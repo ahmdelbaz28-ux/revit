@@ -1,0 +1,322 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NFPA 101 2024", "NFPA 72 2022", "Egyptian Code 2020", "International Best Practices"],
+    "specialization": "HIGH_RISE_AND_SPECIAL_FACILITIES",
+    "validation_status": "VERIFIED"
+  },
+  "highrise_buildings": {
+    "definition": {
+      "nfpa_threshold": ">75 feet (23 meters)",
+      "egyptian_code_threshold": ">15 meters (7 floors approximately)",
+      "classification": "HIGH_RISE"
+    },
+    "required_systems": [
+      {
+        "system": "FIRE_ALARM_CONTROL_PANEL",
+        "requirement": "ADDRESSABLE with voice capability",
+        "location": "FIRE_COMMAND_CENTER",
+        "redundancy": "RECOMMENDED_SECONDARY_PANEL"
+      },
+      {
+        "system": "FIRE_COMMAND_CENTER",
+        "requirement": "MANDATORY",
+        "size_sqft": 100,
+        "features": [
+          "Fire alarm control panel",
+          "Emergency voice system",
+          "Building schematic display",
+          "Radio system",
+          "Telephone",
+          "Generator controls",
+          "Elevator controls"
+        ]
+      },
+      {
+        "system": "VOICE_EVACUATION",
+        "requirement": "MANDATORY",
+        "phased_evacuation": true,
+        "zones": "PER_FLOOR_MINIMUM"
+      },
+      {
+        "system": "EMERGENCY_ELEVATORS",
+        "requirement": "MANDATORY",
+        "recall": "FIRE_SERVICE_MODE"
+      },
+      {
+        "system": "FIREFIGHTER PHONE",
+        "requirement": "MANDATORY",
+        "locations": "EVERY_STAIRWELL"
+      },
+      {
+        "system": "EMERGENCY POWER",
+        "requirement": "MANDATORY",
+        "duration_hours": 24
+      }
+    ],
+    "stairwell_requirements": {
+      "fire_rated": "2_HOUR_MINIMUM",
+      "pressure": "POSITIVE_AIR",
+      "intercom": "REQUIRED_AT_EVERY_5_FLOORS"
+    },
+    "phased_evacuation": {
+      "phase_1": {
+        "floors": "ALARM_FLOOR_AND_FLOOR_ABOVE",
+        "action": "EVACUATE_TO_ASSEMBLY"
+      },
+      "phase_2": {
+        "floors": "TWO_FLOORS_ABOVE_ALARM",
+        "action": "PREPARE_TO_EVACUATE"
+      },
+      "phase_3": {
+        "floors": "ALL_REMAINING",
+        "action": "FULL_EVACUATION"
+      }
+    }
+  },
+  "power_plants": {
+    "substation_classification": {
+      "type": "GENERATION_PLANT",
+      "risk_level": "CRITICAL",
+      "hazards": ["TRANSFORMER_OIL", "CABLE_TUNNELS", "GENERATORS", "FUEL_STORAGE"]
+    },
+    "required_detection": {
+      "transformer": {
+        "type": "LINEAR_HEAT",
+        "rating": "356F or 238F",
+        "application": "OVERHEAD_TRANSFORMERS"
+      },
+      "cable_tunnel": {
+        "type": "LINEAR_HEAT_or_ASPIRATING",
+        "application": "CABLE_TRAY_ROUTING"
+      },
+      "generator_room": {
+        "type": "SMOKE_PLUS_HEAT",
+        "application": "GENERATOR_ENCLOSURE"
+      },
+      "fuel_storage": {
+        "type": "FLAME_DETECTOR",
+        "application": "FUEL_TANK_AREA"
+      }
+    },
+    "suppression_systems": {
+      "transformer": {
+        "type": "CO2_or_FM200",
+        "application": "OIL_FILLED_TRANSFORMERS",
+        "activation": "AUTOMATIC_WITH_MANUAL"
+      },
+      "cable_tunnel": {
+        "type": "WATER_MIST_or_FM200",
+        "application": "CABLE_TUNNELS"
+      },
+      "generator": {
+        "type": "FM200_or_DRY_PIPE",
+        "application": "GENERATOR_ROOM"
+      }
+    },
+    "special_requirements": [
+      "Seismic protection for equipment",
+      "Explosion proof detection in fuel areas",
+      "Deluge system for transformer yards",
+      "Foam system for fuel storage"
+    ],
+    "control_requirements": {
+      "transformer_isolation": "AUTOMATIC_TRIP",
+      "ventilation_shutdown": "AUTOMATIC",
+      "fire_door_closure": "AUTOMATIC"
+    }
+  },
+  "substations": {
+    "voltage_levels": ["132kV", "66kV", "33kV", "11kV"],
+    "risk_assessment": {
+      "equipment": ["TRANSFORMERS", "CABLES", "SWITCHGEAR", "PROTECTION_RELAYS"],
+      "fire_hazards": ["INSULATING_OIL", "CABLE_INSULATION", "DUST", "COMBUSTIBLE_STORED_ITEMS"]
+    },
+    "detection_requirements": {
+      "oil_leakage": "FLAME_DETECTION",
+      "cable_overheating": "LINEAR_HEAT_175F",
+      "smoke_in_closed_areas": "ASPIRATING_SMOKE"
+    },
+    "suppression_requirements": {
+      "transformer_yard": "WATER_DELUGE_or_FOAM",
+      "cable_basement": "CO2_or_FM200",
+      "switchgear_room": "FM200_or_WATER_MIST"
+    },
+    "special_systems": [
+      "Explosion proof equipment required",
+      "Sealed room pressurization",
+      "Oil containment berms"
+    ]
+  },
+  "sensitive_facilities": {
+    "data_centers": {
+      "risk_classification": "CRITICAL",
+      "assets": ["SERVERS", "DATA_STORAGE", "TELECOM_EQUIPMENT"],
+      "value": "IRREPLACEABLE - BUSINESS_CRITICAL",
+      "detection": {
+        "primary": "VESDA_ASPIRATING",
+        "secondary": "SMOKE_PLUS_MULTI_SENSOR",
+        "sensitivity": "HIGH_0.2_to_1.0_%_OBSC"
+      },
+      "suppression": {
+        "preferred": "FM200_or_INERT_GAS",
+        "backup": "WATER_MIST",
+        "reason": "MINIMAL_DAMAGE_TO_ELECTRONICS"
+      },
+      "requirements": [
+        "Very early warning detection",
+        "Addressable to exact rack row",
+        "Clean agent suppression",
+        "Sealed room requirement",
+        "24/7 monitoring"
+      ],
+      "cooling_integration": {
+        "hvac_shutdown": "REQUIRED",
+        "smoke_dampers": "REQUIRED",
+        "ceiling_sampling": "RECOMMENDED"
+      }
+    },
+    "telecom_facilities": {
+      "risk_classification": "CRITICAL",
+      "assets": ["SWITCHING_EQUIPMENT", "OPTICAL_FIBER", "BATTERY_ROOMS"],
+      "detection": {
+        "primary": "VESDA",
+        "secondary": "SMOKE_HIGH_SENSITIVITY"
+      },
+      "battery_rooms": {
+        "warning": "HYDROGEN_GAS_EMISSION",
+        "detection": "SMOKE_PLUS_MULTI_SENSOR",
+        "ventilation": "REQUIRED_EXHAUST"
+      },
+      "suppression": "FM200_PREFERRED"
+    },
+    "museums_archives": {
+      "risk_classification": "HIGH",
+      "assets": ["ARTIFACTS", "DOCUMENTS", "HISTORICAL_ITEMS"],
+      "value": "IRREPLACEABLE_CULTURAL_HERITAGE",
+      "detection": {
+        "primary": "ASPIRATING_SMOKE",
+        "sensitivity": "VERY_HIGH",
+        "sampling": "CEILING_LEVEL"
+      },
+      "suppression": {
+        "preferred": "INERT_GAS_ARGONITE",
+        "alternative": "FM200",
+        "reason": "NO_WATER_DAMAGE"
+      },
+      "special_requirements": [
+        "Non-damaging suppression",
+        "Humidity control maintained",
+        "Minimal residue"
+      ]
+    },
+    "banks_vaults": {
+      "risk_classification": "HIGH",
+      "protection": ["CASH", "VALUABLES", "RECORDS"],
+      "detection": "COMBINATION_SMOKE_HEAT",
+      "suppression": "CO2_OR_FM200",
+      "security_integration": "MANDATORY_LINK",
+      "silent_alarm": "REQUIRED"
+    }
+  },
+  "critical_infrastructure": {
+    "airports": {
+      "zones": [
+        "TERMINAL_BUILDING",
+        "CONTROL_TOWER",
+        "RUNWAY_LIGHTING",
+        "FUEL_FARM",
+        "BAGGAGE_HANDLING"
+      ],
+      "detection": "ADDRESSABLE_PER_ZONE",
+      "suppression": "VARYING_BY_AREA",
+      "special": "EXPLOSION_PROOF_FOR_FUEL"
+    },
+    "railway_stations": {
+      "zones": [
+        "PLATFORM",
+        "TICKET_HALL",
+        "UNDERGROUND_AREA"
+      ],
+      "detection": "ADDRESSABLE",
+      "evacuation": "LARGE_PEOPLE_FLOW",
+      "voice_system": "MANDATORY"
+    },
+    "tunnels": {
+      "type": ["ROAD", "RAIL", "PEDESTRIAN"],
+      "detection": "LINEAR_HEAT_PREFERRED",
+      "suppression": "WATER_MIST_OR_FOAM",
+      "ventilation": "JET_FAN_EMERGENCY",
+      "emergency_exits": "REQUIRED_300M",
+      "fire_extinguishers": "REQUIRED_100M"
+    }
+  },
+  "specialized_detectors": {
+    "linear_heat_cable": {
+      "types": [
+        {"rating": "155F", "application": "普通场所"},
+        {"rating": "170F", "application": "Ducts"},
+        {"rating": "220F", "application": "Industrial"},
+        {"rating": "356F", "application": "Transformers"}
+      ],
+      "manufacturers": ["Protectowire", "Pyrotenax", "Dyneo"]
+    },
+    "aspirating_smoke": {
+      "vesda_models": ["VLC", "VLS", "VFT", "XLO"],
+      "sensitivity": "0.005%_OBSC",
+      "applications": ["DATA_CENTER", "CLEAN_ROOM", "ARCHIVE"]
+    },
+    "flame_detectors": {
+      "types": ["IR_ONLY", "UV_ONLY", "UVIR_COMBO"],
+      "applications": ["FUEL_STORAGE", "AIRCRAFT_HANGAR", "PAINT_BOOTH"],
+      "manufacturers": ["ESMI", "Honeywell", "MSA"]
+    },
+    "gas_detection": {
+      "types": ["CO", "NATURAL_GAS_LEAK", "HYDROGEN"],
+      "applications": ["BATTERY_ROOMS", "GAS_METER_ROOM", "KITCHEN"],
+      "integration": "FIRE_ALARM_PANEL"
+    }
+  },
+  "system_integration": {
+    "hvac_integration": {
+      "smoke_dampers": "AUTOMATIC_CLOSE",
+      "exhaust_fans": "AUTOMATIC_START",
+      "supply_fans": "AUTOMATIC_SHUTDOWN"
+    },
+    "elevator_integration": {
+      "fire_service_elevators": "RECALL_TO_LOBBY",
+      "passenger_elevators": "RECALL_OR_SHUTDOWN",
+      "firefighter_service": "FIRE_SERVICE_MODE"
+    },
+    "door_integration": {
+      "fire_doors": "AUTOMATIC_CLOSURE",
+      "smoke_barriers": "AUTOMATIC_SEAL",
+      "access_control": "FAIL_SAFE_UNLOCK"
+    },
+    "fire_pump_integration": {
+      "jockey_pump": "AUTOMATIC",
+      "main_pump": "FIRE_SERVICE_INITIATED",
+      "backup_power": "REQUIRED"
+    }
+  },
+  "zone_block_diagram_example": {
+    "description": "High-rise with multiple zones",
+    "floors": "B1 to 20F",
+    "zones": [
+      {"zone": 1, "floors": "B1-B2", "area": "PARKING"},
+      {"zone": 2, "floors": "1F", "area": "LOBBY"},
+      {"zone": 3, "floors": "2-10", "area": "OFFICE"},
+      {"zone": 4, "floors": "11-15", "area": "RETAIL"},
+      {"zone": 5, "floors": "16-20", "area": "RESTAURANT"},
+      {"zone": 6, "floors": "ROOF", "area": "MECHANICAL"}
+    ],
+    "voice_zones": [
+      {"voice_zone": "1", "floors": "B1-5"},
+      {"voice_zone": "2", "floors": "6-10"},
+      {"voice_zone": "3", "floors": "11-15"},
+      {"voice_zone": "4", "floors": "16-20"}
+    ]
+  }
+}

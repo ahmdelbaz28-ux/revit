@@ -1,0 +1,266 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NFPA 101 2024", "NFPA 72 2022", "Egyptian Code"],
+    "validation_status": "VERIFIED"
+  },
+  "emergency_lighting": {
+    "illumination_requirements": {
+      "path_of_egress": {
+        "average": 1,
+        "unit": "FOOTCANDLE",
+        "minimum_at_floor": 0.1,
+        "unit": "FOOTCANDLE"
+      },
+      "exit_discharge": {
+        "average": 1,
+        "unit": "FOOTCANDLE"
+      },
+      "refuge_area": {
+        "average": 5,
+        "unit": "FOOTCANDLE"
+      }
+    },
+    "battery_backup": {
+      "duration": {
+        "standard": 90,
+        "unit": "MINUTES"
+      },
+      "high_rise": 90,
+      "assembly": 90,
+      "health_care": 90
+    },
+    "types": [
+      {
+        "id": "EL_UNIT_BATT",
+        "type": "Emergency Light Unit with Battery",
+        "description": "Self-contained battery backup",
+        "wattage": 0.5,
+        "unit": "WATTS",
+        "lumen_output": 50,
+        "duration_hrs": 90,
+        "typical_price_egp": 550
+      },
+      {
+        "id": "EL_UNIT_HEAD",
+        "type": "Emergency Light Head",
+        "description": "Requires remote battery backup",
+        "wattage": 0.5,
+        "unit": "WATTS",
+        "typical_price_egp": 350
+      },
+      {
+        "id": "EL_EXIT_SIG",
+        "type": "Exit Sign (LED) with Battery",
+        "description": "Combined EXIT sign and emergency light",
+        "wattage": 1,
+        "unit": "WATTS",
+        "lumen_output": 100,
+        "duration_hrs": 90,
+        "typical_price_egp": 850
+      },
+      {
+        "id": "EL_COMBO_UNIT",
+        "type": "Combination Unit",
+        "description": "Emergency light + EXIT sign",
+        "wattage": 1.5,
+        "unit": "WATTS",
+        "duration_hrs": 90,
+        "typical_price_egp": 1200
+      },
+      {
+        "id": "EL_PHOTOLUM",
+        "type": "Photoluminescent Exit Sign",
+        "description": "No battery - requires charging light",
+        "typical_price_egp": 450,
+        "notes": "Requires charging from normal lighting"
+      }
+    ],
+    "installation": {
+      "height": {
+        "exit_sign": "FLOOR_6FT_6IN_TO_SIG_BOTTOM",
+        "egress_light": "FLOOR_7FT_6IN_MIN"
+      },
+      "spacing": [
+        {
+          "area": "CORRIDOR",
+          "spacing_ft": 100
+        },
+        {
+          "area": "STAIR",
+          "spacing_per_landing": 1
+        },
+        {
+          "area": "ROOM",
+          "spacing_per_room": 1
+        }
+      ],
+      "code_reference": "NFPA 101 7.9.2, 7.10"
+    }
+  },
+  "voice_alarm_systems": {
+    "requirements": {
+      "minimum_for": [
+        "HIGH_RISE_OVER_75FT",
+        "ASSEMBLY_OVER_1000",
+        "HEALTH_CARE_I1_I2",
+        "EDUCATIONAL_OVER_300"
+      ],
+      "db_requirements": {
+        "sleeping_area": 70,
+        "general_area": 85,
+        "loud_area": 90,
+        "unit": "dBA"
+      }
+    },
+    "system_types": [
+      {
+        "id": "VOICE_BASIC",
+        "type": "Basic Voice System",
+        "description": "Pre-recorded messages",
+        "zones": 4,
+        "amplifier Watts": 25,
+        "typical_price_egp": 85000
+      },
+      {
+        "id": "VOICE_ADVANCED",
+        "type": "Advanced Voice System",
+        "description": "Multiple messages, live paging",
+        "zones": 32,
+        "amplifier Watts": 100,
+        "typical_price_egp": 180000
+      },
+      {
+        "id": "VOICE_DIGITAL",
+        "type": "Digital Voice System",
+        "description": "Full addressable voice",
+        "zones": 250,
+        "amplifier Watts": 200,
+        "typical_price_egp": 350000
+      }
+    ],
+    "message_templates": [
+      "May I have your attention. A fire emergency has been reported in the building. Please evacuate immediately using the nearest exit.",
+      "This is a fire alarm. Do not use elevators. Please proceed to the nearest exit.",
+      "Attention. This is an emergency. All personnel should exit the building immediately.",
+      "All clear. The fire emergency has been handled. You may return to normal activities."
+    ],
+    "speaker_zoning": {
+      "floor_by_floor": true,
+      "zone_by_zone": true,
+      "voice_command_all": true,
+      "override_automode": true
+    },
+    "code_reference": "NFPA 72 24.4, NFPA 101 12.3.3"
+  },
+  "directional_signage": {
+    "requirements": {
+      "illuminance": {
+        "photoluminescent": 5,
+        "electrically_illuminated": 5,
+        "unit": "FOOTCANDLES_MIN"
+      },
+      "letter_size": {
+        "exit_run": 6,
+        "unit": "INCH_HEIGHT_MIN"
+      },
+      "glow_time": {
+        "photoluminescent": "60_MIN_MIN"
+      }
+    },
+    "types": [
+      {
+        "id": "SIGN_EXIT",
+        "type": "EXIT Sign",
+        "description": "Standard exit indication",
+        "typical_price_egp": 380
+      },
+      {
+        "id": "SIGN_EXIT_ARROW",
+        "type": "EXIT Sign with Arrow",
+        "description": "Directional EXIT",
+        "typical_price_egp": 450
+      },
+      {
+        "id": "SIGN_ARROW_ONLY",
+        "type": "Directional Arrow",
+        "description": "Arrow only for path",
+        "typical_price_egp": 320
+      },
+      {
+        "id": "SIGN_FLOOR_EGRESS",
+        "type": "Floor Egress Signage",
+        "description": "Shows floor and exit directions",
+        "typical_price_egp": 650
+      }
+    ],
+    "installation": {
+      "height": "FLOOR_6FT_6IN_TO_SIG_BOTTOM",
+      "visibility_distance": 100,
+        "unit": "FEET_MAX",
+      "changes_of_direction": "MANDATORY",
+      "code_reference": "NFPA 101 7.10"
+    }
+  },
+  "fire_command_center": {
+    "requirements": {
+      "size_min": {
+        "sqft": 100,
+        "meters": 9.3
+      },
+      "located": "PROTECTED_AREA",
+      "equipment": [
+        "Main fire alarm control panel",
+        "Emergency voice system",
+        "Fire department connection",
+        "Building schematic display",
+        "Radio system",
+        "Telephone",
+        "Emergency generator controls",
+        "Elevator controls",
+        "HVAC controls"
+      ],
+      "required_for": [
+        "HIGH_RISE",
+        "LARGE_AREA_OVER_50000_SQFT",
+        "MULTI_BUILDING",
+        "HEALTH_CARE"
+      ],
+      "code_reference": "NFPA 101 11.8.5, NFPA 72 21.2.1"
+    }
+  },
+  "evacuation_procedures": {
+    "phased_evacuation": {
+      "enabled_for": ["HIGH_RISE", "HEALTH_CARE"],
+      "phases": [
+        {
+          "phase": 1,
+          "notify": "ALARM_IN_ZONE_ONLY",
+          "action": "EVACUATE_AFFECTED_FLOOR"
+        },
+        {
+          "phase": 2,
+          "notify": "ADJACENT_FLOORS",
+          "action": "PREPARE_TO_EVACUATE"
+        },
+        {
+          "phase": 3,
+          "notify": "COMPLETE_BUILDING",
+          "action": "FULL_EVACUATION"
+        }
+      ]
+    },
+    "assembly_areas": {
+      "outdoor": {
+        "min_distance_ft": 100,
+        "unit": "FROM_BUILDING"
+      },
+      "indoor": {
+        "rated_area": "2_HOUR_FIRE_RATED",
+        "ventilation": "REQUIRED"
+      }
+    }
+  }
+}

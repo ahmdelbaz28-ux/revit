@@ -51,14 +51,17 @@ logs/
 *.sqlite
 *.sqlite3
 
-# Fire Alarm DB
-fire-alarm-db/
+# Fire Alarm DB - Full project (will be tracked in git)
+# fire-alarm-db/
+
+# But exclude the RAR file
 fire-alarm-db.rar
 
-# Agent temporary files
-bash_events/
+# Agent temporary files (keep conversations but review before commit)
+# bash_events/
 conversations/
 agent_tmp/
 
-# Revit project files
-project/
+# Revit project files - Keep engineering files
+# project/
+project/revit

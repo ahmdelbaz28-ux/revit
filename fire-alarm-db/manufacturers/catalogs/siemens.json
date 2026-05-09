@@ -1,0 +1,422 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["Siemens documentation", "UL listings", "Technical datasheets"],
+    "last_updated": "2026-05-09"
+  },
+  "manufacturer": {
+    "name": "Siemens Industry",
+    "brand_names": ["Siemens", "Cerberus", "Sinteso"],
+    "headquarters": "Munich, Germany",
+    "website": "www.siemens.com/fire-safety",
+    "year_established": "1847 (original founded)",
+    "ul_listings": "UL, FM, LPCB, VdS, CNBOP",
+    "note": "One of the oldest fire alarm manufacturers (Cerberus founded 1898)"
+  },
+  "control_panels": [
+    {
+      "model": "FC2002A",
+      "type": "CONVENTIONAL",
+      "series": "Cerberus",
+      "zones": 2,
+      "notification circuits": 2,
+      "Built-In Printer": false,
+      "network capable": false,
+      "dimensions mm": "400 x 300 x 145",
+      "Input voltage": "230 VAC, 50/60 Hz",
+      "battery capacity max AH": 26,
+      "operating temp": "-10 to +55 C",
+      "listings": ["UL", "FM", "VdS"],
+      "features": [
+        "Microprocessor based",
+        "Event memory",
+        "Auto reset"
+      ],
+      "applications": ["Small building", "Retail", "Restaurant"],
+      "price_range_usd": "1500-3000"
+    },
+    {
+      "model": "FC2060A",
+      "type": "CONVENTIONAL",
+      "series": "Cerberus",
+      "zones": 6,
+      "notification circuits": 4,
+      " Built-In Printer": false,
+      "network capable": false,
+      "dimensions mm": "500 x 400 x 145",
+      "Input voltage": "230 VAC",
+      "battery capacity max AH": 45,
+      "operating temp": "-10 to +55 C",
+      "listings": ["UL", "FM", "VdS"],
+      "features": [
+        "Expandable to 10 zones",
+        "Auxiliary output"
+      ],
+      "applications": ["Small commercial", "School"],
+      "price_range_usd": "3000-5000"
+    },
+    {
+      "model": "FC2070A",
+      "type": "ADDRESSABLE",
+      "series": "Cerberus",
+      "points maximum": 127,
+      "SLC": 1,
+      "devices per SLC": 127,
+      "notification circuits": 4,
+      "Built-In Printer": false,
+      "network capable": true,
+      "dimensions mm": "500 x 400 x 145",
+      "Input voltage": "230 VAC",
+      "battery capacity max AH": 45,
+      "operating temp": "-10 to +55 C",
+      "listings": ["UL", "FM", "VdS"],
+      "communicator built-in": "Optional",
+      "features": [
+        "C-BUS protocol",
+        "Auto addressing",
+        "Event log"
+      ],
+      "applications": ["Small office", "Retail", "Hotel"],
+      "price_range_usd": "8000-12000"
+    },
+    {
+      "model": "FC2020A",
+      "type": "ADDRESSABLE",
+      "series": "Cerberus",
+      "points maximum": 500,
+      "SLC": 2,
+      "devices per SLC": 250,
+      "notification circuits": 4,
+      "Built-In Printer": false,
+      "network capable": true,
+      "voice capable": false,
+      "dimensions mm": "600 x 500 x 200",
+      "Input voltage": "230 VAC",
+      "battery capacity max AH": 65,
+      "operating temp": "-10 to +55 C",
+      "listings": ["UL", "FM", "VdS"],
+      "communicator built-in": "Integrated",
+      "features": [
+        "C-BUS protocol",
+        "Large LCD",
+        "USB programming"
+      ],
+      "applications": ["Office building", "School", "Mall"],
+      "price_range_usd": "15000-22000"
+    },
+    {
+      "model": "FC4040A",
+      "type": "INTELLIGENT",
+      "series": "Sinteso",
+      "points maximum": 1000,
+      "SLC": 4,
+      "devices per SLC": 250,
+      "notification circuits": 8,
+      "Built-In Printer": false,
+      "network capable": true,
+      "voice capable": true,
+      "dimensions mm": "800 x 600 x 300",
+      "Input voltage": "230 VAC",
+      "battery capacity max AH": 110,
+      "operating temp": "-10 to +55 C",
+      "listings": ["UL", "FM", "VdS", "LPCB"],
+      "communicator built-in": "Integrated",
+      "features": [
+        "AlgoTecc algorithm",
+        "Network up to 64 nodes",
+        "Voice integration"
+      ],
+      "applications": ["Large campus", "Airport", "Hospital"],
+      "price_range_usd": "30000-45000"
+    },
+    {
+      "model": "FC7260A",
+      "type": "INTELLIGENT",
+      "series": "Sinteso",
+      "points maximum": 2500,
+      "SLC": 8,
+      "devices per SLC": 250,
+      "notification circuits": 16,
+      "Built-In Printer": true,
+      "network capable": true,
+      "voice capable": true,
+      "dimensions mm": "1000 x 800 x 400",
+      "Input voltage": "230 VAC",
+      "battery capacity max AH": 150,
+      "operating temp": "-10 to +55 C",
+      "listings": ["UL", "FM", "VdS", "LPCB"],
+      "communicator built-in": "Integrated",
+      "features": [
+        "AlgoTecc advanced",
+        "Voice message per zone",
+        "Graphics display",
+        "Touch screen option"
+      ],
+      "applications": ["High-rise", "Airport terminal", "Large hospital"],
+      "price_range_usd": "50000-80000"
+    },
+    {
+      "model": "FC7500",
+      "type": "VOICE_EVACUATION",
+      "series": "Voice",
+      "zones": 120,
+      "amplifier_watts": "500",
+      "Built-In Printer": true,
+      "network capable": true,
+      "Input voltage": "230 VAC",
+      "battery capacity max AH": 150,
+      "listings": ["UL", "FM", "VdS"],
+      "features": [
+        "Digital voice messages",
+        "Microphone input",
+        "Background music option",
+        "Live paging"
+      ],
+      "applications": ["High-rise", "Hospital", "Stadium", "Mall"],
+      "price_range_usd": "60000-90000"
+    }
+  ],
+  "addressable_detectors": [
+    {
+      "model": "OP820",
+      "type": "PHOTOELECTRIC_SMOKE",
+      "series": "Cerberus",
+      "addressable": true,
+      "sensitivity": "0.7 to 3.5 %OBSC/FT",
+      "operating voltage": "19 to 28 VDC",
+      "standby current ma": 0.35,
+      "alarm current ma": 0.5,
+      "temp range": "0 to 60 C",
+      "listings": ["UL", "FM", "VdS"],
+      "features": [
+        "C-BUS addressable",
+        "Auto compensation"
+      ],
+      "base model": "BAU-OP820",
+      "price_usd": 48,
+      "applications": ["General use", "Office", "School"]
+    },
+    {
+      "model": "OH820",
+      "type": "HEAT_ROR",
+      "series": "Cerberus",
+      "addressable": true,
+      "temperature": "135F or 15F/min ROR",
+      "operating voltage": "19 to 28 VDC",
+      "listings": ["UL", "FM"],
+      "base model": "BAU-OH820",
+      "price_usd": 42,
+      "applications": ["Kitchen", "Garage"]
+    },
+    {
+      "model": "OI820",
+      "type": "IONIZATION_SMOKE",
+      "series": "Cerberus",
+      "addressable": true,
+      "sensitivity": "0.5 to 3.5 %OBSC/FT",
+      "operating voltage": "19 to 28 VDC",
+      "listings": ["UL", "FM"],
+      "price_usd": 52,
+      "applications": ["Flammable areas", "Chemical storage"]
+    },
+    {
+      "model": "OOHC820",
+      "type": "MULTI_SENSOR",
+      "series": "Cerberus",
+      "addressable": true,
+      "sensors": ["Photoelectric", "Heat"],
+      "algorithms": ["Single", "Combined"],
+      "listings": ["UL", "FM"],
+      "price_usd": 85,
+      "applications": ["Varying conditions"]
+    },
+    {
+      "model": "FDO-OT220",
+      "type": "DUCT_SMOKE",
+      "series": "Cerberus",
+      "voltage": "24 VDC",
+      "sensitivity": "0.5 to 3.0 %OBSC/FT",
+      "listings": ["UL", "FM"],
+      "price_usd": 320,
+      "applications": ["HVAC ducts"]
+    }
+  ],
+  "conventional_detectors": [
+    {
+      "model": "DO820A",
+      "type": "PHOTOELECTRIC",
+      "series": "Cerberus",
+      "addressable": false,
+      "sensitivity": "2.5 %OBSC/FT",
+      "voltage": "24 VDC",
+      "listings": ["UL", "FM", "VdS"],
+      "price_usd": 22,
+      "applications": ["Conventional systems"]
+    },
+    {
+      "model": "DH820P",
+      "type": "HEAT",
+      "series": "Cerberus",
+      "addressable": false,
+      "temperature": "135F",
+      "voltage": "24 VDC",
+      "listings": ["UL"],
+      "price_usd": 20,
+      "applications": ["Heat detection"]
+    }
+  ],
+  "manual_stations": [
+    {
+      "model": "MS820A",
+      "type": "MANUAL_PULL",
+      "addressable": false,
+      "operation": "SINGLE_ACTION",
+      "reset": "KEY_RESET",
+      "listings": ["UL", "FM", "VdS"],
+      "mounting": "SURFACE",
+      "price_usd": 38,
+      "applications": ["General use"]
+    },
+    {
+      "model": "MS840A",
+      "type": "MANUAL_PULL",
+      "addressable": false,
+      "operation": "DUAL_ACTION",
+      "reset": "KEY_RESET",
+      "listings": ["UL", "FM"],
+      "price_usd": 42,
+      "applications": ["Schools", "Public"]
+    },
+    {
+      "model": "MT-8300",
+      "type": "ADDRESSABLE_PULL",
+      "addressable": true,
+      "operation": "SINGLE_ACTION",
+      "reset": "KEY_RESET",
+      "protocol": "C-BUS",
+      "listings": ["UL", "FM"],
+      "price_usd": 75,
+      "applications": ["Addressable systems"]
+    }
+  ],
+  "notification_appliances": [
+    {
+      "model": "VAD-24",
+      "type": "STROBE",
+      "voltage": "24 VDC",
+      "candlepower": 15,
+      "listings": ["UL", "FM", "VdS"],
+      "price_usd": 58,
+      "applications": ["General"]
+    },
+    {
+      "model": "VAD-24H",
+      "type": "HORN_STROBE",
+      "voltage": "24 VDC",
+      "candlepower": 15,
+      "dB level": 85,
+      "listings": ["UL", "FM"],
+      "price_usd": 72,
+      "applications": ["General"]
+    },
+    {
+      "model": "VAD-H",
+      "type": "HORN",
+      "voltage": "24 VDC",
+      "dB level": 85,
+      "listings": ["UL"],
+      "price_usd": 42,
+      "applications": ["Notification"]
+    },
+    {
+      "model": "VAD-SO",
+      "type": "SPEAKER",
+      "voltage": "70.7V",
+      "wattage": "6",
+      "dB level": 90,
+      "listings": ["UL", "FM"],
+      "price_usd": 62,
+      "applications": ["Voice alarm"]
+    },
+    {
+      "model": "VAD-SO-V",
+      "type": "SPEAKER_STROBE",
+      "voltage": "70.7V",
+      "wattage": "6",
+      "candlepower": 15,
+      "listings": ["UL", "FM"],
+      "price_usd": 85,
+      "applications": ["Voice with strobe"]
+    },
+    {
+      "model": "VAD-BELL",
+      "type": "BELL",
+      "size_inches": 6,
+      "voltage": "24 VDC",
+      "dB level": 80,
+      "listings": ["UL", "FM"],
+      "price_usd": 48,
+      "applications": ["Legacy"]
+    }
+  ],
+  "modules": [
+    {
+      "model": "FDM-220",
+      "type": "MONITOR_MODULE",
+      "addressable": true,
+      "inputs": 1,
+      "listings": ["UL", "FM"],
+      "price_usd": 90,
+      "applications": ["Contacts"]
+    },
+    {
+      "model": "FDR-220",
+      "type": "CONTROL_MODULE",
+      "addressable": true,
+      "relay": "Form C 3A",
+      "listings": ["UL", "FM"],
+      "price_usd": 100,
+      "applications": ["HVAC", "Door"]
+    },
+    {
+      "model": "FDI-220",
+      "type": "ISOLATOR",
+      "addressable": true,
+      "isolates": "loop faults",
+      "listings": ["UL"],
+      "price_usd": 70,
+      "applications": ["Loop protection"]
+    }
+  ],
+  "wiring_requirements": {
+    "cbus_slc": {
+      "wire": "Shielded twisted pair 18-16 AWG",
+      "loop_length": "10000 feet max",
+      "devices": "127 max per loop"
+    },
+    "nac": {
+      "wire": "FPLR 14 AWG",
+      "current": "3.0 A max per circuit"
+    }
+  },
+  "commissioning": {
+    "addressing": "Auto or manual via laptop",
+    "programming": "FDIS software",
+    "testing": "Per NFPA 72"
+  },
+  "warranty": {
+    "panels": "3 years",
+    "detectors": "5 years",
+    "modules": "2 years"
+  },
+  "technical_support": {
+    "technical": "+1-800-315-0447",
+    "website": "www.siemens.com/fire-safety",
+    "distributors": {
+      "middle_east": ["Al Shuaib (UAE)", "Al Fanar (Kuwait)", "AlRajhi (Saudi)"],
+      "egypt": ["MEP Gulf", "Al-Ahram"]
+    }
+  }
+}

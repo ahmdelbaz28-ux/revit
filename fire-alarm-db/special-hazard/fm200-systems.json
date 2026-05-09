@@ -1,0 +1,253 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NFPA 12", "NFPA 17A", "NFPA 2001", "NFPA 201"],
+    "validation_status": "VERIFIED"
+  },
+  "special_hazard_systems": [
+    {
+      "id": "FM200_SYSTEM",
+      "system_type": "CLEAN_AGENT",
+      "name_en": "FM-200 Clean Agent System",
+      "name_ar": "نظام FM-200",
+      "agent": "HFC-227ea",
+      "chemical_name": "Heptafluoropropane",
+      "design_concentration": {
+        "value": 7.8,
+        "unit": "%_BY_VOLUME"
+      },
+      "NOAEL": 9.0,
+      "unit": "%_BY_VOLUME",
+      "hold_time_minutes": 10,
+      "design_method": "TOTAL_FLOODING",
+      "applications": [
+        "DATA_CENTER",
+        "TELECOM_SWITCH",
+        "MEDICAL_IMAGING",
+        "ARCIVE",
+        "CONTROL_ROOM",
+        "ELECTRICAL_ROOM"
+      ],
+      "detection": {
+        "primary": "PHOTO_SMOKE",
+        "secondary": "HEAT",
+        "manual_override": true
+      },
+      "discharge": {
+        "type": "AUTOMATIC_WITH_MANUAL_OVERRIDE",
+        "time_seconds": 15,
+        "piping_design": "CRITICAL_FLOW"
+      },
+      "discharge_heads": {
+        "ceiling_mounted": true,
+        " nozzle_type": "FLOODER"
+      },
+      "equipment_protection": {
+        "max_temp": 150,
+        "unit": "F",
+        "seismic_rated": true
+      },
+      "code_reference": "NFPA 2001 2022",
+      "listings": ["UL", "FM", "NYMEX"],
+      "safety_notes": "Notify occupants before discharge. Provide adequate ventilation after discharge.",
+      "design_criteria": {
+        "volume_calculation": "EXACT_ENCLOSURE_VOLUME",
+        "deductions": "NON_RECLAIMABLE_VOID",
+        "temperature_factor": "77F_REFERENCE"
+      }
+    },
+    {
+      "id": "CO2_SYSTEM",
+      "system_type": "TOTAL_FLOODING",
+      "name_en": "Carbon Dioxide System",
+      "name_ar": "نظام ثاني أكسيد الكربون",
+      "agent": "CO2",
+      "chemical_name": "Carbon Dioxide",
+      "design_concentration": {
+        "low_hazard": 34,
+        "ordinary_hazard": 50,
+        "high_hazard": 68,
+        "unit": "%_BY_VOLUME"
+      },
+      "hold_time_minutes": {
+        "low": 20,
+        "ordinary": 30,
+        "high": 30
+      },
+      "applications": [
+        "INDUSTRIAL_FURNACE",
+        "CIP_SYSTEM",
+        "TUNNEL_FIRE_SUPPRESSION",
+        "COMPRESSOR_ROOM"
+      ],
+      "detection": {
+        "primary": "LINEAR_HEAT",
+        "secondary": "HEAT"
+      },
+      "discharge": {
+        "type": "AUTOMATIC",
+        "time_seconds": 30
+      },
+      "safety_warning": "LIFE_HAZARD - CO2 is hazardous to humans. Evacuate before discharge.",
+      "code_reference": "NFPA 12 2022",
+      "listings": ["UL", "FM"],
+      "safety_notes": "Manned areas require warning system. CO2 accumulation monitoring required. Oxygen deficiency hazard.",
+      "design_criteria": "LOCKWOOD"
+    },
+    {
+      "id": "KITCHEN_SUPPRESSION",
+      "system_type": "WET_CHEMICAL",
+      "name_en": "Kitchen Fire Suppression",
+      "name_ar": "نظام إطفاء مطابخ",
+      "agent": "WET_CHEMICAL",
+      "chemical_type": "POTASSIUM_BASED",
+      "design_application": "BLOWN_UP",
+      "temperature_rating": {
+        "rating": 155,
+        "unit": "F",
+        "ul_listed": true
+      },
+      "applications": [
+        "COMMERCIAL_KITCHEN",
+        "RESTAURANT",
+        "HOTEL_KITCHEN",
+        "HOSPITAL_KITCHEN",
+        "FAST_FOOD"
+      ],
+      "detection": {
+        "type": "FIXED_TEMP_LINK",
+        "temperature": {
+          "min": 155,
+          "max": 165,
+          "unit": "F"
+        },
+        "location": "ABOVE_COOKING_EQUIPMENT"
+      },
+      "discharge": {
+        "type": "AUTOMATIC",
+        "nozzle_coverage": "PER_EQUIPMENT_TYPE"
+      },
+      "components": [
+        "DETECTION_LINK",
+        "DISCHARGE_NOZZLE",
+        "CYLINDER",
+        "ACTUATOR",
+        "MANUAL_PULL",
+        "SHUTOFF_VALVE"
+      ],
+      "hvac_integration": {
+        "shutdown_required": true,
+        "exhaust_fan_off": true,
+        "supply_air_off": true
+      },
+      "fuel_supply": {
+        "gas_shutoff": true,
+        "electric_shutoff": true,
+        "grease_trap": true
+      },
+      "code_reference": "NFPA 17A 2022",
+      "listings": ["UL", "FM", "NSF"],
+      "installation_notes": "UL listed hood and duct required. Annual inspection mandatory. Nozzle cleaning required."
+    },
+    {
+      "id": "AEROSOL_SYSTEM",
+      "system_type": "CONDENSED_AEROSOL",
+      "name_en": "Aerosol Fire Extinguishing",
+      "name_ar": "نظام إطفاء ضبابي",
+      "agent": "CONDENSED_AEROSOL",
+      "particle_size": {
+        "avg": 2,
+        "unit": "UM"
+      },
+      "design_concentration": {
+        "min": 85,
+        "unit": "%_EFFECTIVENESS"
+      },
+      "applications": [
+        "LARGE_ENCLOSURES",
+        "DATA_CENTER",
+        "GENERATOR_ROOM",
+        "MARINE_ENGINE",
+        "VEHICLE_BAY"
+      ],
+      "detection": {
+        "primary": "SMOKE",
+        "secondary": "MULTI_SENSOR"
+      },
+      "discharge": {
+        "type": "AUTOMATIC",
+        "generator_type": "ELECTRIC_IGNITER"
+      },
+      "code_reference": "NFPA 2010 2022",
+      "listings": ["UL", "FM"],
+      "design_notes": "Concentration must be verified by testing. Follow manufacturer discharge calculations."
+    },
+    {
+      "id": "WATER_MIST",
+      "system_type": "WATER_MIST",
+      "name_en": "Water Mist Fire Suppression",
+      "name_ar": "نظام رذاذ الماء",
+      "technology": "HIGH_PRESSURE",
+      "pressure_psi": 1000,
+      "droplet_size": {
+        "avg": 50,
+        "max": 150,
+        "unit": "UM"
+      },
+      "design_criteria": {
+        "method": "EN_14926",
+        "density": "HIGHEST_OF_ALL_METHODS"
+      },
+      "applications": [
+        "HERITAGE_BUILDING",
+        "MARINE",
+        "TUNNEL",
+        "PROTECTABLE_EXTINGUISHING"
+      ],
+      "advantages": [
+        "NO_WATER_DAMAGE",
+        "SAFE_FOR_ELECTRONICS",
+        "REDUCED_PIPING"
+      ],
+      "code_reference": "NFPA 750 2022",
+      "listings": ["UL", "FM", "LPCB"]
+    },
+    {
+      "id": "INERT_GAS",
+      "system_type": "INERT_GAS",
+      "name_en": "Inert Gas System (Argon/Nitrogen)",
+      "name_ar": "غاز خامل",
+      "agents": [
+        {
+          "name": "ARGONITE",
+          "concentration": 38
+        },
+        {
+          "name": "ARGON",
+          "concentration": 43
+        },
+        {
+          "name": "IG55",
+          "concentration": 40
+        },
+        {
+          "name": "IG541",
+          "concentration": 38
+        }
+      ],
+      "applications": [
+        "ARCHIVE",
+        "MUSEUM",
+        "SEISMIC_SENSITIVE"
+      ],
+      "discharge_time": {
+        "max": 120,
+        "unit": "SECONDS"
+      },
+      "code_reference": "ISO 14520",
+      "listings": ["UL", "FM", "EN"]
+    }
+  ]
+}

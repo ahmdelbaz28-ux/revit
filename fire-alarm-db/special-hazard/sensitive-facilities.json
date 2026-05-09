@@ -1,0 +1,282 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant - Critical Infrastructure Specialist",
+    "sources": ["NFPA 72", "NFPA 75", "NFPA 76", "NFPA 101", "TIA 1019", "Uptime Institute Standards"],
+    "specialization": "DATA_CENTER_TELECOM_SENSITIVE_FACILITIES",
+    "validation_status": "VERIFIED"
+  },
+  "data_centers": {
+    "tiers": [
+      {
+        "tier": 1,
+        "name": "Basic",
+        "uptime": "99.671%",
+        "n": "No Redundancy",
+        "fire_protection": "STANDARD_ADDRESSABLE"
+      },
+      {
+        "tier": 2,
+        "name": "Redundant Components",
+        "uptime": "99.741%",
+        "n": "N+1",
+        "fire_protection": "ENHANCED_DETECTION"
+      },
+      {
+        "tier": 3,
+        "name": "Concurrently Maintainable",
+        "uptime": "99.982%",
+        "n": "N+1",
+        "fire_protection": "VESDA_PLUS_SUPPRESSION"
+      },
+      {
+        "tier": 4,
+        "name": "Fault Tolerant",
+        "uptime": "99.995%",
+        "n": "2N",
+        "fire_protection": "VESDA_PLUS_CLEAN_AGENT"
+      }
+    ],
+    "fire_protection_requirements": {
+      "detection": {
+        "primary": "ASPIRATING_SMOKE_VESDA",
+        "sensitivity": "0.005_to_0.2%_OBSC",
+        "sampling": "PER_ROW_OR_RACK",
+        "locations": [
+          "ABOVE_SERVER_RACKS",
+          "UNDER_RAISED_FLOOR",
+          "IN_PLENUM"
+        ]
+      },
+      "suppression": {
+        "preferred": "FM200_OR_INERT_GAS",
+        "alternative": "WATER_MISS",
+        "not_allowed": "WATER_SPRINKLER_IN_SERVER_AREA"
+      },
+      "special": [
+        "Sealed room requirement",
+        "Pre-action sprinkler in surrounding areas",
+        "Smoke containment in server room"
+      ]
+    },
+    "cooling_integration": {
+      "hvac_shutdown": "AUTOMATIC_ON_FIRE",
+      "smoke_dampers": "AUTOMATIC_CLOSE",
+      "airflow_control": "ISOLATE_AFFECTED_ZONE"
+    }
+  },
+  "telecom_facilities": {
+    "types": [
+      {
+        "type": "CENTRAL_OFFICE",
+        "description": "Telecom switching center",
+        "equipment": "SWITCHING_ROUTERS_SERVERS",
+        "risk": "CRITICAL"
+      },
+      {
+        "type": "DATA_HOTEL",
+        "description": "Carrier hotel/colocation",
+        "equipment": "MULTIPLE_CARRIER_EQUIPMENT",
+        "risk": "CRITICAL"
+      },
+      {
+        "type": "CELL_TOWER_COMPOUND",
+        "description": "Cell site shelter",
+        "equipment": "RF_AMPLIFIERS_BATTERIES",
+        "risk": "MEDIUM"
+      }
+    ],
+    "battery_rooms": {
+      "hazards": [
+        "HYDROGEN_GAS_EMISSION",
+        "ELECTROLYTE_LEAK",
+        "THERMAL_RUNAWAY"
+      ],
+      "detection": [
+        "SMOKE_DETECTOR",
+        "GAS_DETECTOR_H2",
+        "TEMPERATURE_MONITOR"
+      ],
+      "ventilation": [
+        "EXHAUST_FAN_1ACH_MIN",
+        "HYDROGEN_SENSORS"
+      ],
+      "suppression": "FM200_OR_WATER_MIST"
+    }
+  },
+  "hospitals_healthcare": {
+    "classifications": [
+      {
+        "class": "I1",
+        "description": "Hospital with overnight patients",
+        "risk": "CRITICAL",
+        "detection": "ADDRESSABLE_HIGH_SENSITIVITY"
+      },
+      {
+        "class": "I2",
+        "description": "Hospital with critical care",
+        "risk": "CRITICAL",
+        "detection": "ADDRESSABLE_MULTI_SENSOR"
+      },
+      {
+        "class": "I3",
+        "description": "Ambulatory healthcare",
+        "risk": "HIGH",
+        "detection": "ADDRESSABLE"
+      },
+      {
+        "class": "I4",
+        "description": "Nursing home",
+        "risk": "HIGH",
+        "detection": "ADDRESSABLE"
+      }
+    ],
+    "patient_areas": {
+      "detection": "SMOKE_IN_PATIENT_ROOMS",
+      "zoning": "CRITICAL_NOT_ALL_ALARM",
+      "voice": "SOFT_VOICE_NOT_LOUD_ALARM",
+      "reason": "PATIENT_SAFETY"
+    },
+    "operating_rooms": {
+      "detection": "SMOKE_DETECTOR",
+      "suppression": "NOT_REQUIRED_IN_OR",
+      "reason": "STERILE_ENVIRONMENT"
+    },
+    "sequence_of_operations": [
+      "ALARM_PATIENT_CARE_AREA_ONLY",
+      "NOTIFY_NURSING_STATION",
+      "NOTIFY_MAINTENANCE",
+      "VOICE_MESSAGE_TO_STAFF_AREAS"
+    ]
+  },
+  "laboratories": {
+    "types": [
+      {
+        "type": "BIOSAFETY_LEVEL_1",
+        "risk": "LOW"
+      },
+      {
+        "type": "BIOSAFETY_LEVEL_2",
+        "risk": "MEDIUM"
+      },
+      {
+        "type": "BIOSAFETY_LEVEL_3",
+        "risk": "HIGH"
+      },
+      {
+        "type": "BIOSAFETY_LEVEL_4",
+        "risk": "CRITICAL"
+      }
+    ],
+    "chemical_labs": {
+      "hazards": [
+        "FLAMMABLE_CHEMICALS",
+        "TOXIC_GASES",
+        "REACTIVE_MATERIALS"
+      ],
+      "detection": "SMOKE_PLUS_GAS",
+      "suppression": "FM200_OR_WATER_MIST"
+    }
+  },
+  "archives_museums": {
+    "assets": [
+      "DOCUMENTS",
+      "ARTIFACTS",
+      "HISTORICAL_ITEMS",
+      "RARE_BOOKS"
+    ],
+    "value": "IRREPLACEABLE",
+    "detection": "VESDA_ASPIRATING",
+    "suppression": "INERT_GAS_PREFERRED",
+    "reasons": [
+      "NO_WATER_DAMAGE",
+      "NO_RESIDUE",
+      "HUMIDITY_CONTROL_MAINTAINED"
+    ]
+  },
+  "banks_financial": {
+    "assets": [
+      "CASH_VAULT",
+      "SAFE_DEPOSIT_BOXES",
+      "RECORDS",
+      "SERVER_ROOM"
+    ],
+    "security_level": "HIGH",
+    "detection": "SMOKE_PLUS_HEAT",
+    "suppression": "FM200_IN_VAULT",
+    "integration": [
+      "SECURITY_ALARM",
+      "SILENT_Alarm_TO_SECURITY"
+    ]
+  },
+  "nuclear_facilities": {
+    "classification": "CRITICAL_NATIONAL_INFRASTRUCTURE",
+    "zones": [
+      "CONTROL_ROOM",
+      "REACTOR_BUILDING",
+      "FUEL_STORAGE",
+      "WASTE_STORAGE"
+    ],
+    "detection": "REDUNDANT_SYSTEMS",
+    "suppression": "SPECIALIZED_PER_ZONE",
+    "requirements": [
+      "SEISMIC_RATED_EQUIPMENT",
+      "RADIATION_HARDENED",
+      "FAIL_SAFE_DESIGN"
+    ]
+  },
+  "pharmaceutical_facilities": {
+    "clean_rooms": {
+      "class": "ISO_5_TO_ISO_8",
+      "detection": "ASPIRATING_SMOKE",
+      "suppression": "WATER_MIST_PREFERRED",
+      "reason": "CONTAMINATION_CONTROL"
+    },
+    "chemical_storage": {
+      "hazards": "FLAMMABLE_SOLVENTS",
+      "detection": "FLAME_PLUS_SMOKE",
+      "suppression": "FM200"
+    }
+  },
+  "server_rooms_small": {
+    "definition": "UNDER_500_SQFT",
+    "detection": "SMOKE_DETECTOR",
+    "suppression": "FM200_OR_WATER_MIST",
+    "cooling_shutdown": "REQUIRED"
+  },
+  "clean_rooms": {
+    "iso_classes": ["ISO_1", "ISO_2", "ISO_3", "ISO_4", "ISO_5"],
+    "detection": "VESDA_WITH_HEPA_FILTER",
+    "suppression": "WATER_MIST",
+    "special": "SEALED_ROOM_CONTAMINATION_CONTROL"
+  },
+  "cold_storage_warehouses": {
+    "temperature_range": "-40C_TO_+5C",
+    "detection": "LINEAR_HEAT_ABOVE_PRODUCT",
+    "sprinklers": "DRY_PIPE_OR_PREACTION",
+    "special": "FREEZE_PROTECTION"
+  },
+  "combustible_storage": {
+    "rack_storage": {
+      "height_limit": "15_FEET",
+      "sprinkler": "CONTROL_MODE_DESIGN"
+    },
+    "shelf_storage": {
+      "detection": "SMOKE_PLUS_HEAT",
+      "sprinkler": "STANDARD"
+    }
+  },
+  "atrium_spaces": {
+    "height": "OVER_2_FLOORS",
+    "detection": "BEAM_DETECTORS",
+    "coverage": "CEILING_LEVEL_SAMPLING",
+    "sprinkler": "SPECIAL_DESIGN"
+  },
+  "covered_malls": {
+    "common_area_detection": "SMOKE_DETECTOR",
+    "store_detection": "PER_STORE",
+    "voice_system": "MANDATORY",
+    "evacuation": "LARGE_CROWD_MANAGEMENT"
+  }
+}

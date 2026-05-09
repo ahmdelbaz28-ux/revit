@@ -1,0 +1,453 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "MEP Engineering Consultant",
+    "currency": "EGP",
+    "pricing_date": "2026-05-09",
+    "region": "Egypt",
+    "sources": ["Local distributors", "Manufacturer quotes", "Industry benchmarks"],
+    "validation_status": "VERIFIED",
+    "pricing_notes": "Prices in EGP. Material + Installation markup included."
+  },
+  "equipment_cost_database": {
+    "control_panels": [
+      {
+        "id": "PANEL_CONV_4Z",
+        "description": "Conventional Panel 4 Zone",
+        "manufacturer_typical": "Notifier/Honeywell",
+        "base_price_egp": 12000,
+        "installed_price_egp": 18500,
+        "labor_hours": 8,
+        "warranty_years": 2,
+        "typical_applications": ["Small office", "Apartment building", "Retail <5000sqft"]
+      },
+      {
+        "id": "PANEL_CONV_8Z",
+        "description": "Conventional Panel 8 Zone",
+        "manufacturer_typical": "Notifier/Honeywell",
+        "base_price_egp": 18000,
+        "installed_price_egp": 28000,
+        "labor_hours": 12,
+        "warranty_years": 2,
+        "typical_applications": ["Medium office", "Hotel floor", "School wing"]
+      },
+      {
+        "id": "PANEL_CONV_16Z",
+        "description": "Conventional Panel 16 Zone",
+        "manufacturer_typical": "Notifier/Honeywell",
+        "base_price_egp": 28000,
+        "installed_price_egp": 42000,
+        "labor_hours": 16,
+        "warranty_years": 2,
+        "typical_applications": ["Large floor", "Warehouse section", "Commercial building"]
+      },
+      {
+        "id": "PANEL_ADDR_250",
+        "description": "Addressable Panel 250 Points",
+        "manufacturer_typical": "Notifier/Siemens/ESL",
+        "base_price_egp": 75000,
+        "installed_price_egp": 110000,
+        "labor_hours": 24,
+        "programming_hours": 8,
+        "warranty_years": 3,
+        "typical_applications": ["Office building", "Hotel", "Hospital wing", "Mall shop"]
+      },
+      {
+        "id": "PANEL_ADDR_500",
+        "description": "Addressable Panel 500 Points",
+        "manufacturer_typical": "Notifier/Siemens/ESL",
+        "base_price_egp": 140000,
+        "installed_price_egp": 195000,
+        "labor_hours": 32,
+        "programming_hours": 12,
+        "warranty_years": 3,
+        "typical_applications": ["Commercial building", "Hospital", "High-rise floor"]
+      },
+      {
+        "id": "PANEL_ADDR_1000",
+        "description": "Addressable Panel 1000 Points",
+        "manufacturer_typical": "Notifier/Siemens",
+        "base_price_egp": 250000,
+        "installed_price_egp": 340000,
+        "labor_hours": 40,
+        "programming_hours": 16,
+        "warranty_years": 3,
+        "typical_applications": ["Mall", "Large office", "Multi-floor"]
+      },
+      {
+        "id": "PANEL_INTEL_2000",
+        "description": "Intelligent/Analog Panel 2000 Points",
+        "manufacturer_typical": "Honeywell/ESL",
+        "base_price_egp": 450000,
+        "installed_price_egp": 580000,
+        "labor_hours": 48,
+        "programming_hours": 24,
+        "warranty_years": 5,
+        "typical_applications": ["Hospital", "Airport terminal", "Large mall", "Data center"]
+      },
+      {
+        "id": "PANEL_VOICE_500",
+        "description": "Voice Evacuation Panel 500 Zones",
+        "manufacturer_typical": "Wheelock/ZETRON",
+        "base_price_egp": 350000,
+        "installed_price_egp": 480000,
+        "labor_hours": 56,
+        "programming_hours": 32,
+        "warranty_years": 3,
+        "typical_applications": ["High-rise", "Hospital", "Assembly >1000", "Stadium"],
+        "notes": "Includes amplifier, microphone, message control"
+      }
+    ],
+    "detectors": [
+      {
+        "id": "DET_SMOKE_PHOTO",
+        "description": "Smoke Detector Photoelectric",
+        "base_price_egp": 380,
+        "installed_price_egp": 750,
+        "base_price_usd": 8,
+        "labor_each": 0.5,
+        "warranty_years": 5,
+        "typical_qty_per_1000sqft": 4
+      },
+      {
+        "id": "DET_SMOKE_INTEL",
+        "description": "Intelligent Smoke Detector",
+        "base_price_egp": 1100,
+        "installed_price_egp": 1800,
+        "base_price_usd": 23,
+        "labor_each": 0.75,
+        "warranty_years": 5,
+        "typical_qty_per_1000sqft": 4
+      },
+      {
+        "id": "DET_HEAT_FIXED",
+        "description": "Heat Detector Fixed 135F",
+        "base_price_egp": 280,
+        "installed_price_egp": 550,
+        "labor_each": 0.5,
+        "warranty_years": 5
+      },
+      {
+        "id": "DET_HEAT_ROR",
+        "description": "Heat Detector Rate of Rise",
+        "base_price_egp": 450,
+        "installed_price_egp": 750,
+        "labor_each": 0.5,
+        "warranty_years": 5
+      },
+      {
+        "id": "DET_HEAT_COMBO",
+        "description": "Heat Detector Fixed/ROR Combo",
+        "base_price_egp": 650,
+        "installed_price_egp": 1000,
+        "labor_each": 0.75,
+        "warranty_years": 5
+      },
+      {
+        "id": "DET_MULTI_SENSOR",
+        "description": "Multi-Criteria Detector",
+        "base_price_egp": 2200,
+        "installed_price_egp": 3200,
+        "base_price_usd": 45,
+        "labor_each": 1,
+        "warranty_years": 5
+      },
+      {
+        "id": "DET_BEAM",
+        "description": "Beam Smoke Detector (Pair)",
+        "base_price_egp": 8500,
+        "installed_price_egp": 12500,
+        "labor_each": 4,
+        "warranty_years": 3
+      },
+      {
+        "id": "DET_VESDA",
+        "description": "VESDA Aspirating System",
+        "base_price_egp": 65000,
+        "installed_price_egp": 85000,
+        "labor_each": 16,
+        "warranty_years": 2,
+        "notes": "Includes detector, pipe, controller"
+      }
+    ],
+    "manual_stations": [
+      {
+        "id": "MANUAL_SURFACE",
+        "description": "Manual Pull Station Surface",
+        "base_price_egp": 650,
+        "installed_price_egp": 1200,
+        "labor_each": 0.75,
+        "warranty_years": 5
+      },
+      {
+        "id": "MANUAL_SURFACE_ADDR",
+        "description": "Addressable Manual Station",
+        "base_price_egp": 1200,
+        "installed_price_egp": 2000,
+        "labor_each": 1,
+        "warranty_years": 5
+      },
+      {
+        "id": "MANUAL_CONCEALED",
+        "description": "Concealed Manual Station",
+        "base_price_egp": 950,
+        "installed_price_egp": 1500,
+        "labor_each": 1.5,
+        "warranty_years": 5
+      }
+    ],
+    "notification_appliances": [
+      {
+        "id": "NOT_HORN",
+        "description": "Horn (Indoor)",
+        "base_price_egp": 450,
+        "installed_price_egp": 850,
+        "labor_each": 0.75
+      },
+      {
+        "id": "NOT_STROBE_15C",
+        "description": "Strobe 15cd",
+        "base_price_egp": 900,
+        "installed_price_egp": 1500,
+        "labor_each": 0.75
+      },
+      {
+        "id": "NOT_HORN_STROBE",
+        "description": "Horn/Strobe Combo",
+        "base_price_egp": 1200,
+        "installed_price_egp": 2000,
+        "labor_each": 1
+      },
+      {
+        "id": "NOT_SPEAKER_4IN",
+        "description": "Speaker 4in",
+        "base_price_egp": 1200,
+        "installed_price_egp": 2200,
+        "labor_each": 1
+      },
+      {
+        "id": "NOT_SPEAKER_STROBE",
+        "description": "Speaker/Strobe Combo",
+        "base_price_egp": 2200,
+        "installed_price_egp": 3500,
+        "labor_each": 1.25
+      },
+      {
+        "id": "NOT_BELL_6IN",
+        "description": "Bell 6 inch",
+        "base_price_egp": 750,
+        "installed_price_egp": 1300,
+        "labor_each": 1
+      },
+      {
+        "id": "NOT_BELL_10IN",
+        "description": "Bell 10 inch",
+        "base_price_egp": 1200,
+        "installed_price_egp": 2000,
+        "labor_each": 1.25
+      }
+    ],
+    "modules": [
+      {
+        "id": "MOD_MONITOR",
+        "description": "Monitor Module (Input)",
+        "base_price_egp": 1200,
+        "installed_price_egp": 2200,
+        "labor_each": 1.5
+      },
+      {
+        "id": "MOD_CONTROL",
+        "description": "Control Module (Output)",
+        "base_price_egp": 1500,
+        "installed_price_egp": 2800,
+        "labor_each": 1.5
+      },
+      {
+        "id": "MOD_IO",
+        "description": "Input/Output Module",
+        "base_price_egp": 2500,
+        "installed_price_egp": 4000,
+        "labor_each": 2
+      },
+      {
+        "id": "MOD_ISOLATOR",
+        "description": "Signal Line Isolator",
+        "base_price_egp": 950,
+        "installed_price_egp": 1800,
+        "labor_each": 1
+      },
+      {
+        "id": "MOD_RELAY",
+        "description": "Power Relay",
+        "base_price_egp": 800,
+        "installed_price_egp": 1500,
+        "labor_each": 1
+      }
+    ],
+    "batteries": [
+      {
+        "id": "BAT_12V_7AH",
+        "description": "Battery 12V 7AH",
+        "base_price_egp": 850,
+        "installed_price_egp": 1100,
+        "typical_use": "Small panel backup"
+      },
+      {
+        "id": "BAT_12V_18AH",
+        "description": "Battery 12V 18AH",
+        "base_price_egp": 1400,
+        "installed_price_egp": 1800,
+        "typical_use": "Medium panel backup"
+      },
+      {
+        "id": "BAT_12V_26AH",
+        "description": "Battery 12V 26AH",
+        "base_price_egp": 2200,
+        "installed_price_egp": 2800,
+        "typical_use": "Large panel backup"
+      },
+      {
+        "id": "BAT_12V_55AH",
+        "description": "Battery 12V 55AH",
+        "base_price_egp": 4500,
+        "installed_price_egp": 5500,
+        "typical_use": "Main panel, 24hr standby"
+      }
+    ],
+    " wire_cable": [
+      {
+        "id": "WIRE_FPLR_14_2C",
+        "description": "FPLR 14/2 (Power Limited)",
+        "price_per_meter_egp": 42,
+        "typical_use": "Notification circuits"
+      },
+      {
+        "id": "WIRE_FPLR_16_2C",
+        "description": "FPLR 16/2",
+        "price_per_meter_egp": 32,
+        "typical_use": "Notification circuits, short runs"
+      },
+      {
+        "id": "WIRE_FPLR_14_4C",
+        "description": "FPLR 14/4 (4 conductor)",
+        "price_per_meter_egp": 75,
+        "typical_use": "Addressable SLC loop"
+      },
+      {
+        "id": "WIRE_CABLE_18_1C",
+        "description": "18/1 (Single conductor)",
+        "price_per_meter_egp": 12,
+        "typical_use": "Power circuits"
+      },
+      {
+        "id": "WIRE_CABLE_16_1C",
+        "description": "16/1",
+        "price_per_meter_egp": 18,
+        "typical_use": "Power circuits, long runs"
+      },
+      {
+        "id": "WIRE_CABLE_14_1C",
+        "description": "14/1",
+        "price_per_meter_egp": 22,
+        "typical_use": "Main power feed"
+      },
+      {
+        "id": "CONDUIT_PVC_34",
+        "description": "Conduit PVC 3/4 inch",
+        "price_per_meter_egp": 18,
+        "typical_use": "Concealed wiring"
+      },
+      {
+        "id": "CONDUIT_PVC_1",
+        "description": "Conduit PVC 1 inch",
+        "price_per_meter_egp": 28,
+        "typical_use": "Main runs"
+      },
+      {
+        "id": "JUNCTION_BOX_4SQ",
+        "description": "Junction Box 4 sq inch",
+        "price_each_egp": 45,
+        "typical_use": "Wire splices"
+      }
+    ]
+  },
+  "labor_rates": {
+    "engineering": [
+      {
+        "role": "Senior Engineer (Design)",
+        "rate_egp_per_day": 3500,
+        "rate_egp_per_hour": 450,
+        "typical_tasks": ["System design", "Calculations", "Code review", "Shop drawing approval"]
+      },
+      {
+        "role": "Engineer",
+        "rate_egp_per_day": 2500,
+        "rate_egp_per_hour": 320,
+        "typical_tasks": ["Layout design", "BOQ preparation", "Shop drawings"]
+      },
+      {
+        "role": "Draftsman",
+        "rate_egp_per_day": 1200,
+        "rate_egp_per_hour": 150,
+        "typical_tasks": ["CAD drawing", "As-built updates", "Labeling"]
+      }
+    ],
+    "installation": [
+      {
+        "role": "Foreman",
+        "rate_egp_per_day": 800,
+        "rate_egp_per_hour": 100,
+        "typical_tasks": ["Supervision", "Quality control"]
+      },
+      {
+        "role": "Electrician",
+        "rate_egp_per_day": 500,
+        "rate_egp_per_hour": 65,
+        "typical_tasks": ["Wiring", "Device installation", "Panel connection"]
+      },
+      {
+        "role": "Technician",
+        "rate_egp_per_day": 400,
+        "rate_egp_per_hour": 50,
+        "typical_tasks": ["Device mounting", "Conduit support"]
+      },
+      {
+        "role": "Helper",
+        "rate_egp_per_day": 250,
+        "rate_egp_per_hour": 35,
+        "typical_tasks": ["Material handling", "Cleanup"]
+      }
+    ],
+    "commissioning": [
+      {
+        "role": "Commissioning Engineer",
+        "rate_egp_per_day": 4500,
+        "rate_egp_per_hour": 560,
+        "typical_tasks": ["System testing", "Sensitivity testing", "Final inspection"]
+      },
+      {
+        "role": "Programming Tech",
+        "rate_egp_per_day": 3000,
+        "rate_egp_per_hour": 380,
+        "typical_tasks": ["Panel programming", "Device addressing", "Zone configuration"]
+      }
+    ]
+  },
+  "typical_markup": {
+    "material": 1.20,
+    "labor_direct": 1.35,
+    "engineering_design": 1.40,
+    "overhead": 0.15,
+    "profit": 0.12,
+    "contingency": 0.10
+  },
+  "cost_estimation_formula": {
+    "basic_equipment_cost": "SUM(all device costs)",
+    "wire_cost_estimate": "AREA_SQFT * 0.15",
+    "conduit_cost_estimate": "AREA_SQFT * 0.08",
+    "labor_installation": "DEVICE_COUNT * 1.5_HOURS * LABOR_RATE",
+    "programming": "POINT_COUNT * 0.1_HOUR * PROGRAM_RATE",
+    "engineer_design": "AREA_SQFT * 0.02 * ENGINEER_RATE"
+  }
+}

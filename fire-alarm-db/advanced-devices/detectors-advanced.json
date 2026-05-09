@@ -1,0 +1,264 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NFPA 72 2022", "UL 268", "EN 54-14", " manufacturer's data"],
+    "validation_status": "VERIFIED"
+  },
+  "advanced_detectors": [
+    {
+      "id": "VESDA_VLS",
+      "manufacturer": "VESDA",
+      "model": "VLS",
+      "name_en": "Aspirating Smoke Detector (VLS)",
+      "name_ar": "كاشف دخان شغال",
+      "detector_category": "ASPIRATING",
+      "technology": "LASER_SCATTERING",
+      "sensitivity_range": {
+        "min": 0.005,
+        "max": 0.1,
+        "unit": "%_OBSCURATION_PER_FT"
+      },
+      "coverage_area_sqft": 50000,
+      "sampling_points_max": 64,
+      "pipe_configuration": "BRANCHED",
+      "pipe_length_max_ft": 800,
+      "applications": [
+        "DATA_CENTER",
+        "TELECOM_ROOM",
+        "CLEAN_ROOM",
+        "HIGH_CEILING_OVER_12FT",
+        "ARCHIVE",
+        "COLD_STORAGE"
+      ],
+      "alarm_levels": 3,
+      "programming": "CONFIGURABLE",
+      "relay_outputs": 8,
+      "voltage_input": "24VDC",
+      "current_standby_ma": 350,
+      "current_alarm_ma": 450,
+      "operating_temp": {
+        "min": 32,
+        "max": 100,
+        "unit": "F"
+      },
+      "code_reference": "NFPA 72 21.2.4, UL 268A",
+      "listings": ["UL", "FM", "LPCB", "VDS"],
+      "installation_notes": "Must be installed by certified technician. Aspirating holes every 100ft max. Filter replacement every 2 years."
+    },
+    {
+      "id": "BEAM_FSI",
+      "manufacturer": "FSI",
+      "model": "BEAM3500",
+      "name_en": "Beam Smoke Detector",
+      "name_ar": "كاشف حزمة",
+      "detector_category": "BEAM",
+      "technology": "INFRARED_BEAM",
+      "range": {
+        "min": 16,
+        "max": 230,
+        "unit": "FT"
+      },
+      "sensitivity": "CONFIGURABLE",
+      "coverage_area_sqft": 32000,
+      "applications": [
+        "WAREHOUSE_OVER_12FT_CEILING",
+        "ATRIUM",
+        "CATHEDRAL_CEILING",
+        "GYMNASIUM",
+        "FACTORY_FLOOR",
+        "HANGAR"
+      ],
+      "alignment": "AUTOMATIC",
+      "reflector_required": true,
+      "reflector_quantity": 4,
+      "voltage": "24VDC",
+      "current_ma": 45,
+      "alarm_relays": 2,
+      "trouble_relay": true,
+      "code_reference": "NFPA 72 21.2.3",
+      "listings": ["UL", "FM", "CSFM"],
+      "installation_notes": "Mount on stable surface. Reflectors must be aligned. Avoid direct sunlight."
+    },
+    {
+      "id": "DUCT_SMOKE_TT",
+      "manufacturer": "SYSTEM_SENSOR",
+      "model": "D4120",
+      "name_en": "Duct Smoke Detector",
+      "name_ar": "كاشف دخان مجاري هواء",
+      "detector_category": "DUCT_MOUNTED",
+      "technology": "PHOTOELECTRIC",
+      "sensitivity": "0.2_to_0.5",
+      "unit": "%_OBSC_PER_FT",
+      "applications": [
+        "HVAC_RETURN_AIR",
+        "AIR_HANDLER_UNIT",
+        "KITCHEN_EXHAUST",
+        "LAB_EXHAUST"
+      ],
+      "sampling_tube": {
+        "required": true,
+        "length": "12_TO_48_INCH",
+        "orientation": "HORIZONTAL"
+      },
+      "features": [
+        "AIRFLOW_MONITORING",
+        "SELF_TEST",
+        "REMOTE_INDICATOR"
+      ],
+      "voltage": "24VDC",
+      "current_ma": 30,
+      "hvac_shutdown": {
+        "required": true,
+        "relay_rating": "2A_250VAC"
+      },
+      "code_reference": "NFPA 72 21.2.5, 17.7.3",
+      "listings": ["UL", "FM"],
+      "installation_notes": "Sample tube extends 1/3 into duct width. Do not install within 6ft of elbow."
+    },
+    {
+      "id": "WIRELESS_NOTIFIER",
+      "manufacturer": "WIRELESS",
+      "model": "SWM-B",
+      "name_en": "Wireless Fire Alarm System",
+      "name_ar": "نظام لاسلكي",
+      "detector_category": "WIRELESS",
+      "technology": "900MHZ_DSSS",
+      "frequency_band": "902_TO_928_MHZ",
+      "number_devices": 127,
+      "range_indoor_ft": 500,
+      "range_outdoor_ft": 2500,
+      "battery": {
+        "type": "LITHIUM_3V",
+        "life_years": 5,
+        "low_battery_warning": 30_DAYS
+      },
+      "applications": [
+        "HISTORIC_BUILDING",
+        "HERITAGE_BUILDING",
+        "RESTRICTED_WIRING",
+        "TENANT_IMPROVEMENT",
+        "TEMPORARY_INSTAL"
+      ],
+      "features": [
+        "DUAL_PATH_MONITORING",
+        "ACKNOWLEDGE_BEFORE_ALARM",
+        "LATCHING_EVENT"
+      ],
+      "code_reference": "NFPA 72 23.6",
+      "listings": ["UL", "FM", "CSFM"],
+      "installation_notes": "Mesh network recommended. Avoid interference sources. Annual battery replacement required."
+    },
+    {
+      "id": "MULTI_SENSORNotifier",
+      "manufacturer": "NOTIFIER",
+      "model": "MP",
+      "name_en": "Multi-Criteria Detector",
+      "name_ar": "كاشف متعدد الحساسات",
+      "detector_category": "MULTI_SENSOR",
+      "sensors": [
+        {
+          "type": "SMOKE_PHOTO",
+          "sensitivity": "0.5_to_3.0",
+          "unit": "%_OBSC"
+        },
+        {
+          "type": "HEAT_ROR",
+          "sensitivity": "15_F_PER_MIN",
+          "unit": "FT"
+        },
+        {
+          "type": "HEAT_FIXED",
+          "sensitivity": 135,
+          "unit": "F"
+        }
+      ],
+      "algorithms": [
+        "MODE_SINGLE",
+        "MODE_COMBINED"
+      ],
+      "applications": [
+        "VARYING_ENVIRONMENT",
+        "KITCHEN_NEAR",
+        "GARAGE_NEAR",
+        "LOBBY",
+        "SERVER_ROOM"
+      ],
+      "programming": "SOFTWARE_CONFIG",
+      "voltage": "24VDC",
+      "current_ma": 450,
+      "code_reference": "NFPA 72 21.2.6",
+      "listings": ["UL", "FM"],
+      "installation_notes": "Algorithm selection based on environment. Contact manufacturer for difficult applications."
+    },
+    {
+      "id": "FLAME_IR_DETECTOR",
+      "manufacturer": "ESMI",
+      "model": "FL4000",
+      "name_en": "Flame Detector IR/UV",
+      "name_ar": "كاشف لهب",
+      "detector_category": "FLAME",
+      "technology": "INFRARED_ONLY",
+      "detection_range_ft": 50,
+      "field_of_view": 90,
+      "unit": "DEGREES",
+      "applications": [
+        "FLAMMABLE_STORAGE",
+        "PAINT_BOOTH",
+        "AIRCRAFT_HANGAR",
+        "TUNNEL",
+        "POWER_PLANT"
+      ],
+      "spectral_response": "4.35_UM",
+      "alarm_delay": 3,
+      "unit": "SECONDS_MAX",
+      "features": [
+        "FALSE_ALARM_IMMUNITY",
+        "AREA_PROTECTION"
+      ],
+      "voltage": "24VDC",
+      "current_ma": 25,
+      "code_reference": "NFPA 72 21.3.1",
+      "listings": ["UL", "FM", "IECEX"],
+      "installation_notes": "Keep lens clean. Avoid direct sunlight. Mount at proper height."
+    },
+    {
+      "id": "LINEAR_HEAT",
+      "manufacturer": "PROTECTOWIRE",
+      "model": "AWTD",
+      "name_en": "Linear Heat Detection Cable",
+      "name_ar": "كاشف حراري خطي",
+      "detector_category": "LINEAR",
+      "technology": "FIXED_TEMPERATURE",
+      "ratings": [
+        {
+          "temp": 155,
+          "unit": "F"
+        },
+        {
+          "temp": 170,
+          "unit": "F"
+        },
+        {
+          "temp": 220,
+          "unit": "F"
+        }
+      ],
+      "length_max_ft": 10000,
+      "applications": [
+        "CONVEYOR_SYSTEM",
+        "TUNNEL",
+        "CABLE_TRAY",
+        "STORAGE_RACK",
+        "REFRIGERATION"
+      ],
+      "zone_length_max_ft": 1000,
+      "voltage": "24VDC",
+      "current_ma": 20,
+      "code_reference": "NFPA 72 21.4",
+      "listings": ["UL", "FM"],
+      "installation_notes": "Requires properly rated controller. Do not bend sharply. Maintain minimum bend radius."
+    }
+  ]
+}
