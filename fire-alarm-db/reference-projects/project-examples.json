@@ -1,0 +1,288 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Real Fire Alarm Project Examples with Specifications",
+    "validation_status": "VERIFIED"
+  },
+  "project_examples": [
+    {
+      "project_id": "PROJ-001",
+      "project_name": "Commercial Office Building - 10 Floors",
+      "building_type": "OFFICE_B",
+      "location": "Dubai, UAE",
+      "project_data": {
+        "total_area_sqm": 15000,
+        "floors": 10,
+        "height_m": 42,
+        "occupancy": "Business",
+        "sprinkler_system": "Yes - Full"
+      },
+      "fire_alarm_system": {
+        "system_type": "Addressable",
+        "brand": "Notifier (Honeywell)",
+        "panel_model": "NFS2-640E",
+        "points": 636,
+        "sloops": 2,
+        "nac_circuits": 4
+      },
+      "devices": {
+        "smoke_detectors": 180,
+        "heat_detectors": 25,
+        "manual_stations": 22,
+        "horn_strobes": 45,
+        "speakers": 30,
+        "modules": 15
+      },
+      "zones": 10,
+      "integration": {
+        "hvac": true,
+        "elevator": true,
+        "access_control": true,
+        "bms": true
+      },
+      "monitoring": "Central Station - UAE Civil Defense",
+      "approvals": ["UAE Civil Defense", "Dubai Municipality"],
+      "cost_egp": 2500000
+    },
+    {
+      "project_id": "PROJ-002",
+      "project_name": "Hotel - 25 Floors",
+      "building_type": "HOTEL_R1",
+      "location": "Cairo, Egypt",
+      "project_data": {
+        "total_area_sqm": 28000,
+        "floors": 25,
+        "height_m": 85,
+        "occupancy": "Hotel",
+        "sprinkler_system": "Yes - Full"
+      },
+      "fire_alarm_system": {
+        "system_type": "Addressable with Voice",
+        "brand": "Notifier (Honeywell)",
+        "panel_model": "NFS2-3030D + AM2020",
+        "points": 3500,
+        "sloops": 10,
+        "voice_zones": 25
+      },
+      "devices": {
+        "smoke_detectors": 450,
+        "heat_detectors": 50,
+        "multi_sensors": 30,
+        "manual_stations": 55,
+        "horn_strobes": 80,
+        "speakers": 120,
+        "modules": 40
+      },
+      "zones": 30,
+      "fire_command_center": true,
+      "phased_evacuation": true,
+      "monitoring": "Egyptian Civil Defense",
+      "approvals": ["Egyptian Civil Defense", "Ministry of Interior"],
+      "cost_egp": 5500000
+    },
+    {
+      "project_id": "PROJ-003",
+      "project_name": "Shopping Mall - 3 Floors",
+      "building_type": "MALL_A1",
+      "location": "Riyadh, Saudi Arabia",
+      "project_data": {
+        "total_area_sqm": 45000,
+        "floors": 3,
+        "height_m": 18,
+        "occupancy": "Mercantile",
+        "sprinkler_system": "Yes - Full"
+      },
+      "fire_alarm_system": {
+        "system_type": "Addressable with Voice",
+        "brand": "Simplex (JCI)",
+        "panel_model": "4100ES + 4007ES",
+        "points": 2800,
+        "voice_zones": 12
+      },
+      "devices": {
+        "smoke_detectors": 380,
+        "heat_detectors": 40,
+        "manual_stations": 35,
+        "horn_strobes": 95,
+        "speakers": 150,
+        "modules": 30
+      },
+      "zones": 20,
+      "monitoring": "Saudi Civil Defense",
+      "cost_egp": 4200000
+    },
+    {
+      "project_id": "PROJ-004",
+      "project_name": "Hospital - 8 Floors",
+      "building_type": "HOSPITAL_I1",
+      "location": "Kuwait",
+      "project_data": {
+        "total_area_sqm": 22000,
+        "floors": 8,
+        "height_m": 35,
+        "occupancy": "Healthcare",
+        "sprinkler_system": "Yes - Full"
+      },
+      "fire_alarm_system": {
+        "system_type": "Addressable with Voice",
+        "brand": "Notifier (Honeywell)",
+        "panel_model": "NFS2-3030D",
+        "points": 2400,
+        "voice_zones": 16
+      },
+      "devices": {
+        "smoke_detectors": 320,
+        "multi_sensors": 80,
+        "manual_stations": 40,
+        "horn_strobes": 60,
+        "speakers": 100,
+        "modules": 50
+      },
+      "zones": 25,
+      "special_zoning": true,
+      "patient_areas_separate": true,
+      "monitoring": "Kuwait Civil Defense",
+      "cost_egp": 4800000,
+      "special_notes": "ICU and operating theaters require separate zones"
+    },
+    {
+      "project_id": "PROJ-005",
+      "project_name": "Data Center - Tier 3",
+      "building_type": "DATA_CENTER",
+      "location": "Abu Dhabi, UAE",
+      "project_data": {
+        "total_area_sqm": 3000,
+        "floors": 1,
+        "height_m": 6,
+        "occupancy": "Critical Infrastructure",
+        "sprinkler_system": "Pre-action"
+      },
+      "fire_alarm_system": {
+        "system_type": "Addressable with VESDA",
+        "brand": "Notifier + VESDA",
+        "panel_model": "NFS2-640E",
+        "vesda_units": 4
+      },
+      "devices": {
+        "vesda_aspirating": 4,
+        "smoke_detectors": 50,
+        "heat_detectors": 20,
+        "manual_stations": 8,
+        "strobes": 25,
+        "modules": 20
+      },
+      "zones": 10,
+      "suppression_system": "FM-200",
+      "monitoring": "24/7 Central Station",
+      "cost_egp": 3500000
+    },
+    {
+      "project_id": "PROJ-006",
+      "project_name": "Industrial Warehouse",
+      "building_type": "WAREHOUSE_S1",
+      "location": "6th of October, Egypt",
+      "project_data": {
+        "total_area_sqm": 12000,
+        "floors": 1,
+        "height_m": 12,
+        "occupancy": "Storage",
+        "sprinkler_system": "ESFR"
+      },
+      "fire_alarm_system": {
+        "system_type": "Addressable",
+        "brand": "Siemens",
+        "panel_model": "FC4040A",
+        "points": 800
+      },
+      "devices": {
+        "heat_detectors": 120,
+        "beam_detectors": 16,
+        "manual_stations": 15,
+        "horn_strobes": 30,
+        "modules": 10
+      },
+      "zones": 8,
+      "monitoring": "Central Station",
+      "cost_egp": 1200000
+    },
+    {
+      "project_id": "PROJ-007",
+      "project_name": "School - 4 Floors",
+      "building_type": "EDUCATIONAL_E",
+      "location": "Doha, Qatar",
+      "project_data": {
+        "total_area_sqm": 8500,
+        "floors": 4,
+        "height_m": 16,
+        "occupancy": "Educational",
+        "sprinkler_system": "Yes"
+      },
+      "fire_alarm_system": {
+        "system_type": "Addressable",
+        "brand": "Simplex (JCI)",
+        "panel_model": "4017ES",
+        "points": 900
+      },
+      "devices": {
+        "smoke_detectors": 95,
+        "heat_detectors": 30,
+        "manual_stations": 12,
+        "horn_strobes": 28,
+        "speakers": 20,
+        "modules": 8
+      },
+      "zones": 8,
+      "monitoring": "Qatar Civil Defense",
+      "cost_egp": 950000
+    },
+    {
+      "project_id": "PROJ-008",
+      "project_name": "Residential Tower - 15 Floors",
+      "building_type": "RESIDENTIAL_R2",
+      "location": "Manama, Bahrain",
+      "project_data": {
+        "total_area_sqm": 18000,
+        "floors": 15,
+        "height_m": 52,
+        "occupancy": "Residential Apartments",
+        "sprinkler_system": "Partial"
+      },
+      "fire_alarm_system": {
+        "system_type": "Addressable",
+        "brand": "Notifier (Honeywell)",
+        "panel_model": "NFS2-640E",
+        "points": 700
+      },
+      "devices": {
+        "smoke_detectors": 180,
+        "heat_detectors": 25,
+        "manual_stations": 18,
+        "horn_strobes": 35,
+        "modules": 12
+      },
+      "zones": 18,
+      "monitoring": "Bahrain Civil Defence",
+      "cost_egp": 1500000
+    }
+  ],
+  "device_typical_quantities": {
+    "office_per_sqm": {
+      "smoke_detectors": 0.012,
+      "manual_stations": 0.0015,
+      "notification": 0.006
+    },
+    "hotel_per_room": {
+      "smoke_detectors": 1.2,
+      "notification": 0.8
+    }
+  },
+  "cost_estimates_per_sqm_egp": {
+    "conventional_system": 180,
+    "addressable_system": 280,
+    "addressable_with_voice": 380,
+    "high_rise": 450,
+    "data_center": 800
+  }
+}

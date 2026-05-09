@@ -1,0 +1,118 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Fire Alarm Shop Drawing Requirements Checklist - Per NFPA 72",
+    "validation_status": "VERIFIED"
+  },
+  "shop_drawing_requirements": {
+    "general_information": [
+      "Project name and address",
+      "Building occupancy classification",
+      "Applicable codes (NFPA 72, local codes)",
+      "Designer's name and license number",
+      "Date and drawing numbers",
+      "Graphic scale on each sheet"
+    ],
+    "floor_plans": [
+      "Room names and numbers",
+      "Wall locations and fire-rated walls",
+      "Ceiling height and type",
+      "Location of all fire alarm devices",
+      "Device addresses (for addressable systems)",
+      "Mounting heights",
+      "Coverage areas for detectors",
+      "Zone boundaries"
+    ],
+    "fire_alarm_control_panel": [
+      "Panel location and mounting details",
+      "Panel model and specifications",
+      "Power supply location",
+      "Battery location and calculations",
+      "Annunciator locations"
+    ],
+    "initiating_devices": [
+      "Smoke detector locations with coverage circles",
+      "Heat detector locations",
+      "Manual pull station locations",
+      "Device addresses",
+      "Detector spacing per code"
+    ],
+    "notification_devices": [
+      "Horn/strobe locations",
+      "Speaker locations (for voice systems)",
+      "Candela ratings for strobes",
+      "dB ratings for horns",
+      "Mounting heights"
+    ],
+    "wiring": [
+      "Wire sizes and types",
+      "Wire color codes",
+      "Conduit sizes and routes",
+      "SLC loop routing",
+      "NAC circuit routing",
+      "Zone wiring details"
+    ],
+    "risers": [
+      "Vertical routing of wiring",
+      "Panel locations per floor",
+      "Splice points",
+      "Junction box locations"
+    ],
+    "details": [
+      "Panel wiring diagram",
+      "Module wiring details",
+      "Interface wiring to other systems",
+      "Power supply details"
+    ]
+  },
+  "calculations_required": [
+    "Battery calculations (standby + alarm)",
+    "Voltage drop calculations",
+    "Detector coverage calculations",
+    "NAC circuit loading",
+    "Sound level calculations (if applicable)"
+  ],
+  "sequence_of_operations": [
+    "Description of alarm initiation",
+    "Description of notification",
+    "Description of aux functions (HVAC, elevator, etc)",
+    "Description of monitoring",
+    "Emergency escalation procedures"
+  ],
+  "equipment_schedules": [
+    "Device type and quantity",
+    "Manufacturer and model",
+    "Device addresses",
+    "Sensitivity ratings",
+    "Mounting types"
+  ],
+  "symbols_and_legends": [
+    "All symbols used on drawings",
+    "Layer definitions",
+    "Abbreviation list",
+    "Key plan if multiple sheets"
+  ],
+  "submittal_checklist": {
+    "drawings": [
+      "Cover sheet with project info",
+      "Key plan",
+      "Floor plans (all floors)",
+      "Riser diagram",
+      "Panel schedules",
+      "Wiring details",
+      "Zone matrix"
+    ],
+    "calculations": [
+      "Battery calculations",
+      "Voltage drop calculations",
+      "Detector coverage area"
+    ],
+    "specifications": [
+      "Technical specifications",
+      "Equipment data sheets",
+      "Manufacturer cut sheets"
+    ]
+  }
+}
