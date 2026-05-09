@@ -1,0 +1,116 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Conventional Fire Alarm System - Complete Reference",
+    "system_type": "CONVENTIONAL",
+    "validation_status": "VERIFIED"
+  },
+  "system_overview": {
+    "name": "Conventional Fire Alarm System",
+    "abbreviation": "Conv",
+    "description": "Traditional zone-based fire alarm system where detection devices are grouped into zones. When any device in a zone activates, the entire zone goes into alarm.",
+    "detection_method": "Binary - either normal or alarm state",
+    "device_identification": "Zone level only - no specific device address"
+  },
+  "components": {
+    "control_panel": {
+      "types": ["2-zone", "4-zone", "6-zone", "8-zone", "10-zone", "16-zone"],
+      "features": [
+        "Zone indicators (LED or LCD)",
+        "System status indicators",
+        "Alarm silence button",
+        "System reset button",
+        "Remote station connections"
+      ],
+      "brands_available": ["Notifier", "Simplex", "Siemens", "Bosch", "Hochiki"]
+    },
+    "initiating_devices": {
+      "smoke_detectors": {
+        "types": ["Photoelectric", "Ionization"],
+        "wiring": "2-wire to zone",
+        "quantity_per_zone_max": 25
+      },
+      "heat_detectors": {
+        "types": ["Fixed temperature", "Rate of rise"],
+        "wiring": "2-wire to zone"
+      },
+      "manual_pull_stations": {
+        "wiring": "2-wire to zone",
+        "quantity_per_zone_max": 10
+      }
+    },
+    "notification_devices": {
+      "horns": "2-wire",
+      "strobes": "2-wire",
+      "bells": "2-wire",
+      "horn_strobes": "2-wire"
+    }
+  },
+  "wiring_diagram": {
+    "style": "HOME_RUN_TO_PANEL",
+    "wire_type": "FPLR 14/2 or 16/2",
+    "polarity": "Reversed polarity for alarm"
+  },
+  "limitations": {
+    "no_device_address": "Cannot identify which specific device activated",
+    "zone_size": "Entire zone in alarm - cannot isolate",
+    "no_advanced_features": "No drift compensation, no maintenance alerts",
+    "limited_integration": "Basic contacts only"
+  },
+  "integration_capabilities": {
+    "hvac": {
+      "possible": true,
+      "method": "Dry contact from zone",
+      "module_needed": "External relay",
+      "limitation": "Cannot target specific device"
+    },
+    "elevator": {
+      "possible": true,
+      "method": "Dry contact from zone",
+      "limitation": "Recall to floor, not specific elevator"
+    },
+    "door_release": {
+      "possible": true,
+      "method": "Dry contact from zone",
+      "limitation": "All doors on zone"
+    },
+    "security": {
+      "possible": true,
+      "method": "Dry contact from zone",
+      "limitation": "Basic unlock only"
+    },
+    "bmS": {
+      "possible": false,
+      "reason": "No network capability"
+    }
+  },
+  "typical_applications": [
+    "Small retail stores",
+    "Small offices",
+    "Restaurants",
+    "Small warehouses",
+    "Storage buildings",
+    "Where budget is primary concern"
+  ],
+  "pros": [
+    "Lower cost",
+    "Simple installation",
+    "Easy troubleshooting",
+    "Wide availability",
+    "Simple programming"
+  ],
+  "cons": [
+    "No specific device location",
+    "Limited integration",
+    "No advanced diagnostics",
+    "Higher maintenance",
+    "No network capability"
+  ],
+  "code_requirements": {
+    "nfpa_72": "Chapter 29 - Protected Premises",
+    "detection_spacing": "Same as addressable",
+    "notification_requirements": "Same as addressable"
+  }
+}

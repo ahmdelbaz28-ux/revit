@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Wireless Fire Alarm System - Complete Reference",
+    "system_type": "WIRELESS",
+    "validation_status": "VERIFIED"
+  },
+  "system_overview": {
+    "name": "Wireless Fire Alarm System",
+    "abbreviation": "Wireless",
+    "description": "Radio frequency based fire alarm system using mesh network topology. Devices communicate wirelessly with panel gateway.",
+    "detection_method": "RF communication with polling",
+    "device_identification": "Individual address via RF"
+  },
+  "technology": {
+    "frequency": {
+      "us": "900 MHz",
+      "eu": "868 MHz",
+      "worldwide": "2.4 GHz"
+    },
+    "protocols": [
+      "DSSS (Direct Sequence Spread Spectrum)",
+      "FHSS (Frequency Hopping Spread Spectrum)"
+    ],
+    "mesh_network": {
+      "description": "Devices communicate peer-to-peer",
+      "benefit": "If one device fails, route through another"
+    }
+  },
+  "components": {
+    "gateway": {
+      "description": "Central hub connecting wireless devices to panel",
+      "functions": ["Translates RF to wired protocol", "Manages mesh network", "Power supply"]
+    },
+    "wireless_devices": {
+      "smoke_detectors": "Battery powered, RF enabled",
+      "heat_detectors": "Battery powered, RF enabled",
+      "manual_pulls": "Battery powered, RF enabled",
+      "notification": "Usually hardwired due to power needs"
+    },
+    "repeaters": {
+      "description": "Extend range in large buildings",
+      "power": "AC powered"
+    }
+  },
+  "battery_requirements": {
+    "expected_life": "5 years",
+    "type": "Lithium 3V",
+    "low_battery_warning": "30 days minimum",
+    "maintenance": "Annual battery replacement recommended"
+  },
+  "limitations": {
+    "battery_dependency": "All devices need battery",
+    "range_constraints": "Indoor range 500-1000 ft typical",
+    "interference": "Potential from other RF sources",
+    "notification_devices": "Usually require wired power"
+  },
+  "integration_capabilities": {
+    "hvac": {
+      "possible": "LIMITED",
+      "method": "Gateway integration only",
+      "limitation": "Output modules usually hardwired"
+    },
+    "elevator": {
+      "possible": false,
+      "reason": "Requires hardwired control"
+    },
+    "door_release": {
+      "possible": "LIMITED",
+      "method": "Hardwired output modules"
+    },
+    "security": {
+      "possible": true,
+      "method": "Through gateway"
+    },
+    "bms": {
+      "possible": "LIMITED",
+      "method": "Gateway communication"
+    }
+  },
+  "typical_applications": [
+    "Historic buildings (no wiring)",
+    "Buildings under renovation",
+    "Temporary installations",
+    "Remote structures",
+    "Heritage sites"
+  ],
+  "pros": [
+    "No wiring required",
+    "Quick installation",
+    "Ideal for historic buildings",
+    "Minimal disruption",
+    "Flexible device placement"
+  ],
+  "cons": [
+    "Battery maintenance",
+    "Higher device cost",
+    "Range limitations",
+    "Interference potential",
+    "Limited output control"
+  ],
+  "code_requirements": {
+    "nfpa_72": "Chapter 23 - Special Requirements",
+    "ul_listing": "Wireless equipment must be UL listed"
+  }
+}

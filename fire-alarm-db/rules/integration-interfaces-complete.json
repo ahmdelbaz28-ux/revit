@@ -1,0 +1,507 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Integration Interface Modules - Complete Reference",
+    "validation_status": "VERIFIED"
+  },
+  "fire_alarm_system_types": {
+    "conventional": {
+      "name": "Conventional (Traditional)",
+      "abbreviation": "Conv",
+      "description": "Zone-based detection - one alarm per zone",
+      "wiring": "2-wire per zone",
+      "modules_compatible": ["ZONE_MONITOR", "CONTROL_RELAY", "DUAL_MONITOR"],
+      "integration": "LIMITED - Basic contacts only",
+      "pros": ["Lower cost", "Simple wiring", "Easy troubleshooting"],
+      "cons": ["No specific location", "Limited devices", "No advanced features"]
+    },
+    "addressable": {
+      "name": "Addressable (Intelligent)",
+      "abbreviation": "Addr",
+      "description": "Individual device addressing - precise location",
+      "wiring": "SLC loop (2-wire daisy chain)",
+      "modules_compatible": ["ALL_MODULE_TYPES"],
+      "integration": "FULL - Multiple protocols",
+      "pros": ["Precise location", "Advanced features", "Network capability"],
+      "cons": ["Higher cost", "Complex programming", "Specialized training"]
+    },
+    "wireless": {
+      "name": "Wireless Fire Alarm",
+      "abbreviation": "Wireless",
+      "description": "Radio frequency based detection",
+      "wiring": "RF mesh network",
+      "modules_compatible": ["WIRELESS_RELAY", "GATEWAY_MODULE"],
+      "integration": "LIMITED - Gateway dependent",
+      "pros": ["No wiring", "Historic buildings", "Quick install"],
+      "cons": ["Battery maintenance", "Interference risk", "Higher cost"]
+    }
+  },
+  "module_types": {
+    "monitor_modules": {
+      "description": "Input modules - monitor contacts from other systems",
+      "types": [
+        {
+          "code": "MON-1",
+          "name": "Single Monitor Module",
+          "type": "MONITOR",
+          "input": 1,
+          "addressable": true,
+          "description": "Monitors one dry contact circuit",
+          "typical_use": ["Manual pull station backup", "Tamper switch", "Flow switch"],
+          "wiring": "2 wires to contact"
+        },
+        {
+          "code": "MON-4",
+          "name": "4-Zone Monitor Module",
+          "type": "MONITOR",
+          "input": 4,
+          "addressable": true,
+          "description": "Monitors up to 4 conventional zones",
+          "typical_use": ["Conventional panel interface", "Multiple dry contacts"],
+          "wiring": "4 separate circuits"
+        },
+        {
+          "code": "MON-DUAL",
+          "name": "Dual Monitor Module",
+          "type": "MONITOR",
+          "input": 2,
+          "addressable": true,
+          "description": "Monitors two independent circuits",
+          "typical_use": ["Sprinkler + Flow", "Two areas monitoring"],
+          "wiring": "2 separate circuits"
+        },
+        {
+          "code": "MON-ZONE",
+          "name": "Zone Interface Module",
+          "type": "MONITOR",
+          "input": "Conventional zone",
+          "addressable": true,
+          "description": "Connects conventional detectors to addressable panel",
+          "typical_use": ["Legacy system upgrade", "Conventional zone integration"],
+          "wiring": "Conventional zone wiring"
+        }
+      ]
+    },
+    "control_modules": {
+      "description": "Output modules - control other systems",
+      "types": [
+        {
+          "code": "CTL-1",
+          "name": "Single Control Module",
+          "type": "CONTROL",
+          "output": 1,
+          "relay_type": "FORM_C",
+          "rating": "5A_120VAC_or_28VDC",
+          "addressable": true,
+          "description": "Controls one output circuit",
+          "typical_use": ["HVAC shutdown", "Door holder release", "Elevator recall"],
+          "wiring": "2 wires to controlled device"
+        },
+        {
+          "code": "CTL-DUAL",
+          "name": "Dual Control Module",
+          "type": "CONTROL",
+          "output": 2,
+          "relay_type": "FORM_C",
+          "addressable": true,
+          "description": "Two independent relay outputs",
+          "typical_use": ["Multiple system control", "Redundant outputs"],
+          "wiring": "2 circuits"
+        },
+        {
+          "code": "CTL-POWER",
+          "name": "Power Control Module",
+          "type": "CONTROL",
+          "output": 1,
+          "rating": "10A_240VAC",
+          "addressable": true,
+          "description": "High current control",
+          "typical_use": ["Large equipment shutdown", "Motor control"],
+          "wiring": "Power wiring"
+        }
+      ]
+    },
+    "isolator_modules": {
+      "description": "Fault isolation - protect loop from shorts",
+      "types": [
+        {
+          "code": "ISO-1",
+          "name": "Single Isolator",
+          "type": "ISOLATOR",
+          "circuits": 1,
+          "addressable": true,
+          "description": "Isolates single fault section",
+          "typical_use": ["Loop protection", "Section isolation"],
+          "wiring": "Inline with SLC loop"
+        },
+        {
+          "code": "ISO-6",
+          "name": "6-Circuit Isolator",
+          "type": "ISOLATOR",
+          "circuits": 6,
+          "addressable": true,
+          "description": "Isolates up to 6 branches",
+          "typical_use": ["Multi-zone protection"],
+          "wiring": "Branch isolation"
+        }
+      ]
+    },
+    "relay_modules": {
+      "description": "General purpose relays",
+      "types": [
+        {
+          "code": "RLY-1",
+          "name": "Single Relay Module",
+          "type": "RELAY",
+          "contacts": "FORM_C",
+          "rating": "5A_120VAC",
+          "addressable": false,
+          "description": "Standalone relay",
+          "typical_use": ["Basic on/off control"],
+          "wiring": "120V control circuit"
+        },
+        {
+          "code": "RLY-EXP",
+          "name": "Expansion Relay",
+          "type": "RELAY",
+          "contacts": "FORM_C",
+          "rating": "10A",
+          "addressable": true,
+          "description": "High capacity relay",
+          "typical_use": ["HVAC", "Pump control"]
+        }
+      ]
+    },
+    "special_modules": {
+      "description": "Specialized integration modules",
+      "types": [
+        {
+          "code": "FIB-INT",
+          "name": "Fiber Interface",
+          "type": "INTERFACE",
+          "description": "Fiber optic SLC connection",
+          "typical_use": ["Long distance", "Industrial environments"],
+          "protocol": "Fiber to copper conversion"
+        },
+        {
+          "code": "NET-MOD",
+          "name": "Network Module",
+          "type": "NETWORK",
+          "description": "Panel to network connection",
+          "typical_use": ["Multiple panel networking"],
+          "protocol": "TCP/IP or proprietary"
+        },
+        {
+          "code": "BAC-MOD",
+          "name": "BACnet Interface",
+          "type": "PROTOCOL",
+          "description": "Building automation connection",
+          "typical_use": ["BMS integration"],
+          "protocol": "BACnet MS/TP"
+        },
+        {
+          "code": "MOD-IP",
+          "name": "IP Communicator",
+          "type": "COMMUNICATION",
+          "description": "IP-based central station communication",
+          "typical_use": ["Monitoring", "Remote access"],
+          "protocol": "IP/GSM"
+        }
+      ]
+    }
+  },
+  "integration_systems": {
+    "hvac_systems": {
+      "system": "HVAC",
+      "integration_method": "CONTROL_MODULE",
+      "action_on_alarm": [
+        "Shut down air handlers",
+        "Close smoke dampers",
+        "Start exhaust fans"
+      ],
+      "module_required": "CTL-1 or CTL-POWER",
+      "typical_connection": "24VAC or 120VAC control circuit",
+      "sequence_example": {
+        "trigger": "Smoke detector alarm",
+        "action": "HVAC unit shutdown",
+        "module": "Control Module",
+        "output": "Trip HVAC control relay"
+      },
+      "compatible_systems": ["VAV", "AHU", "Fan Coil", "Exhaust Fans"],
+      "code_reference": "NFPA 90A"
+    },
+    "elevator_systems": {
+      "system": "ELEVATORS",
+      "integration_method": "CONTROL_MODULE",
+      "action_on_alarm": [
+        "Recall to lobby",
+        "Disable passenger elevators",
+        "Enable fire service mode"
+      ],
+      "module_required": "CTL-1 (per elevator)",
+      "typical_connection": "Elevator controller dry contacts",
+      "sequence_example": {
+        "trigger": "Fire alarm alarm",
+        "action": "Recall all elevators to main lobby",
+        "module": "Control Module",
+        "output": "Recall signal to elevator controller"
+      },
+      "code_reference": "NFPA 72 21.3, ASME A17.1",
+      "important_notes": "Requires elevator contractor coordination"
+    },
+    "fire_door_closures": {
+      "system": "FIRE_DOORS",
+      "integration_method": "CONTROL_MODULE",
+      "action_on_alarm": [
+        "Close fire doors",
+        "Release magnetic door holders"
+      ],
+      "module_required": "CTL-1 or CTL-POWER",
+      "typical_connection": "24VDC or 120VAC",
+      "sequence_example": {
+        "trigger": "Fire alarm alarm",
+        "action": "Release all magnetic door holders",
+        "module": "Control Module",
+        "output": "Remove power from magnets"
+      },
+      "code_reference": "NFPA 80"
+    },
+    "fire_pump": {
+      "system": "FIRE_PUMP",
+      "integration_method": "MONITOR_MODULE",
+      "action_on_alarm": [
+        "Start fire pump",
+        "Monitor pump status"
+      ],
+      "module_required": "MON-1",
+      "typical_connection": "Fire pump controller contacts",
+      "sequence_example": {
+        "trigger": "Waterflow alarm",
+        "action": "Start fire pump (automatic)",
+        "module": "Monitor Module",
+        "input": "Pump running signal"
+      },
+      "code_reference": "NFPA 20"
+    },
+    "smoke_control": {
+      "system": "SMOKE_CONTROL",
+      "integration_method": "CONTROL_MODULE",
+      "action_on_alarm": [
+        "Pressurize stairwells",
+        "Exhaust smoke zone",
+        "Close smoke barriers"
+      ],
+      "module_required": "Multiple CTL modules",
+      "typical_connection": "Smoke control dampers",
+      "sequence_example": {
+        "trigger": "Smoke detection in zone",
+        "action": "Close dampers, start exhaust",
+        "module": "Control Modules",
+        "output": "Dampers and fans"
+      },
+      "code_reference": "NFPA 90A, 92A"
+    },
+    "emergency_lighting": {
+      "system": "EMERGENCY_LIGHTING",
+      "integration_method": "CONTROL_MODULE",
+      "action_on_alarm": [
+        "Activate emergency lights",
+        "Light exit paths"
+      ],
+      "module_required": "CTL-1",
+      "typical_connection": "Emergency lighting circuit",
+      "sequence_example": {
+        "trigger": "Fire alarm alarm",
+        "action": "Turn on emergency lighting",
+        "module": "Control Module",
+        "output": "Energize emergency circuit"
+      },
+      "code_reference": "NFPA 101 7.9"
+    },
+    "public_address": {
+      "system": "PA_SYSTEM",
+      "integration_method": "AUDIO_MODULE",
+      "action_on_alarm": [
+        "Broadcast evacuation message",
+        "Override normal programming"
+      ],
+      "module_required": "AUDIO_CONTROL_MODULE",
+      "typical_connection": "PA amplifier control",
+      "sequence_example": {
+        "trigger": "Fire alarm alarm",
+        "action": "Switch PA to emergency",
+        "module": "Audio Control",
+        "output": "Trigger message"
+      },
+      "code_reference": "NFPA 72 24.4"
+    },
+    "security_systems": {
+      "system": "ACCESS_CONTROL",
+      "integration_method": "CONTROL_MODULE",
+      "action_on_alarm": [
+        "Unlock all doors",
+        "Disable card readers",
+        "Release electromagnetic locks"
+      ],
+      "module_required": "CTL-1",
+      "typical_connection": "Door controller or lock power",
+      "sequence_example": {
+        "trigger": "Fire alarm alarm",
+        "action": "Unlock all egress doors",
+        "module": "Control Module",
+        "output": "Fail-safe unlock"
+      },
+      "code_reference": "NFPA 101"
+    },
+    "generator_systems": {
+      "system": "EMERGENCY_GENERATOR",
+      "integration_method": "MONITOR_AND_CONTROL",
+      "action_on_alarm": [
+        "Start generator",
+        "Transfer load"
+      ],
+      "module_required": "MON-1 + CTL-1",
+      "typical_connection": "Generator auto-start circuit",
+      "sequence_example": {
+        "trigger": "Power failure + fire alarm",
+        "action": "Start generator, transfer to emergency",
+        "modules": "Monitor + Control",
+        "input": "Generator status",
+        "output": "Start signal"
+      },
+      "code_reference": "NFPA 110"
+    },
+    "gas_systems": {
+      "system": "GAS_SUPPRESSION",
+      "integration_method": "CONTROL_MODULE",
+      "action_on_alarm": [
+        "Release suppression gas",
+        "Close ventilation"
+      ],
+      "module_required": "CTL-1 (specialized)",
+      "typical_connection": "Suppression system release",
+      "sequence_example": {
+        "trigger": "Detection in protected area",
+        "action": "Activate suppression system",
+        "module": "Control Module",
+        "output": "Release agent"
+      },
+      "code_reference": "NFPA 2001, 12, 17A"
+    },
+    "sprinkler_systems": {
+      "system": "SPRINKLER",
+      "integration_method": "MONITOR_MODULE",
+      "action_on_alarm": [
+        "Monitor waterflow",
+        "Monitor valve tamper",
+        "Alarm on flow"
+      ],
+      "module_required": "MON-1 or MON-4",
+      "typical_connection": "Waterflow switch, tamper switch",
+      "sequence_example": {
+        "trigger": "Sprinkler activation",
+        "action": "Waterflow alarm",
+        "module": "Monitor Module",
+        "input": "Waterflow switch"
+      },
+      "code_reference": "NFPA 13"
+    }
+  },
+  "compatibility_matrix": {
+    "conventional_systems": {
+      "integration_capability": "LIMITED",
+      "methods": [
+        "Dry contact inputs (monitor modules)",
+        "Relay outputs (control modules)",
+        "Basic on/off control only"
+      ],
+      "typical_integrations": [
+        "Basic door release",
+        "Basic fan shutdown",
+        "Simple monitoring"
+      ],
+      "limitations": [
+        "No precise device identification",
+        "No complex sequencing",
+        "No network integration"
+      ]
+    },
+    "addressable_systems": {
+      "integration_capability": "FULL",
+      "methods": [
+        "Individual device addressing",
+        "Multiple protocol support",
+        "Network capability",
+        "Complex sequencing"
+      ],
+      "typical_integrations": [
+        "All HVAC control",
+        "Elevator recall",
+        "Smoke control",
+        "BMS integration",
+        "Voice evacuation",
+        "Complex automation"
+      ],
+      "advantages": [
+        "Precise location of triggering device",
+        "Time delays configurable",
+        "Event logging",
+        "Remote monitoring"
+      ]
+    },
+    "wireless_systems": {
+      "integration_capability": "BASIC",
+      "methods": [
+        "Gateway-based integration",
+        "Limited output control",
+        "Monitoring only"
+      ],
+      "typical_integrations": [
+        "Basic monitoring",
+        "Simple control"
+      ],
+      "limitations": [
+        "Battery dependent outputs",
+        "Limited module types",
+        "Range constraints"
+      ]
+    }
+  },
+  "manufacturer_module_comparison": {
+    "notifier_modules": [
+      {"model": "FMM-1", "type": "Monitor", "price_usd": 95},
+      {"model": "FRM-1", "type": "Control", "price_usd": 110},
+      {"model": "FZM-1", "type": "Zone Monitor", "price_usd": 120},
+      {"model": "ISO-6", "type": "Isolator", "price_usd": 75}
+    ],
+    "simplex_modules": [
+      {"model": "4090-16", "type": "Monitor 4-point", "price_usd": 120},
+      {"model": "4090-20", "type": "Control", "price_usd": 110},
+      {"model": "4090-80", "type": "Isolator", "price_usd": 65}
+    ],
+    "siemens_modules": [
+      {"model": "FDM-220", "type": "Monitor", "price_usd": 90},
+      {"model": "FDR-220", "type": "Control", "price_usd": 100},
+      {"model": "FDI-220", "type": "Isolator", "price_usd": 70}
+    ]
+  },
+  "wiring_requirements": {
+    "monitor_modules": {
+      "wire": "18AWG 2C minimum",
+      "distance_max_ft": 500,
+      "circuit_type": "DRY_CONTACT_ONLY"
+    },
+    "control_modules": {
+      "wire": "16AWG 2C minimum",
+      "distance_max_ft": 300,
+      "circuit_type": "FORM_C_RELAY"
+    },
+    "power_control": {
+      "wire": "14AWG or thicker",
+      "distance_max_ft": "Based on load",
+      "circuit_type": "LINE_VOLTAGE"
+    }
+  }
+}
