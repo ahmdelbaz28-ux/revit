@@ -1,0 +1,8 @@
+{
+  "command": "mkdir -p .git/hooks && chmod +x .openhands/pre-commit.sh",
+  "cwd": "/workspace/project/revit",
+  "timeout": 30,
+  "id": "3a99d3f507d0425bad2eeda1d02c352b",
+  "timestamp": "2026-05-09T17:55:13.296363Z",
+  "kind": "BashCommand"
+}

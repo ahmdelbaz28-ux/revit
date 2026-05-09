@@ -1,0 +1,8 @@
+{
+  "command": "chmod +x /workspace/project/revit/.openhands/setup.sh && source /workspace/project/revit/.openhands/setup.sh",
+  "cwd": "/workspace/project/revit",
+  "timeout": 600,
+  "id": "b15f12db83e6466fbd97c7bec56d2a60",
+  "timestamp": "2026-05-09T17:55:13.256091Z",
+  "kind": "BashCommand"
+}
