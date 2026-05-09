@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: firealarm-db
+    environment:
+      POSTGRES_USER: firealarm
+      POSTGRES_PASSWORD: firealarm123
+      POSTGRES_DB: firealarmdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U firealarm"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: fire-alarm-db/Dockerfile
+    container_name: firealarm-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://firealarm:firealarm123@db:5432/firealarmdb
+      MODEL_PATH: ./best.pt
+      HOST: 0.0.0.0
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./fire-alarm-db:/app/fire-alarm-db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
