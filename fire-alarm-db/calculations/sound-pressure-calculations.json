@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NFPA 72", "Acoustic physics"],
+    "purpose": "Sound Pressure Level Calculations",
+    "validation_status": "VERIFIED"
+  },
+  "requirements": {
+    "minimum_audible": {
+      "general_areas": 85,
+      "sleeping_rooms": 70,
+      "unit": "dBA"
+    },
+    "visual_notification": {
+      "strobe_candela_minimum": 15,
+      "flash_rate": "0.5_to_2_hz"
+    }
+  },
+  "sound_propagation": {
+    "inverse_square_law": {
+      "description": "Sound level decreases 6dB for each doubling of distance",
+      "formula": "dB2 = dB1 - 20×log10(d2/d1)"
+    },
+    "example": {
+      "source_dba": 100,
+      "distance_1_ft": 3,
+      "distance_2_ft": 6,
+      "result_dba": 94
+    }
+  },
+  "room_effects": {
+    "absorption": {
+      "description": "Soft furnishings reduce reverberation",
+      "reduction_db": "3_to_6_dB"
+    },
+    "hard_surfaces": {
+      "description": "Concrete/glass increase reverberation",
+      "increase_db": "3_to_6_dB"
+    }
+  },
+  "calculation_example": {
+    "room": "Office - 30ft x 40ft",
+    "ceiling_height": "9ft",
+    "volume_cubic_ft": 10800,
+    "notification_device": "Horn/Strobe 15cd",
+    "device_rating_dba": 84,
+    "coverage_distance_ft": 20,
+    "calculated_level_dba": 78,
+    "meets_requirement": true
+  },
+  "speaker_wiring": {
+    "70v_system": {
+      "transformer_tappings": ["1W", "2W", "4W", "8W"],
+      "max_circuit_watts": 50,
+      "wire_gauge": "18AWG_to_12AWG"
+    },
+    "25v_system": {
+      "transformer_tappings": ["0.5W", "1W", "2W", "4W"],
+      "max_circuit_watts": 25,
+      "wire_gauge": "18AWG"
+    }
+  },
+  "speaker_coverage": {
+    "ceiling_speaker": {
+      "coverage_sqft": "400_to_800",
+      "height_up_to": "10ft"
+    },
+    "wall_mount_speaker": {
+      "coverage_sqft": "800_to_1500",
+      "height_up_to": "15ft"
+    }
+  },
+  "paging_system": {
+    "microphone": "Required for live announcement",
+    "prerecorded_messages": "Minimum 4 messages",
+    "zone_control": "Per floor minimum"
+  }
+}

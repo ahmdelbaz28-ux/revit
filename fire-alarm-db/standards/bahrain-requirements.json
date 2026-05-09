@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["Bahrain Civil Defence Requirements", "Bahrain Building Regulations"],
+    "specialization": "BAHRAIN_FIRE_PROTECTION_REQUIREMENTS",
+    "validation_status": "VERIFIED"
+  },
+  "general_requirements": {
+    "authority": "Civil Defence Directorate",
+    "jurisdiction": "Kingdom of Bahrain",
+    "municipality": "Capital Municipality",
+    "approval_process": [
+      "DESIGN_SUBMITTAL",
+      "TECHNICAL_REVIEW",
+      "APPROVAL",
+      "INSTALLATION",
+      "FINAL_INSPECTION"
+    ]
+  },
+  "fire_alarm_requirements": {
+    "buildings_over_15m": "ADDRESSABLE_REQUIRED",
+    "buildings_over_45m": "VOICE_SYSTEM_REQUIRED",
+    "all_commercial": "FIRE_ALARM_REQUIRED"
+  },
+  "monitoring": {
+    "central_station": "REQUIRED",
+    "civil_defence_notification": "REQUIRED"
+  },
+  "equipment_standards": [
+    "UL",
+    "FM",
+    "Civil Defence Approval"
+  ],
+  "documentation_required": [
+    "Layout drawings",
+    "System design",
+    "Equipment specifications"
+  ]
+}
