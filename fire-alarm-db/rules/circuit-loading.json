@@ -1,0 +1,211 @@
+{
+  "meta": {
+    "title": "Circuit Loading Rules — NAC and SLC Current Limits",
+    "description": "Maximum device loading per circuit type with current draw references",
+    "standards_referenced": ["NFPA 72", "Panel manufacturer specifications"],
+    "last_reviewed": "2026-05-09"
+  },
+
+  "notification_appliance_circuits_nac": {
+    "description": "NACs (Notification Appliance Circuits) power the audible and visual notification devices",
+    "voltage": "24VDC full range (typical), 16-33VDC (wide range models)",
+    "max_current_per_nac": {
+      "typical_range": "0.5A to 3.0A per circuit (manufacturer and panel specific)",
+      "common_values": [
+        {"panel_type": "Small conventional", "nac_count": "2", "max_per_nac_A": "0.5"},
+        {"panel_type": "Medium addressable", "nac_count": "4-8", "max_per_nac_A": "1.0-1.5"},
+        {"panel_type": "Large addressable", "nac_count": "8-16", "max_per_nac_A": "2.0-3.0"},
+        {"panel_type": "Voice evacuation amp", "nac_count": "N/A (amplified)", "max_power_W": "60-480 per channel"}
+      ]
+    },
+    "current_draw_reference": {
+      "description": "Typical current draw at 24VDC for common notification appliances",
+      "horns": [
+        {"type": "Electronic horn (low)", "current_mA": 8},
+        {"type": "Electronic horn (medium)", "current_mA": 14},
+        {"type": "Electronic horn (high)", "current_mA": 22},
+        {"type": "Electronic horn (max)", "current_mA": 35}
+      ],
+      "strobes": [
+        {"candela": 15, "current_mA": 25},
+        {"candela": 30, "current_mA": 38},
+        {"candela": 75, "current_mA": 78},
+        {"candela": 95, "current_mA": 95},
+        {"candela": 110, "current_mA": 108},
+        {"candela": 177, "current_mA": 170}
+      ],
+      "horn_strobe_combinations": [
+        {"candela": 75, "horn_setting": "high", "current_mA": 100},
+        {"candela": 95, "horn_setting": "high", "current_mA": 117},
+        {"candela": 110, "horn_setting": "high", "current_mA": 130},
+        {"candela": 110, "horn_setting": "medium", "current_mA": 122}
+      ],
+      "speakers": [
+        {"tap_W": 0.125, "current_mA_at_25V": 5},
+        {"tap_W": 0.25, "current_mA_at_25V": 10},
+        {"tap_W": 0.5, "current_mA_at_25V": 20},
+        {"tap_W": 1.0, "current_mA_at_25V": 40},
+        {"tap_W": 2.0, "current_mA_at_25V": 80}
+      ],
+      "bells_mechanical": [
+        {"type": "6 inch bell", "current_mA": 80},
+        {"type": "10 inch bell", "current_mA": 150}
+      ]
+    },
+    "loading_calculation": {
+      "formula": "Total NAC current = Σ (current_draw of each device on the circuit)",
+      "voltage_drop_check": "Must verify voltage at farthest device ≥ 20VDC (typically 16V minimum operating)",
+      "rule": "Total current must NOT exceed panel NAC rating",
+      "example": {
+        "scenario": "NAC with 10 horn-strobe (95cd, high) devices",
+        "current_per_device": "117 mA",
+        "total_current": "1170 mA = 1.17A",
+        "check": "If panel NAC max = 1.5A → OK (1.17A < 1.5A)",
+        "voltage_drop": "Must calculate based on wire length — see voltage-drop.json"
+      }
+    },
+    "end_of_line_resistor_nac": {
+      "required": true,
+      "value": "4.7 kΩ or 6.8 kΩ (manufacturer specific)",
+      "notes": "Always use EXACT value specified by panel manufacturer"
+    }
+  },
+
+  "initiating_device_circuits_idc": {
+    "description": "IDCs (Initiating Device Circuits) carry signals from detectors and pull stations to the panel",
+    "max_devices_per_idc": {
+      "conventional": "20 devices maximum (recommended for reliable supervision)",
+      "addressable": "Not applicable — uses SLC instead"
+    },
+    "current_draw_per_device": {
+      "smoke_detector_conventional": "1-3 mA (quiescent), 5-15 mA (alarm)",
+      "heat_detector_conventional": "0.5-1 mA (quiescent), 3-5 mA (alarm)",
+      "pull_station_conventional": "1-3 mA",
+      "module_conventional": "1-5 mA"
+    },
+    "end_of_line_resistor_idc": {
+      "required": true,
+      "value": "4.7 kΩ or 6.8 kΩ (manufacturer specific)"
+    }
+  },
+
+  "signaling_line_circuits_slc": {
+    "description": "SLCs (Signaling Line Circuits) are the digital communication loops in addressable systems",
+    "max_devices_per_slc": {
+      "typical_range": "100 to 250 devices per loop (manufacturer dependent)",
+      "common_values": [
+        {"manufacturer": "Notifier (ONNX)", "max_devices_per_loop": 250},
+        {"manufacturer": "Simplex (4100ES)", "max_devices_per_loop": 200},
+        {"manufacturer": "Apollo (Discovery)", "max_devices_per_loop": 250},
+        {"manufacturer": "Hochiki (FIREscape)", "max_devices_per_loop": 200},
+        {"manufacturer": "Edwards (EST3)", "max_devices_per_loop": 250},
+        {"manufacturer": "Advanced (MxPro)", "max_devices_per_loop": 200}
+      ],
+      "notes": "Check manufacturer specification — exceeding limits causes communication failures"
+    },
+    "device_types_on_slc": [
+      "Smoke detectors (addressable)",
+      "Heat detectors (addressable)",
+      "Multi-criteria detectors (addressable)",
+      "Manual call points (addressable)",
+      "Monitor modules",
+      "Control relay modules",
+      "Isolator modules",
+      "Short-circuit isolators (built-in to some detectors)"
+    ],
+    "loop_wiring": {
+      "topology": "Ring (Class A) or Radial (Class B)",
+      "wire_type": "FPL, FPLP, or FPLR",
+      "typical_gauge": "18 AWG (0.82 mm²) minimum",
+      "max_resistance": "50 Ω typical (check manufacturer)",
+      "max_capacitance": "0.5 µF typical (check manufacturer)"
+    },
+    "loop_loading_by_device_type": {
+      "addressable_detector": "0.5-1.0 mA (quiescent)",
+      "addressable_monitor_module": "0.5-1.0 mA",
+      "addressable_relay_module": "1.0-3.0 mA",
+      "isolator_module": "0.5-1.0 mA"
+    },
+    "addressing": {
+      "range": "Typically 1 to 250 per loop (manufacturer dependent)",
+      "rules": [
+        "Each device must have a unique address on its SLC loop",
+        "Address must be programmed into the device (DIP switches or electronic)",
+        "Duplicate addresses on the same loop cause communication failure",
+        "Some panels allow auto-learn of device addresses during commissioning"
+      ]
+    }
+  },
+
+  "circuit_class_summary": {
+    "description": "Wire supervision class affects reliability and redundancy",
+    "classes": [
+      {
+        "class": "Class B (most common)",
+        "description": "Single path — EOL device at end",
+        "fault_response": "Trouble signal on open or short",
+        "operation_on_fault": "Devices on fault side of break go offline",
+        "end_device_required": "Yes (EOL resistor or module)",
+        "wiring": "2 wires + EOL device"
+      },
+      {
+        "class": "Class A",
+        "description": "Redundant path — return wire from last device back to panel",
+        "fault_response": "Trouble signal on open, but circuit still operates",
+        "operation_on_fault": "All devices remain operational on single fault",
+        "end_device_required": "No (redundant path replaces EOL)",
+        "wiring": "4 wires (out + return)",
+        "use_when": "Life safety critical, hospitals, high-rise, code-required"
+      },
+      {
+        "class": "Class C (addressable equivalent of A)",
+        "description": "Addressable SLC with built-in isolators providing equivalent to Class A",
+        "wiring": "2 wires (loop topology) + isolators",
+        "use_when": "Most addressable system defaults",
+        "notes": "Some codes accept Class C as equivalent to Class A"
+      },
+      {
+        "class": "Class X (highest reliability)",
+        "description": "Multiple-fault-tolerant path — survives multiple faults",
+        "use_when": "Critical infrastructure, nuclear, highest-reliability installations",
+        "notes": "Rare in standard commercial construction"
+      }
+    ]
+  },
+
+  "design_software_loading_check": {
+    "description": "Validation rules the design software must perform",
+    "checks": [
+      {
+        "check_id": "NAC_CURRENT_LIMIT",
+        "description": "Total device current on NAC must not exceed panel NAC rating",
+        "formula": "Σ(device_current_mA) ≤ panel_nac_max_mA",
+        "error_if_exceeded": "NAC overloaded — add circuit or reduce devices"
+      },
+      {
+        "check_id": "VOLTAGE_DROP_LIMIT",
+        "description": "Voltage at farthest device must be ≥ minimum operating voltage",
+        "formula": "V_panel - V_drop ≥ V_min_device (typically 16VDC)",
+        "error_if_exceeded": "Voltage drop too high — increase wire gauge or add circuit"
+      },
+      {
+        "check_id": "SLC_DEVICE_LIMIT",
+        "description": "Total devices on SLC must not exceed loop maximum",
+        "formula": "Σ(devices_on_loop) ≤ max_devices_per_loop",
+        "error_if_exceeded": "SLC overloaded — add loop or redistribute devices"
+      },
+      {
+        "check_id": "IDC_DEVICE_LIMIT",
+        "description": "Devices per conventional zone must not exceed 20",
+        "formula": "Σ(devices_on_zone) ≤ 20",
+        "error_if_exceeded": "Too many devices on zone — add zone"
+      },
+      {
+        "check_id": "BATTERY_CAPACITY",
+        "description": "Battery must support total system load for standby + alarm period",
+        "formula": "Standby_load × standby_hours + Alarm_load × alarm_minutes",
+        "error_if_exceeded": "Battery undersized — increase AH rating"
+      }
+    ]
+  }
+}

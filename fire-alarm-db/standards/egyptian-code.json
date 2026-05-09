@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "standard": "Egyptian Code for Fire Protection",
+    "title": "الكود المصري للحماية من الحرائق",
+    "publisher": "Egyptian Organization for Standardization and Quality (EOS)",
+    "scope": "Fire protection requirements for all building types in Egypt",
+    "notes": "Egyptian code draws heavily from NFPA standards with local adaptations. NFPA 72 is the primary referenced standard for fire alarm systems in Egypt.",
+    "jurisdiction": "Arab Republic of Egypt — mandatory for all new construction and major renovations",
+    "last_reviewed": "2026-05-09"
+  },
+
+  "general_requirements": {
+    "fire_alarm_mandatory": {
+      "building_types": [
+        "High-rise buildings (above 28m / 9 floors)",
+        "Commercial buildings above 500m²",
+        "Hospitals and healthcare facilities",
+        "Hotels and tourist accommodation",
+        "Educational institutions (schools, universities)",
+        "Shopping malls and retail centers",
+        "Industrial buildings",
+        "Government buildings",
+        "Assembly buildings (cinemas, theaters, convention centers)",
+        "Underground parking",
+        "Residential buildings above 5 floors"
+      ],
+      "notes": "Local AHJ (Civil Defense / الدفاع المدني) has final authority"
+    },
+    "referenced_standards": {
+      "primary": "NFPA 72 (National Fire Alarm and Signaling Code)",
+      "secondary": [
+        "NFPA 70 (NEC) for electrical wiring",
+        "NFPA 101 (Life Safety Code) for occupancy requirements",
+        "NFPA 170 (Fire Safety Symbols) for drawing symbols",
+        "EN 54 for product certification requirements",
+        "ISO 7240 for international reference"
+      ],
+      "local_codes": [
+        "Egyptian Building Code (الكود المصري للتصميم الإنشائي)",
+        "Egyptian Mechanical Code (for HVAC integration)",
+        "Egyptian Electrical Code (based on IEC standards)"
+      ]
+    }
+  },
+
+  "civil_defense_requirements": {
+    "approval_process": [
+      "Submit fire alarm shop drawings to Civil Defense for review",
+      "Obtain Civil Defense approval before installation",
+      "Acceptance testing witnessed by Civil Defense inspector",
+      "Annual inspection by Civil Defense",
+      "System certificate valid for 1 year (must be renewed)"
+    ],
+    "documentation_required": [
+      "Approved shop drawings ( stamped by licensed fire protection engineer)",
+      "Manufacturer certificates for all equipment (EN 54 / UL listed)",
+      "As-built drawings after installation",
+      "Commissioning test reports",
+      "Maintenance contract with licensed company",
+      "Annual inspection report"
+    ],
+    "contractor_requirements": {
+      "license": "Must hold valid Civil Defense license for fire alarm installation",
+      "engineer": "Design must be stamped by licensed fire protection engineer",
+      "technicians": "Installation and maintenance must be performed by certified technicians"
+    }
+  },
+
+  "specific_egyptian_requirements": {
+    "differences_from_nfpa": [
+      {
+        "area": "Notification language",
+        "nfpa": "English voice messages acceptable",
+        "egypt": "Voice alarm messages must be in Arabic (bilingual Arabic/English acceptable)"
+      },
+      {
+        "area": "Signage",
+        "nfpa": "English signs",
+        "egypt": "All fire alarm signage must be bilingual (Arabic + English)"
+      },
+      {
+        "area": "Civil Defense connection",
+        "nfpa": "Central station monitoring typical",
+        "egypt": "Direct connection to Civil Defense monitoring center required in major cities"
+      },
+      {
+        "area": "Power supply",
+        "nfpa": "Dedicated 120VAC circuit",
+        "egypt": "Dedicated 220VAC circuit (Egypt uses 220V/50Hz)"
+      },
+      {
+        "area": "Standard voltage",
+        "nfpa": "24VDC system standard",
+        "egypt": "24VDC system standard (panels have universal power supplies)"
+      },
+      {
+        "area": "Maintenance",
+        "nfpa": "Annual testing minimum",
+        "egypt": "Annual Civil Defense inspection mandatory; maintenance contract required"
+      }
+    ],
+    "notes": "Always verify current requirements with local Civil Defense office — requirements may vary by governorate"
+  },
+
+  "building_code_reference": {
+    "occupancy_classification_egypt": {
+      "description": "Egyptian building code classifies buildings for fire protection purposes",
+      "categories": [
+        {"category": "Group A", "description": "Residential buildings", "examples": "Apartments, villas, dormitories"},
+        {"category": "Group B", "description": "Commercial buildings", "examples": "Offices, shops, restaurants, malls"},
+        {"category": "Group C", "description": "Educational buildings", "examples": "Schools, universities, training centers"},
+        {"category": "Group D", "description": "Healthcare facilities", "examples": "Hospitals, clinics, care homes"},
+        {"category": "Group E", "description": "Assembly buildings", "examples": "Theaters, cinemas, mosques, churches, conference halls"},
+        {"category": "Group F", "description": "Industrial buildings", "examples": "Factories, workshops, warehouses"},
+        {"category": "Group G", "description": "Storage buildings", "examples": "Warehouses, cold storage, depots"},
+        {"category": "Group H", "description": "Hazardous buildings", "examples": "Chemical storage, fuel stations, gas facilities"},
+        {"category": "Group I", "description": "Institutional buildings", "examples": "Government buildings, museums, libraries"}
+      ],
+      "notes": "Classification determines the fire alarm category, sprinkler requirements, and other fire protection systems"
+    }
+  }
+}

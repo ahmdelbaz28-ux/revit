@@ -1,0 +1,188 @@
+{
+  "meta": {
+    "title": "Coverage and Spacing Rules — Master Reference",
+    "description": "Complete spacing, placement, and coverage rules for fire alarm device layout design",
+    "standards_referenced": ["NFPA 72 Chapter 17", "BS 5839-1 Chapter 22", "EN 54-7", "EN 54-5"],
+    "last_reviewed": "2026-05-09"
+  },
+
+  "spacing_summary_table": {
+    "description": "Quick reference comparison of spacing rules between NFPA 72 and BS 5839",
+    "table": [
+      {
+        "device": "Point Smoke Detector (smooth ceiling)",
+        "nfpa72_spacing": "30 ft (9.1m)",
+        "bs5839_spacing": "7.5m (24.6 ft)",
+        "wall_distance_nfpa": "15 ft (4.6m)",
+        "wall_distance_bs": "3.75m (12.3 ft)",
+        "notes": "BS 5839 spacing is slightly tighter than NFPA for most applications"
+      },
+      {
+        "device": "Point Heat Detector (smooth ceiling)",
+        "nfpa72_spacing": "50 ft (15.2m) — listed",
+        "bs5839_spacing": "5.3m (17.4 ft)",
+        "wall_distance_nfpa": "25 ft (7.6m)",
+        "wall_distance_bs": "2.65m (8.7 ft)",
+        "notes": "BS 5839 heat spacing is MUCH tighter than NFPA — significant difference"
+      },
+      {
+        "device": "Beam Smoke Detector",
+        "nfpa72_spacing": "60 ft (18.3m) between beams",
+        "bs5839_spacing": "12.5m from any point to beam, 100m max Tx-Rx distance",
+        "notes": "Both standards require coverage within beam corridor — see beam projection tables"
+      },
+      {
+        "device": "Manual Call Point / Pull Station",
+        "nfpa72_location": "Within 5 ft (1.5m) of every exit",
+        "nfpa72_travel": "200 ft (61m) max travel",
+        "bs5839_location": "At every exit on every floor",
+        "bs5839_travel": "30m max travel (45m exceptional)",
+        "notes": "BS 5839 travel distance much shorter — more pull stations required"
+      },
+      {
+        "device": "Smoke Detector in Corridor",
+        "nfpa72_spacing": "30 ft (9.1m) on center, within 5 ft (1.5m) of walls",
+        "bs5839_spacing": "7.5m on center (increased to 11.25m in corridors < 2m wide)",
+        "notes": "Corridor = width ≤ 20 ft (NFPA) or width ≤ 2m with spacing bonus (BS)"
+      },
+      {
+        "device": "Duct Smoke Detector",
+        "nfpa72": "Supply: downstream of filters. Return: upstream of exhaust",
+        "bs5839": "Similar requirements",
+        "notes": "Required for HVAC > 2000 CFM (NFPA) or as per risk assessment (BS)"
+      }
+    ]
+  },
+
+  "nfpa72_detailed_spacing": {
+    "smoke_detector_grid": {
+      "description": "NFPA 72 uses a circular coverage model — detectors spaced on a grid with radius overlap",
+      "nominal_spacing": "30 ft (9.1m)",
+      "coverage_radius": "21 ft (6.4m) — the actual detection radius",
+      "wall_distance": "Maximum 15 ft (4.6m) from any wall",
+      "corner_distance": "Maximum 21 ft (6.4m) from any corner",
+      "grid_layout": {
+        "square": "21 ft × 21 ft maximum grid (6.4m × 6.4m) — ensures corner coverage",
+        "notes": "The nominal 30 ft spacing is the diagonal measurement. The actual side-by-side spacing on a square grid is 21 ft. This is a common source of error."
+      },
+      "corridor_mode": {
+        "width_limit": "Corridor ≤ 20 ft (6.1m) wide",
+        "spacing": "30 ft (9.1m) on center",
+        "wall_distance": "5 ft (1.5m) from end walls",
+        "coverage_per_detector": "30 ft × 20 ft area per detector",
+        "notes": "Corridor mode allows wider spacing because walls help contain smoke"
+      }
+    },
+    "ceiling_height_adjustment": {
+      "description": "Spacing must be reduced for high ceilings — smoke stratification prevents full ceiling coverage",
+      "correction_table": [
+        {"height_range": "Up to 10 ft (3m)", "smoke_modifier": "1.00", "heat_modifier": "1.00", "notes": "No adjustment"},
+        {"height_range": "10-12 ft (3-3.7m)", "smoke_modifier": "1.00", "heat_modifier": "1.00", "notes": "No adjustment"},
+        {"height_range": "12-14 ft (3.7-4.3m)", "smoke_modifier": "0.94", "heat_modifier": "0.94", "notes": "Nominal × 0.94"},
+        {"height_range": "14-16 ft (4.3-4.9m)", "smoke_modifier": "0.87", "heat_modifier": "0.87", "notes": "Nominal × 0.87"},
+        {"height_range": "16-18 ft (4.9-5.5m)", "smoke_modifier": "0.80", "heat_modifier": "0.80", "notes": "Nominal × 0.80"},
+        {"height_range": "18-20 ft (5.5-6.1m)", "smoke_modifier": "0.74", "heat_modifier": "0.74", "notes": "Nominal × 0.74"},
+        {"height_range": "20-22 ft (6.1-6.7m)", "smoke_modifier": "0.67", "heat_modifier": "0.67", "notes": "Nominal × 0.67"},
+        {"height_range": "22-24 ft (6.7-7.3m)", "smoke_modifier": "0.61", "heat_modifier": "0.61", "notes": "Nominal × 0.61"},
+        {"height_range": "24-26 ft (7.3-7.9m)", "smoke_modifier": "0.56", "heat_modifier": "0.56", "notes": "Nominal × 0.56"},
+        {"height_range": "26-28 ft (7.9-8.5m)", "smoke_modifier": "0.50", "heat_modifier": "0.50", "notes": "Nominal × 0.50"},
+        {"height_range": "28-30 ft (8.5-9.1m)", "smoke_modifier": "0.45", "heat_modifier": "0.45", "notes": "Nominal × 0.45"},
+        {"height_range": "Above 30 ft (9.1m)", "smoke_modifier": "Use beam, aspirating, or multi-criteria", "heat_modifier": "Not recommended — use beam or ASD", "notes": "Spot detectors unreliable above 30 ft for smoke"}
+      ]
+    }
+  },
+
+  "bs5839_detailed_spacing": {
+    "smoke_detector_grid": {
+      "description": "BS 5839 uses a radius model — detector covers a circular area",
+      "nominal_spacing": "7.5m",
+      "coverage_radius": "5.3m",
+      "wall_distance": "Maximum 3.75m from any wall",
+      "corner_distance": "Maximum 5.3m from any corner",
+      "grid_layout": {
+        "square": "5.3m × 5.3m maximum grid — but often used as 7.5m × 7.5m triangular spacing",
+        "notes": "The 7.5m nominal is the maximum center-to-center distance, not the radius. The actual coverage circle radius is 5.3m."
+      },
+      "corridor_mode": {
+        "width_limit": "Corridor < 2m wide",
+        "spacing_bonus": "Spacing increased by 50% → 11.25m on center",
+        "notes": "One of the most important BS 5839 spacing bonuses — commonly used"
+      }
+    },
+    "ceiling_height_limits": {
+      "table": [
+        {"detector_type": "Smoke EN54-7 Class A1", "max_height": "12.5m"},
+        {"detector_type": "Smoke EN54-7 Class A2/B/C/D/E", "max_height": "10.5m"},
+        {"detector_type": "Heat EN54-5 Class A1/A2/BR", "max_height": "7.5m"},
+        {"detector_type": "Heat EN54-5 Class B/CR", "max_height": "6m"},
+        {"detector_type": "Heat EN54-5 Class AR", "max_height": "7.5m"},
+        {"detector_type": "Beam smoke detector", "min_height": "10.5m (recommended), no max"},
+        {"detector_type": "Aspirating smoke detector", "no_max_height": true},
+        {"detector_type": "Flame detector", "no_max_height": true}
+      ]
+    }
+  },
+
+  "strobe_spacing_nfpa72": {
+    "description": "Visual notification appliance spacing per NFPA 72 Table 18.5.5.2.1",
+    "wall_mounted": [
+      {"candela": 15, "spacing_ft": 20, "spacing_m": 6.1},
+      {"candela": 30, "spacing_ft": 30, "spacing_m": 9.1},
+      {"candela": 75, "spacing_ft": 45, "spacing_m": 13.7},
+      {"candela": 95, "spacing_ft": 50, "spacing_m": 15.2},
+      {"candela": 110, "spacing_ft": 55, "spacing_m": 16.8},
+      {"candela": 115, "spacing_ft": 60, "spacing_m": 18.3}
+    ],
+    "ceiling_mounted": [
+      {"candela": 15, "spacing_ft": 20, "spacing_m": 6.1},
+      {"candela": 30, "spacing_ft": 30, "spacing_m": 9.1},
+      {"candela": 75, "spacing_ft": 45, "spacing_m": 13.7},
+      {"candela": 95, "spacing_ft": 50, "spacing_m": 15.2},
+      {"candela": 110, "spacing_ft": 55, "spacing_m": 16.8},
+      {"candela": 135, "spacing_ft": 55, "spacing_m": 16.8},
+      {"candela": 150, "spacing_ft": 50, "spacing_m": 15.2},
+      {"candela": 177, "spacing_ft": 50, "spacing_m": 15.2},
+      {"candela": 185, "spacing_ft": 40, "spacing_m": 12.2}
+    ],
+    "room_calculation": {
+      "formula": "Required candela = max(0.0375 × area_sqft, area_sqft / 20, 15)",
+      "example": "Room 20 ft × 30 ft = 600 sqft → 0.0375 × 600 = 22.5 cd → use 30 cd minimum",
+      "max_room_wall": "110 cd (wall-mount), 177 cd (ceiling-mount)",
+      "notes": "If calculated candela exceeds maximum, use multiple devices"
+    }
+  },
+
+  "sounder_spacing_bs5839": {
+    "description": "Sounder coverage per BS 5839-1 Section 20.1",
+    "minimum_level": "65 dBA OR 5 dBA above ambient (whichever greater)",
+    "bedroom_minimum": "75 dBA at pillow level",
+    "maximum_level": "120 dBA (hearing damage limit)",
+    "coverage_method": "Circular coverage — sounder output must provide minimum level at farthest point in room",
+    "typical_spacing": {
+      "90_dBA_sounder": "Approximately 15m spacing in open plan",
+      "100_dBA_sounder": "Approximately 20m spacing in open plan",
+      "notes": "Spacing depends heavily on room acoustics, furnishings, partitions — conservative design recommended"
+    },
+    "wall_mounting_height": "2.0m to 2.4m from floor"
+  },
+
+  "placement_rules": {
+    "general": [
+      "Detectors must be on the ceiling or within 300mm of ceiling (BS) / 12 in of ceiling (NFPA)",
+      "Do not place detectors within 500mm of HVAC supply diffusers (BS) / 3 ft (NFPA)",
+      "Do not place detectors near fluorescent lights (EMI interference)",
+      "Do not place detectors where they are obstructed by beams, columns, or ductwork",
+      "Maintain access for testing and maintenance (within reach of ladder or platform)",
+      "Avoid placing detectors in dead air spaces (corners, ceiling peaks, behind beams)"
+    ],
+    "avoid_areas": [
+      "Direct path of supply air from HVAC",
+      "Near cooking equipment (use heat detector instead)",
+      "Bathrooms, showers, steam rooms (moisture causes false alarms)",
+      "Near fluorescent light ballasts (EMI)",
+      "In direct sunlight (photos may false alarm)",
+      "Near diesel generators or exhaust (smoke and fumes)",
+      "In dusty or dirty environments (use appropriate EN54 class)"
+    ]
+  }
+}

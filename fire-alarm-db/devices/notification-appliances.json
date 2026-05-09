@@ -1,0 +1,191 @@
+{
+  "meta": {
+    "title": "Notification Appliances — Technical Reference Database",
+    "description": "Comprehensive specifications for all fire alarm notification device types",
+    "standards_referenced": ["NFPA 72 Chapter 18 & 24", "BS 5839-1 Section 20", "EN 54-3 (Sounders)", "EN 54-23 (Visual)"],
+    "last_reviewed": "2026-05-09"
+  },
+
+  "audible_devices": [
+    {
+      "id": "horn-electronic",
+      "type": "Electronic Horn",
+      "principle": "Solid-state oscillator generates audible alarm tone",
+      "standards": "UL 464, EN 54-3",
+      "output_levels": [
+        {"dBA": "87", "setting": "Low", "typical_current_mA": 8},
+        {"dBA": "90", "setting": "Medium", "typical_current_mA": 14},
+        {"dBA": "95", "setting": "High", "typical_current_mA": 22},
+        {"dBA": "100", "setting": "Maximum", "typical_current_mA": 35}
+      ],
+      "voltage": "24VDC (full range) or 16-33VDC (wide range)",
+      "tone_patterns": [
+        {"pattern": "Temporal Code 3 (T-3)", "description": "0.5s ON, 0.5s OFF, 0.5s ON, 0.5s OFF, 0.5s ON, 1.5s OFF, repeat", "use": "Standard evacuation signal (NFPA 72)"},
+        {"pattern": "Continuous", "description": "Steady tone, no interruption", "use": "Supervisory signals, fault indications"},
+        {"pattern": "March Time", "description": "120 BPM pulse", "use": "Some legacy systems"},
+        {"pattern": "Code 3", "description": "Fast pulse (10 pulses per minute)", "use": "Fire department connection"},
+        {"pattern": "Slow Whoop", "description": "Rising tone, 1 cycle per 3 seconds", "use": "Medical gas, some European systems"}
+      ],
+      "frequency": "500 Hz to 3000 Hz (fundamental per NFPA 72)",
+      "coverage_radius": "Approximately 70 ft (21m) at 90 dBA output (open plan)",
+      "mounting": {
+        "wall": "80 to 96 in (2.03 to 2.44m) from floor",
+        "ceiling": "Minimum 6 in (152mm) from ceiling"
+      },
+      "ip_rating": "IP31 indoor, IP54 outdoor",
+      "color": "Red (fire alarm), white (architectural option)",
+      "notes": "Most common notification appliance worldwide"
+    },
+    {
+      "id": "horn-strobe",
+      "type": "Horn-Strobe Combination",
+      "description": "Single device with both audible horn and visual strobe",
+      "horn_specs": "Same as horn-electronic (see above)",
+      "strobe_specs": {
+        "candela_options": [15, 30, 75, 95, 110, 115, 135, 150, 177, 185],
+        "flash_rate": "1 to 2 Hz (60-120 flashes per minute)",
+        "color": "White (standard), amber (on request)",
+        "coverage": "See candela-calculations.json for detailed spacing tables"
+      },
+      "current_draw": "Horn current + Strobe current (combined)",
+      "typical_strobe_current_mA": [
+        {"candela": 15, "current_mA": 25},
+        {"candela": 30, "current_mA": 38},
+        {"candela": 75, "current_mA": 78},
+        {"candela": 110, "current_mA": 108},
+        {"candela": 177, "current_mA": 170}
+      ],
+      "pros": ["One device provides both audible and visual notification", "Simpler installation", "Lower total device count"],
+      "cons": ["Higher current draw per device", "If one fails, both audible and visual lost at that location"],
+      "notes": "Most widely used notification device in commercial buildings"
+    },
+    {
+      "id": "speaker-fire-alarm",
+      "type": "Fire Alarm Speaker",
+      "description": "Speaker for voice evacuation messages and tone signals",
+      "standards": "UL 1480, EN 54-24",
+      "power_taps": [0.125, 0.25, 0.5, 1, 2, 4],
+      "power_taps_watts": ["1/8W", "1/4W", "1/2W", "1W", "2W", "4W"],
+      "coverage_radius": "Approximately 15 ft (4.6m) per speaker at 1/4W tap",
+      "impedance": "25V or 70V line (US), 100V line (EU/international)",
+      "intelligibility_requirement": {
+        "standard": "Common Intelligibility Scale (CIS) ≥ 0.50 OR Speech Transmission Index (STI) ≥ 0.70",
+        "method": "Must be measured in field during commissioning",
+        "reference": "NFPA 72 Section 24.4.1.2"
+      },
+      "sound_level": "Minimum 75 dBA at ear level, 15 dBA above ambient (whichever greater)",
+      "spacing": "4.5m to 8m between speakers (depends on ceiling height and tap setting)",
+      "messages": [
+        {"type": "Pre-recorded", "description": "Standard evacuation messages stored in panel/amp", "languages": "English, Arabic, or as required by AHJ"},
+        {"type": "Live paging", "description": "Microphone input for firefighter/emergency announcements"},
+        {"type": "Alert tones", "description": "Temporal Code 3 tone before voice message (per NFPA 72)"}
+      ],
+      "pros": ["Voice messages provide clear instructions", "Zone-selective paging", "Can be used for other emergencies (security, weather)"},
+      "cons": ["Requires amplifier(s)", "Intelligibility testing required", "More complex design"],
+      "required_in": ["High-rise > 75 ft", "Assembly > 1000 persons", "Hospitals", "Malls", "Underground buildings"]
+    },
+    {
+      "id": "speaker-strobe",
+      "type": "Speaker-Strobe Combination",
+      "description": "Speaker for voice messages combined with visual strobe",
+      "speaker_specs": "Same as speaker-fire-alarm",
+      "strobe_specs": "Same as horn-strobe",
+      "typical_use": "Voice evacuation systems where visual notification also required",
+      "notes": "Required in voice evacuation systems to serve hearing-impaired occupants"
+    },
+    {
+      "id": "bell-mechanical",
+      "type": "Mechanical Bell",
+      "description": "Traditional electromechanical bell — being phased out in new installations",
+      "standards": "UL 464 (legacy)",
+      "output": "85-92 dBA typical",
+      "current_draw": "80-150 mA at 24VDC (high current draw)",
+      "notes": "Loud but high power consumption. Still found in legacy systems. Not recommended for new installations.",
+      "status": "LEGACY — being replaced by electronic horns"
+    },
+    {
+      "id": "sounder-outdoor",
+      "type": "Outdoor Electronic Sounder",
+      "description": "High-output sounder rated for outdoor installation",
+      "output": "100 to 120 dBA at 1m",
+      "ip_rating": "IP65 or IP66 minimum",
+      "color": "Red (fire), amber (security)",
+      "typical_use": "Campus fire alarm, outdoor gathering areas, industrial facilities",
+      "notes": "May require planning permission due to noise levels"
+    }
+  ],
+
+  "visual_devices": [
+    {
+      "id": "strobe-wall-mount",
+      "type": "Wall-Mounted Strobe",
+      "candela_ratings": [15, 30, 75, 95, 110, 115],
+      "coverage": {
+        "15_cd": {"radius_ft": 20, "notes": "Small rooms, corridors"},
+        "30_cd": {"radius_ft": 30, "notes": "Standard rooms"},
+        "75_cd": {"radius_ft": 45, "notes": "Large rooms"},
+        "95_cd": {"radius_ft": 50, "notes": "Large rooms, high ambient light"},
+        "110_cd": {"radius_ft": 55, "notes": "Maximum wall-mount (per NFPA 72)"},
+        "115_cd": {"radius_ft": 60, "notes": "Special applications"}
+      },
+      "mounting_height": "80 to 96 in (2.03 to 2.44m) from floor",
+      "flash_rate": "1 to 2 Hz",
+      "color": "White or amber",
+      "reference": "NFPA 72 Table 18.5.5.2.1(a)",
+      "room_calculation": "Minimum candela = 0.0375 × room area (sq ft) — OR 1 cd per 20 sq ft, whichever is greater, minimum 15 cd"
+    },
+    {
+      "id": "strobe-ceiling-mount",
+      "type": "Ceiling-Mounted Strobe",
+      "candela_ratings": [15, 30, 75, 95, 110, 135, 150, 177, 185],
+      "max_candela": "177 cd (NFPA 72 maximum for ceiling mount)",
+      "coverage": {
+        "177_cd": {"radius_ft": 50, "notes": "Maximum coverage for ceiling-mounted strobes"}
+      },
+      "mounting": "Minimum 6 in (152mm) from ceiling",
+      "room_calculation": "Same formula as wall-mount: 0.0375 × area, minimum 15 cd, maximum 177 cd"
+    },
+    {
+      "id": "strobe-weatherproof",
+      "type": "Outdoor Strobe",
+      "description": "Weather-rated visual notification appliance for outdoor areas",
+      "ip_rating": "IP65 or IP66",
+      "candela": "Typically 15 to 110 cd",
+      "use": "Outdoor assembly areas, campus pathways, parking areas"
+    }
+  ],
+
+  "notification_requirements_by_occupancy": {
+    "general_rule": {
+      "audible": "75 dBA minimum OR 15 dBA above ambient (whichever greater) throughout all occupiable spaces",
+      "visible": "Required in all areas where audible minimum cannot be met, plus: corridors, lobbies, stairwells, restrooms (public), elevator lobbies",
+      "bedrooms": "75 dBA at pillow level (30 in from pillow), or 15 dBA above ambient",
+      "reference": "NFPA 72 Section 18.4 (audible) / Section 18.5 (visible)"
+    },
+    "special_requirements": [
+      {
+        "occupancy": "Healthcare / Hospital",
+        "notes": "Two-stage alarm — staff notification first (private mode), then evacuation if needed",
+        "audible": "Minimum 45 dBA in patient sleeping rooms (to avoid patient panic), 60 dBA in corridors",
+        "visible": "Required in all patient rooms"
+      },
+      {
+        "occupancy": "Theater / Cinema",
+        "notes": "Stage 1: Staff notification (visual indicators only — minimal audible). Stage 2: General evacuation",
+        "audible": "Stage 2: Full evacuation signal",
+        "voice": "Voice evacuation recommended for phased evacuation"
+      },
+      {
+        "occupancy": "Detention / Correctional",
+        "notes": "Staff notification only (private mode) — no public alarm that could cause disorder",
+        "provisions": "Must be able to switch to public mode if evacuation ordered"
+      },
+      {
+        "occupancy": "School",
+        "notes": "Distinctive signal easily distinguishable from school bell",
+        "audible": "Standard T-3 temporal code",
+        "special": "Must interface with fire sprinkler system for kitchen areas"
+      }
+    ]
+  }
+}

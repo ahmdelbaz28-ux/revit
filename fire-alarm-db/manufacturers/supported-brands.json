@@ -1,0 +1,351 @@
+{
+  "meta": {
+    "title": "Supported Fire Alarm Brands — Product Database Registry",
+    "description": "Major fire alarm system manufacturers with product lines, protocols, and regional availability",
+    "last_updated": "2026-05-09",
+    "notes": "This registry covers the most commonly specified brands in Egypt, Middle East, and international markets. Products must be EN 54 certified and/or UL listed for code compliance."
+  },
+
+  "tier1_global_brands": [
+    {
+      "id": "honeywell-notifier",
+      "name": "Notifier (Honeywell)",
+      "headquarters": "USA",
+      "regional_presence": ["Global", "Egypt", "UAE", "Saudi Arabia", "Kuwait", "Qatar"],
+      "panel_series": [
+        {
+          "name": "ONYX Series",
+          "type": "Intelligent Addressable",
+          "models": ["NFS2-3030", "NFS2-640", "NFS-320", "NFS-640"],
+          "max_devices_per_panel": "640 (NFS2-3030)",
+          "slc_loops": "Up to 10 SLC loops",
+          "protocol": "NOTI-FIRE NET (proprietary)",
+          "detector_family": "NOTIFIER XP95, Acclima, i3 Series",
+          "certification": "UL listed, EN 54 certified",
+          "regional_note": "Most widely specified brand in Egypt and Gulf — strong local support"
+        },
+        {
+          "name": "NFN Series (Network)",
+          "type": "Networked Addressable",
+          "models": ["NFS-640 (network node)", "NFS2-3030 (network master)"],
+          "network_protocol": "NOTI-FIRE NET",
+          "max_panels_in_network": "Multiple panels per network"
+        },
+        {
+          "name": "NSS (Networked Suppression)",
+          "type": "Special Hazard / Suppression",
+          "notes": "Used for clean agent systems, foam systems"
+        }
+      ],
+      "detector_lines": [
+        {"family": "Acclima", "type": "Intelligent addressable multi-criteria", "standards": "EN 54-7, UL 268"},
+        {"family": "XP95", "type": "Intelligent addressable", "standards": "EN 54-7, EN 54-5, UL 268"},
+        {"family": "i3", "type": "Conventional 2-wire", "standards": "EN 54-7, UL 268"},
+        {"family": "MAXSeries", "type": "Intelligent addressable", "standards": "EN 54-7, UL 268"}
+      ],
+      "notification_lines": [
+        {"family": "NFP Series", "type": "Horn-strobe combinations", "standards": "UL 1971, EN 54-3, EN 54-23"},
+        {"family": "VNS Series", "type": "Speaker-strobe combinations", "standards": "UL 1480, EN 54-24"}
+      ],
+      "website": "https://www.notifier.com"
+    },
+    {
+      "id": "carrier-edwards",
+      "name": "Edwards / EST (Carrier)",
+      "headquarters": "USA",
+      "regional_presence": ["Global", "Egypt", "UAE", "Saudi Arabia"],
+      "panel_series": [
+        {
+          "name": "EST3",
+          "type": "Intelligent Addressable / Network",
+          "models": ["EST3-XLC", "EST3-M-1", "EST3-M-3", "EST3-M-7"],
+          "max_devices_per_panel": "1000+",
+          "slc_loops": "Up to 10 loops",
+          "protocol": "EST3 Signature (proprietary)",
+          "certification": "UL listed, EN 54 certified"
+        },
+        {
+          "name": "EST4",
+          "type": "Advanced Intelligent Addressable",
+          "features": ["Touch screen display", "Advanced networking", "Cybersecurity features"],
+          "certification": "UL listed, EN 54 certified"
+        },
+        {
+          "name": "iO64 / iO500",
+          "type": "Small to medium conventional / addressable",
+          "notes": "Budget-friendly option for smaller projects"
+        }
+      ],
+      "website": "https://www.edwardssignals.com"
+    },
+    {
+      "id": "carrier-simplexgrinnell",
+      "name": "SimplexGrinnell (Carrier)",
+      "headquarters": "USA",
+      "regional_presence": ["Global", "Egypt", "Gulf"],
+      "panel_series": [
+        {
+          "name": "4100ES",
+          "type": "Intelligent Addressable / Network",
+          "max_devices_per_panel": "2500+",
+          "protocol": "FlashScan (proprietary)",
+          "certification": "UL listed, EN 54 certified",
+          "notes": "Premium line — often specified in healthcare and institutional projects"
+        },
+        {
+          "name": "TrueAlert ES",
+          "type": "Notification appliance line",
+          "standards": "UL 1971, EN 54-3"
+        }
+      ],
+      "website": "https://www.simplexgrinnell.com"
+    },
+    {
+      "id": "apollo-honeywell",
+      "name": "Apollo (Honeywell)",
+      "headquarters": "UK",
+      "regional_presence": ["Global", "Egypt", "UAE", "Saudi Arabia"],
+      "panel_compatibility": "Works with many panel brands (open protocol advocate)",
+      "detector_lines": [
+        {"family": "Discovery", "type": "Intelligent addressable", "protocol": "Apollo Digital Protocol", "standards": "EN 54-7, EN 54-5, EN 54-29"},
+        {"family": "XP95", "type": "Intelligent addressable (legacy)", "standards": "EN 54-7, EN 54-5"},
+        {"family": "Series 65", "type": "Conventional", "standards": "EN 54-7, EN 54-5"},
+        {"family": "Orbis", "type": "Conventional", "standards": "EN 54-7, EN 54-5"}
+      ],
+      "notification": [
+        {"family": "Xpander", "type": "Wireless devices"},
+        {"family": "Apollo Sounders", "type": "Electronic sounders and beacons", "standards": "EN 54-3, EN 54-23"}
+      ],
+      "notes": "Apollo devices can be used with Kentec, Advanced, and other third-party panels — strong in BS 5839 markets",
+      "website": "https://www.apollo-fire.com"
+    },
+    {
+      "id": "hochiki",
+      "name": "Hochiki",
+      "headquarters": "Japan",
+      "regional_presence": ["Global", "Egypt", "UAE", "Saudi Arabia", "Asia"],
+      "panel_series": [
+        {
+          "name": "FIREscape-ONE",
+          "type": "Intelligent Addressable",
+          "max_devices_per_loop": "200",
+          "protocol": "Hochiki ESP (Enhanced System Protocol)",
+          "certification": "EN 54-2, EN 54-13 certified"
+        }
+      ],
+      "detector_lines": [
+        {"family": "Hochiki ESP", "type": "Intelligent addressable", "standards": "EN 54-7, EN 54-5, EN 54-29"},
+        {"family": "Hochiki Conventional", "type": "Conventional", "standards": "EN 54-7, EN 54-5"},
+        {"family": "Hochiki ALN", "type": "Analog addressable", "standards": "EN 54-7, EN 54-5"}
+      ],
+      "notes": "Very strong in Middle East and Asia — good price/performance ratio",
+      "website": "https://www.hochiki.com"
+    },
+    {
+      "id": "advanced-electronics",
+      "name": "Advanced (Advanced Electronics)",
+      "headquarters": "UK",
+      "regional_presence": ["UK", "Middle East", "Asia"],
+      "panel_series": [
+        {
+          "name": "MxPro 5",
+          "type": "Intelligent Addressable",
+          "models": ["1 loop", "2 loop", "4 loop", "8 loop"],
+          "max_devices_per_loop": "200 (addressable) / 127 (Apollo XP95)",
+          "protocol": "Advanced/Clavis protocol, Apollo XP95 compatible",
+          "certification": "EN 54-2, EN 54-4, EN 54-13",
+          "notes": "Popular in BS 5839 markets"
+        },
+        {
+          "name": "Terra (Marine/Offshore)",
+          "type": "Marine-grade addressable",
+          "certification": "EN 54-2, MED certified"
+        },
+        {
+          "name": "Adenco (Voice Alarm)",
+          "type": "Voice evacuation system",
+          "certification": "EN 54-16"
+        }
+      ],
+      "website": "https://www.advancedco.com"
+    },
+    {
+      "id": "kentec",
+      "name": "Kentec",
+      "headquarters": "UK",
+      "regional_presence": ["UK", "Middle East", "Africa"],
+      "panel_series": [
+        {
+          "name": "Synchronise",
+          "type": "Intelligent Addressable",
+          "models": ["1 loop", "2 loop", "4 loop", "8 loop"],
+          "max_devices_per_loop": "200",
+          "protocol": "Kentec + Apollo XP95 + Hochiki ESP compatible",
+          "certification": "EN 54-2, EN 54-13",
+          "notes": "Multi-protocol — can use Apollo, Hochiki, or Kentec detectors"
+        },
+        {
+          "name": "Islamatic",
+          "type": "Small conventional",
+          "notes": "Budget option for small installations"
+        }
+      ],
+      "website": "https://www.kentec.co.uk"
+    },
+    {
+      "id": "nohmi-bosai",
+      "name": "Nohmi Bosai",
+      "headquarters": "Japan",
+      "regional_presence": ["Japan", "Middle East", "Asia"],
+      "panel_series": [
+        {
+          "name": "NBH-200 series",
+          "type": "Intelligent Addressable",
+          "protocol": "Nohmi proprietary",
+          "certification": "EN 54-2, EN 54-13",
+          "notes": "Strong in Japanese-invested projects in Middle East"
+        }
+      ],
+      "website": "https://www.nohmi.co.jp"
+    },
+    {
+      "id": "siemens",
+      "name": "Siemens (Cerberus PRO)",
+      "headquarters": "Germany",
+      "regional_presence": ["Global", "Egypt", "Gulf"],
+      "panel_series": [
+        {
+          "name": "Cerberus PRO (FC72)",
+          "type": "Intelligent Addressable",
+          "models": ["FC722 compact", "FC724 medium", "FC726 large"],
+          "max_devices_per_panel": "2000+",
+          "protocol": "Siemens proprietary",
+          "certification": "EN 54-2, EN 54-4, EN 54-13, VdS",
+          "notes": "Premium European brand — often specified in high-end projects"
+        }
+      ],
+      "website": "https://www.siemens.com/building-technologies"
+    },
+    {
+      "id": "bosch",
+      "name": "Bosch (Building Technologies)",
+      "headquarters": "Germany",
+      "regional_presence": ["Global", "Egypt", "Gulf"],
+      "panel_series": [
+        {
+          "name": "Fire Panel 5000 / 8000",
+          "type": "Intelligent Addressable",
+          "certification": "EN 54-2, EN 54-13",
+          "notes": "Good integration with BMS/CCTV systems"
+        }
+      ],
+      "website": "https://www.boschsecurity.com"
+    }
+  ],
+
+  "budget_and_regional_brands": [
+    {
+      "id": "kiden",
+      "name": "Kiden",
+      "headquarters": "China",
+      "regional_presence": ["Egypt", "Africa", "Middle East", "Asia"],
+      "notes": "Budget option — widely used in cost-sensitive projects in Egypt",
+      "certification": "EN 54 certified (check specific model certificates)",
+      "warning": "Always verify EN 54 certificates for specific models — certificate validity varies"
+    },
+    {
+      "id": "zeta-alarm",
+      "name": "Zeta Alarm Systems",
+      "headquarters": "UK",
+      "regional_presence": ["UK", "Africa", "Middle East"],
+      "notes": "Budget-friendly conventional and addressable systems",
+      "certification": "EN 54 certified"
+    },
+    {
+      "id": "gst",
+      "name": "GST (Carrier)",
+      "headquarters": "China",
+      "regional_presence": ["China", "Egypt", "Africa", "Asia"],
+      "notes": "Largest fire alarm manufacturer in China — budget market leader",
+      "certification": "EN 54 certified, CCC (China)"
+    },
+    {
+      "id": "nittan",
+      "name": "Nittan",
+      "headquarters": "Japan",
+      "regional_presence": ["Japan", "Middle East", "Asia"],
+      "notes": "Good quality Japanese brand — competitive pricing",
+      "certification": "EN 54 certified"
+    }
+  ],
+
+  "aspirating_detection_brands": [
+    {
+      "id": "xtralis-vesda",
+      "name": "Xtralis VESDA (Carrier)",
+      "headquarters": "Australia",
+      "description": "The industry leader in aspirating smoke detection — VESDA is the generic trademark",
+      "product_lines": [
+        {"name": "VESDA VLP", "type": "Standard ASD", "sensitivity": "0.005% to 4% obscuration/m"},
+        {"name": "VESDA HPLS", "type": "High sensitivity", "sensitivity": "Ultra-high sensitivity for clean rooms"},
+        {"name": "VESDA VLI", "type": "Laser-based", "sensitivity": "Standard to high"},
+        {"name": "VESDA VEU", "type": "Economy", "sensitivity": "Entry-level ASD"}
+      ],
+      "standard": "EN 54-20 certified",
+      "notes": "VESDA is the most specified ASD brand globally — often required by insurance companies"
+    },
+    {
+      "id": "hochiki-airsense",
+      "name": "Hochiki AirSense",
+      "headquarters": "Japan/UK",
+      "description": "Competitive ASD alternative to VESDA",
+      "certification": "EN 54-20 certified"
+    },
+    {
+      "id": "wagner-titanus",
+      "name": "Wagner Titanus",
+      "headquarters": "Germany",
+      "description": "Premium German ASD — very popular in Europe",
+      "certification": "EN 54-20 certified",
+      "notes": "Preferred in German-engineered projects"
+    },
+    {
+      "id": "fenwal-protectowire",
+      "name": "Protectowire (Protectowire FireSystems)",
+      "headquarters": "USA",
+      "description": "Linear heat detection cable — not aspirating but related technology",
+      "certification": "UL listed, FM approved"
+    }
+  ],
+
+  "flame_detection_brands": [
+    {"id": "sharpeye", "name": "SharpEye (Det-Tronics)", "notes": "Industry leader — multi-spectrum UV/IR"},
+    {"id": "det-tronics", "name": "Det-Tronics (Eagle X"), "notes": "Part of Carrier — premium flame detection"},
+    {"id": "drager-flame", "name": "Dräger Flame", "notes": "German precision — industrial applications"},
+    {"id": "spectrex-sharp-eye", "name": "Spectrex", "notes": "Multi-spectrum IR3 flame detectors"}
+  ],
+
+  "brand_selection_guidance": {
+    "egypt_market": {
+      "most_specified": ["Notifier (Honeywell)", "SimplexGrinnell", "Edwards", "Hochiki", "Kiden"],
+      "premium_projects": ["Notifier", "SimplexGrinnell", "Siemens Cerberus PRO"],
+      "budget_projects": ["Kiden", "GST", "Zeta"],
+      "notes": "Notifier has the strongest local presence and support in Egypt"
+    },
+    "gulf_market": {
+      "most_specified": ["Notifier", "SimplexGrinnell", "Edwards", "Hochiki", "Advanced", "Apollo"],
+      "premium": ["Siemens", "Bosch", "SimplexGrinnell"],
+      "notes": "Gulf projects typically specify Tier 1 brands only"
+    },
+    "selection_criteria": [
+      "EN 54 certification (mandatory for code compliance)",
+      "UL listing (if project follows NFPA)",
+      "Local technical support and spare parts availability",
+      "Service/maintenance presence in the country",
+      "Compatibility with existing systems (for expansion projects)",
+      "Price competitiveness within project budget",
+      "Track record in similar projects",
+      "Programming software availability (some brands restrict software access)"
+    ]
+  }
+}
