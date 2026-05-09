@@ -1,0 +1,374 @@
+{
+  "database_name": "FireAlarmSystemDB",
+  "description": "Comprehensive schema for fire alarm system and BMS integration",
+  "tables": [
+    {
+      "name": "Facility",
+      "description": "Top-level site or campus",
+      "columns": [
+        { "name": "FacilityID", "type": "INT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "Name", "type": "NVARCHAR(200)", "nullable": false },
+        { "name": "Address", "type": "NVARCHAR(500)", "nullable": true },
+        { "name": "TimeZone", "type": "VARCHAR(50)", "nullable": true },
+        { "name": "CreatedAt", "type": "DATETIME2", "nullable": true, "default": "GETUTCDATE()" }
+      ],
+      "primary_key": ["FacilityID"]
+    },
+    {
+      "name": "Building",
+      "columns": [
+        { "name": "BuildingID", "type": "INT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "FacilityID", "type": "INT", "nullable": false, "foreign_key": { "table": "Facility", "column": "FacilityID" } },
+        { "name": "Name", "type": "NVARCHAR(200)", "nullable": false },
+        { "name": "NumberOfFloors", "type": "TINYINT", "nullable": true },
+        { "name": "ConstructionType", "type": "VARCHAR(100)", "nullable": true }
+      ],
+      "primary_key": ["BuildingID"],
+      "foreign_keys": [
+        { "columns": ["FacilityID"], "references": "Facility(FacilityID)" }
+      ]
+    },
+    {
+      "name": "FireAlarmSystem",
+      "columns": [
+        { "name": "SystemID", "type": "INT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "FacilityID", "type": "INT", "nullable": false, "foreign_key": { "table": "Facility", "column": "FacilityID" } },
+        { "name": "Name", "type": "NVARCHAR(200)", "nullable": false },
+        { "name": "InstallationDate", "type": "DATE", "nullable": true },
+        { "name": "LastMaintenanceDate", "type": "DATE", "nullable": true },
+        { "name": "Status", "type": "VARCHAR(20)", "nullable": true, "check": "IN ('Operational','Fault','Disabled','Test')", "default": "'Operational'" },
+        { "name": "ComplianceStandard", "type": "VARCHAR(50)", "nullable": false, "default": "'NFPA72'" },
+        { "name": "PanelNetworkConfig", "type": "XML", "nullable": true },
+        { "name": "CreatedAt", "type": "DATETIME2", "nullable": true, "default": "GETUTCDATE()" }
+      ],
+      "primary_key": ["SystemID"],
+      "foreign_keys": [
+        { "columns": ["FacilityID"], "references": "Facility(FacilityID)" }
+      ]
+    },
+    {
+      "name": "DeviceType",
+      "columns": [
+        { "name": "DeviceTypeID", "type": "INT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "TypeName", "type": "NVARCHAR(100)", "nullable": false, "unique": true },
+        { "name": "Description", "type": "NVARCHAR(500)", "nullable": true }
+      ],
+      "primary_key": ["DeviceTypeID"]
+    },
+    {
+      "name": "Device",
+      "description": "Base table for all addressable fire alarm devices",
+      "columns": [
+        { "name": "DeviceID", "type": "BIGINT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "SystemID", "type": "INT", "nullable": false, "foreign_key": { "table": "FireAlarmSystem", "column": "SystemID" } },
+        { "name": "DeviceTypeID", "type": "INT", "nullable": false, "foreign_key": { "table": "DeviceType", "column": "DeviceTypeID" } },
+        { "name": "SerialNumber", "type": "NVARCHAR(100)", "nullable": true, "unique": true },
+        { "name": "Manufacturer", "type": "NVARCHAR(100)", "nullable": true },
+        { "name": "Model", "type": "NVARCHAR(100)", "nullable": true },
+        { "name": "LoopID", "type": "SMALLINT", "nullable": true },
+        { "name": "AddressOnLoop", "type": "SMALLINT", "nullable": true },
+        { "name": "HardwareVersion", "type": "NVARCHAR(50)", "nullable": true },
+        { "name": "FirmwareVersion", "type": "NVARCHAR(50)", "nullable": true },
+        { "name": "InstallationDate", "type": "DATE", "nullable": true },
+        { "name": "LastTestDate", "type": "DATE", "nullable": true },
+        { "name": "NextTestDue", "type": "DATE", "nullable": true },
+        { "name": "Status", "type": "VARCHAR(20)", "nullable": false, "check": "IN ('Normal','Alarm','Fault','Disabled','Isolated','Test')", "default": "'Normal'" },
+        { "name": "BatteryLevel", "type": "DECIMAL(4,1)", "nullable": true },
+        { "name": "SignalStrength", "type": "DECIMAL(5,1)", "nullable": true },
+        { "name": "LocationDescription", "type": "NVARCHAR(500)", "nullable": true },
+        { "name": "ZoneID", "type": "INT", "nullable": true, "foreign_key": { "table": "Zone", "column": "ZoneID" } },
+        { "name": "CreatedAt", "type": "DATETIME2", "nullable": true, "default": "GETUTCDATE()" },
+        { "name": "UpdatedAt", "type": "DATETIME2", "nullable": true, "default": "GETUTCDATE()" }
+      ],
+      "primary_key": ["DeviceID"],
+      "unique_constraints": [
+        { "columns": ["SystemID", "LoopID", "AddressOnLoop"], "name": "UQ_Device_SystemLoopAddress" }
+      ],
+      "foreign_keys": [
+        { "columns": ["SystemID"], "references": "FireAlarmSystem(SystemID)" },
+        { "columns": ["DeviceTypeID"], "references": "DeviceType(DeviceTypeID)" },
+        { "columns": ["ZoneID"], "references": "Zone(ZoneID)" }
+      ],
+      "indexes": [
+        { "columns": ["Status"], "name": "IX_Device_Status" }
+      ]
+    },
+    {
+      "name": "SmokeDetector",
+      "description": "Subtype of Device",
+      "columns": [
+        { "name": "DeviceID", "type": "BIGINT", "nullable": false, "primary_key": true, "foreign_key": { "table": "Device", "column": "DeviceID", "on_delete": "CASCADE" } },
+        { "name": "DetectorType", "type": "VARCHAR(30)", "nullable": true, "check": "IN ('Ionization','Photoelectric','Beam','Duct','Multi')" },
+        { "name": "SensitivityLevel", "type": "DECIMAL(4,2)", "nullable": true },
+        { "name": "PreAlarmThreshold", "type": "DECIMAL(4,2)", "nullable": true },
+        { "name": "DriftCompensation", "type": "DECIMAL(5,2)", "nullable": true },
+        { "name": "ChamberContamination", "type": "INT", "nullable": true }
+      ],
+      "primary_key": ["DeviceID"],
+      "foreign_keys": [
+        { "columns": ["DeviceID"], "references": "Device(DeviceID)", "on_delete": "CASCADE" }
+      ]
+    },
+    {
+      "name": "HeatDetector",
+      "subtype_of": "Device",
+      "columns": [
+        { "name": "DeviceID", "type": "BIGINT", "nullable": false, "primary_key": true, "foreign_key": { "table": "Device", "column": "DeviceID", "on_delete": "CASCADE" } },
+        { "name": "DetectorType", "type": "VARCHAR(20)", "nullable": true, "check": "IN ('FixedTemp','RateOfRise','Combined')" },
+        { "name": "FixedTempThreshold", "type": "DECIMAL(5,1)", "nullable": true },
+        { "name": "RateOfRiseThreshold", "type": "DECIMAL(5,1)", "nullable": true }
+      ],
+      "primary_key": ["DeviceID"],
+      "foreign_keys": [
+        { "columns": ["DeviceID"], "references": "Device(DeviceID)", "on_delete": "CASCADE" }
+      ]
+    },
+    {
+      "name": "ManualCallPoint",
+      "subtype_of": "Device",
+      "columns": [
+        { "name": "DeviceID", "type": "BIGINT", "nullable": false, "primary_key": true, "foreign_key": { "table": "Device", "column": "DeviceID", "on_delete": "CASCADE" } },
+        { "name": "CoverType", "type": "VARCHAR(20)", "nullable": true, "check": "IN ('Glass','Resettable','Plastic')" },
+        { "name": "IsWeatherproof", "type": "BIT", "nullable": true }
+      ],
+      "primary_key": ["DeviceID"],
+      "foreign_keys": [
+        { "columns": ["DeviceID"], "references": "Device(DeviceID)", "on_delete": "CASCADE" }
+      ]
+    },
+    {
+      "name": "ControlPanel",
+      "subtype_of": "Device",
+      "columns": [
+        { "name": "DeviceID", "type": "BIGINT", "nullable": false, "primary_key": true, "foreign_key": { "table": "Device", "column": "DeviceID", "on_delete": "CASCADE" } },
+        { "name": "PanelType", "type": "VARCHAR(30)", "nullable": true, "check": "IN ('MainFACP','NetworkRepeater','SubPanel','LoopController')" },
+        { "name": "MaxLoops", "type": "SMALLINT", "nullable": true },
+        { "name": "MaxDevicesPerLoop", "type": "SMALLINT", "nullable": true },
+        { "name": "PanelStatus", "type": "VARCHAR(20)", "nullable": true, "check": "IN ('Normal','CPU Fault','PSU Fault','Battery Fault','GroundFault')" }
+      ],
+      "primary_key": ["DeviceID"],
+      "foreign_keys": [
+        { "columns": ["DeviceID"], "references": "Device(DeviceID)", "on_delete": "CASCADE" }
+      ]
+    },
+    {
+      "name": "NotificationAppliance",
+      "subtype_of": "Device",
+      "columns": [
+        { "name": "DeviceID", "type": "BIGINT", "nullable": false, "primary_key": true, "foreign_key": { "table": "Device", "column": "DeviceID", "on_delete": "CASCADE" } },
+        { "name": "ApplianceType", "type": "VARCHAR(20)", "nullable": true, "check": "IN ('Horn','Strobe','Speaker','Combo')" },
+        { "name": "SoundPressureLevel", "type": "TINYINT", "nullable": true },
+        { "name": "FlashIntensity", "type": "DECIMAL(5,1)", "nullable": true }
+      ],
+      "primary_key": ["DeviceID"],
+      "foreign_keys": [
+        { "columns": ["DeviceID"], "references": "Device(DeviceID)", "on_delete": "CASCADE" }
+      ]
+    },
+    {
+      "name": "InputOutputModule",
+      "subtype_of": "Device",
+      "columns": [
+        { "name": "DeviceID", "type": "BIGINT", "nullable": false, "primary_key": true, "foreign_key": { "table": "Device", "column": "DeviceID", "on_delete": "CASCADE" } },
+        { "name": "ModuleType", "type": "VARCHAR(20)", "nullable": true, "check": "IN ('Monitor','Control','Relay')" },
+        { "name": "SupervisedInput", "type": "BIT", "nullable": true },
+        { "name": "OutputRating", "type": "NVARCHAR(50)", "nullable": true }
+      ],
+      "primary_key": ["DeviceID"],
+      "foreign_keys": [
+        { "columns": ["DeviceID"], "references": "Device(DeviceID)", "on_delete": "CASCADE" }
+      ]
+    },
+    {
+      "name": "Floor",
+      "columns": [
+        { "name": "FloorID", "type": "INT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "BuildingID", "type": "INT", "nullable": false, "foreign_key": { "table": "Building", "column": "BuildingID" } },
+        { "name": "FloorNumber", "type": "SMALLINT", "nullable": false },
+        { "name": "Name", "type": "NVARCHAR(100)", "nullable": true }
+      ],
+      "primary_key": ["FloorID"],
+      "unique_constraints": [
+        { "columns": ["BuildingID", "FloorNumber"], "name": "UQ_Floor_BuildingNumber" }
+      ],
+      "foreign_keys": [
+        { "columns": ["BuildingID"], "references": "Building(BuildingID)" }
+      ]
+    },
+    {
+      "name": "Zone",
+      "columns": [
+        { "name": "ZoneID", "type": "INT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "FloorID", "type": "INT", "nullable": false, "foreign_key": { "table": "Floor", "column": "FloorID" } },
+        { "name": "SystemID", "type": "INT", "nullable": false, "foreign_key": { "table": "FireAlarmSystem", "column": "SystemID" } },
+        { "name": "ZoneName", "type": "NVARCHAR(100)", "nullable": false },
+        { "name": "Description", "type": "NVARCHAR(500)", "nullable": true },
+        { "name": "ZoneType", "type": "VARCHAR(20)", "nullable": true, "check": "IN ('Detection','Alarm','Both')" },
+        { "name": "EvacPriority", "type": "TINYINT", "nullable": true },
+        { "name": "Status", "type": "VARCHAR(20)", "nullable": true, "check": "IN ('Normal','Alarm','Fault','Disabled')", "default": "'Normal'" }
+      ],
+      "primary_key": ["ZoneID"],
+      "foreign_keys": [
+        { "columns": ["FloorID"], "references": "Floor(FloorID)" },
+        { "columns": ["SystemID"], "references": "FireAlarmSystem(SystemID)" }
+      ]
+    },
+    {
+      "name": "EventLog",
+      "description": "Immutable event log, partitioned by EventDate",
+      "columns": [
+        { "name": "EventID", "type": "BIGINT", "identity": true, "nullable": false },
+        { "name": "EventDate", "type": "DATE", "nullable": false, "computed": "CAST(EventTimestamp AS DATE) PERSISTED", "partition_key": true },
+        { "name": "DeviceID", "type": "BIGINT", "nullable": false, "foreign_key": { "table": "Device", "column": "DeviceID" } },
+        { "name": "EventTimestamp", "type": "DATETIME2", "nullable": false, "default": "GETUTCDATE()" },
+        { "name": "EventType", "type": "VARCHAR(30)", "nullable": false, "check": "IN ('Alarm','Fault','Isolate','Disable','Test','Reset','Supervisory','PreAlarm','Acknowledged','Restore')" },
+        { "name": "Severity", "type": "TINYINT", "nullable": false, "default": "0" },
+        { "name": "EventDescription", "type": "NVARCHAR(1000)", "nullable": true },
+        { "name": "AcknowledgedBy", "type": "INT", "nullable": true, "foreign_key": { "table": "User", "column": "UserID" } },
+        { "name": "AckTimestamp", "type": "DATETIME2", "nullable": true },
+        { "name": "ClearedBy", "type": "INT", "nullable": true, "foreign_key": { "table": "User", "column": "UserID" } },
+        { "name": "ClearTimestamp", "type": "DATETIME2", "nullable": true },
+        { "name": "IsActive", "type": "BIT", "nullable": false, "default": "1" },
+        { "name": "RelatedEventID", "type": "BIGINT", "nullable": true }
+      ],
+      "primary_key": ["EventID", "EventDate"],
+      "partition_scheme": "PartitionScheme_EventLog(EventDate)",
+      "foreign_keys": [
+        { "columns": ["DeviceID"], "references": "Device(DeviceID)" },
+        { "columns": ["AcknowledgedBy"], "references": "User(UserID)" },
+        { "columns": ["ClearedBy"], "references": "User(UserID)" }
+      ],
+      "indexes": [
+        { "name": "IX_EventLog_Device_Time", "columns": ["DeviceID", "EventTimestamp"] },
+        { "name": "IX_EventLog_Type_Time", "columns": ["EventType", "EventDate"] },
+        { "name": "IX_EventLog_Active", "columns": ["IsActive"], "filter": "IsActive = 1" }
+      ]
+    },
+    {
+      "name": "MaintenanceRecord",
+      "columns": [
+        { "name": "RecordID", "type": "BIGINT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "DeviceID", "type": "BIGINT", "nullable": false, "foreign_key": { "table": "Device", "column": "DeviceID" } },
+        { "name": "MaintenanceType", "type": "VARCHAR(30)", "nullable": false, "check": "IN ('RoutineCheck','Repair','Replacement','Cleaning','SensitivityTest','BatteryReplace')" },
+        { "name": "DatePerformed", "type": "DATETIME2", "nullable": false, "default": "GETUTCDATE()" },
+        { "name": "PerformedBy", "type": "INT", "nullable": true, "foreign_key": { "table": "User", "column": "UserID" } },
+        { "name": "Description", "type": "NVARCHAR(1000)", "nullable": true },
+        { "name": "TestResult", "type": "VARCHAR(30)", "nullable": true },
+        { "name": "NextScheduledDate", "type": "DATE", "nullable": true },
+        { "name": "PartsUsed", "type": "NVARCHAR(500)", "nullable": true },
+        { "name": "ImageAttachmentURL", "type": "NVARCHAR(500)", "nullable": true }
+      ],
+      "primary_key": ["RecordID"],
+      "foreign_keys": [
+        { "columns": ["DeviceID"], "references": "Device(DeviceID)" },
+        { "columns": ["PerformedBy"], "references": "User(UserID)" }
+      ],
+      "indexes": [
+        { "name": "IX_Maintenance_Device", "columns": ["DeviceID", "DatePerformed"] },
+        { "name": "IX_Maintenance_Due", "columns": ["NextScheduledDate"], "filter": "NextScheduledDate IS NOT NULL" }
+      ]
+    },
+    {
+      "name": "Role",
+      "columns": [
+        { "name": "RoleID", "type": "INT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "RoleName", "type": "NVARCHAR(50)", "nullable": false, "unique": true },
+        { "name": "Permissions", "type": "XML", "nullable": true }
+      ],
+      "primary_key": ["RoleID"]
+    },
+    {
+      "name": "User",
+      "columns": [
+        { "name": "UserID", "type": "INT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "Username", "type": "NVARCHAR(100)", "nullable": false, "unique": true },
+        { "name": "PasswordHash", "type": "VARBINARY(256)", "nullable": false },
+        { "name": "Email", "type": "NVARCHAR(200)", "nullable": true },
+        { "name": "FullName", "type": "NVARCHAR(200)", "nullable": true },
+        { "name": "RoleID", "type": "INT", "nullable": true, "foreign_key": { "table": "Role", "column": "RoleID" } },
+        { "name": "IsActive", "type": "BIT", "nullable": true, "default": "1" },
+        { "name": "LastLogin", "type": "DATETIME2", "nullable": true }
+      ],
+      "primary_key": ["UserID"],
+      "foreign_keys": [
+        { "columns": ["RoleID"], "references": "Role(RoleID)" }
+      ]
+    },
+    {
+      "name": "IntegrationSystem",
+      "columns": [
+        { "name": "SystemGUID", "type": "UNIQUEIDENTIFIER", "nullable": false, "primary_key": true, "default": "NEWSEQUENTIALID()" },
+        { "name": "SystemName", "type": "NVARCHAR(100)", "nullable": false, "unique": true },
+        { "name": "SystemType", "type": "VARCHAR(30)", "nullable": false },
+        { "name": "ConnectionString", "type": "NVARCHAR(500)", "nullable": true },
+        { "name": "AuthMethod", "type": "VARCHAR(20)", "nullable": true },
+        { "name": "CredentialRef", "type": "NVARCHAR(200)", "nullable": true },
+        { "name": "Status", "type": "VARCHAR(20)", "nullable": true, "check": "IN ('Online','Offline','Degraded')", "default": "'Offline'" },
+        { "name": "LastHeartbeat", "type": "DATETIME2", "nullable": true },
+        { "name": "SyncIntervalSec", "type": "INT", "nullable": true, "default": "30" }
+      ],
+      "primary_key": ["SystemGUID"]
+    },
+    {
+      "name": "IntegrationMapping",
+      "columns": [
+        { "name": "MappingID", "type": "INT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "FireAlarmSystemID", "type": "INT", "nullable": false, "foreign_key": { "table": "FireAlarmSystem", "column": "SystemID" } },
+        { "name": "TriggerCondition", "type": "NVARCHAR(1000)", "nullable": false },
+        { "name": "TargetSystemID", "type": "UNIQUEIDENTIFIER", "nullable": false, "foreign_key": { "table": "IntegrationSystem", "column": "SystemGUID" } },
+        { "name": "TargetAction", "type": "NVARCHAR(200)", "nullable": false },
+        { "name": "ActionParameters", "type": "XML", "nullable": true },
+        { "name": "Priority", "type": "TINYINT", "nullable": true, "default": "5" },
+        { "name": "IsEnabled", "type": "BIT", "nullable": true, "default": "1" },
+        { "name": "CreatedAt", "type": "DATETIME2", "nullable": true, "default": "GETUTCDATE()" }
+      ],
+      "primary_key": ["MappingID"],
+      "foreign_keys": [
+        { "columns": ["FireAlarmSystemID"], "references": "FireAlarmSystem(SystemID)" },
+        { "columns": ["TargetSystemID"], "references": "IntegrationSystem(SystemGUID)" }
+      ]
+    },
+    {
+      "name": "IntegrationOutbox",
+      "columns": [
+        { "name": "OutboxID", "type": "BIGINT", "identity": true, "nullable": false, "primary_key": true },
+        { "name": "MappingID", "type": "INT", "nullable": false, "foreign_key": { "table": "IntegrationMapping", "column": "MappingID" } },
+        { "name": "EventID", "type": "BIGINT", "nullable": false },
+        { "name": "Payload", "type": "NVARCHAR(MAX)", "nullable": true },
+        { "name": "Status", "type": "VARCHAR(10)", "nullable": true, "default": "'Pending'", "check": "IN ('Pending','Sent','Failed')" },
+        { "name": "RetryCount", "type": "TINYINT", "nullable": true, "default": "0" },
+        { "name": "CreatedAt", "type": "DATETIME2", "nullable": true, "default": "GETUTCDATE()" },
+        { "name": "LastAttemptAt", "type": "DATETIME2", "nullable": true }
+      ],
+      "primary_key": ["OutboxID"],
+      "foreign_keys": [
+        { "columns": ["MappingID"], "references": "IntegrationMapping(MappingID)" }
+      ],
+      "indexes": [
+        { "name": "IX_Outbox_Status_Retry", "columns": ["Status", "RetryCount"] }
+      ]
+    }
+  ],
+  "views": [
+    {
+      "name": "vw_DeviceStatusSummary",
+      "definition": "SELECT d.SystemID, dt.TypeName, d.Status, COUNT(*) AS DeviceCount FROM Device d JOIN DeviceType dt ON d.DeviceTypeID = dt.DeviceTypeID GROUP BY d.SystemID, dt.TypeName, d.Status"
+    },
+    {
+      "name": "vw_ZoneDailyEventCount",
+      "definition": "SELECT z.ZoneName, e.EventDate, e.EventType, COUNT(*) AS EventCount FROM EventLog e JOIN Device d ON e.DeviceID = d.DeviceID JOIN Zone z ON d.ZoneID = z.ZoneID WHERE e.EventDate >= CAST(DATEADD(DAY,-30,GETUTCDATE()) AS DATE) GROUP BY z.ZoneName, e.EventDate, e.EventType"
+    },
+    {
+      "name": "vw_MaintenanceDueNextWeek",
+      "definition": "SELECT d.DeviceID, d.SerialNumber, dt.TypeName, mr.NextScheduledDate, d.LocationDescription FROM MaintenanceRecord mr JOIN Device d ON mr.DeviceID = d.DeviceID JOIN DeviceType dt ON d.DeviceTypeID = dt.DeviceTypeID WHERE mr.NextScheduledDate BETWEEN CAST(GETUTCDATE() AS DATE) AND DATEADD(DAY,7,CAST(GETUTCDATE() AS DATE))"
+    }
+  ],
+  "inheritance_strategy": "Class Table Inheritance: Each device subtype table shares DeviceID as PK/FK referencing Device.",
+  "partitioning": {
+    "table": "EventLog",
+    "column": "EventDate",
+    "scheme": "Monthly partitions, oldest partitions switched to archive after 3 years."
+  },
+  "high_availability": "Always‑On Availability Groups / Streaming Replication, full/weekly/diff/tlog backups.",
+  "security": "TDE enabled, column‑level encryption for CredentialRef, TLS 1.2+, RBAC through roles, Row‑Level Security optional for multi‑tenancy."
+}
