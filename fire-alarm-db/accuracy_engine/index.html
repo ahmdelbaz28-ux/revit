@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireAlarmAI - Accuracy Engine</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #e2e8f0;
+            --accent: #3b82f6;
+            --error: #ef4444;
+            --success: #22c55e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .container { max-width: 800px; width: 100%; }
+        h1 { font-size: 2rem; margin-bottom: 10px; color: white; }
+        .subtitle { color: #94a3b8; margin-bottom: 30px; }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card h2 { font-size: 1.2rem; margin-bottom: 15px; color: white; }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 15px;
+            color: #e2e8f0;
+            font-family: monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button:hover { opacity: 0.9; }
+        .result { margin-top: 20px; }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .badge-success { background: var(--success); color: black; }
+        .badge-error { background: var(--error); color: white; }
+        pre {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FireAlarmAI</h1>
+        <p class="subtitle">Accuracy Engine v1 — Deterministic Fire Alarm Device Placement</p>
+
+        <div class="card">
+            <h2>Test Rooms</h2>
+            <textarea id="roomsInput">[
+  {"id": "office1", "type": "office", "area": 120, "polygon": [[0,0],[12,0],[12,10],[0,10]]},
+  {"id": "corridor1", "type": "corridor", "area": 60, "polygon": [[0,10],[12,10],[12,12],[0,12]]},
+  {"id": "storage1", "type": "storage", "area": 20, "polygon": [[12,0],[16,0],[16,5],[12,5]]},
+  {"id": "stair1", "type": "stair", "area": 9, "polygon": [[16,0],[19,0],[19,3],[16,3]]}
+]</textarea>
+            <button onclick="runEngine()">Run Engine</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function runEngine() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="card"><p>Running...</p></div>';
+
+            try {
+                const rooms = JSON.parse(document.getElementById('roomsInput').value);
+                const response = await fetch('/api/accuracy-engine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rooms })
+                });
+
+                const data = await response.json();
+
+                const isValid = data.validation.is_valid;
+                const badgeClass = isValid ? 'badge-success' : 'badge-error';
+                const badgeText = isValid ? 'VALID' : 'INVALID';
+
+                resultDiv.innerHTML = `
+                    <div class="card">
+                        <h2>Result</h2>
+                        <span class="badge ${badgeClass}">${badgeText}</span>
+                        <p style="margin-top: 10px;"><strong>Devices:</strong> ${data.total_devices}</p>
+                        <p><strong>Coverage Score:</strong> ${(data.validation.coverage_score * 100).toFixed(1)}%</p>
+                        ${data.validation.errors.length > 0 ? '<p style="color: var(--error);"><strong>Errors:</strong> ' + data.validation.errors.join(', ') + '</p>' : ''}
+                        ${data.validation.warnings.length > 0 ? '<p style="color: #f59e0b;"><strong>Warnings:</strong> ' + data.validation.warnings.join(', ') + '</p>' : ''}
+                        <pre>${JSON.stringify(data.devices, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="card"><p style="color: var(--error);">Error: ${e.message}</p></div>`;
+            }
+        }
+    </script>
+</body>
+</html>
