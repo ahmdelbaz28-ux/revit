@@ -58,11 +58,174 @@ class ManufacturerCatalog(Base):
     Currency = Column(String(3), default='USD')
     CreatedAt = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
-    device_type = relationship("DeviceType", foreign_keys=[DeviceTypeID])
+class ManufacturerCatalog(Base):
+    """Manufacturer product catalog"""
+    __tablename__ = 'ManufacturerCatalog'
+    
+    CatalogID = Column(Integer, primary_key=True, autoincrement=True)
+    DeviceTypeID = Column(Integer, ForeignKey('DeviceType.DeviceTypeID'))
+    ManufacturerName = Column(String(100), nullable=False)
+    Model = Column(String(100), nullable=False)
+    Specifications = Column(JSON)  # JSON dict of specs
+    UnitPrice = Column(Float)
+    Currency = Column(String(3), default='USD')
+    CreatedAt = Column(DateTime, default=datetime.utcnow)
 
 
 # =============================================================================
+# Route Network Seeding
+# =============================================================================
+
+def seed_route_network(session):
+    """
+    Create a standard routing network for cable routing.
+    
+    Standard floor plan: 100m x 100m
+    - Corridor lines at y=50m, y=60m (horizontal) and x=50m, x=60m (vertical)
+    - RouteNodes every 5m along corridors
+    - CableTray nodes with segments to nearest corridor
+    
+    Args:
+        session: SQLAlchemy session
+        
+    Returns:
+        Count of nodes created
+    """
+    from ai_design_integration import RouteNode, RouteSegment
+    
+    logger.info("Creating route network nodes...")
+    
+    node_count = 0
+    segment_count = 0
+    corridor_y = [50.0, 60.0]  # Horizontal corridors
+    corridor_x = [50.0, 60.0]  # Vertical corridors
+    
+    # Create corridor nodes
+    for y in corridor_y:
+        for x in range(0, 101, 5):
+            if x % 5 == 0:
+                node = RouteNode(
+                    FloorID=1,
+                    XCoord=float(x),
+                    YCoord=float(y),
+                    ZCoord=3.0,
+                    NodeType='junction',
+                    Description=f'Corridor Node x={x}, y={y}'
+                )
+                session.add(node)
+                node_count += 1
+    
+    for x in corridor_x:
+        for y in range(0, 101, 5):
+            if y % 5 == 0 and y not in corridor_y:
+                node = RouteNode(
+                    FloorID=1,
+                    XCoord=float(x),
+                    YCoord=float(y),
+                    ZCoord=3.0,
+                    NodeType='junction',
+                    Description=f'Corridor Node x={x}, y={y}'
+                )
+                session.add(node)
+                node_count += 1
+    
+    session.commit()
+    logger.info(f"Created {node_count} corridor nodes")
+    
+    # Create segments connecting adjacent nodes
+    nodes = session.query(RouteNode).filter(RouteNode.FloorID == 1).all()
+    nodes_by_coord = {(n.XCoord, n.YCoord): n for n in nodes}
+    
+    # Horizontal segments on y=50 and y=60
+    for y in corridor_y:
+        prev_x = None
+        for x in range(0, 101, 5):
+            node = nodes_by_coord.get((float(x), float(y)))
+            if node and prev_x is not None:
+                prev_node = nodes_by_coord.get((float(prev_x), float(y)))
+                if prev_node and node.NodeID != prev_node.NodeID:
+                    segment = RouteSegment(
+                        FloorID=1,
+                        FromNodeID=prev_node.NodeID,
+                        ToNodeID=node.NodeID,
+                        SegmentType='Corridor',
+                        LengthMeters=5.0,
+                        IsAccessible=True
+                    )
+                    session.add(segment)
+                    segment_count += 1
+            prev_x = x
+    
+    # Vertical segments on x=50 and x=60  
+    for x in corridor_x:
+        prev_y = None
+        for y in range(0, 101, 5):
+            node = nodes_by_coord.get((float(x), float(y)))
+            if node and prev_y is not None:
+                prev_node = nodes_by_coord.get((float(x), float(prev_y)))
+                if prev_node and node.NodeID != prev_node.NodeID:
+                    segment = RouteSegment(
+                        FloorID=1,
+                        FromNodeID=prev_node.NodeID,
+                        ToNodeID=node.NodeID,
+                        SegmentType='Corridor',
+                        LengthMeters=5.0,
+                        IsAccessible=True
+                    )
+                    session.add(segment)
+                    segment_count += 1
+            prev_y = y
+    
+    session.commit()
+    logger.info(f"Created {segment_count} corridor segments")
+    
+    # Create CableTray nodes (10 nodes + segments)
+    tray_positions = [(10, 20), (20, 30), (30, 40), (70, 80), (80, 90),
+                     (10, 70), (20, 80), (30, 90), (90, 10), (80, 20)]
+    
+    for x, y in tray_positions:
+        # Find nearest corridor node
+        nearest = None
+        min_dist = float('inf')
+        for node in nodes:
+            dist = ((node.XCoord - x) ** 2 + (node.YCoord - y) ** 2) ** 0.5
+            if dist < min_dist:
+                min_dist = dist
+                nearest = node
+        
+        if nearest:
+            tray_node = RouteNode(
+                FloorID=1,
+                XCoord=float(x),
+                YCoord=float(y),
+                ZCoord=3.0,
+                NodeType='cable_tray',
+                Description=f'CableTray at x={x}, y={y}'
+            )
+            session.add(tray_node)
+            session.flush()
+            node_count += 1
+            
+            # Connect to nearest corridor
+            seg = RouteSegment(
+                FloorID=1,
+                FromNodeID=tray_node.NodeID,
+                ToNodeID=nearest.NodeID,
+                SegmentType='CableTray',
+                LengthMeters=float(min_dist),
+                IsAccessible=True
+            )
+            session.add(seg)
+            segment_count += 1
+    
+    session.commit()
+    logger.info(f"Created 10 CableTray nodes with segments")
+    
+    logger.info(f"Route network seeding complete: {node_count} nodes, {segment_count} segments")
+    return node_count
+
+
+# Relationships
 # Domain Seeding
 # =============================================================================
 
@@ -607,7 +770,8 @@ def seed_all(session):
         counts['device_types'] = seed_device_types(session)
         counts['standards'] = seed_design_standards(session)
         counts['catalogs'] = seed_manufacturer_catalogs(session)
-        
+        counts['route_nodes'] = seed_route_network(session)
+
         logger.info("="*60)
         logger.info("SEEDING COMPLETE")
         logger.info("="*60)
@@ -615,6 +779,7 @@ def seed_all(session):
         logger.info(f"  Device Types: {counts['device_types']}")
         logger.info(f"  Standards: {counts['standards']}")
         logger.info(f"  Catalog Items: {counts['catalogs']}")
+        logger.info(f"  Route Nodes: {counts['route_nodes']}")
         
         return counts
         

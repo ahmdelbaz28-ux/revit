@@ -746,6 +746,42 @@ class EngineeringLogicFactory:
             except ImportError:
                 pass
         
+        # Load AccessControlLogic
+        if logic_class is None and domain == 'AccessControl':
+            try:
+                from access_control_logic import AccessControlLogic
+                cls._LOGICS['AccessControl'] = AccessControlLogic
+                logic_class = AccessControlLogic
+            except ImportError:
+                pass
+        
+        # Load DataNetworkLogic
+        if logic_class is None and domain == 'DataNetwork':
+            try:
+                from data_network_logic import DataNetworkLogic
+                cls._LOGICS['DataNetwork'] = DataNetworkLogic
+                logic_class = DataNetworkLogic
+            except ImportError:
+                pass
+        
+        # Load LightingLogic
+        if logic_class is None and domain == 'Lighting':
+            try:
+                from lighting_logic import LightingLogic
+                cls._LOGICS['Lighting'] = LightingLogic
+                logic_class = LightingLogic
+            except ImportError:
+                pass
+        
+        # Load PowerLogic
+        if logic_class is None and domain == 'Power':
+            try:
+                from power_logic import PowerLogic
+                cls._LOGICS['Power'] = PowerLogic
+                logic_class = PowerLogic
+            except ImportError:
+                pass
+        
         if logic_class is None:
             logger.warning(f"No logic for domain {domain}, using FireAlarm as default")
             logic_class = cls._LOGICS['FireAlarm']
@@ -827,6 +863,10 @@ class EngineeringDesignEngine:
         'FireAlarm': 'FireAlarmLogic',
         'CCTV': 'CCTVLogic',
         'PublicAddress': 'PublicAddressLogic',
+        'AccessControl': 'AccessControlLogic',
+        'DataNetwork': 'DataNetworkLogic',
+        'Lighting': 'LightingLogic',
+        'Power': 'PowerLogic',
     }
     
     def __init__(self, db_manager: DatabaseManager, domain: str = 'FireAlarm'):
