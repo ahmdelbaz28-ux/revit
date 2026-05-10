@@ -1,0 +1,25 @@
+FireAlarmAI Demo Output - Demo Office Building
+============================================
+
+Project: Demo Office Building
+Client: Demo Corp
+Location: Cairo, Egypt
+Area: 500 m²
+Floors: 2
+
+DEVICE SCHEDULE:
+-----------------
+| Device | Qty | Unit Price | Total |
+| SmokeDetector | 24 | 50 | ,600 |
+| HeatDetector | 4 | 75 | 00 |
+| Speaker | 8 | 20 | ,760 |
+| ManualCallPoint | 6 | 5 | 10 |
+| ControlPanel | 1 | ,000 | ,000 |
+-----------------
+TOTAL: 1,570
+
+Labor (50%): ,785
+Grand Total: 7,355
+
+Generated: 2026-05-09
+Domain: FireAlarm
