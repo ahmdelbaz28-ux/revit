@@ -194,7 +194,7 @@ resource "aws_security_group" "postgres_database" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.ecs_container_sg.id]
+    security_groups = [aws_security_group.ecs_container_security_group.id]
     description     = "PostgreSQL access from ECS containers"
   }
 
@@ -263,7 +263,7 @@ resource "aws_db_instance" "postgres_database" {
   port                    = 5432
   multi_az                = true
   db_subnet_group_name     = aws_db_subnet_group.database_subnet_group.name
-  vpc_security_group_ids = [aws_security_group.postgres_database.id]
+  vpc_security_group_ids = [aws_security_group.rds_security_group.id]
   parameter_group_name   = aws_db_parameter_group.postgres_parameters.name
   publicly_accessible   = false
   backup_retention_period = 30
@@ -442,7 +442,7 @@ resource "aws_security_group" "ecs_container_sg" {
     from_port       = 8000
     to_port         = 8000
     protocol        = "tcp"
-    security_groups = [aws_security_group.ecs_alb_sg.id]
+    security_groups = [aws_security_group.alb_security_group.id]
     description     = "Container access from ALB"
   }
 
@@ -483,7 +483,7 @@ resource "aws_lb" "main" {
   name               = "${var.project_name}-${var.environment_name}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.ecs_alb_sg.id]
+  security_groups    = [aws_security_group.alb_security_group.id]
   subnets            = aws_subnet.public[*].id
 
   access_logs {
@@ -623,7 +623,7 @@ resource "aws_ecs_service" "api" {
 
   network_configuration {
     subnets          = aws_subnet.private[*].id
-    security_groups  = [aws_security_group.ecs_container_sg.id]
+    security_groups  = [aws_security_group.ecs_container_security_group.id]
     assign_public_ip = false
   }
 

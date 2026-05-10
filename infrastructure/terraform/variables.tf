@@ -150,3 +150,8 @@ variable "acm_certificate_arn" {
   type        = string
   default     = ""
 }
+
+variable "aws_account_id" {
+  description = "AWS Account ID for ARN construction"
+  type        = string
+}
