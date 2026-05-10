@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireAlarmAI - Sovereign Proof Viewer</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 900px; margin: 30px auto; padding: 20px; background: #f8f9fa; }
+        .drop-zone { border: 3px dashed #adb5bd; padding: 40px; text-align: center; background: white; margin: 15px 0; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+        .drop-zone:hover { border-color: #007bff; background: #f0f7ff; }
+        .result { padding: 20px; margin: 20px 0; border-radius: 8px; font-weight: bold; }
+        .accepted { background: #d4edda; color: #155724; border: 2px solid #28a745; }
+        .rejected { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
+        .hash { font-family: 'Courier New', monospace; font-size: 0.8em; word-break: break-all; }
+        canvas { width: 100%; height: 300px; background: white; border: 1px solid #ccc; margin: 20px 0; }
+        input { display: none; }
+        .info { background: #e2e3e5; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🛡️ FireAlarmAI - Sovereign Proof Viewer</h1>
+    <p>Zero-Server | Offline | Deterministic</p>
+
+    <div class="drop-zone" id="proofZone">📁 Drop or click to upload <strong>proof.json</strong></div>
+    <input type="file" id="proofInput" accept=".json">
+    
+    <div class="drop-zone" id="snapshotZone">📁 Drop or click to upload <strong>snapshot.json</strong></div>
+    <input type="file" id="snapshotInput" accept=".json">
+
+    <div id="result"></div>
+    <div id="map-container" style="display:none;">
+        <h3>📍 Spatial Verification Map</h3>
+        <canvas id="mapCanvas"></canvas>
+    </div>
+    <div id="log" class="info" style="display:none;"></div>
+
+    <script src="lib/crypto-js.min.js"></script>
+    <script>
+        let proofData = null, snapshotData = null;
+        
+        function canonicalJSON(obj) {
+            // FIX: Exact alignment with Python's sort_keys=True, separators=(',', ':')
+            if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
+            if (Array.isArray(obj)) {
+                return '[' + obj.map(canonicalJSON).join(',') + ']';
+            }
+            const keys = Object.keys(obj).sort();
+            const items = keys.map(k => canonicalJSON(k) + ':' + canonicalJSON(obj[k]));
+            return '{' + items.join(',') + '}';
+        }
+
+        function computeGeoHash(snapshot) {
+            const canonStr = canonicalJSON(snapshot);
+            return CryptoJS.SHA256(canonStr).toString();
+        }
+
+        function setupDropZone(zoneId, inputId, callback) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+            zone.addEventListener('click', () => input.click());
+            zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.background = '#e9ecef'; });
+            zone.addEventListener('dragleave', () => zone.style.background = 'white');
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.style.background = 'white';
+                const file = e.dataTransfer.files[0];
+                const reader = new FileReader();
+                reader.onload = ev => callback(JSON.parse(ev.target.result));
+                reader.readAsText(file);
+            });
+            input.addEventListener('change', e => {
+                const reader = new FileReader();
+                reader.onload = ev => callback(JSON.parse(ev.target.result));
+                reader.readAsText(e.target.files[0]);
+            });
+        }
+
+        setupDropZone('proofZone', 'proofInput', data => { proofData = data; verifyAll(); });
+        setupDropZone('snapshotZone', 'snapshotInput', data => { snapshotData = data; verifyAll(); });
+
+        function verifyAll() {
+            if (!proofData || !snapshotData) return;
+            
+            // Extract the pure geometric snapshot
+            const geom = snapshotData.snapshot || snapshotData;
+            const computedGeoHash = computeGeoHash(geom);
+            
+            const resultDiv = document.getElementById('result');
+            const logDiv = document.getElementById('log');
+            const mapContainer = document.getElementById('map-container');
+            
+            if (computedGeoHash !== proofData.geo_hash) {
+                resultDiv.innerHTML = `<div class="result rejected">❌ REJECTED - Geometry Hash Mismatch<br><span class="hash">Proof: ${proofData.geo_hash}</span><br><span class="hash">Computed: ${computedGeoHash}</span></div>`;
+                mapContainer.style.display = 'none';
+                return;
+            }
+
+            resultDiv.innerHTML = `<div class="result accepted">✅ ACCEPTED - Proof is Mathematically Valid<br>Clause: ${proofData.clause_id} (${proofData.clause_edition})</div>`;
+            
+            // Render the truth map
+            renderMap(geom);
+            mapContainer.style.display = 'block';
+            
+            logDiv.style.display = 'block';
+            logDiv.innerHTML = `<strong>Proof Token:</strong> ${proofData.proof_token.slice(0, 32)}...<br><strong>Source File:</strong> ${snapshotData.source_file_hash || 'N/A'}`;
+        }
+
+        function renderMap(geom) {
+            const canvas = document.getElementById('mapCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = geom.width, h = geom.height;
+            const scale = Math.min(canvas.width / w, canvas.height / h) * 0.9;
+            const offX = (canvas.width - w * scale) / 2;
+            const offY = (canvas.height - h * scale) / 2;
+
+            // Clear
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Bounding Box (The Zone)
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(offX, offY, w * scale, h * scale);
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(offX, offY, w * scale, h * scale);
+
+            // Draw Obstacles (Walls)
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 3;
+            (geom.obstacles || []).forEach(o => {
+                ctx.beginPath();
+                ctx.moveTo(offX + o.x1 * scale, offY + o.y1 * scale);
+                ctx.lineTo(offX + o.x2 * scale, offY + o.y2 * scale);
+                ctx.stroke();
+            });
+
+            // Draw Detectors with Coverage Radius
+            (geom.detectors || []).forEach(d => {
+                // Coverage Radius (6.4m default for smoke)
+                ctx.beginPath();
+                ctx.arc(offX + d.x * scale, offY + d.y * scale, 6.4 * scale, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(0, 123, 255, 0.1)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0, 123, 255, 0.5)';
+                ctx.stroke();
+                
+                // Detector Point
+                ctx.beginPath();
+                ctx.arc(offX + d.x * scale, offY + d.y * scale, 4, 0, 2 * Math.PI);
+                ctx.fillStyle = 'blue';
+                ctx.fill();
+            });
+        }
+    </script>
+</body>
+</html>
