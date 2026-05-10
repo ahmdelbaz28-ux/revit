@@ -1,4 +1,5 @@
-from core.risk_tensor.system_topology import build_system_topology, apply_perturbation, calculate_risk_field
+from core.risk_tensor.system_topology import build_system_topology
+from core.risk_tensor.propagation_engine import PropagationEngine
 from core.risk_tensor.aggregator import aggregate_tensors
 from core.risk_tensor.tensor_types import RiskTensor, ImpactVector
 from core.monte_carlo.scenario_generator import generate_scenario
@@ -7,11 +8,14 @@ from core.monte_carlo.scenario_generator import generate_scenario
 def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, num_scenarios: int = 100) -> dict:
     all_tensors = []
     base_coverage = validation.get("coverage", validation.get("overall_coverage", 0.95))
+    engine = PropagationEngine()
 
     topologies = {}
     for room in rooms:
         topology = build_system_topology(room, devices)
         topologies[room.get("id")] = topology
+
+    all_evolution_summaries = []
 
     for scenario_id in range(num_scenarios):
         for room in rooms:
@@ -22,15 +26,14 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
             if not topology:
                 continue
 
-            perturbed = apply_perturbation(topology, scenario)
+            evolved_states = engine.run_propagation(topology, scenario, max_steps=3)
+            evolution_summary = engine.get_evolution_summary()
+            all_evolution_summaries.append(evolution_summary)
 
-            risk_values = []
-            for key in topology.spatial_index:
-                for (x, y) in topology.spatial_index[key]:
-                    risk = calculate_risk_field(perturbed, x, y)
-                    risk_values.append(risk)
+            total_failed = evolution_summary.get("final_failed_count", 0)
+            total_nodes = len(topology.nodes)
+            avg_risk = total_failed / max(total_nodes, 1)
 
-            avg_risk = sum(risk_values) / len(risk_values) if risk_values else 0.0
             coverage_after = base_coverage * (1 - avg_risk * 0.5)
 
             coverage_loss = max(0.0, base_coverage - coverage_after)
@@ -66,6 +69,9 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
 
     composite_index = aggregate_tensors(all_tensors)
 
+    avg_cascading = sum(s["cascading_failures"] for s in all_evolution_summaries) / max(len(all_evolution_summaries), 1)
+    avg_steps = sum(s["total_steps"] for s in all_evolution_summaries) / max(len(all_evolution_summaries), 1)
+
     topology_summary = {}
     for room_id, topology in topologies.items():
         topology_summary[room_id] = {
@@ -81,7 +87,13 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
         "scenarios_evaluated": num_scenarios,
         "tensors_generated": len(all_tensors),
         "has_system_topology": True,
+        "has_propagation_engine": True,
         "topologies": topology_summary,
+        "propagation_stats": {
+            "average_cascading_failures_per_scenario": round(avg_cascading, 1),
+            "average_propagation_steps": round(avg_steps, 1),
+            "propagation_rules_count": len(engine.rules)
+        },
         "composite_risk_index": composite_index.scalar,
         "risk_level": composite_index.risk_level,
         "confidence_interval": {
