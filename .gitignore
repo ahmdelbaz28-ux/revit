@@ -41,10 +41,27 @@ Thumbs.db
 *.log
 logs/
 
-# Certificates and keys
-*.pem
-*.key
-*.crt
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Secrets
+credentials.json
+secrets/
+keys/
+
+# Dataset and models
+dataset/
+models/
+runs/
+uploads/
+temp/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
 
 # Database
 *.db
