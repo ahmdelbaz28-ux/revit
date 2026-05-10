@@ -13,10 +13,15 @@ Date: 2026-05-09
 
 import os
 import json
+import sys
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
+
+# Add rules_engine to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'rules_engine'))
+from core.engine import run_fire_alarm_engine
 
 # SQLAlchemy imports
 from sqlalchemy import (
@@ -565,33 +570,42 @@ class FireAlarmLogic(EngineeringLogic):
         }
         analysis = self.analyze_room(room_data)
         
-        # Calculate grid for detectors
-        detectors = analysis['detectors_needed']
-        import math
-        cols = math.ceil(math.sqrt(detectors))
-        rows = math.ceil(detectors / cols)
-        
-        spacing_x = room.Length / (cols + 1) if room.Length else 1
-        spacing_y = room.Width / (rows + 1) if room.Width else 1
-        
-        # Place detectors
-        for row in range(rows):
-            for col in range(cols):
-                if len(devices) < detectors:
-                    x = spacing_x * (col + 1)
-                    y = spacing_y * (row + 1)
-                    z = (room.Height or 3) - 0.1
-                    
-                    device = AIDesignDevice(
-                        SessionID=session_id,
-                        RoomID=room.RoomID,
-                        ProposedType='SmokeDetector',
-                        X=x, Y=y, Z=z,
-                        Confidence=0.92,
-                        AI_Justification=analysis['justification']
-                    )
-                    devices.append(device)
-        
+        # Calculate grid for detectors using rules engine
+        length = float(room.Length or 0)
+        width = float(room.Width or 0)
+
+        # Create polygon from room bounds
+        if length > 0 and width > 0:
+            polygon = [(0, 0), (length, 0), (length, width), (0, width)]
+        else:
+            polygon = []
+
+        room_data = {
+            "id": str(room.RoomID),
+            "type": room.RoomType or 'office',
+            "area": room.Area or (length * width),
+            "polygon": polygon
+        }
+
+        # Run rules engine
+        result = run_fire_alarm_engine([room_data])
+
+        # Map rules engine devices to AIDesignDevice objects
+        for dev in result.get("devices", []):
+            device_type = "SmokeDetector" if dev["type"] == "smoke" else "HeatDetector"
+
+            device = AIDesignDevice(
+                SessionID=session_id,
+                RoomID=room.RoomID,
+                ProposedType=device_type,
+                X=dev["x"],
+                Y=dev["y"],
+                Z=2.7,
+                Confidence=0.95,
+                AI_Justification=f"Rules engine placement at ({dev['x']:.1f}, {dev['y']:.1f})"
+            )
+            devices.append(device)
+
         # Place notification (speaker) if needed
         if analysis['needs_notification']:
             device = AIDesignDevice(

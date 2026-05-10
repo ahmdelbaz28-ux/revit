@@ -218,6 +218,17 @@ def get_domains():
         "domains": domains,
         "registry": EngineeringDesignEngine.domain_registry,
         "default": "FireAlarm"
+
+@app.post("/api/rules-engine")
+def run_rules_engine(rooms: List[dict]):
+    """Run the Fire Alarm Rules Engine for device placement.
+    
+    Request body: list of Room objects with id, type, area, polygon
+    Response: devices, zones, validation report
+    """
+    from rules_engine.core.engine import run_fire_alarm_engine
+    return run_fire_alarm_engine(rooms)
+
     }
 
 
