@@ -1,64 +1,69 @@
 """
-Validation Layer - Compliance Oracle
-=============================
-Deterministic compliance evaluation layer that invokes the Engine and Normalizer.
-Ensures:
-1. Determinism: same inputs produce bit-identical outputs
-2. Clarity: returns one of three states: PASS, FAIL, REJECTED
-3. Comparability: can detect behavioral changes between code versions
+Validation Layer - Compliance Oracle (Truth-Verification Kernel)
+=============================================================
+Rewritten to be a truth-verification kernel, no I/O.
+
+Uses core/truth_model.py as the single source of truth.
+Outputs only: PASS, FAIL, REJECTED_HARD, REJECTED_AMBIGUOUS
 """
 
 import hashlib
 import json
 import os
 import sys
-from typing import List, Optional, Tuple
-from dataclasses import dataclass, field
+from typing import List, Tuple
 
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from validation.tolerance_model import ToleranceModel
+# NEW IMPORTS - only from core and validation layers
+from core.models import Room, Device, Obstruction, Violation
+from core.truth_model import evaluate_truth, TruthState, quantize_point
 from validation.spatial_normalizer import SpatialNormalizer
-from spatial_constraint_engine import (
-    Room, Device, Obstruction, SpatialValidator, 
-    NFPAStandard, Violation, NFPA72Spacings
-)
+from validation.tolerance_model import ToleranceModel
+from spatial_field_engine import evaluate_compliance, NFPAConstraintModel
 
 
 # =============================================================================
-# Checksum Function
+# Semantic Checksum (no message)
 # =============================================================================
 
-def _violations_checksum(violations: List[Violation]) -> str:
+def _semantic_checksum(violations: List[Violation]) -> str:
     """
-    Generate SHA256 checksum from violations list to ensure output determinism.
-    Sorts violations by rule and device_id for consistent ordering.
+    Calculate SHA256 using ONLY:
+    - rule
+    - device_id
+    - location (quantized to 0.01m grid)
+    - value and threshold with 6 decimal places
+    
+    Does NOT use message.
     """
     if not violations:
-        # Empty violations produce a well-known checksum
         return hashlib.sha256(b"").hexdigest()
     
     data = ""
     for v in sorted(violations, key=lambda x: (x.rule, x.device_id)):
-        # Format each violation with fixed-point precision for determinism
-        data += f"{v.rule}|{v.device_id}|{v.severity}|{v.message}|{v.value:.6f}|{v.threshold:.6f}\n"
+        # Quantize location
+        loc = v.location if v.location else (0, 0)
+        qx, qy = quantize_point(loc) if hasattr(loc, 'x') else (0, 0)
+        
+        data += f"{v.rule}|{v.device_id}|{qx:.2f}|{qy:.2f}|{v.value:.6f}|{v.threshold:.6f}\n"
     
     return hashlib.sha256(data.encode()).hexdigest()
 
 
 # =============================================================================
-# Compliance Oracle
+# Compliance Oracle (Truth-Verification Kernel)
 # =============================================================================
 
 class ComplianceOracle:
     """
-    Top-layer that invokes Engine and Normalizer and ensures deterministic evaluation.
+    Truth-verification kernel.
     
-    Returns one of three states:
-    - PASS: All validations passed
-    - FAIL: Validation completed with violations found
-    - REJECTED: Cannot process due to critical geometry errors
+    Invokes Normalizer, then Engine, then evaluates truth.
+    Returns ONLY: PASS, FAIL, REJECTED_HARD, REJECTED_AMBIGUOUS
+    
+    This Oracle does NOT perform I/O. It accepts direct model inputs.
     """
     
     def __init__(self, tolerance_model: ToleranceModel = None):
@@ -66,53 +71,39 @@ class ComplianceOracle:
             tolerance_model = ToleranceModel()
         self.tolerance_model = tolerance_model
         self.normalizer = SpatialNormalizer(tolerance_model)
-        
-        # Default to NFPA 72 standard
-        self.standard = NFPAStandard(
-            code="NFPA72",
-            edition="2022",
-            spacing_rules=NFPA72Spacings.DETECTOR_MAX_SPACING
-        )
+        self.model = NFPAConstraintModel()
     
-    def evaluate(
-        self, 
-        ifc_path: str, 
+    def verify_truth(
+        self,
+        room: Room,
+        devices: List[Device],
+        obstructions: List[Obstruction],
         source_units: str = "meters"
     ) -> dict:
         """
-        Run full pipeline on an IFC file.
+        Full truth-verification path:
+        1. Normalize inputs via Normalizer
+        2. If rejected -> REJECTED_HARD or REJECTED_AMBIGUOUS
+        3. Run evaluate_compliance on normalized inputs
+        4. Call evaluate_truth(..., violations, repaired=...) for final state
+        5. Generate semantic checksum
+        6. Return dict with status, violations, checksum, audit_trail
         
-        Args:
-            ifc_path: Path to IFC file
-            source_units: Source units (feet, meters, etc.)
-            
-        Returns dict containing:
-        - status: "PASS" | "FAIL" | "REJECTED"
-        - violations_count: int
-        - violations: list
-        - audit_trail: str
-        - checksum: str (SHA256 for deterministic output verification)
+        Returns:
+            dict with:
+            - status: PASS | FAIL | REJECTED_HARD | REJECTED_AMBIGUOUS
+            - violations_count: int
+            - violations: list
+            - audit_trail: str
+            - checksum: str
         """
         from validation.spatial_normalizer import GeometryError, ErrorSeverity
         
         violations: List[Violation] = []
         audit_trail = []
-        status = "PASS"
+        repaired = False
         
-        # Step 1: Parse IFC file
-        try:
-            room, devices, obstructions = self._parse_ifc(ifc_path)
-            audit_trail.append(f"Parsed IFC: {len(devices)} devices, {len(obstructions)} obstructions")
-        except Exception as e:
-            return {
-                "status": "REJECTED",
-                "violations_count": 0,
-                "violations": [],
-                "audit_trail": f"Failed to parse IFC: {str(e)}",
-                "checksum": _violations_checksum([])
-            }
-        
-        # Step 2: Normalize geometry
+        # Step 1: Normalize geometry
         normalized_room, norm_devices, norm_obs, norm_errors = self.normalizer.normalize(
             room, devices, obstructions, source_units
         )
@@ -120,238 +111,108 @@ class ComplianceOracle:
         # Check for critical geometry errors
         critical_errors = [e for e in norm_errors if e.severity == ErrorSeverity.CRITICAL]
         if critical_errors:
-            status = "REJECTED"
             for e in critical_errors:
-                audit_trail.append(f"[REJECTED] {e.entity_id}: {e.message}")
+                audit_trail.append(f"[REJECTED_HARD] {e.entity_id}: {e.message}")
             return {
-                "status": status,
+                "status": "REJECTED_HARD",
                 "violations_count": 0,
                 "violations": [],
                 "audit_trail": "\n".join(audit_trail),
-                "checksum": _violations_checksum([])
+                "checksum": _semantic_checksum([])
             }
         
-        # Log warnings/repairs
-        for e in norm_errors:
+        # Track repairs
+        repaired_errors = [e for e in norm_errors if e.severity == ErrorSeverity.REPAIRED]
+        if repaired_errors:
+            repaired = True
+            for e in repaired_errors:
+                audit_trail.append(f"[REPAIRED] {e.entity_id}: {e.message}")
+        
+        # Log warnings
+        warning_errors = [e for e in norm_errors if e.severity == ErrorSeverity.WARNING]
+        for e in warning_errors:
             audit_trail.append(f"[{e.severity}] {e.entity_id}: {e.message}")
         
-        # Step 3: Run validation engine
+        # Step 2 & 3: Run evaluation engine
         if normalized_room and norm_devices:
-            engine = SpatialValidator(self.standard)
-            violations = engine.validate_room(normalized_room, norm_devices, norm_obs)
+            result, engine_violations = evaluate_compliance(
+                normalized_room, norm_devices, norm_obs, self.model
+            )
+            violations = engine_violations
             
             for v in violations:
                 audit_trail.append(f"[{v.severity}] {v.rule}: {v.message}")
         
-        # Determine final status
-        if violations:
-            status = "FAIL"
+        # Step 4: Evaluate truth using core.truth_model
+        truth_state = evaluate_truth(
+            normalized_room,
+            norm_devices,
+            norm_obs,
+            violations,
+            repaired=repaired
+        )
         
-        # Generate checksum
-        checksum = _violations_checksum(violations)
+        # Map TruthState to output status
+        status_map = {
+            TruthState.PASS: "PASS",
+            TruthState.FAIL: "FAIL",
+            TruthState.REJECTED_HARD: "REJECTED_HARD",
+            TruthState.REJECTED_AMBIGUOUS: "REJECTED_AMBIGUOUS"
+        }
+        final_status = status_map.get(truth_state, "FAIL")
+        
+        # If engine returned REJECTED_AMBIGUOUS via truth evaluation
+        if truth_state == TruthState.REJECTED_AMBIGUOUS:
+            final_status = "REJECTED_AMBIGUOUS"
+            audit_trail.append("[REJECTED_AMBIGUOUS] Ambiguous geometry detected")
+        
+        # Step 5: Generate semantic checksum
+        checksum = _semantic_checksum(violations)
         
         return {
-            "status": status,
+            "status": final_status,
             "violations_count": len(violations),
             "violations": [
                 {
                     "rule": v.rule,
                     "device_id": v.device_id,
                     "severity": v.severity,
-                    "message": v.message,
                     "value": v.value,
-                    "threshold": v.threshold
+                    "threshold": v.threshold,
+                    "location": (quantize_point(v.location) if v.location else None)
                 }
                 for v in violations
             ],
             "audit_trail": "\n".join(audit_trail),
             "checksum": checksum
         }
-    
-    def _parse_ifc(self, ifc_path: str) -> Tuple[Room, List[Device], List[Obstruction]]:
-        """
-        Parse IFC file and extract room, devices, and obstructions.
-        Uses ifcopenshell if available, otherwise creates minimal test data.
-        """
-        try:
-            import ifcopenshell
-            import ifcopenshell.api.owner_history
-        except ImportError:
-            # No ifcopenshell - create minimal test data
-            return self._create_test_data()
-        
-        # Parse IFC file
-        if not os.path.exists(ifc_path):
-            raise FileNotFoundError(f"IFC file not found: {ifc_path}")
-        
-        ifc = ifcopenshell.open(ifc_path)
-        
-        # Extract building
-        building = ifc.by_type("IfcBuilding")[0] if ifc.by_type("IfcBuilding") else None
-        
-        # Extract spaces (rooms)
-        spaces = ifc.by_type("IfcSpace")
-        rooms = []
-        
-        for space in spaces:
-            # Try to get geometry
-            if hasattr(space, "Representation") and space.Representation:
-                for rep in space.Representation.Representations:
-                    if rep.RepresentationIdentifier == "Body":
-                        geom = rep.Items[0]
-                        # Get coordinates from geometry
-                        # This is simplified - real IFC parsing is more complex
-                        pass
-            
-            # For now, create room from bounding box
-            rooms.append(Room(
-                id=str(space.GlobalId) if hasattr(space, "GlobalId") else space.id,
-                name=space.Name if hasattr(space, "Name") and space.Name else "Room",
-                geometry=space.geometry if hasattr(space, "geometry") else None,
-                ceiling_height=3.0,  # Default
-                ceiling_type="SMOOTH"
-            ))
-        
-        # Extract items (devices/sensors)
-        devices = []
-        # Search for fire alarm devices
-        device_types = [
-            "IfcFireAlarm", "IfcAlarm", "IfcSensor", "IfcDetector",
-            "IfcFlowInstrument", "IfcController"
-        ]
-        
-        for dtype in device_types:
-            items = ifc.by_type(dtype)
-            for item in items:
-                devices.append(Device(
-                    id=str(item.GlobalId) if hasattr(item, "GlobalId") else item.id,
-                    device_type=dtype.replace("Ifc", ""),
-                    position=self._get_location(item),
-                    z_height=2.4,
-                    coverage_radius=4.6
-                ))
-        
-        # Extract obstructions
-        obstructions = []
-        
-        # Use test data if nothing found
-        if not rooms or not devices:
-            return self._create_test_data()
-        
-        return rooms[0], devices, obstructions
-    
-    def _get_location(self, entity) -> 'Point':
-        """Extract location from IFC entity"""
-        from shapely.geometry import Point
-        
-        if hasattr(entity, "ObjectPlacement"):
-            placement = entity.ObjectPlacement
-            if hasattr(placement, "Location"):
-                loc = placement.Location
-                if hasattr(loc, "Coordinates"):
-                    coords = loc.Coordinates
-                    return Point(
-                        coords[0] if len(coords) > 0 else 0,
-                        coords[1] if len(coords) > 1 else 0
-                    )
-        
-        return Point(0, 0)
-    
-    def _create_test_data(self) -> Tuple[Room, List[Device], List[Obstruction]]:
-        """Create minimal test data when ifcopenshell is unavailable"""
-        from shapely.geometry import Point, Polygon
-        
-        room = Room(
-            id="test_room",
-            name="Test Room",
-            geometry=Polygon([(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)]),
-            ceiling_height=3.0,
-            ceiling_type="SMOOTH"
-        )
-        
-        devices = [
-            Device(
-                id="smoke_1",
-                device_type="SMOKE_PHOTOELECTRIC",
-                position=Point(5, 5),
-                z_height=2.4,
-                coverage_radius=4.6
-            )
-        ]
-        
-        return room, devices, []
 
 
 # =============================================================================
-# Version Comparison
+# Snapshot Functions
 # =============================================================================
 
-def compare_oracles(oracle_v1_path: str, oracle_v2_path: str, test_ifc_path: str) -> dict:
+def save_snapshot(
+    room: Room,
+    devices: List[Device],
+    obstructions: List[Obstruction],
+    output_path: str,
+    source_units: str = "meters"
+) -> None:
     """
-    Compare outputs from two versions of the code (different files) on same input.
-    Useful for regression testing.
+    Save verification result to JSON file.
     
     Args:
-        oracle_v1_path: Path to first oracle module
-        oracle_v2_path: Path to second oracle module  
-        test_ifc_path: Path to IFC test file
-        
-    Returns dict with comparison results
-    """
-    # Import both oracle versions
-    import importlib.util
-    
-    spec1 = importlib.util.spec_from_file_location("oracle_v1", oracle_v1_path)
-    spec2 = importlib.util.spec_from_file_location("oracle_v2", oracle_v2_path)
-    
-    oracle_v1 = importlib.util.module_from_spec(spec1)
-    oracle_v2 = importlib.util.module_from_spec(spec2)
-    
-    spec1.loader.exec_module(oracle_v1)
-    spec2.loader.exec_module(oracle_v2)
-    
-    # Evaluate with both versions
-    oracle1 = oracle_v1.ComplianceOracle()
-    oracle2 = oracle_v2.ComplianceOracle()
-    
-    result1 = oracle1.evaluate(test_ifc_path)
-    result2 = oracle2.evaluate(test_ifc_path)
-    
-    # Compare
-    checksums_match = result1["checksum"] == result2["checksum"]
-    status_match = result1["status"] == result2["status"]
-    violations_match = result1["violations_count"] == result2["violations_count"]
-    
-    return {
-        "checksums_match": checksums_match,
-        "status_match": status_match,
-        "violations_match": violations_match,
-        "v1_result": result1,
-        "v2_result": result2,
-        "regression_detected": not checksums_match
-    }
-
-
-# =============================================================================
-# Snapshot Functions  
-# =============================================================================
-
-def save_snapshot(ifc_path: str, output_path: str, source_units: str = "meters") -> None:
-    """
-    Save evaluation result (violations + checksum) to JSON file for later reference.
-    Useful for deterministic regression testing.
-    
-    Args:
-        ifc_path: Path to IFC file
+        room: Room model
+        devices: List of devices
+        obstructions: List of obstructions
         output_path: Path to output JSON file
         source_units: Source units
     """
     oracle = ComplianceOracle()
-    result = oracle.evaluate(ifc_path, source_units)
+    result = oracle.verify_truth(room, devices, obstructions, source_units)
     
     snapshot = {
-        "ifc_path": ifc_path,
-        "source_units": source_units,
         "status": result["status"],
         "violations_count": result["violations_count"],
         "violations": result["violations"],
@@ -363,18 +224,26 @@ def save_snapshot(ifc_path: str, output_path: str, source_units: str = "meters")
         json.dump(snapshot, f, indent=2)
 
 
-def verify_snapshot(ifc_path: str, snapshot_path: str, source_units: str = "meters") -> bool:
+def verify_snapshot(
+    room: Room,
+    devices: List[Device],
+    obstructions: List[Obstruction],
+    snapshot_path: str,
+    source_units: str = "meters"
+) -> bool:
     """
-    Compare current evaluation result with a saved snapshot.
-    Returns True if checksums match (deterministic).
+    Compare current result with saved snapshot.
+    Returns True if checksums match.
     
     Args:
-        ifc_path: Path to IFC file  
+        room: Room model
+        devices: List of devices
+        obstructions: List of obstructions
         snapshot_path: Path to snapshot JSON file
         source_units: Source units
         
     Returns:
-        True if checksums match, False otherwise
+        True if checksums match (deterministic)
     """
     if not os.path.exists(snapshot_path):
         return False
@@ -385,10 +254,43 @@ def verify_snapshot(ifc_path: str, snapshot_path: str, source_units: str = "mete
     
     # Evaluate current
     oracle = ComplianceOracle()
-    result = oracle.evaluate(ifc_path, source_units)
+    result = oracle.verify_truth(room, devices, obstructions, source_units)
     
     # Compare checksums
     return snapshot["checksum"] == result["checksum"]
+
+
+def compare_snapshots(snapshot_path_1: str, snapshot_path_2: str) -> dict:
+    """
+    Compare two JSON snapshot files.
+    
+    Args:
+        snapshot_path_1: Path to first snapshot
+        snapshot_path_2: Path to second snapshot
+        
+    Returns dict with comparison results
+    """
+    if not os.path.exists(snapshot_path_1) or not os.path.exists(snapshot_path_2):
+        return {"error": "One or both snapshots not found"}
+    
+    with open(snapshot_path_1, 'r') as f:
+        snapshot1 = json.load(f)
+    
+    with open(snapshot_path_2, 'r') as f:
+        snapshot2 = json.load(f)
+    
+    checksums_match = snapshot1["checksum"] == snapshot2["checksum"]
+    status_match = snapshot1["status"] == snapshot2["status"]
+    violations_match = snapshot1["violations_count"] == snapshot2["violations_count"]
+    
+    return {
+        "checksums_match": checksums_match,
+        "status_match": status_match,
+        "violations_match": violations_match,
+        "regression_detected": not checksums_match,
+        "status_1": snapshot1["status"],
+        "status_2": snapshot2["status"]
+    }
 
 
 # =============================================================================
@@ -396,17 +298,11 @@ def verify_snapshot(ifc_path: str, snapshot_path: str, source_units: str = "mete
 # =============================================================================
 
 def _run_determinism_test() -> None:
-    """
-    Self-test to verify determinism:
-    1. Uses test data with known violations
-    2. Runs evaluate twice on same data
-    3. Compares checksums (should be identical)
-    4. Prints result
-    """
+    """Verify Oracle determinism"""
     from shapely.geometry import Point, Polygon
     
     print("=" * 60)
-    print("DETERMINISM VERIFICATION TEST")
+    print("COMPLIANCE ORACLE DETERMINISM TEST")
     print("=" * 60)
     
     # Create test room - 10m x 10m
@@ -418,59 +314,75 @@ def _run_determinism_test() -> None:
         ceiling_type="SMOOTH"
     )
     
-    # Device in center - distance to wall = 5m > 4.55m (MAX_WALL_DISTANCE)
+    # Device in center - distance to wall = 5m (should fail)
     devices = [
         Device(
             id="smoke_center",
             device_type="SMOKE_PHOTOELECTRIC",
-            position=Point(5, 5),  # 5m from any wall - VIOLATION!
+            position=Point(5, 5),
             z_height=2.4,
             coverage_radius=4.6
         ),
         Device(
-            id="smoke_corner", 
+            id="smoke_corner",
             device_type="SMOKE_PHOTOELECTRIC",
-            position=Point(0.3, 0.3),  # Near wall - OK
+            position=Point(0.3, 0.3),
             z_height=2.4,
             coverage_radius=4.6
         )
     ]
     
-    # Create oracle
+    obstructions = [
+        Obstruction(
+            id="obs_wall",
+            geometry=Polygon([(8, 0), (9, 0), (9, 10), (8, 10), (8, 0)]),
+            height=3.0,
+            blocks_visibility=True
+        )
+    ]
+    
     oracle = ComplianceOracle()
-    oracle.normalizer.tolerance_model = ToleranceModel()
     
-    # Run normalization manually for test
-    norm_room, norm_devices, norm_obs, errors = oracle.normalizer.normalize(
-        room, devices, [], "meters"
-    )
+    # Run 1
+    result1 = oracle.verify_truth(room, devices, obstructions, "meters")
+    checksum1 = result1["checksum"]
+    status1 = result1["status"]
     
-    # Run engine
-    engine = SpatialValidator(oracle.standard)
-    violations = engine.validate_room(norm_room, norm_devices, norm_obs)
+    # Run 2 (same input)
+    result2 = oracle.verify_truth(room, devices, obstructions, "meters")
+    checksum2 = result2["checksum"]
+    status2 = result2["status"]
     
-    # Generate checksum
-    checksum1 = _violations_checksum(violations)
+    # Verify against truth model
+    from core.truth_model import evaluate_truth, TruthState
     
-    # Run again (same input should produce identical output)
-    norm_room2, norm_devices2, norm_obs2, errors2 = oracle.normalizer.normalize(
-        room, devices, [], "meters"
-    )
-    engine2 = SpatialValidator(oracle.standard)
-    violations2 = engine2.validate_room(norm_room2, norm_devices2, norm_obs2)
+    # Create normalized versions for truth evaluation
+    from validation.spatial_normalizer import SpatialNormalizer
+    normalizer = SpatialNormalizer()
+    norm_room, norm_devices, norm_obs, _ = normalizer.normalize(room, devices, obstructions, "meters")
     
-    checksum2 = _violations_checksum(violations2)
+    # Get violations from engine
+    from spatial_field_engine import evaluate_compliance, NFPAConstraintModel
+    model = NFPAConstraintModel()
+    _, violations = evaluate_compliance(norm_room, norm_devices, norm_obs, model)
     
-    print(f"Run 1 - Checksum: {checksum1[:16]}...")
-    print(f"Run 1 - Violations: {len(violations)}")
-    for v in violations:
-        print(f"  - {v.rule}: {v.message}")
-    print(f"Run 2 - Checksum: {checksum2[:16]}...")
-    print(f"Run 2 - Violations: {len(violations2)}")
+    # Evaluate truth
+    truth_state = evaluate_truth(norm_room, norm_devices, norm_obs, violations)
+    expected_state = {
+        TruthState.PASS: "PASS",
+        TruthState.FAIL: "FAIL",
+        TruthState.REJECTED_HARD: "REJECTED_HARD",
+        TruthState.REJECTED_AMBIGUOUS: "REJECTED_AMBIGUOUS"
+    }.get(truth_state, "FAIL")
+    
+    print(f"Run 1 - Status: {status1}, Checksum: {checksum1[:16]}...")
+    print(f"Run 2 - Status: {status2}, Checksum: {checksum2[:16]}...")
+    print(f"Truth Model - Expected State: {expected_state}")
+    print(f"Oracle matches Truth Model: {status1 == expected_state}")
     print(f"Checksums match: {checksum1 == checksum2}")
     print("=" * 60)
     
-    if checksum1 == checksum2:
+    if checksum1 == checksum2 and status1 == expected_state:
         print("✓ DETERMINISM VERIFIED")
     else:
         print("✗ DETERMINISM FAILED")
