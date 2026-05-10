@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import Static
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import List, Tuple
@@ -19,6 +19,7 @@ app.add_middleware(
 )
 
 class RoomModel(BaseModel):
+    height: float = 3.0
     id: str
     type: str
     area: float
