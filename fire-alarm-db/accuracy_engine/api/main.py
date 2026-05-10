@@ -26,6 +26,7 @@ from core.safety.risk_assessment_report import generate_risk_assessment
 from core.monte_carlo.simulator import run_monte_carlo
 from core.monte_carlo.statistics import analyze_results
 from core.monte_carlo.reporting import generate_risk_report
+from core.risk_graph.engine import run_risk_graph
 
 app = FastAPI(title="FireAlarmAI Accuracy Engine")
 
@@ -398,3 +399,23 @@ def monte_carlo_simulation(request: EngineRequest, iterations: int = 1000):
         "critical_failure_probability": stats["critical_failure_probability"],
         "recommended_actions": stats["recommended_actions"]
     }
+
+
+@app.post("/api/risk-graph")
+def risk_graph(request: EngineRequest, scenarios: int = 100):
+    rooms = [r.model_dump() for r in request.rooms]
+    from core.improvement_engine import apply_improvements_and_reassess
+    
+    improvement = apply_improvements_and_reassess(rooms)
+    devices = improvement.get("after", {}).get("devices", [])
+    
+    if not devices:
+        from core.decision_pipeline import run_decision_pipeline
+        pipeline = run_decision_pipeline(rooms)
+        devices = pipeline.get("devices", [])
+    
+    coverage = improvement.get("after", {}).get("coverage", 0.95)
+    validation = {"coverage": coverage, "overall_coverage": coverage}
+
+    result = run_risk_graph(rooms, devices, validation, scenarios)
+    return result
