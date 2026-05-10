@@ -9,6 +9,13 @@ Stateless pipeline that:
 5. Returns final state (PASS/FAIL/REJECTED_HARD/REJECTED_AMBIGUOUS)
 
 This Oracle contains NO business logic. It is a pure transformer.
+
+=========================
+HARD ENFORCEMENT GATE CONTRACT
+=========================
+Only ComplianceOracle.verify_truth() may call TruthModel.
+No other function in the system is allowed to import or call evaluate_truth.
+This Gate is the sole decision boundary.
 """
 
 import os
@@ -16,6 +23,8 @@ import sys
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from dataclasses import dataclass
+from datetime import datetime
 from typing import List
 from core.models import Room, Device, Obstruction, Violation
 from core.truth_model import evaluate_truth, TruthState, quantize_point
@@ -27,7 +36,36 @@ import hashlib
 
 
 # =============================================================================
-# Semantic Checksum (no message, deterministic)
+# Decision Record (Immutable)
+# =============================================================================
+
+@dataclass(frozen=True)
+class DecisionRecord:
+    """Immutable decision record after issuance."""
+    timestamp: str
+    status: str  # PASS, FAIL, REJECTED_HARD, REJECTED_AMBIGUOUS
+    checksum: str
+    violations_count: int
+    input_hash: str  # Hash of inputs to prevent recalculation
+
+
+# =============================================================================
+# Input Hash Computation (Internal)
+# =============================================================================
+
+def _compute_input_hash(room: Room, devices: List[Device], obstructions: List[Obstruction]) -> str:
+    """Compute SHA256 from element IDs and coordinates to prevent input replay."""
+    data = room.id
+    for d in devices:
+        data += f"|{d.id}|{d.position.x}|{d.position.y}"
+    for o in obstructions:
+        bounds = o.geometry.bounds
+        data += f"|{o.id}|{bounds[0]:.2f}|{bounds[1]:.2f}"
+    return hashlib.sha256(data.encode()).hexdigest()
+
+
+# =============================================================================
+# Semantic Checksum (Internal)
 # =============================================================================
 
 def _semantic_checksum(violations: List[Violation]) -> str:
@@ -129,6 +167,15 @@ class ComplianceOracle:
         # Map TruthState to output string
         status = truth_state.value  # PASS, FAIL, REJECTED_HARD, REJECTED_AMBIGUOUS
 
+        # Create immutable decision record (timestamp for logging, but decision_id is deterministic)
+        decision = DecisionRecord(
+            timestamp=datetime.now().isoformat(),
+            status=status,
+            checksum=checksum,
+            violations_count=len(sanitized_violations),
+            input_hash=_compute_input_hash(norm_room, norm_devices, norm_obs)
+        )
+
         return {
             "status": status,
             "violations_count": len(sanitized_violations),
@@ -145,8 +192,12 @@ class ComplianceOracle:
                 }
                 for v in sanitized_violations
             ],
-            "audit_trail": f"TruthState: {status}",
-            "checksum": checksum
+            "audit_trail": "\n".join(audit_trail),
+            "checksum": checksum,
+            "decision_id": hashlib.sha256(
+                f"{status}{checksum}{decision.input_hash}".encode()
+            ).hexdigest()[:16],
+            "input_hash": decision.input_hash
         }
 
 
@@ -216,12 +267,14 @@ def _run_self_test():
     res1 = oracle.verify_truth(room, devices, obstructions)
     res2 = oracle.verify_truth(room, devices, obstructions)
     
-    print(f"Run1: {res1['status']} | {res1['checksum'][:16]}...")
-    print(f"Run2: {res2['status']} | {res2['checksum'][:16]}...")
+    print(f"Run1: {res1['status']} | {res1['checksum'][:16]}... | decision_id: {res1.get('decision_id', 'N/A')}")
+    print(f"Run2: {res2['status']} | {res2['checksum'][:16]}... | decision_id: {res2.get('decision_id', 'N/A')}")
     print(f"Checksums match: {res1['checksum'] == res2['checksum']}")
+    print(f"Decision IDs match: {res1.get('decision_id') == res2.get('decision_id')}")
+    print(f"Input hashes match: {res1.get('input_hash') == res2.get('input_hash')}")
     print("=" * 60)
     
-    if res1['checksum'] == res2['checksum']:
+    if res1['checksum'] == res2['checksum'] and res1.get('decision_id') == res2.get('decision_id'):
         print("✓ DETERMINISM VERIFIED")
     else:
         print("✗ DETERMINISM FAILED")
