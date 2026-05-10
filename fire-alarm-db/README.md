@@ -1,12 +1,12 @@
 # 🔥 FireAlarmAI - Multi-Domain Building Design Platform
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python">
-  <img src="https://img.shields.io/badge/PostgreSQL-14+-blue.svg" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/Docker-Ready-blue.svg" alt="Docker">
-  <img src="https://img.shields.io/badge/YOLOv8-Vision-red.svg" alt="YOLOv8">
-  <img src="https://img.shields.io/badge/FastAPI-Web-blue.svg" alt="FastAPI">
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
+  <a href="https://docker.com"><img src="https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge" alt="Docker"></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge" alt="Python"></a>
+  <a href="https://postgresql.org"><img src="https://img.shields.io/badge/PostgreSQL-14+-blue?style=for-the-badge" alt="PostgreSQL"></a>
+  <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-Web-blue?style=for-the-badge" alt="FastAPI"></a>
+  <a href="https://ultralytics.com"><img src="https://img.shields.io/badge/YOLOv8-Vision-red?style=for-the-badge" alt="YOLOv8"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
 </p>
 
 > AI-powered multi-domain building engineering design platform for Fire Alarm, CCTV, Access Control, Public Address, Data Networks, Lighting, and Power systems.
@@ -85,6 +85,57 @@ docker-compose up -d
 # Or run individually
 docker-compose up -d db     # PostgreSQL
 docker-compose up -d api   # FastAPI server
+```
+
+---
+
+## 🎯 Quick Demo (Copy & Paste)
+
+Test the API instantly after running `docker-compose up -d`:
+
+```bash
+# 1. Check service health
+curl http://localhost:8000/healthz
+
+# 2. List available engineering domains
+curl http://localhost:8000/api/domains
+
+# 3. Submit a FireAlarm design task (with sample image)
+curl -X POST http://localhost:8000/api/elite-design \
+  -F "image=@floorplan.png" \
+  -F "project_name=Demo Office" \
+  -F "domain=FireAlarm"
+
+# 4. Check task status (replace TASK_ID)
+curl http://localhost:8000/api/task/TASK_ID
+
+# 5. Download results (when completed)
+curl -O http://localhost:8000/download/TASK_ID
+```
+
+---
+
+## 🔄 Architecture Flow
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                      Design Pipeline Flow                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                               │
+│    ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐  │
+│    │ Upload │ ───▶ │ Vision  │ ───▶ │ Design  │ ───▶ │Routing │  │
+│    │Image  │      │ YOLOv8 │      │   AI   │      │NetworkX│  │
+│    └─────────┘      └─────────┘      └─────────┘      └─────────┘  │
+│                                                      │       │
+│                                                      ▼       │
+│    ┌─────────┐      ┌─────────┐             ┌─────────────────┐ │
+│    │  ZIP   │ ◀───  │ Validate│ ◀─────────  │   Devices       │ │
+│    │Output │       │  Rules  │             │   Placed        │ │
+│    └─────────┘      └─────────┘             └─────────────────┘ │
+│                                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  PostgreSQL: Project → Rooms → Sessions → Devices → Outputs      │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Manual Setup
