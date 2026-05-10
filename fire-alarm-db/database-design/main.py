@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
 
@@ -136,8 +136,61 @@ def root():
     return {
         "service": "Fire Alarm Elite Pipeline",
         "version": "1.0.0",
-        "status": "running"
+        "status": "running",
+        "docs": "/docs"
     }
+
+
+@app.get("/openapi.json")
+def get_openapi():
+    """Serve OpenAPI specification"""
+    import json
+    from pathlib import Path
+    
+    openapi_path = Path(__file__).parent.parent / "openapi.json"
+    if openapi_path.exists():
+        return JSONResponse(content=json.loads(openapi_path.read_text()))
+    raise HTTPException(status_code=404, detail="OpenAPI spec not found")
+
+
+@app.get("/docs")
+def get_docs():
+    """Swagger UI documentation page"""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>FireAlarmAI API Docs</title>
+        <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+        <style>
+            body { margin: 0; padding: 0; background: #0f172a; }
+            .swagger-container { min-height: 100vh; }
+        </style>
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+        <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+        <script>
+            window.onload = function() {
+                SwaggerUIBundle({
+                    url: '/openapi.json',
+                    dom: '#swagger-ui',
+                    deepLinking: true,
+                    showExtensions: true,
+                    tryItOutEnabled: true,
+                    presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIBundleStandalonePresets
+                    ],
+                    layout: 'StandaloneLayout'
+                });
+            };
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 
 @app.get("/healthz")
