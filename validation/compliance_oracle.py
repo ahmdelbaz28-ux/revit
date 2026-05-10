@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import List
 from core.models import Room, Device, Obstruction, Violation
 from core.truth_model import evaluate_truth, TruthState, quantize_point
+from core.truth_deriver import derive_truth, TruthViolation, compare_truths, NFPAConstraintModel as TruthNFPAConstraintModel
 from core.contract import validate_violation
 from validation.spatial_normalizer import SpatialNormalizer
 from spatial_field_engine import evaluate_compliance, NFPAConstraintModel
@@ -77,6 +78,9 @@ class ComplianceOracle:
                 "checksum": _semantic_checksum([])
             }
 
+        # Initialize audit trail for cross-verification
+        audit_trail = []
+
         # Step 2: Engine raw output
         _, raw_violations = evaluate_compliance(
             norm_room, norm_devices, norm_obs, self.model
@@ -97,6 +101,24 @@ class ComplianceOracle:
             )
             validate_violation(sanitized)
             sanitized_violations.append(sanitized)
+
+        # Step 3a: Cross-verify with independent truth deriver
+        try:
+            truth_model_inst = TruthNFPAConstraintModel()
+            truth_violations = derive_truth(
+                norm_room, norm_devices, norm_obs, truth_model_inst
+            )
+            comparison = compare_truths(sanitized_violations, truth_violations)
+            
+            if comparison['summary'] != "CONSISTENT":
+                audit_trail.append(
+                    f"[DIVERGENCE] Truth deriver mismatch: "
+                    f"matched={comparison['matched']}, "
+                    f"missing={comparison['missing_in_engine']}, "
+                    f"extra={comparison['extra_in_engine']}"
+                )
+        except Exception as e:
+            audit_trail.append(f"[CROSS-VERIFY ERROR] {str(e)}")
 
         # Step 3: Truth Model interprets (use sanitized violations)
         truth_state = evaluate_truth(norm_room, norm_devices, norm_obs, sanitized_violations)
