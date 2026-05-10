@@ -20,6 +20,9 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
     ir_graph = compiler.compile(program)
 
     algebra = KernelInteractionAlgebra()
+    is_stable, stability_report = algebra.project_to_stable_manifold()
+    if not is_stable:
+        print(f"Warning: Algebra may be unstable. Corrections: {stability_report['corrections_applied']}")
     discretizer = NumericalDiscretizer(resolution=1.0)
 
     topologies = {}
