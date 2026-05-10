@@ -65,7 +65,7 @@ jobs:
           pip install pytest pytest-cov pytest-xdist pytest-timeout
       
       - name: "Cache YOLO model"
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/torch
