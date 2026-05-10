@@ -7,6 +7,7 @@ from typing import List, Tuple
 import io
 
 from core.engine import run_accuracy_engine
+from core.decision_pipeline import run_decision_pipeline
 
 app = FastAPI(title="FireAlarmAI Accuracy Engine")
 
@@ -39,6 +40,16 @@ def run_engine(request: EngineRequest):
 @app.get("/api/health")
 def health():
     return {"status": "healthy", "engine": "accuracy_engine_v1"}
+
+
+class DecisionRequest(BaseModel):
+    rooms: List[RoomModel]
+
+@app.post("/api/decision-pipeline")
+def run_pipeline(request: DecisionRequest):
+    rooms = [r.model_dump() for r in request.rooms]
+    result = run_decision_pipeline(rooms)
+    return result
 
 @app.get("/api/export/dxf")
 def export_dxf():
