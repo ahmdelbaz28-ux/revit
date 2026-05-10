@@ -25,14 +25,27 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import List
 from core.models import Room, Device, Obstruction, Violation
-from core.truth_model import evaluate_truth, TruthState, quantize_point
+from core.truth_model import quantize_point, _is_geometry_valid, _is_ambiguous
 from core.truth_deriver import derive_truth, TruthViolation, compare_truths, NFPAConstraintModel as TruthNFPAConstraintModel
 from core.contract import validate_violation
 from validation.spatial_normalizer import SpatialNormalizer
 from spatial_field_engine import evaluate_compliance, NFPAConstraintModel
 import hashlib
+
+
+# =============================================================================
+# Private Truth State (inside Oracle only)
+# =============================================================================
+
+class _TruthState(Enum):
+    """The only permitted truth states - INSIDE Oracle only"""
+    PASS = "PASS"                    # Valid geometry, no violations
+    FAIL = "FAIL"                   # Valid geometry, measurable violations
+    REJECTED_HARD = "REJECTED_HARD"  # Invalid geometry (cannot process)
+    REJECTED_AMBIGUOUS = "REJECTED_AMBIGUOUS"  # Ambiguous case (needs review)
 
 
 # =============================================================================
@@ -91,7 +104,43 @@ class ComplianceOracle:
     def __init__(self):
         self.normalizer = SpatialNormalizer()
         self.model = NFPAConstraintModel()
-
+    
+    def __evaluate_constraints(self, room, devices, obstructions, violations, repaired=False):
+        """
+        Internal constraint evaluator. Replaces truth_model.evaluate_truth().
+        Does NOT return TruthState. Returns raw evaluation data only.
+        
+        Judgment rules (ordered by priority):
+        1. If geometry invalid or devices outside room → REJECTED_HARD
+        2. If there's ambiguity → REJECTED_AMBIGUOUS
+        3. If geometry valid and no violations → PASS
+        4. If geometry valid and measurable violations exist → FAIL
+        """
+        from core.truth_model import _is_geometry_valid as is_valid, _is_ambiguous as is_amb
+        
+        # Rule 1: Check for invalid geometry or devices outside room
+        if not is_valid(room):
+            return _TruthState.REJECTED_HARD
+        
+        for device in devices:
+            if not room.geometry.covers(device.position):
+                return _TruthState.REJECTED_HARD
+        
+        # Check obstructions are inside room
+        for obs in obstructions:
+            if not room.geometry.contains(obs.geometry):
+                return _TruthState.REJECTED_HARD
+        
+        # Rule 2: Check for ambiguity
+        if is_amb(room, devices, obstructions):
+            return _TruthState.REJECTED_AMBIGUOUS
+        
+        # Rule 3 & 4: Judge based on violations
+        if violations:
+            return _TruthState.FAIL
+        
+        return _TruthState.PASS
+    
     def verify_truth(self, room: Room, devices: List[Device],
                    obstructions: List[Obstruction], source_units: str = "meters") -> dict:
         """
@@ -158,8 +207,10 @@ class ComplianceOracle:
         except Exception as e:
             audit_trail.append(f"[CROSS-VERIFY ERROR] {str(e)}")
 
-        # Step 3: Truth Model interprets (use sanitized violations)
-        truth_state = evaluate_truth(norm_room, norm_devices, norm_obs, sanitized_violations)
+        # Step 3: Issue decision (internal constraint evaluation)
+        truth_state = self._ComplianceOracle__evaluate_constraints(
+            norm_room, norm_devices, norm_obs, sanitized_violations
+        )
 
         # Step 4: Deterministic checksum
         checksum = _semantic_checksum(sanitized_violations)
