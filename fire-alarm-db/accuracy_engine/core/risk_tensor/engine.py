@@ -5,6 +5,9 @@ from core.risk_tensor.execution_engine import ExecutionEngine
 from core.risk_tensor.aggregator import aggregate_tensors
 from core.risk_tensor.tensor_types import RiskTensor, ImpactVector
 from core.monte_carlo.scenario_generator import generate_scenario
+from core.risk_tensor.kernel_algebra import KernelInteractionAlgebra
+from core.risk_tensor.numerical_discretization import NumericalDiscretizer
+import numpy as np
 
 
 def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, num_scenarios: int = 100) -> dict:
@@ -15,6 +18,9 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
     program = dsl_engine.program
     compiler = DSLCompiler()
     ir_graph = compiler.compile(program)
+
+    algebra = KernelInteractionAlgebra()
+    discretizer = NumericalDiscretizer(resolution=1.0)
 
     topologies = {}
     for room in rooms:
@@ -33,6 +39,17 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
             exec_engine.initialize_state(topology)
             exec_engine.apply_failures(scenario)
             exec_engine.evolve(max_steps=3)
+
+            # Apply numerical discretization and kernel interaction algebra
+            discretized = discretizer.discretize_state(topology)
+            kernel_values = {}
+            kernel_names = ["smoke", "electrical", "fire"]
+            for kname in kernel_names:
+                kernel_result = discretizer.apply_kernel(discretized, kname)
+                if kernel_result.size > 0:
+                    kernel_values[kname] = float(np.mean(kernel_result))
+
+            composed_risk = algebra.compose_multi(kernel_names, [kernel_values.get(k, 0.0) for k in kernel_names])
 
             final = exec_engine.get_final_state()
             avg_risk = final["average_risk"]
@@ -86,7 +103,9 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
             "layer_1": "DSL Compiler",
             "layer_2": "Intermediate Representation (IR Graph)",
             "layer_3": "Execution Engine (State Evolution Loop)",
-            "layer_4": "Monte Carlo Wrapper"
+            "layer_4": "Monte Carlo Wrapper",
+            "layer_5": "Kernel Interaction Algebra (Ω)",
+            "layer_6": "Numerical Discretization"
         },
         "dsl_program": dsl_engine.get_program_summary(),
         "topologies": topology_summary,
