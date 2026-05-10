@@ -1,0 +1,260 @@
+name: "FireAlarmAI CI/CD Pipeline"
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  AWS_REGION: "eu-west-2"
+  ECR_REPOSITORY: "firealarmai/production/api"
+  ECS_SERVICE: "firealarmai-production-api-service"
+  ECS_CLUSTER: "firealarmai-production-ecs-cluster"
+  CONTAINER_NAME: "api"
+  DOCKER_BUILDKIT: "1"
+  BUILDKIT_PROGRESS: "plain"
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: firealarm_test
+          POSTGRES_PASSWORD: firealarm_test_pass
+          POSTGRES_DB: firealarm_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /var/lib/postgresql/data
+    
+    env:
+      DATABASE_URL: "postgresql://firealarm_test:firealarm_test_pass@localhost:5432/firealarm_test_db"
+    
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+      
+      - name: "Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+          cache-dependency-path: "fire-alarm-db/database-design/requirements.txt"
+      
+      - name: "Install system dependencies"
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libgomp1 libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender-dev libgomp1 tesseract-ocr tesseract-ocr-ara
+      
+      - name: "Install Python dependencies"
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r fire-alarm-db/database-design/requirements.txt
+          pip install pytest pytest-cov pytest-xdist pytest-timeout
+      
+      - name: "Cache YOLO model"
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/torch
+            ~/.cache/ultralytics
+            fire-alarm-db/models
+          key: "yolo-model-${{ runner.os }}-${{ hashFiles('fire-alarm-db/database-design/vision_engine_v2.py') }}"
+          restore-keys: |
+            "yolo-model-${{ runner.os }}-"
+      
+      - name: "Install Playwright browsers"
+        run: |
+          playwright install chromium --with-deps
+      
+      - name: "Run unit tests with coverage"
+        run: |
+          pytest fire-alarm-db/database-design/test_ai_design.py \
+            fire-alarm-db/database-design/test_multi_domain.py \
+            -v --tb=short --timeout=120 \
+            --cov=fire-alarm-db/database-design \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            -n auto
+        timeout-minutes: 15
+      
+      - name: "Run integration tests"
+        run: |
+          python fire-alarm-db/database-design/FULL_INTEGRATION_TEST.py
+        timeout-minutes: 10
+      
+      - name: "Upload coverage to artifact"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "coverage-report"
+          path: "coverage.xml"
+          retention-days: 7
+
+  security-scan:
+    needs: "build-and-test"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: "Run Trivy vulnerability scanner"
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+          skip-dirs: "node_modules,.git,.terraform"
+      
+      - name: "Upload Trivy results"
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-results.sarif"
+      
+      - name: "Check for exposed secrets"
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  build-and-push:
+    needs: ["build-and-test", "security-scan"]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: "Configure AWS credentials"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/FireAlarmAI-GitHubActions-Deploy-Role"
+          role-session-name: "github-actions-deploy-session"
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: "Login to Amazon ECR"
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: "true"
+      
+      - name: "Set image tag"
+        id: set-tag
+        run: |
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          BUILD_DATE=$(date -u +'%Y%m%d-%H%M%S')
+          echo "IMAGE_TAG=${BUILD_DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+      
+      - name: "Build and push Docker image"
+        uses: docker/build-push-action@v6
+        with:
+          context: ./fire-alarm-db
+          file: ./fire-alarm-db/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.set-tag.outputs.IMAGE_TAG }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: "type=gha,scope=firealarmai-build"
+          cache-to: "type=gha,mode=max,scope=firealarmai-build"
+          provenance: false
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.set-tag.outputs.BUILD_DATE }}
+      
+      - name: "Sign image with Cosign"
+        uses: sigstore/cosign-installer@main
+      
+      - run: |
+          cosign sign --yes \
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}@${{ steps.build-and-push.outputs.digest }}
+      
+      - name: "Update ECS service"
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --force-new-deployment \
+            --task-definition ${{ env.CONTAINER_NAME }} \
+            --no-cli-pager
+      
+      - name: "Wait for deployment stability"
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --no-cli-pager
+        timeout-minutes: 10
+      
+      - name: "Run smoke tests against deployed service"
+        env:
+          API_ENDPOINT: "https://api.firealarmai.com"
+        run: |
+          curl -f -s -o /dev/null -w "%{http_code}" ${{ env.API_ENDPOINT }}/healthz | grep 200
+          curl -f -s ${{ env.API_ENDPOINT }}/api/domains | python -m json.tool
+      
+      - name: "Rollback on failure"
+        if: failure()
+        run: |
+          echo "Smoke tests failed. Rolling back deployment."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --force-new-deployment \
+            --task-definition ${{ env.CONTAINER_NAME }} \
+            --no-cli-pager
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --no-cli-pager
+
+  notify:
+    needs: ["build-and-push"]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: "Notify deployment status"
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "FireAlarmAI Deployment ${{ needs.build-and-push.result }}",
+              "attachments": [
+                {
+                  "color": "${{ needs.build-and-push.result == 'success' && 'good' || 'danger' }}",
+                  "fields": [
+                    {"title": "Repository", "value": "${{ github.repository }}", "short": true},
+                    {"title": "Branch", "value": "${{ github.ref_name }}", "short": true},
+                    {"title": "Commit", "value": "${{ github.sha }}", "short": true},
+                    {"title": "Author", "value": "${{ github.actor }}", "short": true}
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
