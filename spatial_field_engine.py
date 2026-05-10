@@ -175,13 +175,21 @@ def evaluate_compliance(
             continue  # Skip obstruction check for uncovered points
         
         # Check obstructions (line of sight)
+        # The device might be ON the obstruction boundary, so we need to check
+        # if obstruction is actually BETWEEN device and point
         line = LineString([
             (nearest_device.position.x, nearest_device.position.y),
             (pt.x, pt.y)
         ])
         
         for obs in obstructions:
-            if line.intersects(obs.geometry):
+            # Skip if device is on/near obstruction boundary (distance ≈ 0)
+            device_dist_to_obs = nearest_device.position.distance(obs.geometry)
+            if device_dist_to_obs < 0.01:
+                continue  # Device is on/near obstruction - can't be blocked
+            
+            # Check proper crossing - the line must actually cross through the interior
+            if line.crosses(obs.geometry):
                 violations.append(Violation(
                     rule="OBSTRUCTION_BLOCKS_POINT",
                     device_id=nearest_device.id,
@@ -283,4 +291,59 @@ def run_test():
 
 
 if __name__ == "__main__":
+    # Test 1: FAILING case (insufficient coverage)
+    print("\n" + "=" * 60)
+    print("TEST 1: FAILING CASE (Insufficient Coverage)")
+    print("=" * 60)
     run_test()
+    
+    # Test 2: PASSING case (proper detector placement)
+    print("\n" + "=" * 60)
+    print("TEST 2: PASSING CASE (Proper Coverage)")
+    print("=" * 60)
+    
+    # Create room: 10m x 10m
+    room2 = Room(
+        id="room_002",
+        name="Good Room",
+        geometry=Polygon([(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)]),
+        ceiling_height=2.4
+    )
+    
+    # Create 4 detectors in proper grid layout (5m apart)
+    devices2 = [
+        Device(id="smoke_001", device_type="SMOKE_PHOTOELECTRIC", position=Point(2.5, 2.5)),
+        Device(id="smoke_002", device_type="SMOKE_PHOTOELECTRIC", position=Point(7.5, 2.5)),
+        Device(id="smoke_003", device_type="SMOKE_PHOTOELECTRIC", position=Point(2.5, 7.5)),
+        Device(id="smoke_004", device_type="SMOKE_PHOTOELECTRIC", position=Point(7.5, 7.5)),
+    ]
+    
+    # No obstructions
+    obstructions2 = []
+    
+    # Run evaluation
+    model2 = NFPAConstraintModel()
+    coverage_map2, violations2 = evaluate_compliance(
+        room2, devices2, obstructions2, model2, grid_spacing=0.25
+    )
+    
+    # Summarize
+    grid_points2 = generate_grid(room2.geometry, 0.25)
+    total_points2 = len(grid_points2)
+    covered_points2 = len(coverage_map2)
+    violation_count2 = len(violations2)
+    
+    print(f"Room: {room2.name}")
+    print(f"Devices: {[d.id for d in devices2]}")
+    print(f"Obstructions: {len(obstructions2)}")
+    print(f"\n--- Coverage Summary ---")
+    print(f"Grid points: {total_points2}")
+    print(f"Covered points: {covered_points2} ({covered_points2/total_points2*100:.1f}%)")
+    print(f"Violations: {violation_count2}")
+    
+    print("\n" + "=" * 60)
+    if violation_count2 == 0:
+        print("RESULT: PASSED - Full coverage!")
+    else:
+        print(f"RESULT: FAILED - {violation_count2} violations")
+    print("=" * 60)
