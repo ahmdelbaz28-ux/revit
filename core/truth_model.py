@@ -7,6 +7,9 @@ This is the HEART of the system - it judges the engine's output.
 It does NOT perform I/O, does NOT touch files, does NOT import external components
 (except Shapely for geometry).
 
+# AUTHORITATIVE: This module alone defines TruthState and evaluate_truth.
+# No other layer may override or reinterpret these definitions.
+
 Truth Model establishes:
 - What is correct compliance?
 - When is a situation ambiguous?
