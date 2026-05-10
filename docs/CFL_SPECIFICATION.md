@@ -1,4 +1,4 @@
-# Canonicalization Functor Layer (CFL) v2.0
+# Canonicalization Functor Layer (CFL) v2.1
 
 ## 0. المبدأ السيادي
 There is only one semantic truth space; all other CAD systems are projections into it, not peers of it.
@@ -25,21 +25,35 @@ All other CAD = Projection Spaces only.
 - يرفض، يقبل، أو يعزل
 - Output: CanonicalFragment أو QuarantineRecord
 
-## 2. مقياس الفقد الدلالي (Graduated Semantic Loss Metric)
+## 2. مقياس الفقد الدلالي الهيكلي (Structured Loss Vector)
 
-SLM = عدد العناصر غير المعترف بها / إجمالي العناصر
+SLM ليس رقماً واحداً، بل متجه خسارة هيكلي (Structured Loss Vector):
 
-| SLM Range | Action |
-|-----------|--------|
-| SLM < 5% | ✅ ACCEPT (minimal loss) |
-| SLM 5% - 20% | ⚠️ QUARANTINE (human validation required) |
-| SLM > 20% | ❌ REJECT (unacceptable ambiguity) |
+| البعد | المعنى |
+|-------|--------|
+| unrecognized_ratio | نسبة العناصر غير المعترف بها في الأنطولوجيا |
+| safety_critical_loss | هل هناك عنصر Safety-Critical مفقود أو مشوه؟ (bool) |
+| topology_ambiguity | درجة الغموض في العلاقات الطوبولوجية (0-1) |
+| semantic_distance | المسافة الدلالية عن أقرب عقدة في Canonical Ontology Graph |
+
+## 2.1 نطاقات الفقد السياقية (Contextual Loss Bands - CLB)
+
+| Band | الشرط | الإجراء |
+|------|-------|---------|
+| L0: Fully Canonical | safety_critical_loss = false ∧ semantic_distance < threshold | ✅ ACCEPT |
+| L1: Canonical Under Local Repair | safety_critical_loss = false ∧ semantic_distance ∈ [threshold, 2×threshold] | ⚠️ QUARANTINE |
+| L2: Ambiguous (Safety-Critical) | safety_critical_loss = true ∨ topology_ambiguity > limit | 🔴 REJECT |
+| L3: Non-Canonical | unrecognized_ratio > 30% | 🔴 REJECT |
+
+**مبدأ حاسم:** إذا كان safety_critical_loss = true، النظام يرفض فوراً بغض النظر عن أي نسبة أخرى. لا يوجد "رقم" يمكنه التغاضي عن سلامة الأرواح.
 
 لا يوجد "اجتهاد" في السلامة. Quarantine تعني: لا يُصدر إثبات حتى يراجع بشري.
 
 ## 3. دالة الإسقاط (Π_cad)
-Π_cad: CAD_Geometry → Option<CanonicalFragment>
-- تعيد None إذا انخفضت درجة الثقة عن 95% (أو SLM > 20%)
+Π_cad: CAD_Geometry → (CandidateSet, LossVector, FailureMode)
+- تعيد LossVector بدلاً من None مباشرة
+- FailureMode يصف سبب الفشل (إن وجد) لضمان explainability
+- لا تعيد None أبداً؛ تعيد دائماً تشخيصاً قابلاً للتدقيق
 
 ## 4. الأنطولوجيا كمخطط بياني (Typed Ontology Graph)
 - Nodes: Canonical Entities (SmokeDetector, HeatDetector, ManualCallPoint, FireDoor, SolidWall, MerkleZone)
