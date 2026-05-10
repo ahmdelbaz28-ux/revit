@@ -12,6 +12,13 @@ from core.optimization.layout_selector import select_best_layout, OPTIMIZATION_M
 from core.optimization.candidate_generation import generate_candidates, generate_corridor_candidates
 from core.optimization.coverage_optimizer import greedy_coverage_selection
 from core.optimization.routing_optimizer import minimum_spanning_tree_length, estimate_cable_cost
+from core.safety.fire_load_risk import fire_load_risk
+from core.safety.failure_mode_analysis import detector_failure_impact
+from core.safety.redundancy_analysis import requires_redundancy, check_overlap_coverage
+from core.safety.evacuation_risk import evacuation_risk
+from core.safety.compliance_engine import run_compliance_check
+from core.safety.confidence_v2 import multi_factor_confidence
+from core.safety.risk_assessment_report import generate_risk_assessment
 
 app = FastAPI(title="FireAlarmAI Accuracy Engine")
 
@@ -89,6 +96,79 @@ def optimize_layout(request: EngineRequest):
         "score": best.get("score", 0),
         "validation": best.get("validation", {}),
         "available_modes": list(OPTIMIZATION_MODES.keys())
+
+@app.post("/api/safety-assessment")
+def safety_assessment(request: EngineRequest):
+    rooms = [r.model_dump() for r in request.rooms]
+
+    pipeline_result = run_decision_pipeline(rooms)
+    devices = pipeline_result.get("devices", [])
+    coverage = pipeline_result.get("validation", {}).get("overall_coverage", 0)
+
+    # Fire load risk
+    fire_load_results = {}
+    for room in rooms:
+        fire_load_results[room["id"]] = fire_load_risk(room)
+
+    # Failure mode analysis
+    failure_analysis = []
+    for room in rooms:
+        room_devices = [d for d in devices if d.get("room_id") == room["id"]]
+        if room_devices:
+            failures = detector_failure_impact(room, room_devices)
+            failure_analysis.extend(failures)
+
+    # Redundancy analysis
+    redundancy_results = {}
+    for room in rooms:
+        room_devices = [d for d in devices if d.get("room_id") == room["id"]]
+        redundancy_results[room["id"]] = {
+            "requires_redundancy": requires_redundancy(room),
+            "overlap_check": check_overlap_coverage(room, room_devices)
+        }
+
+    # Evacuation risk
+    evacuation_results = {}
+    for room in rooms:
+        evacuation_results[room["id"]] = evacuation_risk(room)
+
+    # Compliance check
+    compliance_results = run_compliance_check(rooms, devices, coverage)
+
+    # Multi-factor confidence
+    uncertainty_issues = list(pipeline_result.get("stages", {}).get("uncertainty_detection", {}).get("issues", {}).values())
+    geometry_valid = pipeline_result.get("stages", {}).get("geometry_validation", {}).get("passed", True)
+
+    confidence_results = multi_factor_confidence(
+        geometry_valid, coverage,
+        compliance_results["passed"],
+        [issue for issues in uncertainty_issues for issue in issues]
+    )
+
+    # Risk assessment report
+    risk_report = generate_risk_assessment(
+        rooms, devices,
+        fire_load_results,
+        {"failures": failure_analysis},
+        evacuation_results,
+        compliance_results,
+        confidence_results
+    )
+
+    return {
+        "decision": pipeline_result.get("decision"),
+        "devices": devices,
+        "total_devices": len(devices),
+        "coverage": coverage,
+        "fire_load_risks": fire_load_results,
+        "failure_analysis": failure_analysis,
+        "redundancy_analysis": redundancy_results,
+        "evacuation_risks": evacuation_results,
+        "compliance": compliance_results,
+        "confidence": confidence_results,
+        "risk_assessment_report": risk_report
+    }
+
     }
 @app.get("/api/health")
 def health():
