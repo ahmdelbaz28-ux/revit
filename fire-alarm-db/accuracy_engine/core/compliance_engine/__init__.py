@@ -1,21 +1,16 @@
-"""Compliance Engine - Enterprise-grade traceable compliance verification."""
+"""Compliance Engine v1 - Enterprise-grade compliance verification."""
 
-from core.compliance_engine.rule_registry import (
-    get_all_rules,
-    get_rule_by_id,
-    get_rules_by_category,
-    get_rules_by_severity,
-    ComplianceRule
-)
+from core.compliance_engine.base_rule import Rule, Violation
+from core.compliance_engine.compliance_context import ComplianceContext
+from core.compliance_engine.rule_registry import RuleRegistry
+from core.compliance_engine.compliance_runner import ComplianceRunner
 from core.compliance_engine.engine import run_compliance_verification
-from core.compliance_engine.audit_logger import AuditLog
 
 __all__ = [
-    "run_compliance_verification",
-    "get_all_rules",
-    "get_rule_by_id",
-    "get_rules_by_category",
-    "get_rules_by_severity",
-    "ComplianceRule",
-    "AuditLog"
+    "Rule",
+    "Violation",
+    "ComplianceContext",
+    "RuleRegistry",
+    "ComplianceRunner",
+    "run_compliance_verification"
 ]
