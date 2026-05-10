@@ -28,6 +28,7 @@ from core.monte_carlo.statistics import analyze_results
 from core.monte_carlo.reporting import generate_risk_report
 from core.risk_graph.engine import run_risk_graph
 from core.risk_tensor.engine import run_composite_risk_analysis
+from core.gkil.semantic_mapper import SemanticGeometryMapper
 
 app = FastAPI(title="FireAlarmAI Accuracy Engine")
 
@@ -440,3 +441,81 @@ def composite_risk(request: EngineRequest, scenarios: int = 100):
 
     result = run_composite_risk_analysis(rooms, devices, validation, scenarios)
     return result
+
+
+@app.post("/api/export-cad-graph")
+def export_cad_graph(request: EngineRequest):
+    rooms = [r.model_dump() for r in request.rooms]
+    from core.risk_tensor.engine import run_composite_risk_analysis
+    from core.risk_tensor.system_topology import build_system_topology
+
+    result = run_composite_risk_analysis(rooms, [], {"coverage": 0.95}, num_scenarios=10)
+
+    mapper = SemanticGeometryMapper()
+
+    cad_graphs = []
+    for room in rooms:
+        topology = build_system_topology(room, [])
+        from core.risk_tensor.constraint_graph import DifferentiableConstraintGraph
+        constraint_graph = DifferentiableConstraintGraph()
+
+        spectral_metadata = {
+            "project_name": "FireAlarmAI Export",
+            "risk_index": result.get("composite_risk_index", 0.0),
+            "spectral_radius": result.get("dimensions", {}).get("failure_probability", 0.0)
+        }
+
+        cad_graph = mapper.spectral_to_cad(topology, constraint_graph, spectral_metadata)
+        cad_graphs.append({
+            "graph_id": cad_graph.graph_id,
+            "project_name": cad_graph.project_name,
+            "vertices_count": len(cad_graph.vertices),
+            "edges_count": len(cad_graph.edges),
+            "constraints_count": len(cad_graph.constraints),
+            "zones_count": len(cad_graph.zones),
+            "vertices": [
+                {
+                    "vertex_id": v.vertex_id,
+                    "x": v.x,
+                    "y": v.y,
+                    "z": v.z,
+                    "entity_type": v.entity_type.value,
+                    "spectral_metadata": v.spectral_metadata
+                }
+                for v in cad_graph.vertices
+            ],
+            "edges": [
+                {
+                    "edge_id": e.edge_id,
+                    "from": e.from_vertex,
+                    "to": e.to_vertex,
+                    "length": e.length
+                }
+                for e in cad_graph.edges
+            ],
+            "constraints": [
+                {
+                    "constraint_id": c.constraint_id,
+                    "NFPA_reference": c.NFPA_reference,
+                    "severity": c.severity
+                }
+                for c in cad_graph.constraints
+            ],
+            "zones": [
+                {
+                    "zone_id": z.zone_id,
+                    "spectral_risk": z.spectral_risk,
+                    "stability_index": z.stability_index
+                }
+                for z in cad_graph.zones
+            ]
+        })
+
+    return {
+        "status": "exported",
+        "cad_graphs": cad_graphs,
+        "total_vertices": sum(len(g["vertices"]) for g in cad_graphs),
+        "total_edges": sum(len(g["edges"]) for g in cad_graphs),
+        "total_constraints": sum(len(g["constraints"]) for g in cad_graphs),
+        "total_zones": sum(len(g["zones"]) for g in cad_graphs)
+    }
