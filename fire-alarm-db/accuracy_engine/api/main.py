@@ -29,6 +29,7 @@ from core.monte_carlo.reporting import generate_risk_report
 from core.risk_graph.engine import run_risk_graph
 from core.risk_tensor.engine import run_composite_risk_analysis
 from core.gkil.semantic_mapper import SemanticGeometryMapper
+from core.gkil.decision_stratification import DecisionStratificationEngine
 
 app = FastAPI(title="FireAlarmAI Accuracy Engine")
 
@@ -518,4 +519,63 @@ def export_cad_graph(request: EngineRequest):
         "total_edges": sum(len(g["edges"]) for g in cad_graphs),
         "total_constraints": sum(len(g["constraints"]) for g in cad_graphs),
         "total_zones": sum(len(g["zones"]) for g in cad_graphs)
+    }
+
+
+@app.post("/api/validate-stratification")
+def validate_stratification(request: EngineRequest):
+    rooms = [r.model_dump() for r in request.rooms]
+    from core.risk_tensor.engine import run_composite_risk_analysis
+    from core.risk_tensor.system_topology import build_system_topology
+
+    engine = DecisionStratificationEngine()
+
+    states = []
+    decisions = []
+
+    for room in rooms:
+        topology = build_system_topology(room, [])
+        for node in topology.nodes:
+            state = {
+                "x": getattr(node, 'x', 0.0),
+                "y": getattr(node, 'y', 0.0),
+                "failure_probability": getattr(node, 'failure_probability', 0.0),
+                "coverage_strength": getattr(node, 'coverage_strength', 1.0),
+                "influence_radius": getattr(node, 'influence_radius', 7.5),
+                "status": 1.0 if getattr(node, 'status', '') == "failed" else 0.0
+            }
+            states.append(state)
+
+            if getattr(node, 'status', '') == "failed":
+                decisions.append("CRITICAL")
+            elif getattr(node, 'failure_probability', 0.0) > 0.3:
+                decisions.append("HIGH")
+            elif getattr(node, 'failure_probability', 0.0) > 0.1:
+                decisions.append("MEDIUM")
+            else:
+                decisions.append("LOW")
+
+    sufficient_stats = engine.find_sufficient_statistics(states, decisions)
+    strata_map = engine.construct_quotient_map(states, decisions)
+    validation = engine.validate_stratification()
+
+    return {
+        "total_states": len(states),
+        "total_decisions": len(set(decisions)),
+        "sufficient_statistics": [
+            {
+                "metric_name": s.metric_name,
+                "importance_score": round(s.importance_score, 4),
+                "decision_correlation": round(s.decision_correlation, 4),
+                "preserves_boundary": s.preserves_boundary
+            }
+            for s in sufficient_stats[:10]
+        ],
+        "stratification": {
+            "total_strata": validation["total_strata"],
+            "decision_classes": validation["decision_classes"],
+            "is_valid": validation["is_valid"],
+            "violations_count": len(validation["violations"])
+        },
+        "boundary_metrics": engine.boundary_metrics
     }

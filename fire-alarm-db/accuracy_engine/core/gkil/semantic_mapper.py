@@ -1,5 +1,6 @@
 from typing import List, Dict, Tuple, Optional
 from core.risk_tensor.constraint_graph import DifferentiableConstraintGraph
+from core.gkil.decision_stratification import DecisionStratificationEngine
 from core.gkil.cad_data_model import (
     CADGraph, CADVertex, CADEdge, CADConstraint, CADZone, CADEntityType
 )
@@ -138,3 +139,25 @@ class SemanticGeometryMapper:
     def _next_zone_id(self) -> int:
         self.zone_counter += 1
         return self.zone_counter
+
+    def validate_decision_preservation(self, states: List[Dict], decisions: List[str]) -> Dict:
+        engine = DecisionStratificationEngine()
+        strata_map = engine.construct_quotient_map(states, decisions)
+        validation = engine.validate_stratification()
+
+        return {
+            "is_valid": validation["is_valid"],
+            "violations": validation["violations"],
+            "total_strata": validation["total_strata"],
+            "decision_classes": validation["decision_classes"],
+            "sufficient_statistics": [
+                {
+                    "metric_name": s.metric_name,
+                    "importance_score": s.importance_score,
+                    "decision_correlation": s.decision_correlation,
+                    "preserves_boundary": s.preserves_boundary
+                }
+                for s in engine.sufficient_stats[:5]
+            ],
+            "boundary_metrics": engine.boundary_metrics
+        }
