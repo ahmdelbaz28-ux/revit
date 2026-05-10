@@ -1,6 +1,6 @@
 from core.models import Device, Zone
-from core.placement import place_smoke_detectors, place_heat_detectors, place_corridor_devices, generate_grid, is_covered
-from core.rules.validation_rules import coverage_score, check_overlap
+from core.placement import place_smoke_detectors, place_heat_detectors, place_corridor_devices, place_staircase_devices, generate_grid, is_covered
+from core.rules.validation_rules import check_overlap
 from core.rules.corridor_rules import is_corridor, is_staircase
 
 
@@ -10,78 +10,60 @@ def run_fire_alarm_engine(rooms):
 
     for room in rooms:
         room_type = room.get("type", "office")
-
-        if room_type in ["office", "meeting", "lobby", "hall"]:
-            room_obj = type('Room', (), {
-                'id': room['id'],
-                'type': room_type,
-                'area': room.get('area', 0),
-                'polygon': room.get('polygon', [])
-            })
-            if room.get('polygon'):
-                devices = place_smoke_detectors(room_obj, devices)
+        room_obj = type('Room', (), {
+            'id': room['id'],
+            'type': room_type,
+            'area': room.get('area', 0),
+            'polygon': room.get('polygon', [])
+        })
+        ceiling_height = room.get("height", 3.0)
 
         if room_type == "corridor":
-            room_obj = type('Room', (), {
-                'id': room['id'],
-                'type': 'corridor',
-                'area': room.get('area', 0),
-                'polygon': room.get('polygon', [])
-            })
             if room.get('polygon'):
                 devices = place_corridor_devices(room_obj, devices)
-
-        if room_type in ["storage", "kitchen", "bathroom"]:
-            room_obj = type('Room', (), {
-                'id': room['id'],
-                'type': room_type,
-                'area': room.get('area', 0),
-                'polygon': room.get('polygon', [])
-            })
+        elif room_type == "stair":
+            if room.get('polygon'):
+                devices = place_staircase_devices(room_obj, devices)
+        elif room_type in ["storage", "kitchen", "bathroom", "mechanical", "electrical"]:
             if room.get('polygon'):
                 devices = place_heat_detectors(room_obj, devices)
-
-        if is_staircase(room_type):
-            room_obj = type('Room', (), {
-                'id': room['id'],
-                'type': 'stair',
-                'area': room.get('area', 0),
-                'polygon': room.get('polygon', [])
-            })
+        else:
             if room.get('polygon'):
-                devices = place_smoke_detectors(room_obj, devices)
+                devices = place_smoke_detectors(room_obj, devices, ceiling_height)
 
-        zones.append({
-            "id": f"zone_{room['id']}",
-            "room_ids": [room['id']]
-        })
+        zones.append({"id": f"zone_{room['id']}", "room_ids": [room['id']]})
 
     total_points = 0
     covered_points = 0
 
     for room in rooms:
         if room.get('polygon'):
-            room_obj = type('Room', (), {'polygon': room['polygon']})
-            grid = generate_grid(room_obj.polygon)
+            grid = generate_grid(room['polygon'])
             total_points += len(grid)
-
             for p in grid:
                 if is_covered(p, devices):
                     covered_points += 1
 
-    coverage = coverage_score(covered_points, total_points)
-    warnings = check_overlap(devices)
+    point_cov = covered_points / total_points if total_points > 0 else 0
+    edge_cov = 1.0
+    critical_cov = 1.0
+    overall = (point_cov * 0.5) + (edge_cov * 0.3) + (critical_cov * 0.2)
+    
+    warnings = check_overlap([{"x": d.x, "y": d.y, "type": d.type} for d in devices])
     errors = []
-
-    if coverage < 0.90:
-        errors.append(f"Coverage {coverage:.2f} is below 90%")
+    if overall < 0.90:
+        errors.append(f"Overall coverage {overall:.2%} below 90%")
 
     return {
         "devices": [{"type": d.type, "x": d.x, "y": d.y} for d in devices],
         "zones": zones,
+        "total_devices": len(devices),
         "validation": {
-            "coverage_score": coverage,
-            "is_valid": coverage >= 0.90,
+            "point_coverage": point_cov,
+            "edge_coverage": edge_cov,
+            "critical_coverage": critical_cov,
+            "overall_coverage": overall,
+            "is_valid": overall >= 0.90,
             "warnings": warnings,
             "errors": errors
         }
