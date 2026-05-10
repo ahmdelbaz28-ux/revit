@@ -39,8 +39,13 @@
         let proofData = null, snapshotData = null;
         
         function canonicalJSON(obj) {
-            // FIX: Exact alignment with Python's sort_keys=True, separators=(',', ':')
-            if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
+            const PRECISION = 6;
+            if (obj === null || typeof obj !== 'object') {
+                if (typeof obj === 'number') {
+                    return Math.round(obj * Math.pow(10, PRECISION)) / Math.pow(10, PRECISION);
+                }
+                return JSON.stringify(obj);
+            }
             if (Array.isArray(obj)) {
                 return '[' + obj.map(canonicalJSON).join(',') + ']';
             }
