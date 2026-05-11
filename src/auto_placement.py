@@ -28,7 +28,7 @@ def suggest_devices(
     room_height = max_y - min_y
 
     # 2. لا هامش - نغطي كل المساحة
-    edge_margin = 0.1  # minimal margin to avoid wall edge cases
+    edge_margin = max(0.3, device_spacing / 6)  # Dynamic margin based on spacing to avoid wall edge cases
 
     # 3. المساحة الفعالة
     eff_w = max(0.0, room_width - 2 * edge_margin)
