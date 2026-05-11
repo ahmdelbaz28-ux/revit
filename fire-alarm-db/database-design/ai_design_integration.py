@@ -22,7 +22,7 @@ from dataclasses import dataclass, asdict
 from sqlalchemy import (
     create_engine, Column, Integer, String, Float, Boolean, DateTime,
     Text, DECIMAL, ForeignKey, CheckConstraint, UniqueConstraint,
-    Index, Sequence
+    Index, Sequence, JSON
 )
 from sqlalchemy.orm import relationship, sessionmaker, declarative_base, Session
 from sqlalchemy.dialects.postgresql import JSONB, BYTEA
