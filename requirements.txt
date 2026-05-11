@@ -4,3 +4,4 @@ click>=8.0
 
 # Cable Routing Dependencies
 networkx>=3.0
+ezdxf>=0.18
