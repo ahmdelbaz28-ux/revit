@@ -50,3 +50,15 @@
 - Provide context when needed
 - Acknowledge uncertainties
 - Ask clarifying questions when unclear
+
+---
+
+## Project-Specific Learnings
+
+### FireAI CLI Implementation (2026-05-11)
+
+**Issue:** EZDXF library uses `get_points()` method for LWPOLYLINE entities, not `vertices` property.
+
+**Fix:** Use `entity.get_points()` which returns list of tuples `(x, y, z, start_width, end_width)` instead of iterating over `entity.vertices`.
+
+**Key insight:** When importing DXF files, EZDXF newer versions changed API - always check the actual data structure by printing debug info.

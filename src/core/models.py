@@ -128,6 +128,26 @@ class Polygon:
             area -= self.exterior[j].x * self.exterior[i].y
         
         return abs(area) / 2.0
+    
+    def is_point_inside(self, point: 'Point') -> bool:
+        """Check if point is inside polygon using ray casting algorithm"""
+        if not self.exterior or len(self.exterior) < 3:
+            return False
+        
+        n = len(self.exterior)
+        inside = False
+        
+        j = n - 1
+        for i in range(n):
+            xi, yi = self.exterior[i].x, self.exterior[i].y
+            xj, yj = self.exterior[j].x, self.exterior[j].y
+            
+            if ((yi > point.y) != (yj > point.y)) and (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi):
+                inside = not inside
+            
+            j = i
+        
+        return inside
 
 
 @dataclass
