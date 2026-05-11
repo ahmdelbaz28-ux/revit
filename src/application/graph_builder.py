@@ -131,7 +131,7 @@ class GraphBuilder:
                 is_panel=True
             )
             
-            # ربط اللوحة بأقرب نقاط الشبكة
+            # ربط اللوحة بأقرب نقاط الشبكة (WITHOUT crossing walls)
             panel_x, panel_y = panel_pos
             for node in list(self.graph.nodes()):
                 if node == 'panel':
@@ -140,7 +140,8 @@ class GraphBuilder:
                 if pos:
                     dx = abs(pos[0] - panel_x)
                     dy = abs(pos[1] - panel_y)
-                    if dx < 1.5 or dy < 1.5:  # Connect to neighboring nodes
+                    # Connect to immediate neighbors only
+                    if dx <= 1.0 and dy <= 1.0:
                         dist = (dx**2 + dy**2) ** 0.5
                         self.graph.add_edge(node, 'panel', weight=dist)
         
@@ -199,8 +200,8 @@ class GraphBuilder:
         """تصفية النقاط غير المعيقة"""
         valid = []
         
-        # إنشاء buffer للجدران
-        wall_buffer = 0.2  # 20cm clearance
+        # توسيع الجدار للتحقق من النقاط القريبة جداً
+        wall_buffer = 0.6  # 60cm - must be larger than grid to ensure blocking
         
         for x, y in points:
             pt = geom.Point(x, y)
@@ -248,9 +249,21 @@ class GraphBuilder:
                 
                 if (dx < 0.1 and dy < threshold) or (dy < 0.1 and dx < threshold):
                     distance = (dx**2 + dy**2) ** 0.5
-                    G.add_edge(i, j, weight=distance)
+                    if not self._edge_crosses_walls(x1, y1, x2, y2):
+                                            G.add_edge(i, j, weight=distance)
         
         return G
+
+
+    def _edge_crosses_walls(self, x1, y1, x2, y2) -> bool:
+        """Check if an edge crosses any wall"""
+        import shapely.geometry as geom
+        edge = geom.LineString([(x1, y1), (x2, y2)])
+        for wall in self.walls:
+            if edge.crosses(wall):
+                return True
+        return False
+
     
     def _nearest_valid_point(
         self,
@@ -282,6 +295,12 @@ class GraphBuilder:
         """الحصول على أقرب node integer لجهاز"""
         if not self.graph:
             return None
+
+        # Check if device is outside boundary
+        if self.boundary:
+            pt = geom.Point(device_position[0], device_position[1])
+            if not self.boundary.contains(pt):
+                return None
 
         # Get only integer nodes (not panel string node)
         int_nodes = [n for n in self.graph.nodes() if isinstance(n, int)]

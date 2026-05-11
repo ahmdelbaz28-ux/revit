@@ -73,6 +73,8 @@ class CableRouter:
         
         # 2. ربط جميع الأجهزة بالرسم البياني
         device_nodes = {}
+        skipped_devices = []
+        
         for device in devices:
             if device.position:
                 node = self.graph_builder.get_device_node(
@@ -80,6 +82,11 @@ class CableRouter:
                 )
                 if node is not None:
                     device_nodes[device.device_id] = node
+                else:
+                    skipped_devices.append(device.device_id)
+        
+        if skipped_devices:
+            print(f"Warning: {len(skipped_devices)} device(s) could not be mapped to graph: {skipped_devices}")
         
         # 3. حساب المسارات
         all_paths = []

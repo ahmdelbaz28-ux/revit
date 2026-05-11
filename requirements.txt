@@ -1,3 +1,6 @@
 ezdxf>=0.18
 shapely>=2.0
 click>=8.0
+
+# Cable Routing Dependencies
+networkx>=3.0
