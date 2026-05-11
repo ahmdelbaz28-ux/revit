@@ -1,5 +1,5 @@
 ezdxf>=0.18
-shapely>=2.0
+shapely>=2.1.2
 click>=8.0
 
 # Cable Routing Dependencies
