@@ -1,309 +1,411 @@
 #!/usr/bin/env python3
 """
-rule_checker.py - Routing Rule Validation for Cable Networks
-==========================================================
+rule_checker.py - Self-Review Module for Cable Routing
+==================================================
 
-Validates cable routing against design standards:
-- Voltage drop calculations
+This module validates cable routing against physical and electrical constraints:
 - Loop length limits
+- Voltage drop calculations
 - Device count per loop
-- NFPA72, BS5839 compliance
+- Fire wall penetration warnings
 
-Usage:
-    from rule_checker import RoutingValidator
-    validator = RoutingValidator(session)
-    validator.load_standards_from_db()
-    result = validator.check_voltage_drop(connection, source_voltage)
+Author: FireAlarmAI Engineering Team
+Date: 2026-05-09
 """
 
+import os
+import sys
+import json
 import logging
-from typing import Optional, Dict, List, Any, Tuple
-from sqlalchemy.orm import Session
+import math
+from typing import Dict, List, Tuple, Optional, Any
+from dataclasses import dataclass
+from datetime import datetime
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 
+# =============================================================================
+# Validation Result Data Classes
+# =============================================================================
+
+@dataclass
+class ValidationResult:
+    """Result of a validation check"""
+    passed: bool
+    check_name: str
+    message: str
+    details: Dict = None
+    
+    def __post_init__(self):
+        if self.details is None:
+            self.details = {}
+
+
+# =============================================================================
+# Routing Validator
+# =============================================================================
+
 class RoutingValidator:
     """
-    Validate cable routing against design standards.
+    Self-Review Module for Cable Routing
     
-    Loads standards from DesignStandard table and falls back to
-    defaults if not found in database.
+    Validates routing against:
+    - Maximum loop length (NFPA 72 default: 2000m for SLC)
+    - Voltage drop (max 10% for nominal 24V system)
+    - Maximum devices per loop (250 for SLC)
+    - Fire wall penetration detection
     """
     
-    # Default values if DB standards not available
-    DEFAULT_MAX_VOLTAGE_DROP_PERCENT = 10.0  # 10% max voltage drop
-    DEFAULT_MAX_LOOP_LENGTH = 100.0  # meters
-    DEFAULT_MAX_DEVICES_PER_LOOP = 25
+    # Standard thresholds
+    DEFAULT_MAX_LOOP_LENGTH = 2000  # meters (NFPA 72 SLC)
+    DEFAULT_MAX_VOLTAGE_DROP = 0.10  # 10% of nominal
+    DEFAULT_MAX_DEVICES_PER_LOOP = 250
+    DEFAULT_PANEL_VOLTAGE = 24.0  # Volts
     
-    def __init__(self, session: Session):
+    # Wire gauge resistance (ohms per 1000ft)
+    WIRE_RESISTANCE = {
+        22: 16.0,
+        20: 10.0,
+        18: 6.4,
+        16: 4.0,
+        14: 2.5,
+        12: 1.6,
+        10: 1.0,
+    }
+    
+    # Device typical current draw (amps)
+    DEVICE_CURRENT_DRAW = {
+        'SmokeDetector': 0.0001,  # 100µA standby
+        'HeatDetector': 0.0001,
+        'ManualCallPoint': 0.0001,
+        'Speaker': 0.05,  # 50mA at rated
+        'Horn': 0.10,    # 100mA
+        'Strobe': 0.15,  # 150mA
+        'Panel': 0.0,    # Power source
+    }
+    
+    def __init__(self, 
+                max_loop_length: float = DEFAULT_MAX_LOOP_LENGTH,
+                max_voltage_drop: float = DEFAULT_MAX_VOLTAGE_DROP,
+                max_devices: int = DEFAULT_MAX_DEVICES_PER_LOOP):
+        self.max_loop_length = max_loop_length
+        self.max_voltage_drop = max_voltage_drop
+        self.max_devices = max_devices
+        logger.info(f"RoutingValidator initialized")
+        logger.info(f"  Max loop length: {max_loop_length}m")
+        logger.info(f"  Max voltage drop: {max_voltage_drop*100}%")
+        logger.info(f"  Max devices: {max_devices}")
+    
+    def check_loop_length(self, 
+                          connections: List[Dict],
+                          max_length: float = None) -> ValidationResult:
         """
-        Initialize validator with database session.
+        Check if total loop length is within limits
         
         Args:
-            session: SQLAlchemy session
-        """
-        self.session = session
-        
-        # Standards values (loaded from DB or defaults)
-        self.max_voltage_drop_percent = self.DEFAULT_MAX_VOLTAGE_DROP_PERCENT
-        self.max_loop_length = self.DEFAULT_MAX_LOOP_LENGTH
-        self.max_devices_per_loop = self.DEFAULT_MAX_DEVICES_PER_LOOP
-        
-        self._standards_loaded = False
-    
-    def load_standards_from_db(self, standard_name: str = 'international') -> bool:
-        """
-        Load routing standards from DesignStandard table.
-        
-        Args:
-            standard_name: Standard name to load ('international', 'nfpa72', etc.)
+            connections: List of device connection dicts with 'total_length'
+            max_length: Maximum allowed length (default: self.max_loop_length)
             
         Returns:
-            True if standards loaded successfully, False otherwise
+            ValidationResult
         """
-        try:
-            from ai_design_integration import DesignStandard
-            
-            # Try to find international standards
-            standard = self.session.query(DesignStandard).filter(
-                DesignStandard.StandardName == standard_name
-            ).first()
-            
-            if standard:
-                # Parse specifications
-                specs = standard.Specifications or {}
-                
-                self.max_voltage_drop_percent = specs.get(
-                    'max_voltage_drop_percent',
-                    self.DEFAULT_MAX_VOLTAGE_DROP_PERCENT
-                )
-                self.max_loop_length = specs.get(
-                    'max_loop_length',
-                    self.DEFAULT_MAX_LOOP_LENGTH
-                )
-                self.max_devices_per_loop = specs.get(
-                    'max_devices_per_loop',
-                    self.DEFAULT_MAX_DEVICES_PER_LOOP
-                )
-                
-                self._standards_loaded = True
-                logger.info(f"Loaded routing standards from DB: {standard_name}")
-                logger.info(f"  max_voltage_drop: {self.max_voltage_drop_percent}%")
-                logger.info(f"  max_loop_length: {self.max_loop_length}m")
-                logger.info(f"  max_devices_per_loop: {self.max_devices_per_loop}")
-                
-                return True
-            else:
-                logger.warning(f"Standard '{standard_name}' not found in DB, using defaults")
-                return False
-                
-        except Exception as e:
-            logger.warning(f"Could not load standards from DB: {e}")
-            return False
-    
-    def get_settings(self) -> Dict[str, float]:
-        """
-        Get current routing validation settings.
+        max_len = max_length or self.max_loop_length
         
-        Returns:
-            Dict with max_voltage_drop_percent, max_loop_length, max_devices_per_loop
-        """
-        if not self._standards_loaded:
-            self.load_standards_from_db()
-        
-        return {
-            'max_voltage_drop_percent': self.max_voltage_drop_percent,
-            'max_loop_length': self.max_loop_length,
-            'max_devices_per_loop': self.max_devices_per_loop,
-            'source': 'database' if self._standards_loaded else 'defaults'
-        }
-    
-    def check_voltage_drop(
-        self,
-        connection: Any,
-        source_voltage: float = 24.0
-    ) -> Tuple[bool, float]:
-        """
-        Check voltage drop for a device connection.
-        
-        Args:
-            connection: DeviceConnection object with CalculatedLength and CableType
-            source_voltage: Source voltage (24V for fire alarm, 48V for CCTV)
-            
-        Returns:
-            Tuple of (passes_check, voltage_drop_percent)
-        """
-        if not self._standards_loaded:
-            self.load_standards_from_db()
-        
-        # Get cable type resistance (ohms per 1000ft)
-        cable_resistance = {
-            'CCTVCable': 0.075,  # 18 AWG
-            'FireAlarmCable': 0.065,  # 16 AWG
-            'DataCable': 0.1,  # Cat5e
-            'ControlCable': 0.05,  # 14 AWG
-            'PowerCable': 0.03,  # 12 AWG
-        }.get(connection.CableType, 0.05)
-        
-        # Calculate voltage drop: V_drop = I * R * Length
-        # Assume 0.5A per device for fire alarm, 0.25A for CCTV
-        current = 0.5 if connection.CableType == 'FireAlarmCable' else 0.25
-        length_km = (connection.CalculatedLength or 0) / 1000  # Convert m to km
-        
-        voltage_drop = current * cable_resistance * length_km
-        voltage_drop_percent = (voltage_drop / source_voltage) * 100
-        
-        passes = voltage_drop_percent <= self.max_voltage_drop_percent
-        
-        logger.info(f"Voltage drop check: {voltage_drop_percent:.2f}% (max: {self.max_voltage_drop_percent}%)")
-        
-        return passes, voltage_drop_percent
-    
-    def check_loop_length(
-        self,
-        loop_devices: List[Any]
-    ) -> Tuple[bool, float]:
-        """
-        Check total loop length against max allowed.
-        
-        Args:
-            loop_devices: List of DeviceConnection objects in the loop
-            
-        Returns:
-            Tuple of (passes_check, total_length_meters)
-        """
-        if not self._standards_loaded:
-            self.load_standards_from_db()
-        
-        total_length = sum(
-            (conn.CalculatedLength or 0)
-            for conn in loop_devices
+        total = sum(
+            c.get('total_length', c.get('CalculatedLength', 0))
+            for c in connections
         )
         
-        passes = total_length <= self.max_loop_length
+        passed = total <= max_len
         
-        logger.info(f"Loop length check: {total_length:.1f}m (max: {self.max_loop_length}m)")
-        
-        return passes, total_length
-    
-    def check_device_count_per_loop(
-        self,
-        loop_id: str,
-        all_connections: List[Any]
-    ) -> Tuple[bool, int]:
-        """
-        Check number of devices per loop.
-        
-        Args:
-            loop_id: Loop ID to check
-            all_connections: All connection records
-            
-        Returns:
-            Tuple of (passes_check, device_count)
-        """
-        if not self._standards_loaded:
-            self.load_standards_from_db()
-        
-        device_count = sum(
-            1 for conn in all_connections
-            if conn.LoopID == loop_id
+        return ValidationResult(
+            passed=passed,
+            check_name="Loop Length",
+            message=f"Total length {total:.1f}m {'within' if passed else 'exceeds'} limit {max_len}m",
+            details={
+                'total_length': total,
+                'max_length': max_len,
+                'margin': max_len - total if passed else None,
+                'excess': total - max_len if not passed else None
+            }
         )
-        
-        passes = device_count <= self.max_devices_per_loop
-        
-        logger.info(f"Device count check: {device_count} (max: {self.max_devices_per_loop})")
-        
-        return passes, device_count
     
-    def validate_connection(
-        self,
-        connection: Any,
-        source_voltage: float = 24.0,
-        loop_devices: Optional[List[Any]] = None
-    ) -> Dict[str, Any]:
+    def check_voltage_drop(self,
+                        connections: List[Dict],
+                        wire_gauge: int = 18,
+                        panel_voltage: float = DEFAULT_PANEL_VOLTAGE) -> ValidationResult:
         """
-        Run full validation on a connection.
+        Check voltage drop along the loop
+        
+        Uses simple formula: V_drop = I * R * L
+        where:
+        - I = total current draw
+        - R = resistance per length (from wire gauge table)
+        - L = total loop length in thousands of feet
         
         Args:
-            connection: DeviceConnection to validate
-            source_voltage: Source voltage
-            loop_devices: List of devices in same loop
+            connections: List of device connections with device info
+            wire_gauge: Wire gauge (AWG)
+            panel_voltage: Panel nominal voltage
             
         Returns:
-            Dict with validation results
+            ValidationResult
+        """
+        # Get wire resistance (ohms per 1000ft)
+        resistance = self.WIRE_RESISTANCE.get(wire_gauge, 6.4)
+        
+        # Get total loop length in feet
+        total_length_m = sum(
+            c.get('total_length', c.get('CalculatedLength', 0))
+            for c in connections
+        )
+        total_length_ft = total_length_m * 3.28084  # Convert to feet
+        
+        # Calculate total current
+        total_current = 0
+        for conn in connections:
+            dev_type = conn.get('device_type', 'SmokeDetector')
+            current = self.DEVICE_CURRENT_DRAW.get(dev_type, 0.0001)
+            total_current += current
+        
+        # Voltage drop calculation
+        # V_drop = I * (R/1000) * (L/1000) converted to metric
+        length_kft = total_length_ft / 1000
+        voltage_drop = total_current * resistance * length_kft
+        
+        drop_percent = voltage_drop / panel_voltage
+        passed = drop_percent <= self.max_voltage_drop
+        
+        return ValidationResult(
+            passed=passed,
+            check_name="Voltage Drop",
+            message=f"Voltage drop {voltage_drop:.2f}V ({drop_percent*100:.1f%}) {'within' if passed else 'exceeds'} limit",
+            details={
+                'voltage_drop': voltage_drop,
+                'drop_percent': drop_percent,
+                'max_percent': self.max_voltage_drop,
+                'total_current': total_current,
+                'wire_gauge': wire_gauge,
+                'resistance_ohm_per_kft': resistance,
+                'loop_length_m': total_length_m,
+                'loop_length_ft': total_length_ft
+            }
+        )
+    
+    def check_device_count_per_loop(self,
+                              loop_id: int,
+                              device_count: int = None,
+                              max_devices: int = None) -> ValidationResult:
+        """
+        Check if device count on loop is within limits
+        
+        Args:
+            loop_id: Loop ID for logging
+            device_count: Number of devices on loop
+            max_devices: Maximum allowed (default: self.max_devices)
+            
+        Returns:
+            ValidationResult
+        """
+        max_devs = max_devices or self.max_devices
+        
+        passed = device_count <= max_devs
+        
+        return ValidationResult(
+            passed=passed,
+            check_name="Device Count",
+            message=f"Loop {loop_id}: {device_count} devices {'within' if passed else 'exceeds'} limit {max_devs}",
+            details={
+                'loop_id': loop_id,
+                'device_count': device_count,
+                'max_devices': max_devs,
+                'margin': max_devs - device_count if passed else None,
+                'excess': device_count - max_devs if not passed else None
+            }
+        )
+    
+    def check_fire_wall_penetration(self,
+                                path_segments: List[Dict]) -> ValidationResult:
+        """
+        Check if path passes through fire walls
+        
+        Args:
+            path_segments: List of segment dicts with 'segment_type' or 'segment_type'
+            
+        Returns:
+            ValidationResult
+        """
+        fire_wall_segments = []
+        
+        for seg in path_segments:
+            seg_type = seg.get('segment_type', seg.get('type', 'unknown'))
+            if seg_type == 'FireWall':
+                fire_wall_segments.append(seg)
+        
+        passed = len(fire_wall_segments) == 0
+        
+        return ValidationResult(
+            passed=passed,
+            check_name="Fire Wall Penetration",
+            message=f"{'No' if passed else f'{len(fire_wall_segments)}'} fire wall penetrations detected",
+            details={
+                'count': len(fire_wall_segments),
+                'penetrations': fire_wall_segments
+            }
+        )
+    
+    def check_all(self,
+               connections: List[Dict],
+               loop_id: int = 1,
+               wire_gauge: int = 18,
+               panel_voltage: float = DEFAULT_PANEL_VOLTAGE) -> Dict:
+        """
+        Run all validation checks
+        
+        Args:
+            connections: List of device connections
+            loop_id: Loop ID for logging
+            wire_gauge: Wire gauge for voltage drop
+            panel_voltage: Panel voltage
+            
+        Returns:
+            Dict with all validation results
         """
         results = {
-            'connection_id': connection.ConnectionID,
-            'passed': True,
-            'issues': []
+            'loop_id': loop_id,
+            'checks': {}
         }
         
-        # Check voltage drop
-        passes_vd, vd_percent = self.check_voltage_drop(connection, source_voltage)
-        results['voltage_drop'] = {
-            'passed': passes_vd,
-            'percent': vd_percent
-        }
-        if not passes_vd:
-            results['passed'] = False
-            results['issues'].append(f'Voltage drop {vd_percent:.1f}% exceeds limit')
+        # Extract path segments
+        all_segments = []
+        for conn in connections:
+            segments = conn.get('segments', [])
+            all_segments.extend(segments)
         
-        # Check loop length if loop_devices provided
-        if loop_devices:
-            passes_len, length = self.check_loop_length(loop_devices)
-            results['loop_length'] = {
-                'passed': passes_len,
-                'meters': length
-            }
-            if not passes_len:
-                results['passed'] = False
-                results['issues'].append(f'Loop length {length:.1f}m exceeds limit')
+        # Run checks
+        results['checks']['loop_length'] = self.check_loop_length(connections)
+        results['checks']['voltage_drop'] = self.check_voltage_drop(connections, wire_gauge, panel_voltage)
+        results['checks']['device_count'] = self.check_device_count_per_loop(
+            loop_id, len(connections)
+        )
+        results['checks']['fire_wall'] = self.check_fire_wall_penetration(all_segments)
+        
+        # Summary
+        all_passed = all(r.passed for r in results['checks'].values())
+        results['passed'] = all_passed
+        results['summary'] = f"{sum(1 for r in results['checks'].values() if r.passed)}/{len(results['checks'])} checks passed"
+        
+        # Warnings list
+        results['warnings'] = [
+            r.message for r in results['checks'].values() if not r.passed
+        ]
         
         return results
 
 
 # =============================================================================
-# Helper Functions
+# Integration with Pipeline
 # =============================================================================
 
-def validate_routing_compliance(
-    session: Session,
-    domain: str = 'FireAlarm'
-) -> Dict[str, Any]:
+def validate_routing_results(connections: List[Dict],
+                            loop_id: int = 1) -> Dict:
     """
-    Validate all routing for a domain against standards.
+    Validate routing results from pipeline
+    
+    This function is called by ai_design_pipeline.py after routing
     
     Args:
-        session: Database session
-        domain: Engineering domain
+        connections: List of DeviceConnection dicts
+        loop_id: Loop ID
         
     Returns:
         Dict with validation results
     """
-    validator = RoutingValidator(session)
-    validator.load_standards_from_db()
+    validator = RoutingValidator()
     
-    results = {
-        'domain': domain,
-        'settings': validator.get_settings(),
-        'validations': [],
-        'passed': True
-    }
+    # Convert to validation format
+    conn_dicts = []
+    for conn in connections:
+        conn_dicts.append({
+            'device_id': conn.get('DeviceID'),
+            'device_type': conn.get('DeviceType'),
+            'total_length': conn.get('CalculatedLength', 0),
+            'segments': json.loads(conn.get('PolylinePath', '[]'))
+        })
     
-    try:
-        from ai_design_integration import DeviceConnection
-        
-        connections = session.query(DeviceConnection).all()
-        
-        for conn in connections:
-            val_result = validator.validate_connection(conn)
-            results['validations'].append(val_result)
-            if not val_result['passed']:
-                results['passed'] = False
-                
-    except Exception as e:
-        logger.error(f"Validation error: {e}")
-        results['error'] = str(e)
+    # Run all checks
+    results = validator.check_all(conn_dicts, loop_id)
+    
+    # Log results
+    if results['passed']:
+        logger.info(f"Loop {loop_id}: All validations passed")
+    else:
+        logger.warning(f"Loop {loop_id}: Validation failures: {results['warnings']}")
     
     return results
+
+
+# =============================================================================
+# Entry Point
+# =============================================================================
+
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Routing Validator")
+    parser.add_argument('--loop-length', type=float, default=1800)
+    parser.add_argument('--wire-gauge', type=int, default=18)
+    parser.add_argument('--panel-voltage', type=float, default=24.0)
+    parser.add_argument('--device-count', type=int, default=200)
+    
+    args = parser.parse_args()
+    
+    print("\n" + "="*60)
+    print("ROUTING VALIDATOR TEST")
+    print("="*60)
+    
+    validator = RoutingValidator()
+    
+    # Test connections
+    connections = [
+        {'device_id': 1, 'device_type': 'SmokeDetector', 'total_length': 500},
+        {'device_id': 2, 'device_type': 'Speaker', 'total_length': 600},
+        {'device_id': 3, 'device_type': 'HeatDetector', 'total_length': 700},
+    ]
+    
+    # Test loop length
+    result = validator.check_loop_length(connections, args.loop_length)
+    print(f"\n1. Loop Length Check:")
+    print(f"   {result.message}")
+    
+    # Test voltage drop
+    result = validator.check_voltage_drop(connections, args.wire_gauge, args.panel_voltage)
+    print(f"\n2. Voltage Drop Check:")
+    print(f"   {result.message}")
+    
+    # Test device count
+    result = validator.check_device_count_per_loop(1, args.device_count)
+    print(f"\n3. Device Count Check:")
+    print(f"   {result.message}")
+    
+    # Test fire wall
+    segments = [
+        {'from_node': 1, 'to_node': 2, 'segment_type': 'CableTray'},
+        {'from_node': 2, 'to_node': 3, 'segment_type': 'FireWall'},
+    ]
+    result = validator.check_fire_wall_penetration(segments)
+    print(f"\n4. Fire Wall Check:")
+    print(f"   {result.message}")
+    
+    # All checks
+    all_results = validator.check_all(connections, 1, args.wire_gauge, args.panel_voltage)
+    print(f"\n{'='*60}")
+    print(f"SUMMARY: {all_results['summary']}")
+    if all_results['warnings']:
+        print(f"WARNINGS: {all_results['warnings']}")
