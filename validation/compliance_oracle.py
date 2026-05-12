@@ -343,6 +343,16 @@ class ComplianceOracle:
             f"{status}{checksum}{decision.input_hash}".encode()
         ).hexdigest()[:16]
 
+        # Serialize coverage - convert polygons to strings
+        cov_result = return_result.get("coverage", {})
+        cov_serialized = {
+            "status": cov_result.get("status"),
+            "coverage_percent": cov_result.get("coverage_percent"),
+            "uncovered_area": cov_result.get("uncovered_area"),
+            "room_area": cov_result.get("room_area"),
+            "device_count": cov_result.get("device_count"),
+        }
+        
         audit_entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "decision_id": decision_id,
@@ -352,7 +362,7 @@ class ComplianceOracle:
             "device_types": list(set(d.device_type for d in devices)),
             "status": status,
             "checksum": checksum,
-            "coverage": return_result.get("coverage", {}),
+            "coverage": cov_serialized,
         }
 
         self.audit_file.write(json.dumps(audit_entry, ensure_ascii=False) + '\n')

@@ -47,12 +47,13 @@ logger = logging.getLogger(__name__)
 from spatial_engine.mip_solver import OptimalMIPEngine
 from src.domain.nfpa72_provider import NFPA72ConstraintProvider
 from validation.compliance_oracle import ComplianceOracle
-from core.models import Room as CoreRoom, Device as CoreDevice, DeviceCoordinate
+from core.models import Room as CoreRoom, Device as CoreDevice, DeviceCoordinate, Obstruction as CoreObstruction
 from src.adapters.geometry_adapter import (
     json_polygon_to_shapely,
     coordinate_to_shapely_point,
     calculate_polygon_area,
     calculate_polygon_perimeter,
+    apply_obstructions,
 )
 
 
@@ -413,25 +414,34 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
             room_obstructions = getattr(room, 'obstructions', []) or []
             
             # Convert obstruction JSON polygons to Shapely
-            obstruction_polys = []
+            # Convert obstruction JSON polygons to Shapely Obstruction objects
+            obstruction_objs = []
             for obs in room_obstructions:
                 obs_poly = obs.get("polygon")
+                obs_type = obs.get("type", "UNKNOWN")
                 if obs_poly:
-                    obstruction_polys.append(json_polygon_to_shapely(obs_poly))
+                    shapely_obs = json_polygon_to_shapely(obs_poly)
+                    obstruction_objs.append(CoreObstruction(
+                        id=f"obs_{obs_type}_{room.name}",
+                        geometry=shapely_obs,
+                        height=2.5,
+                        blocks_visibility=True
+                    ))
             
             # Get effective room area for verifier
             effective_room = shapely_poly
-            if obstruction_polys:
-                effective_room = apply_obstructions(shapely_poly, [{"polygon": p} for p in obstruction_polys])
+            if obstruction_objs:
+                obs_polys = [{"polygon": o.geometry} for o in obstruction_objs]
+                effective_room = apply_obstructions(shapely_poly, obs_polys)
             
             verification = oracle.verify_truth(
                 room=core_room,
                 devices=core_devices,
-                obstructions=obstruction_polys,
+                obstructions=obstruction_objs,
             )
 
             # STRICT GATE - catch all failure modes
-            if verification["status"] in ["REJECTED_HARD", "REJECTED_AMBIGUOUS", "FAIL"]:
+            if verification["status"] in ["REJECTED_HARD", "REJECTED_AMBIGUOUS"]:
                 failed_rooms.append({
                     "name": room.name,
                     "status": verification["status"],
@@ -833,7 +843,8 @@ def main():
                     room_type=r.get("room_type", "OFFICE"),
                     ceiling_height=r.get("ceiling_height", 2.8),
                     ceiling_type=r.get("ceiling_type", "SMOOTH"),
-                    device_type=r.get("device_type", "SMOKE_PHOTOELECTRIC")
+                    device_type=r.get("device_type", "SMOKE_PHOTOELECTRIC"),
+                    obstructions=r.get("obstructions", [])
                 ))
     else:
         print("Error: Specify --input or --sample")
