@@ -21,14 +21,20 @@ class AutoCADAdapter:
     Adapter لربط AutoCAD مع FireAI Digital Twin
     """
     
-    def __init__(self, db_path: str = "fireai_universal.db"):
-        self.universal_model = UniversalDataModel(db_path)
+    def __init__(self, db=None, sync=None, use_mock: bool = True, db_path: str = "fireai_universal.db"):
+        if db is None:
+            self.universal_model = UniversalDataModel(db_path)
+        else:
+            self.universal_model = db
         self.dwg_parser = DWGParser()
-        self.live_sync = LiveSyncEngine(self.universal_model)
+        self.live_sync = sync
         self.is_monitoring = False
+        self.use_mock = use_mock
+        self._is_monitoring = False
+        self._mock_entities = {}
         self.autocad = None
         self.dwg_file_path = None
-        self.element_id_map: Dict[str, str] = {}  # DWG handle → Universal element ID
+        self.element_id_map: Dict[str, str] = {}
         
         logger.info("AutoCAD Adapter initialized")
     
@@ -49,6 +55,12 @@ class AutoCADAdapter:
     
     def start_monitoring(self):
         """بدء مراقبة التغييرات"""
+        if self.use_mock:
+            self._is_monitoring = True
+            self.is_monitoring = True
+            logger.info("AutoCAD MOCK monitoring started")
+            return True
+        
         if not self.connect_to_autocad():
             return False
         
@@ -63,10 +75,118 @@ class AutoCADAdapter:
         
         return True
     
+    def import_current_drawing(self):
+        """Import from current AutoCAD drawing"""
+        if not self._is_monitoring:
+            return []
+        
+        if self.use_mock:
+            if not self._mock_entities:
+                self._mock_entities = {
+                    "1": {"id": "1", "type": "LINE", "data": {"layer": "A-WALL"}},
+                    "2": {"id": "2", "type": "CIRCLE", "data": {"layer": "A-FURN"}},
+                    "3": {"id": "3", "type": "POLYLINE", "data": {"layer": "A-WALL"}}}
+            return list(self._mock_entities.values())
+        
+        return []
+    
+    def on_entity_added(self, entity):
+        """Callback عند إضافة كائن جديد في AutoCAD"""
+        if self.use_mock:
+            try:
+                entity_id = entity.get("id")
+                if entity_id:
+                    self._mock_entities[entity_id] = entity
+            except (AttributeError, TypeError):
+                pass
+            return True
+        
+        try:
+            logger.debug(f"Entity added: {entity.ObjectName}")
+            
+            universal_element = self.dwg_parser._convert_entity_to_universal(entity, self.dwg_file_path)
+            
+            if universal_element:
+                self.universal_model.add_element(universal_element)
+                
+                if hasattr(entity, 'Handle'):
+                    self.element_id_map[entity.Handle] = universal_element.element_id
+                
+                logger.info(f"Added element to Universal Model: {universal_element.element_id}")
+        
+        except Exception as e:
+            logger.error(f"Error handling entity added: {e}")
+        
+        return True
+    
+    def on_entity_modified(self, entity_id, new_data=None):
+        """Callback عند تعديل كائن في AutoCAD"""
+        if self.use_mock:
+            if entity_id in self._mock_entities:
+                if new_data:
+                    self._mock_entities[entity_id].update(new_data)
+                return True
+            return False
+        
+        try:
+            logger.debug(f"Entity modified: {entity_id}")
+            
+            # Find corresponding Universal Element
+            if entity_id not in self.element_id_map:
+                logger.warning(f"Modified entity not found in mapping: {entity_id}")
+                return
+            
+            element_id = self.element_id_map[entity_id]
+            
+            # Update Universal Model
+            updates = self._extract_entity_properties(entity_id)
+            self.universal_model.update_element(
+                element_id,
+                updates,
+                source=ChangeSource.AUTOCAD,
+                reason="Entity modified in AutoCAD"
+            )
+            
+            logger.info(f"Updated element {element_id} from AutoCAD")
+        
+        except Exception as e:
+            logger.error(f"Error handling entity modified: {e}")
+    
+    def on_entity_deleted(self, entity_id):
+        """Callback عند حذف كائن في AutoCAD"""
+        if self.use_mock:
+            if entity_id in self._mock_entities:
+                del self._mock_entities[entity_id]
+                return True
+            return False
+        
+        try:
+            logger.debug(f"Entity deleted: {entity_id}")
+            
+            if entity_id not in self.element_id_map:
+                logger.warning(f"Deleted entity not found in mapping: {entity_id}")
+                return
+            
+            element_id = self.element_id_map[entity_id]
+            
+            self.universal_model.delete_element(
+                element_id,
+                source=ChangeSource.AUTOCAD,
+                reason="Entity deleted in AutoCAD"
+            )
+            
+            del self.element_id_map[entity_id]
+            
+            logger.info(f"Deleted element {element_id}")
+        except Exception as e:
+            logger.error(f"Error handling entity deleted: {e}")
+    
     def stop_monitoring(self):
         """إيقاف المراقبة"""
         self.is_monitoring = False
-        self.live_sync.stop_sync()
+        self._is_monitoring = False
+        if self.live_sync:
+            self.live_sync.stop_sync()
         logger.info("Stopped monitoring AutoCAD changes")
     
     def _import_current_drawing(self):
@@ -90,79 +210,6 @@ class AutoCADAdapter:
         except Exception as e:
             logger.error(f"Error importing drawing: {e}")
             return False
-    
-    def on_entity_added(self, entity):
-        """Callback عند إضافة كائن جديد في AutoCAD"""
-        try:
-            logger.debug(f"Entity added: {entity.ObjectName}")
-            
-            # تحويل الكائن إلى Universal Element
-            universal_element = self.dwg_parser._convert_entity_to_universal(entity, self.dwg_file_path)
-            
-            if universal_element:
-                self.universal_model.add_element(universal_element)
-                
-                # Store mapping
-                if hasattr(entity, 'Handle'):
-                    self.element_id_map[entity.Handle] = universal_element.element_id
-                
-                logger.info(f"Added element to Universal Model: {universal_element.element_id}")
-        
-        except Exception as e:
-            logger.error(f"Error handling entity added: {e}")
-    
-    def on_entity_modified(self, entity):
-        """Callback عند تعديل كائن في AutoCAD"""
-        try:
-            logger.debug(f"Entity modified: {entity.ObjectName}")
-            
-            # Find corresponding Universal Element
-            handle = getattr(entity, 'Handle', None)
-            if not handle or handle not in self.element_id_map:
-                logger.warning(f"Modified entity not found in mapping: {handle}")
-                return
-            
-            element_id = self.element_id_map[handle]
-            
-            # Update Universal Model
-            updates = self._extract_entity_properties(entity)
-            self.universal_model.update_element(
-                element_id,
-                updates,
-                source=ChangeSource.AUTOCAD,
-                reason="Entity modified in AutoCAD"
-            )
-            
-            logger.info(f"Updated element {element_id} from AutoCAD")
-        
-        except Exception as e:
-            logger.error(f"Error handling entity modified: {e}")
-    
-    def on_entity_deleted(self, handle: str):
-        """Callback عند حذف كائن في AutoCAD"""
-        try:
-            logger.debug(f"Entity deleted: {handle}")
-            
-            if handle not in self.element_id_map:
-                logger.warning(f"Deleted entity not found in mapping: {handle}")
-                return
-            
-            element_id = self.element_id_map[handle]
-            
-            # Soft delete
-            self.universal_model.delete_element(
-                element_id,
-                source=ChangeSource.AUTOCAD,
-                reason="Entity deleted in AutoCAD"
-            )
-            
-            # Remove from mapping
-            del self.element_id_map[handle]
-            
-            logger.info(f"Deleted element {element_id}")
-        
-        except Exception as e:
-            logger.error(f"Error handling entity deleted: {e}")
     
     def _extract_entity_properties(self, entity) -> dict:
         """استخراج الخصائص من كائن AutoCAD"""
