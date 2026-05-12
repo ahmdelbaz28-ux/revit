@@ -53,7 +53,11 @@ from src.adapters.geometry_adapter import (
     coordinate_to_shapely_point,
     calculate_polygon_area,
     calculate_polygon_perimeter,
+    apply_obstructions,
 )
+from validation.coverage_verifier import CoverageVerifier
+from shapely.geometry import Point
+from shapely.ops import nearest_points
 
 
 # =============================================================================
@@ -346,6 +350,84 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
 
 
 # =============================================================================
+# AUTO-CORRECTION FUNCTION
+# =============================================================================
+
+def optimize_coverage(room, devices, obstructions, radius, max_iterations=10):
+    """
+    Automatically add devices to uncovered areas until PASS or max reached.
+    Returns: (optimized_devices_list, status_message)
+    """
+    import copy
+    
+    verifier = CoverageVerifier()
+    current_devices = list(devices)
+    
+    for i in range(max_iterations):
+        # Convert devices to Shapely Points
+        device_points = []
+        for d in current_devices:
+            pos = getattr(d, 'position', None)
+            if pos is None:
+                continue
+            if hasattr(pos, 'x') and hasattr(pos, 'y'):
+                device_points.append(Point(float(pos.x), float(pos.y)))
+        
+        # Get effective room (with obstructions subtracted)
+        room_poly = getattr(room, 'geometry', None)
+        if room_poly is None:
+            break
+            
+        effective_room = apply_obstructions(room_poly, obstructions)
+        
+        # Verify coverage
+        result = verifier.verify_coverage(effective_room, device_points, radius)
+        
+        if result['status'] == 'PASS':
+            return current_devices, f"Optimized in {i} iterations"
+        
+        # Find largest uncovered area
+        uncovered_polys = result.get('uncovered_polygons', [])
+        if not uncovered_polys:
+            break
+        
+        largest_gap = max(uncovered_polys, key=lambda p: p.area)
+        new_location = largest_gap.centroid
+        
+        # Validate: inside room, not inside obstruction
+        valid = effective_room.contains(new_location)
+        for obs in obstructions:
+            if hasattr(obs, 'contains') and obs.contains(new_location):
+                valid = False
+                break
+        
+        if not valid:
+            # Try nearest point on effective room boundary
+            nearest = nearest_points(effective_room.boundary, new_location)[0]
+            if effective_room.contains(nearest):
+                new_location = nearest
+                valid = True
+        
+        if not valid:
+            break
+        
+        # Create new device at optimized location
+        # Safely copy device type and room ID
+        dev_type = getattr(current_devices[0], 'device_type', 'SMOKE_PHOTOELECTRIC')
+        room_id = getattr(room, 'id', f"room_{getattr(room, 'name', 'unknown')}")
+        
+        new_device = type(current_devices[0])(
+            id=f"auto_dev_{i}_{getattr(room, 'name', 'unknown')}",
+            device_type=dev_type,
+            position=new_location,
+            room_id=room_id
+        )
+        current_devices.append(new_device)
+    
+    return current_devices, f"Stopped after {i+1} iterations, coverage: {result.get('coverage_percent', 0):.2f}%"
+
+
+# =============================================================================
 # REPORT GENERATOR
 # =============================================================================
 
@@ -410,6 +492,33 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
                 obstructions=[],
             )
 
+            # AUTO-CORRECTION: If FAIL due to coverage, try to optimize
+            if verification.get("status") == "FAIL" and "coverage" in verification:
+                original_count = len(core_devices)
+                
+                # Get the radius from NFPA provider
+                radius = NFPA72ConstraintProvider.get_effective_radius(
+                    room.device_type,
+                    room.ceiling_height,
+                    room.ceiling_type
+                )
+                
+                optimized_devices, optimization_msg = optimize_coverage(
+                    room=core_room,
+                    devices=core_devices,
+                    obstructions=[],
+                    radius=radius,
+                    max_iterations=10
+                )
+                
+                if len(optimized_devices) > original_count:
+                    # Re-verify with optimized devices
+                    core_devices = optimized_devices
+                    verification = oracle.verify_truth(core_room, core_devices, [])
+                    
+                    # Log the correction
+                    logger.info(f"Auto-corrected {room.name}: {optimization_msg}")
+
             # STRICT GATE
             if verification["status"] in ["REJECTED_HARD", "REJECTED_AMBIGUOUS"]:
                 failed_rooms.append({
@@ -472,6 +581,27 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
             f"NFPA 72 Compliant: Device spacing {spacing}m (effective {effective_r}m coverage). "
             f"Coverage verified by MIP proof."
         )
+        
+        # ========== COVERAGE DETAILS (Visual Dead Zones) ==========
+        coverage_info = {}
+        if "coverage" in verification:
+            cov = verification["coverage"]
+            coverage_info = {
+                "coverage_percent": cov.get('coverage_percent', 0),
+                "status": cov.get('status', 'UNKNOWN'),
+                "uncovered_area": cov.get('uncovered_area', 0),
+                "max_gap_distance": cov.get('max_gap_distance', 0),
+            }
+            
+            # Add to compliance message if FAIL
+            if cov.get("status") == "FAIL":
+                uncovered = cov.get("uncovered_polygons", [])
+                coverage_info["uncovered_polygons"] = uncovered
+                coverage_info["num_dead_zones"] = len(uncovered)
+                
+                compliance += f"\n⚠️  UNCOVERED: {cov.get('uncovered_area', 0):.2f}m²"
+                compliance += f"\n⚠️  Max gap: {cov.get('max_gap_distance', 0):.2f}m"
+                compliance += f"\n📋 NFPA 72 Ref: Section 17.6.3.1.1(2) - Radius = 0.7 × Spacing = 0.7 × {spacing}m = {effective_r}m"
         
         room_report = RoomReport(
             room_name=room.name,

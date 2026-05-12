@@ -106,3 +106,29 @@ def is_point_inside_polygon(x: float, y: float, polygon_json: List[List[float]])
     poly = json_polygon_to_shapely(polygon_json)
     point = Point(float(x), float(y))
     return poly.contains(point) or poly.touches(point)
+
+
+def apply_obstructions(room_polygon: Polygon, obstructions: List) -> Polygon:
+    """
+    Subtract obstructions from room polygon to get effective coverage area.
+    
+    Args:
+        room_polygon: The original room polygon
+        obstructions: List of obstruction polygons (columns, ducts, etc.)
+        
+    Returns:
+        Effective room polygon with obstructions subtracted
+    """
+    if not obstructions:
+        return room_polygon
+    
+    result = room_polygon
+    for obs in obstructions:
+        try:
+            # Subtract the obstruction
+            result = result.difference(obs)
+        except Exception:
+            # If subtraction fails, keep original
+            continue
+    
+    return result
