@@ -6,6 +6,15 @@
 - السيرفر (`backend/app.py`) يعمل ويعيد `{"status":"healthy"}`.
 - جميع الملفات الهامة (`fireai_surgical_diagnosis.md`، `digital_twin_unified_system.md`، `fireai_complete_system.md`) موجودة كمرجع.
 
+### Known Issue: spatial_constraint_engine.py HEAT_RATE_OF_RISE value
+
+- **File**: `spatial_constraint_engine.py` (FROZEN — do not modify)
+- **Issue**: `HEAT_RATE_OF_RISE` incorrectly set to 6.1m (should be 15.2m per NFPA 72)
+- **Impact**: None — superseded by `src/domain/nfpa72_provider.py`
+- **Resolution**: Always use `NFPA72ConstraintProvider` for all new code
+- **Date**: 2026-05-12
+- **Commit**: c77881e
+
 ## 🚀 المرحلة الحالية من خريطة الطريق
 **الأسبوع الأول: الأيام 3-4** (تحسين DWG Parser + Vision + Constraint)
 - الحالة: ✅ مكتملة
@@ -50,4 +59,7 @@
 
 ## 🔗 الروابط
 - GitHub: https://github.com/ahmdelbaz28-ux/revit
-- Last commit: 74543b1
+- Last commit: c77881e
+
+## 📊 TRL Status
+- TRL 8: MIP Solver with correct NFPA 72 values (Commit c77881e)
