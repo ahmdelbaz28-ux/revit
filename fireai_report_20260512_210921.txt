@@ -4,7 +4,7 @@ FireAI - Optimal Placement Engine
 ================================================================================
 
 Project: Fire Alarm Project
-Date: 2026-05-12 21:06:35
+Date: 2026-05-12 21:09:21
 Standard: NFPA 72
 
 ================================================================================
@@ -19,8 +19,8 @@ Room: Office 101 (OFFICE)
   Cable: 36.0m | Labor: 2.0h
   Cost: $3,530.00
   Compliance: NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof.
-  Decision ID: d6aea7abc4892b67
-  Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  Decision ID: e86aa6c42531be2a
+  Checksum: ba40677276920bb6e33cc9d63b1a002987c1aa28c42f503514d59ddf61759779
 
 Room: Office 102 (OFFICE)
   Area: 64.0m² | Perimeter: 32.0m
@@ -30,8 +30,8 @@ Room: Office 102 (OFFICE)
   Cable: 28.8m | Labor: 2.0h
   Cost: $3,494.00
   Compliance: NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof.
-  Decision ID: 5c75854d4f4bf213
-  Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  Decision ID: 456566130ca0c444
+  Checksum: 501ce9c36689852521230603132073de777dd634c04b10134b251c0216d20607
 
 Room: Corridor A (CORRIDOR)
   Area: 36.0m² | Perimeter: 40.0m
@@ -41,8 +41,8 @@ Room: Corridor A (CORRIDOR)
   Cable: 22.8m | Labor: 1.5h
   Cost: $2,626.50
   Compliance: NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof.
-  Decision ID: 88f302ea3bdc691c
-  Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  Decision ID: c08594d8e3eec424
+  Checksum: 29fb845dbe2bf31777399f46b4a18f7b940d6a5a7a12bfec2c30321a2a4e7249
 
 Room: Kitchen (KITCHEN)
   Area: 10.0m² | Perimeter: 14.0m
@@ -52,8 +52,8 @@ Room: Kitchen (KITCHEN)
   Cable: 6.1m | Labor: 0.5h
   Cost: $867.99
   Compliance: NFPA 72 Compliant: Device spacing 15.2m (effective 10.64m coverage). Coverage verified by MIP proof.
-  Decision ID: 22f0d1a8a574db58
-  Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  Decision ID: 49e79c77a580ebd6
+  Checksum: 415750f37db49aafe4f1a277e766f8d48cc2a5016d744f6c2ff1de498c22686c
 
 ================================================================================
 TOTALS
@@ -94,20 +94,20 @@ Each room decision recorded with unique decision_id and checksum.
 Audit file: oracle_audit_YYYY-MM-DD.jsonl (JSONL format, one entry per line)
 
   ✅ Office 101 (OFFICE)
-     Decision ID: d6aea7abc4892b67
-     Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+     Decision ID: e86aa6c42531be2a
+     Checksum: ba40677276920bb6e33cc9d63b1a002987c1aa28c42f503514d59ddf61759779
 
   ✅ Office 102 (OFFICE)
-     Decision ID: 5c75854d4f4bf213
-     Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+     Decision ID: 456566130ca0c444
+     Checksum: 501ce9c36689852521230603132073de777dd634c04b10134b251c0216d20607
 
   ✅ Corridor A (CORRIDOR)
-     Decision ID: 88f302ea3bdc691c
-     Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+     Decision ID: c08594d8e3eec424
+     Checksum: 29fb845dbe2bf31777399f46b4a18f7b940d6a5a7a12bfec2c30321a2a4e7249
 
   ✅ Kitchen (KITCHEN)
-     Decision ID: 22f0d1a8a574db58
-     Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+     Decision ID: 49e79c77a580ebd6
+     Checksum: 415750f37db49aafe4f1a277e766f8d48cc2a5016d744f6c2ff1de498c22686c
 
 ================================================================================
 END OF REPORT

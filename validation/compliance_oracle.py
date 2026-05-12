@@ -84,19 +84,41 @@ def _compute_input_hash(room: Room, devices: List[Device], obstructions: List[Ob
 # Semantic Checksum (Internal)
 # =============================================================================
 
-def _semantic_checksum(violations: List[Violation]) -> str:
-    """SHA256 over (rule, device_id, quantized location, value, threshold)."""
-    if not violations:
-        return hashlib.sha256(b"").hexdigest()
+def _semantic_checksum(room: Room, devices: List[Device], violations: List[Violation]) -> str:
+    """
+    SHA256 over room + devices + violations.
+    Must be UNIQUE per room configuration.
+    """
+    import json
     
-    data = ""
-    for v in sorted(violations, key=lambda x: (x.rule, x.device_id)):
-        qx, qy = (0.0, 0.0)
-        if v.location is not None:
-            qx, qy = quantize_point(v.location) if hasattr(v.location, 'x') else (0.0, 0.0)
-        data += f"{v.rule}|{v.device_id}|{qx:.2f}|{qy:.2f}|{v.value:.6f}|{v.threshold:.6f}\n"
+    # Build deterministic data from room and devices
+    data = {
+        "room_id": getattr(room, 'id', 'unknown'),
+        "room_name": getattr(room, 'name', 'unknown'),
+        "room_type": getattr(room, 'room_type', 'unknown'),
+        "ceiling_height": getattr(room, 'ceiling_height', 2.8),
+        "devices": [
+            {
+                "id": getattr(d, 'id', f'dev_{i}'),
+                "type": getattr(d, 'device_type', 'unknown'),
+                "x": float(getattr(getattr(d, 'position', None), 'x', 0)),
+                "y": float(getattr(getattr(d, 'position', None), 'y', 0)),
+            }
+            for i, d in enumerate(devices)
+        ],
+        "violations": [
+            {
+                "rule": v.rule,
+                "device_id": v.device_id,
+                "value": float(v.value),
+                "threshold": float(v.threshold),
+            }
+            for v in violations
+        ],
+    }
     
-    return hashlib.sha256(data.encode()).hexdigest()
+    json_str = json.dumps(data, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(json_str.encode('utf-8')).hexdigest()
 
 
 # =============================================================================
@@ -178,7 +200,7 @@ class ComplianceOracle:
                 "violations_count": 0,
                 "violations": [],
                 "audit_trail": "Critical geometry error(s) found.",
-                "checksum": _semantic_checksum([])
+                "checksum": _semantic_checksum(norm_room, norm_devices, [])
             }
 
         # Initialize audit trail for cross-verification
@@ -229,7 +251,7 @@ class ComplianceOracle:
         )
 
         # Step 4: Deterministic checksum
-        checksum = _semantic_checksum(sanitized_violations)
+        checksum = _semantic_checksum(norm_room, norm_devices, sanitized_violations)
 
         # Map TruthState to output string
         status = truth_state.value  # PASS, FAIL, REJECTED_HARD, REJECTED_AMBIGUOUS
