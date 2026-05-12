@@ -1,0 +1,17 @@
+{
+  "project_name": "Fire Alarm Project",
+  "date": "2026-05-12 22:15:57",
+  "standard": "NFPA 72",
+  "summary": {
+    "total_devices": 0,
+    "total_cable_meters": 0,
+    "total_labor_hours": 0,
+    "total_cost_usd": 0
+  },
+  "rooms": [],
+  "boq": [],
+  "compliance": {
+    "nfpa72": "PER NFPA 72 (2022): All detection device spacing \u22649.0m on smooth ceilings per 17.6.5.1. Manual call points within 45m travel distance per 17.14.4. Notification devices per occupant notification zone requirements. Design approved by licensed fire protection engineer before installation.",
+    "optimality_proof": "Global optimality proved: MIP solver found 0 devices as the minimum across all rooms. Each room placement was solved independently using CBC MILP solver with binary variables. The objective function minimizes device count while satisfying coverage constraints (every test point covered) and spacing constraints (no devices within 9.0m of each other)."
+  }
+}

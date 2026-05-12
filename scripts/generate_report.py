@@ -410,8 +410,8 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
                 obstructions=[],
             )
 
-            # STRICT GATE
-            if verification["status"] in ["REJECTED_HARD", "REJECTED_AMBIGUOUS"]:
+            # STRICT GATE - catch all failure modes
+            if verification["status"] in ["REJECTED_HARD", "REJECTED_AMBIGUOUS", "FAIL"]:
                 failed_rooms.append({
                     "name": room.name,
                     "status": verification["status"],
