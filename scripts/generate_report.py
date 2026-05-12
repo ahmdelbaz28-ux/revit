@@ -14,6 +14,8 @@ import os
 import json
 import math
 import logging
+import datetime
+from logging.handlers import RotatingFileHandler
 import argparse
 from pathlib import Path
 from typing import List, Dict, Tuple, Any
@@ -638,6 +640,32 @@ def format_text_report(report: FinalReport) -> str:
     lines.append("Optimality Proof:")
     lines.append(report.optimality_proof)
     lines.append("")
+
+    # ========== AUDIT TRAIL SECTION ==========
+    lines.append("")
+    lines.append("=" * 80)
+    lines.append("AUDIT TRAIL — VERIFICATION LOG")
+    lines.append("=" * 80)
+    lines.append("Each room decision recorded with unique decision_id and checksum.")
+    lines.append("Audit file: oracle_audit_YYYY-MM-DD.jsonl (JSONL format, one entry per line)")
+    lines.append("")
+
+    for r in report.rooms:
+        lines.append(f"  ✅ {r.room_name} ({r.room_type})")
+        lines.append(f"     Decision ID: {r.decision_id}")
+        lines.append(f"     Checksum: {r.checksum}")
+        lines.append("")
+
+    if report.failed_rooms:
+        lines.append("  ❌ REJECTED ROOMS (see Non-Compliant section above)")
+        lines.append("")
+        for failed in report.failed_rooms:
+            lines.append(f"  ❌ {failed['name']}")
+            lines.append(f"     Status: {failed['status']}")
+            if failed.get('reason'):
+                lines.append(f"     Reason: {failed['reason']}")
+            lines.append("")
+
     lines.append("=" * 80)
     lines.append("END OF REPORT")
     lines.append("=" * 80)

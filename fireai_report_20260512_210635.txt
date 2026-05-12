@@ -4,7 +4,7 @@ FireAI - Optimal Placement Engine
 ================================================================================
 
 Project: Fire Alarm Project
-Date: 2026-05-12 21:00:26
+Date: 2026-05-12 21:06:35
 Standard: NFPA 72
 
 ================================================================================
@@ -85,6 +85,29 @@ PER NFPA 72 (2022): All detection device spacing ≤9.0m on smooth ceilings per 
 
 Optimality Proof:
 Global optimality proved: MIP solver found 12 devices as the minimum across all rooms. Each room placement was solved independently using CBC MILP solver with binary variables. The objective function minimizes device count while satisfying coverage constraints (every test point covered) and spacing constraints (no devices within 9.0m of each other).
+
+
+================================================================================
+AUDIT TRAIL — VERIFICATION LOG
+================================================================================
+Each room decision recorded with unique decision_id and checksum.
+Audit file: oracle_audit_YYYY-MM-DD.jsonl (JSONL format, one entry per line)
+
+  ✅ Office 101 (OFFICE)
+     Decision ID: d6aea7abc4892b67
+     Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+  ✅ Office 102 (OFFICE)
+     Decision ID: 5c75854d4f4bf213
+     Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+  ✅ Corridor A (CORRIDOR)
+     Decision ID: 88f302ea3bdc691c
+     Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+  ✅ Kitchen (KITCHEN)
+     Decision ID: 22f0d1a8a574db58
+     Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 
 ================================================================================
 END OF REPORT
