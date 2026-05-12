@@ -440,7 +440,57 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
                 obstructions=obstruction_objs,
             )
 
-            # STRICT GATE - catch all failure modes
+            # ========== AUTO-CORRECTION LOOP ==========
+            # If FAIL, try adding devices in uncovered zones
+            max_auto_corrections = 3
+            auto_correct_iterations = 0
+            cov_status = verification.get("coverage", {}).get("status", "FAIL")
+            
+            while cov_status == "FAIL" and auto_correct_iterations < max_auto_corrections:
+                auto_correct_iterations += 1
+                logger.warning(f"Auto-correct attempt {auto_correct_iterations} for {room.name}")
+                
+                # Get uncovered zones (Shapely Polygon objects)
+                uncovered = verification.get("coverage", {}).get("uncovered_polygons", [])
+                
+                if not uncovered:
+                    break  # No zones to fix
+                
+                # Add device in largest uncovered zone centroid (Shapely Polygon)
+                largest = max(uncovered, key=lambda z: z.area if hasattr(z, 'area') else 0)
+                centroid = [largest.centroid.x, largest.centroid.y]
+                
+                # Create new device at centroid
+                new_device = DevicePlacement(
+                    x=centroid[0],
+                    y=centroid[1],
+                    device_type=room.device_type
+                )
+                result.devices.append(new_device)
+                
+                # Re-verify with new device
+                devices_added = [CoreDevice(
+                    id=f"dev_{d.x}_{d.y}",
+                    device_type=d.device_type,
+                    position=coordinate_to_shapely_point(d.x, d.y),
+                    room_id=f"room_{room.name}",
+                    z_height=room.ceiling_height,
+                    coverage_radius=NFPA72ConstraintProvider.get_effective_radius(
+                        d.device_type, room.ceiling_height, room.ceiling_type
+                    ),
+                ) for d in result.devices]
+                
+                verification = oracle.verify_truth(
+                    room=core_room,
+                    devices=devices_added,
+                    obstructions=obstruction_objs,
+                )
+                
+                cov_status = verification.get("coverage", {}).get("status", "FAIL")
+                logger.info(f"Auto-correct #{auto_correct_iterations}: {len(result.devices)} devices, status={cov_status}")
+            
+            if auto_correct_iterations > 0:
+                logger.info(f"Auto-correct complete: added {auto_correct_iterations} devices to {room.name}")
             if verification["status"] in ["REJECTED_HARD", "REJECTED_AMBIGUOUS"]:
                 failed_rooms.append({
                     "name": room.name,
@@ -498,9 +548,26 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
         effective_r = NFPA72ConstraintProvider.get_effective_radius(
             device_type_key, room.ceiling_height, room.ceiling_type
         )
+        # Get uncovered zones for visualization
+        uncovered_polygons = []
+        raw_unc = verification.get("coverage", {}).get("uncovered_polygons", [])
+        for z in raw_unc:
+            if hasattr(z, 'area'):
+                # Shapely Polygon
+                uncovered_polygons.append(f'{round(z.area, 1)}m²@({round(z.centroid.x, 1)}, {round(z.centroid.y, 1)})')
+            elif isinstance(z, dict):
+                # dict format
+                uncovered_polygons.append(f'{z.get("area", 0):.1f}m²@{z.get("centroid", [0,0])}')
+        uncovered_polygons_str = "; ".join(uncovered_polygons) if uncovered_polygons else "None"
+        
+        # Check if auto-correction needed (FAIL status)
+        coverage_status = verification.get("coverage", {}).get("status", "FAIL")
+        
+        # NFPA 72 Section 17.6.3.1.1(2): Coverage radius = 0.7 × rated spacing
         compliance = (
-            f"NFPA 72 Compliant: Device spacing {spacing}m (effective {effective_r}m coverage). "
-            f"Coverage verified by MIP proof."
+            f"NFPA 72 Section 17.6.3.1.1(2): Coverage radius = 0.7 × {spacing}m = {effective_r}m. "
+            f"Coverage verified by MIP proof. Status: {coverage_status}. "
+            f"Dead zones: {uncovered_polygons_str}"
         )
         
         room_report = RoomReport(
