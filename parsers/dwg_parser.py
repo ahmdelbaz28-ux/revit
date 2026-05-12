@@ -91,11 +91,11 @@ class DWGParser:
         try:
             merged = unary_union(lines)
             
-            # ==== Magical fix to close small gaps ====
-            merged = merged.buffer(0.001)  # Add 1mm buffer to close gaps
-            merged = merged.buffer(-0.0005)  # Remove buffer to return to original size
-            merged = merged.simplify(0.001)  # Simplify
-            # ================================
+            # ==== Smart topology healing: close gaps up to 1cm ====
+            if hasattr(merged, 'geoms') or isinstance(merged, list):
+                # Expand to close gaps (1cm = 0.01), then shrink back (0.5cm)
+                merged = merged.buffer(0.01).buffer(-0.005)
+            # ===============================================================
             
             polys = list(polygonize(merged))
         except:
