@@ -34,6 +34,9 @@ from core.contract import validate_violation
 from validation.spatial_normalizer import SpatialNormalizer
 from spatial_field_engine import evaluate_compliance, NFPAConstraintModel
 import hashlib
+import logging
+import json
+from datetime import datetime
 
 
 # =============================================================================
@@ -102,8 +105,21 @@ def _semantic_checksum(violations: List[Violation]) -> str:
 
 class ComplianceOracle:
     def __init__(self):
-        self.normalizer = SpatialNormalizer()
+        # NFPA 72 constraint model
         self.model = NFPAConstraintModel()
+
+        # Initialize normalizer
+        from validation.spatial_normalizer import SpatialNormalizer
+        self.normalizer = SpatialNormalizer()
+        
+        # Logging
+        import logging
+        self.logger = logging.getLogger(self.__class__.__name__)
+        
+        # Persistent audit trail (JSONL)
+        from datetime import datetime
+        today = datetime.now().strftime("%Y-%m-%d")
+        self.audit_file = open(f"oracle_audit_{today}.jsonl", "a", encoding="utf-8")
     
     def __evaluate_constraints(self, room, devices, obstructions, violations, repaired=False):
         """
@@ -227,7 +243,7 @@ class ComplianceOracle:
             input_hash=_compute_input_hash(norm_room, norm_devices, norm_obs)
         )
 
-        return {
+        return_result = {
             "status": status,
             "violations_count": len(sanitized_violations),
             "violations": [
@@ -251,10 +267,40 @@ class ComplianceOracle:
             "input_hash": decision.input_hash
         }
 
+        # ========== PERSISTENT AUDIT TRAIL ==========
+        # Write audit entry to JSONL file immediately
+        decision_id = hashlib.sha256(
+            f"{status}{checksum}{decision.input_hash}".encode()
+        ).hexdigest()[:16]
+
+        audit_entry = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "decision_id": decision_id,
+            "room_id": getattr(room, 'id', 'unknown'),
+            "room_name": room.name,
+            "device_count": len(devices),
+            "device_types": list(set(d.device_type for d in devices)),
+            "status": status,
+            "checksum": checksum,
+        }
+
+        self.audit_file.write(json.dumps(audit_entry, ensure_ascii=False) + '\n')
+        self.audit_file.flush()
+        self.logger.info(f"Oracle audit: decision={decision_id}, room={room.name}, status={status}")
+
+        return_result["audit_entry"] = audit_entry
+        return return_result
+
 
 # =============================================================================
 # Snapshot functions
 # =============================================================================
+
+    def __del__(self):
+        """Clean up audit file on shutdown"""
+        if hasattr(self, 'audit_file') and self.audit_file and not self.audit_file.closed:
+            self.audit_file.close()
+
 
 def save_snapshot(room: Room, devices: List[Device], obstructions: List[Obstruction],
                output_path: str, source_units: str = "meters"):

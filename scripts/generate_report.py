@@ -13,14 +13,34 @@ import sys
 import os
 import json
 import math
+import logging
 import argparse
 from pathlib import Path
 from typing import List, Dict, Tuple, Any
-from dataclasses import dataclass, field as dataclass_field, asdict
 from datetime import datetime
+from dataclasses import dataclass, field as dataclass_field, asdict
+from logging.handlers import RotatingFileHandler
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# === FireAI Audit Logging ===
+# Persistent logs for human review and legal compliance
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[
+        RotatingFileHandler(
+            'fireai_audit.log',
+            maxBytes=10*1024*1024,  # 10MB per file
+            backupCount=5,           # Keep 5 backup files
+            encoding='utf-8'
+        ),
+        logging.StreamHandler()  # Also show in terminal during development
+    ]
+)
+logger = logging.getLogger(__name__)
 
 from spatial_engine.mip_solver import OptimalMIPEngine
 from src.domain.nfpa72_provider import NFPA72ConstraintProvider
@@ -113,6 +133,8 @@ class RoomReport:
     cost: float
     devices: List[DevicePlacement]
     compliance: str
+    decision_id: str = "unknown"
+    checksum: str = "unknown"
 
 
 @dataclass
@@ -401,10 +423,20 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
             room_decision_id = verification.get("decision_id", "unknown")
 
         except Exception as e:
+            # CRITICAL: The Oracle gate itself failed — not just a design error
+            # This is a safety-critical failure that must be logged permanently
+            device_type_for_log = getattr(room, 'device_type', 'UNKNOWN')
+            logger.critical(
+                f"ComplianceOracle verification FAILED due to unexpected exception: "
+                f"room={room.name}, device_type={device_type_for_log}, error={str(e)}",
+                exc_info=True  # Full traceback for post-mortem analysis
+            )
+            
+            # Fail-safe: Reject the design with full documentation
             failed_rooms.append({
                 "name": room.name,
                 "status": "REJECTED_EXCEPTION",
-                "reason": str(e),
+                "reason": f"Internal Oracle error: {str(e)}",
                 "checksum": None,
                 "decision_id": None,
             })
@@ -450,7 +482,9 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
             labor_hours=round(labor_hours, 2),
             cost=round(room_cost, 2),
             devices=result.devices,
-            compliance=compliance
+            compliance=compliance,
+            decision_id=room_decision_id,
+            checksum=room_checksum
         )
         
         room_reports.append(room_report)
@@ -567,6 +601,8 @@ def format_text_report(report: FinalReport) -> str:
         lines.append(f"  Cable: {room.cable_length}m | Labor: {room.labor_hours}h")
         lines.append(f"  Cost: ${room.cost:,.2f}")
         lines.append(f"  Compliance: {room.compliance}")
+        lines.append(f"  Decision ID: {room.decision_id}")
+        lines.append(f"  Checksum: {room.checksum}")
         lines.append("")
     
     lines.append("=" * 80)
