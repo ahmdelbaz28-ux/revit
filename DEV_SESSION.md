@@ -7,11 +7,15 @@
 - جميع الملفات الهامة (`fireai_surgical_diagnosis.md`، `digital_twin_unified_system.md`، `fireai_complete_system.md`) موجودة كمرجع.
 
 ## 🚀 المرحلة الحالية من خريطة الطريق
-**الأسبوع الأول: الأيام 1-2** (تقوية الأساس - Unit Tests)
+**الأسبوع الأول: الأيام 3-4** (تحسين DWG Parser + Vision + Constraint)
 - الحالة: ✅ مكتملة
-- ملف الاختبارات: `tests/test_universal_model.py`
-- عدد الاختبارات: 5
-- نتيجة التشغيل: All tests passed
+- ملفات جديدة:
+  - `parsers/dwg_parser.py` (محسّن: ARC, SPLINE, TEXT, BLOCK, metadata)
+  - `validation/vision_validator.py` (VisionValidationEngine)
+  - `spatial_engine/constraint_solver.py` (ConstraintSolver)
+  - `tests/test_vision_validator.py` (5 tests)
+  - `tests/test_constraint_solver.py` (3 tests)
+- إجمالي الاختبارات: 13 passed
 
 ## 📂 الملفات الرئيسية وأدوارها
 - `core/models.py`: تعريف جميع فئات البيانات (UniversalElement, Geometry, Point3D, SemanticProperties, ChangeLogEntry, Conflict)
