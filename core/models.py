@@ -7,6 +7,8 @@ from enum import Enum
 from typing import Dict, List, Optional
 from datetime import datetime
 import uuid
+from shapely.geometry import Point as ShapelyPoint, Polygon
+
 
 # ════════════════════════════════════════════════════════════════════════════
 # ENUMERATIONS
@@ -324,3 +326,53 @@ class Conflict:
             'change_b': self.change_b,
             'resolved': self.resolved
         }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# COMPLIANCE ORACLE MODELS
+# ════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class DeviceCoordinate:
+    """Point coordinates for ComplianceOracle"""
+    x: float
+    y: float
+    z: float = 0.0
+
+
+@dataclass
+class Room:
+    """Room for ComplianceOracle"""
+    id: str
+    name: str
+    room_type: str
+    floor_area: float
+    geometry: Dict  # polygon data
+
+
+@dataclass
+class Device:
+    """Device for ComplianceOracle"""
+    id: str
+    device_type: str
+    position: DeviceCoordinate
+    room_id: str
+
+
+@dataclass
+class Violation:
+    """Violation for ComplianceOracle"""
+    rule: str
+    device_id: str
+    location: Optional[DeviceCoordinate] = None
+    value: float = 0.0
+    threshold: float = 0.0
+
+
+@dataclass
+class Obstruction:
+    """Obstruction for ComplianceOracle"""
+    id: str
+    geometry: Polygon
+    height: float
+    blocks_visibility: bool = True
