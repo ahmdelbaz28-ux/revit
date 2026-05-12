@@ -289,6 +289,51 @@ class ComplianceOracle:
             "input_hash": decision.input_hash
         }
 
+        # ========== CONTINUOUS COVERAGE VERIFICATION ==========
+        # Add coverage data to return_result (after it's created)
+        try:
+            room_poly = getattr(norm_room, 'geometry', None)
+            if room_poly is not None:
+                device_points = []
+                for d in norm_devices:
+                    pos = getattr(d, 'position', None)
+                    if pos is not None:
+                        from shapely.geometry import Point
+                        device_points.append(Point(
+                            float(getattr(pos, 'x', 0)),
+                            float(getattr(pos, 'y', 0))
+                        ))
+                if device_points:
+                    from src.domain.nfpa72_provider import NFPA72ConstraintProvider
+                    device_type = devices[0].device_type if devices else "SMOKE_PHOTOELECTRIC"
+                    ceiling_h = getattr(norm_room, 'ceiling_height', 2.8)
+                    ceiling_t = getattr(norm_room, 'ceiling_type', 'SMOOTH')
+                    radius = NFPA72ConstraintProvider.get_effective_radius(
+                        device_type=device_type,
+                        ceiling_height=ceiling_h,
+                        ceiling_type=ceiling_t
+                    )
+                    from validation.coverage_verifier import CoverageVerifier, estimate_extra_devices
+                    verifier = CoverageVerifier(resolution=32)
+                    coverage_result = verifier.verify_coverage(room_poly, device_points, radius)
+                    return_result["coverage"] = coverage_result
+                    if coverage_result["status"] == "FAIL":
+                        extra = estimate_extra_devices(coverage_result["uncovered_area"])
+                        return_result["violations"].append({
+                            "rule": "COVERAGE_GAP",
+                            "device_id": "SYSTEM",
+                            "severity": "CRITICAL",
+                            "value": coverage_result["uncovered_area"],
+                            "threshold": 0.0,
+                            "location": None
+                        })
+                        return_result["violations_count"] += 1
+                        if status == "PASS":
+                            status = "FAIL"
+                            return_result["status"] = "FAIL"
+        except Exception as e:
+            pass  # Non-critical
+
         # ========== PERSISTENT AUDIT TRAIL ==========
         # Write audit entry to JSONL file immediately
         decision_id = hashlib.sha256(
@@ -304,6 +349,7 @@ class ComplianceOracle:
             "device_types": list(set(d.device_type for d in devices)),
             "status": status,
             "checksum": checksum,
+            "coverage": return_result.get("coverage", {}),
         }
 
         self.audit_file.write(json.dumps(audit_entry, ensure_ascii=False) + '\n')

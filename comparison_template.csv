@@ -1,0 +1,33 @@
+Comparison Table - FireAI Validation
+
+Instructions:
+1. Fill in your actual device counts from BOQ/as-built drawings
+2. Compare with FireAI output
+3. Mark your assessment
+
+FORMAT,Room Name,FireAI Devices,Actual Devices,Match?,Your Assessment,Notes
+DATA,Office 101,0,0,,,
+DATA,Office 102,0,0,,,
+DATA,Corridor A,0,0,,,
+DATA,Kitchen,0,0,,,
+DATA,Room 5,0,0,,,
+DATA,Room 6,0,0,,,
+
+Coverage Check - CRITICAL
+Room Name,Any Coverage Gaps?,Gaps Description,Obstructions Missed?
+DATA,Office 101,NONE,,
+DATA,Office 102,NONE,,
+
+Cost Comparison
+Item,FireAI Estimate,Actual Cost,DIFFERENCE,% Difference
+DATA,Devices,0,0,0,0%
+DATA,Cable,0,0,0,0%
+DATA,Labor,0,0,0,0%
+DATA,TOTAL,0,0,0,0%
+
+Summary
+Row,Metric,Value,PASS/FAIL
+DATA,Rooms Matched (≥85%),0%,FAIL
+DATA,Coverage Gaps,0,FAIL
+DATA,Cost Within ±20%,NO,FAIL
+DATA,Parser Crashes,0,FAIL
