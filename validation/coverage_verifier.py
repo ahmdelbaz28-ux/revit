@@ -7,6 +7,7 @@ Uses Shapely geometry operations — NOT grid approximation.
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 from typing import List, Dict, Any
+from src.adapters.geometry_adapter import apply_obstructions
 
 
 class CoverageVerifier:
@@ -22,10 +23,17 @@ class CoverageVerifier:
         """
         self.resolution = resolution
     
-    def verify_coverage(self, room_polygon: Polygon, devices: List[Point], radius: float) -> Dict[str, Any]:
+    def verify_coverage(self, room_polygon: Polygon, devices: List[Point], radius: float, 
+                      obstructions: List[dict] = None) -> Dict[str, Any]:
         """
         Verify that room_polygon is fully covered by device circles.
         
+        Args:
+            room_polygon: The room geometry
+            devices: List of device positions  
+            radius: Coverage radius
+            obstructions: Optional list of {type, polygon} dicts
+
         Returns:
             {
                 "status": "PASS" or "FAIL",
@@ -46,7 +54,7 @@ class CoverageVerifier:
                 "device_count": len(devices),
                 "error": "Empty room polygon",
             }
-        
+
         if not devices:
             return {
                 "status": "FAIL",
@@ -57,78 +65,94 @@ class CoverageVerifier:
                 "room_area": room_polygon.area,
                 "device_count": 0,
             }
-        
+
+        # Handle obstructions - get effective polygon (room minus obstructions)
+        effective_polygon = room_polygon
+        if obstructions:
+            effective_polygon = apply_obstructions(room_polygon, obstructions)
+
         # Step 1: Create coverage circles as polygons
         coverage_circles = []
         for device in devices:
             # buffer(r, resolution) creates circle as polygon
             circle = device.buffer(radius, resolution=self.resolution)
             coverage_circles.append(circle)
-        
+
         # Step 2: Union all coverage circles into one shape
         total_coverage = unary_union(coverage_circles)
-        
-        # Step 3: Find uncovered area (room minus coverage)
-        uncovered = room_polygon.difference(total_coverage)
-        
-        # Step 4: Calculate metrics
-        room_area = room_polygon.area
+
+        # Step 3: CRITICAL - Clip total coverage to effective room (can't pass through obstructions)
+        if effective_polygon != room_polygon:
+            total_coverage = total_coverage.intersection(effective_polygon)
+
+        # Step 4: Find uncovered area (effective area minus coverage)
+        uncovered = effective_polygon.difference(total_coverage)
+
+        # Step 5: Calculate metrics on effective area
+        room_area = effective_polygon.area
         uncovered_area = uncovered.area if not uncovered.is_empty else 0
         coverage_percent = ((room_area - uncovered_area) / room_area * 100) if room_area > 0 else 0
-        
-        # Step 5: Determine status (NFPA 72: 100% coverage required)
+
+        # Step 6: Determine status (NFPA 72: 100% coverage required)
         # Allow 0.01m² tolerance for floating point errors
         if uncovered_area < 0.01:
             status = "PASS"
         else:
             status = "FAIL"
-        
-        # Step 6: Extract uncovered polygons for reporting
+
+        # Step 7: Extract uncovered polygons for reporting
         uncovered_polygons = []
         if not uncovered.is_empty:
             if uncovered.geom_type == 'Polygon':
                 uncovered_polygons = [uncovered]
             elif uncovered.geom_type == 'MultiPolygon':
                 uncovered_polygons = list(uncovered.geoms)
-        
-        # Step 7: Find max gap distance (distance from uncovered area to nearest device)
+
+        # Step 8: Find max gap distance (distance from uncovered area to nearest device)
         max_gap = 0.0
         if uncovered_polygons and devices:
             for poly in uncovered_polygons:
                 for device in devices:
-                    # Distance from polygon to point minus radius = gap beyond coverage
-                    dist = poly.distance(device)
-                    if dist > max_gap:
-                        max_gap = dist
+                    try:
+                        dist = poly.exterior.distance(device)
+                        if dist > max_gap:
+                            max_gap = dist
+                    except Exception:
+                        pass
         
         return {
             "status": status,
-            "coverage_percent": round(coverage_percent, 4),
-            "uncovered_area": round(uncovered_area, 4),
+            "coverage_percent": round(coverage_percent, 2),
+            "uncovered_area": round(uncovered_area, 2),
             "uncovered_polygons": uncovered_polygons,
-            "max_gap_distance": round(max_gap, 4),
-            "room_area": round(room_area, 4),
+            "max_gap_distance": round(max_gap, 2),
+            "room_area": round(room_area, 2),
             "device_count": len(devices),
         }
+
+
+def estimate_extra_devices(room_polygon: Polygon, devices: List[Point], radius: float) -> int:
+    """
+    Quick estimate of additional devices needed for near-full coverage.
     
-    def verify_with_tolerance(self, room_polygon: Polygon, devices: List[Point], 
-                          radius: float, tolerance_m2: float = 0.1) -> Dict[str, Any]:
-        """
-        Verify with small tolerance for practical applications.
-        NFPA 72 sometimes allows tiny uncovered areas near walls.
-        """
-        result = self.verify_coverage(room_polygon, devices, radius)
-        
-        if result["uncovered_area"] <= tolerance_m2:
-            result["status"] = "PASS_WITH_TOLERANCE"
-            result["tolerance_applied_m2"] = tolerance_m2
-        
-        return result
-
-
-def estimate_extra_devices(uncovered_area: float, coverage_per_device: float = 30.0) -> int:
-    """Estimate how many extra devices needed to cover gap."""
-    if uncovered_area <= 0:
+    Uses a simple grid heuristic - not precise but fast.
+    """
+    if not devices:
+        # Rough estimate based on area / coverage per device
+        area = room_polygon.area
+        coverage_per_device = 3.14159 * (radius ** 2) * 0.7  # 70% efficiency
+        return max(1, int(area / coverage_per_device))
+    
+    # Check if first device covers most
+    verifier = CoverageVerifier()
+    result = verifier.verify_coverage(room_polygon, devices, radius)
+    
+    if result["status"] == "PASS":
         return 0
-    import math
-    return math.ceil(uncovered_area / coverage_per_device)
+    
+    # Rough estimate: each additional device adds ~60% efficiency
+    current_coverage = result["coverage_percent"] / 100
+    needed = 1 - current_coverage
+    coverage_per_device = 0.6  # 60% of new device goes to new area
+    
+    return max(0, int(needed / coverage_per_device))

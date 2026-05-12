@@ -91,6 +91,11 @@ class Room:
     ceiling_height: float = 2.8
     ceiling_type: str = "SMOOTH"
     device_type: str = "SMOKE_PHOTOELECTRIC"
+    obstructions: List[dict] = None  # List of {type, polygon}
+
+    def __post_init__(self):
+        if self.obstructions is None:
+            self.obstructions = []
 
 
 @dataclass
@@ -404,10 +409,25 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
 
             # REAL Oracle call
             oracle = ComplianceOracle()
+            # Get real obstructions from room data (or empty list)
+            room_obstructions = getattr(room, 'obstructions', []) or []
+            
+            # Convert obstruction JSON polygons to Shapely
+            obstruction_polys = []
+            for obs in room_obstructions:
+                obs_poly = obs.get("polygon")
+                if obs_poly:
+                    obstruction_polys.append(json_polygon_to_shapely(obs_poly))
+            
+            # Get effective room area for verifier
+            effective_room = shapely_poly
+            if obstruction_polys:
+                effective_room = apply_obstructions(shapely_poly, [{"polygon": p} for p in obstruction_polys])
+            
             verification = oracle.verify_truth(
                 room=core_room,
                 devices=core_devices,
-                obstructions=[],
+                obstructions=obstruction_polys,
             )
 
             # STRICT GATE - catch all failure modes

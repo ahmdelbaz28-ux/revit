@@ -1,0 +1,73 @@
+================================================================================
+FIRE ALARM DESIGN REPORT
+FireAI - Optimal Placement Engine
+================================================================================
+
+Project: Fire Alarm Project
+Date: 2026-05-12 22:17:15
+Standard: NFPA 72
+
+================================================================================
+ROOM-BY-ROOM SUMMARY
+================================================================================
+
+Room: Simple Office (OFFICE)
+  Area: 20.0m² | Perimeter: 18.0m
+  Devices: 1
+    - SMOKE_PHOTOELECTRIC: 1
+  Devices placed at: [(2.75, 2.2)]
+  Cable: 8.08m | Labor: 0.5h
+  Cost: $877.92
+  Compliance: NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof.
+  Decision ID: 723a25b39abc77a3
+  Checksum: a9e1df9e939634a296646430de8894311633b0a12824d6ff00c75ef69b796ef3
+
+================================================================================
+TOTALS
+================================================================================
+Total Devices: 1
+Total Cable: 8.08m
+Total Labor: 0.5h
+TOTAL COST: $877.92
+
+================================================================================
+BILL OF QUANTITIES
+================================================================================
+
+Description                         Qty     Unit        Price        Total
+----------------------------------------------------------------------
+SMOKE_PHOTOELECTRIC                1.00       ea $       800 $    800.00
+Fire Alarm Cable                   8.08        m $         5 $     40.40
+Installation Labor                 0.50      hrs $        75 $     37.50
+----------------------------------------------------------------------
+TOTAL                                                         $    877.92
+
+================================================================================
+COMPLIANCE STATEMENTS
+================================================================================
+
+NFPA 72 Compliance:
+PER NFPA 72 (2022): All detection device spacing ≤9.0m on smooth ceilings per 17.6.5.1. Manual call points within 45m travel distance per 17.14.4. Notification devices per occupant notification zone requirements. Design approved by licensed fire protection engineer before installation.
+
+Optimality Proof:
+Global optimality proved: MIP solver found 1 devices as the minimum across all rooms. Each room placement was solved independently using CBC MILP solver with binary variables. The objective function minimizes device count while satisfying coverage constraints (every test point covered) and spacing constraints (no devices within 9.0m of each other).
+
+
+================================================================================
+AUDIT TRAIL — VERIFICATION LOG
+================================================================================
+Each room decision recorded with unique decision_id and checksum.
+Audit file: oracle_audit_YYYY-MM-DD.jsonl (JSONL format, one entry per line)
+
+  ✅ Simple Office (OFFICE)
+     Decision ID: 723a25b39abc77a3
+     Checksum: a9e1df9e939634a296646430de8894311633b0a12824d6ff00c75ef69b796ef3
+
+  ❌ REJECTED ROOMS (see Non-Compliant section above)
+
+  ❌ L_Factory
+     Status: REJECTED_HARD
+
+================================================================================
+END OF REPORT
+================================================================================

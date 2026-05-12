@@ -1,0 +1,60 @@
+{
+  "project_name": "Fire Alarm Project",
+  "date": "2026-05-12 22:17:15",
+  "standard": "NFPA 72",
+  "summary": {
+    "total_devices": 1,
+    "total_cable_meters": 8.08,
+    "total_labor_hours": 0.5,
+    "total_cost_usd": 877.92
+  },
+  "rooms": [
+    {
+      "name": "Simple Office",
+      "type": "OFFICE",
+      "area_sqm": 20.0,
+      "perimeter_m": 18.0,
+      "devices": [
+        {
+          "x": 2.75,
+          "y": 2.2,
+          "type": "SMOKE_PHOTOELECTRIC"
+        }
+      ],
+      "device_breakdown": {
+        "SMOKE_PHOTOELECTRIC": 1
+      },
+      "cable_meters": 8.08,
+      "labor_hours": 0.5,
+      "cost_usd": 877.92,
+      "compliance": "NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof."
+    }
+  ],
+  "boq": [
+    {
+      "description": "SMOKE_PHOTOELECTRIC",
+      "unit": "ea",
+      "quantity": 1,
+      "unit_price_usd": 800,
+      "total_price_usd": 800
+    },
+    {
+      "description": "Fire Alarm Cable",
+      "unit": "m",
+      "quantity": 8.08,
+      "unit_price_usd": 5,
+      "total_price_usd": 40.4
+    },
+    {
+      "description": "Installation Labor",
+      "unit": "hrs",
+      "quantity": 0.5,
+      "unit_price_usd": 75,
+      "total_price_usd": 37.5
+    }
+  ],
+  "compliance": {
+    "nfpa72": "PER NFPA 72 (2022): All detection device spacing \u22649.0m on smooth ceilings per 17.6.5.1. Manual call points within 45m travel distance per 17.14.4. Notification devices per occupant notification zone requirements. Design approved by licensed fire protection engineer before installation.",
+    "optimality_proof": "Global optimality proved: MIP solver found 1 devices as the minimum across all rooms. Each room placement was solved independently using CBC MILP solver with binary variables. The objective function minimizes device count while satisfying coverage constraints (every test point covered) and spacing constraints (no devices within 9.0m of each other)."
+  }
+}

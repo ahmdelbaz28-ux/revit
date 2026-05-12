@@ -1,0 +1,21 @@
+{
+  "rooms": [
+    {
+      "name": "Office_With_Column",
+      "polygon": [[0,0], [10,0], [10,10], [0,10], [0,0]],
+      "obstructions": [
+        {"type": "COLUMN", "polygon": [[4,4], [6,4], [6,6], [4,6], [4,4]]}
+      ],
+      "room_type": "OFFICE",
+      "ceiling_height": 2.8,
+      "ceiling_type": "SMOOTH"
+    },
+    {
+      "name": "Office_Empty",
+      "polygon": [[0,0], [10,0], [10,10], [0,10], [0,0]],
+      "room_type": "OFFICE",
+      "ceiling_height": 2.8,
+      "ceiling_type": "SMOOTH"
+    }
+  ]
+}

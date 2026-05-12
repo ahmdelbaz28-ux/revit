@@ -1,0 +1,83 @@
+================================================================================
+FIRE ALARM DESIGN REPORT
+FireAI - Optimal Placement Engine
+================================================================================
+
+Project: Fire Alarm Project
+Date: 2026-05-12 22:32:52
+Standard: NFPA 72
+
+================================================================================
+ROOM-BY-ROOM SUMMARY
+================================================================================
+
+Room: Office_With_Column (OFFICE)
+  Area: 100.0m² | Perimeter: 40.0m
+  Devices: 4
+    - SMOKE_PHOTOELECTRIC: 4
+  Devices placed at: [(2.75, 2.75), (2.75, 7.25), (7.25, 2.75), (7.25, 7.25)]
+  Cable: 36.0m | Labor: 2.0h
+  Cost: $3,530.00
+  Compliance: NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof.
+  Decision ID: 89a14534a286b12c
+  Checksum: 26af1d4463a586d26d6b79800e39a07c0e7cee5d0cd829ca19c3bc8616bc73a6
+
+Room: Office_Empty (OFFICE)
+  Area: 100.0m² | Perimeter: 40.0m
+  Devices: 4
+    - SMOKE_PHOTOELECTRIC: 4
+  Devices placed at: [(2.75, 2.75), (2.75, 7.25), (7.25, 2.75), (7.25, 7.25)]
+  Cable: 36.0m | Labor: 2.0h
+  Cost: $3,530.00
+  Compliance: NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof.
+  Decision ID: 0cd7ea2df168cf12
+  Checksum: bcca923dea0f0163c5ae0eacd964b967429c482df4743ba1db904efce49b40b0
+
+================================================================================
+TOTALS
+================================================================================
+Total Devices: 8
+Total Cable: 72.0m
+Total Labor: 4.0h
+TOTAL COST: $7,060.00
+
+================================================================================
+BILL OF QUANTITIES
+================================================================================
+
+Description                         Qty     Unit        Price        Total
+----------------------------------------------------------------------
+SMOKE_PHOTOELECTRIC                8.00       ea $       800 $  6,400.00
+Fire Alarm Cable                  72.00        m $         5 $    360.00
+Installation Labor                 4.00      hrs $        75 $    300.00
+----------------------------------------------------------------------
+TOTAL                                                         $  7,060.00
+
+================================================================================
+COMPLIANCE STATEMENTS
+================================================================================
+
+NFPA 72 Compliance:
+PER NFPA 72 (2022): All detection device spacing ≤9.0m on smooth ceilings per 17.6.5.1. Manual call points within 45m travel distance per 17.14.4. Notification devices per occupant notification zone requirements. Design approved by licensed fire protection engineer before installation.
+
+Optimality Proof:
+Global optimality proved: MIP solver found 8 devices as the minimum across all rooms. Each room placement was solved independently using CBC MILP solver with binary variables. The objective function minimizes device count while satisfying coverage constraints (every test point covered) and spacing constraints (no devices within 9.0m of each other).
+
+
+================================================================================
+AUDIT TRAIL — VERIFICATION LOG
+================================================================================
+Each room decision recorded with unique decision_id and checksum.
+Audit file: oracle_audit_YYYY-MM-DD.jsonl (JSONL format, one entry per line)
+
+  ✅ Office_With_Column (OFFICE)
+     Decision ID: 89a14534a286b12c
+     Checksum: 26af1d4463a586d26d6b79800e39a07c0e7cee5d0cd829ca19c3bc8616bc73a6
+
+  ✅ Office_Empty (OFFICE)
+     Decision ID: 0cd7ea2df168cf12
+     Checksum: bcca923dea0f0163c5ae0eacd964b967429c482df4743ba1db904efce49b40b0
+
+================================================================================
+END OF REPORT
+================================================================================

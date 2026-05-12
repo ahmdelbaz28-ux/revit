@@ -315,7 +315,10 @@ class ComplianceOracle:
                     )
                     from validation.coverage_verifier import CoverageVerifier, estimate_extra_devices
                     verifier = CoverageVerifier(resolution=32)
-                    coverage_result = verifier.verify_coverage(room_poly, device_points, radius)
+                    coverage_result = verifier.verify_coverage(
+                        room_poly, device_points, radius, 
+                        obstructions=obstructions  # Pass real obstructions
+                    )
                     return_result["coverage"] = coverage_result
                     if coverage_result["status"] == "FAIL":
                         extra = estimate_extra_devices(coverage_result["uncovered_area"])
