@@ -216,6 +216,16 @@ class OptimalMIPEngine:
                 "RidgeRow_Minimum"
             )
 
+        # Base Safety Rule: Minimum detectors based on room area
+        area = self.polygon.area
+        min_detectors = 0
+        if area >= 60.0:
+            min_detectors = 1  # At least 1 for any viable room
+        if area >= 120.0:
+            min_detectors = 2  # Minimum for larger rooms
+        if min_detectors > 0:
+            prob += lpSum(x.values()) >= min_detectors, "Minimum_Safety_Count"
+
         prob.solve()
 
         if LpStatus[prob.status] != "Optimal":
