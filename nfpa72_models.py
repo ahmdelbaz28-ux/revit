@@ -14,6 +14,7 @@ NFPA 72 (2022 Edition) is the authoritative standard.
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Tuple, Optional
+from shapely.geometry import Polygon as ShapelyPolygon
 import math
 
 
@@ -27,6 +28,16 @@ class DetectorType(Enum):
     HEAT = "heat"
     FLAME = "flame"
     GAS = "gas"
+    HEAT_FIXED_TEMP = "heat_fixed_temp"
+    HEAT_RATE_OF_RISE = "heat_rate_of_rise"
+    HEAT_COMBINATION = "heat_combination"
+    SMOKE_HEAT_COMBINATION = "smoke_heat_combination"
+
+
+class CoverageGeometry(Enum):
+    """Coverage geometry types per NFPA 72"""
+    CIRCULAR = "circular"
+    SQUARE_GRID = "square_grid"
 
 
 class HeatDetectionMode(Enum):
@@ -132,26 +143,17 @@ class CeilingSpec:
 class RoomSpec:
     """Room specification with polygon boundary"""
     
-    name: str
-    width_m: float
-    depth_m: float
-    height_m: float
-    polygon: Optional[List[Tuple[float, float]]] = None
-    
-    def __post_init__(self):
-        if self.polygon is None:
-            # Default rectangle
-            self.polygon = [
-                (0, 0),
-                (self.width_m, 0),
-                (self.width_m, self.depth_m),
-                (0, self.depth_m)
-            ]
+    room_id: str
+    polygon: ShapelyPolygon
+    ceiling_spec: CeilingSpec
+    detector_type: DetectorType
+    occupancy_type: str = "office"
+    heat_detector_spec: Optional['HeatDetectorSpec'] = None
     
     @property
     def area_sqm(self) -> float:
         """Calculate room area"""
-        return self.width_m * self.depth_m
+        return self.polygon.area
 
 
 @dataclass

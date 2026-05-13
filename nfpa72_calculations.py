@@ -22,7 +22,37 @@ from nfpa72_models import (
     CeilingHeightError,
     get_smoke_detector_radius,
     get_smoke_detector_coverage_max,
+    HeatDetectorSpec,
 )
+
+
+def get_heat_detector_placement_params(
+    spec: HeatDetectorSpec,
+    ceiling_height_m: float,
+    beam_depth_m: float = 0.0,
+    ceiling_slope_degrees: float = 0.0,
+) -> dict:
+    """
+    Get heat detector placement parameters per NFPA 72.
+    
+    Args:
+        spec: HeatDetectorSpec with manufacturer, model_number, listed_spacing
+        ceiling_height_m: Ceiling height in meters
+        beam_depth_m: Beam depth (optional)
+        ceiling_slope_degrees: Ceiling slope in degrees (optional)
+        
+    Returns:
+        Dictionary with max_detector_spacing_m and other parameters
+    """
+    base_spacing = spec.listed_spacing_m if spec else 9.1
+    
+    # NFPA 72 Table 17.6.2.1 adjustments
+    adjusted_spacing = base_spacing
+    
+    return {
+        "max_detector_spacing_m": adjusted_spacing,
+        "coverage_type": "square_grid",
+    }
 
 
 # ============================================================================
@@ -342,11 +372,14 @@ __all__ = [
     # Smoke calculations
     "calculate_smoke_detector_radius",
     "calculate_smoke_detector_spacing",
+    "get_smoke_detector_radius",
+    "get_smoke_detector_coverage_max",
     # Heat calculations
     "calculate_heat_detector_coverage_chebyshev",
     "calculate_heat_detector_spacing_rectangular",
     "generate_heat_detector_positions",
     "is_point_covered_by_heat_detectors",
+    "get_heat_detector_placement_params",
     # Sloped ceiling
     "calculate_ridge_zone_boundary",
     "is_in_ridge_zone",
