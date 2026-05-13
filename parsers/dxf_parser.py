@@ -194,6 +194,43 @@ class DXFParser:
             return [ls]
         return []
 
+    def _is_duplicate(self, poly1: Polygon, poly2: Polygon) -> bool:
+        """Check if two polygons are duplicates (>90% overlap)"""
+        if not poly1.intersects(poly2):
+            return False
+        
+        intersection = poly1.intersection(poly2)
+        min_area = min(poly1.area, poly2.area)
+        
+        if min_area <= 0:
+            return False
+        
+        overlap_ratio = intersection.area / min_area
+        
+        # 90% overlap = duplicate
+        return overlap_ratio > 0.9
+
+    def _remove_duplicates(self, polygons: List[Polygon]) -> List[Polygon]:
+        """Remove duplicate polygons (keep larger one)"""
+        if len(polygons) <= 1:
+            return polygons
+        
+        unique = []
+        for poly in polygons:
+            is_dup = False
+            for existing in unique:
+                if self._is_duplicate(poly, existing):
+                    is_dup = True
+                    # Keep larger polygon
+                    if poly.area > existing.area:
+                        unique.remove(existing)
+                        unique.append(poly)
+                    break
+            if not is_dup:
+                unique.append(poly)
+        
+        return unique
+
     def _lines_to_valid_polygons(self, lines) -> List[Polygon]:
         """CRITICAL: Always validate geometry. Never trust raw DXF."""
         if not lines:

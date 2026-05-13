@@ -17,6 +17,9 @@ from spatial_engine.mip_solver import OptimalMIPEngine
 
 logger = logging.getLogger("fireai.orchestrator")
 
+# SAFETY: Always add margin to detector counts
+SAFETY_MARGIN = 1.15  # 15% extra detectors for safety
+
 
 @dataclass
 class RoomResult:
@@ -59,12 +62,72 @@ class FloorResult:
         self.rooms_errored = sum(1 for r in self.room_results if r.status == "ERROR")
         self.total_detectors = sum(r.detector_count for r in self.room_results)
         self.total_time_s = sum(r.solve_time_s for r in self.room_results)
+        
+        # SAFETY: Include safety margin detectors
+        self.total_detectors_with_margin = sum(
+            getattr(r, 'detector_count_with_margin', r.detector_count) 
+            for r in self.room_results
+        )
+        
         if self.rooms_errored == 0 and self.rooms_failed == 0:
             self.status = "PASS"
         elif self.rooms_passed == 0:
             self.status = "FAIL"
         else:
             self.status = "PARTIAL"
+    
+    def save_audit(self, output_dir: str = "audit"):
+        """Save audit trail to JSON file for liability protection"""
+        import json
+        from pathlib import Path
+        from datetime import datetime
+        
+        Path(output_dir).mkdir(exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{output_dir}/audit_{self.project_name}_{timestamp}.json"
+        
+        audit_data = {
+            "timestamp": datetime.now().isoformat(),
+            "project_name": self.project_name,
+            "source_dxf": self.source_dxf,
+            "version": "FireAI V5.1.2",
+            "status": self.status,
+            "rooms": {
+                "total": self.total_rooms,
+                "passed": self.rooms_passed,
+                "failed": self.rooms_failed,
+                "errored": self.rooms_errored,
+            },
+            "detectors": {
+                "calculated": self.total_detectors,
+                "with_safety_margin": getattr(self, 'total_detectors_with_margin', self.total_detectors),
+            },
+            "safety": {
+                "margin_percent": 15,
+                "reason": "NFPA 72: Always add spare detectors for calculation uncertainty"
+            },
+            "details": [
+                {
+                    "room_id": r.room_id,
+                    "status": r.status,
+                    "detector_count": r.detector_count,
+                    "detector_count_with_margin": getattr(r, 'detector_count_with_margin', r.detector_count),
+                    "coverage_pct": r.coverage_pct,
+                    "radius_m": r.radius_m,
+                    "warnings": r.warnings,
+                    "errors": r.errors,
+                }
+                for r in self.room_results
+            ],
+            "disclaimer": self.disclaimer,
+        }
+        
+        with open(filename, "w") as f:
+            json.dump(audit_data, f, indent=2)
+        
+        logger.info(f"Audit saved: {filename}")
+        return filename
 
 
 class FloorOrchestrator:
@@ -128,6 +191,12 @@ class FloorOrchestrator:
             result.spacing_m = meta["spacing_m"]
             result.geometry = meta["coverage_geometry"]
             result.detector_count = count
+
+            # SAFETY: Always add safety margin
+            # This ensures extra coverage in case of calculation errors
+            result.detector_count_with_margin = int(count * SAFETY_MARGIN)
+            if result.detector_count_with_margin == count:
+                result.detector_count_with_margin = count + 1  # At least 1 extra
             result.detector_positions = positions
             result.coverage_pct = coverage["coverage_percentage"]
             result.worst_case_distance_m = coverage["worst_case_distance_m"]
