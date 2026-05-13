@@ -157,6 +157,10 @@ class FloorOrchestrator:
             logger.info(f"  {spec.name}: {room_res.status}")
 
         result.compute()
+        
+        # CRITICAL: Always save audit trail for liability protection
+        result.save_audit()
+        
         return result
 
     def _process_one_room(self, spec: RoomSpec) -> RoomResult:

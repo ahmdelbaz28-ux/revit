@@ -238,9 +238,12 @@ class DXFParser:
 
         merged = unary_union(lines)
         raw_polys = list(polygonize(merged))
+        
+        # CRITICAL: Remove duplicate polygons (>90% overlap)
+        valid_polys = self._remove_duplicates(raw_polys)
 
         valid = []
-        for p in raw_polys:
+        for p in valid_polys:
             # CRITICAL: make_valid fixes self-intersections
             if not p.is_valid:
                 p = make_valid(p)
