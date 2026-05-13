@@ -54,7 +54,7 @@ class CeilingType(Enum):
 
 
 class FireDeviceType(Enum):
-    """Fire alarm devices."""
+    """Fire alarm devices - NFPA 72 Complete."""
     smoke_detector = "smoke_detector"
     heat_detector = "heat_detector"
     pull_station = "pull_station"
@@ -64,6 +64,29 @@ class FireDeviceType(Enum):
     speaker = "speaker"
     sprinkler = "sprinkler"
     flow_switch = "flow_switch"
+    tamper_switch = "tamper_switch"
+    supervisory = "supervisory"
+    control = "control"
+    relay = "relay"
+    door_release = "door_release"
+    elevator = "elevator"
+    smoke_vent = "smoke_vent"
+    
+    # NEW - Missing critical devices
+    # (These save lives - don't remove)
+    duct_detector = "duct_detector"
+    beam_detector = "beam_detector"
+    aspiration_detector = "aspiration_detector"
+
+
+class FireZoneType(Enum):
+    """Fire alarm zones."""
+    detection = "detection"
+    notification = "notification"
+    suppression = "suppression"
+    evacuation = "evacuation"
+    control = "control"
+    supervisory = "supervisory"  # NEW - Critical for life safety
 
 
 class HazardLevel(Enum):
@@ -79,22 +102,54 @@ class HazardLevel(Enum):
 # ════════════════════════════════════════════════════════════════════════════
 
 class NFPA72:
-    """NFPA 72 Fire Alarm Code Constants."""
+    """NFPA 72 Fire Alarm Code Constants - Scientific Foundation."""
     
-    # Smoke Detector Coverage (meters)
+    # Smoke Detector Coverage (meters) - NFPA 72 Table 17.6.1.2
     SMOKE_COVERAGE = {
-        "flat_ceiling": 9.2,        # Standard flat: 30ft (9.2m)
-        "sloped_ceiling": 9.2,        # Sloped: 30ft
-        "smooth_ceiling": 9.2,        # Smooth ceiling
-        "beam_spacing_4m": 9.2,       # Beams ≤4m apart
+        "flat_ceiling": 9.2,           # Standard flat: 30ft (9.2m)
+        "sloped_ceiling": 9.2,          # Sloped: 30ft
+        "smooth_ceiling": 9.2,          # Smooth ceiling
+        "beam_spacing_4m": 9.2,        # Beams ≤4m apart
         "beam_spacing_over_4m": 6.4,   # Beams >4m apart
-        "solid_joists": 6.4,          # Solid joists
+        "solid_joists": 6.4,           # Solid joists
     }
     
-    # Heat Detector Coverage (meters)
+    # Heat Detector Coverage (meters) - NFPA 72 Table 17.6.3.2
     HEAT_COVERAGE = {
-        "flat_ceiling": 15.2,         # 50ft
-        "sloped_ceiling": 15.2,       # 50ft
+        "flat_ceiling": 15.2,           # 50ft
+        "sloped_ceiling": 15.2,         # 50ft
+        "inverse_rate": 15.2,           # Inverse rate of rise
+        "fixed_temperature": 15.2,      # Fixed temp
+    }
+    
+    # Sprinkler Coverage (meters) - NFPA 13
+    SPRINKLER_COVERAGE = {
+        "standard": 3.7,               # 12ft (3.7m)
+        "fast_response": 3.7,           # Fast response
+        "extended_coverage": 4.6,       # Extended coverage
+    }
+    
+    # NEW - Notification Appliance Coverage
+    STROBE_COVERAGE = {
+        "standard": 15.0,              # 15m based on candela
+        "visibility": 30.0,             # 30m for V1.1/V2.0 visibility
+    }
+    
+    SPEAKER_COVERAGE = {
+        "general": 30.0,               # 30m (100ft)
+        "intelligible": 21.0,          # 70ft for speech
+    }
+    
+    # Duct Detector Coverage
+    DUCT_DETECTOR_COVERAGE = {
+        "intake": 1.0,                # Per duct size
+        "exhaust": 1.0,
+    }
+    
+    # Beam Detector Coverage  
+    BEAM_DETECTOR_COVERAGE = {
+        "per_beam": 30.0,              # 30m per beam
+        "ceiling_mounted": 30.0,
     }
     
     # Spacing from Ceiling (meters)
