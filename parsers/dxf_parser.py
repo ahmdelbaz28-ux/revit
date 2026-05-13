@@ -79,10 +79,11 @@ class DXFParser:
                 )
 
         units = self._detect_units(doc)
-        scale = self.INSUNITS_TO_METERS.get(units, 1.0)
-
+        
+        # Validate and get scale
         if units not in self.INSUNITS_TO_METERS:
-            raise ValueError(f"Unknown DXF units: '{units}'")
+            raise ValueError(f"Unknown DXF units code: '{units}'")
+        scale = self.INSUNITS_TO_METERS[units]
 
         msp = doc.modelspace()
         lines = self._extract_lines(msp, scale)
@@ -118,11 +119,9 @@ class DXFParser:
             skipped_count=skipped,
         )
 
-    def _detect_units(self, doc) -> str:
-        insunits = doc.header.get("$INSUNITS", 0)
-        unit_map = {0: "Unitless", 1: "Inches", 2: "Feet",
-                    4: "Millimeters", 5: "Centimeters", 6: "Meters"}
-        return unit_map.get(insunits, "Unknown")
+    def _detect_units(self, doc) -> int:
+        """Detect DXF units code (not name)"""
+        return doc.header.get("$INSUNITS", 6)  # Default to Meters (6)
 
     def _extract_lines(self, msp, scale: float) -> List:
         from shapely.geometry import LineString

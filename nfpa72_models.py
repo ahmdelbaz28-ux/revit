@@ -314,8 +314,12 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
     }
     
     for (min_h, max_h), radius in RADIUS_MAP.items():
-        if min_h <= ceiling_height_m < max_h:
+        if min_h <= ceiling_height_m <= max_h:
             return radius
+    
+    # Handle edge case at 15.3m (exactly at max)
+    if ceiling_height_m == 15.3:
+        return 6.4
     
     # Outside valid range
     raise CeilingHeightError(

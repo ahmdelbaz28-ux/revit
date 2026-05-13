@@ -91,14 +91,14 @@ class FloorOrchestrator:
         for spec in room_specs:
             room_res = self._process_one_room(spec)
             result.room_results.append(room_res)
-            logger.info(f"  {spec.room_id}: {room_res.status}")
+            logger.info(f"  {spec.name}: {room_res.status}")
 
         result.compute()
         return result
 
     def _process_one_room(self, spec: RoomSpec) -> RoomResult:
         start = time.monotonic()
-        result = RoomResult(room_id=spec.room_id, status="FAIL")
+        result = RoomResult(room_id=spec.name, status="FAIL")
 
         try:
             # [1] NEW Engine for every room — no shared state

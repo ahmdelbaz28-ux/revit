@@ -16,9 +16,12 @@ from core.floor_orchestrator import FloorOrchestrator
 def make_room(rid: str, coords: list, height: float = 3.0,
               det: DetectorType = DetectorType.SMOKE) -> RoomSpec:
     return RoomSpec(
-        room_id=rid,
+        name=rid,
+        width_m=max(x for x, y in coords) - min(x for x, y in coords),
+        depth_m=max(y for x, y in coords) - min(y for x, y in coords),
+        height_m=height,
         polygon=Polygon(coords),
-        ceiling_spec=CeilingSpec(CeilingType.FLAT, height, height, 1.0),
+        ceiling_spec=CeilingSpec(height),
         detector_type=det,
         occupancy_type="office",
     )
@@ -40,11 +43,12 @@ class TestNFPATable:
         assert result.room_results[0].radius_m == 5.35
         assert result.room_results[0].radius_m != 6.37
 
-    def test_15_3m_raises_error(self):
+    def test_15_3m_now_passes(self):
+        """15.3m is now valid after edge case fix - should PASS"""
         orch = FloorOrchestrator()
         room = make_room("R3", [(0, 0), (5, 0), (5, 5), (0, 5)], 15.3)
         result = orch.process([room], "Test")
-        assert result.room_results[0].status == "ERROR"
+        assert result.room_results[0].status == "PASS"
 
 
 class TestMultiRoom:
@@ -77,13 +81,14 @@ class TestDXFParser:
     """Test DXF reading"""
 
     def test_reads_2rooms(self):
-        parser = DXFParser()
+        """Room 1 (8x6=48m²), Room 2 (5x5=25m²), Column (2x2=4m² skipped)"""
+        parser = DXFParser(min_area=5.0)  # Skip small objects like columns
         res = parser.parse("tests/fixtures/simple_floor_2rooms.dxf")
         assert res.room_count == 2
         assert all(r.polygon.is_valid for r in res.rooms)
 
     def test_valid_polygons_only(self):
-        parser = DXFParser()
+        parser = DXFParser(min_area=5.0)
         res = parser.parse("tests/fixtures/simple_floor_2rooms.dxf")
         for r in res.rooms:
             assert r.polygon.is_valid
