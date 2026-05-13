@@ -13,7 +13,7 @@ NFPA 72 (2022 Edition) is the authoritative standard.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Any
 import math
 
 
@@ -35,13 +35,24 @@ class HeatDetectionMode(Enum):
     SQUARE_GRID = "square_grid"  # Chebyshev (for heat)
 
 
+class CoverageGeometry(Enum):
+    """Coverage geometry types"""
+    CIRCULAR = "circular"
+    SQUARE_GRID = "square_grid"
+
+
 class CeilingType(Enum):
     """Ceiling configuration types"""
     FLAT = "flat"
+    SLOPED = "sloped"
+    PEAKED = "peaked_gable"
+    HIP = "hip"
+    CURVED = "curved"
     GABLE = "gable"
     SHED = "shed"
     TRUSS = "truss"
     COMBUSTIBLE = "combustible"
+    SUSPENDED = "suspended"
 
 
 # ============================================================================
@@ -49,9 +60,18 @@ class CeilingType(Enum):
 # ============================================================================
 
 class NFPAComplianceError(Exception):
-    """Base exception for NFPA compliance violations"""
+    """
+    يُرفع عندما لا يمكن لشروط الإدخال إنتاج تصميم متوافق.
+    هذا ليس خطأ برمجي — يعني أن معلمات المبنى نفسها تخالف NFPA 72.
+    """
     pass
 
+class InvalidInputError(ValueError):
+    """
+    يُرفع عندما تكون بيانات الإدخال مفقودة أو غير منطقية.
+    أمثلة: ارتفاع سلبي، حقل مطلوب مفقود.
+    """
+    pass
 
 class CeilingHeightError(NFPAComplianceError):
     """Raised when ceiling height is outside NFPA 72 limits"""
@@ -79,79 +99,72 @@ class RidgeZoneError(NFPAComplianceError):
 
 @dataclass
 class CeilingSpec:
-    """Ceiling specification with height and slope"""
+    """Ceiling specification with height, slope type, and run"""
     
+    ceiling_type: CeilingType
     height_at_low_point_m: float
-    height_at_high_point_m: Optional[float] = None
-    ceiling_type: CeilingType = CeilingType.FLAT
-    slope_degrees: float = 0.0
+    height_at_high_point_m: float
+    slope_run_m: float
     
     def __post_init__(self):
-        # NFPA 72 height limits (Chapter 17)
-        MIN_HEIGHT = 3.0  # 10 feet = 3.0m
-        MAX_HEIGHT = 15.3  # 50 feet = 15.3m
-        
-        if self.height_at_low_point_m < MIN_HEIGHT:
-            raise CeilingHeightError(
-                f"Ceiling height {self.height_at_low_point_m}m is below NFPA 72 "
-                f"minimum of {MIN_HEIGHT}m (10 feet)"
-            )
-        
-        if self.height_at_low_point_m > MAX_HEIGHT:
-            raise CeilingHeightError(
-                f"Ceiling height {self.height_at_low_point_m}m exceeds NFPA 72 "
-                f"maximum of {MAX_HEIGHT}m (50 feet)"
-            )
-        
-        # Calculate slope if high point provided
-        if self.height_at_high_point_m and self.height_at_high_point_m > self.height_at_low_point_m:
-            run = 3.0  # Assume 3m run for slope calculation
-            rise = self.height_at_high_point_m - self.height_at_low_point_m
-            self.slope_degrees = math.degrees(math.atan(rise / run))
+        if self.height_at_low_point_m <= 0:
+            raise InvalidInputError(f"height_at_low_point_m must be > 0. Got: {self.height_at_low_point_m}")
+        if self.height_at_high_point_m < self.height_at_low_point_m:
+            raise InvalidInputError(f"height_at_high_point_m cannot be less than height_at_low_point_m")
+        if self.slope_run_m <= 0:
+            raise InvalidInputError(f"slope_run_m must be > 0")
     
+    @property
+    def slope_degrees(self) -> float:
+        """Calculate slope in degrees"""
+        rise = self.height_at_high_point_m - self.height_at_low_point_m
+        if rise == 0:
+            return 0.0
+        return math.degrees(math.atan(rise / self.slope_run_m))
+
     @property
     def height_m(self) -> float:
         """Get ceiling height (low point)"""
         return self.height_at_low_point_m
-    
+
     @property
     def is_sloped(self) -> bool:
         """Check if ceiling is sloped (>1.5 degrees)"""
         return self.slope_degrees > 1.5
-    
-    @property
-    def ridge_line(self) -> Optional[Tuple[float, float, float, float]]:
-        """Get ridge line for gable/shed ceiling (x1, y1, x2, y2)"""
-        if self.ceiling_type in (CeilingType.GABLE, CeilingType.SHED):
-            # Simplified: return line at center of room
-            return (0, 0, 10, 0)  # Placeholder
-        return None
+
+    def get_local_height_at(self, distance_from_low_wall_m: float) -> float:
+        """Get ceiling height at a given distance from the low wall"""
+        if self.ceiling_type == CeilingType.FLAT:
+            return self.height_at_low_point_m
+        elif self.ceiling_type == CeilingType.SLOPED:
+            slope_tan = (self.height_at_high_point_m - self.height_at_low_point_m) / self.slope_run_m
+            height = self.height_at_low_point_m + distance_from_low_wall_m * slope_tan
+            return min(height, self.height_at_high_point_m)
+        elif self.ceiling_type in (CeilingType.PEAKED, CeilingType.HIP):
+            dist_from_ridge = abs(distance_from_low_wall_m - self.slope_run_m)
+            slope_tan = (self.height_at_high_point_m - self.height_at_low_point_m) / self.slope_run_m
+            height = self.height_at_high_point_m - dist_from_ridge * slope_tan
+            return max(height, self.height_at_low_point_m)
+        return self.height_at_low_point_m
 
 
 @dataclass
 class RoomSpec:
     """Room specification with polygon boundary"""
     
-    name: str
-    width_m: float
-    depth_m: float
-    height_m: float
-    polygon: Optional[List[Tuple[float, float]]] = None
+    room_id: str
+    polygon: Any  # ShapelyPolygon
+    ceiling_spec: CeilingSpec
+    detector_type: DetectorType
+    occupancy_type: str
     
     def __post_init__(self):
-        if self.polygon is None:
-            # Default rectangle
-            self.polygon = [
-                (0, 0),
-                (self.width_m, 0),
-                (self.width_m, self.depth_m),
-                (0, self.depth_m)
-            ]
-    
-    @property
-    def area_sqm(self) -> float:
-        """Calculate room area"""
-        return self.width_m * self.depth_m
+        if not self.room_id.strip():
+            raise InvalidInputError("room_id cannot be empty")
+        if not self.polygon.is_valid:
+            raise InvalidInputError(f"Room '{self.room_id}': polygon is not valid geometry")
+        if self.polygon.area <= 0:
+            raise InvalidInputError(f"Room '{self.room_id}': polygon has zero area")
 
 
 @dataclass
@@ -184,21 +197,25 @@ class SmokeDetectorSpec:
 
 @dataclass
 class HeatDetectorSpec:
-    """Heat detector specification"""
+    """Heat detector specification with manufacturer data for legal compliance"""
     
-    ceiling_spec: CeilingSpec
-    room_spec: RoomSpec
-    detector_type: DetectorType = DetectorType.HEAT
-    heat_mode: HeatDetectionMode = HeatDetectionMode.SQUARE_GRID
+    detector_type: DetectorType
+    listed_spacing_m: float      # From manufacturer catalog - REQUIRED
+    manufacturer: str           # REQUIRED for audit trail
+    model_number: str           # REQUIRED for audit trail
+    listing_standard: str       # "UL 521" or "FM 1220" - REQUIRED for legal defense
     
-    # Fixed spacing per NFPA 72 (Table 17.6.2.1)
-    FIXED_SPACING_FT = 30  # 30 feet = 9.1m
-    FIXED_SPACING_M = 9.1
-    
-    @property
-    def spacing_m(self) -> float:
-        """Get spacing for heat detector"""
-        return self.FIXED_SPACING_M
+    def __post_init__(self):
+        if self.detector_type == DetectorType.SMOKE:
+            raise InvalidInputError("HeatDetectorSpec cannot be used for smoke detectors")
+        if self.listed_spacing_m <= 0:
+            raise InvalidInputError(f"listed_spacing_m must be > 0")
+        if self.listed_spacing_m > 15.25:
+            raise NFPAComplianceError(f"listed_spacing_m exceeds maximum 15.25m")
+        if not self.manufacturer.strip():
+            raise InvalidInputError("manufacturer cannot be empty")
+        if not self.model_number.strip():
+            raise InvalidInputError("model_number cannot be empty")
 
 
 @dataclass
@@ -268,62 +285,61 @@ Verify all detector placements with local AHJ requirements.
 
 def get_smoke_detector_radius(ceiling_height_m: float) -> float:
     """
-    Calculate smoke detector coverage radius based on NFPA 72 Table 17.6.3.2.
+    Calculate smoke detector coverage radius based on NFPA 72 Table 17.6.3.1.
     
     Args:
         ceiling_height_m: Ceiling height in meters
         
     Returns:
         Coverage radius in meters
-        
-    Raises:
-        CeilingHeightError: If height is outside NFPA 72 limits
     """
-    # NFPA 72 Table 17.6.3.2 - Coverage per Ceiling Height
-    # Heights in meters (converted from feet)
-    RADIUS_MAP = {
-        (3.0, 4.3): 4.55,   # 3.0m -> 4.55m
-        (4.3, 6.1): 5.35,   # 4.3-6.1m -> 5.35m
-        (6.1, 7.6): 5.2,    # 6.1-7.6m
-        (7.6, 9.1): 5.8,    # 7.6-9.1m
-        (9.1, 15.3): 6.4,   # 9.1-15.3m
-    }
-    
-    for (min_h, max_h), radius in RADIUS_MAP.items():
-        if min_h <= ceiling_height_m < max_h:
+    if ceiling_height_m <= 0:
+        raise InvalidInputError(f"ceiling_height_m must be > 0. Got: {ceiling_height_m}m")
+
+    NFPA72_TABLE_17_6_3_1 = [
+        (4.6,  4.55),   # ≤ 4.6m
+        (6.1,  5.35),   # ≤ 6.1m
+        (7.6,  6.10),   # ≤ 7.6m
+        (9.1,  6.40),   # ≤ 9.1m
+        (10.7, 6.90),   # ≤ 10.7m
+        (12.2, 7.30),   # ≤ 12.2m
+        (13.7, 7.60),   # ≤ 13.7m
+        (15.2, 7.90),   # ≤ 15.2m
+    ]
+
+    for max_height, radius in NFPA72_TABLE_17_6_3_1:
+        if ceiling_height_m <= max_height:
             return radius
-    
-    # Outside valid range
-    raise CeilingHeightError(
-        f"Ceiling height {ceiling_height_m}m is outside NFPA 72 "
-        f"valid range of 3.0m to 15.3m"
+
+    raise NFPAComplianceError(
+        f"Ceiling height {ceiling_height_m}m exceeds 15.2m (50ft). "
+        f"NFPA 72 (2022) Table 17.6.3.1 does NOT permit standard smoke "
+        f"detectors on ceilings above 15.2m. "
+        f"Engineering alternatives: beam-mounted detectors, projected beam "
+        f"smoke detectors, or air-sampling systems per NFPA 72 Section 17.7."
     )
 
 
 def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
     """
     Calculate maximum coverage area (circles can extend to) per NFPA 72.
-    
-    Args:
-        ceiling_height_m: Ceiling height in meters
-        
-    Returns:
-        Maximum coverage radius in meters
     """
-    # Maximum coverage per NFPA 72 Table 17.6.3.2
     MAX_COVERAGE_MAP = {
-        (3.0, 4.3): 5.5,
-        (4.3, 6.1): 6.5,
-        (6.1, 7.6): 8.1,
-        (7.6, 9.1): 9.0,
-        (9.1, 15.3): 10.1,
+        (4.6, 5.5),
+        (6.1, 6.5),
+        (7.6, 8.1),
+        (9.1, 9.0),
+        (10.7, 10.0),
+        (12.2, 10.7),
+        (13.7, 11.3),
+        (15.2, 11.9),
     }
-    
-    for (min_h, max_h), max_cov in MAX_COVERAGE_MAP.items():
-        if min_h <= ceiling_height_m < max_h:
+
+    for max_h, max_cov in MAX_COVERAGE_MAP:
+        if ceiling_height_m <= max_h:
             return max_cov
-    
-    return 10.1  # Default max
+
+    return 11.9  # Default max for heights > 15.2m
 
 
 def validate_ceiling_height(ceiling_height_m: float) -> None:

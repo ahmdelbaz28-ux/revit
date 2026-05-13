@@ -66,19 +66,18 @@ def create_room_polygon(room_spec: RoomSpec) -> Polygon:
 def is_point_in_room(point: Tuple[float, float], room_polygon: Polygon) -> bool:
     """
     Check if point is inside room polygon.
-    
     Uses Polygon.contains() instead of Bounding Box.
-    
     Args:
         point: (x, y) point to check
         room_polygon: Shapely Polygon of room
-        
     Returns:
         True if point is inside room polygon
     """
+    # Handle both Point objects and tuples
+    if hasattr(point, "x"):
+        return room_polygon.contains(point)
     p = Point(point[0], point[1])
     return room_polygon.contains(p)
-
 
 def check_coverage_polygon(
     detector_positions: List[Tuple[float, float]],
@@ -116,17 +115,19 @@ def check_coverage_polygon(
     uncovered = []
     samples = 20  # Grid resolution for coverage check
     
-    step_x = room_spec.width_m / samples
-    step_y = room_spec.depth_m / samples
+    # Use polygon bounds instead of width/depth
+    minx, miny, maxx, maxy = room_spec.polygon.bounds
+    step_x = (maxx - minx) / samples
+    step_y = (maxy - miny) / samples
     
     covered_count = 0
     total_points = 0
     
     for i in range(samples + 1):
         for j in range(samples + 1):
-            x = i * step_x
-            y = j * step_y
-            point = (x, y)
+            x = minx + i * step_x
+            y = miny + j * step_y
+            point = Point(x, y)
             
             # Check if point is in room (not just bounding box)
             if not is_point_in_room(point, room_polygon):

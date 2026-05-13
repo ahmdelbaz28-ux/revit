@@ -13,16 +13,17 @@ import math
 import pytest
 from nfpa72_models import (
     CeilingSpec,
+    CeilingType,
     RoomSpec,
     DetectorType,
     HeatDetectionMode,
-    CeilingType,
-    CeilingHeightError,
+    CoverageGeometry,
     CoverageError,
     NFPAComplianceError,
+    CeilingHeightError,
+    InvalidInputError,
     get_smoke_detector_radius,
     get_smoke_detector_coverage_max,
-    validate_ceiling_height,
 )
 from nfpa72_calculations import (
     calculate_smoke_detector_radius,
@@ -48,37 +49,52 @@ from nfpa72_coverage import (
 # ============================================================================
 
 class TestSmokeDetectorRadius:
-    """Test smoke detector radius calculations (NFPA 72 Table 17.6.3.2)"""
+    """Test smoke detector radius calculations (NFPA 72 Table 17.6.3.1)"""
     
-    def test_height_3m_radius_455(self):
-        """3.0m ceiling should give radius 4.55m (not 6.37m)"""
-        radius = get_smoke_detector_radius(3.0)
-        assert abs(radius - 4.55) < 0.01, f"Expected 4.55m, got {radius}m"
-    
-    def test_height_48m_radius_535(self):
-        """4.8m ceiling should give radius 5.35m (not 6.37m)"""
-        radius = get_smoke_detector_radius(4.8)
-        assert abs(radius - 5.35) < 0.01, f"Expected 5.35m, got {radius}m"
-    
-    def test_height_61m_radius_52(self):
-        """6.1m ceiling should give radius 5.2m"""
-        radius = get_smoke_detector_radius(6.1)
-        assert abs(radius - 5.2) < 0.01, f"Expected 5.2m, got {radius}m"
-    
-    def test_height_76m_radius_58(self):
-        """7.6m ceiling should give radius 5.8m"""
+    def test_standard_heights(self):
+        """Test all 8 rows of NFPA 72 Table 17.6.3.1"""
+        cases = [
+            (2.5, 4.55), (4.6, 4.55),  # ≤ 4.6m → 4.55m
+            (4.61, 5.35), (6.0, 5.35), (6.1, 5.35),  # ≤ 6.1m → 5.35m
+            (6.2, 6.10), (7.5, 6.10), (7.6, 6.10),  # ≤ 7.6m → 6.10m
+            (7.7, 6.40), (9.0, 6.40), (9.1, 6.40),  # ≤ 9.1m → 6.40m
+            (9.2, 6.90), (10.6, 6.90), (10.7, 6.90),  # ≤ 10.7m → 6.90m
+            (10.8, 7.30), (12.1, 7.30), (12.2, 7.30),  # ≤ 12.2m → 7.30m
+            (12.3, 7.60), (13.6, 7.60), (13.7, 7.60),  # ≤ 13.7m → 7.60m
+            (13.8, 7.90), (15.0, 7.90), (15.2, 7.90),  # ≤ 15.2m → 7.90m
+        ]
+        for height, expected in cases:
+            result = get_smoke_detector_radius(height)
+            assert result == expected, f"Height {height}m: expected {expected}, got {result}"
+
+    def test_height_7_6m_is_610(self):
+        """7.6m ceiling should give radius 6.10m (not 5.8m)"""
         radius = get_smoke_detector_radius(7.6)
-        assert abs(radius - 5.8) < 0.01, f"Expected 5.8m, got {radius}m"
-    
-    def test_height_91m_radius_64(self):
-        """9.1m ceiling should give radius 6.4m"""
-        radius = get_smoke_detector_radius(9.1)
-        assert abs(radius - 6.4) < 0.01, f"Expected 6.4m, got {radius}m"
-    
-    def test_height_above_max_rejects(self):
-        """Height > 15.3m should raise CeilingHeightError"""
-        with pytest.raises(CeilingHeightError):
-            get_smoke_detector_radius(15.3)
+        assert radius == 6.10, f"Expected 6.10m, got {radius}m"
+
+    def test_height_15_2m_is_790(self):
+        """15.2m ceiling should give radius 7.90m"""
+        radius = get_smoke_detector_radius(15.2)
+        assert radius == 7.90, f"Expected 7.90m, got {radius}m"
+
+    def test_above_maximum_raises(self):
+        """Height > 15.2m should raise NFPAComplianceError"""
+        with pytest.raises(NFPAComplianceError):
+            get_smoke_detector_radius(15.21)
+
+    def test_zero_and_negative_raises(self):
+        """Zero or negative height should raise InvalidInputError"""
+        with pytest.raises(InvalidInputError):
+            get_smoke_detector_radius(0.0)
+        with pytest.raises(InvalidInputError):
+            get_smoke_detector_radius(-1.0)
+
+    def test_old_hardcoded_values_are_gone(self):
+        """Verify old hardcoded values are replaced"""
+        assert get_smoke_detector_radius(3.0) == 4.55
+        assert get_smoke_detector_radius(3.0) != 6.37
+        assert get_smoke_detector_radius(5.0) == 5.35
+        assert get_smoke_detector_radius(5.0) != 6.37
 
 
 # ============================================================================
@@ -161,8 +177,10 @@ class TestPolygonCoverageCheck:
     
     def test_rectangular_coverage_works(self):
         """Rectangular room coverage check works"""
-        room = RoomSpec("test", 10, 10, 3.0)
-        ceiling = CeilingSpec(3.0)
+        from shapely.geometry import Polygon
+        ceiling = CeilingSpec(CeilingType.FLAT, 3.0, 3.0, 10.0)
+        room_polygon = Polygon([(0,0),(10,0),(10,10),(0,10)])
+        room = RoomSpec("test", room_polygon, ceiling, DetectorType.SMOKE, "office")
         detectors = [(5, 5), (5, 5)]  # Simplified
         
         result = check_coverage_polygon(
@@ -235,24 +253,25 @@ class TestSlopedCeiling:
     
     def test_slope_15_degrees_requires_ridge(self):
         """Ceiling slope > 1.5° requires ridge zone detector"""
-        ceiling = CeilingSpec(3.0, 4.0, CeilingType.GABLE, slope_degrees=15)
+        ceiling = CeilingSpec(CeilingType.PEAKED, 3.0, 6.0, 5.0)  # ~31° slope
         
-        requires = requires_ridge_zone_detector(ceiling)
-        assert requires is True, "15° slope should require ridge detector"
+        requires = ceiling.is_sloped
+        assert requires is True, "Peaked ceiling should be sloped"
     
     def test_flat_ceiling_no_ridge(self):
         """Flat ceiling doesn't require ridge zone"""
-        ceiling = CeilingSpec(3.0, slope_degrees=0)
+        ceiling = CeilingSpec(CeilingType.FLAT, 3.0, 3.0, 10.0)
         
-        requires = requires_ridge_zone_detector(ceiling)
-        assert requires is False, "Flat ceiling should not require ridge"
+        requires = ceiling.is_sloped
+        assert requires is False, "Flat ceiling should not be sloped"
     
     def test_slope_1_degrees_no_ridge(self):
         """Ceiling slope <= 1.5° doesn't require ridge zone"""
-        ceiling = CeilingSpec(3.0, slope_degrees=1.0)
+        # Small slope: 3.0m to 3.1m over 10m run = ~0.57°
+        ceiling = CeilingSpec(CeilingType.SLOPED, 3.0, 3.1, 10.0)
         
-        requires = requires_ridge_zone_detector(ceiling)
-        assert requires is False, "1° slope should not require ridge"
+        requires = ceiling.is_sloped
+        assert requires is False, "~0.6° slope should not require ridge"
     
     def test_is_in_ridge_zone_true(self):
         """Point within 0.9m of ridge is in ridge zone"""
@@ -271,8 +290,10 @@ class TestIntegration:
     
     def test_full_compliance_check(self):
         """Full compliance check runs without errors"""
-        room = RoomSpec("test", 10, 10, 3.0)
-        ceiling = CeilingSpec(3.0)
+        from shapely.geometry import Polygon
+        ceiling = CeilingSpec(CeilingType.FLAT, 3.0, 3.0, 10.0)
+        room_polygon = Polygon([(0,0),(10,0),(10,10),(0,10)])
+        room = RoomSpec("test", room_polygon, ceiling, DetectorType.SMOKE, "office")
         detectors = [(2.5, 2.5), (7.5, 2.5), (2.5, 7.5), (7.5, 7.5)]
         
         result = check_nfpa72_compliance(
