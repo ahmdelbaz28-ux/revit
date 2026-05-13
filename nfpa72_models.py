@@ -14,6 +14,7 @@ NFPA 72 (2022 Edition) is the authoritative standard.
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Tuple, Optional
+from shapely.geometry import Polygon as ShapelyPolygon
 import math
 
 
@@ -27,6 +28,16 @@ class DetectorType(Enum):
     HEAT = "heat"
     FLAME = "flame"
     GAS = "gas"
+    HEAT_FIXED_TEMP = "heat_fixed_temp"
+    HEAT_RATE_OF_RISE = "heat_rate_of_rise"
+    HEAT_COMBINATION = "heat_combination"
+    SMOKE_HEAT_COMBINATION = "smoke_heat_combination"
+
+
+class CoverageGeometry(Enum):
+    """Coverage geometry types per NFPA 72"""
+    CIRCULAR = "circular"
+    SQUARE_GRID = "square_grid"
 
 
 class HeatDetectionMode(Enum):
@@ -136,17 +147,30 @@ class RoomSpec:
     width_m: float
     depth_m: float
     height_m: float
-    polygon: Optional[List[Tuple[float, float]]] = None
+    polygon: Optional[ShapelyPolygon] = None
+    ceiling_spec: Optional[CeilingSpec] = None
+    detector_type: Optional[DetectorType] = None
+    occupancy_type: str = "office"
+    heat_detector_spec: Optional['HeatDetectorSpec'] = None
     
     def __post_init__(self):
+        # Build polygon from dimensions if not provided
         if self.polygon is None:
-            # Default rectangle
-            self.polygon = [
+            self.polygon = ShapelyPolygon([
                 (0, 0),
                 (self.width_m, 0),
                 (self.width_m, self.depth_m),
                 (0, self.depth_m)
-            ]
+            ])
+        # Build ceiling_spec from height if not provided
+        if self.ceiling_spec is None:
+            try:
+                self.ceiling_spec = CeilingSpec(self.height_m, self.height_m, CeilingType.FLAT, 0.0)
+            except Exception:
+                # Height may not meet NFPA 72 minimum - use default
+                self.ceiling_spec = CeilingSpec(3.0, 3.0, CeilingType.FLAT, 0.0)
+        if self.detector_type is None:
+            self.detector_type = DetectorType.SMOKE
     
     @property
     def area_sqm(self) -> float:

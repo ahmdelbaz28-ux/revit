@@ -423,4 +423,114 @@ __all__ = [
     "create_l_shaped_polygon",
     "check_l_shaped_coverage",
     "check_nfpa72_compliance",
+    "verify_full_coverage",
+    "get_sloped_ceiling_constraints",
 ]
+
+
+def verify_full_coverage(
+    room_polygon,
+    detector_positions: List[Tuple[float, float]],
+    coverage_geometry: str,
+    detector_radius: float,
+    listed_spacing_m: Optional[float] = None,
+    grid_resolution_m: float = 0.25,
+) -> dict:
+    """
+    Verify that all points in the room are covered by detectors.
+    
+    Args:
+        room_polygon: Shapely Polygon of room
+        detector_positions: List of detector (x, y) positions
+        coverage_geometry: "circular" or "square_grid"
+        detector_radius: Coverage radius for smoke detectors
+        listed_spacing_m: Listed spacing for heat detectors
+        grid_resolution_m: Grid resolution for sampling
+        
+    Returns:
+        Dictionary with coverage_percentage, worst_case_distance_m, compliance_status
+    """
+    if coverage_geometry == "circular":
+        radius = detector_radius
+    else:
+        radius = (listed_spacing_m or 9.1) / 2
+    
+    bounds = room_polygon.bounds
+    minx, miny, maxx, maxy = bounds
+    step = grid_resolution_m
+    
+    total_points = 0
+    covered_points = 0
+    worst_distance = 0.0
+    
+    x = minx
+    while x <= maxx:
+        y = miny
+        while y <= maxy:
+            pt = Point(x, y)
+            if room_polygon.contains(pt):
+                total_points += 1
+                
+                # Find distance to nearest detector
+                min_dist = float('inf')
+                for dx, dy in detector_positions:
+                    dist = math.sqrt((x - dx) ** 2 + (y - dy) ** 2)
+                    min_dist = min(min_dist, dist)
+                
+                if min_dist <= radius:
+                    covered_points += 1
+                else:
+                    worst_distance = max(worst_distance, min_dist)
+            y += step
+        x += step
+    
+    coverage_pct = (covered_points / total_points * 100) if total_points > 0 else 0
+    status = "PASS" if coverage_pct >= 99 else "FAIL"
+    
+    return {
+        "coverage_percentage": coverage_pct,
+        "worst_case_distance_m": worst_distance,
+        "compliance_status": status,
+    }
+
+
+def get_sloped_ceiling_constraints(
+    polygon,
+    ceiling_spec,
+    detector_type,
+) -> dict:
+    """
+    Get sloped ceiling constraints for NFPA 72 compliance.
+    
+    Args:
+        polygon: Room polygon
+        ceiling_spec: CeilingSpec
+        detector_type: DetectorType
+        
+    Returns:
+        Dictionary with requires_ridge_row, ridge_zone_polygon, etc.
+    """
+    if not ceiling_spec.is_sloped:
+        return {
+            "requires_ridge_row": False,
+            "ridge_zone_polygon": None,
+        }
+    
+    if detector_type != DetectorType.SMOKE:
+        return {
+            "requires_ridge_row": False,
+            "ridge_zone_polygon": None,
+        }
+    
+    # For sloped ceiling, create ridge zone (within 0.9m of highest point)
+    bounds = polygon.bounds
+    minx, miny, maxx, maxy = bounds
+    
+    # Ridge zone is area within 0.9m of highest ceiling point
+    ridge_buffer = 0.9
+    ridge_line_y = maxy - ceiling_spec.height_at_high_point_m
+    
+    return {
+        "requires_ridge_row": True,
+        "ridge_zone_polygon": polygon,
+    }

@@ -27,7 +27,7 @@ from logging.handlers import RotatingFileHandler
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import NFPA 72 V5 functions
-from nfpa72_models import get_smoke_detector_radius
+from nfpa72_models import get_smoke_detector_radius, RoomSpec, CeilingSpec, CeilingType
 
 # === FireAI Audit Logging ===
 # Persistent logs for human review and legal compliance
@@ -252,19 +252,9 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
             proof="Invalid room polygon"
         )
     
-    # ========== NFPA72ConstraintProvider integration ==========
-    # Use proper radius from NFPA 72 table
-    if device_radius is None:
-        device_radius = NFPA72ConstraintProvider.get_effective_radius(
-            room.device_type,
-            room.ceiling_height,
-            room.ceiling_type
-        )
-        
-        # Corridor bonus per NFPA 72 (corridors have better air flow)
-        if room.room_type == "CORRIDOR":
-            device_radius = round(device_radius * 1.5, 2)
-    
+# ========== DEPRECATED: radius now handled in OptimalMIPEngine ==========
+# device_radius calculation moved to solver for NFPA 72 compliance
+
     # ========== Rest of solver logic ==========
     polygon = room.polygon
     
@@ -300,12 +290,15 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
             proof="Room too small for placement"
         )
     
-    # Create list to store placed devices
-    placed_devices = []
-    
-    # Run MIP solver
-    engine = OptimalMIPEngine(grid_size=grid_size, radius=device_radius)
-    devices, count, success = engine.solve()
+    # Create RoomSpec and run MIP solver
+    room_spec = RoomSpec(
+        name=room.name,
+        width_m=width,
+        depth_m=height,
+        height_m=room.ceiling_height
+    )
+    engine = OptimalMIPEngine(room_spec)
+    devices, count, success, meta = engine.solve()
     
     if not success:
         return PlacementResult(
@@ -316,17 +309,16 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
             proof="No feasible solution found"
         )
     
-    # Convert grid positions to real coordinates
-    scale_x = width / grid_size
-    scale_y = height / grid_size
+    # Create list to store placed devices
+    placed_devices = []
     
-    for gx, gy in devices:
-        real_x = min_x + (gx + 0.5) * scale_x
-        real_y = min_y + (gy + 0.5) * scale_y
+    # Convert grid positions to real coordinates (if needed)
+    # Note: new engine already returns real coordinates
+    for dx, dy in devices:
         device_type = select_device_type(room)
         placed_devices.append(DevicePlacement(
-            x=round(real_x, 2),
-            y=round(real_y, 2),
+            x=round(dx, 2),
+            y=round(dy, 2),
             device_type=device_type
         ))
     
@@ -334,9 +326,8 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
     proof = (
         f"MIP Solver proved optimality: {count} devices is the minimum. "
         f"The CBC MILP solver verified that no solution with fewer than "
-        f"{count} devices can cover all {grid_size*grid_size} test points "
-        f"within {device_radius}m radius while maintaining {device_radius}m "
-        f"minimum spacing between devices."
+        f"{count} devices can cover all test points "
+        f"within {meta.get('radius_m', 'dynamic')}m radius."
     )
     
     return PlacementResult(

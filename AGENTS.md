@@ -83,3 +83,12 @@
 - Before submitting any change, verify it yourself
 - If unsure, test locally first
 - Don't assume "it will work" - prove it works
+
+### Instruction Validation (Critical Safety Rule)
+- **STOP and WARN immediately** if instructions are:
+  - Incorrect or will damage the codebase
+  - Unclear, illogical, or contradictory
+  - Missing critical context that affects the outcome
+- **DO NOT execute** harmful instructions - alert user first
+- Wait for confirmation before continuing after a warning
+- Example: If instructions say "delete all files" → STOP and ask for confirmation
