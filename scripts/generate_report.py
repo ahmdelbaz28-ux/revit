@@ -295,7 +295,10 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
         name=room.name,
         width_m=width,
         depth_m=height,
-        height_m=room.ceiling_height
+        height_m=room.ceiling_height,
+        ceiling_spec=CeilingSpec(room.ceiling_height),
+        detector_type=DetectorType.SMOKE,
+        occupancy_type="office"
     )
     engine = OptimalMIPEngine(room_spec)
     devices, count, success, meta = engine.solve()

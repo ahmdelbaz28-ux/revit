@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-05-13T13:04:52.044026",
+  "project_name": "Test3",
+  "source_dxf": "",
+  "version": "FireAI V5.1.2",
+  "status": "PASS",
+  "rooms": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "errored": 0
+  },
+  "detectors": {
+    "calculated": 5
+  },
+  "safety": {
+    "note": "NFPA 72 compliance verified via verify_full_coverage()"
+  },
+  "details": [
+    {
+      "room_id": "R1",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 99.4389901823282,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "R2",
+      "status": "PASS",
+      "detector_count": 2,
+      "coverage_pct": 99.09015715467329,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "R3",
+      "status": "PASS",
+      "detector_count": 2,
+      "coverage_pct": 99.88801791713325,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    }
+  ],
+  "disclaimer": "This report is produced by FireAI V5.1.0. It MUST be reviewed by a licensed fire protection engineer. All calculations reference NFPA 72 (2022 Edition)."
+}
