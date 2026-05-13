@@ -252,19 +252,9 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
             proof="Invalid room polygon"
         )
     
-    # ========== NFPA72ConstraintProvider integration ==========
-    # Use proper radius from NFPA 72 table
-    if device_radius is None:
-        device_radius = NFPA72ConstraintProvider.get_effective_radius(
-            room.device_type,
-            room.ceiling_height,
-            room.ceiling_type
-        )
-        
-        # Corridor bonus per NFPA 72 (corridors have better air flow)
-        if room.room_type == "CORRIDOR":
-            device_radius = round(device_radius * 1.5, 2)
-    
+# ========== DEPRECATED: radius now handled in OptimalMIPEngine ==========
+# device_radius calculation moved to solver for NFPA 72 compliance
+
     # ========== Rest of solver logic ==========
     polygon = room.polygon
     
