@@ -17,11 +17,8 @@ from spatial_engine.mip_solver import OptimalMIPEngine
 
 logger = logging.getLogger("fireai.orchestrator")
 
-# NOTE: Safety margin removed per expert recommendation.
-# NFPA 72 compliance is verified via verify_full_coverage(), not percentage margin.
-# If coverage fails, margin doesn't help - the system must comply properly.
-# Uncomment to enable if desired for extra safety:
-# SAFETY_MARGIN = 1.15
+# NOTE: NFPA 72 compliance is verified via verify_full_coverage().
+# If coverage fails, the system must comply properly - not masked by percentage margin.
 
 
 @dataclass
