@@ -615,6 +615,26 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
                 compliance += f"\n⚠️  Max gap: {cov.get('max_gap_distance', 0):.2f}m"
                 compliance += f"\n📋 NFPA 72 Ref: Section 17.6.3.1.1(2) - Radius = 0.7 × Spacing = 0.7 × {spacing}m = {effective_r}m"
         
+        # ========== SPECIAL CASE WARNINGS ==========
+        # Stairwell requires 3D coverage assessment
+        if room.room_type == "STAIRWELL":
+            compliance += (
+                "\n"
+                "\n🔴 WARNING: Stairwell requires 3D coverage assessment."
+                "\n   FireAI evaluates ceiling ONLY. Landing coverage must be verified manually."
+                "\n   NFPA 72 Section 17.6.3.3: Stairwells need detectors on EACH landing."
+            )
+        
+        # Atrium / High ceiling warning
+        if room.ceiling_height > 9.1 and room.device_type == "SMOKE_PHOTOELECTRIC":
+            compliance += (
+                f"\n"
+                f"\n⚠️  WARNING: Ceiling height {room.ceiling_height}m > 9.1m."
+                f"\n   Spot smoke detector may not detect smoke at floor level."
+                f"\n   NFPA 72 recommends beam detector for heights > 9.1m."
+                f"\n   Design requires engineer approval."
+            )
+        
         room_report = RoomReport(
             room_name=room.name,
             room_type=room.room_type,
