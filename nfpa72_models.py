@@ -143,17 +143,39 @@ class CeilingSpec:
 class RoomSpec:
     """Room specification with polygon boundary"""
     
-    room_id: str
-    polygon: ShapelyPolygon
-    ceiling_spec: CeilingSpec
-    detector_type: DetectorType
+    name: str
+    width_m: float
+    depth_m: float
+    height_m: float
+    polygon: Optional[ShapelyPolygon] = None
+    ceiling_spec: Optional[CeilingSpec] = None
+    detector_type: Optional[DetectorType] = None
     occupancy_type: str = "office"
     heat_detector_spec: Optional['HeatDetectorSpec'] = None
+    
+    def __post_init__(self):
+        # Build polygon from dimensions if not provided
+        if self.polygon is None:
+            self.polygon = ShapelyPolygon([
+                (0, 0),
+                (self.width_m, 0),
+                (self.width_m, self.depth_m),
+                (0, self.depth_m)
+            ])
+        # Build ceiling_spec from height if not provided
+        if self.ceiling_spec is None:
+            try:
+                self.ceiling_spec = CeilingSpec(self.height_m, self.height_m, CeilingType.FLAT, 0.0)
+            except Exception:
+                # Height may not meet NFPA 72 minimum - use default
+                self.ceiling_spec = CeilingSpec(3.0, 3.0, CeilingType.FLAT, 0.0)
+        if self.detector_type is None:
+            self.detector_type = DetectorType.SMOKE
     
     @property
     def area_sqm(self) -> float:
         """Calculate room area"""
-        return self.polygon.area
+        return self.width_m * self.depth_m
 
 
 @dataclass

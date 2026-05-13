@@ -27,7 +27,7 @@ from logging.handlers import RotatingFileHandler
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import NFPA 72 V5 functions
-from nfpa72_models import get_smoke_detector_radius
+from nfpa72_models import get_smoke_detector_radius, RoomSpec, CeilingSpec, CeilingType
 
 # === FireAI Audit Logging ===
 # Persistent logs for human review and legal compliance
@@ -300,11 +300,14 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
             proof="Room too small for placement"
         )
     
-    # Create list to store placed devices
-    placed_devices = []
-    
-    # Run MIP solver
-    engine = OptimalMIPEngine(grid_size=grid_size, radius=device_radius)
+    # Create RoomSpec and run MIP solver
+    room_spec = RoomSpec(
+        name=room.name,
+        width_m=width,
+        depth_m=height,
+        height_m=room.ceiling_height
+    )
+    engine = OptimalMIPEngine(room_spec)
     devices, count, success = engine.solve()
     
     if not success:

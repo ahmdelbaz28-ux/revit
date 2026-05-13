@@ -20,27 +20,75 @@ from nfpa72_coverage import get_sloped_ceiling_constraints, verify_full_coverage
 
 class OptimalMIPEngine:
     """
-    MIP Solver that produces NFPA 72 V5 compliant placements natively.
+    MIP Solver for NFPA 72 V5 compliant placements.
     CRITICAL: Accepts RoomSpec ONLY. Legacy grid_size/radius REMOVED.
+    Supports BOTH old format (name/width/depth/height) AND new format.
     """
 
-    def __init__(self, room_spec: RoomSpec):
-        if not isinstance(room_spec, RoomSpec):
+    def __init__(self, room_spec):
+        """
+        Initialize with RoomSpec object.
+        
+        Args:
+            room_spec: RoomSpec object with room details
+            
+        Raises:
+            TypeError: If room_spec is not a RoomSpec object
+        """
+        # Support both old and new RoomSpec formats
+        if hasattr(room_spec, 'room_id'):
+            # New format - already has polygon and ceiling_spec
+            self.room_spec = room_spec
+            self.polygon = room_spec.polygon
+            self.ceiling = room_spec.ceiling_spec
+            self.detector_type = getattr(room_spec, 'detector_type', DetectorType.SMOKE)
+        elif hasattr(room_spec, 'name') and hasattr(room_spec, 'width_m'):
+            # Old format - build polygon and ceiling_spec from dimensions
+            self.room_spec = room_spec
+            # Build polygon from dimensions
+            if hasattr(room_spec, 'polygon') and room_spec.polygon is not None:
+                self.polygon = room_spec.polygon
+            else:
+                self.polygon = ShapelyPolygon([
+                    (0, 0),
+                    (room_spec.width_m, 0),
+                    (room_spec.width_m, room_spec.depth_m),
+                    (0, room_spec.depth_m)
+                ])
+            # Build ceiling_spec from height
+            if hasattr(room_spec, 'ceiling_spec') and room_spec.ceiling_spec is not None:
+                self.ceiling = room_spec.ceiling_spec
+            else:
+                self.ceiling = CeilingSpec(CeilingType.FLAT, room_spec.height_m, room_spec.height_m, 0.0)
+            self.detector_type = getattr(room_spec, 'detector_type', DetectorType.SMOKE)
+        else:
             raise TypeError(
-                "CRITICAL SAFETY ERROR: OptimalMIPEngine requires RoomSpec. "
-                "Legacy grid_size/radius mode has been REMOVED to prevent unsafe designs. "
-                "Update caller to pass RoomSpec."
+                "CRITICAL SAFETY ERROR: OptimalMIPEngine requires RoomSpec object. "
+                "Legacy grid_size/radius mode has been REMOVED. "
+                "Pass RoomSpec(name='room', width_m=10, depth_m=10, height_m=3)"
             )
-        self.room_spec = room_spec
-        self.ceiling = room_spec.ceiling_spec
-        self.polygon = room_spec.polygon
-        self.detector_type = room_spec.detector_type
 
-        self._setup_coverage_params()
+        # Get detector spacing/radius based on ceiling height
+        if self.detector_type == DetectorType.SMOKE:
+            self.coverage_geo = CoverageGeometry.CIRCULAR
+            self.radius = get_smoke_detector_radius(self.ceiling.height_at_low_point_m)
+            self.spacing = None
+        elif self.detector_type in (DetectorType.HEAT_FIXED_TEMP, DetectorType.HEAT_RATE_OF_RISE, 
+                                  DetectorType.HEAT_COMBINATION, DetectorType.SMOKE_HEAT_COMBINATION):
+            # Heat detectors use fixed spacing (9.1m = 30ft)
+            self.coverage_geo = CoverageGeometry.SQUARE_GRID
+            self.spacing = 9.1
+            self.radius = self.spacing / 2
+        else:
+            # Default to smoke
+            self.coverage_geo = CoverageGeometry.CIRCULAR
+            self.radius = get_smoke_detector_radius(self.ceiling.height_at_low_point_m)
+            self.spacing = None
+
         self.candidates: List[Tuple[float, float]] = []
         self._build_candidates()
 
-        self.ridge_zone: Optional[Polygon] = None
+        self.ridge_zone: Optional[ShapelyPolygon] = None
         self.ridge_indices: List[int] = []
         self._setup_ridge_zone()
 
