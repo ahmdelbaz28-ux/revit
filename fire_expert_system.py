@@ -79,6 +79,31 @@ class FireDeviceType(Enum):
     aspiration_detector = "aspiration_detector"
 
 
+class HeatDetectorType(Enum):
+    """Heat detector types - NFPA 72 Table 17.6.3.1."""
+    FIXED_TEMPERATURE = "fixed_temperature"  # 6.1m (20ft) ordinary
+    INTERMEDIATE = "intermediate"          # 7.6m (25ft) intermediate
+    RATE_OF_RISE = "rate_of_rise"          # 7.6m (25ft) rate of rise
+    HIGH_CEILING = "high_ceiling"          # 15.2m (50ft) for ceilings > 3.7m
+
+
+class HeatDetectorCoverage:
+    """Heat detector coverage by type - NFPA 72 Table 17.6.3.1."""
+    
+    # Table 17.6.3.1 maximum spacing
+    SPACING = {
+        HeatDetectorType.FIXED_TEMPERATURE: 6.1,      # 20 ft ordinary
+        HeatDetectorType.INTERMEDIATE: 7.6,          # 25 ft intermediate
+        HeatDetectorType.RATE_OF_RISE: 7.6,           # 25 ft rate of rise
+        HeatDetectorType.HIGH_CEILING: 15.2,          # 50 ft for ceilings > 12 ft
+    }
+    
+    @classmethod
+    def get_spacing(cls, detector_type: HeatDetectorType) -> float:
+        """Get coverage spacing for detector type."""
+        return cls.SPACING.get(detector_type, 6.1)  # safe default
+
+
 class FireZoneType(Enum):
     """Fire alarm zones."""
     detection = "detection"
@@ -114,12 +139,22 @@ class NFPA72:
         "solid_joists": 6.4,           # Solid joists
     }
     
-    # Heat Detector Coverage (meters) - NFPA 72 Table 17.6.3.2
+    # Heat Detector Coverage (meters) - NFPA 72 Table 17.6.3.1
+    # FIXED: Now uses type-specific values
     HEAT_COVERAGE = {
-        "flat_ceiling": 15.2,           # 50ft
-        "sloped_ceiling": 15.2,         # 50ft
-        "inverse_rate": 15.2,           # Inverse rate of rise
-        "fixed_temperature": 15.2,      # Fixed temp
+        "fixed_temperature": 6.1,       # Ordinary (20ft) - Table 17.6.3.1
+        "intermediate": 7.6,              # Intermediate (25ft)
+        "rate_of_rise": 7.6,            # Rate of rise (25ft)
+        "high_ceiling": 15.2,            # ONLY for ceilings > 3.7m (12ft)
+        "flat_ceiling": 6.1,             # Default to safe value (fixed temp)
+    }
+    
+    # Mapping heat detector type to coverage
+    HEAT_COVERAGE_BY_TYPE = {
+        "FIXED_TEMPERATURE": 6.1,
+        "INTERMEDIATE": 7.6,
+        "RATE_OF_RISE": 7.6,
+        "HIGH_CEILING": 15.2,
     }
     
     # Sprinkler Coverage (meters) - NFPA 13
