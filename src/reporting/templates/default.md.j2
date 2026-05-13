@@ -1,0 +1,126 @@
+{# Markdown report template — user-editable, useful for git tracking & code review #}
+# Fire Safety Engineering Assessment
+
+**Project:** {{ r.project.name }}
+**Address:** {{ r.project.address }}
+**Issued:** {{ r.integrity.issued_at_utc }}
+**Issuer:** {{ r.issuer }} v{{ r.software }}
+**Source file:** `{{ r.source_file.name }}` (SHA-256 `{{ r.source_file.sha256[:16] }}…`)
+
+---
+
+## ⚠️ Disclaimer
+
+This report is an automated analysis — **NOT** an engineered design. It
+contains explicit per-finding hashes; any later alteration is detectable
+by recomputing the chain. This proves **tamper-evidence**, not correctness.
+Every finding requires independent review by a licensed Professional Engineer.
+
+---
+
+## 1. Executive Summary
+
+| Metric | Value |
+|---|---|
+| Elements detected | {{ r.elements|length }} |
+| Identified symbols | {{ r.counts.values()|sum }} |
+| Findings | {{ r.findings|length }} |
+| Critical | {{ r.findings|selectattr('severity','equalto','critical')|list|length }} |
+| Major | {{ r.findings|selectattr('severity','equalto','major')|list|length }} |
+
+{% if r.reasoning and r.reasoning.conclusion %}
+**Verdict:** {{ r.reasoning.conclusion }}
+(confidence ≈ {{ "%.0f"|format((r.reasoning.confidence or 0)*100) }}%)
+{% endif %}
+
+---
+
+## 2. Methodology
+
+{% for step in r.methodology %}
+**{{ step.step }}. {{ step.name }}** — {{ step.algorithm }}
+{% endfor %}
+
+---
+
+## 3. Code Applicability
+
+| Code | Edition | Applies | Scope |
+|---|---|---|---|
+{% for c in r.code_matrix %}
+| {{ c.code }} | {{ c.edition }} | {% if c.applies %}✓{% else %}—{% endif %} | {{ c.scope }} |
+{% endfor %}
+
+---
+
+## 4. Classified Counts
+
+| Symbol | Count |
+|---|---|
+{% for sym, n in r.counts|dictsort(by='value', reverse=true) %}
+| {{ sym }} | {{ n }} |
+{% endfor %}
+
+---
+
+## 5. Findings
+
+{% if r.findings %}
+| # | Severity | Code | Rule | Message | Hash |
+|---|---|---|---|---|---|
+{% for f in r.findings %}
+| {{ loop.index }} | **{{ f.severity }}** | {{ f.code }} | {{ f.rule }} | {{ f.message }} | `{{ f.hash[:8] }}` |
+{% endfor %}
+{% else %}
+*No findings.*
+{% endif %}
+
+---
+
+## 6. Schedule Reconciliation
+
+{% if r.reconciliation %}
+| Item | Scheduled | Actual | Δ | Status |
+|---|---|---|---|---|
+{% for rec in r.reconciliation %}
+| {{ rec.item }} | {{ rec.scheduled_qty }} | {{ rec.actual_qty }} | {{ "%+d"|format(rec.delta) }} | {{ rec.status }} |
+{% endfor %}
+{% else %}
+*No schedule provided.*
+{% endif %}
+
+---
+
+## 7. Limitations
+
+{% for L in r.limitations %}
+- {{ L }}
+{% endfor %}
+
+---
+
+## 8. Engineer Sign-off
+
+- **Engineer Name:** {{ r.review_block.engineer_name }}
+- **License No:** {{ r.review_block.license_no }}
+- **State:** {{ r.review_block.license_state }}
+- **Date:** {{ r.review_block.signature_date }}
+- **Status:** `{{ r.review_block.approval_status }}`
+
+---
+
+## 9. Integrity
+
+```
+Schema:        {{ r.integrity.schema_version }}
+Chain root:    {{ r.integrity.chain_root }}
+Signature:     {{ r.integrity.signature_alg }}
+{% if r.integrity.signature %}
+Signature:     {{ r.integrity.signature }}
+{% endif %}
+```
+
+To verify:
+```bash
+fsg verify-seal report.json
+```
