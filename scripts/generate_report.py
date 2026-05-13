@@ -473,6 +473,14 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
             )
 
             # Create Core Devices from placements
+            # Calculate proper radius per NFPA 72 based on ceiling height
+            device_type_key = room.device_type if hasattr(room, 'device_type') and room.device_type else 'SMOKE_PHOTOELECTRIC'
+            coverage_radius = NFPA72ConstraintProvider.get_effective_radius(
+                device_type=device_type_key,
+                ceiling_height=room.ceiling_height,
+                ceiling_type=room.ceiling_type
+            )
+            
             core_devices = []
             for d in result.devices:
                 core_devices.append(CoreDevice(
@@ -481,7 +489,7 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
                     position=coordinate_to_shapely_point(d.x, d.y),
                     room_id=f"room_{room.name}",
                     z_height=room.ceiling_height,
-                    coverage_radius=4.6,  # NFPA 72 default for smooth ceiling
+                    coverage_radius=coverage_radius,  # NFPA 72 calculated per ceiling height
                 ))
 
             # REAL Oracle call
