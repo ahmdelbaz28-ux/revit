@@ -192,11 +192,9 @@ class FloorOrchestrator:
             result.geometry = meta["coverage_geometry"]
             result.detector_count = count
 
-            # SAFETY: Always add safety margin
-            # This ensures extra coverage in case of calculation errors
-            result.detector_count_with_margin = int(count * SAFETY_MARGIN)
-            if result.detector_count_with_margin == count:
-                result.detector_count_with_margin = count + 1  # At least 1 extra
+            # SAFETY: Always use ceil to ensure at least +15%
+            import math
+            result.detector_count_with_margin = math.ceil(count * SAFETY_MARGIN)
             result.detector_positions = positions
             result.coverage_pct = coverage["coverage_percentage"]
             result.worst_case_distance_m = coverage["worst_case_distance_m"]
