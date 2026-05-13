@@ -80,12 +80,15 @@ class NFPA72ConstraintProvider:
         # Coverage radius per NFPA 72 = 70% of listed spacing
         radius = base_spacing * 0.7
         
-        # Smoke stratification correction (above 3.0m)
-        if ceiling_height > 3.0 and "SMOKE" in device_type:
+        # Heat detector stratification correction (above 3.0m) per NFPA 72 Table 17.6.3.5.1
+        # NOTE: Smoke detectors maintain full spacing up to 12.2m (40ft) per NFPA 72
+        if ceiling_height > 3.0 and device_type in ["HEAT_FIXED", "HEAT_RATE_OF_RISE"]:
             # Each 0.3m above 3.0m reduces coverage by ~2%
             height_over = ceiling_height - 3.0
             reduction = min(0.15, (height_over / 0.3) * 0.02)  # Max 15%
             radius *= (1 - reduction)
+        # Smoke detectors: NO reduction up to 12.2m (40ft) per NFPA 72
+        # If > 12.2m, keep base radius - Oracle will warn engineer
         
         # Beam obstruction correction
         if ceiling_type == "BEAMED":

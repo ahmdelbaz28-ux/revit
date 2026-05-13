@@ -262,9 +262,13 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
             room.ceiling_type
         )
         
-        # Corridor bonus per NFPA 72 (corridors have better air flow)
-        if room.room_type == "CORRIDOR":
-            device_radius = round(device_radius * 1.5, 2)
+        # NOTE: NFPA 72 does NOT grant a 1.5× corridor bonus.
+        # Real rule: Corridors ≤3m wide may use 12.2m spacing (radius = 8.54m)
+        # This requires corridor width information which is not currently available.
+        # For now, treat corridors like standard rooms.
+        # if room.room_type == "CORRIDOR":
+        #     device_radius = round(device_radius * 1.5, 2)
+        pass
     
     # ========== Rest of solver logic ==========
     polygon = room.polygon
