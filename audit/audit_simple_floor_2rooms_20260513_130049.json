@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-05-13T13:00:49.152281",
+  "project_name": "simple_floor_2rooms",
+  "source_dxf": "tests/fixtures/simple_floor_2rooms.dxf",
+  "version": "FireAI V5.1.2",
+  "status": "PARTIAL",
+  "rooms": {
+    "total": 3,
+    "passed": 1,
+    "failed": 2,
+    "errored": 0
+  },
+  "detectors": {
+    "calculated": 4
+  },
+  "safety": {
+    "note": "NFPA 72 compliance verified via verify_full_coverage()"
+  },
+  "details": [
+    {
+      "room_id": "ROOM_001",
+      "status": "FAIL",
+      "detector_count": 2,
+      "coverage_pct": 98.73417721518987,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": [
+        "Coverage failed: 98.73417721518987%"
+      ]
+    },
+    {
+      "room_id": "ROOM_002",
+      "status": "FAIL",
+      "detector_count": 1,
+      "coverage_pct": 97.78393351800554,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": [
+        "Coverage failed: 97.78393351800554%"
+      ]
+    },
+    {
+      "room_id": "ROOM_003",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    }
+  ],
+  "disclaimer": "This report is produced by FireAI V5.1.0. It MUST be reviewed by a licensed fire protection engineer. All calculations reference NFPA 72 (2022 Edition)."
+}
