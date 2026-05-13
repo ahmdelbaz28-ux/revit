@@ -86,7 +86,7 @@ class OptimalMIPEngine:
             self.spacing = None
 
         self.candidates: List[Tuple[float, float]] = []
-        self._build_candidates()
+        self._build_candidates(step_m=0.25)  # Higher resolution for better placement
 
         self.ridge_zone: Optional[ShapelyPolygon] = None
         self.ridge_indices: List[int] = []
