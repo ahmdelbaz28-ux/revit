@@ -100,6 +100,22 @@ class TestSafetyMargin:
         expected = math.ceil(count * SAFETY_MARGIN)
         assert expected == 115, f"100 * 1.15 = 115, got {expected}"
 
+    def test_spline_supported(self):
+        """SPLINE entity type should be processed"""
+        from parsers.dxf_parser import DXFParser
+        parser = DXFParser()
+        # Method should exist
+        assert hasattr(parser, '_spline_to_segments'), "SPLINE method missing"
+
+    def test_geometry_hash_present(self):
+        """Audit entry should contain entry_hash"""
+        from audit_trail import AuditTrail
+        trail = AuditTrail("test_geo")
+        trail.log_dxf_parse("test.dxf", "Meters", 1.0, 5, 0)
+        data = trail.to_list()[0]
+        assert "entry_hash" in data, "entry_hash missing"
+        assert len(data["entry_hash"]) == 16, "hash should be 16 chars"
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

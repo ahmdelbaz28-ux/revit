@@ -154,13 +154,6 @@ class DXFParser:
                     lines.extend(segments)
                 except Exception as e:
                     logger.debug(f"Arc skip: {e}")
-            elif ent.dxftype() == "SPLINE":
-                # Convert SPLINE to line segments (64 points approximation)
-                try:
-                    segments = self._spline_to_segments(ent, scale)
-                    lines.extend(segments)
-                except Exception as e:
-                    logger.debug(f"Spline skip: {e}")
         return lines
 
     def _circle_to_polygon(self, entity, scale):
@@ -200,44 +193,6 @@ class DXFParser:
             ls = LineString(points)
             return [ls]
         return []
-
-    def _spline_to_segments(self, entity, scale, num_segments: int = 64):
-        """Convert SPLINE to LineString segments (64 points approximation)"""
-        try:
-            # Get control points from SPLINE entity
-            ctrl_pts = entity.control_points
-            if ctrl_pts is None or len(ctrl_pts) < 2:
-                return []
-            
-            # Convert to scaled coordinates
-            points = [(p.dxf.location.x * scale, p.dxf.location.y * scale) 
-                     for p in ctrl_pts]
-            
-            # Generate more points along the spline using linear interpolation
-            if len(points) < 2:
-                return []
-            
-            # Create a line through control points and sample it
-            from shapely.geometry import LineString
-            base_line = LineString(points)
-            
-            # Sample the line into num_segments points
-            sampled_points = []
-            for i in range(num_segments + 1):
-                t = i / num_segments
-                if t <= 1.0:
-                    pt = base_line.interpolate(t, normalized=True)
-                    sampled_points.append((pt.x, pt.y))
-            
-            # Convert to line segments
-            segments = []
-            for i in range(len(sampled_points) - 1):
-                segments.append(LineString([sampled_points[i], sampled_points[i+1]]))
-            
-            return segments
-        except Exception as e:
-            logger.debug(f"Spline conversion failed: {e}")
-            return []
 
     def _is_duplicate(self, poly1: Polygon, poly2: Polygon) -> bool:
         """Check if two polygons are duplicates (>90% overlap)"""
