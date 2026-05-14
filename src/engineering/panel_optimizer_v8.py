@@ -44,6 +44,14 @@ from v8_core.decision_provenance import (
     Alternative
 )
 
+# V2 Pydantic schema for validation (if available)
+try:
+    from v8_core.decision_provenance_v2 import DecisionProvenanceSchema
+    PYDANTIC_AVAILABLE = True
+except ImportError:
+    PYDANTIC_AVAILABLE = False
+    DecisionProvenanceSchema = None
+
 
 @dataclass
 class Panel:
@@ -327,6 +335,27 @@ def optimize_panels(
         warnings=warnings,
         violations=violations
     )
+    
+    # V2 Pydantic validation - ensure type safety
+    if PYDANTIC_AVAILABLE and DecisionProvenanceSchema is not None:
+        try:
+            # Validate basic fields
+            dp_validate = DecisionProvenanceSchema(
+                decision_id=result.decision_id,
+                decision_type="panel_placement",
+                symbol="panel",
+                value=result.value.get("total_cable_m", 0.0),
+                unit="m",
+                confidence=result.confidence.score,
+                jurisdiction="NFPA72",
+                edition="2022",
+                signed_at=result.signed_at,
+                signed_by=result.signed_by
+            )
+        except Exception as e:
+            warnings.append(f"Pydantic validation warning: {e}")
+    
+    return result
 
 
 def recommend_panel_count(
