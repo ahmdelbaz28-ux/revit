@@ -33,6 +33,7 @@ from .reasoning.schedule_match  import reconcile, ScheduleLine
 from .reasoning.chain_of_thought import FireSafetyReasoner
 from .reporting.overlay      import render_overlay
 from .reporting.html_report  import generate_report_html
+from .v8_core.parser_confidence import ParserObservations, gate_input_or_refuse
 
 log = logging.getLogger(__name__)
 
@@ -126,6 +127,53 @@ def analyze_file(path: str,
                                           asdict(cls), e.layer, e.block, e.attributes))
         elif e.kind == "text":
             ocr_texts.append({"page": e.page, "text": e.text, "from":"vector"})
+
+    # === INPUT QUALITY GATE (V8) ===
+    # Populate ParserObservations before compliance
+    observations = ParserObservations()
+    
+    # 1. scale_present: Look for scale in OCR text
+    scale_found = any("1:50" in t.get("text", "") or "1:100" in t.get("text", "") 
+                  for t in ocr_texts)
+    observations.scale_present = (1.0 if scale_found else 0.0, 
+                             f"scale {'found' if scale_found else 'not found'} in OCR")
+    
+    # 2. vector_purity: Mean entity confidence
+    if elements:
+        confs = [el.classification.get("confidence", 0.5) for el in elements]
+        avg_conf = sum(confs)/len(confs) if confs else 0.5
+        observations.vector_purity = (avg_conf, f"mean {avg_conf:.2f}")
+    
+    # 3. ocr_confidence: Mean OCR confidence
+    if ocr_texts:
+        ocr_confs = [t.get("conf", 0.5) for t in ocr_texts]
+        avg_ocr = sum(ocr_confs)/len(ocr_confs) if ocr_confs else 0.5
+        observations.ocr_confidence = (avg_ocr, f"mean OCR {avg_ocr:.2f}")
+    
+    # 4. coordinate_sanity: Check extents
+    if nd.metadata:
+        ext = nd.metadata.get("extents", {})
+        if ext:
+            w = ext.get("xmax", 0) - ext.get("xmin", 0)
+            h = ext.get("ymax", 0) - ext.get("ymin", 0)
+            if 0.1 < max(w, h) < 2000:
+                observations.coordinate_sanity = (1.0, "normal range")
+            else:
+                observations.coordinate_sanity = (0.0, f"extents unusual: {w}x{h}")
+    
+    # Run gate check BEFORE compliance
+    gate_report = None
+    if observations.scale_present[0] < 0.5:
+        # Hard refuse: no scale = meaningless calculations
+        log.warning(f"REFUSE: No scale detected in {path}")
+        report = Report(
+            file=os.path.basename(path),
+            file_type=nd.file_type,
+            file_sha=nd.source_sha256,
+            summary=nd.summary(),
+            warnings=["REFUSE: No scale detected - cannot calculate distances"],
+        )
+        return report
 
     # (B) IFC products
     if nd.file_type == "ifc":
