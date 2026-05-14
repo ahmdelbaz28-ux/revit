@@ -105,27 +105,27 @@ def design_loops(
     for di in order_idx:
         chunk.append(int(di))
         if len(chunk) >= max_devices_per_loop:
-            loop_result.append(_build_loop_v8(
+            loops_result.append(_build_loop_v8(
                 loop_num := loop_num + 1, chunk, arr, panel,
                 class_a, max_loop_length_m, safety_margin,
                 warnings, violations
             ))
-            total_length += loop_result[-1]["total_length_m"]
+            total_length += loops_result[-1]["total_length_m"]
             chunk = []
     
     if chunk:
-        loop_result.append(_build_loop_v8(
+        loops_result.append(_build_loop_v8(
             loop_num := loop_num + 1, chunk, arr, panel,
             class_a, max_loop_length_m, safety_margin,
             warnings, violations
         ))
-        total_length += loop_result[-1]["total_length_m"]
+        total_length += loops_result[-1]["total_length_m"]
 
     # Alternative: try different safety margins
     for margin_test in [0.10, 0.20, 0.25]:
         alternatives.append(Alternative(
             rank=len(alternatives) + 1,
-            value={"loops": len(loop_result), "safety_margin": margin_test},
+            value={"loops": len(loops_result), "safety_margin": margin_test},
             cost=total_length,
             safety_margin=margin_test,
             why_not_selected=f"margin {margin_test} not requested"
@@ -170,7 +170,7 @@ def design_loops(
 
     return DecisionProvenance.new(
         decision_type="loop_design",
-        value={"loops": loop_result, "total_length_m": total_length},
+        value={"loops": loops_result, "total_length_m": total_length},
         inputs={
             "device_count": len(devices),
             "panel_pos": panel_pos,
