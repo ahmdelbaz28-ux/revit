@@ -86,112 +86,146 @@ class KnowledgeBase:
     def __init__(self, db_path: Path | str = DEFAULT_DB):
         self.path = Path(db_path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(self.path)
-        self.conn.row_factory = sqlite3.Row
-        self.conn.executescript(_SCHEMA)
-        self._seed_if_empty()
+        
+        # INT-1: Use db_pool for concurrent access + thread safety
+        from src.v8_core.db_pool import DatabasePool
+        self._pool = DatabasePool(str(self.path))
+        
+        # Initialize schema (execute statements one by one)
+        with self._pool.get_connection() as conn:
+            for stmt in _SCHEMA.split(';'):
+                stmt = stmt.strip()
+                if stmt:
+                    conn.execute(stmt)
+            self._seed_if_empty(conn)
+    
+    def _seed_if_empty(self, conn):
+        """Seed if empty. Use provided connection."""
+        if conn.execute("SELECT COUNT(*) FROM symbols").fetchone()[0] == 0:
+            self._seed(conn)
 
+    # ── Helper for thread-safe DB access
+    def _get_conn(self):
+        """Get connection from pool - use in 'with' statement."""
+        return self._pool.get_connection()
+    
     # ── files
     def record_file(self, sha: str, path: str, ftype: str, meta: dict):
-        self.conn.execute(
-            "INSERT OR REPLACE INTO files(sha256,path,type,ts,meta) VALUES(?,?,?,?,?)",
-            (sha, path, ftype, time.time(), json.dumps(meta, default=str)))
-        self.conn.commit()
+        with self._get_conn() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO files(sha256,path,type,ts,meta) VALUES(?,?,?,?,?)",
+                (sha, path, ftype, time.time(), json.dumps(meta, default=str)))
+            conn.commit()
 
     # ── symbols
     def upsert_symbol(self, name: str, **kw):
-        cur = self.conn.execute("SELECT id FROM symbols WHERE name=?", (name,))
-        row = cur.fetchone()
-        if row:
-            if kw:
-                sets = ", ".join(f"{k}=?" for k in kw)
-                self.conn.execute(f"UPDATE symbols SET {sets} WHERE id=?",
-                                  (*kw.values(), row["id"]))
-                self.conn.commit()
-            return row["id"]
-        cols = ["name"] + list(kw.keys())
-        qs   = ",".join("?"*len(cols))
-        cur  = self.conn.execute(
-            f"INSERT INTO symbols({','.join(cols)}) VALUES({qs})",
-            (name, *kw.values()))
-        self.conn.commit()
-        return cur.lastrowid
+        with self._get_conn() as conn:
+            cur = conn.execute("SELECT id FROM symbols WHERE name=?", (name,))
+            row = cur.fetchone()
+            if row:
+                if kw:
+                    sets = ", ".join(f"{k}=?" for k in kw)
+                    conn.execute(f"UPDATE symbols SET {sets} WHERE id=?",
+                                      (*kw.values(), row["id"]))
+                    conn.commit()
+                return row["id"]
+            cols = ["name"] + list(kw.keys())
+            qs   = ",".join("?"*len(cols))
+            cur  = conn.execute(
+                f"INSERT INTO symbols({','.join(cols)}) VALUES({qs})",
+                (name, *kw.values()))
+            conn.commit()
+            return cur.lastrowid
 
+    @property
+    def conn(self):
+        """Thread-safe connection from pool. Use in 'with' statement."""
+        return self._pool.get_connection()
+    
     def get_symbol(self, name: str) -> Optional[dict]:
-        r = self.conn.execute("SELECT * FROM symbols WHERE name=?", (name,)).fetchone()
+        with self._get_conn() as conn:
+            r = conn.execute("SELECT * FROM symbols WHERE name=?", (name,)).fetchone()
         return dict(r) if r else None
 
     def list_symbols(self) -> list:
-        return [dict(r) for r in self.conn.execute("SELECT * FROM symbols")]
+        with self._get_conn() as conn:
+            return [dict(r) for r in conn.execute("SELECT * FROM symbols")]
 
     # ── examples / embeddings
     def add_example(self, symbol_name: str, embedding_bytes: bytes,
-                    source_sha: str, bbox: tuple, confidence: float = 1.0,
-                    image_bytes: bytes | None = None):
+                source_sha: str, bbox: tuple, confidence: float = 1.0,
+                image_bytes: bytes | None = None):
         sid = self.upsert_symbol(symbol_name)
-        self.conn.execute(
-            "INSERT INTO symbol_examples(symbol_id,source_sha,bbox,embedding,image,label_confidence,ts) "
-            "VALUES(?,?,?,?,?,?,?)",
-            (sid, source_sha, json.dumps(list(bbox)), embedding_bytes,
-             image_bytes, confidence, time.time()))
-        self.conn.commit()
+        with self._get_conn() as conn:
+            conn.execute(
+                "INSERT INTO symbol_examples(symbol_id,source_sha,bbox,embedding,image,label_confidence,ts) "
+                "VALUES(?,?,?,?,?,?,?)",
+                (sid, source_sha, json.dumps(list(bbox)), embedding_bytes,
+                 image_bytes, confidence, time.time()))
+            conn.commit()
 
     def fetch_all_embeddings(self):
         """Returns list of (symbol_name, embedding_bytes, confidence)."""
-        q = """SELECT s.name, e.embedding, e.label_confidence
-               FROM symbol_examples e JOIN symbols s ON s.id=e.symbol_id"""
-        return list(self.conn.execute(q))
+        with self._get_conn() as conn:
+            q = """SELECT s.name, e.embedding, e.label_confidence
+                   FROM symbol_examples e JOIN symbols s ON s.id=e.symbol_id"""
+            return list(conn.execute(q))
 
     # ── decisions / feedback
     def record_decision(self, file_sha: str, page: int, bbox: tuple,
-                        predicted: str, confidence: float) -> int:
-        cur = self.conn.execute(
-            "INSERT INTO decisions(file_sha,page,bbox,predicted_symbol,confidence,ts) "
-            "VALUES(?,?,?,?,?,?)",
-            (file_sha, page, json.dumps(list(bbox)), predicted, confidence, time.time()))
-        self.conn.commit()
-        return cur.lastrowid
+                    predicted: str, confidence: float) -> int:
+        with self._get_conn() as conn:
+            cur = conn.execute(
+                "INSERT INTO decisions(file_sha,page,bbox,predicted_symbol,confidence,ts) "
+                "VALUES(?,?,?,?,?,?)",
+                (file_sha, page, json.dumps(list(bbox)), predicted, confidence, time.time()))
+            conn.commit()
+            return cur.lastrowid
 
     def confirm(self, decision_id: int, correct: bool, correction: str | None = None):
-        self.conn.execute(
-            "UPDATE decisions SET confirmed=?, correction=? WHERE id=?",
-            (1 if correct else 0, correction, decision_id))
-        self.conn.commit()
+        with self._get_conn() as conn:
+            conn.execute(
+                "UPDATE decisions SET confirmed=?, correction=? WHERE id=?",
+                (1 if correct else 0, correction, decision_id))
+            conn.commit()
 
     # ── code rules
     def set_rule(self, code: str, key: str, value: float, units: str,
                  citation: str = "", notes: str = ""):
-        self.conn.execute(
-            "INSERT INTO rules(code,rule_key,value,units,citation,notes) VALUES(?,?,?,?,?,?) "
-            "ON CONFLICT(code,rule_key) DO UPDATE SET value=excluded.value, units=excluded.units, "
-            "citation=excluded.citation, notes=excluded.notes",
-            (code, key, value, units, citation, notes))
-        self.conn.commit()
+        with self._get_conn() as conn:
+            conn.execute(
+                "INSERT INTO rules(code,rule_key,value,units,citation,notes) VALUES(?,?,?,?,?,?) "
+                "ON CONFLICT(code,rule_key) DO UPDATE SET value=excluded.value, units=excluded.units, "
+                "citation=excluded.citation, notes=excluded.notes",
+                (code, key, value, units, citation, notes))
+            conn.commit()
 
     def get_rule(self, key: str, code: str | None = None) -> Optional[dict]:
-        if code:
-            r = self.conn.execute(
-                "SELECT * FROM rules WHERE code=? AND rule_key=?", (code, key)).fetchone()
-        else:
-            r = self.conn.execute(
-                "SELECT * FROM rules WHERE rule_key=? ORDER BY id DESC LIMIT 1", (key,)).fetchone()
-        return dict(r) if r else None
+        with self._get_conn() as conn:
+            if code:
+                r = conn.execute(
+                    "SELECT * FROM rules WHERE code=? AND rule_key=?", (code, key)).fetchone()
+            else:
+                r = conn.execute(
+                    "SELECT * FROM rules WHERE rule_key=? ORDER BY id DESC LIMIT 1", (key,)).fetchone()
+            return dict(r) if r else None
 
     # ── stats
     def stats(self) -> dict:
-        c = self.conn.execute
-        return {
-            "files":     c("SELECT COUNT(*) FROM files").fetchone()[0],
-            "symbols":   c("SELECT COUNT(*) FROM symbols").fetchone()[0],
-            "examples":  c("SELECT COUNT(*) FROM symbol_examples").fetchone()[0],
-            "decisions": c("SELECT COUNT(*) FROM decisions").fetchone()[0],
-            "rules":     c("SELECT COUNT(*) FROM rules").fetchone()[0],
-        }
+        with self._get_conn() as conn:
+            c = conn.execute
+            return {
+                "files":     c("SELECT COUNT(*) FROM files").fetchone()[0],
+                "symbols":   c("SELECT COUNT(*) FROM symbols").fetchone()[0],
+                "examples":  c("SELECT COUNT(*) FROM symbol_examples").fetchone()[0],
+                "decisions": c("SELECT COUNT(*) FROM decisions").fetchone()[0],
+                "rules":     c("SELECT COUNT(*) FROM rules").fetchone()[0],
+            }
 
     # ── seeding: ship with real engineering knowledge
-    def _seed_if_empty(self):
-        if self.conn.execute("SELECT COUNT(*) FROM symbols").fetchone()[0] > 0:
-            return
+    # FIXED: _seed_if_empty now takes conn parameter
+    def _seed(self, conn):
+        """Seed database with initial data. Use thread-safe connection."""
         # Symbol catalogue with typical spacings — these are STARTING values,
         # the user must verify against the governing code for their jurisdiction.
         seed_symbols = [
