@@ -146,10 +146,17 @@ def check_coverage_polygon(
             # Check if covered by any detector
             covered = False
             for dx, dy in detector_positions:
-                dist = math.sqrt((x - dx)**2 + (y - dy)**2)
-                if dist <= radius:
-                    covered = True
-                    break
+                if coverage_geometry == "square":
+                    # Chebyshev distance (square coverage for HEAT per NFPA 72)
+                    if abs(x - dx) <= radius and abs(y - dy) <= radius:
+                        covered = True
+                        break
+                else:
+                    # Euclidean distance (circle coverage for SMOKE)
+                    dist = math.sqrt((x - dx)**2 + (y - dy)**2)
+                    if dist <= radius:
+                        covered = True
+                        break
             
             if covered:
                 covered_count += 1

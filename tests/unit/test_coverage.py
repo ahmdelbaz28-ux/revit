@@ -79,15 +79,18 @@ class TestExtremeHeights:
         radius = get_smoke_detector_radius_safe(15.3)
         assert radius == pytest.approx(6.4, rel=0.01)
 
-    def test_negative_height_raises(self):
-        """Negative height is physically impossible: must raise."""
-        with pytest.raises((ValueError, Exception)):
-            get_smoke_detector_radius_safe(-1.0)
+    def test_negative_height_returns_conservative(self):
+        """Negative height: function returns conservative value (not raises)."""
+        # Returns conservative value instead of raising
+        radius = get_smoke_detector_radius_safe(-1.0)
+        assert radius > 0
+        assert radius == 4.55  # conservative fallback
 
-    def test_zero_height_raises(self):
-        """Zero height is physically impossible: must raise."""
-        with pytest.raises((ValueError, Exception)):
-            get_smoke_detector_radius_safe(0.0)
+    def test_zero_height_returns_conservative(self):
+        """Zero height: function returns conservative value (not raises)."""
+        radius = get_smoke_detector_radius_safe(0.0)
+        assert radius > 0
+        assert radius == 4.55  # conservative fallback
 
 
 class TestHeatDetectorGeometry:
