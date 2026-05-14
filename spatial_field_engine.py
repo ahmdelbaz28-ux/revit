@@ -38,9 +38,9 @@ class NFPAConstraintModel:
     def __init__(self, ceiling_type: str = "SMOOTH", ceiling_height: float = 2.4):
         self.rated_spacing = {
             "SMOKE_PHOTOELECTRIC": 9.1,  # 30 feet
-            "HEAT_FIXED": 15.2,  # 50 feet
+            "HEAT_FIXED": 6.1,  # 20 feet per NFPA 72 Table 17.6.3.1
             "SMOKE_IONIZATION": 9.1,
-            "HEAT_RATE_OF_RISE": 15.2,
+            "HEAT_RATE_OF_RISE": 7.6,  # 25 feet per NFPA 72 Table 17.6.3.1
             "MULTI_CRITERIA": 9.1,
         }
         self.ceiling_type = ceiling_type

@@ -100,7 +100,7 @@ class NFPA72Spacings:
     # Maximum wall distance (should be ≤ half max spacing)
     MAX_WALL_DISTANCE = {
         "SMOKE_PHOTOELECTRIC": 4.55,  # 9.1 / 2
-        "HEAT_FIXED": 7.6,
+        "HEAT_FIXED": 3.05,  # 6.1 / 2 per NFPA 72
     }
     
     @classmethod
