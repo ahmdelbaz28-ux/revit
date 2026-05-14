@@ -113,8 +113,11 @@ def check_coverage_polygon(
         radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
         coverage_geometry = "circular"
     elif detector_type == DetectorType.HEAT:
-        # V9 FIX: Heat detectors use SQUARE coverage (Chebyshev distance)
-        radius = 9.1 / 2  # Heat detector half-spacing
+        # V9 FIX: Heat detectors use NFPA 72 Table 17.6.2.1 spacing
+        from nfpa72_models import HeatDetectorSpec
+        # Get spacing from HeatDetectorSpec (6.1m fixed temp, 7.6m rate of rise)
+        heat_spec = HeatDetectorSpec(ceiling_spec, room_spec)
+        radius = heat_spec.spacing_m / 2  # Half-spacing for coverage
         coverage_geometry = "square"  # NFPA 72 Table 17.6.3.5
     else:
         radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
@@ -472,7 +475,8 @@ def verify_full_coverage(
     if coverage_geometry == "circular":
         radius = detector_radius
     else:
-        radius = (listed_spacing_m or 9.1) / 2
+        # NFPA 72 Table 17.6.2.1: Default to fixed temp 6.1m (most conservative)
+        radius = (listed_spacing_m or 6.1) / 2
     
     bounds = room_polygon.bounds
     minx, miny, maxx, maxy = bounds

@@ -209,21 +209,31 @@ class SmokeDetectorSpec:
 
 @dataclass
 class HeatDetectorSpec:
-    """Heat detector specification"""
+    """Heat detector specification per NFPA 72 Table 17.6.2.1"""
     
     ceiling_spec: CeilingSpec
     room_spec: RoomSpec
     detector_type: DetectorType = DetectorType.HEAT
     heat_mode: HeatDetectionMode = HeatDetectionMode.SQUARE_GRID
     
-    # Fixed spacing per NFPA 72 (Table 17.6.2.1)
-    FIXED_SPACING_FT = 30  # 30 feet = 9.1m
-    FIXED_SPACING_M = 9.1
+    # NFPA 72 Table 17.6.2.1 - Spacing in feet to meters
+    FIXED_TEMP_FT = 20      # 20 feet = 6.1m (fixed temperature)
+    RATE_OF_RISE_FT = 25   # 25 feet = 7.6m (rate of rise)
+    
+    # Spacing in meters
+    FIXED_TEMP_M = 6.1      # 20 feet * 0.3048
+    RATE_OF_RISE_M = 7.6    # 25 feet * 0.3048
     
     @property
     def spacing_m(self) -> float:
-        """Get spacing for heat detector"""
-        return self.FIXED_SPACING_M
+        """Get spacing per NFPA 72 Table 17.6.2.1"""
+        # Default to fixed temp spacing (6.1m) - most conservative
+        # SQUARE_GRID mode = fixed temp (6.1m)
+        # CIRCULAR mode = rate of rise (7.6m) - less conservative
+        if self.heat_mode == HeatDetectionMode.CIRCULAR:
+            return self.RATE_OF_RISE_M  # 7.6m
+        else:
+            return self.FIXED_TEMP_M  # 6.1m default (SQUARE_GRID)
 
 
 @dataclass
