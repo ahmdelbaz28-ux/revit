@@ -364,8 +364,152 @@ def seed_nfpa72_2019_minimum(auth: CodeAuthority, license_no: str = "FPE-DEV-000
     return count
 
 
-# ---------------------------------------------------------------------------
-# Self-test
+def seed_nfpa72_2022_minimum(auth: CodeAuthority, license_no: str = "FPE-DEV-0001") -> int:
+    """
+    Seed NFPA 72-2022 constants (latest edition).
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    placeholder_hash = "0" * 64
+    seeds = [
+        # NFPA 72-2022 §17.6.3.1 - Smoke detector spacing
+        ("NFPA72.17.6.3.1.smoke_max_spacing", "NFPA72", "2022", "17.6.3.1",
+         9.1, "m", None,
+         "Smoke detectors on smooth ceilings: maximum spacing 30 ft (9.1 m).",
+         "2022-01-01"),
+        # NFPA 72-2022 §17.6.2.1 - Heat detector spacing
+        ("NFPA72.17.6.2.1.heat_max_spacing", "NFPA72", "2022", "17.6.2.1",
+         15.2, "m", None,
+         "Heat detectors: listed spacing not exceeding 50 ft (15.2 m).",
+         "2022-01-01"),
+        # NFPA 72-2022 §17.8.3.2 - Pull station travel
+        ("NFPA72.17.8.3.2.pull_station_travel_max", "NFPA72", "2022", "17.8.3.2",
+         61.0, "m", None,
+         "Manual fire alarm boxes: travel distance shall not exceed 200 ft (61 m).",
+         "2022-01-01"),
+        # NFPA 72-2022 §18.5.5.6 - Strobe mounting height
+        ("NFPA72.18.5.5.6.strobe_height_min", "NFPA72", "2022", "18.5.5.6",
+         2.03, "m", None,
+         "Wall-mounted visible appliances: 80 in (2.03 m) minimum to lens bottom.",
+         "2022-01-01"),
+        ("NFPA72.18.5.5.6.strobe_height_max", "NFPA72", "2022", "18.5.5.6",
+         2.44, "m", None,
+         "Wall-mounted visible appliances: 96 in (2.44 m) maximum to lens bottom.",
+         "2022-01-01"),
+        # NFPA 72-2022 §21 - Loop capacity
+        ("NFPA72.21.2.panel_max_devices", "NFPA72", "2022", "21.2.2",
+         250, "devices", None,
+         "Signal line circuit: not more than 250 devices.",
+         "2022-01-01"),
+    ]
+    count = 0
+    for (cid, fam, ed, sec, val, unit, cat, citation, eff_date) in seeds:
+        c = CodeConstant(
+            constant_id=cid, code_family=fam, edition=ed, section=sec,
+            value_numeric=val, value_unit=unit, value_categorical=cat,
+            citation_text=citation,
+            source_pdf_hash=placeholder_hash, source_page=0,
+            effective_date=eff_date,
+            fpe_reviewer="", fpe_signature="",
+            added_at=now,
+        )
+        c_signed = sign_for_dev(c, license_no)
+        try:
+            auth.add_constant(c_signed)
+            count += 1
+        except sqlite3.IntegrityError:
+            pass
+    return count
+
+
+def seed_nfpa13_2022_minimum(auth: CodeAuthority, license_no: str = "FPE-DEV-0001") -> int:
+    """
+    Seed NFPA 13-2022 sprinkler spacing constants.
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    placeholder_hash = "0" * 64
+    seeds = [
+        # NFPA 13-2022 Tables
+        ("NFPA13.8.2.3.1.quick_response_sprinkler_area", "NFPA13", "2022", "8.2.3.1",
+         12.0, "m^2", None,
+         "QR sprinklers: maximum coverage 130 sq ft (12.0 m²).",
+         "2022-01-01"),
+    ]
+    count = 0
+    for (cid, fam, ed, sec, val, unit, cat, citation, eff_date) in seeds:
+        c = CodeConstant(
+            constant_id=cid, code_family=fam, edition=ed, section=sec,
+            value_numeric=val, value_unit=unit, value_categorical=cat,
+            citation_text=citation,
+            source_pdf_hash=placeholder_hash, source_page=0,
+            effective_date=eff_date,
+            fpe_reviewer="", fpe_signature="",
+            added_at=now,
+        )
+        c_signed = sign_for_dev(c, license_no)
+        try:
+            auth.add_constant(c_signed)
+            count += 1
+        except sqlite3.IntegrityError:
+            pass
+    return count
+
+
+def seed_nec_2023_minimum(auth: CodeAuthority, license_no: str = "FPE-DEV-0001") -> int:
+    """
+    Seed NEC 2023 basic electrical constants for firealarm.
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    placeholder_hash = "0" * 64
+    seeds = [
+        # NEC 2023 Table 310.16 - Conductor ampacity
+        ("NEC.310.16.awg_14_ampacity", "NEC", "2023", "Table 310.16",
+         15, "A", None,
+         "14 AWG: 15A copper (60°C).",
+         "2023-01-01"),
+        ("NEC.310.16.awg_12_ampacity", "NEC", "2023", "Table 310.16",
+         20, "A", None,
+         "12 AWG: 20A copper (60°C).",
+         "2023-01-01"),
+        ("NEC.310.16.awg_10_ampacity", "NEC", "2023", "Table 310.16",
+         30, "A", None,
+         "10 AWG: 30A copper (60°C).",
+         "2023-01-01"),
+        # NEC 2023 Article 210 - Voltage drop
+        ("NEC.210.52.voltage_drop_max", "NEC", "2023", "210.52",
+         0.05, "ratio", None,
+         "Voltage drop: not exceed 5% branch circuit, 3% feeder.",
+         "2023-01-01"),
+    ]
+    count = 0
+    for (cid, fam, ed, sec, val, unit, cat, citation, eff_date) in seeds:
+        c = CodeConstant(
+            constant_id=cid, code_family=fam, edition=ed, section=sec,
+            value_numeric=val, value_unit=unit, value_categorical=cat,
+            citation_text=citation,
+            source_pdf_hash=placeholder_hash, source_page=0,
+            effective_date=eff_date,
+            fpe_reviewer="", fpe_signature="",
+            added_at=now,
+        )
+        c_signed = sign_for_dev(c, license_no)
+        try:
+            auth.add_constant(c_signed)
+            count += 1
+        except sqlite3.IntegrityError:
+            pass
+    return count
+
+
+def seed_all_minimum(auth: CodeAuthority, license_no: str = "FPE-DEV-0001") -> dict:
+    """
+    Seed all minimum code authority constants.
+    """
+    results = {}
+    results["NFPA72.2019"] = seed_nfpa72_2019_minimum(auth, license_no)
+    results["NFPA72.2022"] = seed_nfpa72_2022_minimum(auth, license_no)
+    results["NFPA13.2022"] = seed_nfpa13_2022_minimum(auth, license_no)
+    results["NEC.2023"] = seed_nec_2023_minimum(auth, license_no)
+    return results
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
