@@ -9,13 +9,15 @@ from pathlib import Path
 from . import __version__
 from .pipeline import analyze_file
 from .knowledge.memory        import KnowledgeBase
-from .knowledge.self_learner  import SelfLearner
+# V8: self_learner disabled - use pattern_library instead
+# from .knowledge.self_learner  import SelfLearner
 from .knowledge.active_learning import review_pending, submit_feedback, metrics
 from .engineering.panel_optimizer import optimize_panels, recommend_panel_count
 from .engineering.loop_designer   import design_loops
 from .engineering.nec_tables      import voltage_drop, select_conduit, select_minimum_awg
 from .engineering.ada_check       import audit_devices
-from .digital_twin.smoke_simulator import simulate, FireScenario
+# V8: smoke_simulator disabled - use smoke_estimator instead
+# from .digital_twin.smoke_simulator import simulate, FireScenario
 from .reporting.comprehensive_report import (
     build_full_report, render_html, render_markdown, render_json, render_pdf,
     export_default_templates, list_template_variables)
@@ -117,7 +119,7 @@ def main():
         rep = analyze_file(args.file, kb=kb, schedule=sched,
                            auto_schedule=not args.no_auto_schedule,
                            units_to_m=args.units_to_m, do_ocr=not args.no_ocr,
-                           do_self_learn=not args.no_learn,
+                           do_pattern_review=False,  # V8: disabled by default
                            overlay_dir=args.overlays, html_out=args.html)
         rep.print_summary()
         if args.json: rep.save_json(args.json); print(f"JSON → {args.json}")
@@ -178,8 +180,9 @@ def main():
         print("✓ fsg_signing.public.pem   (share for verification)")
 
     elif args.cmd == "learned":
-        print(json.dumps(SelfLearner(kb).explain_what_i_learned(),
-                          indent=2, default=str))
+        # V8: disabled - use pattern_library instead
+        print("V8: Pattern review disabled by default. Use pattern_library for human-curated patterns.")
+        # print(json.dumps(SelfLearner(kb).explain_what_i_learned(), indent=2, default=str))
 
     elif args.cmd == "panel-optimize":
         pts = _read_xy_csv(args.xy_csv)
@@ -202,10 +205,12 @@ def main():
         for w in plan.warnings: print(f"⚠ {w}")
 
     elif args.cmd == "simulate":
-        res = simulate(args.volume_m3, args.ceiling_m,
-                        device_mount_height_m=args.device_h,
-                        scenario=FireScenario.named(args.growth))
-        print(json.dumps(res.__dict__, indent=2, default=str))
+        # V8: disabled - use smoke_estimator instead
+        print("V8: Smoke simulation disabled. Use v8_core.smoke_estimator for pre-screening estimates.")
+        # res = simulate(args.volume_m3, args.ceiling_m,
+        #                 device_mount_height_m=args.device_h,
+        #                 scenario=FireScenario.named(args.growth))
+        # print(json.dumps(res.__dict__, indent=2, default=str))
 
     elif args.cmd == "ada":
         for f in audit_devices(json.loads(Path(args.devices_json).read_text())):

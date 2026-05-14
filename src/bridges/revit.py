@@ -36,13 +36,17 @@ log = logging.getLogger(__name__)
 
 # ──────────────────────────────────────────────────────────────────────────
 def ifc_to_twin(ifc_path: str):
-    """Read an IFC file and build a DigitalTwin (rooms + devices)."""
-    try:
-        import ifcopenshell
-        import ifcopenshell.util.placement as placement
-    except ImportError:
-        raise RuntimeError("ifcopenshell required: pip install ifcopenshell")
-    from ..digital_twin.twin import DigitalTwin, Room, Device, Opening
+    """Read an IFC file and build a DigitalTwin (rooms + devices).
+
+    V8: DISABLED - use v8_core modules instead.
+    """
+    raise RuntimeError("V8: ifc_to_twin disabled. Use v8_core modules for building analysis.")
+    # try:
+    #     import ifcopenshell
+    #     import ifcopenshell.util.placement as placement
+    # except ImportError:
+    #     raise RuntimeError("ifcopenshell required: pip install ifcopenshell")
+    # from ..digital_twin.twin import DigitalTwin, Room, Device, Opening
 
     m = ifcopenshell.open(ifc_path)
     t = DigitalTwin()

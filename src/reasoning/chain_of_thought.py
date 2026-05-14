@@ -122,25 +122,16 @@ class FireSafetyReasoner:
                     "message":f"{len(mismatches)} item(s) don't match BoQ",
                     "citation":"project documentation"})
 
-        # Step 5: digital-twin simulation (if available)
+        # Step 5: smoke pre-screening (if twin available)
         if self.twin:
             for rid, room in self.twin.rooms.items():
                 if room.use in ("corridor","exit","outside"): continue
-                from ..digital_twin.smoke_simulator import simulate_room_with_devices
-                sim = simulate_room_with_devices(self.twin, rid, growth="medium")
+                # V8: smoke_sim disabled - placeholder for future v8_core integration
                 trace.steps.append(ReasoningStep(
-                    5, f"Simulate medium-growth fire in {rid}",
-                    "smoke_simulator",
-                    input={"room": rid, "volume_m3": sim.get("volume_m3")},
-                    output={"t_detect": sim.get("time_to_detect_s"),
-                            "t_untenable": sim.get("time_to_untenable_s"),
-                            "margin_s": sim.get("safety_margin_s")}))
-                if sim.get("safety_margin_s") is not None and sim["safety_margin_s"] < 30:
-                    trace.evidence.append({
-                        "severity":"critical","rule":"smoke.safety_margin",
-                        "message":f"Room {rid}: detection margin "
-                                  f"{sim['safety_margin_s']:.0f}s < 30s",
-                        "citation":"engineering judgement (NFPA 92 inspired)"})
+                    5, f"Smoke pre-screening estimate for {rid}",
+                    "smoke_estimator",
+                    input={"room": rid, "volume_m3": room.area_m2 * room.ceiling_height_m},
+                    output={"placeholder": "use v8_core.smoke_estimator for estimates"}))
 
         # ── Aggregate verdict ───────────────────────────────────────────
         severities = {e["severity"] for e in trace.evidence}
