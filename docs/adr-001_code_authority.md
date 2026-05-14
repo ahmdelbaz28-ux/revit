@@ -98,6 +98,37 @@ DatabasePool with 5 connections, context manager pattern.
 
 ---
 
+# ADR-006: Limited Signal Computation (Known Gap)
+
+## Status: Documented Limitation
+
+## Date: 2026-05-14
+
+## Context
+Parser Confidence has 8 signals defined, but only 4 are computed in pipeline.
+
+## Decision
+Document gap, expand hard-refuse to use computed signals only.
+
+## Computed Signals (4/8):
+- ✅ scale_present (checked)
+- ✅ vector_purity (checked)
+- ✅ coordinate_sanity (checked)
+- ✅ ocr_confidence (computed but not checked)
+
+## Missing Signals (4/8):
+- ❌ legend_coverage
+- ❌ polygon_closure
+- ❌ layer_hygiene (DXF only)
+- ❌ title_block_completeness
+
+## Consequences
+- ⚠️ Gate runs with 50% data
+- ⚠️ May reject valid files or accept invalid
+- ⚠️ Need Phase 2 implementation
+
+---
+
 This file: ADRs for V8 major architectural decisions.
 
 See also: [ARCHITECTURE.md](../ARCHITECTURE.md)

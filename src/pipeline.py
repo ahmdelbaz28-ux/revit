@@ -163,15 +163,24 @@ def analyze_file(path: str,
     
     # Run gate check BEFORE compliance
     gate_report = None
+    
+    # HARD REFUSE — multiple thresholds for safety
+    refuse_reason = None
     if observations.scale_present[0] < 0.5:
-        # Hard refuse: no scale = meaningless calculations
-        log.warning(f"REFUSE: No scale detected in {path}")
+        refuse_reason = "No scale detected - cannot calculate distances"
+    elif observations.vector_purity[0] < 0.3:
+        refuse_reason = f"Vector purity too low ({observations.vector_purity[0]:.2f}) - untrusted input"
+    elif observations.coordinate_sanity[0] < 0.3:
+        refuse_reason = f"Coordinate sanity failed ({observations.coordinate_sanity[0]:.2f}) - extents unusual"
+    
+    if refuse_reason:
+        log.warning(f"REFUSE: {refuse_reason} in {path}")
         report = Report(
             file=os.path.basename(path),
             file_type=nd.file_type,
             file_sha=nd.source_sha256,
             summary=nd.summary(),
-            warnings=["REFUSE: No scale detected - cannot calculate distances"],
+            warnings=[f"REFUSE: {refuse_reason}"],
         )
         return report
 
