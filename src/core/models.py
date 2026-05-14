@@ -36,6 +36,7 @@ class DeviceType(str, Enum):
     """Device types for fire alarm systems"""
     SMOKE_DETECTOR = "SmokeDetector"
     HEAT_DETECTOR = "HeatDetector"
+    DUCT_DETECTOR = "DuctDetector"  # Added in V8 PATCH
     MANUAL_CALL_POINT = "ManualCallPoint"
     SOUNDER = "Sounder"
     STROBE = "Strobe"

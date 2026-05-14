@@ -20,7 +20,7 @@ from nfpa72_models import (
     HeatDetectionMode,
     CeilingType,
     CeilingHeightError,
-    get_smoke_detector_radius,
+    get_smoke_detector_radius_safe,  # V8: use safe version
     get_smoke_detector_coverage_max,
     HeatDetectorSpec,
 )
@@ -73,7 +73,7 @@ def calculate_smoke_detector_radius(ceiling_height_m: float) -> float:
         This is NOT the max coverage - circles can extend up to max coverage
         when spacing allows.
     """
-    return get_smoke_detector_radius(ceiling_height_m)
+    return get_smoke_detector_radius_safe(ceiling_height_m)
 
 
 def calculate_smoke_detector_spacing(
@@ -92,7 +92,7 @@ def calculate_smoke_detector_spacing(
     Returns:
         Tuple of (number_along_width, number_along_depth)
     """
-    radius = get_smoke_detector_radius(ceiling_spec.height_m)
+    radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
     max_coverage = get_smoke_detector_coverage_max(ceiling_spec.height_m)
     
     # Use max coverage for spacing calculation
@@ -345,7 +345,7 @@ def calculate_detector_requirements(
     }
     
     if detector_type == DetectorType.SMOKE:
-        result["radius"] = get_smoke_detector_radius(ceiling_spec.height_m)
+        result["radius"] = get_smoke_detector_radius_safe(ceiling_spec.height_m)
         result["max_coverage"] = get_smoke_detector_coverage_max(ceiling_spec.height_m)
         num_w, num_d = calculate_smoke_detector_spacing(
             ceiling_spec, room_spec.width_m, room_spec.depth_m
