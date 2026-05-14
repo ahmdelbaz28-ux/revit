@@ -27,6 +27,7 @@ from nfpa72_models import (
     DetectorPlacement,
     DetectorType,
     get_smoke_detector_radius,
+    get_smoke_detector_radius_safe,  # V9 SAFE: Use safe fallback
 )
 from nfpa72_calculations import (
     is_point_covered_by_heat_detectors,
@@ -107,10 +108,17 @@ def check_coverage_polygon(
         room_polygon = room_polygon.buffer(0)
     
     # Calculate coverage radius
+    # V9 SAFE: Use safe radius function with fallback for heights outside NFPA range
     if detector_type == DetectorType.SMOKE:
-        radius = get_smoke_detector_radius(ceiling_spec.height_m)
+        radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
+        coverage_geometry = "circular"
+    elif detector_type == DetectorType.HEAT:
+        # V9 FIX: Heat detectors use SQUARE coverage (Chebyshev), not circle
+        radius = 9.1 / 2  # Heat detector half-spacing (4.55m)
+        coverage_geometry = "square"  # NFPA 72 Table 17.6.3.5: Chebyshev
     else:
-        radius = 9.1 / 2  # Heat detector half-spacing
+        radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
+        coverage_geometry = "circular"
     
     # Sample points throughout the room for coverage check
     uncovered = []
@@ -135,12 +143,21 @@ def check_coverage_polygon(
             total_points += 1
             
             # Check if covered by any detector
+            # V9 FIX: Use correct coverage geometry per detector type
             covered = False
             for dx, dy in detector_positions:
-                dist = math.sqrt((x - dx)**2 + (y - dy)**2)
-                if dist <= radius:
-                    covered = True
-                    break
+                if detector_type == DetectorType.HEAT:
+                    # Heat detectors: Chebyshev distance (square coverage)
+                    # NFPA 72 Table 17.6.3.5: max(|dx|, |dy|) <= spacing/2
+                    if max(abs(x - dx), abs(y - dy)) <= radius:
+                        covered = True
+                        break
+                else:
+                    # Smoke detectors: Euclidean distance (circular coverage)
+                    dist = math.sqrt((x - dx)**2 + (y - dy)**2)
+                    if dist <= radius:
+                        covered = True
+                        break
             
             if covered:
                 covered_count += 1
@@ -219,7 +236,8 @@ def check_voronoi_coverage(
         CoverageResult
     """
     room_polygon = create_room_polygon(room_spec)
-    radius = get_smoke_detector_radius(ceiling_spec.height_m)
+    # V9 SAFE: Use safe radius function
+    radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
     
     # Voronoi regions show theoretical coverage
     regions = calculate_voronoi_coverage(detector_positions, room_polygon)
@@ -315,7 +333,7 @@ def check_l_shaped_coverage(
     Returns:
         CoverageResult
     """
-    radius = get_smoke_detector_radius(ceiling_height_m)
+    radius = get_smoke_detector_radius_safe(ceiling_height_m)
     
     # Sample points throughout actual polygon
     uncovered = []
