@@ -27,7 +27,11 @@ from nfpa72_models import (
     DetectorPlacement,
     DetectorType,
     get_smoke_detector_radius,
+    get_smoke_detector_radius_safe,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 from nfpa72_calculations import (
     is_point_covered_by_heat_detectors,
     is_in_ridge_zone,
@@ -108,9 +112,14 @@ def check_coverage_polygon(
     
     # Calculate coverage radius
     if detector_type == DetectorType.SMOKE:
-        radius = get_smoke_detector_radius(ceiling_spec.height_m)
+        radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
+        coverage_geometry = "circle"
+    elif detector_type == DetectorType.HEAT:
+        radius = 9.1 / 2   # 4.55m — half of 9.1m NFPA spacing
+        coverage_geometry = "square"   # NFPA 72 Table 17.6.3.5: Chebyshev (square)
     else:
-        radius = 9.1 / 2  # Heat detector half-spacing
+        radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
+        coverage_geometry = "circle"
     
     # Sample points throughout the room for coverage check
     uncovered = []
@@ -534,3 +543,65 @@ def get_sloped_ceiling_constraints(
         "requires_ridge_row": True,
         "ridge_zone_polygon": polygon,
     }
+
+
+# ============================================================================
+# BEAM DETECTION (Added in V8 PATCH)
+# ============================================================================
+
+def adjust_coverage_for_beams(
+    nominal_radius_m: float,
+    beam_depth_m: float,
+    ceiling_height_m: float,
+) -> float:
+    """
+    Adjusts detector coverage radius based on beam obstruction.
+
+    Per NFPA 72 Section 17.6.3.1:
+    - Beam depth > 10% of ceiling height: treat as separate compartments
+    - Beam depth > 4%: conservative 15% radius reduction
+    - Beam depth <= 4%: no impact
+
+    Args:
+        nominal_radius_m: Original coverage radius in meters
+        beam_depth_m: Beam depth below ceiling in meters (must be >= 0)
+        ceiling_height_m: Floor-to-ceiling height in meters (must be > 0)
+
+    Returns:
+        float: Adjusted coverage radius in meters
+
+    Raises:
+        ValueError: If ceiling_height_m <= 0 or beam_depth_m < 0
+    """
+    if ceiling_height_m <= 0:
+        raise ValueError(
+            f"ceiling_height_m must be positive, got {ceiling_height_m}"
+        )
+    if beam_depth_m < 0:
+        raise ValueError(
+            f"beam_depth_m cannot be negative, got {beam_depth_m}"
+        )
+
+    beam_ratio = beam_depth_m / ceiling_height_m
+
+    if beam_ratio > 0.10:
+        # NFPA 72 17.6.3.1: deep beam = full compartment separation
+        logger.warning(
+            f"Beam depth {beam_depth_m:.2f}m = {beam_ratio:.1%} of ceiling height "
+            f"{ceiling_height_m:.2f}m. Per NFPA 72 s17.6.3.1: "
+            f"treat bays as SEPARATE COMPARTMENTS. Each requires its own detector."
+        )
+        return nominal_radius_m  # radius unchanged; compartment logic handles placement
+
+    elif beam_ratio > 0.04:
+        # Moderate beam: conservative 15% reduction
+        adjusted = nominal_radius_m * 0.85
+        logger.info(
+            f"Beam ratio {beam_ratio:.1%} (>4%%): reducing radius "
+            f"{nominal_radius_m:.2f}m -> {adjusted:.2f}m (15%% conservative reduction)"
+        )
+        return adjusted
+
+    else:
+        # Shallow beam: no adjustment needed
+        return nominal_radius_m
