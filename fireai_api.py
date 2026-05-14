@@ -34,6 +34,12 @@ from parsers.pdf_parser import PDFParser
 from parsers.excel_parser import ExcelParser
 from core.fireai_db_reporting import FireAIDatabase
 from core.pdf_report import PDFReportGenerator
+import logging
+
+logger = logging.getLogger("fireai.api")
+
+# V9 Security: Global exception handler
+from fastapi import Request
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -55,9 +61,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# V9 Security: Global exception handler - sanitize error messages
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception(f"Unhandled error: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error. Contact support."}
+    )
+
 # Storage
 UPLOAD_DIR = "/tmp/fireai_uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# V9 Security: File size limit (50MB)
+MAX_FILE_SIZE_MB = 50
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 # Database
 db = FireAIDatabase()
@@ -130,8 +149,17 @@ async def upload_and_analyze(
     file_path = os.path.join(UPLOAD_DIR, f"{project_id}_{file.filename}")
     
     try:
+        # V9: Read content first to check size
+        content = await file.read()
+        if len(content) > MAX_FILE_SIZE_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Max {MAX_FILE_SIZE_MB}MB allowed."
+            )
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(content)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
     

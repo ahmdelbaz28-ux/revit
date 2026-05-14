@@ -82,7 +82,7 @@ class AuditTrail:
             timestamp_utc=datetime.now(timezone.utc).isoformat(),
             room_id=room_id,
             operation="COVERAGE_VERIFICATION",
-            inputs={"detector_count": detector_count, "grid_resolution_m": 0.1},
+            inputs={"detector_count": detector_count, "grid_resolution_m": 0.25},
             outputs={"coverage_pct": coverage_pct, "worst_case_m": worst_case_m, "status": status},
             nfpa_reference="NFPA 72 (2022) Section 17.6.3",
         ))
