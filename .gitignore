@@ -1,80 +1,45 @@
-# Python
+# Python compiled files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
 *.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test cache
+.pytest_cache/
+
+# JSONL files (often generated)
+*.jsonl
+
+# Backup/dump files
+*.bak
+*.backup
+*.dump
+
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Environment & Secrets
-.env
-.env.*
-.keys/
+# FireAlarm Engine specific
+vv_results.db
 fireai_memory.db
 
-# Generated Reports (keep in local only)
-*_report_*.json
-*_report_*.txt
-nfpa_report.*
-test_report.*
-test_justification.txt
-revit_full_report.md
-test_evolution_log.md
-
-# Dump Files
-*_dump.txt
-*_complete_dump.txt
-
-# Audit artifact files (local development)
-audit/*.json
-oracle_audit_*.jsonl
-
-# Bash event logs
-bash_events/
-
-# DXF Test Files
-*.dxf
-
-# Output builds
-output_build/
+# Environment
+.env
+.env.local
 
 # IDE
 .vscode/
 .idea/
 *.swp
-*.swo
-
-vv_results.db
-
-# Databases (local only)
-*.db
-vv_results.db
-
-# Test synthetic data
-test_data/synthetic_bim/
-test_data/synthetic_bim_full_test/
-
-# Oracle audit
-oracle_audit_*.jsonl
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
