@@ -57,6 +57,17 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
     room_results = []
     total_detectors = 0
     
+    # Try to extract text using pdfplumber for suggestions
+    suggested_names = {}
+    text_extractor_available = False
+    
+    try:
+        import pdfplumber
+        text_extractor_available = True
+        print("  Text extractor: pdfplumber available")
+    except ImportError:
+        print("  Text extractor: pdfplumber not installed (using basic method)")
+    
     for room in rooms:
         room_name = room.name
         area_sqm = room.polygon.area if room.polygon else 0
@@ -66,7 +77,26 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
         is_verified = not room_name.startswith("room_")
         occupancy_source = "extracted" if is_verified else "auto_assigned"
         
-        # Determine detector type
+        # Level 2: Try to extract text as "suggested" only
+        suggested_name = None
+        if text_extractor_available and pdf_path:
+            try:
+                with pdfplumber.open(pdf_path) as pdf:
+                    page = pdf.pages[0]
+                    if room.polygon:
+                        bounds = room.polygon.bounds  # (minx, miny, maxx, maxy)
+                        # Extract text within bounds
+                        text = page.extract_text(bounds=bounds)
+                        if text and len(text.strip()) > 0:
+                            # Take first meaningful line
+                            lines = [l.strip() for l in text.split('\n') if l.strip()]
+                            if lines:
+                                suggested_name = lines[0]
+                                print(f"  Suggested '{room_name}': '{suggested_name}'")
+            except Exception as e:
+                print(f"  Text extraction note: {e}")
+        
+        # Determine detector type - ALWAYS use conservative default
         detector = select_safe_detector_type(room_name, occupancy_type)
         detector_type = detector.name
         
@@ -88,6 +118,9 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
         if not is_verified:
             warnings.append(f"UNVERIFIED_ROOM_TYPE: Assumed '{occupancy_type}'. Verify manually.")
         
+        if suggested_name:
+            warnings.append(f"⚠️ Suggested room name from PDF: '{suggested_name}'. Verify before relying.")
+        
         if occupancy_type == "kitchen":
             warnings.append("Kitchen detected - SMOKE detectors prohibited per NFPA 72 §17.6.4")
         
@@ -97,6 +130,7 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
             "occupancy_type": occupancy_type,
             "occupancy_source": occupancy_source,
             "occupancy_verified": is_verified,
+            "suggested_name": suggested_name,
             "detector_type": detector_type,
             "detector_count": detector_count,
             "coverage_pct": coverage_pct,
@@ -176,6 +210,10 @@ def print_terminal_report(report: dict):
             status_icon = "⚠️"
         
         print(f"{name} {area} {occ} {det_count} {cov} {status_icon}")
+        
+        # Show suggested name if available
+        if room.get("suggested_name"):
+            print(f"  → Suggested: '{room['suggested_name']}'")
     
     print("─" * 45)
     

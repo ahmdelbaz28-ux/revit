@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "source_file": "test_data/hybrid/single_office.pdf",
-    "generated_utc": "2026-05-15T16:11:18.551005Z",
+    "generated_utc": "2026-05-15T16:12:29.275836Z",
     "status": "PRELIMINARY",
     "requires_pe_review": true,
     "review_reason": "6 rooms have auto-assigned types. Manual verification required."
@@ -13,12 +13,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": false,
+      "suggested_name": "FireAI Test - single_office",
       "detector_type": "HEAT_FIXED_TEMP",
       "detector_count": 3,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually."
+        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually.",
+        "⚠️ Suggested room name from PDF: 'FireAI Test - single_office'. Verify before relying."
       ]
     },
     {
@@ -27,12 +29,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": false,
+      "suggested_name": "FireAI Test - single_office",
       "detector_type": "HEAT_FIXED_TEMP",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually."
+        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually.",
+        "⚠️ Suggested room name from PDF: 'FireAI Test - single_office'. Verify before relying."
       ]
     },
     {
@@ -41,12 +45,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": false,
+      "suggested_name": "FireAI Test - single_office",
       "detector_type": "HEAT_FIXED_TEMP",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually."
+        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually.",
+        "⚠️ Suggested room name from PDF: 'FireAI Test - single_office'. Verify before relying."
       ]
     },
     {
@@ -55,12 +61,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": false,
+      "suggested_name": "FireAI Test - single_office",
       "detector_type": "HEAT_FIXED_TEMP",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually."
+        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually.",
+        "⚠️ Suggested room name from PDF: 'FireAI Test - single_office'. Verify before relying."
       ]
     },
     {
@@ -69,12 +77,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": false,
+      "suggested_name": "FireAI Test - single_office",
       "detector_type": "HEAT_FIXED_TEMP",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually."
+        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually.",
+        "⚠️ Suggested room name from PDF: 'FireAI Test - single_office'. Verify before relying."
       ]
     },
     {
@@ -83,12 +93,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": false,
+      "suggested_name": "FireAI Test - single_office",
       "detector_type": "HEAT_FIXED_TEMP",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually."
+        "UNVERIFIED_ROOM_TYPE: Assumed 'office'. Verify manually.",
+        "⚠️ Suggested room name from PDF: 'FireAI Test - single_office'. Verify before relying."
       ]
     }
   ],
