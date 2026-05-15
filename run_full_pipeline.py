@@ -103,12 +103,12 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
                 print(f"  Text extraction note: {e}")
         
         # Determine detector type - FAIL-SAFE for unknown rooms
-        # If room type is unknown, use SMOKE as conservative default
+        # If room type is unknown, don't place any detectors
         if occupancy_type == "unknown":
-            # FAIL-SAFE: Use SMOKE for unknown rooms (conservative per NFPA 72)
-            detector_type = "SMOKE"
-            detector_count = max(1, int((area_sqm / 9.0) + 0.5))
-            coverage_pct = 100.0
+            # FAIL-SAFE: No detectors for unknown rooms
+            detector_type = "UNKNOWN"
+            detector_count = 0
+            coverage_pct = 0.0
         else:
             # Known room type - use safe detector selection
             detector = select_safe_detector_type(room_name, occupancy_type)
@@ -128,7 +128,7 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
         # Build warnings/errors
         warnings = []
         if not is_verified:
-            warnings.append("⚠️ MANUAL TYPE VERIFICATION RECOMMENDED - Using conservative SMOKE default")
+            warnings.append("MANUAL TYPE REQUIRED - NO DETECTORS PLACED")
         
         if suggested_name:
             warnings.append(f"⚠️ Suggested room name from PDF: '{suggested_name}'. Verify before relying.")
