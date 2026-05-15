@@ -1,10 +1,12 @@
 """
-PDF to RoomSpec Adapter (Robust Version)
-=======================================
+PDF to RoomSpec Adapter (Robust Version with Boundary Filtering)
+================================================================
 Converts WallElement objects from GeometryExtractor to RoomSpec objects for NFPA engine.
 - Gap closing for adjacent walls
 - Polygon validation
 - Discarded walls logging
+- Outer boundary exclusion (critical for production)
+- Noise filtering (small polygons)
 
 Usage:
     from adapters.pdf_to_rooms_adapter import extract_rooms_from_walls, design_room_from_pdf
@@ -12,7 +14,7 @@ Usage:
     walls = extractor.extract_walls()
     rooms, report = extract_rooms_from_walls(walls)
     
-    # report contains: rooms_created, walls_used, walls_discarded, gaps_closed
+    # report contains: walls_used, walls_discarded, gaps_closed, rooms_created, etc.
 """
 
 import sys
@@ -30,12 +32,14 @@ from shapely.ops import linemerge, polygonize
 from nfpa72_models import RoomSpec, CeilingSpec, CeilingType, DetectorType
 from nfpa72_coverage import check_coverage_polygon
 
-# Configure logging for discarded walls
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Gap closing threshold in meters
+# Constants
 GAP_CLOSURE_THRESHOLD = 0.10  # 10cm
+MIN_ROOM_AREA_SQM = 1.0  # Minimum room area in square meters
+MAX_ROOM_AREA_SQM = 200.0  # Maximum room area (larger = likely outer boundary)
 
 
 @dataclass
@@ -45,9 +49,90 @@ class ExtractionReport:
     walls_used: int = 0
     walls_discarded: int = 0
     gaps_closed: int = 0
-    rooms_created: int = 0
+    rooms_raw: int = 0  # Before filtering
+    rooms_created: int = 0  # After filtering
+    outer_boundary_excluded: bool = False
+    small_polygons_filtered: int = 0
+    large_polygons_filtered: int = 0
+    final_room_count: int = 0
     validation_failures: List[str] = field(default_factory=list)
     discarded_walls_details: List[dict] = field(default_factory=list)
+
+
+def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List[LineString]) -> Tuple[List[ShapelyPolygon], ExtractionReport]:
+    """
+    Filter polygons to keep only valid rooms:
+    1. Exclude outer boundary (largest polygon containing most walls)
+    2. Exclude tiny polygons (noise)
+    3. Exclude very large polygons (> MAX_ROOM_AREA_SQM)
+    
+    Args:
+        polygons: List of shapely Polygon objects from polygonize
+        walls: List of WallElement objects
+        lines: List of LineString objects representing walls
+    
+    Returns:
+        Tuple of (filtered_polygons, report)
+    """
+    from dataclasses import asdict
+    
+    report = ExtractionReport(rooms_raw=len(polygons))
+    
+    if not polygons:
+        return [], report
+    
+    # Calculate total wall length for each polygon
+    # The outer boundary will contain the most wall length
+    polygon_wall_counts = []
+    
+    for poly in polygons:
+        # Count how many wall lines are contained in this polygon
+        contained_count = 0
+        for line in lines:
+            if line.is_empty:
+                continue
+            try:
+                # Check if line's start point is inside polygon
+                if poly.contains(line) or poly.touches(line):
+                    contained_count += 1
+            except:
+                pass
+        
+        polygon_wall_counts.append((poly, contained_count, poly.area))
+    
+    # Sort by wall count (descending) to find outer boundary
+    polygon_wall_counts.sort(key=lambda x: x[1], reverse=True)
+    
+    # The first polygon (with most walls) is likely the outer boundary
+    # but we need to verify it's actually larger than the rest
+    filtered_polys = []
+    
+    # Filter: remove outer boundary and small/large polygons
+    for idx, (poly, wall_count, area) in enumerate(polygon_wall_counts):
+        # Skip if this is the largest polygon and contains most walls (likely outer boundary)
+        if idx == 0 and wall_count > 10:  # Very high wall count = outer boundary
+            report.outer_boundary_excluded = True
+            logger.info(f"Excluded outer boundary polygon: area={area:.1f}sqm, walls={wall_count}")
+            continue
+        
+        # Skip tiny polygons (noise)
+        if area < MIN_ROOM_AREA_SQM:
+            report.small_polygons_filtered += 1
+            logger.debug(f"Filtered small polygon: area={area:.2f}sqm")
+            continue
+        
+        # Skip very large polygons (likely errors or multiple rooms merged)
+        if area > MAX_ROOM_AREA_SQM:
+            report.large_polygons_filtered += 1
+            logger.debug(f"Filtered large polygon: area={area:.1f}sqm")
+            continue
+        
+        filtered_polys.append(poly)
+    
+    report.final_room_count = len(filtered_polys)
+    logger.info(f"Filtered {len(polygons)} -> {len(filtered_polys)} rooms")
+    
+    return filtered_polys, report
 
 
 def validate_room_polygon(poly, index: int) -> Tuple[bool, str]:
@@ -65,7 +150,6 @@ def validate_room_polygon(poly, index: int) -> Tuple[bool, str]:
         return False, f"Room {index}: Polygon is empty"
     
     if not poly.is_valid:
-        # Try to fix invalid polygon
         try:
             poly = poly.buffer(0)
             if not poly.is_valid:
@@ -79,11 +163,11 @@ def validate_room_polygon(poly, index: int) -> Tuple[bool, str]:
         p1 = coords[i]
         p2 = coords[i + 1]
         dist = ((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2) ** 0.5
-        if dist < 0.01:  # Less than 1cm
+        if dist < 0.01:
             return False, f"Room {index}: Zero-length side detected"
     
     # Check for negative or zero area
-    if poly.area < 0.01:  # Less than 0.01 sqm
+    if poly.area < 0.01:
         return False, f"Room {index}: Area too small ({poly.area:.4f} sqm)"
     
     return True, ""
@@ -92,13 +176,6 @@ def validate_room_polygon(poly, index: int) -> Tuple[bool, str]:
 def close_gaps_in_lines(lines: List[LineString], threshold: float = GAP_CLOSURE_THRESHOLD) -> Tuple[List[LineString], int]:
     """
     Close small gaps between adjacent line segments.
-    
-    Args:
-        lines: List of LineString objects
-        threshold: Maximum gap distance to close (default 10cm)
-    
-    Returns:
-        Tuple of (modified_lines, gaps_closed_count)
     """
     if len(lines) < 2:
         return lines, 0
@@ -106,7 +183,6 @@ def close_gaps_in_lines(lines: List[LineString], threshold: float = GAP_CLOSURE_
     gaps_closed = 0
     modified_lines = list(lines)
     
-    # Find and close gaps between line endpoints
     for i in range(len(modified_lines)):
         for j in range(i + 1, len(modified_lines)):
             line_i = modified_lines[i]
@@ -115,20 +191,17 @@ def close_gaps_in_lines(lines: List[LineString], threshold: float = GAP_CLOSURE_
             if line_i.is_empty or line_j.is_empty:
                 continue
             
-            # Check distance between endpoints
             end_i = line_i.coords[-1]
             start_j = line_j.coords[0]
             dist = ((end_i[0] - start_j[0])**2 + (end_i[1] - start_j[1])**2) ** 0.5
             
             if dist < threshold:
-                # Close the gap by extending line_i to line_j
                 new_coords = list(line_i.coords)[:-1] + list(line_j.coords)
                 modified_lines[i] = LineString(new_coords)
-                modified_lines[j] = LineString([])  # Mark as consumed
+                modified_lines[j] = LineString([])
                 gaps_closed += 1
                 break
     
-    # Remove consumed lines
     modified_lines = [l for l in modified_lines if not l.is_empty and len(l.coords) > 1]
     
     return modified_lines, gaps_closed
@@ -136,15 +209,8 @@ def close_gaps_in_lines(lines: List[LineString], threshold: float = GAP_CLOSURE_
 
 def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tuple[List[RoomSpec], ExtractionReport]:
     """
-    Convert WallElement objects to RoomSpec objects using shapely polygonize.
-    Robust version with gap closing and validation.
-    
-    Args:
-        walls: List of WallElement objects from GeometryExtractor
-        enable_gap_closing: Whether to close small gaps between walls
-    
-    Returns:
-        Tuple of (RoomSpec list, ExtractionReport)
+    Convert WallElement objects to RoomSpec objects.
+    Robust version with gap closing, validation, and boundary filtering.
     """
     report = ExtractionReport(walls_input=len(walls) if walls else 0)
     
@@ -152,7 +218,6 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
         return [], report
     
     # Convert each wall (polygon) to LineString edges
-    # Track which walls are used
     used_wall_indices = set()
     lines = []
     
@@ -166,7 +231,6 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
             })
             continue
         
-        # Create LineString from polygon edges
         wall_lines = []
         for i in range(len(geometry)):
             p1 = geometry[i]
@@ -181,11 +245,9 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
         report.walls_used = 0
         return [], report
     
-    # Track walls that weren't used
     report.walls_used = len(used_wall_indices)
     report.walls_discarded = len(walls) - len(used_wall_indices)
     
-    # Log discarded walls
     for detail in report.discarded_walls_details:
         logger.warning(f"Wall {detail['index']} discarded: {detail['reason']}")
     
@@ -205,14 +267,22 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
     
     # Polygonize to get closed rooms
     try:
-        polygons = list(polygonize(merged))
+        all_polygons = list(polygonize(merged))
     except Exception as e:
         report.validation_failures.append(f"polygonize failed: {str(e)}")
         return [], report
     
-    # Create RoomSpec for each polygon with validation
+    report.rooms_raw = len(all_polygons)
+    
+    # Filter valid rooms (exclude outer boundary and noise)
+    filtered_polygons, filter_report = _filter_valid_rooms(all_polygons, walls, lines)
+    report.outer_boundary_excluded = filter_report.outer_boundary_excluded
+    report.small_polygons_filtered = filter_report.small_polygons_filtered
+    report.large_polygons_filtered = filter_report.large_polygons_filtered
+    
+    # Create RoomSpec for each filtered polygon
     rooms = []
-    for idx, poly in enumerate(polygons):
+    for idx, poly in enumerate(filtered_polygons):
         is_valid, error_msg = validate_room_polygon(poly, idx)
         
         if not is_valid:
@@ -220,7 +290,7 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
             logger.warning(error_msg)
             continue
         
-        coords = list(poly.exterior.coords)[:-1]  # Remove closing point
+        coords = list(poly.exterior.coords)[:-1]
         
         if len(coords) < 3:
             continue
@@ -230,7 +300,6 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
         ys = [c[1] for c in coords]
         min_x, min_y = min(xs), min(ys)
         
-        # Shift coordinates to origin
         normalized_coords = [(x - min_x, y - min_y) for x, y in zip(xs, ys)]
         
         width = max(xs) - min(xs)
@@ -240,10 +309,8 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
             report.validation_failures.append(f"Room {idx}: dimensions too small ({width:.2f}x{depth:.2f}m)")
             continue
         
-        # Create CeilingSpec with default height
         ceiling_spec = CeilingSpec.create_safe(height_at_low_point_m=3.0)
         
-        # Create RoomSpec
         room = RoomSpec(
             name=f"room_{idx + 1}",
             width_m=width,
@@ -256,6 +323,7 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
         rooms.append(room)
     
     report.rooms_created = len(rooms)
+    report.final_room_count = len(rooms)
     logger.info(f"Extraction complete: {report.rooms_created} rooms from {report.walls_input} walls")
     
     return rooms, report
@@ -263,17 +331,8 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
 
 def design_room_from_pdf(pdf_path: str, room_index: int = 0) -> dict:
     """
-    Complete PDF to design pipeline: extract walls → validate → create room → place detectors → verify coverage.
-    
-    Args:
-        pdf_path: Path to PDF file
-        room_index: Index of room to design (default: 0)
-    
-    Returns:
-        dict with: room, detector_positions, detector_count, coverage_pct, is_compliant, violations, extraction_report
+    Complete PDF to design pipeline.
     """
-    import math
-    
     # Import GeometryExtractor directly
     spec = importlib.util.spec_from_file_location(
         "geometry_extractor",
@@ -290,7 +349,7 @@ def design_room_from_pdf(pdf_path: str, room_index: int = 0) -> dict:
     if not walls:
         return {"error": "No walls extracted from PDF", "room": None, "extraction_report": None}
     
-    # Step 2: Convert to rooms (with gap closing and validation)
+    # Step 2: Convert to rooms with filtering
     rooms, report = extract_rooms_from_walls(walls, enable_gap_closing=True)
     
     if room_index >= len(rooms):
@@ -302,10 +361,9 @@ def design_room_from_pdf(pdf_path: str, room_index: int = 0) -> dict:
     
     room = rooms[room_index]
     
-    # Step 3: Place detectors using simple grid placement
+    # Step 3: Place detectors
     ceiling_height = room.ceiling_spec.height_at_low_point_m
     
-    # Get coverage radius based on NFPA 72 Table 17.6.3.2
     if ceiling_height <= 3.0:
         radius = 4.1
     elif ceiling_height <= 4.3:
@@ -320,7 +378,6 @@ def design_room_from_pdf(pdf_path: str, room_index: int = 0) -> dict:
     spacing = radius
     margin = 0.3
     
-    # Simple grid placement
     detector_positions = []
     room_width = room.width_m
     room_depth = room.depth_m
@@ -363,7 +420,6 @@ if __name__ == "__main__":
     spec.loader.exec_module(geometry_extractor)
     GeometryExtractor = geometry_extractor.GeometryExtractor
     
-    # Extract walls from PDF
     extractor = GeometryExtractor(
         pdf_path="test_data/hybrid/single_office.pdf",
         page_number=0
@@ -372,7 +428,6 @@ if __name__ == "__main__":
     
     print(f"=== Extracted {len(walls)} walls ===")
     
-    # Convert to rooms with full reporting
     rooms, report = extract_rooms_from_walls(walls, enable_gap_closing=True)
     
     print(f"\n=== EXTRACTION REPORT ===")
@@ -380,18 +435,12 @@ if __name__ == "__main__":
     print(f"Walls Used: {report.walls_used}")
     print(f"Walls Discarded: {report.walls_discarded}")
     print(f"Gaps Closed: {report.gaps_closed}")
-    print(f"Rooms Created: {report.rooms_created}")
-    
-    if report.validation_failures:
-        print(f"\nValidation Failures:")
-        for failure in report.validation_failures:
-            print(f"  - {failure}")
-    
-    if report.discarded_walls_details:
-        print(f"\nDiscarded Walls Details:")
-        for detail in report.discarded_walls_details:
-            print(f"  - {detail}")
+    print(f"Rooms Raw (before filtering): {report.rooms_raw}")
+    print(f"Outer Boundary Excluded: {report.outer_boundary_excluded}")
+    print(f"Small Polygons Filtered: {report.small_polygons_filtered}")
+    print(f"Large Polygons Filtered: {report.large_polygons_filtered}")
+    print(f"Final Rooms: {report.final_room_count}")
     
     print(f"\n=== Rooms ===")
     for room in rooms:
-        print(f"  - {room.name}: {room.width_m:.2f}x{room.depth_m:.2f}m")
+        print(f"  - {room.name}: {room.width_m:.2f}x{room.depth_m:.2f}m ({room.width_m * room.depth_m:.1f}sqm)")
