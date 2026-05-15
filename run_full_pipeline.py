@@ -85,6 +85,7 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
         
         # Level 2: Try to extract text as "suggested" only
         suggested_name = None
+        inferred_type = None
         if text_extractor_available and pdf_path:
             try:
                 with pdfplumber.open(pdf_path) as pdf:
@@ -98,9 +99,21 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
                             lines = [l.strip() for l in text.split('\n') if l.strip()]
                             if lines:
                                 suggested_name = lines[0]
-                                print(f"  Suggested '{room_name}': '{suggested_name}'")
+                                # BUG FIX: Use suggested_name to infer occupancy type
+                                inferred_type = guess_room_type(suggested_name)
+                                print(f"  Suggested '{room_name}': '{suggested_name}' -> {inferred_type}")
             except Exception as e:
                 print(f"  Text extraction note: {e}")
+        
+        # Determine occupancy type - use inferred type if available
+        # Use "unknown" only when truly unknown (not just auto-named)
+        if inferred_type and inferred_type != "unknown":
+            occupancy_type = inferred_type
+            is_verified = True  # Text was found and typed!
+        elif is_verified and room.occupancy_type and room.occupancy_type != "unknown":
+            occupancy_type = room.occupancy_type
+        else:
+            occupancy_type = "unknown"
         
         # Determine detector type - FAIL-SAFE for unknown rooms
         # If room type is unknown, don't place any detectors
