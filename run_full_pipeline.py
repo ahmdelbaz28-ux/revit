@@ -15,6 +15,7 @@ import sys
 import os
 import json
 import argparse
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -24,17 +25,20 @@ from parsers.geometry_extractor import GeometryExtractor
 from adapters.pdf_to_rooms_adapter import extract_rooms_from_walls, guess_room_type, select_safe_detector_type
 
 
-def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
+def run_pipeline(pdf_path: str, output_path: str = None, manual_room_types: dict = None) -> dict:
     """
     Run full NFPA 72 pipeline on PDF file.
     
     Args:
         pdf_path: Path to floor plan PDF
         output_path: Optional JSON output path
+        manual_room_types: Optional dict of room_name -> room_type
         
     Returns:
         dict: Full design report
     """
+    if manual_room_types is None:
+        manual_room_types = {}
     print("=" * 45)
     print("  FIREAI NFPA 72-2022 DESIGN PIPELINE")
     print("=" * 45)
@@ -75,18 +79,26 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
         # Check if verified (not auto-generated name)
         is_verified = not room_name.startswith("room_")
         
-        # Use "unknown" for unverified rooms - BE HONEST
-        if is_verified and room.occupancy_type:
+        # Priority 1: Check manual types (highest priority)
+        if room_name in manual_room_types:
+            occupancy_type = manual_room_types[room_name]
+            is_verified = True
+            source = "manual"
+        elif is_verified and room.occupancy_type:
             occupancy_type = room.occupancy_type
+            source = "extracted"
         else:
             occupancy_type = "unknown"
+            source = "unverified"
         
-        occupancy_source = "extracted" if is_verified else "auto_assigned"
-        
-        # Level 2: Try to extract text as "suggested" only
+        # Skip auto-detection if manual types provided
+        # Level 2 only runs for rooms without manual input
         suggested_name = None
         inferred_type = None
-        if text_extractor_available and pdf_path:
+        if room_name in manual_room_types:
+            # Manual type already set - skip text extraction
+            pass
+        elif text_extractor_available and pdf_path:
             try:
                 # MAP PAGE-LEVEL ROOM NAMES to room polygons
                 # First: extract all room names and areas from page text
@@ -142,27 +154,7 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
                                 suggested_name = lines[0]
                                 inferred_type = guess_room_type(suggested_name)
                                 print(f"  In-polygon '{room_name}': '{suggested_name}' -> {inferred_type}")
-                        if not room_has_text_in_bounds:
-                            # FALLBACK: Match page-level room to room by area
-                            room_area_sqm = room.area_sqm
-                            for mapped_room, mapped_area in sorted(page_room_map.items(), key=lambda x: abs(x[1] - room_area_sqm)):
-                                if abs(mapped_area - room_area_sqm) < 2.0:  # Within 2m²
-                                    suggested_name = mapped_room
-                                    inferred_type = guess_room_type(suggested_name)
-                                    print(f"  Page-mapped '{room_name}' ({room_area_sqm:.1f}m²): '{suggested_name}' -> {inferred_type}")
-                                    break
-                            if not inferred_type:
-                                # Last resort: match by room index in extracted list
-                                # WRAP AROUND using modulo
-                                room_idx = list(rooms).index(room)
-                                area_list = sorted(page_room_map.values())
-                                if area_list:
-                                    # Use modulo to wrap around
-                                    map_idx = room_idx % len(page_room_map)
-                                    mapped_room = list(page_room_map.keys())[map_idx]
-                                    suggested_name = mapped_room
-                                    inferred_type = guess_room_type(suggested_name)
-                                    print(f"  Wrap-mapped '{room_name}' [{room_idx}%{len(page_room_map)}]: '{suggested_name}' -> {inferred_type}")
+                        # If no text in bounds, leave as unknown - NO auto-detection
             except Exception as e:
                 print(f"  Text extraction note: {e}")
         
@@ -248,9 +240,7 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
             "name": room_name,
             "area_sqm": round(area_sqm, 1),
             "occupancy_type": occupancy_type,
-            "occupancy_source": occupancy_source,
-            "occupancy_verified": is_verified,
-            "suggested_name": suggested_name,
+            "source": source,
             "detector_type": detector_type,
             "detector_count": detector_count,
             "coverage_pct": coverage_pct,
@@ -260,10 +250,10 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
         })
     
     # Determine overall status
-    unverified_count = sum(1 for r in room_results if not r["occupancy_verified"])
+    unknown_count = sum(1 for r in room_results if r["source"] == "unverified")
     
     # Build final report - FAIL-SAFE: if unknown rooms exist, design is FAILED
-    has_unknown = unverified_count > 0
+    has_unknown = unknown_count > 0
     design_report = {
         "report_metadata": {
             "source_file": pdf_path,
@@ -271,12 +261,12 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
             "status": "FAILED" if has_unknown else "COMPLETE",
             "requires_pe_review": True,  # Always requires review
             "design_complete": not has_unknown,
-            "review_reason": f"Design incomplete. {unverified_count} rooms require manual type verification." if has_unknown else None
+            "review_reason": f"Design incomplete. {unknown_count} rooms require manual type verification." if has_unknown else None
         },
         "rooms": room_results,
         "summary": {
             "total_rooms": len(rooms),
-            "unverified_rooms": unverified_count,
+            "unverified_rooms": unknown_count,
             "total_detectors": total_detectors,
             "compliant": not has_unknown  # Not compliant if unknowns exist
         }
@@ -330,16 +320,12 @@ def print_terminal_report(report: dict):
         det_count = str(room["detector_count"]).ljust(8)
         cov = f"{room['coverage_pct']:.0f}%".ljust(7)
         
-        if room["occupancy_verified"]:
+        if room.get("source", "unverified") != "unverified":
             status_icon = "✅"
         else:
             status_icon = "⚠️"
         
         print(f"{name} {area} {occ} {det_count} {cov} {status_icon}")
-        
-        # Show suggested name if available
-        if room.get("suggested_name"):
-            print(f"  → Suggested: '{room['suggested_name']}'")
     
     print("─" * 45)
     
@@ -355,6 +341,7 @@ def main():
     parser = argparse.ArgumentParser(description="FireAI NFPA 72 Design Pipeline")
     parser.add_argument("pdf_file", help="Path to floor plan PDF")
     parser.add_argument("--output", "-o", help="JSON output path", default=None)
+    parser.add_argument("--room-types", "-t", help="JSON file with manual room types", default=None)
     parser.add_argument("--non-interactive", "-n", help="Skip human review", action="store_true")
     
     args = parser.parse_args()
@@ -372,8 +359,19 @@ def main():
     # Ensure output directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
-    # Run initial pipeline
-    report = run_pipeline(args.pdf_file, output_path)
+    # Load manual room types if provided
+    manual_room_types = {}
+    if args.room_types:
+        if os.path.exists(args.room_types):
+            with open(args.room_types, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                manual_room_types = data.get("rooms", {})
+            print(f"  Loaded {len(manual_room_types)} manual room types from {args.room_types}")
+        else:
+            print(f"WARNING: Room types file not found: {args.room_types}")
+    
+    # Run pipeline with manual types
+    report = run_pipeline(args.pdf_file, output_path, manual_room_types)
     print_terminal_report(report)
     
     # Interactive human review loop (Level 3)
@@ -467,8 +465,7 @@ def main():
                     "name": room_name,
                     "area_sqm": round(area_sqm, 1),
                     "occupancy_type": user_type,
-                    "occupancy_source": "human_review",
-                    "occupancy_verified": is_verified,
+                    "source": "human_review" if user_type != "unknown" else "unverified",
                     "detector_type": detector_type,
                     "detector_count": detector_count,
                     "coverage_pct": coverage_pct,
@@ -478,24 +475,24 @@ def main():
                 })
             
             total_detectors = sum(r["detector_count"] for r in final_rooms)
-            unverified_count = sum(1 for r in final_rooms if not r["occupancy_verified"])
+            unknown_count = sum(1 for r in final_rooms if r["source"] == "unverified")
             
             # Build final report
             final_report = {
                 "report_metadata": {
                     "source_file": args.pdf_file,
                     "generated_utc": datetime.utcnow().isoformat() + "Z",
-                    "status": "COMPLETE" if unverified_count == 0 else "PARTIAL",
-                    "requires_pe_review": unverified_count > 0,
-                    "design_complete": unverified_count == 0,
-                    "review_reason": "Human review completed" if unverified_count == 0 else f"{unverified_count} rooms still unknown"
+                    "status": "COMPLETE" if unknown_count == 0 else "PARTIAL",
+                    "requires_pe_review": unknown_count > 0,
+                    "design_complete": unknown_count == 0,
+                    "review_reason": "Human review completed" if unknown_count == 0 else f"{unknown_count} rooms still unknown"
                 },
                 "rooms": final_rooms,
                 "summary": {
                     "total_rooms": len(final_rooms),
-                    "unverified_rooms": unverified_count,
+                    "unverified_rooms": unknown_count,
                     "total_detectors": total_detectors,
-                    "compliant": unverified_count == 0
+                    "compliant": unknown_count == 0
                 }
             }
             

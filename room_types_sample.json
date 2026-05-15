@@ -1,0 +1,16 @@
+{
+  "description": "Manual room types input - edit room names to match PDF",
+  "instructions": "1. Run pipeline to get room names (room_1, room_2, etc.)",
+  "instructions": "2. Edit this file to add actual room types",
+  "instructions": "3. Run with: --room-types room_types_sample.json",
+  "rooms": {
+    "room_1": "atrium",
+    "room_2": "corridor",
+    "room_3": "kitchen",
+    "room_4": "bathroom",
+    "room_5": "storage",
+    "room_6": "mechanical",
+    "room_7": "electrical",
+    "room_8": "storage"
+  }
+}
