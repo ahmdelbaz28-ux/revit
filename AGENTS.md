@@ -74,6 +74,12 @@
 - Priority: 1) manual, 2) text in bounds (if exists), 3) unknown
 - NEVER auto-detect - BE HONEST about limitations
 
+**Known Issues:**
+1. NO VALIDATION on room size vs type - 19,284m² office accepts with no warning
+2. NO AUTOMATIC VALIDATION - PE must verify input manually
+3. Name "FireAI" is misleading - it's a calculator, not AI
+4. History contains fraudulent commit d429e48 (should be ignored)
+
 **Tests:** All rooms → unknown → 0 detectors → ⚠️ WARNING
 
 **Key insight:** If no manual input and no text inside polygon bounds = unknown. No guessing.
