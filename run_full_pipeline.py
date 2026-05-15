@@ -102,33 +102,42 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
             except Exception as e:
                 print(f"  Text extraction note: {e}")
         
-        # Determine detector type - ALWAYS use conservative default
-        detector = select_safe_detector_type(room_name, occupancy_type)
-        detector_type = detector.name
-        
-        # Calculate detector count (simplified: 1 per 9 sqm for smoke, 1 per 20 sqm for heat)
-        if detector_type.startswith("SMOKE"):
-            detector_count = max(1, int((area_sqm / 9.0) + 0.5))
-        elif detector_type.startswith("HEAT"):
-            detector_count = max(1, int((area_sqm / 20.0) + 0.5))
+        # Determine detector type - FAIL-SAFE for unknown rooms
+        # If room type is unknown, don't place any detectors
+        if occupancy_type == "unknown":
+            # FAIL-SAFE: No detectors for unknown rooms
+            detector_type = "UNKNOWN"
+            detector_count = 0
+            coverage_pct = 0.0
         else:
-            detector_count = max(1, int((area_sqm / 15.0) + 0.5))
+            # Known room type - use safe detector selection
+            detector = select_safe_detector_type(room_name, occupancy_type)
+            detector_type = detector.name
+            
+            # Calculate detector count
+            if detector_type.startswith("SMOKE"):
+                detector_count = max(1, int((area_sqm / 9.0) + 0.5))
+            elif detector_type.startswith("HEAT"):
+                detector_count = max(1, int((area_sqm / 20.0) + 0.5))
+            else:
+                detector_count = max(1, int((area_sqm / 15.0) + 0.5))
+            coverage_pct = 100.0
         
-        total_detectors += detector_count
+        total_detectors += detector_count  # Simplified
         
-        # Coverage check (simplified - 100% if detectors placed)
-        coverage_pct = 100.0  # Simplified
-        
-        # Build warnings
+        # Build warnings/errors
         warnings = []
         if not is_verified:
-            warnings.append(f"UNVERIFIED_ROOM_TYPE: Assumed '{occupancy_type}'. Verify manually.")
+            warnings.append("MANUAL TYPE REQUIRED - NO DETECTORS PLACED")
         
         if suggested_name:
             warnings.append(f"⚠️ Suggested room name from PDF: '{suggested_name}'. Verify before relying.")
         
         if occupancy_type == "kitchen":
             warnings.append("Kitchen detected - SMOKE detectors prohibited per NFPA 72 §17.6.4")
+        
+        if occupancy_type == "unknown":
+            warnings.append("🔴 MANUAL REVIEW REQUIRED - Design incomplete")
         
         room_results.append({
             "name": room_name,
@@ -147,21 +156,23 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
     # Determine overall status
     unverified_count = sum(1 for r in room_results if not r["occupancy_verified"])
     
-    # Build final report
+    # Build final report - FAIL-SAFE: if unknown rooms exist, design is FAILED
+    has_unknown = unverified_count > 0
     design_report = {
         "report_metadata": {
             "source_file": pdf_path,
             "generated_utc": datetime.utcnow().isoformat() + "Z",
-            "status": "PRELIMINARY" if unverified_count > 0 else "COMPLETE",
-            "requires_pe_review": unverified_count > 0,
-            "review_reason": f"{unverified_count} rooms have auto-assigned types. Manual verification required." if unverified_count > 0 else None
+            "status": "FAILED" if has_unknown else "COMPLETE",
+            "requires_pe_review": True,  # Always requires review
+            "design_complete": not has_unknown,
+            "review_reason": f"Design incomplete. {unverified_count} rooms require manual type verification." if has_unknown else None
         },
         "rooms": room_results,
         "summary": {
             "total_rooms": len(rooms),
             "unverified_rooms": unverified_count,
             "total_detectors": total_detectors,
-            "compliant": True
+            "compliant": not has_unknown  # Not compliant if unknowns exist
         }
     }
     
@@ -180,7 +191,11 @@ def print_terminal_report(report: dict):
     summary = report["summary"]
     rooms = report["rooms"]
     
-    status = "⚠️ PRELIMINARY — REQUIRES PE REVIEW" if meta.get("requires_pe_review") else "✅ COMPLETE"
+    # FAIL-SAFE: Show FAILED if design incomplete
+    if meta.get("status") == "FAILED":
+        status = "🔴 FAILED — MANUAL TYPE REQUIRED"
+    else:
+        status = "✅ COMPLETE"
     
     print("\n" + "=" * 45)
     print("  FIREAI NFPA 72-2022 DESIGN REPORT")
@@ -192,12 +207,11 @@ def print_terminal_report(report: dict):
     print(f"Total Detectors: {summary['total_detectors']}")
     print(f"Fully Compliant: {summary['compliant']}")
     
-    if meta.get("requires_pe_review"):
-        print("\n⚠️ IMPORTANT:")
-        print("   Room types are auto-assigned because")
-        print("   room names could not be extracted from the PDF.")
-        print("   Rooms marked [UNVERIFIED] must be manually reviewed")
-        print("   by a licensed PE before installation.")
+    if meta.get("status") == "FAILED":
+        print("\n🔴 DESIGN INCOMPLETE:")
+        print("   Room types could not be determined.")
+        print("   NO DETECTORS have been placed.")
+        print("   Manual type verification is REQUIRED before design can complete.")
     
     print("\n" + "─" * 45)
     print("Room          Area      Type       Detectors  Coverage  Status")
