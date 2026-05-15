@@ -53,15 +53,9 @@ fireai_memory.db
 .idea/
 *.swp
 
-# Virtual environments (Added)
+# Virtual environments
 venv/
 .venv/
 
-# Data logs (Added)
-*.jsonl
+# Analysis outputs
 analysis_result.json
-
-# Build artifacts (Added)
-dist/
-build/
-target/
