@@ -371,6 +371,7 @@ class ExtractionReport:
     small_polygons_filtered: int = 0
     large_polygons_filtered: int = 0
     final_room_count: int = 0
+    large_rooms_flagged: List[dict] = field(default_factory=list)
     validation_failures: List[dict] = field(default_factory=list)
     discarded_walls_details: List[dict] = field(default_factory=list)
 
@@ -378,20 +379,23 @@ class ExtractionReport:
 def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List[LineString]) -> Tuple[List[ShapelyPolygon], ExtractionReport]:
     """
     Filter polygons to keep only valid rooms:
-    1. Exclude only the obvious outer boundary (single very large polygon at 100x larger than any room)
+    1. Exclude ONLY outer boundary (>100x larger than second)
     2. Exclude tiny polygons (noise)
-    3. Keep all normal rooms (including conference halls)
+    3. Flag large/outlier rooms for PE review (no deletion!)
     """
-    from dataclasses import asdict
+    import statistics
     
     report = ExtractionReport(rooms_raw=len(polygons))
     
     if not polygons:
         return [], report
     
-    # Sort by area
     sorted_polys = sorted(polygons, key=lambda p: p.area, reverse=True)
     filtered_polys = []
+    
+    # Robust baseline using median (more stable than average)
+    areas = [p.area for p in polygons]
+    median_area = statistics.median(areas) if areas else 0.0
     
     for idx, poly in enumerate(sorted_polys):
         area = poly.area
@@ -402,17 +406,31 @@ def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List
             logger.debug(f"Filtered small polygon: area={area:.2f}sqm")
             continue
         
-        # Exclude ONLY outer boundary:
-        # - It's largest (idx==0)
-        # - There's more than one polygon
-        # - It's >100x larger than second (true boundary: ~9000sqm vs ~30sqm = 300x)
+        # Exclude ONLY outer boundary (>100x larger than second)
         if idx == 0 and len(sorted_polys) > 1:
             second_largest = sorted_polys[1].area
-            # 100x threshold to avoid false positives on conference halls
             if area > second_largest * 100:
                 report.outer_boundary_excluded = True
                 logger.info(f"Excluded outer boundary: {area:.1f}sqm (vs {second_largest:.1f}sqm)")
                 continue
+        
+        # FLAG outliers - any statistically large or absolutely large space
+        # No deletion - only warning for PE review
+        is_outlier = (area > median_area * 10) or (area > 1000.0)
+        if is_outlier:
+            ratio = round(area / median_area, 1) if median_area else None
+            report.large_rooms_flagged.append({
+                "index": idx,
+                "area_m2": round(area, 1),
+                "median_m2": round(median_area, 1),
+                "ratio": ratio,
+                "reason": "outlier_large_space",
+            })
+            logger.warning(
+                f"⚠️ Large space #{idx}: {area:.1f}m² "
+                f"(median={median_area:.1f}m², ratio={ratio}x) — "
+                f"MANUAL REVIEW REQUIRED"
+            )
         
         filtered_polys.append(poly)
     
