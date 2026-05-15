@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.DS_Store
+Thumbs.db
+
+# Environment & Secrets
+.env
+.env.*
+.keys/
+fireai_memory.db
+
+# Generated Reports (keep in local only)
+*_report_*.json
+*_report_*.txt
+nfpa_report.*
+test_report.*
+test_justification.txt
+revit_full_report.md
+test_evolution_log.md
+
+# Dump Files
+*_dump.txt
+*_complete_dump.txt
+
+# Audit artifact files (local development)
+audit/*.json
+oracle_audit_*.jsonl
+
+# Bash event logs
+bash_events/
+
+# DXF Test Files
+*.dxf
+
+# Output builds
+output_build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
