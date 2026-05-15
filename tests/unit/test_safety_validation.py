@@ -237,19 +237,16 @@ class TestSilentDeath:
             pytest.skip("HVACDuct not implemented")
 
     def test_panel_overloaded(self):
-        """Panel with >250 devices = delay/cascade failure."""
-        # NFPA 72: each zone max 250 devices
-        # Test system handles large number
-        room = RoomSpec(name="Warehouse", width_m=100, depth_m=100, height_m=10)
-        ceiling = CeilingSpec(height_at_low_point_m=10.0)
+        """Panel with >250 devices = MUST raise error."""
+        panel = FireAlarmPanel(panel_id="MAIN-1")
         
-        # Create grid of 300+ detectors
-        detectors = [(x, y) for x in range(2, 100, 4) for y in range(2, 100, 4)]
+        # Add exactly 250 - OK
+        for i in range(250):
+            panel.add_device(f"DEV-{i}")
         
-        # Should not crash, may warn about panel capacity
-        result = check_coverage_polygon(detectors, room, ceiling)
-        assert result is not None
-        assert result.detectors_in_coverage <= len(detectors)
+        # Add 251st - must FAIL, not delay
+        with pytest.raises(PanelCapacityError, match="capacity exceeded|250"):
+            panel.add_device("DEV-251")
 
     def test_voltage_drop_below_threshold(self):
         """Voltage drop > 8V at 20km = FAIL (< 16V minimum)."""
