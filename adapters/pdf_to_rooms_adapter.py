@@ -90,6 +90,57 @@ def select_safe_detector_type(room_name: str, room_type_guess: str = "office") -
     return DetectorType.SMOKE
 
 
+def guess_room_type(room_name: str) -> str:
+    """
+    Infer room type from room name using keyword matching.
+    
+    Args:
+        room_name: Name of the room (may contain text labels from PDF)
+    
+    Returns:
+        str: Inferred occupancy type
+    """
+    name_lower = room_name.lower() if room_name else ""
+    
+    # Kitchen / Cooking areas
+    kitchen_keywords = ["kitchen", "cook", "pantry", "galley", "canteen", "cafeteria", "مطبخ"]
+    if any(kw in name_lower for kw in kitchen_keywords):
+        return "kitchen"
+    
+    # Server / Data center
+    server_keywords = ["server", "data center", "it room", "network", "telecom", "idf", "mdf", "خادم"]
+    if any(kw in name_lower for kw in server_keywords):
+        return "server_room"
+    
+    # Corridor / Hallway
+    corridor_keywords = ["corridor", "hallway", "hall", "passage", "ممر", " corridor"]
+    if any(kw in name_lower for kw in corridor_keywords):
+        return "corridor"
+    
+    # Bedroom
+    bedroom_keywords = ["bedroom", "bed", "sleeping", " dorm", "غرفه نوم"]
+    if any(kw in name_lower for kw in bedroom_keywords):
+        return "bedroom"
+    
+    # Bathroom
+    bathroom_keywords = ["bathroom", "bath", "toilet", "washroom", "حمام"]
+    if any(kw in name_lower for kw in bathroom_keywords):
+        return "bathroom"
+    
+    # Garage / Parking
+    garage_keywords = ["garage", "parking", "car park", "مكر"]
+    if any(kw in name_lower for kw in garage_keywords):
+        return "garage"
+    
+    # Warehouse / Storage
+    warehouse_keywords = ["warehouse", "storage", "stock", "مستودع"]
+    if any(kw in name_lower for kw in warehouse_keywords):
+        return "warehouse"
+    
+    # Default
+    return "office"
+
+
 @dataclass
 class ExtractionReport:
     """Report containing detailed extraction statistics."""
@@ -345,7 +396,7 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
             height_m=ceiling_spec.height_at_low_point_m,
             polygon=ShapelyPolygon(normalized_coords),
             ceiling_spec=ceiling_spec,
-            occupancy_type="office"
+            occupancy_type=guess_room_type(f"room_{idx + 1}")
         )
         rooms.append(room)
     
