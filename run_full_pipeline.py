@@ -71,10 +71,16 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
     for room in rooms:
         room_name = room.name
         area_sqm = room.polygon.area if room.polygon else 0
-        occupancy_type = room.occupancy_type or "office"
         
         # Check if verified (not auto-generated name)
         is_verified = not room_name.startswith("room_")
+        
+        # Use "unknown" for unverified rooms - BE HONEST
+        if is_verified and room.occupancy_type:
+            occupancy_type = room.occupancy_type
+        else:
+            occupancy_type = "unknown"
+        
         occupancy_source = "extracted" if is_verified else "auto_assigned"
         
         # Level 2: Try to extract text as "suggested" only
