@@ -276,8 +276,11 @@ class PDFInputLayer:
         try:
             self._extract_data(pdf_path, result)
         except Exception as e:
+            import traceback
+            full_tb = traceback.format_exc()
             result.errors.append(f"Data extraction failed: {e}")
-            logger.error(f"Extraction error: {e}")
+            result.errors.append(f"Traceback: {full_tb}")
+            logger.error(f"Extraction error: {e}\n{full_tb}")
         
         return result
     
@@ -387,11 +390,16 @@ class PDFInputLayer:
         coord_match = re.search(r'(\d+\.?\d*)[,\s]+(\d+\.?\d*)', window)
         if coord_match:
             try:
-                x = float(coord_match.group(1))
-                y = float(coord_match.group(2))
+                x_raw = coord_match.group(1)
+                y_raw = coord_match.group(2)
+                # Ensure these are actually numeric, not sequences
+                if not x_raw.replace('.', '').isdigit() or not y_raw.replace('.', '').isdigit():
+                    return (0.0, 0.0)
+                x = float(x_raw)
+                y = float(y_raw)
                 # Convert from page coords to real-world
-                return (x * self.scale_factor, y * self.scale_factor)
-            except ValueError:
+                return (x * float(self.scale_factor), y * float(self.scale_factor))
+            except (ValueError, TypeError):
                 pass
         
         return (0.0, 0.0)
@@ -417,43 +425,84 @@ class PDFInputLayer:
     def _extract_rooms(self, page, page_num: int) -> List[RoomBoundary]:
         """Extract room boundaries from page."""
         rooms = []
-        text = page.get_text().lower()
+        text = page.get_text()
+        text_lower = text.lower()
         
         # Get page dimensions
         page_rect = page.rect
         
-        # Find room names/numbers
+        # Known room names to look for
+        KNOWN_ROOM_NAMES = [
+            'corridor', 'lobby', 'office', 'kitchen', 'meeting',
+            'bathroom', 'bedroom', 'warehouse', 'storage', 'server'
+        ]
+        
+        # First: try explicit "Room X" patterns
         room_matches = re.finditer(
             r'room\s*([A-Z]?\d+[A-Za-z]?)',
-            text,
+            text_lower,
             re.IGNORECASE
         )
         
         for match in room_matches:
             room_name = match.group(1).upper()
+            area = self._extract_room_area(text_lower, match.start())
+            ceiling = self._extract_ceiling_height(text_lower, match.start())
             
-            # Try to find area for this room
-            area = self._extract_room_area(text, match.start())
-            
-            # Approximate center from text position
-            # (This is rough - real implementation needs layout analysis)
-            bbox = page.get_text("bbox", match.span())
-            if bbox:
-                center_x = (bbox[0] + bbox[2]) / 2
-                center_y = (bbox[1] + bbox[3]) / 2
-            else:
-                center_x, center_y = 0.0, 0.0
-            
-            # Try to find ceiling height
-            ceiling = self._extract_ceiling_height(text, match.start())
+            # Get position safely
+            try:
+                bbox = page.get_text("bbox", match.span())
+                if bbox and isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
+                    try:
+                        center_x = (float(bbox[0]) + float(bbox[2])) / 2.0
+                        center_y = (float(bbox[1]) + float(bbox[3])) / 2.0
+                    except (TypeError, ValueError):
+                        center_x, center_y = 100.0, 100.0
+                else:
+                    center_x, center_y = 100.0, 100.0
+            except Exception:
+                center_x, center_y = 100.0, 100.0
             
             rooms.append(RoomBoundary(
                 name=room_name,
-                area_sqft=area or 100.0,  # Default if not found
+                area_sqft=area or 100.0,
                 center_x=center_x,
                 center_y=center_y,
                 ceiling_height=ceiling
             ))
+        
+        # Second: find known room names in text (Corridor, Lobby, etc)
+        for room_keyword in KNOWN_ROOM_NAMES:
+            pattern = re.compile(rf'\b{re.escape(room_keyword)}\b', re.IGNORECASE)
+            for match in pattern.finditer(text_lower):
+                room_name = match.group(0).title()
+                # Skip if already have this room
+                if any(r.name.lower() == room_name.lower() for r in rooms):
+                    continue
+                
+                area = self._extract_room_area(text_lower, match.start())
+                ceiling = self._extract_ceiling_height(text_lower, match.start())
+                
+                try:
+                    bbox = page.get_text("bbox", match.span())
+                    if bbox and isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
+                        try:
+                            center_x = (float(bbox[0]) + float(bbox[2])) / 2.0
+                            center_y = (float(bbox[1]) + float(bbox[3])) / 2.0
+                        except (TypeError, ValueError):
+                            center_x, center_y = 100.0, 100.0
+                    else:
+                        center_x, center_y = 100.0, 100.0
+                except Exception:
+                    center_x, center_y = 100.0, 100.0
+                
+                rooms.append(RoomBoundary(
+                    name=room_name,
+                    area_sqft=area or 25.0,
+                    center_x=center_x,
+                    center_y=center_y,
+                    ceiling_height=ceiling
+                ))
         
         return rooms
     
@@ -461,11 +510,21 @@ class PDFInputLayer:
         """Extract room area near position."""
         window = text[max(0, position-100):position+100]
         
-        # Area patterns
+        # Area patterns: sqft
         area_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sf|sqft)', window)
         if area_match:
             try:
                 return float(area_match.group(1))
+            except ValueError:
+                pass
+        
+        # Area patterns: m² (convert to sqft)
+        area_match2 = re.search(r'(\d+(?:\.\d+)?)\s*(?:m2|m\.?²|sq\.?\s*m|square\s*m)', window)
+        if area_match2:
+            try:
+                area_val = float(area_match2.group(1))
+                # Convert m² to sqft
+                return area_val * 10.764
             except ValueError:
                 pass
         
