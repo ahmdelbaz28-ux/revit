@@ -1,0 +1,130 @@
+FireAlarm Engine - NFPA 72 Coverage Analysis
+==========================================
+
+**Version**: 1.0-BETA (2026-05-15)
+**Lead Engineer**: AhmedElbaz
+**Status**: BETA - NOT FOR PRODUCTION USE
+
+## ⚠️ SAFETY NOTICE
+
+This software is BETA and requires FPE review before any use.
+See LICENSE file for full terms.
+
+📁 revit/
+├── 📁 parsers/                    # PDF/DXF/DWG extraction
+│   ├── parser_confidence.py        # Gate: Vector vs Raster decision
+│   ├── geometry_extractor.py     # Wall coordinates
+│   ├── symbol_extractor.py     # Fire devices
+│   ├── dimension_extractor.py  # Scale + dimensions
+│   ├── pdf_parser.py         # PDF input
+│   └── dwg_parser.py        # AutoCAD input
+│
+├── 📁 src/core/                 # Core pipeline
+│   ├── input_pipeline.py      # Main: PDF → Rooms + Devices
+│   ├── coverage_pipeline.py # NFPA 72 §17.6
+│   ├── raster_enhancer.py  # Vision for scanned PDFs
+│   ├── scale_bar_detector.py# CV scale detection
+│   ├── beta_watermark.py   # Safety warning
+│   └── models.py           # Data structures
+│
+├── 📁 src/application/          # Business logic
+│   ├── coverage_service.py    # Coverage calculator
+│   ├── compliance_service.py # NFPA 72 checker
+│   ├── beam_detector.py      # Beam detection
+│   └── conflict_detector.py # Spacing conflicts
+│
+├── 📁 src/safety/               # Life safety
+│   └── fire.py               # NFPA 72 rules
+│
+├── 📁 scripts/                   # Run scripts
+│   └── run_vv_analysis.py   # V&V analysis
+│
+└── 📁 docs/
+    └── VV_PROTOCOL.md       # Validation protocol
+
+Files: 90+ Python files
+Lines: 22,720 lines
+Tests: 96 passing
+
+==========================================
+           PIPELINE FLOW
+==========================================
+
+                    ┌──────────────┐
+                    │  PDF Input   │
+                    └──────┬───────┘
+                           │
+                    ┌──────▼───────┐
+                    │  Confidence │◄─── Gate decision
+                    │    Gate    │     Vector vs Raster
+                    └──────┬───────┘
+                           │
+              ┌────────────┴────────────┐
+              │                     │
+        ┌─────▼─────┐        ┌─────▼─────┐
+        │  Vector   │        │  Raster  │
+        │  Parser  │        │Enhancer  │
+        └─────┬─────┘        └─────┬─────┘
+              │                     │
+        ┌─────▼─────┐        ┌─────▼─────┐
+        │ Scale+   │        │ CV Scale │
+        │Extract  │        │Detect   │
+        └─────┬─────┘        └─────┬─────┘
+              │                     │
+              └────────┬────────────┘
+                       │
+                ┌─────▼─────┐
+                │  Extract  │
+                │Walls+    │
+                │Symbols  │
+                └─────┬─────┘
+                       │
+                ┌─────▼─────┐
+                │ Build    │
+                │Rooms    │
+                └─────┬─────┘
+                       │
+                ┌─────▼─────┐
+                │Coverage │
+                │Check    │◄─── NFPA 72 §17.6
+                └─────┬─────┘
+                       │
+                ┌─────▼─────┐
+                │ Output   │
+                │Rooms,    │
+                │Devices,  │
+                │Coverage │
+                └─────────┘
+
+==========================================
+         KEY FILES (1-line description)
+==========================================
+
+parser_confidence.py   # REJECT raster without scale extract
+input_pipeline.py    # PDF → Rooms + Devices + Coverage
+coverage_pipeline.py # NFPA 72 §17.6 calculation
+raster_enhancer.py  # OpenCV for scanned PDFs
+scale_bar_detector.py# CV scale detection
+compliance_service.py# NFPA 72 rules checker
+
+==========================================
+         V&V RESULTS (Real PDFs)
+==========================================
+
+Drawing         Type    Score  Result
+───────────────────────────────────────
+KCHA            Vector  1.0    PASS ✅
+Fire Alarm     Raster  0.5    REJECT ⚠️ (no scale)
+Sample
+Montana        Raster  0.2    REJECT ⚠️ (low quality)
+
+96 tests passing ✅
+
+==========================================
+         SAFETY
+==========================================
+
+⚠️ BETA SOFTWARE - NOT FOR PRODUCTION USE
+   - EULA required
+   - FPE review required
+   - No final design without approval

@@ -1,30 +1,61 @@
-```
-# Python
+# Python compiled files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
+
+# Type checking
+.mypy_cache/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+*.env.*
+
+# Log files
 *.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test cache
+.pytest_cache/
+
+# JSONL files (often generated)
+*.jsonl
+
+# Backup/dump files
+*.bak
+*.backup
+*.dump
+
+# Build artifacts
+dist/
+build/
+target/
+
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# DXF Test Files
-*.dxf
+# FireAlarm Engine specific
+vv_results.db
+fireai_memory.db
 
-# Requirements (uncomment if needed)
-# requirements.txt
-```fireai_memory.db
-.keys/
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Virtual environments
+venv/
+.venv/
+
+# Analysis outputs
+analysis_result.json

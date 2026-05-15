@@ -17,7 +17,10 @@ import argparse, json, logging, sys, csv
 from pathlib import Path
 
 from . import __version__
-from .pipeline import analyze_file
+try:
+    from .pipeline import analyze_file
+except ImportError:
+    analyze_file = None
 from .knowledge.memory        import KnowledgeBase
 # V8: self_learner disabled - use pattern_library instead
 # from .knowledge.self_learner  import SelfLearner

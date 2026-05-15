@@ -1,8 +1,0 @@
-{
-  "command": "git clone https://ghu_XVKf6l0GBKf9B5xgv0LldY9CetW4hl2m8J6E@github.com/ahmdelbaz28-ux/revit.git revit",
-  "cwd": "/workspace/project",
-  "timeout": 120,
-  "id": "2892396eb3164f4aab6e86ea9ae52e09",
-  "timestamp": "2026-05-09T15:53:37.532314Z",
-  "kind": "BashCommand"
-}

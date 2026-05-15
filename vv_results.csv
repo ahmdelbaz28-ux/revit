@@ -1,0 +1,15 @@
+filename,timestamp_utc,gate,score,status,rooms,detectors,coverage_pct,ceiling_height_m,violations_count,warnings,requires_pe_review,errors,duration_sec
+project_1.pdf,2026-05-15T04:13:07.996184+00:00,CAUTION,0.7,REQUIRES PE REVIEW,1,1,85.0,3.0,1,UNCOVERED_AREA; Room 0: requires review,True,,0.04
+test.pdf,2026-05-15T04:13:08.033974+00:00,CAUTION,0.7,REQUIRES PE REVIEW,1,3,85.0,3.0,1,UNCOVERED_AREA; Room 0: requires review,True,,0.01
+test_pipeline_v2.pdf,2026-05-15T04:13:08.040551+00:00,REJECTED,0.4,REJECTED,0,0,0.0,3.0,0,Drawing rejected at input gate,True,REJECT: Drawing score 0.40 < 0.7. Unfit for automated analysis. Engineer must review manually.,0.0
+test_full.pdf,2026-05-15T04:13:08.041724+00:00,HIGH_CONFIDENCE,0.9,REQUIRES PE REVIEW,2,13,85.0,3.5,2,UNCOVERED_AREA; Room 0: requires review; UNCOVERED_AREA; Room 1: requires review,True,,0.01
+project_2.pdf,2026-05-15T04:13:08.050910+00:00,CAUTION,0.7,REQUIRES PE REVIEW,1,1,85.0,3.0,1,UNCOVERED_AREA; Room 0: requires review,True,,0.01
+test_pipeline.pdf,2026-05-15T04:13:08.056402+00:00,REJECTED,0.4,REJECTED,0,0,0.0,3.0,0,Drawing rejected at input gate,True,REJECT: Drawing score 0.40 < 0.7. Unfit for automated analysis. Engineer must review manually.,0.0
+test_dims4.pdf,2026-05-15T04:13:08.057573+00:00,CAUTION,0.7,FAIL,0,0,0.0,1.0,0,NO_ROOMS,True,NO_WALLS: Could not extract any walls from drawing; NO_SYMBOLS: Could not extract any fire protection symbols; NO_ROOMS,0.01
+project_0.pdf,2026-05-15T04:13:08.062680+00:00,CAUTION,0.7,REQUIRES PE REVIEW,1,1,85.0,3.0,1,UNCOVERED_AREA; Room 0: requires review,True,,0.01
+test_dims.pdf,2026-05-15T04:13:08.068070+00:00,CAUTION,0.7,FAIL,0,0,0.0,1.0,0,NO_ROOMS,True,NO_WALLS: Could not extract any walls from drawing; NO_SYMBOLS: Could not extract any fire protection symbols; NO_ROOMS,0.01
+test_symbols2.pdf,2026-05-15T04:13:08.073542+00:00,REJECTED,0.4,REJECTED,0,0,0.0,3.0,0,Drawing rejected at input gate,True,REJECT: Drawing score 0.40 < 0.7. Unfit for automated analysis. Engineer must review manually.,0.0
+test_symbols.pdf,2026-05-15T04:13:08.074763+00:00,REJECTED,0.4,REJECTED,0,0,0.0,3.0,0,Drawing rejected at input gate,True,REJECT: Drawing score 0.40 < 0.7. Unfit for automated analysis. Engineer must review manually.,0.0
+test_dims3.pdf,2026-05-15T04:13:08.075926+00:00,CAUTION,0.7,FAIL,0,0,0.0,1.0,0,NO_ROOMS,True,NO_WALLS: Could not extract any walls from drawing; NO_SYMBOLS: Could not extract any fire protection symbols; NO_ROOMS,0.01
+test_coverage.pdf,2026-05-15T04:13:08.081051+00:00,CAUTION,0.7,REQUIRES PE REVIEW,1,3,85.0,3.0,1,UNCOVERED_AREA; Room 0: requires review,True,,0.01
+test_full_pipeline.pdf,2026-05-15T04:13:08.086650+00:00,REJECTED,0.4,REJECTED,0,0,0.0,3.0,0,Drawing rejected at input gate,True,REJECT: Drawing score 0.40 < 0.7. Unfit for automated analysis. Engineer must review manually.,0.0

@@ -43,7 +43,7 @@ class ComplianceService:
             if std:
                 self.standards.append(std)
                 self.services[std_name] = {
-                    'coverage': CoverageService(std_name),
+                    'coverage': CoverageService(),  # No beams needed for basic check
                     'wall_distance': WallDistanceService(std_name),
                 }
     

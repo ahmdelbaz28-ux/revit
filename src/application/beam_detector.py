@@ -41,6 +41,8 @@ class BeamDetector:
         
         deep_beams = []
         for beam in beams:
+            if not hasattr(beam, 'depth'):
+                continue
             if beam.depth >= depth_threshold:
                 deep_beams.append(beam)
                 

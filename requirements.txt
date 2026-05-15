@@ -1,10 +1,70 @@
+# FireAlarm Engine - NFPA 72 Coverage Analysis
+# BETA 1.0 - Lead: AhmedElbaz
+#
+# ⚠️ BETA SOFTWARE - NOT FOR PRODUCTION USE
+# All results require FPE review before use.
+
+# Core Dependencies
 ezdxf>=0.18
 shapely>=2.0
 click>=8.0
-
-# Cable Routing Dependencies
 networkx>=3.0
-ezdxf>=0.18
-
-# Validation & Audit
 pydantic>=2.0
+
+# PDF Processing
+PyMuPDF>=1.23
+numpy>=1.24
+Pillow>=10.0
+pdf2image>=1.17
+opencv-python-headless>=4.8
+pytesseract>=0.3
+
+# Testing & Quality Assurance (Critical for Life Safety)
+pytest>=7.4
+pytest-cov>=4.1
+pytest-asyncio>=0.21
+hypothesis>=6.88
+faker>=19.0
+
+# BIM & IFC Processing
+ifcopenshell>=0.7
+python-ifc>=0.5
+
+# Data Validation & Schema
+jsonschema>=4.19
+cerberus>=1.3
+
+# Logging & Audit Trail (Critical for Safety Compliance)
+structlog>=23.1
+python-json-logger>=2.0
+
+# Numerical & Scientific Computing
+scipy>=1.11
+numpy>=1.24
+
+# Parallel Processing for Large Projects
+multiprocess>=0.70
+
+# Type Checking & Static Analysis
+mypy>=1.5
+typing-extensions>=4.8
+
+# Security & Cryptography (For Audit Integrity)
+cryptography>=41.0
+hashlib-compat>=1.0
+
+# Performance Profiling
+profilehooks>=1.12
+line-profiler>=4.1
+
+# Emergency Fallback Mechanisms
+tenacity>=8.2
+retrying>=1.3
+
+# CAD Integration (Windows only)
+pyautocad>=0.2; platform_system == "Windows"
+revitpythonshell>=2023; platform_system == "Windows"
+
+# Documentation Generation
+sphinx>=7.2
+sphinx-rtd-theme>=1.3

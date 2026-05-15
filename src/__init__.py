@@ -28,7 +28,10 @@ from . import reasoning
 from . import engineering
 # V8: digital_twin disabled - now in DISABLED_BY_V8 state
 # from . import digital_twin
-from . import pipeline
+try:
+    from . import pipeline
+except ImportError:
+    pipeline = None
 from . import cli
 
-__all__ = ["__version__", "knowledge", "reasoning", "engineering", "pipeline", "cli"]
+__all__ = ["__version__", "knowledge", "reasoning", "engineering", "cli"]

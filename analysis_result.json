@@ -1,0 +1,19 @@
+{
+  "file": "test_data/hybrid/single_office.pdf",
+  "gate": "CAUTION",
+  "score": 0.7,
+  "details": {
+    "file_quality": {
+      "type": "pure_vector",
+      "raster_quality": "n/a"
+    },
+    "completeness": {
+      "scale_found": true,
+      "num_layers": 0,
+      "legend_found": false
+    },
+    "raw_score": 0.7
+  },
+  "message": "CAUTION: Drawing score 0.70. Analysis allowed but all outputs marked MODERATE. PE REVIEW REQUIRED.",
+  "walls_extracted": 12
+}

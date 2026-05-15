@@ -7,7 +7,7 @@
   <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-Web-blue?style=for-the-badge" alt="FastAPI"></a>
   <a href="https://ultralytics.com"><img src="https://img.shields.io/badge/YOLOv8-Vision-red?style=for-the-badge" alt="YOLOv8"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Status-Production-brightgreen?style=for-the-badge" alt="Status"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Status-BETA-orange?style=for-the-badge" alt="Status"></a>
 </p>
 
 > AI-powered multi-domain building engineering design platform. Automate Fire Alarm, CCTV, Access Control, Public Address, Data Network, Lighting, and Power system designs in minutes.
@@ -39,6 +39,19 @@
 │    Projects │ Rooms │ Sessions │ Devices │ Standards │ Manufacturers │ RouteNodes         │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+## ⚠️ BETA WARNING - READ BEFORE USE
+
+**⚠️ THIS IS BETA SOFTWARE - NOT FOR PRODUCTION USE**
+
+- All outputs require FPE (Fire Protection Engineer) review
+- Not reviewed by licensed engineer yet
+- For testing/development only
+- See `src/licenses/eula_beta.py` for full license terms
+
+**Lead Engineer**: AhmedElbaz
+**Version**: 1.0-BETA
+**Date**: 2026-05-15
 
 ---
 
