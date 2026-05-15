@@ -52,3 +52,16 @@ fireai_memory.db
 .vscode/
 .idea/
 *.swp
+
+# Virtual environments (Added)
+venv/
+.venv/
+
+# Data logs (Added)
+*.jsonl
+analysis_result.json
+
+# Build artifacts (Added)
+dist/
+build/
+target/
