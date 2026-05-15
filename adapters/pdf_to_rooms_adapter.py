@@ -201,6 +201,18 @@ def validate_and_guess_type_detailed(
         warnings.append(f"Large storage ({area_sqm:.0f} sqm) - verify purpose")
         requires_review = True
     
+
+    # ====== SIZE-BASED FAIL-SAFE (applies to ALL rooms) ======
+
+    # Large rooms (> 75 sqm) without windows need review
+    if area_sqm > 75 and not has_windows:
+        warnings.append(f"Large room ({area_sqm:.0f} sqm) without windows - verify purpose")
+        requires_review = True
+
+    # Very small rooms (< 5 sqm) need review - may be closets
+    if area_sqm < 5:
+        warnings.append(f"Tiny room ({area_sqm:.1f} sqm) - verify occupancy")
+        requires_review = True
     # Check 5: Kitchen named "Office" near water
     if "office" in name_lower and any(wet in adjacent for wet in ["kitchen", "pantry"]):
         warnings.append("Office adjacent to kitchen - verify no cooking")
