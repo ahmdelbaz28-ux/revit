@@ -125,3 +125,27 @@ class CoverageService:
             coords = [(p.x, p.y) for p in room.polygon.exterior]
             return geom.Polygon(coords)
         raise ValueError("Room has no valid polygon")
+
+    def check_room_coverage(self, room: Room, devices: List[Device] = None) -> List[dict]:
+        """Check room coverage - delegates to check_coverage."""
+        if devices is None:
+            devices = []
+        violations = self.check_coverage(room, devices)
+        return [{'type': v.violation_code, 'severity': v.severity.value} for v in violations]
+
+    def check_device_spacing(self, room: Room, devices: List[Device] = None) -> List[dict]:
+        """Check device spacing violations."""
+        violations = []
+        if not devices or len(devices) < 2:
+            return violations
+        for i, d1 in enumerate(devices):
+            for d2 in devices[i+1:]:
+                dist = math.sqrt((d1.x - d2.x)**2 + (d1.y - d2.y)**2)
+                if dist < 4.55:
+                    violations.append({
+                        'type': 'spacing',
+                        'device1': d1.id,
+                        'device2': d2.id,
+                        'distance': dist
+                    })
+        return violations
