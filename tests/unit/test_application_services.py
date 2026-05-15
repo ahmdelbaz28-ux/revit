@@ -21,9 +21,9 @@ class TestCoverageService:
         assert service.standard is not None
     
     def test_coverage_service_invalid_standard(self):
-        """Test service accepts any standard string"""
-        service = CoverageService("InvalidStandard")
-        assert service.standard == "InvalidStandard"
+        """Test service rejects invalid standard string"""
+        with pytest.raises(ValueError, match="Unknown standard"):
+            CoverageService("InvalidStandard")
     
     def test_check_room_no_devices(self):
         """Test coverage check with no devices"""
