@@ -2,8 +2,8 @@
 floor_orchestrator.py — FireAI V5.1.0
 CRITICAL SAFETY:
   1. SSOT: meta from engine.solve() is the ONLY source of truth.
-  2. Sequential: No threads — PuLP is not thread-safe.
-  3. Fail-Fast: RuntimeError from PuLP/Shapely STOPS everything.
+  2. Sequential: No threads — pure logic only.
+  3. Fail-Fast: RuntimeError STOPS everything.
 """
 
 from dataclasses import dataclass, field
@@ -205,7 +205,7 @@ class FloorOrchestrator:
             result.errors.append(str(e))
 
         except Exception as e:
-            # CRITICAL: RuntimeError from PuLP/Shapely → STOP EVERYTHING
+            # CRITICAL: RuntimeError → STOP EVERYTHING
             logger.critical(
                 f"SYSTEM ERROR in {spec.room_id}: {type(e).__name__}: {e}"
             )
