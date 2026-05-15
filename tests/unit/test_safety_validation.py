@@ -23,28 +23,27 @@ from nfpa72_calculations import calculate_smoke_detector_spacing
 
 
 # ============================================================
-# 🟥 CATEGORY A: REJECT Invalid — Must has PE REVIEW flag
+# 🟥 CATEGORY A: REJECT Invalid — Must RAISE Error, not fallback
 # ============================================================
 
 class TestRejectInvalidInputs:
-    """System must flag non-standard heights, not silent pass."""
+    """System must REJECT invalid inputs, not silently fallback."""
 
-    def test_height_below_3m_has_flag(self):
-        """Height < 3.0m → must set LOW_CEILING flag."""
+    def test_height_negative_raises_error(self):
+        """Negative height → MUST raise ValueError, not fallback."""
+        with pytest.raises(ValueError, match="positive|大于| > 0"):
+            get_smoke_detector_radius_safe(-3.0)
+
+    def test_height_zero_raises_error(self):
+        """Height 0.0m → MUST raise ValueError, not fallback."""
+        with pytest.raises(ValueError, match="positive|大于| > 0"):
+            get_smoke_detector_radius_safe(0.0)
+
+    def test_height_below_3m_requires_review(self):
+        """Height < 3.0m → requires PE REVIEW flag."""
         radius, details = get_smoke_detector_radius_safe(2.0, True)
-        # Returns fallback BUT sets flag
         assert details["flag"] is not None
-        assert "LOW" in details["flag"] or "CEILING" in details["flag"]
-
-    def test_height_zero_has_flag(self):
-        """Height 0.0m → must set LOW_CEILING flag."""
-        radius, details = get_smoke_detector_radius_safe(0.0, True)
-        assert details["flag"] is not None
-
-    def test_height_negative_has_flag(self):
-        """Negative height → must set flag."""
-        radius, details = get_smoke_detector_radius_safe(-3.0, True)
-        assert details["flag"] is not None
+        assert "LOW" in details["flag"] or "REVIEW" in details["flag"]
 
 
 # ============================================================
@@ -274,7 +273,8 @@ class TestMixedScenarios:
     def test_warehouse_30m_ceiling(self):
         """Warehouse with 30m ceiling → HIGH_CEILING flag + capped."""
         r, details = get_smoke_detector_radius_safe(30.0, True)
-        assert details["flag"] == "HIGH_CEILING: Capped at 15.3m, ENGINEER REVIEW REQUIRED"
+        assert "HIGH" in details["flag"]
+        assert "REVIEW" in details["flag"]
         assert r == 6.40
 
     def test_basement_2_4m_low(self):

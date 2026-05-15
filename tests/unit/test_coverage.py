@@ -12,7 +12,9 @@ class TestExtremeHeights:
     def test_height_24m(self):
         assert get_smoke_detector_radius_safe(24.0) == 6.4
     def test_negative(self):
-        assert get_smoke_detector_radius_safe(-1.0) == 4.55
+        """Negative height → REJECT with ValueError."""
+        with pytest.raises(ValueError, match="CEILING_HEIGHT_MUST_BE_POSITIVE"):
+            get_smoke_detector_radius_safe(-1.0)
     def test_height_20m(self):
         assert get_smoke_detector_radius_safe(20.0) == 6.4
     def test_height_15_3m(self):

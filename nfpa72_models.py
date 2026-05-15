@@ -399,30 +399,44 @@ def get_smoke_detector_radius_safe(
     ⭐ ELITE SOLUTION: Get smoke detector radius with SAFE FALLBACK.
     This provides CONSERVATIVE values for heights outside NFPA 72 range.
     More detectors (closer spacing) = safer design.
+    
+    ⚠️ CRITICAL: Negative/zero heights MUST be REJECTED with ValueError.
+    Heights < 3.0m require PE REVIEW flag.
+    
     Args:
         ceiling_height_m: Actual ceiling height in meters
         _return_details: If True, returns (radius, details dict)
     Returns:
         float: Coverage radius in meters (conservative)
         tuple: (radius, details) if _return_details=True
+    Raises:
+        ValueError: If ceiling_height_m <= 0 (MUST be rejected)
     Test Cases:
-        Input 2.4m  -> Output 4.55m (conservative)
-        Input 2.7m  -> Output 4.55m (conservative)
+        Input <= 0  -> ValueError (MUST reject)
+        Input 2.4m  -> Output 4.55m (conservative) + flag
         Input 3.0m  -> Output 4.55m (standard)
         Input 15.3m -> Output 6.40m (standard)
         Input 20.0m -> Output 6.40m (capped) + flag
     """
+    # ⚠️ CRITICAL: REJECT invalid heights - DO NOT fallback silently
+    if ceiling_height_m <= 0:
+        raise ValueError(
+            f"CEILING_HEIGHT_MUST_BE_POSITIVE: {ceiling_height_m}m is not valid. "
+            f"Must be > 0. REJECT - requires PE REVIEW"
+        )
+    
     actual_height = ceiling_height_m
     flag = None
     safe_height = ceiling_height_m
     # Case 1: Below NFPA range (< 3.0m) - use 3.0m values (more conservative)
+    # STILL returns value BUT sets flag for PE REVIEW required
     if ceiling_height_m < 3.0:
         safe_height = 3.0
-        flag = "LOW_CEILING: Using 3.0m values for safety"
+        flag = "LOW_CEILING: Using 3.0m values for safety - REQUIRES PE REVIEW"
     # Case 2: Above NFPA range (> 15.3m) - cap at maximum
     elif ceiling_height_m > 15.3:
         safe_height = 15.3
-        flag = "HIGH_CEILING: Capped at 15.3m, ENGINEER REVIEW REQUIRED"
+        flag = "HIGH_CEILING: Capped at 15.3m - REQUIRES PE REVIEW"
     # Get radius using internal function
     try:
         radius = _get_radius_internal(safe_height)
