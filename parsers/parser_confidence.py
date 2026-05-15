@@ -151,20 +151,45 @@ class ParserConfidence:
             has_scale = comp_details.get('scale_found') is True  # Text mentions scale
             
             if is_raster and has_completeness and has_scale and final >= 0.5:
-                # Check if scale was actually extracted
+                # First try standard text extraction
                 from src.core.dimension_extractor import extract_scale_from_pdf
                 actual_scale = extract_scale_from_pdf(self.pdf_path)
+                
+                # If standard extraction fails, try CV (raster enhancer)
                 if not actual_scale:
-                    # Raster mentions scale but can't extract it
+                    try:
+                        from src.core.scale_bar_detector import detect_scale_bar
+                        cv_result = detect_scale_bar(self.pdf_path)
+                        if cv_result.found and cv_result.meters_per_unit:
+                            actual_scale = cv_result.meters_per_unit
+                            has_scale = True  # CV found scale!
+                    except Exception as e:
+                        pass  # CV also failed
+                
+                if not actual_scale:
+                    # Try RasterEnhancer as last resort
+                    try:
+                        from src.core.raster_enhancer import enhance_raster
+                        enh_result = enhance_raster(self.pdf_path)
+                        if enh_result.success and enh_result.scale_estimate:
+                            actual_scale = enh_result.scale_estimate
+                            has_scale = True
+                    except Exception as e:
+                        pass
+                
+                if not actual_scale:
+                    # Raster mentions scale but can't extract it by any method
                     gate = GateDecision.REJECT
                     message = (
                         f"REJECT: Raster PDF mentions scale but extraction failed. "
+                        f"CV attempted but no scale bar detected. "
                         f"Provide clearer scale bar or vector PDF."
                     )
                 else:
                     gate = GateDecision.CAUTION
                     message = (
                         f"CAUTION: Raster drawing with scale (score {final:.2f}). "
+                        f"Scale extracted via CV enhancement. "
                         f"Processing with caution - MODERATE confidence. PE REVIEW REQUIRED."
                     )
             elif is_raster and has_completeness and not has_scale:
