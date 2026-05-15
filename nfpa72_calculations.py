@@ -279,7 +279,7 @@ def calculate_detector_requirements(
         "requires_ridge_zone": requires_ridge_zone_detector(ceiling_spec),
     }
     if detector_type == DetectorType.SMOKE:
-        result["radius"] = get_smoke_detector_radius(ceiling_spec.height_m)
+        result["radius"] = get_smoke_detector_radius_safe(ceiling_spec.height_m)
         result["max_coverage"] = get_smoke_detector_coverage_max(ceiling_spec.height_m)
         num_w, num_d = calculate_smoke_detector_spacing(
             ceiling_spec, room_spec.width_m, room_spec.depth_m
