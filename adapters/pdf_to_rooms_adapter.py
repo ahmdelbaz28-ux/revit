@@ -64,17 +64,9 @@ class ExtractionReport:
 def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List[LineString]) -> Tuple[List[ShapelyPolygon], ExtractionReport]:
     """
     Filter polygons to keep only valid rooms:
-    1. Exclude outer boundary (largest polygon containing most walls)
+    1. Exclude only the obvious outer boundary (single very large polygon at 100x larger than any room)
     2. Exclude tiny polygons (noise)
-    3. Exclude very large polygons (> MAX_ROOM_AREA_SQM)
-    
-    Args:
-        polygons: List of shapely Polygon objects from polygonize
-        walls: List of WallElement objects
-        lines: List of LineString objects representing walls
-    
-    Returns:
-        Tuple of (filtered_polygons, report)
+    3. Keep all normal rooms (including conference halls)
     """
     from dataclasses import asdict
     
@@ -83,39 +75,12 @@ def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List
     if not polygons:
         return [], report
     
-    # Calculate total wall length for each polygon
-    # The outer boundary will contain the most wall length
-    polygon_wall_counts = []
-    
-    for poly in polygons:
-        # Count how many wall lines are contained in this polygon
-        contained_count = 0
-        for line in lines:
-            if line.is_empty:
-                continue
-            try:
-                # Check if line's start point is inside polygon
-                if poly.contains(line) or poly.touches(line):
-                    contained_count += 1
-            except:
-                pass
-        
-        polygon_wall_counts.append((poly, contained_count, poly.area))
-    
-    # Sort by wall count (descending) to find outer boundary
-    polygon_wall_counts.sort(key=lambda x: x[1], reverse=True)
-    
-    # The first polygon (with most walls) is likely the outer boundary
-    # but we need to verify it's actually larger than the rest
+    # Sort by area
+    sorted_polys = sorted(polygons, key=lambda p: p.area, reverse=True)
     filtered_polys = []
     
-    # Filter: remove outer boundary and small/large polygons
-    for idx, (poly, wall_count, area) in enumerate(polygon_wall_counts):
-        # Skip if this is the largest polygon and contains most walls (likely outer boundary)
-        if idx == 0 and wall_count > 10:  # Very high wall count = outer boundary
-            report.outer_boundary_excluded = True
-            logger.info(f"Excluded outer boundary polygon: area={area:.1f}sqm, walls={wall_count}")
-            continue
+    for idx, poly in enumerate(sorted_polys):
+        area = poly.area
         
         # Skip tiny polygons (noise)
         if area < MIN_ROOM_AREA_SQM:
@@ -123,11 +88,17 @@ def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List
             logger.debug(f"Filtered small polygon: area={area:.2f}sqm")
             continue
         
-        # Skip very large polygons (likely errors or multiple rooms merged)
-        if area > MAX_ROOM_AREA_SQM:
-            report.large_polygons_filtered += 1
-            logger.debug(f"Filtered large polygon: area={area:.1f}sqm")
-            continue
+        # Exclude ONLY outer boundary:
+        # - It's largest (idx==0)
+        # - There's more than one polygon
+        # - It's >100x larger than second (true boundary: ~9000sqm vs ~30sqm = 300x)
+        if idx == 0 and len(sorted_polys) > 1:
+            second_largest = sorted_polys[1].area
+            # 100x threshold to avoid false positives on conference halls
+            if area > second_largest * 100:
+                report.outer_boundary_excluded = True
+                logger.info(f"Excluded outer boundary: {area:.1f}sqm (vs {second_largest:.1f}sqm)")
+                continue
         
         filtered_polys.append(poly)
     
@@ -221,7 +192,7 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
     """
     report = ExtractionReport(walls_input=len(walls) if walls else 0)
     
-    if not walls or len(walls) < 3:
+    if not walls or len(walls) < 2:
         return [], report
     
     # Convert each wall (polygon) to LineString edges
@@ -272,12 +243,15 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
         report.validation_failures.append(f"linemerge failed: {str(e)}")
         return [], report
     
+    import logging
+    
     # Polygonize to get closed rooms
     try:
         all_polygons = list(polygonize(merged))
     except Exception as e:
         report.validation_failures.append(f"polygonize failed: {str(e)}")
         return [], report
+    
     
     report.rooms_raw = len(all_polygons)
     
