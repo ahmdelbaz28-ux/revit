@@ -65,6 +65,32 @@
 
 ---
 
+### Input Layer Implementation (2026-05-15)
+
+**Issue:** Engine was blind - could calculate coverage but couldn't see real drawings.
+
+**Solution:** Built complete input layer:
+1. ParserConfidence Gate - evaluates PDF before engine (REJECT/CAUTION/HIGH)
+2. GeometryExtractor - extracts walls from vector paths
+3. SymbolExtractor - extracts NFPA 170 device symbols from text
+4. PDFInputLayer - integrates all extractors
+
+**Key insight:** PyMuPDF `draw_rect()` returns `type='s'` (stroke), not `'re'`. Use bounding rect for wall extraction since detailed path items are not returned.
+
+**Tests:** 38 tests added - all passing. Zero tolerance for unqualified drawings.
+
+**Files added:**
+- parsers/parser_confidence.py
+- parsers/geometry_extractor.py
+- parsers/symbol_extractor.py
+- parsers/pdf_input_layer.py
+
+**Commits:**
+- Commit: 028122b10c86c4093075797f6e7670f9974ff34b | Link: https://github.com/ahmdelbaz28-ux/revit/commit/028122b10c86c4093075797f6e7670f9974ff34b
+- Commit: 2865da6299e4b5409c10008d55629e690ca7676e | Link: https://github.com/ahmdelbaz28-ux/revit/commit/2865da6299e4b5409c10008d55629e690ca7676e
+
+---
+
 ## Engineering Ethics & Safety Rules (Added 2026-05-13)
 
 ### Honesty & Directness
