@@ -9,6 +9,11 @@ __pycache__/
 *.sqlite
 *.sqlite3
 
+# Environment files
+.env
+.env.local
+*.env.*
+
 # Log files
 *.log
 
@@ -35,19 +40,7 @@ Thumbs.db
 vv_results.db
 fireai_memory.db
 
-# Environment
-.env
-.env.local
-
 # IDE
 .vscode/
 .idea/
 *.swp
-
-# Environment files
-.env
-.env.local
-*.env.*
-
-# Test data (generated/computed)
-test_data/
