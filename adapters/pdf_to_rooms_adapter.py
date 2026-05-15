@@ -57,37 +57,40 @@ def select_safe_detector_type(room_name: str, room_type_guess: str = "office") -
         DetectorType: Appropriate detector type based on NFPA 72
     """
     name_lower = room_name.lower() if room_name else ""
+    type_lower = room_type_guess.lower() if room_type_guess else ""
+    
+    # Use both room_name AND room_type_guess for keyword matching
+    search_text = name_lower + " " + type_lower
     
     # 1. KITCHENS / COOKING AREAS (NO SMOKE DETECTORS ALLOWED)
     # NFPA 72 §17.6.4: Smoke detectors shall not be installed in cooking areas.
     kitchen_keywords = ['kitchen', 'cook', 'pantry', 'galley', 'canteen', 'cafeteria']
-    if any(kw in name_lower for kw in kitchen_keywords):
-        logger.info(f"Room '{room_name}': Using HEAT detector (kitchen/cooking area)")
+    if any(kw in search_text for kw in kitchen_keywords):
+        logger.info(f"Room '{room_name}' ({room_type_guess}): Using HEAT detector (kitchen/cooking)")
         return DetectorType.HEAT_FIXED_TEMP
     
     # 2. SERVER ROOMS / DATA CENTERS (HIGH SENSITIVITY REQUIRED)
-    # Best practice: Multi-criteria or VESDA (simulated here by Multi-criteria)
     server_keywords = ['server', 'data center', 'it room', 'network', 'telecom', 'idf', 'mdf']
-    if any(kw in name_lower for kw in server_keywords):
-        logger.info(f"Room '{room_name}': Using MULTI-CRITERIA detector (server/data center)")
+    if any(kw in search_text for kw in server_keywords):
+        logger.info(f"Room '{room_name}' ({room_type_guess}): Using MULTI-CRITERIA detector (server)")
         return DetectorType.SMOKE_HEAT_COMBINATION
     
-    # 3. GARAGES / PARKING (HEAT OR COMBINATION)
-    # Often subject to vehicle exhaust false alarms if using ionization/photo only.
+    # 3. GARAGES / PARKING
     garage_keywords = ['garage', 'parking', 'car park', 'vehicle']
-    if any(kw in name_lower for kw in garage_keywords):
-        logger.info(f"Room '{room_name}': Using HEAT detector (garage/parking)")
+    if any(kw in search_text for kw in garage_keywords):
+        logger.info(f"Room '{room_name}' ({room_type_guess}): Using HEAT detector (garage/parking)")
         return DetectorType.HEAT_FIXED_TEMP
     
-    # 4. WAREHOUSES / STORAGE (Rate of rise heat preferred)
+    # 4. WAREHOUSES / STORAGE
     warehouse_keywords = ['warehouse', 'storage', 'stock', 'inventory', 'loading']
-    if any(kw in name_lower for kw in warehouse_keywords):
-        logger.info(f"Room '{room_name}': Using HEAT detector (warehouse/storage)")
+    if any(kw in search_text for kw in warehouse_keywords):
+        logger.info(f"Room '{room_name}' ({room_type_guess}): Using HEAT detector (warehouse)")
         return DetectorType.HEAT_RATE_OF_RISE
     
-    # 5. DEFAULT: Standard Office/Bedroom/Living (Smoke - photoelectric for false alarm reduction)
-    logger.info(f"Room '{room_name}': Using SMOKE detector (default office)")
-    return DetectorType.SMOKE
+    # 5. CONSERVATIVE DEFAULT: Unknown = HEAT (not SMOKE)
+    # When we can't determine room type, use HEAT for safety
+    logger.warning(f"Room '{room_name}' ({room_type_guess}): Using HEAT detector (conservative default)")
+    return DetectorType.HEAT_FIXED_TEMP
 
 
 def guess_room_type(room_name: str) -> str:
@@ -225,8 +228,8 @@ def validate_and_guess_type_detailed(
         detector_type = "heat_fixed_temp"  # Fail-safe
         confidence = "LOW"
     else:
-        # Use normal mapping
-        detector_type = select_safe_detector_type(room_name).value
+        # Use normal mapping - pass both room_name and occupancy_type
+        detector_type = select_safe_detector_type(room_name, room.occupancy_type).value
         confidence = "HIGH"
     
     return {
