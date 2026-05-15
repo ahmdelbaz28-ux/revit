@@ -195,10 +195,18 @@ def select_safe_detector_type(room_name: str, room_type_guess: str = "office") -
         logger.info(f"Room '{room_name}' ({room_type_guess}): Using HEAT detector (warehouse)")
         return DetectorType.HEAT_RATE_OF_RISE
     
-    # 5. CONSERVATIVE DEFAULT: Unknown = HEAT (not SMOKE)
-    # When we can't determine room type, use HEAT for safety
-    logger.warning(f"Room '{room_name}' ({room_type_guess}): Using HEAT detector (conservative default)")
-    return DetectorType.HEAT_FIXED_TEMP
+    # 5. OFFICES / ADMINISTRATIVE AREAS (USE SMOKE DETECTORS)
+    # Smoke detectors are appropriate for offices - smoke appears before heat
+    office_keywords = ['office', 'admin', 'administrative', 'desk', 'workroom', 'conference', 'meeting']
+    if any(kw in search_text for kw in office_keywords):
+        logger.info(f"Room '{room_name}' ({room_type_guess}): Using SMOKE detector (office/administrative)")
+        return DetectorType.SMOKE
+    
+    # 6. CONSERVATIVE DEFAULT: Unknown = Unknown (no detectors)
+    # When we can't determine room type, don't place detectors
+    logger.warning(f"Room '{room_name}' ({room_type_guess}): Unknown type - no detectors placed")
+    # Try HEAT for unknown but warn
+    return DetectorType.HEAT
 
 
 def guess_room_type(room_name: str) -> str:

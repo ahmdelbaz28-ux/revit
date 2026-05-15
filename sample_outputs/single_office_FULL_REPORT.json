@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "source_file": "test_data/hybrid/single_office.pdf",
-    "generated_utc": "2026-05-15T16:28:59.864387Z",
+    "generated_utc": "2026-05-15T16:31:57.735035Z",
     "status": "FAILED",
     "requires_pe_review": true,
     "design_complete": false,

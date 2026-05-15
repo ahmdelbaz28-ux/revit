@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "source_file": "test_data/hybrid/single_office.pdf",
-    "generated_utc": "2026-05-15T16:28:59.872108Z",
+    "generated_utc": "2026-05-15T16:31:57.742477Z",
     "status": "PARTIAL",
     "requires_pe_review": true,
     "design_complete": false,
@@ -14,8 +14,8 @@
       "occupancy_type": "office",
       "occupancy_source": "human_review",
       "occupancy_verified": true,
-      "detector_type": "HEAT_FIXED_TEMP",
-      "detector_count": 3,
+      "detector_type": "SMOKE",
+      "detector_count": 7,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": []
@@ -86,7 +86,7 @@
   "summary": {
     "total_rooms": 6,
     "unverified_rooms": 3,
-    "total_detectors": 9,
+    "total_detectors": 13,
     "compliant": false
   }
 }
