@@ -107,8 +107,26 @@ class CoverageService:
             ))
             return violations
 
-        coverage_union = ops.unary_union(coverage_parts)
-        uncovered = room_poly.difference(coverage_union)
+        try:
+            coverage_union = ops.unary_union(coverage_parts)
+            uncovered = room_poly.difference(coverage_union)
+        except Exception as e:
+            # Handle topology conflicts - fall back to simpler calculation
+            try:
+                # Union one by one to avoid topology issues
+                coverage_union = coverage_parts[0]
+                for cp in coverage_parts[1:]:
+                    coverage_union = coverage_union.union(cp)
+                uncovered = room_poly.difference(coverage_union)
+            except:
+                # Last resort: mark entire room as potentially uncovered
+                uncovered = room_poly
+                violations.append(Violation(
+                    violation_code="GEOMETRY_ERROR",
+                    severity=ViolationSeverity.WARNING,
+                    description_template="Geometry calculation error: {error}. Manual review recommended.",
+                    params={"error": str(e)}
+                ))
 
         if not uncovered.is_empty and uncovered.area > 0.01:
             pct = (uncovered.area / room_poly.area) * 100.0
@@ -151,7 +169,13 @@ class CoverageService:
         
         # If it's already a shapely Polygon
         if hasattr(room.polygon, 'exterior') and hasattr(room.polygon, 'difference'):
-            return room.polygon
+            if room.polygon.is_valid:
+                return room.polygon
+            # Try to make valid
+            fixed = room.polygon.buffer(0)
+            if fixed.is_valid:
+                return fixed
+            raise ValueError("Cannot fix invalid polygon")
         
         # If it's our custom Polygon class
         if hasattr(room.polygon, 'exterior'):
@@ -160,7 +184,14 @@ class CoverageService:
                 if hasattr(p, 'x') and hasattr(p, 'y'):
                     coords.append((p.x, p.y))
             if len(coords) >= 3:
-                return geom.Polygon(coords)
+                poly = geom.Polygon(coords)
+                if poly.is_valid:
+                    return poly
+                # Try buffer fix
+                fixed = poly.buffer(0)
+                if fixed.is_valid:
+                    return fixed
+                raise ValueError("Invalid geometry after buffer fix")
         
         # If it's a list of points
         if isinstance(room.polygon, (list, tuple)):
@@ -171,7 +202,13 @@ class CoverageService:
                 elif isinstance(p, (tuple, list)) and len(p) >= 2:
                     coords.append((p[0], p[1]))
             if len(coords) >= 3:
-                return geom.Polygon(coords)
+                poly = geom.Polygon(coords)
+                if poly.is_valid:
+                    return poly
+                fixed = poly.buffer(0)
+                if fixed.is_valid:
+                    return fixed
+                raise ValueError("Invalid geometry")
         
         raise ValueError("Room has no valid polygon")
 
