@@ -250,7 +250,7 @@ class CoveragePipeline:
         return 0.01
     
     def _calculate_coverage(self, room: object, devices: List, violations: List) -> float:
-        """حساب نسبة التغطية."""
+        """حساب نسبة التغطية الحقيقية."""
         if not room or not devices:
             return 0.0
         
@@ -258,15 +258,26 @@ class CoveragePipeline:
         if room_area <= 0:
             return 0.0
         
-        # NFPA spacing ~9m for smoke detectors
-        device_coverage = 63.0  # ~9m radius circle
-        covered = len(devices) * device_coverage
+        # استخدام الـ violations الحقيقية من CoverageEngine
+        # كل violation يعني منطقة غير مغطاة
+        uncovered_pct = len(violations) * 15.0  # ~15% لكل violation
         
-        return min(100.0, (covered / room_area) * 100)
+        # النسبة الحقيقية = 100% - نسبة عدم التغطية
+        coverage = max(0.0, 100.0 - uncovered_pct)
+        
+        return coverage
     
     def _determine_grade(self, coverage: float, violations: List) -> CoverageGrade:
-        """تحديد الدرجة."""
-        if coverage >= 100 and not violations:
+        """تحديد الدرجة الحقيقية."""
+        # إذا توجد violations → FAIL أو PARTIAL
+        if violations:
+            if len(violations) >= 3:
+                return CoverageGrade.FAIL
+            elif len(violations) >= 1:
+                return CoverageGrade.PARTIAL
+        
+        # بدون violations
+        if coverage >= 100:
             return CoverageGrade.FULL
         elif coverage >= 70:
             return CoverageGrade.PASS
