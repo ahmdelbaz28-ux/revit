@@ -37,9 +37,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Constants
-GAP_CLOSURE_THRESHOLD = 0.10  # 10cm
-MIN_ROOM_AREA_SQM = 1.0  # Minimum room area in square meters
-MAX_ROOM_AREA_SQM = 200.0  # Maximum room area (larger = likely outer boundary)
+# WARNING: Gap closing disabled by default to prevent room fragmentation
+# Set to > 0 to enable, but keep < 0.05 (5cm) max
+GAP_CLOSURE_THRESHOLD = 0.0  # 0 = disabled - prevents opening doors/windows from being closed
+MIN_ROOM_AREA_SQM = 1.0
+MAX_ROOM_AREA_SQM = 200.0
 
 
 @dataclass
@@ -175,7 +177,8 @@ def validate_room_polygon(poly, index: int) -> Tuple[bool, str]:
 
 def close_gaps_in_lines(lines: List[LineString], threshold: float = GAP_CLOSURE_THRESHOLD) -> Tuple[List[LineString], int]:
     """
-    Close small gaps between adjacent line segments.
+    Close small gaps between adjacent line segments (drawing errors only).
+    WARNING: Don't close gaps > 80cm as these are likely doors/windows.
     """
     if len(lines) < 2:
         return lines, 0
@@ -194,6 +197,10 @@ def close_gaps_in_lines(lines: List[LineString], threshold: float = GAP_CLOSURE_
             end_i = line_i.coords[-1]
             start_j = line_j.coords[0]
             dist = ((end_i[0] - start_j[0])**2 + (end_i[1] - start_j[1])**2) ** 0.5
+            
+            # WARNING: Don't close gaps > 0.8m (80cm) - these are real doors/windows
+            if threshold < dist < 0.8:
+                continue  # Skip - likely architectural opening
             
             if dist < threshold:
                 new_coords = list(line_i.coords)[:-1] + list(line_j.coords)
@@ -251,8 +258,8 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
     for detail in report.discarded_walls_details:
         logger.warning(f"Wall {detail['index']} discarded: {detail['reason']}")
     
-    # Optional: Gap closing
-    if enable_gap_closing:
+    # Optional: Gap closing (disabled by default to prevent room fragmentation)
+    if enable_gap_closing and GAP_CLOSURE_THRESHOLD > 0:
         lines, gaps_closed = close_gaps_in_lines(lines, GAP_CLOSURE_THRESHOLD)
         report.gaps_closed = gaps_closed
         if gaps_closed > 0:
