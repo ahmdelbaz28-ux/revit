@@ -16,10 +16,18 @@ from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass, field
 from enum import Enum
 
-from parsers.parser_confidence import ParserConfidence, GateDecision, evaluate_drawing
-from parsers.geometry_extractor import GeometryExtractor, WallElement, extract_walls_from_pdf
-from src.core.symbol_extractor import SymbolExtractor, SymbolElement, SymbolType, extract_symbols_from_pdf
-from src.core.dimension_extractor import DimensionExtractor, DimensionElement, extract_dimensions_from_pdf
+from parsers import (
+    ParserConfidence,
+    GateDecision,
+    evaluate_drawing,
+    extract_walls_from_pdf,
+    extract_symbols_from_pdf,
+    extract_dimensions_from_pdf,
+    WallElement,
+    SymbolElement,
+    SymbolType,
+    DimensionElement
+)
 
 
 class PipelineStatus(Enum):

@@ -2,6 +2,14 @@ ezdxf>=0.18
 shapely>=2.0
 click>=8.0
 
+# PDF Processing
+PyMuPDF>=1.23
+numpy>=1.24
+Pillow>=10.0
+
+# Testing
+pytest>=7.0
+
 # Cable Routing Dependencies
 networkx>=3.0
 ezdxf>=0.18
