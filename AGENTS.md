@@ -65,29 +65,26 @@
 
 ---
 
-### Input Layer Implementation (2026-05-15)
+### Manual Input Workflow (Current - Honesty First)
 
-**Issue:** Engine was blind - could calculate coverage but couldn't see real drawings.
+**Issue:** PDFs have NO text inside polygons - only page-level text.
 
-**Solution:** Built complete input layer:
-1. ParserConfidence Gate - evaluates PDF before engine (REJECT/CAUTION/HIGH)
-2. GeometryExtractor - extracts walls from vector paths
-3. SymbolExtractor - extracts NFPA 170 device symbols from text
-4. PDFInputLayer - integrates all extractors
+**Solution:** 
+- Manual input via `--room-types` JSON file (user provides room types)
+- Priority: 1) manual, 2) text in bounds (if exists), 3) unknown
+- NEVER auto-detect - BE HONEST about limitations
 
-**Key insight:** PyMuPDF `draw_rect()` returns `type='s'` (stroke), not `'re'`. Use bounding rect for wall extraction since detailed path items are not returned.
+**Tests:** All rooms → unknown → 0 detectors → ⚠️ WARNING
 
-**Tests:** 38 tests added - all passing. Zero tolerance for unqualified drawings.
+**Key insight:** If no manual input and no text inside polygon bounds = unknown. No guessing.
 
-**Files added:**
-- parsers/parser_confidence.py
-- parsers/geometry_extractor.py
-- parsers/symbol_extractor.py
-- parsers/pdf_input_layer.py
+**Files:**
+- run_full_pipeline.py: Added `--room-types` CLI arg
+- room_types_sample.json: Sample input file
 
 **Commits:**
-- Commit: 028122b10c86c4093075797f6e7670f9974ff34b | Link: https://github.com/ahmdelbaz28-ux/revit/commit/028122b10c86c4093075797f6e7670f9974ff34b
-- Commit: 2865da6299e4b5409c10008d55629e690ca7676e | Link: https://github.com/ahmdelbaz28-ux/revit/commit/2865da6299e4b5409c10008d55629e690ca7676e
+- Commit: 37a5277 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/37a5277
+- Commit: 9c7a276 (reverted) | Link: https://github.com/ahmdelbaz28-ux/revit/commit/9c7a276
 
 ---
 
