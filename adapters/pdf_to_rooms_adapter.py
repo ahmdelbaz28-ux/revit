@@ -102,6 +102,10 @@ def guess_room_type(room_name: str) -> str:
     """
     name_lower = room_name.lower() if room_name else ""
     
+    # Skip if it's a generic auto-generated name
+    if name_lower.startswith("room_") or name_lower == "unknown":
+        return "office"  # Default when no info
+    
     # Kitchen / Cooking areas
     kitchen_keywords = ["kitchen", "cook", "pantry", "galley", "canteen", "cafeteria", "مطبخ"]
     if any(kw in name_lower for kw in kitchen_keywords):
@@ -489,9 +493,62 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
     return rooms, report
 
 
+def _extract_room_label_from_pdf(pdf_path: str, polygon_bounds: tuple) -> str:
+    """
+    Extract room label from PDF text that falls within polygon bounds.
+    
+    Args:
+        pdf_path: Path to PDF file
+        polygon_bounds: (minx, miny, maxx, maxy) bounds
+    
+    Returns:
+        str: Room label if found, empty string otherwise
+    """
+    try:
+        import fitz
+    except ImportError:
+        return ""
+    
+    try:
+        doc = fitz.open(pdf_path)
+        page = doc[0]
+        
+        # Get all text with positions
+        texts = page.get_text('words')
+        
+        if not texts:
+            return ""
+        
+        minx, miny, maxx, maxy = polygon_bounds
+        
+        # Look for text inside the polygon bounds
+        # Use a relaxed bounds (text center inside polygon)
+        for t in texts:
+            x0, y0, x1, y1, text = t[:5]
+            # Check if text center is within bounds
+            cx = (x0 + x1) / 2
+            cy = (y0 + y1) / 2
+            
+            if minx < cx < maxx and miny < cy < maxy:
+                # Clean the text - remove numbers and common prefixes
+                text = text.strip()
+                if text and not text.isdigit():
+                    # Skip common non-room labels
+                    lower = text.lower()
+                    if lower in ['fireai', 'test', 'scale', 'area', 'n', 'area:']:
+                        continue
+                    return text
+        
+        return ""
+    except Exception:
+        return ""
+
+
 def design_room_from_pdf(pdf_path: str, room_index: int = 0) -> dict:
     """
     Complete PDF to design pipeline.
+    
+    Now extracts room labels from PDF text when available.
     """
     # Import GeometryExtractor directly
     spec = importlib.util.spec_from_file_location(
@@ -520,6 +577,18 @@ def design_room_from_pdf(pdf_path: str, room_index: int = 0) -> dict:
         }
     
     room = rooms[room_index]
+
+    # ====== ENHANCE: Extract room names from PDF text ======
+    poly = room.polygon
+    bbox = poly.bounds
+    
+    room_label = _extract_room_label_from_pdf(pdf_path, bbox)
+    
+    if room_label:
+        old_name = room.name
+        room.name = room_label
+        room.occupancy_type = guess_room_type(room_label)
+        logger.info(f"Room named from PDF: '{old_name}' → '{room_label}'")
     
     # Step 3: Place detectors
     ceiling_height = room.ceiling_spec.height_at_low_point_m
