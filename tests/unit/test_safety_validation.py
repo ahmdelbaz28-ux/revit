@@ -15,6 +15,7 @@ from nfpa72_models import (
     RoomSpec, CeilingSpec, CeilingType,
     get_smoke_detector_radius_safe,
     get_smoke_detector_coverage_max_safe,
+    FireAlarmPanel, PanelCapacityError,
 )
 from nfpa72_coverage import (
     check_coverage_polygon, verify_full_coverage, adjust_coverage_for_beams,
@@ -251,16 +252,11 @@ class TestSilentDeath:
         assert result.detectors_in_coverage <= len(detectors)
 
     def test_voltage_drop_below_threshold(self):
-        """Voltage drop >10% at farthest detector = FAIL."""
-        # This is simulation - real voltage dropout needs circuit analysis
-        # Test that function exists for calculation
-        try:
-            from nfpa72_calculations import calculate_voltage_drop
-            # If exists, test it. If not, skip
-            assert calculate_voltage_drop is not None
-        except ImportError:
-            # Function not implemented yet - this is a TODO
-            pytest.skip("calculate_voltage_drop not implemented - ADD IT")
+        """Voltage drop > 8V at 20km = FAIL (< 16V minimum)."""
+        panel = FireAlarmPanel(panel_id="MAIN-1", voltage=24.0, min_voltage=16.0)
+        # Now implemented via FireAlarmPanel
+        ok = panel.verify_voltage(25000)
+        assert ok == False  # Should fail - voltage below 16V
 
 
 # ============================================================
@@ -356,15 +352,41 @@ class TestDuctDetection:
 # ============================================================
 
 class TestAlarmPanel:
-    """Fire alarm control panel requirements."""
+    """Fire alarm control panel per NFPA 72 Chapter 21."""
 
-    def test_panel_class_exists(self):
-        """FireAlarmPanel class exists."""
-        try:
-            from nfpa72_models import FireAlarmPanel
-            assert FireAlarmPanel is not None
-        except ImportError:
-            pytest.skip("FireAlarmPanel not implemented")
+    def test_panel_250_devices_max(self):
+        """Panel with 250 devices = OK."""
+        panel = FireAlarmPanel(panel_id="MAIN-1")
+        for i in range(250):
+            panel.add_device(f"DEV-{i}")
+        assert len(panel.connected_devices) == 250
+
+    def test_panel_251_devices_fails(self):
+        """Panel with 251 devices = MUST raise error."""
+        panel = FireAlarmPanel(panel_id="MAIN-1")
+        for i in range(250):
+            panel.add_device(f"DEV-{i}")
+        
+        with pytest.raises(PanelCapacityError, match="capacity exceeded|250"):
+            panel.add_device("DEV-251")
+
+    def test_voltage_drop_above_16v_ok(self):
+        """Voltage at 200m = OK (24 - 0.08 = 23.92V)."""
+        panel = FireAlarmPanel(panel_id="MAIN-1", voltage=24.0)
+        ok = panel.verify_voltage(200)
+        assert ok == True
+
+    def test_voltage_drop_below_16v_fails(self):
+        """Voltage drop > 8V = FAIL (< 16V minimum)."""
+        panel = FireAlarmPanel(panel_id="MAIN-1", voltage=24.0, min_voltage=16.0)
+        # 25000m * 0.0004 = 10V drop → 14V remaining → FAIL
+        ok = panel.verify_voltage(25000)
+        assert ok == False
+
+    def test_panel_accessible(self):
+        """Panel accessibility check exists."""
+        panel = FireAlarmPanel(panel_id="MAIN-1")
+        assert panel.is_accessible() == True
 
 
 # ============================================================

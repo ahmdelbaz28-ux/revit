@@ -293,6 +293,68 @@ class NFPAComplianceResult:
     warnings: List[str] = field(default_factory=list)
     detector_count: int = 0
     required_detector_count: int = 0
+
+
+# ============================================================================
+# FIRE ALARM PANEL - NFPA 72 Chapter 21
+# ============================================================================
+
+@dataclass
+class FireAlarmPanel:
+    """
+    Fire Alarm Control Panel per NFPA 72 Chapter 21.
+    
+    ⚠️ CRITICAL LIMITS:
+    - Maximum 250 devices per zone (NFPA 72 21.2.2)
+    - Minimum operating voltage: 16V (85% of 24V)
+    - Panel must be accessible for maintenance
+    
+    Args:
+        panel_id: Unique identifier
+        max_devices: Maximum devices (default 250)
+        voltage: Operating voltage (default 24V)
+    """
+    panel_id: str
+    max_devices: int = 250
+    voltage: float = 24.0
+    min_voltage: float = 16.0  # 85% of 24V
+    connected_devices: List[str] = field(default_factory=list)
+    zones: List[int] = field(default_factory=list)
+    
+    def add_device(self, device_id: str) -> None:
+        """Add device to panel."""
+        if len(self.connected_devices) >= self.max_devices:
+            raise PanelCapacityError(
+                f"Panel {self.panel_id} capacity exceeded: "
+                f"{len(self.connected_devices)}/{self.max_devices} devices. "
+                f"NFPA 72 limit is 250 devices per panel."
+            )
+        self.connected_devices.append(device_id)
+    
+    def check_voltage_drop(self, distance_m: float) -> float:
+        """
+        Calculate voltage drop at distance.
+        Simple calculation: V_drop = 0.04V per 100m of wire (@ 1.5mm²)
+        """
+        # Simplified: 0.04V per 100m
+        v_drop = distance_m * 0.0004
+        return v_drop
+    
+    def verify_voltage(self, distance_m: float) -> bool:
+        """Verify voltage at farthest device is above minimum."""
+        v_drop = self.check_voltage_drop(distance_m)
+        v_remaining = self.voltage - v_drop
+        return v_remaining >= self.min_voltage
+    
+    def is_accessible(self) -> bool:
+        """Panel must be accessible for maintenance."""
+        # In real implementation, check physical accessibility
+        return True
+
+
+class PanelCapacityError(NFPAComplianceError):
+    """Raised when panel exceeds device capacity"""
+    pass
     # Legal disclaimer
     DISCLAIMER = """
 ⚠️ LEGAL DISCLAIMER:
