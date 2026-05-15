@@ -1,5 +1,3 @@
-import logging
-logger = logging.getLogger(__name__)
 """
 NFPA 72 V5 Coverage - Polygon and Voronoi Coverage Checks
 This module provides coverage checking using Polygon containment
@@ -593,8 +591,8 @@ def get_sloped_ceiling_constraints(
         "ridge_zone_polygon": polygon,
     }
 
-
-
+import logging
+logger = logging.getLogger(__name__)
 def adjust_coverage_for_beams(
     nominal_radius_m: float,
     beam_depth_m: float,
