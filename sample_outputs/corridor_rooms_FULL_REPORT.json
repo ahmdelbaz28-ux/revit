@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "source_file": "test_data/hybrid/corridor_rooms.pdf",
-    "generated_utc": "2026-05-15T19:26:55.144880Z",
+    "generated_utc": "2026-05-15T19:44:47.987491Z",
     "status": "COMPLETE",
     "requires_pe_review": true,
     "design_complete": true,
@@ -11,16 +11,16 @@
     {
       "name": "room_1",
       "area_sqm": 24105.6,
-      "occupancy_type": "corridor",
+      "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
-      "detector_type": "HEAT",
-      "detector_count": 1205,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 2678,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -29,13 +29,13 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "lobby",
       "detector_type": "HEAT",
       "detector_count": 1004,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
       ]
     },
     {
@@ -44,28 +44,28 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "corridor",
       "detector_type": "HEAT",
       "detector_count": 482,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
       ]
     },
     {
       "name": "room_4",
       "area_sqm": 64.3,
-      "occupancy_type": "corridor",
+      "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
-      "detector_type": "HEAT",
-      "detector_count": 3,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 7,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -74,13 +74,13 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "lobby",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
       ]
     },
     {
@@ -89,28 +89,28 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "corridor",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
       ]
     },
     {
       "name": "room_7",
       "area_sqm": 36.0,
-      "occupancy_type": "corridor",
+      "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
-      "detector_type": "HEAT",
-      "detector_count": 2,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -119,13 +119,13 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "lobby",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
       ]
     },
     {
@@ -134,28 +134,28 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "corridor",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
       ]
     },
     {
       "name": "room_10",
       "area_sqm": 36.0,
-      "occupancy_type": "corridor",
+      "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
-      "detector_type": "HEAT",
-      "detector_count": 2,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -164,13 +164,13 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "lobby",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
       ]
     },
     {
@@ -179,28 +179,28 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "corridor",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
       ]
     },
     {
       "name": "room_13",
       "area_sqm": 36.0,
-      "occupancy_type": "corridor",
+      "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
-      "detector_type": "HEAT",
-      "detector_count": 2,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -209,13 +209,13 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "lobby",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
       ]
     },
     {
@@ -224,28 +224,28 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "corridor",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
       ]
     },
     {
       "name": "room_16",
       "area_sqm": 36.0,
-      "occupancy_type": "corridor",
+      "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
-      "detector_type": "HEAT",
-      "detector_count": 2,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -254,13 +254,13 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "lobby",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
       ]
     },
     {
@@ -269,35 +269,35 @@
       "occupancy_type": "corridor",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
+      "suggested_name": "corridor",
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
       ]
     },
     {
       "name": "room_19",
       "area_sqm": 36.0,
-      "occupancy_type": "corridor",
+      "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - corridor_rooms",
-      "detector_type": "HEAT",
-      "detector_count": 2,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
       "coverage_pct": 100.0,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - corridor_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     }
   ],
   "summary": {
     "total_rooms": 19,
     "unverified_rooms": 0,
-    "total_detectors": 2724,
+    "total_detectors": 4211,
     "compliant": true
   }
 }

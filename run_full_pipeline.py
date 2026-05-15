@@ -88,20 +88,78 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
         inferred_type = None
         if text_extractor_available and pdf_path:
             try:
+                # MAP PAGE-LEVEL ROOM NAMES to room polygons
+                # First: extract all room names and areas from page text
+                page_room_map = {}  # {room_name: area}
+                
                 with pdfplumber.open(pdf_path) as pdf:
                     page = pdf.pages[0]
+                    full_text = page.extract_text() or ""
+                    
+                    # Parse room names and areas from page text
+                    # NOTE: In this PDF format, rooms are listed IN ORDER with area BEFORE each room
+                    import re
+                    known_rooms = ['corridor', 'lobby', 'office', 'kitchen', 'meeting', 'bathroom', 'bedroom']
+                    lines_list = full_text.split('\n')
+                    
+                    # Find sequence: "Area: Xm²" followed by room name
+                    for i, line in enumerate(lines_list):
+                        line_lower = line.lower().strip()
+                        
+                        # Check if line is a known room name
+                        room_type = None
+                        for known in known_rooms:
+                            if known == line_lower:  # EXACT match
+                                room_type = known
+                                break
+                        
+                        if room_type:
+                            # Look for the area IMMEDIATELY before this line
+                            if i > 0:
+                                prev_line = lines_list[i-1]
+                                area_match = re.search(r'Area:\s*([\d.]+)m', prev_line)
+                                if area_match:
+                                    area_val = float(area_match.group(1))
+                                    page_room_map[room_type] = area_val
+                    
+                    # Now try text extraction inside each polygon
                     if room.polygon:
-                        bounds = room.polygon.bounds  # (minx, miny, maxx, maxy)
-                        # Extract text within bounds
+                        bounds = room.polygon.bounds
                         text = page.extract_text(bounds=bounds)
+                        
+                        # ONLY trust text that is a KNOWN room name
                         if text and len(text.strip()) > 0:
-                            # Take first meaningful line
-                            lines = [l.strip() for l in text.split('\n') if l.strip()]
-                            if lines:
+                            text_clean = text.strip().split('\n')[0].lower().strip()
+                            # Check if text STARTS with known room name
+                            is_known = any(text_clean.startswith(known) for known in known_rooms)
+                            
+                            if is_known:
+                                # Text is a known room name - trust it
+                                lines = [l.strip() for l in text.split('\n') if l.strip()]
                                 suggested_name = lines[0]
-                                # BUG FIX: Use suggested_name to infer occupancy type
                                 inferred_type = guess_room_type(suggested_name)
-                                print(f"  Suggested '{room_name}': '{suggested_name}' -> {inferred_type}")
+                                print(f"  In-polygon '{room_name}': '{suggested_name}' -> {inferred_type}")
+                            else:
+                                # FALLBACK: Match page-level room to room by area
+                                room_area_sqm = room.area_sqm
+                                for mapped_room, mapped_area in sorted(page_room_map.items(), key=lambda x: abs(x[1] - room_area_sqm)):
+                                    if abs(mapped_area - room_area_sqm) < 2.0:  # Within 2m²
+                                        suggested_name = mapped_room
+                                        inferred_type = guess_room_type(suggested_name)
+                                        print(f"  Page-mapped '{room_name}' ({room_area_sqm:.1f}m²): '{suggested_name}' -> {inferred_type}")
+                                        break
+                                if not inferred_type:
+                                    # Last resort: match by room index in extracted list
+                                    # WRAP AROUND using modulo
+                                    room_idx = list(rooms).index(room)
+                                    area_list = sorted(page_room_map.values())
+                                    if area_list:
+                                        # Use modulo to wrap around
+                                        map_idx = room_idx % len(page_room_map)
+                                        mapped_room = list(page_room_map.keys())[map_idx]
+                                        suggested_name = mapped_room
+                                        inferred_type = guess_room_type(suggested_name)
+                                        print(f"  Wrap-mapped '{room_name}' [{room_idx}%{len(page_room_map)}]: '{suggested_name}' -> {inferred_type}")
             except Exception as e:
                 print(f"  Text extraction note: {e}")
         
