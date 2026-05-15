@@ -59,3 +59,22 @@ output_build/
 *.swo
 
 vv_results.db
+
+# Databases (local only)
+*.db
+vv_results.db
+
+# Test synthetic data
+test_data/synthetic_bim/
+test_data/synthetic_bim_full_test/
+
+# Oracle audit
+oracle_audit_*.jsonl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
