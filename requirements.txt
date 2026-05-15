@@ -40,6 +40,10 @@ python-json-logger>=2.0
 
 # Numerical & Scientific Computing
 scipy>=1.11
+numpy>=1.24
+
+# Parallel Processing for Large Projects
+multiprocess>=0.70
 
 # Type Checking & Static Analysis
 mypy>=1.5
@@ -51,7 +55,16 @@ hashlib-compat>=1.0
 
 # Performance Profiling
 profilehooks>=1.12
+line-profiler>=4.1
 
 # Emergency Fallback Mechanisms
 tenacity>=8.2
 retrying>=1.3
+
+# CAD Integration (Windows only)
+pyautocad>=0.2; platform_system == "Windows"
+revitpythonshell>=2023; platform_system == "Windows"
+
+# Documentation Generation
+sphinx>=7.2
+sphinx-rtd-theme>=1.3
