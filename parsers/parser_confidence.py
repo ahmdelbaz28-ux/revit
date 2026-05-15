@@ -154,6 +154,7 @@ class ParserConfidence:
                 # First try standard text extraction
                 from src.core.dimension_extractor import extract_scale_from_pdf
                 actual_scale = extract_scale_from_pdf(self.pdf_path)
+                scale_confidence = 0.95 if actual_scale else 0.0
                 
                 # If standard extraction fails, try CV (raster enhancer)
                 if not actual_scale:
@@ -162,9 +163,10 @@ class ParserConfidence:
                         cv_result = detect_scale_bar(self.pdf_path)
                         if cv_result.found and cv_result.meters_per_unit:
                             actual_scale = cv_result.meters_per_unit
-                            has_scale = True  # CV found scale!
+                            scale_confidence = cv_result.confidence  # CV confidence
+                            has_scale = True
                     except Exception as e:
-                        pass  # CV also failed
+                        scale_confidence = 0.0
                 
                 if not actual_scale:
                     # Try RasterEnhancer as last resort
@@ -173,24 +175,35 @@ class ParserConfidence:
                         enh_result = enhance_raster(self.pdf_path)
                         if enh_result.success and enh_result.scale_estimate:
                             actual_scale = enh_result.scale_estimate
+                            scale_confidence = enh_result.confidence
                             has_scale = True
                     except Exception as e:
-                        pass
+                        scale_confidence = 0.0
+                
+                CRITICAL_SAFETY_THRESHOLD = 0.95
                 
                 if not actual_scale:
-                    # Raster mentions scale but can't extract it by any method
+                    # No scale found - REJECT
                     gate = GateDecision.REJECT
                     message = (
-                        f"REJECT: Raster PDF mentions scale but extraction failed. "
-                        f"CV attempted but no scale bar detected. "
-                        f"Provide clearer scale bar or vector PDF."
+                        f"REJECT: No scale detected in raster PDF. "
+                        f"CV attempted. Provide vector PDF or clear scale bar."
+                    )
+                elif scale_confidence < CRITICAL_SAFETY_THRESHOLD:
+                    # CV scale found but confidence < 95% - REJECT for safety
+                    gate = GateDecision.REJECT
+                    message = (
+                        f"REJECT: Scale detected (CV confidence {scale_confidence:.0%}) < 95%. "
+                        f"For safety, manual verification required. "
+                        f"Provide vector PDF or verified scale bar."
                     )
                 else:
+                    # High confidence scale - CAUTION with manual verification
                     gate = GateDecision.CAUTION
                     message = (
-                        f"CAUTION: Raster drawing with scale (score {final:.2f}). "
-                        f"Scale extracted via CV enhancement. "
-                        f"Processing with caution - MODERATE confidence. PE REVIEW REQUIRED."
+                        f"CAUTION: Scale extracted via CV ({scale_confidence:.0%} confidence). "
+                        f"MANUAL SCALE VERIFICATION REQUIRED. "
+                        f"PE REVIEW REQUIRED before use."
                     )
             elif is_raster and has_completeness and not has_scale:
                 # Raster without scale - cannot get meaningful measurements
