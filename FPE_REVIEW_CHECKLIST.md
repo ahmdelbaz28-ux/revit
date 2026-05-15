@@ -187,21 +187,44 @@ Run these MANUALLY:
 
 ---
 
-## 5. Sign-off Requirements
+## 6. Rejection Criteria (الخطوط الحمراء)
 
-FPE MUST verify ALL of these:
+| المشكلة | الدرجة | الإجراء |
+|---------|--------|--------|
+| قيمة NFPA غلط في Table | CRITICAL | REJECT PR |
+| Test < 100% PASS | CRITICAL | REJECT PR |
+| Missing PE disclaimer | CRITICAL | REJECT PR |
+| Logic error في safety calc | CRITICAL | REJECT PR |
+| Naming/style issue | MINOR | Fix in 24h |
 
-- [ ] All pytest tests pass (103/103)
-- [ ] `(-3.0)` raises ValueError
-- [ ] `(0.0)` raises ValueError
-- [ ] `(3.0)` returns 4.55
-- [ ] `(6.0)` returns 5.35
-- [ ] `(9.0)` returns 5.80
-- [ ] `(15.3)` returns 6.40
-- [ ] Beam reduction = 15% at >5%
-- [ ] Panel capacity = 250 (error at 251)
-- [ ] Voltage drop at 25km < 16V = FAIL
-- [ ] No hardcoded magic numbers without citation
+### REJECT = Close PR, restart from V9.7
+
+---
+
+## 7. Re-work Cycle
+
+| Round | Who | Timeline |
+|-------|-----|---------|
+| Round 1 | FPE submits review | ≤14 days |
+| Round 2 | Dev fixes critical | ≤48h |
+| Round 3 | FPE re-review | ≤3 days |
+| Max | → REJECT if fails | 3 rounds |
+
+---
+
+## 8. PASS Criteria
+
+- [ ] All 103 tests pass
+- [ ] 0 SKIPs
+- [ ] No NFPA constant errors
+- [ ] PE disclaimer present
+- [ ] No logic errors in safety calculations
+
+### Decision:
+
+- **PASS**: Merge PR #29
+- **CONDITIONAL**: Fix critical issues in 48h → Re-review
+- **REJECT**: Close PR, restart from V9.7
 
 ---
 
@@ -214,6 +237,8 @@ License #: __________
 Date: __________
 
 Signature: __________
+
+Status: □ PASS □ CONDITIONAL □ REJECT
 
 ---
 
