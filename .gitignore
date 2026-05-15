@@ -43,3 +43,11 @@ fireai_memory.db
 .vscode/
 .idea/
 *.swp
+
+# Environment files
+.env
+.env.local
+*.env.*
+
+# Test data (generated/computed)
+test_data/
