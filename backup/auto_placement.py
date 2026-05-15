@@ -7,10 +7,6 @@ CHANGES:
 1. Added Duct Detector placement logic (NFPA 72 Section 17.7.5)
 2. Added Beam Detection consideration
 3. Uses safe radius calculation
-
-V9 CHANGES (2026-05-14):
-4. enforce_wall_distances() — NFPA 72 §17.6.3.1.1 compliance
-5. validate_min_detector_count() — minimum detector validation
 """
 import math
 from typing import List, Literal, Optional, Tuple
@@ -500,107 +496,6 @@ def suggest_devices_original(
     DEPRECATED: Use suggest_devices() with all parameters instead
     """
     return suggest_devices(room, spacing, pattern, ceiling_height_m=3.0)
-
-
-def enforce_wall_distances(
-    devices: List["Device"],
-    room: "Room",
-    min_wall_dist_m: float = 0.10,
-) -> List["Device"]:
-    """
-    V9: Moves detectors that are too close to walls.
-
-    Per NFPA 72 §17.6.3.1.1: detectors must be >= 4 inches (0.1m) from walls.
-    If a detector is placed closer, it's moved inward to comply.
-
-    Args:
-        devices: List of Device objects with .position.x and .position.y
-        room: Room object with .width and .height (in meters)
-        min_wall_dist_m: Minimum distance from wall (default: 0.10m)
-
-    Returns:
-        List of Device objects with corrected positions
-    """
-    import logging
-    logger = logging.getLogger("fireai.auto_placement")
-
-    corrected = []
-    for device in devices:
-        if device.device_type not in (DeviceType.SMOKE_DETECTOR, DeviceType.HEAT_DETECTOR,
-                                       DeviceType.DUCT_DETECTOR):
-            corrected.append(device)
-            continue
-
-        x = device.position.x
-        y = device.position.y
-        original = (x, y)
-        moved = False
-
-        # Clamp to valid range
-        x = max(min_wall_dist_m, min(room.width - min_wall_dist_m, x))
-        y = max(min_wall_dist_m, min(room.height - min_wall_dist_m, y))
-
-        if (x, y) != original:
-            moved = True
-            logger.warning(
-                f"Device at ({original[0]:.3f},{original[1]:.3f}) moved to ({x:.3f},{y:.3f}) "
-                f"to comply with NFPA 72 §17.6.3.1.1 (min wall dist {min_wall_dist_m*100:.0f}cm)"
-            )
-
-        # Create new device with corrected position
-        new_device = Device(
-            position=Point(x=x, y=y, z=device.position.z),
-            device_type=device.device_type,
-            coverage_radius_m=device.coverage_radius_m,
-            ai_justification=device.ai_justification + (" [WALL-CORRECTED per NFPA §17.6.3.1.1]" if moved else ""),
-        )
-        corrected.append(new_device)
-
-    return corrected
-
-
-def validate_min_detector_count(
-    devices: List["Device"],
-    room: "Room",
-    detector_type: "DeviceType" = None,
-) -> dict:
-    """
-    V9: Validates that minimum detector count requirements are met.
-
-    Per NFPA 72: Every distinct enclosed area must have at least 1 detector.
-
-    Returns:
-        dict with "compliant" bool and "message" string
-    """
-    smoke_detectors = [d for d in devices
-                       if d.device_type in (DeviceType.SMOKE_DETECTOR,)]
-    heat_detectors  = [d for d in devices
-                       if d.device_type in (DeviceType.HEAT_DETECTOR,)]
-    total_detectors = len(smoke_detectors) + len(heat_detectors)
-
-    if total_detectors == 0:
-        return {
-            "compliant": False,
-            "message": f"Room '{getattr(room, 'name', 'unknown')}': ZERO detectors placed. "
-                       f"NFPA 72 requires at least 1 detector per enclosed area.",
-            "count": 0,
-        }
-
-    room_area_m2 = getattr(room, 'width', 10) * getattr(room, 'height', 10)
-    # Rough minimum: 1 detector per 84 m² (NFPA 72 smoke max coverage)
-    min_recommended = max(1, int(room_area_m2 / 84))
-
-    if total_detectors < min_recommended:
-        return {
-            "compliant": False,
-            "message": f"Room area {room_area_m2:.0f}m²: {total_detectors} detector(s) placed, "
-                       f"recommend at least {min_recommended} for full coverage.",
-            "count": total_detectors,
-        }
-
-    return {"compliant": True, "message": "Detector count OK", "count": total_detectors}
-
-
 # Export all symbols
 __all__ = [
     "HVACDuct",
@@ -614,7 +509,4 @@ __all__ = [
     "suggest_beam_detectors",
     "get_coverage_report",
     "suggest_devices_original",
-    # V9 additions
-    "enforce_wall_distances",
-    "validate_min_detector_count",
 ]

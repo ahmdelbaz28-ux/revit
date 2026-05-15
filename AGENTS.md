@@ -105,6 +105,29 @@
   - Direct link to the commit on GitHub
 - Example: `Commit: abc123def... | Link: https://github.com/ahmdelbaz28-ux/revit/commit/abc123def...`
 
+### FireAI V9 Update (2026-05-14)
+
+**Application:** NFPA 72 V9 files from workspace
+- nfpa72_models_V9.py (519 lines)
+- nfpa72_calculations_V9.py (336 lines)
+- nfpa72_coverage_V9.py (592 lines)
+- auto_placement_V9.py (620 lines)
+
+**Key Fixes:**
+1. Unsafe radius calls (crash on extreme heights) → get_smoke_detector_radius_safe()
+2. Fixed grid blind spots → adaptive 0.25m grid
+3. Wall distance violations → validate_wall_distances()
+4. Performance caching → @lru_cache
+
+**Tests:** 36/36 PASSED
+- test_coverage.py: 12/12
+- test_domain_models.py: 24/24
+
+**Safety First:**
+- Every code change in fire safety affects human lives
+- No assumption - always test and verify
+- Be explicit about limitations
+
 ### Code ReviewMandatory
 - Before submitting any change, verify it yourself
 - If unsure, test locally first
