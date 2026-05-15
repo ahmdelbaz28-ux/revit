@@ -180,6 +180,18 @@ class ParserConfidence:
                     except Exception as e:
                         scale_confidence = 0.0
                 
+                # Try reverse scale estimation if nothing found
+                if not actual_scale:
+                    try:
+                        from src.core.reverse_scale_estimator import estimate_reverse_scale
+                        reverse_result = estimate_reverse_scale(self.pdf_path)
+                        if reverse_result.found and reverse_result.meters_per_unit:
+                            actual_scale = reverse_result.meters_per_unit
+                            scale_confidence = reverse_result.confidence
+                            has_scale = True
+                    except Exception as e:
+                        pass
+                
                 CRITICAL_SAFETY_THRESHOLD = 0.95
                 
                 if not actual_scale:
@@ -187,13 +199,14 @@ class ParserConfidence:
                     gate = GateDecision.REJECT
                     message = (
                         f"REJECT: No scale detected in raster PDF. "
-                        f"CV attempted. Provide vector PDF or clear scale bar."
+                        f"CV + reverse estimation attempted. "
+                        f"Provide vector PDF or verified scale bar."
                     )
                 elif scale_confidence < CRITICAL_SAFETY_THRESHOLD:
                     # CV scale found but confidence < 95% - REJECT for safety
                     gate = GateDecision.REJECT
                     message = (
-                        f"REJECT: Scale detected (CV confidence {scale_confidence:.0%}) < 95%. "
+                        f"REJECT: Scale detected (confidence {scale_confidence:.0%}) < 95%. "
                         f"For safety, manual verification required. "
                         f"Provide vector PDF or verified scale bar."
                     )
