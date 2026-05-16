@@ -38,10 +38,14 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
     value = value.strip()
     if len(value) > max_length:
         raise ValueError(f"Input too long (max {max_length} characters)")
+    # Check for SQL injection patterns
     dangerous = {'\0', '\n', '\r', '\t', ';', '\'', '"', '\\', '\x00', '\x01', '\x02'}
     for ch in dangerous:
         if ch in value:
             raise ValueError("Input contains invalid characters")
+    # Check for SQL comment --
+    if '--' in value:
+        raise ValueError("Input contains invalid sequence '--'")
     return value
 
 # ============================================================================
@@ -242,6 +246,8 @@ class RoomSpec:
                 errors.append("width_m must be a number")
             elif self.width_m <= 0 or not math.isfinite(self.width_m):
                 errors.append(f"width_m must be > 0 and finite, got {self.width_m}")
+            elif self.width_m > 1000.0:
+                errors.append(f"width_m exceeds maximum (1000m), got {self.width_m}")
 
         if self.depth_m is not None:
             if isinstance(self.depth_m, bool):
@@ -250,6 +256,8 @@ class RoomSpec:
                 errors.append("depth_m must be a number")
             elif self.depth_m <= 0 or not math.isfinite(self.depth_m):
                 errors.append(f"depth_m must be > 0 and finite, got {self.depth_m}")
+            elif self.depth_m > 1000.0:
+                errors.append(f"depth_m exceeds maximum (1000m), got {self.depth_m}")
 
         # 3. Validate height_m
         if self.height_m is not None:
