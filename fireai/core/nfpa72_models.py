@@ -245,7 +245,7 @@ class RoomSpec:
     detector_type: Optional[DetectorType] = None
     occupancy_type: str = "office"
     heat_detector_spec: Optional['HeatDetectorSpec'] = None
-    hvac_ducts: List[HVACDuct] = field(default_factory=list)
+    hvac_duct_list: List[HVACDuct] = field(default_factory=list)
 
     def __post_init__(self):
         # ===== STRICT VALIDATION = FAIL FAST =====
@@ -346,6 +346,35 @@ class RoomSpec:
     def area_sqm(self) -> float:
         """Calculate room area"""
         return self.width_m * self.depth_m
+    
+    @property
+    def polygon_coords(self) -> List[Tuple[float, float]]:
+        """Get polygon coordinates as list of (x,y) tuples for V12 compatibility"""
+        if self.polygon:
+            return list(self.polygon.exterior.coords)[:-1]  # Remove repeated closing point
+        # Build from width/depth if no polygon
+        return [
+            (0.0, 0.0),
+            (self.width_m, 0.0),
+            (self.width_m, self.depth_m),
+            (0.0, self.depth_m),
+        ]
+    
+    @property
+    def ceiling(self) -> Optional['CeilingSpec']:
+        """Get ceiling spec - maps to ceiling_spec for V12 compatibility"""
+        return self.ceiling_spec
+    
+    @property
+    def _hvac_ducts(self) -> List['HVACDuct']:
+        """Get HVAC ducts - alias for V12 compatibility"""
+        return self.hvac_duct_list
+    
+    # V12 compatibility: exposed as hvac_ducts via forward ref in V12
+    @property
+    def hvac_ducts(self) -> List['HVACDuct']:
+        """Get HVAC ducts - maps to hvac_duct_list for V12 compatibility"""
+        return self.hvac_duct_list
 @dataclass
 class SmokeDetectorSpec:
     """Smoke detector specification"""
