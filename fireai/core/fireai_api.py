@@ -78,6 +78,13 @@ class AnalyseFloorRequest(BaseModel):
     floor_id: str
     rooms: List[RoomSpecIn]
 
+
+class AnalyseFloorRequestV10(BaseModel):
+    """V10 Floor analysis request with resilience option"""
+    rooms: List[RoomSpecIn]
+    run_resilience: bool = True
+
+
 class RoomResultOut(BaseModel):
     room_id: str
     status: str
@@ -281,6 +288,29 @@ async def analyse_room_v10(request: Request, body: AnalyseRoomRequest) -> RoomRe
     
     return _room_result_to_out(result)
 
+@app.post("/analyse/floor/v10", tags=["Design"], dependencies=[Depends(verify_api_key)])
+@limiter.limit("10/minute")
+async def analyse_floor_v10(request: Request, body: AnalyseFloorRequestV10):
+    """Analyze floor using V10 Enhanced with resilience and audit trail."""
+    room_specs = []
+    for r in body.rooms:
+        try:
+            room_specs.append(_build_room_spec(r))
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+
+    system = _get_fireai_system()
+    results = system.analyse_floor(
+        rooms=room_specs,
+        user_id="api_user",
+        run_resilience=body.run_resilience if hasattr(body, 'run_resilience') else True,
+    )
+
+    return {
+        "room_results": [_room_result_to_out(r) for r in results],
+        "total_rooms": len(results),
+        "fully_compliant": all(r.confidence.value != "UNSAFE" for r in results),
+    }
 
 @app.get("/audit/trail", tags=["Audit"], dependencies=[Depends(verify_api_key)])
 async def get_audit_trail_v10():

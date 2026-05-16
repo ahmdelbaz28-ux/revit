@@ -117,6 +117,46 @@ class FireAISystem:
                 )
         
         return result
+
+    def analyse_floor(
+        self,
+        rooms: List[RoomSpec],
+        user_id: str = "system",
+        run_resilience: bool = True,
+    ) -> List[EnhancedExpertResult]:
+        """
+        Analyze multiple rooms as a floor and log to audit trail.
+
+        Args:
+            rooms: List of RoomSpec to analyze as a floor
+            user_id: User performing the analysis (for audit)
+            run_resilience: Whether to run resilience checks
+
+        Returns:
+            List of EnhancedExpertResult, one per room
+        """
+        results = []
+
+        for room_spec in rooms:
+            # Analyze each room using existing method
+            result = self.analyse_room(room_spec, user_id, run_resilience)
+            results.append(result)
+
+        # Log floor-level event (single event for entire floor)
+        floor_details = {
+            "room_count": len(rooms),
+            "rooms": [r.room_id for r in rooms],
+            "user_id": user_id,
+            "results_count": len(results),
+        }
+
+        audit_store.add_event(
+            event_type="floor_analysis",
+            room_id="floor",
+            details_dict=floor_details,
+        )
+
+        return results
     
     def get_audit_trail(self) -> List[Dict[str, Any]]:
         """Get the complete audit trail."""
