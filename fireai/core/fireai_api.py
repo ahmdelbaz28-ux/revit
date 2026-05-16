@@ -136,7 +136,6 @@ def _build_room_spec(room_in: RoomSpecIn) -> RoomSpec:
         name=room_in.name or room_in.room_id,
         width_m=room_in.width_m or 10.0,
         depth_m=room_in.depth_m or 10.0,
-        height_m=room_in.height_m,
         polygon=polygon,
         occupancy_type=room_in.occupancy_type,
         ceiling_spec=ceiling_spec,

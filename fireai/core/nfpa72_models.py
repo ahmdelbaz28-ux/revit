@@ -148,13 +148,24 @@ class CeilingSpec:
         if errors:
             raise CeilingHeightError("CeilingSpec validation failed: " + "; ".join(errors))
         
-        # NFPA 72 range validation - reject non-standard heights
-        if h_low < _NFPA_HEIGHT_MIN_M or h_low > _NFPA_HEIGHT_MAX_M:
-            raise CeilingHeightError(
-                f"CeilingSpec height {h_low}m outside NFPA 72 range "
-                f"({_NFPA_HEIGHT_MIN_M}m - {_NFPA_HEIGHT_MAX_M}m). "
-                f"Use CeilingSpec.create_safe() for automatic clamping."
-            )
+        # NFPA 72 range validation - clamp heights at boundaries
+        # Skip if caller (e.g., create_safe) already provided clamped value
+        caller_provided_clamped = hasattr(self, 'was_clamped') and self.was_clamped and self.original_height_m is not None
+        
+        if not caller_provided_clamped:
+            was_clamped = False
+            if h_low < _NFPA_HEIGHT_MIN_M:
+                h_low = _NFPA_HEIGHT_MIN_M
+                was_clamped = True
+            elif h_low > _NFPA_HEIGHT_MAX_M:
+                original_height = h_low
+                h_low = _NFPA_HEIGHT_MAX_M
+                was_clamped = True
+            
+            self.height_at_low_point_m = h_low
+            if was_clamped:
+                self.original_height_m = original_height if h_low > _NFPA_HEIGHT_MIN_M else None
+            self.was_clamped = was_clamped
         
         if self.height_at_high_point_m and self.height_at_high_point_m > self.height_at_low_point_m:
             run = 3.0
@@ -174,7 +185,7 @@ class CeilingSpec:
         V9: Factory method — clamps height to NFPA range instead of raising.
         Use this for production code to avoid crashes on unusual building heights.
 
-        Heights outside 3.0–15.3m are clamped with a warning logged.
+        Heights outside 3.0–15.24m are clamped with a warning logged.
         A negative or zero height raises ValueError (physically impossible).
         """
         import logging
@@ -239,7 +250,6 @@ class RoomSpec:
     name: str = ""
     width_m: float = 10.0
     depth_m: float = 10.0
-    height_m: float = 3.0
     polygon: Optional[ShapelyPolygon] = None
     ceiling_spec: Optional[CeilingSpec] = None
     detector_type: Optional[DetectorType] = None
@@ -281,13 +291,6 @@ class RoomSpec:
                 errors.append(f"depth_m must be > 0 and finite, got {self.depth_m}")
             elif self.depth_m > MAX_DIMENSION_M:
                 errors.append(f"depth_m exceeds maximum ({MAX_DIMENSION_M}m), got {self.depth_m}")
-
-        # 3. Validate height_m
-        if self.height_m is not None:
-            if not isinstance(self.height_m, (int, float)):
-                errors.append("height_m must be a number")
-            elif self.height_m <= 0 or not math.isfinite(self.height_m):
-                errors.append(f"height_m must be > 0 and finite, got {self.height_m}")
 
         # 4. Validate polygon
         if self.polygon is not None:
@@ -335,8 +338,10 @@ class RoomSpec:
 
         # ===== BUILD CEILING SPEC =====
         if self.ceiling_spec is None:
+            # Get height from ceiling_spec.height_at_low_point_m, fallback to 3.0m default
+            ceiling_height = 3.0  # NFPA minimum default
             self.ceiling_spec = CeilingSpec(
-                self.height_m, self.height_m, CeilingType.FLAT, 0.0
+                ceiling_height, ceiling_height, CeilingType.FLAT, 0.0
             )
 
         if self.detector_type is None:
@@ -363,7 +368,7 @@ class SmokeDetectorSpec:
         (4.3, 6.1): (4.6, 7.2),   # 14-20 ft
         (6.1, 7.6): (5.2, 8.1),    # 20-25 ft
         (7.6, 9.1): (5.8, 9.0),    # 25-30 ft
-        (9.1, 15.3): (6.4, 10.1), # 30-50 ft
+        (9.1, 15.24): (6.4, 10.1), # 30-50 ft
     }
     @property
     def radius_m(self) -> float:
@@ -557,18 +562,18 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
         (4.3, 6.1): 5.35,   # 4.3-6.1m -> 5.35m
         (6.1, 7.6): 5.2,    # 6.1-7.6m
         (7.6, 9.1): 5.8,    # 7.6-9.1m
-        (9.1, 15.3): 6.4,   # 9.1-15.3m
+        (9.1, 15.24): 6.4,   # 9.1-15.24m
     }
     for (min_h, max_h), radius in RADIUS_MAP.items():
         if min_h <= ceiling_height_m <= max_h:
             return radius
-    # Handle edge case at 15.3m (exactly at max)
-    if ceiling_height_m == 15.3:
+    # Handle edge case at 15.24m (exactly at max)
+    if ceiling_height_m == 15.24:
         return 6.4
     # Outside valid range
     raise CeilingHeightError(
         f"Ceiling height {ceiling_height_m}m is outside NFPA 72 "
-        f"valid range of 3.0m to 15.3m"
+        f"valid range of 3.0m to 15.24m"
     )
 def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
     """
@@ -584,7 +589,7 @@ def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
         (4.3, 6.1): 6.5,
         (6.1, 7.6): 8.1,
         (7.6, 9.1): 9.0,
-        (9.1, 15.3): 10.1,
+        (9.1, 15.24): 10.1,
     }
     for (min_h, max_h), max_cov in MAX_COVERAGE_MAP.items():
         if min_h <= ceiling_height_m < max_h:
@@ -641,7 +646,7 @@ def get_smoke_detector_radius_safe(
         Input <= 0  -> ValueError (MUST reject)
         Input 2.4m  -> Output 4.55m (conservative) + flag
         Input 3.0m  -> Output 4.55m (standard)
-        Input 15.3m -> Output 6.40m (standard)
+        Input 15.24m -> Output 6.40m (standard)
         Input 20.0m -> Output 6.40m (capped) + flag
     """
     # ⚠️ CRITICAL: REJECT invalid heights - DO NOT fallback silently
@@ -659,10 +664,10 @@ def get_smoke_detector_radius_safe(
     if ceiling_height_m < 3.0:
         safe_height = 3.0
         flag = "LOW_CEILING: Using 3.0m values for safety - REQUIRES PE REVIEW"
-    # Case 2: Above NFPA range (> 15.3m) - cap at maximum
-    elif ceiling_height_m > 15.3:
-        safe_height = 15.3
-        flag = "HIGH_CEILING: Capped at 15.3m - REQUIRES PE REVIEW"
+    # Case 2: Above NFPA range (> 15.24m) - cap at maximum
+    elif ceiling_height_m > 15.24:
+        safe_height = 15.24
+        flag = "HIGH_CEILING: Capped at 15.24m - REQUIRES PE REVIEW"
     # Get radius using internal function
     try:
         radius = _get_radius_internal(safe_height)
@@ -687,12 +692,12 @@ def _get_radius_internal(h: float) -> float:
         (4.3, 6.1): 5.35,
         (6.1, 7.6): 5.2,
         (7.6, 9.1): 5.8,
-        (9.1, 15.3): 6.4
+        (9.1, 15.24): 6.4
     }
     for (min_h, max_h), r in R.items():
         if min_h <= h <= max_h:
             return r
-    if h == 15.3:
+    if h == 15.24:
         return 6.4
     raise CeilingHeightError(f"Height {h}m outside NFPA range")
 def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_details: bool = False):
@@ -703,8 +708,8 @@ def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_detail
     if ceiling_height_m < 3.0:
         safe_h = 3.0
         flag = "LOW_CEILING"
-    elif ceiling_height_m > 15.3:
-        safe_h = 15.3
+    elif ceiling_height_m > 15.24:
+        safe_h = 15.24
         flag = "HIGH_CEILING"
     try:
         max_cov = _get_max_internal(safe_h)
@@ -727,12 +732,12 @@ def _get_max_internal(h: float) -> float:
         (4.3, 6.1): 6.5,
         (6.1, 7.6): 8.1,
         (7.6, 9.1): 9.0,
-        (9.1, 15.3): 10.1
+        (9.1, 15.24): 10.1
     }
     for (min_h, max_h), m in M.items():
         if min_h <= h <= max_h:
             return m
-    if h == 15.3:
+    if h == 15.24:
         return 10.1
     raise CeilingHeightError(f"Height {h}m outside NFPA range")
 # Test exported symbols
