@@ -3,6 +3,11 @@
 from __future__ import annotations
 
 import logging
+import asyncio
+import time
+import uuid
+from fastapi import BackgroundTasks
+
 import os
 from typing import Any, Dict, List, Optional
 
@@ -47,6 +52,24 @@ def create_app() -> FastAPI:
 app = create_app()
 _expert_system = ExpertSystem()
 _audit_trail = AuditTrail(project_name="api-session")
+
+# Task store for async operations (in-memory)
+_task_store: Dict[str, Dict[str, Any]] = {}
+
+# Request timeout in seconds
+REQUEST_TIMEOUT_SECONDS: float = 30.0
+
+
+async def _run_with_timeout(coro, timeout: float = REQUEST_TIMEOUT_SECONDS):
+    """Run coroutine with timeout, return 503 on timeout."""
+    try:
+        return await asyncio.wait_for(coro, timeout=timeout)
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Request timeout after {timeout}s. Please use /analyse/floor/async for large floors.",
+        )
+
 
 async def verify_api_key(x_api_key: str = Header(...)) -> str:
     raw = os.getenv("FIREAI_API_KEYS", "")
@@ -325,3 +348,80 @@ async def verify_audit_v10():
     system = _get_fireai_system()
     is_valid = system.verify_audit_integrity()
     return {"valid": is_valid, "message": "Audit chain is valid" if is_valid else "Audit chain may be tampered"}
+
+@app.post("/analyse/floor/async", tags=["Design"], dependencies=[Depends(verify_api_key)])
+@limiter.limit("20/minute")
+async def analyse_floor_async(
+    request: Request,
+    body: AnalyseFloorRequestV10,
+    background_tasks: BackgroundTasks,
+):
+    """
+    Analyze floor asynchronously - returns immediately with task_id.
+    
+    For large floors (10+ rooms), use this endpoint for background processing.
+    Poll GET /task/{task_id} for results.
+    """
+    task_id = str(uuid.uuid4())
+    
+    # Immediate response
+    _task_store[task_id] = {
+        "status": "processing",
+        "progress": 0,
+        "result": None,
+        "error": None,
+    }
+    
+    # Schedule background task
+    def _process_floor(task_id: str, body_data: AnalyseFloorRequestV10):
+        """Background task to process floor."""
+        room_specs = []
+        for r in body_data.rooms:
+            try:
+                room_specs.append(_build_room_spec(r))
+            except ValueError as e:
+                _task_store[task_id] = {
+                    "status": "error",
+                    "error": str(e),
+                }
+                return
+        
+        try:
+            system = _get_fireai_system()
+            results = system.analyse_floor(
+                rooms=room_specs,
+                user_id="async_api_user",
+                run_resilience=body_data.run_resilience if hasattr(body_data, 'run_resilience') else True,
+            )
+            _task_store[task_id] = {
+                "status": "completed",
+                "result": {
+                    "room_results": [_room_result_to_out(r) for r in results],
+                    "total_rooms": len(results),
+                    "fully_compliant": all(r.confidence.value != "UNSAFE" for r in results),
+                },
+            }
+        except Exception as e:
+            _task_store[task_id] = {
+                "status": "error",
+                "error": str(e),
+            }
+    
+    background_tasks.add_task(_process_floor, task_id, body)
+    
+    return {"task_id": task_id, "status": "processing"}
+
+
+@app.get("/task/{task_id}", tags=["Design"], dependencies=[Depends(verify_api_key)])
+async def get_task_result(task_id: str):
+    """Get async task result by task_id."""
+    if task_id not in _task_store:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    task = _task_store[task_id]
+    if task["status"] == "completed":
+        return {"status": "completed", "result": task["result"]}
+    elif task["status"] == "error":
+        return {"status": "error", "error": task["error"]}
+    else:
+        return {"status": "processing"}
