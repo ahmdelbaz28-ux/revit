@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """
 benchmark.py — FireAI Performance Benchmark
-Compares analysis time with/without resilience checks.
+Compares analysis time with vs without resilience checks.
+
 Usage:  python fireai/core/benchmark.py
-Output: Timing table for different room sizes
+Output: Timing table showing overhead of resilience testing
+
+What it measures:
+  - run_resilience=True:  Full Monte Carlo resilience testing (50 scenarios)
+  - run_resilience=False: Basic placement only, no resilience
+
+Co-authored-by: openhands <openhands@all-hands.dev>
 """
 import time
 import statistics

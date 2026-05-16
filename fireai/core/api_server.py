@@ -44,6 +44,7 @@ class RoomRequest(BaseModel):
     height: float = Field(3.0, gt=0)
     height_high: Optional[float] = None
     ceiling_type: str = "FLAT"
+    occupancy_type: str = "office"  # FIX: Allow user to specify
     run_resilience: bool = True
 
 class DetectorPos(BaseModel):
@@ -85,7 +86,7 @@ def _build_spec(req: RoomRequest) -> RoomSpec:
         room_id=req.room_id,
         width_m=width,
         depth_m=depth,
-        occupancy_type="office",  # default
+        occupancy_type=req.occupancy_type,  # FIX: Use user-provided
         ceiling_spec=ceiling,
         polygon=poly,
     )
