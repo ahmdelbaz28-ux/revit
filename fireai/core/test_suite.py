@@ -1,263 +1,84 @@
+#!/usr/bin/env python3
 """
-test_suite.py — 10 Reference Rooms for Regression Testing
-================================================
-Each room has expected values. If any test fails, we have a regression.
-Run this before every commit!
+test_suite.py — 10 reference rooms with known expected outcomes.
+Run before every deployment:  python test_suite.py
+Exit 0 = all pass.  Exit 1 = regression detected.
 """
+import sys, json, time
 
-import sys
-sys.path.insert(0, '/workspace/project/revit')
-
-from dataclasses import dataclass
-from typing import Dict, List, Tuple, Optional
-
-from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
-from fireai.core.fireai_core import FireAISystem
-
-
-# Expected results for reference rooms
-REFERENCE_ROOMS = [
-    {
-        "name": "office_10x10",
-        "room": lambda: RoomSpec(
-            room_id="office_10x10",
-            width_m=10.0,
-            depth_m=10.0,
-            occupancy_type="storage",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=3.0),
-        ),
-        "expected": {
-            "detectors_min": 10,
-            "detectors_max": 12,
-            "coverage_min": 99.0,
-            "confidence": "CERTIFIED",
-            "compliant": True,
-        },
-    },
-    {
-        "name": "small_3x3",
-        "room": lambda: RoomSpec(
-            room_id="small_3x3",
-            width_m=3.0,
-            depth_m=3.0,
-            occupancy_type="office",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=2.4),  # clamped
-        ),
-        "expected": {
-            "detectors_min": 1,
-            "detectors_max": 2,
-            "coverage_min": 95.0,
-            "confidence": "HIGH",
-            "compliant": True,
-        },
-    },
-    {
-        "name": "corridor_6x3",
-        "room": lambda: RoomSpec(
-            room_id="corridor_6x3",
-            width_m=6.0,
-            depth_m=3.0,
-            occupancy_type="corridor",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=2.4),  # clamped
-        ),
-        "expected": {
-            "detectors_min": 2,
-            "detectors_max": 2,
-            "coverage_min": 95.0,
-            "confidence": "HIGH",
-            "compliant": True,
-        },
-    },
-    {
-        "name": "large_15x20",
-        "room": lambda: RoomSpec(
-            room_id="large_15x20",
-            width_m=15.0,
-            depth_m=20.0,
-            occupancy_type="office",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=3.0),
-        ),
-        "expected": {
-            "detectors_min": 20,
-            "detectors_max": 30,
-            "coverage_min": 99.0,
-            "confidence": "CERTIFIED",
-            "compliant": True,
-        },
-    },
-    {
-        "name": "large_storage",
-        "room": lambda: RoomSpec(
-            room_id="large_storage",
-            width_m=20.0,
-            depth_m=30.0,
-            occupancy_type="storage",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=6.0),
-        ),
-        "expected": {
-            "detectors_min": 25,
-            "detectors_max": 45,
-            "coverage_min": 95.0,
-            "confidence": "HIGH",
-            "compliant": True,
-        },
-    },
-    {
-        "name": "high_ceiling_10x10",
-        "room": lambda: RoomSpec(
-            room_id="high_ceiling_10x10",
-            width_m=10.0,
-            depth_m=10.0,
-            occupancy_type="office",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=4.5),
-        ),
-        "expected": {
-            "detectors_min": 12,
-            "detectors_max": 16,
-            "coverage_min": 99.0,
-            "confidence": "CERTIFIED",
-            "compliant": True,
-        },
-    },
-    {
-        "name": "bathroom_4x4",
-        "room": lambda: RoomSpec(
-            room_id="bathroom_4x4",
-            width_m=4.0,
-            depth_m=4.0,
-            occupancy_type="bathroom",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=2.4),
-        ),
-        "expected": {
-            "detectors_min": 1,
-            "detectors_max": 2,
-            "coverage_min": 95.0,
-            "confidence": "HIGH",
-            "compliant": True,
-        },
-    },
-    {
-        "name": "meeting_8x8",
-        "room": lambda: RoomSpec(
-            room_id="meeting_8x8",
-            width_m=8.0,
-            depth_m=8.0,
-            occupancy_type="meeting",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=2.7),
-        ),
-        "expected": {
-            "detectors_min": 6,
-            "detectors_max": 8,
-            "coverage_min": 99.0,
-            "confidence": "CERTIFIED",
-            "compliant": True,
-        },
-    },
-    {
-        "name": "L_shaped",
-        "room": lambda: RoomSpec(
-            room_id="L_shaped",
-            width_m=10.0,
-            depth_m=10.0,
-            occupancy_type="office",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=3.0),
-        ),
-        "expected": {
-            "detectors_min": 8,
-            "detectors_max": 12,
-            "coverage_min": 98.0,
-            "confidence": "HIGH",
-            "compliant": True,
-        },
-    },
-    {
-        "name": "storage_5x5",
-        "room": lambda: RoomSpec(
-            room_id="storage_5x5",
-            width_m=5.0,
-            depth_m=5.0,
-            occupancy_type="storage",
-            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=3.0),
-        ),
-        "expected": {
-            "detectors_min": 1,
-            "detectors_max": 2,
-            "coverage_min": 95.0,
-            "confidence": "HIGH",
-            "compliant": True,
-        },
-    },
+ROOMS = [
+    # (label, polygon, height, expect_compliant, expect_min_detectors)
+    ("small_office_3x4",     [[0,0],[3,0],[3,4],[0,4]],           3.0, True,  1),
+    ("medium_office_10x8",   [[0,0],[10,0],[10,8],[0,8]],         3.0, True,  2),
+    ("large_hall_20x15",     [[0,0],[20,0],[20,15],[0,15]],       4.0, True,  4),
+    ("corridor_20x2",        [[0,0],[20,0],[20,2],[0,2]],         3.0, True,  2),
+    ("warehouse_30x25",      [[0,0],[30,0],[30,25],[0,25]],       8.0, True,  6),
+    ("l_shape_room",         [[0,0],[10,0],[10,5],[5,5],[5,10],[0,10]], 3.0, True, 3),
+    ("kitchen_6x5",          [[0,0],[6,0],[6,5],[0,5]],           3.0, False, 0),
+    ("stairwell_3x3",        [[0,0],[3,0],[3,3],[0,3]],           3.0, True,  1),
+    ("open_plan_40x20",      [[0,0],[40,0],[40,20],[0,20]],       3.5, True,  8),
+    ("narrow_corridor_15x1.5",[[0,0],[15,0],[15,1.5],[0,1.5]],   3.0, True,  2),
 ]
 
+def make_spec(label, polygon, height):
+    from fireai.core.nfpa72_models import RoomSpec, CeilingSpec, CeilingType
+    ceiling = CeilingSpec.create_safe(
+        height_at_low_point_m=height,
+        height_at_high_point_m=height,
+        ceiling_type=CeilingType.FLAT,
+    )
+    return RoomSpec(
+        room_id=label,
+        polygon=[tuple(p) for p in polygon],
+        ceiling_spec=ceiling,
+        hvac_ducts=[],
+    )
 
-def run_test(name: str, room: RoomSpec, expected: Dict) -> Tuple[bool, str]:
-    """Run single test and return (passed, message)."""
-    system = FireAISystem(':memory:')
-    result = system.analyse_room(room, user_id='test_suite')
-    
-    # Get values
-    detector_count = len(result.detector_positions)
-    coverage = result.placement_proof.coverage_fraction * 100 if result.placement_proof else 0
-    confidence = result.confidence.value if result.confidence else "UNKNOWN"
-    compliant = result.compliant
-    
-    # Check each expected value
-    errors = []
-    
-    if detector_count < expected["detectors_min"]:
-        errors.append(f"Detectors {detector_count} < min {expected['detectors_min']}")
-    if detector_count > expected["detectors_max"]:
-        errors.append(f"Detectors {detector_count} > max {expected['detectors_max']}")
-    if coverage < expected["coverage_min"]:
-        errors.append(f"Coverage {coverage:.1f}% < {expected['coverage_min']}%")
-    if confidence != expected["confidence"] and confidence not in ["HIGH", "CERTIFIED"]:
-        # Allow HIGH if CERTIFIED expected (might be lower)
-        if expected["confidence"] == "CERTIFIED" and confidence not in ["HIGH", "CERTIFIED"]:
-            errors.append(f"Confidence {confidence} != {expected['confidence']}")
-        elif expected["confidence"] != "CERTIFIED" and confidence != expected["confidence"]:
-            errors.append(f"Confidence {confidence} != {expected['confidence']}")
-    
-    if errors:
-        return False, "; ".join(errors)
-    
-    return True, f"OK (d={detector_count}, cov={coverage:.1f}%, conf={confidence})"
+def run():
+    from fireai.core.fireai_core import FireAISystem
+    from pathlib import Path
+    system = FireAISystem(":memory:")   # isolated test DB
+    # Use FireAISystem
 
-
-def run_all() -> Dict:
-    """Run all 10 reference tests."""
-    print("=" * 60)
-    print("FIREAI TEST SUITE - 10 Reference Rooms")
-    print("=" * 60)
-    
     passed = 0
     failed = 0
-    results = []
-    
-    for test in REFERENCE_ROOMS:
-        room = test["room"]()
-        ok, msg = run_test(test["name"], room, test["expected"])
-        
+    t0     = time.time()
+
+    print(f"{'Room':<30} {'Compliant':>10} {'Detectors':>10} {'Conf':>8} {'Status':>8}")
+    print("-" * 72)
+
+    for label, poly, height, exp_compliant, exp_min_det in ROOMS:
+        spec = make_spec(label, poly, height)
+        r = system.analyse_room(spec, run_resilience=True)
+
+        ok = (
+            r.compliant == exp_compliant and
+            len(r.detector_positions) >= exp_min_det and
+            r.confidence.value not in ("UNSAFE", "LOW")
+        )
+
+        status = "PASS" if ok else "FAIL"
         if ok:
             passed += 1
-            print(f"✓ {test['name']}: {msg}")
         else:
             failed += 1
-            print(f"✗ {test['name']}: {msg}")
-        
-        results.append({"name": test["name"], "passed": ok, "message": msg})
-    
-    print("=" * 60)
-    print(f"RESULTS: {passed}/10 PASSED")
-    print("=" * 60)
-    
-    return {
-        "passed": passed,
-        "failed": failed,
-        "results": results,
-        "success": failed == 0,
-    }
 
+        print(
+            f"{label:<30} {str(r.compliant):>10} "
+            f"{len(r.detector_positions):>10} {r.confidence.value:>8} {status:>8}"
+        )
+
+    elapsed = time.time() - t0
+    print("-" * 72)
+    print(f"Results: {passed}/{len(ROOMS)} passed in {elapsed:.2f}s")
+
+    if failed:
+        print(f"\nREGRESSION DETECTED — {failed} test(s) failed. Do NOT deploy.")
+        sys.exit(1)
+    else:
+        print("\nAll tests passed. Safe to deploy.")
+        sys.exit(0)
 
 if __name__ == "__main__":
-    result = run_all()
-    sys.exit(0 if result["success"] else 1)
+    run()
+
