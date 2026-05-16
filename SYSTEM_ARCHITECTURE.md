@@ -189,3 +189,75 @@ python fireai/core/test_integration.py
 - ExpertSystemV12: 12.0.0
 - AuditStore: Hash-chain based
 - NFPA Compliance: NFPA 72-2022
+================================================================================
+QUICK START
+================================================================================
+
+## Running the API
+
+```bash
+cd /workspace/project/revit
+uvicorn fireai.core.fireai_api:app --host 0.0.0.0 --port 8000
+```
+
+## API Example with curl
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Version
+curl http://localhost:8000/version
+
+# Analyze room (requires API key)
+curl -X POST http://localhost:8000/analyse/room/v10 \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "room": {
+      "room_id": "room_001",
+      "width_m": 10,
+      "depth_m": 10,
+      "ceiling": {"height_at_low_point_m": 3.0}
+    }
+  }'
+```
+
+================================================================================
+ENVIRONMENT VARIABLES
+================================================================================
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| AUDIT_HMAC_KEY | HMAC key for audit signing | dev-key-change-in-production |
+| FIREAI_API_KEY | API key for authentication | change-me-in-production |
+| LOG_LEVEL | Logging level | INFO |
+
+================================================================================
+ERROR MESSAGES
+================================================================================
+
+| Code | Message | Meaning |
+|------|---------|---------|
+| SAFETY_REFUSAL | Safety validation failed | Room rejected for safety |
+| INPUT_ERROR | Invalid input | Missing or invalid parameters |
+| COVERAGE_ERROR | Coverage incomplete | Less than 100% coverage |
+| PLACEMENT_ERROR | No valid placement | Can't place detectors |
+| CEILING_RANGE | Ceiling outside NFPA range | Must be 3.0-15.24m |
+| WALL_VIOLATION | Too close to wall | Detector < 0.1m from wall |
+| AUDIT_TAMPERED | Audit integrity compromised | HMAC signature mismatch |
+
+================================================================================
+PERFORMANCE NOTES
+================================================================================
+
+- 10x10m room: ~0.5s (OK)
+- 50x50m room: >60s with resilience (use run_resilience=False)
+- Single detector rooms: Always resilience=False (no redundancy)
+- Multi-worker: ThreadPoolExecutor supported but single-process recommended
+
+================================================================================
+COMMIT
+================================================================================
+
+Refer to: `git log --oneline -1`
