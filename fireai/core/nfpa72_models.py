@@ -38,7 +38,7 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
     value = value.strip()
     if len(value) > max_length:
         raise ValueError(f"Input too long (max {max_length} characters)")
-    dangerous = {'\0', '\n', '\r', '\x00', '\x01', '\x02'}
+    dangerous = {'\0', '\n', '\r', '\t', ';', '\'', '"', '\\', '\x00', '\x01', '\x02'}
     for ch in dangerous:
         if ch in value:
             raise ValueError("Input contains invalid characters")
