@@ -1,0 +1,472 @@
+{
+  "timestamp": "2026-05-16T07:40:27.598611",
+  "project_name": "test",
+  "source_dxf": "",
+  "version": "FireAI V5.1.2",
+  "status": "PASS",
+  "rooms": {
+    "total": 50,
+    "passed": 50,
+    "failed": 0,
+    "errored": 0
+  },
+  "detectors": {
+    "calculated": 50
+  },
+  "safety": {
+    "note": "NFPA 72 compliance verified via verify_full_coverage()"
+  },
+  "details": [
+    {
+      "room_id": "Room0",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room1",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room2",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room3",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room4",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room5",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room6",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room7",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room8",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room9",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room10",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room11",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room12",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room13",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room14",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room15",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room16",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room17",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room18",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room19",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room20",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room21",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room22",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room23",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room24",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room25",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room26",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room27",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room28",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room29",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room30",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room31",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room32",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room33",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room34",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room35",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room36",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room37",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room38",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room39",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room40",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room41",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room42",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room43",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room44",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room45",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room46",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room47",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room48",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "Room49",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    }
+  ],
+  "disclaimer": "This report is produced by FireAI V5.1.0. It MUST be reviewed by a licensed fire protection engineer. All calculations reference NFPA 72 (2022 Edition)."
+}

@@ -20,7 +20,6 @@ from .nfpa72_models import CeilingSpec, CeilingType, DetectorType, HVACDuct, Roo
 from .fire_expert_system import ExpertSystem
 from .floor_orchestrator import FloorOrchestrator
 from .audit_trail import AuditTrail
-from .room_validator import validate_room_spec
 from shapely.geometry import Polygon as ShapelyPolygon
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
@@ -132,7 +131,7 @@ def _build_room_spec(room_in: RoomSpecIn) -> RoomSpec:
             beam_depth_m=0.0,
         )
     
-    return RoomSpec(
+    return RoomSpec.create_validated(
         room_id=room_in.room_id,
         name=room_in.name or room_in.room_id,
         width_m=room_in.width_m or 10.0,
@@ -180,8 +179,7 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> Dict[st
 @app.post("/analyse/room", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("30/minute")
 async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResultOut:
-    room_spec = _build_room_spec(body.room)
-    validate_room_spec(room_spec)
+    room_spec = _build_room_spec(body.room)  # create_validated called inside
     forced_type: Optional[DetectorType] = None
     if body.forced_detector_type:
         try:
@@ -206,9 +204,7 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
 @app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
 async def analyse_floor(request: Request, body: AnalyseFloorRequest) -> FloorResultOut:
-    room_specs = [_build_room_spec(r) for r in body.rooms]
-    for rs in room_specs:
-        validate_room_spec(rs)
+    room_specs = [_build_room_spec(r) for r in body.rooms]  # create_validated called inside
     orchestrator = FloorOrchestrator(audit_trail=_audit_trail)
     floor_result = orchestrator.process(
         room_specs=room_specs,

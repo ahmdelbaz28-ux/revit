@@ -180,7 +180,7 @@ class HVACDuct:
 
 @dataclass
 class RoomSpec:
-    """Room specification with polygon boundary"""
+    """Room specification with polygon boundary - STRICT VALIDATION at creation"""
     room_id: str = ""
     name: str = ""
     width_m: float = 10.0
@@ -192,27 +192,91 @@ class RoomSpec:
     occupancy_type: str = "office"
     heat_detector_spec: Optional['HeatDetectorSpec'] = None
     hvac_ducts: List[HVACDuct] = field(default_factory=list)
+
     def __post_init__(self):
-        # Build polygon from dimensions if not provided, or convert list to ShapelyPolygon
+        # ===== STRICT VALIDATION = FAIL FAST =====
+        errors = []
+
+        # 1. Validate room_id is not empty
+        if not self.room_id or not self.room_id.strip():
+            errors.append("room_id is required and cannot be empty")
+
+        # 2. Validate width_m and depth_m (if provided)
+        if self.width_m is not None:
+            if not isinstance(self.width_m, (int, float)):
+                errors.append("width_m must be a number")
+            elif self.width_m <= 0 or not math.isfinite(self.width_m):
+                errors.append(f"width_m must be > 0 and finite, got {self.width_m}")
+
+        if self.depth_m is not None:
+            if not isinstance(self.depth_m, (int, float)):
+                errors.append("depth_m must be a number")
+            elif self.depth_m <= 0 or not math.isfinite(self.depth_m):
+                errors.append(f"depth_m must be > 0 and finite, got {self.depth_m}")
+
+        # 3. Validate height_m
+        if self.height_m is not None:
+            if not isinstance(self.height_m, (int, float)):
+                errors.append("height_m must be a number")
+            elif self.height_m <= 0 or not math.isfinite(self.height_m):
+                errors.append(f"height_m must be > 0 and finite, got {self.height_m}")
+
+        # 4. Validate polygon
+        if self.polygon is not None:
+            if isinstance(self.polygon, list):
+                if len(self.polygon) < 3:
+                    errors.append(f"polygon list must have at least 3 points, got {len(self.polygon)}")
+                else:
+                    poly = ShapelyPolygon(self.polygon)
+                    if not poly.is_valid or poly.area <= 0:
+                        errors.append(f"polygon is invalid or has zero area: {poly.area}")
+                    self.polygon = poly
+            elif not isinstance(self.polygon, ShapelyPolygon):
+                errors.append("polygon must be ShapelyPolygon or list of points")
+            elif self.polygon.area <= 0:
+                errors.append(f"polygon area must be > 0, got {self.polygon.area}")
+
+        # 5. Validate occupancy_type
+        valid_types = {
+            "office", "kitchen", "corridor", "atrium", "sleeping", "server_room",
+            "clean_room", "elevator", "stairwell", "standard", "hazardous", "industrial",
+            "assembly", "business", "educational", "factory", "mercantile", "residential",
+            "storage", "utility", "institutional", "laboratory", "mechanical",
+            "electrical", "data_center", "bathroom", "living", "data_center", "undry"
+        }
+        occ = self.occupancy_type
+        if occ is None or not occ or (isinstance(occ, str) and occ.strip() == ""):
+            errors.append("occupancy_type is required and cannot be empty")
+        elif occ.lower().strip() not in valid_types:
+            errors.append(f"occupancy_type '{occ}' not in valid set")
+
+        # Raise if ANY validation fails
+        if errors:
+            raise ValueError(f"RoomSpec validation failed for '{self.room_id}': " + "; ".join(errors))
+
+        # ===== BUILD POLYGON FROM DIMENSIONS =====
         if self.polygon is None:
-            self.polygon = ShapelyPolygon([\
-                (0, 0),\
-                (self.width_m, 0),\
-                (self.width_m, self.depth_m),\
-                (0, self.depth_m)\
+            self.polygon = ShapelyPolygon([
+                (0, 0),
+                (self.width_m, 0),
+                (self.width_m, self.depth_m),
+                (0, self.depth_m)
             ])
-        elif isinstance(self.polygon, list):
-            # Convert list of (x, y) tuples to ShapelyPolygon
-            self.polygon = ShapelyPolygon(self.polygon)
-        # Build ceiling_spec from height if not provided
+
+        # ===== BUILD CEILING SPEC =====
         if self.ceiling_spec is None:
-            try:
-                self.ceiling_spec = CeilingSpec(self.height_m, self.height_m, CeilingType.FLAT, 0.0)
-            except Exception:
-                # Height may not meet NFPA 72 minimum - use default
-                self.ceiling_spec = CeilingSpec(3.0, 3.0, CeilingType.FLAT, 0.0)
+            self.ceiling_spec = CeilingSpec(
+                self.height_m, self.height_m, CeilingType.FLAT, 0.0
+            )
+
         if self.detector_type is None:
             self.detector_type = DetectorType.SMOKE
+
+    @classmethod
+    def create_validated(cls, **kwargs) -> 'RoomSpec':
+        """Factory method - ONLY way to create RoomSpec safely"""
+        return cls(**kwargs)
+
     @property
     def area_sqm(self) -> float:
         """Calculate room area"""

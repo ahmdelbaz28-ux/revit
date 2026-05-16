@@ -84,7 +84,6 @@ from .nfpa72_coverage import (
     suggest_duct_detectors,
     validate_wall_distances,
 )
-from .room_validator import validate_room_spec
 
 logger = logging.getLogger(__name__)
 
@@ -845,8 +844,7 @@ class ExpertSystem:
             nfpa_version = self.nfpa_version,
         )
 
-        # Validate input before analysis
-        validate_room_spec(room_spec)
+        # RoomSpec now validates itself at construction - no external validation needed
 
         try:
             self._run_pipeline(
