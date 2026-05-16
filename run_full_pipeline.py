@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-run_full_pipeline.py - FireAI NFPA 72-2022 Design Pipeline
+run_full_pipeline.py - NFPA 72-2022 Design Pipeline
 ====================================================
 Full pipeline from PDF to NFPA-compliant fire detection design report.
+NOT an AI - this is a deterministic calculator.
 
 Usage:
     python3 run_full_pipeline.py <pdf_file> [--output JSON_OUTPUT_PATH]
@@ -15,7 +16,6 @@ import sys
 import os
 import json
 import argparse
-import json
 from datetime import datetime
 from pathlib import Path
 
@@ -365,7 +365,7 @@ def main():
                 
                 # Calculate detectors with LARGE ROOM handling
                 # CRITICAL: Apply fail-safe to UNKNOWN only, not to ALL large rooms
-                LARGE_ROOM_THRESHOLD_SQM = 500.0
+                LARGE_ROOM_THRESHOLD_SQM = 500.0  # 500 m² flag threshold
                 is_flagged = False
                 warnings = []
                 
@@ -403,10 +403,22 @@ def main():
                 if user_type == "kitchen":
                     warnings.append("Kitchen - SMOKE prohibited per NFPA 72 §17.6.4")
                 
+                # Area vs Type validation - flag anomalies
+                MAX_REASONABLE_AREAS = {
+                    "bathroom": 50, "closet": 20, "storage": 500,
+                    "office": 200, "corridor": 100, "kitchen": 100,
+                    "atrium": 1000, "lobby": 200, "mechanical": 500,
+                    "electrical": 100
+                }
+                max_area = MAX_REASONABLE_AREAS.get(user_type, 500)
+                if area_sqm > max_area:
+                    warnings.append(f"⚠️ Unusual area for {user_type}: {area_sqm:.1f}m² > {max_area}m²")
+                
                 final_rooms.append({
                     "name": room_name,
                     "area_sqm": round(area_sqm, 1),
                     "occupancy_type": user_type,
+                    "occupancy_verified": user_type != "unknown",
                     "source": "human_review" if user_type != "unknown" else "unverified",
                     "detector_type": detector_type,
                     "detector_count": detector_count,
