@@ -24,6 +24,7 @@ class NFPA72:
     # Spacing requirements (meters)
     SMOKE_DETECTOR_SPACING: float = 9.1  # 30 feet
     HEAT_DETECTOR_SPACING: float = 6.1  # 20 feet per NFPA 72 (FIXED from incorrect 9.1m)
+    CORRIDOR_SPACING: float = 15.3  # 50 feet - linear spacing for corridors
     MAX_WALL_DISTANCE_SMOKE: float = 4.6  # Half of 30ft (15ft)
     MAX_WALL_DISTANCE_HEAT: float = 3.05  # half of 20ft spacing (FIXED from incorrect 4.6m)
     

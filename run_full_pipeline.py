@@ -155,20 +155,13 @@ def run_pipeline(pdf_path: str, output_path: str = None, manual_room_types: dict
             
             if not is_flagged:
                 is_flagged = False
-        elif room.is_flagged:
-            # Flagged outlier from adapter - require manual review
-            detector_type = "REVIEW_REQUIRED"
-            detector_count = 0
-            coverage_pct = 0.0
-            is_flagged = True
-            warnings.append(f"⚠️ Outlier detected ({area_sqm:.1f}m²) - MANUAL REVIEW REQUIRED")
-        else:
-            # Fallback: unknown but not flagged
-            detector_type = "UNKNOWN"
-            detector_count = 0
-            coverage_pct = 0.0
-            is_flagged = True
-            warnings.append("🔴 Type unknown - no detectors placed.")
+            else:
+                # Fallback: unknown but not flagged
+                detector_type = "UNKNOWN"
+                detector_count = 0
+                coverage_pct = 0.0
+                is_flagged = True
+                warnings.append("🔴 Type unknown - no detectors placed.")
         
         total_detectors += detector_count  # Simplified
         
@@ -399,9 +392,21 @@ def main():
                     is_flagged = True
                     warnings.append(f"⚠️ Large outlier ({area_sqm:.1f}m²) - MANUAL REVIEW REQUIRED")
                 
-                # Check for special warnings
+                # Kitchen: Per NFPA 72 §17.6.4, smoke detectors PROHIBITED - heat only
                 if user_type == "kitchen":
-                    warnings.append("Kitchen - SMOKE prohibited per NFPA 72 §17.6.4")
+                    if detector_type.startswith("SMOKE"):
+                        detector_type = "HEAT"
+                        detector_count = max(1, int((area_sqm / 20.0) + 0.5))  # Recalculate for HEAT spacing
+                        warnings.append("Kitchen - SMOKE prohibited, HEAT required per NFPA 72 §17.6.4")
+                
+                # Corridor: Per NFPA 72, use linear spacing not area-based
+                elif user_type == "corridor":
+                    corridor_spacing = 15.3  # meters (max 50ft per NFPA 72)
+                    # For corridor, use length-based calculation instead of area
+                    # Estimate corridor as long narrow space: assume width ~2m, calculate length
+                    corridor_length = area_sqm / 2.0  # Approximate length from area
+                    detector_count = max(1, int((corridor_length / corridor_spacing) + 0.5))
+                    warnings.append(f"Corridor - Linear spacing {corridor_spacing}m per NFPA 72")
                 
                 # Area vs Type validation - flag anomalies
                 MAX_REASONABLE_AREAS = {
