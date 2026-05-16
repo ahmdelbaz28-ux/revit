@@ -246,6 +246,10 @@ class RoomSpec:
             self.room_id = sanitize_string(self.room_id, max_length=100)
         except ValueError as e:
             errors.append(str(e))
+        
+        # 1.5. Validate room_id is not empty after sanitize
+        if not self.room_id or not self.room_id.strip():
+            errors.append("room_id is required and cannot be empty")
 
         # 2. Validate width_m and depth_m (if provided)
         if self.width_m is not None:
