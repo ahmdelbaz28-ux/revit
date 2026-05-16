@@ -723,7 +723,7 @@ def _generate_improvements(
         ))
 
     # Ceiling clamped — PE must verify
-    if getattr(ceiling, "was_clamped", False):
+    if ceiling.was_clamped:
         props.append(ImprovementProposal(
             priority    = "COMPLIANCE",
             clause      = "NFPA 72-2022 Table 17.6.3.1",
@@ -925,20 +925,20 @@ class ExpertSystem:
 
         # ── Phase 1: Safe Ceiling Construction ────────────────────────
         input_ceiling  = room_spec.ceiling_spec
-        ceiling_clamped = getattr(input_ceiling, "was_clamped", False)
+        ceiling_clamped = input_ceiling.was_clamped
 
         ceiling = CeilingSpec.create_safe(
             height_at_low_point_m  = input_ceiling.height_at_low_point_m,
             height_at_high_point_m = input_ceiling.height_at_high_point_m,
             ceiling_type           = input_ceiling.ceiling_type,
         )
-        if getattr(ceiling, "was_clamped", False):
+        if ceiling.was_clamped:
             ceiling_clamped = True
 
         if ceiling_clamped:
             original_h = (
                 input_ceiling.original_height_m
-                if input_getattr(ceiling, "was_clamped", False)
+                if input_ceiling.was_clamped
                 else ceiling.original_height_m
             )
             result.warnings.append(

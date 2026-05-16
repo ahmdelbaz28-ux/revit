@@ -86,6 +86,11 @@ class CeilingSpec:
     height_at_high_point_m: Optional[float] = None
     ceiling_type: CeilingType = CeilingType.FLAT
     slope_degrees: float = 0.0
+    # V10: Added for fire_expert_system compatibility
+    was_clamped: bool = False
+    original_height_m: Optional[float] = None
+    beam_depth_m: float = 0.0
+    beam_spacing_m: float = 0.0
     def __post_init__(self):
         # V9: Validate but do NOT crash — warn and clamp instead
         # Use CeilingSpec.create_safe() for production; __init__ still validates strictly
@@ -108,6 +113,8 @@ class CeilingSpec:
         height_at_low_point_m: float,
         height_at_high_point_m: Optional[float] = None,
         ceiling_type: "CeilingType" = None,
+        beam_depth_m: float = 0.0,
+        beam_spacing_m: float = 0.0,
     ) -> "CeilingSpec":
         """
         V9: Factory method — clamps height to NFPA range instead of raising.
@@ -139,7 +146,7 @@ class CeilingSpec:
                 f"— clamped to {MAX_HEIGHT}m. Review with licensed PE."
             )
 
-        kwargs = {"height_at_low_point_m": clamped}
+        kwargs = {"height_at_low_point_m": clamped, "original_height_m": height_at_low_point_m, "was_clamped": height_at_low_point_m != clamped}
         if height_at_high_point_m is not None:
             kwargs["height_at_high_point_m"] = height_at_high_point_m
         if ceiling_type is not None:
