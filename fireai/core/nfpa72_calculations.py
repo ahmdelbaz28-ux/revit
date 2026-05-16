@@ -14,7 +14,7 @@ V9 CHANGES (2026-05-14):
 - Added get_smoke_detector_coverage_max_safe import
 """
 import math
-from typing import List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional
 from functools import lru_cache
 from .nfpa72_models import (
     CeilingSpec,
@@ -400,3 +400,206 @@ __all__ = __all__ + [
     "calculate_coverage_radius",
     "calculate_max_wall_distance",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Beam pocket correction  (NFPA 72 §17.6.3.6)
+# ---------------------------------------------------------------------------
+
+_BEAM_POCKET_DEPTH_FRACTION: float = 0.10  # 10 % of ceiling height threshold
+
+
+def beam_pocket_correction_factor(
+    beam_depth_m: float,
+    ceiling_height_m: float,
+) -> float:
+    """
+    Return spacing reduction factor when beams subdivide a ceiling.
+
+    NFPA 72 §17.6.3.6: if beam depth > 10 % of ceiling height, spacing
+    within each beam pocket is limited to the pocket width.
+
+    Args:
+        beam_depth_m:    Exposed beam depth from ceiling soffit (metres).
+        ceiling_height_m: Ceiling height (metres).
+
+    Returns:
+        Factor in (0, 1] by which rated spacing should be multiplied.
+    """
+    if ceiling_height_m <= 0:
+        return 1.0
+    depth_fraction = beam_depth_m / ceiling_height_m
+    if depth_fraction <= _BEAM_POCKET_DEPTH_FRACTION:
+        return 1.0
+    # Linear reduction: beyond 10 % depth the factor decreases proportionally
+    excess = depth_fraction - _BEAM_POCKET_DEPTH_FRACTION
+    return max(0.25, 1.0 - excess * 2.0)
+
+
+# ---------------------------------------------------------------------------
+# Corridor spacing  (NFPA 72 §17.6.3.3)
+# ---------------------------------------------------------------------------
+
+def calculate_corridor_spacing(
+    ceiling: "CeilingSpec",
+    detector_type: "DetectorType",
+    corridor_width_m: float,
+) -> float:
+    """
+    NFPA 72 §17.6.3.3 — detector spacing for corridors (width ≤ 3 m).
+
+    Detectors in narrow corridors may use the corridor width in the
+    coverage radius calculation, allowing larger along-corridor spacing.
+
+    Args:
+        ceiling:          Validated ceiling specification.
+        detector_type:    Detector type.
+        corridor_width_m: Corridor clear width in metres.
+
+    Returns:
+        Maximum allowable along-corridor spacing in metres.
+    """
+    base = calculate_max_spacing(ceiling, detector_type)
+    if corridor_width_m >= 3.0:
+        return base
+    # §17.6.3.3: Spacing = 2 × √(S² − (W/2)²)   where S = rated radius
+    rated_radius = base / 2.0
+    half_width   = corridor_width_m / 2.0
+    if rated_radius <= half_width:
+        return base
+    along = 2.0 * math.sqrt(rated_radius**2 - half_width**2)
+    return round(min(along, base), 3)
+
+
+# ---------------------------------------------------------------------------
+# Duct detector spacing  (NFPA 72 §17.7.5)
+# ---------------------------------------------------------------------------
+
+_DUCT_DETECTOR_MAX_SPACING_M: float = 10.0  # NFPA 72 §17.7.5.4.2
+
+
+def calculate_duct_detector_positions(
+    duct: "HVACDuct",
+    max_spacing_m: float = _DUCT_DETECTOR_MAX_SPACING_M,
+) -> List[Tuple[float, float]]:
+    """
+    Compute required detector positions along an HVAC duct centreline.
+
+    NFPA 72 §17.7.5.4.2 requires detectors at intervals ≤ 10 m along
+    supply air ducts where the duct cross-section exceeds 0.09 m².
+
+    Args:
+        duct:          HVACDuct descriptor.
+        max_spacing_m: Maximum allowable detector spacing along duct (metres).
+
+    Returns:
+        List of (x, y) detector positions along the centreline.
+    """
+    centreline = duct.centerline
+    if len(centreline) < 2:
+        return [tuple(centreline[0])] if centreline else []
+
+    # Build cumulative arc lengths along centreline
+    arc_lengths: List[float] = [0.0]
+    for i in range(1, len(centreline)):
+        x0, y0 = centreline[i - 1]
+        x1, y1 = centreline[i]
+        arc_lengths.append(arc_lengths[-1] + math.hypot(x1 - x0, y1 - y0))
+
+    total_length = arc_lengths[-1]
+    if total_length <= 0:
+        return [tuple(centreline[0])]
+
+    num_intervals = math.ceil(total_length / max_spacing_m)
+    positions: List[Tuple[float, float]] = []
+
+    for k in range(num_intervals):
+        target = (k + 0.5) * (total_length / num_intervals)  # midpoint of each interval
+        # Interpolate along centreline
+        for i in range(1, len(arc_lengths)):
+            if arc_lengths[i] >= target:
+                seg_start_len = arc_lengths[i - 1]
+                seg_end_len   = arc_lengths[i]
+                seg_len       = seg_end_len - seg_start_len
+                t = (target - seg_start_len) / seg_len if seg_len > 0 else 0.0
+                x0, y0 = centreline[i - 1]
+                x1, y1 = centreline[i]
+                x = x0 + t * (x1 - x0)
+                y = y0 + t * (y1 - y0)
+                positions.append((round(x, 4), round(y, 4)))
+                break
+
+    return positions
+
+
+# ---------------------------------------------------------------------------
+# Voltage drop check  (NFPA 72 §10.14)
+# ---------------------------------------------------------------------------
+
+def check_voltage_drop(
+    supply_voltage_v: float,
+    load_current_a: float,
+    cable_resistance_ohm_per_m: float,
+    cable_length_m: float,
+    max_drop_fraction: float = 0.15,
+) -> Dict[str, float]:
+    """
+    Check that voltage drop along a cable run does not exceed the limit.
+
+    NFPA 72 §10.14 requires that the voltage at the most remote device must
+    be within the device's listed voltage range.  A common design limit is
+    15 % of nominal.
+
+    Args:
+        supply_voltage_v:          Nominal supply voltage (V).
+        load_current_a:            Total load current on the run (A).
+        cable_resistance_ohm_per_m: Cable resistance per unit length (Ω/m).
+        cable_length_m:            One-way cable length (m).
+        max_drop_fraction:         Maximum allowable voltage drop as fraction
+                                   of supply (default 0.15 = 15 %).
+
+    Returns:
+        Dict with keys:
+            drop_v       : Calculated voltage drop (V).
+            drop_fraction: Drop as fraction of supply.
+            compliant    : True if drop ≤ max_drop_fraction.
+    """
+    total_resistance = cable_resistance_ohm_per_m * cable_length_m * 2  # return path
+    drop_v           = load_current_a * total_resistance
+    drop_fraction    = drop_v / supply_voltage_v if supply_voltage_v > 0 else float("inf")
+    return {
+        "drop_v":        round(drop_v, 4),
+        "drop_fraction": round(drop_fraction, 6),
+        "compliant":     drop_fraction <= max_drop_fraction,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Battery standby calculation  (NFPA 72 §10.6.7)
+# ---------------------------------------------------------------------------
+
+def required_battery_capacity_ah(
+    standby_current_ma: float,
+    alarm_current_ma: float,
+    standby_hours: float = 24.0,
+    alarm_minutes: float = 5.0,
+    safety_factor: float = 1.20,
+) -> float:
+    """
+    Calculate required battery capacity for a fire alarm control unit.
+
+    NFPA 72 §10.6.7: 24 h standby + 5 min alarm (for most occupancies).
+
+    Args:
+        standby_current_ma: Quiescent load current (mA).
+        alarm_current_ma:   Full-alarm load current (mA).
+        standby_hours:      Required standby duration (hours).
+        alarm_minutes:      Required alarm duration (minutes).
+        safety_factor:      Multiplier for aging and temperature (default 1.20).
+
+    Returns:
+        Required battery capacity in ampere-hours (Ah).
+    """
+    standby_ah = (standby_current_ma / 1000.0) * standby_hours
+    alarm_ah   = (alarm_current_ma   / 1000.0) * (alarm_minutes / 60.0)
+    return round((standby_ah + alarm_ah) * safety_factor, 3)
