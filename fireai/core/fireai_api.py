@@ -65,7 +65,6 @@ class RoomSpecIn(BaseModel):
     name: str = ""
     width_m: Optional[float] = None
     depth_m: Optional[float] = None
-    height_m: float = 3.0
     polygon: Optional[List[List[float]]] = None
     occupancy_type: str = "office"
     ceiling_height_m: Optional[float] = None
@@ -122,9 +121,10 @@ def _build_room_spec(room_in: RoomSpecIn) -> RoomSpec:
     if room_in.polygon:
         polygon = ShapelyPolygon(room_in.polygon)
     
+    # Use create_safe() to allow clamping of unusual heights
     ceiling_spec = None
     if room_in.ceiling_height_m is not None:
-        ceiling_spec = CeilingSpec(
+        ceiling_spec = CeilingSpec.create_safe(
             height_at_low_point_m=room_in.ceiling_height_m,
             height_at_high_point_m=room_in.ceiling_height_m,
             ceiling_type=CeilingType.FLAT,

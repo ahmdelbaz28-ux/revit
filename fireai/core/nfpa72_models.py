@@ -148,24 +148,14 @@ class CeilingSpec:
         if errors:
             raise CeilingHeightError("CeilingSpec validation failed: " + "; ".join(errors))
         
-        # NFPA 72 range validation - clamp heights at boundaries
-        # Skip if caller (e.g., create_safe) already provided clamped value
-        caller_provided_clamped = hasattr(self, 'was_clamped') and self.was_clamped and self.original_height_m is not None
-        
-        if not caller_provided_clamped:
-            was_clamped = False
-            if h_low < _NFPA_HEIGHT_MIN_M:
-                h_low = _NFPA_HEIGHT_MIN_M
-                was_clamped = True
-            elif h_low > _NFPA_HEIGHT_MAX_M:
-                original_height = h_low
-                h_low = _NFPA_HEIGHT_MAX_M
-                was_clamped = True
-            
-            self.height_at_low_point_m = h_low
-            if was_clamped:
-                self.original_height_m = original_height if h_low > _NFPA_HEIGHT_MIN_M else None
-            self.was_clamped = was_clamped
+        # NFPA 72 - FAIL FAST: reject heights outside normative range
+        # Only CeilingSpec.create_safe() is allowed to clamp
+        if h_low < _NFPA_HEIGHT_MIN_M or h_low > _NFPA_HEIGHT_MAX_M:
+            raise ValueError(
+                f"Ceiling height {h_low} is outside NFPA 72 normative range "
+                f"[{_NFPA_HEIGHT_MIN_M}, {_NFPA_HEIGHT_MAX_M}] m. "
+                f"Use CeilingSpec.create_safe() for automatic clamping."
+            )
         
         if self.height_at_high_point_m and self.height_at_high_point_m > self.height_at_low_point_m:
             run = 3.0
