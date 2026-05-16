@@ -24,7 +24,7 @@ if os.path.exists(DB_PATH):
 from fireai.core.fireai_core import FireAISystem
 from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
 from fireai.core.fire_expert_system import ExpertSystem
-from fireai.core.fire_expert_system_v10_enhanced import analyse_room_enhanced
+from fireai.core.fire_expert_system import analyse_room_enhanced
 
 
 print("=" * 70)

@@ -14,6 +14,7 @@ sys.path.insert(0, '/workspace/project/revit')
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
+from datetime import datetime
 
 # Import audit_store functions (module-level)
 import fireai.core.audit_store as audit_store
@@ -23,24 +24,28 @@ from fireai.core.fire_expert_system import (
     analyse_room_enhanced,
 )
 from fireai.core.nfpa72_models import RoomSpec
+from fireai.core.learning_store import LearningStore
 
 
 @dataclass
 class FireAISystem:
     """
-    Central orchestrator that combines V10 Enhanced analysis with audit logging.
+    Central orchestrator that combines V10 Enhanced analysis with audit logging
+    and adaptive learning.
     
     This is the main entry point for production use of FireAI system.
     Integrates:
       - analyse_room_enhanced: V10 analysis with resilience
       - enhance_result: Add resilience to any result
       - AuditStore: Tamper-evident audit trail
+      - LearningStore: Adaptive confidence calibration
     """
     
     db_path: str
     
     # Internal components
     _expert: Optional[Any] = field(default=None, init=False)
+    learning: Optional[LearningStore] = field(default=None, init=False)
     
     def __post_init__(self):
         """Initialize internal components."""
@@ -54,6 +59,9 @@ class FireAISystem:
         if os.path.exists(db_path):
             os.remove(db_path)
         audit_store._init_database()
+        
+        # Initialize learning store
+        self.learning = LearningStore(db_path="fireai_learning.sqlite3")
     
     def analyse_room(
         self,
@@ -115,6 +123,46 @@ class FireAISystem:
                     room_id=room_spec.room_id,
                     details_dict={"error": error, "user_id": user_id},
                 )
+        
+        # Store experience and potentially recalibrate
+        if self.learning:
+            # Extract room info for storage
+            geometry_hash = f"{room_spec.width_m:.2f}x{room_spec.depth_m:.2f}"
+            room_area = room_spec.width_m * room_spec.depth_m
+            occupancy = room_spec.occupancy_type or "office"
+            detector_type = room_spec.detector_type.value if room_spec.detector_type else "SMOKE_PHOTOELECTRIC"
+            
+            # Get result data
+            coverage_pct = (result.placement_proof.coverage_fraction * 100) if result.placement_proof else 0.0
+            confidence_score = result.confidence_score or 0.0
+            confidence_level = result.confidence.value if result.confidence else "LOW"
+            resilience_pass_rate = result.resilience.pass_rate if result.resilience else None
+            wall_violation_count = len(result.wall_violations)
+            greedy_retries = 0  # Not tracked in current result
+            proof_valid = result.placement_proof.proof_valid if result.placement_proof else False
+            compliant = result.compliant if hasattr(result, 'compliant') else (coverage_pct >= 95.0)
+            
+            self.learning.store(
+                project_id=user_id,
+                room_id=room_spec.room_id,
+                geometry_hash=geometry_hash,
+                room_area_m2=room_area,
+                occupancy=occupancy,
+                detector_type=detector_type,
+                solver_used="fireai_v10",
+                coverage_pct=coverage_pct,
+                confidence_score=confidence_score,
+                confidence_level=confidence_level,
+                resilience_pass_rate=resilience_pass_rate,
+                wall_violation_count=wall_violation_count,
+                greedy_retries=greedy_retries,
+                proof_valid=proof_valid,
+                compliant=compliant,
+                timestamp_utc=datetime.utcnow().isoformat() + "Z",
+            )
+            
+            # Try recalibration
+            self.learning.maybe_recalibrate()
         
         return result
 
