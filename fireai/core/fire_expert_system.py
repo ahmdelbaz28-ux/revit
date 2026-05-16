@@ -1054,12 +1054,12 @@ class ExpertSystem:
 
         # ── Phase 7: Duct Detector Injection ──────────────────────────
         if room_spec.hvac_ducts:
-            duct_devices = suggest_duct_detectors(room_spec.hvac_ducts)
+            duct_devices = suggest_duct_detectors(room_spec)
             result.duct_devices = duct_devices
             if duct_devices:
                 result.warnings.append(
                     f"[NFPA 72-2022 §17.7.5] Added {len(duct_devices)} duct detector(s). "
-                    f"Duct IDs: {list({d.duct_id for d in duct_devices})}."
+                    f"Duct IDs: {list({d.device_id for d in duct_devices})}."
                 )
 
         # ── Phase 8: Confidence Scoring ───────────────────────────────

@@ -19,10 +19,10 @@ try:
 except ImportError:
     _SLOWAPI_AVAILABLE = False
 
-from nfpa72_models import CeilingSpec, CeilingType, DetectorType, HVACDuct, RoomSpec
-from fire_expert_system import ExpertSystem
-from floor_orchestrator import FloorOrchestrator
-from audit_trail import AuditTrail
+from .nfpa72_models import CeilingSpec, CeilingType, DetectorType, HVACDuct, RoomSpec
+from .fire_expert_system import ExpertSystem
+from .floor_orchestrator import FloorOrchestrator
+from .audit_trail import AuditTrail
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)

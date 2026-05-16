@@ -191,7 +191,7 @@ class RoomSpec:
     detector_type: Optional[DetectorType] = None
     occupancy_type: str = "office"
     heat_detector_spec: Optional['HeatDetectorSpec'] = None
-    hvac_ducts: list = field(default_factory=list)
+    hvac_ducts: List[HVACDuct] = field(default_factory=list)
     def __post_init__(self):
         # Build polygon from dimensions if not provided
         if self.polygon is None:
