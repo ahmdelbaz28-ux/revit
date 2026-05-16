@@ -27,6 +27,23 @@ _NFPA_HEIGHT_MIN_M = 0.0
 _NFPA_HEIGHT_MAX_M = 10.0
 MIN_WALL_DISTANCE_M = 0.10  # 4 inches per NFPA 72 §17.6.3.1.1
 import math
+
+# ============================================================================
+# INPUT SANITIZATION
+# ============================================================================
+def sanitize_string(value: str, max_length: int = 100) -> str:
+    """Sanitize string input to prevent injection attacks."""
+    if not isinstance(value, str):
+        raise ValueError("Input must be a string")
+    value = value.strip()
+    if len(value) > max_length:
+        raise ValueError(f"Input too long (max {max_length} characters)")
+    dangerous = {'\0', '\n', '\r', '\x00', '\x01', '\x02'}
+    for ch in dangerous:
+        if ch in value:
+            raise ValueError("Input contains invalid characters")
+    return value
+
 # ============================================================================
 # ENUMS - Detector Types and Modes
 # ============================================================================
@@ -92,16 +109,30 @@ class CeilingSpec:
     beam_depth_m: float = 0.0
     beam_spacing_m: float = 0.0
     def __post_init__(self):
-        # V9: Validate but do NOT crash — warn and clamp instead
-        # Use CeilingSpec.create_safe() for production; __init__ still validates strictly
-        MIN_HEIGHT = 3.0
-        MAX_HEIGHT = 15.3
-        if self.height_at_low_point_m <= 0:
-            raise CeilingHeightError(
-                f"Ceiling height {self.height_at_low_point_m}m must be positive"
-            )
-        # Non-fatal warnings for out-of-range heights (strict validation is caller's responsibility)
-        # Calculate slope if high point provided
+        # ===== STRICT VALIDATION = FAIL FAST =====
+        errors = []
+        
+        h_low = self.height_at_low_point_m
+        if not isinstance(h_low, (int, float)):
+            errors.append("height_at_low_point_m must be a number")
+        elif h_low <= 0 or not math.isfinite(h_low):
+            errors.append(f"height_at_low_point_m must be > 0 and finite, got {h_low}")
+        
+        if self.height_at_high_point_m is not None:
+            h_high = self.height_at_high_point_m
+            if not isinstance(h_high, (int, float)):
+                errors.append("height_at_high_point_m must be a number")
+            elif h_high <= 0 or not math.isfinite(h_high):
+                errors.append(f"height_at_high_point_m must be > 0 and finite, got {h_high}")
+            elif h_high < h_low:
+                errors.append(f"height_at_high_point_m ({h_high}) < low point ({h_low})")
+        
+        if self.ceiling_type is None or not isinstance(self.ceiling_type, CeilingType):
+            errors.append("ceiling_type must be CeilingType enum")
+        
+        if errors:
+            raise CeilingHeightError("CeilingSpec validation failed: " + "; ".join(errors))
+        
         if self.height_at_high_point_m and self.height_at_high_point_m > self.height_at_low_point_m:
             run = 3.0
             rise = self.height_at_high_point_m - self.height_at_low_point_m
@@ -197,19 +228,25 @@ class RoomSpec:
         # ===== STRICT VALIDATION = FAIL FAST =====
         errors = []
 
-        # 1. Validate room_id is not empty
-        if not self.room_id or not self.room_id.strip():
-            errors.append("room_id is required and cannot be empty")
+        # 1. Sanitize room_id
+        try:
+            self.room_id = sanitize_string(self.room_id, max_length=100)
+        except ValueError as e:
+            errors.append(str(e))
 
         # 2. Validate width_m and depth_m (if provided)
         if self.width_m is not None:
-            if not isinstance(self.width_m, (int, float)):
+            if isinstance(self.width_m, bool):
+                errors.append("width_m must be a number, not boolean")
+            elif not isinstance(self.width_m, (int, float)):
                 errors.append("width_m must be a number")
             elif self.width_m <= 0 or not math.isfinite(self.width_m):
                 errors.append(f"width_m must be > 0 and finite, got {self.width_m}")
 
         if self.depth_m is not None:
-            if not isinstance(self.depth_m, (int, float)):
+            if isinstance(self.depth_m, bool):
+                errors.append("depth_m must be a number, not boolean")
+            elif not isinstance(self.depth_m, (int, float)):
                 errors.append("depth_m must be a number")
             elif self.depth_m <= 0 or not math.isfinite(self.depth_m):
                 errors.append(f"depth_m must be > 0 and finite, got {self.depth_m}")
