@@ -245,6 +245,7 @@ class RoomSpec:
     name: str = ""
     width_m: float = 10.0
     depth_m: float = 10.0
+    custom_polygon: list = None  # NEW: List of (x,y) tuples for custom room shape (sets polygon field)
     polygon: Optional[ShapelyPolygon] = None
     ceiling_spec: Optional[CeilingSpec] = None
     detector_type: Optional[DetectorType] = None
@@ -287,7 +288,32 @@ class RoomSpec:
             elif self.depth_m > MAX_DIMENSION_M:
                 errors.append(f"depth_m exceeds maximum ({MAX_DIMENSION_M}m), got {self.depth_m}")
 
-        # 4. Validate polygon
+        # 4. Validate custom_polygon (NEW - converts to polygon)
+        if self.custom_polygon is not None:
+            if not isinstance(self.custom_polygon, list):
+                errors.append("custom_polygon must be a list of (x,y) tuples")
+            elif len(self.custom_polygon) > MAX_POLYGON_VERTICES:
+                errors.append(f"custom_polygon exceeds max vertices ({MAX_POLYGON_VERTICES})")
+            elif len(self.custom_polygon) < 4:
+                errors.append(f"custom_polygon must have at least 4 points, got {len(self.custom_polygon)}")
+            else:
+                # Validate each point is a tuple
+                for i, pt in enumerate(self.custom_polygon):
+                    if not isinstance(pt, (tuple, list)) or len(pt) != 2:
+                        errors.append(f"custom_polygon point {i} must be (x,y) tuple")
+                        break
+                    if not all(isinstance(c, (int, float)) for c in pt):
+                        errors.append(f"custom_polygon point {i} must be numeric")
+                        break
+                else:
+                    # Convert to polygon
+                    poly = ShapelyPolygon(self.custom_polygon)
+                    if not poly.is_valid or poly.area <= 0:
+                        errors.append(f"custom_polygon is invalid or has zero area: {poly.area}")
+                    else:
+                        self.polygon = poly
+
+        # 5. Validate polygon (legacy field)
         if self.polygon is not None:
             if isinstance(self.polygon, list):
                 if len(self.polygon) > MAX_POLYGON_VERTICES:
@@ -304,7 +330,7 @@ class RoomSpec:
             elif self.polygon.area <= 0:
                 errors.append(f"polygon area must be > 0, got {self.polygon.area}")
 
-        # 5. Validate occupancy_type
+        # 6. Validate occupancy_type
         valid_types = {
             "office", "kitchen", "corridor", "atrium", "sleeping", "server_room",
             "clean_room", "elevator", "stairwell", "standard", "hazardous", "industrial",
