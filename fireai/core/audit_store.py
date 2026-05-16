@@ -21,10 +21,21 @@ from typing import List, Dict, Optional, Any
 
 NFPA_VERSION = "NFPA 72-2022"
 
-# HMAC key for digital signature (use environment variable in production)
-AUDIT_HMAC_KEY = os.environ.get("AUDIT_HMAC_KEY", "dev-key-change-in-production")
+# Default HMAC key - use environment variable in production
+_DEFAULT_HMAC_KEY = "dev-key-change-in-production"
 
-DATABASE_PATH = "/workspace/project/revit/fireai/core/audit_store.db"
+
+def _get_hmac_key() -> str:
+    """Get HMAC key from environment or return default.
+    
+    Returns:
+        The HMAC key for signing events.
+    """
+    return os.environ.get("AUDIT_HMAC_KEY", _DEFAULT_HMAC_KEY)
+
+
+# Database path - can be overridden via environment
+DATABASE_PATH = os.environ.get("AUDIT_DB_PATH", "/workspace/project/revit/fireai/core/audit_store.db")
 
 
 # ============================================================================
@@ -91,9 +102,10 @@ def _compute_hash(timestamp: str, event_type: str, room_id: str,
 
 
 def _compute_signature(current_hash: str) -> str:
-    """Compute HMAC-SHA256 signature."""
+    """Compute HMAC-SHA256 signature using unified key."""
+    key = _get_hmac_key()
     return hmac.new(
-        AUDIT_HMAC_KEY.encode(),
+        key.encode(),
         current_hash.encode(),
         hashlib.sha256
     ).hexdigest()
@@ -159,11 +171,11 @@ def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> st
 
 def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
     """
-    Verify the integrity of the entire hash chain.
+    Verify the integrity of the entire hash chain AND HMAC signature.
     
     Returns:
         (is_valid, error_details) tuple
-        - is_valid: True if chain is intact, False if tampered
+        - is_valid: True if chain AND signatures are intact, False if tampered
         - error_details: Details of the tampered event if any
     """
     conn = _get_connection()
@@ -175,11 +187,14 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
     if not rows:
         return True, None
     
+    # Get HMAC key
+    key = _get_hmac_key()
+    
     # Check each event
     for i, row in enumerate(rows):
         event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature = row
         
-        # Recompute expected hash
+        # 1. Verify hash
         expected_hash = _compute_hash(timestamp, event_type, room_id, details_json, previous_hash)
         
         if expected_hash != current_hash:
@@ -190,6 +205,32 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
                 "reason": "Hash mismatch - data tampered",
                 "expected": expected_hash,
                 "actual": current_hash
+            }
+        
+        # 2. Verify signature
+        if not signature or signature.strip() == "":
+            return False, {
+                "event_id": event_id,
+                "event_type": event_type,
+                "room_id": room_id,
+                "reason": "Missing HMAC signature",
+            }
+        
+        # Compute expected signature
+        expected_signature = hmac.new(
+            key.encode(),
+            expected_hash.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        if expected_signature != signature:
+            return False, {
+                "event_id": event_id,
+                "event_type": event_type,
+                "room_id": room_id,
+                "reason": "HMAC signature mismatch - key invalid or event tampered",
+                "expected": expected_signature,
+                "actual": signature
             }
     
     return True, None

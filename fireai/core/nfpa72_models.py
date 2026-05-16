@@ -206,6 +206,11 @@ class CeilingSpec:
             kwargs["height_at_high_point_m"] = height_at_high_point_m
         if ceiling_type is not None:
             kwargs["ceiling_type"] = ceiling_type
+        # Pass beam parameters (V12 compatibility)
+        if beam_depth_m is not None and beam_depth_m > 0:
+            kwargs["beam_depth_m"] = beam_depth_m
+        if beam_spacing_m is not None and beam_spacing_m > 0:
+            kwargs["beam_spacing_m"] = beam_spacing_m
 
         return cls(**kwargs)
     @property
