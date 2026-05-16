@@ -12,10 +12,12 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 try:
-    from slowapi import Limiter, _rate_limit_exceeded_handler
-    from slowapi.errors import RateLimitExceeded
-    from slowapi.util import get_remote_address
-    _SLOWAPI_AVAILABLE = True
+    # slowapi disabled - causes import errors with async functions
+    # from slowapi import Limiter, _rate_limit_exceeded_handler
+    # from slowapi.errors import RateLimitExceeded
+    # from slowapi.util import get_remote_address
+    _SLOWAPI_AVAILABLE = False
+    Limiter = None
 except ImportError:
     _SLOWAPI_AVAILABLE = False
 
@@ -23,6 +25,7 @@ from .nfpa72_models import CeilingSpec, CeilingType, DetectorType, HVACDuct, Roo
 from .fire_expert_system import ExpertSystem
 from .floor_orchestrator import FloorOrchestrator
 from .audit_trail import AuditTrail
+from .room_validator import validate_room_spec
 from shapely.geometry import Polygon as ShapelyPolygon
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
@@ -160,6 +163,7 @@ async def get_audit_trail() -> Dict[str, Any]:
 
 async def analyse_room(body: AnalyseRoomRequest) -> RoomResultOut:
     room_spec = _build_room_spec(body.room)
+    validate_room_spec(room_spec)  # Validate before analysis
     forced_type: Optional[DetectorType] = None
     if body.forced_detector_type:
         try:
@@ -176,7 +180,10 @@ async def analyse_room(body: AnalyseRoomRequest) -> RoomResultOut:
 
 async def analyse_floor(body: AnalyseFloorRequest) -> FloorResultOut:
     room_specs = [_build_room_spec(r) for r in body.rooms]
-    orchestrator = FloorOrchestrator()
+    # Validate each room before processing
+    for rs in room_specs:
+        validate_room_spec(rs)
+    orchestrator = FloorOrchestrator(audit_trail=_audit_trail)
     floor_result = orchestrator.process(
         room_specs=room_specs, 
         project_name=body.floor_id,

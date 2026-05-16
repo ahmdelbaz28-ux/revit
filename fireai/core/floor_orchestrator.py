@@ -1,5 +1,5 @@
 """
-floor_orchestrator.py — FireAI V5.1.0
+floor_orchestrator.py — FireAI V10 with Audit Integration
 CRITICAL SAFETY:
   1. SSOT: meta from engine.solve() is the ONLY source of truth.
   2. Sequential: No threads — pure logic only.
@@ -11,6 +11,7 @@ from typing import List, Tuple, Optional
 import time
 import logging
 
+from .audit_trail import AuditTrail
 from .nfpa72_models import RoomSpec, NFPAComplianceError
 from .nfpa72_coverage import verify_full_coverage
 from spatial_engine.mip_solver import OptimalMIPEngine
@@ -132,8 +133,9 @@ class FloorOrchestrator:
     3. RuntimeError FAILS FAST — stops everything.
     """
 
-    def __init__(self, grid_res: float = 0.25):
+    def __init__(self, grid_res: float = 0.25, audit_trail: Optional[AuditTrail] = None):
         self.grid_res = grid_res
+        self.audit_trail = audit_trail
 
     def process(self, room_specs: List[RoomSpec],
                 project_name: str = "", source_dxf: str = "") -> FloorResult:
@@ -149,6 +151,16 @@ class FloorOrchestrator:
             room_res = self._process_one_room(spec)
             result.room_results.append(room_res)
             logger.info(f"  {spec.name}: {room_res.status}")
+            
+            # Log each room to audit trail if available
+            if self.audit_trail:
+                self.audit_trail.log_placement(
+                    room_id=spec.room_id,
+                    detector_count=room_res.detector_count,
+                    detector_type=room_res.detector_type,
+                    coverage_pct=room_res.coverage_percentage,
+                    positions=room_res.detector_positions
+                )
 
         result.compute()
         

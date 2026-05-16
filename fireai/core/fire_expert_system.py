@@ -84,6 +84,7 @@ from .nfpa72_coverage import (
     suggest_duct_detectors,
     validate_wall_distances,
 )
+from .room_validator import validate_room_spec
 
 logger = logging.getLogger(__name__)
 
@@ -843,6 +844,9 @@ class ExpertSystem:
             room_id      = room_spec.room_id,
             nfpa_version = self.nfpa_version,
         )
+
+        # Validate input before analysis
+        validate_room_spec(room_spec)
 
         try:
             self._run_pipeline(
