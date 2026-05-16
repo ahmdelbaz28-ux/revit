@@ -86,6 +86,10 @@ class CeilingSpec:
     height_at_high_point_m: Optional[float] = None
     ceiling_type: CeilingType = CeilingType.FLAT
     slope_degrees: float = 0.0
+    was_clamped: bool = False  # V12 compatibility
+    original_height_m: Optional[float] = None  # V12 compatibility
+    beam_depth_m: float = 0.0  # V12 compatibility
+    beam_spacing_m: float = 0.0  # V12 compatibility
     def __post_init__(self):
         # V9: Validate but do NOT crash — warn and clamp instead
         # Use CeilingSpec.create_safe() for production; __init__ still validates strictly
@@ -108,6 +112,8 @@ class CeilingSpec:
         height_at_low_point_m: float,
         height_at_high_point_m: Optional[float] = None,
         ceiling_type: "CeilingType" = None,
+        beam_depth_m: float = 0.0,
+        beam_spacing_m: float = 0.0,
     ) -> "CeilingSpec":
         """
         V9: Factory method — clamps height to NFPA range instead of raising.
@@ -144,6 +150,11 @@ class CeilingSpec:
             kwargs["height_at_high_point_m"] = height_at_high_point_m
         if ceiling_type is not None:
             kwargs["ceiling_type"] = ceiling_type
+        # Pass beam parameters (V12 compatibility)
+        if beam_depth_m is not None and beam_depth_m > 0:
+            kwargs["beam_depth_m"] = beam_depth_m
+        if beam_spacing_m is not None and beam_spacing_m > 0:
+            kwargs["beam_spacing_m"] = beam_spacing_m
 
         return cls(**kwargs)
     @property
@@ -185,6 +196,30 @@ class RoomSpec:
     occupancy_type: str = "office"
     heat_detector_spec: Optional['HeatDetectorSpec'] = None
     hvac_ducts: list = field(default_factory=list)
+    
+    # V12 compatibility properties
+    @property
+    def polygon_coords(self) -> list:
+        """Get polygon coordinates for V12"""
+        if self.polygon:
+            return list(self.polygon.exterior.coords)[:-1]
+        return [
+            (0.0, 0.0),
+            (self.width_m, 0.0),
+            (self.width_m, self.depth_m),
+            (0.0, self.depth_m),
+        ]
+    
+    @property
+    def ceiling(self):
+        """Get ceiling spec - maps to ceiling_spec for V12"""
+        return self.ceiling_spec
+    
+    @property
+    def hvac_duct_list(self):
+        """Get HVAC ducts - alias for V12 compatibility"""
+        return self.hvac_ducts
+    
     def __post_init__(self):
         # Build polygon from dimensions if not provided
         if self.polygon is None:
