@@ -333,11 +333,16 @@ class DetectorPlacement:
         return math.pi * (self.coverage_radius_m ** 2)
 @dataclass
 class CoverageResult:
-    """Coverage check result"""
+    """Coverage check result - V12 compatible"""
     is_covered: bool
     uncovered_areas: List[Tuple[float, float]] = field(default_factory=list)
     coverage_percentage: float = 0.0
     detectors_in_coverage: int = 0
+    # V12 compatibility fields
+    proof_valid: bool = True
+    coverage_fraction: float = 1.0
+    max_gap_m: float = 0.0
+    
     def __bool__(self):
         return self.is_covered
 @dataclass

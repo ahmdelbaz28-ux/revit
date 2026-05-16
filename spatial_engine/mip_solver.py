@@ -23,18 +23,33 @@ class OptimalMIPEngine:
     MIP Solver for NFPA 72 V5 compliant placements.
     CRITICAL: Accepts RoomSpec ONLY. Legacy grid_size/radius REMOVED.
     Supports BOTH old format (name/width/depth/height) AND new format.
+    V12 compatibility: Accepts keyword arguments for backward compatibility.
     """
 
-    def __init__(self, room_spec):
+    def __init__(self, room_spec=None, grid_size=0.0, radius=0.0, placement_step=0.5, coverage_step=0.5, time_limit_s=30.0, **kwargs):
         """
         Initialize with RoomSpec object.
         
         Args:
-            room_spec: RoomSpec object with room details
+            room_spec: RoomSpec object with room details (optional for V12 compatibility)
             
         Raises:
             TypeError: If room_spec is not a RoomSpec object
         """
+        # Handle case where room_spec is None (V12 style)
+        if room_spec is None:
+            # Create minimal RoomSpec from kwargs
+            from nfpa72_models import RoomSpec, CeilingSpec, CeilingType
+            width = kwargs.get('width_m', 10.0)
+            depth = kwargs.get('depth_m', 10.0)
+            height = kwargs.get('height_m', 3.0)
+            room_spec = RoomSpec(
+                room_id=kwargs.get('room_id', 'temp'),
+                width_m=width,
+                depth_m=depth,
+                height_m=height,
+            )
+        
         # Support both old and new RoomSpec formats
         if hasattr(room_spec, 'room_id'):
             # New format - already has polygon and ceiling_spec
