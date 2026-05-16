@@ -53,12 +53,13 @@ import logging
 import math
 from dataclasses import dataclass, field
 from enum import Enum, unique
+from .audit_trail import AuditTrail
 from typing import Dict, List, Optional, Tuple
 
 from shapely.geometry import MultiPoint, Point, Polygon
 from shapely.ops import unary_union
 
-from nfpa72_models import (
+from .nfpa72_models import (
     CeilingSpec,
     CeilingType,
     DetectorType,
@@ -68,14 +69,14 @@ from nfpa72_models import (
     _NFPA_HEIGHT_MAX_M,
     _NFPA_HEIGHT_MIN_M,
 )
-from nfpa72_calculations import (
+from .nfpa72_calculations import (
     calculate_coverage_radius,
     calculate_max_spacing,
     calculate_max_wall_distance,
     estimate_detector_count_polygon,
     minimum_detector_count_rectangular,
 )
-from nfpa72_coverage import (
+from .nfpa72_coverage import (
     CoverageResult,
     DuctDevice,
     WallViolation,
@@ -807,8 +808,9 @@ class ExpertSystem:
         nfpa_version: Edition of NFPA 72 to apply (default: "NFPA 72-2022").
     """
 
-    def __init__(self, nfpa_version: str = "NFPA 72-2022") -> None:
+    def __init__(self, nfpa_version: str = "NFPA 72-2022", audit_trail: Optional[AuditTrail] = None) -> None:
         self.nfpa_version = nfpa_version
+        self.audit_trail = audit_trail  # Audit logging
 
     # ------------------------------------------------------------------
     # Primary public entry point
@@ -867,6 +869,28 @@ class ExpertSystem:
             result.confidence = ConfidenceLevel.UNSAFE
             logger.exception("analyse_room: UNEXPECTED room=%s", room_spec.room_id)
 
+        # Audit logging
+        if self.audit_trail:
+            self.audit_trail.log_detector_type_selection(
+                room_id=room_spec.room_id,
+                detector_type=result.detector_type.value if result.detector_type else "unknown",
+                ceiling_height_m=room_spec.ceiling_spec.height_at_low_point_m if room_spec.ceiling_spec else 3.0
+            )
+            for det in result.detector_positions:
+                self.audit_trail.log_placement(
+                    room_id=room_spec.room_id,
+                    detector_id=det.get("device_id", ""),
+                    detector_type=det.get("detector_type", ""),
+                    x=det.get("x", 0.0),
+                    y=det.get("y", 0.0),
+                    z=det.get("z", 0.0)
+                )
+            self.audit_trail.log_coverage_check(
+                room_id=room_spec.room_id,
+                coverage_percent=result.coverage_percent,
+                num_detectors=len(result.detector_positions),
+                compliance=result.compliant
+            )
         return result
 
     # ------------------------------------------------------------------

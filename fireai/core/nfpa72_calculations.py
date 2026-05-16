@@ -16,7 +16,7 @@ V9 CHANGES (2026-05-14):
 import math
 from typing import List, Tuple, Optional
 from functools import lru_cache
-from nfpa72_models import (
+from .nfpa72_models import (
     CeilingSpec,
     RoomSpec,
     DetectorType,
@@ -334,4 +334,69 @@ __all__ = [\
 \
     "calculate_detector_requirements",\
 \
+]
+
+
+# ============================================================================
+# MISSING FUNCTIONS FOR V10 COMPATIBILITY
+# ============================================================================
+
+def calculate_max_spacing(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
+    """NFPA 72 §17.6.3 - spacing between detectors."""
+    spacing = get_smoke_detector_coverage_max(ceiling.height_at_low_point_m)
+    if ceiling.is_sloped:
+        spacing = get_smoke_detector_coverage_max(ceiling.height_at_high_point_m or ceiling.height_at_low_point_m)
+    return round(spacing, 3)
+
+
+def calculate_coverage_radius(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
+    """NFPA 72 §17.6.3.1 - radius = spacing / 2."""
+    return round(calculate_max_spacing(ceiling, detector_type) / 2.0, 4)
+
+
+def calculate_max_wall_distance(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
+    """NFPA 72 §17.6.3.1.1 - max wall distance = radius."""
+    return calculate_coverage_radius(ceiling, detector_type)
+
+
+# Add to exports
+
+
+def estimate_detector_count_polygon(polygon, ceiling_height_m: float, detector_type: str) -> int:
+    """Estimate detector count for a polygon based on coverage area."""
+    import math
+    from shapely.geometry import Polygon
+    from nfpa72_coverage import get_smoke_detector_coverage_max
+    
+    if not isinstance(polygon, Polygon):
+        return 0
+    
+    area = polygon.area
+    radius = get_smoke_detector_coverage_max(ceiling_height_m)
+    # Each detector covers π * r²
+    coverage_per_detector = math.pi * (radius ** 2)
+    if coverage_per_detector <= 0:
+        return 0
+    # Use 0.7 factor for spacing efficiency
+    return math.ceil(area / (coverage_per_detector * 0.7))
+
+
+def minimum_detector_count_rectangular(width_m: float, depth_m: float, ceiling_height_m: float) -> int:
+    """Minimum detector count for rectangular room."""
+    import math
+    from nfpa72_coverage import get_smoke_detector_coverage_max
+    
+    radius = get_smoke_detector_coverage_max(ceiling_height_m)
+    spacing = radius * 2
+    
+    cols = max(1, math.ceil(width_m / spacing))
+    rows = max(1, math.ceil(depth_m / spacing))
+    
+    return cols * rows
+
+
+__all__ = __all__ + [
+    "calculate_max_spacing",
+    "calculate_coverage_radius",
+    "calculate_max_wall_distance",
 ]
