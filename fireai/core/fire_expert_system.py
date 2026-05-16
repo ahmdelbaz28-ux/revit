@@ -460,17 +460,16 @@ def _coverage_aware_placement(
     emergency_relax: bool = False,
 ) -> List[Tuple[float, float]]:
     """
-    Coverage-aware staggered placement.
+    Place detectors on a uniform grid compliant with NFPA 72 spacing rules.
 
-    Algorithm:
-      1. Generate a fine candidate grid (spacing/2 step).
-      2. Filter candidates: inside polygon AND wall distance in [MIN, max_wall].
-      3. Greedy coverage: select the candidate that covers the most
-         uncovered test points, repeat until 100 % covered or no gain.
-
-    This is deterministic, reproducible, and coverage-driven — not
-    geometry-blind.
-
+    NFPA 72-2022 §17.6.3.1 requires detectors to be placed so that:
+      - Spacing between detectors ≤ listed spacing (S).
+      - Distance to walls ≤ 0.5 × S (or listed max wall distance).
+    
+    This function creates a grid of points that respects these limits:
+      nx = ceil((width - 2*max_wall) / spacing) + 1
+      ny = ceil((depth - 2*max_wall) / spacing) + 1
+    
     Args:
         poly:     Room polygon (valid Shapely).
         spacing:  NFPA 72 maximum detector spacing (m).
@@ -478,95 +477,43 @@ def _coverage_aware_placement(
         max_wall: Maximum distance from wall (m).
         seed_positions: Optional pre-seeded detector positions.
         emergency_relax: If True, ignore max_wall constraint.
-
+    
     Returns:
         List of (x, y) positions.
     """
+    import math
+    
     min_x, min_y, max_x, max_y = poly.bounds
-    exterior = poly.exterior
-
-    # Build candidate positions.
-    # Cap step at 2.0 m so large-radius detectors still produce a dense
-    # enough candidate grid to find optimal coverage.
-    step = min(spacing / 2.0, 2.0)
-    candidates: List[Tuple[float, float]] = []
-    x = min_x
-    col = 0
-    while x <= max_x + 1e-9:
-        y0 = min_y + (step / 2.0 if col % 2 == 1 else 0.0)
-        y = y0
-        while y <= max_y + 1e-9:
-            pt = Point(x, y)
-            # Only enforce minimum wall clearance here.
-            # Maximum wall distance (= coverage radius) is validated
-            # separately in validate_wall_distances() — enforcing it here
-            # would eliminate valid interior positions for large rooms.
-            dist = exterior.distance(pt)
-            if poly.contains(pt) and dist >= MIN_WALL_DISTANCE_M:
-                if emergency_relax or dist <= max_wall:
-                    candidates.append((round(x, 4), round(y, 4)))
-            y += step
-        x += step
-        col += 1
-
-    if not candidates:
-        return []
+    width = max_x - min_x
+    depth = max_y - min_y
     
-    # Add seed_positions if provided (must be valid: inside polygon and >= MIN_WALL_DISTANCE_M from walls)
-    if seed_positions:
-        for sx, sy in seed_positions:
-            pt = Point(sx, sy)
-            if poly.contains(pt) and exterior.distance(pt) >= MIN_WALL_DISTANCE_M:
-                candidates.insert(0, (round(sx, 4), round(sy, 4)))
-    
-    # Build test grid (finer)
-    test_pts: List[Point] = []
-    tx = min_x + _COVERAGE_GRID_M / 2.0
-    while tx <= max_x:
-        ty = min_y + _COVERAGE_GRID_M / 2.0
-        while ty <= max_y:
-            p = Point(tx, ty)
-            if poly.contains(p):
-                test_pts.append(p)
-            ty += _COVERAGE_GRID_M
-        tx += _COVERAGE_GRID_M
-
-    if not test_pts:
-        # Degenerate room — fall back to centroid
+    # Safety check
+    if width <= 0 or depth <= 0:
         c = poly.centroid
         return [(round(c.x, 4), round(c.y, 4))]
-
-    # Precompute which test points each candidate covers
-    r2 = radius * radius
-    candidate_coverage: Dict[int, List[int]] = {}
-    for ci, (cx, cy) in enumerate(candidates):
-        covered = [
-            ti for ti, tp in enumerate(test_pts)
-            if (tp.x - cx) ** 2 + (tp.y - cy) ** 2 <= r2
-        ]
-        candidate_coverage[ci] = covered
-
-    # Greedy set cover
-    uncovered = set(range(len(test_pts)))
-    selected_indices: List[int] = []
-
-    while uncovered:
-        best_ci = -1
-        best_gain = -1
-        for ci in range(len(candidates)):
-            if ci in [s for s in selected_indices]:
-                continue
-            gain = len(uncovered & set(candidate_coverage[ci]))
-            if gain > best_gain:
-                best_gain = gain
-                best_ci   = ci
-        if best_ci == -1 or best_gain == 0:
-            break
-        selected_indices.append(best_ci)
-        uncovered -= set(candidate_coverage[best_ci])
-
-    return [candidates[i] for i in selected_indices]
-
+    
+    # Number of detectors in each direction
+    # Ensure at least 1 detector in each direction
+    if spacing <= 0:
+        spacing = 1.0  # safety fallback
+    
+    nx = max(1, int(math.ceil((width - 2 * max_wall) / spacing)) + 1)
+    ny = max(1, int(math.ceil((depth - 2 * max_wall) / spacing)) + 1)
+    
+    # Grid spacing
+    step_x = (width - 2 * max_wall) / (nx - 1) if nx > 1 else 0
+    step_y = (depth - 2 * max_wall) / (ny - 1) if ny > 1 else 0
+    
+    positions = []
+    for i in range(nx):
+        for j in range(ny):
+            x = min_x + max_wall + i * step_x
+            y = min_y + max_wall + j * step_y
+            point = Point(x, y)
+            if poly.contains(point) or poly.boundary.contains(point):
+                positions.append((round(x, 4), round(y, 4)))
+    
+    return positions
 
 def _compute_placement_proof(
     positions: List[Tuple[float, float]],
