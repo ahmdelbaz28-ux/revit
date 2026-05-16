@@ -1,5 +1,4 @@
-# FireAI Core Module Exports
-from .fire_expert_system import ExpertSystem
+from fireai.core.fire_expert_system import FireExpertSystem as ExpertSystem
 from .floor_orchestrator import FloorOrchestrator
 from .audit_trail import AuditTrail
 from .nfpa72_models import RoomSpec, CeilingSpec, DetectorType, CeilingType, HVACDuct
@@ -8,7 +7,7 @@ from .nfpa72_coverage import verify_full_coverage, suggest_duct_detectors
 
 __all__ = [
     "ExpertSystem",
-    "FloorOrchestrator", 
+    "FloorOrchestrator",
     "AuditTrail",
     "RoomSpec",
     "CeilingSpec",
