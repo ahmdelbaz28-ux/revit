@@ -26,6 +26,9 @@ from shapely.geometry import Polygon as ShapelyPolygon
 _NFPA_HEIGHT_MIN_M = 3.0   # NFPA 72 min ceiling height
 _NFPA_HEIGHT_MAX_M = 15.24  # NFPA 72 max ceiling height
 MIN_WALL_DISTANCE_M = 0.10  # 4 inches per NFPA 72 §17.6.3.1.1
+MAX_DIMENSION_M = 1000.0  # Max room dimension in meters
+MAX_POLYGON_VERTICES = 5000  # Max polygon vertices
+MAX_STRING_LENGTH = 200  # Max string input length
 import math
 
 # ============================================================================
@@ -36,8 +39,9 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
     if not isinstance(value, str):
         raise ValueError("Input must be a string")
     value = value.strip()
-    if len(value) > max_length:
-        raise ValueError(f"Input too long (max {max_length} characters)")
+    effective_max = max(MAX_STRING_LENGTH, max_length)
+    if len(value) > effective_max:
+        raise ValueError(f"Input too long (max {effective_max} characters)")
     # Check for SQL injection patterns
     dangerous = {'\0', '\n', '\r', '\t', ';', '\'', '"', '\\', '\x00', '\x01', '\x02'}
     for ch in dangerous:
@@ -251,8 +255,8 @@ class RoomSpec:
                 errors.append("width_m must be a number")
             elif self.width_m <= 0 or not math.isfinite(self.width_m):
                 errors.append(f"width_m must be > 0 and finite, got {self.width_m}")
-            elif self.width_m > 1000.0:
-                errors.append(f"width_m exceeds maximum (1000m), got {self.width_m}")
+            elif self.width_m > MAX_DIMENSION_M:
+                errors.append(f"width_m exceeds maximum ({MAX_DIMENSION_M}m), got {self.width_m}")
 
         if self.depth_m is not None:
             if isinstance(self.depth_m, bool):
@@ -261,8 +265,8 @@ class RoomSpec:
                 errors.append("depth_m must be a number")
             elif self.depth_m <= 0 or not math.isfinite(self.depth_m):
                 errors.append(f"depth_m must be > 0 and finite, got {self.depth_m}")
-            elif self.depth_m > 1000.0:
-                errors.append(f"depth_m exceeds maximum (1000m), got {self.depth_m}")
+            elif self.depth_m > MAX_DIMENSION_M:
+                errors.append(f"depth_m exceeds maximum ({MAX_DIMENSION_M}m), got {self.depth_m}")
 
         # 3. Validate height_m
         if self.height_m is not None:
@@ -274,7 +278,9 @@ class RoomSpec:
         # 4. Validate polygon
         if self.polygon is not None:
             if isinstance(self.polygon, list):
-                if len(self.polygon) < 3:
+                if len(self.polygon) > MAX_POLYGON_VERTICES:
+                    errors.append(f"polygon exceeds max vertices ({MAX_POLYGON_VERTICES})")
+                elif len(self.polygon) < 3:
                     errors.append(f"polygon list must have at least 3 points, got {len(self.polygon)}")
                 else:
                     poly = ShapelyPolygon(self.polygon)
