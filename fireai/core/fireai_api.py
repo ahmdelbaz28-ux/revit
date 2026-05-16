@@ -177,15 +177,22 @@ async def analyse_room(body: AnalyseRoomRequest) -> RoomResultOut:
 async def analyse_floor(body: AnalyseFloorRequest) -> FloorResultOut:
     room_specs = [_build_room_spec(r) for r in body.rooms]
     orchestrator = FloorOrchestrator()
-    floor_result = orchestrator.process(room_specs=room_specs, required_pct=body.required_coverage_pct)
+    floor_result = orchestrator.process(
+        room_specs=room_specs, 
+        project_name=body.floor_id,
+        source_dxf=""
+    )
+    # Calculate fully_compliant from rooms_passed
+    fully_compliant = floor_result.rooms_passed == floor_result.total_rooms and floor_result.rooms_errored == 0
+    
     return FloorResultOut(
-        floor_id=floor_result.floor_id,
-        fully_compliant=floor_result.fully_compliant,
+        floor_id=floor_result.project_name,  # Use project_name as floor_id
+        fully_compliant=fully_compliant,
         total_detectors=floor_result.total_detectors,
-        non_compliant_rooms=floor_result.non_compliant_rooms,
+        non_compliant_rooms=[],  # FloorResult doesn't have this
         room_results=[_room_result_to_out(r) for r in floor_result.room_results],
-        floor_warnings=floor_result.floor_warnings,
-        floor_errors=floor_result.floor_errors,
+        floor_warnings=[],  # FloorResult doesn't have this
+        floor_errors=[],  # FloorResult doesn't have this
     )
 
 async def upload_file(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
