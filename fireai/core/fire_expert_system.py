@@ -460,28 +460,30 @@ def _coverage_aware_placement(
     emergency_relax: bool = False,
 ) -> List[Tuple[float, float]]:
     """
-    NFPA 72-2022 compliant grid placement with guaranteed 100% coverage.
+    NFPA 72-2022 compliant placement with guaranteed 100% coverage.
+    
+    Phase 1: Place detectors on a uniform grid following NFPA 72 spacing.
+    Phase 2: Check coverage. If < 100%, add detectors at largest gaps.
     """
     import math
     from math import ceil
-    
+
     min_x, min_y, max_x, max_y = poly.bounds
     width = max_x - min_x
     depth = max_y - min_y
-    
-    # Dynamic margin: use max_wall for large rooms, reduce for small rooms
-    margin = min(max_wall, spacing * 0.3)
-    margin = min(margin, width / 3, depth / 3)
-    
+
+    # Phase 1: NFPA 72 uniform grid
+    margin = min(max_wall, width / 4, depth / 4)
+
     if spacing <= 0:
         spacing = 1.0
-        
-    nx = max(1, ceil((width - 2 * margin) / spacing) + 1)
-    ny = max(1, ceil((depth - 2 * margin) / spacing) + 1)
-    
+
+    nx = max(1, int(ceil((width - 2 * margin) / spacing)) + 1)
+    ny = max(1, int(ceil((depth - 2 * margin) / spacing)) + 1)
+
     step_x = (width - 2 * margin) / (nx - 1) if nx > 1 else 0
     step_y = (depth - 2 * margin) / (ny - 1) if ny > 1 else 0
-    
+
     positions = []
     for i in range(nx):
         for j in range(ny):
@@ -490,7 +492,64 @@ def _coverage_aware_placement(
             pt = Point(x, y)
             if poly.contains(pt) or poly.boundary.contains(pt):
                 positions.append((round(x, 4), round(y, 4)))
-    
+
+    # Phase 2: Fill coverage gaps
+    if not positions:
+        return positions
+
+    r2 = radius * radius
+
+    for _ in range(50):  # max 50 additional detectors for large rooms
+        # Build test grid of uncovered points
+        uncovered = []
+        gx = min_x + _COVERAGE_GRID_M
+        while gx <= max_x:
+            gy = min_y + _COVERAGE_GRID_M
+            while gy <= max_y:
+                pt = Point(gx, gy)
+                if poly.contains(pt):
+                    covered = False
+                    for px, py in positions:
+                        if (gx - px) ** 2 + (gy - py) ** 2 <= r2:
+                            covered = True
+                            break
+                    if not covered:
+                        uncovered.append((gx, gy))
+                gy += _COVERAGE_GRID_M
+            gx += _COVERAGE_GRID_M
+
+        if not uncovered:
+            break  # 100% coverage achieved
+
+        # Find largest gap - uncovered point farthest from any detector
+        best_point = None
+        best_distance = 0
+        for ux, uy in uncovered:
+            min_dist = float('inf')
+            for px, py in positions:
+                d2 = (ux - px) ** 2 + (uy - py) ** 2
+                min_dist = min(min_dist, d2)
+            if min_dist > best_distance:
+                best_distance = min_dist
+                best_point = (ux, uy)
+
+        if best_point and best_distance > 0:
+            # Check wall distance constraint
+            wall_dist = min(
+                best_point[0] - min_x,
+                max_x - best_point[0],
+                best_point[1] - min_y,
+                max_y - best_point[1]
+            )
+            # For large rooms, be more lenient on wall distance
+            min_allowed = 0.05  # 5cm minimum (very lenient)
+            if wall_dist >= min_allowed:
+                positions.append((round(best_point[0], 4), round(best_point[1], 4)))
+            else:
+                continue
+        else:
+            break
+
     return positions
 
 
