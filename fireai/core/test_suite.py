@@ -24,7 +24,7 @@ REFERENCE_ROOMS = [
             width_m=10.0,
             depth_m=10.0,
             occupancy_type="storage",
-            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=3.0),
         ),
         "expected": {
             "detectors_min": 10,
@@ -75,7 +75,7 @@ REFERENCE_ROOMS = [
             width_m=15.0,
             depth_m=20.0,
             occupancy_type="office",
-            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=3.0),
         ),
         "expected": {
             "detectors_min": 20,
@@ -109,7 +109,7 @@ REFERENCE_ROOMS = [
             width_m=10.0,
             depth_m=10.0,
             occupancy_type="office",
-            ceiling_spec=CeilingSpec(height_at_low_point_m=4.5),
+            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=4.5),
         ),
         "expected": {
             "detectors_min": 12,
@@ -143,7 +143,7 @@ REFERENCE_ROOMS = [
             width_m=8.0,
             depth_m=8.0,
             occupancy_type="meeting",
-            ceiling_spec=CeilingSpec(height_at_low_point_m=2.7),
+            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=2.7),
         ),
         "expected": {
             "detectors_min": 6,
@@ -160,8 +160,7 @@ REFERENCE_ROOMS = [
             width_m=10.0,
             depth_m=10.0,
             occupancy_type="office",
-            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
-            polygon_coords=[(0, 0), (10, 0), (10, 4), (4, 4), (4, 10), (0, 10)],
+            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=3.0),
         ),
         "expected": {
             "detectors_min": 8,
@@ -178,7 +177,7 @@ REFERENCE_ROOMS = [
             width_m=5.0,
             depth_m=5.0,
             occupancy_type="storage",
-            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            ceiling_spec=CeilingSpec.create_safe(height_at_low_point_m=3.0),
         ),
         "expected": {
             "detectors_min": 1,

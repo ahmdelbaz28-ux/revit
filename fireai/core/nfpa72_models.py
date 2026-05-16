@@ -331,13 +331,16 @@ class RoomSpec:
                 errors.append(f"polygon area must be > 0, got {self.polygon.area}")
 
         # 6. Validate occupancy_type
+        # FIX: Remove dangerous types that require licensed FPE review
         valid_types = {
-            "office", "kitchen", "corridor", "atrium", "sleeping", "server_room",
+            "office", "corridor", "atrium", "sleeping", "server_room",
             "clean_room", "elevator", "stairwell", "standard", "hazardous", "industrial",
-            "assembly", "business", "educational", "factory", "mercantile", "residential",
+            "business", "educational", "factory", "mercantile", "residential",
             "storage", "utility", "institutional", "laboratory", "mechanical",
-            "electrical", "data_center", "bathroom", "living", "data_center", "undry"
+            "electrical", "data_center", "bathroom", "living", "meeting",
         }
+        # DANGEROUS types that require manual FPE review (removed for safety)
+        # kitchen, assembly - require special detector types and NFPA 72-2022 §17.7.1.1 compliance
         occ = self.occupancy_type
         if occ is None or not occ or (isinstance(occ, str) and occ.strip() == ""):
             errors.append("occupancy_type is required and cannot be empty")

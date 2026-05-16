@@ -1331,6 +1331,9 @@ def enhance_result(
         detector_positions=result.detector_positions,
         placement_proof=result.placement_proof,
         confidence=result.confidence,
+        confidence_score=result.confidence_score,  # FIX: Copy confidence_score
+        wall_violations=result.wall_violations,
+        occupancy_class=result.occupancy_class,
         refused=result.refused,
         refusal_reason=result.refusal_reason,
         warnings=result.warnings,
