@@ -23,8 +23,8 @@ from typing import List, Tuple, Optional
 from shapely.geometry import Polygon as ShapelyPolygon
 
 # Constants
-_NFPA_HEIGHT_MIN_M = 0.0
-_NFPA_HEIGHT_MAX_M = 10.0
+_NFPA_HEIGHT_MIN_M = 3.0   # NFPA 72 min ceiling height
+_NFPA_HEIGHT_MAX_M = 15.24  # NFPA 72 max ceiling height
 MIN_WALL_DISTANCE_M = 0.10  # 4 inches per NFPA 72 §17.6.3.1.1
 import math
 
@@ -79,6 +79,11 @@ class CeilingType(Enum):
     SHED = "shed"
     TRUSS = "truss"
     COMBUSTIBLE = "combustible"
+    # Additional types used by expert system
+    SMOOTH = "smooth"
+    BEAMED = "beamed"
+    SLOPED = "sloped"
+    CORRIDOR = "corridor"
 # ============================================================================
 # EXCEPTIONS - NFPA Compliance Errors
 # ============================================================================
