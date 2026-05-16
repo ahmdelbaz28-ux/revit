@@ -354,7 +354,7 @@ def _classify_occupancy(room_spec: RoomSpec, ceiling: CeilingSpec) -> OccupancyC
     keywords.  High ceilings override standard classification because the
     ceiling height determines the detector technology.
     """
-    rt = _normalise_room_type(room_spec.room_type)
+    rt = _normalise_room_type(room_spec.occupancy_type)
 
     if rt in _ELEVATOR_TYPES:
         return OccupancyClass.ELEVATOR
@@ -723,7 +723,7 @@ def _generate_improvements(
         ))
 
     # Ceiling clamped — PE must verify
-    if ceiling.was_clamped:
+    if getattr(ceiling, "was_clamped", False):
         props.append(ImprovementProposal(
             priority    = "COMPLIANCE",
             clause      = "NFPA 72-2022 Table 17.6.3.1",
@@ -908,7 +908,7 @@ class ExpertSystem:
         required_fraction = required_coverage_pct / 100.0
 
         # ── Phase 0: Input Validation & Refusal Gate ───────────────────
-        poly = _build_valid_polygon(room_spec.polygon_coords)
+        poly = room_spec.polygon
         if poly is None:
             raise InputValidationError(
                 f"Room '{room_spec.room_id}': polygon is degenerate, "
@@ -924,23 +924,21 @@ class ExpertSystem:
             )
 
         # ── Phase 1: Safe Ceiling Construction ────────────────────────
-        input_ceiling  = room_spec.ceiling
-        ceiling_clamped = input_ceiling.was_clamped
+        input_ceiling  = room_spec.ceiling_spec
+        ceiling_clamped = getattr(input_ceiling, "was_clamped", False)
 
         ceiling = CeilingSpec.create_safe(
             height_at_low_point_m  = input_ceiling.height_at_low_point_m,
             height_at_high_point_m = input_ceiling.height_at_high_point_m,
             ceiling_type           = input_ceiling.ceiling_type,
-            beam_depth_m           = input_ceiling.beam_depth_m,
-            beam_spacing_m         = input_ceiling.beam_spacing_m,
         )
-        if ceiling.was_clamped:
+        if getattr(ceiling, "was_clamped", False):
             ceiling_clamped = True
 
         if ceiling_clamped:
             original_h = (
                 input_ceiling.original_height_m
-                if input_ceiling.was_clamped
+                if input_getattr(ceiling, "was_clamped", False)
                 else ceiling.original_height_m
             )
             result.warnings.append(
