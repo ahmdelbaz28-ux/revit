@@ -12,7 +12,7 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout, DETECTOR_RADIUS
+from density_optimizer import DensityOptimizer, Room, DetectorLayout, DETECTOR_RADIUS
 
 
 # ── Expert-system facade ────────────────────────────────────────────────────────
