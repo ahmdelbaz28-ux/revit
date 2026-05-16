@@ -17,7 +17,7 @@ from typing import Dict, List, Optional, Any
 
 # Import audit_store functions (module-level)
 import fireai.core.audit_store as audit_store
-from fireai.core.fire_expert_system_v10_enhanced import (
+from fireai.core.fire_expert_system import (
     EnhancedExpertResult,
     enhance_result,
     analyse_room_enhanced,

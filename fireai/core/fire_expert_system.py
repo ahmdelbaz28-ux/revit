@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import logging
 import math
+import random
 from dataclasses import dataclass, field
 from enum import Enum, unique
 from .audit_trail import AuditTrail
@@ -1181,3 +1182,226 @@ def _find_uncovered_centroid(
     # Centroid outside polygon (e.g. concave shape) — use nearest interior point
     nearest = poly.exterior.interpolate(poly.exterior.project(c))
     return (round(nearest.x, 4), round(nearest.y, 4))
+# Monte Carlo constants (inspired by V11)
+_MC_ITERATIONS: int = 50
+_MC_RESILIENCE_FLOOR: float = 0.80
+
+
+@dataclass
+class ResilienceResult:
+    """Result of Monte Carlo device-failure simulation."""
+    scenarios_run:        int
+    scenarios_passed:     int
+    pass_rate:            float
+    min_coverage_seen:    float
+    resilience_floor:     float
+    resilient:            bool
+    failure_detail:       Optional[str] = None
+
+
+def _run_resilience_check(
+    positions:   List[Tuple[float, float]],
+    poly:        Polygon,
+    radius:      float,
+    floor:       float = _MC_RESILIENCE_FLOOR,
+    iterations:  int   = _MC_ITERATIONS,
+) -> ResilienceResult:
+    """
+    Run Monte Carlo resilience check - simulates single-device failures.
+
+    Args:
+        positions: Current detector positions.
+        poly: Room polygon for coverage check.
+        radius: Coverage radius per detector.
+        floor: Minimum pass rate (default 80%).
+        iterations: Number of Monte Carlo iterations.
+
+    Returns:
+        ResilienceResult with pass_rate, min_coverage, and resilient flag.
+    """
+    if len(positions) < 2:
+        # Single detector - cannot have resilience (no redundancy)
+        return ResilienceResult(
+            scenarios_run=0,
+            scenarios_passed=0,
+            pass_rate=1.0,
+            min_coverage_seen=1.0,
+            resilience_floor=floor,
+            resilient=False,
+            failure_detail="Single detector - no redundancy possible",
+        )
+
+    scenarios_passed = 0
+    min_coverage_seen = 1.0
+
+    for _ in range(iterations):
+        # Try removing one random detector
+        if not positions:
+            break
+        idx = random.randint(0, len(positions) - 1)
+        remaining = positions[:idx] + positions[idx + 1:]
+
+        if not remaining:
+            min_coverage_seen = 0.0
+            break
+
+        # Check coverage with remaining detectors
+        from shapely.ops import unary_union
+        from shapely.geometry import Point
+
+        coverage = unary_union([Point(x, y).buffer(radius, resolution=12) for x, y in remaining])
+        covered_area = poly.intersection(coverage).area
+        coverage_fraction = covered_area / poly.area
+
+        min_coverage_seen = min(min_coverage_seen, coverage_fraction)
+
+        if coverage_fraction >= floor:
+            scenarios_passed += 1
+
+    return ResilienceResult(
+        scenarios_run=iterations,
+        scenarios_passed=scenarios_passed,
+        pass_rate=scenarios_passed / iterations if iterations > 0 else 0.0,
+        min_coverage_seen=min_coverage_seen,
+        resilience_floor=floor,
+        resilient=min_coverage_seen >= floor,
+        failure_detail=None if min_coverage_seen >= floor else "Coverage below threshold under single failure",
+    )
+
+
+def _sign_proof(result, poly, occupancy):
+    """
+    Placeholder for RegulatoryProofEngine integration.
+
+    In production, this would call an external signing service
+    to prove the design meets NFPA 72 requirements.
+
+    Args:
+        result: ExpertResult to sign.
+        poly: Room polygon.
+        occupancy: OccupancyClass.
+
+    Returns:
+        Boolean (placeholder: always True).
+    """
+    # TODO: Integrate with RegulatoryProofEngine
+    return True
+
+
+class EnhancedExpertResult(ExpertResult):
+    """Enhanced result with resilience testing and regulatory proof."""
+
+    resilience: Optional[ResilienceResult] = None
+    signed_proof: bool = False
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.resilience and self.resilience.resilient:
+            self.confidence = ConfidenceLevel.CERTIFIED
+
+
+def enhance_result(
+    result: ExpertResult,
+    room_id: str,
+    poly: Polygon,
+    radius: float,
+    run_resilience: bool = True,
+) -> EnhancedExpertResult:
+    """
+    Enhance V10 result with resilience testing.
+
+    This creates an EnhancedExpertResult preserving ALL original
+    V10 values while adding resilience analysis.
+
+    Args:
+        result: Original V10 ExpertResult.
+        room_id: Room identifier.
+        poly: Room polygon.
+        radius: Coverage radius.
+        run_resilience: Whether to run Monte Carlo check.
+
+    Returns:
+        EnhancedExpertResult - same as result plus resilience.
+    """
+    # Build enhanced result - copy all original fields
+    enhanced = EnhancedExpertResult(
+        room_id=result.room_id,
+        nfpa_version=result.nfpa_version,
+        detector_type=result.detector_type,
+        detector_positions=result.detector_positions,
+        placement_proof=result.placement_proof,
+        confidence=result.confidence,
+        refused=result.refused,
+        refusal_reason=result.refusal_reason,
+        warnings=result.warnings,
+        errors=result.errors,
+    )
+
+    # Run resilience check if multiple detectors and requested
+    if run_resilience and len(result.detector_positions) >= 2:
+        enhanced.resilience = _run_resilience_check(
+            positions=result.detector_positions,
+            poly=poly,
+            radius=radius,
+        )
+
+        # Adjust confidence based on resilience
+        if enhanced.resilience and enhanced.resilience.resilient:
+            enhanced.confidence = ConfidenceLevel.CERTIFIED
+
+    return enhanced
+
+
+def analyse_room_enhanced(
+    room_id: str,
+    width_m: float,
+    depth_m: float,
+    ceiling_height_m: float = 3.0,
+    run_resilience: bool = True,
+) -> EnhancedExpertResult:
+    """
+    V10 Enhanced analysis - wrapper that calls V10 then enhances.
+
+    This is the main entry point for V10 Enhanced analysis.
+    It runs the original V10 ExpertSystem, then enhances
+    the result with resilience testing.
+
+    Args:
+        room_id: Room identifier.
+        width_m: Room width.
+        depth_m: Room depth.
+        ceiling_height_m: Ceiling height.
+        run_resilience: Whether to run Monte Carlo check.
+
+    Returns:
+        EnhancedExpertResult with full analysis and resilience.
+    """
+    # Build room spec for V10
+    ceiling_spec = CeilingSpec(height_at_low_point_m=ceiling_height_m)
+    room_spec = RoomSpec(
+        room_id=room_id,
+        width_m=width_m,
+        depth_m=depth_m,
+        ceiling_spec=ceiling_spec,
+    )
+
+    # Run original V10 analysis
+    system = ExpertSystem()
+    result = system.analyse_room(room_spec=room_spec)
+
+    # Get the EXACT same coverage_radius that V10 used
+    # This should match what V10 calculated internally
+    radius = calculate_coverage_radius(ceiling_spec, result.detector_type)
+
+    # Build polygon for resilience check
+    poly = Polygon([
+        (0, 0),
+        (width_m, 0),
+        (width_m, depth_m),
+        (0, depth_m)
+    ])
+
+    # Enhance with resilience - pass run_resilience parameter
+    enhanced = enhance_result(result, room_id, poly, radius, run_resilience=run_resilience)
+
+    return enhanced
