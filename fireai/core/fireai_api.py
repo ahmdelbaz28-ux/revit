@@ -244,3 +244,54 @@ async def rate_limit_exception_handler(request: Request, exc: RateLimitExceeded)
         status_code=429,
         content={"detail": "Rate limit exceeded. Please try again later."},
     )
+
+
+# ============================================================================
+# ENDPOINTS USING V10 ENHANCED + AUDIT STORE
+# ============================================================================
+
+# Global FireAISystem instance
+_fireai_system = None
+
+
+def _get_fireai_system():
+    """Get or create FireAISystem instance."""
+    global _fireai_system
+    if _fireai_system is None:
+        from fireai.core.fireai_core import FireAISystem
+        _fireai_system = FireAISystem(db_path=":memory:")
+    return _fireai_system
+
+
+@app.post("/analyse/room/v10", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
+@limiter.limit("30/minute")
+async def analyse_room_v10(request: Request, body: AnalyseRoomRequest) -> RoomResultOut:
+    """Analyze room using V10 Enhanced with resilience and audit trail."""
+    try:
+        room_spec = _build_room_spec(body.room)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    
+    system = _get_fireai_system()
+    result = system.analyse_room(
+        room_spec=room_spec,
+        user_id="api_user",
+        run_resilience=True,
+    )
+    
+    return _room_result_to_out(result)
+
+
+@app.get("/audit/trail", tags=["Audit"], dependencies=[Depends(verify_api_key)])
+async def get_audit_trail_v10():
+    """Get audit trail from FireAISystem."""
+    system = _get_fireai_system()
+    return {"events": system.get_audit_trail()}
+
+
+@app.get("/audit/verify", tags=["Audit"], dependencies=[Depends(verify_api_key)])
+async def verify_audit_v10():
+    """Verify audit trail integrity."""
+    system = _get_fireai_system()
+    is_valid = system.verify_audit_integrity()
+    return {"valid": is_valid, "message": "Audit chain is valid" if is_valid else "Audit chain may be tampered"}

@@ -2,11 +2,10 @@
 fireai_core.py — Central Orchestrator for FireAI Production System
 =====================================================
 This module provides FireAISystem which integrates:
-  - ExpertSystem (analysis engine)
-  - AuditStore (tamper-evident logging)
-  - V10 Enhanced improvements
+  - fire_expert_system_v10_enhanced (V10 Enhanced analysis engine)
+  - audit_store (tamper-evident logging)
 
-Supports room-level analysis with full audit trail for production use.
+Supports room-level analysis with full audit trail and resilience checks.
 """
 
 import sys
@@ -18,10 +17,10 @@ from typing import Dict, List, Optional, Any
 
 # Import audit_store functions (module-level)
 import fireai.core.audit_store as audit_store
-from fireai.core.fire_expert_system import (
-    ExpertSystem,
-    ExpertResult,
-    ConfidenceLevel,
+from fireai.core.fire_expert_system_v10_enhanced import (
+    EnhancedExpertResult,
+    enhance_result,
+    analyse_room_enhanced,
 )
 from fireai.core.nfpa72_models import RoomSpec
 
@@ -29,60 +28,58 @@ from fireai.core.nfpa72_models import RoomSpec
 @dataclass
 class FireAISystem:
     """
-    Central orchestrator that combines ExpertSystem analysis with audit logging.
+    Central orchestrator that combines V10 Enhanced analysis with audit logging.
     
     This is the main entry point for production use of FireAI system.
     Integrates:
-      - ExpertSystem: Analysis engine
-      - AuditStore: Tamper-evident audit trail (module functions)
+      - analyse_room_enhanced: V10 analysis with resilience
+      - enhance_result: Add resilience to any result
+      - AuditStore: Tamper-evident audit trail
     """
     
     db_path: str
     
     # Internal components
-    _expert: Optional[ExpertSystem] = field(default=None, init=False)
+    _expert: Optional[Any] = field(default=None, init=False)
     
     def __post_init__(self):
         """Initialize internal components."""
-        # For production, we use file-based audit store
-        # Set database path in audit_store module before first use
         import fireai.core.audit_store as audit_store
         
-        # Use provided db_path or default (avoid :memory: for audit)
+        # Use provided db_path or default
         db_path = self.db_path if self.db_path != ":memory:" else "/workspace/project/revit/fireai/core/audit_store.db"
         audit_store.DATABASE_PATH = db_path
         
-        # Force re-initialization with new path
-        # Delete existing DB if exists and we're resetting
+        # Reset database
         if os.path.exists(db_path):
             os.remove(db_path)
-        
-        # This will use the new db_path
         audit_store._init_database()
-        
-        # Create expert system
-        self._expert = ExpertSystem()
     
     def analyse_room(
         self,
         room_spec: RoomSpec,
-        user_id: str,
+        user_id: str = "system",
         run_resilience: bool = True,
-    ) -> ExpertResult:
+    ) -> EnhancedExpertResult:
         """
         Analyze a single room and log to audit trail.
+        Uses V10 Enhanced with resilience check.
         
         Args:
             room_spec: Room specification
             user_id: User performing the analysis (for audit)
-            run_resilience: Ignored (kept for API compatibility)
+            run_resilience: Whether to run resilience check
             
         Returns:
-            ExpertResult with full analysis results
+            EnhancedExpertResult with full analysis results and resilience
         """
-        # Run analysis
-        result = self._expert.analyse_room(
-            room_spec=room_spec,
+        # Run V10 Enhanced analysis with resilience
+        result = analyse_room_enhanced(
+            room_id=room_spec.room_id,
+            width_m=room_spec.width_m,
+            depth_m=room_spec.depth_m,
+            ceiling_height_m=room_spec.ceiling_spec.height_at_low_point_m if room_spec.ceiling_spec else 3.0,
+            run_resilience=run_resilience,
         )
         
         # Log to audit trail
@@ -92,6 +89,7 @@ class FireAISystem:
             "wall_violations": len(result.wall_violations),
             "coverage": result.placement_proof.coverage_fraction if result.placement_proof else None,
             "user_id": user_id,
+            "resilience": result.resilience.resilient if result.resilience else None,
         }
         
         audit_store.add_event(
@@ -128,8 +126,3 @@ class FireAISystem:
         """Verify the integrity of the audit trail."""
         is_valid, _ = audit_store.verify_chain()
         return is_valid
-    
-    @property
-    def expert(self) -> Optional[ExpertSystem]:
-        """Get the expert system for direct access."""
-        return self._expert

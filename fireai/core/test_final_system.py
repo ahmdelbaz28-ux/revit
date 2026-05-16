@@ -1,7 +1,7 @@
 """
 test_final_system.py – Final Integration Test for FireAI Production System
-==========================================================================
-Tests the full FireAISystem with V10 ExpertSystem and AuditStore.
+===================================================================
+Tests the full FireAISystem with V10 Enhanced and AuditStore.
 """
 
 import sys
@@ -17,7 +17,7 @@ if os.path.exists(DB_PATH):
 from fireai.core.fireai_core import FireAISystem
 from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
 
-print("=== FireAI Production System Test ===")
+print("=== FireAI Production System Test (V10 Enhanced) ===")
 print()
 
 # Create system
@@ -34,7 +34,7 @@ room = RoomSpec(
 print("2. Room created: OK")
 
 # Analyze room
-result = system.analyse_room(room, user_id="test_user")
+result = system.analyse_room(room, user_id="test_user", run_resilience=True)
 print("3. Analysis completed")
 
 # Check results
@@ -43,6 +43,7 @@ print("=== Results ===")
 print(f"Detectors placed: {len(result.detector_positions)}")
 print(f"Confidence: {result.confidence.value if result.confidence else 'UNKNOWN'}")
 print(f"Coverage: {result.placement_proof.coverage_fraction * 100:.1f}%" if result.placement_proof else "N/A")
+print(f"Resilience: {result.resilience.resilient if result.resilience else 'NOT RUN'}")
 
 # Assertions
 print()
