@@ -36,3 +36,11 @@
 - المساحات التي تحتوي على عوائق (أعمدة، عوارض، فتحات HVAC)
 
 الامتثال النهائي لـ NFPA 72 يقع على عاتق المهندس المسؤول.
+
+## الاعتمادات والمراجع
+- NFPA 72-2022 §17.6.3.1 (Spacing Requirements)
+- NFPA 72-2022 §17.7.4.2.3.1 (0.7S Rule)
+- NICET Fire Alarm Systems Manual
+- MeyerFire.com — Smoke Detector Spacing Guide
+- FireAlarmsOnline.com — 0.7S Rule Explanation
+- جميع الاختبارات والمحاكاة تمت باستخدام Python 3.8+
