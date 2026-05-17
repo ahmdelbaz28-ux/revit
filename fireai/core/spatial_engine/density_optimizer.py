@@ -84,6 +84,7 @@ class DensityOptimizer:
         best: Optional[DetectorLayout] = None
         for lay in cands:
             self._verify(lay)
+            self._audit_nfpa(lay)
             if lay.proof_valid and lay.wall_violations == 0:
                 best = lay
                 break
@@ -100,6 +101,7 @@ class DensityOptimizer:
         if best is None:
             best = self._fallback(room)
             self._verify(best)
+            self._audit_nfpa(best)
         return best
 
     # ── A: Hex-Guarded ──────────────────────────────────────────────────────────
