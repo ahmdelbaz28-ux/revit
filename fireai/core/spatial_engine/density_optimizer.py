@@ -117,27 +117,30 @@ class DensityOptimizer:
 
     # ── A: Hex-Guarded ──────────────────────────────────────────────────────────
 
-    def _calculate_rows(self, L: float) -> int:
+    def _calculate_rows(self, L: float) -> List[float]:
         """
-        Calculate minimum number of rows such that:
-          - distance between adjacent rows <= S
-          - distance from any row to nearest wall <= S/2
+        Returns y-coordinates of rows.
+        - First and last rows are within wall_limit (S/2) of the walls.
+        - Inner rows are evenly spaced such that gap <= Ry.
         """
-        available = L - 2 * self.wm
-        if available <= self.max_spacing:
-            return 1
-        n = 1
-        while True:
-            if n == 1:
-                gap = available
-            else:
-                gap = available / (n - 1)
-            wall_dist = gap / 2 if n > 1 else available / 2
-            if gap <= self.max_spacing + 1e-9 and wall_dist <= self.max_spacing / 2 + 1e-9:
-                return n
-            n += 1
-            if n > 100:
-                return max(1, math.ceil(available / self.max_spacing))
+        wm, Ry = self.wm, self.Ry_g
+        wall_limit = self.max_spacing / 2.0
+
+        # Small room: single row at center
+        if L <= 2 * wall_limit + 2 * wm:
+            return [round(L / 2.0, 3)]
+
+        # Boundary rows at wall_limit
+        y_first = wall_limit
+        y_last = L - wall_limit
+        available = y_last - y_first
+
+        # Number of gaps between rows (must be <= Ry)
+        n_gaps = max(1, math.ceil(available / Ry))
+        actual_ry = available / n_gaps
+
+        rows = [y_first + i * actual_ry for i in range(n_gaps + 1)]
+        return [round(y, 3) for y in rows]
 
     def _distribute_rows(self, L: float, n_rows: int) -> List[float]:
         """
@@ -150,18 +153,32 @@ class DensityOptimizer:
         gap = available / (n_rows - 1)
         return [self.wm + i * gap for i in range(n_rows)]
 
+    def _calculate_columns(self, W: float) -> Tuple[int, float]:
+        """
+        Returns (n_cols, step_x) for horizontal placement.
+        Guarantees step_x <= max_spacing.
+        """
+        available = W - 2 * self.wm
+        if available <= self.max_spacing:
+            return 1, 0.0
+        n = max(2, math.ceil(available / self.max_spacing) + 1)
+        step = available / (n - 1)
+        return n, step
+
     def _hex_guarded(self, room: Room, along_x: bool) -> DetectorLayout:
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
         S, wm, R = self.S_g, self.wm, self.R
         pts: List[Tuple[float, float]] = []
         
         # Use calculated row distribution for NFPA compliance
-        n_rows = self._calculate_rows(L)
-        y_coords = self._distribute_rows(L, n_rows)
+        # _calculate_rows now returns y-coordinates directly
+        y_coords = self._calculate_rows(L)
+        n_cols, step_x = self._calculate_columns(W)
         
         for row_index, y in enumerate(y_coords):
-            offset = (S / 2) if (row_index % 2 == 1) else 0.0
-            xs = self._row_xs_guarded(W, wm, S, offset, R)
+            # Use actual step_x for offset (not S/2)
+            offset = (step_x / 2) if (row_index % 2 == 1) else 0.0
+            xs = self._row_xs_guarded(W, wm, step_x if step_x > 0 else S, offset, R)
             for x in xs:
                 pts.append((x, y))
 
@@ -195,20 +212,21 @@ class DensityOptimizer:
         """
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
         R, wm = self.R, self.wm
-        S = self.max_spacing
         pts: List[Tuple[float, float]] = []
 
-        # Use calculated row distribution
-        n_rows = self._calculate_rows(L)
-        y_coords = self._distribute_rows(L, n_rows)
+        # Use calculated row distribution (now returns y-coordinates directly)
+        y_coords = self._calculate_rows(L)
+        
+        # Use _calculate_columns for horizontal placement
+        Nx, Sx = self._calculate_columns(W)
+        if Nx == 1:
+            even_xs = [W / 2]
+            odd_xs = [W / 2]
+        else:
+            even_xs = [wm + i * Sx for i in range(Nx)]
+            odd_xs = [even_xs[0] + Sx / 2 + i * Sx for i in range(Nx)]
 
-        # Calculate horizontal spacing
-        Nx = max(2, math.ceil((W - 2*wm) / S) + 1)
-        Sx = (W - 2*wm) / (Nx - 1) if Nx > 1 else 0
-        even_xs = [wm + i * Sx for i in range(Nx)]
-        odd_xs = [even_xs[0] + Sx / 2 + i * Sx for i in range(Nx)]
-
-        # Place detectors for each row
+        # Place detectors for each row using Sx/2 offset
         for row_index, y in enumerate(y_coords):
             xs = even_xs if row_index % 2 == 0 else odd_xs
             for x in xs:
