@@ -43,6 +43,7 @@ class DetectorLayout:
     wall_violations: int = 0
     method: str = ""
     violations: List[str] = field(default_factory=list)
+    fallback_used: bool = False
 
     @property
     def count(self) -> int:
@@ -111,6 +112,7 @@ class DensityOptimizer:
         # Fallback to _fallback only if no candidates
         if best is None:
             best = self._fallback(room)
+            best.fallback_used = True
             self._verify(best)
             self._audit_nfpa(best)
         return best
@@ -334,62 +336,54 @@ class DensityOptimizer:
             if yd < self.wm-1e-6 or yd > L-self.wm+1e-6: viol += 1
         layout.wall_violations = viol
 
-    def _audit_nfpa(self, layout: DetectorLayout) -> None:
-        """
-        NFPA 72 §17.6.3.1 spacing audit - corrected interpretation.
-        Checks:
-          1. Max detector-to-detector spacing <= S
-          2. Each wall has at least one detector within S/2.
-        """
-        if not hasattr(layout, 'violations'):
-            layout.violations = []
-        else:
-            layout.violations.clear()
-
+    def _audit_nfpa(self, layout: DetectorLayout) -> bool:
         dets = layout.detectors
-        W, L = layout.room.width, layout.room.length
         S = self.max_spacing
-        half_S = S / 2.0
+        W, L = layout.room.width, layout.room.length
+        wall_limit = S / 2
+        violations = []
+        
+        # Single detector - verify wall boundaries
         n = len(dets)
-        if n == 0:
-            return
-
-        # Inter-device spacing
-        max_gap = 0.0
-        for i in range(n):
-            xi, yi = dets[i]
-            min_dist_i = float('inf')
-            for j in range(n):
-                if i == j: continue
-                xj, yj = dets[j]
-                d2 = (xi - xj) ** 2 + (yi - yj) ** 2
-                if d2 < min_dist_i:
-                    min_dist_i = d2
-            dist_i = math.sqrt(min_dist_i)
-            if dist_i > max_gap:
-                max_gap = dist_i
-        if max_gap > S + 1e-6:
-            layout.violations.append(
-                f"Max detector spacing {max_gap:.3f}m > S={S:.3f}m"
-            )
-
-        # Wall coverage: each wall must have a detector within S/2
-        walls = {
-            'bottom': lambda x, y: y,
-            'top':    lambda x, y: L - y,
-            'left':   lambda x, y: x,
-            'right':  lambda x, y: W - x,
-        }
-        for wall_name, dist_fn in walls.items():
-            ok = any(dist_fn(x, y) <= half_S + 1e-6 for x, y in dets)
-            if not ok:
-                layout.violations.append(
-                    f"No detector within S/2={half_S:.3f}m of {wall_name} wall"
-                )
-
-        # Update proof_valid to include NFPA audit
-        if layout.violations:
-            layout.proof_valid = False
+        if n <= 1:
+            walls_ok = {'bottom': False, 'top': False, 'left': False, 'right': False}
+            for x, y in dets:
+                if y <= wall_limit + self.wm: walls_ok['bottom'] = True
+                if y >= L - wall_limit - self.wm: walls_ok['top'] = True
+                if x <= wall_limit + self.wm: walls_ok['left'] = True
+                if x >= W - wall_limit - self.wm: walls_ok['right'] = True
+            for wall, ok in walls_ok.items():
+                if not ok:
+                    violations.append(f"No boundary on {wall}")
+            layout.nfpa_valid = len(violations) == 0
+            return layout.nfpa_valid
+        
+        # (a) Inter-detector spacing <= S
+        for i, (x1, y1) in enumerate(dets):
+            for j, (x2, y2) in enumerate(dets[i+1:], i+1):
+                if math.hypot(x1-x2, y1-y2) > S * 1.01:
+                    violations.append(f"Spacing {i+1}-{j+1}")
+        
+        # (b) Boundary detectors + gap along wall <= S
+        walls = {'bottom': [], 'top': [], 'left': [], 'right': []}
+        for idx, (x, y) in enumerate(dets):
+            if y <= wall_limit + self.wm: walls['bottom'].append((idx, x))
+            if y >= L - wall_limit - self.wm: walls['top'].append((idx, x))
+            if x <= wall_limit + self.wm: walls['left'].append((idx, y))
+            if x >= W - wall_limit - self.wm: walls['right'].append((idx, y))
+        
+        for wall_name, wall_dets in walls.items():
+            if len(wall_dets) == 0:
+                violations.append(f"No boundary on {wall_name}")
+                continue
+            
+            coords = sorted([c for _, c in wall_dets])
+            for i in range(len(coords) - 1):
+                if coords[i+1] - coords[i] > S * 1.01:
+                    violations.append(f"Wall gap {wall_name}: {coords[i+1]-coords[i]:.2f}m")
+        
+        layout.nfpa_valid = len(violations) == 0
+        return layout.nfpa_valid
 
     def _verify_vectorized(self, layout: DetectorLayout) -> None:
         """
