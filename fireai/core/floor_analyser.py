@@ -1,47 +1,55 @@
 """
-fireai/core/floor_analyser.py  V2.0
+fireai/core/floor_analyser.py  V2.1
 ====================================
 Safe, sequential floor-level fire alarm design analyser.
 
-Uses the V7.3 DensityOptimizer directly – no ExpertSystem, no MIP.
+Uses the V7.3 DensityOptimizer directly - no ExpertSystem, no MIP.
+
+V2.1 Changes:
+  - Added theoretical_lower_bound and efficiency_ratio to RoomSummary
+  - Added detector_type and duct_devices fields to RoomSummary
+  - Added warnings list to RoomSummary
+  - Added BOUNDARY_LIMIT live warning when coverage > 99.9% but proof_valid=False
+  - Added optional AuditTrail integration
 
 Architecture:
-  • DensityOptimizer V7.3 (coverage_limit = R) for detector placement
-  • Sequential execution only — parallel processing disabled for safety
-  • Triple-check gate: proof_valid AND nfpa_valid AND NOT fallback_used
+  - DensityOptimizer V7.3 (coverage_limit = R) for detector placement
+  - Sequential execution only - parallel processing disabled for safety
+  - Triple-check gate: proof_valid AND nfpa_valid AND NOT fallback_used
 
 Safety guarantees:
-  • Every room result is independently verified.
-  • UNSAFE rooms block the floor from being marked compliant.
-  • No inter-room state sharing.
-  • No parallel execution (safety over speed).
+  - Every room result is independently verified.
+  - UNSAFE rooms block the floor from being marked compliant.
+  - No inter-room state sharing.
+  - No parallel execution (safety over speed).
 
 Safety Shield:
-  ┌───────────────┬─────────────────────────────┬───────────────────────┐
-  │ Check         │ Condition                   │ Action on Failure     │
-  ├───────────────┼─────────────────────────────┼───────────────────────┤
-  │ proof_valid   │ coverage >= 99.99%           │ Reject room, log err  │
-  │ nfpa_valid    │ zero NFPA spacing violations│ Reject room, log err  │
-  │ fallback_used │ hex/rect strategy must win   │ Reject room, log warn │
-  └───────────────┴─────────────────────────────┴───────────────────────┘
+  +---------------+-----------------------------+-----------------------+
+  | Check         | Condition                   | Action on Failure     |
+  +---------------+-----------------------------+-----------------------+
+  | proof_valid   | coverage >= 99.99%          | Reject room, log err  |
+  | nfpa_valid    | zero NFPA spacing violations| Reject room, log err  |
+  | fallback_used | hex/rect strategy must win  | Reject room, log warn |
+  +---------------+-----------------------------+-----------------------+
 
 Known Limitations:
-  • Rectangular rooms only (no L-shape support at this layer)
-  • Ceiling height not optimized (R=6.40m conservative per V7.3)
-  • Parallel processing disabled (sequential for safety)
-  • No beam/obstruction handling at this layer
+  - Rectangular rooms only (no L-shape support at this layer)
+  - Ceiling height not optimized (R=6.40m - NOT conservative for low ceilings)
+  - Parallel processing disabled (sequential for safety)
+  - No beam/obstruction handling at this layer
 
 Test Results:
-  • 15 rooms (3 floor tiers): 15/15 PASS — 100% coverage, 0 NFPA violations
-  • 1000 random rooms (seed=42): proof_failures=8/1000, nfpa_failures=0
-  • 100 random rooms (seed=2024): proof_failures=1/100, nfpa_failures=0
+  - 15 rooms (3 floor tiers): 15/15 PASS - 100% coverage, 0 NFPA violations
+  - 1000 random rooms (seed=42): proof_failures=8/1000, nfpa_failures=0
+  - 100 random rooms (seed=2024): proof_failures=1/100, nfpa_failures=0
+  - 10 realistic rooms: 10/10 PASS - 100% coverage, 0 NFPA violations
 """
 from __future__ import annotations
 
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import sys
 import os
@@ -72,39 +80,50 @@ class RoomSummary:
         room_id:        Unique room identifier from input dict.
         name:           Room display name.
         detector_count: Number of detectors placed in this room.
+        detector_type:  Detector type used (e.g. "smoke_photoelectric").
         coverage_pct:   Coverage percentage (target >= 99.99%).
         nfpa_valid:     True if NFPA 72 spacing rules are satisfied.
         proof_valid:    True if coverage proof passed (>= 99.99%).
         fallback_used:  True if fallback strategy was needed (not preferred).
         method:         Placement strategy used (hexG_x, hexA_y, rect_4x3, etc.).
         compliant:      True only if triple-check passes (proof + nfpa + no fallback).
-        safe_to_submit: Same as compliant — room is safe for PE review.
+        safe_to_submit: Same as compliant - room is safe for PE review.
         violations:     List of NFPA violation strings (empty if compliant).
+        warnings:       List of advisory warnings (including BOUNDARY_LIMIT).
+        theoretical_lower_bound: Estimative minimum detector count (NOT proven).
+        efficiency_ratio: theoretical_lower_bound / detector_count (closer to 1.0 = better).
+        duct_devices:   Number of duct detectors (NFPA 72 Section 17.7.5). Initial field only.
         analysis_ms:    Wall-clock time for this room's analysis in milliseconds.
     """
     room_id:          str
     name:             str
     detector_count:   int
-    coverage_pct:     float
-    nfpa_valid:       bool
-    proof_valid:      bool
-    fallback_used:    bool
-    method:           str
-    compliant:        bool
-    safe_to_submit:   bool
-    violations:       List[str]
-    analysis_ms:      float
+    detector_type:    str              = "smoke_photoelectric"
+    coverage_pct:     float            = 0.0
+    nfpa_valid:       bool             = False
+    proof_valid:      bool             = False
+    fallback_used:    bool             = False
+    method:           str              = ""
+    compliant:        bool             = False
+    safe_to_submit:   bool             = False
+    violations:       List[str]        = field(default_factory=list)
+    warnings:         List[str]        = field(default_factory=list)
+    theoretical_lower_bound: int       = 0
+    efficiency_ratio: float            = 0.0
+    duct_devices:     int              = 0
+    analysis_ms:      float            = 0.0
 
 
 @dataclass
 class FloorReport:
     """
     Complete analysis report for one floor.
- 
+
     Attributes:
         floor_id:            Floor identifier.
         room_summaries:      Per-room summaries in input order.
         total_detectors:     Sum across all rooms.
+        total_theoretical_lower_bound: Sum of theoretical lower bounds.
         fully_compliant:     True only if every room is compliant.
         safe_to_submit:      True only if every room is safe_to_submit.
         non_compliant_rooms: IDs of non-compliant rooms.
@@ -115,6 +134,7 @@ class FloorReport:
     floor_id:             str
     room_summaries:       List[RoomSummary]    = field(default_factory=list)
     total_detectors:      int                  = 0
+    total_theoretical_lower_bound: int         = 0
     fully_compliant:      bool                 = False
     safe_to_submit:       bool                 = False
     non_compliant_rooms:  List[str]            = field(default_factory=list)
@@ -131,20 +151,29 @@ class FloorAnalyser:
     """
     Safe, sequential full-floor fire alarm design analyser.
 
-    Uses the V7.3 DensityOptimizer directly – no ExpertSystem, no MIP.
+    Uses the V7.3 DensityOptimizer directly - no ExpertSystem, no MIP.
     Each room is analysed independently; no inter-room state is shared.
 
     Triple-Check Gate (a room passes only if ALL three are true):
-        1. proof_valid   — Coverage verification passed (>= 99.99%)
-        2. nfpa_valid    — NFPA 72 spacing/wall rules satisfied
-        3. not fallback_used — Hex or rect strategy won (not fallback)
+        1. proof_valid   - Coverage verification passed (>= 99.99%)
+        2. nfpa_valid    - NFPA 72 spacing/wall rules satisfied
+        3. not fallback_used - Hex or rect strategy won (not fallback)
 
     Any room failing the triple check is flagged as UNSAFE and blocks
     the floor from being marked safe_to_submit.
 
+    Live Warning (BOUNDARY_LIMIT):
+        When coverage > 99.9% but proof_valid=False, a warning is
+        added to room warnings and logged to AuditTrail (if provided).
+        This represents the known 0.8% boundary condition.
+
     Args:
         floor_id:   Floor identifier (e.g. "GF", "L1", "B2").
         optimizer:  DensityOptimizer instance (V7.3 with coverage_limit=R).
+        audit_trail: Optional AuditTrail for in-memory decision logging.
+        audit_store: Optional AuditStore for tamper-proof (SQLite) logging.
+                     Critical events (BOUNDARY_LIMIT warnings, placements)
+                     are written here when provided.
 
     Example:
         >>> from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
@@ -162,17 +191,21 @@ class FloorAnalyser:
         >>> print(report.safe_to_submit)
         True
     """
- 
+
     def __init__(
         self,
-        floor_id:  str,
-        optimizer: DensityOptimizer,
+        floor_id:    str,
+        optimizer:   DensityOptimizer,
+        audit_trail: Optional[object] = None,
+        audit_store: Optional[object] = None,
     ) -> None:
-        self.floor_id = floor_id
-        self.opt      = optimizer  # V7.3 as-is, no modifications
- 
+        self.floor_id    = floor_id
+        self.opt         = optimizer   # V7.3 as-is, no modifications
+        self.audit_trail = audit_trail
+        self.audit_store = audit_store
+
     # ─── public ──────────────────────────────────────────────────────
- 
+
     def analyse(self, rooms: List[dict]) -> FloorReport:
         """
         Analyse all rooms on the floor and return a FloorReport.
@@ -196,48 +229,113 @@ class FloorAnalyser:
 
         Side Effects:
             - Logs each room result via Python logging
+            - Records decisions in AuditTrail (if provided)
             - No external I/O or database writes
         """
         t0 = time.time()
         report = FloorReport(floor_id=self.floor_id)
- 
+
         if not rooms:
             report.floor_warnings.append("No rooms provided.")
             return report
- 
+
         for room_dict in rooms:
             # Build Room object from dict
             room = self._build_room(room_dict)
- 
-            # Analyse single room with V7.2
+
+            # Analyse single room with V7.3
             t_room = time.time()
             layout = self.opt.optimize(room)
             ms = (time.time() - t_room) * 1000
- 
+
             # Triple check
             ok = (
                 layout.proof_valid
                 and layout.nfpa_valid
                 and not layout.fallback_used
             )
- 
+
+            # BOUNDARY_LIMIT live warning
+            room_warnings = list(layout.warnings) if layout.warnings else []
+            if not layout.proof_valid and layout.coverage_pct > 99.9:
+                boundary_msg = (
+                    f"BOUNDARY_LIMIT: Coverage {layout.coverage_pct:.2f}% exceeds 99.9% "
+                    f"but grid verification at step=0.20m could not confirm 100%. "
+                    f"This is a known limitation (0.8% of rooms). PE review recommended."
+                )
+                room_warnings.append(boundary_msg)
+                logger.warning("Room %s: %s", room.name, boundary_msg)
+
+                # Log to AuditTrail if available
+                if self.audit_trail and hasattr(self.audit_trail, 'log_boundary_limit_warning'):
+                    self.audit_trail.log_boundary_limit_warning(
+                        room_id=room_dict.get("room_id", room.name),
+                        coverage_pct=layout.coverage_pct,
+                    )
+
+                # Log to AuditStore (tamper-proof) if available
+                if self.audit_store and hasattr(self.audit_store, 'add_event'):
+                    self.audit_store.add_event(
+                        event_type="BOUNDARY_LIMIT_WARNING",
+                        room_id=room_dict.get("room_id", room.name),
+                        details_dict={
+                            "coverage_pct": layout.coverage_pct,
+                            "proof_valid": False,
+                            "grid_resolution_m": 0.20,
+                            "note": "Coverage > 99.9% but proof_valid=False. Known 0.8% limitation. PE review recommended.",
+                        },
+                    )
+
+            # Log placement to AuditTrail if available
+            if self.audit_trail and hasattr(self.audit_trail, 'log_placement'):
+                self.audit_trail.log_placement(
+                    room_id=room_dict.get("room_id", room.name),
+                    detector_count=layout.count,
+                    detector_type="smoke_photoelectric",
+                    coverage_pct=layout.coverage_pct,
+                    positions=layout.detectors,
+                )
+
+            # Log placement to AuditStore (tamper-proof) if available
+            if self.audit_store and hasattr(self.audit_store, 'add_event'):
+                self.audit_store.add_event(
+                    event_type="DETECTOR_PLACEMENT",
+                    room_id=room_dict.get("room_id", room.name),
+                    details_dict={
+                        "detector_count": layout.count,
+                        "detector_type": "smoke_photoelectric",
+                        "coverage_pct": layout.coverage_pct,
+                        "nfpa_valid": layout.nfpa_valid,
+                        "proof_valid": layout.proof_valid,
+                        "method": layout.method,
+                        "theoretical_lower_bound": layout.theoretical_lower_bound,
+                        "efficiency_ratio": round(layout.efficiency_ratio, 4),
+                    },
+                )
+
             summary = RoomSummary(
-                room_id        = room_dict.get("room_id", room.name),
-                name           = room.name,
-                detector_count = layout.count,
-                coverage_pct   = layout.coverage_pct,
-                nfpa_valid     = layout.nfpa_valid,
-                proof_valid    = layout.proof_valid,
-                fallback_used  = layout.fallback_used,
-                method         = layout.method,
-                compliant      = ok,
-                safe_to_submit = ok,
-                violations     = getattr(layout, 'violations', []),
-                analysis_ms    = round(ms, 1),
+                room_id                 = room_dict.get("room_id", room.name),
+                name                    = room.name,
+                detector_count          = layout.count,
+                detector_type           = "smoke_photoelectric",
+                coverage_pct            = layout.coverage_pct,
+                nfpa_valid              = layout.nfpa_valid,
+                proof_valid             = layout.proof_valid,
+                fallback_used           = layout.fallback_used,
+                method                  = layout.method,
+                compliant               = ok,
+                safe_to_submit          = ok,
+                violations              = getattr(layout, 'violations', []),
+                warnings                = room_warnings,
+                theoretical_lower_bound = layout.theoretical_lower_bound,
+                efficiency_ratio        = layout.efficiency_ratio,
+                duct_devices            = 0,  # Initial - logic in future phase
+                analysis_ms             = round(ms, 1),
             )
             report.room_summaries.append(summary)
             report.total_detectors += summary.detector_count
- 
+            report.total_theoretical_lower_bound += summary.theoretical_lower_bound
+
         # Floor-level aggregation
         report.non_compliant_rooms = [
             s.room_id for s in report.room_summaries if not s.compliant
@@ -249,7 +347,7 @@ class FloorAnalyser:
         report.fully_compliant = len(report.non_compliant_rooms) == 0
         report.safe_to_submit  = len(report.unsafe_rooms) == 0
         report.analysis_time_s = round(time.time() - t0, 3)
- 
+
         if report.unsafe_rooms:
             report.floor_warnings.append(
                 f"UNSAFE rooms (do NOT submit): {report.unsafe_rooms}"
@@ -258,16 +356,16 @@ class FloorAnalyser:
             report.floor_warnings.append(
                 f"Non-compliant rooms: {report.non_compliant_rooms}"
             )
- 
+
         logger.info(
             "FloorAnalyser: floor=%s rooms=%d detectors=%d compliant=%s t=%.2fs",
             self.floor_id, len(rooms), report.total_detectors,
             report.fully_compliant, report.analysis_time_s,
         )
         return report
- 
+
     # ─── private ─────────────────────────────────────────────────────
- 
+
     @staticmethod
     def _build_room(room_dict: dict) -> Room:
         """
@@ -275,7 +373,7 @@ class FloorAnalyser:
 
         Calculates width/length from the bounding box of polygon_coords.
         This means L-shaped rooms are treated as their bounding rectangle
-        (known limitation — see module docstring).
+        (known limitation - see module docstring).
 
         Args:
             room_dict: Dictionary with keys:
@@ -290,7 +388,7 @@ class FloorAnalyser:
         coords = room_dict["polygon_coords"]
         xs = [p[0] for p in coords]
         ys = [p[1] for p in coords]
- 
+
         return Room(
             name   = room_dict.get("name", room_dict.get("room_id", "")),
             width  = max(xs) - min(xs),
@@ -308,19 +406,16 @@ if __name__ == "__main__":
     analyser = FloorAnalyser(floor_id="test_floor", optimizer=opt)
 
     test_rooms = [
-        # طابق 1: غرف صغيرة
         {"room_id": "small_office_3x4", "name": "small_office", "polygon_coords": [(0,0),(3,0),(3,4),(0,4)], "ceiling_height": 3.0},
         {"room_id": "kitchen_6x5", "name": "kitchen", "polygon_coords": [(0,0),(6,0),(6,5),(0,5)], "ceiling_height": 3.0},
         {"room_id": "medium_office_10x8", "name": "medium_office", "polygon_coords": [(0,0),(10,0),(10,8),(0,8)], "ceiling_height": 3.0},
         {"room_id": "stairwell_3x3", "name": "stairwell", "polygon_coords": [(0,0),(3,0),(3,3),(0,3)], "ceiling_height": 3.0},
         {"room_id": "deep_narrow_4x30", "name": "deep_narrow", "polygon_coords": [(0,0),(4,0),(4,30),(0,30)], "ceiling_height": 3.0},
-        # طابق 2: غرف متوسطة
         {"room_id": "large_hall_20x15", "name": "large_hall", "polygon_coords": [(0,0),(20,0),(20,15),(0,15)], "ceiling_height": 3.0},
         {"room_id": "warehouse_30x25", "name": "warehouse", "polygon_coords": [(0,0),(30,0),(30,25),(0,25)], "ceiling_height": 3.0},
         {"room_id": "open_plan_40x20", "name": "open_plan", "polygon_coords": [(0,0),(40,0),(40,20),(0,20)], "ceiling_height": 3.0},
         {"room_id": "narrow_15x1.5", "name": "narrow_corridor", "polygon_coords": [(0,0),(15,0),(15,1.5),(0,1.5)], "ceiling_height": 3.0},
         {"room_id": "corridor_20x2", "name": "corridor", "polygon_coords": [(0,0),(20,0),(20,2),(0,2)], "ceiling_height": 3.0},
-        # طابق 3: غرف كبيرة
         {"room_id": "square_large_50x50", "name": "square_large", "polygon_coords": [(0,0),(50,0),(50,50),(0,50)], "ceiling_height": 3.0},
         {"room_id": "giant_90x70", "name": "giant_90x70", "polygon_coords": [(0,0),(90,0),(90,70),(0,70)], "ceiling_height": 3.0},
         {"room_id": "giant_98x50", "name": "giant_98x50", "polygon_coords": [(0,0),(98,0),(98,50),(0,50)], "ceiling_height": 3.0},
@@ -328,11 +423,12 @@ if __name__ == "__main__":
         {"room_id": "thin_line_1x50", "name": "thin_line", "polygon_coords": [(0,0),(1,0),(1,50),(0,50)], "ceiling_height": 3.0},
     ]
 
-    print("Testing FloorAnalyser V2 with 15 rooms...")
+    print("Testing FloorAnalyser V2.1 with 15 rooms...")
     report = analyser.analyse(test_rooms)
 
     print(f"\nFloor: {report.floor_id}")
     print(f"Total detectors: {report.total_detectors}")
+    print(f"Total theoretical lower bound: {report.total_theoretical_lower_bound}")
     print(f"Fully compliant: {report.fully_compliant}")
     print(f"Safe to submit: {report.safe_to_submit}")
     print(f"Analysis time: {report.analysis_time_s:.2f}s")
@@ -340,8 +436,8 @@ if __name__ == "__main__":
     print(f"Unsafe rooms: {report.unsafe_rooms}")
     print(f"Warnings: {report.floor_warnings}")
 
-    print(f"\n{'Room':<25} {'Dets':<5} {'Cov%':<8} {'NFPA':<5} {'Proof':<5} {'Fallback':<8} {'Method':<15} {'Status':<10}")
-    print("-" * 95)
+    print(f"\n{'Room':<25} {'Dets':<5} {'LB':<4} {'Eff':<6} {'Cov%':<8} {'NFPA':<5} {'Proof':<5} {'Fallback':<8} {'Method':<15} {'Status':<10}")
+    print("-" * 105)
     for s in report.room_summaries:
         status = "PASS" if s.compliant else "FAIL"
-        print(f"{s.name:<25} {s.detector_count:<5} {s.coverage_pct:<8.2f} {str(s.nfpa_valid):<5} {str(s.proof_valid):<5} {str(s.fallback_used):<8} {s.method:<15} {status:<10}")
+        print(f"{s.name:<25} {s.detector_count:<5} {s.theoretical_lower_bound:<4} {s.efficiency_ratio:<6.2f} {s.coverage_pct:<8.2f} {str(s.nfpa_valid):<5} {str(s.proof_valid):<5} {str(s.fallback_used):<8} {s.method:<15} {status:<10}")

@@ -40,14 +40,43 @@ class DetectorLayout:
     detectors: List[Tuple[float, float]] = field(default_factory=list)
     coverage_pct: float = 0.0
     proof_valid: bool = False
+    nfpa_valid: bool = False  # Set by _audit_nfpa(); default False until audited
     wall_violations: int = 0
     method: str = ""
     violations: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
     fallback_used: bool = False
 
     @property
     def count(self) -> int:
         return len(self.detectors)
+
+    @property
+    def theoretical_lower_bound(self) -> int:
+        """Estimative lower bound for detector count (NOT proven minimum).
+
+        This is a geometric estimate: ceil(room_area / coverage_area_per_detector).
+        It does NOT guarantee that this count is achievable — it is a lower
+        bound only. For a proven minimum, MIP (PuLP) is required.
+        See TECHNICAL_HONESTY.md §5 for the strict distinction between
+        theoretical_lower_bound and theoretical_minimum.
+        """
+        area = self.room.width * self.room.length
+        coverage_area = math.pi * DETECTOR_RADIUS ** 2
+        return max(1, math.ceil(area / coverage_area))
+
+    @property
+    def efficiency_ratio(self) -> float:
+        """Ratio of theoretical_lower_bound to actual detector count.
+
+        Values closer to 1.0 indicate more efficient placement.
+        Values below 1.0 indicate the placement uses more detectors
+        than the theoretical lower bound (expected, since the bound
+        is not achievable for most room geometries).
+        """
+        if self.count == 0:
+            return 0.0
+        return self.theoretical_lower_bound / self.count
 
 
 class DensityOptimizer:
@@ -439,6 +468,23 @@ class DensityOptimizer:
         layout.wall_violations = viol
 
     @staticmethod
-    def theoretical_minimum(room: Room) -> int:
+    def theoretical_lower_bound(room: Room) -> int:
+        """Estimative lower bound for detector count (NOT proven minimum).
+
+        Same calculation as DetectorLayout.theoretical_lower_bound property.
+        Provided as a static convenience method.
+        See TECHNICAL_HONESTY.md §5: theoretical_lower_bound ≠ theoretical_minimum.
+        """
         return max(1, math.ceil(
             room.width * room.length / (math.pi * DETECTOR_RADIUS**2)))
+
+    # Private alias — DO NOT use outside this module.
+    # This name incorrectly implies a mathematically proven minimum.
+    # See TECHNICAL_HONESTY.md §5: theoretical_lower_bound ≠ theoretical_minimum.
+    @staticmethod
+    def _theoretical_minimum(room: Room) -> int:
+        """DEPRECATED: Use theoretical_lower_bound instead.
+        Private method — do not call from outside this module.
+        The name 'theoretical_minimum' creates a precision illusion.
+        """
+        return DensityOptimizer.theoretical_lower_bound(room)
