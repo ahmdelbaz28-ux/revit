@@ -1,38 +1,54 @@
-# FireAI v7.2 — Elite Spatial Engine
+# NFPA 72 Calculator
 
-## الأسس الهندسية
-- **نصف قطر التغطية (R):** 6.4 متر (0.7S) — وفقاً لـ NFPA 72 §17.7.4.2.3.1 (خيار 0.7S)
-- **التباعد الأقصى (S):** 9.14 متر — وفقاً لـ NFPA 72 §17.6.3.1
-- **مسافة الجدار القصوى:** 4.57 متر (S/2) — للكواشف الحدودية فقط
-- **الخوارزميات:** سداسية (Hexagonal) + مستطيلة (Rectangular) + احتياطية (Fallback)
-- **التبعيات:** Python 3.8+ فقط (لا Shapely، لا NumPy إجباري)
+## ⚠️ Historical Acknowledgments
 
-## نتائج الاختبار
-- **الاختبار:** 1000 غرفة عشوائية (seed=42)
-- **الناجحات:** 995/1000 (99.5%)
-- **استخدام fallback:** 60 غرفة (6.0%)
-- **إحصائيات الكواشف:** min=1, max=12, mean≈2.2
+**Previous claims in this repository were incorrect:**
+- "FireAI" and "FireAlarmAI" names are misleading - this is an NFPA 72 calculator, not AI
+- "Production Ready" claims were premature
+- "67% success" claims in commit d429e48 were fraudulent - reverted
+- Auto-detection does not work - manual input is required
 
-## القيود المعروفة والفاشلات المُوثَّقة
+## What This Tool Does
 
-| # | الأبعاد | الكواشف | التغطية | سبب الفشل | الطريقة |
-|---|---------|---------|---------|-----------|---------|
-| 1 | 1.43×10.78m | 2 | 99.9% | تغطية ناقصة 0.1% (ممر طويل) | hexA_y |
-| 2 | 59.79×1.22m | 9 | 99.9% | تغطية ناقصة 0.1% (ممر طويل) | hexG_x |
-| 3 | 51.40×0.86m | 7 | 99.9% | تغطية ناقصة 0.1% (ممر ضيق) | hexG_x |
-| 4 | 90.41×70.51m | 30 | — | انتهاك NFPA (مسافة > S) | rect_10x3 |
-| 5 | 98.87×50.48m | 34 | — | انتهاك NFPA (مسافة > S) | rect_17x2 |
+- Extracts geometry from floor plan PDFs (wall detection)
+- Calculates NFPA 72-2022 compliant detector coverage
+- Requires MANUAL room type input via `--room-types` JSON file
+- No automatic room type detection - engineer must verify all inputs
 
-**تحليل الفاشلات:**
-- 3 غرف: ممرات طويلة جداً (نسبة عرض إلى طول > 10:1) — التغطية 99.9%
-- 2 غرف: مساحات ضخمة (>4500 م²) — استراتيجيات rect تُنتج تباعداً يتجاوز S
+## Usage
 
-## ⚠️ تحذير الأمان
-**هذه الأداة مساعدة للمهندس، وليست بديلاً عن حكمه.**
-يجب على مُصمم مؤهل مراجعة جميع التخطيطات، خاصة في:
-- الغرف العملاقة (>1000 م²)
-- الممرات الطويلة جداً (نسبة > 10:1)
-- الغرف غير المستطيلة
-- المساحات التي تحتوي على عوائق (أعمدة، عوارض، فتحات HVAC)
+```bash
+# Run with manual room types
+python3 run_full_pipeline.py floor_plan.pdf --room-types room_types.json
 
-الامتثال النهائي لـ NFPA 72 يقع على عاتق المهندس المسؤول.
+# Without room types - all rooms show as unknown with 0 detectors
+python3 run_full_pipeline.py floor_plan.pdf --non-interactive
+```
+
+## Known Limitations
+
+- NO automatic room type detection
+- NO validation on room size vs room type
+- Engineer must manually input room types
+- Large spaces (>500m²) require special review
+- Output requires PE (Fire Protection Engineer) review
+
+## Room Types Sample
+
+Edit `room_types_sample.json` to match room names in your PDF:
+
+```json
+{
+  "rooms": {
+    "room_1": "atrium",
+    "room_2": "corridor",
+    "room_3": "kitchen"
+  }
+}
+```
+
+## Status
+
+- NOT production ready
+- REQUIRES engineer verification
+- NOT an AI system
