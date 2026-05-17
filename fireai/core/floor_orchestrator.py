@@ -14,7 +14,7 @@ import logging
 from .audit_trail import AuditTrail
 from .nfpa72_models import RoomSpec, NFPAComplianceError
 from .nfpa72_coverage import verify_full_coverage
-from spatial_engine.mip_solver import OptimalMIPEngine
+from .spatial_engine.density_optimizer import DensityOptimizer, Room
 
 logger = logging.getLogger("fireai.orchestrator")
 
@@ -175,36 +175,39 @@ class FloorOrchestrator:
 
         try:
             # [1] NEW Engine for every room — no shared state
-            engine = OptimalMIPEngine(spec)
+            # Use DensityOptimizer V6 with hexagonal placement strategies
+            room_data = Room(
+                name=spec.name,
+                width=spec.width_m,
+                length=spec.length_m,
+                ceiling_height=spec.ceiling_height_m or 3.0
+            )
+            optimizer = DensityOptimizer()
+            layout = optimizer.optimize(room_data)
 
-            # [2] Solve — SSOT from meta
-            positions, count, ok, meta = engine.solve()
+            # [2] Build result from layout
+            positions = layout.detectors
+            count = layout.count
 
-            if not ok:
-                result.errors.append("MIP Solver failed to find optimal solution")
-                result.solve_time_s = round(time.monotonic() - start, 3)
-                return result
-
-            # [3] Verify coverage — using meta ONLY (SSOT)
+            # Verify coverage
             coverage = verify_full_coverage(
                 room_polygon=spec.polygon,
                 detector_positions=positions,
-                coverage_geometry=meta["coverage_geometry"],
-                detector_radius=meta["radius_m"],
-                listed_spacing_m=meta["spacing_m"],
+                coverage_geometry="circular",
+                detector_radius=optimizer.R,
+                listed_spacing_m=optimizer.max_spacing,
                 grid_resolution_m=self.grid_res,
             )
 
-            # [4] Build result from meta + coverage
+            # [3] Build result from layout + coverage
             result.status = "PASS" if coverage["compliance_status"] == "PASS" else "FAIL"
-            result.radius_m = meta["radius_m"]
-            result.spacing_m = meta["spacing_m"]
-            result.geometry = meta["coverage_geometry"]
+            result.radius_m = optimizer.R
+            result.spacing_m = optimizer.max_spacing
+            result.geometry = "circular"
             result.detector_count = count
             result.detector_positions = positions
             result.coverage_pct = coverage["coverage_percentage"]
             result.worst_case_distance_m = coverage["worst_case_distance_m"]
-            result.audit_notes = meta.get("audit_notes", [])
 
             if result.status == "FAIL":
                 result.errors.append(
