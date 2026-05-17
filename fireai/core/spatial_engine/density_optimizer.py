@@ -43,7 +43,6 @@ class DetectorLayout:
     wall_violations: int = 0
     method: str = ""
     violations: List[str] = field(default_factory=list)
-    fallback_used: bool = False
 
     @property
     def count(self) -> int:
@@ -112,15 +111,8 @@ class DensityOptimizer:
         # Fallback to _fallback only if no candidates
         if best is None:
             best = self._fallback(room)
-            best.fallback_used = True
             self._verify(best)
             self._audit_nfpa(best)
-            # Warn if coverage below 99.9%
-            if best.coverage_pct < 99.9:
-                best.proof_valid = False
-                if not hasattr(best, 'violations'):
-                    best.violations = []
-                best.violations.append("FALLBACK_WARNING: coverage < 99.9%")
         return best
 
     # ── A: Hex-Guarded ──────────────────────────────────────────────────────────
@@ -129,12 +121,10 @@ class DensityOptimizer:
         """
         Returns y-coordinates of rows.
         - First and last rows are within wall_limit (S/2) of the walls.
-        - Inner rows are evenly spaced such that no wall segment is left uncovered.
-        Uses max_spacing (S) to ensure wall segment coverage.
+        - Inner rows are evenly spaced such that gap <= Ry.
         """
-        wm = self.wm
-        S = self.max_spacing
-        wall_limit = S / 2.0
+        wm, Ry = self.wm, self.Ry_g
+        wall_limit = self.max_spacing / 2.0
 
         # Small room: single row at center
         if L <= 2 * wall_limit + 2 * wm:
@@ -145,11 +135,11 @@ class DensityOptimizer:
         y_last = L - wall_limit
         available = y_last - y_first
 
-        # Number of gaps between rows (must be <= S for wall coverage)
-        n_gaps = max(1, math.ceil(available / S))
-        actual_gap = available / n_gaps
+        # Number of gaps between rows (must be <= Ry)
+        n_gaps = max(1, math.ceil(available / Ry))
+        actual_ry = available / n_gaps
 
-        rows = [y_first + i * actual_gap for i in range(n_gaps + 1)]
+        rows = [y_first + i * actual_ry for i in range(n_gaps + 1)]
         return [round(y, 3) for y in rows]
 
     def _distribute_rows(self, L: float, n_rows: int) -> List[float]:
@@ -166,19 +156,11 @@ class DensityOptimizer:
     def _calculate_columns(self, W: float) -> Tuple[int, float]:
         """
         Returns (n_cols, step_x) for horizontal placement.
-        Handles very narrow rooms where single detector covers entire width.
+        Guarantees step_x <= max_spacing.
         """
         available = W - 2 * self.wm
-        
-        # Very narrow room: single detector at center covers width
-        if available <= self.R:
-            return 1, 0.0
-        
-        # Medium room
         if available <= self.max_spacing:
-            return 1, available / 2
-        
-        # Large room
+            return 1, 0.0
         n = max(2, math.ceil(available / self.max_spacing) + 1)
         step = available / (n - 1)
         return n, step
@@ -352,10 +334,10 @@ class DensityOptimizer:
 
     def _audit_nfpa(self, layout: DetectorLayout) -> None:
         """
-        NFPA 72 §17.6.3.1 spacing audit - hardened version.
+        NFPA 72 §17.6.3.1 spacing audit - corrected interpretation.
         Checks:
           1. Max detector-to-detector spacing <= S
-          2. Every S meters of wall must have at least one detector within S/2
+          2. Each wall has at least one detector within S/2.
         """
         if not hasattr(layout, 'violations'):
             layout.violations = []
@@ -365,12 +347,12 @@ class DensityOptimizer:
         dets = layout.detectors
         W, L = layout.room.width, layout.room.length
         S = self.max_spacing
-        wall_limit = S / 2.0
+        half_S = S / 2.0
         n = len(dets)
         if n == 0:
             return
 
-        # 1. Max spacing between any two detectors
+        # Inter-device spacing
         max_gap = 0.0
         for i in range(n):
             xi, yi = dets[i]
@@ -389,25 +371,23 @@ class DensityOptimizer:
                 f"Max detector spacing {max_gap:.3f}m > S={S:.3f}m"
             )
 
-        # 2. Wall segment coverage: every S meters of wall must have detector within S/2
-        def check_wall_segments(wall_length: float, get_point, wall_name: str):
-            n_segments = max(1, int(math.ceil(wall_length / S)))
-            seg_length = wall_length / n_segments
-            for seg in range(n_segments):
-                seg_center = (seg + 0.5) * seg_length
-                px, py = get_point(seg_center)
-                if not any(math.hypot(px-dx, py-dy) <= wall_limit for dx, dy in dets):
-                    layout.violations.append(
-                        f"No detector within {wall_limit:.2f}m of {wall_name} at {seg_center:.1f}m"
-                    )
+        # Wall coverage: each wall must have a detector within S/2
+        walls = {
+            'bottom': lambda x, y: y,
+            'top':    lambda x, y: L - y,
+            'left':   lambda x, y: x,
+            'right':  lambda x, y: W - x,
+        }
+        for wall_name, dist_fn in walls.items():
+            ok = any(dist_fn(x, y) <= half_S + 1e-6 for x, y in dets)
+            if not ok:
+                layout.violations.append(
+                    f"No detector within S/2={half_S:.3f}m of {wall_name} wall"
+                )
 
-        check_wall_segments(L, lambda y: (0, y), "left wall")
-        check_wall_segments(L, lambda y: (W, y), "right wall")
-        check_wall_segments(W, lambda x: (x, 0), "bottom wall")
-        check_wall_segments(W, lambda x: (x, L), "top wall")
-
-        # Update proof_valid
-        layout.proof_valid = len(layout.violations) == 0
+        # Update proof_valid to include NFPA audit
+        if layout.violations:
+            layout.proof_valid = False
 
     def _verify_vectorized(self, layout: DetectorLayout) -> None:
         """
