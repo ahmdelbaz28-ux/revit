@@ -14,8 +14,8 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional
 
-MAX_SPACING_M   = 9.14
-DETECTOR_RADIUS = MAX_SPACING_M / 2     # 4.57 m
+MAX_SPACING_M   = 9.144         # 30 ft exactly in meters
+DETECTOR_RADIUS = 0.7 * MAX_SPACING_M  # 6.40 m (NFPA 72 §17.7.4.2.3.1 - 0.7S Rule)
 WALL_MIN_M      = 0.10
 VERIFY_STEP     = 0.20                  # proof resolution (m)
 
@@ -58,8 +58,9 @@ class DensityOptimizer:
         self.max_spacing = max_spacing
         self.wm          = wall_min
         self.R           = radius
-        self.S_g         = _hex_s_guarded(radius, wall_min)   # 6.7942 m
-        self.Ry_g        = self.S_g * math.sqrt(3) / 2        # 5.8839 m
+        # Hex spacing: use R*sqrt(3), clamped to max_spacing (NFPA 72 rule)
+        self.S_g         = min(radius * math.sqrt(3), max_spacing)
+        self.Ry_g        = self.S_g * math.sqrt(3) / 2
 
     # ── public ──────────────────────────────────────────────────────────────────
 
