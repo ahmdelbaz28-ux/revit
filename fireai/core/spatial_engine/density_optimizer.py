@@ -371,21 +371,6 @@ class DensityOptimizer:
                 f"Max detector spacing {max_gap:.3f}m > S={S:.3f}m"
             )
 
-        # 2. Wall segment coverage: every S meters of wall must have detector within S/2
-        def check_wall(wall_length, get_point, wall_name):
-            n_segments = max(1, int(math.ceil(wall_length / S)))
-            seg_length = wall_length / n_segments
-            for seg in range(n_segments):
-                seg_center = (seg + 0.5) * seg_length
-                px, py = get_point(seg_center)
-                if not any(math.hypot(px-dx, py-dy) <= half_S for dx, dy in dets):
-                    layout.violations.append(f"No detector within {half_S:.2f}m of {wall_name} at {seg_center:.1f}m")
-
-        check_wall(L, lambda y: (0, y), "left wall")
-        check_wall(L, lambda y: (W, y), "right wall")
-        check_wall(W, lambda x: (x, 0), "bottom wall")
-        check_wall(W, lambda x: (x, L), "top wall")
-
         # Wall coverage: each wall must have a detector within S/2
         walls = {
             'bottom': lambda x, y: y,
