@@ -2,7 +2,7 @@
 ## وثيقة الصدق الفني لمشروع FireAI
 
 **التاريخ:** 18 مايو 2026
-**النسخة:** 2.1
+**النسخة:** 2.2
 **الغرض:** توثيق الحالة الراهنة للمشروع، حدود النظام المعروفة، وخطة
 التطوير، التزاماً بمبدأ الشفافية الكاملة ورفض أي ادعاءات غير قابلة للتحقق.
 
@@ -16,11 +16,11 @@
 | MIP Solver (PuLP) | `fireai/core/spatial_engine/mip_solver.py` | ✅ اختياري — تحقق فقط |
 | FloorAnalyser V2.3 | `fireai/core/floor_analyser.py` | ✅ مُختبر + MIP verifier + AuditTrail + AuditStore |
 | BuildingEngine V0.1 | `fireai/core/building_engine.py` | ✅ مُختبر (6 سيناريوهات مبنى) |
-| AuditTrail V5.2 | `audit_trail.py` | ✅ thread-safe + 5 دوال تسجيل جديدة |
+| AuditTrail V5.3.0 | `fireai/core/audit_trail.py` | ✅ موحّد: thread-safe + log_rejection + 6 دوال تسجيل |
 | AuditStore | `fireai/core/audit_store.py` | ✅ سلسلة هش غير قابلة للتعدیل + HMAC-SHA256 |
-| nfpa72_models | `nfpa72_models.py` | ✅ يعمل مع الغرف المستطيلة |
-| nfpa72_calculations | `nfpa72_calculations.py` | ✅ مطابق لـ NFPA 72-2022 |
-| nfpa72_coverage | `nfpa72_coverage.py` | ✅ يعمل (690 سطر) |
+| nfpa72_models | `fireai/core/nfpa72_models.py` | ✅ يعمل مع الغرف المستطيلة |
+| nfpa72_calculations | `fireai/core/nfpa72_calculations.py` | ✅ مطابق لـ NFPA 72-2022 |
+| nfpa72_coverage | `fireai/core/nfpa72_coverage.py` | ✅ يعمل (690 سطر) |
 
 **نتائج DensityOptimizer V7.3 (commit `dfaf5a7`):**
 - nfpa_failures = 0/1000
@@ -91,7 +91,7 @@
 | safe_to_submit محافظ | **نفذ الآن** | ✅ غرفة/طابق/مبنى |
 | حقل duct_devices | **نفذ الآن** | ✅ حقل أولي (=0)، منطق كامل لاحقاً |
 | هيكل الاختبارات (10 مجموعات) | **أعد كتابة** | ✅ test_comprehensive.py |
-| دوال AuditTrail الموسّعة | **نفذ الآن** | ✅ AuditTrail V5.2 |
+| دوال AuditTrail الموسّعة | **نفذ الآن** | ✅ AuditTrail V5.3.0 (موحّد) |
 | theoretical_lower_bound | **نفذ الآن** | ✅ property + static method |
 | efficiency_ratio | **نفذ الآن** | ✅ property على DetectorLayout |
 | تحذير حي للـ 0.8% | **نفذ الآن** | ✅ BOUNDARY_LIMIT warning |
@@ -163,6 +163,7 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 | `86f3cc8` | Phase 2 — theoretical_lower_bound, AuditTrail V5.2, BOUNDARY_LIMIT | ✅ مُختبر |
 | `66b952f` | Phase 3 — BuildingEngine V0.1 | ✅ 6/6 PASS |
 | `784c265` | Phase 4 — FloorAnalyser V2.2 + expanded tests (25 PASS + 3 SKIP) | ✅ مُختبر |
+| `35047d1` | Phase 5 — MIP Solver (PuLP) as verifier (35 PASS + 2 SKIP) | ✅ مُختبر |
 | `d429e48` | ⛔ مُزوَّر — يجب تجاهله حسب AGENTS.md | ❌ مرفوض |
 
 ---
@@ -179,9 +180,12 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 - AuditStore يُستخدم لتسجيل الأحداث الحرجة (سلسلة هش غير قابلة للتعدیل)
 - BuildingEngine تستخدم FloorAnalyser كمكوّن (composition not reimplementation)
 - MIP هو VERIFIER فقط — لا يُستبدل greedy placement أبداً
+- AuditTrail V5.3.0 هي النسخة الوحيدة — لا نسخة مكررة في الجذر
+- لا ملفات .py تراثية في الجذر — الكل داخل fireai/core/
+- FloorAnalyser يستخدم استيراد طبيعي (لا importlib hack)
 
 ---
 
 **تم تحرير هذه الوثيقة بناءً على مراجعة نقدية شاملة للكود المُقدَّم (V11)
-والمشروع الحالي (V7.3 + FloorAnalyser V2.1 + BuildingEngine V0.1 + AuditTrail V5.2 + AuditStore).
+والمشروع الحالي (V7.3 + FloorAnalyser V2.3 + BuildingEngine V0.1 + AuditTrail V5.3.0 + AuditStore).
 أي تطوير لاحق سيُقاس بمدى توافقه مع هذه الوثيقة.**

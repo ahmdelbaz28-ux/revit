@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "."))
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 from fireai.core.building_engine import BuildingEngine, BuildingReport
 from fireai.core.floor_analyser import FloorReport, RoomSummary
-from audit_trail import AuditTrail
+from fireai.core.audit_trail import AuditTrail
 
 
 # ─── Fixtures ───────────────────────────────────────────────────

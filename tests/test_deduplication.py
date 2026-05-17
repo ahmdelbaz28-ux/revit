@@ -84,7 +84,7 @@ class TestCoreFeatures:
 
     def test_geometry_hash_present(self):
         """Audit entry should contain entry_hash"""
-        from audit_trail import AuditTrail
+        from fireai.core.audit_trail import AuditTrail
         trail = AuditTrail("test_geo")
         trail.log_dxf_parse("test.dxf", "Meters", 1.0, 5, 0)
         data = trail.to_list()[0]

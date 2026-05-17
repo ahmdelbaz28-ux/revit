@@ -72,4 +72,4 @@ revitpythonshell>=2023; platform_system == "Windows"
 sphinx>=7.2
 sphinx-rtd-theme>=1.3
 python-multipart>=0.0.9
-#slowapi>=0.1.9
+slowapi>=0.1.9

@@ -10,7 +10,7 @@ from shapely.geometry import Polygon
 
 from parsers.dxf_parser import DXFParser
 from nfpa72_calculations import get_smoke_detector_radius
-from audit_trail import AuditTrail
+from fireai.core.audit_trail import AuditTrail
 
 FIXTURES = Path("tests/fixtures")
 

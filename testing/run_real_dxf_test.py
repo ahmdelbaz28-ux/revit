@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from parsers.dxf_parser import DXFParser
 from nfpa72_models import RoomSpec, CeilingSpec, CeilingType, DetectorType
 from core.floor_orchestrator import FloorOrchestrator
-from audit_trail import AuditTrail
+from fireai.core.audit_trail import AuditTrail
 
 
 def test_dxf_file(dxf_path: str, verbose: bool = False) -> bool:

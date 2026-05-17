@@ -73,18 +73,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-# Import directly from the module file, bypassing __init__.py
-import importlib.util
-spec = importlib.util.spec_from_file_location("density_optimizer", os.path.join(os.path.dirname(__file__), "spatial_engine", "density_optimizer.py"))
-density_module = importlib.util.module_from_spec(spec)
-sys.modules['density_optimizer'] = density_module
-spec.loader.exec_module(density_module)
-DensityOptimizer = density_module.DensityOptimizer
-Room = density_module.Room
-DetectorLayout = density_module.DetectorLayout
+from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout
 
 logger = logging.getLogger(__name__)
 
