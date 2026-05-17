@@ -245,8 +245,22 @@ class DensityOptimizer:
     def _fallback(self, room: Room) -> DetectorLayout:
         xs = self._place(room.width, self._min_n(room.width))
         ys = self._place(room.length, self._min_n(room.length))
+        pts = [(x, y) for x in xs for y in ys]
+
+        # Corner guards for fallback strategy
+        corners = [(self.wm, self.wm), (room.width - self.wm, self.wm),
+                   (self.wm, room.length - self.wm), (room.width - self.wm, room.length - self.wm)]
+        for cx, cy in corners:
+            covered = False
+            for dx, dy in pts:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= self.R ** 2 + 1e-9:
+                    covered = True
+                    break
+            if not covered:
+                pts.append((cx, cy))
+
         return DetectorLayout(room=room,
-                              detectors=[(x, y) for x in xs for y in ys],
+                              detectors=pts,
                               method="fallback")
 
     # ── exact proof ──────────────────────────────────────────────────────────────
@@ -270,26 +284,6 @@ class DensityOptimizer:
             x = min(x+step, W)
         layout.coverage_pct = round(100.0*covered/total, 4) if total else 0.0
         layout.proof_valid  = (covered == total)
-
-        # --- TEMPORARY DIAGNOSTIC ---
-        if covered < total:
-            import sys
-            x = 0.0
-            found = 0
-            while True:
-                y = 0.0
-                while True:
-                    px, py = min(x, W), min(y, L)
-                    if not any((px-dx)**2+(py-dy)**2 <= R2 for dx, dy in dets):
-                        print(f"  UNCOVERED POINT: ({px:.2f}, {py:.2f})", file=sys.stderr)
-                        found += 1
-                        if found >= 5:
-                            break
-                    if y >= L: break
-                    y = min(y+step, L)
-                if found >= 5 or x >= W: break
-                x = min(x+step, W)
-        # --- END DIAGNOSTIC ---
 
         viol = 0
         for xd, yd in dets:
