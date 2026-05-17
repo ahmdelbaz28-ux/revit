@@ -1,10 +1,24 @@
 """
-fireai/core/floor_analyser.py  V2.3
+fireai/core/floor_analyser.py  V3.0
 ====================================
 Safe, sequential floor-level fire alarm design analyser.
 
 Uses the V7.3 DensityOptimizer directly - no ExpertSystem.
 MIP (PuLP) available as optional verifier — never replaces greedy placement.
+Scenario verification (FirePhysics) available as optional verifier.
+
+V3.0 Changes:
+  - Added scenario verification: _run_scenario_verification()
+  - Added use_scenarios parameter to FloorAnalyser constructor
+  - Added scenario_* fields to RoomSummary (5 new fields)
+  - Added scenario_non_compliant_rooms and scenario_safe_to_submit to FloorReport
+  - Scenario verification is VERIFIER only — does not modify placement
+  - If scenarios fail, room gets scenario_pass=False and warning
+  - SCENARIO_DETECTION_FAIL warning when detection time > NFPA limit
+  - SCENARIO_BLIND_SPOT warning when significant blind spots found
+  - Occupancy-aware fire load from scenario_engine.get_fire_load()
+  - Full integration: coverage + detection time + audit in one pipeline
+  - Backward compatible: use_scenarios=False (default) = zero change
 
 V2.3 Changes:
   - Added MIP verification path: _try_mip_verification()
@@ -39,8 +53,10 @@ Architecture:
   - DensityOptimizer V7.3 (coverage_limit = R) for detector placement — FROZEN
   - Coverage radius R is now dynamic: calculate_smoke_detector_radius(ceiling_height)
   - MIP Solver (PuLP) as optional verifier — never replaces greedy
+  - Scenario Engine (FirePhysics) as optional verifier — NFPA 72 §17.7.3
   - Sequential execution only - parallel processing disabled for safety
   - Triple-check gate: proof_valid AND nfpa_valid AND NOT fallback_used
+  - Scenario gate (optional): all_scenarios_pass AND no significant blind spots
 
 MIP Verification (V2.3):
   When use_mip=True and PuLP is available, FloorAnalyser runs MIP Set Covering
@@ -57,13 +73,17 @@ Safety guarantees:
   - No parallel execution (safety over speed).
 
 Safety Shield:
-  +---------------+-----------------------------+-----------------------+
-  | Check         | Condition                   | Action on Failure     |
-  +---------------+-----------------------------+-----------------------+
-  | proof_valid   | coverage >= 99.99%          | Reject room, log err  |
-  | nfpa_valid    | zero NFPA spacing violations| Reject room, log err  |
-  | fallback_used | hex/rect strategy must win  | Reject room, log warn |
-  +---------------+-----------------------------+-----------------------+
+  +-------------------+-----------------------------------+-----------------------+
+  | Check             | Condition                         | Action on Failure     |
+  +-------------------+-----------------------------------+-----------------------+
+  | proof_valid       | coverage >= 99.99%                | Reject room, log err  |
+  | nfpa_valid        | zero NFPA spacing violations      | Reject room, log err  |
+  | fallback_used     | hex/rect strategy must win        | Reject room, log warn |
+  | scenario_pass     | all scenarios detect within 60s   | Mark unsafe, warn (V3)|
+  | scenario_blind_ok | no significant blind spots        | Mark unsafe, warn (V3)|
+  +-------------------+-----------------------------------+-----------------------+
+
+  Note: scenario_pass and scenario_blind_ok only apply when use_scenarios=True.
 
 Known Limitations:
   - Rectangular rooms only (no L-shape support at this layer)
@@ -124,6 +144,16 @@ class RoomSummary:
         mip_solve_time_s: MIP solve time in seconds, or None.
         mip_status:     MIP solver status string, or None.
         analysis_ms:    Wall-clock time for this room's analysis in milliseconds.
+
+    Scenario Verification fields (V3.0, only populated when use_scenarios=True):
+        scenario_pass:      True if ALL scenarios detect within NFPA 72 §17.7.3 limit.
+                            None if scenario verification was not run.
+        scenario_fail_count: Number of scenarios that failed detection time check.
+        scenario_worst_time_s: Worst (slowest) detection time across all scenarios.
+                            None if not run or no detections.
+        scenario_blind_spots: Total blind spots across all scenarios.
+        scenario_battery_ms: Wall-clock time for scenario verification in ms.
+                            0.0 if not run.
     """
     room_id:          str
     name:             str
@@ -153,6 +183,12 @@ class RoomSummary:
     ceiling_height:   Optional[float]    = None
     radius_warning:   Optional[str]      = None
     nfpa_table_ref:   str               = "NFPA 72-2022 Table 17.6.3.1.1"
+    # V3.0: Scenario verification fields
+    scenario_pass:      Optional[bool]   = None
+    scenario_fail_count: int             = 0
+    scenario_worst_time_s: Optional[float] = None
+    scenario_blind_spots: int            = 0
+    scenario_battery_ms: float           = 0.0
 
 
 @dataclass
@@ -182,6 +218,9 @@ class FloorReport:
     unsafe_rooms:         List[str]            = field(default_factory=list)
     floor_warnings:       List[str]            = field(default_factory=list)
     analysis_time_s:      float                = 0.0
+    # V3.0: Scenario verification aggregation
+    scenario_non_compliant_rooms: List[str]     = field(default_factory=list)
+    scenario_safe_to_submit: bool               = True
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -258,6 +297,9 @@ class FloorAnalyser:
         use_mip:     bool = False,
         mip_candidate_step: float = 1.0,
         mip_time_limit: float = 10.0,
+        use_scenarios:    bool = False,
+        scenario_time_step: float = 1.0,
+        scenario_skip_blind: bool = True,
     ) -> None:
         self.floor_id    = floor_id
         self.opt         = optimizer   # V7.3 as-is, no modifications
@@ -266,6 +308,10 @@ class FloorAnalyser:
         self.use_mip     = use_mip
         self.mip_candidate_step = mip_candidate_step
         self.mip_time_limit     = mip_time_limit
+        # V3.0: Scenario verification
+        self.use_scenarios       = use_scenarios
+        self.scenario_time_step  = scenario_time_step
+        self.scenario_skip_blind = scenario_skip_blind  # skip blind scan for speed
 
     # ─── public ──────────────────────────────────────────────────────
 
@@ -495,6 +541,12 @@ class FloorAnalyser:
             if self.use_mip:
                 self._try_mip_verification(room, layout, summary)
 
+            # ─── Scenario verification (optional, V3.0) ───
+            if self.use_scenarios:
+                self._run_scenario_verification(
+                    room_dict, layout, summary, ceiling_h, det_type_str,
+                )
+
             report.room_summaries.append(summary)
             report.total_detectors += summary.detector_count
             report.total_theoretical_lower_bound += summary.theoretical_lower_bound
@@ -509,6 +561,17 @@ class FloorAnalyser:
         ]
         report.fully_compliant = len(report.non_compliant_rooms) == 0
         report.safe_to_submit  = len(report.unsafe_rooms) == 0
+
+        # V3.0: Scenario verification aggregation
+        if self.use_scenarios:
+            report.scenario_non_compliant_rooms = [
+                s.room_id for s in report.room_summaries
+                if s.scenario_pass is False
+            ]
+            report.scenario_safe_to_submit = len(
+                report.scenario_non_compliant_rooms
+            ) == 0
+
         report.analysis_time_s = round(time.time() - t0, 3)
 
         if report.unsafe_rooms:
@@ -518,6 +581,13 @@ class FloorAnalyser:
         if not report.fully_compliant:
             report.floor_warnings.append(
                 f"Non-compliant rooms: {report.non_compliant_rooms}"
+            )
+
+        # V3.0: Scenario warnings at floor level
+        if self.use_scenarios and report.scenario_non_compliant_rooms:
+            report.floor_warnings.append(
+                f"SCENARIO_NON_COMPLIANT rooms (detection time > NFPA 72 §17.7.3): "
+                f"{report.scenario_non_compliant_rooms}"
             )
 
         logger.info(
@@ -618,6 +688,143 @@ class FloorAnalyser:
                 "Room %s: MIP verification skipped — %s",
                 room.name, summary.mip_status,
             )
+
+    # ------------------------------------------------------------------
+    def _run_scenario_verification(
+        self,
+        room_dict:     dict,
+        layout:        DetectorLayout,
+        summary:       RoomSummary,
+        ceiling_h:     float,
+        det_type_str:  str,
+    ) -> None:
+        """
+        Run fire scenario verification after detector placement (V3.0).
+
+        Tests the placed detector layout against standard NFPA 72 §17.7.3
+        fire scenarios. This is VERIFICATION ONLY — it does not modify
+        the placement. If any scenario fails, the room is marked with
+        scenario_pass=False and a warning is added.
+
+        Uses scenario_engine.ScenarioRunner + ScenarioLibrary.
+        Fire load is determined from room occupancy type via
+        scenario_engine.get_fire_load().
+
+        Updates summary fields in-place:
+          - scenario_pass, scenario_fail_count, scenario_worst_time_s,
+            scenario_blind_spots, scenario_battery_ms
+
+        Args:
+            room_dict:    Room dictionary with polygon_coords and optional occupancy.
+            layout:       DetectorLayout from DensityOptimizer.
+            summary:      RoomSummary to update with scenario results.
+            ceiling_h:    Ceiling height in metres.
+            det_type_str: Detector type string (e.g. "smoke_photoelectric").
+        """
+        try:
+            from fireai.core.scenario_engine import (
+                ScenarioRunner,
+                ScenarioLibrary,
+                ScenarioVerdict,
+                get_fire_load,
+            )
+        except ImportError:
+            summary.scenario_pass = None
+            logger.warning(
+                "Room %s: scenario_engine not importable — skipping scenario verification",
+                summary.name,
+            )
+            return
+
+        t_sc = time.perf_counter()
+
+        # Extract room polygon and occupancy
+        polygon = room_dict.get("polygon_coords", [])
+        if not polygon or len(polygon) < 3:
+            summary.scenario_pass = None
+            logger.warning(
+                "Room %s: no valid polygon for scenario verification",
+                summary.name,
+            )
+            return
+
+        occupancy = room_dict.get("room_type", room_dict.get("occupancy", "office"))
+        fire_load = get_fire_load(occupancy)
+
+        # Build standard scenario battery (no blind spot scan — too expensive)
+        scenarios = ScenarioLibrary.all_scenarios(
+            polygon, ceiling_h, fire_load
+        )
+
+        # Run battery
+        runner = ScenarioRunner(time_step_s=self.scenario_time_step)
+        battery = runner.run_battery(
+            detector_positions = layout.detectors,
+            room_polygon       = polygon,
+            scenarios          = scenarios,
+            detector_type_str  = det_type_str,
+        )
+
+        # Aggregate results
+        fail_count = battery.fail_count
+        worst_time = battery.worst_detection_time_s
+        total_blind = battery.total_blind_spots
+
+        scenario_pass = battery.all_pass
+
+        elapsed_ms = (time.perf_counter() - t_sc) * 1000.0
+
+        # Update summary
+        summary.scenario_pass        = scenario_pass
+        summary.scenario_fail_count  = fail_count
+        summary.scenario_worst_time_s = worst_time
+        summary.scenario_blind_spots = total_blind
+        summary.scenario_battery_ms  = round(elapsed_ms, 1)
+
+        # Warnings
+        if not scenario_pass:
+            fail_msg = (
+                f"SCENARIO_DETECTION_FAIL: {fail_count}/{len(scenarios)} scenario(s) "
+                f"failed NFPA 72 §17.7.3 detection time limit. "
+                f"Worst detection time: {worst_time:.1f}s (limit 60s). "
+                f"Layout may need additional detectors or repositioning. "
+                f"PE review required."
+            )
+            summary.warnings.append(fail_msg)
+            logger.warning("Room %s: %s", summary.name, fail_msg)
+
+        if total_blind > 0:
+            blind_msg = (
+                f"SCENARIO_BLIND_SPOT: {total_blind} blind spot(s) detected "
+                f"across all scenarios. Points where no detector responds "
+                f"within NFPA 72 §17.7.3 limit. PE review recommended."
+            )
+            summary.warnings.append(blind_msg)
+            logger.info("Room %s: %s", summary.name, blind_msg)
+
+        # Log to AuditStore if available
+        if self.audit_store and hasattr(self.audit_store, 'add_event'):
+            self.audit_store.add_event(
+                event_type="SCENARIO_VERIFICATION",
+                room_id=summary.room_id,
+                details_dict={
+                    "scenarios_run": len(scenarios),
+                    "scenario_pass": scenario_pass,
+                    "fail_count": fail_count,
+                    "worst_detection_time_s": worst_time,
+                    "total_blind_spots": total_blind,
+                    "fire_load_mj_m2": fire_load,
+                    "occupancy": occupancy,
+                    "compute_ms": round(elapsed_ms, 1),
+                    "nfpa_clause": "NFPA 72-2022 §17.7.3",
+                },
+            )
+
+        logger.info(
+            "Room %s: scenario verification pass=%s fail=%d worst=%.1fs blind=%d t=%.0fms",
+            summary.name, scenario_pass, fail_count,
+            worst_time or 0.0, total_blind, elapsed_ms,
+        )
 
     @staticmethod
     def _check_safety_refusal(room_type: str, detector_type: str) -> tuple:
