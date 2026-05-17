@@ -203,6 +203,9 @@ class RoomSummary:
     # V4.0: Non-rectangular room support
     shape_type:     str               = "rectangular"   # "rectangular", "l_shape", "polygon"
     polygon_coords: Optional[List]    = None            # original polygon for non-rectangular rooms
+    # V5.0: Room dimensions for project learning (bounding rectangle)
+    width:          float             = 0.0             # bounding rectangle width (metres)
+    length:         float             = 0.0             # bounding rectangle length (metres)
 
 
 @dataclass
@@ -589,6 +592,9 @@ class FloorAnalyser:
                 # V4.0: Non-rectangular room tracking
                 shape_type              = shape_type,
                 polygon_coords          = polygon_coords if is_non_rect else None,
+                # V5.0: Room dimensions for project learning
+                width                   = room.width,
+                length                  = room.length,
             )
 
             # ─── MIP verification (optional) ───

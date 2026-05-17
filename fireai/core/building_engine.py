@@ -38,6 +38,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from fireai.core.floor_analyser import FloorAnalyser, FloorReport
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
+from fireai.core.project_learner import ProjectLearner, BuildingProjectProfile
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,8 @@ class BuildingReport:
     unsafe_floors:                    List[str]            = field(default_factory=list)
     building_warnings:                List[str]            = field(default_factory=list)
     analysis_time_s:                  float                = 0.0
+    # V5.0: Project learning profile (populated after all floors analysed)
+    project_profile:                  Optional[BuildingProjectProfile] = None
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -269,6 +272,25 @@ class BuildingEngine:
                     "analysis_time_s": report.analysis_time_s,
                 },
             )
+
+        # V5.0: Build project profile from all room summaries
+        learner = ProjectLearner(building_id=self.building_id)
+        for floor_report in report.floor_reports:
+            for s in floor_report.room_summaries:
+                if s.refused or s.detector_count == 0:
+                    continue
+                eff = (
+                    s.detector_count / s.theoretical_lower_bound
+                    if s.theoretical_lower_bound > 0 else 1.0
+                )
+                learner.record(
+                    name       = s.name,
+                    width      = s.width,
+                    length     = s.length,
+                    strategy   = s.method,
+                    efficiency = eff,
+                )
+        report.project_profile = learner.profile()
 
         logger.info(
             "BuildingEngine: building=%s floors=%d detectors=%d compliant=%s safe=%s t=%.2fs",
