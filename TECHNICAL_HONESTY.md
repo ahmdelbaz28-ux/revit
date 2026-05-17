@@ -2,7 +2,7 @@
 ## وثيقة الصدق الفني لمشروع FireAI
 
 **التاريخ:** 18 مايو 2026
-**النسخة:** 1.0
+**النسخة:** 2.0
 **الغرض:** توثيق الحالة الراهنة للمشروع، حدود النظام المعروفة، وخطة
 التطوير، التزاماً بمبدأ الشفافية الكاملة ورفض أي ادعاءات غير قابلة للتحقق.
 
@@ -13,12 +13,13 @@
 | المكوّن | الملف | الحالة |
 |---------|-------|--------|
 | DensityOptimizer V7.3 | `fireai/core/spatial_engine/density_optimizer.py` | ✅ مُختبر (1000 غرفة) |
-| FloorAnalyser V2.0 | `fireai/core/floor_analyser.py` | ✅ مُختبر (15 غرفة) |
+| FloorAnalyser V2.1 | `fireai/core/floor_analyser.py` | ✅ مُختبر (15+10 غرف) + AuditTrail + AuditStore |
+| BuildingEngine V0.1 | `fireai/core/building_engine.py` | ✅ مُختبر (6 سيناريوهات مبنى) |
+| AuditTrail V5.2 | `audit_trail.py` | ✅ thread-safe + 5 دوال تسجيل جديدة |
+| AuditStore | `fireai/core/audit_store.py` | ✅ سلسلة هش غير قابلة للتعدیل + HMAC-SHA256 |
 | nfpa72_models | `nfpa72_models.py` | ✅ يعمل مع الغرف المستطيلة |
 | nfpa72_calculations | `nfpa72_calculations.py` | ✅ مطابق لـ NFPA 72-2022 |
 | nfpa72_coverage | `nfpa72_coverage.py` | ✅ يعمل (690 سطر) |
-| AuditTrail (مبسط) | `audit_trail.py` | ⚠️ logging فقط — لا يحقق متطلبات التدقيق الكاملة |
-| OptimalMIPEngine | `spatial_engine/mip_solver.py` | ⚠️ موجود لكن غير مُدمج في Pipeline |
 
 **نتائج DensityOptimizer V7.3 (commit `dfaf5a7`):**
 - nfpa_failures = 0/1000
@@ -26,8 +27,18 @@
 - شبكة التحقق: step = 0.20m
 - نصف قطر التغطية: R = 6.40m ثابت
 
-**ملاحظة:** FloorAnalyser V2.0 يعمل بشكل تسلسلي فقط (لا معالجة متوازية)
-لضمان تتبع الأخطاء وعدم إخفائها.
+**نتائج FloorAnalyser V2.1:**
+- 15 غرفة (3 طوابق): 15/15 PASS
+- 10 غرف واقعية: 10/10 PASS
+- تحذير BOUNDARY_LIMIT حي للـ 0.8% cases
+- تكامل AuditTrail + AuditStore اختياري
+
+**نتائج BuildingEngine V0.1:**
+- مبنى فارغ: safe_to_submit=False ✅
+- مبنى متوافق: safe_to_submit=True ✅
+- غرفة unsafe تمنع المبنى بالكامل ✅
+- AuditStore يتلقى أحداث من جميع الطوابق ✅
+- composition (FloorAnalyser كمكوّن) — لا إعادة تنفيذ ✅
 
 ---
 
@@ -36,12 +47,11 @@
 | العنصر | السبب |
 |--------|-------|
 | كود V11 بالكامل | يعتمد على 5+ وحدات غير موجودة. لا يمكن تشغيل أي سطر منه |
-| AuditTrail حقيقي | الموجود حالياً مجرد logging بسيط |
 | MIP Solver مُدمج | لا يوجد تكامل مع PuLP في Pipeline الحالي |
 | ProjectMemory | غير موجود — ولن يُستخدم بين الغرف |
-| BuildingEngine | غير موجود — لا طبقة تحليل مبنى |
 | دعم الأشكال غير المستطيلة | النظام يفترض غرفاً مستطيلة |
-| كاشفات مجاري الهواء (duct_devices) | لا منطق حقن تلقائي |
+| duct_devices منطق كامل | الحقل موجود (=0)، منطق الحقن التلقائي لاحقاً |
+| R متغير حسب ارتفاع السقف | V7.3 مُجمّد — يحتاج سبب هندسي محدد من اختبار واقعي |
 
 ---
 
@@ -50,7 +60,8 @@
 1. **0.8% فشل في إثبات التغطية (proof failures)**
    - 8 غرف من 1000 فشلت في التحقق الشبكي رغم تغطية > 99.9%
    - السبب: خطأ تقريب عائم مع step = 0.20m في غرف ذات نسب أبعاد شاذة
-   - سيتم معالجته عبر تحذير حي وليس بتعديل الخوارزمية قبل اختبارات الواقع
+   - يُعالج عبر تحذير حي (BOUNDARY_LIMIT) وليس بتعديل الخوارزمية
+   - FloorAnalyser V2.1 يُصدر WARNING ويُسجّل في AuditStore
 
 2. **دعم الغرف المستطيلة فقط**
    - RoomSpec يتطلب width_m و depth_m
@@ -65,28 +76,29 @@
 
 4. **غياب الحد الأدنى المُثبت رياضياً**
    - لا يوجد MIP لإثبات العدد الأمثل
-   - أي حد أدنى سيُحسب تقديرياً فقط (theoretical_lower_bound)
+   - `theoretical_lower_bound` تقديري فقط (NOT proven minimum)
 
 ---
 
 ## 4. تصنيف ميزات V11 المُقدَّمة
 
-| الميزة | التصنيف | السبب |
-|--------|---------|-------|
-| هيكل BuildingReport / BuildingEngine | **نفذ الآن** | طبقة مفقودة |
-| safe_to_submit محافظ | **نفذ الآن** | أي غرفة غير آمنة تمنع اعتماد المبنى |
-| حقل duct_devices | **نفذ الآن** | NFPA §17.7.5 — حقل أولي، منطق كامل لاحقاً |
-| هيكل الاختبارات (10 مجموعات) | **أعد كتابة** | الهيكل ممتاز، الكود يعتمد على وحدات وهمية |
-| دوال AuditTrail الموسّعة | **نفذ الآن** | log_placement, log_wall_distance_violation, إلخ |
-| theoretical_lower_bound | **نفذ الآن** | مقياس كفاءة تقديري — كـ "تقديري" وليس "مُثبت" |
-| efficiency_ratio | **نفذ الآن** | مقياس جودة الوضع |
-| تحذير حي للـ 0.8% | **نفذ الآن** | التوثيق الصامت لا يكفي |
-| theoretical_minimum (كما في V11) | **مرفوض** | الاسم يُوحي بإثبات رياضي غير موجود |
+| الميزة | التصنيف | الحالة |
+|--------|---------|--------|
+| هيكل BuildingReport / BuildingEngine | **نفذ الآن** | ✅ BuildingEngine V0.1 |
+| safe_to_submit محافظ | **نفذ الآن** | ✅ غرفة/طابق/مبنى |
+| حقل duct_devices | **نفذ الآن** | ✅ حقل أولي (=0)، منطق كامل لاحقاً |
+| هيكل الاختبارات (10 مجموعات) | **أعد كتابة** | ✅ test_comprehensive.py |
+| دوال AuditTrail الموسّعة | **نفذ الآن** | ✅ AuditTrail V5.2 |
+| theoretical_lower_bound | **نفذ الآن** | ✅ property + static method |
+| efficiency_ratio | **نفذ الآن** | ✅ property على DetectorLayout |
+| تحذير حي للـ 0.8% | **نفذ الآن** | ✅ BOUNDARY_LIMIT warning |
+| AuditStore تكامل | **نفذ الآن** | ✅ FloorAnalyser + BuildingEngine |
+| theoretical_minimum (كما في V11) | **مرفوض** | `_theoretical_minimum` private فقط |
 | ProjectMemory | **مرفوض** | تلوث بين الغرف |
 | ProcessPoolExecutor | **مرفوض** | أخطاء مخفية في نظام سلامة حرائق |
 | أي import لوحدات V11 غير موجودة | **مرفوض** | لا stub/shim وهمية |
-| MIP حقيقي (PuLP) | **لاحقاً** | بعد بناء الأساس — سيُعطي theoretical_minimum مُثبت |
-| R متغير حسب ارتفاع السقف | **لاحقاً** | يحتاج تعديل V7.3 — مفتوح بعد اختبار واقعي |
+| MIP حقيقي (PuLP) | **لاحقاً** | بعد بناء الأساس |
+| R متغير حسب ارتفاع السقف | **لاحقاً** | يحتاج تعديل V7.3 |
 | دعم L-shape عبر Shapely | **لاحقاً** | يحتاج تعديل DensityOptimizer |
 | duct_devices منطق كامل | **لاحقاً** | الحقل الآن، المنطق لاحقاً |
 | Revit Connector | **لاحقاً** | سابق لأوانه |
@@ -102,20 +114,26 @@
 
 **تحذير:** استخدام `theoretical_minimum` بدون MIP حقيقي يخلق "وهم دقة" —
 نفس النوع من التضليل الذي كشفناه في MIP الوهمي سابقاً.
+الاسم `theoretical_minimum` غير موجود في الواجهة العامة — فقط `_theoretical_minimum` (private).
 
 ---
 
-## 6. آلية التحذير الحي للـ 0.8% (ستُنفذ في المرحلة 2)
+## 6. آلية التحذير الحي للـ 0.8% (مُنفذة)
 
 عندما: proof_valid == False لكن coverage_pct > 99.9%
 
 يُصدر FloorAnalyser تحذيراً (وليس خطأ):
 
 ```
-WARNING: BOUNDARY_LIMIT — Coverage {x}% exceeds 99.9% but grid
+BOUNDARY_LIMIT: Coverage {x}% exceeds 99.9% but grid
 verification at step=0.20m could not confirm 100%.
 This is a known limitation (0.8% of rooms). PE review recommended.
 ```
+
+التسجيل:
+- يُضاف إلى `RoomSummary.warnings`
+- يُسجّل في `AuditTrail.log_boundary_limit_warning()`
+- يُسجّل في `AuditStore.add_event("BOUNDARY_LIMIT_WARNING", ...)`
 
 ---
 
@@ -125,6 +143,10 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 |--------|-------|--------|
 | `dfaf5a7` | V7.3 code change (coverage_limit = R) | ✅ مُختبر ومُوثق |
 | `d832a28` | V7.3 + FloorAnalyser V2 documentation | ✅ مُختبر ومُوثق |
+| `4de84ab` | TECHNICAL_HONESTY.md V1.0 | ✅ صادق (مُحدّث في هذا commit) |
+| `3544fdb` | Test Suite V2 — 10 realistic rooms | ✅ 10/10 PASS |
+| `86f3cc8` | Phase 2 — theoretical_lower_bound, AuditTrail V5.2, BOUNDARY_LIMIT | ✅ مُختبر |
+| `66b952f` | Phase 3 — BuildingEngine V0.1 | ✅ 6/6 PASS |
 | `d429e48` | ⛔ مُزوَّر — يجب تجاهله حسب AGENTS.md | ❌ مرفوض |
 
 ---
@@ -136,10 +158,12 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 - لا ذاكرة مشتركة بين الغرف
 - لا كود وهمي (stub/shim)
 - theoretical_lower_bound هو الوحيد المستخدم للحد الأدنى التقديري
-- theoretical_minimum محجوز للحل المُثبت رياضياً مستقبلاً
+- theoretical_minimum محجوز للحل المُثبت رياضياً مستقبلاً (private فقط حالياً)
+- AuditStore يُستخدم لتسجيل الأحداث الحرجة (سلسلة هش غير قابلة للتعدیل)
+- BuildingEngine تستخدم FloorAnalyser كمكوّن (composition not reimplementation)
 
 ---
 
 **تم تحرير هذه الوثيقة بناءً على مراجعة نقدية شاملة للكود المُقدَّم (V11)
-والمشروع الحالي (V7.3 + FloorAnalyser V2.0).
+والمشروع الحالي (V7.3 + FloorAnalyser V2.1 + BuildingEngine V0.1 + AuditTrail V5.2 + AuditStore).
 أي تطوير لاحق سيُقاس بمدى توافقه مع هذه الوثيقة.**
