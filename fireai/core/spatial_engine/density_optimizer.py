@@ -113,21 +113,30 @@ class DensityOptimizer:
         S, wm, R = self.S_g, self.wm, self.R
         pts: List[Tuple[float, float]] = []
 
-        # --- New NFPA-Compliant Row Distribution ---
-        max_dist_from_wall = self.max_spacing / 2.0  # NFPA limit = 4.57m
+        # --- NFPA-Compliant Row Distribution (At S/2 from walls) ---
+        max_row_spacing = S
         
-        # List of y-coordinates for rows
         y_coords = []
         
-        # Place first row at min distance from bottom wall = S/2
-        y = wm + max_dist_from_wall
-        while y <= L - wm - max_dist_from_wall + 1e-9:
-            y_coords.append(y)
-            y += max_dist_from_wall
+        # First row at S/2 from bottom wall
+        first_row = wm + max_row_spacing / 2
+        y_coords.append(first_row)
         
-        # Ensure at least 1 row centered
-        if not y_coords:
-            y_coords = [L / 2]
+        # Add middle rows while there's space
+        while True:
+            next_y = y_coords[-1] + max_row_spacing
+            # Leave room for last row at S/2 from top
+            if next_y <= L - wm - max_row_spacing / 2 - 1e-9:
+                y_coords.append(next_y)
+            else:
+                break
+        
+        # Always add last row at S/2 from top wall
+        last_row = L - wm - max_row_spacing / 2
+        y_coords.append(last_row)
+        
+        # Remove duplicates (for small rooms)
+        y_coords = sorted(list(set(y_coords)))
 
         # Place detectors for each row
         for row_index, y in enumerate(y_coords):
@@ -136,7 +145,7 @@ class DensityOptimizer:
             for x in xs:
                 pts.append((x, y))
 
-        # Add Corner Guards
+        # Corner Guards
         corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
         for cx, cy in corners:
             covered = False
