@@ -125,6 +125,18 @@ class DensityOptimizer:
                 break
             y = nxt; row += 1
         if not along_x: pts = [(b, a) for a, b in pts]
+
+        # Corner guards: ensure all four corners are within R of a detector
+        corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
+        for cx, cy in corners:
+            covered = False
+            for dx, dy in pts:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= R ** 2 + 1e-9:
+                    covered = True
+                    break
+            if not covered:
+                pts.append((cx, cy))
+
         return DetectorLayout(room=room, detectors=pts,
                               method=f"hexG_{'x' if along_x else 'y'}")
 
@@ -181,6 +193,18 @@ class DensityOptimizer:
         if best_pts is None:
             best_pts = []
         if not along_x: best_pts = [(b, a) for a, b in best_pts]
+
+        # Corner guards: ensure all four corners are within R of a detector
+        corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
+        for cx, cy in corners:
+            covered = False
+            for dx, dy in best_pts:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= R ** 2 + 1e-9:
+                    covered = True
+                    break
+            if not covered:
+                best_pts.append((cx, cy))
+
         return DetectorLayout(room=room, detectors=best_pts,
                               method=f"hexA_{'x' if along_x else 'y'}")
 
