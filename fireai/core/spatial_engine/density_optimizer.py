@@ -358,11 +358,16 @@ class DensityOptimizer:
             layout.nfpa_valid = len(violations) == 0
             return layout.nfpa_valid
         
-        # (a) Inter-detector spacing <= S
+        # (a) Inter-detector spacing <= S (check nearest neighbor only)
+        max_gap = 0.0
         for i, (x1, y1) in enumerate(dets):
-            for j, (x2, y2) in enumerate(dets[i+1:], i+1):
-                if math.hypot(x1-x2, y1-y2) > S * 1.01:
-                    violations.append(f"Spacing {i+1}-{j+1}")
+            min_dist = float('inf')
+            for j, (x2, y2) in enumerate(dets):
+                if i == j: continue
+                min_dist = min(min_dist, math.hypot(x1-x2, y1-y2))
+            max_gap = max(max_gap, min_dist)
+        if max_gap > S * 1.01:
+            violations.append(f"Max spacing {max_gap:.2f}m > S={S:.2f}m")
         
         # (b) Boundary detectors + gap along wall <= S
         walls = {'bottom': [], 'top': [], 'left': [], 'right': []}
