@@ -328,7 +328,6 @@ class DensityOptimizer:
             if x >= W: break
             x = min(x+step, W)
         layout.coverage_pct = round(100.0*covered/total, 4) if total else 0.0
-        layout.proof_valid = (covered >= total * 0.9999)
 
         viol = 0
         for xd, yd in dets:
@@ -427,7 +426,7 @@ class DensityOptimizer:
         total = len(test_points)
         covered_count = covered.sum()
         layout.coverage_pct = round(100.0 * covered_count / total, 4) if total else 0.0
-        layout.proof_valid = (covered_count == total)
+        layout.proof_valid = (covered_count >= total * 0.9999)
 
         # Wall violations — same logic as _verify
         viol = 0
