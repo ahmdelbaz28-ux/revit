@@ -13,6 +13,12 @@ V2.3 Changes:
   - Added MIP_OPTIMALITY_GAP warning when MIP proves fewer detectors suffice
   - MIP is VERIFIER only — greedy always places actual detectors
 
+V2.4 Changes:
+  - Coverage radius now calculated dynamically from NFPA 72 Table 17.6.3.2
+  - Uses calculate_smoke_detector_radius(ceiling_height) instead of fixed R=6.40m
+  - LOW_CEILING_WARNING updated: references dynamic radius calculation
+  - MIP verification uses layout.coverage_radius instead of self.opt.R
+
 V2.2 Changes:
   - Added refused, refusal_reason, used_mip fields to RoomSummary
   - Added _check_safety_refusal() for NFPA 72 §17.6.4 detector/room validation
@@ -27,6 +33,7 @@ V2.1 Changes:
 
 Architecture:
   - DensityOptimizer V7.3 (coverage_limit = R) for detector placement — FROZEN
+  - Coverage radius R is now dynamic: calculate_smoke_detector_radius(ceiling_height)
   - MIP Solver (PuLP) as optional verifier — never replaces greedy
   - Sequential execution only - parallel processing disabled for safety
   - Triple-check gate: proof_valid AND nfpa_valid AND NOT fallback_used
@@ -56,7 +63,7 @@ Safety Shield:
 
 Known Limitations:
   - Rectangular rooms only (no L-shape support at this layer)
-  - Ceiling height not optimized (R=6.40m - NOT conservative for low ceilings)
+  - Coverage radius now dynamic from NFPA 72 Table 17.6.3.2
   - Parallel processing disabled (sequential for safety)
   - No beam/obstruction handling at this layer
 
@@ -74,6 +81,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout
+from fireai.core.nfpa72_calculations import calculate_smoke_detector_radius
 
 logger = logging.getLogger(__name__)
 
@@ -196,9 +204,10 @@ class FloorAnalyser:
         This represents the known 0.8% boundary condition.
 
     Live Warning (LOW_CEILING):
-        When ceiling_height < 3.0m, R=6.40m is NOT conservative.
-        NFPA 72 Table 17.6.3.1 requires R=4.55m at 3.0m ceiling.
-        A LOW_CEILING_WARNING is added to room warnings.
+        When ceiling_height < 3.0m (below NFPA 72 normative range),
+        a LOW_CEILING_WARNING is added. The radius is clamped to
+        the 3.0m bracket value (R=4.55m) for safety.
+        PE review is required for heights outside normative range.
 
     Args:
         floor_id:   Floor identifier (e.g. "GF", "L1", "B2").
@@ -324,9 +333,14 @@ class FloorAnalyser:
             # Build Room object from dict
             room = self._build_room(room_dict)
 
-            # Analyse single room with V7.3
+            # Calculate NFPA 72 coverage radius from ceiling height
+            # (was fixed 6.40m — now dynamic per Table 17.6.3.2)
+            ceiling_h = room_dict.get("ceiling_height", 3.0)
+            radius = calculate_smoke_detector_radius(ceiling_h)
+
+            # Analyse single room with V7.3 + dynamic radius
             t_room = time.time()
-            layout = self.opt.optimize(room)
+            layout = self.opt.optimize(room, coverage_radius=radius)
             ms = (time.time() - t_room) * 1000
 
             # Triple check
@@ -339,14 +353,13 @@ class FloorAnalyser:
             # BOUNDARY_LIMIT + LOW_CEILING live warnings
             room_warnings = list(layout.warnings) if layout.warnings else []
 
-            # LOW_CEILING_WARNING: R=6.40m is NOT conservative for ceilings < 3.0m
-            ceiling_h = room_dict.get("ceiling_height", 3.0)
+            # LOW_CEILING_WARNING: ceiling below NFPA 72 normative range
             if ceiling_h < 3.0:
                 low_msg = (
-                    f"LOW_CEILING_WARNING: Ceiling height {ceiling_h:.1f}m < 3.0m. "
-                    f"R=6.40m (0.7S) is NOT conservative at this height. "
-                    f"NFPA 72 Table 17.6.3.1 requires R=4.55m at 3.0m ceiling. "
-                    f"PE must verify coverage with correct radius."
+                    f"LOW_CEILING_WARNING: Ceiling height {ceiling_h:.1f}m < 3.0m "
+                    f"(below NFPA 72 normative range). "
+                    f"Using conservative R={radius:.2f}m from NFPA 72 Table 17.6.3.2. "
+                    f"PE review required for heights outside normative range."
                 )
                 room_warnings.append(low_msg)
                 logger.warning("Room %s: %s", room.name, low_msg)
@@ -358,9 +371,9 @@ class FloorAnalyser:
                         room_id=room_dict.get("room_id", room.name),
                         details_dict={
                             "ceiling_height_m": ceiling_h,
-                            "current_radius_m": 6.40,
-                            "nfpa_required_radius_m": 4.55,
-                            "note": "R=6.40m not conservative for low ceilings. PE review required.",
+                            "radius_used_m": radius,
+                            "nfpa_table_reference": "Table 17.6.3.2",
+                            "note": "Height below NFPA 72 range — using conservative radius. PE review required.",
                         },
                     )
             if not layout.proof_valid and layout.coverage_pct > 99.9:
@@ -524,7 +537,7 @@ class FloorAnalyser:
         mip_result = solve_set_covering_mip(
             room_width=room.width,
             room_length=room.length,
-            coverage_radius=self.opt.R,  # 6.40m from V7.3 (not modified)
+            coverage_radius=layout.coverage_radius,  # Actual radius used for placement
             candidate_step=self.mip_candidate_step,
             time_limit_seconds=self.mip_time_limit,
         )

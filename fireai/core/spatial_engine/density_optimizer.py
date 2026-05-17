@@ -46,6 +46,7 @@ class DetectorLayout:
     violations: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     fallback_used: bool = False
+    coverage_radius: float = DETECTOR_RADIUS  # Actual radius used for placement
 
     @property
     def count(self) -> int:
@@ -60,9 +61,12 @@ class DetectorLayout:
         bound only. For a proven minimum, MIP (PuLP) is required.
         See TECHNICAL_HONESTY.md §5 for the strict distinction between
         theoretical_lower_bound and theoretical_minimum.
+
+        Uses coverage_radius (which may differ from DETECTOR_RADIUS when
+        ceiling height requires a different radius per NFPA 72 Table 17.6.3.2).
         """
         area = self.room.width * self.room.length
-        coverage_area = math.pi * DETECTOR_RADIUS ** 2
+        coverage_area = math.pi * self.coverage_radius ** 2
         return max(1, math.ceil(area / coverage_area))
 
     @property
@@ -94,7 +98,35 @@ class DensityOptimizer:
 
     # ── public ──────────────────────────────────────────────────────────────────
 
-    def optimize(self, room: Room) -> DetectorLayout:
+    def optimize(self, room: Room, coverage_radius: Optional[float] = None) -> DetectorLayout:
+        """Find the best detector placement for a room.
+
+        Args:
+            room: Room with width, length, ceiling_height.
+            coverage_radius: Override coverage radius (meters). If None, uses
+                the instance default (DETECTOR_RADIUS = 6.40m). For low ceilings,
+                pass the NFPA 72 Table 17.6.3.2 radius (e.g. 4.55m at 3.0m).
+                The default behaviour is unchanged — existing callers need not
+                pass this parameter.
+
+        Returns:
+            DetectorLayout with positions, coverage, and compliance info.
+        """
+        # Temporarily override internal radius if specified
+        _override = coverage_radius is not None and coverage_radius != self.R
+        if _override:
+            _saved = (self.R, self.S_g, self.Ry_g)
+            self.R = coverage_radius
+            self.S_g = min(coverage_radius * math.sqrt(3), self.max_spacing)
+            self.Ry_g = self.S_g * math.sqrt(3) / 2
+
+        try:
+            return self._optimize_impl(room)
+        finally:
+            if _override:
+                self.R, self.S_g, self.Ry_g = _saved
+
+    def _optimize_impl(self, room: Room) -> DetectorLayout:
         cands: List[DetectorLayout] = []
 
         # Strategy A: hex-guarded (both orientations)
@@ -228,7 +260,8 @@ class DensityOptimizer:
 
         if not along_x: pts = [(b, a) for a, b in pts]
         return DetectorLayout(room=room, detectors=pts,
-                              method=f"hexG_{'x' if along_x else 'y'}")
+                              method=f"hexG_{'x' if along_x else 'y'}",
+                              coverage_radius=self.R)
 
     def _row_xs_guarded(self, W, wm, S, offset, R):
         xs = []; x = wm + offset
@@ -279,7 +312,8 @@ class DensityOptimizer:
         if not along_x:
             pts = [(b, a) for a, b in pts]
         return DetectorLayout(room=room, detectors=pts,
-                              method=f"hexA_{'x' if along_x else 'y'}")
+                              method=f"hexA_{'x' if along_x else 'y'}",
+                              coverage_radius=self.R)
 
     # ── C: Rect-Best ──────────────────────────────────────────────────────────────
 
@@ -301,7 +335,8 @@ class DensityOptimizer:
         xs = self._place(W, best_nx); ys = self._place(L, best_ny)
         return DetectorLayout(room=room,
                               detectors=[(x, y) for x in xs for y in ys],
-                              method=f"rect_{best_nx}x{best_ny}")
+                              method=f"rect_{best_nx}x{best_ny}",
+                              coverage_radius=self.R)
 
     # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -335,7 +370,8 @@ class DensityOptimizer:
 
         return DetectorLayout(room=room,
                               detectors=pts,
-                              method="fallback")
+                              method="fallback",
+                              coverage_radius=self.R)
 
     # ── exact proof ──────────────────────────────────────────────────────────────
 
@@ -468,23 +504,27 @@ class DensityOptimizer:
         layout.wall_violations = viol
 
     @staticmethod
-    def theoretical_lower_bound(room: Room) -> int:
+    def theoretical_lower_bound(room: Room, coverage_radius: float = DETECTOR_RADIUS) -> int:
         """Estimative lower bound for detector count (NOT proven minimum).
 
         Same calculation as DetectorLayout.theoretical_lower_bound property.
         Provided as a static convenience method.
         See TECHNICAL_HONESTY.md §5: theoretical_lower_bound ≠ theoretical_minimum.
+
+        Args:
+            room: Room object.
+            coverage_radius: Coverage radius in meters (default DETECTOR_RADIUS = 6.40m).
         """
         return max(1, math.ceil(
-            room.width * room.length / (math.pi * DETECTOR_RADIUS**2)))
+            room.width * room.length / (math.pi * coverage_radius**2)))
 
     # Private alias — DO NOT use outside this module.
     # This name incorrectly implies a mathematically proven minimum.
     # See TECHNICAL_HONESTY.md §5: theoretical_lower_bound ≠ theoretical_minimum.
     @staticmethod
-    def _theoretical_minimum(room: Room) -> int:
+    def _theoretical_minimum(room: Room, coverage_radius: float = DETECTOR_RADIUS) -> int:
         """DEPRECATED: Use theoretical_lower_bound instead.
         Private method — do not call from outside this module.
         The name 'theoretical_minimum' creates a precision illusion.
         """
-        return DensityOptimizer.theoretical_lower_bound(room)
+        return DensityOptimizer.theoretical_lower_bound(room, coverage_radius)
