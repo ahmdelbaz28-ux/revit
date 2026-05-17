@@ -42,6 +42,7 @@ class DetectorLayout:
     proof_valid: bool = False
     wall_violations: int = 0
     method: str = ""
+    violations: List[str] = field(default_factory=list)
 
     @property
     def count(self) -> int:
@@ -248,6 +249,72 @@ class DensityOptimizer:
             if xd < self.wm-1e-6 or xd > W-self.wm+1e-6: viol += 1
             if yd < self.wm-1e-6 or yd > L-self.wm+1e-6: viol += 1
         layout.wall_violations = viol
+
+    def _audit_nfpa(self, layout: DetectorLayout) -> None:
+        """
+        Post-placement NFPA 72 §17.6.3.1 spacing audit.
+        Checks:
+          1. Max detector-to-detector spacing <= S
+          2. Min distance to nearest wall >= wm
+          3. Max distance to nearest wall <= S/2
+        Violations are appended to layout.violations (if field exists).
+        """
+        if not hasattr(layout, 'violations'):
+            layout.violations = []
+        else:
+            layout.violations.clear()
+
+        dets = layout.detectors
+        W, L = layout.room.width, layout.room.length
+        S   = self.max_spacing
+        wm  = self.wm
+        half_S = S / 2.0
+
+        n = len(dets)
+        if n == 0:
+            return
+
+        # Helper: min distance from point (px,py) to rectangle boundary
+        def _wall_dist(px: float, py: float) -> float:
+            return min(px, W - px, py, L - py)
+
+        for i, (xd, yd) in enumerate(dets):
+            # Min wall distance
+            wdist = _wall_dist(xd, yd)
+            if wdist < wm - 1e-6:
+                layout.violations.append(
+                    f"Device {i} ({xd:.2f},{yd:.2f}): wall dist {wdist:.3f}m < {wm:.3f}m"
+                )
+            # Max wall distance
+            if wdist > half_S + 1e-6:
+                layout.violations.append(
+                    f"Device {i} ({xd:.2f},{yd:.2f}): wall dist {wdist:.3f}m > S/2={half_S:.3f}m"
+                )
+
+        # Inter-device spacing
+        if n > 1:
+            max_gap = 0.0
+            for i in range(n):
+                xi, yi = dets[i]
+                min_dist_i = float('inf')
+                for j in range(n):
+                    if i == j:
+                        continue
+                    xj, yj = dets[j]
+                    d2 = (xi - xj) ** 2 + (yi - yj) ** 2
+                    if d2 < min_dist_i:
+                        min_dist_i = d2
+                dist_i = math.sqrt(min_dist_i)
+                if dist_i > max_gap:
+                    max_gap = dist_i
+            if max_gap > S + 1e-6:
+                layout.violations.append(
+                    f"Max detector spacing {max_gap:.3f}m > S={S:.3f}m"
+                )
+
+        # Update proof_valid to include NFPA audit
+        if layout.violations:
+            layout.proof_valid = False
 
     def _verify_vectorized(self, layout: DetectorLayout) -> None:
         """
