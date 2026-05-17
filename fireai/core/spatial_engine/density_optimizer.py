@@ -166,11 +166,19 @@ class DensityOptimizer:
     def _calculate_columns(self, W: float) -> Tuple[int, float]:
         """
         Returns (n_cols, step_x) for horizontal placement.
-        Guarantees step_x <= max_spacing.
+        Handles very narrow rooms where single detector covers entire width.
         """
         available = W - 2 * self.wm
-        if available <= self.max_spacing:
+        
+        # Very narrow room: single detector at center covers width
+        if available <= self.R:
             return 1, 0.0
+        
+        # Medium room
+        if available <= self.max_spacing:
+            return 1, available / 2
+        
+        # Large room
         n = max(2, math.ceil(available / self.max_spacing) + 1)
         step = available / (n - 1)
         return n, step
