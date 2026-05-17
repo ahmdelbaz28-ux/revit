@@ -1,9 +1,14 @@
 """
-fireai/core/floor_analyser.py  V2.1
+fireai/core/floor_analyser.py  V2.2
 ====================================
 Safe, sequential floor-level fire alarm design analyser.
 
 Uses the V7.3 DensityOptimizer directly - no ExpertSystem, no MIP.
+
+V2.2 Changes:
+  - Added refused, refusal_reason, used_mip fields to RoomSummary
+  - Added _check_safety_refusal() for NFPA 72 §17.6.4 detector/room validation
+  - Added LOW_CEILING_WARNING when ceiling_height < 3.0m (R=6.40m not conservative)
 
 V2.1 Changes:
   - Added theoretical_lower_bound and efficiency_ratio to RoomSummary
@@ -93,6 +98,9 @@ class RoomSummary:
         theoretical_lower_bound: Estimative minimum detector count (NOT proven).
         efficiency_ratio: theoretical_lower_bound / detector_count (closer to 1.0 = better).
         duct_devices:   Number of duct detectors (NFPA 72 Section 17.7.5). Initial field only.
+        refused:        True if room was refused (safety rule violation).
+        refusal_reason: Human-readable reason for refusal, or None.
+        used_mip:       True if MIP solver was used (always False until MIP is implemented).
         analysis_ms:    Wall-clock time for this room's analysis in milliseconds.
     """
     room_id:          str
@@ -111,6 +119,9 @@ class RoomSummary:
     theoretical_lower_bound: int       = 0
     efficiency_ratio: float            = 0.0
     duct_devices:     int              = 0
+    refused:          bool             = False
+    refusal_reason:   Optional[str]    = None
+    used_mip:         bool             = False
     analysis_ms:      float            = 0.0
 
 
@@ -159,13 +170,21 @@ class FloorAnalyser:
         2. nfpa_valid    - NFPA 72 spacing/wall rules satisfied
         3. not fallback_used - Hex or rect strategy won (not fallback)
 
-    Any room failing the triple check is flagged as UNSAFE and blocks
-    the floor from being marked safe_to_submit.
+    Safety Refusal (_check_safety_refusal):
+        Before analysis, each room is checked for NFPA 72 safety rules.
+        Currently enforces: smoke detectors are prohibited in kitchens
+        (NFPA 72 §17.6.4). Refused rooms get refused=True and
+        refusal_reason with the NFPA reference. No placement is attempted.
 
     Live Warning (BOUNDARY_LIMIT):
         When coverage > 99.9% but proof_valid=False, a warning is
         added to room warnings and logged to AuditTrail (if provided).
         This represents the known 0.8% boundary condition.
+
+    Live Warning (LOW_CEILING):
+        When ceiling_height < 3.0m, R=6.40m is NOT conservative.
+        NFPA 72 Table 17.6.3.1 requires R=4.55m at 3.0m ceiling.
+        A LOW_CEILING_WARNING is added to room warnings.
 
     Args:
         floor_id:   Floor identifier (e.g. "GF", "L1", "B2").
@@ -240,6 +259,42 @@ class FloorAnalyser:
             return report
 
         for room_dict in rooms:
+            # ─── Safety refusal check (NFPA 72 §17.6.4) ───
+            room_type = room_dict.get("room_type", "")
+            detector_type = room_dict.get("detector_type", "smoke_photoelectric")
+            is_refused, refusal_reason = self._check_safety_refusal(room_type, detector_type)
+
+            if is_refused:
+                # Refused room: no placement attempted
+                room_name = room_dict.get("name", room_dict.get("room_id", ""))
+                room_warnings = [
+                    f"SAFETY_REFUSAL: {refusal_reason}"
+                ]
+                summary = RoomSummary(
+                    room_id=room_dict.get("room_id", room_name),
+                    name=room_name,
+                    detector_count=0,
+                    detector_type=detector_type,
+                    coverage_pct=0.0,
+                    nfpa_valid=False,
+                    proof_valid=False,
+                    fallback_used=False,
+                    method="refused",
+                    compliant=False,
+                    safe_to_submit=False,
+                    violations=[refusal_reason],
+                    warnings=room_warnings,
+                    theoretical_lower_bound=0,
+                    efficiency_ratio=0.0,
+                    duct_devices=0,
+                    refused=True,
+                    refusal_reason=refusal_reason,
+                    used_mip=False,
+                    analysis_ms=0.0,
+                )
+                report.room_summaries.append(summary)
+                continue
+
             # Build Room object from dict
             room = self._build_room(room_dict)
 
@@ -255,8 +310,33 @@ class FloorAnalyser:
                 and not layout.fallback_used
             )
 
-            # BOUNDARY_LIMIT live warning
+            # BOUNDARY_LIMIT + LOW_CEILING live warnings
             room_warnings = list(layout.warnings) if layout.warnings else []
+
+            # LOW_CEILING_WARNING: R=6.40m is NOT conservative for ceilings < 3.0m
+            ceiling_h = room_dict.get("ceiling_height", 3.0)
+            if ceiling_h < 3.0:
+                low_msg = (
+                    f"LOW_CEILING_WARNING: Ceiling height {ceiling_h:.1f}m < 3.0m. "
+                    f"R=6.40m (0.7S) is NOT conservative at this height. "
+                    f"NFPA 72 Table 17.6.3.1 requires R=4.55m at 3.0m ceiling. "
+                    f"PE must verify coverage with correct radius."
+                )
+                room_warnings.append(low_msg)
+                logger.warning("Room %s: %s", room.name, low_msg)
+
+                # Log to AuditStore if available
+                if self.audit_store and hasattr(self.audit_store, 'add_event'):
+                    self.audit_store.add_event(
+                        event_type="LOW_CEILING_WARNING",
+                        room_id=room_dict.get("room_id", room.name),
+                        details_dict={
+                            "ceiling_height_m": ceiling_h,
+                            "current_radius_m": 6.40,
+                            "nfpa_required_radius_m": 4.55,
+                            "note": "R=6.40m not conservative for low ceilings. PE review required.",
+                        },
+                    )
             if not layout.proof_valid and layout.coverage_pct > 99.9:
                 boundary_msg = (
                     f"BOUNDARY_LIMIT: Coverage {layout.coverage_pct:.2f}% exceeds 99.9% "
@@ -330,6 +410,9 @@ class FloorAnalyser:
                 theoretical_lower_bound = layout.theoretical_lower_bound,
                 efficiency_ratio        = layout.efficiency_ratio,
                 duct_devices            = 0,  # Initial - logic in future phase
+                refused                 = False,
+                refusal_reason          = None,
+                used_mip                = False,
                 analysis_ms             = round(ms, 1),
             )
             report.room_summaries.append(summary)
@@ -365,6 +448,43 @@ class FloorAnalyser:
         return report
 
     # ─── private ─────────────────────────────────────────────────────
+
+    @staticmethod
+    def _check_safety_refusal(room_type: str, detector_type: str) -> tuple:
+        """
+        Validate room_type + detector_type combination against NFPA 72 safety rules.
+
+        This is a simple rule-based check — NOT an ExpertSystem.
+        It enforces clear NFPA 72 prohibitions that must not be violated
+        regardless of placement quality.
+
+        Current rules:
+            - kitchen + smoke_photoelectric → REFUSED (NFPA 72 §17.6.4)
+              Smoke detectors are prohibited in kitchens due to nuisance alarms
+              from cooking. Heat detectors must be used instead.
+
+        Args:
+            room_type:     Room type string (e.g. "kitchen", "office", "server_room").
+            detector_type: Detector type string (e.g. "smoke_photoelectric", "heat_fixed").
+
+        Returns:
+            Tuple of (is_refused: bool, reason: str).
+            If is_refused is True, reason contains the NFPA reference.
+            If is_refused is False, reason is empty string.
+        """
+        # NFPA 72 §17.6.4: Smoke detectors shall not be installed in kitchens
+        room_lower = room_type.lower().strip()
+        det_lower = detector_type.lower().strip()
+
+        if room_lower == "kitchen" and "smoke" in det_lower:
+            return (
+                True,
+                f"PROHIBITED: Smoke detector ({detector_type}) in kitchen. "
+                f"NFPA 72 §17.6.4 prohibits smoke detectors in kitchens due to "
+                f"nuisance alarms from cooking. Use heat detector instead."
+            )
+
+        return (False, "")
 
     @staticmethod
     def _build_room(room_dict: dict) -> Room:

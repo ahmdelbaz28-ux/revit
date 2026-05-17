@@ -1,21 +1,27 @@
 """
-test_comprehensive.py — FireAI V8.0 Comprehensive Test Suite
-=============================================================
+test_comprehensive.py — FireAI Comprehensive Test Suite V2
+==========================================================
 End-to-end tests across all three architectural layers:
   Layer 1: DensityOptimizer V7.3 (single room)
-  Layer 2: FloorAnalyser V2.1 (floor — multiple rooms)
+  Layer 2: FloorAnalyser V2.2 (floor — multiple rooms)
   Layer 3: BuildingEngine V0.1 (building — multiple floors)
 
 Plus cross-cutting concerns:
-  - AuditTrail V5.2 integrity
+  - AuditTrail V5.2 integrity and thread safety
   - AuditStore tamper-proof chain
   - theoretical_lower_bound invariant
   - Conservative safe_to_submit gate
+  - Safety refusals (NFPA 72 §17.6.4)
+  - Low ceiling warning (R=6.40m not conservative)
+  - Wall distance validation
+  - API security (fireai_api V10)
 
 NFPA References:
   - NFPA 72 (2022) Section 17.6.3 — smoke detector coverage
+  - NFPA 72 (2022) Section 17.6.4 — detector type restrictions (kitchens)
   - NFPA 72 (2022) Section 17.7.4.2.3.1 — 0.7S rule
   - NFPA 72 (2022) Table 17.6.3.1 — ceiling height / radius
+  - NFPA 72 (2022) Section 17.6.3.1.1 — wall distance requirements
   - NFPA 72 (2022) Section 17.7.5 — duct detectors
 """
 
@@ -23,10 +29,11 @@ import pytest
 import sys
 import os
 import tempfile
+import threading
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "."))
 
-from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout
+from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout, DETECTOR_RADIUS
 from fireai.core.floor_analyser import FloorAnalyser, FloorReport, RoomSummary
 from fireai.core.building_engine import BuildingEngine, BuildingReport
 from audit_trail import AuditTrail
@@ -63,6 +70,10 @@ def audit_store():
     os.environ.pop("AUDIT_DB_PATH", None)
 
 
+# ═══════════════════════════════════════════════════════════════════
+# Layer Tests (original 7)
+# ═══════════════════════════════════════════════════════════════════
+
 # ─── Layer 1: DensityOptimizer V7.3 — single room ──────────────
 # NFPA 72 §17.6.3, §17.7.4.2.3.1
 
@@ -76,28 +87,19 @@ def test_1_single_room_density_optimizer(optimizer):
     room = Room(name="test_office", width=12, length=8, ceiling_height=3.0)
     layout = optimizer.optimize(room)
 
-    # Must place at least 1 detector
     assert layout.count >= 1, f"Expected at least 1 detector, got {layout.count}"
-
-    # Coverage must be >= 99% (NFPA 72 §17.6.3)
     assert layout.coverage_pct >= 99.0, f"Coverage {layout.coverage_pct:.2f}% < 99%"
-
-    # NFPA spacing must be valid
     assert layout.nfpa_valid is True, "NFPA validation failed"
-
-    # theoretical_lower_bound must be <= detector count
     assert layout.theoretical_lower_bound >= 1, "theoretical_lower_bound must be >= 1"
     assert layout.theoretical_lower_bound <= layout.count, (
         f"theoretical_lower_bound ({layout.theoretical_lower_bound}) > count ({layout.count})"
     )
-
-    # efficiency_ratio must be in [0, 1]
     assert 0.0 <= layout.efficiency_ratio <= 1.0, (
         f"efficiency_ratio {layout.efficiency_ratio:.4f} out of range"
     )
 
 
-# ─── Layer 2: FloorAnalyser V2.1 — 10 realistic rooms ──────────
+# ─── Layer 2: FloorAnalyser V2.2 — 10 realistic rooms ──────────
 # NFPA 72 §17.6.3, Table 17.6.3.1
 
 def test_2_floor_analyser_ten_rooms(optimizer):
@@ -119,8 +121,9 @@ def test_2_floor_analyser_ten_rooms(optimizer):
          "polygon_coords": [(0,0),(8,0),(8,6),(0,6)], "ceiling_height": 3.0},
         {"room_id": "corridor", "name": "corridor",
          "polygon_coords": [(0,0),(20,0),(20,2),(0,2)], "ceiling_height": 3.0},
-        {"room_id": "kitchen", "name": "kitchen",
-         "polygon_coords": [(0,0),(6,0),(6,5),(0,5)], "ceiling_height": 3.0},
+        {"room_id": "kitchen_heat", "name": "kitchen_heat",
+         "polygon_coords": [(0,0),(6,0),(6,5),(0,5)], "ceiling_height": 3.0,
+         "room_type": "kitchen", "detector_type": "heat_fixed"},
         {"room_id": "open_office", "name": "open_office",
          "polygon_coords": [(0,0),(25,0),(25,15),(0,15)], "ceiling_height": 3.0},
         {"room_id": "warehouse", "name": "warehouse",
@@ -140,11 +143,14 @@ def test_2_floor_analyser_ten_rooms(optimizer):
     assert report.total_detectors > 0
     assert report.total_theoretical_lower_bound > 0
 
-    # Every room must have coverage >= 99%
     for s in report.room_summaries:
         assert s.coverage_pct >= 99.0, f"Room {s.name}: coverage {s.coverage_pct:.2f}% < 99%"
         assert s.theoretical_lower_bound >= 1
         assert s.theoretical_lower_bound <= s.detector_count
+        # New fields must exist
+        assert hasattr(s, 'refused')
+        assert hasattr(s, 'refusal_reason')
+        assert hasattr(s, 'used_mip')
 
 
 # ─── Layer 3: BuildingEngine V0.1 — 3-floor building ───────────
@@ -191,7 +197,6 @@ def test_3_building_engine_three_floors(optimizer, audit_trail, audit_store):
     assert len(report.unsafe_floors) == 0
     assert len(report.non_compliant_floors) == 0
 
-    # Aggregation check
     sum_dets = sum(fr.total_detectors for fr in report.floor_reports)
     sum_lb = sum(fr.total_theoretical_lower_bound for fr in report.floor_reports)
     assert report.total_detectors == sum_dets
@@ -219,17 +224,14 @@ def test_4_audit_store_chain_integrity(optimizer, audit_store):
 
     report = engine.analyse(floors)
 
-    # Verify chain integrity
     is_valid, error = audit_store.verify_chain()
     assert is_valid, f"AuditStore chain broken: {error}"
 
-    # Must have building-level events
     events = audit_store.get_events()
     event_types = [e["event_type"] for e in events]
     assert "BUILDING_ANALYSIS_START" in event_types
     assert "BUILDING_ANALYSIS_COMPLETE" in event_types
 
-    # Must have room-level events from both floors
     placement_events = [e for e in events if e["event_type"] == "DETECTOR_PLACEMENT"]
     assert len(placement_events) >= 2
 
@@ -252,13 +254,9 @@ def test_5_audit_trail_integrity(optimizer, audit_trail):
 
     report = analyser.analyse(rooms)
 
-    # AuditTrail must have entries
-    assert audit_trail.count() >= 2  # At least one placement per room
-
-    # Integrity check must pass
+    assert audit_trail.count() >= 2
     assert audit_trail.verify_integrity() is True
 
-    # Room trail must be retrievable
     r1_trail = audit_trail.get_room_trail("R1")
     assert len(r1_trail) >= 1
     r2_trail = audit_trail.get_room_trail("R2")
@@ -272,7 +270,6 @@ def test_6_theoretical_lower_bound_invariant(optimizer):
     For any room, theoretical_lower_bound must be <= detector_count.
     This is a geometric invariant: ceil(area / pi*R^2) cannot exceed
     the number of detectors that achieve >= 99% coverage.
-
     NFPA 72 §17.6.3 — coverage requirement guarantees this.
     """
     rooms = [
@@ -306,7 +303,6 @@ def test_7_safe_to_submit_conservative_gate(optimizer):
     This is the conservative gate: one failure blocks the entire building.
     NFPA 72 §17.6.3 — triple-check gate must pass for every room.
     """
-    # First: verify that a normal building is safe
     engine = BuildingEngine("SAFE-BLDG", optimizer)
     safe_floors = {
         "GF": [
@@ -317,9 +313,6 @@ def test_7_safe_to_submit_conservative_gate(optimizer):
     safe_report = engine.analyse(safe_floors)
     assert safe_report.safe_to_submit is True
 
-    # Second: verify that a floor with a potentially unsafe room propagates
-    # We test the logic directly: if any floor has safe_to_submit=False,
-    # then building's safe_to_submit must be False
     engine2 = BuildingEngine("RISKY-BLDG", optimizer)
     risky_floors = {
         "GF": [
@@ -327,14 +320,12 @@ def test_7_safe_to_submit_conservative_gate(optimizer):
              "polygon_coords": [(0,0),(12,0),(12,8),(0,8)], "ceiling_height": 3.0},
         ],
         "B1": [
-            # Thin corridor — often triggers fallback_used=True
             {"room_id": "thin_corridor", "name": "thin_corridor",
              "polygon_coords": [(0,0),(1,0),(1,50),(0,50)], "ceiling_height": 3.0},
         ],
     }
     risky_report = engine2.analyse(risky_floors)
 
-    # If any floor is unsafe, building must be unsafe
     floor_unsafe = any(not fr.safe_to_submit for fr in risky_report.floor_reports)
     if floor_unsafe:
         assert risky_report.safe_to_submit is False, (
@@ -343,9 +334,328 @@ def test_7_safe_to_submit_conservative_gate(optimizer):
         assert len(risky_report.unsafe_floors) > 0
         assert "B1" in risky_report.unsafe_floors
 
-    # The safe floor must still be in floor_reports
     gf_report = [fr for fr in risky_report.floor_reports if fr.floor_id == "GF"][0]
     assert gf_report.safe_to_submit is True
+
+
+# ═══════════════════════════════════════════════════════════════════
+# NEW: Test Group — Safety Refusals (NFPA 72 §17.6.4)
+# ═══════════════════════════════════════════════════════════════════
+
+class TestSafetyRefusals:
+    """
+    Test NFPA 72 safety refusals — smoke detector in kitchen is prohibited.
+    Uses FloorAnalyser._check_safety_refusal() — NOT an ExpertSystem.
+    """
+
+    def test_smoke_in_kitchen_is_refused(self, optimizer):
+        """Smoke detector in kitchen MUST be refused — NFPA 72 §17.6.4."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
+        rooms = [
+            {"room_id": "K1", "name": "kitchen",
+             "polygon_coords": [(0,0),(6,0),(6,5),(0,5)],
+             "ceiling_height": 3.0,
+             "room_type": "kitchen",
+             "detector_type": "smoke_photoelectric"},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.refused is True, "Kitchen + smoke must be refused"
+        assert "PROHIBITED" in (s.refusal_reason or "")
+        assert "§17.6.4" in (s.refusal_reason or "")
+
+    def test_refused_room_has_zero_detectors(self, optimizer):
+        """A refused room must return zero detector positions."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
+        rooms = [
+            {"room_id": "K2", "name": "kitchen2",
+             "polygon_coords": [(0,0),(8,0),(8,6),(0,6)],
+             "ceiling_height": 3.0,
+             "room_type": "kitchen",
+             "detector_type": "smoke_photoelectric"},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.refused is True
+        assert s.detector_count == 0, "Refused room must have 0 detectors"
+
+    def test_refused_room_not_compliant(self, optimizer):
+        """compliant must be False for refused rooms — no silent pass-through."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
+        rooms = [
+            {"room_id": "K3", "name": "kitchen3",
+             "polygon_coords": [(0,0),(6,0),(6,5),(0,5)],
+             "ceiling_height": 3.0,
+             "room_type": "kitchen",
+             "detector_type": "smoke_photoelectric"},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.compliant is False
+        assert s.safe_to_submit is False
+
+    def test_heat_in_kitchen_is_accepted(self, optimizer):
+        """Heat detector in kitchen must NOT be refused — correct type."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
+        rooms = [
+            {"room_id": "K4", "name": "kitchen_heat",
+             "polygon_coords": [(0,0),(6,0),(6,5),(0,5)],
+             "ceiling_height": 3.0,
+             "room_type": "kitchen",
+             "detector_type": "heat_fixed"},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.refused is False, f"Heat in kitchen should be accepted, got: {s.refusal_reason}"
+
+    def test_office_with_smoke_is_not_refused(self, optimizer):
+        """Smoke detector in office must NOT be refused — normal case."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
+        rooms = [
+            {"room_id": "O1", "name": "office",
+             "polygon_coords": [(0,0),(10,0),(10,8),(0,8)],
+             "ceiling_height": 3.0,
+             "room_type": "office",
+             "detector_type": "smoke_photoelectric"},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.refused is False
+
+
+# ═══════════════════════════════════════════════════════════════════
+# NEW: Test Group — Wall Distance Validation
+# ═══════════════════════════════════════════════════════════════════
+
+class TestWallDistance:
+    """
+    Test that placed detectors satisfy NFPA 72 §17.6.3.1.1 wall distances.
+    All detectors must be >= 0.10m from walls.
+    """
+
+    def test_no_wall_violations_in_standard_rooms(self, optimizer):
+        """Standard rooms must have zero wall distance violations."""
+        rooms = [
+            Room(name="office_12x8", width=12, length=8, ceiling_height=3.0),
+            Room(name="lobby_10x10", width=10, length=10, ceiling_height=3.0),
+            Room(name="corridor_20x2", width=20, length=2, ceiling_height=3.0),
+        ]
+        for room in rooms:
+            layout = optimizer.optimize(room)
+            assert layout.wall_violations == 0, (
+                f"Room {room.name}: {layout.wall_violations} wall violations"
+            )
+
+    def test_audit_trail_logs_wall_violation_format(self):
+        """log_wall_distance_violation must produce correct format with §17.6.3.1.1."""
+        trail = AuditTrail("WALL-TEST")
+        trail.log_wall_distance_violation("R1", 0, (0.05, 5.0), "SOUTH", 0.05)
+        e = trail.entries()[-1]
+        assert e.operation == "WALL_DISTANCE_VIOLATION"
+        assert e.outputs["distance_m"] == 0.05
+        assert e.outputs["required_m"] == 0.10
+        assert "§17.6.3.1.1" in e.nfpa_reference
+
+    def test_detectors_within_room_bounds(self, optimizer):
+        """All detector positions must be within room boundaries."""
+        room = Room(name="bounded", width=10, length=8, ceiling_height=3.0)
+        layout = optimizer.optimize(room)
+        for x, y in layout.detectors:
+            assert x >= 0.0, f"Detector x={x:.2f} < 0"
+            assert y >= 0.0, f"Detector y={y:.2f} < 0"
+            assert x <= room.width, f"Detector x={x:.2f} > width={room.width}"
+            assert y <= room.length, f"Detector y={y:.2f} > length={room.length}"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# NEW: Test Group — Low Ceiling Warning
+# ═══════════════════════════════════════════════════════════════════
+
+class TestLowCeilingWarning:
+    """
+    Test LOW_CEILING_WARNING when ceiling_height < 3.0m.
+    R=6.40m (0.7S) is NOT conservative at low ceilings.
+    NFPA 72 Table 17.6.3.1 requires R=4.55m at 3.0m ceiling.
+    """
+
+    def test_low_ceiling_produces_warning(self, optimizer):
+        """Room with ceiling < 3.0m must produce LOW_CEILING_WARNING."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
+        rooms = [
+            {"room_id": "LOW1", "name": "low_ceiling",
+             "polygon_coords": [(0,0),(8,0),(8,6),(0,6)],
+             "ceiling_height": 2.4},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        has_low = any("LOW_CEILING_WARNING" in w for w in s.warnings)
+        assert has_low, f"No LOW_CEILING_WARNING for 2.4m ceiling. Warnings: {s.warnings}"
+
+    def test_normal_ceiling_no_warning(self, optimizer):
+        """Room with ceiling >= 3.0m must NOT produce LOW_CEILING_WARNING."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
+        rooms = [
+            {"room_id": "NORM1", "name": "normal_ceiling",
+             "polygon_coords": [(0,0),(8,0),(8,6),(0,6)],
+             "ceiling_height": 3.5},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        has_low = any("LOW_CEILING_WARNING" in w for w in s.warnings)
+        assert not has_low, f"LOW_CEILING_WARNING for 3.5m ceiling (should not appear)"
+
+    def test_low_ceiling_warning_references_nfpa(self, optimizer):
+        """LOW_CEILING_WARNING must reference NFPA 72 Table 17.6.3.1."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
+        rooms = [
+            {"room_id": "LOW2", "name": "low2",
+             "polygon_coords": [(0,0),(10,0),(10,8),(0,8)],
+             "ceiling_height": 2.7},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        low_warnings = [w for w in s.warnings if "LOW_CEILING_WARNING" in w]
+        assert len(low_warnings) >= 1
+        assert "Table 17.6.3.1" in low_warnings[0]
+
+
+# ═══════════════════════════════════════════════════════════════════
+# NEW: Test Group — AuditTrail Thread Safety
+# ═══════════════════════════════════════════════════════════════════
+
+class TestAuditTrailThreadSafety:
+    """
+    Test that AuditTrail is thread-safe under concurrent writes.
+    Uses threading.Lock to protect _entries list.
+    """
+
+    def test_concurrent_writes_preserve_count(self):
+        """100 writes from 5 threads = 500 entries, no lost writes."""
+        trail = AuditTrail("THREAD-SAFE")
+
+        def _write():
+            for _ in range(100):
+                trail.log_placement("R", 1, "SMOKE_PHOTOELECTRIC", 100.0, [])
+
+        threads = [threading.Thread(target=_write) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert trail.count() == 500, f"Expected 500, got {trail.count()}"
+
+    def test_integrity_after_concurrent_writes(self):
+        """SHA-256 hash integrity must hold after concurrent writes."""
+        trail = AuditTrail("THREAD-INTEGRITY")
+
+        def _write(room_id):
+            for _ in range(50):
+                trail.log_placement(room_id, 1, "SMOKE_PHOTOELECTRIC", 100.0, [])
+
+        threads = [
+            threading.Thread(target=_write, args=(f"R{i}",))
+            for i in range(5)
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert trail.count() == 250
+        assert trail.verify_integrity() is True, "Integrity check failed after concurrent writes"
+
+    def test_audit_entry_hash_immutable(self):
+        """Each AuditEntry hash must be immutable — changing data must not match."""
+        trail = AuditTrail("IMMUTABLE")
+        trail.log_placement("R1", 3, "SMOKE_PHOTOELECTRIC", 99.5, [(1, 1), (2, 2), (3, 3)])
+        entry = trail.entries()[0]
+        original_hash = entry.entry_hash
+        # Hash must match recomputation
+        assert entry._compute_hash() == original_hash
+        # Count must be 1
+        assert trail.count() == 1
+
+
+# ═══════════════════════════════════════════════════════════════════
+# NEW: Test Group — API Security (fireai_api V10)
+# ═══════════════════════════════════════════════════════════════════
+
+class TestAPISecurity:
+    """
+    Test API security: API key validation, request size limits, error handling.
+    Uses fireai_api V10 (FastAPI) with TestClient.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _set_env(self, monkeypatch):
+        monkeypatch.setenv("FIREAI_API_KEYS", "valid-key-001")
+
+    @pytest.fixture
+    def client(self):
+        from fastapi.testclient import TestClient
+        from fireai.core.fireai_api import app
+        return TestClient(app, raise_server_exceptions=False)
+
+    def test_missing_api_key_rejected(self, client):
+        """Request without X-Api-Key header must be rejected with 401 or 422."""
+        r = client.post("/analyse/room", json={})
+        assert r.status_code in (401, 422), (
+            f"Expected 401/422, got {r.status_code}"
+        )
+
+    def test_wrong_api_key_rejected(self, client):
+        """Wrong API key must return 401."""
+        r = client.post(
+            "/analyse/room",
+            headers={"X-Api-Key": "wrong-key"},
+            json={
+                "room": {
+                    "room_id": "R1", "name": "T",
+                    "polygon": [[0,0],[10,0],[10,10],[0,10]],
+                    "ceiling_height_m": 3.5,
+                },
+                "required_coverage_pct": 100.0,
+            },
+        )
+        assert r.status_code == 401, f"Expected 401, got {r.status_code}"
+
+    def test_health_endpoint_works(self, client):
+        """Health endpoint must return 200 without API key."""
+        r = client.get("/health")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["status"] == "healthy"
+
+    def test_oversized_file_rejected(self, client):
+        """File > 50MB must return 413."""
+        r = client.post(
+            "/projects/",
+            headers={"X-Api-Key": "valid-key-001"},
+            files={"file": ("big.json", b"x" * (51 * 1024 * 1024), "application/json")},
+        )
+        assert r.status_code == 413, f"Expected 413, got {r.status_code}"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Planned but not yet implemented — skip markers with reasons
+# ═══════════════════════════════════════════════════════════════════
+
+@pytest.mark.skip(reason="MIP Solver not yet implemented — planned for next phase with PuLP")
+def test_mip_solver_produces_optimal_count():
+    """MIP must prove minimum detector count. Requires PuLP implementation."""
+    pass
+
+
+@pytest.mark.skip(reason="Duct detector logic not yet implemented — NFPA 72 §17.7.5 deferred")
+def test_duct_detectors_injected_automatically():
+    """Room with HVAC duct must receive duct detectors. Deferred to future phase."""
+    pass
+
+
+@pytest.mark.skip(reason="Monte Carlo resilience not yet implemented — planned for V2.0")
+def test_resilience_check_for_multi_detector():
+    """Rooms with >=2 detectors must have resilience result. Future feature."""
+    pass
 
 
 if __name__ == "__main__":

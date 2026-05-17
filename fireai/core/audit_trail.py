@@ -119,6 +119,10 @@ class AuditTrail:
             notes=["DESIGN CANNOT PROCEED", violation],
         ))
 
+    def count(self) -> int:
+        """Return the number of audit entries recorded."""
+        return len(self._entries)
+
     def get_room_trail(self, room_id: str) -> List[AuditEntry]:
         return [e for e in self._entries if e.room_id == room_id]
 

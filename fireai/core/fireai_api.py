@@ -22,7 +22,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from .nfpa72_models import CeilingSpec, CeilingType, DetectorType, HVACDuct, RoomSpec
-from .fire_expert_system import ExpertSystem
+from .fire_expert_system import FireExpertSystem as ExpertSystem
 from .floor_orchestrator import FloorOrchestrator
 from .audit_trail import AuditTrail
 from shapely.geometry import Polygon as ShapelyPolygon
