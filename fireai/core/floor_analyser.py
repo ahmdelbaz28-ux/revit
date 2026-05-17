@@ -106,6 +106,13 @@ from typing import Dict, List, Optional, Tuple
 
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout
 from fireai.core.nfpa72_calculations import calculate_smoke_detector_radius, calculate_coverage_radius_from_height, CoverageSpec
+from fireai.core.geometry_utils import (
+    is_rectangular,
+    bounding_rect_dimensions,
+    point_in_polygon,
+    grid_points_in_polygon,
+    polygon_area,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -193,6 +200,9 @@ class RoomSummary:
     # V3.1: Duct detector fields
     duct_results:   List              = field(default_factory=list)
     duct_warnings:  List[str]         = field(default_factory=list)
+    # V4.0: Non-rectangular room support
+    shape_type:     str               = "rectangular"   # "rectangular", "l_shape", "polygon"
+    polygon_coords: Optional[List]    = None            # original polygon for non-rectangular rooms
 
 
 @dataclass
@@ -392,6 +402,21 @@ class FloorAnalyser:
             # Build Room object from dict
             room = self._build_room(room_dict)
 
+            # ─── V4.0: Non-rectangular room detection ─────────────────────────
+            polygon_coords = room_dict.get("polygon_coords", [])
+            is_non_rect = (
+                polygon_coords
+                and len(polygon_coords) >= 3
+                and not is_rectangular(polygon_coords)
+            )
+            shape_type = "rectangular"
+            if is_non_rect:
+                # Classify shape by vertex count for user-friendly labelling
+                nv = len(polygon_coords)
+                if polygon_coords[0] == polygon_coords[-1]:
+                    nv -= 1  # strip closing vertex
+                shape_type = "l_shape" if nv == 6 else "polygon"
+
             # Calculate NFPA 72 coverage radius from ceiling height
             # Phase 7: Use CoverageSpec with structured NFPA 72 Table 17.6.3.1.1
             ceiling_h = room_dict.get("ceiling_height", 3.0)
@@ -413,6 +438,13 @@ class FloorAnalyser:
             layout = self.opt.optimize(room, coverage_radius=radius)
             ms = (time.time() - t_room) * 1000
 
+            # ─── V4.0: Filter detectors for non-rectangular rooms ─────────────
+            filtered_count = 0
+            if is_non_rect:
+                filtered_count = self._filter_polygon_detectors(
+                    layout, polygon_coords, radius,
+                )
+
             # Triple check
             ok = (
                 layout.proof_valid
@@ -422,6 +454,21 @@ class FloorAnalyser:
 
             # BOUNDARY_LIMIT + LOW_CEILING live warnings
             room_warnings = list(layout.warnings) if layout.warnings else []
+
+            # V4.0: Non-rectangular room warning
+            if is_non_rect:
+                poly_area = polygon_area(polygon_coords)
+                bbox_w, bbox_h = room.width, room.length
+                bbox_area = bbox_w * bbox_h
+                approx_msg = (
+                    f"NON_RECTANGULAR_SHAPE: Room shape is {shape_type} "
+                    f"(area={poly_area:.1f}m²). Placement used bounding rectangle "
+                    f"({bbox_w:.1f}m × {bbox_h:.1f}m = {bbox_area:.1f}m²). "
+                    f"{filtered_count} detector(s) filtered from cutout region. "
+                    f"Coverage verified on actual polygon. PE review recommended."
+                )
+                room_warnings.append(approx_msg)
+                logger.info("Room %s: %s", room.name, approx_msg)
 
             # Phase 7: Add CoverageSpec warning to layout and room warnings
             # Fix 7: Use direct assignment, not add_warning()
@@ -526,7 +573,7 @@ class FloorAnalyser:
                 warnings                = room_warnings,
                 theoretical_lower_bound = layout.theoretical_lower_bound,
                 efficiency_ratio        = layout.efficiency_ratio,
-                duct_devices            = 0,  # Initial - logic in future phase
+                duct_devices            = 0,  # Populated by _inject_duct_analysis
                 refused                 = False,
                 refusal_reason          = None,
                 used_mip                = False,
@@ -539,6 +586,9 @@ class FloorAnalyser:
                 ceiling_height          = ceiling_h,
                 radius_warning          = spec.warning,
                 nfpa_table_ref          = spec.nfpa_ref,
+                # V4.0: Non-rectangular room tracking
+                shape_type              = shape_type,
+                polygon_coords          = polygon_coords if is_non_rect else None,
             )
 
             # ─── MIP verification (optional) ───
@@ -696,6 +746,63 @@ class FloorAnalyser:
                 "Room %s: MIP verification skipped — %s",
                 room.name, summary.mip_status,
             )
+
+    # ------------------------------------------------------------------
+    def _filter_polygon_detectors(
+        self,
+        layout:        DetectorLayout,
+        polygon_coords: list,
+        radius:        float,
+    ) -> int:
+        """
+        Filter detectors that fall outside a non-rectangular polygon (V4.0).
+
+        DensityOptimizer places detectors on the bounding rectangle. For
+        L-shaped or other non-rectangular rooms, some detectors may land
+        in the cutout region. This method removes those detectors and
+        re-verifies coverage on the actual polygon grid.
+
+        Updates layout in-place:
+          - layout.detectors: filtered to polygon interior
+          - layout.coverage_pct: re-verified on actual polygon
+          - layout.proof_valid: updated based on new coverage
+
+        Args:
+            layout:         DetectorLayout from DensityOptimizer (bounding rect).
+            polygon_coords: Original polygon coordinates from room_dict.
+            radius:         Coverage radius used for placement.
+
+        Returns:
+            Number of detectors filtered (removed from cutout region).
+        """
+        original_count = len(layout.detectors)
+
+        # Filter detectors that are inside the actual polygon
+        filtered_dets = [
+            (x, y) for (x, y) in layout.detectors
+            if point_in_polygon((x, y), polygon_coords, include_boundary=True)
+        ]
+        removed = original_count - len(filtered_dets)
+
+        if removed > 0:
+            layout.detectors = filtered_dets
+
+        # Re-verify coverage on actual polygon grid
+        targets = grid_points_in_polygon(polygon_coords, step=0.50, margin=0.0)
+        if targets and filtered_dets:
+            R2 = radius * radius + 1e-9
+            covered = sum(
+                1 for (tx, ty) in targets
+                if any((tx - dx) ** 2 + (ty - dy) ** 2 <= R2
+                       for (dx, dy) in filtered_dets)
+            )
+            layout.coverage_pct = round(100.0 * covered / len(targets), 4)
+            layout.proof_valid = (covered >= len(targets) * 0.9999)
+        elif not targets:
+            layout.coverage_pct = 100.0
+            layout.proof_valid = True
+
+        return removed
 
     # ------------------------------------------------------------------
     def _inject_duct_analysis(

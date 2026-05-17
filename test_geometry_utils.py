@@ -13,6 +13,7 @@ from fireai.core.geometry_utils import (
     grid_points_in_polygon, is_clockwise, ensure_ccw,
     rect_polygon, l_shape_polygon, shoelace_area,
     convex_hull_2d,
+    is_rectangular, bounding_rect_dimensions,
 )
 
 
@@ -276,3 +277,74 @@ class TestConvexHull:
     def test_hull_single_point(self):
         result = convex_hull_2d([(3, 7)])
         assert result == [(3, 7)]
+
+
+# ============================================================================
+# Shape Classification Tests
+# ============================================================================
+
+class TestIsRectangular:
+
+    def test_rect_is_rectangular(self):
+        poly = [(0, 0), (6, 0), (6, 4), (0, 4)]
+        assert is_rectangular(poly) is True
+
+    def test_l_shape_is_not_rectangular(self):
+        poly = l_shape_polygon(6, 4, 2, 2)
+        assert is_rectangular(poly) is False
+
+    def test_triangle_is_not_rectangular(self):
+        poly = [(0, 0), (4, 0), (2, 3)]
+        assert is_rectangular(poly) is False
+
+    def test_closed_rect_is_rectangular(self):
+        """Rect with first==last vertex (closed) should still be rectangular."""
+        poly = [(0, 0), (6, 0), (6, 4), (0, 4), (0, 0)]
+        assert is_rectangular(poly) is True
+
+    def test_rect_from_constructor(self):
+        poly = rect_polygon(5, 3)
+        assert is_rectangular(poly) is True
+
+    def test_pentagon_is_not_rectangular(self):
+        import math as _m
+        poly = [(3 + 2 * _m.cos(2 * _m.pi * i / 5),
+                 3 + 2 * _m.sin(2 * _m.pi * i / 5)) for i in range(5)]
+        assert is_rectangular(poly) is False
+
+    def test_3_vertices_not_rectangular(self):
+        """Triangle has 3 vertices — not rectangular."""
+        poly = [(0, 0), (1, 0), (0.5, 0.87)]
+        assert is_rectangular(poly) is False
+
+    def test_rotated_rect_not_axis_aligned(self):
+        """45-degree rotated rectangle is NOT axis-aligned."""
+        poly = [(0, 0), (1, 1), (0, 2), (-1, 1)]
+        assert is_rectangular(poly) is False
+
+
+class TestBoundingRectDimensions:
+
+    def test_rect_dimensions(self):
+        poly = [(0, 0), (6, 0), (6, 4), (0, 4)]
+        w, h, ox, oy = bounding_rect_dimensions(poly)
+        assert w == pytest.approx(6.0)
+        assert h == pytest.approx(4.0)
+        assert ox == pytest.approx(0.0)
+        assert oy == pytest.approx(0.0)
+
+    def test_l_shape_dimensions(self):
+        poly = l_shape_polygon(6, 4, 2, 2)
+        w, h, ox, oy = bounding_rect_dimensions(poly)
+        assert w == pytest.approx(6.0)
+        assert h == pytest.approx(4.0)
+        assert ox == pytest.approx(0.0)
+        assert oy == pytest.approx(0.0)
+
+    def test_offset_polygon(self):
+        poly = rect_polygon(5, 3, origin=(10, 20))
+        w, h, ox, oy = bounding_rect_dimensions(poly)
+        assert w == pytest.approx(5.0)
+        assert h == pytest.approx(3.0)
+        assert ox == pytest.approx(10.0)
+        assert oy == pytest.approx(20.0)

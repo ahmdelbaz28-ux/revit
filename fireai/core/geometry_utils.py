@@ -436,6 +436,94 @@ def grid_points_in_polygon(
 
 
 # ─────────────────────────────────────────────
+# Shape Classification
+# ─────────────────────────────────────────────
+
+def is_rectangular(poly: Polygon, tolerance: float = 0.05) -> bool:
+    """
+    Check if a polygon is effectively rectangular (axis-aligned).
+
+    A polygon is rectangular if:
+      - It has exactly 4 vertices.
+      - Its area equals the bounding rectangle area (within tolerance).
+      - All edges are axis-aligned (horizontal or vertical).
+
+    This is used by FloorAnalyser to determine whether a room can be
+    handled by the rectangular DensityOptimizer directly, or needs
+    polygon-aware placement (bounding rect + filter).
+
+    Args:
+        poly:       Polygon vertices (open or closed).
+        tolerance:  Relative tolerance for area comparison (default 5%).
+
+    Returns:
+        True if the polygon is effectively rectangular.
+
+    Examples:
+        >>> is_rectangular([(0,0), (6,0), (6,4), (0,4)])
+        True
+        >>> is_rectangular([(0,0), (6,0), (6,2), (4,2), (4,4), (0,4)])
+        False
+    """
+    # Strip closing vertex if duplicated
+    clean = list(poly)
+    if len(clean) > 1 and clean[0] == clean[-1]:
+        clean = clean[:-1]
+
+    if len(clean) != 4:
+        return False
+
+    # Compare polygon area to bounding rectangle area
+    poly_area = polygon_area(clean)
+    min_x, min_y, max_x, max_y = polygon_bounds(clean)
+    bbox_area = (max_x - min_x) * (max_y - min_y)
+
+    if bbox_area < 1e-10:
+        return False
+
+    ratio = poly_area / bbox_area
+    if abs(ratio - 1.0) > tolerance:
+        return False
+
+    # All edges must be axis-aligned (horizontal or vertical)
+    for i in range(4):
+        x0, y0 = clean[i]
+        x1, y1 = clean[(i + 1) % 4]
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        # One of dx, dy must be ~0 (axis-aligned edge)
+        if dx > 1e-6 and dy > 1e-6:
+            return False
+
+    return True
+
+
+def bounding_rect_dimensions(poly: Polygon) -> Tuple[float, float, float, float]:
+    """
+    Compute bounding rectangle dimensions and origin from a polygon.
+
+    Returns the width, length (height), and origin (bottom-left corner)
+    of the axis-aligned bounding rectangle that encloses the polygon.
+
+    This is used by FloorAnalyser to convert non-rectangular room
+    polygons into (width, length) for the DensityOptimizer, which
+    only handles rectangular rooms.
+
+    Args:
+        poly: Polygon vertices (open or closed).
+
+    Returns:
+        (width, height, origin_x, origin_y) of the bounding rectangle.
+
+    Examples:
+        >>> bounding_rect_dimensions([(0,0), (6,0), (6,2), (4,2), (4,4), (0,4)])
+        (6.0, 4.0, 0.0, 0.0)
+    """
+    min_x, min_y, max_x, max_y = polygon_bounds(poly)
+    return (max_x - min_x, max_y - min_y, min_x, min_y)
+
+
+# ─────────────────────────────────────────────
 # Convex Hull  (Andrew's Monotone Chain)
 # ─────────────────────────────────────────────
 
