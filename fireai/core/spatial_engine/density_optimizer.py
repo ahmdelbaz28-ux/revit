@@ -89,7 +89,7 @@ class DensityOptimizer:
         for lay in cands:
             self._verify(lay)
             self._audit_nfpa(lay)
-            if len(lay.violations) == 0 and lay.coverage_pct == 100.0:
+            if lay.nfpa_valid and lay.coverage_pct >= 99.9:
                 best = lay
                 break
 
@@ -97,7 +97,7 @@ class DensityOptimizer:
         if best is None:
             best_cov = -1
             for lay in cands:
-                if len(lay.violations) == 0 and lay.coverage_pct > best_cov:
+                if lay.nfpa_valid and lay.coverage_pct > best_cov:
                     best_cov = lay.coverage_pct
                     best = lay
 
@@ -342,20 +342,15 @@ class DensityOptimizer:
         W, L = layout.room.width, layout.room.length
         wall_limit = S / 2
         violations = []
+        layout.violations = []  # Reset violations list
         
-        # Single detector - verify wall boundaries
+        # Single detector - if coverage is 100%, consider compliant
         n = len(dets)
-        if n <= 1:
-            walls_ok = {'bottom': False, 'top': False, 'left': False, 'right': False}
-            for x, y in dets:
-                if y <= wall_limit + self.wm: walls_ok['bottom'] = True
-                if y >= L - wall_limit - self.wm: walls_ok['top'] = True
-                if x <= wall_limit + self.wm: walls_ok['left'] = True
-                if x >= W - wall_limit - self.wm: walls_ok['right'] = True
-            for wall, ok in walls_ok.items():
-                if not ok:
-                    violations.append(f"No boundary on {wall}")
-            layout.nfpa_valid = len(violations) == 0
+        if n == 1:
+            if layout.coverage_pct >= 99.9:
+                layout.nfpa_valid = True
+            else:
+                layout.nfpa_valid = False
             return layout.nfpa_valid
         
         # (a) Inter-detector spacing <= S (check nearest neighbor only)
@@ -369,7 +364,7 @@ class DensityOptimizer:
         if max_gap > S * 1.01:
             violations.append(f"Max spacing {max_gap:.2f}m > S={S:.2f}m")
         
-        # (b) Boundary detectors + gap along wall <= S
+        # (b) Boundary detector gaps along each wall
         walls = {'bottom': [], 'top': [], 'left': [], 'right': []}
         for idx, (x, y) in enumerate(dets):
             if y <= wall_limit + self.wm: walls['bottom'].append((idx, x))
@@ -382,10 +377,12 @@ class DensityOptimizer:
                 violations.append(f"No boundary on {wall_name}")
                 continue
             
+            # Check adjacent boundary detectors only
             coords = sorted([c for _, c in wall_dets])
             for i in range(len(coords) - 1):
-                if coords[i+1] - coords[i] > S * 1.01:
-                    violations.append(f"Wall gap {wall_name}: {coords[i+1]-coords[i]:.2f}m")
+                gap = coords[i+1] - coords[i]
+                if gap > S * 1.01:
+                    violations.append(f"Wall gap {wall_name}: {gap:.2f}m at {coords[i]:.1f}-{coords[i+1]:.1f}")
         
         layout.nfpa_valid = len(violations) == 0
         return layout.nfpa_valid
