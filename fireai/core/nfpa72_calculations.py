@@ -14,7 +14,8 @@ V9 CHANGES (2026-05-14):
 - Added get_smoke_detector_coverage_max_safe import
 """
 import math
-from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass
+from typing import Dict, List, Tuple, Optional, Literal
 from functools import lru_cache
 from .nfpa72_models import (
     CeilingSpec,
@@ -399,7 +400,153 @@ __all__ = __all__ + [
     "calculate_max_spacing",
     "calculate_coverage_radius",
     "calculate_max_wall_distance",
+    # Phase 7 — Variable Coverage Radius
+    "CoverageSpec",
+    "DetectorTypeSimple",
+    "calculate_coverage_radius_from_height",
+    "get_ceiling_height_warnings",
 ]
+
+
+# ============================================================================
+# PHASE 7: Variable Coverage Radius — NFPA 72-2022 Table 17.6.3.1.1
+# ============================================================================
+
+DetectorTypeSimple = Literal["smoke", "heat"]
+
+# NFPA 72-2022 Table 17.6.3.1.1
+# (ceiling_height_max_meters, smoke_radius, heat_radius)
+_NFPA72_TABLE_17_6_3_1_1 = [
+    (3.0,  4.55, 3.05),
+    (3.7,  4.35, 2.90),
+    (4.6,  4.10, 2.75),
+    (5.5,  3.85, 2.60),
+    (6.1,  3.65, 2.45),
+    (7.6,  3.40, 2.30),
+    (9.1,  3.20, 2.15),
+    (10.7, 3.00, 2.00),
+    (12.2, 2.80, 1.85),
+]
+
+_NFPA72_ABSOLUTE_MAX_HEIGHT = 12.2
+_NFPA72_SMOKE_FALLBACK = 2.60
+_NFPA72_HEAT_FALLBACK  = 1.75
+
+
+@dataclass(frozen=True)
+class CoverageSpec:
+    """Structured coverage specification from NFPA 72 Table 17.6.3.1.1.
+
+    Attributes:
+        radius: Coverage radius in meters.
+        height: Ceiling height used for the calculation.
+        detector_type: "smoke" or "heat".
+        area: Coverage area = pi * radius^2 (m^2).
+        spacing_max: Maximum spacing = 2 * radius (m).
+        nfpa_ref: NFPA 72 table reference string.
+        warning: Optional warning for out-of-range heights.
+    """
+    radius: float
+    height: float
+    detector_type: DetectorTypeSimple
+    area: float
+    spacing_max: float
+    nfpa_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
+    warning: Optional[str] = None
+
+
+def calculate_coverage_radius_from_height(
+    ceiling_height: float,
+    detector_type: DetectorTypeSimple = "smoke",
+) -> CoverageSpec:
+    """Calculate coverage radius from ceiling height per NFPA 72 Table 17.6.3.1.1.
+
+    Higher ceilings produce SMALLER radii (more detectors) because smoke
+    disperses more before reaching the detector — NFPA 72 §17.6.3.1.1.
+
+    Args:
+        ceiling_height: Ceiling height in meters.
+        detector_type: "smoke" or "heat".
+
+    Returns:
+        CoverageSpec with radius, area, spacing, and optional warnings.
+
+    Raises:
+        TypeError: If ceiling_height is None.
+        ValueError: If ceiling_height is negative.
+    """
+    # Fix 1: Protect against None
+    if ceiling_height is None:
+        raise TypeError("ceiling_height must be a float, got None.")
+
+    if ceiling_height <= 0:
+        raise ValueError(f"ceiling_height {ceiling_height}m must be positive.")
+
+    warning: Optional[str] = None
+
+    if ceiling_height > _NFPA72_ABSOLUTE_MAX_HEIGHT:
+        radius = _NFPA72_SMOKE_FALLBACK if detector_type == "smoke" else _NFPA72_HEAT_FALLBACK
+        warning = (
+            f"Ceiling height {ceiling_height}m exceeds NFPA 72 table max "
+            f"({_NFPA72_ABSOLUTE_MAX_HEIGHT}m). Conservative radius {radius}m applied — "
+            "AHJ review required."
+        )
+        # Fix 2: More accurate nfpa_ref for extrapolated values
+        return CoverageSpec(
+            radius=radius,
+            height=ceiling_height,
+            detector_type=detector_type,
+            area=round(math.pi * radius ** 2, 2),
+            spacing_max=round(radius * 2, 2),
+            nfpa_ref="NFPA 72-2022 Table 17.6.3.1.1 — extrapolated beyond 12.2m",
+            warning=warning,
+        )
+
+    for h_max, smoke_r, heat_r in _NFPA72_TABLE_17_6_3_1_1:
+        if ceiling_height <= h_max:
+            radius = smoke_r if detector_type == "smoke" else heat_r
+            if ceiling_height > 9.1:
+                warning = "High-bay space — consider beam smoke detectors per NFPA 72 §17.7."
+            return CoverageSpec(
+                radius=radius,
+                height=ceiling_height,
+                detector_type=detector_type,
+                area=round(math.pi * radius ** 2, 2),
+                spacing_max=round(radius * 2, 2),
+                warning=warning,
+            )
+
+    # exactly 12.2
+    radius = 2.80 if detector_type == "smoke" else 1.85
+    return CoverageSpec(
+        radius=radius,
+        height=ceiling_height,
+        detector_type=detector_type,
+        area=round(math.pi * radius ** 2, 2),
+        spacing_max=round(radius * 2, 2),
+    )
+
+
+def get_ceiling_height_warnings(height: float) -> list[str]:
+    """Get validation warnings for a ceiling height.
+
+    Returns a list of warning strings. Empty list means no warnings.
+    Non-throwing alternative to validate_ceiling_height (which raises).
+
+    Args:
+        height: Ceiling height in meters.
+
+    Returns:
+        List of warning strings.
+    """
+    warnings = []
+    if height < 2.1:
+        warnings.append(f"Height {height}m below habitable minimum (2.1m).")
+    if height > _NFPA72_ABSOLUTE_MAX_HEIGHT:
+        warnings.append(f"Height {height}m exceeds NFPA 72 table — consult AHJ.")
+    if height > 9.1:
+        warnings.append("High-bay: consider beam detectors per NFPA 72 §17.7.")
+    return warnings
 
 
 # ---------------------------------------------------------------------------

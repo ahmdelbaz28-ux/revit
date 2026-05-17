@@ -47,6 +47,11 @@ class DetectorLayout:
     warnings: List[str] = field(default_factory=list)
     fallback_used: bool = False
     coverage_radius: float = DETECTOR_RADIUS  # Actual radius used for placement
+    # Phase 7: Variable Coverage Radius tracking fields
+    ceiling_height: Optional[float] = None
+    detector_type_simple: str = "smoke"
+    radius_warning: Optional[str] = None
+    nfpa_table_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
 
     @property
     def count(self) -> int:
@@ -104,8 +109,9 @@ class DensityOptimizer:
         Args:
             room: Room with width, length, ceiling_height.
             coverage_radius: Override coverage radius (meters). If None, uses
-                the instance default (DETECTOR_RADIUS = 6.40m). For low ceilings,
-                pass the NFPA 72 Table 17.6.3.2 radius (e.g. 4.55m at 3.0m).
+                the instance default (DETECTOR_RADIUS = 6.40m). When calculated
+                from NFPA 72 Table 17.6.3.1.1 via calculate_coverage_radius_from_height,
+                higher ceilings produce smaller radii (more detectors).
                 The default behaviour is unchanged — existing callers need not
                 pass this parameter.
 
@@ -121,10 +127,15 @@ class DensityOptimizer:
             self.Ry_g = self.S_g * math.sqrt(3) / 2
 
         try:
-            return self._optimize_impl(room)
+            layout = self._optimize_impl(room)
         finally:
             if _override:
                 self.R, self.S_g, self.Ry_g = _saved
+
+        # Phase 7: Populate tracking fields on layout
+        if coverage_radius is not None:
+            layout.ceiling_height = room.ceiling_height
+        return layout
 
     def _optimize_impl(self, room: Room) -> DetectorLayout:
         cands: List[DetectorLayout] = []

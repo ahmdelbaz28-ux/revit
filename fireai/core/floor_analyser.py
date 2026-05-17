@@ -14,9 +14,13 @@ V2.3 Changes:
   - MIP is VERIFIER only — greedy always places actual detectors
 
 V2.4 Changes:
-  - Coverage radius now calculated dynamically from NFPA 72 Table 17.6.3.2
-  - Uses calculate_smoke_detector_radius(ceiling_height) instead of fixed R=6.40m
-  - LOW_CEILING_WARNING updated: references dynamic radius calculation
+  - Coverage radius now calculated dynamically from NFPA 72 Table 17.6.3.1.1
+  - Uses calculate_coverage_radius_from_height(ceiling_height, detector_type) → CoverageSpec
+  - CoverageSpec provides: radius, area, spacing_max, nfpa_ref, warning
+  - Heat detector support: smaller radii per NFPA 72 Table 17.6.3.1.1
+  - RoomSummary now tracks: coverage_radius_used, ceiling_height, radius_warning, nfpa_table_ref
+  - DetectorLayout now tracks: ceiling_height, detector_type_simple, radius_warning, nfpa_table_ref
+  - LOW_CEILING_WARNING updated: references NFPA 72 Table 17.6.3.1.1
   - MIP verification uses layout.coverage_radius instead of self.opt.R
 
 V2.2 Changes:
@@ -81,7 +85,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout
-from fireai.core.nfpa72_calculations import calculate_smoke_detector_radius
+from fireai.core.nfpa72_calculations import calculate_smoke_detector_radius, calculate_coverage_radius_from_height, CoverageSpec
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +148,11 @@ class RoomSummary:
     mip_solve_time_s: Optional[float]  = None
     mip_status:       Optional[str]    = None
     analysis_ms:      float            = 0.0
+    # Phase 7: Variable Coverage Radius tracking fields
+    coverage_radius_used: float          = 6.40
+    ceiling_height:   Optional[float]    = None
+    radius_warning:   Optional[str]      = None
+    nfpa_table_ref:   str               = "NFPA 72-2022 Table 17.6.3.1.1"
 
 
 @dataclass
@@ -334,9 +343,20 @@ class FloorAnalyser:
             room = self._build_room(room_dict)
 
             # Calculate NFPA 72 coverage radius from ceiling height
-            # (was fixed 6.40m — now dynamic per Table 17.6.3.2)
+            # Phase 7: Use CoverageSpec with structured NFPA 72 Table 17.6.3.1.1
             ceiling_h = room_dict.get("ceiling_height", 3.0)
-            radius = calculate_smoke_detector_radius(ceiling_h)
+            # Fix 5: Protect against None ceiling_height
+            if ceiling_h is None:
+                ceiling_h = 3.0
+            # Fix 6: detector_type with safe default
+            det_type_str = room_dict.get("detector_type", "smoke_photoelectric")
+            # Map FloorAnalyser detector types to CoverageSpec types
+            if "heat" in det_type_str.lower():
+                cov_det_type = "heat"
+            else:
+                cov_det_type = "smoke"
+            spec = calculate_coverage_radius_from_height(ceiling_h, cov_det_type)
+            radius = spec.radius
 
             # Analyse single room with V7.3 + dynamic radius
             t_room = time.time()
@@ -353,12 +373,20 @@ class FloorAnalyser:
             # BOUNDARY_LIMIT + LOW_CEILING live warnings
             room_warnings = list(layout.warnings) if layout.warnings else []
 
+            # Phase 7: Add CoverageSpec warning to layout and room warnings
+            # Fix 7: Use direct assignment, not add_warning()
+            if spec.warning:
+                layout.radius_warning = spec.warning
+                layout.nfpa_table_ref = spec.nfpa_ref
+                room_warnings.append(spec.warning)
+            layout.detector_type_simple = cov_det_type
+
             # LOW_CEILING_WARNING: ceiling below NFPA 72 normative range
             if ceiling_h < 3.0:
                 low_msg = (
                     f"LOW_CEILING_WARNING: Ceiling height {ceiling_h:.1f}m < 3.0m "
                     f"(below NFPA 72 normative range). "
-                    f"Using conservative R={radius:.2f}m from NFPA 72 Table 17.6.3.2. "
+                    f"Using conservative R={radius:.2f}m from NFPA 72 Table 17.6.3.1.1. "
                     f"PE review required for heights outside normative range."
                 )
                 room_warnings.append(low_msg)
@@ -436,7 +464,7 @@ class FloorAnalyser:
                 room_id                 = room_dict.get("room_id", room.name),
                 name                    = room.name,
                 detector_count          = layout.count,
-                detector_type           = "smoke_photoelectric",
+                detector_type           = det_type_str,
                 coverage_pct            = layout.coverage_pct,
                 nfpa_valid              = layout.nfpa_valid,
                 proof_valid             = layout.proof_valid,
@@ -456,6 +484,11 @@ class FloorAnalyser:
                 mip_solve_time_s        = None,
                 mip_status              = None,
                 analysis_ms             = round(ms, 1),
+                # Phase 7: Variable Coverage Radius tracking
+                coverage_radius_used    = radius,
+                ceiling_height          = ceiling_h,
+                radius_warning          = spec.warning,
+                nfpa_table_ref          = spec.nfpa_ref,
             )
 
             # ─── MIP verification (optional) ───

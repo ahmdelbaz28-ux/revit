@@ -522,7 +522,7 @@ class TestLowCeilingWarning:
         assert not has_low, f"LOW_CEILING_WARNING for 3.5m ceiling (should not appear)"
 
     def test_low_ceiling_warning_references_nfpa(self, optimizer):
-        """LOW_CEILING_WARNING must reference NFPA 72 Table 17.6.3.2."""
+        """LOW_CEILING_WARNING must reference NFPA 72 Table 17.6.3.1.1."""
         analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
         rooms = [
             {"room_id": "LOW2", "name": "low2",
@@ -533,7 +533,7 @@ class TestLowCeilingWarning:
         s = report.room_summaries[0]
         low_warnings = [w for w in s.warnings if "LOW_CEILING_WARNING" in w]
         assert len(low_warnings) >= 1
-        assert "Table 17.6.3.2" in low_warnings[0]
+        assert "Table 17.6.3.1.1" in low_warnings[0]
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -859,18 +859,22 @@ def test_duct_detectors_injected_automatically():
 
 
 # ═══════════════════════════════════════════════════════════════════
-# NEW: Test Group — Variable Coverage Radius (NFPA 72 Table 17.6.3.2)
+# NEW: Test Group — Variable Coverage Radius (NFPA 72 Table 17.6.3.1.1)
 # ═══════════════════════════════════════════════════════════════════
 
 class TestVariableCoverageRadius:
     """
     Test that coverage radius varies with ceiling height per NFPA 72.
-    Low ceilings → smaller radius → more detectors.
-    High ceilings → larger radius → fewer detectors.
+    Per NFPA 72 Table 17.6.3.1.1: higher ceilings produce SMALLER radii
+    (more detectors) because smoke disperses more before reaching the detector.
     """
 
-    def test_low_ceiling_produces_more_detectors(self, optimizer):
-        """Low ceiling (3.0m → R=4.55m) must produce more detectors than high ceiling (9.1m → R=6.40m)."""
+    def test_high_ceiling_produces_more_detectors(self, optimizer):
+        """High ceiling (9.1m -> R=3.20m) must produce more detectors than low ceiling (3.0m -> R=4.55m).
+
+        Per NFPA 72 Table 17.6.3.1.1, higher ceilings require smaller coverage radii
+        because smoke disperses more before reaching the detector.
+        """
         analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
 
         # Same room dimensions, different ceiling heights
@@ -891,25 +895,30 @@ class TestVariableCoverageRadius:
         s_low = report_low.room_summaries[0]
         s_high = report_high.room_summaries[0]
 
-        # Low ceiling (R=4.55m) must produce more detectors than high ceiling (R=6.40m)
-        assert s_low.detector_count > s_high.detector_count, (
-            f"Low ceiling (3.0m, R=4.55m) should produce more detectors than "
-            f"high ceiling (9.1m, R=6.40m): {s_low.detector_count} vs {s_high.detector_count}"
+        # High ceiling (9.1m, R=3.20m) must produce more detectors than low ceiling (3.0m, R=4.55m)
+        assert s_high.detector_count > s_low.detector_count, (
+            f"High ceiling (9.1m, R=3.20m) should produce more detectors than "
+            f"low ceiling (3.0m, R=4.55m): {s_high.detector_count} vs {s_low.detector_count}"
         )
 
-    def test_high_ceiling_matches_default_radius(self, optimizer):
-        """High ceiling (9.1m → R=6.40m) must match default DensityOptimizer behaviour."""
-        # Direct call without coverage_radius (default R=6.40m)
-        room = Room(name="default", width=20, length=15, ceiling_height=9.1)
-        layout_default = optimizer.optimize(room)
+        # Verify tracking fields are populated
+        assert s_low.coverage_radius_used == 4.55
+        assert s_high.coverage_radius_used == 3.20
+        assert s_low.ceiling_height == 3.0
+        assert s_high.ceiling_height == 9.1
 
-        # Call with explicit R=6.40 (from 9.1m ceiling)
-        layout_explicit = optimizer.optimize(room, coverage_radius=6.40)
+    def test_coverage_radius_from_nfpa_table(self, optimizer):
+        """Verify CoverageSpec radius matches NFPA 72 Table 17.6.3.1.1."""
+        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
 
-        assert layout_default.count == layout_explicit.count, (
-            f"Default R=6.40m and explicit coverage_radius=6.40 should match: "
-            f"{layout_default.count} vs {layout_explicit.count}"
-        )
+        spec_3m = calculate_coverage_radius_from_height(3.0, "smoke")
+        spec_9m = calculate_coverage_radius_from_height(9.1, "smoke")
+
+        assert spec_3m.radius == 4.55
+        assert spec_9m.radius == 3.20
+        assert spec_3m.area > 0
+        assert spec_9m.area > 0
+        assert spec_3m.nfpa_ref == "NFPA 72-2022 Table 17.6.3.1.1"
 
 
 @pytest.mark.skip(reason="Monte Carlo resilience not yet implemented — planned for V2.0")

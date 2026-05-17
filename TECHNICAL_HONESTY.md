@@ -26,7 +26,7 @@
 - nfpa_failures = 0/1000
 - proof_failures = 8/1000 (جميعها بتغطية > 99.9%)
 - شبكة التحقق: step = 0.20m
-- نصف قطر التغطية: R يُحسب ديناميكيًا من NFPA 72 Table 17.6.3.2
+- نصف قطر التغطية: R يُحسب ديناميكيًا من NFPA 72 Table 17.6.3.1.1 عبر CoverageSpec
 
 **نتائج FloorAnalyser V2.1:**
 - 15 غرفة (3 طوابق): 15/15 PASS
@@ -52,7 +52,7 @@
 | ProjectMemory | غير موجود — ولن يُستخدم بين الغرف |
 | دعم الأشكال غير المستطيلة | النظام يفترض غرفاً مستطيلة |
 | duct_devices منطق كامل | الحقل موجود (=0)، منطق الحقن التلقائي لاحقاً |
-| R متغير حسب ارتفاع السقف | ✅ مُنفذ (V2.4) | يُحسب ديناميكيًا من NFPA 72 Table 17.6.3.2 |
+| R متغير حسب ارتفاع السقف | ✅ مُنفذ (V2.4) | يُحسب ديناميكيًا من NFPA 72 Table 17.6.3.1.1 عبر CoverageSpec |
 
 ---
 
@@ -69,11 +69,15 @@
    - لا يمكن تحليل غرف على شكل L أو مضلعات معقدة
 
 3. **نصف قطر تغطية ديناميكي (R محسوب من NFPA 72)**
-   - R يُحسب الآن من ارتفاع السقف حسب NFPA 72 Table 17.6.3.2
-   - الأسقف المنخفضة (3.0m): R=4.55m (كواشف أكثر، أمان أعلى)
-   - الأسقف المتوسطة (4.3-7.6m): R=5.2-5.8m
-   - الأسقف العالية (9.1m+): R=6.40m
-   - FloorAnalyser V2.4 يحسب R تلقائيًا ويمرره إلى DensityOptimizer
+   - R يُحسب الآن من ارتفاع السقف حسب NFPA 72 Table 17.6.3.1.1
+   - CoverageSpec (frozen dataclass) يُعيد: radius, area, spacing_max, nfpa_ref, warning
+   - الأسقف المنخفضة (3.0m): R=4.55m (smoke) / R=3.05m (heat)
+   - الأسقف المتوسطة (5.0m): R=3.85m (smoke) / R=2.60m (heat)
+   - الأسقف العالية (9.1m): R=3.20m (smoke) / R=2.15m (heat)
+   - كلما ارتفع السقف، صغر نصف القطر → كواشف أكثر (موافق لـ NFPA 72)
+   - FloorAnalyser V2.4 يحسب R تلقائيًا عبر calculate_coverage_radius_from_height()
+   - دعم كواشف الحرارة: R أصغر من الدخان عند نفس الارتفاع
+   - RoomSummary يتتبع: coverage_radius_used, ceiling_height, radius_warning, nfpa_table_ref
    - LOW_CEILING_WARNING لا يزال يُصدر للارتفاعات أقل من 3.0m (خارج النطاق المعياري)
 
 4. **غياب الحد الأدنى المُثبت رياضياً (مُحدَّث)**
@@ -102,7 +106,9 @@
 | ProcessPoolExecutor | **مرفوض** | أخطاء مخفية في نظام سلامة حرائق |
 | أي import لوحدات V11 غير موجودة | **مرفوض** | لا stub/shim وهمية |
 | MIP حقيقي (PuLP) | **مُنفذ (V2.3)** | ✅ تحقق اختياري — لا يُستبدل greedy |
-| R متغير حسب ارتفاع السقف | **مُنفذ (V2.4)** | ✅ يُحسب ديناميكيًا من NFPA 72 Table 17.6.3.2 |
+| R متغير حسب ارتفاع السقف | **مُنفذ (V2.4)** | ✅ يُحسب ديناميكيًا من NFPA 72 Table 17.6.3.1.1 عبر CoverageSpec |
+| CoverageSpec + دعم heat | **مُنفذ (Phase 7)** | ✅ frozen dataclass + calculate_coverage_radius_from_height |
+| RoomSummary radius tracking | **مُنفذ (Phase 7)** | ✅ coverage_radius_used, ceiling_height, radius_warning, nfpa_table_ref |
 | دعم L-shape عبر Shapely | **لاحقاً** | يحتاج تعديل DensityOptimizer |
 | duct_devices منطق كامل | **لاحقاً** | الحقل الآن، المنطق لاحقاً |
 | Revit Connector | **لاحقاً** | سابق لأوانه |
