@@ -249,6 +249,57 @@ class DensityOptimizer:
             if yd < self.wm-1e-6 or yd > L-self.wm+1e-6: viol += 1
         layout.wall_violations = viol
 
+    def _verify_vectorized(self, layout: DetectorLayout) -> None:
+        """
+        Vectorised coverage verification using NumPy.
+        Same logic as _verify, but O(n*k) with broadcasting for speed.
+        Falls back silently to _verify if NumPy is unavailable.
+        """
+        try:
+            import numpy as np
+        except ImportError:
+            self._verify(layout)
+            return
+
+        room = layout.room
+        dets = np.array(layout.detectors)
+        if len(dets) == 0:
+            layout.coverage_pct = 0.0
+            layout.proof_valid = False
+            layout.wall_violations = 0
+            return
+
+        W, L = room.width, room.length
+        step = VERIFY_STEP
+        xs = np.arange(0, W + step * 0.5, step)
+        ys = np.arange(0, L + step * 0.5, step)
+        xv, yv = np.meshgrid(xs, ys)
+        test_points = np.column_stack([xv.ravel(), yv.ravel()])
+
+        # Clip test points to room bounds exactly as _verify does
+        test_points[:, 0] = np.clip(test_points[:, 0], 0, W)
+        test_points[:, 1] = np.clip(test_points[:, 1], 0, L)
+
+        # Vectorised distance check: (k, 1, 2) - (1, n, 2) -> (k, n, 2)
+        diff = test_points[:, np.newaxis, :] - dets[np.newaxis, :, :]
+        dist2 = (diff ** 2).sum(axis=2)
+        r2 = self.R ** 2 + 1e-9
+        covered = (dist2 <= r2).any(axis=1)
+
+        total = len(test_points)
+        covered_count = covered.sum()
+        layout.coverage_pct = round(100.0 * covered_count / total, 4) if total else 0.0
+        layout.proof_valid = (covered_count == total)
+
+        # Wall violations — same logic as _verify
+        viol = 0
+        for xd, yd in layout.detectors:
+            if xd < self.wm - 1e-6 or xd > W - self.wm + 1e-6:
+                viol += 1
+            if yd < self.wm - 1e-6 or yd > L - self.wm + 1e-6:
+                viol += 1
+        layout.wall_violations = viol
+
     @staticmethod
     def theoretical_minimum(room: Room) -> int:
         return max(1, math.ceil(
