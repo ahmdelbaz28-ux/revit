@@ -109,19 +109,28 @@ class DensityOptimizer:
     def _hex_guarded(self, room: Room, along_x: bool) -> DetectorLayout:
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
         S, Ry, wm, R = self.S_g, self.Ry_g, self.wm, self.R
+        # NFPA compliance: ensure row spacing doesn't exceed S/2
+        Ry = min(Ry, S / 2.0)  # Max row spacing = S/2
         pts: List[Tuple[float, float]] = []
         row = 0; y = wm
         while True:
             offset = (S / 2) if (row % 2 == 1) else 0.0
             xs = self._row_xs_guarded(W, wm, S, offset, R)
-            for x in xs: pts.append((x, y))
+            for x in xs:
+                # NFPA compliance: check distance to nearest wall
+                dist_x = min(x - wm, W - wm - x)
+                dist_y = min(y - wm, L - wm - y)
+                if dist_x <= S / 2.0 and dist_y <= S / 2.0:
+                    pts.append((x, y))
             nxt = y + Ry; far = L - wm
             if nxt > far + 1e-9:
                 if far - y > R + 1e-9:
                     row += 1
                     off2 = (S / 2) if (row % 2 == 1) else 0.0
                     for x in self._row_xs_guarded(W, wm, S, off2, R):
-                        pts.append((x, far))
+                        # Only add if within NFPA bounds
+                        if far >= wm and far <= L - wm:
+                            pts.append((x, far))
                 break
             y = nxt; row += 1
         if not along_x: pts = [(b, a) for a, b in pts]
@@ -159,6 +168,9 @@ class DensityOptimizer:
         R, wm = self.R, self.wm
         S_max = R * math.sqrt(3)   # 7.9155 m
 
+        # NFPA compliance: limit Ry to S/2
+        S_max = min(S_max, self.max_spacing / 2.0)  # S/2 = 4.57m
+
         Nx_min = max(2, math.ceil((W - 2*wm) / S_max) + 1)
         best_pts: Optional[List] = None
         best_n = 10**9
@@ -177,13 +189,18 @@ class DensityOptimizer:
             row = 0; y = wm
             while True:
                 for xp in (even_xs if row % 2 == 0 else odd_xs):
-                    pts.append((xp, y))
+                    # NFPA compliance: ensure distance to nearest wall <= S/2
+                    dist_to_nearest_wall = min(y - wm, L - wm - y)
+                    if dist_to_nearest_wall <= self.max_spacing / 2.0:
+                        pts.append((xp, y))
                 nxt = y + Ry; far = L - wm
                 if nxt > far + 1e-9:
                     if far - y > R + 1e-9:
                         row += 1
                         for xp in (even_xs if row % 2 == 0 else odd_xs):
-                            pts.append((xp, far))
+                            # NFPA compliance: check if final row is valid
+                            if wm <= far <= L - wm:
+                                pts.append((xp, far))
                     break
                 y = nxt; row += 1
 
