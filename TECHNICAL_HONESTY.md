@@ -159,10 +159,10 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 
 ---
 
-## 7. اختبار الانحدار ثلاثي الأبعاد (3D Regression Test)
+## 7. اختبار الانحدار ثلاثي الأبعاد (3D Regression Test V2)
 
-تم إضافة `test_regression.py` كحارس أمان يمنع أي تدهور غير مقصود في الأداء
-عبر ثلاثة أبعاد مستقلة + فحص Phase 7:
+تم إضافة `test_regression.py` V2 كحارس أمان يمنع أي تدهور غير مقصود في الأداء
+عبر ثلاثة أبعاد مستقلة + فحص Phase 7 مع 8 إصلاحات للنقاط المكتشفة.
 
 ### البُعد الأول: التغطية (Coverage)
 - كل غرفة يجب أن تحافظ على `proof_valid = True`
@@ -171,24 +171,43 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 ### البُعد الثاني: التوافق NFPA 72
 - كل غرفة يجب أن تحافظ على `nfpa_valid = True`
 - `wall_violations = 0` (لا تجاوزات جدارية)
+- يتم التحقق عبر نفس طبقة FloorAnalyser (لا تجاوز لطبقة أدنى)
 
-### البُعد الثالث: الكفاءة (Efficiency)
-- عدد الكواشف لا يتجاوز baseline × 1.05 (5% tolerance)
-- `efficiency_ratio` لا يقل عن الحد الأدنى لكل غرفة
+### البُعد الثالث: الكفاءة (Efficiency) — ثنائي الاتجاه
+- عدد الكواشف لا يتجاوز `max_count` = baseline × 1.05 (5% tolerance)
+- عدد الكواشف لا يقل عن `min_count` = baseline × 0.90 (10% floor)
+- `efficiency_ratio` لا يقل عن الحد الأدنى المُشدّد لكل غرفة
 
-### Phase 7: فحص نصف القطر الديناميكي
-- `coverage_radius_used` يجب أن يطابق NFPA 72 Table 17.6.3.1.1 بالضبط
+### Phase 7: فحص نصف القطر الديناميكي — ثلاث طبقات
+- **الطبقة A**: `coverage_radius_used` يطابق baseline
+- **الطبقة B** (إصلاح circular dep): إعادة حساب R من `calculate_coverage_radius_from_height()` بشكل مستقل
+- **الطبقة C**: التحقق أن `layout.coverage_radius` في DensityOptimizer يطابق R المستقل
 - أسقف أعلى → R أصغر → كواشف أكثر (العلاقة العكسية)
 - `nfpa_table_ref` يجب أن يشير إلى "NFPA 72-2022 Table 17.6.3.1.1"
 - كواشف الحرارة: R أصغر من الدخان دائماً
 
+### إصلاحات V2 (8 نقاط ضعف مُعالجة)
+| # | الضعف | الإصلاح |
+|---|-------|---------|
+| ① | بطء الاختبارات (73 تحليل) | `@pytest.fixture(scope="module")` → تحليل واحد لكل غرفة |
+| ② | Baseline هش في الكود | ملف JSON مستقل `regression_baseline.json` + فحص تكامل |
+| ③ | اتجاه واحد (عدد زائد فقط) | إضافة `min_count` + فحص `detector_count ≥ min_count` |
+| ④ | efficiency_ratio متساهل | رفع الحد الأدنى (مثلاً server_room: 0.50 → 0.80) |
+| ⑤ | Circular dependency في R | 3 طبقات تحقق مستقلة (reported + independent calc + placement) |
+| ⑥ | لا MIP في الانحدار | `TestRegressionMIPVerification` اختياري مع PuLP |
+| ⑦ | wall_violations بطريقة مختلفة | توحيد مع نفس خط أنابيب FloorAnalyser |
+| ⑧ | لا heat detector baseline | 3 غرف حرارة مُضافة (kitchen, warehouse_heat, laundry) |
+
 ### آلية Baseline
+- ملف JSON مستقل: `regression_baseline.json` مع version + last_updated
 - القيم محسوبة من المحرك الحالي (V7.3 + V2.4)، NOT من الكود القديم (v4/v6)
 - الكود القديم استخدم R=4.57m — أرقامه (77, 174, 14, إلخ) غير قابلة للمقارنة
-- ملف JSON مُوحّد مع تاريخ وسبب كل قيمة
 - تحديث الـ baseline يتطلب commit مُوثّق بسببه الهندسي
+- فحص تكامل baseline تلقائي (`TestBaselineIntegrity`)
 
-### الغرف المُختبرة (10 غرف بأبعاد متنوعة)
+### الغرف المُختبرة (13 غرفة: 10 smoke + 3 heat)
+
+**كواشف الدخان (smoke):**
 
 | الغرفة | الأبعاد | ارتفاع السقف | R المستخدم | عدد الكواشف |
 |--------|---------|-------------|-----------|-----------|
@@ -202,6 +221,14 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 | stairwell_4x2 | 4×2 | 3.0m | 4.55m | 1 |
 | cafeteria_25x18 | 25×18 | 3.5m | 4.35m | 20 |
 | parking_50x25 | 50×25 | 3.0m | 4.55m | 45 |
+
+**كواشف الحرارة (heat):**
+
+| الغرفة | الأبعاد | ارتفاع السقف | R المستخدم | عدد الكواشف |
+|--------|---------|-------------|-----------|-----------|
+| kitchen_8x6 | 8×6 | 3.0m | 3.05m | 9 |
+| warehouse_heat_30x20 | 30×20 | 6.0m | 2.45m | 70 |
+| laundry_5x4 | 5×4 | 3.0m | 3.05m | 3 |
 
 ---
 
