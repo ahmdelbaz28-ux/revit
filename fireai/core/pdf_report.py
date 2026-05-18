@@ -590,9 +590,16 @@ def generate_building_report(
         audit_summary: Optional dict with audit chain summary.
 
     Returns:
-        Absolute path to the generated PDF file.
+        Absolute path to the generated PDF file (or fallback .txt on error).
     """
+    import os as _os
+
     try:
+        # Ensure parent directory exists before building the PDF
+        parent = _os.path.dirname(_os.path.abspath(output_path))
+        if parent:
+            _os.makedirs(parent, exist_ok=True)
+
         doc = _build_doc(output_path)
         story = []
 
@@ -625,11 +632,29 @@ def generate_building_report(
     except Exception as exc:
         # Never crash — return error path with trace
         traceback.print_exc()
+        # Try original fallback location first
         fallback = output_path.replace(".pdf", "_ERROR.txt")
-        with open(fallback, "w") as f:
-            f.write(f"PDF generation failed: {exc}\n\n")
-            traceback.print_exc(file=f)
-        return fallback
+        try:
+            fallback_parent = _os.path.dirname(_os.path.abspath(fallback))
+            if fallback_parent:
+                _os.makedirs(fallback_parent, exist_ok=True)
+            with open(fallback, "w") as f:
+                f.write(f"PDF generation failed: {exc}\n\n")
+                traceback.print_exc(file=f)
+            return fallback
+        except OSError:
+            # Last resort: write to /tmp
+            import tempfile as _tf
+            fb_tmp = _os.path.join(_tf.gettempdir(), "fireai_report_ERROR.txt")
+            try:
+                with open(fb_tmp, "w") as f:
+                    f.write(f"PDF generation failed: {exc}\n"
+                            f"Original path: {output_path}\n\n")
+                    traceback.print_exc(file=f)
+                return fb_tmp
+            except Exception:
+                # Absolutely cannot write anywhere — return descriptive string
+                return f"<error: could not write report to {output_path} or fallback: {exc}>"
 
 
 # Alias for CLI convenience — both names refer to the same function.
