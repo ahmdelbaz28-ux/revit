@@ -128,6 +128,33 @@
 
 **Safety First:**
 - Every code change in fire safety affects human lives
+
+### CRITICAL FIX: Coverage Radius R = 0.7×S (2026-05-18)
+
+**Issue:** `calculate_coverage_radius_from_height()` incorrectly returned S/2 (wall distance) as "radius".
+S/2 is the MAXIMUM WALL DISTANCE per NFPA 72 §17.6.3.1.1, NOT the coverage radius.
+The correct coverage radius is R = 0.7 × adjusted_spacing per NFPA 72 §17.7.4.2.3.1 (0.7S rule).
+
+**Impact:**
+- At h=3.0m smoke: R changed from 4.55m (incorrect S/2) to 6.37m (correct 0.7×S)
+- This aligned the function with DensityOptimizer's DETECTOR_RADIUS = 0.7 × 9.144m = 6.40m
+- Detector counts reduced (previously over-conservative by ~40-50%)
+- All rooms still pass coverage + NFPA compliance checks
+
+**Root Cause:** The NFPA 72 table was stored with S/2 values and mislabeled as "radius".
+The table now stores full adjusted spacings (S) and computes R = 0.7×S in the function.
+
+**Key Changes:**
+- `_NFPA72_TABLE_17_6_3_1_1`: Now stores (h_max, smoke_spacing, heat_spacing) instead of (h_max, S/2, S/2)
+- `CoverageSpec`: Added `wall_distance_max` field (S/2) to preserve wall distance info
+- `calculate_coverage_radius_from_height()`: Now returns R = round(0.7 × spacing, 2)
+- New constants: `_NFPA72_SMOKE_SPACING_FALLBACK`, `_NFPA72_HEAT_SPACING_FALLBACK`
+
+**Commits:**
+- Commit: 6715c55 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/6715c55
+
+**Tests:** 300 PASS (34 coverage + 23 comprehensive + 162 regression + 81 stress)
+
 ### FireAI V10 - Full Integration (2026-05-16)
 
 **Components Added:**
