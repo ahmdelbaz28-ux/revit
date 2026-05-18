@@ -31,6 +31,26 @@ from fireai.core.audit_store import AuditStore
 # Reporting
 from fireai.core.pdf_report import generate_pdf
 
+# Event Bus (Digital Twin foundation)
+from fireai.core.event_bus import EventBus, Event, Events, EventRecorder
+
+# Engineering System (v2 — from calculator to engineering system)
+from fireai.core.room_lifecycle import (
+    RoomState, RoomTransition, RoomLifecycle, RoomLifecycleManager,
+)
+from fireai.core.digital_twin_interface import (
+    DigitalTwinInterface, DigitalTwinState, TwinModelVersion, ChangeRecord,
+)
+from fireai.core.analysis_pipeline import (
+    AnalysisPipeline, PipelineStage, PipelineResult,
+)
+from fireai.core.spatial_engine.consensus_engine import (
+    ConsensusEngine, ConsensusResult, ConfidenceLevel,
+)
+from fireai.core.spatial_engine.proof_certificate import (
+    ProofCertificateGenerator, ProofCertificate,
+)
+
 __all__ = [
     "__version__",
     # Analysers
@@ -52,4 +72,26 @@ __all__ = [
     "AuditStore",
     # Reporting
     "generate_pdf",
+    # Event Bus
+    "EventBus",
+    "Event",
+    "Events",
+    "EventRecorder",
+    # Engineering System v2
+    "RoomState",
+    "RoomTransition",
+    "RoomLifecycle",
+    "RoomLifecycleManager",
+    "DigitalTwinInterface",
+    "DigitalTwinState",
+    "TwinModelVersion",
+    "ChangeRecord",
+    "AnalysisPipeline",
+    "PipelineStage",
+    "PipelineResult",
+    "ConsensusEngine",
+    "ConsensusResult",
+    "ConfidenceLevel",
+    "ProofCertificateGenerator",
+    "ProofCertificate",
 ]
