@@ -349,8 +349,9 @@ def calculate_max_spacing(ceiling: "CeilingSpec", detector_type: "DetectorType")
     Table 17.6.3.1.1, NOT the coverage radius.  The old version incorrectly
     called get_smoke_detector_coverage_max() which returns a radius, not spacing.
     """
-    # Use the correct function that returns R = 0.7 × S, then reverse to S
-    from nfpa72_models import get_smoke_detector_radius_safe
+    # Use the module-level import (already imported from .nfpa72_models at top of file)
+    # CRITICAL: Do NOT use bare import `from nfpa72_models import` here — that resolves
+    # to the stale root-level copy which still has R=S/2 (4.55m) instead of R=0.7×S (6.37m).
     radius = get_smoke_detector_radius_safe(ceiling.height_at_low_point_m)
     spacing = radius / 0.7  # Reverse R = 0.7 × S → S = R / 0.7
     if ceiling.is_sloped and ceiling.height_at_high_point_m:
@@ -381,7 +382,8 @@ def estimate_detector_count_polygon(polygon, ceiling_height_m: float, detector_t
     """Estimate detector count for a polygon based on coverage area."""
     import math
     from shapely.geometry import Polygon
-    from nfpa72_coverage import get_smoke_detector_coverage_max
+    # CRITICAL: Use module-level import (already from .nfpa72_models) — bare import
+    # would resolve to stale root copy with wrong values.
     
     if not isinstance(polygon, Polygon):
         return 0
@@ -399,7 +401,8 @@ def estimate_detector_count_polygon(polygon, ceiling_height_m: float, detector_t
 def minimum_detector_count_rectangular(width_m: float, depth_m: float, ceiling_height_m: float) -> int:
     """Minimum detector count for rectangular room."""
     import math
-    from nfpa72_coverage import get_smoke_detector_coverage_max
+    # CRITICAL: Use module-level import (already from .nfpa72_models) — bare import
+    # would resolve to stale root copy with wrong values.
     
     radius = get_smoke_detector_coverage_max(ceiling_height_m)
     spacing = radius * 2

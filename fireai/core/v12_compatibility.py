@@ -9,9 +9,9 @@ NOTE: This is a pure wrapper that redirects calls - no behavioral changes.
 """
 
 from typing import List, Tuple, Optional
-from nfpa72_coverage import check_coverage_polygon as original_check_coverage_polygon
-from nfpa72_models import RoomSpec, CeilingSpec, DetectorType, CoverageResult
-from spatial_engine.mip_solver import OptimalMIPEngine as OriginalOptimalMIPEngine
+from .nfpa72_coverage import check_coverage_polygon as original_check_coverage_polygon
+from .nfpa72_models import RoomSpec, CeilingSpec, DetectorType, CoverageResult
+from .spatial_engine.mip_solver import OptimalMIPEngine as OriginalOptimalMIPEngine
 
 
 def check_coverage_polygon_compat(
@@ -112,14 +112,14 @@ def patch_for_v12():
     
     Call this BEFORE importing fire_expert_system_v12.
     """
-    import nfpa72_coverage
-    import spatial_engine.mip_solver
+    import fireai.core.nfpa72_coverage as nfpa72_coverage
+    import fireai.core.spatial_engine.mip_solver as mip_solver_mod
     
     # Patch nfpa72_coverage module
     nfpa72_coverage.check_coverage_polygon = check_coverage_polygon_compat
     
     # Patch spatial_engine.mip_solver module
-    spatial_engine.mip_solver.OptimalMIPEngine = OptimalMIPEngine_compat
+    mip_solver_mod.OptimalMIPEngine = OptimalMIPEngine_compat
     
     # Also patch at import location that V12 might use
     import sys
