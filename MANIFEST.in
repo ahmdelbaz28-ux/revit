@@ -1,0 +1,16 @@
+recursive-include fireai *.py
+recursive-include tests *.py
+include TECHNICAL_HONESTY.md
+include README.md
+include requirements.txt
+include pyproject.toml
+include MANIFEST.in
+global-exclude __pycache__
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude .git
+global-exclude .gitignore
+global-exclude *.egg-info
+global-exclude dist
+global-exclude build
