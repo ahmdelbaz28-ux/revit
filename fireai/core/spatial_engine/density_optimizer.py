@@ -879,7 +879,18 @@ class DensityOptimizer:
         if max_gap > S * 1.01:
             violations.append(f"Max spacing {max_gap:.2f}m > S={S:.2f}m")
 
-        # (b) EXACT wall coverage audit using interval merging
+        # (b) Wall distance check: every detector must be within S/2 of a wall
+        # NFPA 72 §17.6.3.1.1 — detectors shall be within S/2 of the wall
+        half_S = S / 2
+        for idx, (xd, yd) in enumerate(dets):
+            dist_to_nearest_wall = min(xd, W - xd, yd, L - yd)
+            if dist_to_nearest_wall > half_S + 1e-6:
+                violations.append(
+                    f"Detector {idx} at ({xd:.2f},{yd:.2f}): "
+                    f"distance to wall {dist_to_nearest_wall:.2f}m > S/2={half_S:.2f}m"
+                )
+
+        # (c) EXACT wall coverage audit using interval merging
         # Bottom wall (y=0)
         self._check_wall_coverage(
             dets, perp_fn=lambda d: d[1], par_fn=lambda d: d[0],
