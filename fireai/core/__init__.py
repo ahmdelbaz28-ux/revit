@@ -41,6 +41,7 @@ from fireai.core.room_lifecycle import (
 from fireai.core.digital_twin_interface import (
     DigitalTwinInterface, DigitalTwinState, TwinModelVersion, ChangeRecord,
 )
+from fireai.core.digital_twin import DigitalTwin
 from fireai.core.analysis_pipeline import (
     AnalysisPipeline, PipelineStage, PipelineResult,
 )
@@ -86,6 +87,7 @@ __all__ = [
     "DigitalTwinState",
     "TwinModelVersion",
     "ChangeRecord",
+    "DigitalTwin",
     "AnalysisPipeline",
     "PipelineStage",
     "PipelineResult",

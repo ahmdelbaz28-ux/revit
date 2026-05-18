@@ -65,6 +65,7 @@ from .spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLa
 from .spatial_engine.consensus_engine import ConsensusEngine, ConsensusResult, ConfidenceLevel
 from .spatial_engine.proof_certificate import ProofCertificateGenerator, ProofCertificate
 from .event_bus import EventBus, Events
+from .digital_twin import DigitalTwin
 
 logger = logging.getLogger("fireai.pipeline")
 
@@ -86,6 +87,7 @@ class PipelineStage(enum.Enum):
     CERTIFICATION = "certification"  # Proof certificate generation
     SIGNING = "signing"             # SHA-256 hash sealing
     STORAGE = "storage"             # Audit trail persistence
+    TWIN_SYNC = "twin_sync"         # Digital twin snapshot (Bridge 2)
     COMPLETE = "complete"           # All stages done
 
 
@@ -122,6 +124,9 @@ class PipelineResult:
     warnings: List[str] = field(default_factory=list)
     timing: Dict[str, float] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    # Digital Twin fields (Bridge 2)
+    twin_version_id: Optional[str] = None
+    twin_checksum: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to a dictionary (for JSON export / audit trail).
@@ -140,6 +145,8 @@ class PipelineResult:
             "warnings": self.warnings,
             "timing": self.timing,
             "metadata": self.metadata,
+            "twin_version_id": self.twin_version_id,
+            "twin_checksum": self.twin_checksum,
         }
 
         if self.layout is not None:
@@ -275,6 +282,10 @@ class AnalysisPipeline:
         # EventBus for publishing pipeline events
         self._bus = EventBus()
 
+        # Digital Twin (Bridge 2)
+        self._twin = DigitalTwin(building_id="pipeline-managed")
+        self._enable_twin_sync = True  # Can be disabled for fast mode
+
         # Try to import AuditStore for STORAGE stage
         self._audit_available = False
         try:
@@ -287,6 +298,18 @@ class AnalysisPipeline:
                 "Install sqlite3 support for full audit trail."
             )
             self._AuditStore = None
+
+    # ── Properties ──────────────────────────────────────────────────
+
+    @property
+    def twin(self) -> DigitalTwin:
+        """Access the pipeline's DigitalTwin instance.
+
+        After running analyze_room() or analyze_building(), the twin
+        contains all planned detectors with their positions, ready
+        for operational tracking.
+        """
+        return self._twin
 
     # ── Single Room Analysis ────────────────────────────────────────────────
 
@@ -772,6 +795,90 @@ class AnalysisPipeline:
             )
             logger.warning(f"  STORAGE FAILED for {room_id}: {exc}")
             # Continue — storage failure is not fatal for the result
+
+        # ═══════════════════════════════════════════════════════════════
+        # STAGE 6: TWIN_SYNC (Digital Twin Snapshot — Bridge 2)
+        # ═══════════════════════════════════════════════════════════════
+        #
+        # CRITICAL DESIGN DECISION:
+        #   TWIN_SYNC is NON-BLOCKING. If it fails, the pipeline still
+        #   succeeds — the twin is a value-add, not a safety gate.
+        #   The safety gate is the CERTIFICATE stage.
+        #
+        #   However, twin failure is ALWAYS logged as a WARNING because
+        #   a missing twin means the building has no live digital copy.
+        #
+        if self._enable_twin_sync:
+            t0 = time.monotonic()
+            try:
+                # Build room data in the format DigitalTwin expects
+                room_data = {
+                    "room_id": room_id,
+                    "name": room.name,
+                    "width_m": room.width,
+                    "depth_m": room.length,
+                    "ceiling_height_m": ceiling_height,
+                    "detector_type": layout.detector_type_simple or "smoke",
+                    "detectors": [
+                        {"x": x, "y": y, "z": ceiling_height,
+                         "radius": layout.coverage_radius or self.coverage_radius}
+                        for x, y in layout.detectors
+                    ],
+                    "coverage_pct": layout.coverage_pct,
+                    "nfpa_valid": layout.nfpa_valid,
+                    "method": layout.method,
+                    "proof_certificates": (
+                        [result.certificate.proof_hash]
+                        if result.certificate else []
+                    ),
+                }
+
+                # Load into twin — creates PLANNED detectors
+                self._twin.from_building_report([room_data])
+
+                # Compute snapshot checksum
+                checksum = self._twin.compute_checksum()
+
+                # Store twin metadata in result
+                result.twin_checksum = checksum
+                result.metadata["twin_checksum"] = checksum
+                result.metadata["twin_detector_count"] = len(layout.detectors)
+                result.stage_reached = PipelineStage.TWIN_SYNC
+                result.timing["twin_sync"] = round(time.monotonic() - t0, 4)
+
+                # ── Event: Twin Sync ────────────────────────────────
+                self._bus.publish(
+                    Events.TWIN_SYNC,
+                    data={
+                        "room_id": room_id,
+                        "detector_count": len(layout.detectors),
+                        "checksum": checksum,
+                        "certificate_hash": (
+                            result.certificate.proof_hash
+                            if result.certificate else None
+                        ),
+                    },
+                    source="AnalysisPipeline",
+                    correlation_id=correlation_id,
+                )
+
+                logger.info(
+                    f"  TWIN_SYNC: {len(layout.detectors)} detectors "
+                    f"snapshot, checksum={checksum[:16]}..."
+                )
+
+            except Exception as exc:
+                elapsed = round(time.monotonic() - t0, 4)
+                result.timing["twin_sync"] = elapsed
+                result.warnings.append(
+                    f"Room {room_id}: Twin sync failed — "
+                    f"no live digital copy for this room: {exc}"
+                )
+                logger.warning(f"  TWIN_SYNC FAILED for {room_id}: {exc}")
+                # Continue — twin failure is NOT a safety failure
+        else:
+            result.timing["twin_sync"] = 0.0
+            logger.info("  TWIN_SYNC: Skipped (enable_twin_sync=False)")
 
         # ═══════════════════════════════════════════════════════════════
         # FINALIZE
