@@ -410,21 +410,23 @@ def check_l_shaped_coverage(
     """
     # ✅ Use safe fallback
     radius = get_smoke_detector_radius_safe(ceiling_height_m)
-    # Sample points throughout actual polygon
+    # FIXED: Use adaptive grid (0.25m resolution) instead of fixed 20×20 sampling
+    # The old 20×20 grid could miss coverage gaps in large rooms
+    GRID_RESOLUTION_M = 0.25
     uncovered = []
     bounds = room_polygon.bounds
     min_x, min_y, max_x, max_y = bounds
-    step_x = (max_x - min_x) / 20
-    step_y = (max_y - min_y) / 20
+    step_x = GRID_RESOLUTION_M
+    step_y = GRID_RESOLUTION_M
     covered_count = 0
     total_points = 0
-    for i in range(21):
-        for j in range(21):
-            x = min_x + i * step_x
-            y = min_y + j * step_y
-            point = (x, y)
+    x = min_x
+    while x <= max_x:
+        y = min_y
+        while y <= max_y:
             # CRITICAL: Use polygon.contains(), NOT bounding box
             if not room_polygon.contains(Point(x, y)):
+                y += step_y
                 continue
             total_points += 1
             # Check coverage
@@ -435,7 +437,9 @@ def check_l_shaped_coverage(
             if covered:
                 covered_count += 1
             else:
-                uncovered.append(point)
+                uncovered.append((x, y))
+            y += step_y
+        x += step_x
     coverage_pct = (covered_count / total_points * 100) if total_points > 0 else 0
     return CoverageResult(
         is_covered=coverage_pct >= 99,

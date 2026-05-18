@@ -343,16 +343,30 @@ __all__ = [\
 # ============================================================================
 
 def calculate_max_spacing(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
-    """NFPA 72 §17.6.3 - spacing between detectors."""
-    spacing = get_smoke_detector_coverage_max(ceiling.height_at_low_point_m)
-    if ceiling.is_sloped:
-        spacing = get_smoke_detector_coverage_max(ceiling.height_at_high_point_m or ceiling.height_at_low_point_m)
+    """NFPA 72 §17.6.3 - spacing between detectors.
+
+    CRITICAL FIX: This now returns the actual LISTED SPACING (S) from NFPA 72
+    Table 17.6.3.1.1, NOT the coverage radius.  The old version incorrectly
+    called get_smoke_detector_coverage_max() which returns a radius, not spacing.
+    """
+    # Use the correct function that returns R = 0.7 × S, then reverse to S
+    from nfpa72_models import get_smoke_detector_radius_safe
+    radius = get_smoke_detector_radius_safe(ceiling.height_at_low_point_m)
+    spacing = radius / 0.7  # Reverse R = 0.7 × S → S = R / 0.7
+    if ceiling.is_sloped and ceiling.height_at_high_point_m:
+        radius_high = get_smoke_detector_radius_safe(ceiling.height_at_high_point_m)
+        spacing = min(spacing, radius_high / 0.7)
     return round(spacing, 3)
 
 
 def calculate_coverage_radius(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
-    """NFPA 72 §17.6.3.1 - radius = spacing / 2."""
-    return round(calculate_max_spacing(ceiling, detector_type) / 2.0, 4)
+    """NFPA 72 §17.6.3.1 - coverage radius R = 0.7 × S.
+
+    CRITICAL FIX: Was using S/2 (spacing / 2.0), but NFPA 72 §17.7.4.2.3.1
+    defines the coverage radius as R = 0.7 × S, not S/2.
+    """
+    spacing = calculate_max_spacing(ceiling, detector_type)
+    return round(spacing * 0.7, 4)
 
 
 def calculate_max_wall_distance(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:

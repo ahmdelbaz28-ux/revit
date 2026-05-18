@@ -58,12 +58,12 @@ class SafetyGates:
             print(f"{result.name}: {result.status.value}")
     """
     
-    # NFPA 72 limits
-    SMOKE_MAX_SPACING = 9.2  # meters
-    SMOKE_MAX_FROM_WALL = 4.6  # meters (0.5 × spacing)
+    # NFPA 72 limits — FIXED: 9.1m = exactly 30ft (was 9.2m)
+    SMOKE_MAX_SPACING = 9.1  # meters (30 feet per NFPA 72 Table 17.6.3.1.1)
+    SMOKE_MAX_FROM_WALL = 4.55  # meters (9.1 / 2 = S/2)
     
-    HEAT_MAX_SPACING = 6.1  # meters (fixed temp)
-    HEAT_MAX_FROM_WALL = 3.0  # meters
+    HEAT_MAX_SPACING = 6.1  # meters (fixed temp, 20ft per NFPA 72)
+    HEAT_MAX_FROM_WALL = 3.05  # meters (6.1 / 2)
     
     # NFPA 13 Sprinkler (Light Hazard)
     SPRINKLER_MAX_SPACING = 4.6  # meters
