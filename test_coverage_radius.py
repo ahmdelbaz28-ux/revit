@@ -24,6 +24,8 @@ from fireai.core.nfpa72_calculations import (
     _NFPA72_ABSOLUTE_MAX_HEIGHT,
     _NFPA72_SMOKE_FALLBACK,
     _NFPA72_HEAT_FALLBACK,
+    _NFPA72_SMOKE_SPACING_FALLBACK,
+    _NFPA72_HEAT_SPACING_FALLBACK,
 )
 
 
@@ -32,22 +34,24 @@ from fireai.core.nfpa72_calculations import (
 # ═══════════════════════════════════════════════════════════════════
 
 @pytest.mark.parametrize("height, det_type, expected_r", [
-    (2.4,  "smoke", 4.55),
-    (3.0,  "smoke", 4.55),
-    (3.5,  "smoke", 4.35),
-    (4.0,  "smoke", 4.10),
-    (5.0,  "smoke", 3.85),
-    (6.0,  "smoke", 3.65),
-    (7.0,  "smoke", 3.40),
-    (8.0,  "smoke", 3.20),
-    (10.0, "smoke", 3.00),
-    (12.0, "smoke", 2.80),
-    (2.4,  "heat",  3.05),
-    (3.0,  "heat",  3.05),
-    (4.0,  "heat",  2.75),
-    (6.0,  "heat",  2.45),
-    (9.0,  "heat",  2.15),
-    (12.0, "heat",  1.85),
+    # CRITICAL FIX (2026-05-18): R = 0.7 × S (coverage radius), NOT S/2 (wall distance)
+    # Old values were S/2; new values are R = 0.7 * adjusted_spacing
+    (2.4,  "smoke", 6.37),   # S=9.10m, R=0.7*9.10=6.37m
+    (3.0,  "smoke", 6.37),   # S=9.10m, R=0.7*9.10=6.37m
+    (3.5,  "smoke", 6.09),   # S=8.70m, R=0.7*8.70=6.09m
+    (4.0,  "smoke", 5.74),   # S=8.20m, R=0.7*8.20=5.74m
+    (5.0,  "smoke", 5.39),   # S=7.70m, R=0.7*7.70=5.39m
+    (6.0,  "smoke", 5.11),   # S=7.30m, R=0.7*7.30=5.11m
+    (7.0,  "smoke", 4.76),   # S=6.80m, R=0.7*6.80=4.76m
+    (8.0,  "smoke", 4.48),   # S=6.40m, R=0.7*6.40=4.48m
+    (10.0, "smoke", 4.20),   # S=6.00m, R=0.7*6.00=4.20m
+    (12.0, "smoke", 3.92),   # S=5.60m, R=0.7*5.60=3.92m
+    (2.4,  "heat",  4.27),   # S=6.10m, R=0.7*6.10=4.27m
+    (3.0,  "heat",  4.27),   # S=6.10m, R=0.7*6.10=4.27m
+    (4.0,  "heat",  3.85),   # S=5.50m, R=0.7*5.50=3.85m
+    (6.0,  "heat",  3.43),   # S=4.90m, R=0.7*4.90=3.43m
+    (9.0,  "heat",  3.01),   # S=4.30m, R=0.7*4.30=3.01m
+    (12.0, "heat",  2.59),   # S=3.70m, R=0.7*3.70=2.59m
 ])
 def test_radius_correct_by_height_and_type(height, det_type, expected_r):
     spec = calculate_coverage_radius_from_height(height, det_type)
@@ -85,14 +89,14 @@ def test_radius_decreases_with_height():
 
 def test_above_max_height_warning_and_fallback():
     spec = calculate_coverage_radius_from_height(15.0, "smoke")
-    assert spec.radius == _NFPA72_SMOKE_FALLBACK
+    assert spec.radius == round(0.7 * _NFPA72_SMOKE_SPACING_FALLBACK, 2)  # 3.64m
     assert spec.warning is not None
     assert "AHJ" in spec.warning
 
 
 def test_above_max_height_heat_fallback():
     spec = calculate_coverage_radius_from_height(15.0, "heat")
-    assert spec.radius == _NFPA72_HEAT_FALLBACK
+    assert spec.radius == round(0.7 * _NFPA72_HEAT_SPACING_FALLBACK, 2)  # 2.45m
     assert spec.warning is not None
 
 
@@ -123,11 +127,15 @@ def test_area_matches_radius():
             assert spec.area == round(math.pi * spec.radius ** 2, 2)
 
 
-def test_spacing_max_matches_radius():
+def test_spacing_max_is_adjusted_spacing():
+    """spacing_max should equal the adjusted spacing S (NOT 2*R)."""
     for h in [2.4, 5.0, 9.0]:
         for det in ("smoke", "heat"):
             spec = calculate_coverage_radius_from_height(h, det)
-            assert spec.spacing_max == round(spec.radius * 2, 2)
+            # R = 0.7 * S → S = R / 0.7
+            assert spec.spacing_max == round(spec.radius / 0.7, 2) or abs(spec.spacing_max - round(spec.radius / 0.7, 2)) < 0.02
+            # Also: wall_distance_max = S / 2
+            assert spec.wall_distance_max == round(spec.spacing_max / 2.0, 2)
 
 
 def test_frozen_spec():
@@ -196,9 +204,10 @@ def test_coverage_spec_radius_used_in_floor_analyser():
     report = analyser.analyse(rooms)
     s = report.room_summaries[0]
 
-    # 3.0m ceiling -> smoke R=4.55 per NFPA 72 Table 17.6.3.1.1
-    assert s.coverage_radius_used == 4.55, (
-        f"Expected coverage_radius_used=4.55, got {s.coverage_radius_used}"
+    # CRITICAL FIX (2026-05-18): 3.0m ceiling -> smoke R=6.37m (= 0.7*9.10)
+    # Old incorrect value was 4.55m (= S/2, wall distance, NOT coverage radius)
+    assert s.coverage_radius_used == 6.37, (
+        f"Expected coverage_radius_used=6.37, got {s.coverage_radius_used}"
     )
     assert s.ceiling_height == 3.0
     assert s.nfpa_table_ref == "NFPA 72-2022 Table 17.6.3.1.1"
@@ -229,7 +238,7 @@ def test_heat_detector_smaller_radius():
     report_smoke = analyser_smoke.analyse(rooms_smoke)
     report_heat = analyser_heat.analyse(rooms_heat)
 
-    # At 5.0m: smoke R=3.85, heat R=2.60 — heat should produce more detectors
+    # CRITICAL FIX: At 5.0m: smoke R=5.39 (0.7*7.70), heat R=3.64 (0.7*5.20)
     assert report_heat.room_summaries[0].coverage_radius_used < report_smoke.room_summaries[0].coverage_radius_used, (
         f"Heat radius ({report_heat.room_summaries[0].coverage_radius_used}) should be < "
         f"smoke radius ({report_smoke.room_summaries[0].coverage_radius_used})"

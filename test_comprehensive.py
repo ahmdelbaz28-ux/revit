@@ -870,10 +870,11 @@ class TestVariableCoverageRadius:
     """
 
     def test_high_ceiling_produces_more_detectors(self, optimizer):
-        """High ceiling (9.1m -> R=3.20m) must produce more detectors than low ceiling (3.0m -> R=4.55m).
+        """High ceiling (9.1m -> R=4.48m) must produce more detectors than low ceiling (3.0m -> R=6.37m).
 
         Per NFPA 72 Table 17.6.3.1.1, higher ceilings require smaller coverage radii
         because smoke disperses more before reaching the detector.
+        R = 0.7 * S where S is the height-adjusted spacing from the NFPA table.
         """
         analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer)
 
@@ -895,27 +896,32 @@ class TestVariableCoverageRadius:
         s_low = report_low.room_summaries[0]
         s_high = report_high.room_summaries[0]
 
-        # High ceiling (9.1m, R=3.20m) must produce more detectors than low ceiling (3.0m, R=4.55m)
+        # High ceiling (9.1m, R=4.48m) must produce more detectors than low ceiling (3.0m, R=6.37m)
         assert s_high.detector_count > s_low.detector_count, (
-            f"High ceiling (9.1m, R=3.20m) should produce more detectors than "
-            f"low ceiling (3.0m, R=4.55m): {s_high.detector_count} vs {s_low.detector_count}"
+            f"High ceiling (9.1m, R=4.48m) should produce more detectors than "
+            f"low ceiling (3.0m, R=6.37m): {s_high.detector_count} vs {s_low.detector_count}"
         )
 
         # Verify tracking fields are populated
-        assert s_low.coverage_radius_used == 4.55
-        assert s_high.coverage_radius_used == 3.20
+        assert s_low.coverage_radius_used == 6.37
+        assert s_high.coverage_radius_used == 4.48
         assert s_low.ceiling_height == 3.0
         assert s_high.ceiling_height == 9.1
 
     def test_coverage_radius_from_nfpa_table(self, optimizer):
-        """Verify CoverageSpec radius matches NFPA 72 Table 17.6.3.1.1."""
+        """Verify CoverageSpec radius matches NFPA 72 Table 17.6.3.1.1.
+
+        R = 0.7 * S where S is the height-adjusted spacing from the NFPA table.
+        At h=3.0m: S=9.10m -> R=6.37m
+        At h=9.1m: S=6.40m -> R=4.48m
+        """
         from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
 
         spec_3m = calculate_coverage_radius_from_height(3.0, "smoke")
         spec_9m = calculate_coverage_radius_from_height(9.1, "smoke")
 
-        assert spec_3m.radius == 4.55
-        assert spec_9m.radius == 3.20
+        assert spec_3m.radius == 6.37
+        assert spec_9m.radius == 4.48
         assert spec_3m.area > 0
         assert spec_9m.area > 0
         assert spec_3m.nfpa_ref == "NFPA 72-2022 Table 17.6.3.1.1"

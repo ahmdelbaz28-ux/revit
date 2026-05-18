@@ -414,35 +414,75 @@ __all__ = __all__ + [
 
 DetectorTypeSimple = Literal["smoke", "heat"]
 
-# NFPA 72-2022 Table 17.6.3.1.1
-# (ceiling_height_max_meters, smoke_radius, heat_radius)
+# NFPA 72-2022 Table 17.6.3.1.1 — Height-Adjusted Detector Spacing
+# =====================================================================
+# IMPORTANT: This table stores ADJUSTED SPACING (S), NOT S/2 and NOT radius.
+#
+# NFPA 72 §17.6.3.1.1 defines the maximum detector spacing for each
+# ceiling height bracket. As ceiling height increases, smoke has more
+# time to disperse before reaching the detector, so the adjusted spacing
+# DECREASES, requiring more detectors per unit area.
+#
+# The coverage radius R is derived from the adjusted spacing S via the
+# 0.7S rule (NFPA 72 §17.7.4.2.3.1): R = 0.7 × S. This ensures that
+# when detectors are placed on a square grid at spacing S, the circular
+# coverage areas overlap to cover all points including grid corners.
+#
+# CRITICAL FIX (2026-05-18): Previous version incorrectly stored S/2
+# values and called them "radius". This caused DensityOptimizer to
+# receive R = S/2 = 4.55m instead of R = 0.7S = 6.37m at h=3.0m,
+# resulting in over-conservative placement (too many detectors).
+#
+# (ceiling_height_max_meters, smoke_adjusted_spacing_m, heat_adjusted_spacing_m)
 _NFPA72_TABLE_17_6_3_1_1 = [
-    (3.0,  4.55, 3.05),
-    (3.7,  4.35, 2.90),
-    (4.6,  4.10, 2.75),
-    (5.5,  3.85, 2.60),
-    (6.1,  3.65, 2.45),
-    (7.6,  3.40, 2.30),
-    (9.1,  3.20, 2.15),
-    (10.7, 3.00, 2.00),
-    (12.2, 2.80, 1.85),
+    (3.0,   9.10,  6.10),   # Smoke: 30ft listed; Heat: 20ft listed
+    (3.7,   8.70,  5.80),
+    (4.6,   8.20,  5.50),
+    (5.5,   7.70,  5.20),
+    (6.1,   7.30,  4.90),
+    (7.6,   6.80,  4.60),
+    (9.1,   6.40,  4.30),
+    (10.7,  6.00,  4.00),
+    (12.2,  5.60,  3.70),
 ]
 
 _NFPA72_ABSOLUTE_MAX_HEIGHT = 12.2
-_NFPA72_SMOKE_FALLBACK = 2.60
-_NFPA72_HEAT_FALLBACK  = 1.75
+
+# Fallback ADJUSTED SPACING for heights above 12.2m (beyond NFPA table).
+# More conservative than the h=12.2m entry (5.60m / 3.70m).
+# Coverage radius will be computed as R = 0.7 * spacing_fallback.
+_NFPA72_SMOKE_SPACING_FALLBACK = 5.20  # → R = 3.64m
+_NFPA72_HEAT_SPACING_FALLBACK  = 3.50  # → R = 2.45m
+
+# Legacy aliases (deprecated — use spacing fallback constants above)
+# These preserve backward compatibility for code that reads these constants.
+_NFPA72_SMOKE_FALLBACK = round(0.7 * _NFPA72_SMOKE_SPACING_FALLBACK, 2)  # 3.64m
+_NFPA72_HEAT_FALLBACK  = round(0.7 * _NFPA72_HEAT_SPACING_FALLBACK, 2)   # 2.45m
 
 
 @dataclass(frozen=True)
 class CoverageSpec:
     """Structured coverage specification from NFPA 72 Table 17.6.3.1.1.
 
+    The coverage radius R is computed from the height-adjusted spacing S
+    via the NFPA 72 0.7S rule: R = 0.7 × S. This ensures that when
+    detectors are placed on a square grid at spacing S, the circular
+    coverage areas (radius R) overlap to cover all points including
+    the corners of the grid.
+
     Attributes:
-        radius: Coverage radius in meters.
+        radius: Coverage radius in meters (R = 0.7 × spacing).
+            This is the radius of the circular coverage area used by
+            DensityOptimizer for detector placement and coverage
+            verification. NOT the same as wall_distance_max.
         height: Ceiling height used for the calculation.
         detector_type: "smoke" or "heat".
         area: Coverage area = pi * radius^2 (m^2).
-        spacing_max: Maximum spacing = 2 * radius (m).
+        spacing_max: Height-adjusted maximum spacing between detectors (meters).
+            This is the S value from NFPA 72 Table 17.6.3.1.1.
+        wall_distance_max: Maximum distance from wall to nearest detector (meters).
+            Equal to S/2 per NFPA 72 §17.6.3.1.1. NOT the coverage radius.
+            Previously confused with radius (S/2 was called "radius" — now fixed).
         nfpa_ref: NFPA 72 table reference string.
         warning: Optional warning for out-of-range heights.
     """
@@ -451,6 +491,7 @@ class CoverageSpec:
     detector_type: DetectorTypeSimple
     area: float
     spacing_max: float
+    wall_distance_max: float = 0.0
     nfpa_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
     warning: Optional[str] = None
 
@@ -461,15 +502,28 @@ def calculate_coverage_radius_from_height(
 ) -> CoverageSpec:
     """Calculate coverage radius from ceiling height per NFPA 72 Table 17.6.3.1.1.
 
-    Higher ceilings produce SMALLER radii (more detectors) because smoke
-    disperses more before reaching the detector — NFPA 72 §17.6.3.1.1.
+    Higher ceilings produce SMALLER adjusted spacings (more detectors) because
+    smoke disperses more before reaching the detector — NFPA 72 §17.6.3.1.1.
+
+    The coverage radius R is computed from the height-adjusted spacing S
+    via the NFPA 72 0.7S rule: R = 0.7 × S.
+
+    CRITICAL FIX (2026-05-18): Previous version incorrectly returned S/2
+    as the "radius". S/2 is the MAXIMUM WALL DISTANCE, NOT the coverage
+    radius. The correct coverage radius is R = 0.7 × S. This fix aligns
+    calculate_coverage_radius_from_height() with DensityOptimizer's
+    DETECTOR_RADIUS = 0.7 × MAX_SPACING_M = 6.40m.
 
     Args:
         ceiling_height: Ceiling height in meters.
         detector_type: "smoke" or "heat".
 
     Returns:
-        CoverageSpec with radius, area, spacing, and optional warnings.
+        CoverageSpec with:
+          - radius: Coverage radius R = 0.7 × adjusted_spacing (meters)
+          - spacing_max: Height-adjusted spacing S (meters)
+          - wall_distance_max: Maximum wall distance S/2 (meters)
+          - area: Coverage area pi × R^2 (m^2)
 
     Raises:
         TypeError: If ceiling_height is None.
@@ -485,26 +539,35 @@ def calculate_coverage_radius_from_height(
     warning: Optional[str] = None
 
     if ceiling_height > _NFPA72_ABSOLUTE_MAX_HEIGHT:
-        radius = _NFPA72_SMOKE_FALLBACK if detector_type == "smoke" else _NFPA72_HEAT_FALLBACK
+        # Use conservative fallback spacing for heights beyond the table
+        spacing = (
+            _NFPA72_SMOKE_SPACING_FALLBACK
+            if detector_type == "smoke"
+            else _NFPA72_HEAT_SPACING_FALLBACK
+        )
+        radius = round(0.7 * spacing, 2)
+        wall_dist = round(spacing / 2.0, 2)
         warning = (
             f"Ceiling height {ceiling_height}m exceeds NFPA 72 table max "
-            f"({_NFPA72_ABSOLUTE_MAX_HEIGHT}m). Conservative radius {radius}m applied — "
-            "AHJ review required."
+            f"({_NFPA72_ABSOLUTE_MAX_HEIGHT}m). Conservative spacing {spacing}m "
+            f"(R={radius}m) applied — AHJ review required."
         )
-        # Fix 2: More accurate nfpa_ref for extrapolated values
         return CoverageSpec(
             radius=radius,
             height=ceiling_height,
             detector_type=detector_type,
             area=round(math.pi * radius ** 2, 2),
-            spacing_max=round(radius * 2, 2),
+            spacing_max=round(spacing, 2),
+            wall_distance_max=wall_dist,
             nfpa_ref="NFPA 72-2022 Table 17.6.3.1.1 — extrapolated beyond 12.2m",
             warning=warning,
         )
 
-    for h_max, smoke_r, heat_r in _NFPA72_TABLE_17_6_3_1_1:
+    for h_max, smoke_spacing, heat_spacing in _NFPA72_TABLE_17_6_3_1_1:
         if ceiling_height <= h_max:
-            radius = smoke_r if detector_type == "smoke" else heat_r
+            spacing = smoke_spacing if detector_type == "smoke" else heat_spacing
+            radius = round(0.7 * spacing, 2)          # R = 0.7 × S (coverage radius)
+            wall_dist = round(spacing / 2.0, 2)        # S/2 (max wall distance)
             if ceiling_height > 9.1:
                 warning = "High-bay space — consider beam smoke detectors per NFPA 72 §17.7."
             return CoverageSpec(
@@ -512,18 +575,22 @@ def calculate_coverage_radius_from_height(
                 height=ceiling_height,
                 detector_type=detector_type,
                 area=round(math.pi * radius ** 2, 2),
-                spacing_max=round(radius * 2, 2),
+                spacing_max=round(spacing, 2),
+                wall_distance_max=wall_dist,
                 warning=warning,
             )
 
-    # exactly 12.2
-    radius = 2.80 if detector_type == "smoke" else 1.85
+    # exactly 12.2m — use last table entry
+    spacing = 5.60 if detector_type == "smoke" else 3.70
+    radius = round(0.7 * spacing, 2)
+    wall_dist = round(spacing / 2.0, 2)
     return CoverageSpec(
         radius=radius,
         height=ceiling_height,
         detector_type=detector_type,
         area=round(math.pi * radius ** 2, 2),
-        spacing_max=round(radius * 2, 2),
+        spacing_max=round(spacing, 2),
+        wall_distance_max=wall_dist,
     )
 
 

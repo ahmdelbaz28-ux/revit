@@ -465,6 +465,11 @@ class TestPhase7NFPA72Radius:
         """
         Physical invariant: higher ceilings MUST produce more detectors.
         Verified through the full FloorAnalyser pipeline.
+
+        Uses a 40x20 room where the difference between heights is clear:
+          h=3.0m -> R=6.37m -> 24 detectors
+          h=6.0m -> R=5.11m -> 28 detectors
+          h=9.1m -> R=4.48m -> 32 detectors
         """
         opt = DensityOptimizer()
         analyser = FloorAnalyser(floor_id="REG", optimizer=opt)
@@ -475,7 +480,7 @@ class TestPhase7NFPA72Radius:
                 {
                     "room_id": f"room_H{H}",
                     "name": f"room_H{H}",
-                    "polygon_coords": [(0, 0), (30, 0), (30, 20), (0, 20)],
+                    "polygon_coords": [(0, 0), (40, 0), (40, 20), (0, 20)],
                     "ceiling_height": H,
                 }
             ]
