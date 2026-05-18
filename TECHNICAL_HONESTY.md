@@ -2,7 +2,7 @@
 ## وثيقة الصدق الفني لمشروع FireAI
 
 **التاريخ:** 18 مايو 2026
-**النسخة:** 2.2
+**النسخة:** 3.0 (تحديث بعد CRITICAL FIX R=0.7×S)
 **الغرض:** توثيق الحالة الراهنة للمشروع، حدود النظام المعروفة، وخطة
 التطوير، التزاماً بمبدأ الشفافية الكاملة ورفض أي ادعاءات غير قابلة للتحقق.
 
@@ -68,17 +68,18 @@
    - RoomSpec يتطلب width_m و depth_m
    - لا يمكن تحليل غرف على شكل L أو مضلعات معقدة
 
-3. **نصف قطر تغطية ديناميكي (R محسوب من NFPA 72)**
-   - R يُحسب الآن من ارتفاع السقف حسب NFPA 72 Table 17.6.3.1.1
-   - CoverageSpec (frozen dataclass) يُعيد: radius, area, spacing_max, nfpa_ref, warning
-   - الأسقف المنخفضة (3.0m): R=4.55m (smoke) / R=3.05m (heat)
-   - الأسقف المتوسطة (5.0m): R=3.85m (smoke) / R=2.60m (heat)
-   - الأسقف العالية (9.1m): R=3.20m (smoke) / R=2.15m (heat)
+3. **نصف قطر تغطية ديناميكي (R محسوب من NFPA 72) — CRITICAL FIX (commit 6715c55)**
+   - R يُحسب الآن من ارتفاع السقف حسب NFPA 72 Table 17.6.3.1.1 عبر R = 0.7 × S
+   - CoverageSpec (frozen dataclass) يُعيد: radius, area, spacing_max, wall_distance_max, nfpa_ref, warning
+   - **الأسقف المنخفضة (3.0m): R=6.37m (smoke, 0.7×9.10) / R=4.27m (heat, 0.7×6.10)**
+   - **الأسقف المتوسطة (5.0m): R=5.39m (smoke, 0.7×7.70) / R=3.64m (heat, 0.7×5.20)**
+   - **الأسقف العالية (9.1m): R=4.48m (smoke, 0.7×6.40) / R=3.01m (heat, 0.7×4.30)**
+   - أقصى مسافة للجدار (wall_distance_max = S/2): 4.55m عند h=3.0m (smoke)
+   - **القيم القديمة (R=4.55m, 3.05m, 3.85m) كانت S/2 وليست نصف قطر تغطية — تم تصحيحها**
    - كلما ارتفع السقف، صغر نصف القطر → كواشف أكثر (موافق لـ NFPA 72)
    - FloorAnalyser V2.4 يحسب R تلقائيًا عبر calculate_coverage_radius_from_height()
    - دعم كواشف الحرارة: R أصغر من الدخان عند نفس الارتفاع
    - RoomSummary يتتبع: coverage_radius_used, ceiling_height, radius_warning, nfpa_table_ref
-   - LOW_CEILING_WARNING لا يزال يُصدر للارتفاعات أقل من 3.0m (خارج النطاق المعياري)
 
 4. **غياب الحد الأدنى المُثبت رياضياً (مُحدَّث)**
    - MIP Solver (PuLP) متاح الآن كخيار تحقق (use_mip=True)
@@ -207,28 +208,28 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 
 ### الغرف المُختبرة (13 غرفة: 10 smoke + 3 heat)
 
-**كواشف الدخان (smoke):**
+**كواشف الدخان (smoke) — بعد CRITICAL FIX R=0.7×S:**
 
 | الغرفة | الأبعاد | ارتفاع السقف | R المستخدم | عدد الكواشف |
 |--------|---------|-------------|-----------|-----------|
-| open_plan_40x20 | 40×20 | 3.0m | 4.55m | 32 |
-| warehouse_60x30 | 60×30 | 6.0m | 3.65m | 91 |
-| corridor_20x3 | 20×3 | 2.8m | 4.55m | 4 |
-| office_10x8 | 10×8 | 3.0m | 4.55m | 6 |
-| lobby_15x15 | 15×15 | 4.5m | 4.10m | 16 |
-| classroom_12x9 | 12×9 | 3.0m | 4.55m | 9 |
-| server_room_6x5 | 6×5 | 3.0m | 4.55m | 1 |
-| stairwell_4x2 | 4×2 | 3.0m | 4.55m | 1 |
-| cafeteria_25x18 | 25×18 | 3.5m | 4.35m | 20 |
-| parking_50x25 | 50×25 | 3.0m | 4.55m | 45 |
+| open_plan_40x20 | 40×20 | 3.0m | 6.37m | 24 |
+| warehouse_60x30 | 60×30 | 6.0m | 5.11m | 50 |
+| corridor_20x3 | 20×3 | 2.8m | 6.37m | 4 |
+| office_10x8 | 10×8 | 3.0m | 6.37m | 3 |
+| lobby_15x15 | 15×15 | 4.5m | 5.74m | 9 |
+| classroom_12x9 | 12×9 | 3.0m | 6.37m | 3 |
+| server_room_6x5 | 6×5 | 3.0m | 6.37m | 1 |
+| stairwell_4x2 | 4×2 | 3.0m | 6.37m | 1 |
+| cafeteria_25x18 | 25×18 | 3.5m | 6.09m | 12 |
+| parking_50x25 | 50×25 | 3.0m | 6.37m | 28 |
 
-**كواشف الحرارة (heat):**
+**كواشف الحرارة (heat) — بعد CRITICAL FIX R=0.7×S:**
 
 | الغرفة | الأبعاد | ارتفاع السقف | R المستخدم | عدد الكواشف |
 |--------|---------|-------------|-----------|-----------|
-| kitchen_8x6 | 8×6 | 3.0m | 3.05m | 9 |
-| warehouse_heat_30x20 | 30×20 | 6.0m | 2.45m | 70 |
-| laundry_5x4 | 5×4 | 3.0m | 3.05m | 3 |
+| kitchen_8x6 | 8×6 | 3.0m | 4.27m | 3 |
+| warehouse_heat_30x20 | 30×20 | 6.0m | 3.43m | 40 |
+| laundry_5x4 | 5×4 | 3.0m | 4.27m | 1 |
 
 ---
 
@@ -236,6 +237,8 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 
 | Commit | الوصف | الحالة |
 |--------|-------|--------|
+| `6715c55` | CRITICAL FIX: Coverage radius R = 0.7×S (not S/2) | ✅ مُختبر (300 اختبار PASS) |
+| `952dcd8` | docs: AGENTS.md + README + TECHNICAL_HONESTY update for R fix | ✅ مُحدّث |
 | `dfaf5a7` | V7.3 code change (coverage_limit = R) | ✅ مُختبر ومُوثق |
 | `d832a28` | V7.3 + FloorAnalyser V2 documentation | ✅ مُختبر ومُوثق |
 | `4de84ab` | TECHNICAL_HONESTY.md V1.0 | ✅ صادق (مُحدّث في هذا commit) |
