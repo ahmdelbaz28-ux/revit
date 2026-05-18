@@ -644,10 +644,15 @@ class DensityOptimizer:
         diff_c = all_corners[:, np.newaxis, :] - dets_arr[np.newaxis, :, :]
         dist2_c = (diff_c ** 2).sum(axis=2)
 
-        # COARSE PASS: any-detector check (fast filter, not a proof)
-        # This identifies which cells MIGHT need refinement.
-        # The actual proof happens in the fine pass.
-        corner_covered_coarse = (dist2_c <= R2).any(axis=1)  # (n_corners,)
+        # COARSE PASS: δ-conservative check with R_eff = R - δ√2/2
+        # This is a PROOF: if all corners are within R_eff of some detector,
+        # the entire cell is provably within R (triangle inequality).
+        # For 1.0m cells: margin = 0.707m, R_eff = 5.693m
+        coarse_margin = coarse_step * math.sqrt(2) / 2  # 0.707m
+        R_eff_coarse = self.R - coarse_margin
+        R2_eff_coarse = R_eff_coarse ** 2 + 1e-9
+
+        corner_covered_coarse = (dist2_c <= R2_eff_coarse).any(axis=1)  # (n_corners,)
         corner_covered_cells = corner_covered_coarse.reshape(n_coarse_cells, 4)
         cell_covered = corner_covered_cells.all(axis=1)  # (n_cells,)
 
