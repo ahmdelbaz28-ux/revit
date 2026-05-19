@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 # Set to > 0 to enable, but keep < 0.05 (5cm) max
 GAP_CLOSURE_THRESHOLD = 0.0  # 0 = disabled - prevents opening doors/windows from being closed
 MIN_ROOM_AREA_SQM = 1.0
-MAX_ROOM_AREA_SQM = 200.0
+MAX_ROOM_AREA_SQM = 10000.0  # V12 Fix: Raised from 200 — atriums/lobbies can be 3000+ m²
 def extract_text_from_polygon(polygon: ShapelyPolygon, page, scale: float = 1.0) -> str:
     """
     Extract text found inside a polygon bounds from PDF page.
@@ -397,9 +397,18 @@ class ExtractionReport:
 def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List[LineString]) -> Tuple[List[ShapelyPolygon], ExtractionReport]:
     """
     Filter polygons to keep only valid rooms:
-    1. Exclude ONLY outer boundary (>100x larger than second)
+    1. Exclude ONLY true outer boundary (architectural containment check)
     2. Exclude tiny polygons (noise)
     3. Flag large/outlier rooms for PE review (no deletion!)
+    
+    V12 Fix — Atrium Deletion Bug:
+    Previous code used `area > second_largest * 100` which deleted atriums/lobbies
+    that were legitimately large (e.g., 3000m² lobby vs 25m² offices).
+    
+    New approach: The outer boundary is identified by ARCHITECTURAL containment,
+    not by area ratio. A polygon is the outer boundary only if it CONTAINS
+    the centroids of most other polygons (it "swallows" the inner rooms).
+    An atrium does NOT contain other rooms → it is correctly kept.
     """
     import statistics
     
@@ -415,6 +424,27 @@ def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List
     areas = [p.area for p in polygons]
     median_area = statistics.median(areas) if areas else 0.0
     
+    # V12 Fix: Identify outer boundary ARCHITECTURALLY, not by area ratio.
+    # The outer building boundary polygon contains the centroids of inner rooms.
+    # An atrium/lobby does NOT contain other rooms → correctly kept.
+    outer_boundary_idx = -1
+    if len(sorted_polys) > 1:
+        largest = sorted_polys[0]
+        # Check: does the largest polygon contain ≥50% of other polygons' centroids?
+        contained_count = sum(
+            1 for p in sorted_polys[1:]
+            if largest.contains(p.centroid)
+        )
+        containment_ratio = contained_count / len(sorted_polys[1:]) if sorted_polys[1:] else 0
+        if containment_ratio >= 0.5:
+            outer_boundary_idx = 0
+            report.outer_boundary_excluded = True
+            logger.info(
+                f"Excluded true outer boundary (architectural): "
+                f"{largest.area:.1f}sqm contains {contained_count}/{len(sorted_polys[1:])} "
+                f"room centroids ({containment_ratio:.0%})"
+            )
+    
     for idx, poly in enumerate(sorted_polys):
         area = poly.area
         
@@ -424,13 +454,10 @@ def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List
             logger.debug(f"Filtered small polygon: area={area:.2f}sqm")
             continue
         
-        # Exclude ONLY outer boundary (>100x larger than second)
-        if idx == 0 and len(sorted_polys) > 1:
-            second_largest = sorted_polys[1].area
-            if area > second_largest * 100:
-                report.outer_boundary_excluded = True
-                logger.info(f"Excluded outer boundary: {area:.1f}sqm (vs {second_largest:.1f}sqm)")
-                continue
+        # Exclude ONLY the true outer boundary (identified by containment)
+        if idx == outer_boundary_idx:
+            logger.info(f"Excluded outer boundary architecturally: {area:.1f}sqm")
+            continue
         
         # FLAG outliers - any statistically large or absolutely large space
         # No deletion - only warning for PE review
@@ -445,8 +472,8 @@ def _filter_valid_rooms(polygons: List[ShapelyPolygon], walls: List, lines: List
                 "reason": "outlier_large_space",
             })
             logger.warning(
-                f"⚠️ Large space #{idx}: {area:.1f}m² "
-                f"(median={median_area:.1f}m², ratio={ratio}x) — "
+                f"\u26a0\ufe0f Large space #{idx}: {area:.1f}m\u00b2 "
+                f"(median={median_area:.1f}m\u00b2, ratio={ratio}x) \u2014 "
                 f"MANUAL REVIEW REQUIRED"
             )
         

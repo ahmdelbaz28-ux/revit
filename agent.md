@@ -51,3 +51,51 @@
 2. **Consultant's K-Means was overkill** — we used simpler Greedy Farthest-Point (no scipy dependency).
 3. **NameError bug** — independently discovered during code review, not mentioned by consultant.
 4. **_try_heat_detectors same clustering bug** — independently discovered, consultant only flagged main method.
+
+---
+
+## V12 Round 2 Fixes (2026-05-20)
+
+### Bug 4 — Atrium Deletion Bug (CRITICAL)
+**File:** `adapters/pdf_to_rooms_adapter.py` — `_filter_valid_rooms()` + `MAX_ROOM_AREA_SQM`
+**Consultant Claim:** `area > second_largest * 100` deletes atriums/lobbies that are legitimately large.
+**Verification:** ✅ CONFIRMED — Hotel atrium 3000m² vs offices 25m²: 3000 > 25×100 = 2500 → atrium deleted. Also `MAX_ROOM_AREA_SQM = 200` silently kills any room over 200m².
+**Impact:** Largest/most important spaces in a building (atriums, lobbies, exhibition halls) get zero fire protection.
+**Fix Applied:**
+- Replaced area-ratio check with architectural containment check: outer boundary is identified by containing ≥50% of other polygons' centroids
+- Raised `MAX_ROOM_AREA_SQM` from 200 to 10000 (atriums can be 3000+ m²)
+**Why consultant's fix is better than old code:** Containment is architecturally correct — an outer boundary "swallows" inner rooms; an atrium does not.
+
+### Bug 5 — Obstruction Bypass in Heat Detector Fallback (CRITICAL)
+**File:** `core/adaptive_solver.py` — `_try_heat_detectors()` and `_try_beam_detectors()`
+**Consultant Claim:** When smoke detectors fail due to obstructions, heat detector fallback uses `room_polygon` instead of `safe_polygon`, placing detectors inside electrical panels.
+**Verification:** ✅ CONFIRMED — `_try_heat_detectors(self, room_polygon, ...)` and `_try_beam_detectors(self, room_polygon, ...)` both use `room_polygon.contains(Point(x, y))` without subtracting exclusion zones.
+**Impact:** Heat detectors placed inside cable trays or electrical panels — direct NEC violation.
+**Fix Applied:**
+- Changed `_try_heat_detectors` signature to accept `safe_polygon` instead of `room_polygon`
+- Changed `_try_beam_detectors` signature similarly
+- `re_solve_with_alternatives` now computes `safe_polygon` and passes it to both fallback methods
+**Consultant's fix was correct** — we applied it with minor adjustments for code consistency.
+
+### Bug 6 — 2D Projection Fallacy (HIGH)
+**File:** `core/code_compliance_engine.py` — `check_compliance()`
+**Consultant Claim:** Distance calculated in 2D only, causing false violations when detector is on ceiling above a floor-level obstruction.
+**Verification:** ⚠️ CONFIRMED in principle — `obs.polygon.distance(point)` is 2D. However, `obs.height_above_floor_m` may not exist on all obstruction objects.
+**Impact:** False RED violations force engineers to relocate detectors that are actually safe (3.3m vertical clearance).
+**Fix Applied:**
+- Added 3D distance calculation using `math.hypot(horizontal_dist, vertical_dist)` when `obs.height_above_floor_m` is available
+- If vertical separation alone exceeds minimum distance → auto-clear (no violation)
+- Falls back to 2D when height info is unavailable (conservative/fail-safe)
+- Violation description now includes 3D breakdown: "(3D: 3.35m = horiz:0.5m + vert:3.3m)"
+**Why NOT consultant's exact fix:** The consultant assumed `obs.height_above_floor_m` always exists. We use `getattr()` with fallback to ensure no crashes.
+
+### Bug 7 — Midpoint Cost Bypass (HIGH)
+**File:** `core/engineering_router.py` — `_segment_cost_factor()`
+**Consultant Claim:** Only checks midpoint of cable segment, not the full segment. A 50m cable alongside an elevator shaft with midpoint in a safe zone gets no penalty.
+**Verification:** ✅ CONFIRMED — `mid_x, mid_y = (p1+p2)/2` then `_point_near_obstacle((mid_x, mid_y))` — single point check only.
+**Impact:** A* algorithm's cost function is undermined — routes through dangerous zones get same cost as safe routes.
+**Fix Applied:**
+- When Shapely available: `ShapelyLineString([p1, p2]).intersects(obstacle_poly)` — checks ENTIRE segment
+- When Shapely unavailable: check midpoint AND quarter-points (3 points instead of 1)
+- Uses pre-computed `_obstacle_polys` for efficiency
+**Why NOT consultant's exact fix:** Consultant multiplied clearance by 2.0 arbitrarily. We use the existing pre-computed obstacle polygons with standard clearance.

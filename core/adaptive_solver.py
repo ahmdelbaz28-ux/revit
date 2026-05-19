@@ -172,17 +172,35 @@ class AdaptiveSolver:
     ) -> AdaptiveSolution:
         """
         Try alternative detector types if primary fails.
+        
+        V12 Fix: Pass safe_polygon (obstruction-free) to alternative methods
+        instead of raw room_polygon — prevents placing detectors inside obstructions.
         """
-        # First try: standard placement
+        # First try: standard placement (re_solve computes safe_polygon internally)
         result = self.re_solve(room_polygon, obstructions, ceiling_info, required_count)
         
         if result.success:
             return result
-            
+        
+        # Compute safe_polygon once for all fallback methods
+        # This ensures heat/beam detectors also avoid obstructions (NEC compliance)
+        exclusion_zones = []
+        for obs in obstructions:
+            if obs.polygon:
+                clearance = CLEARANCE_DISTANCES.get(
+                    obs.element_type.value, 1.0
+                )
+                zone = obs.polygon.buffer(clearance)
+                exclusion_zones.append(zone)
+        
+        safe_polygon = room_polygon
+        for zone in exclusion_zones:
+            safe_polygon = safe_polygon.difference(zone)
+        
         # Second try: heat detectors (larger coverage)
-        alternatives = ["heat_detector"]  # V12 Fix: was undefined — caused NameError
+        alternatives = ["heat_detector"]
         heat_result = self._try_heat_detectors(
-            room_polygon, obstructions, required_count
+            safe_polygon, required_count  # V12 Fix: safe_polygon, NOT room_polygon
         )
         
         if heat_result.success:
@@ -193,7 +211,7 @@ class AdaptiveSolver:
         if ceiling_info and ceiling_info.structure_type.value == "beam_pocket":
             alternatives.append("beam_detector")
             beam_result = self._try_beam_detectors(
-                room_polygon, obstructions, required_count
+                safe_polygon, obstructions, required_count  # V12 Fix: safe_polygon
             )
             if beam_result.success:
                 beam_result.alternative_detector_types = ["beam_detector"]
@@ -332,31 +350,47 @@ class AdaptiveSolver:
 
     def _try_heat_detectors(
         self,
-        room_polygon: Polygon,
-        obstructions: List,
+        safe_polygon: Polygon,  # V12 Fix: was room_polygon — allowed placing inside obstructions
         required_count: int,
     ) -> AdaptiveSolution:
-        """Try with heat detectors (larger coverage = fewer needed)."""
+        """Try with heat detectors (larger coverage = fewer needed).
+        
+        V12 Fix — Obstruction Bypass:
+        Previous code used room_polygon (full room including obstruction zones),
+        which could place heat detectors inside electrical panels or cable trays
+        when smoke detectors failed. NEC violation.
+        
+        Now uses safe_polygon (room minus exclusion zones) to ensure
+        heat detectors also respect NEC clearances.
+        """
         import math
         
         # Heat coverage = 15.2m (vs smoke 9.2m)
         coverage = 15.2
         spacing = coverage / 2
         
-        # Similar to main method but larger spacing
-        minx, miny, maxx, maxy = room_polygon.bounds
+        if safe_polygon.is_empty or safe_polygon.area < 1.0:
+            return AdaptiveSolution(
+                success=False,
+                positions=[],
+                remaining_violations=["No safe space for heat detectors"],
+                warnings=["Safe polygon too small after excluding obstructions"]
+            )
+        
+        # Similar to main method but larger spacing, using safe_polygon
+        minx, miny, maxx, maxy = safe_polygon.bounds
         candidates = []
         
         x = minx + spacing / 2
         while x < maxx:
             y = miny + spacing / 2
             while y < maxy:
-                if room_polygon.contains(Point(x, y)):
+                if safe_polygon.contains(Point(x, y)):  # V12 Fix: safe_polygon, not room_polygon
                     candidates.append((x, y))
                 y += spacing
             x += spacing
             
-        count_needed = math.ceil(room_polygon.area / (coverage * coverage * 0.8))
+        count_needed = math.ceil(safe_polygon.area / (coverage * coverage * 0.8))
         count_needed = min(count_needed, required_count)
         
         # V12 Fix: Use _select_positions instead of candidates[:count_needed]
@@ -366,12 +400,12 @@ class AdaptiveSolver:
         return AdaptiveSolution(
             success=len(positions) >= count_needed,
             positions=positions,
-            metadata={"using": "heat_detector_coverage"}
+            metadata={"using": "heat_detector_coverage", "safe_area": safe_polygon.area}
         )
 
     def _try_beam_detectors(
         self,
-        room_polygon: Polygon,
+        safe_polygon: Polygon,  # V12 Fix: was room_polygon — same obstruction bypass issue
         obstructions: List,
         required_count: int,
     ) -> AdaptiveSolution:
@@ -380,12 +414,12 @@ class AdaptiveSolver:
         coverage = 30.0
         
         import math
-        count_needed = math.ceil(room_polygon.area / (coverage * coverage * 0.6))
+        count_needed = math.ceil(safe_polygon.area / (coverage * coverage * 0.6))
         
         return AdaptiveSolution(
             success=True,
             positions=[],  # Would need actual beam positions
-            metadata={"using": "beam_detector"}
+            metadata={"using": "beam_detector", "safe_area": safe_polygon.area}
         )
 
 

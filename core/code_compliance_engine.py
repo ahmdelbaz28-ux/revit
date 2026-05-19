@@ -136,10 +136,30 @@ class CodeComplianceEngine:
             
         Returns:
             ComplianceReport with any violations
+            
+        V12 Fix — 2D Projection Fallacy:
+        Previous code calculated distance in 2D only (X/Y plane), which caused
+        false violations when a detector is on the ceiling above an obstruction
+        on the floor. A cable tray at 0.2m height with a detector at 3.5m ceiling
+        has 3.3m vertical separation — no clearance violation. But 2D projection
+        would show zero distance → false RED violation.
+        
+        Fix: Calculate true 3D distance when height info is available.
+        Fall back to 2D distance when height info is missing (fail-safe).
         """
+        import math
+        
         violations = []
         warnings = []
         
+        # Extract ceiling height if available
+        ceiling_height_m = 3.0  # default assumption
+        if ceiling_info:
+            if hasattr(ceiling_info, 'height_above_floor_m'):
+                ceiling_height_m = ceiling_info.height_above_floor_m
+            elif hasattr(ceiling_info, 'height_at_low_point_m'):
+                ceiling_height_m = ceiling_info.height_at_low_point_m
+
         for pos in detector_positions:
             point = Point(pos[0], pos[1])
             
@@ -161,19 +181,52 @@ class CodeComplianceEngine:
                     continue
                     
                 # Calculate distance
-                dist = obs.polygon.distance(point)
+                horizontal_dist = obs.polygon.distance(point)
                 min_dist = obs.get_min_separation()
                 
-                if dist < min_dist:
-                    severity = ViolationSeverity.RED if dist < min_dist * 0.5 else ViolationSeverity.YELLOW
-                    violations.append(Violation(
-                        location=pos,
-                        description=f"Detector at {pos} too close to {obs.element_type.value}",
-                        code_reference="NEC 110.26",
-                        severity=severity,
-                        min_required=min_dist,
-                        actual_distance=dist
-                    ))
+                # V12 Fix: 3D distance calculation
+                # If obstruction has height info, compute true 3D distance
+                # This prevents false violations for ceiling detectors above floor-level obstructions
+                obs_height_m = getattr(obs, 'height_above_floor_m', None)
+                
+                if obs_height_m is not None:
+                    # True 3D Euclidean distance
+                    vertical_dist = abs(ceiling_height_m - obs_height_m)
+                    true_3d_dist = math.hypot(horizontal_dist, vertical_dist)
+                    
+                    # If vertical separation alone exceeds min_dist, no violation possible
+                    if vertical_dist >= min_dist:
+                        continue  # Clear by vertical separation
+                    
+                    if true_3d_dist < min_dist:
+                        severity = ViolationSeverity.RED if true_3d_dist < min_dist * 0.5 else ViolationSeverity.YELLOW
+                        violations.append(Violation(
+                            location=pos,
+                            description=(
+                                f"Detector at {pos} too close to {obs.element_type.value} "
+                                f"(3D: {true_3d_dist:.2f}m = horiz:{horizontal_dist:.2f}m + "
+                                f"vert:{vertical_dist:.2f}m)"
+                            ),
+                            code_reference="NEC 110.26 / NFPA 72",
+                            severity=severity,
+                            min_required=min_dist,
+                            actual_distance=true_3d_dist
+                        ))
+                else:
+                    # No height info available — fall back to 2D (conservative)
+                    if horizontal_dist < min_dist:
+                        severity = ViolationSeverity.RED if horizontal_dist < min_dist * 0.5 else ViolationSeverity.YELLOW
+                        violations.append(Violation(
+                            location=pos,
+                            description=(
+                                f"Detector at {pos} too close to {obs.element_type.value} "
+                                f"(2D: {horizontal_dist:.2f}m — height unknown, verify 3D clearance)"
+                            ),
+                            code_reference="NEC 110.26 / NFPA 72",
+                            severity=severity,
+                            min_required=min_dist,
+                            actual_distance=horizontal_dist
+                        ))
                     
         # Check ceiling mounting height
         if ceiling_info:

@@ -467,21 +467,52 @@ class EngineeringRouter:
         Compute cost multiplier for a segment based on routing constraints.
 
         Applies penalties for crossing near certain obstacle types.
+        
+        V12 Fix — Midpoint Cost Bypass:
+        Previous code only checked the MIDPOINT of the segment against obstacles.
+        A 50m cable running alongside an elevator shaft could have its midpoint
+        in a safe zone, receiving NO penalty despite 90% of the cable being
+        in the danger zone. This undermined the A* algorithm's cost function.
+        
+        Fix: Use Shapely LineString.intersection() to check the ENTIRE segment
+        against obstacle clearance zones. If ANY part of the segment passes
+        through the penalty zone, the penalty is applied.
         """
         cost = 1.0
 
-        # Check if segment passes near corridors or stairwells
-        mid_x = (p1[0] + p2[0]) / 2
-        mid_y = (p1[1] + p2[1]) / 2
+        if SHAPELY_AVAILABLE:
+            # V12 Fix: Check ENTIRE segment, not just midpoint
+            segment_line = ShapelyLineString([p1, p2])
+            
+            for i, obs in enumerate(self.obstacles):
+                if obs.passable:
+                    # Check if the segment intersects this obstacle's penalty zone
+                    # Use the pre-computed obstacle polygon with clearance
+                    if i < len(self._obstacle_polys) and self._obstacle_polys[i]:
+                        if segment_line.intersects(self._obstacle_polys[i]):
+                            if obs.obstacle_type in ("stairwell", "elevator", "shaft"):
+                                cost *= self.constraints.vertical_penalty
+                            elif obs.obstacle_type == "hvac":
+                                cost *= 1.2  # Slight penalty for HVAC proximity
+        else:
+            # Fallback when Shapely is not available: check midpoint AND quarter-points
+            # This is less accurate than Shapely intersection but better than midpoint-only
+            check_points = [
+                ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2),  # midpoint
+                ((3*p1[0] + p2[0]) / 4, (3*p1[1] + p2[1]) / 4),  # quarter
+                ((p1[0] + 3*p2[0]) / 4, (p1[1] + 3*p2[1]) / 4),  # three-quarter
+            ]
+            
+            for obs in self.obstacles:
+                if obs.passable:
+                    for pt in check_points:
+                        if self._point_near_obstacle(pt, obs):
+                            if obs.obstacle_type in ("stairwell", "elevator", "shaft"):
+                                cost *= self.constraints.vertical_penalty
+                            elif obs.obstacle_type == "hvac":
+                                cost *= 1.2
+                            break  # One penalty per obstacle is enough
 
-        for obs in self.obstacles:
-            if obs.passable:
-                # Check if segment crosses this obstacle
-                if self._point_near_obstacle((mid_x, mid_y), obs):
-                    if obs.obstacle_type in ("stairwell", "elevator", "shaft"):
-                        cost *= self.constraints.vertical_penalty
-                    elif obs.obstacle_type == "hvac":
-                        cost *= 1.2  # Slight penalty for HVAC proximity
         return cost
 
     def _point_near_obstacle(self, point: Tuple[float, float],
