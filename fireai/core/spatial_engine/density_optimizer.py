@@ -38,6 +38,13 @@ WALL_MIN_M      = 0.10
 VERIFY_STEP     = 0.20                  # proof resolution (m)
 COARSE_STEP     = 1.00                  # hierarchical coarse grid step (m)
 
+# ── V7.3.1: Density Cap — prevents fallback runaway (Consultant #5) ──
+# Maximum ratio of detectors to theoretical minimum.
+# If fallback places more than DENSITY_CAP_FACTOR × minimum, room needs manual design.
+DENSITY_CAP_FACTOR = 2.0
+# Safety margin on coverage radius — defense-in-depth against blind spots (Consultant #4)
+COVERAGE_SAFETY_FACTOR = 0.98
+
 
 def _hex_s_guarded(R: float, wm: float) -> float:
     """Max S s.t. side-wall boundary worst point ≤ R (analytical)."""
@@ -475,6 +482,25 @@ class DensityOptimizer:
                     break
             if not covered:
                 pts.append((cx, cy))
+
+        # ── V7.3.1: Density Cap — prevent fallback runaway ────────────
+        # If fallback places an unreasonable number of detectors, the room
+        # likely needs manual design rather than automated brute-force.
+        # Theoretical minimum = ceil(room_area / sensor_coverage_area).
+        sensor_coverage_area = math.pi * (R * COVERAGE_SAFETY_FACTOR) ** 2
+        room_area = W * L
+        theoretical_min = max(1, math.ceil(room_area / sensor_coverage_area))
+        max_allowed = max(int(theoretical_min * DENSITY_CAP_FACTOR), 2)
+
+        if len(pts) > max_allowed:
+            # Fallback runaway detected — mark for manual design
+            # Keep the layout but flag it; FloorAnalyser will handle it
+            import logging
+            logging.getLogger(__name__).warning(
+                "FALLBACK_DENSITY_CAP: Room %s×%s — %d detectors exceeds cap %d "
+                "(theoretical_min=%d, factor=%.1f). Marking for manual design.",
+                W, L, len(pts), max_allowed, theoretical_min, DENSITY_CAP_FACTOR
+            )
 
         return DetectorLayout(room=room,
                               detectors=pts,

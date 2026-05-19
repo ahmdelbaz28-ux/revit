@@ -80,6 +80,12 @@ HEAT_SPACING_BY_HEIGHT: List[Tuple[float, float]] = [
 # Coverage radius = 0.7 × spacing (NFPA 72 §17.7.4.2.3.1 — 0.7S rule)
 COVERAGE_RADIUS_FACTOR = 0.7
 
+# V7.3.1: Safety margin on coverage radius for defense-in-depth (Consultant #4)
+# Applied during coverage VERIFICATION only — placement uses full NFPA radius.
+# This ensures verification is slightly more conservative than placement,
+# catching edge-case blind spots from floating-point or geometric approximation.
+COVERAGE_SAFETY_FACTOR = 0.98  # 2% safety margin on radius during verification
+
 # Wall distance = 0.5 × spacing (NFPA 72 §17.6.3.1.1)
 WALL_DISTANCE_FACTOR = 0.5
 
@@ -487,7 +493,10 @@ class NFPA72Bridge:
                 reduction_factor = max(0.7, 1.0 - (ceiling_height_m - 3.05) * 0.1)
                 effective_radius *= reduction_factor
 
-            detector_radii.append((det.x, det.y, effective_radius))
+            # V7.3.1: Apply safety factor for verification (defense-in-depth)
+            # Placement uses full NFPA radius; verification is slightly more conservative
+            verification_radius = effective_radius * COVERAGE_SAFETY_FACTOR
+            detector_radii.append((det.x, det.y, verification_radius))
 
         # Grid-based coverage calculation
         covered_cells = 0

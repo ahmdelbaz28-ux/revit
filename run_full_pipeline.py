@@ -153,15 +153,11 @@ def run_pipeline(pdf_path: str, output_path: str = None, manual_room_types: dict
                 warnings.append(f"⚠️ LARGE OPEN SPACE ({occupancy_type}) - Engineer review REQUIRED")
                 warnings.append("   Standard detectors may be unsuitable per NFPA 72")
             
-            if not is_flagged:
-                is_flagged = False
-            else:
-                # Fallback: unknown but not flagged
-                detector_type = "UNKNOWN"
-                detector_count = 0
-                coverage_pct = 0.0
-                is_flagged = True
-                warnings.append("🔴 Type unknown - no detectors placed.")
+            # V7.3.1 FIX: Previously, the else branch incorrectly zeroed detectors
+            # for known-but-flagged rooms (large rooms, atriums). Flagged rooms
+            # still get detectors — they just need engineer review.
+            # Only truly unknown rooms get zero detectors (handled in the
+            # occupancy_type == "unknown" check below).
         
         total_detectors += detector_count  # Simplified
         

@@ -374,6 +374,47 @@ class FloorAnalyser:
             return report
 
         for room_dict in rooms:
+            # ─── V7.3.1: Geometry sanity check (Consultant #4) ───
+            # Reject rooms with impossibly small area — likely Revit modeling errors
+            # (shafts, column pockets, etc.) that should not have detectors.
+            polygon_coords = room_dict.get("polygon_coords", [])
+            if polygon_coords:
+                try:
+                    from shapely.geometry import Polygon as ShapelyPolygon
+                    room_poly = ShapelyPolygon(polygon_coords)
+                    if not room_poly.is_valid:
+                        room_poly = room_poly.buffer(0)  # Auto-repair self-intersecting
+                    if room_poly.area < 1.0:
+                        # Room < 1m² is likely a Revit shaft or modeling error
+                        room_name = room_dict.get("name", room_dict.get("room_id", ""))
+                        summary = RoomSummary(
+                            room_id=room_dict.get("room_id", room_name),
+                            name=room_name,
+                            detector_count=0,
+                            detector_type=room_dict.get("detector_type", "smoke_photoelectric"),
+                            coverage_pct=0.0,
+                            nfpa_valid=False,
+                            proof_valid=False,
+                            fallback_used=False,
+                            method="rejected_geometry",
+                            compliant=False,
+                            safe_to_submit=False,
+                            violations=[f"Room area {room_poly.area:.2f}m² < 1.0m² minimum — likely Revit modeling error"],
+                            warnings=[f"REJECTED: Room area {room_poly.area:.2f}m² is too small for detector placement. Likely a shaft or modeling artifact."],
+                            theoretical_lower_bound=0,
+                            efficiency_ratio=0.0,
+                            duct_devices=0,
+                            refused=True,
+                            refusal_reason=f"Room area {room_poly.area:.2f}m² below 1.0m² minimum",
+                            used_mip=False,
+                            analysis_ms=0.0,
+                        )
+                        report.room_summaries.append(summary)
+                        report.unsafe_rooms.append(room_dict.get("room_id", room_name))
+                        continue
+                except Exception:
+                    pass  # If Shapely unavailable, continue with normal processing
+
             # ─── Safety refusal check (NFPA 72 §17.6.4) ───
             room_type = room_dict.get("room_type", "")
             detector_type = room_dict.get("detector_type", "smoke_photoelectric")
