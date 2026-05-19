@@ -7,8 +7,10 @@ Symbol classifier. Three layers of intelligence — used in order:
                           (deterministic, confidence 1.0)
   2. EMBEDDING MATCH    — visual embedding (ORB/HOG or CLIP if available) →
                           k-NN against KB examples.
-  3. RULE/HEURISTIC     — geometric heuristics (circle in circle = sprinkler,
-                          camera-shape, etc.) as last-resort.
+  3. RULE/HEURISTIC     — DISABLED (V11 Zero-Guessing Policy).
+                          Generic shapes are legally insufficient for Life Safety
+                          device identification. Returns None → forces "unknown"
+                          → engineer must manually classify → system learns.
 
 Every classification writes a row to `decisions` so the system can learn from
 human corrections later.
@@ -139,18 +141,26 @@ class SymbolClassifier:
                               f"embedding k-NN: top-{k} weighted vote = {best_name}")
 
     def classify_by_heuristic(self, img_bgr: np.ndarray) -> Optional[Classification]:
-        """Very conservative geometric fallbacks. Better to return None than guess."""
-        if img_bgr is None or img_bgr.size == 0: return None
-        g = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY) if img_bgr.ndim==3 else img_bgr
-        circles = cv2.HoughCircles(g, cv2.HOUGH_GRADIENT, dp=1.2, minDist=10,
-                                   param1=120, param2=20, minRadius=3, maxRadius=60)
-        n_circ = 0 if circles is None else circles.shape[1]
-        if n_circ >= 2:
-            return Classification("sprinkler_pendant", 0.55,
-                                  f"heuristic: {n_circ} concentric circles → likely sprinkler")
-        if n_circ == 1:
-            return Classification("smoke_detector", 0.45,
-                                  "heuristic: single circle → maybe smoke detector (LOW confidence)")
+        """CRITICAL SAFETY PROTOCOL: Zero-Guessing Policy for Life Safety Devices.
+
+        Generic geometric shapes (circles, rectangles) are legally insufficient
+        to identify Life Safety devices. A light fixture drawn as a circle would
+        be classified as a smoke detector, and in large projects (5000+ devices),
+        users may "Approve All" — resulting in a building covered with light
+        fixtures instead of smoke detectors.
+
+        This method now returns None directly, forcing the system to rely ONLY on:
+          1. Exact name/layer/block matches (classify_by_name)
+          2. Verified KB Embeddings (classify_by_image)
+        If neither produces a confident answer, the device is marked "unknown"
+        and the engineer MUST manually specify the correct symbol — the system
+        then learns from the correction via learn_from().
+
+        Previous heuristic code REMOVED 2026-05-20 (V11 safety hardening).
+        """
+        # لا تقم أبدًا بتخمين أجهزة إنقاذ الأرواح بناءً على أشكال هندسية عامة.
+        # النظام يجب أن يعيد unknown ليُجبر المهندس على إدخال الرمز الصحيح
+        # يدوياً ليتعلم منه الـ Classifier عبر learn_from()
         return None
 
     def classify(self,

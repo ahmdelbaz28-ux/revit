@@ -13,6 +13,7 @@ from typing import Optional
 
 from .spatial import pairwise_min_distance, uncovered_area_estimate, max_gap_to_neighbour
 from ..intelligence.knowledge_base import KnowledgeBase
+from shapely.geometry import LineString
 
 
 SEVERITY = ("critical", "major", "minor", "advisory", "info")
@@ -136,12 +137,28 @@ class ComplianceEngine:
         if not rule: return []
         out = []
         sep = rule["value"] / self.k
+
+        def seg_to_seg_dist(p1, p2, p3, p4):
+            """Compute the exact shortest distance between two line segments.
+
+            Uses Shapely LineString.distance() which correctly handles:
+            - Parallel segments that are close but have different midpoints
+            - Segments that don't overlap in extent
+            - Collinear but offset segments
+
+            Previous midpoint-based check was geometrically incorrect:
+            two parallel segments touching (distance = 0) could have
+            midpoints far apart, causing a FALSE NEGATIVE — the cable
+            could melt and the program would say it's safe.
+            """
+            line1 = LineString([p1, p2])
+            line2 = LineString([p3, p4])
+            return line1.distance(line2)
+
         for i,(ax,ay,bx,by) in enumerate(cable_segments):
             for j,(cx,cy,dx,dy) in enumerate(hot_pipe_segments):
-                # crude midpoint distance — replace with seg-seg distance for production
-                mx1,my1 = (ax+bx)/2, (ay+by)/2
-                mx2,my2 = (cx+dx)/2, (cy+dy)/2
-                d = ((mx1-mx2)**2 + (my1-my2)**2) ** 0.5
+                # Segment-to-segment distance — exact geometric shortest distance
+                d = seg_to_seg_dist((ax,ay), (bx,by), (cx,cy), (dx,dy))
                 if d < sep:
                     out.append(Finding(
                         "major","MEP","cable_tray.from_hot_pipe_m",
