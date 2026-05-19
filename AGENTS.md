@@ -334,6 +334,27 @@ Applied fixes from consultant's deep analysis of bridges/ layer (4 vulnerabiliti
 - Criticism 3 (PDF Tampering): Partially accepted. Added notice but true digital signatures require PKI infrastructure (deferred). JSON file already serves as canonical audit record.
 - Criticism 4 (Hash Truncation): Fully accepted. This was a clear bug — birthday attack complexity dropped from 2^128 to 2^32 with the 16-char truncation.
 
+### V11 — EDA Safety Hardening (2026-05-20)
+
+Applied fixes from consultant's deep analysis of Elite Drawing Analyzer (2 verified vulnerabilities):
+
+| # | Vulnerability | Fix | File | Verdict |
+|---|--------------|-----|------|---------|
+| 1 | Midpoint Collision Trap: `check_cable_separation()` used midpoint distance between cable and hot pipe segments — two parallel segments touching (distance=0) could have midpoints far apart, producing FALSE NEGATIVE | Replaced with Shapely `LineString.distance()` for exact segment-to-segment shortest distance | elite_drawing_analyzer/reasoning/compliance.py | FULLY ACCEPTED |
+| 2 | Computer Vision Hallucination: `classify_by_heuristic()` guessed smoke detector from 1 circle (0.45 confidence) and sprinkler from 2 circles (0.55) — light fixtures, speakers drawn as circles would be misclassified, and "Approve All" in large projects = building covered with lights instead of detectors | Implemented Zero-Guessing Policy: `classify_by_heuristic()` now returns None, forcing "unknown" → manual engineer classification → system learns from correction | elite_drawing_analyzer/intelligence/classifier.py | FULLY ACCEPTED |
+
+**⚠️ REJECTED: MIP Solver "fixes" — Consultant's description does NOT match actual code:**
+The consultant described a class-based MIP solver with `__init__`, `_setup_coverage_params`, `_covers`, and `solve` methods.
+The actual `fireai/core/spatial_engine/mip_solver.py` is a function-based module (`solve_set_covering_mip()`) that already has:
+- `time_limit_seconds=10.0` parameter with `PULP_CBC_CMD(timeLimit=time_limit_seconds)`
+- Proper solver status handling
+- Graceful fallback when PuLP unavailable
+- The module is NOT imported/used anywhere in the codebase (only DensityOptimizer is used for placement)
+Applying the consultant's class-based replacement would DESTROY a working module and introduce references to undefined types (`CoverageGeometry`, `ShapelyPolygon`, `NFPAComplianceError`). Per AGENTS.md §Instruction Validation: STOP and WARN.
+
+**Commits:**
+- Commit: 71e207a | Link: https://github.com/ahmdelbaz28-ux/revit/commit/71e207a
+
 ### Instruction Validation (Critical Safety Rule)
 - **STOP and WARN immediately** if instructions are:
   - Incorrect or will damage the codebase
