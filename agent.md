@@ -192,3 +192,74 @@
 2. **Claim 2 was partially our oversight** — we fixed `constraint_solver.py` but missed that the orchestrator pipeline uses `nfpa72_coverage.py`, not `constraint_solver.py`. The point-counting bug was hiding in a different file.
 3. **Claim 3 is nuanced** — the MIP solver SHOULD find optimal solutions. The real fix is the area-based coverage in nfpa72_coverage.py, which makes both the MIP solver and ConstraintSolver agree. The adaptive re-solve is a safety net.
 4. **V8 safety_margin=0.15 is NOT the same as detector margin** — it's for electrical load calculations (NEC, not NFPA). We did NOT remove it as it serves a different purpose.
+
+---
+
+## V14 Fixes (2026-05-20) — Consultant Round 4 Analysis
+
+### Verification Protocol Results
+
+The consultant claimed 4 new "crimes" plus demanded merging of previous fixes into bridge files.
+After line-by-line code reading, here is the full verification:
+
+#### Claims Already Fixed (NOT re-applied):
+
+| # | Claim | Status | Where Fixed |
+|---|-------|--------|-------------|
+| 1 | Fake 15% Margin | Already fixed V13 | `floor_orchestrator.py:105` |
+| 2 | Point-Cloud Coverage | Already fixed V13 | `nfpa72_coverage.py` area-based |
+| 3 | Premature Solver Surrender | Already fixed V13 | `floor_orchestrator.py:206-245` adaptive re-solve |
+| 4 | PARTIAL Status | Already fixed V13 | `floor_orchestrator.py:77` → REQUIRES_MANUAL_REVIEW |
+| 5 | constraint_solver.py Grid Coverage | Already fixed V11 | Area-based since V11 |
+| 6 | Atrium Deletion | Already fixed V12 | Architectural containment check |
+| 7 | safe_polygon in adaptive_solver | Already fixed V12 | `_try_heat_detectors` uses `safe_polygon` |
+| 8 | 2D-only Clearance | Already fixed V12 | 3D distance with `math.hypot` |
+| 9 | Midpoint Cost Factor | Already fixed V12 | Full segment `intersects()` |
+| 10 | Code Regression in Bridges | NOT TRUE | `parser_bridge.py` already has V11 fix (no buffer(0.5)) |
+
+#### Confirmed New Bugs (4 fixes applied):
+
+### Bug 12 — DC Return Path Fallacy (CRITICAL — Life Safety)
+**File:** `core/multi_floor_analyzer.py` — `estimate_voltage_drop()` line 169
+**Consultant Claim:** Missing `×2` for DC return path in voltage drop calculation.
+**Verification:** ✅ CONFIRMED — `vdrop = current * resistance * (length_ft / 1000)` has no ×2.
+**Impact:** Voltage drop reported at 50% of actual. NAC horns/strobes at end-of-line may not operate during a fire. NEC 760 and NFPA 72 Chapter 10 require accurate voltage drop calculations.
+**Fix Applied:** `vdrop = 2.0 * current * resistance * (length_ft / 1000.0)` with detailed docstring explaining DC circuit physics.
+**Consultant's fix was correct** — standard electrical engineering practice.
+
+### Bug 13 — AABB Rotation Trap (HIGH)
+**File:** `core/room_classifier.py` — `extract_features()` lines 155-163
+**Consultant Claim:** Aspect ratio uses axis-aligned bounding box, misclassifying rotated corridors as offices.
+**Verification:** ✅ CONFIRMED — A 2m×20m corridor rotated 45° has AABB ~14m×14m, aspect_ratio≈1.0 → "office" → wrong NFPA 72 §17.7.3 spacing.
+**Impact:** Corridor-specific detector spacing rules not applied; spacing too wide for corridor width.
+**Fix Applied:** Use Shapely `minimum_rotated_rectangle` for true dimensions when polygon vertices available. Falls back to AABB when only bbox provided.
+**Improvement over consultant's fix:** Added `log.warning()` on failure (consultant silently defaulted to 1.0). Kept AABB fallback for bbox-only cases.
+
+### Bug 14 — A* Crosses Bug (CRITICAL — Cable Routing)
+**File:** `core/engineering_router.py` — `_has_line_of_sight()` line 366
+**Consultant Claim:** `line.crosses(poly)` misses cases where cable path is entirely within obstacle clearance zone.
+**Verification:** ✅ CONFIRMED — Shapely `crosses()` returns False when line is contained within polygon. Both endpoints inside elevator clearance → cable routed through shaft.
+**Impact:** Cables routed through walls, elevator shafts, concrete obstructions. Physical impossibility.
+**Fix Applied:** `line.intersects(poly) and not line.touches(poly)` — catches all intersection cases while allowing cables along clearance boundary.
+**Consultant's fix was correct** — `intersects` + `not touches` is the right Shapely idiom.
+
+### Bug 15 — Bowtie Merge Mutation (MEDIUM — Currently Dormant)
+**File:** `adapters/pdf_to_rooms_adapter.py` — `close_gaps_in_lines()` lines 545-554
+**Consultant Claim:** Only checks end-of-line_i to start-of-line_j, creating zigzag when CAD lines drawn in reverse direction.
+**Verification:** ✅ CONFIRMED in principle — BUT currently dormant because `GAP_CLOSURE_THRESHOLD = 0.0`.
+**Impact:** When gap closing is enabled, reversed CAD lines create bowtie polygons that destroy all room geometry calculations.
+**Fix Applied:** 4-direction endpoint check (end↔start, end↔end, start↔end, start↔start) with coordinate reversal as needed.
+**Note:** Fix is preventive — gap closing is currently disabled. But the bug would manifest immediately if someone sets `GAP_CLOSURE_THRESHOLD > 0`.
+
+### Self-Criticism Notes (V14)
+
+1. **8 out of 12 consultant claims were stale** — already fixed in V11-V13. This again validates the "verify before changing" protocol. Blindly applying would have been wasteful at best, harmful at worst.
+2. **DC Return Path is the most dangerous fix** — a 50% under-report of voltage drop is a direct life-safety failure. This is the kind of bug that kills people.
+3. **AABB Rotation is theoretically correct but low practical impact** — most architectural drawings are axis-aligned. Still worth fixing for correctness.
+4. **A* Crosses Bug is more dangerous than it sounds** — `crosses()` returning False for contained lines means A* would happily route through obstacles it "can't see."
+5. **Bowtie Merge is dormant but must be fixed** — if someone enables gap closing, the bowtie bug would immediately corrupt all room polygons.
+6. **Bridge code regression claim was FALSE** — `parser_bridge.py` already has the V11 fix (buffer(0.5) removed). `output_bridge.py` never had buffer(0.5).
+
+### Commit Information
+- **Commit:** `97ebafd`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/97ebafd
