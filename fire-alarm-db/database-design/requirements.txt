@@ -20,7 +20,7 @@ pytesseract>=0.3.13
 
 # Deep Learning
 torch>=2.0.0
-torchvision>=0.15.0
+torchvision>=0.27.0
 ultralytics>=8.0.0
 
 # PDF Generation
