@@ -49,7 +49,12 @@ class OccupancyType(Enum):
 
 # Ceiling height → adjusted spacing (m) for smoke detectors
 # Per NFPA 72-2022 Table 17.6.3.1.1
-SMOKE_SPACING_BY_HEIGHT = {
+# SAFETY FIX (F1): Changed from set literal {…} to list […]
+# A set has NON-DETERMINISTIC iteration order, which caused:
+#   1. Wrong spacing values for most ceiling heights (e.g., 6.40m instead of 9.14m at 3.0m)
+#   2. TypeError crash for ceilings > 9.1m (set[-1] is not subscriptable)
+# The lookup requires ORDERED iteration from low to high ceiling height.
+SMOKE_SPACING_BY_HEIGHT: List[Tuple[float, float]] = [
     # (max_ceiling_height_m, adjusted_spacing_m)
     (3.0, 9.14),    # ≤ 3.0m: standard spacing
     (3.9, 8.23),    # 3.0-3.9m
@@ -59,17 +64,18 @@ SMOKE_SPACING_BY_HEIGHT = {
     (7.9, 4.57),    # 6.9-7.9m
     (8.9, 3.66),    # 7.9-8.9m
     (9.1, 3.05),    # 8.9-9.1m (max for spot-type)
-}
+]
 
 # Heat detector spacing by ceiling height
-HEAT_SPACING_BY_HEIGHT = {
+# SAFETY FIX (F2): Changed from set literal to list for same reason as F1.
+HEAT_SPACING_BY_HEIGHT: List[Tuple[float, float]] = [
     (3.0, 7.01),
     (4.0, 6.10),
     (5.0, 5.18),
     (6.0, 4.27),
     (7.0, 3.35),
     (7.62, 2.74),   # max for fixed-temp
-}
+]
 
 # Coverage radius = 0.7 × spacing (NFPA 72 §17.7.4.2.3.1 — 0.7S rule)
 COVERAGE_RADIUS_FACTOR = 0.7
@@ -566,7 +572,11 @@ class NFPA72Bridge:
 
             adjusted = self.get_adjusted_spacing(room.ceiling_height_m, "smoke")
             coverage_r = self.get_coverage_radius(adjusted)
-            area_per_det = 3.14159 * (coverage_r ** 2) * 0.65
+            # BUG FIX: Previous version used arbitrary 0.65 overlap factor
+            # which contradicts the BUG 5 fix (grid-based coverage).
+            # Use π·R² without overlap factor — grid-based validation
+            # will catch any remaining gaps.
+            area_per_det = 3.14159 * (coverage_r ** 2)
             recommended_count = max(1, int(room.area_sqm / area_per_det) + 1)
 
             grid_cols = int(recommended_count ** 0.5) + 1

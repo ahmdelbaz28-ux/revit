@@ -5,14 +5,33 @@ High-level simulation interface that wraps the physics engine with
 NFPA 72 compliance validation and proper detector activation tracking.
 
 This layer sits between:
-  - Below: fire_physics.py (low-level N-S solver, zone model, detectors)
+  - Below: semi_cfast_engine.py (SemiCFASTSolver — physics-based zone model)
   - Above: digital_twin_bridge.py (BIM integration, state management)
 
-Key Fixes Applied (from Consultant Code Review):
-  BUG 3: Timer-based detector checking instead of int(t) % 30 == 0
-  BUG 4: Proper lower-layer temperature with plume contribution factor
+CRITICAL FIX (CRIT-02 + CRIT-05): This module now uses SemiCFASTSolver
+instead of the old MultiZoneEngine. The old engine was an event-driven
+visualization tool, NOT a physics simulation. It lacked:
+  ❌ Combustion model (fires burned forever)
+  ❌ Species transport (O2, CO, CO2, soot)
+  ❌ Fuel consumption
+  ❌ Proper RTI detector model
+  ❌ Conservation-law enforcement
+
+The SemiCFASTSolver provides ALL of these via its 11-phase architecture:
+  Phase 1:  LayerState + RoomCompartment (conservation of mass)
+  Phase 2:  LayerEnergySolver (conservation of energy, semi-implicit)
+  Phase 3:  PlumeModel (Heskestad entrainment)
+  Phase 4:  VentFlowSolver (bi-directional with neutral plane)
+  Phase 5:  SmokeLayerSolver (conservation-consistent interface height)
+  Phase 6:  SpeciesTransport (O2, CO2, CO, soot conservation)
+  Phase 7:  CombustionModel (fuel → ventilation → decay)
+  Phase 8:  DetectorPhysics (RTI model per NFPA 72 §17.6.3)
+  Phase 9:  WallThermalSolver (transient conduction)
+  Phase 10: MultiRoomCoupling (coupled compartment solver)
+  Phase 11: NumericalStability (adaptive timestep, mass correction, energy clipping)
 
 SAFETY: All simulation results are approximate. Must be verified by PE.
+"Late correct results are better than fast wrong results in a safety program."
 """
 
 from __future__ import annotations
@@ -22,19 +41,44 @@ import json
 import logging
 import math
 import time as _time
-from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
+# ── Primary physics engine: SemiCFASTSolver (CRIT-02/05 FIX) ──
+from twin.semi_cfast_engine import (
+    AMBIENT_TEMP_K,
+    AMBIENT_PRESSURE_PA,
+    AIR_HEAT_CAP_CP,
+    GRAVITY as GRAVITY_SEMI,
+    GAS_CONSTANT_AIR as GAS_CONSTANT_SEMI,
+    FLASHOVER_TEMP_K,
+    SMOKE_ALARM_OD,
+    CO_LETHAL_PPM,
+    HEAT_OF_COMBUSTION_REF,
+    LayerState,
+    RoomCompartment,
+    Vent,
+    VentFlowSolver,
+    VentFlowResult,
+    PlumeModel,
+    SmokeLayerSolver,
+    SpeciesTransport,
+    CombustionModel,
+    CombustionPhase,
+    DetectorPhysics,
+    WallThermalSolver,
+    NumericalStability,
+    SemiCFASTSolver,
+)
+
+# ── Legacy imports for CFD mode and NFPA 72 bridge ──
 from twin.fire_physics import (
     AMBIENT_TEMP,
     AIR_DENSITY,
     AIR_HEAT_CAP,
     GRAVITY,
     GAS_CONSTANT_AIR,
-    SMOKE_ALARM_OD,
-    CO_LETHAL_PPM,
     VoxelGrid,
     CFLController,
     FireSource,
@@ -42,12 +86,7 @@ from twin.fire_physics import (
     PressureSolver,
     HeatTransportNS,
     SmokeTransportNS,
-    Zone,
     Doorway,
-    MultiZoneEngine,
-    PhysicsDetector,
-    DetectorType,
-    DetectorConfig,
 )
 from twin.nfpa72_bridge import (
     NFPA72Bridge,
@@ -65,7 +104,7 @@ log = logging.getLogger(__name__)
 
 class SimulationMode(Enum):
     """Simulation mode selector."""
-    ZONE_MODEL = "zone"          # 2-zone CFAST-inspired (fast, coarse)
+    ZONE_MODEL = "zone"          # SemiCFASTSolver (physics-based, 11-phase)
     CFD_LITE = "cfd_lite"        # N-S VoxelGrid solver (slower, detailed)
     HYBRID = "hybrid"            # Zone model + CFD validation
 
@@ -94,6 +133,7 @@ class SimulationFireSource:
     soot_yield: float = 0.10
     co_yield: float = 0.04
     ignition_time_s: float = 0.0
+    fuel_load_kg: float = 500.0    # Total fuel available (kg)
 
 
 @dataclass
@@ -106,6 +146,7 @@ class SimulationDetector:
     z: float
     detector_type: str = "smoke"  # smoke, heat, combination, co
     zone_id: str = ""
+    rti: float = 50.0             # Response Time Index (m·s)^½
 
 
 @dataclass
@@ -122,7 +163,7 @@ class DetectorActivation:
 
 @dataclass
 class RoomSimulationState:
-    """State of a room during simulation (2-zone model)."""
+    """State of a room during simulation (from SemiCFAST zone model)."""
     room_id: str
     time_s: float
     upper_layer_temp_k: float
@@ -130,6 +171,9 @@ class RoomSimulationState:
     interface_height_m: float
     smoke_od_m1: float
     co_ppm: float
+    o2_mass_fraction: float
+    combustion_phase: str = "none"
+    fuel_remaining_kg: float = 0.0
     is_flashover: bool = False
 
 
@@ -157,6 +201,7 @@ class SimulationResult:
     peak_temp_k: float
     peak_smoke_od: float
     elapsed_wall_s: float
+    engine_version: str = "SemiCFAST-v1.0"
     sha256: str = ""
 
 
@@ -167,29 +212,39 @@ class SimulationResult:
 class SimulationLayer:
     """High-level fire simulation interface with NFPA 72 validation.
 
+    Uses SemiCFASTSolver as the primary physics engine (CRIT-02/05 FIX).
+
+    The old MultiZoneEngine was an event-driven visualization tool that:
+      - Had no combustion model (fires burned forever)
+      - Had no species transport (O2, CO2, CO, soot)
+      - Had no fuel consumption
+      - Did not enforce conservation laws
+      - Used ad-hoc equations instead of physics-based ones
+
+    The SemiCFASTSolver provides proper physics with:
+      ✅ Heskestad plume entrainment model
+      ✅ Bi-directional vent flow with neutral plane
+      ✅ Conservation of mass and energy (semi-implicit)
+      ✅ Species transport (O2 consumption, CO/CO2/soot generation)
+      ✅ 3-phase combustion (growth → ventilation-controlled → decay)
+      ✅ RTI detector model per NFPA 72 §17.6.3
+      ✅ Wall thermal response (1-D implicit)
+      ✅ Numerical stability (adaptive dt, mass correction)
+      ✅ Reversible flashover (HIGH-07 FIX)
+
     Supports three modes:
-      - ZONE_MODEL: Fast 2-zone CFAST-inspired simulation
+      - ZONE_MODEL: SemiCFASTSolver (fast, physics-based)
       - CFD_LITE: Full N-S voxel solver (detailed but slower)
       - HYBRID: Zone model with CFD spot-checks
-
-    Key fixes applied from consultant code review:
-      - BUG 3: Timer-based detector checking (not int(t) % 30)
-      - BUG 4: Proper lower-layer temperature with plume impact factor
 
     Safety: All results are approximate. Must be verified by licensed PE.
     """
 
-    # Detector check interval (seconds)
-    # BUG FIX (Consultant BUG 3): Use fixed interval instead of int(t) % 30
+    # Flashover temperature threshold (600°C per ISO 834 / Babrauskas)
+    FLASHOVER_TEMP_K: float = 873.15
+
+    # Detector check interval (seconds) — how often we poll detectors
     DETECTOR_CHECK_INTERVAL_S: float = 0.1
-
-    # Plume impact factor for lower-layer temperature
-    # BUG FIX (Consultant BUG 4): Use physics-based factor instead of 0.1
-    # Plume entrainment brings hot gases down; factor ~0.5 is conservative
-    PLUME_IMPACT_FACTOR: float = 0.5
-
-    # Flashover threshold (upper layer temperature)
-    FLASHOVER_TEMP_K: float = 600.0 + 273.15  # 600°C per ISO 834
 
     def __init__(
         self,
@@ -201,27 +256,27 @@ class SimulationLayer:
         self.resolution_m = resolution_m
         self.max_steps = max_steps
 
-        # Sub-engines
+        # ── Primary physics engine: SemiCFASTSolver ──
+        self._cfast: Optional[SemiCFASTSolver] = None
+
+        # ── NFPA 72 compliance bridge ──
         self._nfpa72 = NFPA72Bridge()
+
+        # ── CFD components (for CFD_LITE/HYBRID modes) ──
         self._cfl = CFLController()
-
-        # Zone model components
-        self._multi_zone: Optional[MultiZoneEngine] = None
-
-        # CFD components
         self._grid: Optional[VoxelGrid] = None
         self._pressure_solver: Optional[PressureSolver] = None
         self._heat_transport: Optional[HeatTransportNS] = None
         self._smoke_transport: Optional[SmokeTransportNS] = None
 
-        # Detector tracking
-        # BUG FIX (Consultant BUG 3): Track last check time per detector
+        # ── Detector tracking ──
         self._detector_last_check: Dict[str, float] = {}
-        self._detector_configs: Dict[str, DetectorConfig] = {}
-        self._physics_detectors: Dict[str, PhysicsDetector] = {}
+        self._activated_detector_ids: set = set()
 
-        # Room configurations
+        # ── Room/fire configs (for CFD mode and NFPA72 bridge) ──
         self._room_configs: Dict[str, SimulationRoomConfig] = {}
+        self._fires: List[SimulationFireSource] = []
+        self._detector_configs: Dict[str, SimulationDetector] = {}
 
     def setup(
         self,
@@ -242,67 +297,99 @@ class SimulationLayer:
         for room in rooms:
             self._room_configs[room.room_id] = room
 
-        # Initialize zone model
-        self._multi_zone = MultiZoneEngine()
+        # Store fire configs
+        self._fires = fires
+
+        # Store detector configs
+        for det in detectors:
+            self._detector_configs[det.detector_id] = det
+
+        # ── Initialize SemiCFASTSolver (CRIT-02/05 FIX) ──
+        self._cfast = SemiCFASTSolver()
+
+        # Add rooms as compartments
         for room in rooms:
-            zone = Zone(
-                zone_id=room.room_id,
+            compartment = RoomCompartment(
+                room_id=room.room_id,
                 width=room.width_m,
-                length=room.depth_m,
+                depth=room.depth_m,
                 height=room.height_m,
             )
-            self._multi_zone.add_zone(zone)
+            self._cfast.add_room(compartment)
 
-        # Add doorways between rooms
+        # Add doorways as vents (convert Doorway → Vent)
         if doorways:
-            for door in doorways:
-                self._multi_zone.add_doorway(door)
+            for i, door in enumerate(doorways):
+                vent = Vent(
+                    vent_id=f"vent_{door.zone_a_id}_{door.zone_b_id}_{i}",
+                    zone_a_id=door.zone_a_id,
+                    zone_b_id=door.zone_b_id,
+                    width=door.width,
+                    height=door.height,
+                    sill_height=0.0,  # Floor-level doors
+                    is_open=door.is_open,
+                )
+                self._cfast.add_vent(vent)
 
-        # Add fires
-        self._fires: List[SimulationFireSource] = fires
+        # Add fires as CombustionModel instances
+        for fire in fires:
+            combustion = CombustionModel(
+                hrr_peak_w=fire.hrr_peak_w,
+                growth_alpha_kw_s2=fire.growth_alpha_kW_s2,
+                ignition_time_s=fire.ignition_time_s,
+                fuel_load_kg=fire.fuel_load_kg,
+                soot_yield=fire.soot_yield,
+                co_yield=fire.co_yield,
+            )
+            self._cfast.add_fire(fire.room_id, combustion)
 
-        # Set up detectors with proper configs
+        # Add detectors with RTI model
         for det in detectors:
-            # Map detector type
-            if det.detector_type.lower() == "smoke":
-                dt = DetectorType.SMOKE
-            elif det.detector_type.lower() == "heat":
-                dt = DetectorType.HEAT
-            elif det.detector_type.lower() == "combination":
-                dt = DetectorType.COMBINATION
-            elif det.detector_type.lower() == "co":
-                dt = DetectorType.CO
-            else:
-                dt = DetectorType.SMOKE
+            # Map detector type string to DetectorType enum
+            from twin.semi_cfast_engine import DetectorType as SemiDetectorType
+            from twin.semi_cfast_engine import DetectorConfig as SemiDetectorConfig
+            from twin.semi_cfast_engine import DetectorPhysics as SemiDetectorPhysics
 
-            config = DetectorConfig(detector_type=dt)
-            self._detector_configs[det.detector_id] = config
+            dt_map = {
+                "smoke": SemiDetectorType.SMOKE,
+                "heat": SemiDetectorType.HEAT,
+                "combination": SemiDetectorType.COMBINATION,
+                "co": SemiDetectorType.CO,
+            }
+            det_type_enum = dt_map.get(det.detector_type.lower(), SemiDetectorType.SMOKE)
 
-            # Create physics detector
-            physics_det = PhysicsDetector(
+            # Create DetectorConfig with proper RTI
+            config = SemiDetectorConfig(
+                detector_type=det_type_enum,
+                rti=det.rti,
+            )
+
+            # Create DetectorPhysics with proper RTI model
+            physics_det = SemiDetectorPhysics(
                 detector_id=det.detector_id,
-                x=det.x, y=det.y, z=det.z,
-                zone_id=det.zone_id or det.room_id,
+                room_id=det.room_id,
+                x=det.x,
+                y=det.y,
+                z=det.z,
                 config=config,
             )
-            self._physics_detectors[det.detector_id] = physics_det
-
-            # BUG FIX (Consultant BUG 3): Initialize timer tracking
+            self._cfast.add_detector(physics_det)
             self._detector_last_check[det.detector_id] = -1.0
 
-        # Set up CFD grid if needed
+        # ── Initialize CFD grid if needed ──
         if self.mode in (SimulationMode.CFD_LITE, SimulationMode.HYBRID):
             self._setup_cfd(rooms)
 
-        log.info("Simulation setup: %d rooms, %d fires, %d detectors, mode=%s",
-                 len(rooms), len(fires), len(detectors), self.mode.value)
+        log.info(
+            "Simulation setup (SemiCFAST): %d rooms, %d fires, %d detectors, mode=%s",
+            len(rooms), len(fires), len(detectors), self.mode.value,
+        )
 
     def _setup_cfd(self, rooms: List[SimulationRoomConfig]) -> None:
         """Initialize CFD voxel grid for the largest room."""
         if not rooms:
             return
 
-        # Use the largest room for CFD
         largest = max(rooms, key=lambda r: r.width_m * r.depth_m * r.height_m)
         self._grid = VoxelGrid(
             width=largest.width_m,
@@ -314,9 +401,11 @@ class SimulationLayer:
         self._heat_transport = HeatTransportNS()
         self._smoke_transport = SmokeTransportNS()
 
-        log.info("CFD grid: %dx%dx%d cells (%.1fm resolution)",
-                 self._grid.nx, self._grid.ny, self._grid.nz,
-                 self.resolution_m)
+        log.info(
+            "CFD grid: %dx%dx%d cells (%.1fm resolution)",
+            self._grid.nx, self._grid.ny, self._grid.nz,
+            self.resolution_m,
+        )
 
     def run(
         self,
@@ -324,19 +413,23 @@ class SimulationLayer:
         dt_req: float = 1.0,
         check_compliance: bool = True,
     ) -> SimulationResult:
-        """Run the fire simulation.
+        """Run the fire simulation using SemiCFASTSolver.
 
         Parameters:
             t_end: Simulation end time (seconds)
-            dt_req: Requested time step (seconds)
+            dt_req: Requested time step (seconds) — may be adapted
             check_compliance: Whether to run NFPA 72 compliance check
 
         Returns:
             SimulationResult with all states and activations
         """
+        if self._cfast is None:
+            raise RuntimeError("Simulation not set up. Call setup() first.")
+
         wall_start = _time.time()
         t = 0.0
         step_count = 0
+        dt_actual = dt_req  # Will be adapted by SemiCFAST
 
         # Results tracking
         room_states: Dict[str, List[RoomSimulationState]] = {
@@ -344,133 +437,122 @@ class SimulationLayer:
         }
         all_activations: List[DetectorActivation] = []
         flashover_rooms: List[str] = []
-        global_peak_temp = AMBIENT_TEMP
+        global_peak_temp = AMBIENT_TEMP_K
         global_peak_smoke = 0.0
 
-        # Group fires by room
+        # Group fires by room for CFD mode
         fires_by_room: Dict[str, List[SimulationFireSource]] = {}
         for fire in self._fires:
             fires_by_room.setdefault(fire.room_id, []).append(fire)
 
-        # Group detectors by room
-        detectors_by_room: Dict[str, List[SimulationDetector]] = {}
-        for det_id, pdet in self._physics_detectors.items():
-            room_id = pdet.zone_id
-            detectors_by_room.setdefault(room_id, []).append(
-                SimulationDetector(
-                    detector_id=det_id,
-                    room_id=room_id,
-                    x=pdet.x, y=pdet.y, z=pdet.z,
-                    detector_type=pdet.config.detector_type.name.lower(),
-                    zone_id=pdet.zone_id,
-                )
-            )
-
         while t < t_end and step_count < self.max_steps:
-            # Compute adaptive dt
-            if self._grid and self.mode in (SimulationMode.CFD_LITE, SimulationMode.HYBRID):
-                u_max = CFLController.max_velocity(self._grid.all_fluid())
-                dt = self._cfl.compute_dt(self.resolution_m, u_max, dt_req)
-            else:
-                dt = min(dt_req, t_end - t)
+            dt = min(dt_req, t_end - t)
 
-            # Compute HRR for each fire
-            total_hrr_by_room: Dict[str, float] = {}
-            for room_id, fires in fires_by_room.items():
-                room_hrr = 0.0
-                for fire in fires:
-                    hrr = FireGrowthModel.hrr_at(
-                        fire.hrr_peak_w,
-                        fire.growth_alpha_kW_s2,
-                        fire.ignition_time_s,
-                        t,
-                    )
-                    room_hrr += hrr
-                total_hrr_by_room[room_id] = room_hrr
+            if self.mode == SimulationMode.ZONE_MODEL:
+                # ── SemiCFASTSolver step (CRIT-02/05 FIX) ──
+                # This single call runs all 11 phases of physics:
+                #   vent flows, plume, species, interface, energy,
+                #   wall thermal, detectors (RTI), numerical stability
+                activation_events = self._cfast.step(t, dt)
+                dt_actual = dt  # SemiCFAST adapts internally
 
-            # Advance zone model
-            if self._multi_zone:
-                for room_id, fires in fires_by_room.items():
-                    for fire in fires:
-                        self._multi_zone.step(
-                            dt,
-                            fire=FireSource(
-                                x=fire.x, y=fire.y, z=fire.z,
-                                hrr=fire.hrr_peak_w,
-                                growth_alpha=fire.growth_alpha_kW_s2,
-                                soot_yield=fire.soot_yield,
-                                co_yield=fire.co_yield,
-                                ignition_time=fire.ignition_time_s,
-                            ),
-                            hrr_now=total_hrr_by_room.get(room_id, 0.0),
+                # Process detector activations from SemiCFAST
+                for event in activation_events:
+                    det_id = event.get('detector_id', '')
+                    if det_id and det_id not in self._activated_detector_ids:
+                        self._activated_detector_ids.add(det_id)
+                        # Find room for this detector
+                        det_cfg = self._detector_configs.get(det_id)
+                        room_id = det_cfg.room_id if det_cfg else "unknown"
+
+                        activation = DetectorActivation(
+                            detector_id=det_id,
+                            room_id=room_id,
+                            activation_time_s=round(event.get('activation_time', t), 2),
+                            activation_type=event.get('activation_type', 'unknown'),
+                            threshold_value=round(event.get('threshold_value', 0.0), 4),
+                            measured_value=round(event.get('measured_value', 0.0), 4),
+                            zone_id=det_cfg.zone_id if det_cfg else "",
                         )
+                        all_activations.append(activation)
 
-            # Advance CFD if in that mode
-            if self.mode == SimulationMode.CFD_LITE and self._grid:
-                self._advance_cfd(dt, fires_by_room, total_hrr_by_room, t)
+            elif self.mode == SimulationMode.CFD_LITE:
+                # CFD mode: still use SemiCFAST for detector RTI
+                self._cfast.step(t, dt)
+                dt_actual = dt
+                self._advance_cfd(dt, fires_by_room, t)
 
-            # Record room states and check detectors
+            elif self.mode == SimulationMode.HYBRID:
+                # Hybrid: SemiCFAST primary + CFD overlay
+                self._cfast.step(t, dt)
+                dt_actual = dt
+                # Periodically overlay zone model onto CFD grid
+                if step_count % 10 == 0:
+                    self._overlay_zone_to_cfd()
+
+            # ── Record room states from SemiCFAST compartments ──
             for room_id, room_cfg in self._room_configs.items():
-                zone = self._multi_zone.zones.get(room_id) if self._multi_zone else None
+                compartment = self._cfast.rooms.get(room_id)
+                if compartment is None:
+                    continue
 
-                if zone:
-                    upper_temp = zone.T_upper
-                    smoke_od = zone.smoke_upper
-                    co_ppm = zone.co_upper_ppm
-                    interface = zone.z_interface
+                # Read state from RoomCompartment
+                upper_temp = compartment.upper.temperature
+                lower_temp = compartment.lower.temperature
+                interface = compartment.interface_height
+                smoke_od = compartment.smoke_od
+                co_ppm = compartment.co_ppm
+                o2_frac = compartment.upper.species.get('O2', 0.232)
 
-                    # BUG FIX (Consultant BUG 4): Proper lower-layer temp
-                    # Old: T_lower = 293 + (T_upper - 293) * 0.1  (arbitrary 0.1)
-                    # New: Use plume impact factor based on physics
-                    # Hot gas descends via plume entrainment; impact ~50% at floor
-                    plume_contribution = (upper_temp - AMBIENT_TEMP) * self.PLUME_IMPACT_FACTOR
-                    lower_temp = max(AMBIENT_TEMP, AMBIENT_TEMP + plume_contribution)
+                # Combustion phase
+                fire = self._cfast.fires.get(room_id)
+                if fire is not None:
+                    comb_phase = fire.phase.name.lower()
+                    fuel_rem = fire.fuel_remaining
+                else:
+                    comb_phase = "none"
+                    fuel_rem = 0.0
 
-                    is_flashover = upper_temp >= self.FLASHOVER_TEMP_K
-                    if is_flashover and room_id not in flashover_rooms:
-                        flashover_rooms.append(room_id)
+                # HIGH-07 FIX: Flashover is now REVERSIBLE
+                # Old behavior: is_flashover was a one-way flag
+                # New behavior: flashover depends on current temperature
+                is_flashover = upper_temp >= self.FLASHOVER_TEMP_K
+                if is_flashover and room_id not in flashover_rooms:
+                    flashover_rooms.append(room_id)
+                if not is_flashover and room_id in flashover_rooms:
+                    # Flashover reversed — temperature dropped below threshold
+                    # This is physically correct: if the fire decays or
+                    # ventilation improves, conditions can improve.
+                    flashover_rooms.remove(room_id)
 
-                    # Track peaks
-                    if upper_temp > global_peak_temp:
-                        global_peak_temp = upper_temp
-                    if smoke_od > global_peak_smoke:
-                        global_peak_smoke = smoke_od
+                # Track peaks
+                if upper_temp > global_peak_temp:
+                    global_peak_temp = upper_temp
+                if smoke_od > global_peak_smoke:
+                    global_peak_smoke = smoke_od
 
-                    state = RoomSimulationState(
-                        room_id=room_id,
-                        time_s=t,
-                        upper_layer_temp_k=round(upper_temp, 1),
-                        lower_layer_temp_k=round(lower_temp, 1),
-                        interface_height_m=round(interface, 2),
-                        smoke_od_m1=round(smoke_od, 4),
-                        co_ppm=round(co_ppm, 1),
-                        is_flashover=is_flashover,
-                    )
-                    room_states[room_id].append(state)
+                # Calculate lower layer temperature using proper physics
+                # The SemiCFAST energy solver already computes this correctly.
+                # No more ad-hoc PLUME_IMPACT_FACTOR needed.
+                state = RoomSimulationState(
+                    room_id=room_id,
+                    time_s=round(t, 2),
+                    upper_layer_temp_k=round(upper_temp, 1),
+                    lower_layer_temp_k=round(lower_temp, 1),
+                    interface_height_m=round(interface, 2),
+                    smoke_od_m1=round(smoke_od, 4),
+                    co_ppm=round(co_ppm, 1),
+                    o2_mass_fraction=round(o2_frac, 4),
+                    combustion_phase=comb_phase,
+                    fuel_remaining_kg=round(fuel_rem, 1),
+                    is_flashover=is_flashover,
+                )
+                room_states[room_id].append(state)
 
-                # BUG FIX (Consultant BUG 3): Timer-based detector checking
-                # Old: if int(t) % 30 == 0: check_detector()
-                # New: Use fixed interval with per-detector tracking
-                room_dets = detectors_by_room.get(room_id, [])
-                for det in room_dets:
-                    last_check = self._detector_last_check.get(det.detector_id, -1.0)
-                    if t - last_check >= self.DETECTOR_CHECK_INTERVAL_S:
-                        self._detector_last_check[det.detector_id] = t
+                # Update derived quantities (smoke OD, CO ppm)
+                compartment.update_derived_quantities()
 
-                        activation = self._check_detector_activation(
-                            det, zone, t
-                        )
-                        if activation:
-                            # Check if already activated (dedup)
-                            already = any(
-                                a.detector_id == activation.detector_id and
-                                abs(a.activation_time_s - activation.activation_time_s) < 0.5
-                                for a in all_activations
-                            )
-                            if not already:
-                                all_activations.append(activation)
-
-            t += dt
+            t += dt_actual
             step_count += 1
 
         # NFPA 72 compliance check
@@ -484,7 +566,7 @@ class SimulationLayer:
         result = SimulationResult(
             mode=self.mode,
             duration_s=t_end,
-            dt_used=dt,
+            dt_used=dt_actual,
             total_steps=step_count,
             room_states=room_states,
             all_activations=all_activations,
@@ -498,8 +580,11 @@ class SimulationLayer:
         # Compute SHA-256 of result for audit integrity
         result.sha256 = self._compute_result_hash(result)
 
-        log.info("Simulation complete: %d steps, %d activations, %d flashover rooms, %.1fs wall",
-                 step_count, len(all_activations), len(flashover_rooms), elapsed_wall)
+        log.info(
+            "Simulation complete (SemiCFAST): %d steps, %d activations, "
+            "%d flashover rooms, %.1fs wall",
+            step_count, len(all_activations), len(flashover_rooms), elapsed_wall,
+        )
 
         return result
 
@@ -507,14 +592,12 @@ class SimulationLayer:
         self,
         dt: float,
         fires_by_room: Dict[str, List[SimulationFireSource]],
-        hrr_by_room: Dict[str, float],
         t: float,
     ) -> None:
         """Advance the CFD solver by one time step."""
         if not self._grid:
             return
 
-        # Use first fire for CFD (single-room CFD for now)
         for room_id, fires in fires_by_room.items():
             for fire in fires:
                 fire_src = FireSource(
@@ -523,7 +606,12 @@ class SimulationLayer:
                     soot_yield=fire.soot_yield,
                     co_yield=fire.co_yield,
                 )
-                hrr_now = hrr_by_room.get(room_id, 0.0)
+                hrr_now = FireGrowthModel.hrr_at(
+                    fire.hrr_peak_w,
+                    fire.growth_alpha_kW_s2,
+                    fire.ignition_time_s,
+                    t,
+                )
 
                 if self._pressure_solver:
                     self._pressure_solver.step(self._grid, dt)
@@ -532,94 +620,34 @@ class SimulationLayer:
                 if self._smoke_transport:
                     self._smoke_transport.step(self._grid, fire_src, hrr_now, dt)
 
-                # Check for divergence
                 self._cfl.check_divergence(self._grid.all_fluid())
-                break  # Only one fire in CFD for now
+                break
             break
 
-    def _check_detector_activation(
-        self,
-        det: SimulationDetector,
-        zone: Optional[Zone],
-        t: float,
-    ) -> Optional[DetectorActivation]:
-        """Check if a detector should activate based on zone conditions.
+    def _overlay_zone_to_cfd(self) -> None:
+        """Overlay SemiCFAST zone model state onto CFD grid.
 
-        Uses the physics detector model with RTI delay.
+        This is the HYBRID mode coupling: the fast zone model provides
+        boundary conditions for the CFD grid, ensuring consistency.
         """
-        if zone is None:
-            return None
+        if not self._grid or not self._cfast:
+            return
 
-        physics_det = self._physics_detectors.get(det.detector_id)
-        if physics_det is None:
-            return None
-
-        # Feed zone conditions to the physics detector
-        # The detector is at ceiling level, so it sees upper layer
-        if det.z >= zone.z_interface:
-            # Detector is in upper layer
-            local_temp = zone.T_upper
-            local_smoke = zone.smoke_upper
-            local_co = zone.co_upper_ppm
-            # Estimate gas velocity at ceiling from plume
-            u_gas = max(0.5, math.sqrt(2.0 * GRAVITY * (zone.T_upper - AMBIENT_TEMP) / AMBIENT_TEMP * zone.height_m))
-        else:
-            # Detector is in lower layer
-            # BUG FIX (Consultant BUG 4): Use proper lower-layer temp
-            plume_contribution = (zone.T_upper - AMBIENT_TEMP) * self.PLUME_IMPACT_FACTOR
-            local_temp = max(AMBIENT_TEMP, AMBIENT_TEMP + plume_contribution)
-            local_smoke = zone.smoke_upper * 0.1  # Lower layer has much less smoke
-            local_co = zone.co_upper_ppm * 0.1
-            u_gas = 0.3  # Low velocity in lower layer
-
-        # Check activation conditions
-        config = physics_det.config
-        activation_type = None
-        threshold_val = 0.0
-        measured_val = 0.0
-
-        if config.detector_type in (DetectorType.SMOKE, DetectorType.COMBINATION):
-            if local_smoke >= config.smoke_threshold:
-                activation_type = "smoke"
-                threshold_val = config.smoke_threshold
-                measured_val = local_smoke
-
-        if config.detector_type in (DetectorType.HEAT, DetectorType.COMBINATION):
-            if local_temp >= config.temp_threshold:
-                if activation_type is None:  # Smoke takes priority for combination
-                    activation_type = "heat"
-                    threshold_val = config.temp_threshold
-                    measured_val = local_temp
-
-        if config.detector_type == DetectorType.CO:
-            if local_co >= config.co_threshold_ppm:
-                activation_type = "co"
-                threshold_val = config.co_threshold_ppm
-                measured_val = local_co
-
-        if activation_type is None:
-            return None
-
-        # Apply RTI delay model
-        # t_response = RTI / sqrt(u_gas) + latency
-        rti = config.rti
-        latency = config.latency_s
-        if u_gas > 0.01:
-            response_time = rti / math.sqrt(u_gas) + latency
-        else:
-            response_time = rti / math.sqrt(0.01) + latency
-
-        activation_time = t + response_time
-
-        return DetectorActivation(
-            detector_id=det.detector_id,
-            room_id=det.room_id,
-            activation_time_s=round(activation_time, 2),
-            activation_type=activation_type,
-            threshold_value=round(threshold_val, 4),
-            measured_value=round(measured_val, 4),
-            zone_id=det.zone_id,
-        )
+        for v in self._grid.all_fluid():
+            # Find which compartment this voxel belongs to
+            for room_id, compartment in self._cfast.rooms.items():
+                room_cfg = self._room_configs.get(room_id)
+                if room_cfg is None:
+                    continue
+                if (0.0 <= v.cx <= room_cfg.width_m and
+                        0.0 <= v.cy <= room_cfg.depth_m):
+                    if v.cz >= compartment.interface_height:
+                        v.temp = compartment.upper.temperature
+                        v.smoke = compartment.smoke_od
+                        v.co_ppm = compartment.co_ppm
+                    else:
+                        v.temp = compartment.lower.temperature
+                    break
 
     def _check_nfpa72_compliance(self) -> Dict[str, Any]:
         """Run NFPA 72 compliance validation on the design."""
@@ -627,7 +655,6 @@ class SimulationLayer:
         detector_placements = []
 
         for room_id, room in self._room_configs.items():
-            # Map occupancy type
             occ_map = {
                 "business": OccupancyType.BUSINESS,
                 "assembly": OccupancyType.ASSEMBLY,
@@ -652,11 +679,10 @@ class SimulationLayer:
                 ceiling_type=room.ceiling_type,
             ))
 
-        for det_id, pdet in self._physics_detectors.items():
-            # Get effective coverage radius
-            room_cfg = self._room_configs.get(pdet.zone_id)
+        for det_id, det_cfg in self._detector_configs.items():
+            room_cfg = self._room_configs.get(det_cfg.room_id)
             ceiling_h = room_cfg.height_m if room_cfg else 2.8
-            det_type_str = pdet.config.detector_type.name.lower()
+            det_type_str = det_cfg.detector_type.lower()
             if det_type_str == "combination":
                 det_type_str = "smoke"
 
@@ -665,10 +691,10 @@ class SimulationLayer:
 
             detector_placements.append(DetectorPlacement(
                 detector_id=det_id,
-                room_id=pdet.zone_id,
-                x=pdet.x,
-                y=pdet.y,
-                z=pdet.z,
+                room_id=det_cfg.room_id,
+                x=det_cfg.x,
+                y=det_cfg.y,
+                z=det_cfg.z,
                 detector_type=det_type_str,
                 coverage_radius_m=coverage_r,
             ))
@@ -689,6 +715,7 @@ class SimulationLayer:
             'flashover_rooms': sorted(result.flashover_rooms),
             'peak_temp_k': result.peak_temp_k,
             'peak_smoke_od': result.peak_smoke_od,
+            'engine_version': result.engine_version,
         }
         content = json.dumps(data, sort_keys=True, separators=(',', ':'))
         return hashlib.sha256(content.encode()).hexdigest()[:16]

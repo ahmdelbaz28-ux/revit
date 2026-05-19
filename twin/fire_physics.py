@@ -39,10 +39,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import math
 import os
 import threading
 import time as _time
+
+logger = logging.getLogger(__name__)
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import (
@@ -146,6 +149,18 @@ class VoxelGrid:
         height: float,
         resolution: float,
     ) -> None:
+        # SAFETY FIX (F3): Input validation — reject negative/zero/NaN dimensions
+        # Without these checks, negative or NaN inputs produce silently wrong
+        # results (e.g., VoxelGrid(-5, 3, 2, 0.5) creates nx=1 from ceil(-5/0.5)).
+        if not math.isfinite(width) or width <= 0.0:
+            raise ValueError(f"VoxelGrid width must be positive and finite, got {width}")
+        if not math.isfinite(length) or length <= 0.0:
+            raise ValueError(f"VoxelGrid length must be positive and finite, got {length}")
+        if not math.isfinite(height) or height <= 0.0:
+            raise ValueError(f"VoxelGrid height must be positive and finite, got {height}")
+        if not math.isfinite(resolution) or resolution <= 0.0:
+            raise ValueError(f"VoxelGrid resolution must be positive and finite, got {resolution}")
+
         self.width = width
         self.length = length
         self.height = height
@@ -178,10 +193,21 @@ class VoxelGrid:
         return None
 
     def at_pos(self, x: float, y: float, z: float) -> Optional[Voxel]:
-        """Return voxel containing world position (x, y, z)."""
-        ix = int(x / self.resolution)
-        iy = int(y / self.resolution)
-        iz = int(z / self.resolution)
+        """Return voxel containing world position (x, y, z).
+
+        BUG FIX (CRIT-04): Previous version used int() truncation which
+        gives wrong results for negative coordinates:
+          int(-0.3 / 0.5) = int(-0.6) = 0  (WRONG — should be -1 → out of bounds)
+        Now uses math.floor() which correctly handles negative values:
+          math.floor(-0.3 / 0.5) = math.floor(-0.6) = -1  → out of bounds → None
+
+        For positive coordinates, floor and int give the same result:
+          math.floor(0.7 / 0.5) = math.floor(1.4) = 1  ✓
+          int(0.7 / 0.5) = int(1.4) = 1  ✓
+        """
+        ix = math.floor(x / self.resolution)
+        iy = math.floor(y / self.resolution)
+        iz = math.floor(z / self.resolution)
         if 0 <= ix < self.nx and 0 <= iy < self.ny and 0 <= iz < self.nz:
             return self.get(ix, iy, iz)
         return None
@@ -289,6 +315,16 @@ class CFLController:
           - CFL_VISC * dx² / NU_AIR
           - dt_req
         """
+        # SAFETY FIX (F4): NaN/Inf velocity guard — prevent numerical blow-up
+        # If u_max is NaN/Inf, the CFL computation would produce NaN dt,
+        # which would silently propagate through the entire simulation.
+        if not math.isfinite(u_max):
+            u_max = 0.0
+        if not math.isfinite(dx) or dx <= 0.0:
+            return max(dt_req, 1e-6)
+        if not math.isfinite(dt_req) or dt_req <= 0.0:
+            dt_req = 1.0
+
         u_safe = max(u_max, 1e-6)
         dt_adv = self.CFL_ADV * dx / u_safe
         dt_diff = self.CFL_DIFF * dx * dx / (2.0 * max(self.ALPHA_HOT, self.D_SMOKE))
@@ -382,11 +418,21 @@ class FireGrowthModel:
             t_ign: ignition time (s)
             t: current simulation time (s)
         """
+        # SAFETY FIX (F5): Guard against negative/invalid inputs
+        # Negative hrr_peak or alpha produces negative HRR, which is physically
+        # impossible and would corrupt energy balance calculations downstream.
+        if not math.isfinite(hrr_peak) or hrr_peak < 0.0:
+            return 0.0
+        if not math.isfinite(alpha) or alpha < 0.0:
+            return 0.0
+        if not math.isfinite(t_ign) or not math.isfinite(t):
+            return 0.0
+
         dt = t - t_ign
         if dt <= 0.0:
             return 0.0
         hrr = alpha * dt * dt * 1000.0  # kW -> W
-        return min(hrr, hrr_peak)
+        return min(max(hrr, 0.0), hrr_peak)
 
 
 # ---------------------------------------------------------------------------
@@ -428,6 +474,12 @@ class PressureSolver:
         """
         dx = grid.resolution
         fluid = grid.all_fluid()
+
+        # BUG FIX (CRIT-01): Build fluid index map for PressureSolver
+        # to look up u_star by (ix, iy, iz) during Poisson iteration.
+        self._fluid_idx: Dict[Tuple[int, int, int], int] = {}
+        for idx_f, vf in enumerate(fluid):
+            self._fluid_idx[(vf.ix, vf.iy, vf.iz)] = idx_f
 
         # --- Step 1: Momentum prediction (explicit Euler) -----------------
         # We accumulate u*, v*, w* for each fluid cell.
@@ -563,6 +615,11 @@ class PressureSolver:
         # Use the existing pressure field as initial guess.
         rho_ref = AIR_DENSITY
 
+        # BUG FIX (CRIT-01): Removed dead code from first divergence block
+        # (lines 574-583) that was immediately overwritten by second block.
+        # Also fixed: divergence now correctly uses u_star[idx] for the
+        # current cell's predicted velocity instead of stale nb.u values.
+        # The projection method REQUIRES ∇·u* (predicted velocity), not ∇·u^n.
         for _iteration in range(self.MAX_ITER):
             max_residual = 0.0
             for idx, vc in enumerate(fluid):
@@ -570,19 +627,18 @@ class PressureSolver:
                 if not nbs:
                     continue
 
-                # Divergence of u*
-                div_ustar = 0.0
+                # Accumulate neighbour pressure sum for SOR
                 p_nb_sum = 0.0
                 count_nb = 0
                 for nb in nbs:
-                    # Central differences for divergence
-                    if nb.ix == vc.ix + 1:
-                        div_ustar += (u_star[idx] - nb.u) / dx  # use u* for this cell
-                        # actually we need full divergence; approximate:
                     count_nb += 1
                     p_nb_sum += nb.pressure
 
-                # More accurate divergence computation
+                # Divergence of u* using central differences where possible.
+                # For interior cells: ∂u*/∂x ≈ (u*_xp - u*_xm) / (2·dx)
+                # We only have u* for the current cell (u_star[idx]),
+                # not for neighbours, so we use neighbour's u* from the
+                # u_star array by looking up its index.
                 div_ustar = 0.0
                 nb_xp = grid.get(vc.ix + 1, vc.iy, vc.iz)
                 nb_xm = grid.get(vc.ix - 1, vc.iy, vc.iz)
@@ -592,32 +648,51 @@ class PressureSolver:
                 nb_zm = grid.get(vc.ix, vc.iy, vc.iz - 1)
 
                 if nb_xp is not None and nb_xm is not None:
-                    div_ustar += (u_star[idx] - nb_xm.u) / dx  # approximate
-                    # Actually: (u*_xp - u*_xm) / (2*dx), but we only have u* for our cell
-                    # Use simpler: forward/backward differences
-                # Simplified: compute divergence from u_star at cell and neighbours
-                # For interior cells with all 6 neighbours:
-                div_ustar = 0.0
-                if nb_xp is not None and nb_xm is not None:
-                    div_ustar += (nb_xp.u - nb_xm.u) / (2.0 * dx)
+                    # Use u_star for both this cell and its neighbours
+                    # by finding the neighbour's fluid index
+                    xp_idx = self._fluid_idx.get((vc.ix + 1, vc.iy, vc.iz))
+                    xm_idx = self._fluid_idx.get((vc.ix - 1, vc.iy, vc.iz))
+                    u_xp = u_star[xp_idx] if xp_idx is not None else nb_xp.u
+                    u_xm = u_star[xm_idx] if xm_idx is not None else nb_xm.u
+                    div_ustar += (u_xp - u_xm) / (2.0 * dx)
                 elif nb_xp is not None:
-                    div_ustar += (nb_xp.u - u_star[idx]) / dx
+                    xp_idx = self._fluid_idx.get((vc.ix + 1, vc.iy, vc.iz))
+                    u_xp = u_star[xp_idx] if xp_idx is not None else nb_xp.u
+                    div_ustar += (u_xp - u_star[idx]) / dx
                 elif nb_xm is not None:
-                    div_ustar += (u_star[idx] - nb_xm.u) / dx
+                    xm_idx = self._fluid_idx.get((vc.ix - 1, vc.iy, vc.iz))
+                    u_xm = u_star[xm_idx] if xm_idx is not None else nb_xm.u
+                    div_ustar += (u_star[idx] - u_xm) / dx
 
                 if nb_yp is not None and nb_ym is not None:
-                    div_ustar += (nb_yp.v - nb_ym.v) / (2.0 * dx)
+                    yp_idx = self._fluid_idx.get((vc.ix, vc.iy + 1, vc.iz))
+                    ym_idx = self._fluid_idx.get((vc.ix, vc.iy - 1, vc.iz))
+                    v_yp = v_star[yp_idx] if yp_idx is not None else nb_yp.v
+                    v_ym = v_star[ym_idx] if ym_idx is not None else nb_ym.v
+                    div_ustar += (v_yp - v_ym) / (2.0 * dx)
                 elif nb_yp is not None:
-                    div_ustar += (nb_yp.v - v_star[idx]) / dx
+                    yp_idx = self._fluid_idx.get((vc.ix, vc.iy + 1, vc.iz))
+                    v_yp = v_star[yp_idx] if yp_idx is not None else nb_yp.v
+                    div_ustar += (v_yp - v_star[idx]) / dx
                 elif nb_ym is not None:
-                    div_ustar += (v_star[idx] - nb_ym.v) / dx
+                    ym_idx = self._fluid_idx.get((vc.ix, vc.iy - 1, vc.iz))
+                    v_ym = v_star[ym_idx] if ym_idx is not None else nb_ym.v
+                    div_ustar += (v_star[idx] - v_ym) / dx
 
                 if nb_zp is not None and nb_zm is not None:
-                    div_ustar += (nb_zp.w - nb_zm.w) / (2.0 * dx)
+                    zp_idx = self._fluid_idx.get((vc.ix, vc.iy, vc.iz + 1))
+                    zm_idx = self._fluid_idx.get((vc.ix, vc.iy, vc.iz - 1))
+                    w_zp = w_star[zp_idx] if zp_idx is not None else nb_zp.w
+                    w_zm = w_star[zm_idx] if zm_idx is not None else nb_zm.w
+                    div_ustar += (w_zp - w_zm) / (2.0 * dx)
                 elif nb_zp is not None:
-                    div_ustar += (nb_zp.w - w_star[idx]) / dx
+                    zp_idx = self._fluid_idx.get((vc.ix, vc.iy, vc.iz + 1))
+                    w_zp = w_star[zp_idx] if zp_idx is not None else nb_zp.w
+                    div_ustar += (w_zp - w_star[idx]) / dx
                 elif nb_zm is not None:
-                    div_ustar += (w_star[idx] - nb_zm.w) / dx
+                    zm_idx = self._fluid_idx.get((vc.ix, vc.iy, vc.iz - 1))
+                    w_zm = w_star[zm_idx] if zm_idx is not None else nb_zm.w
+                    div_ustar += (w_star[idx] - w_zm) / dx
 
                 # SOR update:  p_new = (sum(p_nb) - dx²·rhs) / count_nb
                 # rhs = (rho/dt) · div(u*)
@@ -731,13 +806,17 @@ class HeatTransportNS:
         dx2 = dx * dx
         fluid = grid.all_fluid()
 
+        # BUG FIX (HIGH-05): Compute fire_voxel ONCE before the loop
+        # instead of inside every cell's iteration (was O(n) redundant calls).
+        fire_voxel = grid.at_pos(fire.x, fire.y, fire.z)
+
         # Pre-compute new temperatures
         new_temp: Dict[int, float] = {}
 
         for v in fluid:
             nbs = grid.neighbours(v)
             if not nbs:
-                new_temp[v.ix * 1000000 + v.iy * 1000 + v.iz] = v.temp
+                new_temp[(v.ix, v.iy, v.iz)] = v.temp
                 continue
 
             T = v.temp
@@ -785,7 +864,6 @@ class HeatTransportNS:
 
             # Source term at fire voxel
             source_T = 0.0
-            fire_voxel = grid.at_pos(fire.x, fire.y, fire.z)
             if fire_voxel is not None and v.ix == fire_voxel.ix and \
                v.iy == fire_voxel.iy and v.iz == fire_voxel.iz:
                 # Q = hrr / (rho * Cp * V_cell)
@@ -795,12 +873,12 @@ class HeatTransportNS:
             T_new = T + dt * (diff_T + adv_T + cool_T + source_T)
             # Physical floor: temperature cannot drop below absolute zero
             T_new = max(T_new, 1.0)
-            key = v.ix * 1000000 + v.iy * 1000 + v.iz
+            key = (v.ix, v.iy, v.iz)
             new_temp[key] = T_new
 
         # Apply updates
         for v in fluid:
-            key = v.ix * 1000000 + v.iy * 1000 + v.iz
+            key = (v.ix, v.iy, v.iz)
             if key in new_temp:
                 v.temp = new_temp[key]
 
@@ -873,8 +951,8 @@ class SmokeTransportNS:
         for v in fluid:
             nbs = grid.neighbours(v)
             if not nbs:
-                new_smoke[v.ix * 1000000 + v.iy * 1000 + v.iz] = v.smoke
-                new_co[v.ix * 1000000 + v.iy * 1000 + v.iz] = v.co_ppm
+                new_smoke[(v.ix, v.iy, v.iz)] = v.smoke
+                new_co[(v.ix, v.iy, v.iz)] = v.co_ppm
                 continue
 
             s = v.smoke
@@ -951,13 +1029,13 @@ class SmokeTransportNS:
             s_new = max(s_new, 0.0)
             c_new = max(c_new, 0.0)
 
-            key = v.ix * 1000000 + v.iy * 1000 + v.iz
+            key = (v.ix, v.iy, v.iz)
             new_smoke[key] = s_new
             new_co[key] = c_new
 
         # Apply updates
         for v in fluid:
-            key = v.ix * 1000000 + v.iy * 1000 + v.iz
+            key = (v.ix, v.iy, v.iz)
             if key in new_smoke:
                 v.smoke = new_smoke[key]
             if key in new_co:
@@ -1256,6 +1334,29 @@ class MultiZoneEngine:
 
         # Lower layer relaxes toward ambient
         zone.T_lower += 0.01 * dt * (AMBIENT_TEMP - zone.T_lower)
+
+        # SAFETY FIX (F8): Zone temperature bounds with WARNING logging.
+        # Real compartment fires rarely exceed ~1100 K (post-flashover ~1100-1200 K).
+        # T_upper > 1500 K or T_lower > 1000 K indicates numerical blow-up.
+        # We clamp BUT ALSO log a warning — silent clamping violates PRINCIPLE ZERO.
+        _MAX_T_UPPER = 1500.0  # K — physically reasonable ceiling for zone models
+        _MAX_T_LOWER = 1000.0  # K
+        if zone.T_upper > _MAX_T_UPPER:
+            logger.warning(
+                "Zone %s T_upper = %.1f K exceeds %d K — clamped (numerical blow-up?)",
+                zone.zone_id, zone.T_upper, int(_MAX_T_UPPER),
+            )
+            zone.T_upper = _MAX_T_UPPER
+        if zone.T_upper < AMBIENT_TEMP:
+            zone.T_upper = AMBIENT_TEMP
+        if zone.T_lower > _MAX_T_LOWER:
+            logger.warning(
+                "Zone %s T_lower = %.1f K exceeds %d K — clamped (numerical blow-up?)",
+                zone.zone_id, zone.T_lower, int(_MAX_T_LOWER),
+            )
+            zone.T_lower = _MAX_T_LOWER
+        if zone.T_lower < AMBIENT_TEMP:
+            zone.T_lower = AMBIENT_TEMP
 
         # Update densities
         zone.update_densities()

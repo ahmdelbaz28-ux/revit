@@ -360,8 +360,10 @@ def draw_fire_alarm_design(
     # ── Draw devices ──
     devices_drawn = 0
     for d in devices:
-        x = d.position.x / units_to_m if units_to_m else d.position.x
-        y = d.position.y / units_to_m if units_to_m else d.position.y
+        # BUG FIX: Guard against division by zero when units_to_m is 0
+        safe_units = units_to_m if units_to_m and units_to_m > 0 else 1.0
+        x = d.position.x / safe_units
+        y = d.position.y / safe_units
 
         drawer = SYMBOL_DRAWERS.get(d.device_type, _draw_smoke_detector)
         drawer(msp, x, y)
@@ -380,12 +382,13 @@ def draw_fire_alarm_design(
     # ── Draw coverage circles ──
     coverage_count = 0
     if draw_coverage:
+        safe_units = units_to_m if units_to_m and units_to_m > 0 else 1.0
         for d in devices:
             if d.coverage_radius <= 0:
                 continue
-            x = d.position.x / units_to_m if units_to_m else d.position.x
-            y = d.position.y / units_to_m if units_to_m else d.position.y
-            r = d.coverage_radius / units_to_m if units_to_m else d.coverage_radius
+            x = d.position.x / safe_units
+            y = d.position.y / safe_units
+            r = d.coverage_radius / safe_units
             msp.add_circle(
                 center=(x, y), radius=r,
                 dxfattribs={"layer": "FA-COVERAGE"}

@@ -612,40 +612,56 @@ class DigitalTwinBridge:
         SAFETY: Simulation results are approximate. Must be verified by PE.
         """
         try:
-            from twin.fire_physics import (
-                ScenarioRunner, FireSource, DetectorConfig,
-                DetectorType, Zone
+            from twin.simulation_layer import (
+                SimulationLayer, SimulationMode,
+                SimulationRoomConfig, SimulationFireSource,
+                SimulationDetector,
             )
+            # Doorway imported for multi-room vent connections (future use)
+            # from twin.fire_physics import Doorway
         except ImportError:
-            log.warning("twin.fire_physics not available")
+            log.warning("twin.simulation_layer not available")
             return None
 
-        runner = ScenarioRunner(
-            width=width, length=length, height=height,
-            resolution=resolution
-        )
-        runner.add_zone(Zone('Z1', width, length, height))
-        runner.add_fire(FireSource(x=fire_x, y=fire_y, hrr=1000000))
+        # BUG FIX: Previous version referenced non-existent ScenarioRunner
+        # and DetectorType.MULTI (should be DetectorType.COMBINATION).
+        # Now uses the correct SimulationLayer API.
+        sim = SimulationLayer(mode=SimulationMode.ZONE_MODEL, resolution_m=resolution)
 
+        room_cfg = SimulationRoomConfig(
+            room_id='Z1', name='FireRoom',
+            width_m=width, depth_m=length, height_m=height,
+        )
+
+        fire_cfg = SimulationFireSource(
+            room_id='Z1', x=fire_x, y=fire_y, z=0.0,
+            hrr_peak_w=1_000_000.0,
+        )
+
+        det_cfgs = []
         if detectors:
             for det in detectors:
-                det_type = DetectorType.SMOKE
-                dt = getattr(det, 'device_type', 'smoke').upper()
-                if 'HEAT' in dt:
-                    det_type = DetectorType.HEAT
-                elif 'MULTI' in dt:
-                    det_type = DetectorType.MULTI
+                det_type = getattr(det, 'device_type', 'smoke').lower()
+                if 'heat' in det_type:
+                    det_type = 'heat'
+                elif 'multi' in det_type or 'combination' in det_type:
+                    det_type = 'combination'
+                elif 'co' == det_type:
+                    det_type = 'co'
+                else:
+                    det_type = 'smoke'
 
-                runner.add_detector(
-                    getattr(det, 'id', f'det_{fire_x}'),
+                det_cfgs.append(SimulationDetector(
+                    detector_id=getattr(det, 'id', f'det_{fire_x}'),
+                    room_id='Z1',
                     x=getattr(det.position, 'x', fire_x),
                     y=getattr(det.position, 'y', fire_y),
-                    z=getattr(det, 'z_height', 2.8),
-                    zone_id='Z1',
-                    config=DetectorConfig(det_type),
-                )
+                    z=getattr(det, 'z_height', height),
+                    detector_type=det_type,
+                ))
 
-        self._last_simulation_result = runner.run(t_end=t_end)
+        sim.setup([room_cfg], [fire_cfg], det_cfgs)
+        self._last_simulation_result = sim.run(t_end=t_end)
         return self._last_simulation_result
 
     def get_state_checksum(self) -> str:

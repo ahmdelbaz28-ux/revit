@@ -608,23 +608,41 @@ class FirePhysics:
         ratio = r / H
 
         # Smoke production rate (kg/s)
-        s_rate = y_s * q_kw
+        # BUG FIX (2026-05-19): Previous formula y_s * Q gave units of
+        # (kg_soot/kg_fuel) * kW, which is NOT kg/s.
+        # Correct: s_rate = y_s * Q / ΔH_c  where ΔH_c = heat of combustion.
+        # Using ΔH_c ≈ 13.1 MJ/kg (cellulosic fuel, SFPE Handbook Table 3-4.14).
+        HEAT_OF_COMBUSTION_KW_S_PER_KG = 13100.0  # kJ/kg = kW·s/kg
+        s_rate = y_s * q_kw / HEAT_OF_COMBUSTION_KW_S_PER_KG
 
         # Ceiling jet layer depth (Alpert: ~5-12% of H, use 10%)
         delta = 0.10 * H
 
         if ratio > 0.18:
             # Far field: ceiling jet carries smoke radially
-            # Mass flow in ceiling jet (Alpert 1972):
-            #   m_jet = 0.197 * Q^(1/3) * r^(5/3) / H^(1/3)  [kg/s]
-            # But we use a simplified smoke dilution model:
-            # Total smoke mass passing through annular ring at distance r:
-            #   m_total ~ m_jet (ceiling jet carries most of the smoke)
-            # Concentration = s_rate / (m_jet * ring_cross_section_area)
-            # Ring area = 2 * pi * r * delta
+            #
+            # BUG FIX (2026-05-19): Previous version used _ALPERT_V_FAR (0.197)
+            # as a mass flow constant. But 0.197 is the VELOCITY constant from
+            # Alpert's ceiling jet velocity correlation:
+            #   V = 0.197 * Q^(1/3) * (r/H)^(-5/6) / H^(1/3)  [m/s]
+            # This is NOT a mass flow formula.
+            #
+            # Correct approach: compute mass flow from velocity × density × area.
+            #   m_jet = rho * V * delta * 2*pi*r
+            # where delta = ceiling jet layer thickness (~10% of H per Alpert)
+            #
+            # Alpert ceiling jet velocity at distance r (far field, r/H > 0.15):
+            #   V = 0.197 * Q^(1/3) * (r/H)^(-5/6) / H^(1/3)
+            # Mass flow = rho * V * delta * 2*pi*r (integrated over annular ring)
 
-            # Alpert ceiling jet mass flow (kg/s)
-            m_jet = _ALPERT_V_FAR * (q_kw ** (1.0/3.0)) * (r ** (5.0/3.0)) / (H ** (1.0/3.0))
+            # Ceiling jet velocity (Alpert 1972, far field)
+            V_jet = _ALPERT_V_FAR * (q_kw ** (1.0/3.0)) * (ratio ** (-5.0/6.0)) / (H ** (1.0/3.0))
+
+            # Ceiling jet mass flow (kg/s) — derived from velocity
+            # m = rho * V * delta * 2*pi*r
+            # Using rho ≈ 1.2 kg/m³, delta = 0.10*H
+            rho_air = 1.2   # kg/m³ at 20°C
+            m_jet = rho_air * V_jet * delta * 2.0 * math.pi * r
 
             # Smoke concentration at ceiling jet layer
             ring_area = 2.0 * math.pi * r * delta
@@ -649,6 +667,8 @@ class FirePhysics:
                 c_mass = 0.0
 
         # Optical density: sigma * c_mass [1/m] → %/m = * 100
+        # Note: OD is an engineering estimate. For regulatory submission,
+        # validate with CFD (FDS) or full-scale test per NFPA 72 §B.2.
         od = sigma * c_mass * 100.0
         return min(od, 100.0)
 

@@ -102,6 +102,7 @@ class LayerState:
     """
     mass: float = 0.0              # kg
     temperature: float = AMBIENT_TEMP_K  # K
+    pressure: float = AMBIENT_PRESSURE_PA  # Pa — local pressure for this layer
     species: Dict[str, float] = field(default_factory=lambda: {
         'O2': 0.232,     # mass fraction of O2 in air
         'CO2': 0.0006,   # trace
@@ -112,8 +113,13 @@ class LayerState:
 
     @property
     def density(self) -> float:
-        """Density from ideal gas law: ρ = P / (R·T)."""
-        return AMBIENT_PRESSURE_PA / (GAS_CONSTANT_AIR * max(self.temperature, 1.0))
+        """Density from ideal gas law: ρ = P / (R·T).
+
+        Uses the layer's own pressure field, not the global AMBIENT_PRESSURE_PA.
+        BUG FIX: Previous version hardcoded AMBIENT_PRESSURE_PA, which gave
+        wrong density when room pressure changed during fire.
+        """
+        return self.pressure / (GAS_CONSTANT_AIR * max(self.temperature, 1.0))
 
     @property
     def volume(self) -> float:
@@ -127,11 +133,13 @@ class LayerState:
         return self.mass * AIR_HEAT_CAP_CP * self.temperature
 
     def update_density_pressure(self, pressure: float) -> None:
-        """Re-derive temperature-independent quantities from given pressure.
+        """Update the layer pressure for consistent density computation.
 
         This ensures consistency: ρ = P / (R·T), then m = ρ·V.
+        BUG FIX: Previous version was a no-op (just `pass`), so density
+        always used AMBIENT_PRESSURE_PA regardless of actual room pressure.
         """
-        pass  # density is computed on-the-fly via property
+        self.pressure = max(pressure, 1.0)  # floor at 1 Pa to avoid division by zero
 
 
 @dataclass
@@ -180,6 +188,16 @@ class RoomCompartment:
         depth: float,
         height: float,
     ) -> None:
+        # SAFETY FIX (F6): Input validation — reject negative/zero/NaN dimensions
+        # Without these checks, RoomCompartment(-5, 3, 2) creates negative
+        # floor_area and volume, which corrupts ALL downstream physics.
+        if not math.isfinite(width) or width <= 0.0:
+            raise ValueError(f"RoomCompartment width must be positive and finite, got {width}")
+        if not math.isfinite(depth) or depth <= 0.0:
+            raise ValueError(f"RoomCompartment depth must be positive and finite, got {depth}")
+        if not math.isfinite(height) or height <= 0.0:
+            raise ValueError(f"RoomCompartment height must be positive and finite, got {height}")
+
         self.room_id = room_id
         self.width = width
         self.depth = depth
@@ -227,7 +245,14 @@ class RoomCompartment:
         Called after interface height changes. Ensures:
           ρ = P / (R·T)
           m = ρ · V
+
+        BUG FIX: Also syncs layer pressures from room pressure so that
+        density calculations use the correct pressure, not a stale value.
         """
+        # Update layer pressures from room pressure
+        self.upper.update_density_pressure(self.pressure)
+        self.lower.update_density_pressure(self.pressure)
+
         rho_upper = self.pressure / (GAS_CONSTANT_AIR * max(self.upper.temperature, 1.0))
         rho_lower = self.pressure / (GAS_CONSTANT_AIR * max(self.lower.temperature, 1.0))
 
@@ -248,9 +273,18 @@ class RoomCompartment:
         y_co = self.upper.species.get('CO', 0.0)
         self.co_ppm = y_co * (28.97 / 28.01) * 1e6
 
-        # Flashover check
-        if self.upper.temperature >= FLASHOVER_TEMP_K:
-            self.is_flashover = True
+        # HIGH-07 FIX: Flashover is now REVERSIBLE.
+        # Previous behavior: once is_flashover was set True, it was never
+        # reset. This is physically incorrect — if the fire decays (fuel
+        # exhaustion, ventilation control) or suppression is applied, the
+        # upper layer temperature can drop below the flashover threshold.
+        # In reality, flashover is a transient event, not a permanent state.
+        # A room that has "flashed over" can return to sub-flashover
+        # conditions when the fire decays.
+        # Reference: Babrauskas, "Flashover — When Does It Happen?"
+        # Fire Technology, 1979 — flashover is defined by the CURRENT
+        # temperature, not the peak temperature.
+        self.is_flashover = self.upper.temperature >= FLASHOVER_TEMP_K
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -328,8 +362,15 @@ class LayerEnergySolver:
         if m_dot_in_upper > 0.0:
             Q_source += m_dot_in_upper * Cp * (T_in_upper - T_u)
 
-        # Sink: vent outflow enthalpy (mass leaving at upper layer temp)
-        # This is implicitly handled since the mass is leaving at T_u
+        # BUG FIX: Vent outflow enthalpy loss must be explicit.
+        # When mass leaves the upper layer at T_u, it carries enthalpy out:
+        #   Q_out = ṁ_out · Cp · T_u
+        # This was previously "implicitly handled" (i.e., ignored), which
+        # caused energy to accumulate without removal — temperatures grew
+        # unrealistically in well-ventilated compartments.
+        Q_sink_outflow = 0.0
+        if m_dot_out_upper > 0.0:
+            Q_sink_outflow = m_dot_out_upper * Cp * T_u
 
         # Sink: wall/ceiling convective cooling
         wall_area = 2.0 * (room.width + room.depth) * (room.height - room.interface_height)
@@ -351,9 +392,9 @@ class LayerEnergySolver:
         Q_loss = Q_loss_conv + Q_loss_rad
 
         # Semi-implicit update:
-        # m·Cp·dT/dt = Q_source − Q_loss
-        # T^{n+1} = T^n + dt · (Q_source − Q_loss) / (m · Cp)
-        dT_u = dt * (Q_source - Q_loss) / (m_u * Cp)
+        # m·Cp·dT/dt = Q_source − Q_loss − Q_sink_outflow
+        # T^{n+1} = T^n + dt · (Q_source − Q_loss − Q_sink_outflow) / (m · Cp)
+        dT_u = dt * (Q_source - Q_loss - Q_sink_outflow) / (m_u * Cp)
         T_u_new = T_u + dT_u
 
         # Physical floor: temperature cannot drop below ambient
@@ -368,8 +409,13 @@ class LayerEnergySolver:
         if m_dot_in_lower > 0.0:
             Q_source_l = m_dot_in_lower * Cp * (T_in_lower - T_l)
 
-        # Sink: plume entrainment removes mass at lower layer temperature
-        # (implicitly handled by mass conservation)
+        # BUG FIX: Plume entrainment removes mass from lower layer,
+        # which means it removes enthalpy at T_l. This energy loss must
+        # be accounted for explicitly (was previously "implicitly handled"):
+        #   Q_plume_sink = ṁ_plume · Cp · T_l
+        Q_plume_sink = 0.0
+        if m_dot_plume > 0.0:
+            Q_plume_sink = m_dot_plume * Cp * T_l
 
         # Small heating from radiation penetrating lower layer
         # (simplified: 5% of upper layer radiation reaches lower layer)
@@ -379,11 +425,13 @@ class LayerEnergySolver:
         wall_area_l = 2.0 * (room.width + room.depth) * room.interface_height
         Q_loss_l = self.H_CONV_WALL * max(wall_area_l, 0.0) * (T_l - AMBIENT_TEMP_K)
 
-        dT_l = dt * (Q_source_l + Q_rad_to_lower - Q_loss_l) / (m_l * Cp)
+        dT_l = dt * (Q_source_l + Q_rad_to_lower - Q_loss_l - Q_plume_sink) / (m_l * Cp)
         T_l_new = T_l + dT_l
         room.lower.temperature = max(T_l_new, AMBIENT_TEMP_K)
 
-        # Update density from ideal gas
+        # Update layer pressures from room pressure and sync volumes
+        room.upper.update_density_pressure(room.pressure)
+        room.lower.update_density_pressure(room.pressure)
         room.sync_layer_volumes()
 
 
@@ -582,6 +630,14 @@ class VentFlowSolver:
         m_dot_B_to_A_upper = 0.0
         m_dot_B_to_A_lower = 0.0
 
+        # BUG FIX: Track neutral plane height properly.
+        # Previous version overwrote neutral_plane_height in every iteration
+        # of the A→B upper layer loop, ending up with the LAST strip's
+        # height, not the actual neutral plane. Now we detect the
+        # sign change properly.
+        neutral_plane_found = False
+        prev_dp_sign = 0
+
         for i in range(n_layers):
             z = z_sill + (i + 0.5) * dz   # height of this strip
 
@@ -621,6 +677,13 @@ class VentFlowSolver:
             dp = P_a - P_b   # pressure difference (Pa)
             dA = W * dz      # area of this strip (m²)
 
+            # BUG FIX: Detect neutral plane from pressure sign change
+            dp_sign = 1 if dp > 0 else (-1 if dp < 0 else 0)
+            if not neutral_plane_found and prev_dp_sign != 0 and dp_sign != 0 and dp_sign != prev_dp_sign:
+                result.neutral_plane_height = z
+                neutral_plane_found = True
+            prev_dp_sign = dp_sign if dp_sign != 0 else prev_dp_sign
+
             if abs(dp) < 1e-8:
                 continue
 
@@ -636,7 +699,6 @@ class VentFlowSolver:
                 # (buoyant hot gas rises to ceiling in destination room)
                 if z >= room_a.interface_height:
                     m_dot_A_to_B_upper += dm
-                    result.neutral_plane_height = z
                 else:
                     # Lower layer flow can go to either upper or lower
                     # depending on buoyancy. In CFAST, this is handled
@@ -829,8 +891,10 @@ class SpeciesTransport:
         # Lower layer receives ambient air from vents; minimal species changes
         # unless plume entrainment brings products down (rare)
         Y_l = room.lower.species
-        # Slow relaxation toward ambient
-        alpha_relax = 0.01 * dt
+        # BUG FIX: Previous relaxation coefficient `alpha_relax = 0.01 * dt`
+        # could exceed 1.0 for large dt, causing species to overshoot ambient
+        # and oscillate. Clamped to [0, 1] range.
+        alpha_relax = min(0.01 * dt, 1.0)
         for sp, Y_ambient in [('O2', 0.232), ('CO2', 0.0006), ('CO', 0.0), ('soot', 0.0)]:
             Y_l[sp] = Y_l.get(sp, Y_ambient) + alpha_relax * (Y_ambient - Y_l.get(sp, Y_ambient))
         Y_l['N2'] = max(1.0 - Y_l.get('O2', 0.0) - Y_l.get('CO2', 0.0)
@@ -880,6 +944,14 @@ class CombustionModel:
         soot_yield: float = 0.10,
         co_yield: float = 0.04,
     ) -> None:
+        # SAFETY FIX (F7b): Validate hrr_peak and alpha at construction
+        if not math.isfinite(hrr_peak_w) or hrr_peak_w < 0.0:
+            raise ValueError(f"CombustionModel hrr_peak must be non-negative and finite, got {hrr_peak_w}")
+        if not math.isfinite(growth_alpha_kw_s2) or growth_alpha_kw_s2 < 0.0:
+            raise ValueError(f"CombustionModel alpha must be non-negative and finite, got {growth_alpha_kw_s2}")
+        if not math.isfinite(fuel_load_kg) or fuel_load_kg < 0.0:
+            raise ValueError(f"CombustionModel fuel_load must be non-negative and finite, got {fuel_load_kg}")
+
         self.hrr_peak = hrr_peak_w
         self.alpha = growth_alpha_kw_s2
         self.ignition_time = ignition_time_s
@@ -910,6 +982,9 @@ class CombustionModel:
         # ── Phase 1: Growth ──
         if self.phase == CombustionPhase.GROWTH:
             hrr = self.alpha * dt * dt * 1000.0  # kW → W
+            # SAFETY FIX (F7): Guard against negative HRR from negative alpha
+            # (should be caught at construction, but defense-in-depth)
+            hrr = max(hrr, 0.0)
             hrr = min(hrr, self.hrr_peak)
 
             # Check if we've reached peak
@@ -980,8 +1055,13 @@ class CombustionModel:
         m_o2_available = room.upper.mass * y_o2_excess
         # HRR from available O2
         Q_vent = m_o2_available * HEAT_OF_COMBUSTION_REF / SpeciesTransport.DEFAULT_O2_STOICH
-        # Scale to reasonable rate (don't burn all O2 in one step)
-        Q_vent = min(Q_vent * 0.1, self.hrr_peak)  # 10% per second max
+        # BUG FIX: Previous version used arbitrary 0.1 scaling factor
+        # (only 10% of available O2 could be consumed per second).
+        # This is not physics-based. Instead, limit the burn rate by
+        # the available O2 divided by a characteristic mixing time (5s),
+        # which is more consistent with zone model assumptions.
+        mixing_time = 5.0  # seconds — characteristic mixing time
+        Q_vent = min(Q_vent / mixing_time, self.hrr_peak)
         return max(Q_vent, 0.0)
 
     def consume_fuel(self, hrr_w: float, dt: float) -> None:
@@ -995,11 +1075,23 @@ class CombustionModel:
         self.fuel_remaining -= m_dot_fuel * dt
         self.fuel_remaining = max(self.fuel_remaining, 0.0)
 
-    @property
-    def m_dot_fuel(self) -> float:
-        """Current fuel mass loss rate (kg/s) — for species transport."""
-        # This is a convenience; callers should use get_hrr() then compute
-        return 0.0  # Will be computed from hrr / ΔH_c in the main loop
+    def get_m_dot_fuel(self, current_hrr_w: float) -> float:
+        """Compute current fuel mass loss rate (kg/s) from HRR.
+
+        BUG FIX: Previous `m_dot_fuel` property always returned 0.0, which
+        meant species transport received zero fuel burning rate, producing
+        no soot, CO, or CO2 generation — making the entire species
+        transport system ineffective.
+
+        Parameters:
+            current_hrr_w: Current heat release rate (W)
+
+        Returns:
+            Fuel mass burning rate (kg/s): ṁ_fuel = Q / ΔH_c
+        """
+        if current_hrr_w <= 0.0:
+            return 0.0
+        return current_hrr_w / HEAT_OF_COMBUSTION_REF
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1458,12 +1550,18 @@ class SemiCFASTSolver:
 
         # 1. Calculate vent flows for all vents
         vent_results: Dict[str, VentFlowResult] = {}
-        vent_flows_by_room: Dict[str, Dict[str, float]] = {}
+        vent_flows_by_room: Dict[str, Dict[str, Any]] = {}
         for room_id in self.rooms:
             vent_flows_by_room[room_id] = {
                 'm_in_upper': 0.0, 'm_in_lower': 0.0,
                 'm_out_upper': 0.0, 'm_out_lower': 0.0,
                 'T_in_upper': AMBIENT_TEMP_K, 'T_in_lower': AMBIENT_TEMP_K,
+                # BUG FIX: Track incoming species from source rooms
+                # Previously, Y_in_upper was always set to ambient composition,
+                # which meant smoke/CO/soot never transferred between rooms.
+                # Now we accumulate mass-weighted species from all source rooms.
+                'Y_in_upper_accum': None,   # mass-weighted species accumulator
+                'Y_in_upper_mass': 0.0,      # total mass for weighting
             }
 
         for vent in self.vents:
@@ -1486,6 +1584,16 @@ class SemiCFASTSolver:
             # Temperature of flow from B→A: use B's upper/lower temp
             if result.m_dot_upper_b_to_a > 0.0:
                 fa['T_in_upper'] = room_b.upper.temperature
+                # BUG FIX: Accumulate species from source room B
+                # Mass-weighted: Y_weighted = (Y_existing * m_existing + Y_source * m_source) / m_total
+                dm = result.m_dot_upper_b_to_a
+                if fa['Y_in_upper_accum'] is None:
+                    fa['Y_in_upper_accum'] = {sp: val * dm for sp, val in room_b.upper.species.items()}
+                    fa['Y_in_upper_mass'] = dm
+                else:
+                    for sp, val in room_b.upper.species.items():
+                        fa['Y_in_upper_accum'][sp] = fa['Y_in_upper_accum'].get(sp, 0.0) + val * dm
+                    fa['Y_in_upper_mass'] += dm
             if result.m_dot_lower_b_to_a > 0.0:
                 fa['T_in_lower'] = room_b.lower.temperature
 
@@ -1498,6 +1606,15 @@ class SemiCFASTSolver:
             # Temperature of flow from A→B: use A's upper/lower temp
             if result.m_dot_upper_a_to_b > 0.0:
                 fb['T_in_upper'] = room_a.upper.temperature
+                # BUG FIX: Accumulate species from source room A
+                dm = result.m_dot_upper_a_to_b
+                if fb['Y_in_upper_accum'] is None:
+                    fb['Y_in_upper_accum'] = {sp: val * dm for sp, val in room_a.upper.species.items()}
+                    fb['Y_in_upper_mass'] = dm
+                else:
+                    for sp, val in room_a.upper.species.items():
+                        fb['Y_in_upper_accum'][sp] = fb['Y_in_upper_accum'].get(sp, 0.0) + val * dm
+                    fb['Y_in_upper_mass'] += dm
             if result.m_dot_lower_a_to_b > 0.0:
                 fb['T_in_lower'] = room_a.lower.temperature
 
@@ -1533,11 +1650,25 @@ class SemiCFASTSolver:
             m_in_upper = vf.get('m_in_upper', 0.0)
             m_out_upper = vf.get('m_out_upper', 0.0)
 
-            # Species of incoming vent flow (approximate: use source room upper layer)
+            # BUG FIX: Species of incoming vent flow now uses ACTUAL source room
+            # composition instead of ambient air. Previously, smoke/CO/soot never
+            # transferred between rooms because Y_in_upper was always set to ambient.
+            # Now we use mass-weighted species from all source rooms.
             Y_in_upper = None
-            # Simple approximation: ambient composition
             if m_in_upper > 0.0:
-                Y_in_upper = {'O2': 0.232, 'CO2': 0.0006, 'CO': 0.0, 'soot': 0.0, 'N2': 0.7674}
+                Y_accum = vf.get('Y_in_upper_accum')
+                Y_mass = vf.get('Y_in_upper_mass', 0.0)
+                if Y_accum is not None and Y_mass > 0.0:
+                    # Mass-weighted average species from all source rooms
+                    Y_in_upper = {sp: val / Y_mass for sp, val in Y_accum.items()}
+                    # Ensure N2 by difference
+                    Y_in_upper['N2'] = max(
+                        1.0 - Y_in_upper.get('O2', 0.0) - Y_in_upper.get('CO2', 0.0)
+                        - Y_in_upper.get('CO', 0.0) - Y_in_upper.get('soot', 0.0), 0.0
+                    )
+                else:
+                    # Fallback: ambient composition (only if no species tracked)
+                    Y_in_upper = {'O2': 0.232, 'CO2': 0.0006, 'CO': 0.0, 'soot': 0.0, 'N2': 0.7674}
 
             self.species.solve(
                 room, m_dot_fuel, soot_yield, co_yield,
