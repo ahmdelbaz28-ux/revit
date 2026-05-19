@@ -97,6 +97,7 @@ class Voxel:
         "ix", "iy", "iz",
         "cx", "cy", "cz",
         "temp", "pressure", "smoke", "co_ppm",
+        "o2_fraction", "co2_ppm",
         "u", "v", "w",
         "is_solid",
     )
@@ -116,6 +117,8 @@ class Voxel:
         self.pressure: float = AMBIENT_PRESSURE
         self.smoke: float = 0.0
         self.co_ppm: float = 0.0
+        self.o2_fraction: float = 0.232   # mass fraction of O2 in air
+        self.co2_ppm: float = 0.0          # CO2 volume fraction (ppm)
         self.u: float = 0.0
         self.v: float = 0.0
         self.w: float = 0.0
@@ -179,6 +182,9 @@ class VoxelGrid:
                     self._cells.append(Voxel(ix, iy, iz, cx, cy, cz))
 
         # Index lookup: (ix, iy, iz) -> list index
+        # HIGH-08: Keys are always Python int tuples (from range()),
+        # which have stable hash values. Explicit int() casting in get()
+        # provides defense against numpy.int64 or other non-standard ints.
         self._idx: Dict[Tuple[int, int, int], int] = {}
         for i, v in enumerate(self._cells):
             self._idx[(v.ix, v.iy, v.iz)] = i
@@ -186,8 +192,14 @@ class VoxelGrid:
     # -- accessors -----------------------------------------------------------
 
     def get(self, ix: int, iy: int, iz: int) -> Optional[Voxel]:
-        """Return voxel at grid indices, or None if out of bounds."""
-        idx = self._idx.get((ix, iy, iz))
+        """Return voxel at grid indices, or None if out of bounds.
+
+        HIGH-08 FIX: Explicitly cast to int for dict key safety.
+        While Python range() always produces ints, defensive casting
+        prevents subtle bugs if a caller passes float indices (e.g.,
+        from numpy.int64 which hashes differently than Python int).
+        """
+        idx = self._idx.get((int(ix), int(iy), int(iz)))
         if idx is not None:
             return self._cells[idx]
         return None
@@ -433,6 +445,255 @@ class FireGrowthModel:
             return 0.0
         hrr = alpha * dt * dt * 1000.0  # kW -> W
         return min(max(hrr, 0.0), hrr_peak)
+
+
+# ---------------------------------------------------------------------------
+# 5b. VoxelCombustionModel – CRIT-02: O2-limited combustion with fuel tracking
+# ---------------------------------------------------------------------------
+
+
+class VoxelCombustionModel:
+    """CRIT-02 FIX: Physics-based combustion model for the voxel-grid solver.
+
+    The previous fire_physics.py had NO combustion model — it used a simple
+    t² growth curve (FireGrowthModel.hrr_at) that grows forever regardless of
+    oxygen supply or fuel exhaustion. This is physically impossible:
+
+      - Real fires cannot burn without oxygen (ventilation control)
+      - Real fires decay when fuel is exhausted
+      - HRR must be limited by BOTH fuel AND oxygen availability
+
+    This model implements a 3-phase combustion:
+      Phase 1 — GROWTH:   Q(t) = min(alpha * dt² * 1000, Q_peak)
+      Phase 2 — VENT-CTRL: Q limited by local O2 at fire voxel
+      Phase 3 — DECAY:     Q decays exponentially when fuel runs out
+
+    O2-limited HRR:
+      Q_vent = m_dot_O2_available * DeltaH_c / r_O2
+      where m_dot_O2 = (Y_O2 - Y_O2_min) * rho * V_cell / tau_mix
+
+    Fuel consumption:
+      m_dot_fuel = Q / DeltaH_c  (kg/s)
+      fuel_remaining -= m_dot_fuel * dt
+
+    SAFETY: This follows PRINCIPLE ZERO — if O2 drops to zero, HRR drops to
+    zero (FAIL LOUDLY — the fire goes out, which is physically correct).
+
+    References:
+      - NFPA 72-2022 Annex B — Fire Growth Parameters
+      - CFAST Technical Reference Guide (NIST SP 1030)
+      - Babrauskas, V. (1983), "Estimating Large Room Test Burn Rates"
+      - Drysdale, D. (2011), "An Introduction to Fire Dynamics", 3rd ed.
+    """
+
+    # O2 ventilation threshold (mass fraction) — below this, fire is O2-limited
+    O2_VENT_THRESHOLD: float = 0.15       # ~15% O2 by mass
+    O2_MIN_BURN: float = 0.05             # absolute minimum for combustion
+    DECAY_TAU: float = 300.0              # decay time constant (s)
+    MIXING_TIME: float = 5.0              # characteristic mixing time (s)
+    HEAT_OF_COMBUSTION: float = 13.1e6    # J/kg (cellulosic fuel)
+    O2_STOICH_RATIO: float = 2.3          # kg_O2 per kg_fuel
+
+    def __init__(
+        self,
+        hrr_peak_w: float = 500_000.0,
+        growth_alpha_kw_s2: float = 0.047,  # fast fire per NFPA 72 Table B.4.2.1
+        ignition_time_s: float = 0.0,
+        fuel_load_kg: float = 500.0,
+    ) -> None:
+        # Input validation (defense-in-depth)
+        if not math.isfinite(hrr_peak_w) or hrr_peak_w < 0.0:
+            raise ValueError(
+                f"VoxelCombustionModel hrr_peak must be non-negative finite, got {hrr_peak_w}"
+            )
+        if not math.isfinite(growth_alpha_kw_s2) or growth_alpha_kw_s2 < 0.0:
+            raise ValueError(
+                f"VoxelCombustionModel alpha must be non-negative finite, got {growth_alpha_kw_s2}"
+            )
+        if not math.isfinite(fuel_load_kg) or fuel_load_kg < 0.0:
+            raise ValueError(
+                f"VoxelCombustionModel fuel_load must be non-negative finite, got {fuel_load_kg}"
+            )
+
+        self.hrr_peak = hrr_peak_w
+        self.alpha = growth_alpha_kw_s2
+        self.ignition_time = ignition_time_s
+        self.fuel_load = fuel_load_kg
+        self.fuel_remaining = fuel_load_kg
+
+        self._phase: str = "GROWTH"  # GROWTH, VENT_CONTROLLED, DECAY
+        self._time_at_decay: Optional[float] = None
+        self._hrr_at_decay: float = 0.0
+
+    @property
+    def phase(self) -> str:
+        """Current combustion phase."""
+        return self._phase
+
+    def get_hrr(
+        self,
+        t: float,
+        grid: Optional[VoxelGrid] = None,
+        fire: Optional[FireSource] = None,
+    ) -> float:
+        """Compute current HRR (W) with O2-limited combustion.
+
+        Parameters:
+            t: Current simulation time (s)
+            grid: VoxelGrid (for O2 reading at fire voxel)
+            fire: FireSource (for fire voxel position)
+
+        Returns:
+            Current heat release rate (W), O2-limited if applicable.
+        """
+        dt_ign = t - self.ignition_time
+        if dt_ign <= 0.0:
+            return 0.0
+
+        # --- Phase 1: GROWTH ---
+        if self._phase == "GROWTH":
+            hrr = self.alpha * dt_ign * dt_ign * 1000.0  # kW -> W
+            hrr = max(hrr, 0.0)
+            hrr = min(hrr, self.hrr_peak)
+
+            # Check for ventilation control (O2 depletion at fire voxel)
+            if grid is not None and fire is not None:
+                o2_frac = self._read_local_o2(grid, fire)
+                if o2_frac < self.O2_VENT_THRESHOLD:
+                    self._phase = "VENT_CONTROLLED"
+                    return self._ventilation_limited_hrr(grid, fire, hrr)
+
+            # Check if peak reached
+            if hrr >= self.hrr_peak:
+                self._phase = "GROWTH"  # will transition to STEADY next
+                # Check fuel
+                if self.fuel_remaining <= 0.0:
+                    self._transition_to_decay(t, hrr)
+
+            return hrr
+
+        # --- Phase 2: VENTILATION-CONTROLLED ---
+        if self._phase == "VENT_CONTROLLED":
+            # Base growth HRR
+            hrr_growth = min(
+                self.alpha * dt_ign * dt_ign * 1000.0,
+                self.hrr_peak,
+            )
+
+            # Check if O2 recovered
+            if grid is not None and fire is not None:
+                o2_frac = self._read_local_o2(grid, fire)
+                if o2_frac > self.O2_VENT_THRESHOLD + 0.02:
+                    # O2 recovered — back to growth/steady
+                    self._phase = "GROWTH"
+                    return min(hrr_growth, self.hrr_peak)
+
+                return self._ventilation_limited_hrr(grid, fire, hrr_growth)
+
+            return min(hrr_growth, self.hrr_peak)
+
+        # --- Phase 3: DECAY ---
+        if self._phase == "DECAY":
+            if self._time_at_decay is not None:
+                dt_decay = t - self._time_at_decay
+                hrr = self._hrr_at_decay * math.exp(-dt_decay / self.DECAY_TAU)
+                return max(hrr, 0.0)
+            return 0.0
+
+        return 0.0
+
+    def consume_fuel(self, hrr_w: float, dt: float) -> None:
+        """Consume fuel based on current HRR.
+
+        m_dot_fuel = Q / DeltaH_c  (kg/s)
+        """
+        if hrr_w <= 0.0 or dt <= 0.0:
+            return
+        m_dot_fuel = hrr_w / self.HEAT_OF_COMBUSTION
+        self.fuel_remaining -= m_dot_fuel * dt
+        if self.fuel_remaining <= 0.0:
+            self.fuel_remaining = 0.0
+
+    def check_fuel_exhaustion(self, t: float, current_hrr: float) -> float:
+        """Check if fuel is exhausted and transition to decay if so.
+
+        Returns potentially reduced HRR if fuel just ran out.
+        """
+        if self.fuel_remaining <= 0.0 and self._phase != "DECAY":
+            self._transition_to_decay(t, current_hrr)
+            return current_hrr * 0.5  # immediate drop
+        return current_hrr
+
+    def _read_local_o2(self, grid: VoxelGrid, fire: FireSource) -> float:
+        """Read O2 mass fraction averaged over a region around the fire.
+
+        CRIT-02 STABILITY: A single voxel contains very little O2
+        (e.g., 0.035 kg in a 0.5m cell). A real fire draws O2 from the
+        entire room via the plume entrainment flow. Using only the fire
+        voxel's O2 causes instant depletion and numerical blow-up.
+
+        Solution: Average O2 over a 3×3×3 block (27 cells) centered on
+        the fire, which better represents the O2 available to the fire
+        plume. This is consistent with CFAST's well-mixed lower layer
+        assumption.
+        """
+        voxel = grid.at_pos(fire.x, fire.y, fire.z)
+        if voxel is None or voxel.is_solid:
+            return 0.232  # ambient — assume well-ventilated
+
+        # Average O2 over 3×3×3 neighborhood
+        o2_sum = 0.0
+        count = 0
+        for dix in range(-1, 2):
+            for diy in range(-1, 2):
+                for diz in range(-1, 2):
+                    nb = grid.get(voxel.ix + dix, voxel.iy + diy, voxel.iz + diz)
+                    if nb is not None and not nb.is_solid:
+                        o2_sum += getattr(nb, 'o2_fraction', 0.232)
+                        count += 1
+
+        if count > 0:
+            return o2_sum / count
+        return getattr(voxel, 'o2_fraction', 0.232)
+
+    def _ventilation_limited_hrr(
+        self,
+        grid: VoxelGrid,
+        fire: FireSource,
+        hrr_unlimited: float,
+    ) -> float:
+        """Compute HRR limited by available oxygen around the fire.
+
+        Q_vent = m_O2_available * DeltaH_c / r_O2
+
+        Uses O2 averaged over the 3×3×3 neighborhood of the fire voxel,
+        consistent with _read_local_o2(). The available O2 mass is
+        computed from the neighborhood average, scaled by the fire cell
+        volume and an entrainment factor.
+        """
+        voxel = grid.at_pos(fire.x, fire.y, fire.z)
+        if voxel is None or voxel.is_solid:
+            return min(hrr_unlimited, self.hrr_peak)
+
+        o2_frac = self._read_local_o2(grid, fire)
+        o2_excess = max(o2_frac - self.O2_MIN_BURN, 0.0)
+
+        # Available O2 mass in the fire cell (using neighborhood-averaged O2)
+        dx = grid.resolution
+        vol = dx * dx * dx
+        rho = voxel.density
+        m_o2 = rho * vol * o2_excess * 5.0  # ×5 for plume entrainment volume
+
+        # HRR from available O2 (limited by mixing time)
+        Q_vent = (m_o2 / self.MIXING_TIME) * self.HEAT_OF_COMBUSTION / self.O2_STOICH_RATIO
+
+        return min(Q_vent, hrr_unlimited, self.hrr_peak)
+
+    def _transition_to_decay(self, t: float, current_hrr: float) -> None:
+        """Transition to decay phase."""
+        self._phase = "DECAY"
+        self._time_at_decay = t
+        self._hrr_at_decay = max(current_hrr * 0.5, 0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -862,13 +1123,22 @@ class HeatTransportNS:
                 AIR_DENSITY * AIR_HEAT_CAP * dx
             )
 
-            # Source term at fire voxel
+            # Source term at fire voxel — spread over 3×3×3 neighborhood
+            # for stability (same as SmokeTransportNS source spreading)
             source_T = 0.0
-            if fire_voxel is not None and v.ix == fire_voxel.ix and \
-               v.iy == fire_voxel.iy and v.iz == fire_voxel.iz:
-                # Q = hrr / (rho * Cp * V_cell)
-                vol = dx * dx * dx
-                source_T = hrr_now / (AIR_DENSITY * AIR_HEAT_CAP * vol)
+            if fire_voxel is not None:
+                dist_cells = max(
+                    abs(v.ix - fire_voxel.ix),
+                    abs(v.iy - fire_voxel.iy),
+                    abs(v.iz - fire_voxel.iz),
+                )
+                if dist_cells <= 1:
+                    if dist_cells == 0:
+                        weight = 1.0 / 3.0
+                    else:
+                        weight = 2.0 / (3.0 * 26.0)
+                    vol = dx * dx * dx
+                    source_T = weight * hrr_now / (AIR_DENSITY * AIR_HEAT_CAP * vol)
 
             T_new = T + dt * (diff_T + adv_T + cool_T + source_T)
             # Physical floor: temperature cannot drop below absolute zero
@@ -889,7 +1159,21 @@ class HeatTransportNS:
 
 
 class SmokeTransportNS:
-    """Smoke and CO transport on the N-S velocity field.
+    """Smoke, CO, O2, and CO2 transport on the N-S velocity field.
+
+    CRIT-05 FIX: Previously this class only transported smoke (OD) and CO.
+    It did NOT consume O2 or generate CO2, which meant:
+      - The fire could burn forever regardless of oxygen supply
+      - No CO2 was produced (a key fire product for tenability assessment)
+      - VoxelCombustionModel could not read O2 to limit HRR
+
+    Now this class implements FULL species transport:
+      - Soot generation: mass_loss_rate * soot_yield → OD via Seader-Linhard
+      - CO generation:   mass_loss_rate * co_yield → ppm
+      - O2 consumption:  mass_loss_rate * o2_stoich → O2 fraction depletion
+      - CO2 generation:  mass_loss_rate * co2_yield → ppm
+
+    All species are transported via diffusion + advection (upwind on N-S field).
 
     Soot generation uses the relationship:
         mass_loss_rate = HRR / heat_of_combustion  (kg/s)
@@ -899,17 +1183,29 @@ class SmokeTransportNS:
     Optical density from Seader & Linhard:
         OD ≈ 7000 × soot_concentration  (m⁻¹)
 
-    CO generated from co_yield fraction.
+    O2 consumption stoichiometry (Drysdale, "Introduction to Fire Dynamics"):
+        mass_O2_consumed = mass_fuel_burned * r_O2
+    where r_O2 ≈ 2.3 kg_O2 / kg_fuel for cellulosic fuels.
+
+    CO2 generation (stoichiometric):
+        mass_CO2_generated = mass_fuel_burned * r_CO2
+    where r_CO2 ≈ 1.5 kg_CO2 / kg_fuel.
 
     Transport: diffusion + advection (upwind on N-S field) + gravitational
-    settling (exponential decay with time constant ~1000 s).
+    settling (exponential decay with time constant ~1000 s) for smoke only.
     """
 
     D_SMOKE: float = 0.18   # turbulent smoke diffusivity (m²/s)
     D_CO: float = 0.20      # turbulent CO diffusivity (m²/s)
+    D_O2: float = 0.20      # turbulent O2 diffusivity (m²/s)
+    D_CO2: float = 0.20     # turbulent CO2 diffusivity (m²/s)
     HEAT_OF_COMBUSTION: float = 13.1e6  # J/kg (cellulosic fuel)
     OD_COEFF: float = 7000.0  # Seader & Linhard coefficient
-    SETTLING_RATE: float = 0.001  # gravitational settling rate (1/s)
+    SETTLING_RATE: float = 0.01   # smoke settling + wall deposition rate (1/s)
+    CO_DECAY_RATE: float = 0.005  # CO oxidation/dispersion rate (1/s)
+    O2_STOICH_RATIO: float = 2.3   # kg_O2 / kg_fuel (Drysdale)
+    CO2_YIELD: float = 1.5         # kg_CO2 / kg_fuel (stoichiometric)
+    O2_AMBIENT: float = 0.232      # mass fraction of O2 in ambient air
 
     def step(
         self,
@@ -918,7 +1214,7 @@ class SmokeTransportNS:
         hrr_now: float,
         dt: float,
     ) -> None:
-        """Advance smoke and CO fields by one time-step.
+        """Advance smoke, CO, O2, and CO2 fields by one time-step.
 
         Parameters:
             grid: VoxelGrid to update in-place
@@ -935,6 +1231,54 @@ class SmokeTransportNS:
         mass_loss_rate = hrr_now / self.HEAT_OF_COMBUSTION  # kg/s
         soot_rate = mass_loss_rate * fire.soot_yield         # kg_soot/s
         co_rate = mass_loss_rate * fire.co_yield             # kg_CO/s
+        o2_consumption_rate = mass_loss_rate * self.O2_STOICH_RATIO  # kg_O2/s
+        co2_rate = mass_loss_rate * self.CO2_YIELD           # kg_CO2/s
+
+        # CRIT-05 STABILITY: Limit source terms by available O2 in fire region.
+        # Use the SAME averaged O2 that VoxelCombustionModel uses (3×3×3 block)
+        # to avoid mismatch where combustion model sees high O2 (averaged)
+        # but smoke transport depletes the single fire voxel's O2.
+        fire_voxel_pre = grid.at_pos(fire.x, fire.y, fire.z)
+        o2_avg = 0.232  # default ambient
+        n_cells_fire = 27  # 3×3×3 neighborhood
+        if fire_voxel_pre is not None and not fire_voxel_pre.is_solid:
+            # Average O2 over 3×3×3 (same as VoxelCombustionModel._read_local_o2)
+            o2_sum = 0.0
+            count = 0
+            for dix in range(-1, 2):
+                for diy in range(-1, 2):
+                    for diz in range(-1, 2):
+                        nb = grid.get(
+                            fire_voxel_pre.ix + dix,
+                            fire_voxel_pre.iy + diy,
+                            fire_voxel_pre.iz + diz,
+                        )
+                        if nb is not None and not nb.is_solid:
+                            o2_sum += getattr(nb, 'o2_fraction', 0.232)
+                            count += 1
+            if count > 0:
+                o2_avg = o2_sum / count
+                n_cells_fire = count
+
+        # Available O2 in the fire region (all 27 cells combined)
+        o2_available_kg = AIR_DENSITY * vol * o2_avg * n_cells_fire
+        # Maximum O2 that can be consumed in this timestep
+        o2_max_consumable = o2_available_kg / dt if dt > 0 else 0.0
+        if o2_max_consumable <= 0.0:
+            # No O2 available → no combustion products at all
+            o2_consumption_rate = 0.0
+            soot_rate = 0.0
+            co_rate = 0.0
+            co2_rate = 0.0
+            mass_loss_rate = 0.0
+        elif o2_consumption_rate > o2_max_consumable:
+            # Scale all source terms proportionally to available O2
+            scale = o2_max_consumable / o2_consumption_rate
+            o2_consumption_rate *= scale
+            soot_rate *= scale
+            co_rate *= scale
+            co2_rate *= scale
+            mass_loss_rate *= scale
 
         # Soot concentration → optical density conversion
         soot_source_od = self.OD_COEFF * soot_rate / vol if vol > 0 else 0.0
@@ -943,8 +1287,19 @@ class SmokeTransportNS:
         # total air in cell = rho * vol
         co_source_ppm = (co_rate / (AIR_DENSITY * vol)) * 1e6 if vol > 0 else 0.0
 
+        # CRIT-05: O2 consumption at fire voxel (mass fraction change per second)
+        # delta_Y_O2 = -o2_consumption_rate / (rho * vol)
+        o2_source_frac = -o2_consumption_rate / (AIR_DENSITY * vol) if vol > 0 else 0.0
+
+        # CRIT-05: CO2 generation at fire voxel (ppm change per second)
+        # ppm_CO2 = (kg_CO2 / (rho * vol)) * (M_air / M_CO2) * 1e6
+        # M_air ≈ 28.97, M_CO2 ≈ 44.01
+        co2_source_ppm = (co2_rate / (AIR_DENSITY * vol)) * (28.97 / 44.01) * 1e6 if vol > 0 else 0.0
+
         new_smoke: Dict[int, float] = {}
         new_co: Dict[int, float] = {}
+        new_o2: Dict[int, float] = {}
+        new_co2: Dict[int, float] = {}
 
         fire_voxel = grid.at_pos(fire.x, fire.y, fire.z)
 
@@ -953,24 +1308,36 @@ class SmokeTransportNS:
             if not nbs:
                 new_smoke[(v.ix, v.iy, v.iz)] = v.smoke
                 new_co[(v.ix, v.iy, v.iz)] = v.co_ppm
+                new_o2[(v.ix, v.iy, v.iz)] = v.o2_fraction
+                new_co2[(v.ix, v.iy, v.iz)] = v.co2_ppm
                 continue
 
             s = v.smoke
             c = v.co_ppm
+            o2 = v.o2_fraction
+            co2 = v.co2_ppm
 
             # --- Diffusion ---
             lap_s = 0.0
             lap_c = 0.0
+            lap_o2 = 0.0
+            lap_co2 = 0.0
             for nb in nbs:
                 lap_s += (nb.smoke - s) / dx2
                 lap_c += (nb.co_ppm - c) / dx2
+                lap_o2 += (nb.o2_fraction - o2) / dx2
+                lap_co2 += (nb.co2_ppm - co2) / dx2
 
             diff_s = self.D_SMOKE * lap_s
             diff_c = self.D_CO * lap_c
+            diff_o2 = self.D_O2 * lap_o2
+            diff_co2 = self.D_CO2 * lap_co2
 
             # --- Advection (upwind) ---
             adv_s = 0.0
             adv_c = 0.0
+            adv_o2 = 0.0
+            adv_co2 = 0.0
 
             nb_xp = grid.get(v.ix + 1, v.iy, v.iz)
             nb_xm = grid.get(v.ix - 1, v.iy, v.iz)
@@ -983,55 +1350,104 @@ class SmokeTransportNS:
                 if v.u >= 0:
                     dsdx = (s - nb_xm.smoke) / dx
                     dcdx = (c - nb_xm.co_ppm) / dx
+                    do2dx = (o2 - nb_xm.o2_fraction) / dx
+                    dco2dx = (co2 - nb_xm.co2_ppm) / dx
                 else:
                     dsdx = (nb_xp.smoke - s) / dx
                     dcdx = (nb_xp.co_ppm - c) / dx
+                    do2dx = (nb_xp.o2_fraction - o2) / dx
+                    dco2dx = (nb_xp.co2_ppm - co2) / dx
                 adv_s -= v.u * dsdx
                 adv_c -= v.u * dcdx
+                adv_o2 -= v.u * do2dx
+                adv_co2 -= v.u * dco2dx
 
             if nb_yp is not None and nb_ym is not None:
                 if v.v >= 0:
                     dsdy = (s - nb_ym.smoke) / dx
                     dcdy = (c - nb_ym.co_ppm) / dx
+                    do2dy = (o2 - nb_ym.o2_fraction) / dx
+                    dco2dy = (co2 - nb_ym.co2_ppm) / dx
                 else:
                     dsdy = (nb_yp.smoke - s) / dx
                     dcdy = (nb_yp.co_ppm - c) / dx
+                    do2dy = (nb_yp.o2_fraction - o2) / dx
+                    dco2dy = (nb_yp.co2_ppm - co2) / dx
                 adv_s -= v.v * dsdy
                 adv_c -= v.v * dcdy
+                adv_o2 -= v.v * do2dy
+                adv_co2 -= v.v * dco2dy
 
             if nb_zp is not None and nb_zm is not None:
                 if v.w >= 0:
                     dsdz = (s - nb_zm.smoke) / dx
                     dcdz = (c - nb_zm.co_ppm) / dx
+                    do2dz = (o2 - nb_zm.o2_fraction) / dx
+                    dco2dz = (co2 - nb_zm.co2_ppm) / dx
                 else:
                     dsdz = (nb_zp.smoke - s) / dx
                     dcdz = (nb_zp.co_ppm - c) / dx
+                    do2dz = (nb_zp.o2_fraction - o2) / dx
+                    dco2dz = (nb_zp.co2_ppm - co2) / dx
                 adv_s -= v.w * dsdz
                 adv_c -= v.w * dcdz
+                adv_o2 -= v.w * do2dz
+                adv_co2 -= v.w * dco2dz
 
             # --- Source at fire voxel ---
+            # CRIT-05 STABILITY: Spread source over 3×3×3 neighborhood
+            # instead of concentrating in a single voxel. A real fire has
+            # finite area and draws O2 from surrounding cells via plume
+            # entrainment. Concentrating all source terms in one cell causes
+            # instant O2 depletion and numerical blow-up.
             src_s = 0.0
             src_c = 0.0
-            if fire_voxel is not None and \
-               v.ix == fire_voxel.ix and v.iy == fire_voxel.iy and \
-               v.iz == fire_voxel.iz:
-                src_s = soot_source_od
-                src_c = co_source_ppm
+            src_o2 = 0.0
+            src_co2 = 0.0
+            if fire_voxel is not None:
+                # Distance from this voxel to fire center (in grid cells)
+                dist_cells = max(
+                    abs(v.ix - fire_voxel.ix),
+                    abs(v.iy - fire_voxel.iy),
+                    abs(v.iz - fire_voxel.iz),
+                )
+                if dist_cells <= 1:
+                    # Weight: center cell gets 1/3, neighbors share 2/3
+                    if dist_cells == 0:
+                        weight = 1.0 / 3.0
+                    else:
+                        weight = 2.0 / (3.0 * 26.0)  # 26 neighbors share 2/3
+                    src_s = soot_source_od * weight
+                    src_c = co_source_ppm * weight
+                    src_o2 = o2_source_frac * weight
+                    src_co2 = co2_source_ppm * weight
 
-            # --- Gravitational settling (smoke only) ---
+            # --- Gravitational settling + wall deposition (smoke) ---
             settle_s = -self.SETTLING_RATE * s
+            # CO oxidation/dispersion
+            decay_c = -self.CO_DECAY_RATE * c
 
             # --- Update ---
             s_new = s + dt * (diff_s + adv_s + src_s + settle_s)
-            c_new = c + dt * (diff_c + adv_c + src_c)
+            c_new = c + dt * (diff_c + adv_c + src_c + decay_c)
+            o2_new = o2 + dt * (diff_o2 + adv_o2 + src_o2)
+            co2_new = co2 + dt * (diff_co2 + adv_co2 + src_co2)
 
             # Floor at zero (concentrations cannot be negative)
             s_new = max(s_new, 0.0)
             c_new = max(c_new, 0.0)
+            # CRIT-05 STABILITY: Cap O2 depletion to 50% per step.
+            # Without this, a single step can deplete a cell's O2 to 0,
+            # and it never recovers because diffusion is too slow.
+            # In reality, plume entrainment continuously replenishes O2.
+            o2_new = max(min(o2_new, self.O2_AMBIENT), o2 * 0.5)
+            co2_new = max(co2_new, 0.0)
 
             key = (v.ix, v.iy, v.iz)
             new_smoke[key] = s_new
             new_co[key] = c_new
+            new_o2[key] = o2_new
+            new_co2[key] = co2_new
 
         # Apply updates
         for v in fluid:
@@ -1040,6 +1456,32 @@ class SmokeTransportNS:
                 v.smoke = new_smoke[key]
             if key in new_co:
                 v.co_ppm = new_co[key]
+            if key in new_o2:
+                v.o2_fraction = new_o2[key]
+            if key in new_co2:
+                v.co2_ppm = new_co2[key]
+
+        # CRIT-05 STABILITY: O2 boundary replenishment.
+        # In a real room, fresh air enters through doors, windows, and
+        # leakage. The voxel grid has no explicit boundary conditions for
+        # species, so we add O2 replenishment at domain boundaries.
+        # This prevents O2 from being permanently depleted at boundary cells
+        # and provides a source of fresh air for the fire to draw from
+        # via diffusion and advection.
+        for v in grid._cells:
+            if v.is_solid:
+                continue
+            # Boundary voxels (on the edge of the domain) get O2 replenishment
+            if (v.ix == 0 or v.ix == grid.nx - 1 or
+                v.iy == 0 or v.iy == grid.ny - 1 or
+                v.iz == 0 or v.iz == grid.nz - 1):
+                # Relax O2 toward ambient (simulates fresh air infiltration)
+                replenish_rate = 0.1 * dt  # 10% per second toward ambient
+                v.o2_fraction += replenish_rate * (self.O2_AMBIENT - v.o2_fraction)
+                # Also dilute CO2/CO/smoke at boundaries (fresh air mixes in)
+                v.co2_ppm *= (1.0 - replenish_rate)
+                v.co_ppm *= (1.0 - replenish_rate)
+                v.smoke *= (1.0 - replenish_rate)
 
 
 # ---------------------------------------------------------------------------
@@ -1365,23 +1807,29 @@ class MultiZoneEngine:
         zone.P_zone = AMBIENT_PRESSURE  # simplified: uniform pressure
 
     def impose_on_grid(self, grid: VoxelGrid) -> None:
-        """Overlay the multi-zone state onto the CFD grid.
+        """Overlay the multi-zone temperature state onto the CFD grid.
 
-        For each fluid cell, if its zone can be determined, override
-        temperature and smoke from the zone model.  This couples the
-        fast zone model with the detailed CFD field.
+        CRIT-05 FIX: Only impose TEMPERATURE from the zone model.
+        Species (smoke, CO, O2, CO2) are now tracked by the voxel-grid
+        species transport (SmokeTransportNS) and should NOT be overridden
+        by the zone model, which would:
+          - Reset upper-layer smoke to 0 every step (zone.smoke_upper=0)
+          - Prevent O2/CO2 tracking in the voxel grid
+          - Cause mismatches between zone and voxel species values
+
+        The zone model's smoke_upper / co_upper_ppm are still maintained
+        for compatibility but are no longer imposed on the grid.
         """
         for v in grid.all_fluid():
             zone = self._find_zone_containing(v.cx, v.cy)
             if zone is None:
                 continue
             if v.cz >= zone.z_interface:
-                # Upper layer
+                # Upper layer: impose temperature only
                 v.temp = zone.T_upper
-                v.smoke = zone.smoke_upper
-                v.co_ppm = zone.co_upper_ppm
+                # Smoke and species are managed by SmokeTransportNS
             else:
-                # Lower layer
+                # Lower layer: impose temperature only
                 v.temp = zone.T_lower
 
 
@@ -2042,6 +2490,7 @@ class TimeEngine:
         event_store: AuditEventStore,
         dt_request: float = 0.5,
         snapshot_interval: float = 5.0,
+        combustion_model: Optional[VoxelCombustionModel] = None,
     ) -> None:
         self.grid = grid
         self.fires = fires
@@ -2057,6 +2506,19 @@ class TimeEngine:
         self._pressure = PressureSolver()
         self._heat = HeatTransportNS()
         self._smoke = SmokeTransportNS()
+
+        # CRIT-02: Combustion model with O2-limited HRR and fuel tracking.
+        # If not provided, create one from the first fire source.
+        if combustion_model is not None:
+            self._combustion = combustion_model
+        elif fires:
+            self._combustion = VoxelCombustionModel(
+                hrr_peak_w=fires[0].hrr,
+                growth_alpha_kw_s2=fires[0].growth_alpha,
+                ignition_time_s=fires[0].ignition_time,
+            )
+        else:
+            self._combustion = VoxelCombustionModel()
 
         # State tracking
         self._t: float = 0.0
@@ -2080,27 +2542,30 @@ class TimeEngine:
         # 2. Pressure solver step
         self._pressure.step(self.grid, dt)
 
+        # CRIT-02: Use VoxelCombustionModel for O2-limited HRR
+        # This replaces the simple FireGrowthModel.hrr_at() which had
+        # no ventilation control, no fuel tracking, and no decay.
+        primary_fire = self.fires[0] if self.fires else None
+        hrr_now = self._combustion.get_hrr(
+            self._t, grid=self.grid, fire=primary_fire,
+        )
+
+        # Check fuel exhaustion (may transition to DECAY phase)
+        hrr_now = self._combustion.check_fuel_exhaustion(self._t, hrr_now)
+
         # 3. Heat transport
         for fire in self.fires:
-            hrr_now = FireGrowthModel.hrr_at(fire.hrr, fire.growth_alpha,
-                                               fire.ignition_time, self._t)
             self._heat.step(self.grid, fire, hrr_now, dt)
 
-        # 4. Smoke transport
+        # 4. Smoke + species transport (CRIT-05: includes O2/CO2)
         for fire in self.fires:
-            hrr_now = FireGrowthModel.hrr_at(fire.hrr, fire.growth_alpha,
-                                               fire.ignition_time, self._t)
             self._smoke.step(self.grid, fire, hrr_now, dt)
 
+        # Consume fuel after transport
+        self._combustion.consume_fuel(hrr_now, dt)
+
         # 5. Multi-zone step + impose on grid
-        primary_fire = self.fires[0] if self.fires else None
-        hrr_primary = 0.0
-        if primary_fire is not None:
-            hrr_primary = FireGrowthModel.hrr_at(
-                primary_fire.hrr, primary_fire.growth_alpha,
-                primary_fire.ignition_time, self._t
-            )
-        self.multi_zone.step(dt, fire=primary_fire, hrr_now=hrr_primary)
+        self.multi_zone.step(dt, fire=primary_fire, hrr_now=hrr_now)
         self.multi_zone.impose_on_grid(self.grid)
 
         # 6. Detector update
@@ -2142,13 +2607,11 @@ class TimeEngine:
         if self._t - self._last_snapshot_t >= self.snapshot_interval:
             self._last_snapshot_t = self._t
 
-            # Compute current HRR (sum of all fires)
-            hrr_total = 0.0
-            for fire in self.fires:
-                hrr_total += FireGrowthModel.hrr_at(
-                    fire.hrr, fire.growth_alpha,
-                    fire.ignition_time, self._t
-                )
+            # Compute current HRR from combustion model
+            hrr_total = self._combustion.get_hrr(
+                self._t, grid=self.grid,
+                fire=self.fires[0] if self.fires else None,
+            )
 
             # Collect alarm events from this snapshot window
             recent_events = [
@@ -2329,12 +2792,10 @@ class ScenarioRunner:
             snapshots.append(snap)
 
         # Final snapshot
-        hrr_total = 0.0
-        for fire in self._fires:
-            hrr_total += FireGrowthModel.hrr_at(
-                fire.hrr, fire.growth_alpha,
-                fire.ignition_time, engine.t
-            )
+        hrr_total = engine._combustion.get_hrr(
+            engine.t, grid=self._grid,
+            fire=self._fires[0] if self._fires else None,
+        )
         final_snap = SimulationSnapshot(
             t=engine.t,
             hrr_w=hrr_total,
