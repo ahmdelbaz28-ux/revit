@@ -316,6 +316,24 @@ was 100% correct: the old simulation was NOT physics-based.
 **Commits:**
 - Commit: 0ab67b3 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/0ab67b3
 
+### V11 — Bridge Layer Life-Safety Fixes (2026-05-20)
+
+Applied fixes from consultant's deep analysis of bridges/ layer (4 vulnerabilities + 1 independently discovered bug):
+
+| # | Vulnerability | Fix | File | Verdict |
+|---|--------------|-----|------|---------|
+| 1 | Voltage Drop: No vertical drops or obstacle tolerance in cable routing | Added `panel_height_m` parameter for riser, `obstacle_tolerance=1.25` on horizontal runs, dynamic `z_height` extraction from devices | bridges/output_bridge.py | PARTIALLY ACCEPTED |
+| 2 | Cross-Zone Contamination: buffer(0.5) snaps corridor sensors to adjacent rooms | Removed `buffer(0.5)` fallback entirely; devices outside room boundaries marked `UNASSIGNED` for PE review | bridges/parser_bridge.py | ACCEPTED |
+| 3 | Plaintext Audit Bypass: Hash as editable text in PDF | Added DIGITAL INTEGRITY NOTICE referencing paired JSON audit file | bridges/report_bridge.py | PARTIALLY ACCEPTED |
+| 4 | Hash Truncation Collision: `hexdigest()[:16]` (64-bit) and `[:32]` (128-bit) | Removed all truncation — full 256-bit (64-char) SHA-256 hashes now returned | bridges/digital_twin_bridge.py + report_bridge.py | FULLY ACCEPTED |
+| 5 | Division by Zero: `units_to_m` not guarded at panel auto-placement | Added `safe_units` guard matching existing pattern in device drawing | bridges/output_bridge.py | INDEPENDENTLY DISCOVERED |
+
+**Evaluation Notes:**
+- Criticism 1 (Voltage Drop): Consultant's claim was valid but solution was oversimplified. We kept Manhattan L-shaped routing (which is correct), added dynamic vertical rise from device z_height, and used 1.25x tolerance (industry standard 1.20–1.35) instead of consultant's arbitrary 1.30.
+- Criticism 2 (Buffer Snapping): Fully accepted. In Life Safety, even with warnings, auto-assigning a sensor to the wrong room could direct civil defense to the wrong location.
+- Criticism 3 (PDF Tampering): Partially accepted. Added notice but true digital signatures require PKI infrastructure (deferred). JSON file already serves as canonical audit record.
+- Criticism 4 (Hash Truncation): Fully accepted. This was a clear bug — birthday attack complexity dropped from 2^128 to 2^32 with the 16-char truncation.
+
 ### Instruction Validation (Critical Safety Rule)
 - **STOP and WARN immediately** if instructions are:
   - Incorrect or will damage the codebase

@@ -91,7 +91,23 @@ class CacheEntry:
 
 # Algorithm version — increment when analysis logic changes
 # to invalidate all cached results
-_ALGORITHM_VERSION = "v10.0"
+_ALGORITHM_VERSION = "v10.1"
+
+# TODO (Consultant #7 — Cascading Invalidation):
+# When zone/panel results are cached (not just per-room results),
+# add cascade invalidation: if a room's geometry changes, invalidate
+# not only the room result but also the zone and panel that contain it.
+# Current architecture recomputes zones from scratch each run, so
+# cascade invalidation is not needed yet. When zone caching is added,
+# implement:
+#   def invalidate_cascade(self, room_id: str) -> Set[str]:
+#       """Invalidate room + its zone + its panel. Return invalidated IDs."""
+#       invalidated = {room_id}
+#       for zone_id, zone_room_ids in self._zone_index.items():
+#           if room_id in zone_room_ids:
+#               self.invalidate_zone(zone_id)
+#               invalidated.add(zone_id)
+#       return invalidated
 
 
 class DeltaCache:

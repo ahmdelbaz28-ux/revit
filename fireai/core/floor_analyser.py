@@ -115,6 +115,12 @@ from fireai.core.geometry_utils import (
     sanitize_room_geometry,
 )
 from fireai.core.sensor_physics_advisor import SensorPhysicsAdvisor
+from fireai.core.nfpa72_technology_dispatcher import (
+    EliteTechnologyDispatcher,
+    DetectorTechnology,
+    TechnologyDecision,
+    dispatch_detector_technology,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -624,6 +630,47 @@ class FloorAnalyser:
                             "nfpa_references": sensor_advisory.nfpa_references,
                         },
                     )
+
+            # ─── V13: Technology Dispatcher (Consultant #7) ───
+            # Automatic detector technology selection based on ceiling
+            # height and slope. This goes BEYOND advisory — it selects
+            # the appropriate detector technology for the room.
+            tech_decision = dispatch_detector_technology(room_dict)
+            if tech_decision.technology != DetectorTechnology.POINT_SMOKE:
+                # Non-point detector required — add technology decision to warnings
+                room_warnings.append(
+                    f"TECHNOLOGY_DISPATCH: {tech_decision.technology.value} selected "
+                    f"for ceiling h={tech_decision.ceiling_height_m:.1f}m "
+                    f"slope={tech_decision.slope_degrees:.1f}°. "
+                    f"Reason: {tech_decision.reason}"
+                )
+                logger.warning(
+                    "Room %s: TECHNOLOGY_DISPATCH → %s (h=%.1fm, slope=%.1f°)",
+                    room.name, tech_decision.technology.value,
+                    tech_decision.ceiling_height_m, tech_decision.slope_degrees,
+                )
+                # Log to AuditStore
+                if self.audit_store and hasattr(self.audit_store, 'add_event'):
+                    self.audit_store.add_event(
+                        event_type=f"TECHNOLOGY_DISPATCH_{tech_decision.technology.value}",
+                        room_id=room_dict.get("room_id", room.name),
+                        details_dict={
+                            "technology": tech_decision.technology.value,
+                            "ceiling_height_m": tech_decision.ceiling_height_m,
+                            "slope_degrees": tech_decision.slope_degrees,
+                            "spacing_m": tech_decision.spacing_m,
+                            "ridge_zone_required": tech_decision.ridge_zone_required,
+                            "reason": tech_decision.reason,
+                            "nfpa_references": tech_decision.nfpa_references,
+                            "warnings": tech_decision.warnings,
+                        },
+                    )
+            # Add economic warnings from dispatcher even for point detectors
+            for tw in tech_decision.warnings:
+                if tw not in room_warnings:
+                    room_warnings.append(tw)
+                    logger.info("Room %s: %s", room.name, tw)
+
             if not layout.proof_valid and layout.coverage_pct > 99.9:
                 boundary_msg = (
                     f"BOUNDARY_LIMIT: Coverage {layout.coverage_pct:.2f}% exceeds 99.9% "

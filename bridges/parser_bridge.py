@@ -244,8 +244,13 @@ def _extract_devices_from_classifications(
 
 def _assign_devices_to_rooms(devices: list, rooms: list) -> list:
     """
-    Assign each device to the room that contains its position.
-    Devices not contained in any room get room_id="" and a warning.
+    Assign each device to the room that strictly contains its position.
+
+    V11 — Cross-Zone Contamination Fix:
+    The buffer(0.5) proximity fallback has been REMOVED. In Life Safety
+    applications, assigning a corridor detector to a Server Room by
+    proximity buffer could send civil defense to the wrong location.
+    Devices outside all room boundaries are marked UNASSIGNED for PE review.
     """
     warnings = []
     for d in devices:
@@ -255,19 +260,13 @@ def _assign_devices_to_rooms(devices: list, rooms: list) -> list:
                 d.room_id = r.id
                 assigned = True
                 break
-            # Fallback: nearest room within 0.5m
-            if r.geometry.buffer(0.5).contains(d.position):
-                d.room_id = r.id
-                assigned = True
-                warnings.append(
-                    f"Device {d.id} assigned to {r.name} by proximity (0.5m buffer), "
-                    f"not strict containment. Verify manually."
-                )
-                break
+
         if not assigned:
+            d.room_id = "UNASSIGNED"
             warnings.append(
-                f"Device {d.id} ({d.device_type}) at ({d.position.x:.2f}, {d.position.y:.2f}) "
-                f"is NOT inside any room. Skipping device."
+                f"CRITICAL: Device {d.id} ({d.device_type}) at "
+                f"({d.position.x:.2f}, {d.position.y:.2f}) is outside all defined "
+                f"room boundaries. Tagged as UNASSIGNED — PE must review and assign manually."
             )
     return warnings
 

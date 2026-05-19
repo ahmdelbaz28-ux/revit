@@ -69,12 +69,20 @@ class ZoneConstraints:
         separate_occupancy_types: If True, rooms with different
             occupancy types go in separate zones (e.g., boiler rooms).
         prefer_adjacent: If True, prefer grouping adjacent rooms.
+        max_slc_devices_per_loop: Maximum devices per SLC loop.
+            NFPA 72 §21.2.2 limits 250 devices per SLC loop.
+            This is a PANEL/LOOP constraint, not a zone constraint.
+            Zones are typically much smaller. Included here for
+            validation warnings when zone assignments exceed loop capacity.
+            (Consultant #7 — concept accepted, threshold corrected: 250 is
+            the SLC loop limit, NOT the zone limit. Zone default remains 100.)
     """
     max_area_sqm: float = 2000.0
     max_detectors_per_zone: int = 100
     max_rooms_per_zone: int = 0  # no limit
     separate_occupancy_types: bool = True
     prefer_adjacent: bool = True
+    max_slc_devices_per_loop: int = 250  # NFPA 72 §21.2.2 SLC loop capacity
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -271,6 +279,15 @@ class FireZoneEngine:
                     f"limit {self.constraints.max_detectors_per_zone}. "
                     f"Split zone or add panel."
                 )
+
+        # Validate SLC loop capacity (Consultant #7 — NFPA 72 §21.2.2)
+        # Total detectors across all zones on this floor must not exceed SLC loop capacity.
+        if report.total_detectors > self.constraints.max_slc_devices_per_loop:
+            report.warnings.append(
+                f"SLC_LOOP_CAPACITY: Floor has {report.total_detectors} total detectors, "
+                f"exceeding SLC loop capacity of {self.constraints.max_slc_devices_per_loop} "
+                f"devices per NFPA 72 §21.2.2. Multiple SLC loops or panels required."
+            )
 
         logger.info(
             "FireZoneEngine: floor=%s zones=%d rooms=%d detectors=%d",

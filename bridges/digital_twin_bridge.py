@@ -516,12 +516,17 @@ class DigitalTwinBridge:
 
     @staticmethod
     def _hash_file(path: str) -> str:
-        """SHA-256 hash of a file."""
+        """SHA-256 hash of a file — FULL 256-bit, NO TRUNCATION.
+
+        V11 Fix: Previously truncated to 16 hex chars (64-bit), which reduces
+        collision resistance from 2^128 to 2^32 (birthday attack). For legal
+        audit trail integrity, the full 64-char (256-bit) hash is required.
+        """
         h = hashlib.sha256()
         with open(path, "rb") as f:
             for chunk in iter(lambda: f.read(1 << 20), b""):
                 h.update(chunk)
-        return h.hexdigest()[:16]
+        return h.hexdigest()
 
     # ── Level 4: Twin Module Integration ──
 
