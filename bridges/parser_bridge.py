@@ -132,7 +132,22 @@ def _extract_rooms_from_entities(entities: list, units_to_m: float = 0.001) -> l
         try:
             coords = [(p[0] * units_to_m, p[1] * units_to_m) for p in pts_raw]
             poly = ShapelyPolygon(coords)
-            if not poly.is_valid or poly.area < 1.0:  # < 1 m² → skip
+            
+            # V12 Fix — Silent Room Drop:
+            # Previous code silently skipped invalid polygons (bowties, self-intersections).
+            # Architectural DXF files frequently contain these due to drawing errors.
+            # A complex electrical room could be silently dropped = zero fire protection.
+            # Fix: Attempt to heal invalid geometry with buffer(0) before giving up.
+            # If healing fails, LOG CRITICALLY and add to warnings for PE review.
+            if not poly.is_valid:
+                poly = poly.buffer(0)  # Heals bow-tie self-intersections
+            
+            if not poly.is_valid or poly.area < 1.0:
+                log.critical(
+                    "Room polygon DROPPED at %s: invalid=%s, area=%.2f m². "
+                    "PE must verify this space has fire protection!",
+                    coords[0] if coords else "?", not poly.is_valid, poly.area
+                )
                 continue
         except Exception:
             continue
@@ -302,6 +317,9 @@ def _extract_obstructions_from_entities(
         try:
             coords = [(p[0] * units_to_m, p[1] * units_to_m) for p in pts_raw]
             poly = ShapelyPolygon(coords)
+            # V12 Fix: Heal invalid obstruction polygons too
+            if not poly.is_valid:
+                poly = poly.buffer(0)
             if not poly.is_valid or poly.area < 0.01:
                 continue
         except Exception:

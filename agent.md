@@ -99,3 +99,35 @@
 - When Shapely unavailable: check midpoint AND quarter-points (3 points instead of 1)
 - Uses pre-computed `_obstacle_polys` for efficiency
 **Why NOT consultant's exact fix:** Consultant multiplied clearance by 2.0 arbitrarily. We use the existing pre-computed obstacle polygons with standard clearance.
+
+---
+
+## V12 Round 3 Fixes — Bridges Layer (2026-05-20)
+
+### Bug 8 — Unassigned Devices Black Hole (CRITICAL)
+**File:** `bridges/orchestrator.py` — FireAI Engine section
+**Consultant Claim:** Devices with room_id="UNASSIGNED" never enter any compliance check.
+**Verification:** ✅ CONFIRMED
+**Fix:** Track verified_device_ids; orphaned devices trigger CRITICAL SAFETY GATE (proof_valid=False).
+
+### Bug 9 — 2D BIM Collapse (CRITICAL)
+**File:** `bridges/digital_twin_bridge.py` — `detect_conflicts()`
+**Consultant Claim:** Conflict detection uses 2D only, flagging different-floor sensors as duplicates.
+**Verification:** ✅ CONFIRMED
+**Fix:** 3D Euclidean distance when Z available. 2D fallback with auto_resolvable=False.
+
+### Bug 10 — Hardcoded CAD Vandalism (HIGH)
+**File:** `bridges/output_bridge.py` — `_draw_schedule_table()`
+**Consultant Claim:** Fixed coordinates (15000, 20000) for schedule table.
+**Verification:** ✅ CONFIRMED
+**Fix:** Dynamic positioning from room bounding box with 2m margin.
+
+### Bug 11 — Silent Room Drop (CRITICAL)
+**File:** `bridges/parser_bridge.py` — `_extract_rooms_from_entities()`
+**Consultant Claim:** `if not poly.is_valid: continue` silently drops rooms.
+**Verification:** ✅ CONFIRMED
+**Fix:** Added `poly.buffer(0)` healing + `log.critical()` when dropped. Same for obstructions.
+
+### Regression Check
+- ✅ buffer(0.5) in parser_bridge — REMOVED in V11, confirmed NOT present
+- ✅ Manhattan routing in output_bridge — Present but justified (V11 fix with panel_height_m + obstacle_tolerance)

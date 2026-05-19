@@ -440,18 +440,38 @@ class DigitalTwinBridge:
             for sensor in bim_sensors:
                 bim_pos = self._ifc_get_position(sensor)
                 if bim_pos:
-                    dist = math.hypot(
-                        d.position.x - bim_pos[0],
-                        d.position.y - bim_pos[1]
-                    )
-                    if dist < 0.3:  # 30cm — likely duplicate
-                        conflicts.append(ConflictRecord(
-                            element_id=d.id,
-                            bim_value={"position": bim_pos, "name": getattr(sensor, "Name", "")},
-                            fireai_value={"position": (d.position.x, d.position.y, d.z_height)},
-                            conflict_type="geometry_mismatch",
-                            auto_resolvable=True,
-                        ))
+                    # V12 Fix — 2D BIM Collapse:
+                    # Previous code used 2D distance only (X,Y), which caused
+                    # sensors on different floors to be flagged as duplicates.
+                    # In a 10-storey building, sensors stacked vertically would
+                    # all appear as conflicts — destroying the Digital Twin.
+                    # Fix: Use 3D Euclidean distance when Z is available.
+                    dx = d.position.x - bim_pos[0]
+                    dy = d.position.y - bim_pos[1]
+                    
+                    if len(bim_pos) > 2 and hasattr(d, 'z_height'):
+                        # True 3D distance
+                        dz = d.z_height - bim_pos[2]
+                        dist_3d = math.sqrt(dx*dx + dy*dy + dz*dz)
+                        if dist_3d < 0.3:  # 30cm in 3D space
+                            conflicts.append(ConflictRecord(
+                                element_id=d.id,
+                                bim_value={"position": bim_pos, "name": getattr(sensor, "Name", "")},
+                                fireai_value={"position": (d.position.x, d.position.y, d.z_height)},
+                                conflict_type="geometry_mismatch",
+                                auto_resolvable=True,
+                            ))
+                    else:
+                        # Fallback to 2D when Z info not available
+                        dist_2d = math.hypot(dx, dy)
+                        if dist_2d < 0.3:  # 30cm in 2D (conservative)
+                            conflicts.append(ConflictRecord(
+                                element_id=d.id,
+                                bim_value={"position": bim_pos, "name": getattr(sensor, "Name", "")},
+                                fireai_value={"position": (d.position.x, d.position.y)},
+                                conflict_type="geometry_mismatch",
+                                auto_resolvable=False,  # V12: requires manual review — Z unknown
+                            ))
 
         return conflicts
 

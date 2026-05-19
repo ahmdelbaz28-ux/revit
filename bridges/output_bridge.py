@@ -437,7 +437,7 @@ def draw_fire_alarm_design(
 
     # ── Draw device schedule ──
     if draw_schedule:
-        _draw_schedule_table(msp, devices, doc)
+        _draw_schedule_table(msp, devices, rooms, doc, units_to_m)
 
     # ── Save ──
     doc.saveas(output_path)
@@ -470,8 +470,16 @@ def draw_fire_alarm_design(
     return result
 
 
-def _draw_schedule_table(msp, devices, doc):
-    """Draw a device schedule table on the drawing."""
+def _draw_schedule_table(msp, devices, rooms, doc, units_to_m=0.001):
+    """Draw a device schedule table on the drawing.
+    
+    V12 Fix — Hardcoded CAD Vandalism:
+    Previous code used fixed coordinates (15000, 20000) which could:
+    - Overlap the building geometry in small-scale drawings
+    - Be kilometers away from the building in UTM-coordinate drawings
+    Fix: Calculate the building's bounding box from room geometry,
+    then place the schedule table safely outside with a margin.
+    """
     # Count by type
     counts = defaultdict(int)
     for d in devices:
@@ -480,11 +488,38 @@ def _draw_schedule_table(msp, devices, doc):
     if not counts:
         return
 
-    # Position table at a fixed offset (top-right area)
-    table_x = 15000
-    table_y = 20000
-    row_h = 500
-    col_w = 5000
+    # V12 Fix: Dynamic table positioning based on building bounding box
+    safe_units = units_to_m if units_to_m and units_to_m > 0 else 1.0
+    max_x, max_y = 0.0, 0.0
+    
+    if rooms:
+        for r in rooms:
+            geom = getattr(r, 'geometry', None)
+            if geom and hasattr(geom, 'bounds'):
+                try:
+                    _, _, rx, ry = geom.bounds
+                    max_x = max(max_x, rx / safe_units)
+                    max_y = max(max_y, ry / safe_units)
+                except Exception:
+                    pass
+    
+    if max_x == 0.0 and max_y == 0.0:
+        # Fallback: try to get extents from modelspace entities
+        try:
+            ext = msp.query('*'). extents
+            if ext:
+                max_x = ext.upper_right[0]
+                max_y = ext.upper_right[1]
+        except Exception:
+            max_x, max_y = 10000.0, 10000.0  # Last resort fallback
+    
+    # Place table in upper-right area outside building with safe margin
+    margin_x = 2000.0  # 2m margin in drawing units
+    margin_y = 1000.0  # 1m margin
+    table_x = max_x + margin_x
+    table_y = max_y + margin_y
+    row_h = 500.0
+    col_w = 5000.0
 
     # Header
     msp.add_text("FIRE ALARM DEVICE SCHEDULE", dxfattribs={

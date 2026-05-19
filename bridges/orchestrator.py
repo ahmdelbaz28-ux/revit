@@ -152,10 +152,23 @@ def run_full_design(
         expert = FireExpertSystem()
         all_findings = []
 
+        # V12 Fix — Orphaned Devices Check (Unassigned Devices Black Hole):
+        # Previous code only checked devices that matched a room_id. Devices in
+        # corridors or outside defined rooms (room_id="UNASSIGNED") were NEVER
+        # checked by any compliance engine. The report could say "PASS" while
+        # unverified devices existed in the building.
+        # Fix: Track all verified device IDs. After the room loop, any device
+        # not verified triggers a CRITICAL SAFETY GATE that fails the building.
+        verified_device_ids = set()
+
         for room in result.rooms:
             try:
                 room_devices = [d for d in result.devices
                                 if getattr(d, "room_id", "") == room.id]
+                
+                # Track verified devices
+                for d in room_devices:
+                    verified_device_ids.add(d.id)
 
                 # Run NFPA 72 check for each room
                 if hasattr(expert, "analyze_room"):
@@ -175,6 +188,21 @@ def run_full_design(
 
             except Exception as ex:
                 warnings.append(f"Compliance check failed for {room.name}: {ex}")
+
+        # V12 Fix: Orphaned Devices Safety Gate
+        # Any device not verified through a room check is a life-safety blind spot
+        orphaned_devices = [d for d in result.devices
+                          if d.id not in verified_device_ids]
+        if orphaned_devices:
+            error_msg = (
+                f"CRITICAL SAFETY GATE: {len(orphaned_devices)} device(s) are "
+                f"outside all defined rooms (UNASSIGNED). NFPA analysis is INCOMPLETE! "
+                f"Device IDs: {[d.id for d in orphaned_devices[:10]]}"
+            )
+            warnings.append(error_msg)
+            result.violations.append(error_msg)
+            result.proof_valid = False  # Building CANNOT pass
+            log.critical(error_msg)
 
         bridge_results["fireai_engine"] = {
             "rooms_checked": len(result.rooms),
