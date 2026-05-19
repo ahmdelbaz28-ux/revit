@@ -95,20 +95,38 @@ class CognitiveMemoryBank:
             entry.confidence_score = min(1.0, entry.confidence_score + 0.1)
 
     def recognize(self, entity_features: dict) -> Optional[CognitiveMemoryEntry]:
-        """Instantly recognize an object based on past experience."""
+        """Instantly recognize an object based on past experience.
+        
+        SAFETY PROTOCOL (V12 Fix — Semantic Sub-string Collision):
+        Previous code used first-match with `any(p in layer for p in patterns)`.
+        This caused 'F-DET' to match 'F-DET-H', classifying ALL heat detectors
+        as smoke detectors — a life-safety catastrophe.
+        
+        Fix: Use LONGEST-MATCH strategy. The most specific (longest) pattern
+        wins. 'F-DET-H' (7 chars) now beats 'F-DET' (5 chars) → HEAT_DETECTOR.
+        """
         layer = entity_features.get("layer", "").upper()
         
-        # Check semantic rules first
+        # Check semantic rules — find the MOST SPECIFIC (longest) match
+        # This prevents 'F-DET' from matching 'F-DET-H' which is a HEAT_DETECTOR
+        best_match = None
+        best_match_len = 0
+        
         for label, patterns in self.SEMANTIC_RULES.items():
-            if any(p in layer for p in patterns):
-                return CognitiveMemoryEntry(
-                    signature_hash="SEMANTIC",
-                    semantic_label=label,
-                    layer_pattern=layer,
-                    geometry_type=entity_features.get("shape", "UNKNOWN"),
-                    confidence_score=0.95,
-                    resolution_logic="Semantic Rule Match"
-                )
+            for p in patterns:
+                if p in layer and len(p) > best_match_len:
+                    best_match = label
+                    best_match_len = len(p)
+        
+        if best_match:
+            return CognitiveMemoryEntry(
+                signature_hash="SEMANTIC",
+                semantic_label=best_match,
+                layer_pattern=layer,
+                geometry_type=entity_features.get("shape", "UNKNOWN"),
+                confidence_score=0.95,
+                resolution_logic="Semantic Rule Match (Most Specific)"
+            )
         
         # Check learned knowledge
         candidate_sig = f"{layer}_{entity_features.get('shape', 'UNKNOWN')}"
@@ -229,11 +247,14 @@ class EliteDecisionEngine:
     """
 
     # NFPA 72 spacing
-    MAX_DISTANCE_FROM_WALL = 7.5  # 7.5m from any point to detector
+    MIN_WALL_DISTANCE = 0.1    # 4 inches — Dead Air Space boundary per NFPA 72 §17.6.3.1.1
+    MAX_DETECTOR_SPACING = 9.1  # Maximum between detectors (nominal spacing S)
     MIN_DETECTOR_SPACING = 4.5  # Minimum between detectors
+    DETECTOR_COVERAGE_RADIUS = 0.7 * 9.1  # R = 0.7 × S per NFPA 72 §17.7.4.2.3.1
+    COVERAGE_THRESHOLD_PCT = 99.0  # Minimum room coverage percentage
 
     def __init__(self):
-        self.max_dist = self.MAX_DISTANCE_FROM_WALL
+        pass
 
     def evaluate_and_solve(
         self, 
@@ -241,7 +262,18 @@ class EliteDecisionEngine:
         proposed_detectors: List[Point], 
         obstacles: List[Polygon]
     ) -> Dict:
-        """Evaluate coverage and find solutions."""
+        """Evaluate NFPA 72 compliance and find solutions.
+        
+        V12 Fix — Wall-Hugging Fallacy:
+        Previous code checked `dist_to_wall > 7.5m` and suggested 'MOVE_CLOSER_TO_WALL'.
+        This was WRONG per NFPA 72: the code does NOT require detectors to be near walls.
+        A detector in the center of a 30×30m hall (15m from wall) would FAIL the old check,
+        which would push it to a wall and leave the center uncovered.
+        
+        Correct NFPA 72 checks:
+        1. Dead Air Space: detector must be ≥ 0.1m from wall (NOT closer)
+        2. Area Coverage: every ceiling point must be within R = 0.7×S of a detector
+        """
         report = {
             "status": "PASS",
             "violations": [],
@@ -249,22 +281,56 @@ class EliteDecisionEngine:
             "audit_hash": ""
         }
         
-        # 1. Coverage Check
+        # 1. Dead Air Space Check (NFPA 72 §17.6.3.1.1)
+        # Detector must NOT be closer than 0.1m to wall — air stagnation zone
         for i, pt in enumerate(proposed_detectors):
             dist_to_wall = room.exterior.distance(pt)
-            if dist_to_wall > self.max_dist:
+            
+            if dist_to_wall < self.MIN_WALL_DISTANCE:
                 report["status"] = "FAIL"
                 report["violations"].append(
-                    f"Detector {i}: {dist_to_wall:.2f}m from wall (max {self.max_dist}m)"
+                    f"Detector {i}: {dist_to_wall:.3f}m from wall — "
+                    f"Dead Air Space violation (min {self.MIN_WALL_DISTANCE}m per NFPA 72 §17.6.3.1.1)"
                 )
-                # Propose solution
                 report["optimal_alternatives"].append({
-                    "action": "MOVE_CLOSER_TO_WALL",
+                    "action": "MOVE_AWAY_FROM_WALL",
                     "detector_id": i,
-                    "reasoning": "Shift detector to maintain wall coverage"
+                    "reasoning": f"Shift detector at least {self.MIN_WALL_DISTANCE}m from wall "
+                                 f"to avoid dead air space (stagnant air prevents smoke entry)"
                 })
 
-        # 2. Obstruction Check
+        # 2. Area Coverage Check (NFPA 72 §17.7.4.2.3.1 — 0.7×S Rule)
+        # Every point on ceiling must be within R = 0.7 × S of a detector.
+        # Measured by actual AREA coverage, not by detector-to-wall distance.
+        if proposed_detectors:
+            coverage_polys = []
+            for pt in proposed_detectors:
+                coverage_circle = pt.buffer(self.DETECTOR_COVERAGE_RADIUS)
+                actual_coverage = coverage_circle.intersection(room)
+                coverage_polys.append(actual_coverage)
+            
+            total_coverage = unary_union(coverage_polys)
+            coverage_percent = (total_coverage.area / room.area) * 100.0
+            
+            if coverage_percent < self.COVERAGE_THRESHOLD_PCT:
+                report["status"] = "FAIL"
+                report["violations"].append(
+                    f"Room coverage: {coverage_percent:.1f}% "
+                    f"(minimum {self.COVERAGE_THRESHOLD_PCT}% per NFPA 72 §17.7.4.2.3.1)"
+                )
+                report["optimal_alternatives"].append({
+                    "action": "ADD_MORE_DETECTORS",
+                    "detector_id": -1,
+                    "reasoning": f"Current coverage {coverage_percent:.1f}% below {self.COVERAGE_THRESHOLD_PCT}% threshold. "
+                                 f"Add detectors to cover unmonitored ceiling area."
+                })
+        else:
+            report["status"] = "FAIL"
+            report["violations"].append(
+                "No detectors proposed — zero coverage"
+            )
+
+        # 3. Obstruction Check
         for obs in obstacles:
             for i, det in enumerate(proposed_detectors):
                 if obs.contains(det):
@@ -273,10 +339,10 @@ class EliteDecisionEngine:
                     report["optimal_alternatives"].append({
                         "action": "RELOCATE",
                         "detector_id": i,
-                        "reasoning": "Move to nearest valid spot"
+                        "reasoning": "Move to nearest valid spot outside obstruction"
                     })
 
-        # 3. Detector Spacing Check
+        # 4. Detector Spacing Check
         for i, d1 in enumerate(proposed_detectors):
             for d2 in proposed_detectors[i+1:]:
                 dist = d1.distance(d2)

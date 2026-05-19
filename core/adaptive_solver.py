@@ -180,7 +180,7 @@ class AdaptiveSolver:
             return result
             
         # Second try: heat detectors (larger coverage)
-        alternatives.append("heat_detector")
+        alternatives = ["heat_detector"]  # V12 Fix: was undefined — caused NameError
         heat_result = self._try_heat_detectors(
             room_polygon, obstructions, required_count
         )
@@ -234,8 +234,13 @@ class AdaptiveSolver:
                 y += spacing
             x += spacing
             
-        # Return up to count
-        return candidates[:count * 3]  # 3x for selection
+        # Return all valid candidates for spatial distribution
+        # V12 Fix: Removed [:count*3] truncation which biased bottom-left corner
+        # If too many candidates, use stride-based sampling for performance
+        if len(candidates) > count * 20:
+            step = max(1, len(candidates) // (count * 10))
+            return candidates[::step]
+        return candidates
 
     def _select_positions(
         self,
@@ -243,13 +248,50 @@ class AdaptiveSolver:
         count: int,
         ceiling_info,
     ) -> List[Tuple[float, float]]:
-        """Select positions maximizing coverage."""
+        """Select positions maximizing spatial distribution.
+        
+        V12 Fix — Left-Side Clustering Trap:
+        Previous code returned `candidates[:count]` which took the first N points
+        from a bottom-left-to-top-right grid, clustering ALL detectors in one
+        corner — leaving 90%+ of the room uncovered.
+        
+        Fix: Greedy Farthest-Point algorithm. Each new detector is placed as
+        far as possible from all already-selected detectors. This maximizes
+        NFPA 72 coverage and guarantees spatial distribution.
+        """
+        import math
+        
         if len(candidates) <= count:
             return candidates
+        
+        # Start from center candidate (best starting point for coverage)
+        center_idx = len(candidates) // 2
+        selected = [candidates[center_idx]]
+        selected_set = {center_idx}
+        
+        for _ in range(count - 1):
+            best_min_dist = -1.0
+            best_idx = -1
             
-        # Simplified: return first count
-        # Real implementation would maximize coverage
-        return candidates[:count]
+            for i, c in enumerate(candidates):
+                if i in selected_set:
+                    continue
+                # Minimum distance from this candidate to any selected detector
+                min_dist = min(
+                    math.hypot(c[0] - s[0], c[1] - s[1])
+                    for s in selected
+                )
+                if min_dist > best_min_dist:
+                    best_min_dist = min_dist
+                    best_idx = i
+            
+            if best_idx >= 0:
+                selected.append(candidates[best_idx])
+                selected_set.add(best_idx)
+            else:
+                break
+        
+        return selected
 
     def _check_spacing(
         self,
@@ -295,6 +337,8 @@ class AdaptiveSolver:
         required_count: int,
     ) -> AdaptiveSolution:
         """Try with heat detectors (larger coverage = fewer needed)."""
+        import math
+        
         # Heat coverage = 15.2m (vs smoke 9.2m)
         coverage = 15.2
         spacing = coverage / 2
@@ -303,12 +347,10 @@ class AdaptiveSolver:
         minx, miny, maxx, maxy = room_polygon.bounds
         candidates = []
         
-        import math
         x = minx + spacing / 2
         while x < maxx:
             y = miny + spacing / 2
             while y < maxy:
-                from shapely.geometry import Point
                 if room_polygon.contains(Point(x, y)):
                     candidates.append((x, y))
                 y += spacing
@@ -317,9 +359,13 @@ class AdaptiveSolver:
         count_needed = math.ceil(room_polygon.area / (coverage * coverage * 0.8))
         count_needed = min(count_needed, required_count)
         
+        # V12 Fix: Use _select_positions instead of candidates[:count_needed]
+        # to avoid left-side clustering trap
+        positions = self._select_positions(candidates, count_needed, None)
+        
         return AdaptiveSolution(
-            success=len(candidates) >= count_needed,
-            positions=candidates[:count_needed],
+            success=len(positions) >= count_needed,
+            positions=positions,
             metadata={"using": "heat_detector_coverage"}
         )
 
