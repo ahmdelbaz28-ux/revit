@@ -314,7 +314,7 @@ was 100% correct: the old simulation was NOT physics-based.
 **Tests:** 45/45 PASSED in tests/test_semi_cfast_engine.py
 
 **Commits:**
-- Commit: (pending) | Link: (pending)
+- Commit: 0ab67b3 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/0ab67b3
 
 ### Instruction Validation (Critical Safety Rule)
 - **STOP and WARN immediately** if instructions are:
