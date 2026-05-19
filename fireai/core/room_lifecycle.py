@@ -197,7 +197,9 @@ class RoomLifecycle:
         self._state = RoomState.PENDING
         self._transitions: List[RoomTransition] = []
         self._state_entered_at: str = datetime.now(timezone.utc).isoformat()
-        self._lock = threading.Lock()
+        # ✅ FIX: Use RLock to prevent deadlock — RoomLifecycle.to_dict()
+        # calls methods that also acquire the lock.
+        self._lock = threading.RLock()
         self._bus = bus  # None → lazy init from singleton
 
     # ── Properties ────────────────────────────────────────────────────
@@ -336,7 +338,11 @@ class RoomLifecycle:
             actor: Who initiated the transition.
         """
         try:
-            bus = self._bus if self._bus is not None else EventBus()
+            # FIX-3: Always use the singleton EventBus to ensure all
+            # modules (pipeline, twin, lifecycle) share the SAME bus.
+            # The old code used EventBus() which created a NEW instance,
+            # so lifecycle events never reached the twin or pipeline.
+            bus = self._bus if self._bus is not None else EventBus.instance()
             bus.publish(
                 "room.lifecycle.changed",
                 {
@@ -467,7 +473,12 @@ class RoomLifecycleManager:
                 is used for each room's lifecycle.
         """
         self._rooms: Dict[str, RoomLifecycle] = {}
-        self._lock = threading.Lock()
+        # ✅ FIX: Use RLock instead of Lock to prevent deadlock.
+        # RoomLifecycleManager.to_dict() calls certification_progress()
+        # and building_status() while holding the lock. With Lock (non-reentrant),
+        # this causes immediate deadlock. RLock allows re-entrant acquisition,
+        # matching DigitalTwin's proven pattern.
+        self._lock = threading.RLock()
         self._bus = bus
 
     # ── Room Management ───────────────────────────────────────────────

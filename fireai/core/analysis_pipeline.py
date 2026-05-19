@@ -153,7 +153,8 @@ class PipelineResult:
             try:
                 layout_dict = asdict(self.layout)
                 result["layout"] = layout_dict
-            except Exception:
+            except Exception as exc:
+                logger.warning("Failed to serialize layout: %s: %s", type(exc).__name__, exc)
                 result["layout"] = {
                     "count": self.layout.count,
                     "coverage_pct": self.layout.coverage_pct,
@@ -171,7 +172,8 @@ class PipelineResult:
                     for v in self.consensus.engines
                 ]
                 result["consensus"] = consensus_dict
-            except Exception:
+            except Exception as exc:
+                logger.warning("Failed to serialize consensus: %s: %s", type(exc).__name__, exc)
                 result["consensus"] = {
                     "confidence": self.consensus.confidence.value,
                     "is_safe": self.consensus.is_safe,
@@ -182,7 +184,8 @@ class PipelineResult:
         if self.certificate is not None:
             try:
                 result["certificate"] = asdict(self.certificate)
-            except Exception:
+            except Exception as exc:
+                logger.warning("Failed to serialize certificate: %s: %s", type(exc).__name__, exc)
                 result["certificate"] = {
                     "room_id": self.certificate.room_id,
                     "coverage_guaranteed": self.certificate.coverage_guaranteed,
@@ -279,10 +282,10 @@ class AnalysisPipeline:
             wall_min=wall_min,
         )
 
-        # EventBus for publishing pipeline events
-        self._bus = EventBus()
+        # EventBus for publishing pipeline events (FIX-3: use singleton)
+        self._bus = EventBus.instance()
 
-        # Digital Twin (Bridge 2)
+        # Digital Twin (Bridge 2) — shares the same EventBus singleton
         self._twin = DigitalTwin(building_id="pipeline-managed")
         self._enable_twin_sync = True  # Can be disabled for fast mode
 
@@ -290,14 +293,14 @@ class AnalysisPipeline:
         self._audit_available = False
         try:
             from .audit_store import AuditStore
-            self._AuditStore = AuditStore
+            self._audit_store = AuditStore()  # Store INSTANCE (FIX-11)
             self._audit_available = True
         except ImportError:
             logger.warning(
                 "AuditStore not available — STORAGE stage will be skipped. "
                 "Install sqlite3 support for full audit trail."
             )
-            self._AuditStore = None
+            self._audit_store = None
 
     # ── Properties ──────────────────────────────────────────────────
 
@@ -732,7 +735,7 @@ class AnalysisPipeline:
         # ═══════════════════════════════════════════════════════════════
         t0 = time.monotonic()
         try:
-            if self._audit_available and self._AuditStore is not None:
+            if self._audit_available and self._audit_store is not None:
                 audit_details = {
                     "room_id": room_id,
                     "room_name": room.name,
@@ -767,7 +770,7 @@ class AnalysisPipeline:
                         "timestamp": result.certificate.timestamp,
                     }
 
-                audit_hash = self._AuditStore.add_event(
+                audit_hash = self._audit_store.add_event(
                     event_type="ROOM_ANALYSIS_COMPLETE",
                     room_id=room_id,
                     details_dict=audit_details,

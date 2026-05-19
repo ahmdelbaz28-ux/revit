@@ -52,6 +52,15 @@ from fireai.core.spatial_engine.proof_certificate import (
     ProofCertificateGenerator, ProofCertificate,
 )
 
+# Safety Assurance (from consultant's architecture — adopted 2026-05-19)
+from fireai.core.safety_assurance import (
+    SafetyTier, classify_safety_tier, apply_fail_safe,
+    tier_requires_fpe_review, tier_can_submit,
+    OverrideRole, OverrideRecord, EngineeringEvidencePackage,
+    ABSOLUTE_MINIMUM_COVERAGE, MINIMUM_COVERAGE_FOR_SUBMISSION,
+    STANDARD_COVERAGE_THRESHOLD, PROOF_VERIFIED_THRESHOLD,
+)
+
 __all__ = [
     "__version__",
     # Analysers
@@ -96,4 +105,17 @@ __all__ = [
     "ConfidenceLevel",
     "ProofCertificateGenerator",
     "ProofCertificate",
+    # Safety Assurance
+    "SafetyTier",
+    "classify_safety_tier",
+    "apply_fail_safe",
+    "tier_requires_fpe_review",
+    "tier_can_submit",
+    "OverrideRole",
+    "OverrideRecord",
+    "EngineeringEvidencePackage",
+    "ABSOLUTE_MINIMUM_COVERAGE",
+    "MINIMUM_COVERAGE_FOR_SUBMISSION",
+    "STANDARD_COVERAGE_THRESHOLD",
+    "PROOF_VERIFIED_THRESHOLD",
 ]

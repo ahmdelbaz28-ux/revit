@@ -36,6 +36,7 @@ from __future__ import annotations
 import threading
 import time
 import uuid
+from collections import deque
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
@@ -63,11 +64,14 @@ class Event:
     correlation_id: str = ""
     timestamp: float = field(default_factory=time.monotonic)
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    _wall_clock_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
 
     @property
     def datetime_utc(self) -> str:
-        """ISO 8601 UTC timestamp (approximate, from monotonic)."""
-        return datetime.now(timezone.utc).isoformat()
+        """ISO 8601 UTC timestamp captured at event creation time."""
+        return self._wall_clock_at
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary for audit storage."""
@@ -78,7 +82,7 @@ class Event:
             "source": self.source,
             "correlation_id": self.correlation_id,
             "timestamp": self.timestamp,
-            "datetime_utc": self.datetime_utc,
+            "datetime_utc": self._wall_clock_at,
         }
 
 
@@ -147,6 +151,15 @@ class Events:
 EventCallback = Callable[[Event], None]
 
 
+__all__ = [
+    "Event",
+    "Events",
+    "EventCallback",
+    "EventRecorder",
+    "EventBus",
+]
+
+
 # ===========================================================================
 # EventRecorder
 # ===========================================================================
@@ -164,16 +177,17 @@ class EventRecorder:
 
     def __init__(self, max_events: int = 10_000):
         self._lock = threading.Lock()
-        self._events: List[Event] = []
+        self._events: deque[Event] = deque(maxlen=max_events)
         self._max_events = max_events
 
     def record(self, event: Event) -> None:
-        """Record an event (called automatically by EventBus)."""
+        """Record an event (called automatically by EventBus).
+
+        Uses collections.deque with maxlen for O(1) append
+        and automatic oldest eviction — no manual slicing needed.
+        """
         with self._lock:
             self._events.append(event)
-            # Bounded — drop oldest if over limit
-            if len(self._events) > self._max_events:
-                self._events = self._events[-self._max_events:]
 
     def get_events(
         self,
@@ -193,7 +207,8 @@ class EventRecorder:
         if correlation_id is not None:
             events = [e for e in events if e.correlation_id == correlation_id]
 
-        return events[-limit:]
+        # Return the most recent `limit` events
+        return events[-limit:] if limit < len(events) else events
 
     def count(self) -> int:
         """Number of recorded events."""
@@ -356,10 +371,17 @@ class EventBus:
         for callback in specific + wildcard:
             try:
                 callback(event)
-            except Exception:
+            except Exception as exc:
                 self._error_count += 1
-                # SILENT catch — the bus must never crash.
-                # Monitoring should check error_count regularly.
+                # Log the error — the bus must never crash, but
+                # operators MUST know about subscriber failures.
+                # In a safety-critical system, silent failures are
+                # unacceptable. We catch to survive, but we log to inform.
+                import logging as _logging
+                _logging.getLogger(__name__).error(
+                    "EventBus subscriber error on %s: %s: %s",
+                    event_type, type(exc).__name__, exc,
+                )
 
         return event
 

@@ -72,6 +72,69 @@ class NormalizedDrawing:
 
 
 # ──────────────────────────────────────────────────────────────────────────
+# Security — Path Traversal Protection
+# ──────────────────────────────────────────────────────────────────────────
+
+# Configurable allowed base directories (env var, comma-separated)
+_ALLOWED_BASE_DIRS: list[str] | None = None
+
+
+def _get_allowed_dirs() -> list[str]:
+    """Get or initialize the list of allowed base directories."""
+    global _ALLOWED_BASE_DIRS
+    if _ALLOWED_BASE_DIRS is None:
+        env_dirs = os.environ.get("FIREAI_INPUT_DIRS", "")
+        if env_dirs:
+            _ALLOWED_BASE_DIRS = [os.path.abspath(d) for d in env_dirs.split(",") if d.strip()]
+        else:
+            # Default: current working directory
+            _ALLOWED_BASE_DIRS = [os.getcwd()]
+    return _ALLOWED_BASE_DIRS
+
+
+class PathTraversalError(ValueError):
+    """Raised when a file path attempts directory traversal."""
+    pass
+
+
+def _validate_path(path: str) -> str:
+    """Validate that a file path is within allowed directories.
+
+    Prevents path traversal attacks (e.g., ../../etc/passwd).
+
+    Args:
+        path: The file path to validate.
+
+    Returns:
+        The resolved absolute path if valid.
+
+    Raises:
+        PathTraversalError: If the path escapes allowed directories.
+        FileNotFoundError: If the file does not exist.
+    """
+    resolved = os.path.realpath(path)  # Resolves symlinks too
+
+    # Check file exists
+    if not os.path.isfile(resolved):
+        raise FileNotFoundError(f"File not found: {path}")
+
+    # Check against allowed base directories
+    allowed_dirs = _get_allowed_dirs()
+    if allowed_dirs:
+        is_allowed = any(
+            resolved.startswith(allowed_dir + os.sep) or resolved == allowed_dir
+            for allowed_dir in allowed_dirs
+        )
+        if not is_allowed:
+            raise PathTraversalError(
+                f"Path '{path}' is outside allowed directories: {allowed_dirs}. "
+                f"Set FIREAI_INPUT_DIRS env var to configure allowed directories."
+            )
+
+    return resolved
+
+
+# ──────────────────────────────────────────────────────────────────────────
 # Dispatcher
 # ──────────────────────────────────────────────────────────────────────────
 def sha256_of(path: str) -> str:
@@ -98,19 +161,22 @@ def detect_type(path: str) -> str:
 
 
 def ingest(path: str) -> NormalizedDrawing:
-    ftype = detect_type(path)
+    # ✅ FIX: Validate path to prevent directory traversal attacks
+    validated_path = _validate_path(path)
+
+    ftype = detect_type(validated_path)
     nd = NormalizedDrawing(
-        source_path=os.path.abspath(path),
-        source_sha256=sha256_of(path),
+        source_path=validated_path,
+        source_sha256=sha256_of(validated_path),
         file_type=ftype,
     )
-    log.info("Ingesting %s as %s", path, ftype)
+    log.info("Ingesting %s as %s", validated_path, ftype)
 
-    if   ftype == "dxf":   _ingest_dxf(path, nd)
-    elif ftype == "dwg":   _ingest_dwg(path, nd)
-    elif ftype == "pdf":   _ingest_pdf(path, nd)
-    elif ftype == "ifc":   _ingest_ifc(path, nd)
-    elif ftype == "image": _ingest_image(path, nd)
+    if   ftype == "dxf":   _ingest_dxf(validated_path, nd)
+    elif ftype == "dwg":   _ingest_dwg(validated_path, nd)
+    elif ftype == "pdf":   _ingest_pdf(validated_path, nd)
+    elif ftype == "ifc":   _ingest_ifc(validated_path, nd)
+    elif ftype == "image": _ingest_image(validated_path, nd)
     else:
         raise ValueError(f"Unsupported file type: {ftype}")
     return nd
@@ -235,8 +301,15 @@ def _ingest_pdf(path: str, nd: NormalizedDrawing) -> None:
                         layer=f"pdf_p{pno}_text", page=pno, text=sp["text"],
                         attributes={"font": sp.get("font"), "size": sp.get("size")}))
         # 3) Rasterize for symbol/image analysis later
+        # ✅ FIX: Write raster files to a secure temp directory instead of
+        # alongside the source file (which could be anywhere on the filesystem).
         pix = page.get_pixmap(dpi=200)
-        raster_path = f"{path}.p{pno}.png"
+        _raster_dir = os.environ.get("FIREAI_RASTER_DIR", "")
+        if _raster_dir:
+            os.makedirs(_raster_dir, exist_ok=True)
+            raster_path = os.path.join(_raster_dir, f"{os.path.basename(path)}.p{pno}.png")
+        else:
+            raster_path = f"{path}.p{pno}.png"
         pix.save(raster_path)
         nd.raw_unknown.append({"raster_page": pno, "image": raster_path,
                                "width": pix.width, "height": pix.height})

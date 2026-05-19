@@ -50,6 +50,7 @@ import logging
 import threading
 import time
 import uuid
+from collections import deque
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from enum import Enum
@@ -64,6 +65,44 @@ except ImportError:
     AuditStore = None  # type: ignore[assignment,misc]
 
 logger = logging.getLogger(__name__)
+
+
+__all__ = [
+    "DetectorStatus",
+    "EventType",
+    "DriftType",
+    "DetectorState",
+    "TwinEvent",
+    "DriftRecord",
+    "TwinHealthReport",
+    "SimulationResult",
+    "TwinDriftAnalyzer",
+    "TwinSimulator",
+    "TwinSerializer",
+    "DigitalTwin",
+    "LEGAL_STATUS_TRANSITIONS",
+    "NFPA72_SMOKE_RADIUS_M",
+    "NFPA72_HEAT_RADIUS_M",
+    "NFPA72_DEFAULT_CEILING_M",
+    "NFPA72_MAX_SPACING_M",
+]
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# NFPA 72-2022 Constants
+# ═══════════════════════════════════════════════════════════════════════
+
+# Default coverage radius for smoke detectors (R = 0.7 × S = 0.7 × 9.1m)
+NFPA72_SMOKE_RADIUS_M = 6.37
+
+# Default coverage radius for heat detectors (per NFPA 72 Table 17.6.3.1.1)
+NFPA72_HEAT_RADIUS_M = 5.3
+
+# Default ceiling height for commercial buildings
+NFPA72_DEFAULT_CEILING_M = 3.0
+
+# Maximum detector spacing (S = 30ft = 9.1m per NFPA 72 Table 17.6.3.1.1)
+NFPA72_MAX_SPACING_M = 9.1
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -81,14 +120,24 @@ class DetectorStatus(Enum):
         OFFLINE  — Installed but communication lost (possible hazard).
         DECOMMISSIONED — Permanently removed from service.
 
-    State Transitions:
+    State Transitions (ENFORCED — see LEGAL_STATUS_TRANSITIONS):
         PLANNED → OK              (installation + commissioning)
+        PLANNED → DECOMMISSIONED  (cancelled before install)
         OK      → FAULT           (fault detected)
         OK      → OFFLINE         (communication lost)
-        FAULT   → OK              (fault resolved)
-        OFFLINE → OK              (communication restored)
         OK      → DECOMMISSIONED  (permanently removed)
+        FAULT   → OK              (fault resolved)
+        FAULT   → OFFLINE         (fault + comm lost)
         FAULT   → DECOMMISSIONED  (permanently removed)
+        OFFLINE → OK              (communication restored)
+        OFFLINE → FAULT           (came back with fault)
+        OFFLINE → DECOMMISSIONED  (permanently removed)
+
+    FORBIDDEN transitions (SAFETY VIOLATIONS if allowed):
+        OK → PLANNED              (cannot "un-install" a detector)
+        DECOMMISSIONED → any      (dead is dead)
+        PLANNED → FAULT           (never installed, can't be faulty)
+        PLANNED → OFFLINE         (never installed, can't go offline)
     """
     PLANNED = "planned"
     OK = "ok"
@@ -100,6 +149,39 @@ class DetectorStatus(Enum):
     def provides_coverage(self) -> bool:
         """True only if this status means the detector is actively protecting."""
         return self == DetectorStatus.OK
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Legal Status Transition Map (BUG-10 FIX)
+# ═══════════════════════════════════════════════════════════════════════
+
+LEGAL_STATUS_TRANSITIONS: Dict[DetectorStatus, set] = {
+    # A detector that exists in design but is not yet installed.
+    DetectorStatus.PLANNED: {
+        DetectorStatus.OK,              # Installed + commissioned
+        DetectorStatus.DECOMMISSIONED,  # Cancelled before install
+    },
+    # An active, operational detector.
+    DetectorStatus.OK: {
+        DetectorStatus.FAULT,           # Fault detected
+        DetectorStatus.OFFLINE,         # Communication lost
+        DetectorStatus.DECOMMISSIONED,  # Permanently removed
+    },
+    # A detector with a known fault — still physically present.
+    DetectorStatus.FAULT: {
+        DetectorStatus.OK,              # Fault resolved
+        DetectorStatus.OFFLINE,         # Fault + comm lost
+        DetectorStatus.DECOMMISSIONED,  # Permanently removed
+    },
+    # A detector that lost communication — still physically present.
+    DetectorStatus.OFFLINE: {
+        DetectorStatus.OK,              # Communication restored, healthy
+        DetectorStatus.FAULT,           # Came back with a fault
+        DetectorStatus.DECOMMISSIONED,  # Permanently removed
+    },
+    # Terminal state — no transitions allowed.
+    DetectorStatus.DECOMMISSIONED: set(),
+}
 
 
 class EventType(Enum):
@@ -154,19 +236,25 @@ class DetectorState:
     z: float
     detector_type: str = "smoke"
     status: DetectorStatus = DetectorStatus.PLANNED
-    coverage_radius: float = 6.37
-    design_x: float = 0.0
-    design_y: float = 0.0
-    design_z: float = 0.0
+    coverage_radius: float = NFPA72_SMOKE_RADIUS_M
+    design_x: Optional[float] = None
+    design_y: Optional[float] = None
+    design_z: Optional[float] = None
     installed_at: str = ""
     last_verified_at: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        # Initialize design coordinates to match placement if not set
-        if self.design_x == 0.0 and self.design_y == 0.0 and self.design_z == 0.0:
+        # Initialize design coordinates to match placement if not explicitly set.
+        # CRITICAL (FIX-5): Using None as sentinel instead of 0.0 because
+        # a detector CAN legitimately be at position (0.0, 0.0, 0.0).
+        # The old code used `if design_x == 0.0` which falsely treated
+        # (0,0,0) as "unset" — a SAFETY BUG for rooms with origin corners.
+        if self.design_x is None:
             self.design_x = self.x
+        if self.design_y is None:
             self.design_y = self.y
+        if self.design_z is None:
             self.design_z = self.z
 
     @property
@@ -191,10 +279,20 @@ class DetectorState:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DetectorState":
-        """Deserialize from dictionary."""
+        """Deserialize from dictionary.
+
+        Handles backward compatibility: if design_x/y/z are missing
+        from old serialized data (pre-FIX-5), they default to None
+        which triggers __post_init__ to set them from x/y/z.
+        """
         data = dict(data)
         if isinstance(data.get("status"), str):
             data["status"] = DetectorStatus(data["status"])
+        # Backward compat: old data may not have design_x/y/z fields.
+        # If missing, set to None so __post_init__ fills them from x/y/z.
+        for key in ("design_x", "design_y", "design_z"):
+            if key not in data:
+                data[key] = None
         return cls(**data)
 
 
@@ -415,6 +513,14 @@ class TwinSimulator:
       - "What if we commission all PLANNED detectors?"
     """
 
+    DEFAULT_COVERAGE_RADII: Dict[str, float] = {
+        "smoke": NFPA72_SMOKE_RADIUS_M,
+        "heat": NFPA72_HEAT_RADIUS_M,
+        "flame": NFPA72_SMOKE_RADIUS_M,
+        "gas": NFPA72_SMOKE_RADIUS_M,
+        "duct_smoke": NFPA72_SMOKE_RADIUS_M,
+    }
+
     def simulate_offline(
         self,
         detectors: Dict[str, DetectorState],
@@ -469,6 +575,7 @@ class TwinSimulator:
         y: float,
         z: float,
         detector_type: str = "smoke",
+        coverage_radius: Optional[float] = None,
     ) -> SimulationResult:
         """Simulate adding a new detector.
 
@@ -477,11 +584,18 @@ class TwinSimulator:
             room_id: Room to add the detector in.
             x, y, z: Position in meters.
             detector_type: Type of detector.
+            coverage_radius: Coverage radius in meters. If None, uses
+                DEFAULT_COVERAGE_RADII for the detector_type.
 
         Returns:
             SimulationResult showing impact of the addition.
         """
         new_id = f"SIM_{uuid.uuid4().hex[:8]}"
+        effective_radius = (
+            coverage_radius
+            if coverage_radius is not None
+            else self.DEFAULT_COVERAGE_RADII.get(detector_type, NFPA72_SMOKE_RADIUS_M)
+        )
 
         def apply(dets: Dict[str, DetectorState]) -> None:
             dets[new_id] = DetectorState(
@@ -490,7 +604,7 @@ class TwinSimulator:
                 x=x, y=y, z=z,
                 detector_type=detector_type,
                 status=DetectorStatus.OK,
-                coverage_radius=6.37,
+                coverage_radius=effective_radius,
             )
 
         return self._run_simulation(
@@ -639,16 +753,22 @@ class TwinSerializer:
             did: DetectorState.from_dict(ddata)
             for did, ddata in state["detectors"].items()
         }
-        twin._events = [
-            TwinEvent.from_dict(edata) for edata in state.get("events", [])
-        ]
+        twin._events = deque(
+            [TwinEvent.from_dict(edata) for edata in state.get("events", [])],
+            maxlen=10_000,
+        )
         twin._drift_records = [
             DriftRecord.from_dict(ddata) for ddata in state.get("drift_records", [])
         ]
         twin._room_ids = set(state.get("room_ids", []))
         twin._created_at = state["created_at"]
         twin._bus = EventBus.instance()
-        twin._audit_store = AuditStore if AuditStore is not None else None
+        twin._audit_store = AuditStore() if AuditStore is not None else None
+
+        # Restore sub-components (were missing in original deserializer)
+        twin._drift_analyzer = TwinDriftAnalyzer()
+        twin._simulator = TwinSimulator()
+        twin._serializer = TwinSerializer()
 
         return twin
 
@@ -694,12 +814,16 @@ class DigitalTwin:
         self._lock = threading.RLock()
         self._building_id = building_id or str(uuid.uuid4())
         self._detectors: Dict[str, DetectorState] = {}
-        self._events: List[TwinEvent] = []
+        self._events: deque = deque(maxlen=10_000)
         self._drift_records: List[DriftRecord] = []
         self._room_ids: set = set()
         self._created_at = datetime.now(timezone.utc).isoformat()
         self._bus = EventBus.instance()
-        self._audit_store = AuditStore if AuditStore is not None else None
+        # FIX-6: Store AuditStore INSTANCE, not the class itself.
+        # The old code stored AuditStore (class), which meant _audit_log
+        # called class methods instead of instance methods — no state,
+        # no database connection, no hash chain.
+        self._audit_store = AuditStore() if AuditStore is not None else None
 
         # Compose sub-components
         self._drift_analyzer = TwinDriftAnalyzer()
@@ -739,7 +863,7 @@ class DigitalTwin:
         z: float,
         detector_type: str = "smoke",
         status: DetectorStatus = DetectorStatus.PLANNED,
-        coverage_radius: float = 6.37,
+        coverage_radius: float = NFPA72_SMOKE_RADIUS_M,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> DetectorState:
         """Register a new detector in the Digital Twin.
@@ -826,11 +950,34 @@ class DigitalTwin:
 
     # ── Status Updates ────────────────────────────────────────────────
 
+    @staticmethod
+    def validate_status_transition(
+        old_status: DetectorStatus,
+        new_status: DetectorStatus,
+    ) -> None:
+        """Validate that a status transition is legal per LEGAL_STATUS_TRANSITIONS.
+
+        Args:
+            old_status: Current status of the detector.
+            new_status: Proposed new status.
+
+        Raises:
+            ValueError: If the transition is not allowed.
+        """
+        allowed = LEGAL_STATUS_TRANSITIONS.get(old_status, set())
+        if new_status not in allowed:
+            raise ValueError(
+                f"Illegal status transition: {old_status.value} → {new_status.value}. "
+                f"Allowed transitions from {old_status.value}: "
+                f"{sorted(s.value for s in allowed)}"
+            )
+
     def update_detector_status(
         self,
         detector_id: str,
         new_status: DetectorStatus,
         verified_by: str = "",
+        force: bool = False,
     ) -> DetectorState:
         """Update the lifecycle status of a detector.
 
@@ -842,12 +989,16 @@ class DigitalTwin:
             detector_id: The detector to update.
             new_status: The new DetectorStatus.
             verified_by: Who verified this status change (PE name, etc.).
+            force: If True, bypass status transition validation and
+                allow illegal transitions (logs a WARNING). Use with
+                extreme caution — illegal transitions are safety violations.
 
         Returns:
             The updated DetectorState.
 
         Raises:
             KeyError: If detector_id not found.
+            ValueError: If the transition is illegal and force is False.
         """
         with self._lock:
             if detector_id not in self._detectors:
@@ -855,6 +1006,16 @@ class DigitalTwin:
 
             det = self._detectors[detector_id]
             old_status = det.status
+
+            if force:
+                logger.warning(
+                    "FORCE bypassing status transition validation for %s: "
+                    "%s → %s (SAFETY CHECK BYPASSED)",
+                    detector_id, old_status.value, new_status.value,
+                )
+            else:
+                self.validate_status_transition(old_status, new_status)
+
             det.status = new_status
 
             now = datetime.now(timezone.utc).isoformat()
@@ -1269,24 +1430,40 @@ class DigitalTwin:
     def compute_checksum(self) -> str:
         """Compute SHA-256 checksum of the current twin state.
 
-        The checksum covers all detector positions (sorted by ID for
-        determinism), making it a tamper-evident fingerprint.
+        The checksum covers building_id + all detector positions
+        (sorted by ID for determinism), making it a tamper-evident
+        fingerprint.
+
+        CRITICAL: building_id MUST be included in the checksum.
+        Two different buildings with identical detector layouts
+        MUST produce different checksums — otherwise swapping twin
+        states between buildings would go undetected.
 
         Returns:
             Hex-encoded SHA-256 digest.
         """
         with self._lock:
             if not self._detectors:
-                return hashlib.sha256(b"empty_twin").hexdigest()
+                return hashlib.sha256(
+                    f"empty_twin:{self._building_id}".encode()
+                ).hexdigest()
 
-            # Sort by detector_id for deterministic ordering
+            # Include building_id + sorted detector positions + coverage_radius
+            # coverage_radius is included because two detectors at the same
+            # position but with different radii are NOT equivalent —
+            # a heat detector (R=5.3) vs smoke (R=6.37) has different coverage.
             positions = sorted(
                 (
-                    (did, det.x, det.y, det.z, det.status.value)
+                    (did, det.x, det.y, det.z, det.status.value,
+                     det.coverage_radius)
                     for did, det in self._detectors.items()
                 )
             )
-            raw = json.dumps(positions, sort_keys=True, separators=(",", ":"))
+            payload = {
+                "building_id": self._building_id,
+                "positions": positions,
+            }
+            raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
         return hashlib.sha256(raw.encode()).hexdigest()
 
@@ -1323,8 +1500,20 @@ class DigitalTwin:
             detector_type = room.get("detector_type", "smoke")
             detectors = room.get("detectors", [])
 
+            # FIX-2: Extract proof certificate hashes for this room.
+            # Every detector in a certified room stores the certificate
+            # hash in its metadata — this is the audit trail link
+            # between the design proof and the physical detector.
+            proof_certs = room.get("proof_certificates", [])
+            cert_metadata: Dict[str, Any] = {}
+            if proof_certs:
+                cert_metadata["proof_certificate_hashes"] = proof_certs
+
             for idx, det in enumerate(detectors):
                 det_id = det.get("detector_id", f"{room_id}_D{idx + 1}")
+                # Merge room-level cert metadata with per-detector metadata
+                det_meta = dict(cert_metadata)
+                det_meta.update(det.get("metadata", {}))
                 try:
                     self.register_detector(
                         room_id=room_id,
@@ -1334,7 +1523,8 @@ class DigitalTwin:
                         z=float(det.get("z", 0.0)),
                         detector_type=detector_type,
                         status=default_status,
-                        coverage_radius=float(det.get("radius", 6.37)),
+                        coverage_radius=float(det.get("radius", NFPA72_SMOKE_RADIUS_M)),
+                        metadata=det_meta,
                     )
                     count += 1
                 except ValueError:
@@ -1396,7 +1586,7 @@ class DigitalTwin:
     def get_event_log(self, limit: int = 100) -> List[TwinEvent]:
         """Get recent events from the twin's event log."""
         with self._lock:
-            return list(self._events[-limit:])
+            return list(self._events)[-limit:]
 
     # ── Serialization ─────────────────────────────────────────────────
 
@@ -1490,30 +1680,61 @@ class DigitalTwin:
 
     @staticmethod
     def _pipeline_result_to_room_dict(pr: Any) -> Dict[str, Any]:
-        """Convert a PipelineResult to a room result dict."""
+        """Convert a PipelineResult to a room result dict.
+
+        IMPORTANT: Layout.detectors is a List[Tuple[float, float]] —
+        each detector is (x, y), NOT a dict.  The z coordinate comes
+        from ceiling_height (passed to analyze_room), and the radius
+        comes from layout.coverage_radius (FIX-9: NOT self.coverage_radius).
+        """
         result: Dict[str, Any] = {
             "room_id": getattr(pr, "room_id", "unknown"),
         }
 
         layout = getattr(pr, "layout", None)
         if layout is not None:
-            result["detector_type"] = "smoke"
+            result["detector_type"] = getattr(layout, "detector_type_simple", None) or "smoke"
             result["width_m"] = getattr(layout, "width", 0.0)
             result["depth_m"] = getattr(layout, "length", 0.0)
-            result["ceiling_height_m"] = getattr(layout, "ceiling_height", 3.0)
+
+            # FIX: ceiling_height comes from the pipeline's metadata, not layout.
+            # PipelineResult.metadata stores it as "ceiling_height".
+            pr_meta = getattr(pr, "metadata", {})
+            if isinstance(pr_meta, dict):
+                result["ceiling_height_m"] = pr_meta.get("ceiling_height", NFPA72_DEFAULT_CEILING_M)
+            else:
+                result["ceiling_height_m"] = NFPA72_DEFAULT_CEILING_M
+
+            # FIX-9: coverage_radius comes from layout.coverage_radius,
+            # NOT from self.coverage_radius.  The layout may use a different
+            # radius than the pipeline default.
+            layout_radius = getattr(layout, "coverage_radius", None) or NFPA72_SMOKE_RADIUS_M
 
             # Extract detector positions
+            # Layout.detectors is List[Tuple[float, float]] = [(x, y), ...]
+            # Each tuple is (x, y).  z = ceiling_height, radius = coverage_radius.
             detectors_raw = getattr(layout, "detectors", [])
+            ceiling_h = result["ceiling_height_m"]
+
+            det_list = []
             if isinstance(detectors_raw, list):
-                result["detectors"] = [
-                    {
-                        "x": d.get("x", 0.0) if isinstance(d, dict) else getattr(d, "x", 0.0),
-                        "y": d.get("y", 0.0) if isinstance(d, dict) else getattr(d, "y", 0.0),
-                        "z": d.get("z", 0.0) if isinstance(d, dict) else getattr(d, "z", 0.0),
-                        "radius": d.get("radius", 6.37) if isinstance(d, dict) else getattr(d, "radius", 6.37),
-                    }
-                    for d in detectors_raw
-                ]
+                for d in detectors_raw:
+                    if isinstance(d, (list, tuple)) and len(d) >= 2:
+                        # (x, y) tuple from DensityOptimizer
+                        det_list.append({
+                            "x": float(d[0]),
+                            "y": float(d[1]),
+                            "z": float(ceiling_h),
+                            "radius": float(layout_radius),
+                        })
+                    elif isinstance(d, dict):
+                        det_list.append({
+                            "x": float(d.get("x", 0.0)),
+                            "y": float(d.get("y", 0.0)),
+                            "z": float(d.get("z", ceiling_h)),
+                            "radius": float(d.get("radius", layout_radius)),
+                        })
+            result["detectors"] = det_list
 
             # Extract coverage info
             result["coverage_pct"] = getattr(layout, "coverage_pct", 0.0)
