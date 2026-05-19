@@ -205,6 +205,34 @@ All 5 bridges now implemented:
 - Bridge 4: PASS (1 room from IFC, push creates IfcSensor)
 - Bridge 5: PASS (PDF 3.3KB, HTML 2.7KB, JSON 1.4KB)
 
+### FIRE-BIM Production Core Integration (2026-05-19)
+
+Integrated 5 production-grade modules from FIRE-BIM PRODUCTION CORE v2.0:
+
+| Module | File | Key Features |
+|--------|------|-------------|
+| ProductionConfig | core/production_config.py | NFPA 72/NEC/building code constants (single source of truth) |
+| Geometry Kernel | core/geometry_kernel.py | Polygon2D with self-intersection, winding normalization, holes |
+| IFC Utils | core/ifc_utils.py | buildingSMART GUID generation, STEP serialization helpers |
+| Engineering Router | core/engineering_router.py | NEC/NFPA-aware routing with visibility graph + A* |
+| Room Classifier | core/room_classifier.py | Rule-based 10-type classification (geometric + name hints) |
+
+**Enhanced Bridge 4 (Digital Twin):**
+- Added `export_to_ifc()` with full IFC4 spatial hierarchy
+- IfcSpace with IfcExtrudedAreaSolid geometry
+- Pset_FireSafetyRequirements + Pset_FireAlarmDesign
+- Extended device type mappings (strobe, horn, fire_alarm_panel)
+
+**Commits:**
+- Commit: 7538d6c | Link: https://github.com/ahmdelbaz28-ux/revit/commit/7538d6c
+
+**Integration Tests:** ALL PASS
+- ProductionConfig: smoke_spacing=9.1, bend_radius=300mm
+- Geometry Kernel: tri area=40m², centroid OK
+- IFC Utils: 1000 unique GUIDs verified
+- Engineering Router: obstacle-aware A* routing OK
+- Room Classifier: corridor=0.66, office=0.78 confidence
+
 ### Instruction Validation (Critical Safety Rule)
 - **STOP and WARN immediately** if instructions are:
   - Incorrect or will damage the codebase
