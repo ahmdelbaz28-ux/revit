@@ -6,9 +6,9 @@ CRITICAL SAFETY SYSTEM: Any modification requires peer review.
 """
 
 from typing import List, Tuple, Dict, Optional
-from pulp import LpProblem, LpMinimize, LpVariable, LpBinary, lpSum, LpStatus, value
+from pulp import LpProblem, LpMinimize, LpVariable, LpBinary, lpSum, LpStatus, value, PULP_CBC_CMD
 import math
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, LineString
 
 from nfpa72_models import (
     RoomSpec, DetectorType, CoverageGeometry, CeilingType, NFPAComplianceError,
@@ -83,22 +83,14 @@ class OptimalMIPEngine:
                 "Pass RoomSpec(name='room', width_m=10, depth_m=10, height_m=3)"
             )
 
-        # Get detector spacing/radius based on ceiling height
-        if self.detector_type == DetectorType.SMOKE:
-            self.coverage_geo = CoverageGeometry.CIRCULAR
-            self.radius = get_smoke_detector_radius(self.ceiling.height_at_low_point_m)
-            self.spacing = None
-        elif self.detector_type in (DetectorType.HEAT_FIXED_TEMP, DetectorType.HEAT_RATE_OF_RISE, 
-                                  DetectorType.HEAT_COMBINATION, DetectorType.SMOKE_HEAT_COMBINATION):
-            # Heat detectors use fixed spacing (9.1m = 30ft)
-            self.coverage_geo = CoverageGeometry.SQUARE_GRID
-            self.spacing = 9.1
-            self.radius = self.spacing / 2
-        else:
-            # Default to smoke
-            self.coverage_geo = CoverageGeometry.CIRCULAR
-            self.radius = get_smoke_detector_radius(self.ceiling.height_at_low_point_m)
-            self.spacing = None
+        # Save time limit for solver protection against NP-Hard hangs
+        self.time_limit_s = time_limit_s
+
+        # FIX V11: Call _setup_coverage_params() which respects NFPA 72 height adjustments
+        # for ALL detector types (including heat). Previous code hardcoded 9.1m for heat
+        # detectors regardless of ceiling height — at 8m ceiling, heat detector spacing
+        # drops to ~4m, not 9.1m. This was a Life Safety vulnerability.
+        self._setup_coverage_params()
 
         self.candidates: List[Tuple[float, float]] = []
         self._build_candidates(step_m=0.25)  # Higher resolution for better placement
@@ -186,14 +178,27 @@ class OptimalMIPEngine:
         tx, ty = test_point
         cx, cy = candidate
 
+        # 1. Check geometric distance/range
+        is_in_range = False
         if self.coverage_geo == CoverageGeometry.CIRCULAR:
-            return math.sqrt((tx - cx) ** 2 + (ty - cy) ** 2) <= self.radius
-
+            is_in_range = math.sqrt((tx - cx) ** 2 + (ty - cy) ** 2) <= self.radius
         elif self.coverage_geo == CoverageGeometry.SQUARE_GRID:
             half = self.spacing / 2
-            return abs(tx - cx) <= half and abs(ty - cy) <= half
+            is_in_range = abs(tx - cx) <= half and abs(ty - cy) <= half
 
-        return False
+        if not is_in_range:
+            return False
+
+        # 2. Line of Sight check — smoke does NOT penetrate walls or columns
+        # If the sight line between candidate and test point exits the room polygon,
+        # the coverage is blocked by a wall or column.
+        # Small buffer (0.01m) avoids false negatives from floating-point precision
+        # on boundary-adjacent points.
+        sight_line = LineString([(cx, cy), (tx, ty)])
+        if not self.polygon.buffer(0.01).contains(sight_line):
+            return False
+
+        return True
 
     def _build_coverage_pairs(self) -> Dict[int, List[int]]:
         coverage = {}
@@ -241,10 +246,25 @@ class OptimalMIPEngine:
         if min_detectors > 0:
             prob += lpSum(x.values()) >= min_detectors, "Minimum_Safety_Count"
 
-        prob.solve()
+        # FIX V11: Enforce time limit to prevent NP-Hard server hang
+        # MIP Set Covering is NP-Hard — a room with 0.25m grid generates
+        # 15,000+ binary variables. Without time limit, prob.solve() can hang
+        # for hours/days (Denial of Service). PULP_CBC_CMD with timeLimit
+        # returns feasible solution if found within limit.
+        solver = PULP_CBC_CMD(timeLimit=self.time_limit_s, msg=False)
+        prob.solve(solver)
 
-        if LpStatus[prob.status] != "Optimal":
-            return [], 0, False, {"status": LpStatus[prob.status]}
+        # Accept both Optimal and feasible solutions from time-limited solve
+        # PuLP returns 'Not Solved' when time limit hit but feasible integer solution exists
+        status = LpStatus[prob.status]
+        if status not in ("Optimal",):
+            # If we hit time limit but have a feasible solution, accept it
+            # Otherwise fail gracefully
+            if status == "Not Solved" and any(value(var) is not None and value(var) > 0.5 for var in x.values()):
+                # Feasible solution found before timeout
+                pass
+            else:
+                return [], 0, False, {"status": status}
 
         selected = [
             self.candidates[i]
