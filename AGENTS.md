@@ -179,6 +179,32 @@ The table now stores full adjusted spacings (S) and computes R = 0.7×S in the f
 - If unsure, test locally first
 - Don't assume "it will work" - prove it works
 
+### Bridge Architecture (2026-05-19)
+
+All 5 bridges now implemented:
+
+| Bridge | Name | File | Status |
+|--------|------|------|--------|
+| 1 | Pipeline | run_full_pipeline.py | ✅ Built earlier |
+| 2 | Parser | bridges/parser_bridge.py | ✅ NEW |
+| 3 | Output | bridges/output_bridge.py | ✅ NEW |
+| 4 | Digital Twin | bridges/digital_twin_bridge.py | ✅ NEW |
+| 5 | Reports | bridges/report_bridge.py | ✅ NEW |
+
+**Orchestrator:** bridges/orchestrator.py — chains all 5 bridges end-to-end
+
+**EDA Integration:** elite_drawing_analyzer/ — provides universal file parsing, symbol classification, compliance checking
+
+**Commits:**
+- Commit: d440c53 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/d440c53
+- Commit: 9d6b07d | Link: https://github.com/ahmdelbaz28-ux/revit/commit/9d6b07d
+
+**Self-Test Results:**
+- Bridge 2: PASS (1 room, 1 device, 1 obstruction from DXF)
+- Bridge 3: PASS (5 devices, 11 cable segments, 11 layers)
+- Bridge 4: PASS (1 room from IFC, push creates IfcSensor)
+- Bridge 5: PASS (PDF 3.3KB, HTML 2.7KB, JSON 1.4KB)
+
 ### Instruction Validation (Critical Safety Rule)
 - **STOP and WARN immediately** if instructions are:
   - Incorrect or will damage the codebase
