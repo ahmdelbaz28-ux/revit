@@ -261,6 +261,61 @@ Applied fixes from consultant's critical code review of simulation/NFPA72 layer:
 **Commits:**
 - Commit: d3831ba | Link: https://github.com/ahmdelbaz28-ux/revit/commit/d3831ba
 
+### Semi-CFAST Physics Engine (2026-05-19)
+
+Built conservation-law-compliant Semi-CFAST physics engine replacing
+the previous event-driven visualization approach. Consultant's critique
+was 100% correct: the old simulation was NOT physics-based.
+
+**11 Phases Implemented:**
+
+| Phase | Component | Key Equation | Status |
+|-------|-----------|-------------|--------|
+| 1 | LayerState + RoomCompartment | dm_u/dt = ṁ_p + Σṁ_in − Σṁ_out | ✅ |
+| 2 | LayerEnergySolver | d(mCpT)/dt = Q + ṁCpT_in − ṁCpT_out − Q_loss | ✅ |
+| 3 | PlumeModel (Heskestad) | ṁ_p = 0.071·Q^⅓·z^5/3 + 0.0018·Q | ✅ |
+| 4 | VentFlowSolver (bi-directional) | Neutral plane + Bernoulli + Cd=0.68 | ✅ |
+| 5 | SmokeLayerSolver | dh/dt = −(ṁ_p − ṁ_vent_out) / (ρ·A) | ✅ |
+| 6 | SpeciesTransport | d(mYi)/dt = ṁ_gen + ṁ_in·Yi_in − ṁ_out·Yi | ✅ |
+| 7 | CombustionModel | Growth → Vent-controlled → Decay | ✅ |
+| 8 | DetectorPhysics (RTI) | RTI·dT/dt = T_gas − T_det | ✅ |
+| 9 | WallThermalSolver | ∂T/∂t = α·∂²T/∂x² (implicit) | ✅ |
+| 10 | SemiCFASTSolver | Coupled multi-compartment | ✅ |
+| 11 | NumericalStability | Adaptive dt + mass correction + energy clip | ✅ |
+
+**Key Physics Improvements:**
+- Mass conservation enforced (not just temperature thresholds)
+- Energy conservation with semi-implicit integration
+- Ideal gas coupling: ρ = P/(R·T) consistently applied
+- Heskestad plume with virtual origin correction (not simplified McCaffrey)
+- Bi-directional vent flow with neutral plane (not unidirectional)
+- Species transport: O2 consumption, CO2/CO/soot generation
+- Ventilation-controlled combustion (O2 < 15% → HRR limited)
+- RTI detector model per NFPA 72 §17.6.3 (not just threshold)
+- Wall thermal response (1-D transient conduction)
+- Multi-room coupling via vents (NOT independent per room)
+
+**Comparison with Previous Implementation:**
+
+| Component | Old (event-driven) | New (Semi-CFAST) |
+|-----------|-------------------|------------------|
+| Mass conservation | ❌ | ✅ |
+| Energy conservation | ❌ | ✅ |
+| Ideal gas coupling | ❌ | ✅ |
+| Heskestad plume | ❌ (simplified McCaffrey) | ✅ |
+| Bi-directional vent | ❌ | ✅ |
+| Species transport | ❌ | ✅ |
+| Vent-controlled combustion | ❌ | ✅ |
+| RTI detector model | ❌ | ✅ |
+| Wall thermal response | ❌ | ✅ |
+| Numerical stability | Partial | ✅ |
+
+**File:** twin/semi_cfast_engine.py (~1700 lines)
+**Tests:** 45/45 PASSED in tests/test_semi_cfast_engine.py
+
+**Commits:**
+- Commit: (pending) | Link: (pending)
+
 ### Instruction Validation (Critical Safety Rule)
 - **STOP and WARN immediately** if instructions are:
   - Incorrect or will damage the codebase
