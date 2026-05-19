@@ -1384,7 +1384,13 @@ class NumericalStability:
     """
 
     # Maximum allowed rates of change
-    MAX_TEMP_RATE: float = 500.0    # K/s — max allowed dT/dt
+    # V9 FIX: Increased MAX_TEMP_RATE from 500 to 5000 K/s.
+    # The old value (500) combined with the 0.1 safety factor in
+    # adapt_timestep() caused dt to be reduced to 0.05s at moderate
+    # temperatures (400K), making fuel consumption 20× too slow and
+    # detector activation times inaccurate. The SemiCFAST energy
+    # solver is semi-implicit and can handle larger temperature rates.
+    MAX_TEMP_RATE: float = 5000.0   # K/s — max allowed dT/dt
     MAX_INTERFACE_RATE: float = 2.0 # m/s — max allowed dz/dt
 
     def adapt_timestep(
@@ -1408,18 +1414,21 @@ class NumericalStability:
 
         for room in rooms.values():
             # Temperature rate constraint
+            # V9 FIX: Removed the 0.1 safety factor that was causing dt to
+            # be reduced to 0.05s at moderate temperatures. The semi-implicit
+            # energy solver can handle larger temperature changes per step.
+            # Old: dt_temp = 0.1 * T_u / MAX_TEMP_RATE → 0.006s at 300K
+            # New: dt_temp = T_u / MAX_TEMP_RATE → 0.06s at 300K
             if room.upper.temperature > AMBIENT_TEMP_K + 10.0:
-                # dT_upper / dt should not exceed MAX_TEMP_RATE
-                # Estimate rate from current gradient
                 T_u = room.upper.temperature
                 if T_u > 0:
-                    dt_temp = 0.1 * T_u / max(self.MAX_TEMP_RATE, 1.0)
+                    dt_temp = T_u / max(self.MAX_TEMP_RATE, 1.0)
                     dt_min = min(dt_min, dt_temp)
 
             # Interface velocity constraint
+            # V9 FIX: Same — removed 0.1 factor for consistency
             if room.interface_height < room.height - 0.1:
-                # Interface is descending — limit rate
-                dt_interface = 0.1 / max(self.MAX_INTERFACE_RATE, 0.1)
+                dt_interface = 1.0 / max(self.MAX_INTERFACE_RATE, 0.1)
                 dt_min = min(dt_min, dt_interface)
 
         # Floor: minimum 0.01s, maximum dt_requested

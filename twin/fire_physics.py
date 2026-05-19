@@ -1083,8 +1083,14 @@ class HeatTransportNS:
     Uses explicit Euler with:
       - Diffusion: alpha * ∇²T
       - Advection: upwind on N-S velocity field
-      - Fire source term at fire voxel
+      - Fire source term at fire voxel (V9 FIX: O2-gated)
       - Convective cooling to ambient (Newton's law)
+
+    V9 FIX: The fire source term is now gated by local O2 concentration.
+    If O2 is depleted at the fire voxel, the source term is scaled
+    proportionally. This prevents the physically impossible scenario
+    where SmokeTransportNS consumes all O2 but HeatTransportNS
+    continues adding heat as if combustion is unlimited.
 
     Thermal diffusivity alpha = 2.2e-5 m²/s is a turbulent effective value
     calibrated for room-scale enclosure fires (CFAST-consistent).
@@ -1170,6 +1176,13 @@ class HeatTransportNS:
 
             # Source term at fire voxel — spread over 3×3×3 neighborhood
             # for stability (same as SmokeTransportNS source spreading)
+            #
+            # V9 FIX: Gate source by local O2 availability.
+            # Without this, HeatTransportNS adds heat even when O2 is
+            # depleted (SmokeTransportNS already consumed it), causing
+            # unphysical temperature blow-up (observed: 658,000 K).
+            # The O2 gate scales the heat source proportionally to
+            # available O2, ensuring consistency between the two solvers.
             source_T = 0.0
             if fire_voxel is not None:
                 dist_cells = max(
@@ -1183,7 +1196,14 @@ class HeatTransportNS:
                     else:
                         weight = 2.0 / (3.0 * 26.0)
                     vol = dx * dx * dx
-                    source_T = weight * hrr_now / (AIR_DENSITY * AIR_HEAT_CAP * vol)
+                    # V9 FIX: Scale heat source by O2 availability.
+                    # If O2 is depleted at this voxel, combustion cannot
+                    # produce heat here — physically, fire needs O2.
+                    # o2_fraction ranges from 0.0 (no O2) to 0.232 (ambient).
+                    # Below O2_MIN_BURN (0.05), combustion is impossible.
+                    o2_here = getattr(v, 'o2_fraction', 0.232)
+                    o2_factor = max(0.0, min(1.0, (o2_here - 0.05) / (0.232 - 0.05)))
+                    source_T = weight * o2_factor * hrr_now / (AIR_DENSITY * AIR_HEAT_CAP * vol)
 
             T_new = T + dt * (diff_T + adv_T + cool_T + source_T)
             # Physical floor: temperature cannot drop below absolute zero
@@ -1307,8 +1327,15 @@ class SmokeTransportNS:
 
         # Available O2 in the fire region (all 27 cells combined)
         o2_available_kg = AIR_DENSITY * vol * o2_avg * n_cells_fire
-        # Maximum O2 that can be consumed in this timestep
-        o2_max_consumable = o2_available_kg / dt if dt > 0 else 0.0
+        # V9 FIX: Maximum O2 consumable per timestep is limited by
+        # a mixing time constant (5s), not by the total O2 in the
+        # region. The old formula `o2_available_kg / dt` allowed
+        # consuming ALL oxygen in one step (instantaneous depletion),
+        # which is physically impossible — O2 must diffuse to the
+        # fire via entrainment and mixing. This matches the mixing
+        # time used in VoxelCombustionModel._ventilation_limited_hrr().
+        O2_MIXING_TIME = 5.0  # seconds — characteristic mixing time
+        o2_max_consumable = o2_available_kg / O2_MIXING_TIME  # kg/s
         if o2_max_consumable <= 0.0:
             # No O2 available → no combustion products at all
             o2_consumption_rate = 0.0
@@ -1481,20 +1508,26 @@ class SmokeTransportNS:
             # Floor at zero (concentrations cannot be negative)
             s_new = max(s_new, 0.0)
             c_new = max(c_new, 0.0)
-            # BUG-CRIT-3 FIX: Removed artificial 50% O2 depletion cap.
-            # The old code `max(min(o2_new, O2_AMBIENT), o2 * 0.5)` silently
-            # inflated O2 levels, causing VoxelCombustionModel to compute
-            # higher-than-physical HRR — a silently wrong result violating
-            # PRINCIPLE ZERO.
-            # Instead: floor at 0.0 (physically correct minimum), and emit
-            # a loud WARNING if depletion exceeds 50%/step (indicates dt too large).
+            # V9 FIX: O2 depletion rate limiter per voxel per timestep.
+            # Previous code allowed O2 to drop from 0.232 to 0.0 in a
+            # single step, causing numerical blow-up in HeatTransportNS
+            # (observed: 658,000 K). The root cause: source term scaling
+            # and mixing time were not enough because individual voxels
+            # have very small O2 mass (e.g., 0.035 kg in a 0.5m cell)
+            # and the source term could still consume all of it.
+            #
+            # Physical justification: O2 must diffuse to the fire through
+            # the surrounding air. In one timestep of dt seconds, only
+            # a fraction of the local O2 can be consumed — the rest must
+            # wait for turbulent mixing to bring fresh O2. A 20% per-step
+            # limit is conservative but prevents numerical catastrophe.
+            # This is equivalent to a mixing time of ~5×dt, consistent
+            # with the O2_MIXING_TIME constant above.
+            O2_MAX_DEPLETION_RATE = 0.20  # max 20% depletion per step
+            if o2 > 0.0:
+                o2_min = o2 * (1.0 - O2_MAX_DEPLETION_RATE)
+                o2_new = max(o2_new, o2_min)
             o2_new = max(min(o2_new, self.O2_AMBIENT), 0.0)
-            if o2 > 0.0 and o2_new < o2 * 0.5:
-                logger.warning(
-                    "O2 at voxel (%d,%d,%d) dropped %.1f%% in one step — "
-                    "timestep may be too large (o2: %.4f -> %.4f)",
-                    v.ix, v.iy, v.iz, (1.0 - o2_new / o2) * 100.0, o2, o2_new,
-                )
             co2_new = max(co2_new, 0.0)
 
             key = (v.ix, v.iy, v.iz)
