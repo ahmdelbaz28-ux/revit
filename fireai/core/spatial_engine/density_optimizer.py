@@ -590,18 +590,21 @@ class DensityOptimizer:
         if not new_dets:
             return
 
-        # SAFETY: re-verify with the reduced set
+        # SAFETY: re-verify with the reduced set (Coverage AND NFPA Spacing)
         old_dets = layout.detectors
         old_cov = layout.coverage_pct
         old_valid = layout.proof_valid
+        old_nfpa_valid = layout.nfpa_valid
         layout.detectors = new_dets
         self._verify_fast(layout)
+        self._audit_nfpa(layout)  # ← CRITICAL FIX: was missing
 
-        # If coverage proof fails, restore the removed detector
-        if not layout.proof_valid:
+        # If coverage proof fails OR NFPA spacing fails, restore the removed detector
+        if not layout.proof_valid or not layout.nfpa_valid:
             layout.detectors = old_dets
             layout.coverage_pct = old_cov
             layout.proof_valid = old_valid
+            layout.nfpa_valid = old_nfpa_valid
 
     # ═══════════════════════════════════════════════════════════════════════════
     # CHALLENGE 1: Hierarchical Grid Verification (10-20x faster)

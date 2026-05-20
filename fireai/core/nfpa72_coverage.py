@@ -527,33 +527,86 @@ def check_voronoi_coverage(
 def check_ridge_zone_compliance(
     detector_positions: List[Tuple[float, float]],
     ceiling_spec: CeilingSpec,
-    ridge_line: Tuple[float, float, float, float]
+    ridge_line: Tuple[float, float, float, float],
+    standard_spacing: float = 9.1
 ) -> NFPAComplianceResult:
     """
-    Check if sloped ceiling has detector in ridge zone.
-    Per NFPA 72, for ceilings with slope > 1.5°, at least one
-    detector must be within 0.9m (3ft) of the ridge.
+    Check if sloped ceiling has a ROW of detectors in the ridge zone.
+
+    Per NFPA 72 §17.6.3.4, for ceilings with slope > 25 % (approx 14°),
+    detectors must be located within 0.9 m (3 ft) of the ridge AND
+    spaced no farther apart than the listed spacing along the ridge.
+
+    The old code accepted a single detector in the ridge zone, which
+    fails for long ridges (e.g. a 60 m warehouse gable roof where one
+    detector at one end leaves the far end unprotected — smoke travels
+    longitudinally along the ridge before descending to side detectors).
+
     Args:
-        detector_positions: List of detector positions
-        ceiling_spec: Ceiling specification
-        ridge_line: Ridge line coordinates
+        detector_positions: List of detector (x, y) positions.
+        ceiling_spec:       Ceiling specification (slope, type).
+        ridge_line:         (x1, y1, x2, y2) ridge line coordinates.
+        standard_spacing:   Maximum detector spacing along the ridge (m).
+                            Default 9.1 m per NFPA 72 Table 17.6.3.5.1.
     Returns:
         NFPAComplianceResult
     """
     result = NFPAComplianceResult(is_compliant=True)
     if not requires_ridge_zone_detector(ceiling_spec):
         return result
-    # Check if any detector is in ridge zone
-    has_ridge_detector = False
+
+    # Collect all detectors inside the ridge zone
+    ridge_detectors = []
     for dx, dy in detector_positions:
         if is_in_ridge_zone((dx, dy), ridge_line, ceiling_spec.slope_degrees):
-            has_ridge_detector = True
-            break
-    if not has_ridge_detector:
+            ridge_detectors.append((dx, dy))
+
+    # Must have at least one detector in the ridge zone
+    if not ridge_detectors:
         result.add_violation(
             f"Sloped ceiling (slope={ceiling_spec.slope_degrees}°) requires "
-            f"at least one detector in ridge zone (within 0.9m of ridge)"
+            f"detectors in the ridge zone (within 0.9m of ridge). "
+            f"None found."
         )
+        return result
+
+    # Calculate ridge length and required detector count
+    x1, y1, x2, y2 = ridge_line
+    ridge_length = math.hypot(x2 - x1, y2 - y1)
+
+    if ridge_length > 0 and standard_spacing > 0:
+        required_count = max(1, math.ceil(ridge_length / standard_spacing))
+        if len(ridge_detectors) < required_count:
+            result.add_violation(
+                f"Ridge length {ridge_length:.1f}m requires at least "
+                f"{required_count} detectors in the ridge zone "
+                f"(spacing ≤ {standard_spacing}m per NFPA 72 §17.6.3.4), "
+                f"but only {len(ridge_detectors)} found."
+            )
+
+    # Check inter-detector gaps along the ridge
+    if len(ridge_detectors) >= 2 and ridge_length > 0:
+        # Sort detectors by their projection along the ridge direction
+        dx = x2 - x1
+        dy = y2 - y1
+        ridge_len_sq = dx * dx + dy * dy
+        if ridge_len_sq > 0:
+            sorted_dets = sorted(
+                ridge_detectors,
+                key=lambda p: ((p[0] - x1) * dx + (p[1] - y1) * dy) / ridge_len_sq
+            )
+            for i in range(len(sorted_dets) - 1):
+                gap = math.hypot(
+                    sorted_dets[i + 1][0] - sorted_dets[i][0],
+                    sorted_dets[i + 1][1] - sorted_dets[i][1]
+                )
+                if gap > standard_spacing * 1.01:
+                    result.add_violation(
+                        f"Ridge detector gap {gap:.1f}m exceeds spacing "
+                        f"limit {standard_spacing}m (NFPA 72 §17.6.3.4)."
+                    )
+                    break  # One violation is enough to flag
+
     return result
 # ============================================================================
 # L-SHAPED ROOM HANDLING

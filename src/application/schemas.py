@@ -98,18 +98,30 @@ class LoopGroup:
         self.total_current_ma += device_current_ma
     
     def calculate_voltage_drop(self) -> float:
-        """حساب انخفاض الجهد
-        
+        """حساب انخفاض الجهد — أسوأ حالة (Worst-Case Voltage Drop)
+
         V_drop = 2 × I_total × R_per_meter × max_distance
-        
-       _factor 2 لأن هناك سلكين (ذهاب وعودة)
+
+        Factor 2 لأن هناك سلكين (ذهاب وعودة — DC return path).
+        Per NFPA 72 §10.14 and NEC Article 760, voltage at the most
+        remote device must be within the device's listed voltage range.
+
+        CRITICAL FIX: Use total cable length as worst-case distance,
+        NOT the average distance (total_length / device_count).
+        The old formula under-reported voltage drop by N× (where N =
+        device count), which could allow dangerously thin wire gauge
+        selection — leaving end-of-line devices inoperative during fire.
         """
-        # max distance from panel to any device in loop
-        max_distance = 0.0
-        if self.panel_location and self.devices:
-            # Would need device positions - simplified for now
-            max_distance = self.total_length_m / len(self.devices)
-        
+        # Worst-case: most remote device is at the full cable length
+        # For Class B circuits: max_distance = total_length_m
+        # For Class A loops: max_distance = total_length_m / 2
+        # Conservative: use total_length_m (covers both topologies)
+        if self.total_length_m <= 0:
+            self.voltage_drop_v = 0.0
+            return 0.0
+
+        max_distance = self.total_length_m
+
         r_per_m = self.cable_spec.resistance_ohm_per_meter
         self.voltage_drop_v = (
             2 * (self.total_current_ma / 1000.0) * r_per_m * max_distance
