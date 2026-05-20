@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "elite-platform-v2"
+version = "0.2.0"
+description = "Elite engineering platform reference with evidence chain and twin system of record"
+requires-python = ">=3.8"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,5 @@
+Metadata-Version: 2.1
+Name: elite-platform-v2
+Version: 0.2.0
+Summary: Elite engineering platform reference with evidence chain and twin system of record
+Requires-Python: >=3.8

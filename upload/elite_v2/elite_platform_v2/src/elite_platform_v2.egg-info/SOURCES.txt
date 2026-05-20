@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/elite_platform_v2/__init__.py
+src/elite_platform_v2/canonical_json.py
+src/elite_platform_v2/contracts.py
+src/elite_platform_v2/evidence_chain.py
+src/elite_platform_v2/geometry.py
+src/elite_platform_v2/placement.py
+src/elite_platform_v2/release_gates.py
+src/elite_platform_v2/twin_db.py
+src/elite_platform_v2.egg-info/PKG-INFO
+src/elite_platform_v2.egg-info/SOURCES.txt
+src/elite_platform_v2.egg-info/dependency_links.txt
+src/elite_platform_v2.egg-info/top_level.txt
+tests/test_v2.py

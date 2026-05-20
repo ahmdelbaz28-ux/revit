@@ -1,0 +1,14 @@
+{
+  "connector_status": {
+    "expected_revision_id": "rev-002",
+    "external_model_id": "revit://tower-a/level-1",
+    "observed_revision_id": "rev-003",
+    "snapshot_id": "snapshot-b",
+    "status": "drift_detected"
+  },
+  "drift_count": 1,
+  "drift_types": [
+    "geometry_changed"
+  ],
+  "manifest_valid": true
+}

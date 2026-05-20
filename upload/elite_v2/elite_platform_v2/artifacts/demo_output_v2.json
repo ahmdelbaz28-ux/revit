@@ -1,0 +1,29 @@
+{
+  "db_path": "C:\\Users\\EWS-01\\Downloads\\alloma\\elite_platform_v2\\artifacts\\elite_v2_eec2a4cc.db",
+  "drift": [
+    {
+      "drift_type": "geometry_changed",
+      "room_id": "R-500"
+    }
+  ],
+  "drift_count": 1,
+  "evidence_chain_valid": true,
+  "latest_revision": {
+    "connector_name": "revit",
+    "created_at": "2026-05-20T07:48:06.520232Z",
+    "revision_id": "rev-102",
+    "snapshot_id": "v2-snap-b",
+    "source_model_id": "revit://hq/level-5"
+  },
+  "release": {
+    "blockers": [],
+    "checks": {
+      "canonical_geometry": true,
+      "connector_in_sync": true,
+      "evidence_chain_valid": true,
+      "stale_surfaces_removed": true,
+      "version_authority_valid": true
+    },
+    "release_status": "green"
+  }
+}

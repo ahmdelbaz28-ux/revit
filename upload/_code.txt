@@ -1,34 +1,3 @@
 [
-  {
-    "Severity Level": "CRITICAL",
-    "Life Safety Impact": "فشل تام لجميع أجهزة الإنذار والإشعار (سارينات/فلاشرات) الموجودة في نهاية مسار الكابل أثناء الحريق، مما يؤدي إلى عدم تنبيه الشاغلين وموتهم محاصرين.",
-    "Technical Explanation": "في ملف `schemas.py` داخل دالة `calculate_voltage_drop` للكلاس `LoopGroup`، يتم حساب أقصى مسافة (max_distance) عن طريق قسمة الطول الإجمالي للكابل على عدد الأجهزة `self.total_length_m / len(self.devices)`. هذا خطأ كارثي لأنه يحسب هبوط الجهد بناءً على (متوسط) المسافة بين الأجهزة وليس المسافة التراكمية الكلية لأبعد جهاز. بالتالي، النظام سيوافق على كابلات رفيعة لمسافات طويلة جداً بناءً على حسابات هبوط جهد وهمية ومنخفضة.",
-    "Code/Standard Reference": "NEC 2023 Article 210 / NFPA 72 §10.14",
-    "Root Cause": "خطأ برمجي ورياضي فادح (Logic Flaw) في استخدام المتوسط الحسابي بدلاً من المسافة الكلية أو المسافة التراكمية لحساب أسوأ حالة لهبوط الجهد (Worst-Case Voltage Drop).",
-    "Real-World Failure Scenario": "دائرة إنذار طولها 1000 متر تحتوي على 100 جهاز. النظام سيقوم بقسمة 1000 على 100، ويحسب هبوط الجهد على مسافة 10 أمتار فقط! سيتم تركيب أسلاك رفيعة (AWG 18). عند اندلاع الحريق وسحب تيار عالٍ لتشغيل السارينات، سيهبط الجهد الفعلي إلى ما دون 16 فولت في نهاية الخط، ولن تعمل الأجهزة إطلاقاً.",
-    "Recommended Correction": "تعديل دالة `calculate_voltage_drop` في `schemas.py` لتستخدم مسافة الكابل الإجمالية كأسوأ حالة، أو استخدام حسابات التوزيع النقطي الدقيقة:\n\n```python\ndef calculate_voltage_drop(self) -> float:\n    # التصحيح الجذري: أبعد نقطة في الـ Loop تعادل نصف الطول الإجمالي للـ Class A أو الطول الكامل للـ Class B\n    # للضمان الأمني الأقصى، نستخدم الطول الإجمالي للكابل إذا لم يتم تفصيل المسافات\n    max_distance = self.total_length_m\n    \n    r_per_m = self.cable_spec.resistance_ohm_per_meter\n    self.voltage_drop_v = (\n        2 * (self.total_current_ma / 1000.0) * r_per_m * max_distance\n    )\n    return self.voltage_drop_v\n```",
-    "Confidence Level": "High"
-  },
-  {
-    "Severity Level": "CRITICAL",
-    "Life Safety Impact": "تأخر شديد في اكتشاف الحريق في الأسقف المائلة (Sloped/Gable Ceilings) لأن الدخان سيتجمع في القمة (Ridge) ويمتد طولياً دون أن يتم رصده.",
-    "Technical Explanation": "في ملف `nfpa72_coverage.py`، تقوم الدالة `check_ridge_zone_compliance` باختبار ما إذا كان هناك كاشف واحد (على الأقل) في منطقة القمة (Ridge Zone). بمجرد إيجاد كاشف واحد فقط، يتم إرجاع `True`! معيار NFPA يفرض وضع 'صف' من الكواشف على امتداد القمة بمسافات لا تتجاوز المسافة القياسية (Spacing). كاشف واحد لا يكفي لتغطية قمة طولها 50 متراً.",
-    "Code/Standard Reference": "NFPA 72-2022 §17.6.3.4",
-    "Root Cause": "استخدام حلقة `for` تنتهي بـ `break` بمجرد إيجاد كاشف واحد داخل منطقة الـ Ridge، وتجاهل الفحص الطولي للمسافات بين الكواشف في تلك المنطقة.",
-    "Real-World Failure Scenario": "مستودع بسقف جمالوني (Gable Roof) طوله 60 متراً. يضع المحرك كاشفاً واحداً في أول القمة وكواشف أخرى على الجوانب، ويعتبر التصميم معتمداً. عند اشتعال حريق في الطرف الآخر من المستودع، سيرتفع الدخان إلى القمة ويسير طولياً عبر الـ 60 متراً. سيستغرق الأمر وقتاً طويلاً جداً حتى يمتلئ الحيز بالدخان ويهبط ليصل للكواشف الجانبية، مما يعني خروج الحريق عن السيطرة.",
-    "Recommended Correction": "تعديل دالة `check_ridge_zone_compliance` لضمان أن المسافة بين جميع الكواشف الواقعة في منطقة الـ Ridge لا تتجاوز المسافة القصوى (Spacing):\n\n```python\ndef check_ridge_zone_compliance(detector_positions, ceiling_spec, ridge_line, standard_spacing) -> NFPAComplianceResult:\n    result = NFPAComplianceResult(is_compliant=True)\n    ridge_detectors = []\n    for dx, dy in detector_positions:\n        if is_in_ridge_zone((dx, dy), ridge_line, ceiling_spec.slope_degrees):\n            ridge_detectors.append((dx, dy))\n            \n    if not ridge_detectors:\n        result.add_violation(\"Sloped ceiling requires detectors in ridge zone.\")\n        return result\n\n    # التحقق من المسافات الطولية بين كواشف القمة\n    ridge_length = math.hypot(ridge_line[2]-ridge_line[0], ridge_line[3]-ridge_line[1])\n    required_detectors = math.ceil(ridge_length / standard_spacing)\n    \n    if len(ridge_detectors) < required_detectors:\n        result.add_violation(f\"Ridge length {ridge_length}m requires at least {required_detectors} detectors.\")\n    \n    # إضافة فحص للفراغات بين كل كاشف وآخر في القمة هنا...\n    return result\n```",
-    "Confidence Level": "High"
-  },
-  {
-    "Severity Level": "MAJOR",
-    "Life Safety Impact": "إزالة كواشف بشكل يخل بمسافات التباعد الخطية الإلزامية للكود، مما يؤدي إلى رفض التصميم من السلطات المختصة، ووجود مناطق استجابتها بطيئة للدخان.",
-    "Technical Explanation": "في ملف `density_optimizer.py` دالة `_remove_redundant`، تقوم الخوارزمية الجشعة (Greedy) بحذف الكواشف إذا كانت منطقة التغطية متداخلة بنسبة 100% مع كواشف أخرى. بعد كل حذف، تقوم بإعادة التحقق من التغطية فقط عبر استدعاء `self._verify_fast(layout)`، ولكنها لا تستدعي `self._audit_nfpa(layout)`! هذا يعني أن إزالة الكاشف قد تجعل المسافة بين الكاشفين المتبقيين تتجاوز الـ 9.1 متر المسموحة.",
-    "Code/Standard Reference": "NFPA 72-2022 §17.6.3.1.1 (Spacing limits)",
-    "Root Cause": "تجاهل إعادة فحص شروط الـ Spacing والـ Wall Distance بعد إجراء عمليات تحسين التغطية (Redundancy Elimination).",
-    "Real-World Failure Scenario": "تصميم لغرفة ممتدة يضع 3 كواشف بمسافة 8 أمتار بين كل كاشف. يكتشف المحسن أن الكاشف الأوسط تغطيته (تقاطع الدوائر) مشمولة بالكاشفين الأول والثالث. يقوم بحذف الأوسط. تصبح المسافة بين الأول والثالث 16 متراً، ورغم أن التغطية تبدو هندسياً متقاطعة بشكل كافٍ لملء الغرفة الضيقة، إلا أن المسافة الخطية 16 متر تمثل خرقاً صريحاً للكود.",
-    "Recommended Correction": "إجبار الخوارزمية على إعادة التحقق من قواعد المسافات والجدران الخاصة بـ NFPA قبل اعتماد حذف الكاشف في `density_optimizer.py`:\n\n```python\n        # SAFETY: re-verify with the reduced set (Coverage AND Spacing)\n        old_dets = layout.detectors\n        old_cov = layout.coverage_pct\n        old_valid = layout.proof_valid\n        old_nfpa_valid = layout.nfpa_valid\n        \n        layout.detectors = new_dets\n        self._verify_fast(layout)\n        self._audit_nfpa(layout) # <--- التصحيح الجذري\n\n        # If coverage proof fails OR NFPA spacing fails, restore the removed detector\n        if not layout.proof_valid or not layout.nfpa_valid:\n            layout.detectors = old_dets\n            layout.coverage_pct = old_cov\n            layout.proof_valid = old_valid\n            layout.nfpa_valid = old_nfpa_valid\n```",
-    "Confidence Level": "High"
-  },
-  {
-    "Severity Level": "CRITICAL",
-    "Life Safety Impact":
+  {"call": "google:search", "queries": ["NFPA 101 ASET RSET calculation", "Fire alarm IoT digital twin architecture"]}
+]
