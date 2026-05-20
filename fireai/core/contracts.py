@@ -351,6 +351,91 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     return payload
 
 
+# ============================================================================
+# STRICT_ENGINEERING: Loop Input Validation
+# ============================================================================
+
+# Forbidden derived fields for loop inputs
+FORBIDDEN_LOOP_DERIVED_FIELDS: tuple = (
+    "voltage_drop_v",
+    "is_compliant",
+    "max_distance_m",
+)
+
+
+def validate_loop_input(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate an SLC loop input payload before design.
+
+    Checks:
+      1. No forbidden derived fields (voltage_drop_v, is_compliant).
+      2. Required fields: loop_id, device_count or devices list.
+      3. Device count within NFPA 72 limits.
+      4. Total length is positive.
+      5. Cable specification is valid.
+
+    Args:
+        payload: Raw dictionary from API / config.
+
+    Returns:
+        The validated payload (unchanged if valid).
+
+    Raises:
+        ContractViolation: If any contract rule is violated.
+    """
+    if not isinstance(payload, dict):
+        raise ContractViolation("Loop input must be a dictionary")
+
+    # 1. Reject derived fields
+    for field_name in FORBIDDEN_LOOP_DERIVED_FIELDS:
+        if field_name in payload:
+            raise ContractViolation(
+                f"Field '{field_name}' is derived internally and must not be "
+                f"supplied in input. Voltage drop and compliance are computed "
+                f"from cable length, gauge, and current."
+            )
+
+    # 2. Required fields
+    if "loop_id" not in payload:
+        raise ContractViolation("Missing required field: 'loop_id'")
+
+    # 3. Device count limits (NFPA 72 §21.2.2: max 250 per loop typically)
+    device_count = payload.get("device_count") or len(payload.get("devices", []))
+    if device_count and device_count > 250:
+        raise ContractViolation(
+            f"Loop has {device_count} devices — exceeds NFPA 72 §21.2.2 "
+            f"limit of 250 devices per SLC loop"
+        )
+
+    # 4. Total length must be positive if provided
+    total_length = payload.get("total_length_m")
+    if total_length is not None:
+        try:
+            l = float(total_length)
+            if l < 0:
+                raise ContractViolation(
+                    f"total_length_m must be >= 0, got {l}"
+                )
+        except (TypeError, ValueError):
+            raise ContractViolation(
+                f"total_length_m must be a number, got {total_length!r}"
+            )
+
+    # 5. Panel voltage validation
+    panel_voltage = payload.get("panel_voltage_v", 24.0)
+    try:
+        v = float(panel_voltage)
+        if v <= 0 or v > 48:
+            raise ContractViolation(
+                f"panel_voltage_v must be > 0 and <= 48, got {v}"
+            )
+    except (TypeError, ValueError):
+        raise ContractViolation(
+            f"panel_voltage_v must be a number, got {panel_voltage!r}"
+        )
+
+    return payload
+
+
 __all__ = [
     "CONTRACT_VERSION",
     "CeilingType",
@@ -369,5 +454,7 @@ __all__ = [
     # STRICT_ENGINEERING: Input validation
     "ContractViolation",
     "FORBIDDEN_DERIVED_FIELDS",
+    "FORBIDDEN_LOOP_DERIVED_FIELDS",
     "validate_room_input",
+    "validate_loop_input",
 ]

@@ -171,6 +171,13 @@ class BOQReport:
     total_pull_stations: int = 0
     total_notification_devices: int = 0
     
+    # Battery sizing — CRITICAL for life safety
+    # Previously MISSING: NFPA 72 §10.6.7 requires 24h standby + 5min alarm
+    battery_capacity_ah: float = 0.0
+    battery_standby_current_ma: float = 0.0
+    battery_alarm_current_ma: float = 0.0
+    battery_safety_factor: float = 1.20
+    
     # Costs
     equipment_cost: float = 0.0
     labor_hours_estimated: float = 0.0
@@ -312,6 +319,70 @@ def generate_boq(design_report: dict, project_name: str = "Fire Alarm Project") 
         report.total_notification_devices * 2.0 +
         report.total_pull_stations * 0.5
     )
+    
+    # ══════════════════════════════════════════════════════════════════════
+    # BATTERY SIZING — NFPA 72 §10.6.7 (PREVIOUSLY MISSING)
+    # ══════════════════════════════════════════════════════════════════════
+    # Without this calculation, projects could ship without properly sized
+    # batteries, causing panel failure during power outages in a fire.
+    #
+    # Formula: 24h standby + 5min alarm per NFPA 72 §10.6.7.2.1
+    # Safety factor of 1.20 (20%) for aging and temperature.
+    try:
+        from fireai.core.nfpa72_calculations import required_battery_capacity_ah
+        
+        # Estimate standby current: quiescent draw of all devices
+        # Typical: smoke detector ~0.15mA, module ~5mA, panel ~100mA
+        panel_quiescent_ma = 100.0
+        detector_quiescent_ma = report.total_detectors * 0.15
+        module_quiescent_ma = report.total_detectors * 5.0  # Each detector needs a module
+        report.battery_standby_current_ma = panel_quiescent_ma + detector_quiescent_ma + module_quiescent_ma
+        
+        # Estimate alarm current: all notification devices + panel alarm draw
+        panel_alarm_ma = 200.0
+        notif_alarm_ma = report.total_notification_devices * 350.0  # Horn/strobe ~350mA each
+        report.battery_alarm_current_ma = panel_alarm_ma + notif_alarm_ma
+        
+        # Calculate required battery capacity
+        report.battery_capacity_ah = required_battery_capacity_ah(
+            standby_current_ma=report.battery_standby_current_ma,
+            alarm_current_ma=report.battery_alarm_current_ma,
+            safety_factor=report.battery_safety_factor,
+        )
+        
+        # Add battery line item
+        # Standard lead-acid batteries come in 7Ah, 12Ah, 18Ah, 26Ah, 33Ah, 55Ah
+        standard_sizes = [7, 12, 18, 26, 33, 55, 80, 100, 120]
+        selected_ah = min((s for s in standard_sizes if s >= report.battery_capacity_ah), default=120)
+        battery_cost = selected_ah * 8.50  # ~$8.50 per Ah for sealed lead-acid
+        
+        battery_item = BOQLineItem(
+            item_code="BAT-LEAD-ACID",
+            description=f"Sealed Lead-Acid Battery {selected_ah}Ah 24VDC",
+            model=f"PS-{selected_ah}AH-24V",
+            quantity=2,  # Two batteries in series for 24VDC (12V each)
+            unit="ea",
+            unit_price=battery_cost / 2,
+            total_price=battery_cost,
+        )
+        report.line_items.append(battery_item)
+        report.equipment_cost += battery_cost
+        
+        report.warnings.append(
+            f"Battery sizing: {report.battery_capacity_ah:.1f}Ah required, "
+            f"selected {selected_ah}Ah per NFPA 72 §10.6.7. "
+            f"(Standby: {report.battery_standby_current_ma:.0f}mA x 24h, "
+            f"Alarm: {report.battery_alarm_current_ma:.0f}mA x 5min, "
+            f"Safety factor: {report.battery_safety_factor:.2f})"
+        )
+    except ImportError:
+        report.warnings.append(
+            "CRITICAL: nfpa72_calculations module not available — "
+            "battery sizing NOT performed. Manual calculation required."
+        )
+    except Exception as e:
+        report.warnings.append(f"Battery sizing error: {e} — manual calculation required")
+    # ══════════════════════════════════════════════════════════════════════
     
     # Calculate total system cost
     labor_rate = 85.00  # $85/hour for licensed technician

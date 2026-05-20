@@ -88,6 +88,11 @@ class LoopGroup:
     max_devices: int = 250
     max_current_ma: float = 5000.0  # 5A for panel
     
+    # topology — CRITICAL for voltage drop calculation
+    # Class A: loop with return path (fault tolerant, worst-case at midpoint)
+    # Class B: daisy chain (no return, worst-case at end of line)
+    is_class_a: bool = False  # Default Class B (most common)
+    
     # references
     panel_location: Optional[tuple] = None
     cable_spec: CableSpecification = field(default_factory=CableSpecification)
@@ -106,21 +111,29 @@ class LoopGroup:
         Per NFPA 72 §10.14 and NEC Article 760, voltage at the most
         remote device must be within the device's listed voltage range.
 
-        CRITICAL FIX: Use total cable length as worst-case distance,
-        NOT the average distance (total_length / device_count).
-        The old formula under-reported voltage drop by N× (where N =
-        device count), which could allow dangerously thin wire gauge
-        selection — leaving end-of-line devices inoperative during fire.
+        CRITICAL FIX (v2): Use topology-aware worst-case distance.
+        - Class B (daisy chain): worst-case = total_length_m (EOL device)
+        - Class A (loop):         worst-case = total_length_m / 2 (midpoint)
+
+        The original bug used average distance (total/N), under-reporting
+        by N×. The first fix used total_length_m for both topologies,
+        which is correct for Class B but over-conservative for Class A
+        (over-reports by 2×). This version uses the correct formula
+        for each topology per NFPA 72 §10.14 and NEC Article 760.
         """
-        # Worst-case: most remote device is at the full cable length
-        # For Class B circuits: max_distance = total_length_m
-        # For Class A loops: max_distance = total_length_m / 2
-        # Conservative: use total_length_m (covers both topologies)
         if self.total_length_m <= 0:
             self.voltage_drop_v = 0.0
             return 0.0
 
-        max_distance = self.total_length_m
+        # Topology-aware worst-case distance
+        if self.is_class_a:
+            # Class A: current can reach the midpoint from BOTH directions.
+            # Worst-case device is at the midpoint of the loop.
+            max_distance = self.total_length_m / 2.0
+        else:
+            # Class B: daisy chain, no return path.
+            # Worst-case device is at the end of the cable.
+            max_distance = self.total_length_m
 
         r_per_m = self.cable_spec.resistance_ohm_per_meter
         self.voltage_drop_v = (
@@ -160,7 +173,9 @@ class LoopGroup:
             'total_current_ma': round(self.total_current_ma, 2),
             'voltage_drop_v': round(self.voltage_drop_v, 3),
             'is_compliant': self.is_compliant,
-            'panel_voltage_v': self.panel_voltage_v
+            'panel_voltage_v': self.panel_voltage_v,
+            'is_class_a': self.is_class_a,
+            'topology': 'Class_A_loop' if self.is_class_a else 'Class_B_daisy_chain',
         }
 
 

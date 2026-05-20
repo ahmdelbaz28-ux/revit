@@ -232,17 +232,35 @@ class TwinSystemOfRecord:
         finally:
             conn.close()
 
+    # Minimum movement distance (meters) to count as "moved".
+    # Prevents false drift alerts from floating-point rounding.
+    # 0.01m = 10mm — any movement under 1cm is negligible for fire safety.
+    MOVEMENT_THRESHOLD_M = 0.01
+
+    # Polygon point comparison tolerance (meters).
+    # Points within this distance are considered identical.
+    POLYGON_TOLERANCE_M = 0.005  # 5mm
+
     def diff_snapshots(
-        self, old_snapshot_id: str, new_snapshot_id: str
+        self, old_snapshot_id: str, new_snapshot_id: str,
+        movement_threshold_m: Optional[float] = None,
+        polygon_tolerance_m: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         """Diff two snapshots to detect drift.
 
         Compares rooms (added, removed, geometry changed) and
         detectors (added, removed, moved).
 
+        STRENGTHENED: Uses floating-point tolerance for polygon and
+        position comparisons. The original code used exact equality
+        (==), which triggered false drift alerts from 0.001mm
+        floating-point differences.
+
         Args:
             old_snapshot_id: Earlier snapshot ID.
             new_snapshot_id: Later snapshot ID.
+            movement_threshold_m: Min distance to count as "moved".
+            polygon_tolerance_m: Tolerance for polygon point comparison.
 
         Returns:
             List of drift records with room_id, drift_type, and details.
@@ -279,13 +297,17 @@ class TwinSystemOfRecord:
                 drift.append({"room_id": room_id, "drift_type": "room_removed"})
                 continue
 
-            # Geometry change
+            # Geometry change — STRENGTHENED: use tolerance instead of exact equality
             old_polygon = old_room.get("polygon", [])
             new_polygon = new_room.get("polygon", [])
-            if old_polygon != new_polygon:
+            if not self._polygons_approx_equal(
+                old_polygon, new_polygon,
+                tolerance_m=polygon_tolerance_m or self.POLYGON_TOLERANCE_M
+            ):
                 drift.append({
                     "room_id": room_id,
                     "drift_type": "geometry_changed",
+                    "detail": "Room polygon geometry changed beyond tolerance",
                 })
 
             # Detector changes
@@ -316,13 +338,17 @@ class TwinSystemOfRecord:
                     continue
                 old_pos = (old_det.get("x"), old_det.get("y"), old_det.get("z"))
                 new_pos = (new_det.get("x"), new_det.get("y"), new_det.get("z"))
-                if old_pos != new_pos:
+                # STRENGTHENED: only flag movement above threshold
+                move_dist = self._position_distance(old_pos, new_pos)
+                threshold = movement_threshold_m or self.MOVEMENT_THRESHOLD_M
+                if move_dist > threshold:
                     drift.append({
                         "room_id": room_id,
                         "drift_type": "detector_moved",
                         "detector_id": det_id,
                         "old_position": old_pos,
                         "new_position": new_pos,
+                        "move_distance_m": round(move_dist, 4),
                     })
 
         return drift
@@ -337,6 +363,50 @@ class TwinSystemOfRecord:
             return [row[0] for row in rows]
         finally:
             conn.close()
+
+    @staticmethod
+    def _position_distance(pos_a: tuple, pos_b: tuple) -> float:
+        """Euclidean distance between two 3D positions.
+
+        Handles None coordinates by treating them as 0.0.
+        """
+        import math
+        ax, ay = float(pos_a[0] or 0), float(pos_a[1] or 0)
+        az = float(pos_a[2] or 0) if len(pos_a) > 2 else 0.0
+        bx, by = float(pos_b[0] or 0), float(pos_b[1] or 0)
+        bz = float(pos_b[2] or 0) if len(pos_b) > 2 else 0.0
+        return math.sqrt((ax - bx) ** 2 + (ay - by) ** 2 + (az - bz) ** 2)
+
+    @staticmethod
+    def _polygons_approx_equal(
+        poly_a: list, poly_b: list, tolerance_m: float = 0.005
+    ) -> bool:
+        """Check if two polygons are approximately equal within tolerance.
+
+        Compares point-by-point. Returns False if:
+          - Different number of points
+          - Any corresponding points differ by more than tolerance_m
+        """
+        if len(poly_a) != len(poly_b):
+            return False
+        for pa, pb in zip(poly_a, poly_b):
+            # Handle tuples, lists, or dict representations
+            if isinstance(pa, dict):
+                ax, ay = float(pa.get("x", 0)), float(pa.get("y", 0))
+            elif isinstance(pa, (list, tuple)) and len(pa) >= 2:
+                ax, ay = float(pa[0]), float(pa[1])
+            else:
+                return False
+            if isinstance(pb, dict):
+                bx, by = float(pb.get("x", 0)), float(pb.get("y", 0))
+            elif isinstance(pb, (list, tuple)) and len(pb) >= 2:
+                bx, by = float(pb[0]), float(pb[1])
+            else:
+                return False
+            dist = ((ax - bx) ** 2 + (ay - by) ** 2) ** 0.5
+            if dist > tolerance_m:
+                return False
+        return True
 
 
 __all__ = ["TwinSystemOfRecord"]
