@@ -1,0 +1,77 @@
+{
+  "system_mode": "DEEP_FOCUS",
+  "analysis_type": "SYS_ANALYSIS",
+  "language": "ARABIC",
+  "auditor_persona": "SENIOR_FIRE_PROTECTION_AUTHORITY",
+
+  "mandatory_rules": "agent.md — 8 rules: (1) ABSOLUTE_TRUTH: Never lie or claim something was done when it wasn't. (2) NO_UNAUTHORIZED_CHANGES: Do not modify any code not explicitly mentioned. (3) STOP_ON_ERRORS: If you encounter a problem, stop immediately and report. (4) NEVER_SELF_EDIT: Do not fix anything on your own even if it appears wrong — follow instructions literally. (5) EXPLAIN_AFTER_EACH_STEP: After each step, briefly explain what you did and the result. (6) VERIFY_BEFORE_CHANGING: Read the actual code line by line before applying ANY fix — the consultant may be describing a different version. (7) COMMIT_REPORTING: After every commit, provide commit hash + direct GitHub link. (8) WORKSPACE: /home/z/my-project/revit/",
+
+  "scope": [
+    "fireai/core/",
+    "core/",
+    "bridges/",
+    "adapters/",
+    "fireai/cli.py",
+    "backend/app.py",
+    "fireai/__init__.py"
+  ],
+
+  "on_critical_finding": "STOP_AND_REPORT — do NOT fix independently. Report the finding with exact file, line number, and evidence. Wait for user confirmation before making any change.",
+
+  "verification_protocol": "LINE_BY_LINE_BEFORE_CHANGE — Read the target file line by line before applying ANY modification. The consultant may be describing a different version of the code. If the code does not match the consultant's description, flag the discrepancy and do NOT apply the fix.",
+
+  "commit_reporting": "HASH_PLUS_GITHUB_LINK — After every commit, provide: (1) Full commit SHA, (2) Direct link: https://github.com/ahmdelbaz28-ux/revit/commit/<SHA>",
+
+  "stop_conditions": [
+    "Code does not match consultant's description — discrepancy detected",
+    "RuntimeError or unhandled exception encountered",
+    "Change would affect file not listed in scope",
+    "Consultant fix is based on stale/old version of the code",
+    "Self-editing temptation — if something looks wrong but wasn't mentioned, report it instead of fixing it"
+  ],
+
+  "nfpa72_cross_reference": {
+    "0.7S_rule": "§17.7.4.2.3.1 — coverage radius R = 0.7 × adjusted_spacing S",
+    "dead_air_space": "§17.6.3.1.3 — detectors must not be in dead air space",
+    "wall_distance_min": "§17.6.3.1.1 — minimum 4 inches (0.1m) from wall",
+    "smoke_spacing_table": "Table 17.6.3.5.1 — spacing by ceiling height",
+    "voltage_drop": "Chapter 10 + NEC 760 — NAC circuit voltage drop (×2 for DC return)",
+    "cooking_areas": "§17.6.4 — no smoke detectors in cooking areas",
+    "corridor_spacing": "§17.7.3 — reduced spacing for corridors",
+    "heat_spacing": "§17.5.4 — heat detector spacing",
+    "duct_detectors": "§17.8.3 — HVAC duct smoke detectors",
+    "beam_detectors": "§17.6.6 — beam detector spacing"
+  },
+
+  "known_fixed_bugs": {
+    "V12_Bug1": "cognitive_core.py — longest-match for semantic collision",
+    "V12_Bug2": "adaptive_solver.py — greedy farthest-point instead of candidates[:count]",
+    "V12_Bug3": "cognitive_core.py — dead air space + area coverage instead of wall-hugging",
+    "V12_Bug4": "pdf_to_rooms_adapter.py — architectural containment + MAX_ROOM_AREA_SQM=10000",
+    "V12_Bug5": "adaptive_solver.py — safe_polygon in heat/beam detector fallback",
+    "V12_Bug6": "code_compliance_engine.py — 3D distance with math.hypot",
+    "V12_Bug7": "engineering_router.py — full segment intersects()",
+    "V12_Bug8": "orchestrator.py — unassigned devices safety gate",
+    "V12_Bug9": "digital_twin_bridge.py — 3D Euclidean conflict detection",
+    "V12_Bug10": "output_bridge.py — dynamic schedule table positioning",
+    "V12_Bug11": "parser_bridge.py — buffer(0) healing + log.critical",
+    "V13_Claim1": "floor_orchestrator.py — fake 15% margin already removed",
+    "V13_Claim2": "nfpa72_coverage.py — area-based coverage (not point-counting)",
+    "V13_Claim3": "floor_orchestrator.py — adaptive re-solve via ConstraintSolver",
+    "V13_Claim4": "floor_orchestrator.py — REQUIRES_MANUAL_REVIEW instead of PARTIAL",
+    "V14_Bug12": "multi_floor_analyzer.py — DC return path ×2.0",
+    "V14_Bug13": "room_classifier.py — minimum_rotated_rectangle for true dimensions",
+    "V14_Bug14": "engineering_router.py — intersects + not touches (not crosses)",
+    "V14_Bug15": "pdf_to_rooms_adapter.py — 4-direction bowtie merge check",
+    "Commit3888598_1": "fireai_api.py — no fake geometry defaults",
+    "Commit3888598_2": "api_server.py — polygon dimension max-min fix",
+    "Commit3888598_3": "nfpa72_models.py — area_sqm uses polygon.area",
+    "Commit3888598_4": "floor_orchestrator.py — 5 contract breaks fixed",
+    "Commit3888598_5": "fireai_core.py — FireExpertSystem + EnhancedRoomResult adapter",
+    "Commit3888598_6": "audit_store.py — dev-mode key mismatch warning",
+    "Commit3888598_7": "fireai/__init__.py — lazy __getattr__ instead of wildcard",
+    "Commit3888598_8": "fireai/cli.py — DXFImporter lazy import with fallback",
+    "Commit3888598_9": "backend/app.py — truthful health endpoint",
+    "NewFix_57c61f0": "cli.py DXFImporter NameError + pdf_to_rooms_adapter room undefined + floor_orchestrator adaptive re-solve parity"
+  }
+}
