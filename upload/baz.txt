@@ -1,0 +1,42 @@
+[
+  {
+    "Severity Level": "CRITICAL",
+    "Life Safety Impact": "انهيار حلقة الإنذار بالكامل (SLC Loop) في حالة حدوث 'Short Circuit' (تماس كهربائي) واحد، مما يؤدي إلى فقدان الاتصال بجميع الكواشف والأجهزة في المبنى بأكمله، والموت حرقاً لعدم القدرة على إطلاق الإنذار.",
+    "Technical Explanation": "عند مراجعتي القاسية لكود `loop_designer_v8.py`، وجدت أن الخوارزمية تقوم بتوصيل الأجهزة في حلقة واحدة (حتى 250 جهاز) وتكتفي بحساب طول الكابل، لكنها **تتجاهل تماماً حقن وحدات العزل (Fault Isolator Modules)**. الكود الأمريكي يمنع منعاً باتاً فقدان أكثر من منطقة حريق واحدة (Zone) أو عدد محدد من الأجهزة عند حدوث تماس كهربائي.",
+    "Code/Standard Reference": "NFPA 72-2022 §23.6.1 / EN 54-14",
+    "Root Cause": "التعامل مع الـ Loop كمسار كهربائي واحد متصل (Daisychain) دون الأخذ في الاعتبار معمارية عزل الأعطال (Fault Tolerance Architecture) التي تميز الأنظمة المعنونة (Addressable Systems).",
+    "Real-World Failure Scenario": "عامل صيانة يخطئ ويحدث تماس كهربائي في كاشف واحد بالغرفة رقم 10. بسبب عدم وجود (Isolators)، يهبط الجهد في الحلقة بأكملها إلى الصفر، وتخرج الـ 250 كاشفاً عن الخدمة في نفس اللحظة. يندلع حريق في الغرفة رقم 20 ولا يشعر به أحد.",
+    "Recommended Correction": "الحل الجذري: حقن وحدات العزل برمجياً عند كل انتقال بين (Zone) وأخرى، أو كل 20 جهازاً بحد أقصى، كجزء أصيل من خوارزمية التوجيه:\n\n```python\ndef inject_fault_isolators(loop_devices: list, max_devices_between_isolators: int = 20) -> list:\n    # NFPA 72 §23.6.1: A single fault cannot lose more than one zone or >20 devices\n    secure_loop = []\n    count = 0\n    current_zone = getattr(loop_devices[0], 'zone_id', None) if loop_devices else None\n    \n    for dev in loop_devices:\n        # Inject isolator if zone changes or max devices reached\n        if getattr(dev, 'zone_id', None) != current_zone or count >= max_devices_between_isolators:\n            isolator = Device(device_type=DeviceType.ISOLATOR, position=dev.position, zone_id=dev.zone_id)\n            isolator.ai_justification = \"[SAFETY-INJECTED] NFPA 72 §23.6.1 Fault Isolation\"\n            secure_loop.append(isolator)\n            count = 0\n            current_zone = getattr(dev, 'zone_id', None)\n            \n        secure_loop.append(dev)\n        count += 1\n        \n    return secure_loop\n```",
+    "Confidence Level": "High"
+  },
+  {
+    "Severity Level": "CRITICAL",
+    "Life Safety Impact": "اختناق الشاغلين بالدخان السام أثناء محاولتهم الهروب، لأن البرنامج يحسب مسافات الهروب هندسياً ولكنه لا يربطها بالزمن الفعلي لامتلاء الغرفة بالدخان (ASET vs RSET).",
+    "Technical Explanation": "لقد قمت بمراجعة التفكير الهندسي للنظام. النظام حالياً يستخدم `SafetyGates.gate_egress` للتحقق من أن مسافة الهروب لا تتجاوز 61 متراً (NFPA 101). ويستخدم `semi_cfast_engine.py` لحساب وقت نزول طبقة الدخان. **الكارثة هنا هي انعدام الربط بينهما**. ماذا لو كانت المسافة القانونية 61 متراً، ولكن الدخان يملأ المكان في 30 ثانية؟",
+    "Code/Standard Reference": "SFPE Engineering Guide to Performance-Based Fire Protection / NFPA 101 §9.3",
+    "Root Cause": "الفصل بين محرك الإخلاء (Egress Engine) ومحرك الدخان (Smoke Engine)؛ غياب الحسابات الديناميكية للمخاطر (Dynamic Tenability).",
+    "Real-World Failure Scenario": "مستودع مواد كيميائية تتوافق فيه مسافات الهروب مع الكود (50 متر). يوافق البرنامج. في الواقع، الحريق يتطور بسرعة فائقة (Ultrafast)، وينزل مستوى الدخان السام إلى مستوى التنفس (1.8 متر) خلال 40 ثانية. الشاغل الذي يركض يحتاج إلى 50 ثانية للوصول للمخرج. يموت الشاغل قبل وصوله للمخرج رغم أن 'المسافة' كانت قانونية.",
+    "Recommended Correction": "الربط الجذري والديناميكي (ASET vs RSET Validation)؛ لا يمكن اعتماد المخرج إلا إذا كان وقت الهروب أقل من وقت الموت:\n\n```python\ndef validate_aset_vs_rset(travel_dist_m: float, smoke_fill_time_s: float, safety_margin: float = 2.0) -> dict:\n    # RSET (Required Safe Egress Time) = Pre-movement + (Distance / Speed)\n    # Assume walking speed of 1.0 m/s and detection/pre-movement of 60s\n    walking_speed_mps = 1.0\n    pre_movement_delay_s = 60.0\n    rset_s = (travel_dist_m / walking_speed_mps) + pre_movement_delay_s\n    \n    # ASET (Available Safe Egress Time) = smoke_fill_time_s\n    required_aset = rset_s * safety_margin\n    \n    if required_aset > smoke_fill_time_s:\n        return {\n            \"status\": \"FAIL\",\n            \"violation\": f\"CRITICAL: RSET ({rset_s}s) with safety margin exceeds ASET ({smoke_fill_time_s}s). Occupants will perish before egress.\",\n            \"recommendation\": \"Introduce Smoke Extraction System or add closer emergency exits.\"\n        }\n    return {\"status\": \"PASS\"}\n```",
+    "Confidence Level": "High"
+  },
+  {
+    "Severity Level": "MAJOR",
+    "Life Safety Impact": "فشل أجهزة الإنذار الصوتي (Speakers/Horns) في إيقاظ النائمين أو التنبيه في البيئات الصاخبة، مما يؤدي إلى تجاهل الحريق تماماً.",
+    "Technical Explanation": "الكود الحالي في `fire_expert_system.py` يضع تغطية الـ Speaker بقيمة صماء ثابتة: `SPEAKER_COVERAGE = 30.0` متراً. هذا **جهل هندسي مطبق**. الصوت يخضع لقانون التربيع العكسي (Inverse Square Law)، وتغطية السماعة تعتمد حصرياً على الضجيج المحيط (Ambient Noise).",
+    "Code/Standard Reference": "NFPA 72-2022 §18.4.3 (Public Mode Audible Requirements) / §18.4.4",
+    "Root Cause": "التعامل مع الصوتيات كمساحات هندسية مسطحة (Geometric Radii) بدلاً من حسابات التوهين الصوتي (Acoustic Attenuation).",
+    "Real-World Failure Scenario": "يضع النظام سماعة إنذار واحدة في غرفة مولدات ميكانيكية ضخمة بناءً على المساحة فقط. مستوى الضجيج الطبيعي في الغرفة هو 90 ديسيبل. السماعة تنتج 85 ديسيبل على بعد 3 أمتار. لن يسمع أحد الإنذار أبداً لأن الصوت الفعلي أضعف من ضجيج الخلفية.",
+    "Recommended Correction": "تطبيق قانون التوهين الصوتي واشتراط أن يكون الصوت أعلى بـ 15 ديسيبل من الضجيج المحيط حسب الكود:\n\n```python\nimport math\n\ndef calculate_audibility_compliance(source_dBa: float, dist_m: float, ambient_dBa: float) -> dict:\n    # NFPA 72 §18.4.3: Must be at least 15 dB above average ambient sound level\n    if dist_m < 1.0: \n        effective_dBa = source_dBa\n    else:\n        # Inverse square law: Drop of 20*log10(d/d_ref) or roughly 6dB per doubling of distance\n        drop_dB = 20 * math.log10(dist_m)\n        effective_dBa = source_dBa - drop_dB\n        \n    required_dBa = ambient_dBa + 15.0\n    \n    if effective_dBa < required_dBa:\n        return {\n            \"status\": \"FAIL\",\n            \"violation\": f\"Sound level at {dist_m}m is {effective_dBa:.1f}dBA. Required is {required_dBa}dBA (15dB > ambient {ambient_dBa}dBA).\"\n        }\n    return {\"status\": \"PASS\", \"effective_dBa\": effective_dBa}\n```",
+    "Confidence Level": "High"
+  },
+  {
+    "Severity Level": "MAJOR",
+    "Life Safety Impact": "موت لوحات التحكم (Panels) وتوقف النظام عن العمل في منتصف عملية الإخلاء في حال انقطاع التيار الكهربائي الرئيسي نتيجة الحريق، بسبب تقادم البطاريات.",
+    "Technical Explanation": "في `boq_generator.py` وفي حسابات الـ `Voltage Drop` يتم حساب البطاريات بناءً على المعادلة البسيطة (24 ساعة وضع استعداد + 5 دقائق إنذار). ما غفلت عنه المنظومة هو أن البطاريات تتدهور كيميائياً مع الزمن ومع درجات الحرارة المرتفعة. الكود يلزم بوضع عامل تصحيح للتقادم (Aging Factor).",
+    "Code/Standard Reference": "NFPA 72-2022 §10.6.7.2.1",
+    "Root Cause": "عدم إدراج معاملات تصحيح التدهور الحراري والزمني (Derating Factors) في حسابات السعة التخزينية.",
+    "Real-World Failure Scenario": "مبنى تجاري تنقطع عنه الكهرباء أثناء حريق. البطارية مصممة على القياس الدقيق (بدون عامل أمان). بعد سنتين من تركيب النظام، تفقد البطارية 20% من سعتها بسبب التقادم (Aging). تفشل اللوحة في تشغيل السارينات للـ 5 دقائق المطلوبة للإخلاء، ويتوقف الإنذار في الدقيقة الثانية.",
+    "Recommended Correction": "تضمين كود السعة الحقيقية الآمنة مع معاملات الكود:\n\n```python\ndef calculate_secure_battery_capacity_Ah(standby_ma: float, alarm_ma: float, temp_c: float = 25.0) -> float:\n    # 1. Base requirements: 24h standby + 5min (0.083h) alarm\n    standby_ah = (standby_ma / 1000.0) * 24.0\n    alarm_ah = (alarm_ma / 1000.0) * (5.0 / 60.0)\n    base_capacity_ah = standby_ah + alarm_ah\n    \n    # 2. NFPA 72 §10.6.7.2.1: 20% to 25% safety margin for aging is mandatory\n    aging_factor = 1.25\n    \n    # 3. Temperature derating (Batteries lose capacity below 20C)\n    temp_derating = 1.0\n    if temp_c < 20.0:\n        # Rule of thumb: approx 1% loss per degree below 20C\n        temp_derating = 1.0 + ((20.0 - temp_c) * 0.01)\n        \n    final_required_ah = base_capacity_ah * aging_factor * temp_derating\n    return round(final_required_ah, 2)\n```",
+    "Confidence Level": "High"
+  }
+]

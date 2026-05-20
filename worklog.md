@@ -50,3 +50,36 @@ Stage Summary:
 - Link: https://github.com/ahmdelbaz28-ux/revit/commit/797ad4752ecea4c72c8a434acee4534101fdcc95
 - Files: audit/ai_studio_configs/system_config_v2.json, audit/ai_studio_configs/nfpa72_search_queries_v2.json
 - Also saved to: /home/z/my-project/download/ai_studio_code_3_improved.json, /home/z/my-project/download/ai_studio_code_4_improved.json
+---
+Task ID: security-audit-phase
+Agent: Main Agent
+Task: Read consultant's 3 security audit files, evaluate consultant, fix verified OWASP vulnerabilities
+
+Work Log:
+- Read 01-vulnerabilities-report.md (33 VULNs), 02-remediation-plan.md, 03-fix-codes.md
+- Verified each VULN against actual codebase — confirmed 27 exist, 3 files don't exist (project_api.py, auth.py)
+- Evaluated consultant: 7/10 — good OWASP methodology but lacks NFPA 72 domain expertise, didn't verify file existence
+- Fixed VULN-001: Removed hardcoded credentials from docker-compose.yml, added env var references
+- Fixed VULN-002: Replaced CI/CD hardcoded creds with GitHub Secrets references
+- Fixed VULN-010: Added column whitelist to prevent SQL injection in knowledge_base.py
+- Fixed VULN-011: Added column whitelist to prevent SQL injection in memory.py
+- Fixed VULN-012: Added html.escape() to all user data in report_bridge.py
+- Fixed VULN-016: Replaced MD5 with SHA-256 in cognitive_kernel.py (3 instances)
+- Fixed VULN-004/005/006: Restricted CORS origins via CORS_ORIGINS env var in 3 files
+- Fixed VULN-017: Timing-safe API key comparison with secrets.compare_digest
+- Fixed VULN-023: Persistent DB via FIREAI_DB_PATH instead of :memory:
+- Fixed VULN-019: File upload validation (extension whitelist, size limit)
+- Fixed VULN-020: Generic error messages with reference IDs
+- Fixed VULN-022: Log injection prevention via CRLF sanitization
+- Fixed VULN-026: Filename header injection sanitization
+- Fixed VULN-031: Replaced subprocess/openssl with secrets module
+- Fixed VULN-032: Removed exposed DB port from docker-compose
+- Tested every fix individually before commit
+- Committed and pushed: 5061714
+
+Stage Summary:
+- 15 OWASP vulnerabilities fixed across 10 files
+- Commit: 5061714
+- Link: https://github.com/ahmdelbaz28-ux/revit/commit/5061714
+- Not fixed (files don't exist): VULN-008, VULN-015, VULN-018
+- Not fixed (separate service, lower priority): VULN-003, VULN-007, VULN-009, VULN-013, VULN-014, VULN-021, VULN-025, VULN-029, VULN-030, VULN-033
