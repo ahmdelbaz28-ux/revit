@@ -1,0 +1,42 @@
+[
+  {
+    "Severity Level": "CRITICAL",
+    "Life Safety Impact": "تركيب الكواشف في مناطق الهواء الميت (Dead Air Space) يمنع الدخان من الوصول للحساسات، مما يؤدي إلى تأخر كارثي في اكتشاف الحريق وفشل خطة الإخلاء وموت الشاغلين اختناقاً.",
+    "Technical Explanation": "خوارزميات التوزيع في الملفات `auto_placement.py` و `density_optimizer.py` وشهادة الإثبات `proof_certificate.py` تعتمد على حدود المضلع الهندسي للغرفة بالكامل. هذا خطأ هندسي فادح لأن الكود يمنع قطعياً تركيب كواشف الدخان في مسافة 100 مم (4 بوصات) عند نقطة التقاء السقف بالجدار بسبب ظاهرة ركود الهواء.",
+    "Code/Standard Reference": "NFPA 72-2022 §17.6.3.1.3",
+    "Root Cause": "الاعتماد على المضلع الهندسي الكلي (Polygon) دون تطبيق منطقة عازلة سالبة (Negative Buffer Zone) تمثل القيود الفيزيائية لتدفق الموائع (Fluid Dynamics).",
+    "Real-World Failure Scenario": "اندلاع حريق بطيء التطور (Smoldering Fire). يتصاعد الدخان للسقف ولكنه لا يدخل الزاوية التي وضع الذكاء الاصطناعي الكاشف فيها، فينتشر الدخان السام في المبنى دون انطلاق الإنذار.",
+    "Recommended Correction": "الحل الجذري برمجياً هو اقتطاع هذه المنطقة من المساحة المسموحة للتوزيع باستخدام مكتبة Shapely:\n\n```python\nfrom shapely.geometry import Polygon, Point\n\ndef enforce_dead_air_space(room_poly: Polygon, devices: list) -> list:\n    # NFPA 72-2022 17.6.3.1.3: No detectors in 4-inch (0.1m) dead air space\n    DEAD_AIR_MARGIN = 0.10 \n    safe_zone = room_poly.buffer(-DEAD_AIR_MARGIN)\n    \n    for dev in devices:\n        pt = Point(dev.x, dev.y)\n        if not safe_zone.contains(pt):\n            # Auto-relocate to the nearest legally safe boundary point\n            nearest_safe = safe_zone.exterior.interpolate(safe_zone.exterior.project(pt))\n            dev.x, dev.y = nearest_safe.x, nearest_safe.y\n            dev.warnings.append(\"RELOCATED: Escaped Dead Air Space per NFPA 17.6.3.1.3\")\n    return devices\n```",
+    "Confidence Level": "High"
+  },
+  {
+    "Severity Level": "CRITICAL",
+    "Life Safety Impact": "التصميم يضع الكواشف الحرارية على مسافات متباعدة جداً في الأسقف المرتفعة، مما يضمن احتراق المبنى وانهياره الهيكلي قبل وصول الحرارة الكافية لتفعيل الكاشف.",
+    "Technical Explanation": "ملف `nfpa72_calculations.py` يحتوي على مسافات قياسية للكواشف، ولكنه يفشل تماماً في تطبيق معاملات التخفيض الإلزامية (Reduction Multipliers) للكواشف الحرارية في الأسقف التي يتجاوز ارتفاعها 3 أمتار (10 أقدام).",
+    "Code/Standard Reference": "NFPA 72-2022 Table 17.6.3.5.1",
+    "Root Cause": "غياب دالة تحسب النسبة المئوية المتبقية من المسافة القياسية بناءً على الارتفاع الفعلي للغرفة، والاعتماد على نصف قطر ثابت.",
+    "Real-World Failure Scenario": "مستودع (Warehouse) بارتفاع 8 أمتار. النظام الحالي يوزع الكواشف الحرارية بمسافة 6.1 متر (20 قدم). عملياً، الحرارة تتشتت وتبرد (Stratification) قبل الوصول للكاشف، ولن يعمل النظام.",
+    "Recommended Correction": "الحل الجذري لتطبيق التخفيض الرياضي الإلزامي في المحرك:\n\n```python\ndef get_high_ceiling_heat_reduction(ceiling_height_m: float) -> float:\n    # NFPA 72-2022 Table 17.6.3.5.1 Multipliers for Heat Detectors\n    if ceiling_height_m <= 3.05: return 1.00\n    elif ceiling_height_m <= 3.66: return 0.91\n    elif ceiling_height_m <= 4.27: return 0.84\n    elif ceiling_height_m <= 4.88: return 0.77\n    elif ceiling_height_m <= 5.49: return 0.71\n    elif ceiling_height_m <= 6.10: return 0.64\n    elif ceiling_height_m <= 6.71: return 0.58\n    elif ceiling_height_m <= 7.32: return 0.52\n    elif ceiling_height_m <= 7.92: return 0.46\n    elif ceiling_height_m <= 8.53: return 0.40\n    elif ceiling_height_m <= 9.14: return 0.34\n    else:\n        raise ValueError(\"CRITICAL: Heat detectors NOT PERMITTED above 9.14m (30ft) per NFPA 72.\")\n\ndef calculate_safe_heat_radius(base_spacing_m: float, height_m: float) -> float:\n    multiplier = get_high_ceiling_heat_reduction(height_m)\n    actual_safe_spacing = base_spacing_m * multiplier\n    # R = 0.7 * S\n    return actual_safe_spacing * 0.7\n```",
+    "Confidence Level": "High"
+  },
+  {
+    "Severity Level": "CRITICAL",
+    "Life Safety Impact": "تيار هواء التكييف يمنع الدخان من دخول غرفة الكاشف (Sensing Chamber)، مما يجعل الكاشف 'أعمى' تماماً ويفشل في حماية الأرواح.",
+    "Technical Explanation": "محرك `DensityOptimizer` لا يأخذ في الاعتبار مواقع مخارج تكييف الهواء (HVAC Supply Diffusers). يضع النظام الكواشف بناءً على التقسيم الهندسي فقط، مما يؤدي غالباً إلى وضع الكاشف ملاصقاً لمخرج هواء قوي.",
+    "Code/Standard Reference": "NFPA 72-2022 §17.7.4.1",
+    "Root Cause": "عدم دمج نظام التكييف (MEP Coordination) كمناطق حظر (Exclusion Zones) أثناء عملية التوزيع بخوارزمية K-means أو Greedy Set Cover.",
+    "Real-World Failure Scenario": "دخان يتصاعد في غرفة اجتماعات، لكن الهواء البارد المندفع من فتحة التكييف (Supply Air) المجاورة للكاشف يطرد الدخان بعيداً. لن يعمل الإنذار.",
+    "Recommended Correction": "الحل الجذري بخلق مناطق استبعاد (Exclusion Zones) حول فتحات التكييف (نصف قطر 0.9 متر / 3 أقدام) قبل بدء أي توزيع:\n\n```python\nfrom shapely.geometry import Polygon, Point\n\ndef apply_hvac_exclusion_zones(room_poly: Polygon, hvac_diffusers: list[Point]) -> Polygon:\n    # NFPA 72 17.7.4.1: Detectors shall not be located within 36 in. (0.9m) of supply diffusers\n    HVAC_EXCLUSION_RADIUS_M = 0.914 \n    \n    safe_area = room_poly\n    for diffuser in hvac_diffusers:\n        exclusion_circle = diffuser.buffer(HVAC_EXCLUSION_RADIUS_M)\n        safe_area = safe_area.difference(exclusion_circle)\n    \n    if safe_area.is_empty:\n        raise ValueError(\"CRITICAL: Impossible to place detectors. HVAC diffusers cover the entire ceiling.\")\n    \n    return safe_area\n# MUST pass this safe_area to the DensityOptimizer candidates generator.\n```",
+    "Confidence Level": "High"
+  },
+  {
+    "Severity Level": "MAJOR",
+    "Life Safety Impact": "ادعاء 'نسبة التغطية المضمونة 100%' في `proof_certificate.py` يعطي المهندس والسلطات ثقة زائفة ومميتة.",
+    "Technical Explanation": "المنطق في `ProofCertificateGenerator` يستخدم دوائر لتغطية شبكة النقاط (Grid). إذا لم تُحسب المساحات غير المغطاة بدقة، يقوم النظام باحتساب مساحة النقاط المتبقية كدوائر صغيرة `(delta/2)^2 * pi`، وهو ما يقلل رياضياً من الحجم الحقيقي للنقاط العمياء المتجاورة.",
+    "Code/Standard Reference": "Engineering Ethics / FPE Standard Practice",
+    "Root Cause": "استخدام تقريب دائري لحساب مساحات النقاط العمياء بدلاً من حساب الخلايا المربعة للشبكة (Cell Area).",
+    "Real-World Failure Scenario": "نظام يقر بتغطية 99.9% بناءً على حسابات مساحة خاطئة، بينما المساحة الفعلية المكشوفة تشكل 5% من الغرفة، وقد تكون هي الزاوية التي تحتوي على أعلى حمل حراري (Fire Load).",
+    "Recommended Correction": "تعديل حساب الحد الأقصى للمساحة غير المغطاة ليكون مربعاً (Cell Area) بدلاً من دائري لضمان أقصى درجات الأمان الهندسي (Conservative Bound):\n\n```python\n# In proof_certificate.py\n# BAD: uncovered_area_upper = n_uncovered * math.pi * (delta / 2) ** 2\n# GOOD (RADICAL FIX):\n\ndef calculate_strict_uncovered_area(n_uncovered: int, grid_step_m: float) -> float:\n    # Treat each uncovered grid point as a full square cell of uncertainty\n    cell_area = grid_step_m ** 2\n    strict_uncovered_area = n_uncovered * cell_area\n    return strict_uncovered_area\n```",
+    "Confidence Level": "High"
+  }
+]
