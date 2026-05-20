@@ -23,6 +23,7 @@ import threading
 import zipfile
 import tempfile
 import logging
+import re
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -30,6 +31,24 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
+
+# Security Fix (VULN-019): Allowed file extensions and max size
+ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.pdf', '.dwg', '.dxf'}
+MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Security Fix (VULN-019/026): Remove path components and validate filename."""
+    filename = os.path.basename(filename)
+    filename = re.sub(r'[^\w\s.-]', '', filename)
+    return filename
+
+
+def _sanitize_for_log(value: str) -> str:
+    """Security Fix (VULN-022): Remove CRLF characters to prevent log injection."""
+    if not isinstance(value, str):
+        value = str(value)
+    return re.sub(r'[\r\n]', '_', value)
 
 # Configure logging
 logging.basicConfig(
@@ -69,13 +88,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for all origins (development)
+# Security Fix (VULN-005): Restricted CORS origins via environment variable
+_cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type", "X-API-Key"],
 )
 
 
@@ -261,18 +281,35 @@ async def elite_design(
     
     # Generate task ID
     task_id = str(uuid.uuid4())
-    logger.info(f"Task {task_id}: project={project_name}")
+    # Security Fix (VULN-022): Sanitize log inputs to prevent log injection
+    logger.info(f"Task {task_id}: project={_sanitize_for_log(project_name)}")
     
-    # Save uploaded image
-    image_ext = Path(image.filename).suffix or '.png'
+    # Security Fix (VULN-019): Sanitize filename and validate extension
+    safe_filename = _sanitize_filename(image.filename or "")
+    image_ext = Path(safe_filename).suffix.lower()
+    if image_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported file type '{image_ext}'. Allowed: {sorted(ALLOWED_EXTENSIONS)}"
+        )
     image_path = TEMP_DIR / f"{task_id}{image_ext}"
     
     try:
         content = await image.read()
+        # Security Fix (VULN-019): Enforce maximum upload size
+        if len(content) > MAX_UPLOAD_SIZE_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Maximum size is {MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"
+            )
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty file uploaded")
         with open(image_path, 'wb') as f:
             f.write(content)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save image: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save image")
     
     # Initialize task (if no image provided, pipeline will use test data)
     if not content:
@@ -362,7 +399,8 @@ def download_result(task_id: str):
     if not zip_path or not Path(zip_path).exists():
         raise HTTPException(status_code=404, detail="Result file not found")
     
-    project_name = task.get('project_name', 'design')
+    # Security Fix (VULN-026): Sanitize project_name for filename
+    project_name = re.sub(r'[^\w\s.-]', '', task.get('project_name', 'design'))
     filename = f"{project_name}_outputs.zip"
     
     return FileResponse(
@@ -378,11 +416,14 @@ def download_result(task_id: str):
 
 @app.exception_handler(Exception)
 def global_exception_handler(request, exc):
-    """Global exception handler"""
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    """Global exception handler — returns generic error to client.
+    Security Fix (VULN-020): No internal details exposed to client.
+    """
+    ref_id = str(uuid.uuid4())[:8]
+    logger.error(f"[{ref_id}] Unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc)}
+        content={"detail": "Internal server error", "reference_id": ref_id}
     )
 
 
@@ -394,7 +435,8 @@ if __name__ == "__main__":
     import uvicorn
     
     # Get host and port
-    host = os.environ.get('HOST', '0.0.0.0')
+    # Security Fix (VULN-005): Bind to localhost by default
+    host = os.environ.get('HOST', '127.0.0.1')
     port = int(os.environ.get('PORT', 8000))
     
     print("\n" + "="*60)

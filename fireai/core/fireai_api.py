@@ -9,6 +9,7 @@ import uuid
 from fastapi import BackgroundTasks
 
 import os
+import secrets
 from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
@@ -44,7 +45,9 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
-    application.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["*"])
+    # Security Fix (VULN-006): Read allowed CORS origins from environment variable
+    _cors_origins = os.getenv("FIREAI_CORS_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000")).split(",")
+    application.add_middleware(CORSMiddleware, allow_origins=_cors_origins, allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["Authorization", "Content-Type", "X-API-Key"])
     application.state.limiter = limiter
     application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     return application
@@ -99,9 +102,15 @@ async def _run_with_timeout(coro, timeout: float = REQUEST_TIMEOUT_SECONDS):
 
 
 async def verify_api_key(x_api_key: str = Header(...)) -> str:
+    """Verify API key using timing-safe comparison.
+    Security Fix (VULN-017): Use secrets.compare_digest instead of set membership.
+    """
     raw = os.getenv("FIREAI_API_KEYS", "")
     valid_keys = {k.strip() for k in raw.split(",") if k.strip()}
-    if x_api_key not in valid_keys:
+    if not valid_keys:
+        raise HTTPException(status_code=503, detail="Service not configured: FIREAI_API_KEYS not set")
+    # Security Fix (VULN-017): Timing-safe comparison to prevent timing attacks
+    if not any(secrets.compare_digest(x_api_key, k) for k in valid_keys):
         raise HTTPException(status_code=401, detail="Invalid API key")
     return x_api_key
 
@@ -343,11 +352,18 @@ _fireai_system = None
 
 
 def _get_fireai_system():
-    """Get or create FireAISystem instance."""
+    """Get or create FireAISystem instance.
+    Security Fix (VULN-023): Use file-based database for persistent audit trail.
+    """
     global _fireai_system
     if _fireai_system is None:
         from fireai.core.fireai_core import FireAISystem
-        _fireai_system = FireAISystem(db_path=":memory:")
+        # Security Fix (VULN-023): Persistent DB path from environment variable
+        _db_path = os.getenv("FIREAI_DB_PATH", "fireai_data/fireai.sqlite")
+        _db_dir = os.path.dirname(_db_path)
+        if _db_dir:
+            os.makedirs(_db_dir, exist_ok=True)
+        _fireai_system = FireAISystem(db_path=_db_path)
     return _fireai_system
 
 

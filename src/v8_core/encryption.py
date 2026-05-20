@@ -52,33 +52,28 @@ class ColumnEncryptor:
         """
         Generate and save a new master key.
         
+        Security Fix (VULN-031): Use Python's secrets module instead of
+        subprocess/openssl for cryptographic key generation. Eliminates
+        PATH poisoning risk and external binary dependency.
+        
         Args:
             key_path: Path to save the key
             
         Returns:
             Path to the generated key
         """
-        import subprocess
+        import secrets
         
-        # Generate 32 bytes of random data
-        result = subprocess.run(
-            ['openssl', 'rand', '-base64', '32'],
-            capture_output=True,
-            text=True
-        )
-        
-        if result.returncode != 0:
-            # Fallback to secrets module
-            import secrets
-            key_bytes = secrets.token_bytes(32)
-            key_b64 = base64.urlsafe_b64encode(key_bytes).decode()
-        else:
-            key_b64 = result.stdout.strip()
+        # Security Fix (VULN-031): Use secrets module (cryptographically secure, no subprocess)
+        key_bytes = secrets.token_bytes(32)
+        key_b64 = base64.urlsafe_b64encode(key_bytes).decode()
         
         # Ensure directory exists
-        os.makedirs(os.path.dirname(key_path) if os.path.dirname(key_path) else '.', exist_ok=True)
+        key_dir = os.path.dirname(key_path)
+        if key_dir:
+            os.makedirs(key_dir, exist_ok=True)
         
-        # Write key
+        # Write key with restricted permissions
         with open(key_path, 'wb') as f:
             f.write(key_b64.encode())
         

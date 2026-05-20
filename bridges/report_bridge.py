@@ -29,10 +29,17 @@ from __future__ import annotations
 import base64, hashlib, json, logging, os, time
 from dataclasses import dataclass, field
 from datetime import datetime
+from html import escape as _html_escape
 from pathlib import Path
 from typing import Optional
 
 log = logging.getLogger(__name__)
+
+
+# Security Fix (VULN-012): Helper for HTML escaping to prevent XSS
+def _h(value) -> str:
+    """HTML-escape user-controlled data to prevent XSS."""
+    return _html_escape(str(value))
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -340,7 +347,7 @@ def _generate_html(path: str, data: dict):
     """Generate HTML report (self-contained, dark theme)."""
     parts = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'>",
-        f"<title>FireAI Report — {data['project_name']}</title>",
+        f"<title>FireAI Report — {_h(data['project_name'])}</title>",
         "<style>",
         ":root{--bg:#0e1116;--card:#1a1f27;--text:#e6edf3;--mut:#8b949e;"
         "--crit:#c0392b;--maj:#e67e22;--ok:#27ae60}",
@@ -357,7 +364,7 @@ def _generate_html(path: str, data: dict):
         "</style></head><body>",
         f"<h1>FireAI — NFPA 72 Compliance Report</h1>",
         f"<div class='card'>",
-        f"<h2>{data['project_name']}</h2>",
+        f"<h2>{_h(data['project_name'])}</h2>",
         f"<p>Date: {data['generated_at']}</p>",
         f"<p>Audit Hash: <code>{data['audit_hash']}</code></p>",
     ]
@@ -385,7 +392,7 @@ def _generate_html(path: str, data: dict):
     parts.append("<div class='card'><h3>Device Schedule</h3><table>"
                  "<tr><th>Type</th><th>Count</th></tr>")
     for dtype, count in sorted(data["device_counts"].items()):
-        parts.append(f"<tr><td>{dtype}</td><td>{count}</td></tr>")
+        parts.append(f"<tr><td>{_h(dtype)}</td><td>{count}</td></tr>")
     parts.append(f"<tr><td><b>TOTAL</b></td><td><b>{data['total_devices']}</b></td></tr>")
     parts.append("</table></div>")
 
@@ -396,9 +403,9 @@ def _generate_html(path: str, data: dict):
         for f in data["findings"]:
             sev = f.get("severity", "info")
             parts.append(
-                f"<tr><td><span class='sev {sev}'>{sev}</span></td>"
-                f"<td>{f.get('code', '')}</td>"
-                f"<td>{f.get('message', f.get('rule', ''))}</td></tr>")
+                f"<tr><td><span class='sev {_h(sev)}'>{_h(sev)}</span></td>"
+                f"<td>{_h(f.get('code', ''))}</td>"
+                f"<td>{_h(f.get('message', f.get('rule', '')))}</td></tr>")
         parts.append("</table></div>")
 
     # Room details
@@ -406,7 +413,7 @@ def _generate_html(path: str, data: dict):
                  "<tr><th>#</th><th>Name</th><th>Type</th><th>Area</th><th>Devices</th></tr>")
     for i, r in enumerate(data["room_summary"], 1):
         parts.append(
-            f"<tr><td>{i}</td><td>{r['name']}</td><td>{r['type']}</td>"
+            f"<tr><td>{i}</td><td>{_h(r['name'])}</td><td>{_h(r['type'])}</td>"
             f"<td>{r['area_m2']:.1f} m2</td><td>{r['device_count']}</td></tr>")
     parts.append("</table></div>")
 

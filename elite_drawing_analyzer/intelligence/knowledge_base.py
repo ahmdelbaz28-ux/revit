@@ -99,7 +99,20 @@ class KnowledgeBase:
         self.conn.commit()
 
     # ── symbols
+    # Security Fix (VULN-010): Whitelist of allowed column names to prevent SQL injection
+    _SYMBOL_COLUMNS = frozenset({
+        "category", "description", "standard_spacing_m", "coverage_radius_m", "meta"
+    })
+
     def upsert_symbol(self, name: str, **kw):
+        # Security Fix (VULN-010): Validate column names against whitelist
+        invalid_keys = set(kw.keys()) - self._SYMBOL_COLUMNS
+        if invalid_keys:
+            raise ValueError(
+                f"Invalid symbol columns: {invalid_keys}. "
+                f"Allowed: {self._SYMBOL_COLUMNS}"
+            )
+
         cur = self.conn.execute("SELECT id FROM symbols WHERE name=?", (name,))
         row = cur.fetchone()
         if row:

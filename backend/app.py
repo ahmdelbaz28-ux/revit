@@ -5,6 +5,7 @@ FireAI Digital Twin - Main Application Entry Point
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,13 +18,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add CORS middleware
+# Security Fix (VULN-004): Read allowed CORS origins from environment variable
+# In production, set CORS_ORIGINS=https://your-domain.com,https://app.your-domain.com
+_cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type", "X-API-Key"],
 )
 
 # Import core modules
@@ -69,4 +72,7 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Security Fix (VULN-004): Bind to localhost by default; use reverse proxy in production
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)

@@ -173,9 +173,11 @@ class CognitiveKernel:
                 success=True
             )
         """
-        case_hash = hashlib.md5(
+        # Security Fix (VULN-016): Replace MD5 with SHA-256 for collision resistance
+        # Use 32 hex chars (128 bits) minimum — 16 chars (64 bits) is too weak
+        case_hash = hashlib.sha256(
             f"{layer}{geometry_signature}".encode()
-        ).hexdigest()[:16]
+        ).hexdigest()[:32]
         
         with sqlite3.connect(self.db_path) as conn:
             c = conn.cursor()
@@ -207,9 +209,10 @@ class CognitiveKernel:
             if case:
                 print(f"Recalled: {case.interpretation}")
         """
-        case_hash = hashlib.md5(
+        # Security Fix (VULN-016): Replace MD5 with SHA-256
+        case_hash = hashlib.sha256(
             f"{layer}{geometry_signature or ''}".encode()
-        ).hexdigest()[:16]
+        ).hexdigest()[:32]
         
         with sqlite3.connect(self.db_path) as conn:
             c = conn.cursor()
@@ -257,7 +260,8 @@ class CognitiveKernel:
                 (case_hash, original_interpretation, corrected_interpretation, source)
                 VALUES (?, ?, ?, ?)
             """, (
-                hashlib.md5(layer.encode()).hexdigest()[:16],
+                # Security Fix (VULN-016): Replace MD5 with SHA-256
+                hashlib.sha256(layer.encode()).hexdigest()[:32],
                 original_interpretation,
                 corrected_interpretation,
                 "human_expert"

@@ -17,9 +17,10 @@ jobs:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_USER: firealarm_test
-          POSTGRES_PASSWORD: firealarm_test_pass
-          POSTGRES_DB: firealarm_test_db
+          # Security Fix (VULN-002): Use GitHub Secrets for database credentials
+          POSTGRES_USER: ${{ secrets.TEST_POSTGRES_USER || 'firealarm_test' }}
+          POSTGRES_PASSWORD: ${{ secrets.TEST_POSTGRES_PASSWORD || 'firealarm_test_pass' }}
+          POSTGRES_DB: ${{ secrets.TEST_POSTGRES_DB || 'firealarm_test_db' }}
         ports:
           - 5432:5432
         options: >-
@@ -30,7 +31,8 @@ jobs:
           --tmpfs /var/lib/postgresql/data
 
     env:
-      DATABASE_URL: "postgresql://firealarm_test:firealarm_test_pass@localhost:5432/firealarm_test_db"
+      # Security Fix (VULN-002): Use GitHub Secrets for DATABASE_URL
+      DATABASE_URL: "postgresql://${{ secrets.TEST_POSTGRES_USER || 'firealarm_test' }}:${{ secrets.TEST_POSTGRES_PASSWORD || 'firealarm_test_pass' }}@localhost:5432/${{ secrets.TEST_POSTGRES_DB || 'firealarm_test_db' }}"
 
     steps:
       - name: "Checkout repository"
