@@ -97,15 +97,28 @@ def build(dxf_file, calibrate, output, standard, panel):
 
     # 1. Import DXF
     click.echo(f"\n📥 جاري استيراد: {dxf_file}")
-    importer = DXFImporter(dxf_file)
-    
-    if calibrate:
-        d, x1, y1, x2, y2 = map(float, calibrate.split(','))
-        importer.calibrate_scale(d, (x1, y1), (x2, y2))
-    
-    rooms = importer.to_domain_models()
-    walls = importer.extract_walls()
-    click.echo(f"✅ استيراد {len(rooms)} غرفة، {len(walls)} جدار")
+
+    # CRITICAL FIX: DXFImporter was removed (src.dxf_importer never existed).
+    # The full pipeline CLI requires the src.* application layer which may not
+    # be installed. Fail gracefully instead of crashing with NameError.
+    try:
+        from fireai.dxf_importer import DXFImporter as _DXFImporter
+        importer = _DXFImporter(dxf_file)
+
+        if calibrate:
+            d, x1, y1, x2, y2 = map(float, calibrate.split(','))
+            importer.calibrate_scale(d, (x1, y1), (x2, y2))
+
+        rooms = importer.to_domain_models()
+        walls = importer.extract_walls()
+        click.echo(f"✅ استيراد {len(rooms)} غرفة، {len(walls)} جدار")
+    except ImportError:
+        click.echo(
+            "ERROR: DXFImporter module not available. "
+            "Use `python run_full_pipeline.py` instead, which supports "
+            "DXF import via ezdxf."
+        )
+        sys.exit(1)
 
     # 2. Device placement and coverage
     if standard == 'NFPA72':

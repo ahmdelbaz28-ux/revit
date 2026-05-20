@@ -362,8 +362,9 @@ def validate_and_guess_type_detailed(
         detector_type = "heat_fixed_temp"  # Fail-safe
         confidence = "LOW"
     else:
-        # Use normal mapping - pass both room_name and occupancy_type
-        detector_type = select_safe_detector_type(room_name, room.occupancy_type).value
+        # Use normal mapping - pass room_name and base_type (from guess_room_type)
+        # FIX: 'room' is not in scope — use base_type from guess_room_type() above
+        detector_type = select_safe_detector_type(room_name, base_type).value
         confidence = "HIGH"
     
     return {

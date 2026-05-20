@@ -230,6 +230,43 @@ class FloorOrchestrator:
                     f"Coverage failed: {coverage['coverage_percentage']}%"
                 )
 
+                # V13 Fix: Adaptive Re-solve — if DensityOptimizer coverage fails,
+                # try the ConstraintSolver with area-based greedy placement.
+                # This mirrors the adaptive re-solve in core/floor_orchestrator.py
+                # (which uses OptimalMIPEngine) and provides the same safety net here.
+                try:
+                    from .spatial_engine.constraint_solver import ConstraintSolver
+                    area_solver = ConstraintSolver(
+                        room_polygon=spec.polygon,
+                        device_radius=optimizer.R
+                    )
+                    adaptive_result = area_solver.find_optimal_placement(max_devices=50)
+                    if adaptive_result.coverage_percent >= 99.9:
+                        result.status = "PASS"
+                        result.detector_count = adaptive_result.num_devices
+                        result.detector_positions = adaptive_result.positions
+                        result.coverage_pct = adaptive_result.coverage_percent
+                        result.audit_notes.append(
+                            f"V13 Adaptive Re-solve: DensityOptimizer failed, "
+                            f"area-based solver succeeded with {adaptive_result.num_devices} detectors "
+                            f"({adaptive_result.coverage_percent:.1f}% coverage)"
+                        )
+                        logger.info(
+                            f"  {spec.name}: ADAPTIVE RE-SOLVE succeeded "
+                            f"({adaptive_result.num_devices} detectors, "
+                            f"{adaptive_result.coverage_percent:.1f}%)"
+                        )
+                    else:
+                        result.errors.append(
+                            f"Adaptive re-solve also failed: "
+                            f"{adaptive_result.coverage_percent:.1f}% coverage "
+                            f"(need 99.9%). Manual design required."
+                        )
+                except Exception as adapt_err:
+                    result.errors.append(
+                        f"Adaptive re-solve error: {adapt_err}. Manual design required."
+                    )
+
         except (NFPAComplianceError, InvalidInputError, ValueError) as e:
             # Logic errors → convert to ERROR result
             result.status = "ERROR"
