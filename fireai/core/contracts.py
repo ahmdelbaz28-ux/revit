@@ -254,6 +254,103 @@ def is_feature_enabled(flag: FeatureFlag) -> bool:
     return get_feature_flags().get(flag, False)
 
 
+# ============================================================================
+# STRICT_ENGINEERING: Input Contract Validation
+# ============================================================================
+# Adapted from Elite Platform V2 contracts.py.
+# Prevents injection of derived fields (area_m2, width_m, etc.) via API
+# that could bypass calculation and report fake compliance data.
+
+FORBIDDEN_DERIVED_FIELDS: tuple = (
+    "area_m2",
+    "area_sqm",
+    "width_m",
+    "depth_m",
+    "centroid_x",
+    "centroid_y",
+    "coverage_pct",
+    "detector_count",
+    "is_compliant",
+    "nfpa_valid",
+    "proof_valid",
+)
+"""
+Fields that MUST be computed internally — never accepted from external input.
+
+Accepting these from an API payload would allow a caller to inject
+fake values (e.g. area_m2=999, is_compliant=True) and bypass the
+entire calculation pipeline.  In a life-safety system, this is
+equivalent to forging a safety certificate.
+"""
+
+
+class ContractViolation(ValueError):
+    """Raised when an input payload violates a strict contract rule."""
+    pass
+
+
+def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate a room input payload before it enters the calculation pipeline.
+
+    Checks:
+      1. No forbidden derived fields are present (prevents data injection).
+      2. Required fields are present and valid.
+      3. Numeric fields are within physically plausible bounds.
+
+    Args:
+        payload: Raw dictionary from API / JSON / parser.
+
+    Returns:
+        The validated payload (unchanged if valid).
+
+    Raises:
+        ContractViolation: If any contract rule is violated.
+    """
+    if not isinstance(payload, dict):
+        raise ContractViolation("Room input must be a dictionary")
+
+    # 1. Reject derived fields — these MUST be computed, not supplied
+    for field_name in FORBIDDEN_DERIVED_FIELDS:
+        if field_name in payload:
+            raise ContractViolation(
+                f"Field '{field_name}' is derived internally and must not be "
+                f"supplied in input. The system computes this value from the "
+                f"polygon geometry to prevent data injection."
+            )
+
+    # 2. Required fields
+    required = ("room_id", "polygon", "ceiling_height_m")
+    for field_name in required:
+        if field_name not in payload:
+            raise ContractViolation(f"Missing required field: '{field_name}'")
+
+    # 3. Validate room_id is non-empty
+    if not payload.get("room_id"):
+        raise ContractViolation("room_id must be a non-empty string")
+
+    # 4. Validate polygon is a list of at least 3 points
+    polygon = payload.get("polygon")
+    if not isinstance(polygon, (list, tuple)) or len(polygon) < 3:
+        raise ContractViolation(
+            f"polygon must be a list of at least 3 points, got {type(polygon).__name__}"
+        )
+
+    # 5. Validate ceiling_height_m is positive
+    ceiling_height = payload.get("ceiling_height_m")
+    try:
+        h = float(ceiling_height)
+        if h <= 0 or h > 30:
+            raise ContractViolation(
+                f"ceiling_height_m must be > 0 and <= 30, got {h}"
+            )
+    except (TypeError, ValueError):
+        raise ContractViolation(
+            f"ceiling_height_m must be a number, got {ceiling_height!r}"
+        )
+
+    return payload
+
+
 __all__ = [
     "CONTRACT_VERSION",
     "CeilingType",
@@ -269,4 +366,8 @@ __all__ = [
     "AuditEventContract",
     "get_feature_flags",
     "is_feature_enabled",
+    # STRICT_ENGINEERING: Input validation
+    "ContractViolation",
+    "FORBIDDEN_DERIVED_FIELDS",
+    "validate_room_input",
 ]
