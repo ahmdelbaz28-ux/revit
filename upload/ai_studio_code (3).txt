@@ -1,0 +1,6 @@
+{
+  "system_mode": "DEEP_FOCUS",
+  "analysis_type": "SYS_ANALYSIS",
+  "language": "ARABIC",
+  "auditor_persona": "SENIOR_FIRE_PROTECTION_AUTHORITY"
+}
