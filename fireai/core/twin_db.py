@@ -101,11 +101,25 @@ class TwinSystemOfRecord:
     ) -> None:
         """Save a complete snapshot bundle to the database.
 
+        STRENGTHENED: Validates snapshot_id is non-empty before saving.
+        An empty snapshot_id would create a corrupt record that overwrites
+        any previous record with empty key (INSERT OR REPLACE).
+
         Args:
             snapshot_payload: Building snapshot data (rooms, geometry).
             analysis_payload: Analysis results (detector placements).
             envelope:         Signed evidence envelope.
+
+        Raises:
+            ValueError: If snapshot_id is missing or empty.
         """
+        snapshot_id = snapshot_payload.get("snapshot_id", "")
+        if not snapshot_id or not isinstance(snapshot_id, str) or not snapshot_id.strip():
+            raise ValueError(
+                "snapshot_payload must have a non-empty 'snapshot_id' field. "
+                "An empty ID would create a corrupt database record."
+            )
+
         conn = self._connect()
         try:
             conn.execute(
@@ -121,7 +135,7 @@ class TwinSystemOfRecord:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    snapshot_payload.get("snapshot_id", ""),
+                    snapshot_id,
                     snapshot_payload.get("revision_id", ""),
                     snapshot_payload.get("source_model_id", ""),
                     json.dumps(snapshot_payload, sort_keys=True),
@@ -308,6 +322,49 @@ class TwinSystemOfRecord:
                     "room_id": room_id,
                     "drift_type": "geometry_changed",
                     "detail": "Room polygon geometry changed beyond tolerance",
+                })
+
+            # STRENGTHENED v2: Ceiling height change detection.
+            # Ceiling height directly affects detector spacing per NFPA 72
+            # §17.6.3.1.1 — a 3m room uses 9.1m spacing, but a 6m room uses
+            # 7.3m spacing. Missing this drift = wrong detector count.
+            CEILING_HEIGHT_TOLERANCE_M = 0.01  # 10mm tolerance
+            old_h = old_room.get("ceiling_height_m")
+            new_h = new_room.get("ceiling_height_m")
+            if old_h is not None and new_h is not None:
+                try:
+                    h_diff = abs(float(new_h) - float(old_h))
+                    if h_diff > CEILING_HEIGHT_TOLERANCE_M:
+                        drift.append({
+                            "room_id": room_id,
+                            "drift_type": "ceiling_height_changed",
+                            "old_height_m": float(old_h),
+                            "new_height_m": float(new_h),
+                            "height_diff_m": round(h_diff, 4),
+                            "detail": (
+                                f"Ceiling height changed from {float(old_h):.2f}m to "
+                                f"{float(new_h):.2f}m — affects detector spacing per "
+                                f"NFPA 72 §17.6.3.1.1"
+                            ),
+                        })
+                except (TypeError, ValueError):
+                    pass  # Non-numeric heights — skip comparison
+
+            # STRENGTHENED v2: Detector type change detection.
+            # Switching from SMOKE to HEAT changes spacing from 9.1m to 6.1m.
+            # This is a critical design parameter change.
+            old_dtype = old_room.get("detector_type")
+            new_dtype = new_room.get("detector_type")
+            if old_dtype is not None and new_dtype is not None and old_dtype != new_dtype:
+                drift.append({
+                    "room_id": room_id,
+                    "drift_type": "detector_type_changed",
+                    "old_type": old_dtype,
+                    "new_type": new_dtype,
+                    "detail": (
+                        f"Detector type changed from {old_dtype} to {new_dtype} — "
+                        f"changes spacing requirements per NFPA 72"
+                    ),
                 })
 
             # Detector changes

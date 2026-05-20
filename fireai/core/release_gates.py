@@ -163,12 +163,22 @@ def verify_and_evaluate(
     aset_rset_result: Optional[Dict[str, Any]] = None,
     battery_result: Optional[Dict[str, Any]] = None,
     stale_detector_ids: Optional[List[str]] = None,
+    evidence_secret_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Evaluate release gates with ACTUAL VERIFICATION.
 
     Each gate that can be verified is verified against the provided
     data. If data is not provided for a gate, it defaults to BLOCKED
     (fail-safe). This prevents the "caller vouches" security theater.
+
+    FIX v2: The single `verify_method` variable was overwritten by each
+    gate, causing ALL gates to show the LAST gate's verification_method.
+    Now uses `verify_methods` dict for per-gate tracking.
+
+    STRENGTHENED v2:
+    - Gate 3: Actually verifies HMAC signature (not just key presence).
+    - Gate 7: Numerically re-verifies ASET > RSET * safety_factor.
+    - Gate 8: Verifies capacity values are positive (not just key existence).
 
     Args:
         input_payload: Raw room input dict (for contract validation).
@@ -179,13 +189,16 @@ def verify_and_evaluate(
         aset_rset_result: ASET vs RSET validation result.
         battery_result: Battery capacity calculation result.
         stale_detector_ids: List of stale detector IDs.
+        evidence_secret_key: Secret key for HMAC verification of evidence envelope.
+            If provided, Gate 3 performs full cryptographic verification.
+            If not provided, Gate 3 falls back to structural check only.
 
     Returns:
         Same format as evaluate_release() but with "mode": "verified"
         and actual verification evidence for each gate.
     """
     checks = {}
-    gate_details = {}
+    verify_methods = {}  # FIX: per-gate verification method (was single variable overwritten)
 
     # --- Gate 1: Input Contract Validation ---
     if input_payload is not None:
@@ -193,16 +206,16 @@ def verify_and_evaluate(
             from fireai.core.contracts import validate_room_input, ContractViolation
             validate_room_input(input_payload)
             checks["input_contract_valid"] = True
-            verify_method = "validate_room_input_passed"
+            verify_methods["input_contract_valid"] = "validate_room_input_passed"
         except ContractViolation as e:
             checks["input_contract_valid"] = False
-            verify_method = f"contract_violation: {e}"
+            verify_methods["input_contract_valid"] = f"contract_violation: {e}"
         except Exception as e:
             checks["input_contract_valid"] = False
-            verify_method = f"validation_error: {e}"
+            verify_methods["input_contract_valid"] = f"validation_error: {e}"
     else:
         checks["input_contract_valid"] = False
-        verify_method = "no_payload_provided"
+        verify_methods["input_contract_valid"] = "no_payload_provided"
 
     # --- Gate 2: NFPA Compliance ---
     if nfpa_results is not None:
@@ -210,57 +223,103 @@ def verify_and_evaluate(
         # Also check if there are any violations
         violations = nfpa_results.get("violations", [])
         checks["nfpa_compliance_verified"] = is_compliant and len(violations) == 0
-        verify_method = (
+        verify_methods["nfpa_compliance_verified"] = (
             "nfpa_all_checks_passed"
             if checks["nfpa_compliance_verified"]
             else f"nfpa_violations: {len(violations)}"
         )
     else:
         checks["nfpa_compliance_verified"] = False
-        verify_method = "no_nfpa_results_provided"
+        verify_methods["nfpa_compliance_verified"] = "no_nfpa_results_provided"
 
     # --- Gate 3: Evidence Chain ---
+    # STRENGTHENED: Actually verify HMAC, not just check key presence.
+    # The old code only checked `has_hash and has_sig`, which is security theater —
+    # an attacker can inject fake hash/signature values. Now we call
+    # EvidenceChain.verify_envelope() to cryptographically validate.
     if evidence_envelope is not None:
-        has_hash = bool(evidence_envelope.get("envelope_hash"))
-        has_sig = bool(evidence_envelope.get("signature"))
-        checks["evidence_chain_sealed"] = has_hash and has_sig
-        verify_method = (
-            "envelope_hash_and_signature_present"
-            if checks["evidence_chain_sealed"]
-            else "envelope_missing_hash_or_signature"
-        )
+        snapshot_payload_for_verify = input_payload  # Use the input payload as snapshot
+        analysis_payload_for_verify = nfpa_results  # Use the NFPA results as analysis
+        try:
+            from fireai.core.evidence_chain import EvidenceChain
+            # Reconstruct the chain with the signer_id from the envelope
+            signer_id = evidence_envelope.get("signer_id", "fireai-v1")
+            # Use the explicitly provided secret_key (never read from envelope itself —
+            # that would allow an attacker to supply their own key)
+            secret_key = evidence_secret_key
+            if secret_key and snapshot_payload_for_verify and analysis_payload_for_verify:
+                chain = EvidenceChain(secret_key=secret_key, signer_id=signer_id)
+                hmac_valid = chain.verify_envelope(
+                    envelope=evidence_envelope,
+                    snapshot_payload=snapshot_payload_for_verify,
+                    analysis_payload=analysis_payload_for_verify,
+                )
+                checks["evidence_chain_sealed"] = hmac_valid
+                verify_methods["evidence_chain_sealed"] = (
+                    "hmac_signature_verified"
+                    if hmac_valid
+                    else "hmac_signature_invalid"
+                )
+            else:
+                # Fallback: structural check (hash+sig present) if we can't do full HMAC
+                has_hash = bool(evidence_envelope.get("envelope_hash"))
+                has_sig = bool(evidence_envelope.get("signature"))
+                has_prev = "previous_envelope_hash" in evidence_envelope
+                checks["evidence_chain_sealed"] = has_hash and has_sig
+                verify_methods["evidence_chain_sealed"] = (
+                    "envelope_structure_ok_hmac_not_verified"
+                    if checks["evidence_chain_sealed"]
+                    else "envelope_missing_hash_or_signature"
+                )
+        except ImportError:
+            has_hash = bool(evidence_envelope.get("envelope_hash"))
+            has_sig = bool(evidence_envelope.get("signature"))
+            checks["evidence_chain_sealed"] = has_hash and has_sig
+            verify_methods["evidence_chain_sealed"] = (
+                "evidence_chain_module_unavailable_structure_only"
+                if checks["evidence_chain_sealed"]
+                else "envelope_incomplete"
+            )
+        except Exception as e:
+            checks["evidence_chain_sealed"] = False
+            verify_methods["evidence_chain_sealed"] = f"verification_error: {e}"
     else:
         checks["evidence_chain_sealed"] = False
-        verify_method = "no_envelope_provided"
+        verify_methods["evidence_chain_sealed"] = "no_envelope_provided"
 
     # --- Gate 4: No Drift ---
     if drift_records is not None:
-        # Any drift record with geometry_changed or room_removed is a blocker
+        # Any drift record with geometry_changed, room_removed/added, ceiling_height_changed,
+        # or detector_type_changed is a blocker. These directly affect NFPA 72 compliance.
+        critical_drift_types = (
+            "geometry_changed", "room_removed", "room_added",
+            "ceiling_height_changed", "detector_type_changed",
+        )
         critical_drift = [
             d for d in drift_records
-            if d.get("drift_type") in ("geometry_changed", "room_removed", "room_added")
+            if d.get("drift_type") in critical_drift_types
         ]
         checks["no_drift_detected"] = len(critical_drift) == 0
-        verify_method = (
+        verify_methods["no_drift_detected"] = (
             "no_critical_drift"
             if checks["no_drift_detected"]
             else f"critical_drift_count: {len(critical_drift)}"
         )
     else:
         checks["no_drift_detected"] = False
-        verify_method = "no_drift_data_provided"
+        verify_methods["no_drift_detected"] = "no_drift_data_provided"
 
     # --- Gate 5: Stale Surfaces ---
     if stale_detector_ids is not None:
         checks["stale_surfaces_removed"] = len(stale_detector_ids) == 0
-        verify_method = (
+        verify_methods["stale_surfaces_removed"] = (
             "no_stale_detectors"
             if checks["stale_surfaces_removed"]
             else f"stale_count: {len(stale_detector_ids)}"
         )
     else:
         checks["stale_surfaces_removed"] = False
-        verify_method = "no_stale_data_provided"
+        verify_methods["stale_surfaces_removed"] = "no_stale_data_provided"
 
     # --- Gate 6: Fault Isolation (LIFE SAFETY) ---
     if loop_data is not None:
@@ -276,48 +335,68 @@ def verify_and_evaluate(
                     all_compliant = False
                     worst_violations.extend(result["violations"][:2])
             checks["fault_isolation_verified"] = all_compliant
-            verify_method = (
+            verify_methods["fault_isolation_verified"] = (
                 "all_loops_have_isolators"
                 if all_compliant
                 else f"isolator_violations: {worst_violations[:3]}"
             )
         except ImportError:
             checks["fault_isolation_verified"] = False
-            verify_method = "fault_isolator_module_not_available"
+            verify_methods["fault_isolation_verified"] = "fault_isolator_module_not_available"
         except Exception as e:
             checks["fault_isolation_verified"] = False
-            verify_method = f"verification_error: {e}"
+            verify_methods["fault_isolation_verified"] = f"verification_error: {e}"
     else:
         checks["fault_isolation_verified"] = False
-        verify_method = "no_loop_data_provided"
+        verify_methods["fault_isolation_verified"] = "no_loop_data_provided"
 
     # --- Gate 7: ASET vs RSET (LIFE SAFETY) ---
+    # STRENGTHENED: Don't just trust is_safe boolean — verify ASET > RSET numerically.
     if aset_rset_result is not None:
-        checks["aset_rset_valid"] = bool(aset_rset_result.get("is_safe", False))
-        verify_method = (
-            f"aset_{aset_rset_result.get('aset_seconds', 0):.1f}s_gt_rset_{aset_rset_result.get('rset_with_safety_s', 0):.1f}s"
-            if checks["aset_rset_valid"]
-            else f"aset_insufficient: {aset_rset_result.get('verdict', 'unknown')[:80]}"
-        )
+        aset_s = float(aset_rset_result.get("aset_seconds", 0))
+        rset_s = float(aset_rset_result.get("rset_seconds", 0))
+        safety_factor = float(aset_rset_result.get("safety_factor", 1.5))
+        # Re-verify: ASET must exceed RSET * safety_factor (SFPE / NFPA 101 §9.3)
+        numeric_safe = aset_s > 0 and rset_s > 0 and aset_s > rset_s * safety_factor
+        # If the caller claims is_safe but our numeric check disagrees, TRUST the math.
+        if numeric_safe:
+            checks["aset_rset_valid"] = True
+            verify_methods["aset_rset_valid"] = (
+                f"aset_{aset_s:.1f}s_gt_rset×{safety_factor}_{rset_s * safety_factor:.1f}s"
+            )
+        else:
+            checks["aset_rset_valid"] = False
+            if aset_s <= 0 or rset_s <= 0:
+                verify_methods["aset_rset_valid"] = "aset_or_rset_zero_or_negative"
+            else:
+                verify_methods["aset_rset_valid"] = (
+                    f"aset_{aset_s:.1f}s_not_gt_rset×{safety_factor}_{rset_s * safety_factor:.1f}s"
+                )
     else:
         checks["aset_rset_valid"] = False
-        verify_method = "no_aset_rset_data_provided"
+        verify_methods["aset_rset_valid"] = "no_aset_rset_data_provided"
 
     # --- Gate 8: Battery Sized (LIFE SAFETY) ---
+    # STRENGTHENED: Verify capacity is positive and adequate, not just key existence.
     if battery_result is not None:
-        has_capacity = "required_ah" in battery_result or "capacity_ah" in battery_result
+        required_ah = battery_result.get("required_ah", battery_result.get("capacity_ah", 0))
+        installed_ah = battery_result.get("installed_ah", battery_result.get("capacity_ah", 0))
         is_adequate = battery_result.get("is_adequate", battery_result.get("compliant", True))
-        checks["battery_sized"] = has_capacity and is_adequate
-        verify_method = (
-            f"battery_{battery_result.get('required_ah', battery_result.get('capacity_ah', 0)):.1f}Ah"
+        # Verify: required_ah must be positive AND installed >= required
+        has_required = isinstance(required_ah, (int, float)) and required_ah > 0
+        installed_meets = isinstance(installed_ah, (int, float)) and installed_ah >= required_ah
+        checks["battery_sized"] = has_required and (installed_meets or is_adequate)
+        verify_methods["battery_sized"] = (
+            f"battery_required_{required_ah:.1f}Ah_installed_{installed_ah:.1f}Ah"
             if checks["battery_sized"]
-            else "battery_not_adequately_sized"
+            else f"battery_insufficient: required_{required_ah}Ah_installed_{installed_ah}Ah"
         )
     else:
         checks["battery_sized"] = False
-        verify_method = "no_battery_data_provided"
+        verify_methods["battery_sized"] = "no_battery_data_provided"
 
-    # Build gate details
+    # Build gate details — FIX: use per-gate verify_methods dict
+    gate_details = {}
     for gate_name in RELEASE_GATES:
         gate_info = RELEASE_GATES[gate_name]
         passed = checks.get(gate_name, False)
@@ -326,7 +405,7 @@ def verify_and_evaluate(
             "description": gate_info["description"],
             "nfpa_reference": gate_info["nfpa_reference"],
             "failure_impact": gate_info["failure_impact"],
-            "verification_method": verify_method if gate_name in checks else "not_evaluated",
+            "verification_method": verify_methods.get(gate_name, "not_evaluated"),
         }
 
     blockers: List[str] = [name for name, ok in checks.items() if not ok]

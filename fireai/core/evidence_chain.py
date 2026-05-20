@@ -29,7 +29,7 @@ import hashlib
 import hmac
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 def _canonical_dumps(payload: Any) -> str:
@@ -128,6 +128,10 @@ class EvidenceChain:
           4. envelope_hash can be rebuilt from the body.
           5. HMAC signature is valid.
 
+        STRENGTHENED: Now raises EvidenceChainError with specific failure
+        reason instead of silently returning False. This makes debugging
+        and audit trail analysis possible.
+
         Args:
             envelope:          The envelope to verify.
             snapshot_payload:  The snapshot data to check against.
@@ -135,7 +139,10 @@ class EvidenceChain:
             previous_envelope: The expected previous envelope.
 
         Returns:
-            True if all checks pass, False otherwise.
+            True if all checks pass.
+
+        Raises:
+            EvidenceChainError: If any check fails, with the specific reason.
         """
         expected = dict(envelope)
         signature = expected.pop("signature")
@@ -143,26 +150,125 @@ class EvidenceChain:
 
         # 1. Snapshot hash
         if expected["snapshot_hash"] != _sha256_payload(snapshot_payload):
-            return False
+            raise EvidenceChainError(
+                f"Snapshot hash mismatch: envelope has {expected['snapshot_hash'][:16]}..., "
+                f"computed {_sha256_payload(snapshot_payload)[:16]}... "
+                f"— data may have been tampered with"
+            )
 
         # 2. Analysis hash
         if expected["analysis_hash"] != _sha256_payload(analysis_payload):
-            return False
+            raise EvidenceChainError(
+                f"Analysis hash mismatch: envelope has {expected['analysis_hash'][:16]}..., "
+                f"computed {_sha256_payload(analysis_payload)[:16]}... "
+                f"— results may have been tampered with"
+            )
 
         # 3. Previous envelope chain
         expected_previous_hash = (
             previous_envelope["envelope_hash"] if previous_envelope else None
         )
         if expected["previous_envelope_hash"] != expected_previous_hash:
-            return False
+            raise EvidenceChainError(
+                f"Chain link broken: previous_envelope_hash is "
+                f"{expected['previous_envelope_hash'][:16] if expected['previous_envelope_hash'] else 'None'}, "
+                f"expected {expected_previous_hash[:16] if expected_previous_hash else 'None'} "
+                f"— envelope may have been inserted or removed"
+            )
 
         # 4. Envelope hash integrity
         rebuilt_hash = _sha256_payload(expected)
         if rebuilt_hash != envelope_hash:
-            return False
+            raise EvidenceChainError(
+                f"Envelope hash integrity failed: stored {envelope_hash[:16]}..., "
+                f"rebuilt {rebuilt_hash[:16]}... — envelope body was modified"
+            )
 
         # 5. HMAC signature
-        return hmac.compare_digest(signature, self._sign(envelope_hash))
+        if not hmac.compare_digest(signature, self._sign(envelope_hash)):
+            raise EvidenceChainError(
+                f"HMAC signature invalid — envelope may have been forged"
+            )
+
+        return True
+
+    def verify_chain(
+        self,
+        envelopes: List[Dict[str, Any]],
+        snapshot_payloads: List[Dict[str, Any]],
+        analysis_payloads: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Verify an entire chain of evidence envelopes.
+
+        This detects:
+          - Missing envelopes (chain gap)
+          - Tampered envelopes (hash mismatch)
+          - Reordered envelopes (timestamp not monotonic)
+          - Forged envelopes (HMAC failure)
+
+        Each envelope[i] is verified against snapshot_payloads[i] and
+        analysis_payloads[i], and envelope[i]'s previous_envelope_hash
+        must match envelope[i-1]'s envelope_hash.
+
+        Args:
+            envelopes:          Ordered list of envelopes (oldest first).
+            snapshot_payloads:  Corresponding snapshot payloads.
+            analysis_payloads:  Corresponding analysis payloads.
+
+        Returns:
+            Dictionary with:
+              - valid: bool — True if entire chain is valid
+              - envelope_count: int — Number of envelopes checked
+              - errors: List[str] — Specific failures (empty if valid)
+              - first_break: Optional[int] — Index of first invalid envelope
+        """
+        if len(envelopes) != len(snapshot_payloads) or len(envelopes) != len(analysis_payloads):
+            return {
+                "valid": False,
+                "envelope_count": len(envelopes),
+                "errors": [
+                    f"Length mismatch: {len(envelopes)} envelopes, "
+                    f"{len(snapshot_payloads)} snapshots, "
+                    f"{len(analysis_payloads)} analyses"
+                ],
+                "first_break": None,
+            }
+
+        errors: List[str] = []
+        first_break: Optional[int] = None
+        prev_timestamp: Optional[str] = None
+
+        for i, envelope in enumerate(envelopes):
+            prev_env = envelopes[i - 1] if i > 0 else None
+            try:
+                self.verify_envelope(
+                    envelope=envelope,
+                    snapshot_payload=snapshot_payloads[i],
+                    analysis_payload=analysis_payloads[i],
+                    previous_envelope=prev_env,
+                )
+            except EvidenceChainError as e:
+                errors.append(f"Envelope[{i}]: {e}")
+                if first_break is None:
+                    first_break = i
+
+            # Check monotonic timestamp ordering
+            ts = envelope.get("created_at", "")
+            if prev_timestamp and ts < prev_timestamp:
+                errors.append(
+                    f"Envelope[{i}]: Timestamp regression — "
+                    f"{ts} < {prev_timestamp} — envelopes may be reordered"
+                )
+                if first_break is None:
+                    first_break = i
+            prev_timestamp = ts
+
+        return {
+            "valid": len(errors) == 0,
+            "envelope_count": len(envelopes),
+            "errors": errors,
+            "first_break": first_break,
+        }
 
     def _sign(self, envelope_hash: str) -> str:
         """Sign an envelope hash with HMAC-SHA256."""

@@ -273,6 +273,14 @@ FORBIDDEN_DERIVED_FIELDS: tuple = (
     "is_compliant",
     "nfpa_valid",
     "proof_valid",
+    # v2: spacing is derived from detector_type + ceiling_height per
+    # NFPA 72 Table 17.6.3.1.1 — accepting it from input bypasses this lookup
+    "spacing_m",
+    "listed_spacing_m",
+    "coverage_radius_m",
+    # v2: these are computed from polygon, must not be supplied externally
+    "perimeter_m",
+    "min_wall_distance_m",
 )
 """
 Fields that MUST be computed internally — never accepted from external input.
@@ -334,6 +342,41 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
         raise ContractViolation(
             f"polygon must be a list of at least 3 points, got {type(polygon).__name__}"
         )
+
+    # 4a. Validate polygon points are numeric — prevents downstream crashes
+    #     A polygon like [{"x": "abc"}] passes the len check but crashes
+    #     when Shapely tries to compute area.
+    for i, pt in enumerate(polygon):
+        if isinstance(pt, (list, tuple)):
+            if len(pt) < 2:
+                raise ContractViolation(
+                    f"polygon point {i} must have at least 2 coordinates, got {len(pt)}"
+                )
+            try:
+                float(pt[0])
+                float(pt[1])
+            except (TypeError, ValueError):
+                raise ContractViolation(
+                    f"polygon point {i} coordinates must be numeric, got {pt!r}"
+                )
+        elif isinstance(pt, dict):
+            x_val = pt.get("x", pt.get("X"))
+            y_val = pt.get("y", pt.get("Y"))
+            if x_val is None or y_val is None:
+                raise ContractViolation(
+                    f"polygon point {i} dict must have 'x' and 'y' keys, got {list(pt.keys())}"
+                )
+            try:
+                float(x_val)
+                float(y_val)
+            except (TypeError, ValueError):
+                raise ContractViolation(
+                    f"polygon point {i} coordinates must be numeric, got x={x_val!r} y={y_val!r}"
+                )
+        else:
+            raise ContractViolation(
+                f"polygon point {i} must be a tuple/list or dict, got {type(pt).__name__}"
+            )
 
     # 5. Validate ceiling_height_m is positive
     ceiling_height = payload.get("ceiling_height_m")
