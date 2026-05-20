@@ -256,9 +256,15 @@ class ProofCertificateGenerator:
             coverage_lower_bound = 100.0
             uncovered_area_upper = 0.0
         else:
-            # Upper bound on uncovered area: each uncovered grid point
-            # represents at most (δ/2)²π area around it that might be uncovered
-            uncovered_area_upper = n_uncovered * math.pi * (delta / 2) ** 2
+            # V15 FIX: Upper bound on uncovered area uses SQUARE cell area,
+            # not circular inscribed area. The circular approximation
+            # π(δ/2)² ≈ 0.785δ² understates the true maximum uncovered area
+            # by ~21.5%. Using δ² (square cell) is the conservative bound
+            # because each uncovered grid point represents an entire cell of
+            # uncertainty, not just the inscribed circle within it.
+            # Old (WRONG): uncovered_area_upper = n_uncovered * math.pi * (delta / 2) ** 2
+            # New (CONSERVATIVE): uncovered_area_upper = n_uncovered * delta ** 2
+            uncovered_area_upper = n_uncovered * delta ** 2
             coverage_lower_bound = max(0.0, 100.0 * (1 - uncovered_area_upper / room_area))
 
         # Build certificate

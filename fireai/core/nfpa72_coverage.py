@@ -121,6 +121,98 @@ def validate_wall_distances(
     return violations
 
 
+# ============================================================================
+# V15: HVAC SUPPLY AIR DIFFUSER EXCLUSION ZONES
+# ============================================================================
+NFPA_HVAC_EXCLUSION_RADIUS_M = 0.914  # NFPA 72 §17.7.4.1: 3 ft = 0.9144m
+
+
+def validate_hvac_exclusion_zones(
+    detector_positions: List[Tuple[float, float]],
+    hvac_diffuser_positions: List[Tuple[float, float]],
+    exclusion_radius_m: float = NFPA_HVAC_EXCLUSION_RADIUS_M,
+) -> List[dict]:
+    """
+    V15: Validates that no detector is within the HVAC supply air diffuser
+    exclusion zone per NFPA 72 §17.7.4.1.
+
+    Airflow from HVAC supply diffusers prevents smoke from reaching detectors.
+    NFPA 72 §17.7.4.1 requires detectors be located NOT less than 3 feet
+    (0.914m) from the supply air diffuser unless the detector is listed for
+    use in that specific airflow pattern.
+
+    Args:
+        detector_positions: List of (x, y) detector coordinates
+        hvac_diffuser_positions: List of (x, y) HVAC supply diffuser coordinates
+        exclusion_radius_m: Minimum distance from diffuser (default 0.914m per NFPA 72)
+
+    Returns:
+        List of violations, each with detector_index, position, diffuser, distance.
+        Empty list = all detectors compliant.
+    """
+    import math
+    violations = []
+
+    for d_idx, (dx, dy) in enumerate(detector_positions):
+        for h_idx, (hx, hy) in enumerate(hvac_diffuser_positions):
+            dist = math.hypot(dx - hx, dy - hy)
+            if dist < exclusion_radius_m:
+                violations.append({
+                    "detector_index": d_idx,
+                    "position": (dx, dy),
+                    "diffuser_index": h_idx,
+                    "diffuser_position": (hx, hy),
+                    "distance_m": round(dist, 4),
+                    "required_m": exclusion_radius_m,
+                    "violation": (
+                        f"Detector #{d_idx} at ({dx:.2f},{dy:.2f}) is {dist*100:.1f}cm "
+                        f"from HVAC diffuser #{h_idx} at ({hx:.2f},{hy:.2f}) "
+                        f"(min {exclusion_radius_m*100:.0f}cm per NFPA 72 §17.7.4.1)"
+                    ),
+                    "nfpa_reference": "NFPA 72-2022 §17.7.4.1",
+                })
+
+    return violations
+
+
+def compute_hvac_safe_zone(
+    room_polygon,
+    hvac_diffuser_positions: List[Tuple[float, float]],
+    exclusion_radius_m: float = NFPA_HVAC_EXCLUSION_RADIUS_M,
+):
+    """
+    V15: Compute the safe placement zone by subtracting HVAC diffuser
+    exclusion circles from the room polygon.
+
+    NFPA 72 §17.7.4.1: Detectors shall not be installed within 3 ft (0.914m)
+    of a supply air diffuser.
+
+    Args:
+        room_polygon: Shapely Polygon of the room
+        hvac_diffuser_positions: List of (x, y) supply diffuser coordinates
+        exclusion_radius_m: Exclusion radius (default 0.914m)
+
+    Returns:
+        Shapely Polygon of the safe placement area (room minus exclusion zones).
+        Raises ValueError if safe zone is empty (diffusers cover entire ceiling).
+    """
+    from shapely.geometry import Point
+
+    safe_zone = room_polygon
+    for hx, hy in hvac_diffuser_positions:
+        exclusion_circle = Point(hx, hy).buffer(exclusion_radius_m)
+        safe_zone = safe_zone.difference(exclusion_circle)
+
+    if safe_zone.is_empty:
+        raise ValueError(
+            "CRITICAL: No valid detector placement area remains. "
+            "HVAC supply diffusers cover the entire ceiling. "
+            "Per NFPA 72 §17.7.4.1, relocate diffusers or use listed detectors."
+        )
+
+    return safe_zone
+
+
 def suggest_duct_detectors(room: RoomSpec, detector_type: str = "smoke") -> List[DuctDevice]:
     """Suggest detector placements near HVAC ducts."""
     devices = []

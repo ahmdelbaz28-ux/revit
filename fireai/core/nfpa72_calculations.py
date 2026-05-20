@@ -114,7 +114,7 @@ def calculate_heat_detector_coverage_chebyshev(
     detector_y: float,
     point_x: float,
     point_y: float,
-    spacing_m: float = 9.1
+    spacing_m: float = 6.1
 ) -> bool:
     """
     Check if a point is covered by a heat detector using Chebyshev distance.
@@ -126,7 +126,10 @@ def calculate_heat_detector_coverage_chebyshev(
         detector_y: Detector Y position
         point_x: Point X position to check
         point_y: Point Y position to check
-        spacing_m: Detector spacing (default 9.1m = 30ft)
+        spacing_m: Detector spacing (default 6.1m = 20ft per NFPA 72 Table 17.6.3.5.1)
+                   CRITICAL FIX: Was 9.1m (smoke spacing), now 6.1m (heat listed spacing).
+                   Callers should use calculate_coverage_radius_from_height() for
+                   height-adjusted spacing at high ceilings.
     Returns:
         True if point is covered by heat detector
     """
@@ -140,14 +143,15 @@ def calculate_heat_detector_coverage_chebyshev(
 def calculate_heat_detector_spacing_rectangular(
     room_width_m: float,
     room_depth_m: float,
-    spacing_m: float = 9.1
+    spacing_m: float = 6.1
 ) -> Tuple[int, int]:
     """
     Calculate number of heat detectors needed using rectangular spacing.
     Args:
         room_width_m: Room width in meters
         room_depth_m: Room depth in meters
-        spacing_m: Detector spacing (default 9.1m = 30ft)
+        spacing_m: Detector spacing (default 6.1m = 20ft per NFPA 72 Table 17.6.3.5.1)
+                   CRITICAL FIX: Was 9.1m (smoke spacing), now 6.1m (heat listed spacing).
     Returns:
         Tuple of (number_along_width, number_along_depth)
     """
@@ -157,19 +161,29 @@ def calculate_heat_detector_spacing_rectangular(
 def generate_heat_detector_positions(
     room_spec: RoomSpec,
     ceiling_spec: CeilingSpec,
-    spacing_m: float = 9.1
+    spacing_m: float = None
 ) -> List[Tuple[float, float]]:
     """
     Generate heat detector positions using square grid pattern.
+    CRITICAL FIX: Now applies NFPA 72 height-adjusted spacing for heat detectors.
+    At high ceilings, heat detector spacing MUST be reduced per Table 17.6.3.5.1.
     Args:
         room_spec: Room specification
         ceiling_spec: Ceiling specification
-        spacing_m: Detector spacing (default 9.1m = 30ft)
+        spacing_m: Detector spacing. If None, uses height-adjusted spacing from
+                   calculate_coverage_radius_from_height(). Default 6.1m at h≤3.0m.
     Returns:
         List of (x, y) detector positions
     """
+    if spacing_m is None:
+        # Apply NFPA 72 height-adjusted spacing for heat detectors
+        heat_spec = calculate_coverage_radius_from_height(
+            ceiling_spec.height_m, detector_type="heat"
+        )
+        spacing = heat_spec.spacing_max
+    else:
+        spacing = spacing_m
     positions = []
-    spacing = spacing_m
     # Generate grid positions
     x = spacing / 2
     while x < room_spec.width_m:
@@ -182,7 +196,7 @@ def generate_heat_detector_positions(
 def is_point_covered_by_heat_detectors(
     point: Tuple[float, float],
     detector_positions: List[Tuple[float, float]],
-    spacing_m: float = 9.1
+    spacing_m: float = 6.1
 ) -> bool:
     """
     Check if a point is covered by any heat detector.
@@ -190,7 +204,8 @@ def is_point_covered_by_heat_detectors(
     Args:
         point: (x, y) position to check
         detector_positions: List of detector (x, y) positions
-        spacing_m: Detector spacing (default 9.1m = 30ft)
+        spacing_m: Detector spacing (default 6.1m = 20ft per NFPA 72 Table 17.6.3.5.1)
+                   CRITICAL FIX: Was 9.1m (smoke spacing), now 6.1m (heat listed spacing).
     Returns:
         True if point is covered by at least one detector
     """
@@ -304,7 +319,13 @@ def calculate_detector_requirements(
         result["detectors_depth"] = num_d
         result["total_detectors"] = num_w * num_d
     elif detector_type == DetectorType.HEAT:
-        spacing = 9.1  # Fixed 30ft per NFPA 72
+        # CRITICAL FIX: Was hardcoded 9.1m (smoke spacing). Now uses
+        # NFPA 72 height-adjusted spacing from Table 17.6.3.5.1.
+        # At h≤3.0m: 6.1m (20ft), reducing at higher ceilings.
+        heat_spec = calculate_coverage_radius_from_height(
+            ceiling_spec.height_m, detector_type="heat"
+        )
+        spacing = heat_spec.spacing_max
         result["spacing"] = spacing
         num_w, num_d = calculate_heat_detector_spacing_rectangular(
             room_spec.width_m, room_spec.depth_m, spacing
