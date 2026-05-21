@@ -216,6 +216,59 @@ class AuditEventContract:
 # Feature Flags — Config Service
 # ============================================================================
 
+class PathwaySurvivabilityLevel(str, Enum):
+    """NFPA 72-2022 §12.4 — Pathway Survivability Levels.
+
+    Determines the minimum fire-resistance rating for fire alarm wiring
+    based on building occupancy and evacuation strategy.  Lives depend
+    on these cables remaining functional during a fire.
+
+    Level 1: General-purpose wiring in fully sprinklered buildings.
+             Cables may be FPL (unrated) in ordinary conduits.
+    Level 2: 2-hour fire-resistance rating required.
+             Either CI cable OR ordinary cable in 2-hour rated enclosure.
+             Required for: partial evacuation, high-rise, voice evacuation.
+    Level 3: 2-hour fire-resistance rating with CI cable IN 2-hour
+             rated enclosure.  Highest protection level.
+             Required for: staged evacuation in non-sprinklered buildings.
+    """
+    LEVEL_1 = "LEVEL_1"
+    LEVEL_2 = "LEVEL_2"
+    LEVEL_3 = "LEVEL_3"
+
+
+class CableType(str, Enum):
+    """NEC Article 760 — Fire alarm cable ratings.
+
+    FPL:  Fire Power Limited — general use, no fire rating.
+    FPLR: Fire Power Limited Riser — vertical shafts between floors.
+    FPLP: Fire Power Limited Plenum — plenum/return-air spaces.
+    CI:   Circuit Integrity — 2-hour fire-resistance rated (NFPA 72 §12.4.2).
+    """
+    FPL = "FPL"
+    FPLR = "FPLR"
+    FPLP = "FPLP"
+    CI = "CI"
+
+
+class OccupancyCategory(str, Enum):
+    """Building occupancy classification for pathway survivability determination.
+
+    Derived from NFPA 101 Life Safety Code and IBC occupancy groups.
+    Determines which PathwaySurvivabilityLevel is required.
+    """
+    ASSEMBLY = "ASSEMBLY"          # IBC Group A — theatres, churches
+    EDUCATIONAL = "EDUCATIONAL"    # IBC Group E — schools
+    HEALTH_CARE = "HEALTH_CARE"   # IBC Group I-2 — hospitals
+    RESIDENTIAL = "RESIDENTIAL"   # IBC Group R — hotels, apartments
+    BUSINESS = "BUSINESS"         # IBC Group B — offices
+    MERCANTILE = "MERCANTILE"     # IBC Group M — retail
+    INDUSTRIAL = "INDUSTRIAL"     # IBC Group F — factories
+    STORAGE = "STORAGE"           # IBC Group S — warehouses
+    HIGH_RISE = "HIGH_RISE"       # Any building >23 m (75 ft) in height
+    DETENTION = "DETENTION"       # IBC Group I-3 — prisons
+
+
 class FeatureFlag(str, Enum):
     """Feature flags for toggling functionality per service.
 
@@ -530,6 +583,9 @@ __all__ = [
     "CeilingType",
     "ConfidenceLevel",
     "DetectorType",
+    "PathwaySurvivabilityLevel",
+    "CableType",
+    "OccupancyCategory",
     "FeatureFlag",
     "DEFAULT_FEATURE_FLAGS",
     "ParsedDrawingContract",

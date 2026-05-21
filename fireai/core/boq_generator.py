@@ -21,7 +21,12 @@ from fireai.core.fault_isolator_injector import (
     inject_fault_isolators,
     verify_isolator_compliance,
 )
-from fireai.core.nfpa72_calculations import required_battery_capacity_ah
+from fireai.core.nfpa72_calculations import (
+    required_battery_capacity_ah,
+    auto_select_awg,
+    check_voltage_drop,
+    AWG_RESISTANCE_TABLE,
+)
 
 __all__ = [
     "BOQItem",
@@ -58,8 +63,11 @@ UNIT_COSTS: Dict[str, float] = {
     "cable_fpl_per_m": 1.80,
     "cable_fplr_per_m": 2.10,
     "cable_fplp_per_m": 2.80,
+    "cable_ci_per_m": 4.50,      # Circuit Integrity cable (2-hour rated)
     "conduit_per_m": 4.50,
+    "conduit_rated_2hr_per_m": 18.00,  # 2-hour fire-rated conduit
     "junction_box": 25.0,
+    "firestop_penetration": 65.0,  # per penetration (firestopping material + labor)
 }
 
 # Standard VRLA / lead-acid battery sizes commonly available (Ah)
@@ -375,6 +383,11 @@ def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
 def generate_cable_boq(
     loops: List[Dict],
     cable_type: str = "FPL",
+    survivability_level: Optional[str] = None,
+    auto_size_awg: bool = False,
+    supply_voltage_v: float = 24.0,
+    load_current_a: float = 0.5,
+    require_rated_enclosure: bool = False,
 ) -> List[BOQItem]:
     """Generate BOQ line items for cable and conduit from loop data.
 
@@ -383,7 +396,18 @@ def generate_cable_boq(
     estimated at 60 % of cable length (typical for fire alarm wiring where
     not all runs are in conduit).
 
-    Supported cable types: ``FPL``, ``FPLR``, ``FPLP``.
+    Supported cable types: ``FPL``, ``FPLR``, ``FPLP``, ``CI``.
+
+    V2 ENHANCEMENTS:
+      - ``survivability_level``: Overrides cable_type based on NFPA 72 §12.4.
+        When provided, cable_type is automatically upgraded:
+          Level 2 → CI cable
+          Level 3 → CI cable + 2-hour rated conduit
+      - ``auto_size_awg``: When True, calls auto_select_awg() to determine
+        the correct wire gauge based on voltage drop, and adds an AWG
+        specification to the BOQ item notes.
+      - ``require_rated_enclosure``: When True, uses 2-hour fire-rated
+        conduit instead of standard EMT.
 
     Each loop dict should contain:
         - ``loop_id`` (str): Loop identifier.
@@ -391,7 +415,12 @@ def generate_cable_boq(
 
     Args:
         loops: List of loop descriptor dictionaries.
-        cable_type: Cable rating – ``FPL``, ``FPLR``, or ``FPLP``.
+        cable_type: Cable rating – ``FPL``, ``FPLR``, ``FPLP``, or ``CI``.
+        survivability_level: Override from PathwaySurvivabilityEngine.
+        auto_size_awg: Auto-select AWG gauge based on voltage drop.
+        supply_voltage_v: Panel voltage for AWG sizing (default 24 VDC).
+        load_current_a: Circuit load current for AWG sizing (default 0.5 A).
+        require_rated_enclosure: Use 2-hour rated conduit.
 
     Returns:
         List of :class:`BOQItem` for cable, conduit, and junction boxes.
@@ -399,10 +428,20 @@ def generate_cable_boq(
     items: List[BOQItem] = []
 
     cable_type_upper = cable_type.upper().strip()
+
+    # ── Survivability override ────────────────────────────────────────
+    if survivability_level is not None:
+        level = survivability_level.upper().strip()
+        if level in ("LEVEL_2", "LEVEL_3"):
+            cable_type_upper = "CI"
+            if level == "LEVEL_3":
+                require_rated_enclosure = True
+
     cable_key_map = {
         "FPL": "cable_fpl_per_m",
         "FPLR": "cable_fplr_per_m",
         "FPLP": "cable_fplp_per_m",
+        "CI": "cable_ci_per_m",
     }
     cable_key = cable_key_map.get(cable_type_upper, "cable_fpl_per_m")
 
@@ -417,31 +456,57 @@ def generate_cable_boq(
     # Apply 10 % waste factor
     cable_with_waste = math.ceil(total_cable_m * CABLE_WASTE_FACTOR)
 
+    # ── AWG auto-sizing ───────────────────────────────────────────────
+    awg_note = ""
+    selected_awg = None
+    if auto_size_awg and total_cable_m > 0:
+        awg_result = auto_select_awg(
+            supply_voltage_v=supply_voltage_v,
+            load_current_a=load_current_a,
+            cable_length_m=total_cable_m / max(loop_count, 1),  # avg per loop
+        )
+        if awg_result.get("selected_awg") is not None:
+            selected_awg = awg_result["selected_awg"]
+            awg_note = f"; AWG={selected_awg} (auto-sized for VD ≤15%)"
+        else:
+            awg_note = "; WARNING: no AWG satisfies VD — split circuits"
+
     # Cable item
     if cable_with_waste > 0:
-        unit_cost = UNIT_COSTS[cable_key]
+        unit_cost = UNIT_COSTS.get(cable_key, UNIT_COSTS["cable_fpl_per_m"])
         items.append(BOQItem(
             item_type=f"cable_{cable_type_upper}",
             description=f"Fire Alarm Cable – {cable_type_upper} (per metre)",
             quantity=cable_with_waste,
             unit="m",
             unit_cost_usd=unit_cost,
-            nfpa_reference="NFPA 72 §12.2 / NEC Art. 760",
-            notes=f"Includes 10% waste factor; raw length={total_cable_m:.0f} m",
+            nfpa_reference="NFPA 72 §12.2 / §12.4 / NEC Art. 760",
+            notes=f"Includes 10% waste factor; raw length={total_cable_m:.0f}m{awg_note}",
         ))
 
     # Conduit – estimated at 60 % of cable length
     conduit_m = math.ceil(cable_with_waste * 0.60)
     if conduit_m > 0:
-        items.append(BOQItem(
-            item_type="conduit",
-            description="EMT Conduit for Fire Alarm Wiring (per metre)",
-            quantity=conduit_m,
-            unit="m",
-            unit_cost_usd=UNIT_COSTS["conduit_per_m"],
-            nfpa_reference="NEC Art. 760",
-            notes="Estimated at 60% of cable length",
-        ))
+        if require_rated_enclosure:
+            items.append(BOQItem(
+                item_type="conduit_rated_2hr",
+                description="2-Hour Fire-Rated Conduit for FA Wiring (per metre)",
+                quantity=conduit_m,
+                unit="m",
+                unit_cost_usd=UNIT_COSTS["conduit_rated_2hr_per_m"],
+                nfpa_reference="NFPA 72 §12.4.2 / IBC §714",
+                notes="2-hour fire-rated enclosure per survivability Level 3",
+            ))
+        else:
+            items.append(BOQItem(
+                item_type="conduit",
+                description="EMT Conduit for Fire Alarm Wiring (per metre)",
+                quantity=conduit_m,
+                unit="m",
+                unit_cost_usd=UNIT_COSTS["conduit_per_m"],
+                nfpa_reference="NEC Art. 760",
+                notes="Estimated at 60% of cable length",
+            ))
 
     # Junction boxes – rough estimate: one every 30 m of conduit
     if conduit_m > 0:
@@ -454,6 +519,19 @@ def generate_cable_boq(
             unit_cost_usd=UNIT_COSTS["junction_box"],
             nfpa_reference="",
             notes="Estimated 1 per 30 m of conduit run",
+        ))
+
+    # Firestopping – one penetration per floor per riser
+    if require_rated_enclosure or cable_type_upper == "CI":
+        floor_count = max(1, loop_count)
+        items.append(BOQItem(
+            item_type="firestop_penetration",
+            description="Firestopping Penetration Seal (rated assembly)",
+            quantity=floor_count,
+            unit="ea",
+            unit_cost_usd=UNIT_COSTS["firestop_penetration"],
+            nfpa_reference="IBC 2021 §714 / NFPA 72 §12.4",
+            notes="One penetration per floor for rated enclosure through-penetration",
         ))
 
     return items

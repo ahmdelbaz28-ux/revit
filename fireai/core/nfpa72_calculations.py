@@ -15,7 +15,7 @@ V9 CHANGES (2026-05-14):
 """
 import math
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Optional, Literal
+from typing import Any, Dict, List, Tuple, Optional, Literal
 from functools import lru_cache
 from .nfpa72_models import (
     CeilingSpec,
@@ -882,3 +882,276 @@ def required_battery_capacity_ah(
     standby_ah = (standby_current_ma / 1000.0) * standby_hours
     alarm_ah   = (alarm_current_ma   / 1000.0) * (alarm_minutes / 60.0)
     return round((standby_ah + alarm_ah) * safety_factor, 3)
+
+
+# ============================================================================
+# AWG WIRE GAUGE TABLES — NEC/NFPA 70
+# ============================================================================
+# Resistance values from NEC Chapter 9, Table 8 (solid copper at 75 °C).
+# Used for automatic wire gauge selection based on voltage drop calculations.
+
+AWG_RESISTANCE_TABLE: Dict[int, Dict[str, float]] = {
+    # AWG: {"ohm_per_1000ft": R, "ohm_per_m": R/304.8, "metric_mm2": area, "ampacity_75c": A}
+    18: {"ohm_per_1000ft": 6.40,  "ohm_per_m": 0.02101, "metric_mm2": 0.823, "ampacity_75c": 18},
+    16: {"ohm_per_1000ft": 4.00,  "ohm_per_m": 0.01312, "metric_mm2": 1.31,  "ampacity_75c": 22},
+    14: {"ohm_per_1000ft": 2.50,  "ohm_per_m": 0.00820, "metric_mm2": 2.08,  "ampacity_75c": 30},
+    12: {"ohm_per_1000ft": 1.60,  "ohm_per_m": 0.00525, "metric_mm2": 3.31,  "ampacity_75c": 35},
+    10: {"ohm_per_1000ft": 1.00,  "ohm_per_m": 0.00328, "metric_mm2": 5.26,  "ampacity_75c": 45},
+}
+
+# Available AWG gauges for auto-selection (smallest to largest)
+AWG_GAUGES: List[int] = sorted(AWG_RESISTANCE_TABLE.keys(), reverse=True)  # [18, 16, 14, 12, 10]
+
+# ============================================================================
+# NAC DEVICE CURRENT DRAW — NFPA 72 §18.5 + Manufacturer Data
+# ============================================================================
+# Typical steady-state and inrush currents for common notification appliances.
+# Inrush factor: strobes draw 2-3× their rated current during the first
+# 50-200 ms of activation.  For voltage drop calculations under alarm
+# conditions (NFPA 72 §10.14.1), inrush must be considered.
+
+DEVICE_CURRENT_DRAW: Dict[str, Dict[str, float]] = {
+    # device_type: {"steady_a": steady-state, "inrush_a": peak inrush, "inrush_factor": multiplier}
+    "strobe_15cd":       {"steady_a": 0.15, "inrush_a": 0.38, "inrush_factor": 2.5},
+    "strobe_30cd":       {"steady_a": 0.22, "inrush_a": 0.55, "inrush_factor": 2.5},
+    "strobe_60cd":       {"steady_a": 0.35, "inrush_a": 0.88, "inrush_factor": 2.5},
+    "strobe_75cd":       {"steady_a": 0.45, "inrush_a": 1.13, "inrush_factor": 2.5},
+    "horn":              {"steady_a": 0.25, "inrush_a": 0.50, "inrush_factor": 2.0},
+    "horn_strobe_15cd":  {"steady_a": 0.40, "inrush_a": 1.00, "inrush_factor": 2.5},
+    "horn_strobe_30cd":  {"steady_a": 0.47, "inrush_a": 1.18, "inrush_factor": 2.5},
+    "speaker_4w_70v":    {"steady_a": 0.057, "inrush_a": 0.057, "inrush_factor": 1.0},
+    "speaker_8w_70v":    {"steady_a": 0.114, "inrush_a": 0.114, "inrush_factor": 1.0},
+    "bell_6in":          {"steady_a": 0.15, "inrush_a": 0.30, "inrush_factor": 2.0},
+    "bell_10in":         {"steady_a": 0.25, "inrush_a": 0.50, "inrush_factor": 2.0},
+}
+
+# Maximum NAC circuit current (typical panel limit)
+NAC_MAX_CURRENT_A: float = 3.0
+
+# Minimum voltage at the most remote device (NFPA 72 §10.14.1)
+# For 24 VDC systems, the typical minimum operating voltage is 16 VDC.
+DEVICE_MIN_OPERATING_VOLTAGE_V: float = 16.0
+
+
+# ---------------------------------------------------------------------------
+# Inrush Current Calculation — NFPA 72 §10.14.1
+# ---------------------------------------------------------------------------
+
+def calculate_inrush_current(
+    device_type: str,
+    quantity: int,
+) -> Dict[str, float]:
+    """Calculate steady-state and inrush (worst-case) current for NAC devices.
+
+    NFPA 72 §10.14.1 requires that voltage at the most remote device be
+    sufficient "under alarm conditions."  When multiple strobes activate
+    simultaneously, their combined inrush current can cause a momentary
+    voltage sag that drops below the device minimum operating voltage,
+    causing devices at the end of the circuit to fail to operate.
+
+    This is a REAL safety issue: a hotel fire where 50 strobes activate
+    at once can cause the inrush current to sag the voltage below 16 VDC
+    at the last device, meaning NO visual alarm in that room.
+
+    Args:
+        device_type: Key in DEVICE_CURRENT_DRAW (e.g. "strobe_15cd").
+        quantity: Number of devices on the circuit.
+
+    Returns:
+        Dict with:
+            steady_total_a:     Total steady-state current (A).
+            inrush_total_a:     Total peak inrush current (A).
+            inrush_factor:      Peak-to-steady multiplier.
+            device_type:        Echo of input device_type.
+            quantity:           Echo of input quantity.
+    """
+    spec = DEVICE_CURRENT_DRAW.get(device_type)
+    if spec is None:
+        # Unknown device — use conservative defaults
+        return {
+            "steady_total_a": 0.25 * quantity,
+            "inrush_total_a": 0.63 * quantity,
+            "inrush_factor": 2.5,
+            "device_type": device_type,
+            "quantity": quantity,
+        }
+
+    steady = spec["steady_a"] * quantity
+    inrush = spec["inrush_a"] * quantity
+    return {
+        "steady_total_a": round(steady, 4),
+        "inrush_total_a": round(inrush, 4),
+        "inrush_factor": spec["inrush_factor"],
+        "device_type": device_type,
+        "quantity": quantity,
+    }
+
+
+# ---------------------------------------------------------------------------
+# NAC Circuit Loading — NFPA 72 §18.5
+# ---------------------------------------------------------------------------
+
+def calculate_nac_loading(
+    devices: List[Dict[str, Any]],
+    panel_voltage_v: float = 24.0,
+) -> Dict[str, Any]:
+    """Calculate total NAC circuit loading for mixed device types.
+
+    Aggregates steady-state and inrush currents across all devices on a
+    single NAC circuit, then checks against the 3 A panel limit.
+
+    Args:
+        devices: List of dicts, each with:
+            - "device_type": key in DEVICE_CURRENT_DRAW
+            - "quantity": count of that device type
+        panel_voltage_v: Panel nominal voltage (default 24 VDC).
+
+    Returns:
+        Dict with:
+            steady_total_a:   Total steady-state current (A).
+            inrush_total_a:   Total peak inrush current (A).
+            within_panel_limit: True if steady_total <= NAC_MAX_CURRENT_A.
+            device_details:   Per-type breakdown.
+            warnings:         Advisory messages.
+    """
+    steady_total = 0.0
+    inrush_total = 0.0
+    details: List[Dict[str, Any]] = []
+    warnings: List[str] = []
+
+    for dev in devices:
+        dtype = dev.get("device_type", "horn")
+        qty = dev.get("quantity", 1)
+        result = calculate_inrush_current(dtype, qty)
+        steady_total += result["steady_total_a"]
+        inrush_total += result["inrush_total_a"]
+        details.append(result)
+
+    within_limit = steady_total <= NAC_MAX_CURRENT_A
+
+    if not within_limit:
+        warnings.append(
+            f"NAC circuit overloaded: {steady_total:.2f} A > {NAC_MAX_CURRENT_A:.1f} A limit. "
+            f"Split into multiple NAC circuits or reduce device count."
+        )
+
+    if inrush_total > NAC_MAX_CURRENT_A * 1.5:
+        warnings.append(
+            f"High inrush current ({inrush_total:.2f} A) may cause voltage sag "
+            f"at remote devices. Verify voltage drop under inrush conditions."
+        )
+
+    return {
+        "steady_total_a": round(steady_total, 4),
+        "inrush_total_a": round(inrush_total, 4),
+        "within_panel_limit": within_limit,
+        "device_details": details,
+        "warnings": warnings,
+        "nfpa_reference": "NFPA 72 §18.5 / §10.14.1",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Automatic AWG Wire Gauge Selection — NEC Art. 760 + NFPA 72 §10.14
+# ---------------------------------------------------------------------------
+
+def auto_select_awg(
+    supply_voltage_v: float,
+    load_current_a: float,
+    cable_length_m: float,
+    max_drop_fraction: float = 0.15,
+    min_device_voltage_v: float = 16.0,
+) -> Dict[str, Any]:
+    """Automatically select the smallest AWG wire gauge that satisfies voltage drop.
+
+    Evaluates each AWG gauge from smallest (18) to largest (10), and returns
+    the first gauge where the voltage at the most remote device stays above
+    min_device_voltage_v under both steady-state and the specified max drop
+    fraction.
+
+    This bridges the gap between check_voltage_drop() (which requires manual
+    resistance input) and generate_cable_boq() (which had no AWG sizing).
+    Now BOQ generation can call auto_select_awg() to determine the correct
+    wire gauge for each circuit.
+
+    Args:
+        supply_voltage_v: Panel supply voltage (V), typically 24 VDC.
+        load_current_a:   Total circuit load current (A).
+        cable_length_m:   One-way cable length (m).
+        max_drop_fraction: Maximum allowable voltage drop as fraction (default 0.15).
+        min_device_voltage_v: Minimum device operating voltage (default 16 VDC).
+
+    Returns:
+        Dict with:
+            selected_awg:     Chosen AWG gauge (int), or None if none works.
+            resistance_ohm_per_m: Resistance of selected gauge.
+            voltage_at_device: Voltage at most remote device (V).
+            drop_v:           Voltage drop (V).
+            drop_fraction:    Drop as fraction of supply.
+            compliant:        True if voltage at device >= min_device_voltage_v.
+            all_candidates:   Results for every gauge evaluated.
+    """
+    all_candidates: List[Dict[str, Any]] = []
+    selected = None
+
+    for awg in AWG_GAUGES:
+        entry = AWG_RESISTANCE_TABLE[awg]
+        r_per_m = entry["ohm_per_m"]
+
+        # Check voltage drop using existing function
+        vd = check_voltage_drop(
+            supply_voltage_v=supply_voltage_v,
+            load_current_a=load_current_a,
+            cable_resistance_ohm_per_m=r_per_m,
+            cable_length_m=cable_length_m,
+            max_drop_fraction=max_drop_fraction,
+        )
+
+        voltage_at_device = supply_voltage_v - vd["drop_v"]
+        compliant = (
+            vd["compliant"]
+            and voltage_at_device >= min_device_voltage_v
+        )
+
+        candidate = {
+            "awg": awg,
+            "resistance_ohm_per_m": r_per_m,
+            "metric_mm2": entry["metric_mm2"],
+            "ampacity_75c": entry["ampacity_75c"],
+            "drop_v": vd["drop_v"],
+            "drop_fraction": vd["drop_fraction"],
+            "voltage_at_device": round(voltage_at_device, 4),
+            "compliant": compliant,
+        }
+        all_candidates.append(candidate)
+
+        # Select first compliant gauge (largest AWG = smallest wire)
+        if compliant and selected is None:
+            selected = candidate
+
+    if selected is None:
+        return {
+            "selected_awg": None,
+            "resistance_ohm_per_m": None,
+            "voltage_at_device": None,
+            "drop_v": None,
+            "drop_fraction": None,
+            "compliant": False,
+            "all_candidates": all_candidates,
+            "error": (
+                f"No AWG gauge satisfies voltage drop constraint "
+                f"(supply={supply_voltage_v}V, load={load_current_a}A, "
+                f"length={cable_length_m}m, max_drop={max_drop_fraction*100:.0f}%). "
+                f"Reduce circuit length or split into multiple circuits."
+            ),
+        }
+
+    return {
+        "selected_awg": selected["awg"],
+        "resistance_ohm_per_m": selected["resistance_ohm_per_m"],
+        "voltage_at_device": selected["voltage_at_device"],
+        "drop_v": selected["drop_v"],
+        "drop_fraction": selected["drop_fraction"],
+        "compliant": True,
+        "all_candidates": all_candidates,
+    }

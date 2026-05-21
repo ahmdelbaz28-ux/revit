@@ -156,6 +156,8 @@ CAD_LAYERS: Dict[str, Dict[str, Any]] = {
     "FA-LEGEND": {"color": 7, "linetype": "Continuous", "description": "Drawing legend"},
     "FA-TITLEBLOCK": {"color": 7, "linetype": "Continuous", "description": "Title block and border"},
     "FA-FIRESTOP": {"color": 1, "linetype": "PHANTOM", "description": "Firestopping callouts"},
+    "FA-PLENUM": {"color": 4, "linetype": "DASHED", "description": "Plenum zones / collision areas"},
+    "FA-SURVIVABILITY": {"color": 6, "linetype": "PHANTOM", "description": "Survivability route constraints"},
     "WALLS": {"color": 9, "linetype": "Continuous", "description": "Wall outlines (reference)"},
 }
 
@@ -422,13 +424,64 @@ class FirestoppingCallout:
     Attributes:
         position: (x, y) where the penetration occurs.
         wall_fire_rating: Fire rating of the wall being penetrated.
-        cable_type: Type of cable penetrating (FPL, FPLR, FPLP).
+        cable_type: Type of cable penetrating (FPL, FPLR, FPLP, CI).
         nfpa_reference: IBC §714 reference.
     """
     position: Tuple[float, float]
     wall_fire_rating: int
     cable_type: str = "FPL"
     nfpa_reference: str = "IBC 2021 §714"
+
+
+@dataclass(frozen=True)
+class PlenumZone:
+    """A plenum space where cable routing requires special consideration.
+
+    Plenum spaces (return-air cavities above suspended ceilings) require
+    FPLP-rated cable per NEC Article 760.  Additionally, large ducts,
+    sprinkler mains, and structural members within the plenum can block
+    cable routing paths — these are represented as collision_zones.
+
+    Attributes:
+        zone_id:       Unique identifier for the plenum zone.
+        floor_id:      Floor where the plenum exists.
+        bounds:        (min_x, min_y, max_x, max_y) bounding box.
+        plenum_height_m: Clear height of the plenum space (m).
+        collision_zones: List of (x, y, width, height) obstacles within plenum.
+        requires_fplp: Whether FPLP cable is required (always True for plenum).
+    """
+    zone_id: str
+    floor_id: str = ""
+    bounds: Tuple[float, float, float, float] = (0, 0, 100, 100)
+    plenum_height_m: float = 0.6
+    collision_zones: Tuple[Tuple[float, float, float, float], ...] = ()
+    requires_fplp: bool = True
+
+
+@dataclass(frozen=True)
+class SurvivabilityRouteConstraint:
+    """Cable routing constraint derived from pathway survivability classification.
+
+    When PathwaySurvivabilityEngine determines that a building requires
+    Level 2 or Level 3 survivability, the cable router must enforce
+    specific constraints on where cables can and cannot run.
+
+    Attributes:
+        route_id:            Unique identifier for this route constraint.
+        required_level:      NFPA 72 §12.4 survivability level string.
+        cable_type:          Required cable type (FPL/FPLR/FPLP/CI).
+        in_rated_enclosure:  Whether cable must be in fire-rated enclosure.
+        enclosure_rating_hr: Fire-resistance rating hours.
+        must_avoid_plenum:   If True, route must avoid plenum spaces
+                             (CI cable cannot simply run in plenum without
+                             rated enclosure at Level 3).
+    """
+    route_id: str
+    required_level: str = "LEVEL_1"
+    cable_type: str = "FPL"
+    in_rated_enclosure: bool = False
+    enclosure_rating_hr: float = 0.0
+    must_avoid_plenum: bool = False
 
 
 @dataclass(frozen=True)
@@ -670,6 +723,134 @@ class AutoDraftingEngine:
                     break  # One callout per segment
 
         return callouts
+
+    def check_plenum_collisions(
+        self,
+        path: List[Tuple[float, float]],
+        plenum_zones: List[PlenumZone],
+    ) -> List[Dict[str, Any]]:
+        """Check if a cable path passes through plenum collision zones.
+
+        Plenum spaces contain ducts, sprinkler mains, and structural
+        members that can physically block cable routing.  This function
+        identifies where the cable path intersects collision zones within
+        plenum spaces, and generates warnings for field verification.
+
+        Pragmatic approach: instead of full 3D voxel collision detection
+        (which requires IFC import and Navisworks-level BIM), we use 2D
+        bounding-box collision detection plus plenum_height_m as a
+        vertical clearance constraint.  Cable routing in plenum spaces
+        should be field-verified regardless.
+
+        Args:
+            path: Cable path waypoints.
+            plenum_zones: List of PlenumZone objects defining plenum spaces.
+
+        Returns:
+            List of collision dicts with:
+                - "point": (x, y) collision point
+                - "zone_id": Plenum zone where collision occurs
+                - "obstacle": (x, y, w, h) collision zone bounds
+                - "requires_fplp": True (plenum always requires FPLP)
+                - "warning": Advisory message
+        """
+        collisions = []
+
+        for zone in plenum_zones:
+            # Check if any path point is inside the plenum zone bounds
+            z_min_x, z_min_y, z_max_x, z_max_y = zone.bounds
+
+            for i in range(len(path) - 1):
+                px, py = path[i]
+
+                # Skip if point is outside plenum zone
+                if not (z_min_x <= px <= z_max_x and z_min_y <= py <= z_max_y):
+                    continue
+
+                # Check collision zones within this plenum
+                for obs in zone.collision_zones:
+                    ox, oy, ow, oh = obs
+                    if (ox <= px <= ox + ow and oy <= py <= oy + oh):
+                        collisions.append({
+                            "point": (px, py),
+                            "zone_id": zone.zone_id,
+                            "obstacle": obs,
+                            "requires_fplp": zone.requires_fplp,
+                            "warning": (
+                                f"Cable at ({px:.1f}, {py:.1f}) passes through "
+                                f"plenum obstacle in zone '{zone.zone_id}'. "
+                                f"Verify cable routing in plenum space above "
+                                f"ceiling (clear height: {zone.plenum_height_m:.2f}m). "
+                                f"FPLP cable required per NEC Art. 760."
+                            ),
+                        })
+
+        return collisions
+
+    def apply_survivability_constraints(
+        self,
+        path: List[Tuple[float, float]],
+        constraint: SurvivabilityRouteConstraint,
+        plenum_zones: Optional[List[PlenumZone]] = None,
+    ) -> Tuple[List[Tuple[float, float]], List[str]]:
+        """Apply pathway survivability constraints to a cable route.
+
+        Modifies the path and generates warnings based on the required
+        survivability level:
+          - Level 2+: Cable must use CI-rated type
+          - Level 3: Cable must avoid unprotected plenum spaces
+          - All levels: Generate field-verification warnings for plenum
+
+        Args:
+            path: Original cable path waypoints.
+            constraint: SurvivabilityRouteConstraint from PathwaySurvivabilityEngine.
+            plenum_zones: Optional plenum zone definitions.
+
+        Returns:
+            Tuple of (possibly modified path, list of warning strings).
+        """
+        warnings = []
+
+        # Survivability cable type warning
+        if constraint.required_level in ("LEVEL_2", "LEVEL_3"):
+            warnings.append(
+                f"Route '{constraint.route_id}': {constraint.cable_type} cable required "
+                f"per NFPA 72 §12.4 ({constraint.required_level}). "
+                f"{'In 2-hour rated enclosure.' if constraint.in_rated_enclosure else 'CI cable without rated enclosure.'}"
+            )
+
+        # Level 3: avoid plenum spaces without rated enclosure
+        if constraint.must_avoid_plenum and plenum_zones:
+            for zone in plenum_zones:
+                z_min_x, z_min_y, z_max_x, z_max_y = zone.bounds
+                in_plenum = any(
+                    z_min_x <= px <= z_max_x and z_min_y <= py <= z_max_y
+                    for px, py in path
+                )
+                if in_plenum and not constraint.in_rated_enclosure:
+                    warnings.append(
+                        f"Route '{constraint.route_id}': Path passes through plenum "
+                        f"zone '{zone.zone_id}' but Level 3 requires rated enclosure "
+                        f"in plenum spaces. Re-route or provide 2-hour rated enclosure."
+                    )
+
+        # Plenum collision check
+        if plenum_zones:
+            collisions = self.check_plenum_collisions(path, plenum_zones)
+            for c in collisions:
+                warnings.append(c["warning"])
+
+        # Low plenum height warning
+        if plenum_zones:
+            for zone in plenum_zones:
+                if zone.plenum_height_m < 0.3:
+                    warnings.append(
+                        f"Plenum zone '{zone.zone_id}' has very low clearance "
+                        f"({zone.plenum_height_m:.2f}m). Cable routing may be "
+                        f"physically impossible. Consider routing below ceiling."
+                    )
+
+        return path, warnings
 
     def generate_dxf(
         self,
