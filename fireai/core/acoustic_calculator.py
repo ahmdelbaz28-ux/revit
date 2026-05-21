@@ -478,14 +478,342 @@ def get_speaker_coverage_radius(
     return round(best_radius, 2)
 
 
+# ============================================================================
+# AcousticSPLCalculator — Multi-speaker room analysis with 3D barriers
+# ============================================================================
+
+# Barrier attenuation values (dBA) — based on ASHRAE / acoustic engineering data
+# These represent the additional attenuation when sound passes through or around
+# a barrier between source and listener.
+BARRIER_ATTENUATION_DB = {
+    "open_doorway": 3.0,       # Open doorway — minimal diffraction
+    "standard_door": 15.0,     # Closed standard interior door (STC 25-30)
+    "fire_door": 25.0,         # Fire-rated door (STC 40+)
+    "glass_partition": 22.0,   # Single glazing (STC 26-32)
+    "drywall_partition": 30.0, # Standard drywall partition (STC 33-40)
+    "concrete_wall": 45.0,     # Concrete or masonry wall (STC 50+)
+}
+
+
+@dataclass
+class CheckPoint:
+    """A point in space where SPL is evaluated (3D).
+
+    Attributes:
+        x: X coordinate in metres.
+        y: Y coordinate in metres.
+        z: Z coordinate in metres (height above floor).
+        label: Optional label for identification.
+    """
+    x: float
+    y: float
+    z: float = 1.5  # Default: typical ear height for standing adult
+    label: str = ""
+
+
+@dataclass
+class Speaker:
+    """A fire alarm speaker/horn with position and specification.
+
+    Attributes:
+        x: X coordinate in metres.
+        y: Y coordinate in metres.
+        z: Z coordinate in metres (mounting height).
+        rating_dba: Speaker output in dBA at the reference distance.
+        ref_distance_m: Reference distance for the speaker spec (default 3m).
+        speaker_id: Optional identifier.
+    """
+    x: float
+    y: float
+    z: float = 2.8  # Default: typical ceiling-mounted height
+    rating_dba: float = 95.0
+    ref_distance_m: float = DEFAULT_REF_DISTANCE_M
+    speaker_id: str = ""
+
+
+@dataclass
+class Barrier:
+    """A sound barrier between a speaker and listener.
+
+    Attributes:
+        barrier_type: Key from BARRIER_ATTENUATION_DB (e.g., "standard_door").
+            Or a custom dBA value can be specified.
+        attenuation_dba: Custom attenuation in dBA (overrides barrier_type).
+        label: Optional label for identification.
+    """
+    barrier_type: str = "standard_door"
+    attenuation_dba: Optional[float] = None
+    label: str = ""
+
+    @property
+    def effective_attenuation_dba(self) -> float:
+        """Get the effective attenuation for this barrier."""
+        if self.attenuation_dba is not None:
+            return self.attenuation_dba
+        return BARRIER_ATTENUATION_DB.get(self.barrier_type, 15.0)
+
+
+@dataclass
+class RoomAcousticResult:
+    """Result of acoustic analysis for a room with multiple speakers.
+
+    Attributes:
+        room_id: Room identifier.
+        compliant: Whether ALL check points meet NFPA 72 requirements.
+        worst_point_spl: SPL at the worst (lowest SPL) check point.
+        worst_point_label: Label of the worst check point.
+        required_dba: Required minimum SPL per NFPA 72.
+        margin_dba: Worst margin (effective - required).
+        violations: List of violation dicts for non-compliant points.
+        point_results: Detailed results for each check point.
+    """
+    room_id: str
+    compliant: bool
+    worst_point_spl: float
+    worst_point_label: str
+    required_dba: float
+    margin_dba: float
+    violations: List[Dict[str, Any]] = field(default_factory=list)
+    point_results: List[Dict[str, Any]] = field(default_factory=list)
+
+
+class AcousticSPLCalculator:
+    """Multi-speaker room SPL calculator with 3D barrier support.
+
+    This class provides the integration interface for the orchestrator.
+    Unlike the standalone functions (which check one speaker at one point),
+    this class checks MULTIPLE speakers against MULTIPLE check points in a
+    room, handling logarithmic SPL addition, 3D distances, and barrier
+    attenuation.
+
+    The consultant's proposed code had these errors:
+      1. behind_closed_door flag on speaker (should be on the path/barrier)
+      2. Only 2D (x,y) — ignored height/z dimension
+      3. Wrong import path (fireai.v8_core → fireai.core.provenance)
+      4. Wrong formula: 20*log10(dist_m) instead of 20*log10(dist_m/ref_dist)
+
+    This implementation fixes ALL of those issues.
+
+    Usage::
+
+        from fireai.core.acoustic_calculator import (
+            AcousticSPLCalculator, Speaker, CheckPoint, Barrier
+        )
+
+        calc = AcousticSPLCalculator(ambient_noise_db={"business": 55.0})
+        result = calc.calculate_room_spl(
+            room_id="R-101",
+            occ_type="business",
+            speakers=[Speaker(x=5, y=5, z=2.8, rating_dba=95)],
+            check_points=[CheckPoint(x=1, y=1, z=1.5)],
+            barriers=[Barrier(barrier_type="standard_door")],
+        )
+    """
+
+    def __init__(
+        self,
+        room_ambient_noise: Optional[Dict[str, float]] = None,
+    ) -> None:
+        """Initialize the acoustic calculator.
+
+        Args:
+            room_ambient_noise: Dict mapping occupancy types to ambient noise
+                levels in dBA. If None, uses AMBIENT_NOISE_LEVELS defaults.
+        """
+        self.ambient_levels = room_ambient_noise or dict(AMBIENT_NOISE_LEVELS)
+
+    def _get_ambient_for_occ(self, occ_type: str) -> float:
+        """Get ambient noise level for an occupancy type."""
+        # Try exact match first
+        if occ_type in self.ambient_levels:
+            return self.ambient_levels[occ_type]
+        # Try lowercase
+        occ_lower = occ_type.lower()
+        for key, val in self.ambient_levels.items():
+            if key.lower() == occ_lower:
+                return val
+        # Partial match
+        for key, val in self.ambient_levels.items():
+            if occ_lower in key.lower() or key.lower() in occ_lower:
+                return val
+        # Default: 55 dBA (moderate office)
+        return 55.0
+
+    def calculate_room_spl(
+        self,
+        room_id: str,
+        occ_type: str,
+        speakers: List[Speaker],
+        check_points: List[CheckPoint],
+        barriers: Optional[List[Barrier]] = None,
+        mode: str = "public",
+        room_absorption_m2: Optional[float] = None,
+    ) -> RoomAcousticResult:
+        """Calculate SPL at all check points from all speakers in a room.
+
+        For each check point:
+          1. Calculate 3D distance to each speaker
+          2. Apply inverse square law attenuation (with correct ref_distance)
+          3. Apply barrier attenuation if barriers exist
+          4. Sum SPL contributions from all speakers (logarithmic addition)
+          5. Add reverberant field contribution if room absorption provided
+          6. Check against NFPA 72 requirements
+
+        Args:
+            room_id: Room identifier.
+            occ_type: Occupancy type (e.g., "business", "mechanical_room").
+            speakers: List of Speaker objects with positions and ratings.
+            check_points: List of CheckPoint objects where SPL is evaluated.
+            barriers: Optional list of Barrier objects between speakers and
+                check points. If provided, barrier attenuation is applied to
+                ALL speaker→point paths. For per-path barriers, the caller
+                should pre-process and provide separate rooms/zones.
+            mode: "public", "private", or "sleeping" per NFPA 72 §18.4.
+            room_absorption_m2: Room absorption in m² Sabine (for reverberant
+                field calculation). If None, only direct sound is considered.
+
+        Returns:
+            RoomAcousticResult with compliance status for all check points.
+        """
+        ambient_dba = self._get_ambient_for_occ(occ_type)
+
+        if mode not in AUDIBLE_REQUIREMENTS:
+            mode = "public"
+
+        min_above_ambient, absolute_min, nfpa_section = AUDIBLE_REQUIREMENTS[mode]
+        required_dba = max(ambient_dba + min_above_ambient, absolute_min)
+
+        # Total barrier attenuation (applied to all paths if barriers exist)
+        total_barrier_dba = 0.0
+        if barriers:
+            for b in barriers:
+                total_barrier_dba += b.effective_attenuation_dba
+
+        violations: List[Dict[str, Any]] = []
+        point_results: List[Dict[str, Any]] = []
+        worst_spl = 200.0  # Track worst (lowest) SPL
+        worst_label = ""
+
+        for point in check_points:
+            # Sum SPL contributions from all speakers (logarithmic addition)
+            sum_power = 0.0
+
+            for spkr in speakers:
+                # 3D distance (not 2D like consultant's code)
+                dist_m = max(
+                    0.5,  # Minimum distance to avoid singularity
+                    math.sqrt(
+                        (point.x - spkr.x) ** 2 +
+                        (point.y - spkr.y) ** 2 +
+                        (point.z - spkr.z) ** 2
+                    ),
+                )
+
+                # Inverse square law with correct reference distance
+                # Lp(d) = Lp(ref) - 20*log10(d / d_ref)
+                # NOT the consultant's formula: 20*log10(d)
+                drop_dB = 20.0 * math.log10(dist_m / spkr.ref_distance_m)
+                effective_dba = spkr.rating_dba - drop_dB
+
+                # Apply barrier attenuation
+                effective_dba -= total_barrier_dba
+
+                # Logarithmic SPL addition: sum 10^(SPL/10)
+                if effective_dba > 0:
+                    sum_power += math.pow(10, effective_dba / 10.0)
+
+            # Total SPL at this point from all speakers
+            total_pt_spl = (
+                10.0 * math.log10(sum_power) if sum_power > 0 else 0.0
+            )
+
+            # Add reverberant field contribution if room absorption provided
+            if room_absorption_m2 is not None and room_absorption_m2 > 0 and speakers:
+                # Reverberant field adds to direct sound
+                # Use average speaker power for reverberant estimate
+                avg_rating = sum(s.rating_dba for s in speakers) / len(speakers)
+                avg_ref = sum(s.ref_distance_m for s in speakers) / len(speakers)
+                reverberant_spl = avg_rating + 10.0 * math.log10(4.0 / room_absorption_m2)
+                reverberant_spl += 10.0 * math.log10(avg_ref ** 2)
+
+                total_pt_spl = 10.0 * math.log10(
+                    math.pow(10, total_pt_spl / 10.0) +
+                    math.pow(10, reverberant_spl / 10.0)
+                )
+
+            # Track worst point
+            if total_pt_spl < worst_spl:
+                worst_spl = total_pt_spl
+                worst_label = point.label or f"({point.x:.1f},{point.y:.1f},{point.z:.1f})"
+
+            margin = total_pt_spl - required_dba
+            pt_compliant = margin >= 0
+
+            pt_result: Dict[str, Any] = {
+                "point": point.label or f"({point.x:.1f},{point.y:.1f},{point.z:.1f})",
+                "spl_dba": round(total_pt_spl, 1),
+                "required_dba": round(required_dba, 1),
+                "margin_dba": round(margin, 1),
+                "compliant": pt_compliant,
+            }
+            point_results.append(pt_result)
+
+            if not pt_compliant:
+                msg = (
+                    f"Room '{room_id}' check point '{pt_result['point']}': "
+                    f"SPL = {total_pt_spl:.1f} dBA, required {required_dba:.1f} dBA "
+                    f"({min_above_ambient} dB above ambient {ambient_dba:.0f} dBA "
+                    f"per NFPA 72 {nfpa_section}). Deficit: {abs(margin):.1f} dB."
+                )
+                violations.append({
+                    "code": "ACOUSTIC-INSUFFICIENT",
+                    "message": msg,
+                    "severity": "CRITICAL",
+                    "point": pt_result["point"],
+                    "deficit_dba": round(abs(margin), 1),
+                })
+
+            # Check maximum level
+            if total_pt_spl > MAX_SOUND_LEVEL_DBA:
+                violations.append({
+                    "code": "ACOUSTIC-EXCESSIVE",
+                    "message": (
+                        f"Room '{room_id}' SPL {total_pt_spl:.1f} dBA exceeds "
+                        f"maximum {MAX_SOUND_LEVEL_DBA} dBA per NFPA 72 §18.4.1.2"
+                    ),
+                    "severity": "WARNING",
+                    "point": pt_result["point"],
+                })
+
+        compliant = len(violations) == 0
+        margin_dba = worst_spl - required_dba
+
+        return RoomAcousticResult(
+            room_id=room_id,
+            compliant=compliant,
+            worst_point_spl=round(worst_spl, 1),
+            worst_point_label=worst_label,
+            required_dba=round(required_dba, 1),
+            margin_dba=round(margin_dba, 1),
+            violations=violations,
+            point_results=point_results,
+        )
+
+
 __all__ = [
     "AUDIBLE_REQUIREMENTS",
     "AMBIENT_NOISE_LEVELS",
     "MAX_SOUND_LEVEL_DBA",
     "DEFAULT_REF_DISTANCE_M",
+    "BARRIER_ATTENUATION_DB",
     "SPLResult",
     "AudibilityResult",
     "SpeakerPlacementResult",
+    "CheckPoint",
+    "Speaker",
+    "Barrier",
+    "RoomAcousticResult",
+    "AcousticSPLCalculator",
     "calculate_spl_at_distance",
     "check_audibility_compliance",
     "calculate_min_speakers_for_room",

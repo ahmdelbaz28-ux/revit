@@ -56,6 +56,12 @@ class FullDesignResult:
     as_built_reconciliation: dict = field(default_factory=dict)
     # V16: MEP sync injection result
     mep_sync: dict = field(default_factory=dict)
+    # V17: Acoustic SPL analysis result
+    acoustic_analysis: dict = field(default_factory=dict)
+    # V17: Battery aging/derating audit result
+    battery_audit: dict = field(default_factory=dict)
+    # V17: ASET/RSET tenability analysis result
+    aset_rset_analysis: dict = field(default_factory=dict)
 
 
 def run_full_design(
@@ -77,6 +83,18 @@ def run_full_design(
     as_built_devices: list = None,
     merkle_root: str = None,
     mep_elements: list = None,
+    # V17: Life-safety triad parameters
+    battery_spec: dict = None,
+    min_temperature_c: float = 20.0,
+    standby_load_amps: float = 0.0,
+    alarm_load_amps: float = 0.0,
+    acoustic_check_points: list = None,
+    acoustic_speakers: list = None,
+    acoustic_barriers: list = None,
+    occupancy_type: str = "business",
+    travel_distance_m: float = 0.0,
+    fire_growth_rate: str = "medium",
+    fire_load_MJ: float = 500.0,
 ) -> FullDesignResult:
     """
     Run the complete fire alarm design pipeline across all 5 bridges.
@@ -537,6 +555,198 @@ def run_full_design(
         except Exception as ex:
             warnings.append(f"MEP sync injection error: {ex}")
             log.error("MEP sync injection error: %s", ex)
+
+    # ═══════════════════════════════════════════════════════════════
+    # V17: Acoustic SPL Analysis (NFPA 72 §18.4)
+    # ═══════════════════════════════════════════════════════════════
+    if acoustic_speakers and acoustic_check_points:
+        log.info("=" * 50)
+        log.info("V17: ACOUSTIC SPL ANALYSIS (NFPA 72 §18.4)...")
+        try:
+            from fireai.core.acoustic_calculator import (
+                AcousticSPLCalculator, Speaker, CheckPoint, Barrier,
+            )
+
+            calc = AcousticSPLCalculator()
+            speakers = [
+                Speaker(
+                    x=s.get('x', 0), y=s.get('y', 0),
+                    z=s.get('z', 2.8), rating_dba=s.get('rating_dba', 95.0),
+                    ref_distance_m=s.get('ref_distance_m', 3.0),
+                    speaker_id=s.get('id', ''),
+                )
+                for s in acoustic_speakers
+            ]
+            check_pts = [
+                CheckPoint(
+                    x=p.get('x', 0), y=p.get('y', 0),
+                    z=p.get('z', 1.5), label=p.get('label', ''),
+                )
+                for p in acoustic_check_points
+            ]
+            barriers = None
+            if acoustic_barriers:
+                barriers = [
+                    Barrier(
+                        barrier_type=b.get('type', 'standard_door'),
+                        attenuation_dba=b.get('attenuation_dba'),
+                        label=b.get('label', ''),
+                    )
+                    for b in acoustic_barriers
+                ]
+
+            # Run SPL analysis for each room (using occupancy_type as default)
+            occ = occupancy_type or "business"
+            mode = "sleeping" if "sleep" in occ.lower() else "public"
+
+            acoustic_result = calc.calculate_room_spl(
+                room_id="GLOBAL",
+                occ_type=occ,
+                speakers=speakers,
+                check_points=check_pts,
+                barriers=barriers,
+                mode=mode,
+            )
+
+            result.acoustic_analysis = {
+                'compliant': acoustic_result.compliant,
+                'worst_point_spl': acoustic_result.worst_point_spl,
+                'required_dba': acoustic_result.required_dba,
+                'margin_dba': acoustic_result.margin_dba,
+                'violations': acoustic_result.violations,
+                'point_results': acoustic_result.point_results,
+            }
+
+            if not acoustic_result.compliant:
+                for v in acoustic_result.violations:
+                    result.violations.append(v.get('message', str(v)))
+
+            bridge_results['acoustic_spl'] = {
+                'compliant': acoustic_result.compliant,
+                'worst_spl': acoustic_result.worst_point_spl,
+                'violations': len(acoustic_result.violations),
+            }
+            log.info("Acoustic analysis: %s, worst SPL %.1f dBA",
+                     "PASS" if acoustic_result.compliant else "FAIL",
+                     acoustic_result.worst_point_spl)
+        except ImportError:
+            warnings.append("Acoustic calculator module not available")
+            log.warning("Acoustic calculator import failed")
+        except Exception as ex:
+            warnings.append(f"Acoustic analysis error: {ex}")
+            log.error("Acoustic analysis error: %s", ex)
+
+    # ═══════════════════════════════════════════════════════════════
+    # V17: Battery Aging/Derating Audit (NFPA 72 §10.6.7)
+    # ═══════════════════════════════════════════════════════════════
+    if battery_spec and (standby_load_amps > 0 or alarm_load_amps > 0):
+        log.info("=" * 50)
+        log.info("V17: BATTERY AGING/DERATING AUDIT (NFPA 72 §10.6.7)...")
+        try:
+            from fireai.core.battery_aging_derating import (
+                BatteryAuditor, BatterySpec, battery_result_for_gate,
+            )
+
+            bat = BatterySpec(
+                amp_hour_20h=battery_spec.get('amp_hour_20h', 26.0),
+                cells=battery_spec.get('cells', 6),
+                battery_type=battery_spec.get('type', 'vrla'),
+            )
+
+            auditor = BatteryAuditor(
+                battery=bat,
+                min_temperature_c=min_temperature_c,
+                service_life_years=battery_spec.get('service_life_years', 5),
+                safety_margin_pct=battery_spec.get('safety_margin_pct', 10.0),
+                standby_hours=battery_spec.get('standby_hours', 24.0),
+                alarm_hours=battery_spec.get('alarm_hours', 0.083),
+            )
+
+            bat_result = auditor.audit(
+                standby_load_amps=standby_load_amps,
+                alarm_load_amps=alarm_load_amps,
+            )
+
+            result.battery_audit = battery_result_for_gate(bat_result)
+
+            if not bat_result.is_adequate:
+                for v in bat_result.violations:
+                    result.violations.append(v.get('message', str(v)))
+                result.proof_valid = False
+
+            bridge_results['battery_audit'] = {
+                'adequate': bat_result.is_adequate,
+                'required_ah': bat_result.required_ah,
+                'installed_ah': bat_result.installed_ah,
+                'margin_pct': bat_result.margin_pct,
+                'temperature_derating': bat_result.temperature_derating,
+                'aging_derating': bat_result.aging_derating,
+            }
+            log.info("Battery audit: %s, required %.1f Ah, installed %.1f Ah, margin %.1f%%",
+                     "PASS" if bat_result.is_adequate else "FAIL",
+                     bat_result.required_ah, bat_result.installed_ah,
+                     bat_result.margin_pct)
+        except ImportError:
+            warnings.append("Battery aging derating module not available")
+            log.warning("Battery aging derating import failed")
+        except Exception as ex:
+            warnings.append(f"Battery audit error: {ex}")
+            log.error("Battery audit error: %s", ex)
+
+    # ═══════════════════════════════════════════════════════════════
+    # V17: ASET/RSET Tenability Analysis (NFPA 101 §9.3 / SFPE)
+    # ═══════════════════════════════════════════════════════════════
+    if travel_distance_m > 0 and result.rooms:
+        log.info("=" * 50)
+        log.info("V17: ASET/RSET TENABILITY ANALYSIS (NFPA 101 §9.3)...")
+        try:
+            from fireai.core.aset_rset_calculator import perform_aset_rset_analysis
+
+            # Use first room's area/height for analysis, or building_spec
+            room_area = 100.0
+            room_height = 3.0
+            if result.rooms:
+                first_room = result.rooms[0]
+                room_area = getattr(first_room, 'area_m2', None) or 100.0
+                room_height = getattr(first_room, 'ceiling_height_m', None) or 3.0
+
+            is_sprinklered = (building_spec or {}).get('is_sprinklered', False)
+
+            aset_rset = perform_aset_rset_analysis(
+                room_area_m2=room_area,
+                room_height_m=room_height,
+                travel_distance_m=travel_distance_m,
+                occupancy_type=occupancy_type or "business",
+                fire_growth_rate=fire_growth_rate,
+                fire_load_MJ=fire_load_MJ,
+                is_sprinklered=is_sprinklered,
+            )
+
+            result.aset_rset_analysis = aset_rset
+
+            if not aset_rset.get('is_safe', True):
+                result.violations.append(
+                    f"ASET/RSET FAIL: {aset_rset.get('verdict', 'Insufficient egress time')} "
+                    f"(Limiting factor: {aset_rset.get('limiting_factor', 'unknown')})"
+                )
+
+            bridge_results['aset_rset'] = {
+                'is_safe': aset_rset.get('is_safe', False),
+                'aset_seconds': aset_rset.get('aset_seconds', 0),
+                'rset_seconds': aset_rset.get('rset_seconds', 0),
+                'limiting_factor': aset_rset.get('limiting_factor', 'N/A'),
+            }
+            log.info("ASET/RSET: %s, ASET=%.1fs, RSET=%.1fs, factor=%s",
+                     "PASS" if aset_rset.get('is_safe') else "FAIL",
+                     aset_rset.get('aset_seconds', 0),
+                     aset_rset.get('rset_seconds', 0),
+                     aset_rset.get('limiting_factor', 'N/A'))
+        except ImportError:
+            warnings.append("ASET/RSET calculator module not available")
+            log.warning("ASET/RSET calculator import failed")
+        except Exception as ex:
+            warnings.append(f"ASET/RSET analysis error: {ex}")
+            log.error("ASET/RSET analysis error: %s", ex)
 
     # ═══════════════════════════════════════════════════════════════
     # BRIDGE 3: Draw design on DWG
