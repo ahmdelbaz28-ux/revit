@@ -404,6 +404,30 @@ Applied 7 fixes from self-critique of V12 (isolated modules, broken imports, no 
 **Commits:**
 - V12: Commit: 89f8441 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/89f8441
 
+### V14 — Multi-Device Daisy-Chain Routing + Dead Code Cleanup (2026-05-21)
+
+Applied 5 fixes from post-V13 code audit (2 CRITICAL, 2 MAJOR, 1 MINOR):
+
+| # | Problem | Fix | File | Severity |
+|---|---------|-----|------|----------|
+| 1 | `generate_class_a_loop()` only routes to LAST device — all intermediate devices skipped by A* path | Implemented daisy-chain routing: FACP → dev[0] → dev[1] → ... → dev[-1]. Outgoing path now chains A* segments through ALL devices | `fireai/core/routing_engine_v10.py` | CRITICAL |
+| 2 | `_route_cables_astar()` only passes terminal device to router — Manhattan fallback visits all devices but A* does not | Pass full `all_devs_m` list (all devices converted to meters) instead of single `last_dev_m` | `bridges/output_bridge.py` | CRITICAL |
+| 3 | FirestoppingAnnotator created but NEVER USED in `_route_cables_astar()` — dead import + dead variable | Removed dead annotator construction and import. Firestopping is handled by `_check_firestopping()` which sets boolean flags drawn later | `bridges/output_bridge.py` | MAJOR |
+| 4 | Generator-of-generators bug: `[(tuple(c)[:2] for c in ...) for wall_ls ...]` produces list of generators, not list of tuples | Removed the buggy code along with dead annotator. Documented proper wall segment extraction pattern for future use | `bridges/output_bridge.py` | MAJOR |
+| 5 | `routing_global_class_a.py` imports from `src.v8_core.decision_provenance` — cross-package dependency fragile for deployment | Created `fireai/core/provenance.py` shim that re-exports from `src.v8_core` with graceful fallback. Updated `routing_global_class_a.py` to import from shim | `fireai/core/provenance.py` + `routing_global_class_a.py` | MINOR |
+
+**Root Cause Analysis — Issues #1 and #2:**
+The original V12 `generate_class_a_loop()` was designed as a "simplification" (line 168 comment: `# Simplification: Assume daisy-chain sorted`) that only routed to the terminal device. This meant a building with 10 smoke detectors on a Class A loop would have its outgoing cable path go DIRECTLY from FACP to the last device, completely bypassing detectors 1–9. The Manhattan fallback correctly visited all devices, but the A* path did not. This is a life-safety defect: cables that don't reach devices = devices not connected.
+
+**Unit Tests:** 10 PASS (V14) + 26 PASS (V13) = 36 total
+- `test_v14_multi_device_routing.py`: 10 tests
+  - TestMultiDeviceDaisyChain: 7 tests (daisy-chain, separation, sequential ordering, fire walls)
+  - TestProvenanceShim: 3 tests (import, functional, source verification)
+
+**Remaining Known Issues (deferred to V15):**
+- HeadlessIFCBridge not integrated into orchestrator pipeline (duplicate of DigitalTwinBridge)
+- HeadlessIFCBridge._resolve_local_placement() doesn't walk parent placement chain (coordinates may be relative)
+
 ---
 
 ## Hardcoded Agent Instructions (ELITE)

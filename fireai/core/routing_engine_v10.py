@@ -143,7 +143,9 @@ class EliteClassARouter:
         """
         Generate a complete Class A loop with outgoing and return paths.
 
-        The outgoing path routes from FACP to the terminal device.
+        V14: The outgoing path now DAISY-CHAINS through ALL devices in order:
+          FACP → loop_devices[0] → loop_devices[1] → ... → loop_devices[-1]
+
         The return path routes from the terminal device back to FACP,
         avoiding the outgoing path by at least 1m (NFPA 72 S12.2.2).
 
@@ -165,10 +167,30 @@ class EliteClassARouter:
         if not loop_devices:
             return {}
 
-        target = loop_devices[-1]  # Simplification: Assume daisy-chain sorted.
+        # 1. GENERATE OUTGOING LEG — Daisy-chain through ALL devices
+        # V14 FIX: Previously only routed to loop_devices[-1], skipping
+        # all intermediate devices. Now we chain A* segments:
+        #   FACP → dev[0] → dev[1] → ... → dev[-1]
+        forward_path = []
+        waypoints = [facp_node] + list(loop_devices)
 
-        # 1. GENERATE OUTGOING LEG
-        forward_path = self._astar(facp_node, target, self.base_grid)
+        for i in range(len(waypoints) - 1):
+            src = waypoints[i]
+            dst = waypoints[i + 1]
+            segment = self._astar(src, dst, self.base_grid)
+
+            if not segment:
+                # If A* fails between two consecutive waypoints, use direct line
+                segment = [src, dst]
+
+            if forward_path:
+                # Remove duplicate junction point (end of prev = start of current)
+                forward_path.extend(segment[1:])
+            else:
+                forward_path.extend(segment)
+
+        if not forward_path:
+            return {}
 
         # 2. PUNISH FORWARD LEG FOR REVERSE ROUTING (NFPA 72 S12.2.2 Minimum 1 meter)
         # TERMINAL CONNECTION ZONE: The first and last `terminal_buffer_m` of the
@@ -202,7 +224,8 @@ class EliteClassARouter:
                         return_grid[rr, cc] += 50000.0  # DEAD ZONE FOR REVERSE
 
         # 3. GENERATE REVERSE LEG AVOIDING DEAD ZONES
-        reverse_path = self._astar(target, facp_node, return_grid)
+        terminal_device = loop_devices[-1]
+        reverse_path = self._astar(terminal_device, facp_node, return_grid)
         if not reverse_path:
             raise ValueError(
                 "CRITICAL ENGINEERING LIMIT: Unable to isolate reverse path by 1.0m "

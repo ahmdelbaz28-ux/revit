@@ -23,7 +23,7 @@ import math
 from typing import List, Tuple
 
 from fireai.core.routing_engine_v10 import EliteClassARouter, ArchitecturalWall
-from src.v8_core.decision_provenance import (
+from fireai.core.provenance import (
     DecisionProvenance, RuleApplied, ConfidenceScore, ConfidenceLevel, Violation,
 )
 

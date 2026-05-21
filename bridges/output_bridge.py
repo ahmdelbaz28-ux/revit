@@ -436,7 +436,8 @@ def _route_cables_astar(
     """
     try:
         from fireai.core.routing_engine_v10 import EliteClassARouter, ArchitecturalWall
-        from fireai.core.firestop_annotator import FirestoppingAnnotator
+        # V14: Removed FirestoppingAnnotator import — it was never used in this
+        # function. Firestopping detection is handled by _check_firestopping().
     except ImportError:
         log.warning("EliteClassARouter not available, falling back to Manhattan routing")
         return None
@@ -468,14 +469,22 @@ def _route_cables_astar(
 
         # Convert panel and device positions from mm to local meters
         panel_m = ((panel_pos[0] / 1000.0) - min_x, (panel_pos[1] / 1000.0) - min_y)
-        last_dev_idx = ordered[-1]
-        last_dev_m = (
-            (device_pts[last_dev_idx][0] / 1000.0) - min_x,
-            (device_pts[last_dev_idx][1] / 1000.0) - min_y,
-        )
 
-        # Run Class A loop generation
-        result = router.generate_class_a_loop(panel_m, [last_dev_m])
+        # V14 FIX: Pass ALL devices (not just the last one) to the router.
+        # The outgoing path must daisy-chain through every device:
+        #   FACP → dev[0] → dev[1] → ... → dev[-1]
+        # Previously only the terminal device was passed, causing the
+        # outgoing path to skip all intermediate devices entirely.
+        all_devs_m = []
+        for idx in ordered:
+            dev_m = (
+                (device_pts[idx][0] / 1000.0) - min_x,
+                (device_pts[idx][1] / 1000.0) - min_y,
+            )
+            all_devs_m.append(dev_m)
+
+        # Run Class A loop generation with full device list
+        result = router.generate_class_a_loop(panel_m, all_devs_m)
         out_seg = result["outgoing_class_a"]
         ret_seg = result["return_class_a"]
 
@@ -521,13 +530,19 @@ def _route_cables_astar(
             _check_firestopping(seg, p1_mm, p2_mm, fire_rated_walls)
             segments.append(seg)
 
-        # Add firestopping annotations from the annotator (additional check)
-        if fire_rated_walls:
-            annotator = FirestoppingAnnotator([
-                (tuple(c)[:2] for c in list(wall_ls.coords))
-                for wall_ls in fire_rated_walls
-                if hasattr(wall_ls, 'coords')
-            ])
+        # V14 FIX: FirestoppingAnnotator was previously created but NEVER USED.
+        # The annotator provides dedicated DXF callouts (circle + X cross + text)
+        # at each penetration point. However, it needs the modelspace (msp)
+        # which is not available inside the routing function.
+        # The firestopping detection is handled by _check_firestopping() above
+        # which sets boolean flags on CableSegments. The actual DXF markers
+        # are drawn in draw_fire_alarm_design() when seg.firestopping is True.
+        # The annotator is available for future use when more detailed callouts
+        # are needed (e.g., penetration rating, firestop system specification).
+        #
+        # The old generator-of-generators bug is also removed:
+        #   [(tuple(c)[:2] for c in list(wall_ls.coords)) for wall_ls ...]
+        # produced a list of generators, not a list of ((x1,y1),(x2,y2)) tuples.
 
         return segments
 
