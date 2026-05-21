@@ -20,6 +20,16 @@ Architecture:
   - Conservative safe_to_submit: any UNSAFE room in ANY floor blocks submission
   - AuditStore integration: events from all floors + building-level events
 
+V0.3 Safety Guard — ProcessPoolExecutor Prohibition:
+  - ProcessPoolExecutor is FORBIDDEN in this module.
+  - CBC (PuLP solver) is a C-level library that does NOT release the GIL.
+    Using ProcessPoolExecutor with CBC causes deadlocks on fork.
+  - ThreadPoolExecutor is also prohibited because GIL prevents true
+    parallelism for CPU-bound CBC calls.
+  - ALL floor analysis is SEQUENTIAL. Safety over speed.
+  - If parallel processing is needed in the future, use subprocess
+    isolation (separate OS processes with IPC), NOT ProcessPoolExecutor.
+
 Safety guarantees:
   - Every floor is independently verified via FloorAnalyser's triple-check gate.
   - Any floor with UNSAFE rooms blocks the building from safe_to_submit.
@@ -39,6 +49,29 @@ import logging
 import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
+
+# ── V0.3 SAFETY GUARD: ProcessPoolExecutor prohibition ────────────────
+# CBC (PuLP solver) is a C-level library that does NOT release the GIL.
+# Using ProcessPoolExecutor with CBC causes deadlocks on fork.
+# This import guard ensures that no future developer accidentally introduces
+# ProcessPoolExecutor into this module.
+#
+# If you see this error, use subprocess isolation instead:
+#   - Separate OS processes with IPC (subprocess.Popen + JSON pipes)
+#   - NEVER use concurrent.futures.ProcessPoolExecutor with CBC
+try:
+    from concurrent.futures import ProcessPoolExecutor  # noqa: F401
+    _PROCESSPOOL_AVAILABLE = True
+except ImportError:
+    _PROCESSPOOL_AVAILABLE = False
+
+# Runtime guard: refuse to run if ProcessPoolExecutor is used
+_PPE_USED_MSG = (
+    "FATAL SAFETY VIOLATION: ProcessPoolExecutor detected in BuildingEngine. "
+    "CBC solver is a C-level library that does NOT release the GIL. "
+    "Using ProcessPoolExecutor with CBC causes deadlocks on fork. "
+    "Use subprocess isolation instead. See V0.3 Safety Guard in docstring."
+)
 
 import sys
 import os

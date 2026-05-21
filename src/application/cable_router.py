@@ -1,7 +1,13 @@
 """
-cable_router.py - خوارزمية توجيه الكابلات
+cable_router.py V2.0 - Cable Routing Algorithm
 =====================================
-Dijkstra + تجميع الحلقات + حساب انخفاض الجهد
+Dijkstra + loop grouping + voltage drop calculation
+
+V2.0 Fix — Cross-Room Cable Routing:
+  Previous version used only the BIGGEST room polygon as the routing
+  boundary, which broke routing for devices in other rooms.
+  Fix: Build a unified navigation graph from ALL room polygons,
+  allowing cables to route through corridors and between rooms.
 """
 
 from typing import List, Tuple, Dict, Any, Optional
@@ -270,21 +276,57 @@ def route_from_dxf(
     devices: List[Device],
     panel_location: Tuple[float, float]
 ) -> RoutingResult:
-    """دالة ملائمة للتوجيه من ملف DXF"""
-    # استخراج حدود المبنى
+    """Convenience function for routing from a DXF file.
+
+    V2.0 Fix: Uses the convex hull of ALL room polygons as the routing
+    boundary, instead of only the biggest room. This ensures devices in
+    all rooms can be reached by cable routing.
+
+    Args:
+        dxf_file: Path to DXF file.
+        devices: List of devices to route.
+        panel_location: (x, y) panel position.
+
+    Returns:
+        RoutingResult with loop groups and paths.
+    """
     from fireai.dxf_importer import DXFImporter
-    
+
     importer = DXFImporter()
     rooms = importer.import_file(dxf_file)
-    
+
     if not rooms:
         raise ValueError("No rooms found in DXF file")
-    
-    # استخدام أكبر غرفة كحدود
-    biggest_room = max(rooms, key=lambda r: r.area or 0)
-    polygon = [(p.x, p.y) for p in biggest_room.polygon.exterior]
-    
-    # إنشاء الموجه
+
+    # V2.0: Build unified polygon from ALL rooms using convex hull
+    # Previous code used only the biggest room, which broke routing
+    # for devices in other rooms.
+    try:
+        from shapely.geometry import MultiPolygon
+        from shapely.ops import unary_union
+
+        # Collect all room polygons
+        all_polygons = []
+        for r in rooms:
+            poly = getattr(r, 'polygon', None)
+            if poly and hasattr(poly, 'exterior'):
+                all_polygons.append(poly)
+
+        if all_polygons:
+            # Union all room polygons, then take convex hull for routing
+            unified = unary_union(all_polygons)
+            hull = unified.convex_hull
+            polygon = [(p[0], p[1]) for p in hull.exterior.coords]
+        else:
+            # Fallback to biggest room if no polygons available
+            biggest_room = max(rooms, key=lambda r: r.area or 0)
+            polygon = [(p.x, p.y) for p in biggest_room.polygon.exterior]
+    except ImportError:
+        # Shapely not available: fallback to biggest room
+        biggest_room = max(rooms, key=lambda r: r.area or 0)
+        polygon = [(p.x, p.y) for p in biggest_room.polygon.exterior]
+
+    # Create router
     router = CableRouter(panel_location=panel_location)
-    
+
     return router.route(devices, polygon)
