@@ -263,3 +263,54 @@ After line-by-line code reading, here is the full verification:
 ### Commit Information
 - **Commit:** `97ebafd`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/97ebafd
+
+---
+
+## V18 Fixes (2026-05-22) — Cause & Effect Matrix + Conduit Fill
+
+### Self-Criticism Notes (V17 — applied before V18 work)
+
+1. **Accepted consultant's dict interface** — Created wrapper conversions (`_convert_speakers`, `_convert_check_points`) to accommodate consultant's dict-based inputs. This was a half-solution. Should have rejected dict interfaces entirely and used only dataclasses.
+2. **Didn't verify consultant's code line-by-line** — In V15, I caught 6 errors by reading code carefully. In V17, I accepted the consultant's code as a "starting point" without the same rigor.
+3. **Created unnecessary wrapper layer** — `fireai/v17_core/` is just a wrapper around `fireai/core/`. Adds complexity without real value. Should have integrated improvements directly into core modules.
+4. **Accommodated `behind_closed_door` flag** — This is a conceptual error (barrier on speaker, not on path). Instead of converting it, should have rejected it.
+
+### V18 Consultant Analysis — 15 Errors Found
+
+#### sequence_of_operations.py — 8 Errors:
+
+| # | Consultant Error | Impact | Our Fix |
+|---|-----------------|--------|---------|
+| 1 | Missing NAC activation — NO notification appliance circuits | Horns/strobes don't activate | Added NAC_ZONE and NAC_ALL LogicFunctions |
+| 2 | `location_hint` string matching ("LOBBY" in loc_hint) | Matches "LOBBY STORAGE ROOM" | Replaced with DeviceInputType Enum + exact matching |
+| 3 | Missing Elevator Phase II (independent service) | Elevator stuck in recall mode | Added ELEVATOR_PHASE_II LogicFunction |
+| 4 | Missing Fire Pump Start signal | Fire pump doesn't start | Added FIRE_PUMP_START LogicFunction |
+| 5 | Building-wide HVAC shutdown only | Unnecessary panic in unaffected zones | Added HVAC_SHUTDOWN_ZONE (zone-specific) |
+| 6 | Missing zone-specific door release | All doors release simultaneously | Made DOOR_RELEASE zone-specific |
+| 7 | `hashlib.sha256(str(matrix_rows).encode())` — non-deterministic | Hash changes between runs | Canonical JSON serialization |
+| 8 | LogicFunction as class constants, not Enum | No type safety, typos possible | Converted to str Enum |
+
+#### conduit_fill_analyzer.py — 7 Errors:
+
+| # | Consultant Error | Impact | Our Fix |
+|---|-----------------|--------|---------|
+| 1 | FPLR-only wire types | Wrong diameter for FPLP, THHN | Added FPLP, FPL, THHN, THWN, XHHW, shielded cables |
+| 2 | No PLFA/NPLFA separation | NEC 760.154 violation — mixing prohibited | Added CircuitClass Enum + separation check |
+| 3 | EMT-only conduit type | No option for RMC, IMC | Added RMC, IMC specs from NEC Table 4 |
+| 4 | Unverified fill area values | Potential calculation errors | Verified against NEC Chapter 9 Table 4 |
+| 5 | Missing conductor derating | NEC 310.15 violation — thermal risk | Added derating table per NEC 310.15(B)(3)(a) |
+| 6 | WireSpec.awg unused field | Dead code | Used for automatic diameter lookup from table |
+| 7 | No cable tray option | No solution for oversized bundles | Added cable tray recommendation when conduit exceeds 4" |
+
+#### What Consultant Got RIGHT:
+
+1. ✅ Diagnosis correct — FACP without cause-effect matrix is a "dumb box"
+2. ✅ Duct detector → Supervisory (not general alarm) — correct per NFPA 72 §17.7.5.6.1
+3. ✅ NEC conduit fill is needed — cable bundling in trunk pathways is a real risk
+4. ✅ Fill limits (53%/31%/40%) — correct per NEC Chapter 9 Table 1
+5. ✅ Elevator lobby smoke → elevator recall — correct per NFPA 72 §21.3.3
+6. ✅ Healthcare duct detector nuance — acknowledged context matters
+
+### Commit Information
+- **Commit:** (pending push)
+- **Tests:** 127/127 passing
