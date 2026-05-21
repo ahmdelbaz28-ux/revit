@@ -48,6 +48,10 @@ class FullDesignResult:
     warnings: list = field(default_factory=list)
     stats: dict = field(default_factory=dict)
     elapsed_seconds: float = 0.0
+    # V15: FACP capacity audit results
+    facp_audit: dict = field(default_factory=dict)
+    # V15: Pathway survivability classification
+    pathway_survivability: dict = field(default_factory=dict)
 
 
 def run_full_design(
@@ -63,6 +67,9 @@ def run_full_design(
     class_a: bool = True,
     fire_rated_walls: list = None,
     panel_position: tuple = None,
+    facp_manufacturer: str = "notifier",
+    ducts: list = None,
+    building_spec: dict = None,
 ) -> FullDesignResult:
     """
     Run the complete fire alarm design pipeline across all 5 bridges.
@@ -82,6 +89,12 @@ def run_full_design(
     fire_rated_walls: List of Shapely LineString objects for fire-rated walls (V13)
     panel_position: (x_mm, y_mm) panel position in drawing units (V15). If None,
         auto-placed near first room centroid (may be inaccurate).
+    facp_manufacturer: FACP manufacturer for protocol limit checks (V15).
+        "notifier", "simplex", or "siemens". Default: "notifier".
+    ducts         : List of DuctSpec dicts for duct detector analysis (V15).
+    building_spec : Dict with building info for pathway survivability (V15).
+        Keys: occupancy, height_m, num_floors, is_sprinklered, has_voice_evac,
+        evacuation_type, is_high_rise.
     """
     t0 = time.time()
     os.makedirs(output_dir, exist_ok=True)
@@ -250,6 +263,146 @@ def run_full_design(
     except Exception as ex:
         warnings.append(f"FireAI engine error: {ex}")
         log.error("FireAI engine error: %s", ex)
+
+    # ═══════════════════════════════════════════════════════════════
+    # V15: FACP Capacity Audit (PSU burnout + protocol limits)
+    # ═══════════════════════════════════════════════════════════════
+    log.info("=" * 50)
+    log.info("V15: FACP CAPACITY AUDIT...")
+    try:
+        from fireai.core.facp_capacity_auditor import FACPCapacityAuditor, get_default_profile
+
+        facp_profile = get_default_profile(facp_manufacturer)
+        facp_auditor = FACPCapacityAuditor(facp_profile)
+
+        # SLC protocol audit — check device counts against manufacturer limits
+        # Group devices by their circuit_id attribute
+        slc_loops_dict = {}
+        for d in result.devices:
+            loop_id = getattr(d, 'circuit_id', 'SLC-01')
+            if loop_id not in slc_loops_dict:
+                slc_loops_dict[loop_id] = []
+            slc_loops_dict[loop_id].append({
+                'device_type': getattr(d, 'device_type', 'UNKNOWN'),
+                'device_id': d.id,
+            })
+        slc_loops = [{'loop_id': k, 'devices': v} for k, v in slc_loops_dict.items()]
+
+        slc_result = facp_auditor.audit_slc_protocol_limits(slc_loops)
+        result.facp_audit['slc_protocol'] = slc_result
+
+        if not slc_result.get('all_pass', True):
+            for v in slc_result.get('violations', []):
+                result.violations.append(v.get('message', str(v)))
+            result.proof_valid = False
+
+        bridge_results['facp_capacity'] = {
+            'manufacturer': facp_profile.manufacturer,
+            'slc_all_pass': slc_result.get('all_pass', True),
+            'slc_violations': len(slc_result.get('violations', [])),
+        }
+        log.info("FACP audit: SLC %s, %d violations",
+                 "PASS" if slc_result.get('all_pass', True) else "FAIL",
+                 len(slc_result.get('violations', [])))
+    except ImportError:
+        warnings.append("FACP capacity auditor not available")
+        log.warning("FACP capacity auditor import failed")
+    except Exception as ex:
+        warnings.append(f"FACP audit error: {ex}")
+        log.error("FACP audit error: %s", ex)
+
+    # ═══════════════════════════════════════════════════════════════
+    # V15: Pathway Survivability Classification
+    # ═══════════════════════════════════════════════════════════════
+    if building_spec:
+        log.info("V15: PATHWAY SURVIVABILITY CLASSIFICATION...")
+        try:
+            from fireai.core.pathway_survivability_engine import (
+                PathwaySurvivabilityEngine, BuildingSpec,
+            )
+            from fireai.core.contracts import OccupancyCategory
+
+            occ = building_spec.get('occupancy', 'BUSINESS')
+            occ_enum = OccupancyCategory(occ) if occ in [e.value for e in OccupancyCategory] else OccupancyCategory.BUSINESS
+
+            spec = BuildingSpec(
+                occupancy=occ_enum,
+                height_m=building_spec.get('height_m', 12.0),
+                num_floors=building_spec.get('num_floors', 3),
+                is_sprinklered=building_spec.get('is_sprinklered', False),
+                has_voice_evac=building_spec.get('has_voice_evac', False),
+                evacuation_type=building_spec.get('evacuation_type', 'full'),
+                is_high_rise=building_spec.get('is_high_rise', False),
+            )
+
+            engine = PathwaySurvivabilityEngine()
+            surv_result = engine.classify(spec)
+
+            result.pathway_survivability = {
+                'level': surv_result.building_level.value,
+                'compliant': surv_result.compliant,
+                'cable_requirements': [
+                    {
+                        'route_type': cr.route_type,
+                        'cable_type': cr.cable_type.value,
+                        'in_rated_enclosure': cr.in_rated_enclosure,
+                        'enclosure_rating_hr': cr.enclosure_rating_hr,
+                        'nfpa_reference': cr.nfpa_reference,
+                    }
+                    for cr in surv_result.cable_requirements
+                ],
+                'rationale': surv_result.classification_rationale,
+                'warnings': surv_result.warnings,
+            }
+
+            bridge_results['pathway_survivability'] = {
+                'level': surv_result.building_level.value,
+                'compliant': surv_result.compliant,
+            }
+            log.info("Pathway survivability: level=%s compliant=%s",
+                     surv_result.building_level.value, surv_result.compliant)
+        except ImportError:
+            warnings.append("Pathway survivability engine not available")
+            log.warning("Pathway survivability import failed")
+        except Exception as ex:
+            warnings.append(f"Pathway survivability error: {ex}")
+            log.error("Pathway survivability error: %s", ex)
+
+    # ═══════════════════════════════════════════════════════════════
+    # V15: Duct Detector Analysis
+    # ═══════════════════════════════════════════════════════════════
+    if ducts:
+        log.info("V15: DUCT DETECTOR ANALYSIS...")
+        try:
+            from fireai.core.duct_detector import analyse_ducts, DuctSpec, total_duct_detectors
+
+            duct_specs = []
+            for d in ducts:
+                duct_specs.append(DuctSpec(
+                    duct_id=d.get('duct_id', 'DUCT-??'),
+                    length_m=d.get('length_m', 1.0),
+                    width_m=d.get('width_m', 0.3),
+                    start_point=tuple(d.get('start_point', (0.0, 0.0))),
+                    end_point=tuple(d.get('end_point', (1.0, 0.0))),
+                    airflow_cfm=d.get('airflow_cfm'),
+                    duct_type=d.get('duct_type', 'supply'),
+                ))
+
+            duct_results = analyse_ducts(duct_specs)
+            total_det = total_duct_detectors(duct_results)
+
+            bridge_results['duct_detector'] = {
+                'ducts_analysed': len(duct_results),
+                'total_duct_detectors': total_det,
+            }
+            log.info("Duct detectors: %d ducts analysed, %d detectors required",
+                     len(duct_results), total_det)
+        except ImportError:
+            warnings.append("Duct detector module not available")
+            log.warning("Duct detector import failed")
+        except Exception as ex:
+            warnings.append(f"Duct detector error: {ex}")
+            log.error("Duct detector error: %s", ex)
 
     # ═══════════════════════════════════════════════════════════════
     # BRIDGE 3: Draw design on DWG
