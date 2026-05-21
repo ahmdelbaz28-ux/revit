@@ -1,7 +1,7 @@
 [
   {
     "priority": "CRITICAL",
-    "description": "Life-safety critical references — must be verified before any release",
+    "description": "Life-safety critical references — must be verified before any release. These sections directly affect occupant survival. Any implementation error here means deaths.",
     "call": "google:search",
     "queries": [
       "NFPA 72-2022 Table 17.6.3.5.1 smoke detector spacing ceiling height",
@@ -12,12 +12,21 @@
       "NFPA 72-2022 10.6.7.2.1 battery secondary supply 24 hours standby",
       "NFPA 72-2022 18.4.3 public mode audible 15 dB above ambient",
       "NFPA 72-2022 18.4.2 sleeping areas 75 dBA at pillow",
-      "NFPA 72-2022 10.14 voltage drop notification appliance circuit"
+      "NFPA 72-2022 10.14 voltage drop notification appliance circuit",
+      "NFPA 72-2022 21.3.2 elevator recall Phase I fire alarm activation",
+      "NFPA 72-2022 21.7.1 HVAC shutdown fire alarm duct smoke detector"
+    ],
+    "implemented_by": [
+      "fireai/core/nfpa72_coverage.py",
+      "fireai/core/fault_isolator_injector.py",
+      "fireai/core/acoustic_calculator.py",
+      "fireai/core/nfpa72_calculations.py",
+      "fireai/core/release_gates.py"
     ]
   },
   {
     "priority": "HIGH",
-    "description": "Core engineering references — affect detector placement and coverage",
+    "description": "Core engineering references — affect detector placement, coverage, and loop design. Errors here may cause non-compliance requiring redesign.",
     "call": "google:search",
     "queries": [
       "NFPA 72-2022 17.6.3.1.3 dead air space detector placement",
@@ -29,12 +38,21 @@
       "NFPA 72-2022 17.8.3 duct smoke detectors HVAC system",
       "NFPA 72-2022 17.7.6 detector spacing high ceiling greater than 10m",
       "NFPA 72-2022 21.3.3 zone requirements fire alarm",
-      "NFPA 72-2022 21.4 Class A circuit requirements"
+      "NFPA 72-2022 21.4 Class A circuit requirements",
+      "NFPA 72-2022 21.2.2 SLC loop device limit 250 addressable devices",
+      "NFPA 72-2022 18.4.1.2 maximum sound pressure 110 dBA"
+    ],
+    "implemented_by": [
+      "fireai/core/nfpa72_coverage.py",
+      "fireai/core/nfpa72_calculations.py",
+      "fireai/core/nfpa72_models.py",
+      "fireai/core/contracts.py",
+      "fireai/core/boq_generator.py"
     ]
   },
   {
     "priority": "STANDARD",
-    "description": "Supplementary references — design guidance and documentation",
+    "description": "Supplementary references — design guidance, documentation requirements, and maintenance. Non-compliance may delay AHJ approval but typically does not cause immediate life-safety risk.",
     "call": "google:search",
     "queries": [
       "NFPA 72-2022 Section 17.3 general requirements detector placement",
@@ -47,11 +65,16 @@
       "NFPA 72-2022 24.3.4 pathway supervisory class A class B loop",
       "NFPA 72-2022 Chapter 12 inspection testing maintenance fire alarm",
       "NFPA 72-2022 17.6.5 stratification high ceiling detector sensitivity"
+    ],
+    "implemented_by": [
+      "fireai/core/release_gates.py",
+      "fireai/core/evidence_chain.py",
+      "fireai/core/twin_db.py"
     ]
   },
   {
     "priority": "ENGINEERING",
-    "description": "Engineering analysis references — ASET/RSET, CFAST, egress modeling",
+    "description": "Engineering analysis references — ASET/RSET, CFAST, egress modeling, and physics-based calculations. These underpin the performance-based design layer.",
     "call": "google:search",
     "queries": [
       "Heskestad plume model mass flow rate ceiling jet temperature",
@@ -60,22 +83,35 @@
       "Zukoski plume filling model smoke layer descent rate",
       "Bouguer Beer Lambert visibility through smoke",
       "SFPE Engineering Guide performance-based fire protection ASET RSET",
-      "NFPA 101-2024 Chapter 9 means of egress travel distance",
+      "NFPA 101-2024 Section 9.3 means of egress travel distance",
       "PD 7974-6 evacuation timing pre-movement delay",
       "NEC 760 fire alarm cable voltage drop calculation DC return path",
-      "Shapely python polygon area coverage calculation NFPA compliance"
+      "Shapely python polygon area coverage calculation NFPA compliance",
+      "ISO 13571 life-threatening components fire tenability criteria",
+      "BS 7974-2 visibility smoke layer tenability assessment"
+    ],
+    "implemented_by": [
+      "fireai/core/semi_cfast_engine.py",
+      "fireai/core/aset_rset_calculator.py",
+      "fireai/core/acoustic_calculator.py"
     ]
   },
   {
     "priority": "INTEGRATION",
-    "description": "Integration and interoperability references — BIM, IFC, CAD",
+    "description": "Integration and interoperability references — BIM, IFC, CAD, MEP coordination. These enable the system to interface with external design tools.",
     "call": "google:search",
     "queries": [
       "IFC4 IfcSensor IfcFireAlarm buildingSMART spatial hierarchy",
       "A* pathfinding cable routing obstacle avoidance fire alarm",
       "Revit API fire alarm device placement automation",
       "buildingSMART IFC4 property set fire protection equipment",
-      "DXF floor plan parsing room boundary extraction algorithm"
+      "DXF floor plan parsing room boundary extraction algorithm",
+      "NFPA 90A duct smoke detector air handling system over 2000 CFM",
+      "NFPA 72-2022 21.3.4 elevator power disconnect shunt trip"
+    ],
+    "implemented_by": [
+      "fireai/core/duct_detector.py",
+      "fireai/core/fire_zone_engine.py"
     ]
   }
 ]
