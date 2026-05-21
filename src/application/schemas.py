@@ -93,6 +93,12 @@ class LoopGroup:
     # Class B: daisy chain (no return, worst-case at end of line)
     is_class_a: bool = False  # Default Class B (most common)
     
+    # zone_id — NFPA 72 §12.3.1/§12.3.2 fault isolation requirement
+    # A single fault must not affect more than one zone. This field
+    # is used by fault_isolator_injector.py to determine where to
+    # place fault isolators on SLC loops.
+    zone_id: Optional[str] = None
+    
     # references
     panel_location: Optional[tuple] = None
     cable_spec: CableSpecification = field(default_factory=CableSpecification)

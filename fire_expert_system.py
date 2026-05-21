@@ -213,10 +213,22 @@ class NFPA72:
         "visibility": 30.0,             # 30m for V1.1/V2.0 visibility
     }
     
+    # DEPRECATED: Hardcoded speaker coverage replaced by acoustic_calculator.py
+    # Use calculate_min_speakers_for_room() from fireai.core.acoustic_calculator
+    # which properly computes distance-based SPL per NFPA 72 §18.4/§18.5
+    # with inverse square law, room absorption, and ambient noise compensation.
+    # Kept for backward compatibility only — DO NOT use for new code.
     SPEAKER_COVERAGE = {
-        "general": 30.0,               # 30m (100ft)
-        "intelligible": 21.0,          # 70ft for speech
+        "general": 30.0,               # DEPRECATED: Use acoustic_calculator
+        "intelligible": 21.0,          # DEPRECATED: Use acoustic_calculator
     }
+
+    # Reference to proper acoustic calculator module
+    # from fireai.core.acoustic_calculator import (
+    #     calculate_min_speakers_for_room,
+    #     check_audibility_compliance,
+    #     calculate_spl_at_distance,
+    # )
     
     # Duct Detector Coverage
     DUCT_DETECTOR_COVERAGE = {

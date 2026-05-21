@@ -25,12 +25,22 @@ CONTRACT_VERSION = "v1"
 
 
 class CeilingType(str, Enum):
-    """NFPA 72 ceiling classifications."""
+    """NFPA 72 ceiling classifications.
+
+    CONSOLIDATED: This enum is the canonical source. nfpa72_models.py
+    CeilingType has additional entries (GABLE, SHED, TRUSS, COMBUSTIBLE,
+    CORRIDOR) that map to these core types for contract validation.
+    """
     FLAT = "FLAT"
     SLOPED = "SLOPED"
     BEAMED = "BEAMED"
     COFFERED = "COFFERED"
     DOMED = "DOMED"
+    # Extended types from nfpa72_models.py for full compatibility
+    SMOOTH = "SMOOTH"
+    GABLE = "GABLE"
+    SHED = "SHED"
+    CORRIDOR = "CORRIDOR"
 
 
 class ConfidenceLevel(str, Enum):
@@ -42,12 +52,23 @@ class ConfidenceLevel(str, Enum):
 
 
 class DetectorType(str, Enum):
-    """NFPA 72 detector types."""
+    """NFPA 72 detector types.
+
+    CONSOLIDATED: Includes all types from both contracts.py and
+    nfpa72_models.py to prevent enum drift between modules.
+    """
+    SMOKE = "SMOKE"
     SMOKE_PHOTOELECTRIC = "SMOKE_PHOTOELECTRIC"
     SMOKE_IONIZATION = "SMOKE_IONIZATION"
+    SMOKE_MULTI_CRITERIA = "SMOKE_MULTI_CRITERIA"
+    HEAT = "HEAT"
     HEAT_FIXED = "HEAT_FIXED"
     HEAT_RATE_OF_RISE = "HEAT_RATE_OF_RISE"
+    HEAT_COMBINATION = "HEAT_COMBINATION"
     COMBINATION = "COMBINATION"
+    SMOKE_HEAT_COMBINATION = "SMOKE_HEAT_COMBINATION"
+    FLAME = "FLAME"
+    GAS = "GAS"
 
 
 # ============================================================================
@@ -346,6 +367,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     # 4a. Validate polygon points are numeric — prevents downstream crashes
     #     A polygon like [{"x": "abc"}] passes the len check but crashes
     #     when Shapely tries to compute area.
+    coords = []
     for i, pt in enumerate(polygon):
         if isinstance(pt, (list, tuple)):
             if len(pt) < 2:
@@ -353,12 +375,13 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
                     f"polygon point {i} must have at least 2 coordinates, got {len(pt)}"
                 )
             try:
-                float(pt[0])
-                float(pt[1])
+                x_val = float(pt[0])
+                y_val = float(pt[1])
             except (TypeError, ValueError):
                 raise ContractViolation(
                     f"polygon point {i} coordinates must be numeric, got {pt!r}"
                 )
+            coords.append((x_val, y_val))
         elif isinstance(pt, dict):
             x_val = pt.get("x", pt.get("X"))
             y_val = pt.get("y", pt.get("Y"))
@@ -367,16 +390,36 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
                     f"polygon point {i} dict must have 'x' and 'y' keys, got {list(pt.keys())}"
                 )
             try:
-                float(x_val)
-                float(y_val)
+                x_val = float(x_val)
+                y_val = float(y_val)
             except (TypeError, ValueError):
                 raise ContractViolation(
                     f"polygon point {i} coordinates must be numeric, got x={x_val!r} y={y_val!r}"
                 )
+            coords.append((x_val, y_val))
         else:
             raise ContractViolation(
                 f"polygon point {i} must be a tuple/list or dict, got {type(pt).__name__}"
             )
+
+    # 4b. Polygon self-intersection check — prevents wrong area calculations.
+    #     A self-intersecting polygon (e.g. figure-8) has ambiguous area
+    #     and produces incorrect coverage results from Shapely. In a
+    #     life-safety system, this means detectors could be placed based
+    #     on wrong room geometry.
+    try:
+        from shapely.geometry import Polygon as ShapelyPolygon
+        if len(coords) >= 3:
+            shapely_poly = ShapelyPolygon(coords)
+            if not shapely_poly.is_valid:
+                # is_valid checks for self-intersection, ring orientation, etc.
+                raise ContractViolation(
+                    f"polygon is self-intersecting or otherwise invalid. "
+                    f"Self-intersecting polygons produce wrong area calculations, "
+                    f"which leads to incorrect detector counts. Fix the polygon geometry."
+                )
+    except ImportError:
+        pass  # Shapely not available — skip geometric validation
 
     # 5. Validate ceiling_height_m is positive
     ceiling_height = payload.get("ceiling_height_m")

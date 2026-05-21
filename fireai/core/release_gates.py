@@ -352,10 +352,28 @@ def verify_and_evaluate(
 
     # --- Gate 7: ASET vs RSET (LIFE SAFETY) ---
     # STRENGTHENED: Don't just trust is_safe boolean — verify ASET > RSET numerically.
+    # If aset_rset_result contains raw scenario data, we can also compute
+    # ASET from the semi_cfast_engine for independent verification.
     if aset_rset_result is not None:
         aset_s = float(aset_rset_result.get("aset_seconds", 0))
         rset_s = float(aset_rset_result.get("rset_seconds", 0))
         safety_factor = float(aset_rset_result.get("safety_factor", 1.5))
+
+        # If ASET is not provided but scenario data is, compute it
+        if aset_s <= 0 and "scenario" in aset_rset_result:
+            try:
+                from fireai.core.semi_cfast_engine import (
+                    calculate_aset, FireScenario, TenabilityCriteria,
+                )
+                scenario_data = aset_rset_result["scenario"]
+                scenario = FireScenario(**scenario_data)
+                criteria_data = aset_rset_result.get("criteria", {})
+                criteria = TenabilityCriteria(**criteria_data) if criteria_data else None
+                aset_result = calculate_aset(scenario, criteria)
+                aset_s = aset_result.aset_seconds
+            except Exception as e:
+                verify_methods.setdefault("aset_rset_valid", f"aset_computation_failed: {e}")
+
         # Re-verify: ASET must exceed RSET * safety_factor (SFPE / NFPA 101 §9.3)
         numeric_safe = aset_s > 0 and rset_s > 0 and aset_s > rset_s * safety_factor
         # If the caller claims is_safe but our numeric check disagrees, TRUST the math.
