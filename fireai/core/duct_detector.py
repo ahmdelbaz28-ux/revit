@@ -21,6 +21,8 @@ References:
   NFPA 72-2022 §17.7.5 — Smoke Detectors in Duct Systems
   NFPA 90A-2024 §6.4.2.2 — Duct Detector Spacing
   IMC §606.4 — Smoke Detectors in Duct Systems
+  UL 268A — Smoke Detectors for Duct Heater and Air-Handling System Applications
+      (velocity blindness limit: sampling tubes ineffective above 4000 FPM)
 """
 
 from __future__ import annotations
@@ -43,6 +45,10 @@ NFPA_DUCT_MIN_LENGTH_M: float = 1.00    # ducts shorter than this are exempt
 
 # CFM threshold — NFPA 72 §17.7.5.1
 NFPA_DUCT_CFM_THRESHOLD: float = 2000.0
+
+# UL 268A — maximum air velocity for reliable smoke detection
+# Above this velocity, sampling tubes cannot capture smoke particles (blow-by effect).
+UL268A_MAX_VELOCITY_FPM: float = 4000.0
 
 # Tolerance for length mismatch warning
 _LENGTH_MISMATCH_TOLERANCE: float = 0.10  # 10 cm
@@ -72,6 +78,7 @@ class DuctSpec:
     end_point:   Point = (1.0, 0.0)
     airflow_cfm: Optional[float] = None
     duct_type:   str = "supply"
+    height_m:    float = 0.0   # cross-section height (0 = round duct; width_m = diameter)
 
 
 @dataclass(frozen=True)
@@ -108,6 +115,8 @@ class DuctAnalysisResult:
     exempt: bool = False
     exemption_reason: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
+    velocity_fpm: float = 0.0        # computed air velocity in FPM
+    velocity_blindness: bool = False  # True if velocity exceeds UL 268A limit
     nfpa_ref: str = "NFPA 72-2022 §17.7.5"       # detector requirement
     spacing_ref: str = "NFPA 90A-2024 §6.4.2.2"   # max spacing source
 
@@ -203,6 +212,30 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
             f"detector is mandatory (NFPA 72 §17.7.5.1)."
         )
 
+    # ── UL 268A velocity blindness check ─────────────────────────────────
+    velocity_fpm = 0.0
+    velocity_blindness = False
+    if duct.airflow_cfm is not None and duct.airflow_cfm > 0 and duct.width_m > 0:
+        # Compute cross-section area
+        if duct.height_m > 0:
+            # Rectangular duct
+            area_m2 = duct.width_m * duct.height_m
+        else:
+            # Round duct (width_m = diameter)
+            area_m2 = math.pi * (duct.width_m / 2.0) ** 2
+        area_sq_ft = area_m2 * 10.764  # m² → ft²
+        if area_sq_ft > 0:
+            velocity_fpm = duct.airflow_cfm / area_sq_ft
+            if velocity_fpm > UL268A_MAX_VELOCITY_FPM:
+                velocity_blindness = True
+                warnings.append(
+                    f"Duct '{duct.duct_id}': air velocity {velocity_fpm:.0f} FPM "
+                    f"exceeds UL 268A limit of {UL268A_MAX_VELOCITY_FPM:.0f} FPM — "
+                    f"smoke detector sampling tubes cannot capture smoke particles "
+                    f"at this velocity (blow-by effect). Reduce duct velocity or "
+                    f"use alternative detection method."
+                )
+
     # ── Compute detector count and spacing ───────────────────────────────
     n_detectors = max(1, math.ceil(duct.length_m / NFPA_DUCT_MAX_SPACING_M))
     spacing_m = duct.length_m / n_detectors
@@ -240,6 +273,8 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
         detector_count=len(positions),
         spacing_used_m=round(spacing_m, 4),
         warnings=warnings,
+        velocity_fpm=round(velocity_fpm, 1),
+        velocity_blindness=velocity_blindness,
     )
 
 

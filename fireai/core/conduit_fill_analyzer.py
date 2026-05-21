@@ -112,11 +112,13 @@ WIRE_DIAMETERS_MM: Dict[Tuple[str, int], float] = {
     ("FPLP", 16): 3.00,
     ("FPLP", 14): 3.61,
     ("FPLP", 12): 4.22,
+    ("FPLP", 10): 4.80,  # V20.1: Added for NAC voltage-drop upsizing feedback loop
     # FPLR — Fire Power Limited Riser
     ("FPLR", 18): 2.59,
     ("FPLR", 16): 3.00,
     ("FPLR", 14): 3.61,
     ("FPLR", 12): 4.22,
+    ("FPLR", 10): 4.80,  # V20.1: Added for NAC voltage-drop upsizing feedback loop
     # FPL — Fire Power Limited (general purpose)
     ("FPL", 18): 2.39,
     ("FPL", 16): 2.79,
@@ -617,6 +619,144 @@ class ConduitSizer:
             "warnings": warnings,
             "violations": [str(v) for v in violations],
         }
+
+    # ------------------------------------------------------------------
+    # Conduit-Wire Feedback Loop
+    # ------------------------------------------------------------------
+
+    def analyze_with_wire_overrides(
+        self,
+        bundle_id: str,
+        wire_inventory: List[Dict],
+        wire_size_overrides: Optional[Dict[int, int]] = None,
+        conduit_type: str = "EMT",
+        enforce_plfa_separation: bool = True,
+    ) -> Any:
+        """Analyze conduit fill with wire size overrides from NAC voltage drop.
+
+        This method accepts a wire_size_overrides dict that maps original AWG
+        to upgraded AWG (e.g., {14: 10} means all 14AWG wires were upsized
+        to 10AWG for voltage drop compliance). The conduit fill calculation
+        MUST use the upgraded wire sizes to prevent overfilled conduits.
+
+        Per NEC Chapter 9 Table 1, if the actual (upsized) wire diameters
+        cause fill to exceed the limit, the conduit must be upsized too.
+        Failure to account for upsized wires is a CRITICAL safety violation
+        — an overfilled conduit can cause insulation melting during a fire,
+        defeating the fire alarm system precisely when it is needed most.
+
+        Args:
+            bundle_id: Identifier for this cable bundle.
+            wire_inventory: List of wire dicts (same format as analyze_routing_bundle).
+            wire_size_overrides: Dict mapping original_awg → upgraded_awg.
+                E.g., {14: 10, 16: 12} means all 14AWG wires became 10AWG
+                and all 16AWG became 12AWG for voltage drop.
+            conduit_type: Preferred conduit type.
+            enforce_plfa_separation: Whether to enforce NEC 760.154.
+
+        Returns:
+            DecisionProvenance or dict with conduit fill analysis using
+            the upgraded wire sizes.
+        """
+        # No overrides — delegate directly to the standard analysis
+        if not wire_size_overrides:
+            return self.analyze_routing_bundle(
+                bundle_id=bundle_id,
+                wire_inventory=wire_inventory,
+                conduit_type=conduit_type,
+                enforce_plfa_separation=enforce_plfa_separation,
+            )
+
+        # Build a modified wire inventory with upsized AWG values.
+        # Each cable dict is shallow-copied so the caller's data is untouched.
+        modified_inventory: List[Dict] = []
+        overrides_applied: List[Dict[str, int]] = []
+
+        for cable in wire_inventory:
+            original_awg = cable.get("awg", 16)
+            upgraded_awg = wire_size_overrides.get(original_awg, original_awg)
+
+            modified_cable = dict(cable)  # shallow copy
+            modified_cable["awg"] = upgraded_awg
+            modified_inventory.append(modified_cable)
+
+            if upgraded_awg != original_awg:
+                overrides_applied.append({
+                    "original_awg": original_awg,
+                    "upgraded_awg": upgraded_awg,
+                })
+                logger.info(
+                    f"Conduit-wire feedback loop: bundle '{bundle_id}' "
+                    f"AWG {original_awg} → {upgraded_awg} "
+                    f"(voltage-drop upsized)"
+                )
+
+        # Run the standard analysis with the modified (upsized) inventory
+        result = self.analyze_routing_bundle(
+            bundle_id=bundle_id,
+            wire_inventory=modified_inventory,
+            conduit_type=conduit_type,
+            enforce_plfa_separation=enforce_plfa_separation,
+        )
+
+        # Augment the provenance object with feedback-loop metadata
+        if DecisionProvenance is not None and isinstance(result, DecisionProvenance):
+            # Add NEC_WIRE_UPSIZE_FEEDBACK rule
+            # NOTE: DecisionProvenance.new() serialises RuleApplied via asdict(),
+            # so rules_applied is a list[dict], not list[RuleApplied].  We append
+            # a dict to keep the representation consistent.
+            upsize_rule_dict = {
+                "citation": "NEC 2023 Chapter 9 Table 1 / Art. 210.19(A)",
+                "constant_id": "NEC_WIRE_UPSIZE_FEEDBACK",
+                "value_used": len(overrides_applied),
+                "unit": "overrides",
+            }
+            if hasattr(result, "rules_applied") and isinstance(result.rules_applied, list):
+                result.rules_applied.append(upsize_rule_dict)
+
+            # Add algorithm correction note about the feedback loop
+            if hasattr(result, "algorithm") and isinstance(result.algorithm, dict):
+                corrections = result.algorithm.setdefault("corrections", [])
+                corrections.append(
+                    "Conduit-wire feedback loop: wire AWG overrides from NAC voltage-drop "
+                    "sizer applied before conduit fill calculation to prevent >80% fill "
+                    "from upsized conductors (NEC_WIRE_UPSIZE_FEEDBACK)"
+                )
+
+            # Record the override details in inputs for traceability
+            if hasattr(result, "inputs") and isinstance(result.inputs, dict):
+                result.inputs["wire_size_overrides"] = wire_size_overrides
+                result.inputs["overrides_applied"] = overrides_applied
+
+            # If the fill changed, add a warning
+            if overrides_applied:
+                override_desc = ", ".join(
+                    f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG"
+                    for o in overrides_applied
+                )
+                if hasattr(result, "warnings") and isinstance(result.warnings, list):
+                    result.warnings.append(
+                        f"NEC_WIRE_UPSIZE_FEEDBACK: Wire upsizing ({override_desc}) "
+                        f"applied to conduit fill calculation. Conduit may need "
+                        f"upsizing to accommodate larger conductors."
+                    )
+
+        # Fallback: augment plain dict result
+        elif isinstance(result, dict):
+            result["wire_size_overrides"] = wire_size_overrides
+            result["overrides_applied"] = overrides_applied
+            if overrides_applied:
+                override_desc = ", ".join(
+                    f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG"
+                    for o in overrides_applied
+                )
+                result.setdefault("warnings", []).append(
+                    f"NEC_WIRE_UPSIZE_FEEDBACK: Wire upsizing ({override_desc}) "
+                    f"applied to conduit fill calculation. Conduit may need "
+                    f"upsizing to accommodate larger conductors."
+                )
+
+        return result
 
 
 __all__ = [
