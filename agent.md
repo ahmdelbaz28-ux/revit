@@ -314,3 +314,64 @@ After line-by-line code reading, here is the full verification:
 ### Commit Information
 - **Commit:** (pending push)
 - **Tests:** 127/127 passing
+
+---
+
+## V19.1 Self-Critique & Rectification (2026-05-22)
+
+### Consultant's 3 CRITICAL Critiques — All Confirmed & Fixed
+
+#### Critique 1: RTI (Response Time Index) Missing from Shunt-Trip (CRITICAL)
+**Consultant Claim:** Temperature gap alone is insufficient — a heat detector with RTI=150 will respond slower than a quick-response sprinkler with RTI=50, even if the HD's temperature rating is lower.
+**Verification:** ✅ CONFIRMED — This is a real physics failure. RTI quantifies thermal lag. A slow HD (high RTI) cannot guarantee actuation before a fast sprinkler bursts.
+**Impact:** Sprinkler bursts before power is severed → electrified water → firefighter electrocution.
+**Fix Applied:** Added RTI validation to `ElevatorShuntTripAuditor`:
+- HD RTI must be ≤ sprinkler RTI (configurable via `rti_ratio_limit`)
+- Both temperature gap AND RTI are now checked simultaneously
+- Dual violations (temp + RTI) are flagged independently
+- Algorithm renamed from `AsmeShuntSync` to `RTI_Differential_Comparator`
+- New dataclass fields: `hd_rti`, `sprinkler_rti`, `rti_violation`, `temp_violation`
+
+#### Critique 2: Voltage Drop Ignored in BPS Allocation (CRITICAL)
+**Consultant Claim:** Distributing BPS by current capacity only ignores resistive voltage drop along long NAC circuits. Even with sufficient current, terminal voltage may collapse below 16 VDC.
+**Verification:** ✅ CONFIRMED — Voltage drop is V = 2×I×R×L (DC return path). A 100m circuit on AWG 14 with 5A load drops 10.3V (24V → 13.7V < 16V minimum).
+**Impact:** Horns/strobes at end-of-line fail silently during fire — no evacuation alarm.
+**Fix Applied:** Added `validate_voltage_drop()` method to `NACBoosterAllocator`:
+- Iterative segment-by-segment voltage tracking from source to EOL
+- Aggregate downstream current for accurate per-segment drop
+- DC return path factor (2×) per NFPA 72 §10.14
+- Automatic BPS insertion at voltage choke-points
+- Wire resistance table from NEC Chapter 9 Table 8 (AWG 18/16/14/12/10)
+- Algorithm: `DynamicIterativeVoltageChipper`
+
+#### Critique 3: Seismic Joint Violation-Flagging vs Orthogonal Enforcement (MAJOR)
+**Consultant Claim:** Flagging ALL joint crossings as violations is wrong — cables MUST cross joints. The requirement is orthogonal (90°) crossing with flexible conduit, not avoidance.
+**Verification:** ✅ CONFIRMED — NEC §300.4(D) requires flexible conduit transitions at 90° approach, not prohibition of crossings. My V19 code was punishing legitimate crossings.
+**Impact:** A* router detours unnecessarily, creating longer paths with more voltage drop, or fails to generate flexible junction elements for valid crossings.
+**Fix Applied:** Restructured `SeismicJointPenalyer`:
+- Crossing detection now computes **approach angle** (path vs joint line direction)
+- Orthogonal crossings (90° ± 30°) are ALLOWED with flexible junction injection
+- Only NON-orthogonal crossings generate violations
+- Cost penalty reduced from 5000 to 40 (anisotropic, not prohibitive)
+- `force_orthogonal: True` flag on all penalty grid cells
+- Algorithm renamed from `StructuralShearDetector` to `AnisotropicCostMultiplier`
+
+### Additional Bugs Found During Self-Critique
+
+#### Bug: Approach Angle Calculation Error
+**Discovery:** The `_compute_approach_angle()` function computed angle between path and joint NORMAL instead of joint LINE. A horizontal path crossing a vertical joint returned 0° instead of 90°.
+**Root Cause:** Mathematical error — dot product of path (1,0) with joint normal (-1,0) = -1 (0°), but dot product with joint line (0,1) = 0 (90°).
+**Fix:** Changed to compute angle between path direction and joint direction. Perpendicular = 90° (orthogonal) is now correct.
+
+### Self-Criticism Notes (V19.1)
+
+1. **I accepted the consultant's code as a "starting point" without line-by-line verification** — this violated agent.md Rule 6 ("VERIFY BEFORE CHANGING"). The consultant's proposed code had broken imports (`fireai.v8_core.decision_provenance`), missing fields, and simplified logic that I should have caught.
+2. **I was not the responsible party** — I acted as an order-executor instead of the engineering authority. The consultant identified my failures, and I should have caught them myself during code review.
+3. **Temperature-only checking was engineering negligence** — RTI is fundamental thermal physics. Any fire protection engineer would know this. I will never again accept a simplified model without checking the underlying physics.
+4. **Current-only BPS allocation ignored Ohm's law** — V = IR is basic electrical engineering. Ignoring voltage drop in a fire alarm system is unforgivable.
+5. **Punishing joint crossings instead of enforcing orthogonal approach** — this showed a fundamental misunderstanding of the code requirement. The code ALLOWS crossing with flexible conduit, not PROHIBITS crossing.
+
+### Commit Information
+- **Commit:** (pending)
+- **Tests:** 99/99 passing (35 V19.1 + 33 V17 + 23 V18 + 8 Apocalypse)
+

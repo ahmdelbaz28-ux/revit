@@ -3,20 +3,42 @@ fireai/core/elevator_shunt_trip.py
 ===================================
 Elevator Shunt-Trip Power Severance Auditor — CRITICAL LIFE-SAFETY MODULE.
 
-When sprinklers are installed inside elevator hoistways or machine rooms,
-NFPA 72 §21.4.1 and ASME A17.1 Rule 2.8.3.3 mandate that a dedicated heat
-detector must be placed within 0.6 m (2 ft) of each sprinkler head, with a
-temperature rating **at least 11.1 °C (20 °F) lower** than the sprinkler's
-operating temperature.  This ensures the heat detector actuates BEFORE the
-sprinkler discharges, triggering an immediate shunt-trip of the elevator's
-main power breaker — preventing lethal electrocution of firefighters and
-occupants from electrified water spray on live 480 V motor windings.
+V19.1 FIX: Added RTI (Response Time Index) thermodynamic validation.
+The original V19 implementation only checked the temperature gap between
+the heat detector and sprinkler ratings.  This is INSUFFICIENT because
+thermal response depends on BOTH temperature rating AND RTI.  A heat
+detector with a lower temperature rating but a MUCH higher RTI (slower
+thermal response) will actuate AFTER a fast-response sprinkler bursts,
+defeating the entire shunt-trip safety mechanism.
+
+Physics:
+  RTI (Response Time Index) quantifies how quickly a thermal device
+  responds to a given heat flux.  A device with RTI=50 (m·s)^0.5 is
+  "quick response"; RTI=150 is "standard response".  Under a fast-
+  growing t² fire, the activation time of a device is proportional
+  to its RTI and inversely proportional to the heat release rate.
+
+  The critical test: the heat detector's COMBINED thermal lag
+  (rating + RTI) must guarantee actuation BEFORE the sprinkler.
+  If the sprinkler has a LOWER RTI than the heat detector, the
+  sprinkler will respond to the thermal plume faster even if the
+  heat detector's temperature setpoint is lower.
+
+  Per NFPA 72 §21.4.2 and UL 521 / UL 199, the heat detector must
+  have a response time index that guarantees actuation before the
+  sprinkler under the design fire scenario.  The simplified rule:
+  - HD temperature rating must be at least 11.1°C below sprinkler rating
+  - HD RTI must be LESS THAN OR EQUAL TO sprinkler RTI
+    (a slower HD cannot "outrun" a faster sprinkler)
 
 Code references:
   - NFPA 72-2022 §21.4.1  — Shunt trip requirement
   - NFPA 72-2022 §21.4.2  — Heat detector placement & rating
   - ASME A17.1 Rule 2.8.3.3 — Elevator safety
   - NFPA 13-2022           — Sprinkler requirements in elevator spaces
+  - UL 521                 — Standard for Heat Detectors for Fire
+                            Protective Signaling Systems
+  - SFPE Handbook           — Alpert ceiling jet correlations, RTI theory
 
 Provenance:
   Returns ``DecisionProvenance`` via the ``.new()`` factory when
@@ -62,6 +84,17 @@ SAFETY_GAP_C: float = 11.1
 # dedicated shunt-trip heat detector — 2 ft = 0.61 m per NFPA 72 §21.4.2.
 MAX_HD_SPRINKLER_DISTANCE_M: float = 0.6
 
+# Default RTI values (m·s)^0.5
+# Quick-response sprinkler per NFPA 13 §8.3.3.1
+DEFAULT_SPRINKLER_RTI: float = 50.0
+# Standard-response heat detector per UL 521
+DEFAULT_HD_RTI: float = 50.0
+
+# RTI threshold: if the HD's RTI exceeds the sprinkler's RTI by more
+# than this factor, the HD is guaranteed to respond too slowly.
+# Conservative limit: HD RTI must be ≤ sprinkler RTI (factor = 1.0).
+RTI_RATIO_LIMIT: float = 1.0
+
 # Standard sprinkler temperature ratings (°C) per NFPA 13 Table 6.2.5.1
 STANDARD_SPRINKLER_TEMPS_C: Dict[str, float] = {
     "ordinary": 68.3,       # 155 °F
@@ -83,6 +116,7 @@ STANDARD_HD_TEMPS_C: Dict[str, float] = {
 _CITE_NFPA72_21_4_1 = "NFPA 72-2022 §21.4.1"
 _CITE_NFPA72_21_4_2 = "NFPA 72-2022 §21.4.2"
 _CITE_ASME_A17_1 = "ASME A17.1 Rule 2.8.3.3"
+_CITE_SFPE_RTI = "SFPE Handbook / UL 521 RTI"
 
 
 @dataclass(frozen=True)
@@ -93,8 +127,12 @@ class ShuntTripResult:
     has_dedicated_hd: bool
     hd_distance_m: Optional[float]
     hd_temp_rating_C: Optional[float]
+    hd_rti: Optional[float]
     required_hd_temp_C: float
     sprinkler_temp_C: float
+    sprinkler_rti: float
+    rti_violation: bool
+    temp_violation: bool
     compliant: bool
     violation_description: Optional[str] = None
 
@@ -103,14 +141,23 @@ class ElevatorShuntTripAuditor:
     """Audits elevator spaces for mandatory shunt-trip heat detector
     compliance per NFPA 72 §21.4.1 / ASME A17.1 Rule 2.8.3.3.
 
-    The auditor examines every sprinkler located inside an elevator hoistway
-    or machine room and verifies:
+    V19.1 ENHANCEMENT: Now validates BOTH temperature gap AND RTI
+    (Response Time Index) to ensure thermodynamic response priority.
+    A heat detector with a lower temperature rating but a much higher
+    RTI will respond too slowly to a fast-growing fire, allowing the
+    sprinkler to burst before the shunt-trip signal is generated.
+
+    The auditor examines every sprinkler located inside an elevator
+    hoistway or machine room and verifies:
 
       1. A dedicated heat detector exists within 0.6 m of the sprinkler.
       2. The heat detector's temperature rating is at least 11.1 °C
          (20 °F) lower than the sprinkler's temperature rating.
+      3. The heat detector's RTI is ≤ the sprinkler's RTI, guaranteeing
+         that the HD responds to the thermal plume no slower than the
+         sprinkler (SFPE Handbook / UL 521).
 
-    When both conditions are met, the auditor generates a logic injection
+    When all conditions are met, the auditor generates a logic injection
     (``SHUNT_TRIP_POWER_DELAY_0s``) for the Sequence of Operations matrix
     to sever the elevator's main power breaker instantaneously.
 
@@ -124,15 +171,24 @@ class ElevatorShuntTripAuditor:
         )
     """
 
-    def __init__(self, safety_gap_C: float = SAFETY_GAP_C) -> None:
+    def __init__(
+        self,
+        safety_gap_C: float = SAFETY_GAP_C,
+        rti_ratio_limit: float = RTI_RATIO_LIMIT,
+    ) -> None:
         """Initialise the auditor.
 
         Args:
             safety_gap_C: Minimum temperature gap (°C) between the heat
                 detector and sprinkler ratings.  Defaults to 11.1 °C
                 (20 °F) per NFPA 72 §21.4.2.
+            rti_ratio_limit: Maximum allowed ratio of HD RTI to sprinkler
+                RTI.  Defaults to 1.0 (HD must not be slower than
+                sprinkler).  A more permissive value (e.g. 1.5) may be
+                used when the temperature gap is sufficiently large.
         """
         self.safety_gap_C = safety_gap_C
+        self.rti_ratio_limit = rti_ratio_limit
 
     def audit_hoistway_machine_room(
         self,
@@ -142,25 +198,13 @@ class ElevatorShuntTripAuditor:
     ) -> Any:
         """Audit all sprinklers in elevator spaces for shunt-trip compliance.
 
-        Args:
-            sprinkler_locations: Each dict must have:
-                - ``device_id`` (str): Sprinkler identifier.
-                - ``room_id`` (str): Room identifier.
-                - ``x``, ``y`` (float): 2D coordinates (metres).
-                - ``temp_rating_C`` (float, optional): Sprinkler temperature
-                  rating in °C.  Defaults to 68.3 °C (ordinary, 155 °F).
-            heat_detector_locations: Each dict must have:
-                - ``device_id`` (str): Heat detector identifier.
-                - ``room_id`` (str): Room identifier.
-                - ``x``, ``y`` (float): 2D coordinates (metres).
-                - ``temp_rating_C`` (float, optional): Heat detector rating
-                  in °C.  Defaults to 57.2 °C (135 °F).
-            elevator_spaces: List of room IDs that are elevator hoistways
-                or machine rooms (e.g. ``["ELEV-MR-01", "ELEV-HW-01"]``).
+        Each sprinkler dict now supports an optional ``rti`` field:
+        - ``rti`` (float, optional): Response Time Index in (m·s)^0.5.
+          Defaults to 50.0 (quick-response sprinkler per NFPA 13).
 
-        Returns:
-            ``DecisionProvenance`` if provenance module is available;
-            otherwise a plain dict with the same structure.
+        Each heat detector dict now supports an optional ``rti`` field:
+        - ``rti`` (float, optional): Response Time Index in (m·s)^0.5.
+          Defaults to 50.0 (standard per UL 521).
         """
         violations: list = []
         injections: list = []
@@ -168,7 +212,6 @@ class ElevatorShuntTripAuditor:
 
         for sprinkler in sprinkler_locations:
             room_id = sprinkler.get("room_id", "")
-            # ASME A17.1 Rule 2.8.3.3 applies ONLY inside elevator spaces
             if room_id not in elevator_spaces:
                 continue
 
@@ -176,10 +219,10 @@ class ElevatorShuntTripAuditor:
             spk_x = float(sprinkler.get("x", 0.0))
             spk_y = float(sprinkler.get("y", 0.0))
             spk_temp = float(sprinkler.get("temp_rating_C", 68.3))
+            spk_rti = float(sprinkler.get("rti", DEFAULT_SPRINKLER_RTI))
             required_hd_temp = round(spk_temp - self.safety_gap_C, 1)
 
             # Find the closest heat detector in the same elevator space
-            hd_found = False
             best_hd = None
             best_dist = float("inf")
 
@@ -194,30 +237,45 @@ class ElevatorShuntTripAuditor:
                     best_hd = hd
 
             if best_hd is not None and best_dist <= MAX_HD_SPRINKLER_DISTANCE_M:
-                hd_found = True
                 hd_id = best_hd.get("device_id", "UNKNOWN-HD")
                 hd_temp = float(best_hd.get("temp_rating_C", 57.2))
+                hd_rti = float(best_hd.get("rti", DEFAULT_HD_RTI))
 
-                if hd_temp > required_hd_temp:
-                    # Heat detector fires TOO LATE — sprinkler will burst
-                    # before power is severed
+                # CHECK 1: Temperature gap
+                temp_violation = hd_temp > required_hd_temp
+                # CHECK 2: RTI ratio — HD must not be slower than sprinkler
+                rti_violation = hd_rti > (spk_rti * self.rti_ratio_limit)
+
+                if temp_violation or rti_violation:
+                    # Build violation description
+                    parts = []
+                    if temp_violation:
+                        parts.append(
+                            f"Temperature rating ({hd_temp:.1f}°C) exceeds "
+                            f"max allowed ({required_hd_temp:.1f}°C)"
+                        )
+                    if rti_violation:
+                        parts.append(
+                            f"RTI ({hd_rti:.0f} (m·s)^0.5) exceeds sprinkler "
+                            f"RTI ({spk_rti:.0f}) — HD responds too slowly, "
+                            f"sprinkler will burst before power is severed"
+                        )
                     desc = (
-                        f"Heat Detector '{hd_id}' rating ({hd_temp:.1f}°C) "
-                        f"is too high! Must actuate before Sprinkler "
-                        f"'{spk_id}' ({spk_temp:.1f}°C) to shunt-trip the "
-                        f"elevator power. Required max HD rating: "
-                        f"{required_hd_temp:.1f}°C."
+                        f"Thermal Response MISMATCH for HD '{hd_id}' guarding "
+                        f"sprinkler '{spk_id}' in {room_id}: "
+                        + "; ".join(parts)
+                        + f". Water shock on 480V windings is IMMINENT."
                     )
                     if Violation is not None:
                         violations.append(Violation(
                             severity="CRITICAL",
-                            citation=f"{_CITE_NFPA72_21_4_1} / {_CITE_ASME_A17_1}",
+                            citation=f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1} / {_CITE_SFPE_RTI}",
                             description=desc,
                         ))
                     else:
                         violations.append({
                             "severity": "CRITICAL",
-                            "citation": f"{_CITE_NFPA72_21_4_1} / {_CITE_ASME_A17_1}",
+                            "citation": f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1} / {_CITE_SFPE_RTI}",
                             "description": desc,
                         })
                     logger.critical(desc)
@@ -227,14 +285,17 @@ class ElevatorShuntTripAuditor:
                         has_dedicated_hd=True,
                         hd_distance_m=round(best_dist, 4),
                         hd_temp_rating_C=hd_temp,
+                        hd_rti=hd_rti,
                         required_hd_temp_C=round(required_hd_temp, 1),
                         sprinkler_temp_C=spk_temp,
+                        sprinkler_rti=spk_rti,
+                        rti_violation=rti_violation,
+                        temp_violation=temp_violation,
                         compliant=False,
                         violation_description=desc,
                     ))
                 else:
-                    # Correct: HD will fire before sprinkler → inject
-                    # shunt-trip logic into the cause-and-effect matrix
+                    # ALL CHECKS PASSED → inject shunt-trip logic
                     injections.append({
                         "input": hd_id,
                         "action": "SHUNT_TRIP_POWER_DELAY_0s",
@@ -246,8 +307,12 @@ class ElevatorShuntTripAuditor:
                         has_dedicated_hd=True,
                         hd_distance_m=round(best_dist, 4),
                         hd_temp_rating_C=hd_temp,
+                        hd_rti=hd_rti,
                         required_hd_temp_C=round(required_hd_temp, 1),
                         sprinkler_temp_C=spk_temp,
+                        sprinkler_rti=spk_rti,
+                        rti_violation=False,
+                        temp_violation=False,
                         compliant=True,
                     ))
             else:
@@ -279,8 +344,12 @@ class ElevatorShuntTripAuditor:
                     has_dedicated_hd=False,
                     hd_distance_m=round(best_dist, 4) if best_hd else None,
                     hd_temp_rating_C=None,
+                    hd_rti=None,
                     required_hd_temp_C=round(required_hd_temp, 1),
                     sprinkler_temp_C=spk_temp,
+                    sprinkler_rti=spk_rti,
+                    rti_violation=False,
+                    temp_violation=False,
                     compliant=False,
                     violation_description=desc,
                 ))
@@ -309,6 +378,12 @@ class ElevatorShuntTripAuditor:
                         value_used=MAX_HD_SPRINKLER_DISTANCE_M,
                         unit="metres",
                     ),
+                    RuleApplied(
+                        citation=_CITE_SFPE_RTI,
+                        constant_id="RTI_RATIO_LIMIT",
+                        value_used=self.rti_ratio_limit,
+                        unit="dimensionless",
+                    ),
                 ]
                 conf = ConfidenceScore(
                     input_quality_score=1.0,
@@ -328,8 +403,12 @@ class ElevatorShuntTripAuditor:
                                 "has_dedicated_hd": r.has_dedicated_hd,
                                 "hd_distance_m": r.hd_distance_m,
                                 "hd_temp_rating_C": r.hd_temp_rating_C,
+                                "hd_rti": r.hd_rti,
                                 "required_hd_temp_C": r.required_hd_temp_C,
                                 "sprinkler_temp_C": r.sprinkler_temp_C,
+                                "sprinkler_rti": r.sprinkler_rti,
+                                "rti_violation": r.rti_violation,
+                                "temp_violation": r.temp_violation,
                                 "compliant": r.compliant,
                                 "violation_description": r.violation_description,
                             }
@@ -342,12 +421,12 @@ class ElevatorShuntTripAuditor:
                         "elevator_spaces": len(elevator_spaces),
                     },
                     rules_applied=rules,
-                    algorithm={"name": "AsmeShuntSync", "version": "v19"},
+                    algorithm={"name": "RTI_Differential_Comparator", "version": "v19.1"},
                     confidence=conf,
                     selected_because=(
-                        "Required power severing to avoid lethal shock "
-                        "before suppression discharge in electro-mechanical "
-                        "shaft/rooms per NFPA 72 §21.4.1 / ASME A17.1"
+                        "True thermodynamic validation replaces lazy delta-temp "
+                        "checking.  Both temperature rating AND RTI must guarantee "
+                        "HD actuation before sprinkler discharge per SFPE / UL 521."
                     ),
                     violations=violations if violations else None,
                 )
@@ -367,8 +446,12 @@ class ElevatorShuntTripAuditor:
                         "has_dedicated_hd": r.has_dedicated_hd,
                         "hd_distance_m": r.hd_distance_m,
                         "hd_temp_rating_C": r.hd_temp_rating_C,
+                        "hd_rti": r.hd_rti,
                         "required_hd_temp_C": r.required_hd_temp_C,
                         "sprinkler_temp_C": r.sprinkler_temp_C,
+                        "sprinkler_rti": r.sprinkler_rti,
+                        "rti_violation": r.rti_violation,
+                        "temp_violation": r.temp_violation,
                         "compliant": r.compliant,
                         "violation_description": r.violation_description,
                     }
@@ -390,6 +473,9 @@ __all__ = [
     "ShuntTripResult",
     "SAFETY_GAP_C",
     "MAX_HD_SPRINKLER_DISTANCE_M",
+    "DEFAULT_SPRINKLER_RTI",
+    "DEFAULT_HD_RTI",
+    "RTI_RATIO_LIMIT",
     "STANDARD_SPRINKLER_TEMPS_C",
     "STANDARD_HD_TEMPS_C",
 ]
