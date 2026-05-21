@@ -60,6 +60,8 @@ def run_full_design(
     force_draw: bool = False,
     pe_name: str = "",
     pe_license: str = "",
+    class_a: bool = True,
+    fire_rated_walls: list = None,
 ) -> FullDesignResult:
     """
     Run the complete fire alarm design pipeline across all 5 bridges.
@@ -75,6 +77,8 @@ def run_full_design(
     force_draw    : Force drawing even without proof
     pe_name       : Professional Engineer name
     pe_license    : PE license number
+    class_a       : Route Class A return with >=1m separation (V13)
+    fire_rated_walls: List of Shapely LineString objects for fire-rated walls (V13)
     """
     t0 = time.time()
     os.makedirs(output_dir, exist_ok=True)
@@ -234,6 +238,8 @@ def run_full_design(
             proof_valid=proof_valid,
             force=force_draw,
             units_to_m=units_to_m,
+            class_a=class_a,
+            fire_rated_walls=fire_rated_walls,
         )
         result.output_dwg = draw_result.output_path
         result.warnings.extend(draw_result.warnings)

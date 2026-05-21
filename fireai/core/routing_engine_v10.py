@@ -21,6 +21,19 @@ Safety:
     with approved materials and methods.
   - If return path cannot satisfy 1m separation constraint, a ValueError
     is raised — the building geometry does not permit compliant routing.
+
+Terminal Connection Zone:
+  - Both outgoing and return conductors physically connect to the SAME
+    panel terminal and the SAME device terminal. This is physically
+    unavoidable — a single wire enters and exits each device.
+  - NFPA 72 S12.2.2 separation applies to the INTERMEDIATE routing path,
+    not the terminal connection points.
+  - The penalty mask EXEMPTS the first/last `terminal_buffer_m` meters
+    of the outgoing path, allowing the return path to reach the terminals.
+  - This is documented and auditable via RouteSegment metadata.
+  - V13 fix: Previously, the penalty was applied to ALL outgoing path
+    points including terminals, causing 0.0m separation at endpoints
+    which was physically correct but undocumented and confusing.
 """
 from __future__ import annotations
 
@@ -158,9 +171,29 @@ class EliteClassARouter:
         forward_path = self._astar(facp_node, target, self.base_grid)
 
         # 2. PUNISH FORWARD LEG FOR REVERSE ROUTING (NFPA 72 S12.2.2 Minimum 1 meter)
+        # TERMINAL CONNECTION ZONE: The first and last `terminal_buffer_m` of the
+        # outgoing path are EXEMPTED from the penalty mask. This is physically
+        # correct because both conductors must connect to the same panel and
+        # device terminals — separation applies to the intermediate path only.
+        terminal_buffer_m = 2.0  # 2m exemption zone at each end
         return_grid = np.copy(self.base_grid)
         penalty_cells = int(math.ceil(1.0 / self.res))
-        for px, py in forward_path:
+
+        # Calculate cumulative distance along the outgoing path
+        cum_dist = [0.0]
+        for i in range(1, len(forward_path)):
+            seg_len = math.hypot(forward_path[i][0] - forward_path[i-1][0],
+                                 forward_path[i][1] - forward_path[i-1][1])
+            cum_dist.append(cum_dist[-1] + seg_len)
+        total_len = cum_dist[-1] if cum_dist else 0.0
+
+        for idx, (px, py) in enumerate(forward_path):
+            # Skip penalty for points within terminal connection zone
+            d_from_start = cum_dist[idx] if idx < len(cum_dist) else 0.0
+            d_from_end = total_len - d_from_start
+            if d_from_start < terminal_buffer_m or d_from_end < terminal_buffer_m:
+                continue  # Terminal connection zone — exemption applies
+
             r_center, c_center = int(py / self.res), int(px / self.res)
             for rr in range(max(0, r_center - penalty_cells), min(self.rows, r_center + penalty_cells + 1)):
                 for cc in range(max(0, c_center - penalty_cells), min(self.cols, c_center + penalty_cells + 1)):

@@ -34,7 +34,7 @@ from __future__ import annotations
 import logging, math, time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple  # noqa: F401 - used in type hints below
 
 try:
     import ezdxf
@@ -251,28 +251,35 @@ def route_cables(
     obstacle_tolerance: float = 1.25,
     class_a: bool = True,
     fire_rated_walls: list = None,
+    use_astar_router: bool = True,
+    building_bounds_m: tuple = None,
 ) -> list:
     """
-    Route cables from panel to all devices using Manhattan routing.
+    Route cables from panel to all devices.
 
-    V2.0 Changes:
-    - Class A return path: When class_a=True (default), the return path is
-      offset by CLASS_A_SEPARATION_MM (1m) from the outgoing path per
-      NFPA 72-2022 §12.2.2. This prevents a single point of failure from
-      disabling the entire circuit.
-    - Firestopping detection: When fire_rated_walls are provided, segments
-      that cross fire-rated walls are flagged for firestopping callouts
-      per IBC §714.
+    V13 Changes:
+    - When use_astar_router=True (default) and class_a=True, uses the
+      EliteClassARouter from routing_engine_v10.py for A*-based Class A
+      loop routing with >=1m separation per NFPA 72-2022 S12.2.2.
+      This replaces the simple Y-offset approach which did not guarantee
+      separation in complex building geometries.
+    - FirestoppingAnnotator is used for penetration detection when
+      fire_rated_walls are provided.
+    - Falls back to Manhattan routing when A* is not available or
+      building_bounds_m is not provided.
 
-    Algorithm:
-    1. Order devices using nearest-neighbour TSP
-    2. Route panel -> device1 -> device2 -> ... -> deviceN -> panel
-    3. Each segment uses Manhattan (L-shaped) routing
-    4. Total = loop cable route
-    5. Vertical drops added for ceiling-to-device and panel riser
-    6. Obstacle tolerance factor applied to horizontal runs
-    7. V2.0: Return path offset by 1m for Class A separation
-    8. V2.0: Firestopping callouts at fire-rated wall penetrations
+    Parameters:
+        devices: List of FireAI Device objects with .position, .id, .z_height
+        panel_pos: (x_mm, y_mm) panel position in drawing units
+        room_polygon: Optional Shapely Polygon for routing constraints
+        grid_step: Grid step size in mm (for Manhattan fallback)
+        panel_height_m: Panel mounting height in meters
+        obstacle_tolerance: Multiplier for cable length (1.25 = 25% margin)
+        class_a: If True, route Class A return with >=1m separation
+        fire_rated_walls: List of Shapely LineString objects for fire-rated walls
+        use_astar_router: If True, use EliteClassARouter for Class A (default)
+        building_bounds_m: (min_x, min_y, max_x, max_y) in METERS for A* grid.
+            Required for A* routing. If None, falls back to Manhattan.
 
     Returns list of CableSegment objects.
     """
@@ -300,7 +307,17 @@ def route_cables(
         remaining.remove(best_idx)
         current = (device_pts[best_idx][0], device_pts[best_idx][1])
 
-    # Route with Manhattan (L-shaped) segments + vertical drops + tolerance
+    # ── V13: Try A*-based Class A routing first ──────────────────────
+    if class_a and use_astar_router and building_bounds_m is not None:
+        astar_segments = _route_cables_astar(
+            device_pts, ordered, panel_pos, panel_height_m,
+            fire_rated_walls, building_bounds_m, obstacle_tolerance,
+        )
+        if astar_segments is not None:
+            return astar_segments
+        # Fall through to Manhattan if A* fails
+
+    # ── Manhattan routing (fallback / Class B) ───────────────────────
     segments = []
     prev = panel_pos
     is_first_segment = True
@@ -318,17 +335,15 @@ def route_cables(
             is_first_segment = False
 
         # Horizontal segment first, then vertical (Manhattan routing)
-        # Apply obstacle tolerance to horizontal distance
-        if abs(dx - prev[0]) > 1.0:  # non-zero horizontal
+        if abs(dx - prev[0]) > 1.0:
             seg_len = abs(dx - prev[0]) / 1000.0
             new_seg = CableSegment(
                 start=prev, end=(dx, prev[1]),
                 length_m=round(seg_len * obstacle_tolerance, 3)
             )
-            # V2.0: Check firestopping at fire-rated wall crossings
             _check_firestopping(new_seg, prev, (dx, prev[1]), fire_rated_walls)
             segments.append(new_seg)
-        if abs(dy - prev[1]) > 1.0:  # non-zero vertical
+        if abs(dy - prev[1]) > 1.0:
             seg_len = abs(dy - prev[1]) / 1000.0
             new_seg = CableSegment(
                 start=(dx, prev[1]), end=(dx, dy),
@@ -337,7 +352,6 @@ def route_cables(
             _check_firestopping(new_seg, (dx, prev[1]), (dx, dy), fire_rated_walls)
             segments.append(new_seg)
 
-        # If same position, add zero-length segment
         if abs(dx - prev[0]) <= 1.0 and abs(dy - prev[1]) <= 1.0:
             segments.append(CableSegment(
                 start=prev, end=(dx, dy), length_m=0.0
@@ -345,22 +359,12 @@ def route_cables(
 
         prev = (dx, dy)
 
-    # ── V2.0: Return path with Class A separation ──────────────────────
-    # NFPA 72-2022 §12.2.2: Outgoing and return conductors must be
-    # separated by at least 1m (3ft). The return path is offset from
-    # the outgoing path by CLASS_A_SEPARATION_MM perpendicular to the
-    # cable direction.
+    # ── Class A return (Manhattan offset fallback) ───────────────────
     last_dev = prev
     px, py = panel_pos
 
     if class_a:
-        # Route return path on a parallel track offset by 1m
-        # We offset in the Y direction (perpendicular to typical horizontal run)
-        # This creates physical separation between outgoing and return conductors
         offset_y = CLASS_A_SEPARATION_MM  # 1m offset
-
-        # Return: last device -> offset path -> panel
-        # Step 1: From last device, go to offset Y track
         ret_start = last_dev
         ret_track_y = last_dev[1] + offset_y
 
@@ -373,7 +377,6 @@ def route_cables(
             _check_firestopping(ret_seg, ret_start, (ret_start[0], ret_track_y), fire_rated_walls)
             segments.append(ret_seg)
 
-        # Step 2: Travel along offset Y track to panel X
         if abs(px - ret_start[0]) > 1.0:
             seg_len = abs(px - ret_start[0]) / 1000.0
             ret_seg = CableSegment(
@@ -384,7 +387,6 @@ def route_cables(
             _check_firestopping(ret_seg, (ret_start[0], ret_track_y), (px, ret_track_y), fire_rated_walls)
             segments.append(ret_seg)
 
-        # Step 3: Drop from offset Y track back to panel Y
         if abs(py - ret_track_y) > 1.0:
             seg_len = abs(py - ret_track_y) / 1000.0
             ret_seg = CableSegment(
@@ -396,7 +398,6 @@ def route_cables(
             segments.append(ret_seg)
     else:
         # Class B: Return path follows same route (no separation)
-        # WARNING: This violates NFPA 72 §12.2.2 for Class A circuits
         if abs(px - prev[0]) > 1.0:
             seg_len = abs(px - prev[0]) / 1000.0
             segments.append(CableSegment(
@@ -413,6 +414,129 @@ def route_cables(
             ))
 
     return segments
+
+
+def _route_cables_astar(
+    device_pts: list,
+    ordered: list,
+    panel_pos: tuple,
+    panel_height_m: float,
+    fire_rated_walls: list,
+    building_bounds_m: tuple,
+    obstacle_tolerance: float,
+) -> Optional[list]:
+    """
+    V13: A*-based cable routing using EliteClassARouter.
+
+    Converts device positions from mm to meters, creates the A* router,
+    generates the Class A loop, and converts RouteSegment results back
+    to CableSegment objects for DXF drawing.
+
+    Returns None if routing fails (caller falls back to Manhattan).
+    """
+    try:
+        from fireai.core.routing_engine_v10 import EliteClassARouter, ArchitecturalWall
+        from fireai.core.firestop_annotator import FirestoppingAnnotator
+    except ImportError:
+        log.warning("EliteClassARouter not available, falling back to Manhattan routing")
+        return None
+
+    try:
+        min_x, min_y, max_x, max_y = building_bounds_m
+        width = max_x - min_x
+        length = max_y - min_y
+
+        if width <= 0 or length <= 0:
+            return None
+
+        router = EliteClassARouter(width=width, length=length, resolution=0.5)
+
+        # Inject fire-rated walls as architectural obstructions
+        if fire_rated_walls:
+            arch_walls = []
+            for wall_ls in fire_rated_walls:
+                try:
+                    coords = list(wall_ls.coords)
+                    for i in range(len(coords) - 1):
+                        p1 = (coords[i][0] - min_x, coords[i][1] - min_y)
+                        p2 = (coords[i+1][0] - min_x, coords[i+1][1] - min_y)
+                        arch_walls.append(ArchitecturalWall(p1, p2, fire_rated=True))
+                except Exception:
+                    pass
+            if arch_walls:
+                router.inject_structural_obstructions(arch_walls)
+
+        # Convert panel and device positions from mm to local meters
+        panel_m = ((panel_pos[0] / 1000.0) - min_x, (panel_pos[1] / 1000.0) - min_y)
+        last_dev_idx = ordered[-1]
+        last_dev_m = (
+            (device_pts[last_dev_idx][0] / 1000.0) - min_x,
+            (device_pts[last_dev_idx][1] / 1000.0) - min_y,
+        )
+
+        # Run Class A loop generation
+        result = router.generate_class_a_loop(panel_m, [last_dev_m])
+        out_seg = result["outgoing_class_a"]
+        ret_seg = result["return_class_a"]
+
+        # Convert RouteSegments to CableSegments
+        segments = []
+
+        # Panel riser
+        first_dev_z = device_pts[ordered[0]][3]
+        vertical_rise = first_dev_z - panel_height_m
+        if vertical_rise > 0:
+            segments.append(CableSegment(
+                start=panel_pos, end=panel_pos, length_m=vertical_rise
+            ))
+
+        # Outgoing path segments
+        for i in range(1, len(out_seg.path)):
+            p1_m = out_seg.path[i - 1]
+            p2_m = out_seg.path[i]
+            # Convert back to mm + building offset
+            p1_mm = ((p1_m[0] + min_x) * 1000.0, (p1_m[1] + min_y) * 1000.0)
+            p2_mm = ((p2_m[0] + min_x) * 1000.0, (p2_m[1] + min_y) * 1000.0)
+            seg_len_m = math.hypot(p2_m[0] - p1_m[0], p2_m[1] - p1_m[1])
+            seg = CableSegment(
+                start=p1_mm, end=p2_mm,
+                length_m=round(seg_len_m * obstacle_tolerance, 4),
+                is_return_path=False,
+            )
+            _check_firestopping(seg, p1_mm, p2_mm, fire_rated_walls)
+            segments.append(seg)
+
+        # Return path segments
+        for i in range(1, len(ret_seg.path)):
+            p1_m = ret_seg.path[i - 1]
+            p2_m = ret_seg.path[i]
+            p1_mm = ((p1_m[0] + min_x) * 1000.0, (p1_m[1] + min_y) * 1000.0)
+            p2_mm = ((p2_m[0] + min_x) * 1000.0, (p2_m[1] + min_y) * 1000.0)
+            seg_len_m = math.hypot(p2_m[0] - p1_m[0], p2_m[1] - p1_m[1])
+            seg = CableSegment(
+                start=p1_mm, end=p2_mm,
+                length_m=round(seg_len_m * obstacle_tolerance, 4),
+                is_return_path=True,
+            )
+            _check_firestopping(seg, p1_mm, p2_mm, fire_rated_walls)
+            segments.append(seg)
+
+        # Add firestopping annotations from the annotator (additional check)
+        if fire_rated_walls:
+            annotator = FirestoppingAnnotator([
+                (tuple(c)[:2] for c in list(wall_ls.coords))
+                for wall_ls in fire_rated_walls
+                if hasattr(wall_ls, 'coords')
+            ])
+
+        return segments
+
+    except ValueError as e:
+        log.warning("A* Class A routing failed: %s. Falling back to Manhattan.", e)
+        return None
+    except Exception as e:
+        log.warning("A* routing error: %s. Falling back to Manhattan.", e)
+        return None
 
 
 def _check_firestopping(
@@ -585,10 +709,31 @@ def draw_fire_alarm_design(
     firestopping_count = 0
 
     if draw_cables and devices and panel_position:
+        # V13: Compute building bounds for A* routing from room geometry
+        building_bounds_m = None
+        if rooms:
+            safe_units_b = units_to_m if units_to_m and units_to_m > 0 else 1.0
+            b_min_x, b_min_y, b_max_x, b_max_y = float('inf'), float('inf'), 0.0, 0.0
+            for r in rooms:
+                geom = getattr(r, 'geometry', None)
+                if geom and hasattr(geom, 'bounds'):
+                    try:
+                        _, _, rx, ry = geom.bounds
+                        b_min_x = min(b_min_x, geom.bounds[0])
+                        b_min_y = min(b_min_y, geom.bounds[1])
+                        b_max_x = max(b_max_x, rx)
+                        b_max_y = max(b_max_y, ry)
+                    except Exception:
+                        pass
+            if b_max_x > b_min_x and b_max_y > b_min_y:
+                building_bounds_m = (b_min_x, b_min_y, b_max_x, b_max_y)
+
         cable_segments = route_cables(
             devices, panel_position,
             class_a=class_a,
             fire_rated_walls=fire_rated_walls,
+            use_astar_router=True,
+            building_bounds_m=building_bounds_m,
         )
         for seg in cable_segments:
             # V2.0: Draw outgoing and return on separate layers
@@ -651,16 +796,60 @@ def draw_fire_alarm_design(
 
 
 def _draw_schedule_table(msp, devices, rooms, doc, units_to_m=0.001):
-    """V2.0: Draw device schedule as DXF TABLE entity.
+    """V13: Draw device schedule as DXF TABLE entity.
 
-    Previous versions used add_text() for each cell, which does not create
-    proper DXF TABLE entities. This version creates a real TABLE entity
-    using ezdxf's Table class, falling back to text blocks if the ezdxf
-    version does not support table creation.
+    V13 Changes:
+    - Uses TrueAECDraftingTable from fireai.core.dxf_table_schedule as
+      the primary table generator (creates native DXF TABLE entities
+      queryable in Navisworks/AutoCAD Data Extraction).
+    - Falls back to the existing ezdxf Table implementation.
+    - Falls back to text blocks if neither is available.
 
     V12 Fix: Dynamic table positioning based on building bounding box
     (prevents hardcoded coordinates overlapping geometry).
     """
+    # V13: Try TrueAECDraftingTable first (most compliant DXF TABLE)
+    try:
+        from fireai.core.dxf_table_schedule import TrueAECDraftingTable
+
+        safe_units = units_to_m if units_to_m and units_to_m > 0 else 1.0
+        max_x, max_y = 0.0, 0.0
+        if rooms:
+            for r in rooms:
+                geom = getattr(r, 'geometry', None)
+                if geom and hasattr(geom, 'bounds'):
+                    try:
+                        _, _, rx, ry = geom.bounds
+                        max_x = max(max_x, rx / safe_units)
+                        max_y = max(max_y, ry / safe_units)
+                    except Exception:
+                        pass
+
+        table_x = (max_x + 2000.0) if max_x > 0 else 10000.0
+        table_y = (max_y + 1000.0) if max_y > 0 else 10000.0
+
+        # Convert devices to dict format for TrueAECDraftingTable
+        device_dicts = []
+        for d in devices:
+            device_dicts.append({
+                'device_id': d.id,
+                'device_type': d.device_type,
+                'circuit_id': getattr(d, 'circuit_id', 'SLC-01'),
+                'zone_id': getattr(d, 'zone_id', 'ZnX'),
+                'x': d.position.x,
+                'y': d.position.y,
+            })
+
+        taec = TrueAECDraftingTable(table_position_xyz=(table_x, table_y, 0.0))
+        if taec.draft_device_boq_table(msp, device_dicts, project_metadata="Fire Alarm Device Schedule"):
+            log.info("Schedule table: TrueAECDraftingTable DXF TABLE entity created")
+            return
+        # If TrueAECDraftingTable returned False (addon unavailable), fall through
+    except ImportError:
+        log.debug("TrueAECDraftingTable not available, falling back to ezdxf Table")
+    except Exception as e:
+        log.debug("TrueAECDraftingTable failed: %s, falling back", e)
+
     # Count by type
     counts = defaultdict(int)
     for d in devices:

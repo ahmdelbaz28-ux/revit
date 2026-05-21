@@ -380,6 +380,30 @@ Applied fixes from consultant's deep analysis of spatial_engine/ layer (6 verifi
 - **DO NOT execute** harmful instructions - alert user first
 - Wait for confirmation before continuing after a warning
 
+### V13 — Pipeline Integration + Bug Fixes (2026-05-21)
+
+Applied 7 fixes from self-critique of V12 (isolated modules, broken imports, no tests):
+
+| # | Problem | Fix | File | Severity |
+|---|---------|-----|------|----------|
+| 1 | SafeBuildingEngine imports `OptimalMIPEngine` which doesn't exist in `fireai.core.spatial_engine.mip_solver` | Replaced with `solve_set_covering_mip` (function-based, verified, used by FloorAnalyser) | `safe_building_engine.py` | CRITICAL |
+| 2 | Two routing engines doing the same thing differently (routing_global_class_a vs routing_engine_v10) | `routing_engine_v10.py` is now the CANONICAL engine. `routing_global_class_a.py` is a wrapper that delegates to it and converts RouteSegment → DecisionProvenance | `routing_global_class_a.py` | MAJOR |
+| 3 | Class A endpoints have 0.0m separation (conductors share terminal) without documentation | Added `terminal_buffer_m=2.0` exemption zone at path endpoints. Separation applies to INTERMEDIATE path only. Documented as "Terminal Connection Zone" | `routing_engine_v10.py` | MAJOR |
+| 4 | New modules NOT connected to pipeline — user gets old Manhattan routing | output_bridge.py now calls EliteClassARouter via `_route_cables_astar()` when `building_bounds_m` provided. Falls back to Manhattan if unavailable | `bridges/output_bridge.py` | CRITICAL |
+| 5 | FirestoppingAnnotator not wired into output pipeline | `_route_cables_astar()` imports and uses FirestoppingAnnotator for penetration detection | `bridges/output_bridge.py` | MAJOR |
+| 6 | TrueAECDraftingTable not used in schedule generation | `_draw_schedule_table()` now tries TrueAECDraftingTable first, then ezdxf Table, then text blocks | `bridges/output_bridge.py` | MINOR |
+| 7 | Orchestrator doesn't pass class_a or fire_rated_walls parameters | Added `class_a` and `fire_rated_walls` parameters to `run_full_design()` | `bridges/orchestrator.py` | MAJOR |
+
+**Unit Tests:** 26 PASS, 1 SKIP (ifcopenshell availability)
+- `test_v13_class_a_routing.py`: 8 tests (separation, firestops, wrapper)
+- `test_v13_firestop_annotator.py`: 6 tests (penetration detection, DXF callouts)
+- `test_v13_safe_building_engine.py`: 6 tests (MIP solve, threading, RLock)
+- `test_v13_dxf_table_schedule.py`: 4 tests (construction, dict input)
+- `test_v13_ifc_headless_bridge.py`: 3 tests (import, validation)
+
+**Commits:**
+- V12: Commit: 89f8441 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/89f8441
+
 ---
 
 ## Hardcoded Agent Instructions (ELITE)

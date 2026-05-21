@@ -11,6 +11,8 @@ Architecture:
   - Sequential execution within each thread (CBC does NOT release GIL)
   - Timeout protection per-room (180s max per solve)
   - Graceful error handling with CRASH status on fatal failures
+  - Uses solve_set_covering_mip (function-based, proven in fireai.core.spatial_engine)
+    instead of OptimalMIPEngine (class-based, different import path, no solve_polygon)
 
 Safety:
   - V0.3 ProcessPoolExecutor prohibition from building_engine.py applies.
@@ -21,6 +23,15 @@ Safety:
   - This is NOT about parallelism (GIL prevents that for CPU-bound CBC).
     It is about SAFE concurrent submission of work items with sequential
     execution guaranteed by the lock.
+
+V13 Fix:
+  - Replaced broken OptimalMIPEngine import with solve_set_covering_mip
+    (the function-based MIP solver in fireai.core.spatial_engine.mip_solver
+    which is the VERIFIED and TESTED solver used by FloorAnalyser).
+  - OptimalMIPEngine lives at spatial_engine/mip_solver.py (root level)
+    with incompatible constructor signature and no solve_polygon method.
+  - The function-based solve_set_covering_mip is what BuildingEngine and
+    FloorAnalyser actually use — consistency is safety.
 """
 from __future__ import annotations
 
@@ -53,15 +64,31 @@ class SafeBuildingEngine:
             Note: due to the RLock, only ONE thread will be actively
             solving at any time. Multiple threads allow overlap of
             I/O (result collection, logging) with computation.
+        coverage_radius: MIP coverage radius in meters (default 6.37 = 0.7*9.1m).
+        candidate_step: Grid spacing for MIP candidate positions (default 1.0m).
+        time_limit_s: MIP solver time limit per room (default 60s).
     """
 
-    def __init__(self, max_threads: int = 4):
+    def __init__(
+        self,
+        max_threads: int = 4,
+        coverage_radius: float = 6.37,
+        candidate_step: float = 1.0,
+        time_limit_s: float = 60.0,
+    ):
         self.max_threads = max_threads
+        self.coverage_radius = coverage_radius
+        self.candidate_step = candidate_step
+        self.time_limit_s = time_limit_s
         self.global_c_level_lock = threading.RLock()  # Hard barrier avoiding C++ Memory Corruption on solver library instance loading.
 
     def _solve_mip_safe(self, room_spec: Dict[str, Any]) -> Dict[str, Any]:
         """
         Solve MIP for a single room in a thread-safe manner.
+
+        Uses solve_set_covering_mip (function-based) which is the VERIFIED
+        solver used by FloorAnalyser and BuildingEngine. This avoids the
+        broken import of OptimalMIPEngine which has an incompatible API.
 
         The RLock ensures only one thread enters the CBC solver at a
         time, preventing concurrent access to C-level solver state.
@@ -70,16 +97,18 @@ class SafeBuildingEngine:
             room_spec: Dictionary with room parameters:
                 - room_id: Unique room identifier
                 - width_m: Room width in meters
-                - polygon_coords: Optional polygon coordinates
-                - Other fields passed to OptimalMIPEngine
+                - length_m: Room length in meters (defaults to width_m)
+                - coverage_radius: Override coverage radius (optional)
+                - candidate_step: Override candidate step (optional)
+                - time_limit_s: Override time limit (optional)
 
         Returns:
             Dictionary with:
                 - room_id: Room identifier
                 - success: Whether solve completed without exception
                 - placements: Detector positions (if successful)
-                - coverage_pct: Coverage percentage (if successful)
-                - status: Solver status string
+                - theoretical_minimum: Proven minimum count (if successful)
+                - solver_status: Solver status string
                 - calc_time_sec: Wall-clock solve time
                 - error: Exception message (if failed)
         """
@@ -87,31 +116,32 @@ class SafeBuildingEngine:
         try:
             # Forced encapsulation with the thread execution lock ensuring independent solving process tracking
             with self.global_c_level_lock:
-                from fireai.core.spatial_engine.mip_solver import OptimalMIPEngine
-                solver = OptimalMIPEngine(
-                    grid_size=room_spec.get('width_m', 10.0),
-                    radius=6.37,
-                    placement_step=1.0,
-                    coverage_step=0.5,
-                    time_limit_s=60,
+                from fireai.core.spatial_engine.mip_solver import solve_set_covering_mip
+
+                width = room_spec.get('width_m', 10.0)
+                length = room_spec.get('length_m', width)  # Default to square if not specified
+                radius = room_spec.get('coverage_radius', self.coverage_radius)
+                step = room_spec.get('candidate_step', self.candidate_step)
+                time_limit = room_spec.get('time_limit_s', self.time_limit_s)
+
+                result = solve_set_covering_mip(
+                    room_width=width,
+                    room_length=length,
+                    coverage_radius=radius,
+                    candidate_step=step,
+                    time_limit_seconds=time_limit,
                 )
-
-                placements = []
-                coverage_pct = 0.0
-                status = "FAIL"
-
-                if 'polygon_coords' in room_spec:
-                    placements, coverage_pct, _, status = solver.solve_polygon(room_spec['polygon_coords'])
-                else:
-                    placements, coverage_pct, _, status = solver.solve()
 
                 elapsed = time.time() - start
                 return {
                     "room_id": room_spec.get("room_id", "UNK"),
-                    "success": True,
-                    "placements": placements,
-                    "coverage_pct": coverage_pct,
-                    "status": status,
+                    "success": result.success,
+                    "placements": result.detector_positions,
+                    "theoretical_minimum": result.theoretical_minimum,
+                    "coverage_pct": 0.0,  # MIP doesn't compute coverage %
+                    "status": result.solver_status,
+                    "used_mip": result.used_mip,
+                    "fallback_reason": result.fallback_reason,
                     "calc_time_sec": elapsed,
                 }
         except Exception as ex:
@@ -141,7 +171,7 @@ class SafeBuildingEngine:
                 - room_id: Room identifier
                 - success: Whether solve completed
                 - placements: Detector positions (if successful)
-                - coverage_pct: Coverage percentage (if successful)
+                - theoretical_minimum: Proven minimum count (if successful)
                 - status: Solver status or "CRASH" on fatal error
                 - calc_time_sec: Solve time (if successful)
                 - error: Exception message (if failed)
