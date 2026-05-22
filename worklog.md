@@ -102,3 +102,59 @@ Stage Summary:
 - 266 tests passing (136 core + 130 safety)
 - 10K-room / 30-floor stress test PASSED (9,990 rooms, 12,564 detectors, 0 errors)
 - Round 3 closed-loop re-audit must continue on remaining unexamined files
+
+---
+Task ID: 6
+Agent: Main (Session 7 - continued from context loss)
+Task: V20.2 Round 2 — Deep code audit continued, 10 more CRITICAL/HIGH fixes
+
+Work Log:
+- Read and audited cable_router.py, schemas.py, nfpa72_coverage.py, digital_twin.py,
+  nfpa72_calculations.py, sequence_of_operations.py, safety_assurance.py, nec_tables.py
+- Launched 2 parallel audit agents covering 16 more files:
+  Agent 1: routing_engine_v10.py, routing_global_class_a.py, aset_rset_calculator.py,
+  stairwell_smoke_control.py, battery_aging_derating.py, facp_capacity_auditor.py,
+  pathway_survivability_engine.py
+  Agent 2: loop_designer.py, panel_optimizer.py, nec_tables_v8.py, ada_check.py,
+  nfpa72_provider.py, standards.py, coverage_service.py, compliance_service.py, beam_detector.py
+- Found 31 additional issues: 7 CRITICAL, 9 HIGH, 10 MEDIUM, 5 LOW
+- Applied 10 CRITICAL/HIGH fixes:
+
+  Fix #10 (CRITICAL): cable_router.py — hardcoded 1mA/device replaced with NFPA 72 device
+  current table. Strobes draw 220mA, not 1mA. Old code allowed 220x cable overload = FIRE RISK.
+
+  Fix #11 (HIGH): cable_router.py — star topology length accumulation replaced with max-path-length.
+  Summing all panel-to-device distances double-counts shared cable segments in daisy-chain.
+
+  Fix #12 (HIGH): schemas.py — CableSpecification resistance was 6.4 ohm/kft (no standard AWG).
+  Changed to 7.95 (AWG 18 solid copper per NEC Ch.9 Table 8). Old underestimated Vdrop by 19.5%.
+
+  Fix #13 (HIGH): nfpa72_coverage.py — heat detector spacing fallback used 9.1m (smoke) instead
+  of 6.1m (heat). Credited heat detectors with MORE coverage than they provide.
+
+  Fix #14 (CRITICAL): battery_aging_derating.py — double derating in adequacy check.
+  usable_ah >= required_ah = installed >= load / derating^2 (WRONG).
+  Fixed to installed_ah >= required_ah.
+
+  Fix #15 (CRITICAL): standards.py — get_max_wall_distance() returned 4.6m for BOTH smoke and
+  heat detectors. MAX_WALL_DISTANCE_HEAT (3.05m) was defined but NEVER USED.
+
+  Fix #16 (CRITICAL): coverage_service.py — heat detector spacing check used 15.0m, contradicts
+  6.1m in domain layer. Also fixed AttributeError crash on None position and pull station spacing.
+
+  Fix #17 (HIGH): pathway_survivability_engine.py — high-rise threshold 23.0m→22.86m per IBC §403.
+
+  Fix #18 (HIGH): stairwell_smoke_control.py — MAX_POSITIVE_PRESSURE_PA 87→85 per NFPA 92 §6.4.2.
+
+  Fix #19 (CRITICAL): aset_rset_calculator.py — double safety factor in ASET/RSET verification.
+  verify_aset_rset() received rset*sf as rset AND sf as safety_factor = rset * sf^2.
+
+- Created 10,000-room / 30-floor stress test with 12 test scenarios — ALL PASS
+- Commit: 6f2d32f (Round 2 fixes), fb9fa4c (stress test)
+
+Stage Summary:
+- 10 additional CRITICAL/HIGH fixes across 9 files
+- 135/135 existing core tests pass
+- 12/12 stress tests pass (10,000 rooms, 30 floors)
+- Remaining from audit agents: beam_detector.py shadow polygon (CRITICAL),
+  nec_tables_v8.py solid vs stranded resistance (HIGH), various MEDIUM issues
