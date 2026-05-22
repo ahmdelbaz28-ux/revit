@@ -510,7 +510,7 @@ class EngineeringEvidencePackage:
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
-    algorithm_version: str = "nfpa72_v8.0"
+    algorithm_version: str = "V20.2"
 
     def compute_integrity_hash(self) -> str:
         """Compute SHA-256 hash of the entire evidence package for integrity."""

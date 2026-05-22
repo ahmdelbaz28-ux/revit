@@ -466,7 +466,7 @@ def check_coverage_polygon(
             primary_pct = (covered_count / total_points) * 100
         else:
             primary_pct = 0
-        is_covered = primary_pct >= 99
+        is_covered = primary_pct >= 99.9  # V20.2 FIX: Must match primary threshold (was 99%)
 
     return CoverageResult(
         is_covered=is_covered,
@@ -635,7 +635,9 @@ def create_l_shaped_polygon(
 def check_l_shaped_coverage(
     detector_positions: List[Tuple[float, float]],
     room_polygon: Polygon,
-    ceiling_height_m: float
+    ceiling_height_m: float,
+    detector_type: DetectorType = DetectorType.SMOKE,
+    listed_spacing_m: Optional[float] = None,
 ) -> CoverageResult:
     """
     Check coverage for L-shaped room.
@@ -643,9 +645,26 @@ def check_l_shaped_coverage(
 
     V13 Fix: Uses area-based coverage calculation as primary method,
     with point-sampling retained for uncovered area detection.
+
+    V20.2 Fix: Added detector_type + listed_spacing_m parameters so
+    heat detectors use square (Chebyshev) geometry instead of always
+    using circular (smoke) geometry. Also fixed fallback math which
+    computed an incorrect coverage percentage when area calculation failed.
     """
-    # ✅ Use safe fallback
-    radius = get_smoke_detector_radius_safe(ceiling_height_m)
+    # =====================================================================
+    # Determine coverage geometry per detector type
+    # =====================================================================
+    if detector_type == DetectorType.HEAT:
+        heat_spec = calculate_coverage_radius_from_height(
+            ceiling_height_m, detector_type="heat"
+        )
+        half_spacing = heat_spec.spacing_max / 2.0
+        coverage_geometry = "square"  # Chebyshev
+        radius = half_spacing  # Used for area-based circle fallback
+    else:
+        radius = get_smoke_detector_radius_safe(ceiling_height_m)
+        half_spacing = radius
+        coverage_geometry = "circular"
 
     # =====================================================================
     # PRIMARY: Area-based coverage (EXACT, no grid artifacts)
@@ -656,10 +675,16 @@ def check_l_shaped_coverage(
             raise ValueError("Room has zero area")
 
         coverage_polys = []
-        for dx, dy in detector_positions:
-            pt = Point(dx, dy)
-            buf = pt.buffer(radius)
-            coverage_polys.append(buf)
+        if detector_type == DetectorType.HEAT:
+            for dx, dy in detector_positions:
+                sq = box(dx - half_spacing, dy - half_spacing,
+                         dx + half_spacing, dy + half_spacing)
+                coverage_polys.append(sq)
+        else:
+            for dx, dy in detector_positions:
+                pt = Point(dx, dy)
+                buf = pt.buffer(radius)
+                coverage_polys.append(buf)
 
         if coverage_polys:
             total_coverage = unary_union(coverage_polys)
@@ -679,6 +704,7 @@ def check_l_shaped_coverage(
     # =====================================================================
     GRID_RESOLUTION_M = 0.25
     uncovered = []
+    total_sampled = 0  # V20.2 FIX: Track total points for correct fallback
     bounds = room_polygon.bounds
     min_x, min_y, max_x, max_y = bounds
     step_x = GRID_RESOLUTION_M
@@ -690,19 +716,33 @@ def check_l_shaped_coverage(
             if not room_polygon.contains(Point(x, y)):
                 y += step_y
                 continue
-            covered = any(
-                math.sqrt((x - dx)**2 + (y - dy)**2) <= radius
-                for dx, dy in detector_positions
-            )
+            total_sampled += 1
+            # V20.2 FIX: Use correct geometry per detector type
+            if detector_type == DetectorType.HEAT:
+                covered = any(
+                    max(abs(x - dx), abs(y - dy)) <= half_spacing
+                    for dx, dy in detector_positions
+                )
+            else:
+                covered = any(
+                    math.sqrt((x - dx)**2 + (y - dy)**2) <= radius
+                    for dx, dy in detector_positions
+                )
             if not covered:
                 uncovered.append((x, y))
             y += step_y
         x += step_x
 
-    # Use area-based percentage (primary)
-    primary_pct = area_pct if area_pct > 0 else (
-        (1 - len(uncovered) / max(1, len(uncovered) + 1)) * 100
-    )
+    # V20.2 FIX: Use area-based percentage (primary), with correct fallback
+    if area_pct > 0:
+        primary_pct = area_pct
+    else:
+        # Fallback: proper point-based percentage
+        if total_sampled > 0:
+            primary_pct = ((total_sampled - len(uncovered)) / total_sampled) * 100
+        else:
+            primary_pct = 0
+        is_covered = primary_pct >= 99.9  # Match primary threshold
 
     return CoverageResult(
         is_covered=is_covered,

@@ -774,6 +774,8 @@ class AcousticSPLCalculator:
                 })
 
             # Check maximum level
+            # V20.2 FIX: NFPA 72 §18.4.1.2 "shall not exceed" = mandatory,
+            # so severity is CRITICAL not WARNING.
             if total_pt_spl > MAX_SOUND_LEVEL_DBA:
                 violations.append({
                     "code": "ACOUSTIC-EXCESSIVE",
@@ -781,7 +783,7 @@ class AcousticSPLCalculator:
                         f"Room '{room_id}' SPL {total_pt_spl:.1f} dBA exceeds "
                         f"maximum {MAX_SOUND_LEVEL_DBA} dBA per NFPA 72 §18.4.1.2"
                     ),
-                    "severity": "WARNING",
+                    "severity": "CRITICAL",
                     "point": pt_result["point"],
                 })
 

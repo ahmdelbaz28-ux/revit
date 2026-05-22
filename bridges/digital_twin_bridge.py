@@ -247,6 +247,10 @@ class DigitalTwinBridge:
                     ceiling_height=height,
                     ceiling_type="SMOOTH",
                 ))
+                # V20.2 FIX: Flag placeholder rooms so orchestrator rejects NFPA analysis
+                # (Same pattern as parser_bridge.py line 213)
+                if poly is None:
+                    rooms[-1]._placeholder_geometry = True
             except Exception as ex:
                 log.warning("Failed to extract IfcSpace: %s", ex)
 
