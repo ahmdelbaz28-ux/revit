@@ -299,11 +299,16 @@ class NECCompliance:
         "minimum_height": 2.0,  # 78 inches
     }
     
-    # Conductor fill (NEC Chapter 9)
+    # Conductor fill (NEC Chapter 9, Table 1)
+    # V20.2 FIX: Second "40%" key was a duplicate that silently overwrote.
+    # Per NEC Chapter 9 Table 1, the fill limits are:
+    #   53% — 1 conductor (was missing)
+    #   31% — 2 conductors
+    #   40% — 3 or more conductors
     MAX_CONDUCTOR_FILL = {
-        "40%": 40,  # # of conductors
-        "31%": 31, 
-        "40%": 40,
+        "53%": 53,  # 1 conductor per NEC Ch 9 Table 1
+        "31%": 31,  # 2 conductors
+        "40%": 40,  # 3+ conductors
     }
 
     def check_panel_clearance(

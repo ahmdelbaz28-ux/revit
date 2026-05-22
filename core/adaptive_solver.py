@@ -412,14 +412,31 @@ class AdaptiveSolver:
         """Try with beam detectors (for beam pocket ceilings)."""
         # Beam detector coverage = 30m
         coverage = 30.0
-        
+
         import math
         count_needed = math.ceil(safe_polygon.area / (coverage * coverage * 0.6))
-        
+
+        # V20.2 FIX: Previous code returned success=True with positions=[].
+        # This is a LIE — claiming beam detectors are placed when they
+        # aren't. A building could be signed off as "protected" with zero
+        # actual beam detector positions. In a fire alarm system, this
+        # kills people.
+        # Fix: Return success=False with a clear reason. The caller must
+        # not treat this as a valid solution.
         return AdaptiveSolution(
-            success=True,
-            positions=[],  # Would need actual beam positions
-            metadata={"using": "beam_detector", "safe_area": safe_polygon.area}
+            success=False,
+            positions=[],
+            metadata={
+                "using": "beam_detector",
+                "safe_area": safe_polygon.area,
+                "count_needed": count_needed,
+                "reason": (
+                    "Beam detector placement not yet implemented — "
+                    "requires manual design by FPE per NFPA 72 §17.7.4. "
+                    f"Estimated {count_needed} beam detector(s) needed "
+                    f"for {safe_polygon.area:.1f} m² room."
+                ),
+            }
         )
 
 

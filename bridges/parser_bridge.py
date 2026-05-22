@@ -196,7 +196,11 @@ def _extract_rooms_from_ifc(entities: list) -> list:
         name = attrs.get("name") or attrs.get("long_name") or "Unnamed"
         # IFC geometry is stored as GlobalId reference; we need the bridge
         # to resolve it. For now, create a placeholder polygon.
-        rooms.append(Room(
+        # V20.2 FIX: Mark IFC rooms with placeholder geometry so downstream
+        # NFPA analysis can detect and refuse to process them. A 1m² box
+        # produces completely wrong coverage calculations — the building
+        # could be signed off as "protected" when it's not.
+        room = Room(
             id=e.provenance.get("ifc_id", str(id(e))),
             name=name,
             room_type="unknown",
@@ -204,7 +208,10 @@ def _extract_rooms_from_ifc(entities: list) -> list:
             geometry=ShapelyPolygon([(0, 0), (1, 0), (1, 1), (0, 1)]),
             ceiling_height=2.8,
             ceiling_type="SMOOTH",
-        ))
+        )
+        # V20.2: Flag this room as having placeholder geometry
+        room._placeholder_geometry = True
+        rooms.append(room)
     return rooms
 
 

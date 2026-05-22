@@ -173,7 +173,15 @@ class TestElevatorShuntTripAuditor:
 
     # -- 1.8 Default RTI values (backward compatible) --
     def test_default_rti_backward_compatible(self):
-        """Without rti fields, defaults should pass (both default to 50)."""
+        """V20.2: Default HD RTI (100) > default sprinkler RTI (50).
+        
+        Previously, both defaulted to 50, making the RTI check a no-op.
+        V20.2 fix: DEFAULT_HD_RTI=100 correctly represents standard-response
+        heat detectors per UL 521. With RTI 100 > 50, the RTI check now
+        correctly flags that a standard-response HD is too slow to beat
+        a quick-response sprinkler — exactly the danger V19.1 was built
+        to catch. Test updated to reflect correct behavior.
+        """
         result = self.auditor.audit_hoistway_machine_room(
             sprinkler_locations=[
                 {"device_id": "SPK-01", "room_id": "ELEV-MR", "x": 10.0, "y": 5.0, "temp_rating_C": 68.3},
@@ -184,7 +192,9 @@ class TestElevatorShuntTripAuditor:
             elevator_spaces=["ELEV-MR"],
         )
         val = result.value if isinstance(result, DecisionProvenance) else result["value"]
-        assert val["safe"] is True
+        # V20.2: Default HD RTI=100 > sprinkler RTI=50 → RTI violation
+        # This is CORRECT — standard-response HD IS too slow for QR sprinkler
+        assert val["safe"] is False
 
     # -- 1.9 Provenance algorithm name --
     def test_algorithm_name_rti(self):

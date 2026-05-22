@@ -1,5 +1,5 @@
 """
-floor_orchestrator.py — FireAI V10 with Audit Integration
+floor_orchestrator.py — FireAI V20.2 with Audit Integration
 CRITICAL SAFETY:
   1. SSOT: meta from engine.solve() is the ONLY source of truth.
   2. Sequential: No threads — pure logic only.
@@ -58,7 +58,7 @@ class FloorResult:
     total_time_s: float = 0.0
     status: str = "UNKNOWN"
     disclaimer: str = (
-        "This report is produced by FireAI V5.1.0. "
+        "This report is produced by FireAI V20.2. "
         "It MUST be reviewed by a licensed fire protection engineer. "
         "All calculations reference NFPA 72 (2022 Edition)."
     )
@@ -95,7 +95,7 @@ class FloorResult:
             "timestamp": datetime.now().isoformat(),
             "project_name": self.project_name,
             "source_dxf": self.source_dxf,
-            "version": "FireAI V5.1.2",
+            "version": "FireAI V20.2",
             "status": self.status,
             "rooms": {
                 "total": self.total_rooms,

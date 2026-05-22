@@ -87,8 +87,17 @@ MAX_HD_SPRINKLER_DISTANCE_M: float = 0.6
 # Default RTI values (m·s)^0.5
 # Quick-response sprinkler per NFPA 13 §8.3.3.1
 DEFAULT_SPRINKLER_RTI: float = 50.0
-# Standard-response heat detector per UL 521
-DEFAULT_HD_RTI: float = 50.0
+# V20.2 FIX: Standard-response heat detector per UL 521 typically has
+# RTI of 100–150 (m·s)^0.5. Previous value of 50.0 was WRONG — it
+# matched the quick-response sprinkler default, making the RTI check
+# `hd_rti > (spk_rti * 1.0)` ALWAYS False. The V19.1 RTI fix was
+# therefore a no-op with default values.
+# A standard-response HD at RTI=100 will respond ~2× slower than a
+# quick-response sprinkler (RTI=50), meaning the sprinkler bursts
+# FIRST → electrified water → firefighter electrocution.
+# Setting 100.0 (conservative standard-response) ensures the RTI
+# check triggers by default when paired with quick-response sprinklers.
+DEFAULT_HD_RTI: float = 100.0
 
 # RTI threshold: if the HD's RTI exceeds the sprinkler's RTI by more
 # than this factor, the HD is guaranteed to respond too slowly.

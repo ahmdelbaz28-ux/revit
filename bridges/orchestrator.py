@@ -238,6 +238,23 @@ def run_full_design(
         verified_device_ids = set()
 
         for room in result.rooms:
+            # V20.2 FIX: Skip NFPA analysis for IFC rooms with placeholder
+            # geometry. A 1m² box produces completely wrong coverage results
+            # that could lead to a building being signed off as "protected"
+            # when it's not. Flag as critical violation instead.
+            if getattr(room, '_placeholder_geometry', False):
+                error_msg = (
+                    f"CRITICAL: Room '{room.name}' (ID: {room.id}) has "
+                    f"placeholder IFC geometry (1m² box). NFPA 72 analysis "
+                    f"would produce INVALID results. IFC geometry resolution "
+                    f"is required before fire alarm design can proceed."
+                )
+                warnings.append(error_msg)
+                result.violations.append(error_msg)
+                result.proof_valid = False
+                log.critical(error_msg)
+                continue
+
             try:
                 room_devices = [d for d in result.devices
                                 if getattr(d, "room_id", "") == room.id]
@@ -852,7 +869,12 @@ def run_full_design(
         "audit_hash": result.audit_hash,
     }
     result.elapsed_seconds = round(time.time() - t0, 2)
-    result.proof_valid = proof_valid
+    # V20.2 FIX: proof_valid must NOT override safety gates.
+    # CRITICAL SAFETY GATE (line 280) sets proof_valid=False when orphaned
+    # devices exist. A simple assignment here would silently negate that.
+    # Fix: AND logic — proof_valid is True only if BOTH the caller AND all
+    # safety gates agree. A single safety gate veto is binding.
+    result.proof_valid = proof_valid and result.proof_valid
 
     log.info("=" * 50)
     log.info("FULL DESIGN COMPLETE in %.1fs", result.elapsed_seconds)

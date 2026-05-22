@@ -310,7 +310,55 @@ class NACBoosterAllocator:
             except Exception:
                 pass
 
-        return {
+        # V20.2 FIX: Auto-invoke Pass 2 (voltage drop validation) when
+        # device line data is available on any floor. Without this,
+        # BPS placement is based on current capacity ONLY — terminal
+        # voltage at end-of-line may collapse below 16 VDC during fire,
+        # causing horns/strobes to fail silently.
+        voltage_result = None
+        all_devices_line: List[Dict[str, Any]] = []
+        for f_info in sorted_floors:
+            dev_line = f_info.get("devices_line")
+            if dev_line and isinstance(dev_line, list):
+                all_devices_line.extend(dev_line)
+
+        if all_devices_line:
+            voltage_result = self.validate_voltage_drop(all_devices_line)
+            # Merge voltage violations into main violations list
+            v_violations = []
+            if isinstance(voltage_result, dict):
+                v_violations = voltage_result.get("violations", [])
+            elif hasattr(voltage_result, "violations"):
+                v_violations = voltage_result.violations or []
+            if v_violations:
+                violations.extend(v_violations)
+                safe = False
+        else:
+            # V20.2: CRITICAL WARNING when voltage drop validation
+            # cannot be performed — current-only allocation is incomplete.
+            desc = (
+                "VOLTAGE DROP VALIDATION NOT PERFORMED: No devices_line "
+                "data provided on any floor. BPS allocation is based on "
+                "current capacity ONLY. Terminal voltage at end-of-line "
+                "devices may be below minimum — horns/strobes may fail "
+                "during fire. Provide devices_line per floor for full "
+                "Pass 1 + Pass 2 allocation per NFPA 72 §10.14."
+            )
+            if Violation is not None:
+                violations.append(Violation(
+                    severity="CRITICAL",
+                    citation=f"{_CITE_NFPA72_10_14}",
+                    description=desc,
+                ))
+            else:
+                violations.append({
+                    "severity": "CRITICAL",
+                    "citation": _CITE_NFPA72_10_14,
+                    "description": desc,
+                })
+            safe = False
+
+        result_dict = {
             "decision_type": "distributed_power_routing",
             "value": {
                 "boosters": panel_allocation,
@@ -320,6 +368,12 @@ class NACBoosterAllocator:
             "safe": safe,
             "violations": violations,
         }
+        if voltage_result is not None:
+            if isinstance(voltage_result, dict):
+                result_dict["voltage_drop_validation"] = voltage_result
+            elif hasattr(voltage_result, "to_dict"):
+                result_dict["voltage_drop_validation"] = voltage_result.to_dict()
+        return result_dict
 
     def validate_voltage_drop(
         self,

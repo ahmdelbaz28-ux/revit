@@ -189,6 +189,49 @@ CONDUIT_SPECS: Dict[Tuple[str, str], Dict[str, float]] = {
     ("IMC", "1-1/4"): {"id_mm": 36.00, "area_mm2": 1017.88},
     ("IMC", "1-1/2"): {"id_mm": 41.80, "area_mm2": 1372.88},
     ("IMC", "2"):    {"id_mm": 53.50, "area_mm2": 2248.93},
+
+    # V20.2 FIX: PVC Schedule 40 — NEC Chapter 9 Table 4
+    # PVC is commonly used for fire alarm installations per NEC 760.154.
+    # Missing specs caused silent fallback to cable tray recommendation.
+    ("PVC40", "1/2"):  {"id_mm": 15.30, "area_mm2": 183.85},
+    ("PVC40", "3/4"):  {"id_mm": 20.40, "area_mm2": 326.85},
+    ("PVC40", "1"):    {"id_mm": 26.10, "area_mm2": 535.02},
+    ("PVC40", "1-1/4"): {"id_mm": 34.50, "area_mm2": 934.79},
+    ("PVC40", "1-1/2"): {"id_mm": 40.40, "area_mm2": 1281.65},
+    ("PVC40", "2"):    {"id_mm": 52.00, "area_mm2": 2123.72},
+    ("PVC40", "2-1/2"): {"id_mm": 62.10, "area_mm2": 3029.09},
+    ("PVC40", "3"):    {"id_mm": 77.60, "area_mm2": 4729.90},
+    ("PVC40", "3-1/2"): {"id_mm": 89.50, "area_mm2": 6291.77},
+    ("PVC40", "4"):    {"id_mm": 101.50, "area_mm2": 8089.43},
+
+    # V20.2 FIX: PVC Schedule 80 — NEC Chapter 9 Table 4
+    ("PVC80", "1/2"):  {"id_mm": 13.20, "area_mm2": 136.85},
+    ("PVC80", "3/4"):  {"id_mm": 17.90, "area_mm2": 251.79},
+    ("PVC80", "1"):    {"id_mm": 23.10, "area_mm2": 419.10},
+    ("PVC80", "1-1/4"): {"id_mm": 31.10, "area_mm2": 759.65},
+    ("PVC80", "1-1/2"): {"id_mm": 36.50, "area_mm2": 1046.35},
+    ("PVC80", "2"):    {"id_mm": 47.80, "area_mm2": 1793.94},
+    ("PVC80", "2-1/2"): {"id_mm": 57.20, "area_mm2": 2569.30},
+    ("PVC80", "3"):    {"id_mm": 71.90, "area_mm2": 4059.87},
+    ("PVC80", "4"):    {"id_mm": 95.30, "area_mm2": 7131.27},
+
+    # V20.2 FIX: LFMC — Liquidtight Flexible Metal Conduit
+    ("LFMC", "3/8"):  {"id_mm": 12.40, "area_mm2": 120.76},
+    ("LFMC", "1/2"):  {"id_mm": 15.70, "area_mm2": 193.59},
+    ("LFMC", "3/4"):  {"id_mm": 20.40, "area_mm2": 326.85},
+    ("LFMC", "1"):    {"id_mm": 25.90, "area_mm2": 526.90},
+    ("LFMC", "1-1/4"): {"id_mm": 34.30, "area_mm2": 923.89},
+    ("LFMC", "1-1/2"): {"id_mm": 40.10, "area_mm2": 1262.92},
+    ("LFMC", "2"):    {"id_mm": 51.60, "area_mm2": 2089.88},
+
+    # V20.2 FIX: FMC — Flexible Metal Conduit
+    ("FMC", "3/8"):  {"id_mm": 12.30, "area_mm2": 118.82},
+    ("FMC", "1/2"):  {"id_mm": 15.60, "area_mm2": 191.13},
+    ("FMC", "3/4"):  {"id_mm": 20.30, "area_mm2": 323.65},
+    ("FMC", "1"):    {"id_mm": 25.80, "area_mm2": 522.79},
+    ("FMC", "1-1/4"): {"id_mm": 34.20, "area_mm2": 918.51},
+    ("FMC", "1-1/2"): {"id_mm": 40.00, "area_mm2": 1256.64},
+    ("FMC", "2"):    {"id_mm": 51.50, "area_mm2": 2081.81},
 }
 
 

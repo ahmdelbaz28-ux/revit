@@ -29,6 +29,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/..")
 from shapely.geometry import LineString, Polygon as ShapelyPolygon
 from shapely.ops import linemerge, polygonize
 
+# V20.2 FIX: Moved logger definition BEFORE the try/except import block
+# to prevent NameError when PyMuPDF (fitz) is not installed.
+# Previously, logger.warning() at the old line 38 was called before
+# logger was defined at line 45 → NameError at import time.
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Try to import PyMuPDF for text extraction
 try:
     import fitz
@@ -39,10 +47,6 @@ except ImportError:
 
 from nfpa72_models import RoomSpec, CeilingSpec, CeilingType, DetectorType
 from nfpa72_coverage import check_coverage_polygon
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Constants
 # WARNING: Gap closing disabled by default to prevent room fragmentation
