@@ -95,8 +95,12 @@ __all__ = [
 # Default coverage radius for smoke detectors (R = 0.7 × S = 0.7 × 9.1m)
 NFPA72_SMOKE_RADIUS_M = 6.37
 
-# Default coverage radius for heat detectors (per NFPA 72 Table 17.6.3.1.1)
-NFPA72_HEAT_RADIUS_M = 5.3
+# Default coverage radius for heat detectors (R = 0.7 × S = 0.7 × 6.1m)
+# per NFPA 72 Table 17.6.3.1.1 (20ft listed spacing)
+NFPA72_HEAT_RADIUS_M = 4.27
+
+# Secondary constant for 25ft listed spacing heat detectors
+NFPA72_HEAT_RADIUS_25FT_M = 5.3
 
 # Default ceiling height for commercial buildings
 NFPA72_DEFAULT_CEILING_M = 3.0
@@ -518,7 +522,7 @@ class TwinSimulator:
         "heat": NFPA72_HEAT_RADIUS_M,
         "flame": NFPA72_SMOKE_RADIUS_M,
         "gas": NFPA72_SMOKE_RADIUS_M,
-        "duct_smoke": NFPA72_SMOKE_RADIUS_M,
+        "duct_smoke": 0.0,  # Duct detectors don't provide area coverage
     }
 
     def simulate_offline(
@@ -667,13 +671,17 @@ class TwinSimulator:
     def _compute_health_score(dets: Dict[str, DetectorState]) -> float:
         """Compute a 0.0–1.0 health score from detector states."""
         if not dets:
-            return 1.0
+            return 0.0  # V20.2 FIX: No detectors = NO protection, not perfect
         ok = sum(1 for d in dets.values() if d.status == DetectorStatus.OK)
         faulted = sum(1 for d in dets.values() if d.status == DetectorStatus.FAULT)
         offline = sum(1 for d in dets.values() if d.status == DetectorStatus.OFFLINE)
-        total = len(dets)
-        # OK counts full, FAULT counts 0.3, OFFLINE counts 0.1, rest counts 0
-        score = (ok + 0.3 * faulted + 0.1 * offline) / total
+        decommed = sum(1 for d in dets.values() if d.status == DetectorStatus.DECOMMISSIONED)
+        # V20.2 FIX: Exclude DECOMMISSIONED from denominator — they're removed
+        # from the active system per NFPA 72 §14.3.4
+        active_total = len(dets) - decommed
+        if active_total == 0:
+            return 0.0
+        score = (ok + 0.3 * faulted + 0.1 * offline) / active_total
         return round(score, 4)
 
     @staticmethod
@@ -863,7 +871,7 @@ class DigitalTwin:
         z: float,
         detector_type: str = "smoke",
         status: DetectorStatus = DetectorStatus.PLANNED,
-        coverage_radius: float = NFPA72_SMOKE_RADIUS_M,
+        coverage_radius: Optional[float] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> DetectorState:
         """Register a new detector in the Digital Twin.
@@ -883,6 +891,14 @@ class DigitalTwin:
         Raises:
             ValueError: If detector_id already exists.
         """
+        # V20.2 FIX: Select default radius based on detector_type
+        effective_radius = (
+            coverage_radius if coverage_radius is not None
+            else TwinSimulator.DEFAULT_COVERAGE_RADII.get(
+                detector_type, NFPA72_SMOKE_RADIUS_M
+            )
+        )
+
         with self._lock:
             if detector_id in self._detectors:
                 raise ValueError(
@@ -895,7 +911,7 @@ class DigitalTwin:
                 x=x, y=y, z=z,
                 detector_type=detector_type,
                 status=status,
-                coverage_radius=coverage_radius,
+                coverage_radius=effective_radius,
                 metadata=metadata or {},
             )
 
@@ -1235,8 +1251,12 @@ class DigitalTwin:
         offline = sum(1 for d in detectors.values() if d.status == DetectorStatus.OFFLINE)
         decommed = sum(1 for d in detectors.values() if d.status == DetectorStatus.DECOMMISSIONED)
 
-        # Room-level coverage analysis
-        rooms = set(d.room_id for d in detectors.values())
+        # V20.2 FIX: Use self._room_ids (all registered rooms) not just rooms
+        # that currently have detectors. Rooms with all detectors removed are a
+        # CRITICAL gap that must appear in the health report.
+        with self._lock:
+            all_rooms = set(self._room_ids)
+        rooms = all_rooms
         rooms_with_ok = set(
             d.room_id for d in detectors.values() if d.status == DetectorStatus.OK
         )
@@ -1246,17 +1266,27 @@ class DigitalTwin:
         coverage_pct = round(len(rooms_with_ok) / len(rooms) * 100, 2) if rooms else 0.0
 
         # Health score: weighted combination
+        # V20.2 FIX: total==0 means NO protection → score=0.0, NOT 1.0
         if total == 0:
-            health_score = 1.0
+            health_score = 0.0
+            critical_issues = ["ZERO detectors in building — NO fire protection (NFPA 72 §1.2)"]
         else:
-            # Active detectors contribute fully, FAULT 30%, OFFLINE 10%, rest 0%
-            raw_score = (active + 0.3 * faulted + 0.1 * offline) / total
+            # V20.2 FIX: Exclude DECOMMISSIONED from denominator
+            active_total = total - decommed
+            if active_total == 0:
+                raw_score = 0.0
+            else:
+                # Active detectors contribute fully, FAULT 30%, OFFLINE 10%, rest 0%
+                raw_score = (active + 0.3 * faulted + 0.1 * offline) / active_total
             # Penalize for unresolved drifts
             drift_penalty = min(0.2, unresolved_drifts * 0.02)
             health_score = round(max(0.0, raw_score - drift_penalty), 4)
 
         # Critical issues and warnings
-        critical_issues: List[str] = []
+        if total == 0:
+            pass  # Already set above
+        else:
+            critical_issues: List[str] = []
         warnings: List[str] = []
 
         if rooms_without_ok:

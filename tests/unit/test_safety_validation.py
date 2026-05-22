@@ -55,19 +55,19 @@ class TestCorrectValues:
     """Values must match NFPA 72."""
 
     def test_radius_3m(self):
-        """3.0m → 4.55m."""
+        """3.0m → R = 0.7 × 9.10 = 6.37m (was 4.55m using S/2, now R = 0.7×S)."""
         r = get_smoke_detector_radius_safe(3.0)
-        assert r == pytest.approx(4.55, rel=0.01)
+        assert r == pytest.approx(6.37, rel=0.01)
 
     def test_radius_6m(self):
-        """6.0m → 5.35m."""
+        """6.0m in (5.5, 6.1) bracket → R = 0.7 × 7.70 = 5.39m (NFPA 72 Table 17.6.3.1.1)."""
         r = get_smoke_detector_radius_safe(6.0)
-        assert r == pytest.approx(5.35, rel=0.05)
+        assert r == pytest.approx(5.39, rel=0.02)
 
     def test_radius_9m(self):
-        """9.0m → 5.80m."""
+        """9.0m in (7.6, 9.1) bracket → R = 0.7 × 6.80 = 4.76m (NFPA 72 Table 17.6.3.1.1)."""
         r = get_smoke_detector_radius_safe(9.0)
-        assert r == pytest.approx(5.80, rel=0.05)
+        assert r == pytest.approx(4.76, rel=0.02)
 
     def test_radius_above_15m_has_flag(self):
         """Height > 15.3m → must set HIGH_CEILING flag."""
@@ -264,33 +264,36 @@ class TestMixedScenarios:
     """Real-world combinations."""
 
     def test_warehouse_30m_ceiling(self):
-        """Warehouse with 30m ceiling → HIGH_CEILING flag + capped."""
+        """Warehouse with 30m ceiling → HIGH_CEILING flag + capped at 15.24m."""
         r, details = get_smoke_detector_radius_safe(30.0, True)
         assert "HIGH" in details["flag"]
         assert "REVIEW" in details["flag"]
-        assert r == 6.40
+        # Capped at 15.24m → R = 0.7 × 5.60 = 3.92m
+        assert r == 3.92
 
     def test_basement_2_4m_low(self):
-        """Basement 2.4m → LOW_CEILING flag."""
+        """Basement 2.4m → LOW_CEILING flag, uses 3.0m values."""
         r, details = get_smoke_detector_radius_safe(2.4, True)
         assert "LOW" in details["flag"]
-        assert r == 4.55
+        # Uses 3.0m values → R = 0.7 × 9.10 = 6.37m
+        assert r == 6.37
 
     def test_exact_transition_3_0m(self):
         """Exact NFPA lower limit 3.0m → no flag."""
         r, details = get_smoke_detector_radius_safe(3.0, True)
         assert details["flag"] is None
-        assert r == pytest.approx(4.55, rel=0.01)
+        # R = 0.7 × 9.10 = 6.37m
+        assert r == pytest.approx(6.37, rel=0.01)
 
     def test_exact_transition_4_3m(self):
-        """Transition at 4.3m."""
+        """Transition at 4.3m → R = 0.7 × 8.70 = 6.09m."""
         r = get_smoke_detector_radius_safe(4.3)
-        assert r == pytest.approx(4.55, rel=0.01)
+        assert r == pytest.approx(6.09, rel=0.01)
 
     def test_exact_transition_15_3m(self):
-        """Upper limit 15.3m."""
+        """Upper limit 15.3m → R = 0.7 × 5.60 = 3.92m."""
         r = get_smoke_detector_radius_safe(15.3)
-        assert r == pytest.approx(6.40, rel=0.01)
+        assert r == pytest.approx(3.92, rel=0.01)
 
 
 # ============================================================

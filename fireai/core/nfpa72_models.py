@@ -428,14 +428,15 @@ class SmokeDetectorSpec:
     ceiling_spec: CeilingSpec
     room_spec: RoomSpec
     detector_type: DetectorType = DetectorType.SMOKE
-    # NFPA 72 Table 17.6.3.2 coverage areas
-    HEIGHT_TO_COVERAGE = {
-        (3.0, 4.3): (4.1, 6.4),    # 10-14 ft -> 4.1m radius (circles can extend to 6.4m)
-        (4.3, 6.1): (4.6, 7.2),   # 14-20 ft
-        (6.1, 7.6): (5.2, 8.1),    # 20-25 ft
-        (7.6, 9.1): (5.8, 9.0),    # 25-30 ft
-        (9.1, 15.24): (6.4, 10.1), # 30-50 ft
-    }
+    # V20.2 FIX: HEIGHT_TO_COVERAGE REMOVED — it used old S/2 values which
+    # contradicted the corrected R = 0.7 × S in RADIUS_MAP and
+    # get_smoke_detector_radius(). Use those functions instead.
+    #
+    # Old values (S/2 based, INCORRECT for R = 0.7 × S):
+    #   (3.0, 4.3): (4.1, 6.4),   <- 4.1m = S/2, not R = 0.7×S
+    #   (4.3, 6.1): (4.6, 7.2),   <- same issue
+    #
+    # Correct values are computed dynamically via radius_m / coverage_max_m.
     @property
     def radius_m(self) -> float:
         """Get radius based on ceiling height per NFPA 72"""
@@ -461,6 +462,12 @@ class HeatDetectorSpec:
     def spacing_m(self) -> float:
         """Get spacing for heat detector"""
         return self.FIXED_SPACING_M
+    # V20.2 FIX: Add radius_m property for heat detectors
+    # R = 0.7 × S = 0.7 × 6.1m = 4.27m for circular coverage equivalent
+    @property
+    def radius_m(self) -> float:
+        """Get equivalent circular coverage radius R = 0.7 × S per NFPA 72."""
+        return round(0.7 * self.FIXED_SPACING_M, 2)  # 4.27m
 # ============================================================================
 # ⚠️ FIXED: DetectorPlacement - Reference Bug Resolved (2026-05-14)
 # ============================================================================
@@ -493,18 +500,21 @@ class DetectorPlacement:
     coverage_radius_m: Optional[float] = None
     def __post_init__(self):
         """
-        Initialize coverage radius with safe fallback.
-        FIXED: 2026-05-14
-        - Uses self.ceiling_height_m (explicit parameter)
-        - Uses get_smoke_detector_radius_safe() for safe fallback
-        - No longer references undefined 'ceiling_spec' variable
+        Initialize coverage radius with type-appropriate fallback.
+        V20.2 FIX: Use detector-type-appropriate default radius.
+        Heat detectors use R = 0.7 × 6.1m = 4.27m, NOT the smoke detector
+        radius of 6.37m. Using smoke radius for heat detectors overestimates
+        coverage by ~50%, potentially leaving areas unprotected.
         """
         if self.coverage_radius_m is None:
-            # ✅ FIXED: Use explicit ceiling_height_m parameter
-            # ✅ FIXED: Use safe fallback function
-            self.coverage_radius_m = get_smoke_detector_radius_safe(
-                self.ceiling_height_m
-            )
+            if self.detector_type in (DetectorType.HEAT, DetectorType.HEAT_FIXED):
+                # Heat: R = 0.7 × S = 0.7 × 6.1m = 4.27m
+                self.coverage_radius_m = 4.27
+            else:
+                # Smoke and other types: use safe fallback
+                self.coverage_radius_m = get_smoke_detector_radius_safe(
+                    self.ceiling_height_m
+                )
     @property
     def position_3d(self) -> Tuple[float, float, float]:
         """Get 3D position"""
@@ -590,9 +600,25 @@ class FireAlarmPanel:
     def check_voltage_drop(self, distance_m: float) -> float:
         """
         Calculate voltage drop at distance.
-        Simple calculation: V_drop = 0.04V per 100m of wire (@ 1.5mm²)
+
+        DEPRECATED (Issue #12): This simplified formula (0.04V/100m) ignores
+        load current and wire gauge. For accurate voltage drop calculations
+        per NFPA 72 §10.14, use `nfpa72_calculations.check_voltage_drop()`
+        which properly accounts for current, cable resistance, and return path.
+
+        This method is retained for backward compatibility but will produce
+        inaccurate results for any real-world design.
         """
-        # Simplified: 0.04V per 100m
+        import warnings
+        warnings.warn(
+            "FireAlarmPanel.check_voltage_drop() is deprecated — it uses a "
+            "simplified 0.04V/100m formula that ignores current and wire gauge. "
+            "Use nfpa72_calculations.check_voltage_drop() for accurate results "
+            "per NFPA 72 §10.14.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        # Simplified: 0.04V per 100m (VERY rough approximation)
         v_drop = distance_m * 0.0004
         return v_drop
     
@@ -688,7 +714,8 @@ def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
         (9.1, 15.24): 10.1,
     }
     for (min_h, max_h), max_cov in MAX_COVERAGE_MAP.items():
-        # Use < for upper bound in lower brackets to avoid overlap
+        # FIX (Issue #11): Use < for upper bound of non-last brackets
+        # to avoid non-deterministic overlap at boundary heights.
         if max_h == 15.24:
             if min_h <= ceiling_height_m <= max_h:
                 return max_cov
@@ -838,7 +865,14 @@ def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_detail
         return max_cov, details
     return max_cov
 def _get_max_internal(h: float) -> float:
-    """Internal max coverage lookup."""
+    """Internal max coverage lookup.
+
+    CRITICAL FIX (Issue #11): Previous version used min_h <= h <= max_h for
+    ALL ranges, causing overlapping boundaries at h=4.3, 6.1, 7.6, 9.1.
+    This produced non-deterministic results depending on dict iteration order.
+    Now uses < for upper bound of non-last ranges (consistent with RADIUS_MAP
+    and _get_radius_internal), and <= only for the final bracket.
+    """
     M = {
         (3.0, 4.3): 5.5,
         (4.3, 6.1): 6.5,
@@ -847,8 +881,13 @@ def _get_max_internal(h: float) -> float:
         (9.1, 15.24): 10.1
     }
     for (min_h, max_h), m in M.items():
-        if min_h <= h <= max_h:
-            return m
+        # Use < for upper bound in lower brackets to avoid overlap
+        if max_h == 15.24:
+            if min_h <= h <= max_h:
+                return m
+        else:
+            if min_h <= h < max_h:
+                return m
     if h == 15.24:
         return 10.1
     raise CeilingHeightError(f"Height {h}m outside NFPA range")

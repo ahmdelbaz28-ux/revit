@@ -444,17 +444,29 @@ def estimate_detector_count_polygon(polygon, ceiling_height_m: float, detector_t
 
 
 def minimum_detector_count_rectangular(width_m: float, depth_m: float, ceiling_height_m: float) -> int:
-    """Minimum detector count for rectangular room."""
+    """Minimum detector count for rectangular room.
+
+    CRITICAL FIX (Issue #10): Previous version used `get_smoke_detector_coverage_max()
+    * 2` as spacing, which equals 5.5 * 2 = 11.0m at h=3.0m. This exceeds the
+    NFPA 72 listed spacing of 9.1m by 21%, causing FEWER detectors to be
+    computed than required — a life-safety gap in fire detection coverage.
+
+    The correct spacing S comes from NFPA 72 Table 17.6.3.1.1 and is
+    computed via calculate_coverage_radius_from_height(), which already
+    applies height-adjusted reductions for higher ceilings.
+    """
     import math
     # CRITICAL: Use module-level import (already from .nfpa72_models) — bare import
     # would resolve to stale root copy with wrong values.
-    
-    radius = get_smoke_detector_coverage_max(ceiling_height_m)
-    spacing = radius * 2
-    
+
+    # Use the height-adjusted listed spacing from NFPA 72 Table 17.6.3.1.1,
+    # NOT max_coverage * 2 (which is 21% too large at h=3.0m).
+    spec = calculate_coverage_radius_from_height(ceiling_height_m, detector_type="smoke")
+    spacing = spec.spacing_max  # 9.1m at h≤3.0m, reducing at higher ceilings
+
     cols = max(1, math.ceil(width_m / spacing))
     rows = max(1, math.ceil(depth_m / spacing))
-    
+
     return cols * rows
 
 

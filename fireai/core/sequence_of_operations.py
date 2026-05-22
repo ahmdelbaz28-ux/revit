@@ -110,6 +110,7 @@ class LogicFunction(str, Enum):
     ELEVATOR_RECALL_PRIMARY = "Elevator Phase I Recall (Designated Floor)"
     ELEVATOR_RECALL_ALTERNATE = "Elevator Phase I Recall (Alternate Floor)"
     ELEVATOR_PHASE_II = "Elevator Phase II (Independent Service)"
+    ELEVATOR_SHUNT_TRIP = "Elevator Shunt-Trip Power Disconnect (NFPA 72 §21.4.1)"
     DOOR_RELEASE = "Release Magnetic Hold-Open Doors (Zone)"
     FIRE_PUMP_START = "Start Fire Pump"
     SMOKE_CONTROL = "Activate Smoke Control (Zone)"
@@ -129,14 +130,18 @@ class DeviceInputType(str, Enum):
     """
     SMOKE_GENERAL = "SMOKE_GENERAL"
     SMOKE_ELEVATOR_LOBBY = "SMOKE_ELEVATOR_LOBBY"
+    SMOKE_ELEVATOR_LOBBY_DESIGNATED = "SMOKE_ELEVATOR_LOBBY_DESIGNATED"
     SMOKE_MACHINE_ROOM = "SMOKE_MACHINE_ROOM"
+    SMOKE_ELEVATOR_SHAFT = "SMOKE_ELEVATOR_SHAFT"
     SMOKE_RETURN = "SMOKE_RETURN"
     HEAT = "HEAT"
+    HEAT_ELEVATOR_SHUNT_TRIP = "HEAT_ELEVATOR_SHUNT_TRIP"
     MANUAL_CALL_POINT = "MANUAL_CALL_POINT"
     DUCT_DETECTOR = "DUCT_DETECTOR"
     WATERFLOW = "WATERFLOW"
     VALVE_TAMPER = "VALVE_TAMPER"
     SPRINKLER_SUPERVISORY = "SPRINKLER_SUPERVISORY"
+    UNKNOWN = "UNKNOWN"
 
 
 # ============================================================================
@@ -164,29 +169,63 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
 
-    # Smoke detector in elevator machine room → Alarm + Phase I alternate
+    # V20.2 FIX: Smoke at DESIGNATED floor lobby → recall to ALTERNATE floor
+    # NFPA 72 §21.3.3: "Where the designated level smoke detector is activated,
+    # the elevator shall be recalled to the alternate level."
+    DeviceInputType.SMOKE_ELEVATOR_LOBBY_DESIGNATED: [
+        LogicFunction.ALARM,
+        LogicFunction.NAC_ZONE,
+        LogicFunction.ELEVATOR_RECALL_ALTERNATE,
+        LogicFunction.DOOR_RELEASE,
+        LogicFunction.HVAC_SHUTDOWN_ZONE,
+    ],
+
+    # Smoke detector in elevator machine room → Alarm + recall to alternate
     # NFPA 72 §21.3.3: If machine room smoke, recall to alternate floor
+    # V20.2 FIX: Removed ELEVATOR_PHASE_II — Phase II is MANUAL firefighter
+    # action only per ASME A17.1 §2.27.3.4. Auto Phase II would trap occupants.
+    # Added DOOR_RELEASE for smoke containment per NFPA 72 §14.4.
     DeviceInputType.SMOKE_MACHINE_ROOM: [
         LogicFunction.ALARM,
         LogicFunction.NAC_ZONE,
         LogicFunction.ELEVATOR_RECALL_ALTERNATE,
-        LogicFunction.ELEVATOR_PHASE_II,
+        LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
 
-    # Smoke detector in return air shaft → Alarm + HVAC shutdown
+    # V20.2 FIX: Missing hoistway/shaft smoke detector type per NFPA 72 §21.3.3
+    DeviceInputType.SMOKE_ELEVATOR_SHAFT: [
+        LogicFunction.ALARM,
+        LogicFunction.NAC_ZONE,
+        LogicFunction.ELEVATOR_RECALL_ALTERNATE,
+        LogicFunction.DOOR_RELEASE,
+        LogicFunction.HVAC_SHUTDOWN_ZONE,
+    ],
+
+    # Smoke detector in return air shaft → Alarm + HVAC shutdown + door release
     # NFPA 72 §17.7.5.6
+    # V20.2 FIX: Added DOOR_RELEASE for smoke containment per NFPA 72 §14.4
     DeviceInputType.SMOKE_RETURN: [
         LogicFunction.ALARM,
         LogicFunction.NAC_ZONE,
+        LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
 
-    # Heat detector → Alarm (no HVAC shutdown — heat doesn't spread via ducts)
+    # Heat detector → Alarm (no HVAC shutdown — smoke detectors should have
+    # already triggered HVAC shutdown earlier in fire development)
     DeviceInputType.HEAT: [
         LogicFunction.ALARM,
         LogicFunction.NAC_ZONE,
         LogicFunction.DOOR_RELEASE,
+    ],
+
+    # V20.2 FIX: Dedicated heat detector for elevator shunt-trip per
+    # NFPA 72 §21.4.1. Must activate before sprinkler to avoid electrified water.
+    DeviceInputType.HEAT_ELEVATOR_SHUNT_TRIP: [
+        LogicFunction.ALARM,
+        LogicFunction.NAC_ZONE,
+        LogicFunction.ELEVATOR_SHUNT_TRIP,
     ],
 
     # Manual call point (pull station) → Full alarm
@@ -212,10 +251,11 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
 
     # Waterflow switch → Alarm (sprinkler system activated)
     # NFPA 72 §17.14: Waterflow alarm
+    # V20.2 FIX: Removed FIRE_PUMP_START — per NFPA 20 §10.5.2.1, the pump
+    # controller starts the pump automatically on pressure drop, NOT the FACP.
     DeviceInputType.WATERFLOW: [
         LogicFunction.ALARM,
         LogicFunction.NAC_ZONE,
-        LogicFunction.FIRE_PUMP_START,
     ],
 
     # Valve tamper switch → Supervisory only
@@ -227,6 +267,13 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
     # Sprinkler supervisory switch → Supervisory only
     DeviceInputType.SPRINKLER_SUPERVISORY: [
         LogicFunction.SUPERVISORY,
+    ],
+
+    # V20.2 FIX: Unknown devices default to TROUBLE, NOT general alarm.
+    # NFPA 72 §10.14: Alarm signals must indicate a confirmed fire condition.
+    # An unknown device type is NOT a confirmed condition.
+    DeviceInputType.UNKNOWN: [
+        LogicFunction.TROUBLE,
     ],
 }
 
@@ -582,9 +629,13 @@ class SequenceOfOperationsMatrix:
                 return DeviceInputType.SMOKE_RETURN
             return DeviceInputType.SMOKE_GENERAL
 
-        # Unknown device type
+        # V20.2 FIX: Unknown device type → TROUBLE, NOT general alarm.
+        # NFPA 72 §10.14: Alarm signals must indicate a confirmed fire condition.
+        # An unknown device is NOT a confirmed condition — false general alarm
+        # in a high-rise or healthcare building causes injuries during
+        # unnecessary evacuation.
         logger.warning(f"Unknown device type '{raw_type}' for device {dev.get('device_id', '?')}")
-        return DeviceInputType.SMOKE_GENERAL  # Fail-safe: treat as general smoke
+        return DeviceInputType.UNKNOWN
 
 
 __all__ = [

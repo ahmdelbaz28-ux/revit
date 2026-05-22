@@ -456,16 +456,31 @@ class TestDuctDetectorIntegration:
         assert result.detector_count == 0
 
     def test_narrow_duct_exempt(self):
-        """Ducts narrower than 0.20m are exempt."""
+        """Ducts narrower than 0.20m are exempt WHEN airflow_cfm is known ≤ 2000.
+        V20.2 FIX: When airflow_cfm is None (unknown), dimension exemptions are
+        BLOCKED because the AHU could be > 2000 CFM. The test now provides
+        an explicit airflow_cfm value to allow the exemption."""
         from fireai.core.duct_detector import analyse_duct, DuctSpec
 
+        # With known CFM ≤ 2000: narrow duct IS exempt
         duct = DuctSpec(
             duct_id="NARROW-1",
             length_m=10.0,
             width_m=0.15,
+            airflow_cfm=500.0,  # V20.2 FIX: Explicit CFM allows exemption
         )
         result = analyse_duct(duct)
         assert result.exempt is True
+
+        # With unknown CFM: narrow duct is NOT exempt (conservative)
+        duct_unknown = DuctSpec(
+            duct_id="NARROW-2",
+            length_m=10.0,
+            width_m=0.15,
+            airflow_cfm=None,  # Unknown → dimension exemptions blocked
+        )
+        result_unknown = analyse_duct(duct_unknown)
+        assert result_unknown.exempt is False
 
     def test_total_duct_detectors(self):
         """total_duct_detectors sums across all results."""

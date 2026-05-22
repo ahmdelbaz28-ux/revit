@@ -162,7 +162,8 @@ class PathwaySurvivabilityEngine:
         # result.building_level → LEVEL_2
     """
 
-    # NFPA 72-2022 §12.4.2 survivability level determination rules
+    # V20.2 FIX: NFPA 72-2022 §12.3 (not §12.4) survivability level
+    # determination rules.
     # Ordered from most to least restrictive for correct escalation.
 
     def classify(self, spec: BuildingSpec) -> SurvivabilityResult:
@@ -179,50 +180,67 @@ class PathwaySurvivabilityEngine:
 
         # ── Step 1: Determine minimum survivability level ────────────────
 
-        required_level = PathwaySurvivabilityLevel.LEVEL_1  # baseline
+        # V20.2 FIX: Per NFPA 72 §12.3.3, Level 1 pathways shall be
+        # permitted ONLY in buildings that are fully sprinklered throughout
+        # in accordance with NFPA 13 or 13R. Start at Level 2 for
+        # non-sprinklered buildings.
+        if not spec.is_sprinklered:
+            required_level = PathwaySurvivabilityLevel.LEVEL_2
+            rationale.append(
+                "§12.3.3: Non-sprinklered building → Level 2 minimum. "
+                "Level 1 is permitted ONLY in fully sprinklered buildings "
+                "per NFPA 72 §12.3.3."
+            )
+        else:
+            required_level = PathwaySurvivabilityLevel.LEVEL_1  # baseline for sprinklered
 
         # Rule: Staged evacuation in non-sprinklered → Level 3
-        # NFPA 72 §12.4.2(3): Where staging is used and building is NOT
-        # fully sprinklered, the highest level of protection is required.
+        # V20.2 FIX: Split staged evacuation into two cases
+        # NFPA 72 §12.3.5: Staged + non-sprinklered → Level 3
         if spec.evacuation_type == "staged" and not spec.is_sprinklered:
             required_level = PathwaySurvivabilityLevel.LEVEL_3
             rationale.append(
-                "§12.4.2(3): Staged evacuation + non-sprinklered → Level 3. "
+                "§12.3.5: Staged evacuation + non-sprinklered → Level 3. "
                 "CI cable in 2-hour rated enclosure required."
+            )
+        # V20.2 FIX: Staged + sprinklered → Level 2 minimum
+        # NFPA 72 §12.3.4: Staged evacuation requires at least Level 2
+        elif spec.evacuation_type == "staged" and spec.is_sprinklered:
+            if required_level < PathwaySurvivabilityLevel.LEVEL_2:
+                required_level = PathwaySurvivabilityLevel.LEVEL_2
+            rationale.append(
+                "§12.3.4: Staged evacuation + sprinklered → Level 2 minimum. "
+                "CI cable or 2-hour rated enclosure required."
             )
 
         # Rule: Partial evacuation → Level 2 minimum
-        # NFPA 72 §12.4.2(2): Where partial evacuation is used, at least
-        # Level 2 survivability is required so that the non-evacuating
-        # floors maintain alarm capability.
-        elif spec.evacuation_type == "partial":
-            required_level = PathwaySurvivabilityLevel.LEVEL_2
+        # V20.2 FIX: Use separate `if` not `elif` so partial+high-rise works
+        # NFPA 72 §12.3.4: At least Level 2 for partial evacuation.
+        if spec.evacuation_type == "partial":
+            if required_level < PathwaySurvivabilityLevel.LEVEL_2:
+                required_level = PathwaySurvivabilityLevel.LEVEL_2
             rationale.append(
-                "§12.4.2(2): Partial evacuation → Level 2 minimum. "
+                "§12.3.4: Partial evacuation → Level 2 minimum. "
                 "CI cable or 2-hour rated enclosure required."
             )
 
         # Rule: High-rise → Level 2 minimum
-        # NFPA 72 §12.4.2(2): Buildings >23 m require Level 2 because
-        # fire on a lower floor can disable upper-floor alarm circuits
-        # if wiring is unprotected.
+        # NFPA 72 §12.3.4: Buildings >23 m require Level 2
         if spec.is_high_rise:
             if required_level < PathwaySurvivabilityLevel.LEVEL_2:
                 required_level = PathwaySurvivabilityLevel.LEVEL_2
             rationale.append(
-                "§12.4.2(2): High-rise (>23 m) → Level 2 minimum. "
+                "§12.3.4: High-rise (>23 m) → Level 2 minimum. "
                 "Unprotected riser cables are a single point of failure."
             )
 
         # Rule: Voice evacuation → Level 2 minimum
-        # NFPA 72 §12.4.2(2): Voice evacuation systems require Level 2
-        # because occupants depend on audible instructions, not just
-        # horns/strobes. If the voice circuit fails, evacuation fails.
+        # NFPA 72 §12.3.4: Voice evacuation requires Level 2
         if spec.has_voice_evac:
             if required_level < PathwaySurvivabilityLevel.LEVEL_2:
                 required_level = PathwaySurvivabilityLevel.LEVEL_2
             rationale.append(
-                "§12.4.2(2): Voice evacuation → Level 2 minimum. "
+                "§12.3.4: Voice evacuation → Level 2 minimum. "
                 "Voice circuits must survive to instruct occupants."
             )
 
@@ -248,8 +266,7 @@ class PathwaySurvivabilityEngine:
             )
 
         # Rule: Fully sprinklered + full evacuation → Level 1 permitted
-        # NFPA 72 §12.4.2(1): In fully sprinklered buildings with
-        # simultaneous full evacuation, general-purpose wiring is OK.
+        # V20.2 FIX: NFPA 72 §12.3.3 — Level 1 ONLY if fully sprinklered
         if (spec.is_sprinklered
                 and spec.evacuation_type == "full"
                 and not spec.is_high_rise
@@ -260,16 +277,16 @@ class PathwaySurvivabilityEngine:
             else:
                 required_level = PathwaySurvivabilityLevel.LEVEL_1
                 rationale.append(
-                    "§12.4.2(1): Fully sprinklered + full evacuation → "
+                    "§12.3.3: Fully sprinklered + full evacuation → "
                     "Level 1 sufficient. General-purpose wiring permitted."
                 )
 
         # Rule: Central station monitoring → Level 1 minimum
-        # NFPA 72 §12.4.2(1): Central station monitoring requires at
+        # NFPA 72 §12.3.3: Central station monitoring requires at
         # least Level 1 (which is always satisfied).
         if spec.has_central_station:
             rationale.append(
-                "§12.4.2(1): Central station monitoring → Level 1 minimum "
+                "§12.3.3: Central station monitoring → Level 1 minimum "
                 "(already satisfied by all levels)."
             )
 
@@ -283,10 +300,17 @@ class PathwaySurvivabilityEngine:
 
         # ── Step 3: Warnings ────────────────────────────────────────────
 
+        # V20.2 FIX: Non-sprinklered building at Level 1 is a CODE VIOLATION
         if not spec.is_sprinklered and required_level == PathwaySurvivabilityLevel.LEVEL_1:
+            result.errors.append(
+                "VIOLATION: Level 1 survivability assigned to non-sprinklered "
+                "building. Per NFPA 72 §12.3.3, Level 1 is permitted ONLY in "
+                "fully sprinklered buildings. Minimum Level 2 required."
+            )
+            required_level = PathwaySurvivabilityLevel.LEVEL_2
             result.warnings.append(
-                "Non-sprinklered building at Level 1 — verify evacuation "
-                "strategy. Partial/staged evacuation requires Level 2+."
+                "Corrected: Non-sprinklered building escalated to Level 2 "
+                "per NFPA 72 §12.3.3."
             )
 
         if spec.is_high_rise and not spec.has_voice_evac:

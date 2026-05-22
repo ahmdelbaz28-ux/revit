@@ -415,22 +415,29 @@ class TestV20Integration:
 class TestV20Apocalypse:
 
     def test_slc_zero_length_loop(self):
-        """Zero-length loop → zero capacitance → PASS."""
+        """Zero-length loop → invalid (V20.2 FIX) → FAIL.
+        V20.2 FIX: Zero-length SLC loops are physically meaningless and
+        likely indicate a data-entry error. Previously this trivially
+        passed, masking missing data. Now correctly flagged as invalid."""
         auditor = SLCCapacitanceAuditor()
         result = auditor.audit_slc_loops([
             {"loop_id": "SLC-01", "total_length_m": 0.0},
         ])
         val = result.value if isinstance(result, DecisionProvenance) else result["value"]
-        assert val["safe"] is True
+        assert val["safe"] is False
 
     def test_slc_unknown_wire_type(self):
-        """Unknown wire type uses default 100 pF/m."""
+        """Unknown wire type uses conservative fallback (V20.2 FIX: 164 pF/m, not 100 pF/m).
+        V20.2 FIX: Unknown wire types now use the HIGHEST known value (164 pF/m
+        for FPLP_Shielded) as a conservative default, not 100 pF/m which could
+        approve an overloaded shielded-cable loop."""
         auditor = SLCCapacitanceAuditor()
         result = auditor.audit_slc_loops([
             {"loop_id": "SLC-01", "total_length_m": 1000.0, "wire_type": "UNKNOWN_CABLE"},
         ])
         val = result.value if isinstance(result, DecisionProvenance) else result["value"]
-        # 1000m × 100 pF/m = 100,000 pF = 0.1 µF → PASS
+        # V20.2 FIX: 1000m × 164 pF/m = 164,000 pF = 0.164 µF → PASS
+        # (was 1000m × 100 pF/m = 0.1 µF before)
         assert val["safe"] is True
 
     def test_stairwell_zero_building_height(self):

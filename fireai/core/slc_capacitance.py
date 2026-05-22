@@ -76,13 +76,20 @@ logger = logging.getLogger(__name__)
 # Cable capacitance per metre (pF/m) per EIA/TIA-568 / NFPA 72
 CABLE_CAPACITANCE_PF_PER_M: Dict[str, float] = {
     "FPLR_Solid": 60.0,
-    "FPLR_Unshielded": 82.0,
+    "FPLR_Unshielded": 60.0,  # V20.2 FIX: Same as FPLR_Solid (same physical cable)
     "FPLP_Shielded": 164.0,
     "FPLP_Unshielded": 100.0,
     "Standard_Unshielded": 82.0,
     "THHN_Paired": 70.0,
     "Fiber_Optic": 0.0,  # Immune to capacitance
 }
+
+# V20.2 FIX: Conservative per-device parasitic capacitance (pF)
+# Each addressable device on an SLC loop adds parasitic capacitance
+# — typically 15-30 pF per detector/module, up to 40-50 pF per isolator.
+# Source: Notifier NFS2-3030 p.17, System Sensor, Edwards datasheets.
+DEVICE_CAPACITANCE_PF: float = 25.0   # Conservative per-device parasitic (pF)
+ISOLATOR_CAPACITANCE_PF: float = 40.0  # Isolator parasitic is higher (pF)
 
 # Manufacturer SLC protocol maximum total loop capacitance (µF)
 SLC_MAX_CAPACITANCE_UF: Dict[str, float] = {
@@ -199,15 +206,53 @@ class SLCCapacitanceAuditor:
             wire_type = loop.get("wire_type", "FPLP_Shielded")
             loop_mfr = loop.get("manufacturer", self.manufacturer).strip().lower()
             device_count = int(loop.get("device_count", 0))
+            isolator_count = int(loop.get("isolator_count", 0))
+
+            # V20.2 FIX: Validate loop length is positive
+            if total_length_m <= 0:
+                violations.append({
+                    "severity": "CRITICAL",
+                    "citation": f"{_CITE_NFPA72_12_2}",
+                    "description": (
+                        f"SLC loop '{loop_id}' has invalid length "
+                        f"{total_length_m}m. Length must be positive."
+                    ),
+                })
+                detailed_results.append(SLCCapacitanceResult(
+                    loop_id=loop_id, total_length_m=total_length_m,
+                    wire_type=wire_type, capacitance_pf=0.0,
+                    capacitance_uf=0.0, max_cap_uf=0.0,
+                    compliant=False, margin_uf=0.0,
+                    violation_description="Invalid loop length",
+                ))
+                continue
 
             # Get per-loop capacitance limit
+            # V20.2 FIX: Unknown manufacturer → conservative warning
             cap_limit_uf = SLC_MAX_CAPACITANCE_UF.get(loop_mfr, self.max_cap_uf)
+            if loop_mfr not in SLC_MAX_CAPACITANCE_UF:
+                logger.warning(
+                    f"Unknown manufacturer '{loop_mfr}' for SLC loop '{loop_id}'; "
+                    f"using default {self.max_cap_uf} µF which may EXCEED the "
+                    f"actual panel limit. Verify with manufacturer installation manual."
+                )
 
-            # Get cable capacitance per metre
-            cap_pf_per_m = CABLE_CAPACITANCE_PF_PER_M.get(wire_type, 100.0)
+            # V20.2 FIX: Unknown wire type → use most conservative (highest) value
+            cap_pf_per_m = CABLE_CAPACITANCE_PF_PER_M.get(wire_type)
+            if cap_pf_per_m is None:
+                cap_pf_per_m = max(CABLE_CAPACITANCE_PF_PER_M.values())  # 164.0
+                logger.warning(
+                    f"Unknown wire_type '{wire_type}' for SLC loop '{loop_id}'; "
+                    f"using conservative default {cap_pf_per_m} pF/m. "
+                    f"Specify a known cable type for accurate results."
+                )
 
-            # Calculate total loop capacitance
-            total_cap_pf = total_length_m * cap_pf_per_m
+            # V20.2 FIX: Calculate total loop capacitance INCLUDING device parasitics
+            # Total = (cable capacitance) + (device parasitic) + (isolator parasitic)
+            # Per UL 864 10th Ed., total loop capacitance includes ALL connected devices.
+            cable_cap_pf = total_length_m * cap_pf_per_m
+            device_cap_pf = (device_count * DEVICE_CAPACITANCE_PF) + (isolator_count * ISOLATOR_CAPACITANCE_PF)
+            total_cap_pf = cable_cap_pf + device_cap_pf
             total_cap_uf = total_cap_pf / 1_000_000.0
 
             compliant = total_cap_uf <= cap_limit_uf

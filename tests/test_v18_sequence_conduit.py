@@ -88,7 +88,9 @@ class TestSequenceOfOperationsMatrix:
             assert LogicFunction.ELEVATOR_RECALL_PRIMARY.value in outputs
 
     def test_elevator_machine_room_triggers_alternate(self):
-        """Machine room smoke must trigger alternate recall + Phase II."""
+        """Machine room smoke must trigger alternate recall + door release.
+        V20.2 FIX: Phase II removed — it's manual firefighter action only per
+        ASME A17.1 §2.27.3.4. DOOR_RELEASE added per NFPA 72 §14.4."""
         from fireai.core.sequence_of_operations import (
             SequenceOfOperationsMatrix, DeviceInput, DeviceInputType, LogicFunction,
         )
@@ -99,10 +101,15 @@ class TestSequenceOfOperationsMatrix:
         if hasattr(result, "value"):
             outputs = [o for o in result.value["matrix"][0]["outputs"]]
             assert LogicFunction.ELEVATOR_RECALL_ALTERNATE.value in outputs
-            assert LogicFunction.ELEVATOR_PHASE_II.value in outputs
+            # V20.2 FIX: Phase II must NOT be auto-triggered
+            assert LogicFunction.ELEVATOR_PHASE_II.value not in outputs
+            # V20.2 FIX: Door release IS required for smoke containment
+            assert LogicFunction.DOOR_RELEASE.value in outputs
 
-    def test_waterflow_triggers_fire_pump(self):
-        """Waterflow switch must trigger fire pump start."""
+    def test_waterflow_does_not_trigger_fire_pump(self):
+        """Waterflow switch triggers alarm but NOT fire pump start.
+        V20.2 FIX: Per NFPA 20 §10.5.2.1, the fire pump controller starts
+        the pump automatically on pressure drop — the FACP does NOT command this."""
         from fireai.core.sequence_of_operations import (
             SequenceOfOperationsMatrix, DeviceInput, DeviceInputType, LogicFunction,
         )
@@ -112,7 +119,9 @@ class TestSequenceOfOperationsMatrix:
         ])
         if hasattr(result, "value"):
             outputs = [o for o in result.value["matrix"][0]["outputs"]]
-            assert LogicFunction.FIRE_PUMP_START.value in outputs
+            assert LogicFunction.ALARM.value in outputs
+            # V20.2 FIX: FIRE_PUMP_START must NOT be triggered by waterflow
+            assert LogicFunction.FIRE_PUMP_START.value not in outputs
 
     def test_manual_call_point_triggers_full_evac(self):
         """Manual pull station triggers full building evacuation + NAC_ALL."""

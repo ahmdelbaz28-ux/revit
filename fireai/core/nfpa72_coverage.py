@@ -75,7 +75,7 @@ from .nfpa72_calculations import (
 # ============================================================================
 # V9: WALL DISTANCE VALIDATION
 # ============================================================================
-NFPA_MIN_WALL_DISTANCE_M = 0.10  # NFPA 72 §17.6.3.1.1: 4 inches = 0.1016m
+NFPA_MIN_WALL_DISTANCE_M = 0.1016  # CRITICAL FIX (C2): 4 inches = 101.6mm per NFPA 72 §17.6.3.1.1 (was 0.10m = 100mm, 1.6mm too lenient)
 
 def validate_wall_distances(
     detector_positions: List[Tuple[float, float]],
@@ -132,7 +132,7 @@ def validate_wall_distances(
 # ============================================================================
 # V15: HVAC SUPPLY AIR DIFFUSER EXCLUSION ZONES
 # ============================================================================
-NFPA_HVAC_EXCLUSION_RADIUS_M = 0.914  # NFPA 72 §17.7.4.1: 3 ft = 0.9144m
+NFPA_HVAC_EXCLUSION_RADIUS_M = 0.9144  # CRITICAL FIX (C3): 3 ft = 0.9144m per NFPA 72 §17.7.4.1 (was 0.914m, 0.4mm too lenient)
 
 
 def validate_hvac_exclusion_zones(

@@ -50,6 +50,10 @@ NFPA_DUCT_CFM_THRESHOLD: float = 2000.0
 # Above this velocity, sampling tubes cannot capture smoke particles (blow-by effect).
 UL268A_MAX_VELOCITY_FPM: float = 4000.0
 
+# V20.2 FIX: UL 268A minimum velocity — below 100 FPM, sampling tubes cannot
+# draw enough air through the sensing chamber. Smoke may be present but undetected.
+UL268A_MIN_VELOCITY_FPM: float = 100.0
+
 # Tolerance for length mismatch warning
 _LENGTH_MISMATCH_TOLERANCE: float = 0.10  # 10 cm
 
@@ -98,7 +102,7 @@ class DuctDetectorPosition:
     spacing_ref: str = "NFPA 90A-2024 §6.4.2.2"   # max spacing source
 
 
-@dataclass
+@dataclass(frozen=True)
 class DuctAnalysisResult:
     """
     Complete analysis result for one duct.
@@ -117,6 +121,9 @@ class DuctAnalysisResult:
     warnings: List[str] = field(default_factory=list)
     velocity_fpm: float = 0.0        # computed air velocity in FPM
     velocity_blindness: bool = False  # True if velocity exceeds UL 268A limit
+    # V20.2 FIX: HVAC shutdown flag per NFPA 72 §21.7.1
+    hvac_shutdown_required: bool = False
+    hvac_shutdown_ref: str = ""
     nfpa_ref: str = "NFPA 72-2022 §17.7.5"       # detector requirement
     spacing_ref: str = "NFPA 90A-2024 §6.4.2.2"   # max spacing source
 
@@ -155,6 +162,15 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
             f"dimensions. Dimension exemptions are OVERRIDDEN."
         )
         # Fall through to detector placement logic below — do NOT exempt
+    elif duct.airflow_cfm is None:
+        # V20.2 FIX: Unknown CFM — conservative: block dimension exemptions
+        # per NFPA 72 §17.7.5.1. The AHU could be >2000 CFM.
+        warnings.append(
+            f"Duct '{duct.duct_id}': airflow CFM is UNKNOWN — dimension "
+            f"exemptions are BLOCKED per conservative interpretation of "
+            f"NFPA 72 §17.7.5.1. Verify AHU capacity with mechanical engineer."
+        )
+        # Fall through — do NOT exempt
     else:
         # ── Exemption: narrow duct ────────────────────────────────────────
         if duct.width_m < NFPA_DUCT_MIN_WIDTH_M:
@@ -250,6 +266,17 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
                     f"at this velocity (blow-by effect). Reduce duct velocity or "
                     f"use alternative detection method."
                 )
+            # V20.2 FIX: Check UL 268A MINIMUM velocity — below 100 FPM,
+            # sampling tubes cannot draw enough air for smoke detection.
+            if velocity_fpm < UL268A_MIN_VELOCITY_FPM:
+                velocity_blindness = True
+                warnings.append(
+                    f"Duct '{duct.duct_id}': air velocity {velocity_fpm:.0f} FPM "
+                    f"is below UL 268A minimum of {UL268A_MIN_VELOCITY_FPM:.0f} FPM — "
+                    f"sampling tubes cannot draw sufficient air for smoke detection "
+                    f"(stagnation effect). Increase duct velocity or use alternative "
+                    f"detection method per UL 268A listing."
+                )
 
     # ── Compute detector count and spacing ───────────────────────────────
     n_detectors = max(1, math.ceil(duct.length_m / NFPA_DUCT_MAX_SPACING_M))
@@ -290,6 +317,16 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
         warnings=warnings,
         velocity_fpm=round(velocity_fpm, 1),
         velocity_blindness=velocity_blindness,
+        # V20.2 FIX: HVAC shutdown per NFPA 72 §21.7.1
+        hvac_shutdown_required=(
+            duct.duct_type.lower() in ("supply", "return", "mixed")
+            and (duct.airflow_cfm is None or duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD)
+        ),
+        hvac_shutdown_ref=(
+            "NFPA 72-2022 §21.7.1"
+            if duct.duct_type.lower() in ("supply", "return", "mixed")
+            else ""
+        ),
     )
 
 
