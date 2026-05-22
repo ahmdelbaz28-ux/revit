@@ -136,9 +136,19 @@ def calculate_cable_length(
     Calculate approximate cable length.
     
     ⚠️  APPROXIMATE - actual requires path tracing!
+    
+    V20.2 FIX: Now supports 3D coordinates. Previous code used 2D only,
+    severely underestimating cable length for multi-floor runs. A cable
+    from floor 1 to floor 5 with 4m floor-to-floor height would have
+    its length underestimated by ~16m, causing voltage drop calculations
+    to be wrong — horns/strobes may not operate during fire.
     """
     import math
-    direct = math.sqrt((start[0]-end[0])**2 + (start[1]-end[1])**2)
+    # V20.2: Use 3D distance when Z coordinates are available
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    dz = (end[2] - start[2]) if len(start) > 2 and len(end) > 2 else 0.0
+    direct = math.sqrt(dx*dx + dy*dy + dz*dz)
     return direct * routing_factor
 
 

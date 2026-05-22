@@ -141,37 +141,52 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
     """
     warnings: List[str] = []
 
-    # ── Exemption: narrow duct ────────────────────────────────────────────
-    if duct.width_m < NFPA_DUCT_MIN_WIDTH_M:
-        return DuctAnalysisResult(
-            duct_id=duct.duct_id,
-            duct_length_m=duct.length_m,
-            duct_width_m=duct.width_m,
-            detectors=[],
-            detector_count=0,
-            spacing_used_m=0.0,
-            exempt=True,
-            exemption_reason=(
-                f"Duct width {duct.width_m:.2f}m < minimum "
-                f"{NFPA_DUCT_MIN_WIDTH_M}m (NFPA 72 §17.7.5 — exempt)."
-            ),
+    # V20.2 FIX: CFM check MUST come BEFORE dimension exemptions.
+    # NFPA 72 §17.7.5.1 mandates detectors for supply/return systems
+    # >2,000 CFM REGARDLESS of duct dimensions. Previously, a narrow
+    # or short duct serving a 5,000 CFM AHU would be exempted — leaving
+    # a major air-handling system without smoke detection.
+    if (duct.airflow_cfm is not None
+            and duct.airflow_cfm > 2000
+            and duct.duct_type.lower() in ("supply", "return", "mixed")):
+        warnings.append(
+            f"Duct airflow {duct.airflow_cfm:.0f} CFM > 2000 CFM threshold — "
+            f"detector REQUIRED per NFPA 72 §17.7.5.1 regardless of duct "
+            f"dimensions. Dimension exemptions are OVERRIDDEN."
         )
+        # Fall through to detector placement logic below — do NOT exempt
+    else:
+        # ── Exemption: narrow duct ────────────────────────────────────────
+        if duct.width_m < NFPA_DUCT_MIN_WIDTH_M:
+            return DuctAnalysisResult(
+                duct_id=duct.duct_id,
+                duct_length_m=duct.length_m,
+                duct_width_m=duct.width_m,
+                detectors=[],
+                detector_count=0,
+                spacing_used_m=0.0,
+                exempt=True,
+                exemption_reason=(
+                    f"Duct width {duct.width_m:.2f}m < minimum "
+                    f"{NFPA_DUCT_MIN_WIDTH_M}m (NFPA 72 §17.7.5 — exempt)."
+                ),
+            )
 
-    # ── Exemption: short duct ─────────────────────────────────────────────
-    if duct.length_m < NFPA_DUCT_MIN_LENGTH_M:
-        return DuctAnalysisResult(
-            duct_id=duct.duct_id,
-            duct_length_m=duct.length_m,
-            duct_width_m=duct.width_m,
-            detectors=[],
-            detector_count=0,
-            spacing_used_m=0.0,
-            exempt=True,
-            exemption_reason=(
-                f"Duct length {duct.length_m:.2f}m < minimum "
-                f"{NFPA_DUCT_MIN_LENGTH_M}m (NFPA 72 §17.7.5 — exempt)."
-            ),
-        )
+        # ── Exemption: short duct ─────────────────────────────────────────
+        if duct.length_m < NFPA_DUCT_MIN_LENGTH_M:
+            return DuctAnalysisResult(
+                duct_id=duct.duct_id,
+                duct_length_m=duct.length_m,
+                duct_width_m=duct.width_m,
+                detectors=[],
+                detector_count=0,
+                spacing_used_m=0.0,
+                exempt=True,
+                exemption_reason=(
+                    f"Duct length {duct.length_m:.2f}m < minimum "
+                    f"{NFPA_DUCT_MIN_LENGTH_M}m (NFPA 72 §17.7.5 — exempt)."
+                ),
+            )
 
     # ── Exemption: exhaust ducts don't require detectors ──────────────────
     if duct.duct_type.lower() == "exhaust":

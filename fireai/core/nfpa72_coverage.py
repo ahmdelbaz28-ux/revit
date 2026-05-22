@@ -21,10 +21,18 @@ V9 CHANGES (2026-05-14):
 """
 
 import math
+import logging  # V20.2 FIX: Moved from line 947 to top of file — logger is used
+                 # in functions (e.g. verify_full_coverage line ~849) that run
+                 # before the old import location. Previously, if the Shapely
+                 # area calculation failed, the except block called
+                 # logger.warning() → NameError → no fallback → crash.
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 from shapely.geometry import Polygon, Point, box
 from shapely.ops import unary_union
+
+# V20.2: Logger defined at module level (was at line 947, too late)
+logger = logging.getLogger(__name__)
 
 @dataclass
 class DuctDevice:
@@ -944,8 +952,7 @@ def get_sloped_ceiling_constraints(
         "ridge_zone_polygon": polygon,
     }
 
-import logging
-logger = logging.getLogger(__name__)
+# V20.2: logging and logger moved to top of file (line 24-35)
 def adjust_coverage_for_beams(
     nominal_radius_m: float,
     beam_depth_m: float,

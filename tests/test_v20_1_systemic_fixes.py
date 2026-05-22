@@ -544,10 +544,16 @@ class TestV20_1Apocalypse:
 
     # -- 5.1 Duct: zero-width duct --
     def test_zero_width_duct_velocity(self):
-        """Zero width duct → exempt (too narrow), no velocity calc."""
+        """V20.2: Zero width duct with CFM>2000 → NOT exempt per NFPA §17.7.5.1.
+        
+        Previously, dimension exemptions came before CFM check, so a zero-width
+        duct would be exempted even with 5000 CFM. V20.2 fix: CFM > 2000
+        overrides dimension exemptions. This duct REQUIRES a detector.
+        """
         duct = DuctSpec("ZERO-W", 5.0, 0.0, airflow_cfm=5000.0, duct_type="supply")
         result = analyse_duct(duct)
-        assert result.exempt is True
+        # V20.2: 5000 CFM > 2000 threshold → NOT exempt, detector required
+        assert result.exempt is False
 
     # -- 5.2 Duct: very high CFM with large duct → OK --
     def test_very_high_cfm_large_duct(self):
