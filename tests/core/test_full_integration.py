@@ -461,14 +461,20 @@ class TestASET_RSET:
         assert abs(hrr_100s - expected) < 1.0, f"Expected ~{expected:.1f} kW, got {hrr_100s:.1f}"
 
     def test_smoke_layer_descends_over_time(self):
-        """Smoke layer should descend as fire grows."""
+        """Smoke layer should descend as fire grows.
+
+        V20.2 FIX: Test parameters updated after fixing Zukoski model H^5 → H^(5/2).
+        The old test used a 100m² room with 500kW fire, which with the corrected
+        formula immediately fills the room. Now uses a 500m² room with 50kW fire
+        to produce a gradual, observable descent.
+        """
         from fireai.core.semi_cfast_engine import calculate_smoke_layer_height
 
-        h_100 = calculate_smoke_layer_height(100.0, 3.0, 500.0, 100.0)
-        h_300 = calculate_smoke_layer_height(100.0, 3.0, 500.0, 300.0)
+        h_50 = calculate_smoke_layer_height(500.0, 3.0, 50.0, 50.0)
+        h_150 = calculate_smoke_layer_height(500.0, 3.0, 50.0, 150.0)
 
-        # Layer should be lower at 300s than at 100s
-        assert h_300 < h_100, "Smoke layer should descend over time"
+        # Layer should be lower at 150s than at 50s
+        assert h_150 < h_50, f"Smoke layer should descend over time: h_50={h_50:.2f}, h_150={h_150:.2f}"
 
     def test_alpert_ceiling_jet(self):
         """Ceiling jet temperature should increase with HRR."""

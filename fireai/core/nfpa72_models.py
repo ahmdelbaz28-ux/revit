@@ -669,21 +669,33 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
     # CRITICAL FIX: RADIUS_MAP now uses height-adjusted spacing per
     # NFPA 72 Table 17.6.3.1.1. Higher ceilings → smaller spacing → smaller R.
     # R = 0.7 × adjusted_spacing for each height bracket.
+    # V20.2 CRITICAL FIX: RADIUS_MAP brackets were off-by-one.
+    # NFPA 72 Table 17.6.3.1.1 uses cumulative upper bounds (h ≤ h_max → S),
+    # but the old brackets used (prev_h_max, h_max) which assigned the
+    # PREVIOUS bracket's R to the current bracket's height range.
+    # E.g. at h=3.5m: old map returned R=6.37 (h≤3.0m bracket) instead
+    # of R=6.09 (3.0<h≤3.7m bracket). This overestimated R by up to 5%,
+    # producing fewer detectors than required — a life-safety gap.
+    # FIX: Lower bounds now start at 0.0 for the first bracket, and each
+    # bracket's lower bound equals the PREVIOUS bracket's upper bound.
     RADIUS_MAP = {
-        (3.0, 3.7):  6.37,   # R = 0.7 × 9.10 (h ≤ 3.0m)
-        (3.7, 4.6):  6.09,   # R = 0.7 × 8.70 (3.0–3.7m)
-        (4.6, 5.5):  5.74,   # R = 0.7 × 8.20 (3.7–4.6m)
-        (5.5, 6.1):  5.39,   # R = 0.7 × 7.70 (4.6–5.5m)
-        (6.1, 7.6):  5.11,   # R = 0.7 × 7.30 (5.5–6.1m)
-        (7.6, 9.1):  4.76,   # R = 0.7 × 6.80 (6.1–7.6m)
-        (9.1, 10.7): 4.48,   # R = 0.7 × 6.40 (7.6–9.1m)
-        (10.7, 12.2): 4.20,  # R = 0.7 × 6.00 (9.1–10.7m)
-        (12.2, 15.24): 3.92, # R = 0.7 × 5.60 (10.7–12.2m)
+        (0.0, 3.0):  6.37,   # R = 0.7 × 9.10 (h ≤ 3.0m)
+        (3.0, 3.7):  6.09,   # R = 0.7 × 8.70 (3.0 < h ≤ 3.7m)
+        (3.7, 4.6):  5.74,   # R = 0.7 × 8.20 (3.7 < h ≤ 4.6m)
+        (4.6, 5.5):  5.39,   # R = 0.7 × 7.70 (4.6 < h ≤ 5.5m)
+        (5.5, 6.1):  5.11,   # R = 0.7 × 7.30 (5.5 < h ≤ 6.1m)
+        (6.1, 7.6):  4.76,   # R = 0.7 × 6.80 (6.1 < h ≤ 7.6m)
+        (7.6, 9.1):  4.48,   # R = 0.7 × 6.40 (7.6 < h ≤ 9.1m)
+        (9.1, 10.7): 4.20,   # R = 0.7 × 6.00 (9.1 < h ≤ 10.7m)
+        (10.7, 12.2): 3.92,  # R = 0.7 × 5.60 (10.7 < h ≤ 12.2m)
+        (12.2, 15.24): 3.64, # R = 0.7 × 5.20 (conservative fallback for >12.2m)
     }
     for (min_h, max_h), radius in RADIUS_MAP.items():
-        # Use < for upper bound in lower brackets to avoid overlap at boundaries
-        # Only the last bracket (12.2, 15.24) uses <= for its upper bound
-        if max_h == 15.24:
+        # V20.2 FIX: Use <= for upper bound of first bracket (0.0, 3.0] and
+        # last bracket (12.2, 15.24]. Interior brackets use < to avoid overlap.
+        # This aligns with NFPA 72 Table 17.6.3.1.1 which uses cumulative
+        # upper bounds (h ≤ h_max → S), so h=3.0m must match the ≤3.0m bracket.
+        if max_h == 15.24 or min_h == 0.0:
             if min_h <= ceiling_height_m <= max_h:
                 return radius
         else:
@@ -691,7 +703,7 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
                 return radius
     # Handle edge case at 15.24m (exactly at max)
     if ceiling_height_m == 15.24:
-        return 3.92
+        return 3.64  # V20.2 FIX: was 3.92, now matches conservative fallback
     # Outside valid range
     raise CeilingHeightError(
         f"Ceiling height {ceiling_height_m}m is outside NFPA 72 "
@@ -815,29 +827,31 @@ def get_smoke_detector_radius_safe(
     return radius
 def _get_radius_internal(h: float) -> float:
     """Internal radius lookup."""
-    # CRITICAL FIX: R = 0.7 × S (must match RADIUS_MAP above)
-    # Height-adjusted per NFPA 72 Table 17.6.3.1.1
+    # V20.2 CRITICAL FIX: Same off-by-one bracket fix as RADIUS_MAP above.
+    # Old brackets started at (3.0, 3.7) which gave h=3.5m the wrong R=6.37
+    # instead of R=6.09. Now aligned with NFPA 72 Table 17.6.3.1.1.
     R = {
-        (3.0, 3.7):  6.37,   # R = 0.7 × 9.10
-        (3.7, 4.6):  6.09,   # R = 0.7 × 8.70
-        (4.6, 5.5):  5.74,   # R = 0.7 × 8.20
-        (5.5, 6.1):  5.39,   # R = 0.7 × 7.70
-        (6.1, 7.6):  5.11,   # R = 0.7 × 7.30
-        (7.6, 9.1):  4.76,   # R = 0.7 × 6.80
-        (9.1, 10.7): 4.48,   # R = 0.7 × 6.40
-        (10.7, 12.2): 4.20,  # R = 0.7 × 6.00
-        (12.2, 15.24): 3.92, # R = 0.7 × 5.60
+        (0.0, 3.0):  6.37,   # R = 0.7 × 9.10 (h ≤ 3.0m)
+        (3.0, 3.7):  6.09,   # R = 0.7 × 8.70 (3.0 < h ≤ 3.7m)
+        (3.7, 4.6):  5.74,   # R = 0.7 × 8.20 (3.7 < h ≤ 4.6m)
+        (4.6, 5.5):  5.39,   # R = 0.7 × 7.70 (4.6 < h ≤ 5.5m)
+        (5.5, 6.1):  5.11,   # R = 0.7 × 7.30 (5.5 < h ≤ 6.1m)
+        (6.1, 7.6):  4.76,   # R = 0.7 × 6.80 (6.1 < h ≤ 7.6m)
+        (7.6, 9.1):  4.48,   # R = 0.7 × 6.40 (7.6 < h ≤ 9.1m)
+        (9.1, 10.7): 4.20,   # R = 0.7 × 6.00 (9.1 < h ≤ 10.7m)
+        (10.7, 12.2): 3.92,  # R = 0.7 × 5.60 (10.7 < h ≤ 12.2m)
+        (12.2, 15.24): 3.64, # R = 0.7 × 5.20 (conservative fallback for >12.2m)
     }
     for (min_h, max_h), r in R.items():
-        # Use < for upper bound in lower brackets to avoid overlap
-        if max_h == 15.24:
+        # V20.2 FIX: Same logic as RADIUS_MAP — first bracket uses <=
+        if max_h == 15.24 or min_h == 0.0:
             if min_h <= h <= max_h:
                 return r
         else:
             if min_h <= h < max_h:
                 return r
     if h == 15.24:
-        return 3.92
+        return 3.64  # V20.2 FIX: matches conservative fallback
     raise CeilingHeightError(f"Height {h}m outside NFPA range")
 def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_details: bool = False):
     """⭐ ELITE SOLUTION: Get max coverage with SAFE FALLBACK."""

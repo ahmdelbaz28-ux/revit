@@ -81,7 +81,7 @@ class EliteGlobalRouter:
             ret_seg = result["return_class_a"]
 
             rule_applied = RuleApplied(
-                citation="NFPA 72 12.2.2",
+                citation="NFPA 72 §12.2.2; NEC 760.154; Engineering practice",
                 constant_id="CLASS_A_SEP",
                 value_used=1.0,
                 unit="m",
@@ -108,11 +108,11 @@ class EliteGlobalRouter:
             # Return path could not satisfy separation constraint
             violation = Violation(
                 severity="CRITICAL",
-                citation="NFPA72.12.2.2",
+                citation="NFPA 72 §12.2.2; NEC 760.154",
                 description=str(e),
             )
             rule_applied = RuleApplied(
-                citation="NFPA 72 12.2.2",
+                citation="NFPA 72 §12.2.2; NEC 760.154; Engineering practice",
                 constant_id="CLASS_A_SEP",
                 value_used=1.0,
                 unit="m",

@@ -87,7 +87,7 @@ Safety Shield:
 
 Known Limitations:
   - Rectangular rooms only (no L-shape support at this layer)
-  - Coverage radius now dynamic from NFPA 72 Table 17.6.3.2
+  - Coverage radius now dynamic from NFPA 72 Table 17.6.3.1.1
   - Parallel processing disabled (sequential for safety)
   - No beam/obstruction handling at this layer
 
@@ -195,7 +195,7 @@ class RoomSummary:
     mip_status:       Optional[str]    = None
     analysis_ms:      float            = 0.0
     # Phase 7: Variable Coverage Radius tracking fields
-    coverage_radius_used: float          = 6.40
+    coverage_radius_used: float          = 6.37  # V20.2 FIX: was stale 6.40; correct R=0.7×9.1=6.37 at h≤3.0m
     ceiling_height:   Optional[float]    = None
     radius_warning:   Optional[str]      = None
     nfpa_table_ref:   str               = "NFPA 72-2022 Table 17.6.3.1.1"
@@ -284,7 +284,7 @@ class FloorAnalyser:
     Live Warning (LOW_CEILING):
         When ceiling_height < 3.0m (below NFPA 72 normative range),
         a LOW_CEILING_WARNING is added. The radius is clamped to
-        the 3.0m bracket value (R=4.55m) for safety.
+        the 3.0m bracket value (R=6.37m, 0.7×S where S=9.1m) for safety.
         PE review is required for heights outside normative range.
 
     Args:
@@ -598,7 +598,7 @@ class FloorAnalyser:
                         details_dict={
                             "ceiling_height_m": ceiling_h,
                             "radius_used_m": radius,
-                            "nfpa_table_reference": "Table 17.6.3.2",
+                            "nfpa_table_reference": "Table 17.6.3.1.1",  # V20.2 FIX: was wrong 17.6.3.2
                             "note": "Height below NFPA 72 range — using conservative radius. PE review required.",
                         },
                     )
@@ -705,7 +705,7 @@ class FloorAnalyser:
                 self.audit_trail.log_placement(
                     room_id=room_dict.get("room_id", room.name),
                     detector_count=layout.count,
-                    detector_type="smoke_photoelectric",
+                    detector_type=det_type_str,  # V20.2 FIX: was hardcoded "smoke_photoelectric"
                     coverage_pct=layout.coverage_pct,
                     positions=layout.detectors,
                 )
@@ -717,7 +717,7 @@ class FloorAnalyser:
                     room_id=room_dict.get("room_id", room.name),
                     details_dict={
                         "detector_count": layout.count,
-                        "detector_type": "smoke_photoelectric",
+                        "detector_type": det_type_str,  # V20.2 FIX: was hardcoded "smoke_photoelectric"
                         "coverage_pct": layout.coverage_pct,
                         "nfpa_valid": layout.nfpa_valid,
                         "proof_valid": layout.proof_valid,

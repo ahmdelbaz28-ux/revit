@@ -144,7 +144,7 @@ class SensitivityAnalyzer:
             )
 
         # Resolve baseline
-        default_radius = 4.57   # NFPA 72 default for 3.0m ceiling; not imported to avoid coupling
+        default_radius = 6.37   # NFPA 72 §17.7.4.2.3.1: R = 0.7 × S = 6.37m at h≤3.0m
         default_step   = _dm.VERIFY_STEP
         base_val = baseline_value if baseline_value is not None else (
             default_radius if param == "coverage_radius" else default_step

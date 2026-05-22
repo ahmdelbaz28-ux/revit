@@ -183,13 +183,15 @@ def estimate_voltage_drop(
     float
         Voltage drop in volts (out + return).
     """
-    # Resistance per 1000 ft (NEC Chapter 9, Table 8 — copper)
+    # Resistance per 1000 ft (NEC Chapter 9, Table 8 — stranded copper at 75°C)
+    # CRITICAL FIX (2026-05-22): Previous values were 3-5% too low (non-conservative).
+    # Voltage drop was underestimated, risking device failure during fire.
     resistance = {
-        14: 3.0,   # Ω/kft
-        12: 1.9,
-        10: 1.2,
-        8: 0.75,
-    }.get(wire_gauge, 3.0)
+        14: 3.14,   # Ω/kft per NEC Ch.9 Table 8 (stranded copper)
+        12: 1.98,
+        10: 1.24,
+        8:  0.778,
+    }.get(wire_gauge, 3.14)  # Default to most conservative (smallest wire)
 
     # Convert one-way metres to feet
     length_ft = distance * 3.281
@@ -201,5 +203,4 @@ def estimate_voltage_drop(
     return vdrop
 
 
-print("Multi-floor analyzer loaded - SIMPLIFIED MODEL")
-print("⚠️  WARNING: Do NOT use for actual installations!")
+# Module loaded — use via imports, not direct execution

@@ -190,6 +190,29 @@ class EliteTechnologyDispatcher:
                 f"Ceiling height must be positive, got {ceiling_height_m}m."
             )
 
+        # V20.2 FIX: Handle heat detector category.
+        # Previously, detector_category was accepted but IGNORED, causing
+        # heat detector requests to return POINT_SMOKE with smoke spacing.
+        # Heat detectors at h≤3.0m use S=6.1m (R=4.27m), NOT S=9.1m.
+        # NFPA 72 Table 17.6.3.1.1 / Table 17.6.3.5.1.
+        if detector_category == "heat":
+            from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+            heat_spec = calculate_coverage_radius_from_height(ceiling_height_m, "heat")
+            return TechnologyDecision(
+                technology=DetectorTechnology.POINT_HEAT,
+                ceiling_height_m=ceiling_height_m,
+                slope_degrees=slope_degrees,
+                reason=(
+                    f"Heat detector selected. Ceiling height {ceiling_height_m:.1f}m, "
+                    f"height-adjusted spacing S={heat_spec.spacing_max:.1f}m "
+                    f"(R={heat_spec.radius:.2f}m) per NFPA 72 Table 17.6.3.5.1."
+                ),
+                nfpa_references=["NFPA 72-2022 Table 17.6.3.5.1", "NFPA 72-2022 Table 17.6.3.1.1"],
+                spacing_m=round(heat_spec.spacing_max, 2),
+                ridge_zone_required=ridge_zone_required,
+                warnings=warnings,
+            )
+
         # ─── Check 1: Steep slope (>30°) — spot detectors impractical ──
         if slope_degrees > _STEEP_SLOPE_THRESHOLD_DEG:
             return TechnologyDecision(

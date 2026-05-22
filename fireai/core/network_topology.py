@@ -250,13 +250,13 @@ class NetworkTopologyAuditor:
         # Check 1: Every non-master panel must have ≥2 connections
         # (Class X = redundant path)
         #
-        # TODO(CRITICAL): This check only verifies the degree (number of
-        # adjacent links) per panel, NOT that there are 2 INDEPENDENT
-        # (edge-disjoint) paths to the master.  A panel can have degree ≥2
-        # yet still be isolated from the master by a single link cut if
-        # its redundant connections both route through the same neighbor.
-        # Full 2-edge-connectivity verification (e.g. via bridge-finding
-        # or max-flow) is needed but not yet implemented.
+        # V20.2 FIX: Now also verifies 2-edge-connectivity (bridge-finding).
+        # Previously only checked degree (number of adjacent links) per panel,
+        # which is NECESSARY but NOT SUFFICIENT. A panel can have degree ≥2
+        # yet still be isolated from the master by a single link cut if its
+        # redundant connections both route through the same neighbor.
+        # Now uses Tarjan's bridge-finding algorithm to detect bridge edges
+        # that would disconnect the graph if cut.
         for pid in panel_ids:
             if pid == master_id:
                 continue
@@ -349,6 +349,56 @@ class NetworkTopologyAuditor:
                     "description": desc,
                 })
             logger.critical(desc)
+
+        # V20.2 FIX: Check 4 — Bridge detection (2-edge-connectivity).
+        # A bridge edge is one whose removal disconnects the graph.
+        # NFPA 72 §23.8 requires NO single point of failure in the
+        # network backbone. If any bridge exists between a non-master
+        # panel and the master, that panel can be isolated by a single
+        # cable cut — violating Class X redundancy.
+        if master_id and len(panel_ids) > 2:
+            bridges = self._find_bridges(adj, panel_ids)
+            for bridge_from, bridge_to in bridges:
+                # Only flag bridges that could isolate a panel from the master
+                # Check if removing this bridge disconnects any panel from master
+                test_adj = {p: list(neighbors) for p, neighbors in adj.items()}
+                if bridge_to in test_adj.get(bridge_from, []):
+                    test_adj[bridge_from].remove(bridge_to)
+                if bridge_from in test_adj.get(bridge_to, []):
+                    test_adj[bridge_to].remove(bridge_from)
+                # Find panels disconnected from master
+                reachable = set()
+                queue = deque([master_id])
+                reachable.add(master_id)
+                while queue:
+                    node = queue.popleft()
+                    for neighbor in test_adj.get(node, []):
+                        if neighbor not in reachable:
+                            reachable.add(neighbor)
+                            queue.append(neighbor)
+                disconnected = panel_ids - reachable
+                if disconnected:
+                    desc = (
+                        f"BRIDGE_EDGE: Link '{bridge_from}' ↔ '{bridge_to}' is a "
+                        f"single point of failure. Removing this link disconnects "
+                        f"{len(disconnected)} panel(s) from the master: "
+                        f"{sorted(disconnected)}. NFPA 72 §23.8 requires Class X "
+                        f"redundancy — no single cable cut may isolate any panel. "
+                        f"Add a redundant path between these panels."
+                    )
+                    if Violation is not None:
+                        violations.append(Violation(
+                            severity="CRITICAL",
+                            citation=_CITE_NFPA72_23_8,
+                            description=desc,
+                        ))
+                    else:
+                        violations.append({
+                            "severity": "CRITICAL",
+                            "citation": _CITE_NFPA72_23_8,
+                            "description": desc,
+                        })
+                    logger.critical(desc)
 
         # Classify overall compliance
         is_class_x_compliant = len(violations) == 0 and topology_type in ("ring", "mesh")
@@ -486,6 +536,50 @@ class NetworkTopologyAuditor:
                     visited.add(neighbor)
                     queue.append(neighbor)
         return visited == panel_ids
+
+    @staticmethod
+    def _find_bridges(
+        adj: Dict[str, List[str]],
+        panel_ids: set,
+    ) -> List[Tuple[str, str]]:
+        """Find all bridge edges using Tarjan's algorithm.
+
+        A bridge is an edge whose removal increases the number of
+        connected components. In a life-safety network, a bridge is
+        a single point of failure that violates NFPA 72 §23.8.
+
+        Returns:
+            List of (from_panel, to_panel) tuples that are bridge edges.
+        """
+        # Tarjan's bridge-finding: O(V + E)
+        visited = set()
+        disc = {}   # discovery time
+        low = {}    # low-link value
+        parent = {}
+        bridges = []
+        timer = [0]  # mutable counter
+
+        def dfs(u):
+            visited.add(u)
+            disc[u] = low[u] = timer[0]
+            timer[0] += 1
+            for v in adj.get(u, []):
+                if v not in visited:
+                    parent[v] = u
+                    dfs(v)
+                    low[u] = min(low[u], low[v])
+                    # If low[v] > disc[u], (u,v) is a bridge
+                    if low[v] > disc[u]:
+                        bridges.append((u, v))
+                elif v != parent.get(u):
+                    low[u] = min(low[u], disc[v])
+
+        for pid in panel_ids:
+            if pid not in visited:
+                parent[pid] = None
+                dfs(pid)
+
+        return bridges
 
 
 __all__ = [

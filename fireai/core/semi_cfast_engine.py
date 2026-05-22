@@ -113,6 +113,7 @@ FIRE_GROWTH_RATES: Dict[str, float] = {
     "medium": 0.01172,
     "fast": 0.04689,
     "ultra-fast": 0.1876,
+    "ultrafast": 0.1876,  # Alias — some callers use no hyphen
 }
 
 # ---------------------------------------------------------------------------
@@ -393,9 +394,12 @@ def calculate_smoke_layer_height(
     #   m_upper = integral of plume entrainment rate dt
     # For a t² fire, plume entrainment rate scales as Q^(1/3) * z^(5/3)
     # The simplified engineering correlation:
-    #   Y/H = 1 - (Q_c / (rho_0 * c_p * T_0 * sqrt(g) * H^5 * A))^(1/3) * t^(2/3)
+    #   Y/H = 1 - (Q_c / (rho_0 * c_p * T_0 * sqrt(g) * H^(5/2) * A))^(1/3) * t^(2/3)
+    # CRITICAL FIX (2026-05-22): Was H^5, but Zukoski (1985) / NFPA 92 Annex B
+    # defines Q* = Q_c / (rho_0 * c_p * T_0 * sqrt(g) * H^(5/2) * A).
+    # H^5 overestimates the denominator by ~15x at H=3m, making ASET ~2.5x too long.
 
-    denominator = rho_0 * c_p * T_0 * math.sqrt(g) * (H ** 5) * A
+    denominator = rho_0 * c_p * T_0 * math.sqrt(g) * (H ** 2.5) * A
     if denominator < 1e-30:
         return 0.0
 

@@ -64,6 +64,7 @@ _ALPHA: Dict[str, float] = {
     "medium":    0.01172,
     "fast":      0.04689,
     "ultrafast": 0.18760,
+    "ultra-fast": 0.18760,  # Alias — NFPA 72 Annex B uses "ultra-fast"
 }
 
 # Maximum allowable detection time (seconds) — NFPA 72-2022 §17.7.3

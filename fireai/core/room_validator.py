@@ -7,8 +7,12 @@ from typing import Set
 from .nfpa72_models import RoomSpec
 
 # Known occupancy types per NFPA 72
+# V20.2 FIX: Removed "kitchen" and "assembly" — these are DANGEROUS types
+# that require licensed FPE review per nfpa72_models.py. Having them here
+# created an inconsistency: room_validator accepted them but RoomSpec
+# construction would reject them. Kitchen requires heat detectors (not smoke)
+# per NFPA 72 §17.6.4. Assembly requires special occupant load calculations.
 VALID_OCCUPANCY_TYPES: Set[str] = {
-    "assembly",
     "business",
     "educational",
     "factory",
@@ -20,7 +24,6 @@ VALID_OCCUPANCY_TYPES: Set[str] = {
     "utility",
     # Common variants
     "office",
-    "kitchen",
     "corridor",
     "atrium",
     "sleeping",

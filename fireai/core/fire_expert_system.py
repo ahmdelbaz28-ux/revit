@@ -12,7 +12,8 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout, DETECTOR_RADIUS
+from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout
+from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
 
 
 # ── Expert-system facade ────────────────────────────────────────────────────────
@@ -45,16 +46,29 @@ class FireExpertSystem:
         ----------
         name            : identifier string
         width, length   : room dimensions in metres
-        ceiling_height  : used for future heat-stratification checks
+        ceiling_height  : used for height-adjusted coverage radius per
+                          NFPA 72 Table 17.6.3.1.1
 
         Returns
         -------
         AnalysisResult with detector positions, coverage, violations.
+
+        V20.2 CRITICAL FIX: Now passes height-adjusted coverage_radius to
+        DensityOptimizer.optimize(). Previous version used the default static
+        radius (6.40m) regardless of ceiling height, which overestimated
+        coverage at high ceilings (e.g., h=10m got R=6.40m instead of the
+        correct R=4.48m) — producing too few detectors and leaving areas
+        unprotected. Per NFPA 72 §17.6.3.1.1, coverage radius MUST be
+        height-adjusted.
         """
         room   = Room(name=name, width=width, length=length,
                       ceiling_height=ceiling_height)
-        layout = self.optimizer.optimize(room)
-        theory = DensityOptimizer.theoretical_lower_bound(room)
+        # V20.2 FIX: Use height-adjusted coverage radius from NFPA 72 Table 17.6.3.1.1
+        # instead of the static default DETECTOR_RADIUS=6.40m from DensityOptimizer.
+        # At h=10m: old R=6.40m → only R=4.48m is correct → 43% overestimate.
+        spec = calculate_coverage_radius_from_height(ceiling_height)
+        layout = self.optimizer.optimize(room, coverage_radius=spec.radius)
+        theory = DensityOptimizer.theoretical_lower_bound(room, coverage_radius=spec.radius)
         return AnalysisResult(layout=layout, theoretical_lower_bound=theory)
 
     def analyse_batch(self, rooms: List[dict]) -> List[AnalysisResult]:

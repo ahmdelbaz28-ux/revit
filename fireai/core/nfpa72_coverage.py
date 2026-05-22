@@ -779,7 +779,7 @@ def check_nfpa72_compliance(
     )
     if not coverage.is_covered:
         result.add_violation(
-            f"Coverage is {coverage.coverage_percentage:.1f}%, below 99% required"
+            f"Coverage is {coverage.coverage_percentage:.1f}%, below 99.9% required"
         )
     # Check ridge zone
     if ridge_line and requires_ridge_zone_detector(ceiling_spec):

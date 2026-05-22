@@ -113,8 +113,10 @@ class SafetyGates:
         
         # CRITICAL: Use CIRCLE area, not square!
         import math
-        radius = SafetyGates.SMOKE_MAX_SPACING / 2
-        coverage_per_detector = math.pi * radius ** 2  # 66.5m² NOT 84.6m²!
+        # CRITICAL FIX (2026-05-22): Was SMOKE_MAX_SPACING / 2 = 4.55m (S/2 = wall distance).
+        # NFPA 72 §17.7.4.2.3.1 defines coverage radius as R = 0.7 × S, NOT S/2.
+        radius = 0.7 * SafetyGates.SMOKE_MAX_SPACING  # R = 0.7 × 9.1 = 6.37m
+        coverage_per_detector = math.pi * radius ** 2  # 127.5m² per NFPA 72 §17.7.4.2.3.1
         
         # Check spacing between detectors
         for i, pos1 in enumerate(detector_positions):
@@ -147,6 +149,95 @@ class SafetyGates:
             name="smoke_coverage",
             status=GateStatus.PASS,
             message=f"{detectors_provided} detectors, {coverage_per_detector:.1f}m² coverage each",
+            severity="info"
+        )
+    
+    @staticmethod
+    def gate_heat_coverage(
+        heat_detectors: List[tuple],
+        room_area: float = 0,
+        room_bounds: tuple = None,
+    ) -> SafetyGateResult:
+        """Check heat detector coverage per NFPA 72 Table 17.6.3.1.1.
+        
+        V20.2 FIX: Previously heat detectors were always PASS with no validation.
+        Now validates spacing (6.1m at h≤3.0m) and area coverage using
+        SQUARE (Chebyshev) geometry, consistent with NFPA 72 heat detector rules.
+        """
+        import math
+        
+        if not heat_detectors:
+            return SafetyGateResult(
+                name="heat_coverage",
+                status=GateStatus.REVIEW_REQUIRED,
+                message="No heat detectors found in zone — verify if required",
+                severity="advisory"
+            )
+        
+        # Check spacing between heat detectors (SQUARE grid — Chebyshev distance)
+        for i, pos1 in enumerate(heat_detectors):
+            for j, pos2 in enumerate(heat_detectors[i+1:], i+1):
+                # Heat detectors use Chebyshev (max of |dx|, |dy|) not Euclidean
+                d = max(abs(pos1[0] - pos2[0]), abs(pos1[1] - pos2[1]))
+                if d > SafetyGates.HEAT_MAX_SPACING:
+                    return SafetyGateResult(
+                        name="heat_coverage",
+                        status=GateStatus.FAIL,
+                        message=(
+                            f"Heat detector {i}↔{j}: Chebyshev distance {d:.1f}m "
+                            f"> {SafetyGates.HEAT_MAX_SPACING}m allowed "
+                            f"per NFPA 72 Table 17.6.3.1.1"
+                        ),
+                        severity="critical",
+                        details={"i": i, "j": j, "distance": d,
+                                 "limit": SafetyGates.HEAT_MAX_SPACING}
+                    )
+        
+        # Check area per detector (SQUARE coverage area = S²)
+        coverage_per_detector = SafetyGates.HEAT_MAX_SPACING ** 2  # 6.1² = 37.2m²
+        if room_area > 0:
+            detectors_needed = math.ceil(room_area / coverage_per_detector)
+            detectors_provided = len(heat_detectors)
+            if detectors_provided < detectors_needed:
+                return SafetyGateResult(
+                    name="heat_coverage",
+                    status=GateStatus.FAIL,
+                    message=(
+                        f"Need {detectors_needed} heat detectors for {room_area}m² "
+                        f"(have {detectors_provided}) per NFPA 72 Table 17.6.3.1.1"
+                    ),
+                    severity="critical",
+                    details={"needed": detectors_needed, "provided": detectors_provided,
+                             "area": room_area}
+                )
+        
+        # Check wall distance
+        if room_bounds:
+            width, depth = room_bounds[0], room_bounds[1]
+            for idx, pos in enumerate(heat_detectors):
+                dist_to_wall = min(pos[0], width - pos[0], pos[1], depth - pos[1])
+                if dist_to_wall > SafetyGates.HEAT_MAX_FROM_WALL:
+                    return SafetyGateResult(
+                        name="heat_coverage",
+                        status=GateStatus.FAIL,
+                        message=(
+                            f"Heat detector {idx}: {dist_to_wall:.1f}m from wall "
+                            f"> {SafetyGates.HEAT_MAX_FROM_WALL}m allowed "
+                            f"per NFPA 72 §17.6.3.1.1"
+                        ),
+                        severity="major",
+                        details={"detector": idx, "distance": dist_to_wall,
+                                 "limit": SafetyGates.HEAT_MAX_FROM_WALL}
+                    )
+        
+        return SafetyGateResult(
+            name="heat_coverage",
+            status=GateStatus.PASS,
+            message=(
+                f"{len(heat_detectors)} heat detectors, "
+                f"{coverage_per_detector:.1f}m² coverage each "
+                f"(square grid per NFPA 72 Table 17.6.3.1.1)"
+            ),
             severity="info"
         )
     
@@ -265,12 +356,11 @@ class SafetyGates:
                 smoke_detectors, room_area, room_bounds
             ))
         
-        # Heat detection
+        # Heat detection — V20.2 FIX: Was always PASS with no validation.
+        # Now validates spacing per NFPA 72 Table 17.6.3.1.1 (6.1m at h≤3.0m).
         if heat_detectors:
-            results.append(SafetyGateResult(
-                name="heat_coverage",
-                status=GateStatus.PASS,
-                message=f"{len(heat_detectors)} heat detectors"
+            results.append(cls.gate_heat_coverage(
+                heat_detectors, room_area, room_bounds
             ))
         
         # Sprinklers

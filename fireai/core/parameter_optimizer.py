@@ -91,11 +91,12 @@ class ParameterOptimizer:
     are considered. Results are written to JSON for manual engineer review.
     """
 
-    def __init__(self, coverage_radius: float = 4.57) -> None:
+    def __init__(self, coverage_radius: float = 6.37) -> None:
         """
         Args:
-            coverage_radius: Coverage radius in metres (default 4.57 per NFPA 72
-                             for 3.0m ceiling). Passed to DensityOptimizer.optimize().
+            coverage_radius: Coverage radius in metres (default 6.37 per NFPA 72
+                             §17.7.4.2.3.1: R = 0.7 × S = 0.7 × 9.1m at h≤3.0m).
+                             Passed to DensityOptimizer.optimize().
         """
         self.coverage_radius = coverage_radius
 

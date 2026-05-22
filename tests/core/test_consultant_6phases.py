@@ -534,9 +534,11 @@ class TestPhase4NFPA72Correctness(unittest.TestCase):
         self.assertAlmostEqual(
             ceiling_max.height_at_low_point_m, 15.24, places=2
         )
-        # Radius at max height should be smallest (3.92m)
+        # Radius at max height should be conservative fallback (3.64m = 0.7 × 5.20)
+        # V20.2 FIX: Was 3.92m (0.7×5.60 at h=12.2m), but heights >12.2m must use
+        # the more conservative fallback per NFPA 72 extrapolation rules.
         radius_max = get_smoke_detector_radius(15.24)
-        self.assertAlmostEqual(radius_max, 3.92, places=2)
+        self.assertAlmostEqual(radius_max, 3.64, places=2)
 
         # Test 2: Height above NFPA max (should be clamped)
         ceiling_above = CeilingSpec.create_safe(20.0)
