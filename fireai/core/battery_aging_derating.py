@@ -527,11 +527,23 @@ def size_battery(
         required_ah *= (1.0 + safety_margin_pct / 100.0)
 
     # --- Step 8: Compare with installed capacity ---
+    # V20.2 FIX #14: Battery adequacy check was double-applying derating.
+    # Old code: is_adequate = usable_ah >= required_ah
+    #   where usable_ah = installed * derating, required_ah = load / derating
+    #   This is equivalent to: installed >= load / derating^2 (WRONG)
+    # Correct: Compare installed RATED capacity against required RATED capacity
+    #   installed_ah >= required_ah (rated vs rated, derating already factored into required_ah)
+    #   OR equivalently: usable_ah >= total_load_ah (usable vs actual load)
+    # Both yield the same result: installed >= load / derating
+    # Example: 26 Ah battery, derating=0.5472, load=12.17 Ah
+    #   required_ah = 12.17 / 0.5472 = 22.24 Ah
+    #   Old: usable=26*0.5472=14.23 < 22.24 → FAIL (WRONG)
+    #   New: installed=26 >= 22.24 → PASS (CORRECT)
     if battery is not None:
         installed_ah = battery.amp_hour_20h
         usable_ah = installed_ah * combined_derating
-        is_adequate = usable_ah >= required_ah
-        margin_pct = ((usable_ah - required_ah) / max(required_ah, 0.01)) * 100.0
+        is_adequate = installed_ah >= required_ah  # V20.2 FIX #14: was usable_ah >= required_ah
+        margin_pct = ((installed_ah - required_ah) / max(required_ah, 0.01)) * 100.0
 
         if not is_adequate:
             deficit = required_ah - usable_ah

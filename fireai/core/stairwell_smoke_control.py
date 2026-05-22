@@ -71,8 +71,11 @@ MIN_HEIGHT_FOR_PRESSURIZATION_M: float = 22.86
 MIN_POSITIVE_PRESSURE_PA: float = 25.0
 
 # Maximum positive pressure (Pa) — excessive pressure prevents door opening
-# NFPA 92 §6.4.2: must not exceed 85 Pa (door force limit)
-MAX_POSITIVE_PRESSURE_PA: float = 87.0
+# V20.2 FIX #18: Was 87.0 Pa, but NFPA 92 §6.4.2 limits to 85 Pa (door force
+# limit per NFPA 101 §7.2.1.4.5). 87 Pa could allow designs where doors
+# cannot be opened by occupants during a fire — TRAPPING PEOPLE inside.
+# Changed to 85.0 Pa per NFPA 92 §6.4.2.
+MAX_POSITIVE_PRESSURE_PA: float = 85.0
 
 # Typical pressurization fan activation delay (seconds) — must occur
 # BEFORE general evacuation alarm per NFPA 92 §6.1

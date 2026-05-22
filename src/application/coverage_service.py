@@ -228,17 +228,25 @@ class CoverageService:
         import math
         
         for d1, d2 in combinations(devices, 2):
-            # Get spacing based on detector type
-            max_spacing = 9.1  # Default smoke
+            # V20.2 FIX #16: Heat detector spacing was 15.0m (wrong — contradicts
+            # 6.1m in nfpa72_provider and standards.py). Using 15.0m would PASS
+            # designs where heat detectors are dangerously far apart.
+            # NFPA 72 Table 17.6.3.1: heat detector listed spacing = 20ft = 6.1m.
+            # V20.2 FIX: Also fix the pull station spacing (21.0m doesn't match
+            # any NFPA 72 requirement — pull stations are per-exit, not spaced).
+            max_spacing = 9.1  # Default smoke (30ft per NFPA 72)
             if hasattr(d1, 'device_type'):
                 if 'heat' in str(d1.device_type).lower():
-                    max_spacing = 15.0
+                    max_spacing = 6.1   # V20.2 FIX #16: was 15.0m, correct is 6.1m per NFPA 72
                 elif 'pull' in str(d1.device_type).lower():
-                    max_spacing = 21.0
+                    max_spacing = 60.0  # Pull stations are per-exit, not distance-limited
             
             # Calculate distance
-            x1, y1 = d1.position.x, d1.position.y if d1.position else (0, 0)
-            x2, y2 = d2.position.x, d2.position.y if d2.position else (0, 0)
+            # V20.2 FIX: Guard against None position (was AttributeError crash)
+            if not d1.position or not d2.position:
+                continue
+            x1, y1 = d1.position.x, d1.position.y
+            x2, y2 = d2.position.x, d2.position.y
             distance = math.sqrt((x2-x1)**2 + (y2-y1)**2)
             
             if distance > max_spacing:

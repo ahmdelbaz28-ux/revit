@@ -30,8 +30,15 @@ class CableSpecification:
     cable_type: CableType = CableType.FPL
     gauge: WireGauge = WireGauge.AWG_18
     
-    # المقاومة أوم لكل 1000 قدم
-    resistance_ohm_per_1000ft: float = 6.4
+    # V20.2 FIX #12: Resistance per 1000ft — NEC Chapter 9 Table 8
+    # Old value 6.4 does NOT match any standard AWG gauge.
+    # AWG 18 solid copper = 7.95 ohm/kft per NEC Ch.9 Table 8.
+    # Using a resistance that's too low UNDERESTIMATES voltage drop,
+    # meaning devices at the end of long cable runs may receive voltage
+    # below their minimum operating range during alarm conditions.
+    # For 24VDC systems with 10% max drop (2.4V), this could mean
+    # notification appliances fail to activate — SILENT ALARM = LIFE RISK.
+    resistance_ohm_per_1000ft: float = 7.95  # AWG 18 solid copper, NEC Ch.9 Table 8
     
     # السعة الحالية (أمبير)
     current_capacity_amp: float = 3.0

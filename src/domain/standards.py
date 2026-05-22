@@ -47,10 +47,21 @@ class NFPA72:
         return spacing_map.get(device_type, self.SMOKE_DETECTOR_SPACING)
     
     def get_max_wall_distance(self, device_type: str) -> float:
-        """Get maximum allowed distance from wall"""
-        if device_type in ['SmokeDetector', 'HeatDetector']:
-            return self.MAX_WALL_DISTANCE_SMOKE
-        return self.MAX_WALL_DISTANCE_SMOKE  # Default
+        """Get maximum allowed distance from wall per NFPA 72 §17.6.3.1.
+
+        V20.2 FIX #15: Heat detector wall distance was returning
+        MAX_WALL_DISTANCE_SMOKE (4.6m) for BOTH smoke and heat detectors.
+        The correctly defined MAX_WALL_DISTANCE_HEAT (3.05m) constant was
+        NEVER USED. Heat detectors placed up to 4.6m from a wall would
+        pass this check, but NFPA 72 requires them within 3.05m (half of
+        20ft listed spacing). A fire near a wall could go UNDETECTED.
+        """
+        # V20.2 FIX #15: Separate smoke vs heat wall distance
+        if device_type == 'SmokeDetector':
+            return self.MAX_WALL_DISTANCE_SMOKE    # 4.6m (half of 30ft spacing)
+        if device_type == 'HeatDetector':
+            return self.MAX_WALL_DISTANCE_HEAT      # 3.05m (half of 20ft spacing)
+        return self.MAX_WALL_DISTANCE_SMOKE  # Default for other device types
     
     def check_device_spacing(self, devices: List[Device], room: Room) -> List[Violation]:
         """

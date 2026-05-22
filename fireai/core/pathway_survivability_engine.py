@@ -84,8 +84,13 @@ class BuildingSpec:
     zone_count: int = 1
 
     def __post_init__(self) -> None:
-        # Auto-detect high-rise if height > 23 m
-        if self.height_m > 23.0 and not self.is_high_rise:
+        # V20.2 FIX #17: High-rise threshold was 23.0m, but IBC §403 defines
+        # high-rise as occupied floor >75ft = 22.86m above fire dept access.
+        # Using 23.0m means a building at 22.9m (75.1ft) — which IS a
+        # high-rise per IBC — would NOT be detected. Non-detected high-rises
+        # get Level 1 pathway survivability instead of required Level 2,
+        # meaning fire alarm cables would NOT have fire-resistance ratings.
+        if self.height_m > 22.86 and not self.is_high_rise:
             object.__setattr__(self, "is_high_rise", True)
         # Auto-detect detention
         if self.occupancy == OccupancyCategory.DETENTION and not self.has_detention:

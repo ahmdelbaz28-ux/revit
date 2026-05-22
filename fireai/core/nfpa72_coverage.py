@@ -854,13 +854,23 @@ def verify_full_coverage(
     Returns:
         Dictionary with coverage_percentage, worst_case_distance_m, compliance_status
     """
+    # V20.2 FIX #13: Heat detector spacing fallback was 9.1m (smoke listed
+    # spacing) instead of 6.1m (heat listed spacing per NFPA 72 Table 17.6.3.1.1).
+    # Using 9.1/2 = 4.55m instead of 6.1/2 = 3.05m credits heat detectors
+    # with MORE coverage than they provide, leaving areas UNPROTECTED.
+    _DEFAULT_SMOKE_SPACING_M = 9.1   # NFPA 72 Table 17.6.3.1.1 at h<=3.0m
+    _DEFAULT_HEAT_SPACING_M = 6.1    # NFPA 72 Table 17.6.3.1.1 at h<=3.0m
+
     if coverage_geometry == "circular":
         radius = detector_radius
     else:
-        radius = (listed_spacing_m or 9.1) / 2
+        if detector_type == DetectorType.HEAT:
+            radius = (listed_spacing_m or _DEFAULT_HEAT_SPACING_M) / 2
+        else:
+            radius = (listed_spacing_m or _DEFAULT_SMOKE_SPACING_M) / 2
 
     if detector_type == DetectorType.HEAT:
-        half_spacing = (listed_spacing_m or 9.1) / 2
+        half_spacing = (listed_spacing_m or _DEFAULT_HEAT_SPACING_M) / 2
 
     # =====================================================================
     # PRIMARY: Area-based coverage calculation (EXACT, no grid artifacts)

@@ -636,9 +636,16 @@ def perform_aset_rset_analysis(
         rset_with_safety = rset_seconds * sf
 
         # Verify ASET > RSET with safety factor
+        # V20.2 FIX #19: Was passing rset_with_safety as rset_seconds AND sf
+        # as safety_factor to verify_aset_rset(), which internally computes
+        # required_aset = rset_seconds * safety_factor. This resulted in:
+        #   required_aset = (rset * sf) * sf = rset * sf²
+        # For sf=1.5, this means ASET > RSET × 2.25 instead of ASET > RSET × 1.5.
+        # Fix: Pass the RAW rset_seconds (without safety factor) so verify_aset_rset
+        # applies the safety factor exactly once internally.
         validation = verify_aset_rset(
             aset_seconds=aset_result.aset_seconds,
-            rset_seconds=rset_with_safety,
+            rset_seconds=rset_seconds,  # V20.2 FIX #19: was rset_with_safety (double SF)
             safety_factor=sf,
         )
 
