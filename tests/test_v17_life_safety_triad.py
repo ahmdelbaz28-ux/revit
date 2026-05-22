@@ -56,9 +56,13 @@ class TestBatteryTemperatureDerating:
         assert get_temperature_derating_factor(-20.0) == 0.60
 
     def test_hot_temperature_slight_gain(self):
-        """At 30°C, battery has slight gain but reduced lifespan."""
+        """V20.2 FIX: At 30°C, derating is capped at 1.00 (not 1.02).
+        Elevated temperatures accelerate VRLA aging — any marginal capacity
+        gain is offset by accelerated degradation. Per IEEE 1188 §5.3 and
+        NFPA 72 §10.6.7, life-safety design must not overestimate capacity
+        at high temperatures."""
         from fireai.core.battery_aging_derating import get_temperature_derating_factor
-        assert get_temperature_derating_factor(30.0) == 1.02
+        assert get_temperature_derating_factor(30.0) == 1.00
 
     def test_interpolation_between_points(self):
         """Between data points, should interpolate."""

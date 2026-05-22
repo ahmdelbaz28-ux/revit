@@ -46,6 +46,7 @@ Provenance:
 from __future__ import annotations
 
 import logging
+from collections import deque
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -170,11 +171,58 @@ class NetworkTopologyAuditor:
         # Build adjacency graph
         panel_ids = set()
         master_id = None
+        master_count = 0
         for p in panels:
             pid = p.get("panel_id", "UNKNOWN")
             panel_ids.add(pid)
             if p.get("is_master", False):
                 master_id = pid
+                master_count += 1
+
+        # HIGH: No master panel with multiple panels
+        if master_id is None and len(panel_ids) > 1:
+            desc = (
+                f"No master panel designated in a {len(panel_ids)}-panel "
+                f"network. NFPA 72 \u00a723.8 requires a designated master "
+                f"panel for coordinated evacuation and notification. "
+                f"Without a master, no panel can orchestrate network-wide "
+                f"alarm sequences."
+            )
+            if Violation is not None:
+                violations.append(Violation(
+                    severity="CRITICAL",
+                    citation=_CITE_NFPA72_23_8,
+                    description=desc,
+                ))
+            else:
+                violations.append({
+                    "severity": "CRITICAL",
+                    "citation": _CITE_NFPA72_23_8,
+                    "description": desc,
+                })
+            logger.critical(desc)
+
+        # MEDIUM: Multiple masters silently overwritten
+        if master_count > 1:
+            desc = (
+                f"{master_count} master panels designated. Only one master "
+                f"is permitted per NFPA 72 \u00a723.8 network. Multiple masters "
+                f"cause conflicting command authority and synchronization "
+                f"failures."
+            )
+            if Violation is not None:
+                violations.append(Violation(
+                    severity="HIGH",
+                    citation=_CITE_NFPA72_23_8,
+                    description=desc,
+                ))
+            else:
+                violations.append({
+                    "severity": "HIGH",
+                    "citation": _CITE_NFPA72_23_8,
+                    "description": desc,
+                })
+            logger.warning(desc)
 
         # Build adjacency list (undirected)
         adj: Dict[str, List[str]] = {pid: [] for pid in panel_ids}
@@ -201,6 +249,14 @@ class NetworkTopologyAuditor:
 
         # Check 1: Every non-master panel must have ≥2 connections
         # (Class X = redundant path)
+        #
+        # TODO(CRITICAL): This check only verifies the degree (number of
+        # adjacent links) per panel, NOT that there are 2 INDEPENDENT
+        # (edge-disjoint) paths to the master.  A panel can have degree ≥2
+        # yet still be isolated from the master by a single link cut if
+        # its redundant connections both route through the same neighbor.
+        # Full 2-edge-connectivity verification (e.g. via bridge-finding
+        # or max-flow) is needed but not yet implemented.
         for pid in panel_ids:
             if pid == master_id:
                 continue
@@ -227,9 +283,9 @@ class NetworkTopologyAuditor:
                     })
                 logger.critical(desc)
 
-        # Check 2: Non-Class-X copper links are single points of failure
+        # Check 2: All non-Class-X links are single points of failure
         for lid, details in link_details.items():
-            if not details["is_class_x"] and details["link_type"] == "copper":
+            if not details["is_class_x"]:
                 fiber_recommendations.append({
                     "link_id": lid,
                     "from": details["from"],
@@ -237,9 +293,10 @@ class NetworkTopologyAuditor:
                     "current_type": details["link_type"],
                     "recommended_type": "fiber_dual",
                     "reason": (
-                        "Copper link without Class X redundancy is a "
-                        "single point of failure. Replace with dual "
-                        "fiber optic ring per NFPA 72 §23.8."
+                        f"{details['link_type']} link without Class X "
+                        f"redundancy is a single point of failure. "
+                        f"Replace with dual fiber optic ring per "
+                        f"NFPA 72 §23.8."
                     ),
                 })
 
@@ -269,6 +326,29 @@ class NetworkTopologyAuditor:
 
         # Determine topology type
         topology_type = self._classify_topology(adj, panel_ids)
+
+        # CRITICAL: Disconnected rings — degree-2 nodes but not fully connected
+        if topology_type == "disconnected_rings":
+            desc = (
+                f"Network panels each have 2 connections but the graph is "
+                f"not fully connected. The topology consists of isolated "
+                f"ring segments, which means some panels cannot reach the "
+                f"master at all. NFPA 72 §23.8 requires all panels to be "
+                f"on a single connected Class X network."
+            )
+            if Violation is not None:
+                violations.append(Violation(
+                    severity="CRITICAL",
+                    citation=_CITE_NFPA72_23_8,
+                    description=desc,
+                ))
+            else:
+                violations.append({
+                    "severity": "CRITICAL",
+                    "citation": _CITE_NFPA72_23_8,
+                    "description": desc,
+                })
+            logger.critical(desc)
 
         # Classify overall compliance
         is_class_x_compliant = len(violations) == 0 and topology_type in ("ring", "mesh")
@@ -347,7 +427,8 @@ class NetworkTopologyAuditor:
         """Classify the network topology type.
 
         Returns:
-            "star", "daisy_chain", "ring", "mesh", or "unknown".
+            "star", "daisy_chain", "ring", "disconnected_rings", "mesh",
+            or "unknown".
         """
         if len(panel_ids) <= 1:
             return "single_panel"
@@ -355,9 +436,11 @@ class NetworkTopologyAuditor:
         # Count connections per panel
         conn_counts = {pid: len(adj.get(pid, [])) for pid in panel_ids}
 
-        # Ring: every panel has exactly 2 connections
+        # Ring: every panel has exactly 2 connections AND graph is connected
         if all(c == 2 for c in conn_counts.values()):
-            return "ring"
+            if self._is_connected(adj, panel_ids):
+                return "ring"
+            return "disconnected_rings"
 
         # Star: one hub has N-1 connections, all others have 1
         max_conn = max(conn_counts.values())
@@ -372,12 +455,37 @@ class NetworkTopologyAuditor:
             return "mesh"
 
         # Daisy-chain: exactly 2 endpoints with 1 connection each,
-        # all intermediates with 2
+        # all intermediates with exactly degree 2
         endpoints = sum(1 for c in conn_counts.values() if c == 1)
-        if endpoints == 2:
+        intermediates = [c for c in conn_counts.values() if c != 1]
+        if endpoints == 2 and all(c == 2 for c in intermediates):
             return "daisy_chain"
 
         return "unknown"
+
+    @staticmethod
+    def _is_connected(
+        adj: Dict[str, List[str]],
+        panel_ids: set,
+    ) -> bool:
+        """Check whether the graph is fully connected using BFS.
+
+        Returns:
+            True if all panels are reachable from any starting panel.
+        """
+        if not panel_ids:
+            return True
+        start = next(iter(panel_ids))
+        visited = set()
+        queue = deque([start])
+        visited.add(start)
+        while queue:
+            node = queue.popleft()
+            for neighbor in adj.get(node, []):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+        return visited == panel_ids
 
 
 __all__ = [

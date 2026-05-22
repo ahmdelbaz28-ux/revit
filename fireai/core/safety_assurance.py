@@ -76,7 +76,7 @@ class SafetyTier(enum.Enum):
     REJECTED = "REJECTED"              # Tier 4: coverage < 95%
 
 
-# Coverage thresholds (NFPA 72 aligned)
+# Coverage thresholds (internal quality gates; NFPA 72 requires 100% coverage)
 MINIMUM_COVERAGE_FOR_SUBMISSION = 95.0   # Below this = REJECTED
 STANDARD_COVERAGE_THRESHOLD = 99.0       # Below this = FALLBACK_USED
 PROOF_VERIFIED_THRESHOLD = 99.99         # Above this = PROOF_VERIFIED
@@ -116,8 +116,16 @@ def classify_safety_tier(
     if coverage_pct < MINIMUM_COVERAGE_FOR_SUBMISSION:
         return SafetyTier.REJECTED
 
+    # Tier 4: Wall violations severe enough to reject outright
+    if wall_violations >= 3:
+        return SafetyTier.REJECTED
+
     # Tier 3: Fallback/heuristic placement
     if fallback_used or coverage_pct < STANDARD_COVERAGE_THRESHOLD:
+        return SafetyTier.FALLBACK_USED
+
+    # Wall violations downgrade PROOF_VERIFIED to at best FALLBACK_USED
+    if wall_violations > 0:
         return SafetyTier.FALLBACK_USED
 
     # Tier 2 vs Tier 1: Distinguished by proof quality
@@ -200,6 +208,7 @@ def apply_fail_safe(
     proof_valid: Optional[bool] = None,
     audit_chain_valid: Optional[bool] = None,
     hmac_key_valid: Optional[bool] = None,
+    wall_violations: int = 0,
 ) -> Dict[str, Any]:
     """Apply fail-safe rules and return a safety decision.
 
@@ -222,7 +231,7 @@ def apply_fail_safe(
     reasons = []
 
     # Critical stop conditions (checked first)
-    if hmac_key_valid is False:
+    if hmac_key_valid is not True:
         return {
             "safe_to_submit": False,
             "tier": SafetyTier.REJECTED,
@@ -231,7 +240,7 @@ def apply_fail_safe(
             "system_state": "CRITICAL STOP",
         }
 
-    if audit_chain_valid is False:
+    if audit_chain_valid is not True:
         return {
             "safe_to_submit": False,
             "tier": SafetyTier.REJECTED,
@@ -262,6 +271,7 @@ def apply_fail_safe(
         coverage_pct=coverage_pct or 0.0,
         proof_valid=proof_valid or False,
         fallback_used=False,
+        wall_violations=wall_violations,
     )
 
     # Final decision
@@ -366,10 +376,10 @@ MANDATORY_REVIEW_TRIGGERS = {
         "timeout_hours": 48,
         "description": "Non-rectangular rooms require FPE review",
     },
-    "ceiling_height_above_10m": {
+    "ceiling_height_above_9.1m": {
         "reviewer": "FPE",
         "timeout_hours": 48,
-        "description": "Ceiling height > 10m requires FPE review",
+        "description": "Ceiling height > 9.1m requires FPE review per NFPA 72 §17.7.4.2.4.2",
     },
     "override_used": {
         "reviewer": "FPE + Senior Engineer",
@@ -426,9 +436,9 @@ def check_review_triggers(
             "actual_value": f"shape={room_shape}",
         })
 
-    if ceiling_height_m > 10.0:
+    if ceiling_height_m > 9.1:
         triggers.append({
-            **MANDATORY_REVIEW_TRIGGERS["ceiling_height_above_10m"],
+            **MANDATORY_REVIEW_TRIGGERS["ceiling_height_above_9.1m"],
             "actual_value": f"height={ceiling_height_m:.1f}m",
         })
 

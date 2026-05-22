@@ -100,9 +100,9 @@ TEMPERATURE_DERATING = {
      15: 0.89,
      20: 0.95,
      25: 1.00,   # Reference temperature (rated capacity)
-     30: 1.02,   # Slight gain but reduced lifespan
-     35: 1.03,
-     40: 1.03,   # No further gain; accelerated aging
+     30: 1.00,   # Elevated temp accelerates VRLA aging — cap at 1.00
+     35: 1.00,
+     40: 1.00,   # No capacity gain; accelerated aging
 }
 
 # ============================================================================
@@ -187,7 +187,7 @@ class LoadProfile:
     standby_load_amps: float
     alarm_load_amps: float
     standby_hours: float = 24.0
-    alarm_hours: float = 0.083  # 5 minutes
+    alarm_hours: float = 5 / 60  # 5 minutes (= 0.08333...h)
 
 
 # ============================================================================
@@ -208,8 +208,10 @@ def get_temperature_derating_factor(temperature_c: float) -> float:
         temperature_c: Expected minimum ambient temperature in °C.
 
     Returns:
-        Derating factor as a fraction (0.0 to ~1.03).
+        Derating factor as a fraction (0.0 to 1.00).
         Multiply rated Ah by this factor to get usable Ah at this temperature.
+        Capped at 1.00 — elevated temperatures accelerate VRLA aging and
+        must not yield a derating factor above 1.00.
     """
     temps = sorted(TEMPERATURE_DERATING.keys())
 
@@ -219,11 +221,11 @@ def get_temperature_derating_factor(temperature_c: float) -> float:
 
     # Above maximum data point
     if temperature_c >= temps[-1]:
-        return TEMPERATURE_DERATING[temps[-1]]
+        return min(TEMPERATURE_DERATING[temps[-1]], 1.00)
 
     # Exact match
     if temperature_c in TEMPERATURE_DERATING:
-        return TEMPERATURE_DERATING[temperature_c]
+        return min(TEMPERATURE_DERATING[temperature_c], 1.00)
 
     # Linear interpolation between nearest data points
     # Find the two bracketing temperatures
@@ -235,7 +237,7 @@ def get_temperature_derating_factor(temperature_c: float) -> float:
             break
 
     if lo_temp is None or hi_temp is None:
-        return 1.0  # Fallback — should not happen
+        return min(TEMPERATURE_DERATING.values())  # Most conservative value
 
     lo_factor = TEMPERATURE_DERATING[lo_temp]
     hi_factor = TEMPERATURE_DERATING[hi_temp]
@@ -245,8 +247,8 @@ def get_temperature_derating_factor(temperature_c: float) -> float:
     interpolated = lo_factor + fraction * (hi_factor - lo_factor)
 
     # CONSERVATIVE: round down to avoid overestimating capacity
-    # Use the minimum of interpolated and hi_factor
-    return min(interpolated, hi_factor)
+    # Use the minimum of interpolated and hi_factor, capped at 1.00
+    return min(interpolated, hi_factor, 1.00)
 
 
 # ============================================================================
@@ -394,7 +396,7 @@ def size_battery(
     standby_load_amps: float,
     alarm_load_amps: float,
     standby_hours: float = 24.0,
-    alarm_hours: float = 0.083,
+    alarm_hours: float = 5 / 60,
     battery: Optional[BatterySpec] = None,
     min_temperature_c: float = 20.0,
     service_life_years: float = DEFAULT_SERVICE_LIFE_YEARS,
@@ -439,6 +441,54 @@ def size_battery(
     """
     violations: List[Dict[str, Any]] = []
 
+    # --- Pre-check: NFPA 72 minimum duration requirements ---
+    if standby_hours < 24:
+        msg = (
+            f"Standby duration {standby_hours:.1f}h is below the NFPA 72 "
+            f"§10.6.7.2.1 minimum of 24 hours. "
+            f"({_CITE_NFPA72_10_6_7_2_1})"
+        )
+        violations.append({
+            "code": "BATTERY-STANDBY-BELOW-MIN",
+            "message": msg,
+            "severity": "CRITICAL",
+            "standby_hours": standby_hours,
+            "minimum_hours": 24,
+        })
+        logger.critical(msg)
+
+    if alarm_hours < 5 / 60:
+        msg = (
+            f"Alarm duration {alarm_hours * 60:.2f} min is below the NFPA 72 "
+            f"§10.6.7.2.1 minimum of 5 minutes. "
+            f"({_CITE_NFPA72_10_6_7_2_1})"
+        )
+        violations.append({
+            "code": "BATTERY-ALARM-BELOW-MIN",
+            "message": msg,
+            "severity": "CRITICAL",
+            "alarm_hours": alarm_hours,
+            "minimum_hours": 5 / 60,
+        })
+        logger.critical(msg)
+
+    # --- Pre-check: NFPA supervisory period vs standby_hours ---
+    if nfpa_supervisory_period == "60h" and standby_hours < 60:
+        msg = (
+            f"NFPA 72 §10.6.7.2.1 supervisory period is 60h (central station) "
+            f"but standby_hours is only {standby_hours:.1f}h. "
+            f"Battery must support 60 hours of standby for central station systems. "
+            f"({_CITE_NFPA72_10_6_7_2_1})"
+        )
+        violations.append({
+            "code": "BATTERY-SUPERVISORY-PERIOD-MISMATCH",
+            "message": msg,
+            "severity": "CRITICAL",
+            "nfpa_supervisory_period": nfpa_supervisory_period,
+            "standby_hours": standby_hours,
+        })
+        logger.critical(msg)
+
     # --- Step 1-2: Calculate Ah for each load period ---
     standby_ah = standby_load_amps * standby_hours
     alarm_ah = alarm_load_amps * alarm_hours
@@ -480,15 +530,15 @@ def size_battery(
     if battery is not None:
         installed_ah = battery.amp_hour_20h
         usable_ah = installed_ah * combined_derating
-        is_adequate = usable_ah >= total_load_ah
-        margin_pct = ((usable_ah - total_load_ah) / max(total_load_ah, 0.01)) * 100.0
+        is_adequate = usable_ah >= required_ah
+        margin_pct = ((usable_ah - required_ah) / max(required_ah, 0.01)) * 100.0
 
         if not is_adequate:
-            deficit = total_load_ah - usable_ah
+            deficit = required_ah - usable_ah
             msg = (
                 f"Battery capacity INSUFFICIENT: {installed_ah:.1f} Ah "
                 f"× {combined_derating:.3f} (derating) = {usable_ah:.1f} Ah usable, "
-                f"but {total_load_ah:.1f} Ah required. "
+                f"but {required_ah:.1f} Ah required (incl. safety margin). "
                 f"Deficit: {deficit:.1f} Ah. "
                 f"Temperature derating: {temp_derating:.2f} "
                 f"(at {min_temperature_c}°C). "
@@ -617,7 +667,7 @@ class BatteryAuditor:
         service_life_years: float = DEFAULT_SERVICE_LIFE_YEARS,
         safety_margin_pct: float = 10.0,
         standby_hours: float = 24.0,
-        alarm_hours: float = 0.083,
+        alarm_hours: float = 5 / 60,
     ) -> None:
         self.battery = battery
         self.min_temperature_c = min_temperature_c

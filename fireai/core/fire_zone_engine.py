@@ -77,7 +77,7 @@ class ZoneConstraints:
             (Consultant #7 — concept accepted, threshold corrected: 250 is
             the SLC loop limit, NOT the zone limit. Zone default remains 100.)
     """
-    max_area_sqm: float = 2000.0
+    max_area_sqm: float = 1858.0  # NFPA 72 §21.3.4 limit ≈ 20,000 sq ft = 1,858 sqm
     max_detectors_per_zone: int = 100
     max_rooms_per_zone: int = 0  # no limit
     separate_occupancy_types: bool = True
@@ -242,7 +242,7 @@ class FireZoneEngine:
 
             # Step 3: Apply constraints to each cluster (split if needed)
             for cluster in clusters:
-                split_zones = self._apply_constraints(cluster, zone_counter)
+                split_zones = self._apply_constraints(cluster, zone_counter, floor_id)
                 for z in split_zones:
                     report.zones.append(z)
                     zone_counter += 1
@@ -280,13 +280,15 @@ class FireZoneEngine:
                     f"Split zone or add panel."
                 )
 
-        # Validate SLC loop capacity (Consultant #7 — NFPA 72 §21.2.2)
-        # Total detectors across all zones on this floor must not exceed SLC loop capacity.
+        # Per-floor detector count review (Consultant #7 — NFPA 72 §21.2.2)
+        # This validates the floor-level count only; loop-level validation
+        # (aggregating across floors sharing a loop) must be done at building scope.
         if report.total_detectors > self.constraints.max_slc_devices_per_loop:
             report.warnings.append(
-                f"SLC_LOOP_CAPACITY: Floor has {report.total_detectors} total detectors, "
+                f"FLOOR_DETECTOR_COUNT_REVIEW: Floor has {report.total_detectors} total detectors, "
                 f"exceeding SLC loop capacity of {self.constraints.max_slc_devices_per_loop} "
-                f"devices per NFPA 72 §21.2.2. Multiple SLC loops or panels required."
+                f"devices per NFPA 72 §21.2.2. "
+                f"This is a per-floor count; loop-level validation is required at building scope."
             )
 
         logger.info(
@@ -363,12 +365,14 @@ class FireZoneEngine:
         self,
         cluster: List[dict],
         zone_counter: int,
+        floor_id: str = "",
     ) -> List[FireZone]:
         """Split a cluster into zones respecting constraints.
 
         Args:
             cluster: List of room dicts.
             zone_counter: Starting zone counter for ID generation.
+            floor_id: Floor identifier for zone ID prefix and FireZone.floor_id.
 
         Returns:
             List of FireZone objects.
@@ -378,9 +382,10 @@ class FireZoneEngine:
         max_rooms = self.constraints.max_rooms_per_zone
 
         zones: List[FireZone] = []
+        _zid = f"{floor_id}-Z{zone_counter + 1:02d}" if floor_id else f"Z-{zone_counter + 1:03d}"
         current = FireZone(
-            zone_id=f"Z-{zone_counter + 1:03d}",
-            floor_id="",
+            zone_id=_zid,
+            floor_id=floor_id,
         )
         occupancy_types: Set[str] = set()
 
@@ -409,9 +414,10 @@ class FireZoneEngine:
                     current.occupancy_types = occupancy_types.copy()
                     zones.append(current)
                 zone_counter += 1
+                _zid = f"{floor_id}-Z{zone_counter + 1:02d}" if floor_id else f"Z-{zone_counter + 1:03d}"
                 current = FireZone(
-                    zone_id=f"Z-{zone_counter + 1:03d}",
-                    floor_id="",
+                    zone_id=_zid,
+                    floor_id=floor_id,
                 )
                 occupancy_types.clear()
 
