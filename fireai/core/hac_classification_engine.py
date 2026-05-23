@@ -37,6 +37,7 @@ from typing import Dict, List, Optional, Tuple
 from fireai.core.models_v21 import (
     SubstanceProperties, HACResult, ZoneExtent, ZoneType,
     VentilationLevel, HazardType, _select_temp_class, TemperatureClass,
+    EnvironmentalContext, burgess_wheeler_lfl,
 )
 from fireai.core.international_reg_selector import (
     ATEXZone, HazardClass, HazardSystem, NECDivision,
@@ -236,19 +237,40 @@ class HACClassificationEngine:
         is_indoor:   bool,
         source_height_m: float = 0.0,
         ambient_temp_c:  float = 20.0,
+        env_context:     Optional[EnvironmentalContext] = None,
     ) -> HACResult:
         """
-        V21 classify using Pydantic models — fail-fast on invalid input.
+        V21.2 classify using Pydantic models — fail-fast on invalid input.
         SubstanceProperties is validated at construction — no dict/tuple passes.
+
+        V21.2 adds EnvironmentalContext for Burgess-Wheeler LFL correction.
+        If env_context is provided, uses its ambient_temp for LFL correction.
+        Otherwise, uses ambient_temp_c parameter for backward compatibility.
         """
         warnings: List[str] = []
         critical_flags: List[str] = []
+
+        # V21.2: Apply Burgess-Wheeler LFL correction if env_context provided
+        lfl_corrected = None
+        if env_context is not None and substance.lfl_vol_pct is not None:
+            lfl_corrected = burgess_wheeler_lfl(
+                substance.lfl_vol_pct, env_context.ambient_temp_c
+            )
+            if lfl_corrected < substance.lfl_vol_pct:
+                pct_reduction = (1.0 - lfl_corrected / substance.lfl_vol_pct) * 100.0
+                warnings.append(
+                    f"LFL thermal correction applied: "
+                    f"{substance.lfl_vol_pct:.2f}% -> {lfl_corrected:.2f}% "
+                    f"({pct_reduction:.1f}% reduction at "
+                    f"{env_context.ambient_temp_c}C). "
+                    f"[Burgess-Wheeler / IEC 60079-10-1 Annex B]"
+                )
 
         if substance.hazard_type == HazardType.GAS:
             return self._classify_gas_v21(
                 substance, ventilation, is_indoor,
                 source_height_m, ambient_temp_c,
-                warnings, critical_flags,
+                warnings, critical_flags, lfl_corrected,
             )
         elif substance.hazard_type == HazardType.DUST:
             return self._classify_dust_v21(
@@ -259,15 +281,16 @@ class HACClassificationEngine:
             return self._classify_hybrid_v21(
                 substance, ventilation, is_indoor,
                 source_height_m, ambient_temp_c,
-                warnings, critical_flags,
+                warnings, critical_flags, lfl_corrected,
             )
         else:
             raise ValueError(f"Unsupported hazard_type: {substance.hazard_type}")
 
     def _classify_gas_v21(
         self, sub, vent, indoor, src_h, ambient, warnings, critical_flags,
+        lfl_corrected=None,
     ) -> HACResult:
-        """IEC 60079-10-1 gas zone classification (V21)."""
+        """IEC 60079-10-1 gas zone classification (V21.2 with LFL correction)."""
 
         # Fix #9: Flash point check (NFPA 497 §4.2)
         if sub.flash_point_c is not None:
@@ -293,17 +316,20 @@ class HACClassificationEngine:
         zone = self._apply_ventilation_gas_v21(zone, vent)
 
         # Fix #11: POOR + Zone 0 -> critical flag
+        # CRITICAL: Flag string must EXACTLY match HACResult.check_critical_combination validator
         if vent == VentilationLevel.POOR and zone == ZoneType.ZONE_0:
             flag = (
-                "CRITICAL: Zone 0 with POOR ventilation — "
+                "CRITICAL: Zone 0/20 with POOR ventilation — "
                 "most dangerous possible classification. "
                 "Mandatory engineering review required. "
                 "[IEC 60079-10-1 §6.3]"
             )
             critical_flags.append(flag)
 
+        # V21.2: Use corrected LFL if available (wider zone)
+        effective_lfl = lfl_corrected if lfl_corrected is not None else (sub.lfl_vol_pct or 1.0)
         extent = self._compute_extent_v21(
-            sub.lfl_vol_pct or 1.0, vent, indoor, src_h)
+            effective_lfl, vent, indoor, src_h)
 
         return HACResult(
             zone=zone,
@@ -338,12 +364,13 @@ class HACClassificationEngine:
         zone = self._dust_zone_from_ventilation_v21(vent)
 
         # Fix #11: POOR + Zone 20 -> critical flag
+        # Uses same flag string as HACResult validator for consistency
         if vent == VentilationLevel.POOR and zone == ZoneType.ZONE_20:
             flag = (
-                "CRITICAL: Zone 20 with POOR ventilation — "
-                "most dangerous possible dust classification. "
+                "CRITICAL: Zone 0/20 with POOR ventilation — "
+                "most dangerous possible classification. "
                 "Mandatory engineering review required. "
-                "[IEC 60079-10-2 §6.3]"
+                "[IEC 60079-10-1 §6.3]"
             )
             critical_flags.append(flag)
 
@@ -361,8 +388,9 @@ class HACClassificationEngine:
 
     def _classify_hybrid_v21(
         self, sub, vent, indoor, src_h, ambient, warnings, critical_flags,
+        lfl_corrected=None,
     ) -> HACResult:
-        """Fix #8: Hybrid = classify separately, take most severe (V21)."""
+        """Fix #8: Hybrid = classify separately, take most severe (V21.2)."""
         warnings.append(
             "HYBRID mixture: classified independently for gas and dust. "
             "Most severe zone applies. [IEC 60079-10-1 §5.7]"
@@ -370,7 +398,7 @@ class HACClassificationEngine:
 
         gas_result = self._classify_gas_v21(
             sub, vent, indoor, src_h, ambient,
-            warnings=[], critical_flags=[],
+            warnings=[], critical_flags=[], lfl_corrected=lfl_corrected,
         )
         dust_result = self._classify_dust_v21(
             sub, vent, indoor, src_h,

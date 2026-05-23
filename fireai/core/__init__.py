@@ -95,6 +95,15 @@ from fireai.core.models_v21 import (
     RegulatoryFramework as V21RegulatoryFramework,
     RegSelectorResult as V21RegSelectorResult,
     _select_temp_class,
+    _select_temp_class_with_margin,
+    EnvironmentalContext,
+    burgess_wheeler_lfl,
+    SpectralSignatureRegistry,
+    SpectralSignature,
+    VolumetricMedium,
+    beer_lambert_transmittance,
+    volumetric_path_transmittance,
+    PasquillStability,
 )
 from fireai.core.international_reg_selector import (
     InternationalRegSelector,
@@ -105,6 +114,23 @@ from fireai.core.international_reg_selector import (
 from fireai.core.hac_classification_engine import HACClassificationEngine
 from fireai.core.flame_detector_aoc_raytrace import FlameDetectorAOCRayTrace
 from fireai.core.atex_hazardous_arbiter import ATEXHazardousArbiter
+from fireai.core.revit_acl import (
+    RevitSubstanceDTO,
+    RevitObstructionDTO,
+    RevitDetectorDTO,
+    ImportReport,
+    import_substances_from_revit,
+    import_obstructions_from_revit,
+    import_detectors_from_revit,
+)
+from fireai.core.fireai_cli_engine import (
+    CLIFireAIEngine,
+    PipelineResult,
+    Layer1Result,
+    Layer2Result,
+    Layer3Result,
+    Layer5Result,
+)
 
 __all__ = [
     "__version__",
@@ -195,6 +221,15 @@ __all__ = [
     "V21RegulatoryFramework",
     "V21RegSelectorResult",
     "_select_temp_class",
+    "_select_temp_class_with_margin",
+    "EnvironmentalContext",
+    "burgess_wheeler_lfl",
+    "SpectralSignatureRegistry",
+    "SpectralSignature",
+    "VolumetricMedium",
+    "beer_lambert_transmittance",
+    "volumetric_path_transmittance",
+    "PasquillStability",
     "InternationalRegSelector",
     "UnknownCountryError",
     "resolve_regulatory",
@@ -202,4 +237,19 @@ __all__ = [
     "HACClassificationEngine",
     "FlameDetectorAOCRayTrace",
     "ATEXHazardousArbiter",
+    # V21.2 — Anti-Corruption Layer
+    "RevitSubstanceDTO",
+    "RevitObstructionDTO",
+    "RevitDetectorDTO",
+    "ImportReport",
+    "import_substances_from_revit",
+    "import_obstructions_from_revit",
+    "import_detectors_from_revit",
+    # V21.2 — CLI Orchestration Engine
+    "CLIFireAIEngine",
+    "PipelineResult",
+    "Layer1Result",
+    "Layer2Result",
+    "Layer3Result",
+    "Layer5Result",
 ]

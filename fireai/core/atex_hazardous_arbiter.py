@@ -27,7 +27,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from fireai.core.models_v21 import (
     ATEXEquipmentSpec, ZoneType, TemperatureClass, _select_temp_class,
-    HazardType,
+    _select_temp_class_with_margin, HazardType,
 )
 from fireai.core.international_reg_selector import (
     ATEXZone, HazardSystem, HazardClass,
@@ -211,12 +211,18 @@ class ATEXArbitrationResult:
     hazard_system:       HazardSystem
     regulatory_note:     str
     fire_detector_spec:  Optional[str]  = None
+    hac_warnings:        Tuple[str, ...] = ()  # V21.2 Round 4: propagated from HAC
     warnings:            Tuple[str, ...] = ()
     errors:              Tuple[str, ...] = ()
 
     @property
     def is_valid(self) -> bool:
         return len(self.errors) == 0
+
+    @property
+    def all_warnings(self) -> Tuple[str, ...]:
+        """V21.2 Round 4: Combined HAC + arbiter warnings. Fix #16."""
+        return self.hac_warnings + self.warnings
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +292,7 @@ class ATEXHazardousArbiter:
                 ),
                 hazard_system=hazard_system,
                 regulatory_note="ERROR: Unknown zone",
+                hac_warnings=tuple(hac_warnings),  # V21.2 Round 4: Fix #16
                 warnings=tuple(warnings),
                 errors=tuple(errors),
             )
@@ -302,9 +309,22 @@ class ATEXHazardousArbiter:
         permitted = _ZONE_PERMITTED_PROTECTIONS.get(atex_zone, set())
         protection_modes = sorted([p.value for p in permitted])
 
-        # Fix #15: Temperature class selection with safe margin
+        # Fix #15 (V21.2): Temperature class with IEC 60079-14 thermal margin
+        # Uses _select_temp_class_with_margin which applies 5% margin
+        # for Zone 0/20/1/21, instead of just "strictly below"
         if autoignition_c is not None:
-            temp_class = _select_temp_class(autoignition_c)
+            try:
+                temp_class = _select_temp_class_with_margin(autoignition_c, zone)
+            except ValueError:
+                # Fallback to basic selection if margin too strict
+                temp_class = _select_temp_class(autoignition_c)
+                warnings.append(
+                    f"Cannot achieve IEC 60079-14 thermal margin for "
+                    f"autoignition={autoignition_c}C in {zone.value}. "
+                    f"Using basic T-class {temp_class.value} (max surface "
+                    f"strictly below autoignition). Engineering review required. "
+                    f"[IEC 60079-14 §5.3]"
+                )
         else:
             temp_class = TemperatureClass.T4
 
@@ -366,6 +386,7 @@ class ATEXHazardousArbiter:
                 ),
                 hazard_system=hazard_system,
                 regulatory_note=reg_note,
+                hac_warnings=tuple(hac_warnings),  # V21.2 Round 4: Fix #16
                 warnings=tuple(warnings),
                 errors=tuple(errors),
             )
@@ -381,6 +402,7 @@ class ATEXHazardousArbiter:
             hazard_system=hazard_system,
             regulatory_note=reg_note,
             fire_detector_spec=fire_det_marking,
+            hac_warnings=tuple(hac_warnings),  # V21.2 Round 4: Fix #16
             warnings=tuple(warnings),
             errors=tuple(errors),
         )
@@ -481,6 +503,7 @@ class ATEXHazardousArbiter:
             hazard_system=hazard_system,
             regulatory_note=reg_note,
             fire_detector_spec=fire_det_marking,
+            hac_warnings=tuple(hac_result.warnings),  # V21.2 Round 4: Fix #16
             warnings=tuple(warnings),
             errors=tuple(errors),
         )
@@ -599,6 +622,7 @@ class ATEXHazardousArbiter:
             hazard_system=hazard_system,
             regulatory_note="Space classified SAFE — no Ex equipment required.",
             fire_detector_spec=None,
+            hac_warnings=tuple(hac_warnings),  # V21.2 Round 4: Fix #16
             warnings=tuple(hac_warnings),
             errors=(),
         )
@@ -618,6 +642,7 @@ class ATEXHazardousArbiter:
             hazard_system=hazard_system,
             regulatory_note="Space classified SAFE — no Ex equipment required.",
             fire_detector_spec=None,
+            hac_warnings=hac_result.warnings,  # V21.2 Round 4: Fix #16
             warnings=hac_result.warnings,
             errors=(),
         )

@@ -34,6 +34,10 @@ from fireai.core.models_v21 import (
     Obstruction as V21Obstruction,
     RayTracePoint as V21RayTracePoint,
     WavelengthBand,
+    VolumetricMedium,
+    SpectralSignatureRegistry,
+    volumetric_path_transmittance,
+    beer_lambert_transmittance,
 )
 from fireai.core.international_reg_selector import ATEXZone
 
@@ -158,7 +162,8 @@ class SingleDetectorResult:
     detector_id:       str
     covered_pts:       frozenset   # indices into target grid
     effective_range_m: float
-    warnings:         tuple
+    spectral_transmittance_map: Dict[int, float] = field(default_factory=dict)
+    warnings:         tuple = ()
 
 
 @dataclass(frozen=True)
@@ -204,10 +209,14 @@ class FlameDetectorAOCRayTrace:
 
     GRID_STEP_M: float = 0.5
 
-    def __init__(self, grid_step_m: float = 0.5) -> None:
+    DETECTOR_THRESHOLD: float = 0.1  # Minimum transmittance for coverage
+
+    def __init__(self, grid_step_m: float = 0.5, detector_threshold: float = 0.1) -> None:
         self.grid_step = grid_step_m
         self._spatial_index = None
         self._rtree_available = False
+        self._spectral_registry = SpectralSignatureRegistry()
+        self.detector_threshold = detector_threshold
 
     # ── V21 API ────────────────────────────────────────────────────────────
 
@@ -336,17 +345,57 @@ class FlameDetectorAOCRayTrace:
         ratio = rated_range / distance_m
         return ratio * ratio   # Inverse square, always <= 1.0
 
+    def _ray_spectral_transmittance_v21(
+        self,
+        ray_start:    Tuple[float, float, float],
+        ray_end:      Tuple[float, float, float],
+        obstructions: List[V21Obstruction],
+        volumetric_media: List[VolumetricMedium],
+        band:         WavelengthBand,
+    ) -> float:
+        """
+        V21.2: Calculate total spectral transmittance along a ray.
+
+        Two-stage check:
+        1. Solid obstructions: if opaque for this band, T = 0.0 (blocked)
+        2. Volumetric media: Beer-Lambert attenuation T = exp(-alpha * d)
+
+        Returns transmittance in [0.0, 1.0].
+        """
+        # Stage 1: Check solid obstructions
+        candidates = self._get_candidate_obstructions(
+            obstructions, ray_start, ray_end
+        )
+        for idx in candidates:
+            obs = obstructions[idx]
+            transmittance = obs.transmittance_for(band)
+            if transmittance > 0.5:
+                continue   # transparent for this band
+            if self._ray_intersects_box(ray_start, ray_end, obs.vertices):
+                return 0.0  # Blocked by opaque solid
+
+        # Stage 2: Volumetric media (Beer-Lambert)
+        if volumetric_media:
+            t_vol = volumetric_path_transmittance(
+                ray_start, ray_end, volumetric_media, band, self._spectral_registry
+            )
+            return t_vol
+
+        return 1.0
+
     def analyse_single_v21(
         self,
-        detector:     V21FlameDetectorSpec,
-        target_grid:  List[V21RayTracePoint],
-        obstructions: List[V21Obstruction],
+        detector:          V21FlameDetectorSpec,
+        target_grid:       List[V21RayTracePoint],
+        obstructions:      List[V21Obstruction],
+        volumetric_media:  Optional[List[VolumetricMedium]] = None,
     ) -> SingleDetectorResult:
         """
-        V21: Analyse one detector against all target points.
-        Returns set of covered point indices.
+        V21.2: Analyse one detector against all target points.
+        Returns set of covered point indices and per-point spectral transmittance.
         """
         warnings: List[str] = []
+        volumetric_media = volumetric_media or []
 
         # Q6: detector facing upward warning
         if detector.is_facing_upward():
@@ -358,6 +407,7 @@ class FlameDetectorAOCRayTrace:
 
         covered_pts: Set[int] = set()
         distances_covered: List[float] = []
+        spectral_map: Dict[int, float] = {}  # point_index -> transmittance
 
         src = tuple(detector.position)
 
@@ -377,17 +427,19 @@ class FlameDetectorAOCRayTrace:
             if not self._in_aoc_v21(detector, tgt):
                 continue
 
-            # LOS check per spectral band
-            # Point is covered if ANY of detector's bands has LOS
-            band_covered = False
+            # V21.2: Spectral transmittance per band (solid + volumetric)
+            best_transmittance = 0.0
             for band in detector.spectral_bands:
-                if not self._ray_blocked_v21(src, tgt, obstructions, band):
-                    band_covered = True
-                    break
+                t = self._ray_spectral_transmittance_v21(
+                    src, tgt, obstructions, volumetric_media, band
+                )
+                best_transmittance = max(best_transmittance, t)
 
-            if band_covered:
+            # Point is covered if best transmittance >= threshold
+            if best_transmittance >= self.detector_threshold:
                 covered_pts.add(ti)
                 distances_covered.append(dist)
+                spectral_map[ti] = round(best_transmittance, 4)
 
         # Fix #18: effective range = median (not max)
         effective_range = (
@@ -398,20 +450,24 @@ class FlameDetectorAOCRayTrace:
             detector_id       = detector.detector_id,
             covered_pts       = frozenset(covered_pts),
             effective_range_m = round(effective_range, 2),
+            spectral_transmittance_map = spectral_map,
             warnings          = tuple(warnings),
         )
 
     def analyse_multi_v21(
         self,
-        detectors:    List[V21FlameDetectorSpec],
-        target_grid:  List[V21RayTracePoint],
-        obstructions: List[V21Obstruction],
+        detectors:         List[V21FlameDetectorSpec],
+        target_grid:       List[V21RayTracePoint],
+        obstructions:      List[V21Obstruction],
+        volumetric_media:  Optional[List[VolumetricMedium]] = None,
     ) -> CoverageResult:
         """
-        V21: Multi-detector analysis.
+        V21.2: Multi-detector analysis.
         Fix #20: No double-counting. Union of covered sets.
         Q5: Coverage = covered_count / total_count (not hull area).
+        V21.2: Includes volumetric media (Beer-Lambert) analysis.
         """
+        volumetric_media = volumetric_media or []
         self._build_spatial_index(obstructions)
 
         all_warnings: List[str] = []
@@ -419,7 +475,7 @@ class FlameDetectorAOCRayTrace:
         union_covered: Set[int] = set()
 
         for det in detectors:
-            result = self.analyse_single_v21(det, target_grid, obstructions)
+            result = self.analyse_single_v21(det, target_grid, obstructions, volumetric_media)
             per_detector[det.detector_id] = result
             # Fix #20: union, not count per detector
             union_covered |= result.covered_pts

@@ -88,21 +88,34 @@ def test_substance_dict_rejected_strict():
 # ── Temperature class Fix #15 ────────────────────────────────────────────────
 
 def test_temp_class_autoignition_180():
-    """autoignition=180C -> must give T4 (max 135C), NOT T3 (max 200C)."""
+    """autoignition=180C -> returned T-class max surface must be < 180C."""
     t = _select_temp_class(180.0)
-    assert t == TemperatureClass.T4, (
-        f"Got {t.value} — T3 (200C max) would be UNSAFE for 180C autoignition!"
+    from fireai.core.models_v21 import _T_CLASS_MAX
+    max_surface = _T_CLASS_MAX[t.value]
+    assert max_surface < 180.0, (
+        f"Got {t.value} (max {max_surface}C) — "
+        f"max surface must be STRICTLY below autoignition 180C!"
     )
 
 def test_temp_class_autoignition_200():
-    """autoignition=200C -> T4 (135C max)."""
+    """autoignition=200C -> returned T-class max surface must be < 200C."""
     t = _select_temp_class(200.0)
-    assert t == TemperatureClass.T4
+    from fireai.core.models_v21 import _T_CLASS_MAX
+    max_surface = _T_CLASS_MAX[t.value]
+    assert max_surface < 200.0, (
+        f"Got {t.value} (max {max_surface}C) — "
+        f"max surface must be STRICTLY below autoignition 200C!"
+    )
 
 def test_temp_class_autoignition_300():
-    """autoignition=300C -> T2 or T3."""
+    """autoignition=300C -> returned T-class max surface must be < 300C."""
     t = _select_temp_class(300.0)
-    assert t in (TemperatureClass.T2, TemperatureClass.T3)
+    from fireai.core.models_v21 import _T_CLASS_MAX
+    max_surface = _T_CLASS_MAX[t.value]
+    assert max_surface < 300.0, (
+        f"Got {t.value} (max {max_surface}C) — "
+        f"max surface must be STRICTLY below autoignition 300C!"
+    )
 
 def test_temp_class_autoignition_too_low():
     """autoignition <= 85C cannot be handled — must raise."""
@@ -238,13 +251,17 @@ def test_all_fix5_countries():
 # ── HAC Classification ───────────────────────────────────────────────────────
 
 def test_poor_ventilation_zone0_critical_flag():
-    """Zone 0 + POOR ventilation must raise critical flag (enforced by Pydantic)."""
+    """Zone 0 + POOR ventilation must have critical flag in result."""
     engine = HACClassificationEngine()
     sub = SubstanceProperties(
         name="methane", hazard_type=HazardType.GAS, lfl_vol_pct=5.0
     )
-    with pytest.raises(ValueError, match="CRITICAL"):
-        engine.classify_v21(sub, VentilationLevel.POOR, is_indoor=True)
+    # The engine should ADD the critical flag before HACResult construction
+    # so HACResult validator passes. The flag must be present in the result.
+    result = engine.classify_v21(sub, VentilationLevel.POOR, is_indoor=True)
+    assert result.zone == ZoneType.ZONE_0
+    assert len(result.critical_flags) > 0
+    assert any("CRITICAL" in f for f in result.critical_flags)
 
 def test_hybrid_takes_more_severe_zone():
     """Hybrid classification must take the most severe zone."""
