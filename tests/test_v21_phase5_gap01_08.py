@@ -405,8 +405,44 @@ class TestGAP04ExtendedRegistry:
         sig = registry.get("7783-06-4")
         assert sig.alpha_ir3 > sig.alpha_vis
 
-    def test_total_registry_size_at_least_16(self, registry):
-        assert registry.count() >= 16
+    # Additional industrial substances (3 new CAS numbers)
+    @pytest.mark.parametrize("cas,name", [
+        ("75-07-0",  "Acetaldehyde"),
+        ("106-99-0", "1,3-Butadiene"),
+        ("1330-20-7","Xylene (mixed)"),
+    ])
+    def test_additional_substance_registered(self, registry, cas, name):
+        sig = registry.get(cas)
+        assert sig is not None, f"CAS {cas} ({name}) not found in registry"
+        assert sig.substance_name == name
+
+    def test_acetaldehyde_moderate_uv_carbonyl(self, registry):
+        """Acetaldehyde: n→π* transition gives moderate UV absorption."""
+        sig = registry.get("75-07-0")
+        assert sig is not None
+        assert sig.alpha_uv > 1.0  # n→π* at ~290 nm
+        assert sig.alpha_ir1 > sig.alpha_ir3  # C-H stretch dominates IR1
+
+    def test_butadiene_strong_uv_conjugated(self, registry):
+        """1,3-Butadiene: conjugated diene gives strong UV absorption."""
+        sig = registry.get("106-99-0")
+        assert sig is not None
+        assert sig.alpha_uv > 4.0  # π→π* conjugated diene at 217 nm
+        assert sig.alpha_vis == 0.0  # transparent in visible
+
+    def test_xylene_mixed_similar_to_ortho(self, registry):
+        """Xylene mixed isomers: aromatic system similar to o-Xylene."""
+        sig_mixed = registry.get("1330-20-7")
+        sig_ortho = registry.get("95-47-6")
+        assert sig_mixed is not None
+        assert sig_ortho is not None
+        # Both aromatic → strong UV
+        assert sig_mixed.alpha_uv > 5.0
+        # Mixed isomers should be close to ortho values
+        assert abs(sig_mixed.alpha_uv - sig_ortho.alpha_uv) < 2.0
+
+    def test_total_registry_size_at_least_23(self, registry):
+        assert registry.count() >= 23  # 4 original + 12 GAP-04 + 4 extended + 3 new
 
 
 # ═════════════════════════════════════════════════════════════════════════════

@@ -1236,6 +1236,28 @@ class SpectralSignatureRegistry:
                 # LPG component; LFL=1.8%, MW=58
                 alpha_uv=0.09, alpha_vis=0.0, alpha_ir1=0.9, alpha_ir3=4.5,
             ),
+            # ── Additional industrial substances (3 new entries) ────────────
+            # Acetaldehyde CH₃CHO — CAS 75-07-0
+            # Chemical/petrochemical; LFL=4.0%, MW=44
+            # n→π* transition ~290 nm; C=O stretch at 5.8 µm; C-H at 3.4 µm
+            "75-07-0": SpectralSignature(
+                cas_number="75-07-0", substance_name="Acetaldehyde",
+                alpha_uv=2.0, alpha_vis=0.0, alpha_ir1=2.4, alpha_ir3=0.8,
+            ),
+            # 1,3-Butadiene C₄H₆ — CAS 106-99-0
+            # Synthetic rubber manufacturing; LFL=2.0%, MW=54
+            # Strong conjugated diene π→π* at 217 nm; C-H stretch at 3.3 µm
+            "106-99-0": SpectralSignature(
+                cas_number="106-99-0", substance_name="1,3-Butadiene",
+                alpha_uv=5.5, alpha_vis=0.0, alpha_ir1=2.0, alpha_ir3=1.2,
+            ),
+            # Xylene (mixed isomers) C₈H₁₀ — CAS 1330-20-7
+            # Solvent/petrochemical; LFL=1.1%, MW=106
+            # Aromatic π-system (similar to o-Xylene 95-47-6); C-H aromatic stretches
+            "1330-20-7": SpectralSignature(
+                cas_number="1330-20-7", substance_name="Xylene (mixed)",
+                alpha_uv=6.5, alpha_vis=0.1, alpha_ir1=2.5, alpha_ir3=0.7,
+            ),
         }
 
     def get(self, cas_number: str) -> Optional[SpectralSignature]:
