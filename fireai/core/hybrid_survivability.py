@@ -48,6 +48,8 @@ Reference Standards:
 
 from __future__ import annotations
 
+import datetime
+import json
 import logging
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
@@ -525,3 +527,123 @@ class HybridSurvivabilityEngine:
             ),
             warnings=warnings,
         )
+
+    # ── GAP-2: 3D Heatmap Export ──────────────────────────────────
+
+    def export_heatmap_json(
+        self,
+        hybrid_map: HybridSurvivabilityMap,
+        output_path: str,
+    ) -> str:
+        """
+        Export HybridSurvivabilityMap to a JSON file consumable by the
+        WebGL heatmap viewer (heatmap_viewer.html).
+
+        The JSON schema matches the HybridSurvivabilityMap model exactly:
+        - point_results is a Dict[int, HybridPointResult]
+        - Each HybridPointResult has: x, y, z, survivability_class,
+          optical_detector_count, best_acoustic_detail
+        - best_acoustic_detail (if present) has: sensor_id, triggered,
+          snr_db, margin_to_threshold_db, has_los, total_insertion_loss_db,
+          distance_meters
+
+        Color coding (NFPA 72 convention):
+          REDUNDANT_HYBRID -> #00AA44  (green)
+          OPTICAL_ONLY     -> #FFD700  (yellow)
+          ACOUSTIC_ONLY    -> #FF8C00  (orange)
+          BLIND_SPOT       -> #CC0000  (red)
+
+        Args:
+            hybrid_map: The HybridSurvivabilityMap to export.
+            output_path: Path to write the JSON file.
+
+        Returns:
+            Path of the written JSON file.
+        """
+        COLOR_MAP = {
+            SurvivabilityClass.REDUNDANT_HYBRID: "#00AA44",
+            SurvivabilityClass.OPTICAL_ONLY:     "#FFD700",
+            SurvivabilityClass.ACOUSTIC_ONLY:    "#FF8C00",
+            SurvivabilityClass.BLIND_SPOT:       "#CC0000",
+        }
+
+        total_pts = hybrid_map.total_points
+        cls_counts: Dict[str, int] = {
+            "REDUNDANT_HYBRID": 0,
+            "OPTICAL_ONLY":     0,
+            "ACOUSTIC_ONLY":    0,
+            "BLIND_SPOT":       0,
+        }
+
+        points_out: List[Dict] = []
+        for pt_idx, pr in hybrid_map.point_results.items():
+            cls_str = pr.survivability_class.value
+            cls_counts[cls_str] += 1
+
+            # Acoustic detail extraction
+            acoustic_snr = None
+            if pr.best_acoustic_detail is not None:
+                acoustic_snr = pr.best_acoustic_detail.snr_db
+
+            points_out.append({
+                "x":               pr.x,
+                "y":               pr.y,
+                "z":               pr.z,
+                "class":           cls_str,
+                "optical_count":   pr.optical_detector_count,
+                "acoustic_snr_db": acoustic_snr,
+                "color":           COLOR_MAP.get(
+                    pr.survivability_class, "#888888"
+                ),
+            })
+
+        def _pct(n: int) -> float:
+            return round(100 * n / total_pts, 2) if total_pts else 0.0
+
+        payload = {
+            "meta": {
+                "generated":     datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "version":       "FireAI_V24",
+                "total_points":  total_pts,
+                "standards":     [
+                    "NFPA 72-2022 §17.8.3.4",
+                    "ISA-TR 84.00.07",
+                ],
+            },
+            "statistics": {
+                "total_points":           total_pts,
+                "redundant_hybrid_pct":   _pct(cls_counts["REDUNDANT_HYBRID"]),
+                "optical_only_pct":       _pct(cls_counts["OPTICAL_ONLY"]),
+                "acoustic_only_pct":      _pct(cls_counts["ACOUSTIC_ONLY"]),
+                "blind_spot_pct":         _pct(cls_counts["BLIND_SPOT"]),
+            },
+            "class_legend": {
+                "REDUNDANT_HYBRID": {
+                    "color": "#00AA44",
+                    "label": "Redundant (Optical ∩ Acoustic)",
+                },
+                "OPTICAL_ONLY": {
+                    "color": "#FFD700",
+                    "label": "Optical coverage only",
+                },
+                "ACOUSTIC_ONLY": {
+                    "color": "#FF8C00",
+                    "label": "Acoustic coverage only",
+                },
+                "BLIND_SPOT": {
+                    "color": "#CC0000",
+                    "label": "Blind spot — no coverage",
+                },
+            },
+            "points": points_out,
+        }
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+
+        logger.info(
+            f"Heatmap JSON exported: {output_path} "
+            f"({total_pts} points, "
+            f"{cls_counts['BLIND_SPOT']} blind spots)"
+        )
+        return output_path
