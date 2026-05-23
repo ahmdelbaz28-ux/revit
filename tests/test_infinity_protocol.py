@@ -8,7 +8,12 @@ import sys
 import math
 from unittest.mock import Mock
 
-sys.path.insert(0, sys.path.insert(0, sys.path[0]))
+# NOTE: The previous line `sys.path.insert(0, sys.path.insert(0, sys.path[0]))`
+# was a BUG — sys.path.insert() returns None, so it inserted None into sys.path,
+# which caused importlib.metadata.entry_points() to crash with:
+#   TypeError: stat: path should be string, bytes, os.PathLike or integer, not NoneType
+# This broke hypothesis collection when run alongside this test.
+# Removed — no legitimate purpose.
 
 
 def test_theological_time_loop():

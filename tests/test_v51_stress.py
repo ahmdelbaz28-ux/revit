@@ -48,19 +48,37 @@ class TestCoreFeatures:
 
 
 class TestCeilingHeight:
-    def test_15m_returns_6_4(self):
-        r = get_smoke_detector_radius(15.0)
-        assert r == 6.4
+    """Ceiling height tests aligned with V20.2 corrected RADIUS_MAP.
 
-    def test_above_15m_raises(self):
-        from nfpa72_models import CeilingHeightError
+    V20.2 FIX: R = 0.7 × adjusted_spacing per NFPA 72 Table 17.6.3.1.1.
+    Height 15.0m falls in bracket (12.2, 15.24) → R = 0.7 × 5.20 = 3.64.
+    Heights below 3.0m are handled safely by get_smoke_detector_radius()
+    which returns the conservative 3.0m-bracket value (6.37m) rather than
+    raising an exception — this is the correct V20.2 behaviour.
+    """
+
+    def test_15m_returns_correct_v20_2_radius(self):
+        """15.0m is in (12.2, 15.24) bracket → R = 0.7 × 5.20 = 3.64."""
+        r = get_smoke_detector_radius(15.0)
+        assert r == 3.64, f"Expected 3.64 per V20.2 fix, got {r}"
+
+    def test_above_15_24m_raises(self):
+        """Heights above NFPA 72 max (15.24m) must raise CeilingHeightError."""
+        from fireai.core.nfpa72_models import CeilingHeightError
         with pytest.raises(CeilingHeightError):
             get_smoke_detector_radius(50.0)
 
-    def test_below_3m_raises(self):
-        from nfpa72_models import CeilingHeightError
-        with pytest.raises(CeilingHeightError):
-            get_smoke_detector_radius(2.5)
+    def test_below_3m_returns_conservative_radius(self):
+        """Heights below 3.0m get safe conservative radius via V20.2 fix.
+
+        get_smoke_detector_radius() returns R for the ≤3.0m bracket (6.37m).
+        Use get_smoke_detector_radius_safe() for flag/review detection.
+        """
+        from fireai.core.nfpa72_models import get_smoke_detector_radius_safe
+        r, details = get_smoke_detector_radius_safe(2.5, _return_details=True)
+        assert r == 6.37, f"Conservative radius for 2.5m should be 6.37, got {r}"
+        assert details.get("flag") is not None, "Below 3m should produce a PE review flag"
+        assert details.get("conservative") is True, "Below 3m should be marked conservative"
 
 
 if __name__ == "__main__":
