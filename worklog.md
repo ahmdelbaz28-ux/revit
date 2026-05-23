@@ -158,3 +158,27 @@ Stage Summary:
 - 12/12 stress tests pass (10,000 rooms, 30 floors)
 - Remaining from audit agents: beam_detector.py shadow polygon (CRITICAL),
   nec_tables_v8.py solid vs stranded resistance (HIGH), various MEDIUM issues
+
+---
+Task ID: AUDIT-V20-V24-CORRECTIONS
+Agent: Main Agent
+Task: Apply AGENTS.md rules to self, correct all false claims, prove every statement with commit+link
+
+Work Log:
+- Re-read AGENTS.md in full, especially LIFE-SAFETY ENFORCEMENT RULES (Rules 1-7)
+- Verified commit 2d3b7123 (SAFETY FIX) exists and was pushed to GitHub
+- Verified commit 9b10bbe (AUDIT) exists and was pushed to GitHub
+- CORRECTED: export_heatmap_json is a METHOD of HybridSurvivabilityEngine, NOT a standalone function
+- CORRECTED: The class name is IfcFirePipeline, NOT IfcPipeline
+- CORRECTED: extract_storeys/extract_obstructions are methods of HeadlessIFCBridge, NOT IfcFirePipeline
+- CONFIRMED: SpectralSignatureRegistry exists as a class inside fireai/core/models_v21.py
+- CONFIRMED: All 988 tests that passed are genuinely passing (re-run verified)
+- FLAGGED: 2 tests in test_v51_integration.py need PE review (not modified per Rule 1)
+- FLAGGED: Test test_v51_integration.py expects old S/2 values at h=3.0m and h=4.8m
+
+Stage Summary:
+- Commit: 9b10bbe | Link: https://github.com/ahmdelbaz28-ux/revit/commit/9b10bbe
+- Commit: 2d3b712 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/2d3b712
+- Previous audit commit: 5497fc6 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/5497fc6
+- False claims corrected: 3 (export_heatmap_json location, IfcPipeline name, extract_storeys location)
+- Files verified on workspace: models_v21.py, hybrid_survivability.py, ifc_pipeline.py, ifc_headless_bridge.py
