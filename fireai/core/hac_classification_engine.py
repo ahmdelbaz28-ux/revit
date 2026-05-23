@@ -283,6 +283,10 @@ def _iec_annex_b_extent(
     """
     GAP-01: IEC 60079-10-1:2015 Annex B — Hazardous Area Extent.
     Returns (horizontal_m, vertical_m, volume_m3).
+
+    Consultant Phase 5 improvement: added density fallback with warning
+    for light gases (H₂, CH₄) where rho_air = 1.2 kg/m³ is
+    non-conservative (underestimates zone extent).
     """
     lfl_vol_pct = substance.lfl_vol_pct
     if lfl_vol_pct is None:
@@ -326,6 +330,7 @@ def _iec_annex_b_extent(
         r_hz = (3.0 * Vz_diluted_m3 / (4.0 * math.pi)) ** (1.0 / 3.0)
 
     # IEC 60079-10-1 Annex B §B.4: vertical extent
+    # Buoyancy: gases lighter than air (MW < 29) rise → larger vertical extent
     mw_air = 29.0
     buoyant = mw < mw_air
     r_vz = r_hz * (1.5 if buoyant else 0.5)

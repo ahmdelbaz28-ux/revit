@@ -245,6 +245,31 @@ class TestGAP03DefaultAlpha:
         )
         assert medium.get_alpha(WavelengthBand.VIS) == pytest.approx(99.9)
 
+    def test_mist_medium_has_nonzero_alpha(self):
+        """MIST type (Phase 5 addition) must have non-zero alpha in all bands."""
+        medium = VolumetricMedium(
+            medium_id="oil_mist", medium_type="MIST",
+            bbox_min=[0.0, 0.0, 0.0], bbox_max=[5.0, 5.0, 2.0],
+        )
+        # MIST must absorb in all bands (fine droplets scatter strongly)
+        assert medium.get_alpha(WavelengthBand.UV) > 0.0
+        assert medium.get_alpha(WavelengthBand.VIS) > 0.0
+        assert medium.get_alpha(WavelengthBand.IR1) > 0.0
+        assert medium.get_alpha(WavelengthBand.IR3) > 0.0
+
+    def test_mist_vs_steam_ir1(self):
+        """MIST IR1 absorption > STEAM UV (MIST has coarser droplets)."""
+        mist = VolumetricMedium(
+            medium_id="mist", medium_type="MIST",
+            bbox_min=[0, 0, 0], bbox_max=[5, 5, 2],
+        )
+        steam = VolumetricMedium(
+            medium_id="steam", medium_type="STEAM",
+            bbox_min=[0, 0, 0], bbox_max=[5, 5, 2],
+        )
+        # MIST has stronger UV scattering than STEAM
+        assert mist.get_alpha(WavelengthBand.UV) > steam.get_alpha(WavelengthBand.UV)
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # GAP-04: SpectralSignatureRegistry extended substances

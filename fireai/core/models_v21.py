@@ -706,6 +706,11 @@ _DEFAULT_MEDIUM_ALPHA: Dict[str, Dict[str, float]] = {
     # GAS_CLOUD: hydrocarbon vapour at low concentration (<LEL)
     # UV opaque to most organics; VIS transparent; IR1/IR3 C-H bonds
     "GAS_CLOUD": {"UV": 0.1, "VIS": 0.0, "IR1": 0.1, "IR3": 0.5},
+
+    # MIST: fine liquid droplets (oil mist, water spray)
+    # Similar to steam but coarser droplets → stronger UV/VIS scattering
+    # [Consultant Phase 5 addition — common in industrial environments]
+    "MIST": {"UV": 1.0, "VIS": 2.0, "IR1": 2.5, "IR3": 2.0},
 }
 
 
