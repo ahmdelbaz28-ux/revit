@@ -154,6 +154,16 @@ from fireai.core.ugld_acoustics import (
     speed_of_sound,
 )
 
+# V23 Phase 2 — UGLD Ray Tracing & Maekawa Barrier Diffraction
+from fireai.core.ugld_raytrace import (
+    AcousticObstacle as V23AcousticObstacle,
+    ObstacleHit,
+    AcousticRayResult,
+    trace_acoustic_ray,
+    maekawa_insertion_loss,
+    compute_path_difference,
+)
+
 __all__ = [
     "__version__",
     # Analysers
@@ -292,4 +302,11 @@ __all__ = [
     "atmospheric_attenuation_db_per_m",
     "max_detection_range_m",
     "speed_of_sound",
+    # V23 Phase 2 — UGLD Ray Tracing & Maekawa Barrier
+    "V23AcousticObstacle",
+    "ObstacleHit",
+    "AcousticRayResult",
+    "trace_acoustic_ray",
+    "maekawa_insertion_loss",
+    "compute_path_difference",
 ]
