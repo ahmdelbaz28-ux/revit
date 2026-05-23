@@ -296,8 +296,16 @@ def _iec_annex_b_extent(
         )
 
     # LFL temperature correction — Burgess-Wheeler
-    lfl_corrected = lfl_vol_pct * (1.0 - 0.001824 * (ambient_temp_c - 25.0))
-    lfl_corrected = max(lfl_corrected, lfl_vol_pct * 0.5)
+    # BUG FIX: Burgess-Wheeler correction is ONLY valid for T > 25C.
+    # Below 25C, the correction would INCREASE LFL (physically wrong
+    # extrapolation). The standalone burgess_wheeler_lfl() function in
+    # models_v21.py enforces this guard — _iec_annex_b_extent() must
+    # do the same for consistency.
+    if ambient_temp_c > 25.0:
+        lfl_corrected = lfl_vol_pct * (1.0 - 0.001824 * (ambient_temp_c - 25.0))
+        lfl_corrected = max(lfl_corrected, lfl_vol_pct * 0.5)
+    else:
+        lfl_corrected = lfl_vol_pct
     lfl_frac = lfl_corrected / 100.0
 
     # Volumetric release rate (m³/s at standard conditions)
@@ -307,7 +315,13 @@ def _iec_annex_b_extent(
             f"Substance '{substance.name}' has no molecular_weight; "
             "cannot apply IEC 60079-10-1 Annex B formula."
         )
-    mw_kg_mol = mw / 1000.0 if mw > 10.0 else mw
+    # BUG FIX: Molecular weight is ALWAYS in g/mol in FireAI (SubstanceProperties
+    # model). The previous heuristic `mw > 10.0` assumed MW < 10 meant kg/mol,
+    # but MW=2.016 (hydrogen) would be treated as kg/mol, causing a 1000x
+    # UNDERESTIMATE of the volumetric release rate. This is a critical safety
+    # bug — hydrogen zone extents would be 10x too small (cube root of 1000).
+    # ALL molecular weights in FireAI are in g/mol (consistent with NIST/CRC).
+    mw_kg_mol = mw / 1000.0
     dV_release_m3_s = (release_rate_kg_s / mw_kg_mol) * 0.0224
 
     # Concentration factor Ck
@@ -405,7 +419,11 @@ class HACClassificationEngine:
         ventilation: VentilationLevel,
         is_indoor:   bool = True,
         source_height_m: float = 0.0,
-        ambient_temp_c:  float = 20.0,
+        # BUG FIX H-1: Default ambient_temp_c aligned with EnvironmentalContext
+        # default (40°C). Previous default of 20°C was non-conservative —
+        # Burgess-Wheeler LFL correction only activates above 25°C, so 20°C
+        # produced no correction and narrower zone extents.
+        ambient_temp_c:  float = 40.0,
         env_context:     Optional[EnvironmentalContext] = None,
         release_grade:   Optional[ReleaseGrade] = None,
         release_rate_kg_s: float = 0.0,
@@ -447,7 +465,9 @@ class HACClassificationEngine:
 
         # GAP-02: zone from release grade + ventilation
         is_gas = substance.hazard_type in (HazardType.GAS, HazardType.HYBRID)
-        is_dust = substance.hazard_type in (HazardType.DUST, HazardType.HYBRID)
+        # BUG FIX C-1: FIBER is classified using dust zones (Zone 20/21/22)
+        # per NFPA 70 Art. 503 / IEC 60079-10-2, but needs dust extent formula.
+        is_dust = substance.hazard_type in (HazardType.DUST, HazardType.HYBRID, HazardType.FIBER)
 
         if substance.hazard_type == HazardType.HYBRID:
             gas_zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=True)
@@ -465,8 +485,15 @@ class HACClassificationEngine:
             )
         elif is_gas:
             zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=True)
-        else:
+        elif is_dust:
             zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=False)
+        else:
+            # Should not reach here after the FIBER fix above, but guard anyway
+            zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=False)
+            warnings.append(
+                f"Hazard type {substance.hazard_type.value} defaulted to dust "
+                "zone classification. Review zone assignment."
+            )
 
         # GAP-01: zone extent using IEC Annex B or simplified fallback
         effective_temp = env_context.ambient_temp_c if env_context else ambient_temp_c
@@ -504,6 +531,7 @@ class HACClassificationEngine:
 
         if not use_annex_b:
             # Simplified k/LFL method (existing behaviour)
+            # BUG FIX C-1: FIBER uses dust extent formula (MEC-based), not gas (LFL-based)
             if is_dust and not is_gas:
                 extent = self._compute_extent_dust_v21(
                     substance.mec_g_m3 or 30.0, ventilation, is_indoor, source_height_m)
@@ -767,7 +795,11 @@ class HACClassificationEngine:
             VentilationLevel.POOR:   15.0,
         }[vent]
 
-        r_h = k / lfl
+        # BUG FIX C-2: Guard against division by very small LFL producing
+        # physically meaningless zone extents (e.g., LFL=0.001 → 15000m).
+        # Cap at 50m matching the dust formula's guard (IEC 60079-10-1 Annex A).
+        r_h = k / max(lfl, 0.01)  # Floor LFL at 0.01 vol% (no real gas has LFL < 0.01%)
+        r_h = min(r_h, 50.0)      # Physical limit per IEC 60079-10-1
         r_v = r_h * 0.5
 
         if indoor:
