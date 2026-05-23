@@ -35,11 +35,14 @@ V21.2 Hardening (Red Team fixes):
 
 from __future__ import annotations
 
+import logging
 import math
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -1340,10 +1343,15 @@ class VolumetricMedium(BaseModel):
 
         Multiplied by concentration_factor in all cases.
 
+        When using type-based defaults (Priority 2), a warning is emitted
+        via Python logging to inform the engineer that approximate values
+        are being used. In a life-safety system, decisions must not be
+        made on approximate data without explicit awareness.
+
         IEC 60079-10-1 §7: Absorption should never be assumed zero for
         optically active media without explicit justification.
         """
-        # Priority 1: explicit override
+        # Priority 1: explicit override — no warning needed
         if self.alpha_override is not None:
             raw = self.alpha_override.get(band, 0.0)
             # Also check string value in case dict was built with str keys
@@ -1351,26 +1359,65 @@ class VolumetricMedium(BaseModel):
                 raw = self.alpha_override.get(band.value, 0.0)
             return float(raw) * self.concentration_factor
 
-        # Priority 2: type-based default
+        # Priority 2: type-based default — emit warning
         defaults = _DEFAULT_MEDIUM_ALPHA.get(self.medium_type, {})
         band_key = band.value if isinstance(band, WavelengthBand) else band
         raw = defaults.get(band_key, 0.0)
+
+        if raw > 0.0:
+            logger.warning(
+                "VolumetricMedium '%s': using DEFAULT absorption coefficient "
+                "for band %s (alpha=%.2f m^-1). No alpha_override or CAS "
+                "number provided — approximate values must not be the sole "
+                "basis for safety-critical coverage decisions without FPE "
+                "sign-off. [IEC 60079-10-1 §7, ISO 13943:2017 §3.88]",
+                self.medium_id, band_key, raw * self.concentration_factor,
+            )
+
         return float(raw) * self.concentration_factor
 
     def get_alpha_with_registry(
         self, band: WavelengthBand, registry: SpectralSignatureRegistry
     ) -> float:
-        """Get absorption coefficient using registry lookup."""
+        """
+        Get absorption coefficient using registry lookup.
+
+        Priority order:
+        1. alpha_override[band] — explicit user value
+        2. CAS number lookup in SpectralSignatureRegistry
+        3. _DEFAULT_MEDIUM_ALPHA type-based defaults (with warning)
+        4. 0.0 — transparent fallback
+
+        When falling back to type-based defaults (Priority 3), a warning
+        is emitted because approximate values are being used for a
+        safety-critical calculation.
+        """
+        # Priority 1: explicit override — no warning
         if self.alpha_override is not None:
             return self.alpha_override.get(band, 0.0) * self.concentration_factor
+
+        # Priority 2: CAS number lookup — no warning (data-driven)
         if self.cas_number is not None:
             sig = registry.get(self.cas_number)
             if sig is not None:
                 return sig.alpha_for(band) * self.concentration_factor
-        # GAP-03: Fall back to type-based defaults before returning 0.0
+
+        # Priority 3: type-based defaults — emit warning
         defaults = _DEFAULT_MEDIUM_ALPHA.get(self.medium_type, {})
         band_key = band.value if isinstance(band, WavelengthBand) else band
         raw = defaults.get(band_key, 0.0)
+
+        if raw > 0.0:
+            logger.warning(
+                "VolumetricMedium '%s': using DEFAULT absorption coefficient "
+                "for band %s (alpha=%.2f m^-1). CAS number '%s' not found in "
+                "registry. Approximate values must not be the sole basis "
+                "for safety-critical coverage decisions without FPE sign-off. "
+                "[IEC 60079-10-1 §7, ISO 13943:2017 §3.88]",
+                self.medium_id, band_key, raw * self.concentration_factor,
+                self.cas_number or "(none)",
+            )
+
         return float(raw) * self.concentration_factor
 
 

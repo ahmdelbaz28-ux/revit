@@ -6,6 +6,7 @@ Adapted from consultant deliverables with correct import paths and API fixes.
 Run with: pytest tests/test_v21_phase5_gap01_08.py -v
 """
 
+import logging
 import math
 import pytest
 from typing import Optional
@@ -269,6 +270,97 @@ class TestGAP03DefaultAlpha:
         )
         # MIST has stronger UV scattering than STEAM
         assert mist.get_alpha(WavelengthBand.UV) > steam.get_alpha(WavelengthBand.UV)
+
+
+class TestGAP03DefaultAlphaWarning:
+    """
+    GAP-03 Enhancement: When VolumetricMedium.get_alpha() falls back to
+    type-based default absorption coefficients (no alpha_override, no CAS
+    number), a Python logging WARNING must be emitted to inform the engineer
+    that approximate values are being used for a safety-critical calculation.
+
+    This addresses the consultant's valid point that life-safety decisions
+    must not be made silently on approximate default data.
+    """
+
+    def test_default_alpha_emits_warning(self, caplog):
+        """get_alpha() with no override/CAS must emit a WARNING log."""
+        medium = VolumetricMedium(
+            medium_id="smoke_no_override", medium_type="SMOKE",
+            bbox_min=[0.0, 0.0, 0.0], bbox_max=[5.0, 5.0, 3.0],
+        )
+        with caplog.at_level(logging.WARNING, logger="fireai.core.models_v21"):
+            alpha = medium.get_alpha(WavelengthBand.VIS)
+        assert alpha > 0.0  # Default alpha is non-zero for SMOKE/VIS
+        assert len(caplog.records) >= 1
+        assert "DEFAULT absorption coefficient" in caplog.records[0].message
+        assert "smoke_no_override" in caplog.records[0].message
+
+    def test_override_no_warning(self, caplog):
+        """get_alpha() with alpha_override must NOT emit a warning."""
+        medium = VolumetricMedium(
+            medium_id="custom_override", medium_type="SMOKE",
+            bbox_min=[0.0, 0.0, 0.0], bbox_max=[5.0, 5.0, 3.0],
+            alpha_override={WavelengthBand.VIS: 5.0},
+        )
+        with caplog.at_level(logging.WARNING, logger="fireai.core.models_v21"):
+            alpha = medium.get_alpha(WavelengthBand.VIS)
+        assert alpha == pytest.approx(5.0)
+        assert len(caplog.records) == 0  # No warning when override provided
+
+    def test_transparent_band_no_warning(self, caplog):
+        """Bands where default alpha=0.0 must not emit a warning (no info gained)."""
+        medium = VolumetricMedium(
+            medium_id="gas_no_alpha", medium_type="GAS_CLOUD",
+            bbox_min=[0.0, 0.0, 0.0], bbox_max=[3.0, 3.0, 3.0],
+        )
+        # GAS_CLOUD VIS default = 0.0 (transparent)
+        with caplog.at_level(logging.WARNING, logger="fireai.core.models_v21"):
+            alpha = medium.get_alpha(WavelengthBand.VIS)
+        assert alpha == pytest.approx(0.0)
+        assert len(caplog.records) == 0  # No warning for 0.0 — nothing approximate
+
+    def test_registry_fallback_emits_warning(self, caplog):
+        """get_alpha_with_registry() with missing CAS must emit a warning."""
+        medium = VolumetricMedium(
+            medium_id="unknown_cas", medium_type="SMOKE",
+            bbox_min=[0.0, 0.0, 0.0], bbox_max=[5.0, 5.0, 3.0],
+            cas_number="9999-99-9",  # Not in registry
+        )
+        registry = SpectralSignatureRegistry()
+        with caplog.at_level(logging.WARNING, logger="fireai.core.models_v21"):
+            alpha = medium.get_alpha_with_registry(WavelengthBand.IR1, registry)
+        assert alpha > 0.0  # Falls back to SMOKE defaults
+        assert len(caplog.records) >= 1
+        assert "DEFAULT absorption coefficient" in caplog.records[0].message
+        assert "9999-99-9" in caplog.records[0].message
+
+    def test_registry_hit_no_warning(self, caplog):
+        """get_alpha_with_registry() with valid CAS must NOT emit a warning."""
+        medium = VolumetricMedium(
+            medium_id="known_cas", medium_type="GAS_CLOUD",
+            bbox_min=[0.0, 0.0, 0.0], bbox_max=[3.0, 3.0, 3.0],
+            cas_number="74-85-1",  # Ethylene — in registry
+        )
+        registry = SpectralSignatureRegistry()
+        with caplog.at_level(logging.WARNING, logger="fireai.core.models_v21"):
+            alpha = medium.get_alpha_with_registry(WavelengthBand.IR3, registry)
+        # Ethylene should be found — no warning
+        # Note: alpha might be 0.0 if Ethylene has no IR3 data, but no warning
+        # because the lookup was data-driven (CAS found in registry)
+        assert len(caplog.records) == 0
+
+    def test_warning_includes_fpe_signoff_advice(self, caplog):
+        """Warning message must advise FPE sign-off for safety-critical use."""
+        medium = VolumetricMedium(
+            medium_id="dust_default", medium_type="DUST_SUSPENSION",
+            bbox_min=[0.0, 0.0, 0.0], bbox_max=[10.0, 10.0, 5.0],
+        )
+        with caplog.at_level(logging.WARNING, logger="fireai.core.models_v21"):
+            medium.get_alpha(WavelengthBand.UV)
+        assert len(caplog.records) >= 1
+        msg = caplog.records[0].message
+        assert "FPE" in msg or "sign-off" in msg or "safety-critical" in msg
 
 
 # ═════════════════════════════════════════════════════════════════════════════
