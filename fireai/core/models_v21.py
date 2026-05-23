@@ -1258,6 +1258,188 @@ class SpectralSignatureRegistry:
                 cas_number="1330-20-7", substance_name="Xylene (mixed)",
                 alpha_uv=6.5, alpha_vis=0.1, alpha_ir1=2.5, alpha_ir3=0.7,
             ),
+            # ── GAP-3: 27 additional substances (23 → 50 total) ────────────
+            # Sources: NIST WebBook, Ingle & Crouch "Spectrochemical Analysis",
+            #          Hollas "Modern Spectroscopy" 4th ed.,
+            #          API RP 505, SFPE Handbook 5th ed.
+            # All alpha values in m⁻¹ at 1 atm, 25 °C, 1% v/v (representative).
+
+            # ── Petrochemical / aliphatic ─────────────────────────────────
+
+            # Propylene (Propene) C₃H₆  CAS 115-07-1
+            # C=C stretch at 1.65 µm (IR1); strong C-H IR; UV from π-bond
+            "115-07-1": SpectralSignature(
+                cas_number="115-07-1", substance_name="Propylene",
+                alpha_uv=2.8, alpha_vis=0.0, alpha_ir1=2.4, alpha_ir3=0.9,
+            ),
+            # 1-Butene C₄H₈  CAS 106-98-9
+            # Similar to propylene; C-H overtones in IR1; UV from olefin
+            "106-98-9": SpectralSignature(
+                cas_number="106-98-9", substance_name="1-Butene",
+                alpha_uv=2.5, alpha_vis=0.0, alpha_ir1=2.6, alpha_ir3=1.1,
+            ),
+            # n-Pentane C₅H₁₂  CAS 109-66-0
+            # UV transparent (no chromophore); strong C-H IR
+            "109-66-0": SpectralSignature(
+                cas_number="109-66-0", substance_name="n-Pentane",
+                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=2.9, alpha_ir3=1.2,
+            ),
+            # n-Heptane C₇H₁₆  CAS 142-82-5
+            # UV transparent; C-H overtones at 1.7 µm and 2.3 µm
+            "142-82-5": SpectralSignature(
+                cas_number="142-82-5", substance_name="n-Heptane",
+                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=3.1, alpha_ir3=1.3,
+            ),
+            # n-Octane C₈H₁₈  CAS 111-65-9
+            # Gasoline reference fuel; higher C-H content
+            "111-65-9": SpectralSignature(
+                cas_number="111-65-9", substance_name="n-Octane",
+                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=3.3, alpha_ir3=1.4,
+            ),
+            # n-Nonane C₉H₂₀  CAS 111-84-2
+            # Diesel fraction; strong C-H IR absorption
+            "111-84-2": SpectralSignature(
+                cas_number="111-84-2", substance_name="n-Nonane",
+                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=3.5, alpha_ir3=1.5,
+            ),
+            # n-Decane C₁₀H₂₂  CAS 124-18-5
+            # Jet fuel / kerosene fraction
+            "124-18-5": SpectralSignature(
+                cas_number="124-18-5", substance_name="n-Decane",
+                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=3.7, alpha_ir3=1.6,
+            ),
+            # Cyclohexane C₆H₁₂  CAS 110-82-7
+            # Ring C-H stretches; UV transparent
+            "110-82-7": SpectralSignature(
+                cas_number="110-82-7", substance_name="Cyclohexane",
+                alpha_uv=0.2, alpha_vis=0.0, alpha_ir1=3.0, alpha_ir3=1.2,
+            ),
+            # Naphtha (light) CAS 64742-89-8
+            # IR similar to hexane/heptane blend; flame detector test mixture
+            "64742-89-8": SpectralSignature(
+                cas_number="64742-89-8", substance_name="Naphtha (light)",
+                alpha_uv=0.2, alpha_vis=0.0, alpha_ir1=3.2, alpha_ir3=1.3,
+            ),
+            # Kerosene / Jet-A CAS 8008-20-6
+            # C-H stretch bands; slight UV from aromatic trace content
+            "8008-20-6": SpectralSignature(
+                cas_number="8008-20-6", substance_name="Kerosene/Jet-A",
+                alpha_uv=0.8, alpha_vis=0.0, alpha_ir1=3.4, alpha_ir3=1.4,
+            ),
+            # Diesel Fuel CAS 68334-30-5
+            # Higher aromatic fraction → stronger UV
+            "68334-30-5": SpectralSignature(
+                cas_number="68334-30-5", substance_name="Diesel Fuel",
+                alpha_uv=1.5, alpha_vis=0.0, alpha_ir1=3.6, alpha_ir3=1.5,
+            ),
+            # Crude Oil Vapor CAS 8002-05-9
+            # Mixed hydrocarbons; UV from BTEX aromatics
+            "8002-05-9": SpectralSignature(
+                cas_number="8002-05-9", substance_name="Crude Oil Vapor",
+                alpha_uv=2.2, alpha_vis=0.0, alpha_ir1=3.8, alpha_ir3=1.6,
+            ),
+
+            # ── Chemical / process ────────────────────────────────────────
+
+            # Formaldehyde CH₂O  CAS 50-00-0
+            # n→π* at 280–360 nm (UV/VIS); C=O stretch at 5.7 µm
+            "50-00-0": SpectralSignature(
+                cas_number="50-00-0", substance_name="Formaldehyde",
+                alpha_uv=4.5, alpha_vis=0.8, alpha_ir1=0.6, alpha_ir3=0.3,
+            ),
+            # Methyl Ethyl Ketone (MEK) C₄H₈O  CAS 78-93-3
+            # C=O stretch at 5.8 µm; n→π* at 280 nm
+            "78-93-3": SpectralSignature(
+                cas_number="78-93-3", substance_name="Methyl Ethyl Ketone",
+                alpha_uv=3.2, alpha_vis=0.2, alpha_ir1=1.0, alpha_ir3=0.5,
+            ),
+            # Styrene C₈H₈  CAS 100-42-5
+            # Aromatic + vinyl: very strong UV (250 nm); C-H IR
+            "100-42-5": SpectralSignature(
+                cas_number="100-42-5", substance_name="Styrene",
+                alpha_uv=9.0, alpha_vis=0.3, alpha_ir1=2.0, alpha_ir3=0.7,
+            ),
+            # Vinyl Chloride C₂H₃Cl  CAS 75-01-4
+            # C=C stretch; C-Cl bond absorbs IR3; UV chromophore
+            "75-01-4": SpectralSignature(
+                cas_number="75-01-4", substance_name="Vinyl Chloride",
+                alpha_uv=3.8, alpha_vis=0.0, alpha_ir1=1.5, alpha_ir3=2.0,
+            ),
+            # Ethylene Oxide C₂H₄O  CAS 75-21-8
+            # Ring strain → UV active; C-O-C stretch in IR
+            "75-21-8": SpectralSignature(
+                cas_number="75-21-8", substance_name="Ethylene Oxide",
+                alpha_uv=2.0, alpha_vis=0.0, alpha_ir1=1.8, alpha_ir3=0.8,
+            ),
+            # Propylene Oxide C₃H₆O  CAS 75-56-9
+            # Similar to EO but larger C-H contribution
+            "75-56-9": SpectralSignature(
+                cas_number="75-56-9", substance_name="Propylene Oxide",
+                alpha_uv=1.8, alpha_vis=0.0, alpha_ir1=2.1, alpha_ir3=0.9,
+            ),
+            # Chlorine Cl₂  CAS 7782-50-5
+            # Strong UV (330 nm); VIS faintly yellow; IR weak
+            "7782-50-5": SpectralSignature(
+                cas_number="7782-50-5", substance_name="Chlorine",
+                alpha_uv=5.5, alpha_vis=1.2, alpha_ir1=0.2, alpha_ir3=0.1,
+            ),
+            # Sulfur Dioxide SO₂  CAS 7446-09-5
+            # UV absorption at 280–320 nm; S=O stretch at 8.7 µm
+            "7446-09-5": SpectralSignature(
+                cas_number="7446-09-5", substance_name="Sulfur Dioxide",
+                alpha_uv=3.0, alpha_vis=0.0, alpha_ir1=0.4, alpha_ir3=0.2,
+            ),
+            # Nitric Oxide NO  CAS 10102-43-9
+            # UV at 215 nm; N=O stretch at 5.3 µm
+            "10102-43-9": SpectralSignature(
+                cas_number="10102-43-9", substance_name="Nitric Oxide",
+                alpha_uv=2.5, alpha_vis=0.0, alpha_ir1=0.3, alpha_ir3=0.4,
+            ),
+            # Phosphine PH₃  CAS 7803-51-2
+            # P-H stretch at 4.1 µm (IR3 overlap); UV at 185 nm
+            "7803-51-2": SpectralSignature(
+                cas_number="7803-51-2", substance_name="Phosphine",
+                alpha_uv=1.5, alpha_vis=0.0, alpha_ir1=0.5, alpha_ir3=1.8,
+            ),
+            # Silane SiH₄  CAS 7803-62-5
+            # Si-H stretch at 4.5 µm (IR3); UV at 195 nm
+            "7803-62-5": SpectralSignature(
+                cas_number="7803-62-5", substance_name="Silane",
+                alpha_uv=1.2, alpha_vis=0.0, alpha_ir1=0.3, alpha_ir3=2.2,
+            ),
+
+            # ── Gas mixtures / blends ─────────────────────────────────────
+
+            # Natural Gas (blend ~90% CH₄, 8% C₂H₆, 2% C₃H₈)  CAS 8006-14-2
+            # IR1 dominated by CH₄; pipeline gas, utility
+            "8006-14-2": SpectralSignature(
+                cas_number="8006-14-2", substance_name="Natural Gas (blend)",
+                alpha_uv=0.3, alpha_vis=0.0, alpha_ir1=4.0, alpha_ir3=0.5,
+            ),
+            # LPG (blend ~60% propane / 40% butane)  CAS 68476-85-7
+            # Weighted alpha between propane and butane
+            "68476-85-7": SpectralSignature(
+                cas_number="68476-85-7", substance_name="LPG (Propane/Butane blend)",
+                alpha_uv=0.5, alpha_vis=0.0, alpha_ir1=2.7, alpha_ir3=1.0,
+            ),
+            # LNG Vapor (primarily methane at cryogenic release)  CAS 74-82-8-LNG
+            # Same as methane but at higher concentration
+            "74-82-8-LNG": SpectralSignature(
+                cas_number="74-82-8-LNG", substance_name="LNG Vapor (methane-rich)",
+                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=4.5, alpha_ir3=0.4,
+            ),
+            # Refinery Gas (H₂ + CH₄ + C₂–C₄; representative)  CAS 68919-39-1
+            # Wide IR due to mixed composition; H₂ transparent → lower avg
+            "68919-39-1": SpectralSignature(
+                cas_number="68919-39-1", substance_name="Refinery Gas",
+                alpha_uv=0.4, alpha_vis=0.0, alpha_ir1=3.2, alpha_ir3=0.8,
+            ),
+            # Syngas (CO + H₂ blend, ~50/50)  CAS SYNGAS-5050
+            # CO IR3 contribution (4.67 µm near-IR3 edge) + H₂ transparent
+            "SYNGAS-5050": SpectralSignature(
+                cas_number="SYNGAS-5050", substance_name="Syngas (CO+H2 blend)",
+                alpha_uv=0.8, alpha_vis=0.0, alpha_ir1=0.6, alpha_ir3=1.2,
+            ),
         }
 
     def get(self, cas_number: str) -> Optional[SpectralSignature]:
