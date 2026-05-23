@@ -206,6 +206,23 @@ class CoverageResult:
         """
         return self.min_redundancy >= 2 and self.is_full_coverage
 
+    @property
+    def redundancy_pct(self) -> float:
+        """Percentage of covered points with redundancy >= 2.
+        NFPA 72-2022 §17.8.3.4 / FM Global DS 5-48 §4.3."""
+        if not self.redundancy_map or self.covered_points == 0:
+            return 0.0
+        pts_with_2plus = sum(1 for c in self.redundancy_map.values() if c >= 2)
+        return round(100.0 * pts_with_2plus / self.covered_points, 2)
+
+    @property
+    def avg_redundancy(self) -> float:
+        """Average redundancy across all grid points (not just covered)."""
+        if not self.redundancy_map or self.total_points == 0:
+            return 0.0
+        total = sum(self.redundancy_map.values())
+        return round(total / self.total_points, 2)
+
 
 # ---------------------------------------------------------------------------
 # Ray Trace Engine

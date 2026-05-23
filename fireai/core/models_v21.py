@@ -1056,6 +1056,10 @@ _DEFAULT_MEDIUM_ALPHA: Dict[str, Dict[str, float]] = {
     # Similar to steam but coarser droplets → stronger UV/VIS scattering
     # [Consultant Phase 5 addition — common in industrial environments]
     "MIST": {"UV": 1.0, "VIS": 2.0, "IR1": 2.5, "IR3": 2.0},
+
+    # CLEAR: no medium present (ambient air without contaminants)
+    # All bands transparent — used as fallback for clean environments
+    "CLEAR": {"UV": 0.0, "VIS": 0.0, "IR1": 0.0, "IR3": 0.0},
 }
 
 
@@ -1206,6 +1210,28 @@ class SpectralSignatureRegistry:
             "67-63-0": SpectralSignature(
                 cas_number="67-63-0", substance_name="Isopropanol",
                 alpha_uv=1.2, alpha_vis=0.0, alpha_ir1=2.7, alpha_ir3=1.0,
+            ),
+            # ── Extended registry: common industrial substances ────────────
+            "75-28-5": SpectralSignature(
+                cas_number="75-28-5", substance_name="Isobutane",
+                # Natural refrigerant R600a; LFL=1.8%, MW=58
+                alpha_uv=0.08, alpha_vis=0.0, alpha_ir1=0.8, alpha_ir3=4.2,
+            ),
+            "75-04-7": SpectralSignature(
+                cas_number="75-04-7", substance_name="Ethylamine",
+                # Chemical industry; LFL=3.5%, MW=45
+                # Amine N-H bands in IR
+                alpha_uv=0.18, alpha_vis=0.0, alpha_ir1=0.5, alpha_ir3=2.5,
+            ),
+            "74-84-0": SpectralSignature(
+                cas_number="74-84-0", substance_name="Ethane",
+                # LNG component; LFL=3.0%, MW=30
+                alpha_uv=0.06, alpha_vis=0.0, alpha_ir1=0.4, alpha_ir3=2.8,
+            ),
+            "106-97-8": SpectralSignature(
+                cas_number="106-97-8", substance_name="Butane",
+                # LPG component; LFL=1.8%, MW=58
+                alpha_uv=0.09, alpha_vis=0.0, alpha_ir1=0.9, alpha_ir3=4.5,
             ),
         }
 
