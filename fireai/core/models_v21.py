@@ -161,6 +161,101 @@ class ThermalMarginRule(str, Enum):
     BASIC         = "BASIC"
 
 
+class RegionProfile(str, Enum):
+    """Environmental region presets for HAC calculations.
+    
+    Each region triggers ADVISORY warnings when engineer inputs deviate
+    from typical regional conditions. The system NEVER silently overwrites
+    engineer inputs — it only generates advisory warnings.
+    
+    STANDARD_IEC: Default IEC conditions (40C ambient, 0.85 fouling)
+    MENA_SUMMER_OUTDOOR: Middle East/North Africa outdoor summer conditions.
+        GCC desert environments regularly exceed 50C in summer months.
+        Sandstorm fouling degrades optical paths more aggressively.
+    GULF_HCIS: GCC / Saudi HCIS region (50-55C peak, sandstorm fouling 0.45-0.55).
+        Triggers both high-temp and high-fouling advisories.
+    EGYPT_CODE: Egyptian fire code region (45C peak summer, moderate fouling).
+        Triggers high-temp advisory only.
+    EUROPE_IEC: European IEC conditions (25-30C ambient, clean environment).
+        No advisories under normal conditions.
+    USA_NFPA: USA NFPA conditions (25-35C ambient, clean environment).
+        No advisories under normal conditions.
+    
+    FM Global DS 5-48 acknowledges that fouling factors must reflect
+    actual service conditions.
+    """
+    STANDARD_IEC = "STANDARD_IEC"
+    MENA_SUMMER_OUTDOOR = "MENA_SUMMER_OUTDOOR"
+    GULF_HCIS = "GULF_HCIS"
+    EGYPT_CODE = "EGYPT_CODE"
+    EUROPE_IEC = "EUROPE_IEC"
+    USA_NFPA = "USA_NFPA"
+
+
+class Jurisdiction(str, Enum):
+    """Regulatory jurisdiction for safety audit rules.
+    Each jurisdiction may impose requirements BEYOND the base IEC/NFPA standards.
+    Only jurisdictions with documented, verifiable additional requirements
+    are included. Empty stubs are FORBIDDEN — they mislead engineers into
+    thinking a jurisdiction is covered when it is not.
+    
+    GLOBAL_IEC: Base IEC 60079 / NFPA 72 requirements.
+        Zone 2 allows single detector (1oo1).
+    SAUDI_HCIS: Saudi High Commission for Industrial Safety.
+        Requires minimum 1oo2 voting for flame detectors in Zone 2 areas
+        for critical process installations (HCIS SAF Directive 2021).
+    EGYPTIAN_FIRE_CODE: Egyptian Fire Code.
+        Follows NFPA 72 base standard — allows 1oo1 in Zone 2.
+        Based on EGS 442-1/2 which adopts NFPA with local amendments.
+    USA_NFPA: USA NFPA 72 jurisdiction.
+        Allows 1oo1 in Class I Division 2 (Zone 2 equivalent).
+        NFPA 72 §17.8.3.4 provides redundancy guidance but does not
+        mandate 1oo2 for Zone 2.
+    """
+    GLOBAL_IEC = "GLOBAL_IEC"
+    SAUDI_HCIS = "SAUDI_HCIS"
+    EGYPTIAN_FIRE_CODE = "EGYPTIAN_FIRE_CODE"
+    USA_NFPA = "USA_NFPA"
+
+
+class FoulingCategory(str, Enum):
+    """Categorical fouling environment classification.
+    Used for advisory generation when combined with region profiles.
+    Maps to typical lens_fouling_factor ranges:
+      CLEAN:    0.85-1.00 (laboratory / controlled indoor)
+      MODERATE: 0.70-0.85 (typical industrial)
+      HEAVY:    0.55-0.70 (heavy industrial / dusty)
+      SEVERE:   0.00-0.55 (desert outdoor / chemical plant)
+    
+    Reference: FM Global DS 5-48 §3.2.1
+    """
+    CLEAN   = "CLEAN"
+    MODERATE = "MODERATE"
+    HEAVY   = "HEAVY"
+    SEVERE  = "SEVERE"
+
+
+class ElevationTier(str, Enum):
+    """Detector/gas elevation classification for Z-Axis audit.
+    Based on vapor density ratio (MW_gas / MW_air) using ±3% band.
+    
+    Air MW ≈ 28.96 g/mol. Classification uses density ratio thresholds:
+      - Ratio < 0.97 (MW < 28.0912): gas is lighter than air → rises to ceiling
+      - 0.97 ≤ Ratio ≤ 1.03 (28.0912 ≤ MW ≤ 29.8288): near air density → breathing zone
+      - Ratio > 1.03 (MW > 29.8288): gas is heavier than air → pools at floor
+    
+    The ±3% band accounts for typical temperature/pressure variations
+    and turbulent mixing effects that make strict MW=28.96 boundaries
+    impractical for engineering classification.
+    
+    Reference: IEC 60079-10-1:2015 §B.4, NFPA 497 §4.5,
+               Lees' Loss Prevention §15.2 (buoyancy of gases)
+    """
+    LOW = "LOW"                              # Floor level (heavy gases, MW > 29.8288)
+    BREATHING_ZONE = "BREATHING_ZONE"        # 1-2m height (28.0912 ≤ MW ≤ 29.8288)
+    HIGH = "HIGH"                            # Ceiling level (light gases, MW < 28.0912)
+
+
 # ---------------------------------------------------------------------------
 # Pydantic Models
 # ---------------------------------------------------------------------------
@@ -551,6 +646,32 @@ class EnvironmentalContext(BaseModel):
             "Applied to Beer-Lambert transmittance in Layer 5."
         ),
     )
+    region: RegionProfile = Field(
+        default=RegionProfile.STANDARD_IEC,
+        description=(
+            "Environmental region preset. MENA_SUMMER_OUTDOOR triggers "
+            "advisory warnings for high ambient temperature and sandstorm "
+            "fouling. Does NOT force values — engineer judgment prevails. "
+            "Burgess-Wheeler LFL correction reacts to actual ambient_temp_c."
+        ),
+    )
+    jurisdiction: Jurisdiction = Field(
+        default=Jurisdiction.GLOBAL_IEC,
+        description=(
+            "Regulatory jurisdiction for audit rules. SAUDI_HCIS requires "
+            "minimum 1oo2 voting in Zone 2 for critical installations. "
+            "GLOBAL_IEC uses base IEC 60079 / NFPA 72 requirements."
+        ),
+    )
+    fouling_category: Optional[FoulingCategory] = Field(
+        default=None,
+        description=(
+            "Categorical fouling environment. When set, generates regional "
+            "advisory warnings if the category seems optimistic for the "
+            "selected region. Does NOT override lens_fouling_factor. "
+            "FM Global DS 5-48 §3.2.1."
+        ),
+    )
 
     @model_validator(mode="after")
     def cross_validate_environment(self) -> "EnvironmentalContext":
@@ -564,6 +685,59 @@ class EnvironmentalContext(BaseModel):
                 "[Pasquill-Gifford correlation]"
             )
         return self
+
+    @property
+    def advisories(self) -> List[str]:
+        """
+        Generate advisory warnings based on region vs actual values.
+        
+        The system NEVER silently overwrites engineer inputs. Instead,
+        it generates advisory warnings when the selected region suggests
+        conditions may differ from what the engineer specified. This
+        preserves engineering judgment while flagging potential issues.
+        
+        Advisory Rules:
+          - MENA/GULF regions with ambient_temp_c < 50C → temp advisory
+          - MENA/GULF regions with fouling_category=CLEAN → fouling advisory
+          - EGYPT region with ambient_temp_c < 45C → temp advisory
+          - EUROPE/USA/STANDARD_IEC → no regional advisories
+        
+        Returns:
+            List of advisory warning strings
+        """
+        warnings: List[str] = []
+        
+        # MENA / GCC regions: peak summer temperatures 50-55C
+        if self.region in (RegionProfile.MENA_SUMMER_OUTDOOR, RegionProfile.GULF_HCIS):
+            if self.ambient_temp_c < 50.0:
+                warnings.append(
+                    f"MENA/GULF region selected but ambient temperature "
+                    f"({self.ambient_temp_c:.1f}C) is below typical GCC summer "
+                    f"peak of 50-55.0C. Verify outdoor temperature assumption. "
+                    f"Burgess-Wheeler LFL correction at higher temperatures "
+                    f"produces wider zone extents."
+                )
+            if self.fouling_category == FoulingCategory.CLEAN:
+                warnings.append(
+                    f"MENA/GULF region with CLEAN fouling category. GCC desert "
+                    f"sandstorms can degrade fouling to 0.45-0.55 for outdoor "
+                    f"detectors. CLEAN assumption may be optimistic. "
+                    f"[FM Global DS 5-48 §3.2.1]"
+                )
+        
+        # EGYPT region: peak summer ~45C
+        # Egypt has moderate dust but not severe sandstorms like the Gulf.
+        # Fouling advisory is only triggered for severe desert regions
+        # (MENA_SUMMER_OUTDOOR, GULF_HCIS) where sandstorms are common.
+        if self.region == RegionProfile.EGYPT_CODE:
+            if self.ambient_temp_c < 45.0:
+                warnings.append(
+                    f"EGYPT region selected but ambient temperature "
+                    f"({self.ambient_temp_c:.1f}C) is below typical Egyptian "
+                    f"summer peak of 45.0C. Verify outdoor temperature assumption."
+                )
+        
+        return warnings
 
 
 # ===========================================================================
@@ -580,6 +754,76 @@ MIN_REDUNDANCY_BY_ZONE: Dict[ZoneType, int] = {
     ZoneType.ZONE_22: 1,   # Single acceptable
     ZoneType.UNCLASSIFIED: 0,  # No detector required
 }
+
+
+# ===========================================================================
+# V21.2: Vapor Density Tier (Ratio-Based Buoyancy Classification)
+# ===========================================================================
+
+# Molecular weight of dry air at STP (g/mol)
+# Source: CRC Handbook of Chemistry and Physics, 97th Edition
+_MW_AIR: float = 28.96
+
+# Density ratio thresholds for gas buoyancy classification.
+# A gas with density ratio < 0.97 is considered significantly lighter
+# than air (rises), while ratio > 1.03 is significantly heavier (sinks).
+# The ±3% band accounts for typical temperature/pressure variations
+# and mixing effects that make strict MW=28.96 boundaries impractical.
+#
+# Ratio = MW_gas / MW_air
+# HIGH threshold:  MW < 28.96 × 0.97 = 28.0912 → gas rises
+# LOW threshold:   MW > 28.96 × 1.03 = 29.8288 → gas sinks
+#
+# Reference: IEC 60079-10-1:2015 §B.4 (vertical extent buoyancy factor),
+#            NFPA 497-2021 §4.5 (vapor density classification),
+#            Lees' Loss Prevention §15.2 (buoyancy of gases)
+_VD_RATIO_HIGH: float = 0.97   # Below this ratio → gas is lighter, rises
+_VD_RATIO_LOW: float = 1.03    # Above this ratio → gas is heavier, sinks
+_MW_HIGH_THRESHOLD: float = _MW_AIR * _VD_RATIO_HIGH   # 28.0912
+_MW_LOW_THRESHOLD: float = _MW_AIR * _VD_RATIO_LOW     # 29.8288
+
+
+def vapor_density_tier(molecular_weight: float) -> ElevationTier:
+    """
+    Classify gas buoyancy behavior by molecular weight using density ratios.
+    
+    This function uses precise density ratios (MW_gas / MW_air) rather
+    than fixed MW thresholds, providing a physically rigorous classification
+    of where a gas is expected to accumulate relative to air.
+    
+    At the same temperature and pressure (ideal gas law: ρ = PM/RT),
+    density is proportional to molecular weight. The ratio MW_gas/MW_air
+    directly gives the vapor density relative to air:
+      - Ratio < 0.97 → gas is noticeably lighter → rises to ceiling (HIGH)
+      - 0.97 ≤ Ratio ≤ 1.03 → gas is near air density → breathing zone
+      - Ratio > 1.03 → gas is noticeably heavier → pools at floor (LOW)
+    
+    The ±3% band accounts for typical temperature/pressure variations
+    and turbulent mixing effects that make strict equality impractical.
+    
+    Args:
+        molecular_weight: Molecular weight of the gas (g/mol). Must be > 0.
+        
+    Returns:
+        ElevationTier indicating where the gas is expected to accumulate
+        
+    Raises:
+        ValueError: If molecular_weight is not greater than 0
+        
+    Reference: IEC 60079-10-1:2015 §B.4, NFPA 497 §4.5
+    """
+    if molecular_weight <= 0:
+        raise ValueError(
+            f"molecular_weight must be greater than 0, got {molecular_weight}. "
+            f"Molecular weight is a physical property that cannot be zero or negative."
+        )
+    
+    if molecular_weight < _MW_HIGH_THRESHOLD:
+        return ElevationTier.HIGH
+    elif molecular_weight <= _MW_LOW_THRESHOLD:
+        return ElevationTier.BREATHING_ZONE
+    else:
+        return ElevationTier.LOW
 
 
 # ===========================================================================

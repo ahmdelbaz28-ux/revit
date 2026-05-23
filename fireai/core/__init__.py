@@ -104,6 +104,9 @@ from fireai.core.models_v21 import (
     beer_lambert_transmittance,
     volumetric_path_transmittance,
     PasquillStability,
+    RegionProfile,
+    Jurisdiction,
+    ElevationTier,
 )
 from fireai.core.international_reg_selector import (
     InternationalRegSelector,
@@ -130,6 +133,13 @@ from fireai.core.fireai_cli_engine import (
     Layer2Result,
     Layer3Result,
     Layer5Result,
+)
+from fireai.core.safety_audit_engine import (
+    SafetyAuditEngine,
+    AuditResult,
+    AuditViolation,
+    AuditSeverity,
+    elevation_tier_from_detector_z,
 )
 
 __all__ = [
@@ -230,6 +240,9 @@ __all__ = [
     "beer_lambert_transmittance",
     "volumetric_path_transmittance",
     "PasquillStability",
+    "RegionProfile",
+    "Jurisdiction",
+    "ElevationTier",
     "InternationalRegSelector",
     "UnknownCountryError",
     "resolve_regulatory",
@@ -252,4 +265,10 @@ __all__ = [
     "Layer2Result",
     "Layer3Result",
     "Layer5Result",
+    # V21.2 — Safety Audit Engine
+    "SafetyAuditEngine",
+    "AuditResult",
+    "AuditViolation",
+    "AuditSeverity",
+    "elevation_tier_from_detector_z",
 ]

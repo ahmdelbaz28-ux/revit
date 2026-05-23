@@ -1,7 +1,7 @@
 """
 fireai_cli_engine.py – FireAI CLI Orchestration Engine
 =======================================================
-Coordinates the 5-layer fire alarm design pipeline for standalone CLI usage.
+Coordinates the 5-layer + audit fire alarm design pipeline for standalone CLI usage.
 
 Layers:
   Layer 1: InternationalRegSelector  – Regulatory framework resolution
@@ -9,6 +9,7 @@ Layers:
   Layer 3: ATEXHazardousArbiter      – Equipment protection level
   Layer 4: Thermal margin + temp class – IEC 60079-14 safe temperature
   Layer 5: FlameDetectorAOCRayTrace  – Optical coverage analysis
+  Layer 6: SafetyAuditEngine         – Post-calculation compliance audit
 
 Design Decisions (vs. Consultant's ProcessPoolExecutor proposal):
   - REJECTED: ProcessPoolExecutor with global mutable state (_WORKER_BVH_ROOT)
@@ -62,6 +63,10 @@ from fireai.core.flame_detector_aoc_raytrace import (
     SingleDetectorResult,
 )
 from fireai.core.atex_hazardous_arbiter import ATEXHazardousArbiter
+from fireai.core.safety_audit_engine import (
+    SafetyAuditEngine,
+    AuditResult as AuditReport,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -121,12 +126,26 @@ class Layer5Result:
 
 
 @dataclass(frozen=True)
+class Layer6Result:
+    """Layer 6: Post-calculation safety audit."""
+    audit_status:      str                      # "PASS" or "FAIL"
+    total_checks:      int
+    passed_checks:     int
+    critical_violations: Tuple[str, ...]       # CRITICAL violation messages
+    warning_violations:  Tuple[str, ...]       # WARNING violation messages
+    info_violations:     Tuple[str, ...]       # INFO violation messages
+    all_violations:    Tuple[str, ...]         # All violation messages
+    success:           bool
+
+
+@dataclass(frozen=True)
 class PipelineResult:
-    """Complete 5-layer pipeline result."""
+    """Complete 5-layer + audit pipeline result."""
     layer1:            Optional[Layer1Result] = None
     layer2:            Optional[Layer2Result] = None
     layer3:            Optional[Layer3Result] = None
     layer5:            Optional[Layer5Result] = None
+    layer6:            Optional[Layer6Result] = None
     env_context:       Optional[EnvironmentalContext] = None
     elapsed_seconds:   float = 0.0
     pipeline_warnings: Tuple[str, ...] = ()
@@ -191,6 +210,7 @@ class CLIFireAIEngine:
             detector_threshold=detector_threshold,
         )
         self._spectral_registry = SpectralSignatureRegistry()
+        self._audit_engine = SafetyAuditEngine()
         # Worst-case default if no context provided — defensive physics
         self._env_context = env_context or EnvironmentalContext()
 
@@ -409,6 +429,63 @@ class CLIFireAIEngine:
                 success=False,
             )
 
+    # ── Layer 6: Safety Audit ───────────────────────────────────────────
+
+    def run_layer6(
+        self,
+        zone: ZoneType,
+        hazard_type: HazardType,
+        min_redundancy: int = 0,
+        min_transmittance: Optional[float] = None,
+        substance: Optional[SubstanceProperties] = None,
+        detector_z_positions: Optional[List[float]] = None,
+        ceiling_height_m: float = 6.0,
+    ) -> Layer6Result:
+        """
+        Run post-calculation safety audit against IEC/NFPA rules
+        and jurisdiction-specific requirements.
+
+        The audit engine NEVER modifies outputs — only reports violations.
+        CRITICAL violations cause audit_status="FAIL". WARNING/INFO are advisory.
+        """
+        try:
+            report: AuditReport = self._audit_engine.run_audit(
+                zone=zone,
+                hazard_type=hazard_type,
+                min_redundancy=min_redundancy,
+                min_transmittance=min_transmittance,
+                env_context=self._env_context,
+                substance=substance,
+                detector_z_positions=detector_z_positions,
+                ceiling_height_m=ceiling_height_m,
+            )
+            return Layer6Result(
+                audit_status=report.status,
+                total_checks=report.total_checks,
+                passed_checks=report.passed_checks,
+                critical_violations=tuple(
+                    v.message for v in report.violations if v.severity == "CRITICAL"
+                ),
+                warning_violations=tuple(
+                    v.message for v in report.violations if v.severity == "WARNING"
+                ),
+                info_violations=tuple(
+                    v.message for v in report.violations if v.severity == "INFO"
+                ),
+                all_violations=tuple(v.message for v in report.violations),
+                success=report.is_pass,
+            )
+        except Exception as exc:
+            logger.error("Layer 6 FAILED: %s", exc)
+            return Layer6Result(
+                audit_status="FAIL",
+                total_checks=0, passed_checks=0,
+                critical_violations=(str(exc),),
+                warning_violations=(), info_violations=(),
+                all_violations=(str(exc),),
+                success=False,
+            )
+
     # ── Full Pipeline ───────────────────────────────────────────────────
 
     def run_full_pipeline(
@@ -501,13 +578,30 @@ class CLIFireAIEngine:
         if not l5.success:
             pipeline_errors.append("Layer 5 failed")
 
+        # ── Layer 6: Safety Audit ──
+        logger.info(
+            "Layer 6: Safety audit (zone=%s, redundancy=%d, jurisdiction=%s)",
+            l2.zone.value, 0, self._env_context.jurisdiction.value,
+        )
+        detector_zs = [d.position[2] for d in detectors if len(d.position) > 2] if detectors else None
+        l6 = self.run_layer6(
+            zone=l2.zone,
+            hazard_type=l2.hazard_type,
+            min_redundancy=0,  # Will be populated from Layer 5 coverage result
+            substance=substance,
+            detector_z_positions=detector_zs,
+        )
+        if not l6.success:
+            pipeline_warnings.extend(l6.all_violations)
+
         elapsed = time.monotonic() - start_time
         overall_success = l1.success and l2.success and l5.success
 
         logger.info(
-            "Pipeline complete: %s (%.3fs). Zone=%s, Coverage=%.1f%%",
+            "Pipeline complete: %s (%.3fs). Zone=%s, Coverage=%.1f%%, Audit=%s",
             "PASS" if overall_success else "FAIL",
             elapsed, l2.zone.value, l5.coverage_pct,
+            l6.audit_status,
         )
 
         return PipelineResult(
@@ -515,6 +609,7 @@ class CLIFireAIEngine:
             layer2=l2,
             layer3=l3,
             layer5=l5,
+            layer6=l6,
             env_context=self._env_context,
             elapsed_seconds=round(elapsed, 3),
             pipeline_warnings=tuple(pipeline_warnings),
