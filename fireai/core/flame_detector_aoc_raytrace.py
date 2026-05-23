@@ -171,12 +171,20 @@ class CoverageResult:
     """
     Q5: Coverage computed from grid cell count — never Convex Hull.
     Conservative bias: a point is covered only if >=1 detector has LOS + AOC.
+
+    GAP-06: Added redundancy fields for NFPA 72-2022 §17.8.3.4 / FM Global DS 5-48.
     """
     total_points:     int
     covered_points:   int
     coverage_fraction: float   # = covered / total (never overestimated)
     per_detector:     Dict[str, SingleDetectorResult]
     warnings:         List[str]
+
+    # GAP-06 new fields — all defaulted for backward compat
+    redundancy_map:     Dict[int, int] = field(default_factory=dict)
+    min_redundancy:     int   = 0
+    mean_redundancy:    float = 0.0
+    double_covered_pct: float = 0.0  # % of all points covered by >=2 detectors
 
     @property
     def coverage_pct(self) -> float:
@@ -185,6 +193,15 @@ class CoverageResult:
     @property
     def is_full_coverage(self) -> bool:
         return self.covered_points == self.total_points
+
+    @property
+    def is_nfpa72_redundant(self) -> bool:
+        """
+        True if all covered points have >=2 detector coverage.
+        NFPA 72-2022 §17.8.3.4 requirement for critical applications.
+        FM Global DS 5-48 §3.1 requirement for high-hazard areas.
+        """
+        return self.min_redundancy >= 2 and self.is_full_coverage
 
 
 # ---------------------------------------------------------------------------
@@ -466,6 +483,7 @@ class FlameDetectorAOCRayTrace:
         Fix #20: No double-counting. Union of covered sets.
         Q5: Coverage = covered_count / total_count (not hull area).
         V21.2: Includes volumetric media (Beer-Lambert) analysis.
+        GAP-06: Computes redundancy per grid point for NFPA 72 §17.8.3.4.
         """
         volumetric_media = volumetric_media or []
         self._build_spatial_index(obstructions)
@@ -485,12 +503,44 @@ class FlameDetectorAOCRayTrace:
         covered  = len(union_covered)
         fraction = covered / total if total > 0 else 0.0
 
+        # GAP-06: Compute redundancy map
+        from collections import Counter
+        point_counter: Counter = Counter()
+        for det_result in per_detector.values():
+            for pt_idx in det_result.covered_pts:
+                point_counter[pt_idx] += 1
+
+        if point_counter:
+            redundancy_map = dict(point_counter)
+            min_redundancy = min(point_counter.values())
+            mean_redundancy = round(sum(point_counter.values()) / len(point_counter), 2)
+            double_covered = sum(1 for c in point_counter.values() if c >= 2)
+            double_pct = round(double_covered / total * 100.0, 2) if total > 0 else 0.0
+        else:
+            redundancy_map = {}
+            min_redundancy = 0
+            mean_redundancy = 0.0
+            double_pct = 0.0
+
+        # NFPA 72 redundancy advisory
+        if min_redundancy < 2 and len(detectors) >= 2:
+            all_warnings.append(
+                f"NFPA 72-2022 §17.8.3.4 Advisory: minimum redundancy is "
+                f"{min_redundancy} detector(s) per point ({double_pct:.1f}% of area "
+                "covered by >=2 detectors). Critical applications require "
+                "min_redundancy >= 2 (FM Global DS 5-48 §3.1)."
+            )
+
         return CoverageResult(
             total_points      = total,
             covered_points    = covered,
             coverage_fraction = round(fraction, 6),
             per_detector      = per_detector,
             warnings          = all_warnings,
+            redundancy_map    = redundancy_map,
+            min_redundancy    = min_redundancy,
+            mean_redundancy   = mean_redundancy,
+            double_covered_pct= double_pct,
         )
 
     # ── Legacy API ──────────────────────────────────────────────────────────

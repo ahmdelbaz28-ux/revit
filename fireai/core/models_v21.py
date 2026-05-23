@@ -658,6 +658,13 @@ def _select_temp_class_with_margin(
         t_safe = autoignition_c - 1.0  # Just strictly below
 
     # V21.2 Round 4: Extended T-class subdivisions for more granular selection
+    # GAP-08: The condition `_T_CLASS_MAX[t_class] <= t_safe` is intentional.
+    # IEC 60079-0:2017 §7.3 states: "the maximum surface temperature of
+    # the equipment shall not exceed the ignition temperature of the
+    # surrounding atmosphere" — i.e., T_surface ≤ T_ignition (≤ not <).
+    # Therefore _T_CLASS_MAX[t_class] <= t_safe is correct.
+    # _select_temp_class (basic, no margin) uses < for strictly below.
+    # If a future reviewer changes either function, both must change together.
     for t_class in [
         "T1", "T2", "T2A", "T2B", "T2C", "T2D",
         "T3", "T3A", "T3B", "T3C",
@@ -677,6 +684,30 @@ def _select_temp_class_with_margin(
 # ===========================================================================
 # V21.2: Spectral Signature Registry (Lazy Load)
 # ===========================================================================
+
+# ── GAP-03: Default medium absorption coefficients ───────────
+# Source: Drysdale "An Introduction to Fire Dynamics" Table 4.1,
+#         ISO 13943:2017 §3.88 (smoke optical density), EN 54-12
+#         IR band values from NIST WebBook (representative order-of-magnitude).
+_DEFAULT_MEDIUM_ALPHA: Dict[str, Dict[str, float]] = {
+    # SMOKE: condensed carbonaceous aerosol, d_p ≈ 0.1–1 µm
+    # UV 2.0 m⁻¹, VIS 3.0 m⁻¹  (Mie scattering peak in visible)
+    # IR1 (1–2.7 µm) 1.5 m⁻¹, IR3 (3.7–5 µm) 0.8 m⁻¹
+    "SMOKE": {"UV": 2.0, "VIS": 3.0, "IR1": 1.5, "IR3": 0.8},
+
+    # STEAM: water vapour, strong IR1 and IR3 absorption bands
+    # HITRAN database: H₂O strong bands at 1.4 µm and 2.7 µm
+    "STEAM": {"UV": 0.5, "VIS": 1.5, "IR1": 2.0, "IR3": 3.0},
+
+    # DUST_SUSPENSION: combustible dust cloud, d_p ≈ 10–100 µm
+    # Larger particles → geometric scattering → flat spectrum
+    "DUST_SUSPENSION": {"UV": 3.0, "VIS": 4.0, "IR1": 2.5, "IR3": 1.5},
+
+    # GAS_CLOUD: hydrocarbon vapour at low concentration (<LEL)
+    # UV opaque to most organics; VIS transparent; IR1/IR3 C-H bonds
+    "GAS_CLOUD": {"UV": 0.1, "VIS": 0.0, "IR1": 0.1, "IR3": 0.5},
+}
+
 
 class SpectralSignature(BaseModel):
     """
@@ -755,6 +786,77 @@ class SpectralSignatureRegistry:
                 cas_number="630-08-0", substance_name="Carbon Monoxide",
                 alpha_uv=0.2, alpha_vis=0.0, alpha_ir1=0.3, alpha_ir3=0.1,
             ),
+            # ── GAP-04: Extended substances (12 new entries) ──
+            # Absorption coefficients (m⁻¹ at 1 atm, 25 °C, 1% v/v concentration)
+            # Sources: NIST WebBook, Ingle & Crouch "Spectrochemical Analysis",
+            #          Hollas "Modern Spectroscopy" 4th ed.
+
+            # Ethylene C₂H₄ — CAS 74-85-1
+            # Strong UV absorption (π→π* at 165 nm); C-H stretch at 3.3 µm (IR1)
+            "74-85-1": SpectralSignature(
+                cas_number="74-85-1", substance_name="Ethylene",
+                alpha_uv=3.2, alpha_vis=0.0, alpha_ir1=1.8, alpha_ir3=0.6,
+            ),
+            # Acetylene C₂H₂ — CAS 74-86-2
+            # Strong UV (triple bond), strong C≡C and C-H stretches in IR
+            "74-86-2": SpectralSignature(
+                cas_number="74-86-2", substance_name="Acetylene",
+                alpha_uv=4.1, alpha_vis=0.0, alpha_ir1=2.2, alpha_ir3=1.2,
+            ),
+            # Ethanol C₂H₅OH — CAS 64-17-5
+            # O-H stretch at 2.9 µm (IR1), C-O stretch, moderate UV
+            "64-17-5": SpectralSignature(
+                cas_number="64-17-5", substance_name="Ethanol",
+                alpha_uv=1.5, alpha_vis=0.0, alpha_ir1=2.8, alpha_ir3=0.9,
+            ),
+            # n-Hexane C₆H₁₄ — CAS 110-54-3
+            "110-54-3": SpectralSignature(
+                cas_number="110-54-3", substance_name="n-Hexane",
+                alpha_uv=0.3, alpha_vis=0.0, alpha_ir1=2.5, alpha_ir3=1.0,
+            ),
+            # Benzene C₆H₆ — CAS 71-43-2
+            # Very strong UV (aromatic π-system at 254 nm)
+            "71-43-2": SpectralSignature(
+                cas_number="71-43-2", substance_name="Benzene",
+                alpha_uv=8.5, alpha_vis=0.2, alpha_ir1=1.6, alpha_ir3=0.5,
+            ),
+            # Toluene C₇H₈ — CAS 108-88-3
+            "108-88-3": SpectralSignature(
+                cas_number="108-88-3", substance_name="Toluene",
+                alpha_uv=7.2, alpha_vis=0.1, alpha_ir1=2.3, alpha_ir3=0.7,
+            ),
+            # o-Xylene C₈H₁₀ — CAS 95-47-6
+            "95-47-6": SpectralSignature(
+                cas_number="95-47-6", substance_name="o-Xylene",
+                alpha_uv=6.8, alpha_vis=0.1, alpha_ir1=2.7, alpha_ir3=0.8,
+            ),
+            # Ammonia NH₃ — CAS 7664-41-7
+            # Strong IR1 (N-H stretch at 2.95 µm, 3.3 µm); UV at 200 nm
+            "7664-41-7": SpectralSignature(
+                cas_number="7664-41-7", substance_name="Ammonia",
+                alpha_uv=2.0, alpha_vis=0.0, alpha_ir1=3.5, alpha_ir3=1.8,
+            ),
+            # Hydrogen sulfide H₂S — CAS 7783-06-4
+            # S-H stretch at 3.9 µm (IR3); UV at 195 nm
+            "7783-06-4": SpectralSignature(
+                cas_number="7783-06-4", substance_name="Hydrogen Sulfide",
+                alpha_uv=1.8, alpha_vis=0.0, alpha_ir1=0.8, alpha_ir3=2.4,
+            ),
+            # Acetone (CH₃)₂CO — CAS 67-64-1
+            "67-64-1": SpectralSignature(
+                cas_number="67-64-1", substance_name="Acetone",
+                alpha_uv=3.5, alpha_vis=0.0, alpha_ir1=0.9, alpha_ir3=0.4,
+            ),
+            # Methanol CH₃OH — CAS 67-56-1
+            "67-56-1": SpectralSignature(
+                cas_number="67-56-1", substance_name="Methanol",
+                alpha_uv=0.8, alpha_vis=0.0, alpha_ir1=2.6, alpha_ir3=0.9,
+            ),
+            # Isopropanol (CH₃)₂CHOH — CAS 67-63-0
+            "67-63-0": SpectralSignature(
+                cas_number="67-63-0", substance_name="Isopropanol",
+                alpha_uv=1.2, alpha_vis=0.0, alpha_ir1=2.7, alpha_ir3=1.0,
+            ),
         }
 
     def get(self, cas_number: str) -> Optional[SpectralSignature]:
@@ -772,6 +874,11 @@ class SpectralSignatureRegistry:
         self._ensure_loaded()
         return sorted(self._signatures.keys())
 
+    def count(self) -> int:
+        """Return total number of registered substances."""
+        self._ensure_loaded()
+        return len(self._signatures)
+
 
 # ===========================================================================
 # V21.2: Volumetric Medium (Gaseous/Smoke Obstruction)
@@ -788,7 +895,12 @@ class VolumetricMedium(BaseModel):
 
     Example: smoke layer, steam cloud, gas cloud in detector line of sight.
 
-    Reference: Beer-Lambert law, IEC 60079-29-4, FM Global DS 5-48
+    GAP-03: Default absorption coefficients per medium type.
+    GAP-07: Non-zero volume validator.
+
+    Reference: Beer-Lambert law, IEC 60079-29-4, FM Global DS 5-48,
+               Drysdale "An Introduction to Fire Dynamics" Table 4.1,
+               ISO 13943:2017 §3.88
     """
     model_config = ConfigDict(frozen=True, strict=True)
 
@@ -824,12 +936,50 @@ class VolumetricMedium(BaseModel):
                 )
         return self
 
+    @model_validator(mode="after")
+    def bbox_nonzero_volume(self) -> "VolumetricMedium":
+        """
+        GAP-07: A volumetric medium with zero volume has no physical meaning.
+        IEC 60079-10-1:2015 Annex B §B.3: minimum enclosure volume applies.
+        """
+        dx = self.bbox_max[0] - self.bbox_min[0]
+        dy = self.bbox_max[1] - self.bbox_min[1]
+        dz = self.bbox_max[2] - self.bbox_min[2]
+        if dx * dy * dz < 1.0e-9:
+            raise ValueError(
+                f"VolumetricMedium '{self.medium_id}' has zero or near-zero "
+                f"volume (dx={dx:.4f}, dy={dy:.4f}, dz={dz:.4f}). "
+                "All three bbox dimensions must be positive."
+            )
+        return self
+
     def get_alpha(self, band: WavelengthBand) -> float:
-        """Get absorption coefficient for a band."""
+        """
+        GAP-03: Return absorption coefficient (m^-1) for `band`.
+
+        Priority order:
+        1. alpha_override[band]  — explicit user value, highest priority
+        2. _DEFAULT_MEDIUM_ALPHA[medium_type][band]  — type-based default
+        3. 0.0  — fallback (medium transparent in this band)
+
+        Multiplied by concentration_factor in all cases.
+
+        IEC 60079-10-1 §7: Absorption should never be assumed zero for
+        optically active media without explicit justification.
+        """
+        # Priority 1: explicit override
         if self.alpha_override is not None:
-            return self.alpha_override.get(band, 0.0) * self.concentration_factor
-        # Without override or CAS, assume minimal absorption
-        return 0.0
+            raw = self.alpha_override.get(band, 0.0)
+            # Also check string value in case dict was built with str keys
+            if raw == 0.0:
+                raw = self.alpha_override.get(band.value, 0.0)
+            return float(raw) * self.concentration_factor
+
+        # Priority 2: type-based default
+        defaults = _DEFAULT_MEDIUM_ALPHA.get(self.medium_type, {})
+        band_key = band.value if isinstance(band, WavelengthBand) else band
+        raw = defaults.get(band_key, 0.0)
+        return float(raw) * self.concentration_factor
 
     def get_alpha_with_registry(
         self, band: WavelengthBand, registry: SpectralSignatureRegistry
@@ -841,7 +991,11 @@ class VolumetricMedium(BaseModel):
             sig = registry.get(self.cas_number)
             if sig is not None:
                 return sig.alpha_for(band) * self.concentration_factor
-        return 0.0
+        # GAP-03: Fall back to type-based defaults before returning 0.0
+        defaults = _DEFAULT_MEDIUM_ALPHA.get(self.medium_type, {})
+        band_key = band.value if isinstance(band, WavelengthBand) else band
+        raw = defaults.get(band_key, 0.0)
+        return float(raw) * self.concentration_factor
 
 
 # ===========================================================================

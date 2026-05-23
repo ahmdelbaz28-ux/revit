@@ -33,6 +33,52 @@ from fireai.core.international_reg_selector import (
     ATEXZone, HazardSystem, HazardClass,
 )
 
+
+# ── GAP-05: Zone/hazard_type cross-validation ────────────────────────────
+
+_GAS_ZONES  = {ZoneType.ZONE_0, ZoneType.ZONE_1, ZoneType.ZONE_2}
+_DUST_ZONES = {ZoneType.ZONE_20, ZoneType.ZONE_21, ZoneType.ZONE_22}
+
+
+def _validate_zone_hazard_consistency(
+    zone: ZoneType,
+    hazard_type: HazardType,
+    errors: list,
+    warnings: list,
+) -> None:
+    """
+    GAP-05: Cross-validate zone classification against hazard family.
+
+    IEC 60079-10-1:2015 §1.3:
+    - Zones 0/1/2 are defined for GAS or VAPOUR hazards.
+    - Zones 20/21/22 are defined for DUST hazards.
+    Mixing them indicates a data-entry error that must be flagged.
+    """
+    if zone in _GAS_ZONES and hazard_type == HazardType.DUST:
+        errors.append(
+            f"Zone {zone.value} is a GAS zone (IEC 60079-10-1 §1.3) but "
+            f"hazard_type is DUST. Did you mean Zone 20/21/22? "
+            "This combination is not permitted — zone and hazard_type are inconsistent."
+        )
+    elif zone in _DUST_ZONES and hazard_type == HazardType.GAS:
+        errors.append(
+            f"Zone {zone.value} is a DUST zone (IEC 60079-10-1 §1.3) but "
+            f"hazard_type is GAS. Did you mean Zone 0/1/2? "
+            "This combination is not permitted — zone and hazard_type are inconsistent."
+        )
+    elif zone in _GAS_ZONES and hazard_type == HazardType.HYBRID:
+        warnings.append(
+            f"Zone {zone.value} is a gas zone, but hazard_type is HYBRID (gas+dust). "
+            "Ensure a separate dust zone analysis covers the dust component. "
+            "IEC 60079-10-1:2015 §5.3."
+        )
+    elif zone in _DUST_ZONES and hazard_type == HazardType.HYBRID:
+        warnings.append(
+            f"Zone {zone.value} is a dust zone, but hazard_type is HYBRID (gas+dust). "
+            "Ensure a separate gas zone analysis covers the gas/vapour component. "
+            "IEC 60079-10-1:2015 §5.3."
+        )
+
 logger = logging.getLogger(__name__)
 
 
@@ -277,6 +323,9 @@ class ATEXHazardousArbiter:
         warnings: List[str] = list(hac_warnings)
         errors:   List[str] = []
 
+        # GAP-05: Cross-validate zone and hazard_type
+        _validate_zone_hazard_consistency(zone, hazard_type, errors, warnings)
+
         if zone == ZoneType.UNCLASSIFIED:
             return self._safe_result_v21(hazard_system, hac_warnings, space_id)
 
@@ -378,12 +427,21 @@ class ATEXHazardousArbiter:
             )
         except Exception as exc:
             errors.append(f"Equipment spec validation failed: {exc}")
+            # Use minimal safe fallback spec for the zone
+            try:
+                fallback_spec = ATEXEquipmentSpec(
+                    zone=zone, epl_required=epl_str, atex_category=cat_str,
+                    temp_class=temp_class, protection_modes=["n"],
+                )
+            except Exception:
+                # Ultimate fallback - Zone 2 / Gc / 3G / T4 / n
+                fallback_spec = ATEXEquipmentSpec(
+                    zone=ZoneType.ZONE_2, epl_required="Gc", atex_category="3G",
+                    temp_class=TemperatureClass.T4, protection_modes=["n"],
+                )
             return ATEXArbitrationResult(
                 space_id=space_id,
-                equipment_spec=ATEXEquipmentSpec(
-                    zone=zone, epl_required=epl_str, atex_category=cat_str,
-                    temp_class=temp_class, protection_modes=protection_modes,
-                ),
+                equipment_spec=fallback_spec,
                 hazard_system=hazard_system,
                 regulatory_note=reg_note,
                 hac_warnings=tuple(hac_warnings),  # V21.2 Round 4: Fix #16

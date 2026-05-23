@@ -229,9 +229,15 @@ class CLIFireAIEngine:
         substance: SubstanceProperties,
         ventilation: VentilationLevel,
         is_indoor: bool = True,
+        release_grade = None,
+        release_rate_kg_s: float = 0.0,
+        room_volume_m3: float = 1000.0,
     ) -> Layer2Result:
         """
         Classify hazardous area with Burgess-Wheeler LFL thermal correction.
+
+        GAP-02: release_grade is now the PRIMARY zone determinant per IEC §4.2.
+        Default release_grade=None → PRIMARY (backward compatible).
 
         Uses EnvironmentalContext.ambient_temp_c for thermal correction.
         If no context provided, uses worst-case 40C default.
@@ -243,6 +249,9 @@ class CLIFireAIEngine:
                 is_indoor=is_indoor,
                 ambient_temp_c=self._env_context.ambient_temp_c,
                 env_context=self._env_context,
+                release_grade=release_grade,
+                release_rate_kg_s=release_rate_kg_s,
+                room_volume_m3=room_volume_m3,
             )
 
             # Extract LFL correction info from warnings

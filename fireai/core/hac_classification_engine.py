@@ -24,6 +24,9 @@ Fix #10 (HIGH):     MIE < 3mJ = electrostatic ignition risk
 Fix #11 (HIGH):     POOR + Zone 0/20 = critical flag (not silent)
 Fix #12 (MEDIUM):   Temperature class vs autoignition
 Fix #13 (MEDIUM):   Indoor = hemisphere (2/3*pi*r^3), not full sphere
+
+GAP-01: IEC 60079-10-1 Annex B zone extent formula
+GAP-02: release_grade parameter in classify_v21()
 """
 
 from __future__ import annotations
@@ -215,6 +218,163 @@ class HACResultLegacy:
 # V21 Classification Engine
 # ---------------------------------------------------------------------------
 
+# ── GAP-01: IEC 60079-10-1 Annex B ventilation tables ───────────────
+
+# IEC 60079-10-1:2015 Annex B Table B.2 — ventilation effectiveness (f)
+_VENT_EFFECTIVENESS: Dict[str, float] = {
+    "HIGH":   1.0,   # f = 1.0 (well-ventilated, uniform flow)
+    "MEDIUM": 0.5,   # f = 0.5 (moderate, some dead zones)
+    "LOW":    0.2,   # f = 0.2 (poor distribution, stratification)
+    "POOR":   0.05,  # f = 0.05 (almost stagnant)
+}
+
+# IEC 60079-10-1:2015 Annex B Table B.1 — concentration factor Ck
+_RELEASE_GRADE_CK: Dict[str, float] = {
+    "CONTINUOUS": 0.25,  # Zone 0 vicinity — very conservative
+    "PRIMARY":    0.25,  # Zone 1 vicinity — IEC 60079-10-1 Annex B §B.2
+    "SECONDARY":  0.50,  # Zone 2 vicinity — IEC 60079-10-1 Annex B §B.3
+}
+
+# Minimum air changes per hour (ACH) by ventilation level
+_VENT_ACH: Dict[str, float] = {
+    "HIGH":   12.0,  # forced ventilation
+    "MEDIUM":  6.0,  # general mechanical ventilation
+    "LOW":     1.0,  # natural ventilation
+    "POOR":    0.1,  # effectively enclosed
+}
+
+# ── GAP-02: IEC 60079-10-1 §4.2 release_grade × ventilation matrix ─────
+
+_GAS_ZONE_RELEASE_BASE: Dict[str, ZoneType] = {
+    "CONTINUOUS": ZoneType.ZONE_0,
+    "PRIMARY":    ZoneType.ZONE_1,
+    "SECONDARY":  ZoneType.ZONE_2,
+}
+_DUST_ZONE_RELEASE_BASE: Dict[str, ZoneType] = {
+    "CONTINUOUS": ZoneType.ZONE_20,
+    "PRIMARY":    ZoneType.ZONE_21,
+    "SECONDARY":  ZoneType.ZONE_22,
+}
+
+# IEC 60079-10-1:2015 §4.3 — ventilation modifies zone
+# Higher index = less severe zone. HIGH ventilation should reduce severity
+# (move to higher index = less severe zone), POOR should increase severity
+# (move to lower index = more severe zone).
+_VENT_ZONE_DELTA: Dict[str, int] = {
+    "HIGH":   +1,   # reduces severity (e.g. Zone 1 → Zone 2)
+    "MEDIUM":  0,   # no change to zone type
+    "LOW":     0,   # no change, but extent increases
+    "POOR":   -1,   # increases severity (e.g. Zone 2 → Zone 1)
+}
+
+_GAS_ZONE_ORDER = ["ZONE_0", "ZONE_1", "ZONE_2"]
+_DUST_ZONE_ORDER = ["ZONE_20", "ZONE_21", "ZONE_22"]
+
+
+def _iec_annex_b_extent(
+    substance: SubstanceProperties,
+    ventilation: VentilationLevel,
+    release_grade: ReleaseGrade,
+    release_rate_kg_s: float,
+    room_volume_m3: float,
+    ambient_temp_c: float = 40.0,
+    is_indoor: bool = True,
+) -> tuple:
+    """
+    GAP-01: IEC 60079-10-1:2015 Annex B — Hazardous Area Extent.
+    Returns (horizontal_m, vertical_m, volume_m3).
+    """
+    lfl_vol_pct = substance.lfl_vol_pct
+    if lfl_vol_pct is None:
+        raise ValueError(
+            f"Substance '{substance.name}' has no lfl_vol_pct; "
+            "cannot apply IEC 60079-10-1 Annex B formula."
+        )
+
+    # LFL temperature correction — Burgess-Wheeler
+    lfl_corrected = lfl_vol_pct * (1.0 - 0.001824 * (ambient_temp_c - 25.0))
+    lfl_corrected = max(lfl_corrected, lfl_vol_pct * 0.5)
+    lfl_frac = lfl_corrected / 100.0
+
+    # Volumetric release rate (m³/s at standard conditions)
+    mw = substance.molecular_weight
+    if mw is None or mw <= 0.0:
+        raise ValueError(
+            f"Substance '{substance.name}' has no molecular_weight; "
+            "cannot apply IEC 60079-10-1 Annex B formula."
+        )
+    mw_kg_mol = mw / 1000.0 if mw > 10.0 else mw
+    dV_release_m3_s = (release_rate_kg_s / mw_kg_mol) * 0.0224
+
+    # Concentration factor Ck
+    ck = _RELEASE_GRADE_CK.get(release_grade.value, 0.25)
+
+    # Hazardous volume at source — eq. B.1
+    Vz_source_m3_s = dV_release_m3_s / (ck * lfl_frac + 1e-12)
+
+    # Ventilation dilution — eq. B.3
+    f = _VENT_EFFECTIVENESS.get(ventilation.value, 0.5)
+    n_ach = _VENT_ACH.get(ventilation.value, 6.0)
+    n_m3_s = (n_ach * room_volume_m3) / 3600.0
+    effective_dilution = f * n_m3_s
+    Vz_diluted_m3 = Vz_source_m3_s / (effective_dilution + 1e-12)
+
+    # Convert to zone radius
+    if is_indoor:
+        r_hz = (3.0 * Vz_diluted_m3 / (2.0 * math.pi)) ** (1.0 / 3.0)
+    else:
+        r_hz = (3.0 * Vz_diluted_m3 / (4.0 * math.pi)) ** (1.0 / 3.0)
+
+    # IEC 60079-10-1 Annex B §B.4: vertical extent
+    mw_air = 29.0
+    buoyant = mw < mw_air
+    r_vz = r_hz * (1.5 if buoyant else 0.5)
+    zone_vol_m3 = Vz_diluted_m3
+
+    # Apply minimum extents (safety floor)
+    r_hz = max(r_hz, 0.5)
+    r_vz = max(r_vz, 0.3)
+    # Recompute volume from final radii (consistent with ZoneExtent validator)
+    if is_indoor:
+        zone_vol_m3 = (2.0 / 3.0) * math.pi * r_hz ** 2 * r_vz
+    else:
+        zone_vol_m3 = (4.0 / 3.0) * math.pi * r_hz ** 2 * r_vz
+
+    return r_hz, r_vz, zone_vol_m3
+
+
+def _resolve_zone_with_grade_vent(
+    release_grade: ReleaseGrade,
+    ventilation: VentilationLevel,
+    is_gas: bool,
+) -> ZoneType:
+    """
+    GAP-02: IEC 60079-10-1:2015 §4.2 + §4.3.
+    Zone from release grade (primary) modified by ventilation (secondary).
+
+    IEC §4.3 Note 2: "high dilution may reduce zone extent but should
+    not relax zone type for CONTINUOUS/PRIMARY releases" — therefore
+    CONTINUOUS releases stay at Zone 0/20 regardless of ventilation.
+    """
+    if is_gas:
+        base_str = _GAS_ZONE_RELEASE_BASE[release_grade.value]
+        order = _GAS_ZONE_ORDER
+    else:
+        base_str = _DUST_ZONE_RELEASE_BASE[release_grade.value]
+        order = _DUST_ZONE_ORDER
+
+    base_idx = order.index(base_str)
+    delta = _VENT_ZONE_DELTA.get(ventilation.value, 0)
+
+    # IEC §4.3 Note 2: CONTINUOUS releases cannot be reduced by ventilation
+    # Zone 0/20 (index 0) must stay at index 0
+    if release_grade == ReleaseGrade.CONTINUOUS and delta > 0:
+        delta = 0
+
+    final_idx = max(0, min(len(order) - 1, base_idx + delta))
+    return ZoneType(order[final_idx])
+
+
 class HACClassificationEngine:
     """
     Classifies hazardous areas from physical parameters.
@@ -225,6 +385,10 @@ class HACClassificationEngine:
     Physics-first: zone is derived from substance properties,
     release grade, and ventilation — not from user opinion.
 
+    GAP-02: release_grade is now the PRIMARY zone determinant per §4.2.
+    ventilation is the SECONDARY modifier per §4.3.
+    Default release_grade=PRIMARY preserves backward compatibility.
+
     IEC 60079-10-1:2015 (Gas) / IEC 60079-10-2:2015 (Dust)
     """
 
@@ -234,19 +398,29 @@ class HACClassificationEngine:
         self,
         substance:   SubstanceProperties,
         ventilation: VentilationLevel,
-        is_indoor:   bool,
+        is_indoor:   bool = True,
         source_height_m: float = 0.0,
         ambient_temp_c:  float = 20.0,
         env_context:     Optional[EnvironmentalContext] = None,
+        release_grade:   Optional[ReleaseGrade] = None,
+        release_rate_kg_s: float = 0.0,
+        room_volume_m3:  float = 1000.0,
     ) -> HACResult:
         """
         V21.2 classify using Pydantic models — fail-fast on invalid input.
-        SubstanceProperties is validated at construction — no dict/tuple passes.
 
-        V21.2 adds EnvironmentalContext for Burgess-Wheeler LFL correction.
-        If env_context is provided, uses its ambient_temp for LFL correction.
-        Otherwise, uses ambient_temp_c parameter for backward compatibility.
+        GAP-02: release_grade is now the PRIMARY zone determinant per IEC §4.2.
+        ventilation is the SECONDARY modifier per IEC §4.3.
+        Default release_grade=PRIMARY preserves backward compatibility.
+
+        GAP-01: When release_rate_kg_s > 0 AND substance has lfl_vol_pct
+        AND molecular_weight, uses IEC Annex B formula for zone extent.
+        Otherwise falls back to simplified k/lfl method.
         """
+        # Backward compat: None → PRIMARY
+        if release_grade is None:
+            release_grade = ReleaseGrade.PRIMARY
+
         warnings: List[str] = []
         critical_flags: List[str] = []
 
@@ -266,25 +440,128 @@ class HACClassificationEngine:
                     f"[Burgess-Wheeler / IEC 60079-10-1 Annex B]"
                 )
 
-        if substance.hazard_type == HazardType.GAS:
-            return self._classify_gas_v21(
-                substance, ventilation, is_indoor,
-                source_height_m, ambient_temp_c,
-                warnings, critical_flags, lfl_corrected,
+        # GAP-02: zone from release grade + ventilation
+        is_gas = substance.hazard_type in (HazardType.GAS, HazardType.HYBRID)
+        is_dust = substance.hazard_type in (HazardType.DUST, HazardType.HYBRID)
+
+        if substance.hazard_type == HazardType.HYBRID:
+            gas_zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=True)
+            dust_zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=False)
+            severity = [
+                ZoneType.ZONE_0, ZoneType.ZONE_20,
+                ZoneType.ZONE_1, ZoneType.ZONE_21,
+                ZoneType.ZONE_2, ZoneType.ZONE_22,
+                ZoneType.UNCLASSIFIED,
+            ]
+            zone = gas_zone if severity.index(gas_zone) <= severity.index(dust_zone) else dust_zone
+            warnings.append(
+                "HYBRID hazard: zone determined from most severe of gas and dust analysis. "
+                "[IEC 60079-10-1:2015 §5.3]"
             )
-        elif substance.hazard_type == HazardType.DUST:
-            return self._classify_dust_v21(
-                substance, ventilation, is_indoor,
-                source_height_m, warnings, critical_flags,
-            )
-        elif substance.hazard_type == HazardType.HYBRID:
-            return self._classify_hybrid_v21(
-                substance, ventilation, is_indoor,
-                source_height_m, ambient_temp_c,
-                warnings, critical_flags, lfl_corrected,
-            )
+        elif is_gas:
+            zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=True)
         else:
-            raise ValueError(f"Unsupported hazard_type: {substance.hazard_type}")
+            zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=False)
+
+        # GAP-01: zone extent using IEC Annex B or simplified fallback
+        effective_temp = env_context.ambient_temp_c if env_context else ambient_temp_c
+        effective_lfl = lfl_corrected if lfl_corrected is not None else (substance.lfl_vol_pct or 1.0)
+
+        use_annex_b = (
+            release_rate_kg_s > 0.0
+            and substance.lfl_vol_pct is not None
+            and substance.molecular_weight is not None
+            and room_volume_m3 > 0.0
+        )
+
+        if use_annex_b:
+            try:
+                r_h, r_v, vol_m3 = _iec_annex_b_extent(
+                    substance=substance,
+                    ventilation=ventilation,
+                    release_grade=release_grade,
+                    release_rate_kg_s=release_rate_kg_s,
+                    room_volume_m3=room_volume_m3,
+                    ambient_temp_c=effective_temp,
+                    is_indoor=is_indoor,
+                )
+                warnings.append(
+                    "Zone extent computed using IEC 60079-10-1:2015 Annex B formula "
+                    f"(release_rate={release_rate_kg_s:.4f} kg/s, "
+                    f"room_volume={room_volume_m3:.1f} m3)."
+                )
+            except (ValueError, ZeroDivisionError) as exc:
+                warnings.append(
+                    f"IEC Annex B calculation failed ({exc}); "
+                    "falling back to simplified k/LFL method."
+                )
+                use_annex_b = False
+
+        if not use_annex_b:
+            # Simplified k/LFL method (existing behaviour)
+            if is_dust and not is_gas:
+                extent = self._compute_extent_dust_v21(
+                    substance.mec_g_m3 or 30.0, ventilation, is_indoor, source_height_m)
+            else:
+                extent = self._compute_extent_v21(
+                    effective_lfl, ventilation, is_indoor, source_height_m)
+            r_h = extent.horizontal_m
+            r_v = extent.vertical_m
+            vol_m3 = extent.volume_m3
+
+        # Build ZoneExtent
+        extent = ZoneExtent(
+            horizontal_m=round(r_h, 3),
+            vertical_m=round(r_v, 3),
+            volume_m3=round(vol_m3, 3),
+            is_outdoor=not is_indoor,
+        )
+
+        # Fix #9: Flash point check
+        if substance.flash_point_c is not None and is_gas:
+            if substance.flash_point_c > effective_temp:
+                warnings.append(
+                    f"Flash point ({substance.flash_point_c}C) > ambient "
+                    f"({effective_temp}C): liquid may not be flammable "
+                    "at ambient temperature. Review HAC zone assignment."
+                )
+
+        # Fix #10: MIE electrostatic warning
+        if substance.mie_mj is not None and substance.mie_mj < 3.0:
+            warnings.append(
+                f"MIE={substance.mie_mj} mJ < 3 mJ: electrostatic ignition risk. "
+                "IEC 60079-10-1 §5.5 — anti-static precautions mandatory."
+            )
+
+        # Fix #12: Temperature class vs autoignition check
+        if substance.autoignition_c is not None:
+            t_class = _select_temp_class(substance.autoignition_c)
+            warnings.append(
+                f"Max temperature class for autoignition "
+                f"{substance.autoignition_c}C -> {t_class.value} "
+                f"[IEC 60079-0 §7.3]"
+            )
+
+        # Fix #11: POOR ventilation + Zone 0/20 critical flag
+        if ventilation == VentilationLevel.POOR and zone in (
+            ZoneType.ZONE_0, ZoneType.ZONE_20
+        ):
+            flag = (
+                "CRITICAL: Zone 0/20 with POOR ventilation — "
+                "most dangerous possible classification. "
+                "Mandatory engineering review required. "
+                "[IEC 60079-10-1 §6.3]"
+            )
+            critical_flags.append(flag)
+
+        return HACResult(
+            zone=zone,
+            extent=extent,
+            ventilation=ventilation,
+            hazard_type=substance.hazard_type,
+            warnings=warnings,
+            critical_flags=critical_flags,
+        )
 
     def _classify_gas_v21(
         self, sub, vent, indoor, src_h, ambient, warnings, critical_flags,
