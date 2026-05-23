@@ -142,6 +142,18 @@ from fireai.core.safety_audit_engine import (
     elevation_tier_from_detector_z,
 )
 
+# V23 — Ultrasonic Gas Leak Detection (UGLD) Acoustic Physics Engine
+from fireai.core.ugld_acoustics import (
+    UltrasonicSensor as V23UltrasonicSensor,
+    AcousticPropagation as V23AcousticPropagation,
+    UGLDTriggerResult,
+    UGLDFrequencyBand,
+    check_ugld_trigger,
+    atmospheric_attenuation_db_per_m,
+    max_detection_range_m,
+    speed_of_sound,
+)
+
 __all__ = [
     "__version__",
     # Analysers
@@ -271,4 +283,13 @@ __all__ = [
     "AuditViolation",
     "AuditSeverity",
     "elevation_tier_from_detector_z",
+    # V23 — UGLD Acoustic Physics
+    "V23UltrasonicSensor",
+    "V23AcousticPropagation",
+    "UGLDTriggerResult",
+    "UGLDFrequencyBand",
+    "check_ugld_trigger",
+    "atmospheric_attenuation_db_per_m",
+    "max_detection_range_m",
+    "speed_of_sound",
 ]
