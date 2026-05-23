@@ -59,18 +59,26 @@ def make_room(rid: str, coords: list, height: float = 3.0,
 class TestNFPATable:
     """Verify dynamic radius from NFPA 72 Table 17.6.3.1"""
 
-    def test_3m_gives_4_55m(self):
+    def test_3m_gives_R_0_7xS(self):
+        """h=3.0m → S=9.1m → R = 0.7×S = 6.37m per NFPA 72 §17.7.4.2.3.1.
+        PREVIOUS BUG: Old test expected 4.55m (which is S/2 = wall distance, NOT
+        coverage radius). R = 0.7×S is the correct coverage radius formula."""
         orch = FloorOrchestrator()
         room = make_room("R1", [(0, 0), (8, 0), (8, 6), (0, 6)], 3.0)
         result = orch.process([room], "Test")
-        assert result.room_results[0].radius_m == 4.55
+        assert result.room_results[0].radius_m == 6.37  # R = 0.7 × 9.1m
+        assert result.room_results[0].spacing_m == 9.1
 
-    def test_4_8m_gives_5_35m_not_6_37(self):
+    def test_4_8m_height_adjusted_spacing(self):
+        """h=4.8m → S=7.7m → R = 0.7×S = 5.39m per NFPA 72 Table 17.6.3.1.1.
+        PREVIOUS BUG: Old test expected 5.35m (S/2). Also FloorOrchestrator
+        previously used S=9.1m for ALL heights, ignoring the NFPA table —
+        this has been fixed to use height-adjusted spacing."""
         orch = FloorOrchestrator()
         room = make_room("R2", [(0, 0), (10, 0), (10, 8), (0, 8)], 4.8)
         result = orch.process([room], "Test")
-        assert result.room_results[0].radius_m == 5.35
-        assert result.room_results[0].radius_m != 6.37
+        assert result.room_results[0].radius_m == 5.39  # R = 0.7 × 7.7m
+        assert result.room_results[0].spacing_m == 7.7
 
     def test_15_3m_now_passes(self):
         """15.3m is now valid after edge case fix - should PASS"""

@@ -14,7 +14,7 @@ import logging
 from .audit_trail import AuditTrail
 from .nfpa72_models import RoomSpec, NFPAComplianceError, DetectorType
 from .nfpa72_coverage import verify_full_coverage
-from .spatial_engine.density_optimizer import DensityOptimizer, Room
+from .spatial_engine.density_optimizer import DensityOptimizer, Room, MAX_SPACING_M, DETECTOR_RADIUS
 
 # CRITICAL FIX: InvalidInputError was caught but never imported or defined.
 # Define it locally to prevent NameError at runtime.
@@ -198,7 +198,23 @@ class FloorOrchestrator:
                 length=spec.depth_m,
                 ceiling_height=ceiling_h
             )
-            optimizer = DensityOptimizer()
+            # CRITICAL FIX: Use height-adjusted coverage radius per NFPA 72
+            # Table 17.6.3.1.1. Previously, DensityOptimizer always used R=6.37m
+            # (S=9.1m at h≤3.0m) regardless of ceiling height, which overestimates
+            # coverage at higher ceilings — a life-safety defect.
+            from .nfpa72_calculations import calculate_coverage_radius_from_height
+            det_type = spec.detector_type.value if hasattr(spec.detector_type, 'value') else str(spec.detector_type or 'SMOKE')
+            try:
+                cov_spec = calculate_coverage_radius_from_height(ceiling_h, det_type)
+                height_radius = cov_spec.radius
+                height_spacing = cov_spec.spacing_max
+            except Exception:
+                height_radius = None
+                height_spacing = None
+            optimizer = DensityOptimizer(
+                max_spacing=height_spacing if height_spacing else MAX_SPACING_M,
+                radius=height_radius if height_radius else DETECTOR_RADIUS,
+            )
             layout = optimizer.optimize(room_data)
 
             # [2] Build result from layout

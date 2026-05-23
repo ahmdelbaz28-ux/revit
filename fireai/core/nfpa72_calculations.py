@@ -616,7 +616,7 @@ def calculate_coverage_radius_from_height(
         # Use conservative fallback spacing for heights beyond the table
         spacing = (
             _NFPA72_SMOKE_SPACING_FALLBACK
-            if detector_type == "smoke"
+            if detector_type.lower() == "smoke"
             else _NFPA72_HEAT_SPACING_FALLBACK
         )
         radius = round(0.7 * spacing, 2)
@@ -639,7 +639,7 @@ def calculate_coverage_radius_from_height(
 
     for h_max, smoke_spacing, heat_spacing in _NFPA72_TABLE_17_6_3_1_1:
         if ceiling_height <= h_max:
-            spacing = smoke_spacing if detector_type == "smoke" else heat_spacing
+            spacing = smoke_spacing if detector_type.lower() == "smoke" else heat_spacing
             radius = round(0.7 * spacing, 2)          # R = 0.7 × S (coverage radius)
             wall_dist = round(spacing / 2.0, 2)        # S/2 (max wall distance)
             if ceiling_height > 9.1:
@@ -655,7 +655,7 @@ def calculate_coverage_radius_from_height(
             )
 
     # exactly 12.2m — use last table entry
-    spacing = 5.60 if detector_type == "smoke" else 3.70
+    spacing = 5.60 if detector_type.lower() == "smoke" else 3.70
     radius = round(0.7 * spacing, 2)
     wall_dist = round(spacing / 2.0, 2)
     return CoverageSpec(

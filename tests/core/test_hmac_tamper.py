@@ -57,6 +57,12 @@ def test_hmac_tamper_detection():
         conn = sqlite3.connect(temp_path)
         cursor = conn.cursor()
 
+        # Drop triggers to simulate an attacker who bypasses DB-level protection.
+        # This tests the HMAC chain integrity — even if triggers are bypassed,
+        # the HMAC signature should detect the tampering.
+        cursor.execute("DROP TRIGGER IF EXISTS prevent_update")
+        cursor.execute("DROP TRIGGER IF EXISTS prevent_delete")
+
         cursor.execute(
             "SELECT id, event_type, room_id, details, previous_hash, timestamp FROM audit_log WHERE id = 2"
         )

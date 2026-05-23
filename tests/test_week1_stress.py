@@ -72,8 +72,12 @@ class TestParserRobustness:
         """ملف غير موجود — يجب ألا ينهار"""
         from parsers.dwg_parser import DWGParser
         parser = DWGParser()
-        result = parser.parse_dwg("/ghost/path/none.dwg")
-        assert isinstance(result, list)
+        # DWGParser uses parse() not parse_dwg() — method was renamed
+        # parse() returns DWGParseResult, not list
+        result = parser.parse("/ghost/path/none.dwg")
+        assert result is not None
+        assert hasattr(result, 'success')
+        assert result.success is False  # Should gracefully report failure
 
     def test_dwg_parser_empty_or_corrupted(self):
         """ملف تالف أو فارغ — يجب ألا ينهار"""
@@ -84,8 +88,9 @@ class TestParserRobustness:
         try:
             with open(tmp, 'wb') as f:
                 f.write(b'\x00\xFF' * 100)
-            result = parser.parse_dwg(tmp)
-            assert isinstance(result, list)
+            result = parser.parse(tmp)
+            assert result is not None
+            assert hasattr(result, 'success')
         finally:
             if os.path.exists(tmp):
                 os.remove(tmp)
@@ -95,8 +100,10 @@ class TestParserRobustness:
         from parsers.dwg_parser import DWGParser
         parser = DWGParser()
         for _ in range(50):
-            result = parser.parse_dwg("/nonexistent.dwg")
-            assert isinstance(result, list)
+            result = parser.parse("/nonexistent.dwg")
+            assert result is not None
+            assert hasattr(result, 'success')
+            assert result.success is False
 
 # ============================================================
 # 3. اختبارات منطق المزامنة والتعارض (Sync Logic & Conflict Tests)

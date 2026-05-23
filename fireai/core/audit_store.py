@@ -155,17 +155,24 @@ DATABASE_PATH = os.environ.get(
 # Track whether database has been initialized
 _db_initialized = False
 
+# Persistent connection for :memory: databases (each sqlite3.connect(":memory:")
+# creates a NEW empty database, so we must reuse the same connection)
+_memory_conn: sqlite3.Connection | None = None
+
 
 def _init_database() -> None:
     """Initialize database with V11 schema (ECDSA signature column)."""
-    global _db_initialized
+    global _db_initialized, _memory_conn
     if _db_initialized:
         return
-    # Ensure parent directory exists
-    db_dir = os.path.dirname(DATABASE_PATH)
-    if db_dir and not os.path.isdir(db_dir):
-        os.makedirs(db_dir, exist_ok=True)
+    # Ensure parent directory exists (skip for :memory:)
+    if DATABASE_PATH != ":memory:":
+        db_dir = os.path.dirname(DATABASE_PATH)
+        if db_dir and not os.path.isdir(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(DATABASE_PATH)
+    if DATABASE_PATH == ":memory:":
+        _memory_conn = conn  # Keep this connection alive
     cursor = conn.cursor()
 
     # Create table with ECDSA signature column (V11)
@@ -216,14 +223,33 @@ def _init_database() -> None:
     """)
 
     conn.commit()
-    conn.close()
+    # For :memory: databases, keep the connection alive — closing it destroys the data
+    if DATABASE_PATH != ":memory:":
+        conn.close()
     _db_initialized = True
 
 
 def _get_connection() -> sqlite3.Connection:
-    """Get database connection (initializes on first call)."""
+    """Get database connection (initializes on first call).
+    
+    For :memory: databases, returns the SAME persistent connection,
+    because sqlite3.connect(":memory:") creates a new empty database
+    each time — the schema and data would be lost otherwise.
+    """
     _init_database()
+    if DATABASE_PATH == ":memory:" and _memory_conn is not None:
+        return _memory_conn
     return sqlite3.connect(DATABASE_PATH)
+
+
+def _release_connection(conn: sqlite3.Connection) -> None:
+    """Release a database connection.
+    
+    For :memory: databases, do NOT close the persistent connection.
+    For file databases, close normally.
+    """
+    if DATABASE_PATH != ":memory:":
+        conn.close()
 
 
 # ============================================================================
@@ -253,7 +279,7 @@ def _get_last_hash() -> str:
     cursor = conn.cursor()
     cursor.execute("SELECT current_hash FROM audit_log ORDER BY id DESC LIMIT 1")
     row = cursor.fetchone()
-    conn.close()
+    _release_connection(conn)
     return row[0] if row else "GENESIS"
 
 
@@ -454,7 +480,7 @@ def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> st
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (timestamp, event_type, room_id, details_json, previous_hash, current_hash, hmac_signature, ecdsa_sig))
     conn.commit()
-    conn.close()
+    _release_connection(conn)
 
     return current_hash
 
@@ -471,7 +497,7 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM audit_log ORDER BY id")
     rows = cursor.fetchall()
-    conn.close()
+    _release_connection(conn)
 
     if not rows:
         return True, None
@@ -538,7 +564,7 @@ def get_events() -> List[Dict[str, Any]]:
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM audit_log ORDER BY id")
     rows = cursor.fetchall()
-    conn.close()
+    _release_connection(conn)
 
     events = []
     for row in rows:
