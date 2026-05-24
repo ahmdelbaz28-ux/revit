@@ -1,5 +1,5 @@
 """
-DensityOptimizer v7.3 – NFPA 72 Maximum-Reduction Placement Engine
+DensityOptimizer v7.4 – NFPA 72 Maximum-Reduction Placement Engine
 ====================================================================
 Three placement strategies; best proven result selected per room.
 
@@ -24,6 +24,19 @@ ELITE IMPROVEMENTS (v7.3):
      deterministic — same room always produces same result.
   4. Redundancy elimination: removes detectors whose coverage is fully
      contained in other detectors, with re-verification after each removal.
+
+V7.4 FIX — Placement/Verification Mismatch (CRITICAL — Life Safety):
+  Previous version placed detectors using R for spacing decisions, but
+  verification used R_eff = R - δ (where δ = step×√2/2 ≈ 0.141m) for
+  corner checks. This created a systematic gap: placement THOUGHT coverage
+  was complete but verification DISPROVED it, resulting in ~44% proof failure
+  rate across diverse room geometries.
+  Fix: Placement now uses R_place = R - placement_margin for all spacing
+  and coverage decisions. This ensures detectors are placed closer together,
+  guaranteeing that verification corners pass the R_eff check. Per agent.md
+  Rule 5 (conservative = more detectors = safer), this is the correct
+  approach. The placement margin equals the fine verification margin so
+  that placement and verification are mathematically aligned.
 """
 import math
 from dataclasses import dataclass, field
@@ -37,6 +50,10 @@ DETECTOR_RADIUS = 0.7 * MAX_SPACING_M  # 6.37 m (NFPA 72 §17.7.4.2.3.1 - 0.7S R
 WALL_MIN_M      = 0.10
 VERIFY_STEP     = 0.20                  # proof resolution (m)
 COARSE_STEP     = 1.00                  # hierarchical coarse grid step (m)
+# V7.4: Placement margin — must match the fine verification margin to ensure
+# placement decisions align with verification proof. This guarantees that
+# detectors placed using R_place will pass the R_eff check in _verify_fast().
+PLACEMENT_MARGIN = VERIFY_STEP * math.sqrt(2) / 2  # 0.1414m
 
 # ── V7.3.1: Density Cap — prevents fallback runaway (Consultant #5) ──
 # Maximum ratio of detectors to theoretical minimum.
@@ -178,8 +195,14 @@ class DensityOptimizer:
         self.max_spacing = max_spacing
         self.wm          = wall_min
         self.R           = radius
-        # Hex spacing: use R*sqrt(3), clamped to max_spacing (NFPA 72 rule)
-        self.S_g         = min(radius * math.sqrt(3), max_spacing)
+        # V7.4: Placement radius — R minus verification margin.
+        # This ensures detectors are placed using the SAME effective radius
+        # that verification uses for corner checks, eliminating the systematic
+        # mismatch that caused ~44% proof failure rate.
+        # Per agent.md Rule 5: more detectors = safer = correct.
+        self.R_place     = radius - PLACEMENT_MARGIN
+        # Hex spacing: use R_place*sqrt(3), clamped to max_spacing (NFPA 72 rule)
+        self.S_g         = min(self.R_place * math.sqrt(3), max_spacing)
         self.Ry_g        = self.S_g * math.sqrt(3) / 2
 
     # ── public ──────────────────────────────────────────────────────────────────
@@ -202,16 +225,17 @@ class DensityOptimizer:
         # Temporarily override internal radius if specified
         _override = coverage_radius is not None and coverage_radius != self.R
         if _override:
-            _saved = (self.R, self.S_g, self.Ry_g)
+            _saved = (self.R, self.R_place, self.S_g, self.Ry_g)
             self.R = coverage_radius
-            self.S_g = min(coverage_radius * math.sqrt(3), self.max_spacing)
+            self.R_place = coverage_radius - PLACEMENT_MARGIN
+            self.S_g = min(self.R_place * math.sqrt(3), self.max_spacing)
             self.Ry_g = self.S_g * math.sqrt(3) / 2
 
         try:
             layout = self._optimize_impl(room)
         finally:
             if _override:
-                self.R, self.S_g, self.Ry_g = _saved
+                self.R, self.R_place, self.S_g, self.Ry_g = _saved
 
         # Phase 7: Populate tracking fields on layout
         if coverage_radius is not None:
@@ -289,22 +313,24 @@ class DensityOptimizer:
     def _calculate_rows(self, L: float) -> List[float]:
         """
         Returns y-coordinates of rows.
-        - First and last rows are within coverage_limit (R) of the walls.
+        - First and last rows are within R_place of the walls.
         - Inner rows are evenly spaced such that gap <= Ry.
+
+        V7.4: Uses R_place instead of R to align with verification.
         """
         wm, Ry = self.wm, self.Ry_g
-        coverage_limit = self.R  # 6.37m — coverage radius for full wall coverage
+        coverage_limit = self.R_place  # V7.4: aligned with verification margin
 
         # Small room: check if a SINGLE row at center can cover both walls
-        # For a single row at y=L/2 to cover the wall at y=0, we need L/2 ≤ R.
-        # If L/2 > R, a single center row leaves walls uncovered → use 2 boundary rows.
+        # For a single row at y=L/2 to cover the wall at y=0, we need L/2 ≤ R_place.
+        # If L/2 > R_place, a single center row leaves walls uncovered → use 2 boundary rows.
         if L <= 2 * coverage_limit:
-            # Single row at center: distance to wall = L/2 ≤ R ✓
+            # Single row at center: distance to wall = L/2 ≤ R_place ✓
             return [round(L / 2.0, 3)]
 
         # Slightly larger room: 2 rows at coverage_limit from each wall
         if L <= 2 * coverage_limit + 2 * wm:
-            # Two boundary rows at R from walls
+            # Two boundary rows at R_place from walls
             return [round(coverage_limit, 3), round(L - coverage_limit, 3)]
 
         # Boundary rows at coverage_limit
@@ -334,9 +360,11 @@ class DensityOptimizer:
         """
         Returns (n_cols, step_x) for horizontal placement.
         Guarantees step_x <= max_spacing.
+
+        V7.4: Uses R_place instead of R to align with verification.
         """
         available = W - 2 * self.wm
-        if available <= 2 * self.R:
+        if available <= 2 * self.R_place:  # V7.4: aligned with verification
             return 1, available / 2
         if available <= self.max_spacing:
             return 1, 0.0
@@ -346,7 +374,8 @@ class DensityOptimizer:
 
     def _hex_guarded(self, room: Room, along_x: bool) -> DetectorLayout:
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
-        S, wm, R = self.S_g, self.wm, self.R
+        S, wm = self.S_g, self.wm
+        Rp = self.R_place  # V7.4: use placement radius for spacing
         pts: List[Tuple[float, float]] = []
 
         # Use calculated row distribution for NFPA compliance
@@ -357,16 +386,16 @@ class DensityOptimizer:
         for row_index, y in enumerate(y_coords):
             # Use actual step_x for offset (not S/2)
             offset = (step_x / 2) if (row_index % 2 == 1) else 0.0
-            xs = self._row_xs_guarded(W, wm, step_x if step_x > 0 else S, offset, R)
+            xs = self._row_xs_guarded(W, wm, step_x if step_x > 0 else S, offset, Rp)
             for x in xs:
                 pts.append((x, y))
 
-        # Corner Guards
+        # Corner Guards — V7.4: use R_place so guards match verification
         corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
         for cx, cy in corners:
             covered = False
             for dx, dy in pts:
-                if (cx - dx) ** 2 + (cy - dy) ** 2 <= R ** 2 + 1e-9:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= Rp ** 2 + 1e-9:
                     covered = True
                     break
             if not covered:
@@ -389,9 +418,11 @@ class DensityOptimizer:
     def _hex_adaptive(self, room: Room, along_x: bool) -> DetectorLayout:
         """
         Uses calculated row distribution for NFPA compliance.
+
+        V7.4: Uses R_place instead of R for placement decisions.
         """
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
-        R, wm = self.R, self.wm
+        Rp, wm = self.R_place, self.wm  # V7.4: use R_place
         pts: List[Tuple[float, float]] = []
 
         # Use calculated row distribution (now returns y-coordinates directly)
@@ -413,12 +444,12 @@ class DensityOptimizer:
             for x in xs:
                 pts.append((x, y))
 
-        # Add Corner Guards
+        # Add Corner Guards — V7.4: use R_place
         corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
         for cx, cy in corners:
             covered = False
             for dx, dy in pts:
-                if (cx - dx) ** 2 + (cy - dy) ** 2 <= R ** 2 + 1e-9:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= Rp ** 2 + 1e-9:
                     covered = True
                     break
             if not covered:
@@ -444,7 +475,7 @@ class DensityOptimizer:
                 xs = self._place(W, Nx); ys = self._place(L, Ny)
                 Sx = (xs[-1]-xs[0])/(Nx-1) if Nx > 1 else 0.0
                 Sy = (ys[-1]-ys[0])/(Ny-1) if Ny > 1 else 0.0
-                if math.sqrt((Sx/2)**2+(Sy/2)**2) <= self.R+1e-9:
+                if math.sqrt((Sx/2)**2+(Sy/2)**2) <= self.R_place+1e-9:  # V7.4: use R_place
                     best_nx, best_ny, best_t = Nx, Ny, t
         if best_nx is None: return None
         xs = self._place(W, best_nx); ys = self._place(L, best_ny)
@@ -470,14 +501,15 @@ class DensityOptimizer:
         ys = self._place(room.length, self._min_n(room.length))
         pts = [(x, y) for x in xs for y in ys]
 
-        # Corner guards: ensure all corners are within R of a detector
+        # Corner guards: ensure all corners are within R_place of a detector
+        # V7.4: use R_place so guards match verification
         W, L = room.width, room.length
-        wm, R = self.wm, self.R
+        wm, Rp = self.wm, self.R_place
         corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
         for cx, cy in corners:
             covered = False
             for dx, dy in pts:
-                if (cx - dx) ** 2 + (cy - dy) ** 2 <= R ** 2 + 1e-9:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= Rp ** 2 + 1e-9:
                     covered = True
                     break
             if not covered:
@@ -487,7 +519,7 @@ class DensityOptimizer:
         # If fallback places an unreasonable number of detectors, the room
         # likely needs manual design rather than automated brute-force.
         # Theoretical minimum = ceil(room_area / sensor_coverage_area).
-        sensor_coverage_area = math.pi * (R * COVERAGE_SAFETY_FACTOR) ** 2
+        sensor_coverage_area = math.pi * (Rp * COVERAGE_SAFETY_FACTOR) ** 2
         room_area = W * L
         theoretical_min = max(1, math.ceil(room_area / sensor_coverage_area))
         max_allowed = max(int(theoretical_min * DENSITY_CAP_FACTOR), 2)
@@ -535,7 +567,7 @@ class DensityOptimizer:
 
         room = layout.room
         W, L = room.width, room.length
-        R2 = self.R ** 2 + 1e-9
+        R2 = self.R_place ** 2 + 1e-9  # V7.4: use R_place to match placement
         step = VERIFY_STEP
 
         # Build the full verification grid
