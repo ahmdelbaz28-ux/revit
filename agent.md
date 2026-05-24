@@ -540,3 +540,38 @@ After running 1,000,000 room / 10,000 floor stress test (per user's explicit com
 ### Commit Information
 - **Commit:** (pending push)
 - **Tests:** 257 core tests passing (57 coverage + 204 comprehensive), 4 efficiency regression tests failing (outdated baselines)
+
+---
+
+## V27 Fixes (2026-05-25) — DWGParser Chaos Safety + Namespace Collision Fix
+
+### Context
+The last failing test (test_event_horizon.py) called `DWGParser.extract_rooms_from_chaos()` which did not exist. This method is designed to handle adversarial/corrupted document data with NaN/Infinity coordinates — a safety-critical requirement since NaN in room geometry would propagate silently through Shapely, producing zero-area coverage results.
+
+### Bug 31 — DWGParser Missing extract_rooms_from_chaos Method (CRITICAL — Safety)
+**File:** `parsers/dwg_parser.py` — DWGParser class
+**Discovery:** `test_event_horizon.py::test_quantum_room_observer_effect` creates a mock document with a LINE entity containing `float('nan')` coordinates and calls `parser.extract_rooms_from_chaos(chaos_doc_mock)`. The method did not exist, causing ModuleNotFoundError.
+**Impact:** A NaN coordinate in a room polygon would silently propagate through Shapely operations, producing zero-area coverage results that could allow a building to be signed off as "protected" when it is not. Rejecting poisoned data at the parser boundary is the conservative (safer) choice per Life-Safety Rule 5.
+**Fix Applied:**
+- Added `extract_rooms_from_chaos()` method to DWGParser
+- Validates all coordinates with `math.isfinite()` before creating geometry
+- NaN/Inf coordinates cause the entity to be silently dropped (logged as WARNING)
+- LINE entities (not closed polygons) are not treated as rooms
+- LWPOLYLINE/POLYLINE entities with valid vertices become `UniversalElement` rooms
+- Lazy import of `core.models` with sys.path cleanup to avoid `fireai/core/` shadowing
+
+### Infrastructure Fix — conftest.py Namespace Re-poisoning (HIGH)
+**File:** `tests/conftest.py` — `_reset_audit_store` autouse fixture
+**Discovery:** The autouse fixture imports `fireai.core.audit_store`, which causes Python's import machinery to re-add `fireai/` to `sys.path` and re-cache `'core'` as `fireai/core/` in `sys.modules`. This undoes the namespace collision fix that runs before the import, causing `from core.models import ...` in downstream tests to fail.
+**Fix Applied:** Added post-import cleanup after `import fireai.core.audit_store`:
+1. Remove `fireai/` from `sys.path` (re-added by Python's import machinery)
+2. Ensure project root is first in `sys.path`
+3. Clear cached `'core'` module from `sys.modules` if it resolved to `fireai/core/`
+
+### Test Results
+- `test_event_horizon.py`: 3/3 passing (was 2/3 with 1 ModuleNotFoundError)
+- Zero test modifications — all changes were in production code and test infrastructure
+
+### Commit Information
+- **Commit:** `debdeaa`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/debdeaa

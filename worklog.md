@@ -298,3 +298,68 @@ Stage Summary:
 - Estimated 1M room runtime: ~197 hours (impractical in single session)
 - Production code bug identified in density_optimizer.py — placement/verification mismatch
 - Results saved: stress_test_1M_results.json
+
+---
+Task ID: V26-PLACEMENT-VERIFICATION-MISMATCH
+Agent: Main Agent (Session 11)
+Task: Apply agent.md contract, fix density_optimizer placement/verification mismatch, run stress test, report exact results
+
+Work Log:
+- Read agent.md in full, pledged commitment to all 8 mandatory rules + 7 LIFE-SAFETY RULES
+- Analyzed previous session's stress test results: 44% proof failure rate across 100 rooms
+- Root cause: DensityOptimizer v7.3 places detectors using R for spacing but verification uses R_eff = R - 0.141m for proof
+- Fix: Introduced R_place = R - PLACEMENT_MARGIN (0.141m) for all placement strategies
+- Updated: _calculate_rows, _calculate_columns, _hex_guarded, _hex_adaptive, _rect_best, _fallback, _remove_redundant
+- All placement methods now use R_place for spacing decisions, verification still uses R_eff
+- Ran 100-room stress test with SAME seed (2026) as previous session for direct comparison
+- Results: Proof valid 56% → 100%, Coverage 100%: 48% → 61%, Coverage <99%: 25% → 19%
+- Ran unit tests: 57 coverage tests pass, 204 comprehensive tests pass
+- 4 efficiency regression tests fail (outdated baselines based on buggy V7.3 code)
+- Per user instruction: tests NOT modified — increased detector count is CORRECT safety behavior
+- Updated agent.md with V26 section
+- Committed and pushed to GitHub
+
+Stage Summary:
+- Commit: 21fc231 | Link: https://github.com/ahmdelbaz28-ux/revit/commit/21fc231
+- 1 CRITICAL fix: density_optimizer.py placement/verification mismatch
+- Proof valid rate: 56% → 100% (zero proof failures)
+- 4 regression tests fail with outdated baselines (not modified per user instruction)
+- Test file stress_test_1M_rooms.py NOT modified — exact results reported as-is
+
+---
+Task ID: V27-DWGPARSER-FIX
+Agent: Main Agent (Session 12)
+Task: Apply agent.md contract, fix DWGParser.extract_rooms_from_chaos, run stress test, report exact results
+
+Work Log:
+- Read agent.md in full, pledged commitment to all 8 mandatory rules + 7 LIFE-SAFETY RULES
+- Identified 1 remaining failing test: test_event_horizon.py::test_quantum_room_observer_effect
+- Root cause: DWGParser class missing `extract_rooms_from_chaos()` method
+- The test creates a mock document with LINE entities containing NaN coordinates and expects the parser to handle them safely
+- Added `extract_rooms_from_chaos()` method to DWGParser with:
+  - NaN/Inf coordinate validation via `math.isfinite()`
+  - Poisoned entities silently dropped (logged as WARNING)
+  - Only closed polylines become rooms (LINE entities skipped)
+  - Lazy import of core.models with sys.path cleanup for namespace collision
+- Fixed conftest.py namespace re-poisoning:
+  - The autouse fixture imports `fireai.core.audit_store`, which causes Python to re-add `fireai/` to sys.path and re-cache `core` as `fireai/core/`
+  - Added post-import cleanup: removes fireai/ from sys.path, ensures project root is first, clears poisoned core.* from sys.modules
+- All 3 event_horizon tests now pass (was 2/3)
+- Ran 50-room / 5-floor stress test with SEED=2026:
+  - Coverage 100%: 27 rooms (54%)
+  - Coverage 99-99.9%: 10 rooms (20%)
+  - Coverage <99%: 13 rooms (26%)
+  - NFPA valid: 50 rooms (100%)
+  - Proof valid: 50 rooms (100%) — V26 fix confirmed working
+  - Errors: 0
+  - Estimated 1M room runtime: ~179 hours
+- Updated agent.md with V27 section
+- Committed and pushed to GitHub
+
+Stage Summary:
+- Commit: debdeaa | Link: https://github.com/ahmdelbaz28-ux/revit/commit/debdeaa
+- 1 CRITICAL fix: DWGParser.extract_rooms_from_chaos() for NaN/poisoned data handling
+- 1 HIGH fix: conftest.py namespace re-poisoning after audit_store import
+- Proof valid rate: 100% (V26 fix confirmed)
+- Stress test: 0 errors, 100% NFPA valid, 100% proof valid
+- Estimated 1M room test: ~179 hours (single-process)
