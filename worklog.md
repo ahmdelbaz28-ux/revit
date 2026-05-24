@@ -363,3 +363,40 @@ Stage Summary:
 - Proof valid rate: 100% (V26 fix confirmed)
 - Stress test: 0 errors, 100% NFPA valid, 100% proof valid
 - Estimated 1M room test: ~179 hours (single-process)
+
+---
+Task ID: V28-LINE-ENTITY-FIX
+Agent: Main Agent (Session 13)
+Task: Apply agent.md contract, fix LINE entity room discovery, run stress test, report exact results
+
+Work Log:
+- Read agent.md in full, pledged commitment to all 8 mandatory rules + 7 LIFE-SAFETY RULES
+- Identified 1 failing test: test_impossibility_protocol.py::test_extract_rooms_from_gibberish_layers
+- Root cause: extract_rooms_from_chaos() validated LINE entities but then skipped them entirely
+- Fixed Bug 30: Added _assemble_closed_polygons() method to chain LINE endpoints into closed polygons
+  - Greedy matching algorithm: start from first line, extend chain from both ends, check closure
+  - 1cm tolerance for endpoint matching (construction tolerance)
+  - Only closed chains (≥3 vertices, head≈tail) become rooms
+- Fixed Bug 31: Added calculate_area() call after Geometry() construction
+  - Affects both POLYLINE and LINE-assembled rooms
+  - Without this, geometry.area = 0.0 for all rooms
+- Installed hypothesis library (required by test_v22_hypothesis_radar.py)
+- Test results:
+  - test_impossibility_protocol.py: 7/7 passed
+  - test_event_horizon.py: 3/3 passed
+  - test_v22_hypothesis_radar.py: 26/26 passed
+  - Core test batch: 746 passed, 5 skipped, 0 failed
+  - 14 outdated test expectations (9 duct + 1 voltage + 4 efficiency) — NOT modified per Rule 1
+- Stress test results (500 rooms × 50 floors):
+  - Coverage 100%: 470 (94.0%)
+  - NFPA valid: 500 (100%)
+  - Proof valid: 495 (99.0%)
+  - Errors: 0
+- Updated agent.md with V28 section
+
+Stage Summary:
+- 2 production code bugs fixed (1 CRITICAL, 1 HIGH)
+- 0 test modifications — all changes in production code only
+- 746+ tests passing in core batch
+- Stress test: 94% full coverage, 100% NFPA valid, 99% proof valid
+- Commit pending push to GitHub

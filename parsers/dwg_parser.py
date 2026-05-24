@@ -105,6 +105,117 @@ class DWGParser:
         except (TypeError, ValueError):
             return False
 
+    @staticmethod
+    def _assemble_closed_polygons(lines: list, tolerance: float = 0.01) -> list:
+        """Chain LINE segments into closed polygons by matching endpoints.
+
+        This solves the classic DWG/DXF problem where walls are drawn as
+        separate LINE entities instead of closed polylines.  The algorithm
+        builds chains by greedily matching endpoints within *tolerance*
+        (default 1 cm), then returns only chains whose last endpoint
+        connects back to the first — i.e. closed polygons.
+
+        Safety rationale
+        ----------------
+        Missing a room because its walls were drawn as LINEs (not polylines)
+        means zero fire protection for that space — potentially fatal per
+        Life-Safety Rule 5 (conservative interpretation).
+
+        Parameters
+        ----------
+        lines : list of ((sx, sy), (ex, ey))
+            Validated line segments with finite coordinates.
+        tolerance : float
+            Maximum distance (metres) to consider two endpoints coincident.
+
+        Returns
+        -------
+        list of list of (x, y)
+            Each inner list is a closed polygon's vertex sequence
+            (first vertex == last vertex NOT duplicated; closing
+            is implied by polyline_closed=True downstream).
+        """
+        if not lines:
+            return []
+
+        tol_sq = tolerance * tolerance
+
+        # Build adjacency: for each endpoint, which lines touch it?
+        # We use a simple O(n²) approach — fine for parser input sizes.
+        remaining = list(range(len(lines)))  # indices not yet consumed
+        closed_polygons = []
+
+        while remaining:
+            # Start a new chain from the first remaining line
+            chain_start_idx = remaining[0]
+            sx, sy = lines[chain_start_idx][0]
+            ex, ey = lines[chain_start_idx][1]
+
+            # Chain of vertices: start with the first line's two endpoints
+            chain_vertices = [(sx, sy), (ex, ey)]
+            consumed = {chain_start_idx}
+            remaining.remove(chain_start_idx)
+
+            # Try to extend the chain from both ends
+            changed = True
+            while changed:
+                changed = False
+                # Current chain endpoints
+                head = chain_vertices[0]    # "open" end at start
+                tail = chain_vertices[-1]   # "open" end at end
+
+                for idx in list(remaining):
+                    ls, le = lines[idx]
+                    lsx, lsy = ls
+                    lex, ley = le
+
+                    # Does this line connect to the tail?
+                    tail_dx = min(
+                        (lsx - tail[0])**2 + (lsy - tail[1])**2,
+                        (lex - tail[0])**2 + (ley - tail[1])**2,
+                    )
+                    # Does this line connect to the head?
+                    head_dx = min(
+                        (lsx - head[0])**2 + (lsy - head[1])**2,
+                        (lex - head[0])**2 + (ley - head[1])**2,
+                    )
+
+                    if tail_dx <= tol_sq or head_dx <= tol_sq:
+                        # This line connects — figure out which end and direction
+                        d_tail_start = (lsx - tail[0])**2 + (lsy - tail[1])**2
+                        d_tail_end   = (lex - tail[0])**2 + (ley - tail[1])**2
+                        d_head_start = (lsx - head[0])**2 + (lsy - head[1])**2
+                        d_head_end   = (lex - head[0])**2 + (ley - head[1])**2
+
+                        if d_tail_start <= tol_sq:
+                            # tail → line.start → line.end
+                            chain_vertices.append(le)
+                        elif d_tail_end <= tol_sq:
+                            # tail → line.end → line.start
+                            chain_vertices.append(ls)
+                        elif d_head_start <= tol_sq:
+                            # line.start ← head (prepend line.end, line.start)
+                            chain_vertices.insert(0, le)
+                        elif d_head_end <= tol_sq:
+                            # line.end ← head (prepend line.start, line.end)
+                            chain_vertices.insert(0, ls)
+
+                        consumed.add(idx)
+                        remaining.remove(idx)
+                        changed = True
+                        break  # restart inner loop with updated chain
+
+            # Check if chain is closed (head connects to tail)
+            if len(chain_vertices) >= 3:
+                head = chain_vertices[0]
+                tail = chain_vertices[-1]
+                close_dist_sq = (head[0] - tail[0])**2 + (head[1] - tail[1])**2
+                if close_dist_sq <= tol_sq:
+                    # Closed polygon found — remove duplicate closing vertex
+                    closed_polygons.append(chain_vertices[:-1])
+
+        return closed_polygons
+
     def extract_rooms_from_chaos(self, doc) -> list:
         """Extract rooms from a potentially-corrupted or adversarial document.
 
@@ -159,6 +270,7 @@ class DWGParser:
         from core.models import UniversalElement, Geometry, Point3D, ElementType
 
         rooms: list = []
+        valid_lines: list = []  # Collect LINE segments for polygon assembly
 
         try:
             modelspace = doc.modelspace()
@@ -192,9 +304,11 @@ class DWGParser:
                     )
                     continue
 
-                # A single line does not form a closed room — skip it.
-                # Only closed polylines / polygons become rooms.
-                continue
+                # Collect valid line segments for later polygon assembly.
+                # Individual LINE entities can form closed rooms when their
+                # endpoints chain together (common in DWG/DXF files where
+                # walls are drawn as separate LINE entities, not polylines).
+                valid_lines.append(((sx, sy), (ex, ey)))
 
             elif etype in ('LWPOLYLINE', 'POLYLINE'):
                 # ── Validate polyline vertices ──
@@ -227,6 +341,7 @@ class DWGParser:
                     if len(vertices) >= 3:
                         points_3d = [Point3D(x=vx, y=vy, z=0.0) for vx, vy in vertices]
                         geom = Geometry(points=points_3d, polyline_closed=True)
+                        geom.calculate_area()  # Must compute for downstream NFPA analysis
                         room = UniversalElement(geometry=geom)
                         rooms.append(room)
 
@@ -236,6 +351,21 @@ class DWGParser:
 
             # Other entity types (CIRCLE, ARC, TEXT, etc.) are not rooms.
             # They are silently ignored.
+
+        # ── Assemble closed polygons from LINE segments ──
+        # In many DWG/DXF files, walls are drawn as separate LINE entities
+        # rather than closed polylines.  We must chain their endpoints to
+        # discover rooms.  This is safety-critical: missing a room means
+        # zero fire protection for that space.
+        if valid_lines:
+            closed_chains = self._assemble_closed_polygons(valid_lines)
+            for chain in closed_chains:
+                if len(chain) >= 3:
+                    points_3d = [Point3D(x=vx, y=vy, z=0.0) for vx, vy in chain]
+                    geom = Geometry(points=points_3d, polyline_closed=True)
+                    geom.calculate_area()  # Must compute for downstream NFPA analysis
+                    room = UniversalElement(geometry=geom)
+                    rooms.append(room)
 
         return rooms
 

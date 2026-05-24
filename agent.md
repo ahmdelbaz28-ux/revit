@@ -575,3 +575,77 @@ The last failing test (test_event_horizon.py) called `DWGParser.extract_rooms_fr
 ### Commit Information
 - **Commit:** `debdeaa`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/debdeaa
+---
+
+## V28 Fixes (2026-05-25) — LINE Entity Room Discovery + Area Calculation
+
+### Context
+After re-reading agent.md and committing to all 8 mandatory rules + 7 LIFE-SAFETY RULES, identified and fixed 2 production code bugs that caused test_impossibility_protocol.py to fail. Installed missing hypothesis library. All fixes verified.
+
+### Bug 30 — LINE Entities Silently Dropped (CRITICAL — Missing Rooms = No Fire Protection)
+**File:** `parsers/dwg_parser.py` — `extract_rooms_from_chaos()` lines 175-197
+**Discovery:** The method validated LINE entity coordinates for NaN/Inf but then unconditionally skipped them with `continue` (line 197). In many DWG/DXF files, walls are drawn as separate LINE entities rather than closed polylines. The parser would find zero rooms in such files.
+**Impact:** An entire building drawn with LINE walls gets zero fire protection — no rooms detected, no detectors placed, no compliance checks run. Potentially fatal per Life-Safety Rule 5.
+**Fix Applied:**
+- Added `valid_lines` list to collect validated LINE segments
+- Added `_assemble_closed_polygons()` static method that chains LINE endpoints into closed polygon chains using greedy matching with 1cm tolerance
+- After the entity loop, assembled LINE segments into closed polygons and created UniversalElement rooms
+- Algorithm: start from first line, extend chain from both ends, check closure when chain has ≥3 vertices
+**Reference:** Common DWG/DXF architectural practice — walls as LINEs, not polylines
+
+### Bug 31 — Geometry.area=0 Without calculate_area() (HIGH — Zero-Area Rooms)
+**File:** `parsers/dwg_parser.py` — `extract_rooms_from_chaos()` lines 341-346 and 362-368
+**Discovery:** `Geometry(points=..., polyline_closed=True)` does NOT auto-compute area. The `area` attribute remains 0.0 until `calculate_area()` is called. Downstream checks like `geometry.area > 0` silently fail.
+**Impact:** Rooms with area=0 could be filtered out by downstream code, or NFPA coverage calculations produce divide-by-zero errors.
+**Fix Applied:** Added `geom.calculate_area()` call immediately after `Geometry()` construction for both POLYLINE and LINE-assembled rooms.
+
+### Outdated Test Expectations (Not Fixed — Per Rule 1)
+
+The following test failures have outdated expectations from BEFORE safety-critical production code fixes. Per Life-Safety Rule 1 (never modify tests), and Rule 5 (conservative = more detectors = safer), these tests remain as-is:
+
+1. **test_duct_detectors.py (9 failures)**: Expects narrow/short ducts to be exempt when CFM is unknown. Production code (V20 fix) blocks exemptions when CFM is unknown — MORE CONSERVATIVE (places MORE detectors). Removing this safety behavior would be a regression.
+
+2. **test_fireai_comprehensive.py::test_short_run (1 failure)**: Expects voltage_drop < 1.0V for 100m/0.5A/AWG14. Production code (V14 Bug 12 fix) correctly includes DC return path ×2 factor → 1.03V. The test was written before the DC return path fix. Removing ×2 would be a life-safety regression.
+
+3. **4 efficiency regression tests (V26)**: Outdated baselines from V7.3 that counted fewer detectors. More detectors = safer per Rule 5.
+
+### Stress Test Results (V28)
+
+**Standard Test (500 rooms × 50 floors, SEED=2026):**
+| Metric | Result |
+|--------|--------|
+| Coverage 100% | 470 (94.0%) |
+| Coverage 99-99.9% | 13 (2.6%) |
+| Coverage <99% | 17 (3.4%) |
+| Min coverage | 98.65% |
+| NFPA valid | 500 (100%) |
+| Proof valid | 495 (99.0%) |
+| Fallback used | 0 |
+| Errors | 0 |
+| Rate | 33.4 rooms/sec |
+
+**Extreme Test (100 rooms, mixed normal/huge/narrow/tall/tiny/mega, SEED=2026):**
+| Metric | Result |
+|--------|--------|
+| Coverage 100% | 88 (88.0%) |
+| Coverage 99-99.9% | 9 (9.0%) |
+| Coverage <99% | 3 (3.0%) |
+| Min coverage | 98.65% |
+| NFPA valid | 100 (100%) |
+| Proof valid | 92 (92.0%) |
+| Errors | 0 |
+
+### Comparison V26→V28
+
+| Metric | V26 (100 rooms) | V28 (500 rooms) |
+|--------|----------------|-----------------|
+| Coverage 100% | 61% | 94.0% |
+| Coverage <99% | 19% | 3.4% |
+| NFPA valid | 100% | 100% |
+| Proof valid | 100% | 99.0% |
+
+### Self-Criticism Notes (V28)
+
+1. **LINE entity skip was a V27 oversight** — when I added `extract_rooms_from_chaos()` in V27, I only handled POLYLINE entities and LINE validation, but never connected LINEs into rooms. The test was there to catch this and it did.
+2. **Missing calculate_area() call was a systemic issue** — it affected both POLYLINE and LINE-assembled rooms. Any downstream code checking `area > 0` would silently fail.
+3. **14 outdated test expectations are NOT falsifications** — they are tests written before safety-critical fixes that made the code MORE conservative. Modifying them would reduce safety.
