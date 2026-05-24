@@ -26,8 +26,9 @@ NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 """
 
 import math
+from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Set
 
 
 @dataclass
@@ -158,26 +159,62 @@ class AnalyticalVerifier:
     ) -> bool:
         """Check all detector-to-detector midpoints are covered.
 
+        V30 B10: Replaced O(D²) all-pairs enumeration with spatial bin index.
+        Only detector pairs within 2R (NFPA 72 max spacing) can have an
+        uncovered midpoint — all other pairs are too far apart to create gaps.
+        Spatial bin cell size = 2R; 3×3 Moore neighbourhood covers all candidates.
+
+        This is the SAME midpoint check, just indexed — same gaps reported,
+        same conservative behavior. For D=100, mean k≈4: O(100×4)=400 vs
+        O(100²/2)=5000 — 12× speedup.
+
         This is a critical test: if two detectors are at maximum spacing S,
         their midpoint should be exactly at distance R = 0.7 × S from each.
         If the midpoint is NOT covered, spacing exceeds S or positions are wrong.
         """
-        if len(detectors) < 2:
+        D = len(detectors)
+        if D < 2:
             return True
 
+        two_r = 2.0 * self.R
+        cell = two_r   # bin size = 2R so adjacent bins contain all candidates
+
+        # Build spatial bin index
+        bins: Dict[Tuple[int, int], List[int]] = defaultdict(list)
+        for i, (xi, yi) in enumerate(detectors):
+            bx = int(math.floor(xi / cell))
+            by = int(math.floor(yi / cell))
+            bins[(bx, by)].append(i)
+
         all_covered = True
-        for i in range(len(detectors)):
-            for j in range(i + 1, len(detectors)):
-                x1, y1 = detectors[i]
-                x2, y2 = detectors[j]
-                dist = math.hypot(x2 - x1, y2 - y1)
-                # Only check midpoints for nearby detector pairs (within 2R)
-                if dist > 2 * self.R:
-                    continue
-                mx, my = (x1 + x2) / 2, (y1 + y2) / 2
-                if not self._point_covered(mx, my, detectors):
-                    result.uncovered_midpoints.append((mx, my))
-                    all_covered = False
+        seen_pairs: Set[Tuple[int, int]] = set()
+        pairs_checked = 0
+
+        for i, (xi, yi) in enumerate(detectors):
+            bx = int(math.floor(xi / cell))
+            by = int(math.floor(yi / cell))
+            # Check 3×3 Moore neighbourhood — covers all pairs within 2R
+            for dbx in (-1, 0, 1):
+                for dby in (-1, 0, 1):
+                    for j in bins.get((bx + dbx, by + dby), []):
+                        if j <= i:
+                            continue
+                        pair = (i, j)
+                        if pair in seen_pairs:
+                            continue
+                        seen_pairs.add(pair)
+                        x2, y2 = detectors[j]
+                        dx = xi - x2
+                        dy = yi - y2
+                        dist2 = dx*dx + dy*dy
+                        if dist2 > two_r * two_r:
+                            continue   # too far apart — midpoint trivially covered
+                        pairs_checked += 1
+                        mx = (xi + x2) * 0.5
+                        my = (yi + y2) * 0.5
+                        if not self._point_covered(mx, my, detectors):
+                            result.uncovered_midpoints.append((mx, my))
+                            all_covered = False
 
         return all_covered
 
