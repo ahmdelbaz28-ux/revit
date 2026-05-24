@@ -12,6 +12,7 @@ then delegates to DXFParser.
 import subprocess
 import tempfile
 import os
+import math
 import logging
 from pathlib import Path
 from typing import Optional, List
@@ -111,15 +112,23 @@ class DWGParser:
 
         This solves the classic DWG/DXF problem where walls are drawn as
         separate LINE entities instead of closed polylines.  The algorithm
-        builds chains by greedily matching endpoints within *tolerance*
-        (default 1 cm), then returns only chains whose last endpoint
-        connects back to the first — i.e. closed polygons.
+        uses a spatial grid index for O(n) expected-time endpoint lookup,
+        then chains segments greedily and returns only closed loops.
 
         Safety rationale
         ----------------
         Missing a room because its walls were drawn as LINEs (not polylines)
         means zero fire protection for that space — potentially fatal per
         Life-Safety Rule 5 (conservative interpretation).
+
+        Performance
+        -----------
+        V29 optimisation: replaced O(n²) brute-force scan with a grid-based
+        spatial index.  Each endpoint is binned into a grid cell of size
+        *tolerance*.  To find a neighbour within *tolerance* we only check
+        the 9 surrounding cells (3×3 Moore neighbourhood), giving O(1)
+        expected lookup and O(n) total expected runtime for well-separated
+        buildings.
 
         Parameters
         ----------
@@ -140,78 +149,111 @@ class DWGParser:
 
         tol_sq = tolerance * tolerance
 
-        # Build adjacency: for each endpoint, which lines touch it?
-        # We use a simple O(n²) approach — fine for parser input sizes.
-        remaining = list(range(len(lines)))  # indices not yet consumed
+        # ── Phase 1: Build spatial grid index ──
+        # Grid cell size = tolerance.  Each cell stores the line indices
+        # whose start or end point falls inside that cell.
+        cell_size = tolerance
+        # We index BOTH endpoints of every line so we can find lines
+        # whose start or end is near a query point.
+        # grid_start[(cx,cy)] = set of line indices whose start is in cell (cx,cy)
+        # grid_end[(cx,cy)]   = set of line indices whose end is in cell (cx,cy)
+        grid_start: dict = {}
+        grid_end: dict = {}
+
+        for idx, (start, end) in enumerate(lines):
+            sx, sy = start
+            ex, ey = end
+            cs = (int(math.floor(sx / cell_size)), int(math.floor(sy / cell_size)))
+            ce = (int(math.floor(ex / cell_size)), int(math.floor(ey / cell_size)))
+            grid_start.setdefault(cs, set()).add(idx)
+            grid_end.setdefault(ce, set()).add(idx)
+
+        consumed = set()  # indices of lines already used
         closed_polygons = []
 
-        while remaining:
-            # Start a new chain from the first remaining line
-            chain_start_idx = remaining[0]
-            sx, sy = lines[chain_start_idx][0]
-            ex, ey = lines[chain_start_idx][1]
+        def _find_neighbours(px: float, py: float) -> list:
+            """Return line indices whose start or end is within tolerance of (px,py)."""
+            cx = int(math.floor(px / cell_size))
+            cy = int(math.floor(py / cell_size))
+            candidates = set()
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    cell = (cx + dx, cy + dy)
+                    # Lines whose START is near
+                    for i in grid_start.get(cell, ()):
+                        if i not in consumed:
+                            candidates.add(i)
+                    # Lines whose END is near
+                    for i in grid_end.get(cell, ()):
+                        if i not in consumed:
+                            candidates.add(i)
+            return list(candidates)
 
-            # Chain of vertices: start with the first line's two endpoints
-            chain_vertices = [(sx, sy), (ex, ey)]
-            consumed = {chain_start_idx}
-            remaining.remove(chain_start_idx)
+        # ── Phase 2: Chain lines into polygons ──
+        for seed_idx in range(len(lines)):
+            if seed_idx in consumed:
+                continue
 
-            # Try to extend the chain from both ends
+            start, end = lines[seed_idx]
+            chain_vertices = [start, end]
+            consumed.add(seed_idx)
+
+            # Extend chain from both ends until no more connections
             changed = True
             while changed:
                 changed = False
-                # Current chain endpoints
-                head = chain_vertices[0]    # "open" end at start
-                tail = chain_vertices[-1]   # "open" end at end
+                head = chain_vertices[0]
+                tail = chain_vertices[-1]
 
-                for idx in list(remaining):
+                # Try to extend from tail first
+                for idx in _find_neighbours(tail[0], tail[1]):
+                    if idx in consumed:
+                        continue
                     ls, le = lines[idx]
-                    lsx, lsy = ls
-                    lex, ley = le
 
-                    # Does this line connect to the tail?
-                    tail_dx = min(
-                        (lsx - tail[0])**2 + (lsy - tail[1])**2,
-                        (lex - tail[0])**2 + (ley - tail[1])**2,
-                    )
-                    # Does this line connect to the head?
-                    head_dx = min(
-                        (lsx - head[0])**2 + (lsy - head[1])**2,
-                        (lex - head[0])**2 + (ley - head[1])**2,
-                    )
+                    d_ts = (ls[0] - tail[0])**2 + (ls[1] - tail[1])**2
+                    d_te = (le[0] - tail[0])**2 + (le[1] - tail[1])**2
 
-                    if tail_dx <= tol_sq or head_dx <= tol_sq:
-                        # This line connects — figure out which end and direction
-                        d_tail_start = (lsx - tail[0])**2 + (lsy - tail[1])**2
-                        d_tail_end   = (lex - tail[0])**2 + (ley - tail[1])**2
-                        d_head_start = (lsx - head[0])**2 + (lsy - head[1])**2
-                        d_head_end   = (lex - head[0])**2 + (ley - head[1])**2
-
-                        if d_tail_start <= tol_sq:
-                            # tail → line.start → line.end
-                            chain_vertices.append(le)
-                        elif d_tail_end <= tol_sq:
-                            # tail → line.end → line.start
-                            chain_vertices.append(ls)
-                        elif d_head_start <= tol_sq:
-                            # line.start ← head (prepend line.end, line.start)
-                            chain_vertices.insert(0, le)
-                        elif d_head_end <= tol_sq:
-                            # line.end ← head (prepend line.start, line.end)
-                            chain_vertices.insert(0, ls)
-
+                    if d_ts <= tol_sq:
+                        chain_vertices.append(le)
                         consumed.add(idx)
-                        remaining.remove(idx)
                         changed = True
-                        break  # restart inner loop with updated chain
+                        break
+                    elif d_te <= tol_sq:
+                        chain_vertices.append(ls)
+                        consumed.add(idx)
+                        changed = True
+                        break
 
-            # Check if chain is closed (head connects to tail)
+                if changed:
+                    continue
+
+                # Try to extend from head
+                for idx in _find_neighbours(head[0], head[1]):
+                    if idx in consumed:
+                        continue
+                    ls, le = lines[idx]
+
+                    d_hs = (ls[0] - head[0])**2 + (ls[1] - head[1])**2
+                    d_he = (le[0] - head[0])**2 + (le[1] - head[1])**2
+
+                    if d_hs <= tol_sq:
+                        chain_vertices.insert(0, le)
+                        consumed.add(idx)
+                        changed = True
+                        break
+                    elif d_he <= tol_sq:
+                        chain_vertices.insert(0, ls)
+                        consumed.add(idx)
+                        changed = True
+                        break
+
+            # Check if chain is closed (head ≈ tail)
             if len(chain_vertices) >= 3:
                 head = chain_vertices[0]
                 tail = chain_vertices[-1]
                 close_dist_sq = (head[0] - tail[0])**2 + (head[1] - tail[1])**2
                 if close_dist_sq <= tol_sq:
-                    # Closed polygon found — remove duplicate closing vertex
                     closed_polygons.append(chain_vertices[:-1])
 
         return closed_polygons
