@@ -474,13 +474,23 @@ class ATEXEquipmentSpec(BaseModel):
         [IEC 60079-14]
         """
         zone_allowed = {
-            ZoneType.ZONE_0:  {"ia", "d", "e", "s", "ma"},
+            # V25 FIX: IEC 60079-14 protection concepts permitted per zone.
+            # Zone 0 (EPL Ga) — most hazardous, continuous hazard.
+            # ONLY "ia" (intrinsically safe, level a), "ma" (encapsulation, level a),
+            # and "s" (special, if specifically designed for Zone 0) are permitted.
+            # "d" (flameproof) and "e" (increased safety) are EPL Gb — Zone 1 only.
+            # Allowing Gb equipment in Zone 0 is a LIFE SAFETY failure:
+            # flameproof enclosure could contain an explosion but NOT prevent ignition
+            # in a Zone 0 continuous-hazard atmosphere.
+            ZoneType.ZONE_0:  {"ia", "s", "ma"},
             ZoneType.ZONE_1:  {"ia", "ib", "d", "e", "px", "py", "s",
                                "ma", "mb", "o", "p", "q"},
             ZoneType.ZONE_2:  {"ia", "ib", "ic", "d", "e", "px", "py", "pz",
                                "n", "s", "ec", "ma", "mb", "o", "p", "q",
                                "nA", "nC", "nR"},
-            ZoneType.ZONE_20: {"ia", "ma", "tb", "s", "tD"},
+            # Zone 20 (EPL Da) — dust equivalent of Zone 0.
+            # "tb" is EPL Db (Zone 21 only). Removed from Zone 20 allowed list.
+            ZoneType.ZONE_20: {"ia", "ma", "ta", "s", "tD"},
             ZoneType.ZONE_21: {"ia", "ib", "ma", "mb", "tb", "tc"},
             ZoneType.ZONE_22: {"ia", "ib", "ic", "ma", "mb", "mc",
                                "ta", "tb", "tc"},

@@ -84,6 +84,21 @@ class DuctSpec:
     duct_type:   str = "supply"
     height_m:    float = 0.0   # cross-section height (0 = round duct; width_m = diameter)
 
+    def __post_init__(self):
+        # V25 FIX: Validate duct_type against NFPA 72 §17.7.5.1 recognized types.
+        # A misspelled duct_type (e.g., "suply") would bypass the CFM override
+        # in analyse_duct(), potentially leaving a 5000+ CFM air handler without
+        # smoke detection — a life-safety failure.
+        valid_types = {"supply", "return", "exhaust", "mixed"}
+        normalized = self.duct_type.lower().strip()
+        if normalized not in valid_types:
+            raise ValueError(
+                f"DuctSpec.duct_type='{self.duct_type}' is not a recognized "
+                f"NFPA 72 §17.7.5.1 duct type. Must be one of: "
+                f"{sorted(valid_types)}. A misspelled duct_type could bypass "
+                f"CFM-based detector requirements — a life-safety risk."
+            )
+
 
 @dataclass(frozen=True)
 class DuctDetectorPosition:
