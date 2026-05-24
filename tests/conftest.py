@@ -118,6 +118,35 @@ def _reset_audit_store():
     _orig_db_path = _as.DATABASE_PATH
     _orig_db_init = _as._db_initialized
     _orig_mem_conn = _as._memory_conn
+
+    # ── Post-import cleanup ──────────────────────────────────────────────
+    # Importing fireai.core.audit_store above may have re-poisoned
+    # sys.path and sys.modules:
+    #   1. Python re-added fireai/ to sys.path during the import
+    #   2. 'core' in sys.modules now points to fireai/core/ (wrong)
+    # This causes `from core.models import ...` in downstream test
+    # methods to fail with ModuleNotFoundError.
+    # Re-run the namespace collision fix AFTER the import.
+
+    # Remove fireai/ from sys.path (re-added by Python's import machinery)
+    _fireai_path = _PROJECT_ROOT + '/fireai'
+    while _fireai_path in sys.path:
+        sys.path.remove(_fireai_path)
+
+    # Ensure project root is first
+    if _PROJECT_ROOT not in sys.path:
+        sys.path.insert(0, _PROJECT_ROOT)
+    elif sys.path[0] != _PROJECT_ROOT:
+        sys.path.remove(_PROJECT_ROOT)
+        sys.path.insert(0, _PROJECT_ROOT)
+
+    # Clear cached 'core' module if it resolved to fireai/core/
+    if 'core' in sys.modules:
+        _cached = sys.modules['core']
+        if hasattr(_cached, '__file__') and _cached.__file__ and '/fireai/core/' in _cached.__file__:
+            for _k in [k for k in list(sys.modules.keys()) if k == 'core' or k.startswith('core.')]:
+                del sys.modules[_k]
+
     yield
     # After test: reset globals if they were changed
     if _as.DATABASE_PATH != _orig_db_path:

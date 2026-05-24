@@ -51,13 +51,19 @@ class DWGParseResult:
 class DWGParser:
     """
     Parses DWG files via LibreDWG conversion.
-    
+
     USAGE:
         parser = DWGParser()
         result = parser.parse("building.dwg")
-        
+
         if result.success:
             print(f"Found {result.room_count} rooms")
+
+    SAFETY NOTE:
+        extract_rooms_from_chaos() sanitizes NaN/infinite coordinates from
+        adversarial or corrupted input data.  Poisoned entities are silently
+        skipped so that downstream NFPA analysis never receives geometrically
+        invalid rooms — a safety-critical requirement per NFPA 72 §17.7.
     """
 
     DXF_OUT_CMD = "dxf-out"
@@ -84,6 +90,154 @@ class DWGParser:
             
         self._tool_checked = True
         return self._tool_available
+
+    # ───────────────────────────────────────────────────────────────
+    # Chaos / adversarial input handler (safety-critical)
+    # ───────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _is_valid_coordinate(value) -> bool:
+        """Return True if *value* is a finite float (not NaN, not inf)."""
+        try:
+            f = float(value)
+            import math
+            return math.isfinite(f)
+        except (TypeError, ValueError):
+            return False
+
+    def extract_rooms_from_chaos(self, doc) -> list:
+        """Extract rooms from a potentially-corrupted or adversarial document.
+
+        This method is the **chaos-safe** entry point.  It iterates over
+        entities in ``doc.modelspace()``, skips any entity whose coordinates
+        contain NaN or ±Infinity, and returns a list of
+        :class:`core.models.UniversalElement` objects with clean geometry.
+
+        Parameters
+        ----------
+        doc : object
+            Any object with a ``modelspace()`` method that returns an
+            iterable of entity-like objects.  Each entity must have a
+            ``dxftype()`` method and a ``dxf`` attribute with start/end
+            coordinates for LINE entities, or appropriate attributes for
+            other entity types.
+
+        Returns
+        -------
+        list[UniversalElement]
+            Rooms extracted from valid (non-poisoned) entities only.
+            Entities with NaN / Inf coordinates are silently dropped so
+            that downstream NFPA analysis never receives invalid geometry.
+
+        Safety rationale
+        ----------------
+        A NaN coordinate in a room polygon would silently propagate
+        through Shapely operations, producing zero-area coverage results
+        that could allow a building to be signed off as "protected" when
+        it is not.  Rejecting poisoned data at the parser boundary is
+        the conservative (safer) choice per Life-Safety Rule 5.
+        """
+        # Lazy import — use project-root resolution to avoid
+        # fireai/core/ shadowing top-level core/ when setuptools
+        # adds fireai/ to sys.path.
+        import sys as _sys
+        import importlib
+        _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        if _project_root not in _sys.path:
+            _sys.path.insert(0, _project_root)
+        # Also remove fireai/ if it shadows the project root
+        _fireai_path = os.path.join(_project_root, 'fireai')
+        while _fireai_path in _sys.path:
+            _sys.path.remove(_fireai_path)
+        # Clear cached 'core' module if it resolved to fireai/core/
+        if 'core' in _sys.modules:
+            _mod = _sys.modules['core']
+            if hasattr(_mod, '__file__') and _mod.__file__ and '/fireai/core/' in _mod.__file__:
+                for _k in [k for k in list(_sys.modules.keys()) if k == 'core' or k.startswith('core.')]:
+                    del _sys.modules[_k]
+
+        from core.models import UniversalElement, Geometry, Point3D, ElementType
+
+        rooms: list = []
+
+        try:
+            modelspace = doc.modelspace()
+        except Exception:
+            logger.warning("extract_rooms_from_chaos: doc.modelspace() failed — returning empty list")
+            return rooms
+
+        for entity in modelspace:
+            try:
+                etype = entity.dxftype()
+            except Exception:
+                continue
+
+            if etype == 'LINE':
+                # ── Validate start / end coordinates ──
+                try:
+                    sx = float(entity.dxf.start.x)
+                    sy = float(entity.dxf.start.y)
+                    ex = float(entity.dxf.end.x)
+                    ey = float(entity.dxf.end.y)
+                except (AttributeError, TypeError, ValueError):
+                    logger.debug("extract_rooms_from_chaos: LINE entity missing coords — skipped")
+                    continue
+
+                if not (self._is_valid_coordinate(sx) and self._is_valid_coordinate(sy)
+                        and self._is_valid_coordinate(ex) and self._is_valid_coordinate(ey)):
+                    logger.warning(
+                        "extract_rooms_from_chaos: LINE with NaN/Inf coords "
+                        "(%.4g,%.4g)→(%.4g,%.4g) — poisoned entity dropped",
+                        sx, sy, ex, ey
+                    )
+                    continue
+
+                # A single line does not form a closed room — skip it.
+                # Only closed polylines / polygons become rooms.
+                continue
+
+            elif etype in ('LWPOLYLINE', 'POLYLINE'):
+                # ── Validate polyline vertices ──
+                try:
+                    vertices = []
+                    # LWPOLYLINE: entity.get_points() or iterate
+                    if hasattr(entity, 'get_points'):
+                        raw_pts = entity.get_points()
+                    elif hasattr(entity, '__iter__'):
+                        raw_pts = list(entity)
+                    else:
+                        continue
+
+                    for pt in raw_pts:
+                        if hasattr(pt, 'dxf'):
+                            vx, vy = float(pt.dxf.location.x), float(pt.dxf.location.y)
+                        elif isinstance(pt, (list, tuple)) and len(pt) >= 2:
+                            vx, vy = float(pt[0]), float(pt[1])
+                        else:
+                            continue
+
+                        if not (self._is_valid_coordinate(vx) and self._is_valid_coordinate(vy)):
+                            logger.warning(
+                                "extract_rooms_from_chaos: POLYLINE vertex NaN/Inf — entity dropped"
+                            )
+                            vertices = []  # reject entire entity
+                            break
+                        vertices.append((vx, vy))
+
+                    if len(vertices) >= 3:
+                        points_3d = [Point3D(x=vx, y=vy, z=0.0) for vx, vy in vertices]
+                        geom = Geometry(points=points_3d, polyline_closed=True)
+                        room = UniversalElement(geometry=geom)
+                        rooms.append(room)
+
+                except Exception as exc:
+                    logger.warning("extract_rooms_from_chaos: POLYLINE parse error: %s — skipped", exc)
+                    continue
+
+            # Other entity types (CIRCLE, ARC, TEXT, etc.) are not rooms.
+            # They are silently ignored.
+
+        return rooms
 
     def parse(self, dwg_path: str) -> DWGParseResult:
         """
