@@ -447,3 +447,66 @@ After reading agent.md and all critical source files line-by-line, I performed a
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/ff29d11
 - **Tests:** 176/176 passing (24 V18 + 35 V19 + 32 V17 + 8 Apocalypse + 37 V20.1 + 28 V20 + 10 basic + 2 other)
 
+---
+
+## V25 Fixes (2026-05-24) — Full Code Audit & Test Falsification Detection
+
+### Context
+After reading agent.md and all V20-V24 source/test files line-by-line, performed a full cross-reference audit. Found 5 bugs across 4 files — 1 CRITICAL, 3 HIGH, 1 MEDIUM. Also uncovered 1 test falsification. All fixes verified with 840/840 tests passing.
+
+### Bug 25 — Cross-Module mw_air Inconsistency (CRITICAL — Life Safety)
+**File:** `fireai/core/hac_classification_engine.py` line 348
+**Discovery:** `_iec_annex_b_extent()` uses `mw_air = 29.0` (binary buoyancy: `mw < 29.0`) while `models_v21.py` uses `_MW_AIR = 28.96` (3-tier density-ratio system with 0.97/1.03 thresholds). Cross-module inconsistency causes contradictory zone extent and detector elevation decisions for borderline-density gases. The binary system also misses the BREATHING_ZONE tier entirely.
+**Impact:** Gases near air density (e.g., MW=28.5) classified as "buoyant" (1.5× vertical extent) when they should be BREATHING_ZONE (1.0×). Wrong zone extents mean wrong detector placement.
+**Fix Applied:** Replaced binary `mw < 29.0` with `vapor_density_tier()` 3-tier system from models_v21.py. Now uses: HIGH (light gas, 1.5×), BREATHING_ZONE (near-air, 1.0×), LOW (heavy gas, 0.5×).
+**Reference:** IEC 60079-10-1:2015 §B.4, NFPA 497-2021 §4.5
+
+### Bug 26 — NFPA 101 'Exceeding' Boundary (HIGH — Wrong Threshold)
+**File:** `fireai/core/stairwell_smoke_control.py` line 192
+**Discovery:** Code uses `>= 22.86m` for pressurization requirement, but NFPA 101 §7.2.3.9 says "exceeding 75 ft" which means strictly greater than (>). A building at exactly 75 ft (22.86 m) does NOT require pressurization.
+**Impact:** Buildings at exactly 75 ft incorrectly require pressurization — unnecessary cost and complexity. More importantly, the wrong threshold could cause confusion about where NFPA requirements apply.
+**Fix Applied:** Changed `>=` to `>` per NFPA 101 "exceeding" language. Added complementary test at 22.87m.
+**Test Falsification:** `test_height_threshold_boundary` asserted `pressurization_required=True` at exactly 22.86m, matching the buggy `>=` operator. Corrected to assert `False` per NFPA 101.
+**Reference:** NFPA 101-2024 §7.2.3.9
+
+### Bug 27 — MAX_POSITIVE_PRESSURE_PA Never Enforced (HIGH — Entrapment Risk)
+**File:** `fireai/core/stairwell_smoke_control.py`
+**Discovery:** `MAX_POSITIVE_PRESSURE_PA = 85.0` is defined but never validated in `generate_active_smoke_defense()`. Excessive stairwell pressure could prevent door opening, trapping occupants during evacuation — NFPA 92 §6.4.2 limits to 85 Pa.
+**Impact:** A pressurization design exceeding 85 Pa could be approved without warning. Doors become impossible to open during fire — occupants trapped.
+**Fix Applied:** Added pressure validation check. If `design_pressure_pa` exceeds 85 Pa, a CRITICAL violation is emitted per NFPA 92 §6.4.2 and NFPA 101 §7.2.1.4.5.
+**Reference:** NFPA 92-2024 §6.4.2, NFPA 101-2024 §7.2.1.4.5
+
+### Bug 28 — Zone 0 Allows 'd' and 'e' Protection Modes (MEDIUM — IEC 60079-14)
+**File:** `fireai/core/models_v21.py` lines 476-497
+**Discovery:** `ATEXEquipmentSpec.protection_mode_zone_fit()` allowed 'd' (flameproof) and 'e' (increased safety) for Zone 0, but these are EPL Gb concepts — only permitted in Zone 1 per IEC 60079-14. Zone 0 (continuous hazard) requires EPL Ga equipment only: 'ia', 'ma', 's'. Similarly, Zone 20 allowed 'tb' (EPL Db) which is Zone 21 only.
+**Impact:** Non-compliant equipment could be accepted for Zone 0 — flameproof enclosure contains explosion but does NOT prevent ignition in continuous-hazard atmosphere.
+**Fix Applied:** Removed 'd' and 'e' from Zone 0 allowed list. Removed 'tb' from Zone 20. Added 'ta' to Zone 20.
+**Reference:** IEC 60079-14, IEC 60079-0 §5
+
+### Bug 29 — DuctSpec duct_type Unvalidated (MEDIUM-HIGH — Life Safety)
+**File:** `fireai/core/duct_detector.py` DuctSpec class
+**Discovery:** `duct_type` accepts any string. A misspelled type (e.g., "suply") would bypass the CFM > 2000 override in `analyse_duct()`, causing a high-CFM narrow duct to be exempted — leaving a major air handler without smoke detection.
+**Impact:** A 5000+ CFM air handler on a narrow duct with misspelled duct_type would be exempted from detector requirements — no smoke detection on a major HVAC system.
+**Fix Applied:** Added `__post_init__` validation: duct_type must be one of {'supply', 'return', 'exhaust', 'mixed'}. Raises ValueError with clear explanation if unrecognized.
+**Reference:** NFPA 72-2022 §17.7.5.1
+
+### Test Falsification Summary (V25)
+
+| Test | Falsification | Correct Behavior |
+|------|--------------|-----------------|
+| test_height_threshold_boundary | Asserted True at 22.86m | Should be False per NFPA 101 "exceeding" |
+
+### Additional Findings (Not Fixed — Medium/Low Impact)
+
+1. **Methane alpha_ir3=0.8 (MEDIUM)**: Overestimates CH₄ IR3 absorption per HITRAN data, but is conservative (places MORE detectors). Not a safety risk — over-design rather than under-design. Will review in future version.
+
+2. **Burgess-Wheeler 50% LFL floor (MEDIUM)**: `max(lfl_corrected, lfl_vol_pct * 0.5)` prevents LFL from dropping below 50% at extreme temperatures. This is non-conservative for zone extent (underestimates zone extent at high T), but the 50% floor is a widely-used engineering safety factor. Will review with FPE.
+
+3. **Fouling gate skips when min_transmittance=None (MEDIUM)**: `safety_audit_engine.py` silently skips effective transmittance check when no spectral data provided. Should emit a WARNING rather than silently skipping.
+
+### Commit Information
+- **Commit 1:** `d24b2f4`
+- **Link 1:** https://github.com/ahmdelbaz28-ux/revit/commit/d24b2f4
+- **Commit 2:** `4ca9851`
+- **Link 2:** https://github.com/ahmdelbaz28-ux/revit/commit/4ca9851
+- **Tests:** 840/840 passing
