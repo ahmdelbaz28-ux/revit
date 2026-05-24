@@ -723,10 +723,18 @@ class TestL1ToL7CompletePipeline:
             autoignition_c=hydrogen_sulfide.autoignition_c,
         )
         assert atex_result.is_valid
-        # H2S autoignition 260°C → T2, T2C, or T3 class
-        # Extended T-classes (T2A-T2D) are valid per IEC 60079-0 §7.3
         tc = atex_result.equipment_spec.temp_class
-        assert tc.value.startswith("T2") or tc.value.startswith("T3") or tc == TemperatureClass.T1
+        # H2S autoignition 260°C → T2C (max 230°C) or stricter class
+        # T1 (450°C), T2 (300°C), T2A (280°C), T2B (260°C) are ALL UNSAFE
+        # because their max surface temps ≥ AIT → could ignite H2S
+        valid_safe_classes = {
+            "T2C", "T2D", "T3", "T3A", "T3B", "T3C",
+            "T4", "T4A", "T5", "T6",
+        }
+        assert tc.value in valid_safe_classes, (
+            f"H2S AIT=260°C requires T2C or stricter, got {tc.value} "
+            f"(max surface temp could exceed autoignition)"
+        )
 
         # L5: Optical coverage WITH obstruction
         ray_engine = FlameDetectorAOCRayTrace(grid_step_m=0.5, detector_threshold=0.1)

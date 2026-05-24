@@ -668,7 +668,8 @@ class TestZAxisGate:
         self.propane = SubstanceProperties(
             name="Propane", hazard_type=HazardType.GAS,
             lfl_vol_pct=2.1, ufl_vol_pct=9.5,
-            autoignition_c=470.0, molecular_weight=44.1,
+            autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
+            molecular_weight=44.1,
         )
         self.hydrogen = SubstanceProperties(
             name="Hydrogen", hazard_type=HazardType.GAS,
@@ -1039,7 +1040,8 @@ class TestFullAudit:
         propane = SubstanceProperties(
             name="Propane", hazard_type=HazardType.GAS,
             lfl_vol_pct=2.1, ufl_vol_pct=9.5,
-            autoignition_c=470.0, molecular_weight=44.1,
+            autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
+            molecular_weight=44.1,
         )
         result = self.engine.run_audit(
             zone=ZoneType.ZONE_2,
@@ -1219,7 +1221,8 @@ class TestCLILayer6Integration:
         propane = SubstanceProperties(
             name="Propane", hazard_type=HazardType.GAS,
             lfl_vol_pct=2.1, ufl_vol_pct=9.5,
-            autoignition_c=470.0, molecular_weight=44.1,
+            autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
+            molecular_weight=44.1,
         )
         result = engine.run_layer6(
             zone=ZoneType.ZONE_1,
@@ -1344,7 +1347,8 @@ class TestEdgeCases:
         propane = SubstanceProperties(
             name="Propane", hazard_type=HazardType.GAS,
             lfl_vol_pct=2.1, ufl_vol_pct=9.5,
-            autoignition_c=470.0, molecular_weight=44.1,
+            autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
+            molecular_weight=44.1,
         )
         result = self.engine.run_audit(
             zone=ZoneType.ZONE_1,
@@ -1422,7 +1426,8 @@ class TestEdgeCases:
         propane = SubstanceProperties(
             name="Propane", hazard_type=HazardType.GAS,
             lfl_vol_pct=2.1, ufl_vol_pct=9.5,
-            autoignition_c=470.0, molecular_weight=44.1,
+            autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
+            molecular_weight=44.1,
         )
         result = self.engine.run_audit(
             zone=ZoneType.ZONE_1,

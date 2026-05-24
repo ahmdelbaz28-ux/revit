@@ -173,7 +173,7 @@ class TestPipelineSubstanceLookup:
         substance = pipeline._get_substance()
         assert substance.name == "Propane"
         assert substance.lfl_vol_pct == 2.1
-        assert substance.autoignition_c == 470.0
+        assert substance.autoignition_c == 450.0  # NFPA 497-2024 Table 4.4.2
 
     def test_methane_cas_resolves(self):
         """Pipeline should resolve methane CAS."""

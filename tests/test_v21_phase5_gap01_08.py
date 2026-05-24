@@ -41,7 +41,8 @@ def propane() -> SubstanceProperties:
     return SubstanceProperties(
         name="Propane", hazard_type=HazardType.GAS,
         lfl_vol_pct=2.1, ufl_vol_pct=9.5, flash_point_c=-104.0,
-        autoignition_c=470.0, molecular_weight=44.1, density_kg_m3=1.882,
+        autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
+        molecular_weight=44.1, density_kg_m3=1.882,
     )
 
 @pytest.fixture
@@ -465,7 +466,7 @@ class TestGAP05ZoneHazardCrossValidation:
         """Zone 21 (dust zone) + GAS hazard → errors."""
         result = arbiter.arbitrate_v21(
             zone=ZoneType.ZONE_21, hazard_type=HazardType.GAS,
-            autoignition_c=470.0,
+            autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
         )
         # Cross-validation error is in errors list; spec construction may also fail
         cross_errors = [e for e in result.errors
@@ -476,7 +477,7 @@ class TestGAP05ZoneHazardCrossValidation:
         """Zone 1 + GAS → no cross-validation error."""
         result = arbiter.arbitrate_v21(
             zone=ZoneType.ZONE_1, hazard_type=HazardType.GAS,
-            autoignition_c=470.0,
+            autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
         )
         cross_errors = [e for e in result.errors
                         if "gas zone" in e.lower() or "dust zone" in e.lower()]

@@ -68,6 +68,7 @@ class JurisdictionRegion(str, Enum):
     ASEAN         = "ASEAN"
     TURKEY        = "TURKEY"
     NORTH_AFRICA  = "NORTH_AFRICA"
+    WEST_AFRICA   = "WEST_AFRICA"
     SOUTH_AMERICA = "SOUTH_AMERICA"
     CENTRAL_ASIA  = "CENTRAL_ASIA"
     GLOBAL        = "GLOBAL"
@@ -394,7 +395,7 @@ _COUNTRY_TO_REGION: Dict[str, JurisdictionRegion] = {
     "PK": JurisdictionRegion.CENTRAL_ASIA, "PAKISTAN": JurisdictionRegion.CENTRAL_ASIA,
     "ZA": JurisdictionRegion.SOUTH_AFRICA, "SOUTH AFRICA": JurisdictionRegion.SOUTH_AFRICA,
     "EG": JurisdictionRegion.NORTH_AFRICA, "EGYPT": JurisdictionRegion.NORTH_AFRICA,
-    "NG": JurisdictionRegion.NORTH_AFRICA, "NIGERIA": JurisdictionRegion.NORTH_AFRICA,
+    "NG": JurisdictionRegion.WEST_AFRICA, "NIGERIA": JurisdictionRegion.WEST_AFRICA,
 }
 
 _REGION_TO_SYSTEM: Dict[JurisdictionRegion, HazardSystem] = {
@@ -417,6 +418,7 @@ _REGION_TO_SYSTEM: Dict[JurisdictionRegion, HazardSystem] = {
     JurisdictionRegion.ASEAN:        HazardSystem.IECEX_ZONE,
     JurisdictionRegion.TURKEY:       HazardSystem.IECEX_ZONE,
     JurisdictionRegion.NORTH_AFRICA: HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.WEST_AFRICA:  HazardSystem.IECEX_ZONE,  # Nigeria, Ghana etc. use IECEx
     JurisdictionRegion.SOUTH_AMERICA:HazardSystem.IECEX_ZONE,
     JurisdictionRegion.CENTRAL_ASIA: HazardSystem.IECEX_ZONE,
     JurisdictionRegion.GLOBAL:       HazardSystem.IECEX_ZONE,

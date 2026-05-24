@@ -62,7 +62,7 @@ def propane():
     return SubstanceProperties(
         name="Propane", hazard_type=HazardType.GAS,
         lfl_vol_pct=2.1, ufl_vol_pct=9.5,
-        flash_point_c=-104.0, autoignition_c=470.0,
+        flash_point_c=-104.0, autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
         molecular_weight=44.1,
     )
 
@@ -235,7 +235,7 @@ class TestFix5NewCountries:
         ("SG", JurisdictionRegion.ASEAN),
         ("MY", JurisdictionRegion.ASEAN),
         ("ID", JurisdictionRegion.ASEAN),
-        ("NG", JurisdictionRegion.NORTH_AFRICA),
+        ("NG", JurisdictionRegion.WEST_AFRICA),  # Nigeria is in West Africa, not North Africa
         ("TR", JurisdictionRegion.TURKEY),
         ("TH", JurisdictionRegion.ASEAN),
         ("PH", JurisdictionRegion.ASEAN),
@@ -285,7 +285,9 @@ class TestFix6DustVentilationEffect:
         """HIGH ventilation upgrades gas zone."""
         result = hac.classify_v21(
             propane, VentilationLevel.HIGH, is_indoor=True)
-        assert result.zone in (ZoneType.ZONE_2, ZoneType.UNCLASSIFIED)
+        assert result.zone == ZoneType.ZONE_2, (
+            f"FIX #6: HIGH ventilation upgrades PRIMARY gas to Zone 2, got {result.zone}"
+        )
 
     def test_gas_poor_vent_downgrades(self, hac, propane):
         result = hac.classify_v21(

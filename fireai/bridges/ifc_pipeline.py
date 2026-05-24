@@ -650,7 +650,7 @@ class IfcFirePipeline:
             lfl_vol_pct=2.1,
             ufl_vol_pct=9.5,
             flash_point_c=-104.0,
-            autoignition_c=470.0,
+            autoignition_c=450.0,  # NFPA 497-2024 Table 4.4.2: propane AIT = 450°C (842°F)
             molecular_weight=44.1,
             density_kg_m3=1.882,
         )

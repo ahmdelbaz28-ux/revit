@@ -452,7 +452,7 @@ class TestHACWithLFLCorrection:
         sub = SubstanceProperties(
             name="Propane", hazard_type=HazardType.GAS,
             lfl_vol_pct=2.1, ufl_vol_pct=9.5,
-            autoignition_c=470.0,
+            autoignition_c=450.0,  # NFPA 497: propane AIT=450°C
         )
         result = engine.classify_v21(
             sub, VentilationLevel.LOW, is_indoor=True
