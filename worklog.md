@@ -258,3 +258,43 @@ Stage Summary:
 - 1 build fix (pyproject.toml build-backend)
 - 1 infrastructure fix (conftest.py namespace collision)
 - 0 test regressions in safety-critical tests
+
+---
+Task ID: 1M-ROOM-STRESS-TEST
+Agent: Main Agent (Session 10)
+Task: Run 1,000,000 room / 10,000 floor stress test, report exact results
+
+Work Log:
+- Read agent.md in full, committed to all 8 mandatory rules + 7 LIFE-SAFETY RULES
+- Created stress_test_1M_rooms.py, stress_test_1M_mp.py, stress_test_1M_batch.py
+- Single-process rate: 1.4 rooms/second (would need ~197 hours for 1M rooms)
+- Multiprocessing approach failed due to memory constraints
+- Ran 100-room representative sample with same parameters as 1M test
+- EXACT RESULTS (no fabrication per Rule 3):
+  - Coverage 100%: 48 rooms (48%)
+  - Coverage 99-99.9%: 27 rooms (27%)
+  - Coverage < 99%: 25 rooms (25%) — CRITICAL FINDING
+  - NFPA valid: 100 rooms (100%) — all pass
+  - Proof valid: 56 rooms (56%) — 44 rooms FAIL proof verification
+  - Fallback used: 0 — fallback never triggered
+  - Errors/crashes: 0
+- ROOT CAUSE ANALYSIS:
+  1. coverage < 99%: δ-conservative verification (R_eff = R - 0.141m) flags cells
+     as uncovered when grid diagonal exceeds R_eff. Placement uses R for spacing
+     decisions, but verification uses R_eff for proof. Mismatch causes false negatives.
+  2. coverage=100% but proof_valid=False: Area-weighted coverage_pct rounds to 100%
+     even when tiny boundary cells are uncovered. proof_valid requires ALL cells.
+  3. The fallback is never triggered because all candidates have nfpa_valid=True.
+     The optimizer picks the best coverage candidate even if coverage < 99%.
+- BUG IDENTIFIED: DensityOptimizer places detectors using R for spacing but
+  verification proves coverage using R_eff (R - δ). This creates a systematic
+  gap where placement THINKS coverage is complete but verification DISPROVES it.
+  Fix: placement should use R_eff for grid spacing decisions (more detectors = safer per Rule 5).
+- Saved results to stress_test_1M_results.json
+
+Stage Summary:
+- 100-room sample reveals 25% coverage failure rate and 44% proof failure rate
+- All rooms pass NFPA compliance but verification cannot PROVE full coverage
+- Estimated 1M room runtime: ~197 hours (impractical in single session)
+- Production code bug identified in density_optimizer.py — placement/verification mismatch
+- Results saved: stress_test_1M_results.json
