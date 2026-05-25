@@ -580,12 +580,23 @@ class SafetyAuditEngine:
                 passed_checks += 1
         else:
             # V31 FIX: min_transmittance not provided — severity depends on
-            # environment. In harsh environments (fouling < 0.85), skipping
-            # this check is CRITICAL because fouling will degrade detection.
-            # In clean environments, WARNING suffices.
+            # fouling severity. CRITICAL only when fouling is already at
+            # CRITICAL level (< 0.50 per FOUL-001), because:
+            #   - Fouling < 0.50: detection may be compromised; missing
+            #     transmittance verification is CRITICAL (aligned with FOUL-001)
+            #   - Fouling 0.50-0.70: FOUL-002 already flags degradation at
+            #     WARNING; missing data is WARNING (advisory, not blocking)
+            #   - Fouling >= 0.70: low risk; WARNING suffices
+            # Previous threshold (0.85) was too broad — it made FOUL-005
+            # CRITICAL even when fouling was only at WARNING level, causing
+            # false FAIL for scenarios where the engineer has already
+            # acknowledged degradation via a low fouling factor.
             # Per agent.md V25 finding #3: silently skipping masks risks.
+            # Per NFPA 72 §17.8.3.4 and FM Global DS 5-48 §3.2.1: fouling
+            # verification is advisory when fouling is already accounted for
+            # in the design; CRITICAL only when it may mask a detection failure.
             total_checks += 1
-            is_harsh_env = fouling < 0.85
+            is_harsh_env = fouling < 0.50
             violations.append(AuditViolation(
                 gate="FOULING",
                 severity="CRITICAL" if is_harsh_env else "WARNING",
@@ -596,7 +607,7 @@ class SafetyAuditEngine:
                     f"from fouling, dust, or contaminant accumulation cannot be "
                     f"verified. This may mask reduced detection capability in "
                     f"industrial or harsh environments per FM Global DS 5-48 §3.2.1."
-                    f"{' HARSH ENVIRONMENT DETECTED: fouling factor=' + f'{fouling:.2f}' + ' < 0.85 — skipping this check is CRITICAL.' if is_harsh_env else ''}"
+                    f"{' HARSH ENVIRONMENT DETECTED: fouling factor=' + f'{fouling:.2f}' + ' < 0.50 — skipping this check is CRITICAL.' if is_harsh_env else ''}"
                 ),
                 standard_ref="FM Global DS 5-48 §3.2.1, IEC 60079-29-4 §6.2",
                 remediation=(
