@@ -385,7 +385,7 @@ class BuildingEngine:
 
         # V0.2: Persist delta cache (Consultant #6 Criticism #3)
         self.delta_cache.persist()
-        report.cache_stats = self.delta_cache.stats
+        report.cache_stats = self.delta_cache.stats()
 
         # Add zone summary to building info
         total_zones = sum(zr.total_zones for zr in report.zone_reports.values())

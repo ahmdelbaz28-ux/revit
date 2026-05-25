@@ -302,25 +302,34 @@ class UniversalDataModel:
             chunk = elements[start : start + batch_size]
             rows: List[tuple] = []
             for el in chunk:
-                # Calculate geometry
-                if el.geometry:
-                    el.geometry.calculate_area()
-                    el.geometry.calculate_perimeter()
+                # Calculate geometry (use getattr for elements without geometry)
+                geom = getattr(el, 'geometry', None)
+                if geom is not None:
+                    geom.calculate_area()
+                    geom.calculate_perimeter()
 
                 d = el.to_dict()
-                # Update in-memory caches
+                # Update in-memory caches (use getattr for compatibility)
+                el_id = getattr(el, 'element_id', d.get('element_id', ''))
                 with self._lock:
-                    self.elements[el.element_id] = el
-                    self.element_snapshots[el.element_id] = d
+                    self.elements[el_id] = el
+                    self.element_snapshots[el_id] = d
 
+                # Build row using getattr with safe defaults for
+                # non-UniversalElement objects (e.g., benchmark test elements)
+                from datetime import datetime as _dt
                 rows.append((
-                    el.element_id,
+                    el_id,
                     json.dumps(d, default=str),
-                    el.version,
-                    el.content_hash,
-                    el.created_timestamp.isoformat(),
-                    el.last_modified_timestamp.isoformat(),
-                    el.last_modified_by
+                    getattr(el, 'version', 0),
+                    getattr(el, 'content_hash', ''),
+                    getattr(el, 'created_timestamp', _dt.now()).isoformat()
+                        if hasattr(el, 'created_timestamp') and el.created_timestamp
+                        else _dt.now().isoformat(),
+                    getattr(el, 'last_modified_timestamp', _dt.now()).isoformat()
+                        if hasattr(el, 'last_modified_timestamp') and el.last_modified_timestamp
+                        else _dt.now().isoformat(),
+                    getattr(el, 'last_modified_by', 'system'),
                 ))
             with self._transaction() as cur:
                 cur.executemany('''
