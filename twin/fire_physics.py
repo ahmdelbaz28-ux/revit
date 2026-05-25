@@ -1365,8 +1365,8 @@ class SmokeTransportNS:
 
         # CRIT-05: CO2 generation at fire voxel (ppm change per second)
         # ppm_CO2 = (kg_CO2 / (rho * vol)) * (M_air / M_CO2) * 1e6
-        # M_air ≈ 28.97, M_CO2 ≈ 44.01
-        co2_source_ppm = (co2_rate / (AIR_DENSITY * vol)) * (28.97 / 44.01) * 1e6 if vol > 0 else 0.0
+        # M_air ≈ 28.96 (CRC Handbook), M_CO2 ≈ 44.01
+        co2_source_ppm = (co2_rate / (AIR_DENSITY * vol)) * (28.96 / 44.01) * 1e6 if vol > 0 else 0.0
 
         new_smoke: Dict[int, float] = {}
         new_co: Dict[int, float] = {}

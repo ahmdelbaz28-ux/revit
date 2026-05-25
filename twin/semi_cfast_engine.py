@@ -269,9 +269,9 @@ class RoomCompartment:
 
         # CO ppm from mass fraction
         # ppm = Y_CO × (M_air / M_CO) × 1e6
-        # M_air ≈ 28.97 g/mol, M_CO ≈ 28.01 g/mol
+        # M_air ≈ 28.96 g/mol (CRC Handbook), M_CO ≈ 28.01 g/mol
         y_co = self.upper.species.get('CO', 0.0)
-        self.co_ppm = y_co * (28.97 / 28.01) * 1e6
+        self.co_ppm = y_co * (28.96 / 28.01) * 1e6
 
         # HIGH-07 FIX: Flashover is now REVERSIBLE.
         # Previous behavior: once is_flashover was set True, it was never

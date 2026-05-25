@@ -78,7 +78,8 @@ PHYSICAL_CONSTANTS: Dict[str, float] = {
     "CO_MOLAR_MASS_G_MOL": 28.01,
 
     # Air molecular weight (g/mol)
-    "AIR_MOLAR_MASS_G_MOL": 28.97,
+    # Source: CRC Handbook of Chemistry and Physics, 97th Edition (aligned with _MW_AIR in models_v21.py)
+    "AIR_MOLAR_MASS_G_MOL": 28.96,
 
     # Effective heat of combustion for generic fuel (MJ/kg)
     # Ref: SFPE Handbook, Table 3-4; conservative average for common fuels
@@ -671,7 +672,7 @@ def estimate_co_concentration(
     Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg
     y_CO = PHYSICAL_CONSTANTS["CO_YIELD_FACTOR"]                          # 0.020
     M_CO = PHYSICAL_CONSTANTS["CO_MOLAR_MASS_G_MOL"]                     # 28.01
-    M_air = PHYSICAL_CONSTANTS["AIR_MOLAR_MASS_G_MOL"]                   # 28.97
+    M_air = PHYSICAL_CONSTANTS["AIR_MOLAR_MASS_G_MOL"]                   # 28.96
 
     # Mass loss rate from HRR
     m_dot_fuel = Q / (Delta_H_c * 1000.0)  # kg/s
