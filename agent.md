@@ -1320,3 +1320,28 @@ Severity alignment matrix (after fix):
 ### Commit Information
 - **Commit:** `5b91c93`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/5b91c93
+
+---
+
+## V35 Fix (2026-05-25) — HAC Duplicate Burgess-Wheeler Elimination
+
+### Context
+V33 documented "HAC engine has duplicate Burgess-Wheeler implementation" as MEDIUM priority. Per Rule 18 (Continuous Pipeline), this is the next fix in the closed loop.
+
+### Bug 35 — Duplicate Burgess-Wheeler Implementation in HAC Engine (MEDIUM — Maintenance Risk)
+**File:** `fireai/core/hac_classification_engine.py` — `_iec_annex_b_extent()` lines 298-309
+**Discovery:** `_iec_annex_b_extent()` reimplements Burgess-Wheeler LFL thermal correction inline instead of calling the canonical `burgess_wheeler_lfl()` from `models_v21.py`. This creates a maintenance risk — if the BW formula or floor ratio changes, only one implementation might get updated.
+**Verification:** Line-by-line comparison confirmed the two implementations are mathematically identical when `burgess_wheeler_lfl()` uses default parameters (`heat_of_combustion_kj_mol=None`, `lfl_floor_ratio=0.5`). Same guard condition (T>25C), same formula coefficient (0.001824), same floor (50% of LFL).
+**Impact:** Not a correctness bug (V25 already aligned mw_air values). But if future changes to BW correction (e.g., adding heat-of-combustion adjustment per NFPA 497) are applied only to `models_v21.py`, the HAC engine would silently use outdated logic.
+**Fix Applied:** Replaced 8-line inline BW implementation with single delegation call: `lfl_corrected = burgess_wheeler_lfl(lfl_vol_pct, ambient_temp_c)`. Import was already present in the file.
+**Tests:** 151/151 passing (26 hypothesis + 125 V22 safety)
+
+### Self-Criticism Notes (V35)
+
+1. **This was a maintenance bomb, not a correctness bug** — but in a life-critical system, maintenance risk IS safety risk. If a future FPE updates the BW formula in models_v21.py but forgets the HAC inline copy, the two modules would diverge silently.
+2. **The V25 fix already prevented divergence** — mw_air was aligned to 28.96 in both modules. But the duplicate code was still a latent risk.
+3. **Rule 17 (No Half-Solutions) applies** — A half-solution would have been adding a comment "keep in sync with models_v21.py." The root-cause fix is eliminating the duplication entirely.
+
+### Commit Information
+- **Commit:** `04ff20c`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/04ff20c
