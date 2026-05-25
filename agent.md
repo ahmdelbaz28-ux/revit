@@ -1479,3 +1479,47 @@ After completing all V33 Additional Findings (V34-V38), performed a full securit
 ### Commit Information
 - **Commit:** `3bef4d7`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/3bef4d7
+
+---
+
+## V40 Fixes (2026-05-25) — HIGH Security Audit Findings
+
+### Context
+Continuing closed-loop pipeline (Rule 18) to fix remaining 5 HIGH findings from security audit.
+
+### Bug 40a — IEC Annex B Volumetric Release Rate Not Temperature-Corrected (HIGH — 15% Underestimate)
+**File:** `fireai/core/hac_classification_engine.py` — `_iec_annex_b_extent()` line 319
+**Fix:** Replaced `0.0224` with `0.0224 * (273.15 + ambient_temp_c) / 273.15` per ideal gas law. At 40°C, gas is ~14.7% more voluminous — zone extents were underestimated.
+
+### Bug 40b — Z-Axis Gate Silently Skips When Data Missing (HIGH — Missing Safety Check)
+**File:** `fireai/core/safety_audit_engine.py` — `_check_z_axis()` lines 807-811
+**Fix:** Added ZAX-002 WARNING when substance/MW missing, ZAX-003 WARNING when detector positions missing. Audit trail now reflects check was attempted but could not complete.
+
+### Bug 40c — FIBER Hazard Type Has No Required Physical Properties (HIGH — NFPA 70 Violation)
+**File:** `fireai/core/models_v21.py` — `physics_consistency` validator lines 289-320
+**Fix:** Added FIBER branch requiring at least one of `lfl_vol_pct` or `mec_g_m3` per NFPA 70 Art. 503.
+
+### Bug 40d — Zone 2+HIGH→UNCLASSIFIED Without Availability Check (HIGH — IEC §4.3 Violation)
+**File:** `fireai/core/hac_classification_engine.py` — `_apply_ventilation_gas_v21` line 784
+**Fix:** Changed mapping from UNCLASSIFIED to ZONE_2 (conservative default). UNCLASSIFIED only valid after explicit availability confirmation per IEC §4.3.
+
+### Bug 40e — Legacy classify() Uses Non-Conservative 25°C Default (HIGH — Burgess-Wheeler Bypass)
+**File:** `fireai/core/hac_classification_engine.py` — `classify()` line 869
+**Fix:** Changed default from 25.0°C to 40.0°C (matching V21 API). Added deprecation warning directing users to `classify_v21()`.
+
+**Tests:** 178/178 passing
+
+### Remaining Audit Findings (6 MEDIUM)
+
+| # | Finding | Impact |
+|---|---------|--------|
+| 8 | Dead code `_classify_hybrid_v21` has inconsistent zone logic | MEDIUM |
+| 9 | Dust extent formula has no MEC floor | MEDIUM |
+| 10 | Source height parameter ignored in extent calculations | MEDIUM |
+| 11 | SpectralSignatureRegistry not thread-safe | MEDIUM |
+| 12 | AuditSeverity class defined but never used | MEDIUM |
+| 13 | POOR→LOW mapping loses severity in legacy path | MEDIUM |
+
+### Commit Information
+- **Commit:** `1fd43c6`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/1fd43c6
