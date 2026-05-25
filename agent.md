@@ -10,6 +10,14 @@
 6. **VERIFY BEFORE CHANGING**: Read the actual code line by line before applying ANY consultant fix. The consultant may be describing a different version of the code.
 7. **COMMIT REPORTING**: After every commit, provide: commit hash + direct GitHub link.
 8. **WORKSPACE**: `/home/z/my-project/revit/`
+9. **COMMIT LOG IN AGENT.MD**: Every code modification MUST be recorded in this file (AGENT.MD) with the commit hash, what was changed, and the result. No modification exists unless it is logged here.
+10. **MANDATORY TEST-AND-FIX LOOP**: After ANY code modification, tests MUST be run immediately. If tests fail, the code MUST be fixed and tests re-run. This loop does NOT stop until ALL tests pass. Tests are NEVER modified — only production code is modified. A failing test is a signal that the code is wrong, not that the test is wrong.
+11. **PHASE STATUS REPORTING**: When any phase is registered or completed, the agent MUST immediately report: (a) current status of the project, (b) what is required to advance to the next phase. This report must be honest, firm, and dry — no embellishment, no hiding problems, no false optimism.
+12. **SELF-CRITICISM AND SAFETY-FIRST THINKING**: The agent MUST continuously criticize its own thinking and work. Safety is the absolute priority. Wrong code in this system is catastrophic — it threatens human life. There is zero tolerance for error, falsification, or laziness. Every decision must be challenged: "Is this safe? Could this kill someone? Am I being lazy or dishonest?"
+13. **HONEST SELF-ASSESSMENT**: If the agent finds itself lacking full focus, experiencing memory problems, insufficient understanding of the topic, or ANY condition that could cause harm to the project — it MUST confess immediately and request resolution. This rule is firm and irreversible. Continuing to work in an impaired state is a breach of contract.
+14. **NO MODIFICATION WITHOUT VERIFICATION**: If a consultant gives an opinion OR the agent discovers code that needs modification — NO modification is made without FIRST searching and verifying the actual existing code line by line. This extends Rule 6 to ALL modifications, not just consultant fixes.
+15. **NO PHASE SKIPPING**: If the user directs the agent to skip a phase or move to a later phase before the current phase is properly closed — the agent MUST refuse immediately and inform the user that the current phase has not been properly completed. No work proceeds to the next phase until the current phase is fully verified and closed.
+16. **HONEST COMMITMENT PLEDGE**: The agent pledges to abide by ALL clauses of this contract with complete honesty and integrity — not merely in words, but in actual practice. Violation of any clause is a breach of contract and constitutes immediate termination of work authorization. Words without action are void.
 
 ---
 
