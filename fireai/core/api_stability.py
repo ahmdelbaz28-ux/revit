@@ -17,9 +17,13 @@ Provides:
 from __future__ import annotations
 
 import functools
+import logging
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -228,9 +232,61 @@ class FireAIPluginAPI:
 
         Stable API: always returns list of same length as input.
         Order preserved. Failed rooms return PluginDetectorLayout with proof_valid=False.
+
+        Thread Safety (V0.3 Safety Guard):
+          - ProcessPoolExecutor is FORBIDDEN: CBC (PuLP solver) is a C-level
+            library that does NOT release the GIL; forking with CBC causes
+            deadlocks (see building_engine.py V0.3 Safety Guard).
+          - ThreadPoolExecutor is used ONLY in fallback mode (no engine).
+            The fallback path (_fallback_analyse_room) is pure Python with
+            no shared mutable state, so concurrent execution is safe.
+          - When an engine is present, parallelisation is NOT safe because
+            DensityOptimizer.optimize() temporarily mutates instance state
+            (self.R, self.R_place, self.S_g, self.Ry_g) and restores it in
+            a finally block — a classic race condition under concurrency.
+            A WARNING is logged and execution falls back to sequential.
         """
-        return [self.analyse_room(room, coverage_radius=coverage_radius)
-                for room in rooms]
+        if n_workers <= 1 or len(rooms) <= 1:
+            return [self.analyse_room(room, coverage_radius=coverage_radius)
+                    for room in rooms]
+
+        # Engine path: DensityOptimizer.optimize() has mutable instance state
+        # that is temporarily overridden per call — NOT thread-safe.
+        if self._engine is not None:
+            logger.warning(
+                "analyse_rooms_batch: n_workers=%d ignored — parallelisation "
+                "unsafe with engine present (DensityOptimizer mutable state "
+                "race condition). Falling back to sequential execution. "
+                "See building_engine.py V0.3 Safety Guard.",
+                n_workers,
+            )
+            return [self.analyse_room(room, coverage_radius=coverage_radius)
+                    for room in rooms]
+
+        # Fallback path: pure Python, no shared mutable state — thread-safe.
+        # ProcessPoolExecutor is FORBIDDEN per V0.3 Safety Guard (CBC deadlock).
+        # ThreadPoolExecutor is safe here because _fallback_analyse_room
+        # only reads self-level constants and creates new objects per call.
+        max_workers = max(1, min(n_workers, len(rooms)))
+        indexed_results: List[Optional[PluginDetectorLayout]] = [None] * len(rooms)
+
+        def _analyse_indexed(
+            idx: int, room: PluginRoom
+        ) -> Tuple[int, PluginDetectorLayout]:
+            result = self.analyse_room(room, coverage_radius=coverage_radius)
+            return (idx, result)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(_analyse_indexed, i, room): i
+                for i, room in enumerate(rooms)
+            }
+            for future in as_completed(futures):
+                idx, result = future.result()
+                indexed_results[idx] = result
+
+        # Guarantee: every slot filled (analyse_room never returns None)
+        return list(indexed_results)  # type: ignore[arg-type]
 
     def analyse_building(
         self,
