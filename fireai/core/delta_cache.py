@@ -336,7 +336,7 @@ class DeltaCache:
         # Cache hit?
         entry = self._cache.get(cache_key)
         if entry is not None:
-            self.saved_computes += 1
+            self.saved_computes += 1  # V44 NOTE: Not thread-safe but acceptable for stats counter
             return entry.result
 
         # Cache miss — compute OUTSIDE the lock
@@ -351,7 +351,7 @@ class DeltaCache:
             computed_at=time.time(),
             compute_time_s=elapsed,
         ))
-        self.total_computes += 1
+        self.total_computes += 1   # V44 NOTE: Not thread-safe but acceptable for stats counter
         return result
 
     def invalidate(
@@ -380,7 +380,7 @@ class DeltaCache:
             # Invalidate all cache keys with this node_id prefix
             count += self._cache.invalidate_prefix(f"{nid}:")
 
-        self.total_invalidates += len(all_invalidated)
+        self.total_invalidates += len(all_invalidated)  # V44 NOTE: Not thread-safe but acceptable for stats counter
         return frozenset(all_invalidated)
 
     def invalidate_batch(
