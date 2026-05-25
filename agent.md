@@ -1434,3 +1434,48 @@ V33 documented "CI Benchmark `_stub()` returns fake results" as LOW priority. Pe
 ### Commit Information
 - **Commit:** `096ccb7`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/096ccb7
+
+---
+
+## V39 Fixes (2026-05-25) — CRITICAL Security Audit Findings
+
+### Context
+After completing all V33 Additional Findings (V34-V38), performed a full security audit per Rules 6/14. Found 13 new issues (2 CRITICAL, 5 HIGH, 6 MEDIUM). Fixing CRITICAL issues immediately per Rule 18.
+
+### Bug 39a — AuditInput API Bypasses 3 of 5 Safety Gates (CRITICAL — Silent Safety Bypass)
+**File:** `fireai/core/safety_audit_engine.py` — `_run_audit_from_input()` lines 329-448
+**Discovery:** The AuditInput API path only executed Gate 1 (Redundancy) and Gate 4 (Elevation). Three gates were completely absent: Gate 2 (Fouling/Transmittance), Gate 3 (Zone Mapping), Gate 5 (MENA Region). A caller using `engine.run_audit(audit_input=...)` could pass a DUST hazard in a gas zone, severe fouling, and a MENA desert environment — and receive PASS with zero violations.
+**Root Cause:** `AuditInput` model lacked `hazard_type` and `region` fields, making it impossible for this API path to call Gates 3 and 5. Even without those fields, Gate 2 (fouling) should have been called but wasn't.
+**Fix Applied:**
+- Added `hazard_type: Optional[HazardType]` and `region: Optional[RegionProfile]` fields to `AuditInput` (backward-compatible, default=None)
+- Rewrote `_run_audit_from_input()` to execute all 5 gates with inference logic for missing fields
+- Region inference: SAUDI_HCIS→GULF_HCIS, EGYPTIAN_FIRE_CODE→EGYPT_CODE, others→STANDARD_IEC
+- Hazard type inference: gas zones→GAS, dust zones→DUST, unclassified→skip
+**Tests:** 196/196 passing. Lethal scenario now correctly produces 6 violations (4 CRITICAL) → FAIL
+
+### Bug 39b — PRIMARY Release Zones Relaxed by HIGH Ventilation (CRITICAL — IEC §4.3 Violation)
+**File:** `fireai/core/hac_classification_engine.py` — `_resolve_zone_with_grade_vent()` line 403
+**Discovery:** The safety guard at line 403 only blocked `ReleaseGrade.CONTINUOUS` from zone relaxation by HIGH ventilation. PRIMARY releases were not protected: `PRIMARY + HIGH → Zone 1 becomes Zone 2` (delta=+1). Per IEC 60079-10-1 §4.3 Note 2: "High dilution may reduce zone extent but should not relax zone type for CONTINUOUS/PRIMARY releases."
+**Fix Applied:** Extended guard: `release_grade in (ReleaseGrade.CONTINUOUS, ReleaseGrade.PRIMARY) and delta > 0: delta = 0`. Now PRIMARY releases also cannot be relaxed by ventilation.
+**Tests:** 196/196 passing
+
+### Self-Criticism Notes (V39)
+
+1. **The AuditInput bypass was a catastrophic design flaw** — 60% of safety gates were silently skipped. This is exactly the kind of bug that Rule 12 warns about: "Wrong code in this system is catastrophic — it threatens human life."
+2. **The PRIMARY release relaxation violates IEC** — Per IEC §4.3, both CONTINUOUS and PRIMARY releases must not be relaxed by ventilation. The original code only protected CONTINUOUS. This is a standards violation, not just a logic error.
+3. **Both CRITICAL bugs were in recently-introduced code** — V21 API and V22 HAC engine. This reinforces the need for continuous security auditing per Rule 18.
+
+### Remaining Audit Findings (5 HIGH, 6 MEDIUM — Documented for Next Phase)
+
+| # | Finding | Impact | Standard |
+|---|---------|--------|----------|
+| 3 | IEC Annex B volumetric release rate not temperature-corrected | HIGH | IEC 60079-10-1 Annex B |
+| 4 | Z-axis gate silently skips missing data | HIGH | IEC 60079-10-1 §B.4 |
+| 5 | FIBER hazard type has no required physical properties | HIGH | NFPA 70 Art. 503 |
+| 6 | Zone 2+HIGH→UNCLASSIFIED without availability check | HIGH | IEC 60079-10-1 §4.3 |
+| 7 | Legacy classify() uses non-conservative 25°C default | HIGH | IEC Annex B |
+| 8-13 | Dead code, MEC floor, source height, thread safety, AuditSeverity, POOR→LOW | MEDIUM | Various |
+
+### Commit Information
+- **Commit:** `3bef4d7`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/3bef4d7
