@@ -352,10 +352,10 @@ class FireAIPluginAPI:
             room_id=room.room_id,
             detectors=tuple(dets),
             count=len(dets),
-            coverage_pct=95.0,   # Conservative estimate
+            coverage_pct=0.0,    # V44 FIX: Unknown coverage — was 95.0 (fabricated). Actual coverage depends on room geometry and detector type.
             proof_valid=False,   # Not mathematically proven
             method="fallback_grid",
-            nfpa_compliant=True,
+            nfpa_compliant=False,  # V44 FIX: Cannot claim compliance without proof — was True (FALSE COMPLIANCE CLAIM). Per NFPA 72, compliance requires mathematical verification.
             warnings=("Fallback mode: no engine available. "
                       "Verify coverage before submission.",),
         )

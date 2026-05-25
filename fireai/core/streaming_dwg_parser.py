@@ -301,8 +301,17 @@ class StreamingDXFParser:
                             stats.rooms_yielded += 1
 
                         # Keep only lines not yet assembled into polygons
+                        # V44 FIX: Previously `pending_lines = []` silently dropped ALL lines,
+                        # including orphans not consumed by polygon assembly. This meant rooms
+                        # that span chunk boundaries were NEVER assembled — missing rooms = missing
+                        # fire detectors = life safety failure. Now only remove consumed lines.
                         if polygons:
-                            pending_lines = []
+                            consumed_line_ids = set()
+                            for poly in polygons:
+                                for seg in poly:
+                                    consumed_line_ids.add(id(seg))
+                            pending_lines = [ln for ln in pending_lines
+                                           if id(ln) not in consumed_line_ids]
                         chunk_buf = []
 
                 # Final chunk

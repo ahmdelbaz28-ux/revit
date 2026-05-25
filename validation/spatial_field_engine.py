@@ -211,10 +211,26 @@ class SpatialFieldEngine:
 
     def evaluate_batch(
         self,
-        rooms_data: List[Tuple[Any, List[Tuple[float,float]], str]],
+        rooms_data: List[Tuple[Any, List[Tuple[float,float]], str, List[Any]]],
     ) -> List[ComplianceResult]:
-        """Batch evaluate N rooms. Each independent — parallelisable."""
-        return [
-            self.evaluate_compliance(poly, dets, room_id=rid)
-            for poly, dets, rid in rooms_data
-        ]
+        """Batch evaluate N rooms. Each independent — parallelisable.
+
+        V44 FIX: Added obstructions parameter to each room_data tuple.
+        Previously, obstructions were silently dropped, causing non-compliant
+        rooms to pass (detectors behind obstructions counted as valid).
+        Each tuple is now: (room_polygon, device_positions, room_id, obstructions)
+        For backward compatibility, 3-element tuples default to no obstructions.
+        """
+        results = []
+        for item in rooms_data:
+            if len(item) == 4:
+                poly, dets, rid, obsts = item
+            elif len(item) == 3:
+                poly, dets, rid = item
+                obsts = None
+            else:
+                continue
+            results.append(
+                self.evaluate_compliance(poly, dets, room_id=rid, obstructions=obsts)
+            )
+        return results
