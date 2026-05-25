@@ -113,14 +113,19 @@ class SpatialFieldEngine:
                 violation_pts=grid_pts, nfpa_compliant=False)
 
         # STRtree for obstructions
+        # BUG FIX V33: STRtree indices refer to the list it was built from.
+        # Previously, obs_tree was built from `valid` (filtered Nones) but
+        # indexed into `obs_geoms` (which includes Nones at different indices).
+        # This caused wrong obstruction lookups — obstructed LOS could pass
+        # as clear. Now we use `valid` consistently for both building and lookup.
         obs_tree = None
-        obs_geoms = []
+        valid_obs_geoms: List[Any] = []
         if _SHAPELY and obstructions:
-            obs_geoms = [getattr(o, "shapely_geom",
-                         getattr(o, "geometry", None)) for o in obstructions]
-            valid = [g for g in obs_geoms if g is not None]
-            if valid:
-                obs_tree = STRtree(valid)
+            obs_geoms_raw = [getattr(o, "shapely_geom",
+                             getattr(o, "geometry", None)) for o in obstructions]
+            valid_obs_geoms = [g for g in obs_geoms_raw if g is not None]
+            if valid_obs_geoms:
+                obs_tree = STRtree(valid_obs_geoms)
 
         R2 = self.detector_radius ** 2
         covered = 0
@@ -142,12 +147,11 @@ class SpatialFieldEngine:
                 if obs_tree is None:
                     covered += 1
                     continue
-                # LOS check
+                # LOS check — V33 FIX: index into valid_obs_geoms (STRtree indices)
                 dx, dy = device_positions[int(best_det[i])]
                 los = LineString([(gx, gy), (dx, dy)])
                 blocked = any(
-                    obs_geoms[idx] is not None
-                    and los.intersects(obs_geoms[idx])
+                    los.intersects(valid_obs_geoms[idx])
                     for idx in obs_tree.query(los)
                 )
                 if not blocked:
@@ -161,8 +165,7 @@ class SpatialFieldEngine:
                         if dist2[i, j] <= R2:
                             los2 = LineString([(gx, gy), (dx2, dy2)])
                             b2 = any(
-                                obs_geoms[k] is not None
-                                and los2.intersects(obs_geoms[k])
+                                los2.intersects(valid_obs_geoms[k])
                                 for k in obs_tree.query(los2)
                             )
                             if not b2:
@@ -185,8 +188,7 @@ class SpatialFieldEngine:
                         break
                     los = LineString([(gx, gy), (dx, dy)])
                     if not any(
-                        obs_geoms[k] is not None
-                        and los.intersects(obs_geoms[k])
+                        los.intersects(valid_obs_geoms[k])
                         for k in obs_tree.query(los)
                     ):
                         pt_covered = True
