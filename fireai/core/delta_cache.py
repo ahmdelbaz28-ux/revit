@@ -578,6 +578,35 @@ class DeltaCache:
                 (self._algorithm_version,),
             )
 
+            # Write current LRU entries to SQLite
+            with self._cache._lock:
+                for key, entry in self._cache._data.items():
+                    # Extract room_id from cache key (format: "node_id:content_hash")
+                    room_id = key.split(":", 1)[0]
+                    try:
+                        result_json = json.dumps(entry.result, default=str)
+                    except (TypeError, ValueError):
+                        result_json = str(entry.result)
+
+                    cursor.execute(
+                        """
+                        INSERT OR REPLACE INTO delta_cache
+                        (room_id, geometry_hash, algorithm_version, ceiling_height,
+                         detector_type, result_json, timestamp, hit_count)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            room_id,
+                            entry.content_hash,
+                            self._algorithm_version,
+                            0.0,
+                            "unknown",
+                            result_json,
+                            entry.computed_at,
+                            entry.hit_count,
+                        ),
+                    )
+
             conn.commit()
             conn.close()
             logger.info("DeltaCache: Persisted to %s", self._db_path)
