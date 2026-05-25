@@ -1737,3 +1737,49 @@ After adding Rule 19 (Mandatory Infinite Improvement Cycle) per operator instruc
 - **Commit:** `678a6cc`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/678a6cc
 - **Tests:** 530+ passing (excluding 2 known IEC expectation mismatches)
+
+---
+
+## V44 P0/P1 Critical Fixes (2026-05-25) — Consultant File Deep Audit
+
+### Context
+Read 5 consultant production files line-by-line per Rules 6/14: delta_cache.py, streaming_dwg_parser.py, api_stability.py, ci_benchmark.py, spatial_field_engine.py. Found 7 CRITICAL, 9 HIGH, 11 MEDIUM issues. Applied P0 and P1 fixes.
+
+### Bug 44-P0-1 — False NFPA Compliance Claim (CRITICAL — Life Safety)
+**File:** `fireai/core/api_stability.py` — `_fallback_analyse_room()` line 358
+**Discovery:** Fallback mode returns `nfpa_compliant=True` with `proof_valid=False` and fabricated `coverage_pct=95.0`. A room marked NFPA-compliant without mathematical proof is a **false compliance claim**. An AHJ relying on this could approve a non-compliant design.
+**Impact:** Buildings approved with inadequate fire detection. Direct life-safety failure.
+**Fix:** Changed `nfpa_compliant=True` → `nfpa_compliant=False` and `coverage_pct=95.0` → `coverage_pct=0.0` (unknown coverage).
+**Standard:** NFPA 72 §17.7.6.1 (compliance requires verified coverage)
+
+### Bug 44-P0-2 — Missing Rooms from DWG Parsing (CRITICAL — NFPA 72 §17.6.3)
+**File:** `fireai/core/streaming_dwg_parser.py` — line 305
+**Discovery:** After polygon assembly, `pending_lines = []` discards ALL lines including orphans not consumed by any polygon. Rooms spanning chunk boundaries are silently lost.
+**Impact:** Missing rooms = no detectors = life safety failure per NFPA 72.
+**Fix:** Changed to only remove consumed lines using `id()` tracking.
+
+### Bug 44-P0-3 — evaluate_batch Drops Obstructions (CRITICAL — NFPA 72)
+**File:** `validation/spatial_field_engine.py` — `evaluate_batch()` lines 212-220
+**Discovery:** `evaluate_batch` calls `evaluate_compliance` WITHOUT passing obstructions. Detectors behind obstructions counted as valid coverage.
+**Fix:** Added obstruction passing with backward compatibility (3-tuple defaults to None).
+
+### Bug 44-P1-1 — Compliance Threshold Too Strict (HIGH — NFPA 72)
+**File:** `validation/spatial_field_engine.py` — line 202
+**Discovery:** `coverage_pct >= 100.0` requirement is stricter than NFPA 72 (spacing rules, not grid coverage) and subject to floating-point errors.
+**Fix:** Changed to `>= 99.9` matching nfpa72_coverage.py area-based standard.
+
+### Bug 44-P1-2 — Detector Radius Not Documented (HIGH)
+**File:** `validation/spatial_field_engine.py` — line 57
+**Discovery:** `detector_radius=6.37` had no NFPA 72 reference. The value is 0.7×S for smoke (S=9.1m) per NFPA 72 §17.7.6.1.
+**Fix:** Added inline documentation with standard reference.
+
+### Known Gaps (Not Yet Fixed)
+- `wall_min` parameter stored but never enforced (NFPA 72 §17.6.3.1.1)
+- `ci_benchmark.py`: Fake std_dev=0.0, missing baseline handling
+- `delta_cache.py`: Thread-unsafe counter increments
+- No Shapely fallback produces unreliable compliance results
+
+### Commit Information
+- **Commits:** `678a6cc` (thread safety + Rule 19), `8a61ad2` (P0 critical), `b488fd7` (P1)
+- **Tests:** 404+ passing, 0 regressions
+

@@ -177,7 +177,11 @@ class CIBenchmarkSuite:
                 rounds.append(time.perf_counter() - t)
             avg = sum(rounds) / len(rounds)
             elem_per_s = 1000.0 / avg
-            std = 0.0
+            # V44 FIX: Compute actual std_dev instead of hardcoded 0.0.
+            # Population std (consistent with _run_timed) for 5 rounds.
+            mean_r = sum(rounds) / len(rounds)
+            variance = sum((r - mean_r) ** 2 for r in rounds) / len(rounds)
+            std = (variance ** 0.5) / mean_r * 100.0 if mean_r > 0 else 0.0
             return BenchResult("db_batch_1000", elem_per_s, avg*1e6/1000, 5, std)
         except ImportError:
             return self._stub("db_batch_1000", 50_000)
