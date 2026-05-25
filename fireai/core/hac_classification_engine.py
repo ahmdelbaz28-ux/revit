@@ -425,10 +425,14 @@ def _resolve_zone_with_grade_vent(
     base_idx = order.index(base_str)
     delta = _VENT_ZONE_DELTA.get(ventilation.value, 0)
 
-    # IEC §4.3 Note 2: CONTINUOUS and PRIMARY releases cannot be reduced
-    # by ventilation — zone type must not be relaxed (Zone 0 stays 0,
-    # Zone 1/21 stays 1/21 even with HIGH ventilation).
-    if release_grade in (ReleaseGrade.CONTINUOUS, ReleaseGrade.PRIMARY) and delta > 0:
+    # IEC §4.3 Note 2: CONTINUOUS releases cannot be reduced by ventilation
+    # — Zone 0/20 stays Zone 0/20 regardless of ventilation level.
+    # PRIMARY releases may be reduced by one zone level with HIGH ventilation
+    # (Zone 1→2 gas, Zone 21→22 dust) per IEC §4.3 §4.4. This is the
+    # standard engineering interpretation: HIGH ventilation provides enough
+    # dilution to reduce the probability of a hazardous atmosphere for
+    # PRIMARY (occasional) releases, but NOT for CONTINUOUS (permanent) ones.
+    if release_grade == ReleaseGrade.CONTINUOUS and delta > 0:
         delta = 0
 
     final_idx = max(0, min(len(order) - 1, base_idx + delta))
