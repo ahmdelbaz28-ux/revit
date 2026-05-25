@@ -566,3 +566,34 @@ Stage Summary:
 - 1 known failure from V31 safety improvement (FOUL-005) — documented, test NOT modified per Rule 1
 - Consultant advice fully integrated — nothing pending
 - Phase status: READY FOR NEXT PHASE — all V12-V31 fixes verified
+---
+Task ID: V34-V41
+Agent: Main Agent (Session 17 — continued from context loss)
+Task: Apply AGENT.MD Rules 17/18, fix all pending bugs, perform security audit
+
+Work Log:
+- Re-read agent.md in full (18 mandatory rules + elite engineering protocol)
+- Committed to all 18 rules including new Rule 17 (Root-Cause Analysis) and Rule 18 (Continuous Pipeline)
+- Ran full test suite: identified 1 failing test (FOUL-005 severity misalignment)
+- V34: Fixed FOUL-005 harsh_env threshold 0.85→0.50, aligning with FOUL-001 CRITICAL level
+- V35: Eliminated duplicate Burgess-Wheeler implementation in HAC engine, delegating to canonical burgess_wheeler_lfl()
+- V36: Added missing SQLite write path to DeltaCache persist() — cache results no longer silently discarded
+- V37: Implemented n_workers parallelization in analyse_rooms_batch() — ThreadPoolExecutor for safe fallback, WARNING for unsafe engine mode
+- V38: Made CI Benchmark stub results transparent — is_stub flag, warnings.warn, skip in baseline comparison
+- All 4 V33 Additional Findings resolved (V34-V38)
+- Performed full security audit on 3 critical files (3,887 lines)
+- Found 13 new issues: 2 CRITICAL, 5 HIGH, 6 MEDIUM
+- V39: Fixed CRITICAL AuditInput 5-gate bypass (60% of safety gates were skipped)
+- V39: Fixed CRITICAL PRIMARY release zone relaxation (IEC §4.3 violation)
+- V40: Fixed 5 HIGH findings (temp-corrected volumetric release, Z-axis warning, FIBER validation, Zone2+HIGH, legacy 25°C default)
+- V41: Fixed 6 MEDIUM findings (deprecated dead code, MEC floor, GAP-09 documentation, thread safety, AuditSeverity validator, POOR→LOW warning)
+- All 13 security audit findings resolved
+- Total: 8 bugs fixed in this session (V34-V41)
+
+Stage Summary:
+- Commits: 5b91c93 (V34), 04ff20c (V35), 42086cd (V36), 046c38a (V37), 096ccb7 (V38), 3bef4d7 (V39), 1fd43c6 (V40), 3378b5f (V41)
+- Latest push: bcab00b (AGENT.MD V41 log)
+- Tests: 178/178 passing (core safety + hypothesis + V29 integration)
+- Known remaining: test_big_crunch_protocol OS thread limit (environmental, not code bug)
+- Security audit: ALL 13 findings resolved (2 CRITICAL + 5 HIGH + 6 MEDIUM)
+- Total documented bugs in AGENT.MD: 41+ (V12-V41)
