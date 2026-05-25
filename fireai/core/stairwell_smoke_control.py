@@ -306,6 +306,35 @@ class StairwellSmokeControlIntegrator:
                     logger.critical(desc)
                     safe = False
 
+                # V43 FIX: Add minimum pressurization check per NFPA 92 §6.4.
+                # Previously only checked maximum pressure. Insufficient pressurization
+                # (below 25 Pa / 0.10 in. w.g.) allows smoke infiltration via stack
+                # effect, rendering the primary egress path lethal.
+                if design_pressure is not None and design_pressure < MIN_POSITIVE_PRESSURE_PA:
+                    desc = (
+                        f"Stairwell '{name}' ({zone_id}) design pressure "
+                        f"({design_pressure:.1f} Pa) is BELOW minimum "
+                        f"({MIN_POSITIVE_PRESSURE_PA:.1f} Pa per NFPA 92 §6.4). "
+                        f"Insufficient pressurization allows smoke infiltration — "
+                        f"primary egress path may become impassable. "
+                        f"Increase design pressure to at least "
+                        f"{MIN_POSITIVE_PRESSURE_PA:.1f} Pa."
+                    )
+                    if Violation is not None:
+                        violations.append(Violation(
+                            severity="CRITICAL",
+                            citation=f"{_CITE_NFPA92_6_4}",
+                            description=desc,
+                        ))
+                    else:
+                        violations.append({
+                            "severity": "CRITICAL",
+                            "citation": _CITE_NFPA92_6_4,
+                            "description": desc,
+                        })
+                    logger.critical(desc)
+                    safe = False
+
         # Build provenance result
         if DecisionProvenance is not None:
             try:

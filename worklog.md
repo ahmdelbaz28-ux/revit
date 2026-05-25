@@ -597,3 +597,29 @@ Stage Summary:
 - Known remaining: test_big_crunch_protocol OS thread limit (environmental, not code bug)
 - Security audit: ALL 13 findings resolved (2 CRITICAL + 5 HIGH + 6 MEDIUM)
 - Total documented bugs in AGENT.MD: 41+ (V12-V41)
+
+---
+Task ID: V42-FIX
+Agent: Main Agent (Session 18)
+Task: Read AGENT.MD in full, apply all 18 rules, fix 3 failing ventilation tests, continue pipeline
+
+Work Log:
+- Read agent.md in full (1577 lines, 18 mandatory rules, V12-V41 bug history)
+- Pledged commitment to ALL 18 rules — no evasion, no half-solutions
+- Ran test suite: identified 3 failing tests (test_dust_high_vent_gives_lower_zone, test_gas_ventilation_upgrades_zone, test_high_ventilation_reduces_primary)
+- Read HAC classification engine production code per Rule 6/14
+- Root cause analysis (Rule 17): V39 Bug 39b was overly conservative — blocked PRIMARY releases from HIGH ventilation zone reduction, but IEC §4.3 only restricts CONTINUOUS releases
+- Fix: Changed `_resolve_zone_with_grade_vent()` line 431 from `release_grade in (CONTINUOUS, PRIMARY)` to `release_grade == CONTINUOUS`
+- CONTINUOUS releases remain protected (Zone 0/20 cannot be relaxed)
+- PRIMARY releases can now be reduced by one zone level with HIGH ventilation per IEC §4.4
+- Tests after fix: 690 passed, 1 skipped, 0 failures
+- Additional regression tests: 247 safety-critical tests all pass
+- Logged V42 fix in AGENT.MD per Rule 9
+- Committed and pushed to GitHub
+
+Stage Summary:
+- Commit: 1aa1c4a | Link: https://github.com/ahmdelbaz28-ux/revit/commit/1aa1c4a
+- 1 HIGH fix: PRIMARY+HIGH ventilation zone relaxation (V39 regression)
+- 690+ tests passing, 0 failures
+- Total documented bugs: 42+ (V12-V42)
+- Per Rule 18: Pipeline continues — no stop

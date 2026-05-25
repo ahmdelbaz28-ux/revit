@@ -112,7 +112,7 @@ class AuditInput(BaseModel):
         ge=0, description="Actual minimum detector redundancy"
     )
     final_transmittance: float = Field(
-        gt=0.0, le=1.0, description="Final optical transmittance after fouling"
+        gt=0.0, le=1.0, description="Spectral optical transmittance BEFORE fouling adjustment (fouling applied in _check_fouling)"
     )
     substance_molecular_weight: float = Field(
         gt=0.0, description="Molecular weight of the target gas (g/mol)"
@@ -229,10 +229,17 @@ def _get_required_redundancy(
     Returns:
         Minimum number of independent detectors required per point
     """
+    # V43 FIX: If zone is None or unrecognized, return a conservative default
+    # (2 detectors) instead of 1. A single detector in an unknown zone is a
+    # Single Point of Failure. Fail-safe: require MORE redundancy for unknown
+    # zones, not less. Per IEC 60079-10-1, unknown zone classification is a
+    # safety concern that should require manual review.
+    if zone is None:
+        return 2  # Conservative fail-safe for unknown zone
     if jurisdiction == Jurisdiction.SAUDI_HCIS:
-        return _HCIS_MIN_REDUNDANCY.get(zone, 1)
+        return _HCIS_MIN_REDUNDANCY.get(zone, 2)  # V43: changed default 1→2
     # GLOBAL_IEC, EGYPTIAN_FIRE_CODE, USA_NFPA all follow base IEC/NFPA
-    return MIN_REDUNDANCY_BY_ZONE.get(zone, 1)
+    return MIN_REDUNDANCY_BY_ZONE.get(zone, 2)  # V43: changed default 1→2
 
 
 # ---------------------------------------------------------------------------

@@ -523,7 +523,14 @@ class EngineeringEvidencePackage:
     algorithm_version: str = "V20.2"
 
     def compute_integrity_hash(self) -> str:
-        """Compute SHA-256 hash of the entire evidence package for integrity."""
+        """Compute SHA-256 hash of the entire evidence package for integrity.
+
+        V43 FIX: Previously only hashed 7 of 20+ fields, allowing undetected
+        tampering with room geometry, ceiling height, spacing, etc. An attacker
+        could modify room_polygon to reduce detector count or change ceiling_height_m
+        to avoid high-ceiling derating, and the hash would still validate.
+        Now includes all design-critical fields per NFPA 72 §7.4.
+        """
         payload = json.dumps({
             "package_id": self.package_id,
             "room_id": self.room_id,
@@ -532,6 +539,14 @@ class EngineeringEvidencePackage:
             "proof_valid": self.proof_valid,
             "safety_tier": self.safety_tier,
             "algorithm_version": self.algorithm_version,
+            # V43: Added design-critical fields previously excluded
+            "room_polygon": getattr(self, "room_polygon", None),
+            "ceiling_height_m": getattr(self, "ceiling_height_m", None),
+            "spacing_m": getattr(self, "spacing_m", None),
+            "ceiling_type": getattr(self, "ceiling_type", None),
+            "wall_violations": getattr(self, "wall_violations", 0),
+            "nfpa_references": getattr(self, "nfpa_references", None),
+            "audit_chain_valid": getattr(self, "audit_chain_valid", None),
         }, sort_keys=True)
         return hashlib.sha256(payload.encode()).hexdigest()
 

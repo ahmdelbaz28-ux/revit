@@ -362,10 +362,11 @@ def calculate_rset(
     safety_factor: Optional[float] = None,
     is_sprinklered: bool = True,
     population_density: Optional[float] = None,
+    detection_time_s: Optional[float] = None,
 ) -> RSETResult:
     """Calculate Required Safe Egress Time (RSET).
 
-    RSET = Premovement Delay + Travel Time
+    RSET = Detection Time + Premovement Delay + Travel Time
 
     Where:
         Premovement Delay = time from alarm to start of movement
@@ -413,7 +414,12 @@ def calculate_rset(
     travel_time = travel_distance_m / speed
 
     # Total RSET
-    rset = pm_delay + travel_time
+    # V43 FIX: Include detection time per SFPE Engineering Guide and PD 7974-6:2019.
+    # RSET = detection_time + premovement_delay + travel_time.
+    # Previously omitted detection time, underestimating RSET by 60-300s.
+    # A building that should FAIL ASET > RSET × SF could PASS, costing lives.
+    dt = detection_time_s if detection_time_s is not None else 0.0
+    rset = dt + pm_delay + travel_time
 
     # Safety factor
     if safety_factor is not None:

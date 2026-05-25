@@ -399,7 +399,12 @@ def verify_and_evaluate(
     if battery_result is not None:
         required_ah = battery_result.get("required_ah", battery_result.get("capacity_ah", 0))
         installed_ah = battery_result.get("installed_ah", battery_result.get("capacity_ah", 0))
-        is_adequate = battery_result.get("is_adequate", battery_result.get("compliant", True))
+        # V43 FIX: Default is_adequate to False (fail-safe). Previously defaulted
+        # to True, allowing insufficient battery capacity to pass when the
+        # battery result dict lacked 'is_adequate' or 'compliant' keys.
+        # NFPA 72 §10.6.7.2.1 requires secondary supply — assuming adequacy
+        # without evidence is a life-safety failure.
+        is_adequate = battery_result.get("is_adequate", battery_result.get("compliant", False))
         # Verify: required_ah must be positive AND installed >= required
         has_required = isinstance(required_ah, (int, float)) and required_ah > 0
         installed_meets = isinstance(installed_ah, (int, float)) and installed_ah >= required_ah

@@ -277,7 +277,11 @@ class ATEXArbitrationResult:
 
 _NEC_TO_IEC_GAS_GROUP: Dict[str, str] = {
     "A": "IIC", "B": "IIC", "C": "IIB", "D": "IIA",
-    "E": "IIIC", "F": "IIIB", "G": "IIIA",
+    # V43 FIX: NEC Group G (combustible dusts — flour, grain, wood) maps to
+    # IEC IIIB (non-conductive combustible dust), NOT IIIA (combustible flyings).
+    # IIIA covers textile fibers/flyings which have different equipment requirements.
+    # Per NFPA 499-2021 and IEC 60079-0:2017 §5.
+    "E": "IIIC", "F": "IIIB", "G": "IIIB",
 }
 
 _TEMP_CLASS_MAP: Dict[str, float] = {
@@ -434,11 +438,25 @@ class ATEXHazardousArbiter:
                     temp_class=temp_class, protection_modes=["n"],
                 )
             except Exception:
-                # Ultimate fallback - Zone 2 / Gc / 3G / T4 / n
-                fallback_spec = ATEXEquipmentSpec(
-                    zone=ZoneType.ZONE_2, epl_required="Gc", atex_category="3G",
-                    temp_class=TemperatureClass.T4, protection_modes=["n"],
-                )
+                # V43 FIX: Ultimate fallback must NOT downgrade Zone 0 to Zone 2.
+                # The first fallback already preserves zone/epl/category but may
+                # fail if protection_modes=["n"] is invalid for Zone 0. The ultimate
+                # fallback must use the MOST protective mode ("ia") and preserve
+                # the already-determined zone classification. Downgrading Zone 0
+                # (continuous explosive atmosphere) to Zone 2 equipment creates an
+                # ignition source in the most hazardous environment.
+                try:
+                    fallback_spec = ATEXEquipmentSpec(
+                        zone=zone, epl_required=epl_str, atex_category=cat_str,
+                        temp_class=temp_class, protection_modes=["ia"],
+                    )
+                except Exception:
+                    # Absolute last resort: use Zone 0 / Ga / 1G / T4 / ia
+                    # This is the MOST conservative spec possible
+                    fallback_spec = ATEXEquipmentSpec(
+                        zone=ZoneType.ZONE_0, epl_required="Ga", atex_category="1G",
+                        temp_class=TemperatureClass.T4, protection_modes=["ia"],
+                    )
             return ATEXArbitrationResult(
                 space_id=space_id,
                 equipment_spec=fallback_spec,

@@ -90,12 +90,15 @@ DEFAULT_MIN_TERMINAL_VOLTAGE: float = 16.0
 
 # Wire resistance table (ohm per metre) per NEC Chapter 9 Table 8
 # Copper conductors, uncoated, DC resistance at 75°C
+# V43 FIX: AWG 18 and AWG 16 values were ~10% too low (matched ~50°C, not 75°C).
+# Correct values per NEC Ch.9 Table 8: AWG 18 solid = 25.5 Ω/km, AWG 16 solid = 16.1 Ω/km.
+# AWG 14/12/10 values are reasonable for stranded conductors (slightly conservative).
 WIRE_RESISTANCE_OHM_PER_M: Dict[int, float] = {
-    18: 0.0230,  # 23.0 ohm/km
-    16: 0.0145,  # 14.5 ohm/km
-    14: 0.0103,  # 10.3 ohm/km  (standard fire alarm)
-    12: 0.0065,  #  6.5 ohm/km
-    10: 0.0041,  #  4.1 ohm/km
+    18: 0.0255,  # 25.5 ohm/km (NEC Ch.9 Table 8 solid at 75°C)
+    16: 0.0161,  # 16.1 ohm/km (NEC Ch.9 Table 8 solid at 75°C)
+    14: 0.0103,  # 10.3 ohm/km  (standard fire alarm, stranded at 75°C)
+    12: 0.0065,  #  6.5 ohm/km  (stranded at 75°C)
+    10: 0.0041,  #  4.1 ohm/km  (stranded at 75°C)
 }
 
 # Default wire gauge for NAC circuits
@@ -252,6 +255,55 @@ class NACBoosterAllocator:
 
         safe = len(violations) == 0
 
+        # V43 FIX: Move Pass 2 voltage drop validation BEFORE provenance
+        # construction. The previous code structure had an early return inside
+        # the provenance try block (line ~309), which meant Pass 2 never
+        # executed in production (only on ImportError). This rendered the
+        # entire V20.2 voltage-drop safety enhancement inoperative.
+        # NFPA 72 §10.14 requires voltage drop validation, not just current.
+        voltage_result = None
+        all_devices_line: List[Dict[str, Any]] = []
+        for f_info in sorted_floors:
+            dev_line = f_info.get("devices_line")
+            if dev_line and isinstance(dev_line, list):
+                all_devices_line.extend(dev_line)
+
+        if all_devices_line:
+            voltage_result = self.validate_voltage_drop(all_devices_line)
+            # Merge voltage violations into main violations list
+            v_violations = []
+            if isinstance(voltage_result, dict):
+                v_violations = voltage_result.get("violations", [])
+            elif hasattr(voltage_result, "violations"):
+                v_violations = voltage_result.violations or []
+            if v_violations:
+                violations.extend(v_violations)
+                safe = False
+        else:
+            # V20.2: CRITICAL WARNING when voltage drop validation
+            # cannot be performed — current-only allocation is incomplete.
+            desc = (
+                "VOLTAGE DROP VALIDATION NOT PERFORMED: No devices_line "
+                "data provided on any floor. BPS allocation is based on "
+                "current capacity ONLY. Terminal voltage at end-of-line "
+                "devices may be below minimum — horns/strobes may fail "
+                "during fire. Provide devices_line per floor for full "
+                "Pass 1 + Pass 2 allocation per NFPA 72 §10.14."
+            )
+            if Violation is not None:
+                violations.append(Violation(
+                    severity="CRITICAL",
+                    citation=f"{_CITE_NFPA72_10_14}",
+                    description=desc,
+                ))
+            else:
+                violations.append({
+                    "severity": "CRITICAL",
+                    "citation": _CITE_NFPA72_10_14,
+                    "description": desc,
+                })
+            safe = False
+
         # Build provenance result
         if DecisionProvenance is not None:
             try:
@@ -309,54 +361,6 @@ class NACBoosterAllocator:
                 )
             except Exception:
                 pass
-
-        # V20.2 FIX: Auto-invoke Pass 2 (voltage drop validation) when
-        # device line data is available on any floor. Without this,
-        # BPS placement is based on current capacity ONLY — terminal
-        # voltage at end-of-line may collapse below 16 VDC during fire,
-        # causing horns/strobes to fail silently.
-        voltage_result = None
-        all_devices_line: List[Dict[str, Any]] = []
-        for f_info in sorted_floors:
-            dev_line = f_info.get("devices_line")
-            if dev_line and isinstance(dev_line, list):
-                all_devices_line.extend(dev_line)
-
-        if all_devices_line:
-            voltage_result = self.validate_voltage_drop(all_devices_line)
-            # Merge voltage violations into main violations list
-            v_violations = []
-            if isinstance(voltage_result, dict):
-                v_violations = voltage_result.get("violations", [])
-            elif hasattr(voltage_result, "violations"):
-                v_violations = voltage_result.violations or []
-            if v_violations:
-                violations.extend(v_violations)
-                safe = False
-        else:
-            # V20.2: CRITICAL WARNING when voltage drop validation
-            # cannot be performed — current-only allocation is incomplete.
-            desc = (
-                "VOLTAGE DROP VALIDATION NOT PERFORMED: No devices_line "
-                "data provided on any floor. BPS allocation is based on "
-                "current capacity ONLY. Terminal voltage at end-of-line "
-                "devices may be below minimum — horns/strobes may fail "
-                "during fire. Provide devices_line per floor for full "
-                "Pass 1 + Pass 2 allocation per NFPA 72 §10.14."
-            )
-            if Violation is not None:
-                violations.append(Violation(
-                    severity="CRITICAL",
-                    citation=f"{_CITE_NFPA72_10_14}",
-                    description=desc,
-                ))
-            else:
-                violations.append({
-                    "severity": "CRITICAL",
-                    "citation": _CITE_NFPA72_10_14,
-                    "description": desc,
-                })
-            safe = False
 
         result_dict = {
             "decision_type": "distributed_power_routing",

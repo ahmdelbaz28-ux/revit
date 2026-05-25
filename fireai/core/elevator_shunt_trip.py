@@ -235,8 +235,23 @@ class ElevatorShuntTripAuditor:
             best_hd = None
             best_dist = float("inf")
 
+            # V43 FIX: Track assigned HDs to enforce 1:1 sprinkler→HD mapping
+            # per NFPA 72 §21.4.2. Previously, two sprinklers near the same HD
+            # would both pass with that HD as their dedicated detector. But one
+            # HD cannot trigger shunt-trip for two independent sprinklers — if
+            # the unguarded sprinkler discharges, 480V windings are electrified.
+            used_hd_ids = set()
+            # Collect IDs of HDs already assigned to previous sprinklers
+            for prev_result in detailed_results:
+                if hasattr(prev_result, 'hd_device_id') and prev_result.hd_device_id:
+                    used_hd_ids.add(prev_result.hd_device_id)
+
             for hd in heat_detector_locations:
                 if hd.get("room_id", "") != room_id:
+                    continue
+                hd_id_candidate = hd.get("device_id", "UNKNOWN-HD")
+                # Skip HDs already assigned to another sprinkler
+                if hd_id_candidate in used_hd_ids:
                     continue
                 hd_x = float(hd.get("x", 0.0))
                 hd_y = float(hd.get("y", 0.0))

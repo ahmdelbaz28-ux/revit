@@ -351,12 +351,18 @@ def _iec_annex_b_extent(
     # Hazardous volume at source — eq. B.1
     Vz_source_m3_s = dV_release_m3_s / (ck * lfl_frac + 1e-12)
 
-    # Ventilation dilution — eq. B.3
+    # Ventilation dilution — eq. B.3 (IEC 60079-10-1:2015 Annex B)
+    # V43 FIX: Vz = (dV/dt)_min / (f × n) where n is air-change rate (1/s),
+    # NOT volumetric flow (m³/s). Previous code divided m³/s by m³/s producing
+    # a dimensionless ratio instead of volume (m³). This caused zone extents
+    # to be ~10× too small for typical rooms.
+    # Example: 100 m³ room, MEDIUM ventilation: old Vz=1.58 (dimensionless),
+    # correct Vz=158.1 m³ → r_hz goes from 0.91m to 4.23m.
     f = _VENT_EFFECTIVENESS.get(ventilation.value, 0.5)
     n_ach = _VENT_ACH.get(ventilation.value, 6.0)
-    n_m3_s = (n_ach * room_volume_m3) / 3600.0
-    effective_dilution = f * n_m3_s
-    Vz_diluted_m3 = Vz_source_m3_s / (effective_dilution + 1e-12)
+    n_per_s = n_ach / 3600.0  # air changes per second (1/s)
+    effective_dilution_rate = f * n_per_s  # effective dilution rate (1/s)
+    Vz_diluted_m3 = Vz_source_m3_s / (effective_dilution_rate + 1e-12)  # (m³/s)/(1/s) = m³
 
     # Convert to zone radius
     if is_indoor:
@@ -879,10 +885,14 @@ class HACClassificationEngine:
         r_h = min(r_h, 50.0)      # Physical limit per IEC 60079-10-1
         r_v = r_h * 0.5
 
+        # V43 FIX: Volume must use r_h² × r_v (hemi-ellipsoid), not r_h³ (hemisphere).
+        # r_v = 0.5 × r_h acknowledges the zone is NOT a uniform sphere.
+        # Using r_h³ overestimates volume by 2.0× for gas (r_v=0.5×r_h)
+        # and 2.5× for dust (r_v=0.4×r_h) per IEC 60079-10-1 Annex A.
         if indoor:
-            vol = (2.0 / 3.0) * math.pi * r_h ** 3   # Fix #13
+            vol = (2.0 / 3.0) * math.pi * r_h ** 2 * r_v   # Hemi-ellipsoid
         else:
-            vol = (4.0 / 3.0) * math.pi * r_h ** 3
+            vol = (4.0 / 3.0) * math.pi * r_h ** 2 * r_v   # Ellipsoid
 
         return ZoneExtent(
             horizontal_m=round(r_h, 2),
@@ -918,10 +928,11 @@ class HACClassificationEngine:
         r_h = min(r_h, 50.0)
         r_v = r_h * 0.4
 
+        # V43 FIX: Volume must use r_h² × r_v (hemi-ellipsoid), not r_h³ (hemisphere).
         if indoor:
-            vol = (2.0 / 3.0) * math.pi * r_h ** 3
+            vol = (2.0 / 3.0) * math.pi * r_h ** 2 * r_v   # Hemi-ellipsoid
         else:
-            vol = (4.0 / 3.0) * math.pi * r_h ** 3
+            vol = (4.0 / 3.0) * math.pi * r_h ** 2 * r_v   # Ellipsoid
 
         return ZoneExtent(
             horizontal_m=round(r_h, 2),
