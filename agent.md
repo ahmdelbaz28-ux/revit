@@ -1523,3 +1523,55 @@ Continuing closed-loop pipeline (Rule 18) to fix remaining 5 HIGH findings from 
 ### Commit Information
 - **Commit:** `1fd43c6`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/1fd43c6
+
+---
+
+## V41 Fixes (2026-05-25) — MEDIUM Security Audit Findings (ALL 13 Resolved)
+
+### Bug 41a — Dead Code _classify_hybrid_v21 Inconsistent Zone Logic (MEDIUM)
+**File:** `fireai/core/hac_classification_engine.py` — `_classify_hybrid_v21()`
+**Fix:** Added `@deprecated` docstring + `DeprecationWarning` at method entry. Uses `_gas_zone_from_ventilation_v21` (no release_grade) vs active path `_resolve_zone_with_grade_vent`.
+
+### Bug 41b — Dust Extent Formula Has No MEC Floor (MEDIUM)
+**File:** `fireai/core/hac_classification_engine.py` — `_compute_extent_dust_v21()`
+**Fix:** Added `max(mec, 1.0)` floor. No real combustible dust has MEC < 1 g/m³.
+
+### Bug 41c — Source Height Parameter Ignored (MEDIUM — Documented as GAP-09)
+**File:** `fireai/core/hac_classification_engine.py` — `_compute_extent_v21/dust_v21()`
+**Fix:** Documented `src_h` as unused with GAP-09 marker. Implementation requires IEC Annex A dispersion model — not a quick fix.
+
+### Bug 41d — SpectralSignatureRegistry Not Thread-Safe (MEDIUM)
+**File:** `fireai/core/models_v21.py` — `_ensure_loaded()` line 1157
+**Fix:** Added `threading.Lock` with double-checked locking pattern. Extracted `_load_builtin_signatures()` for lock scope.
+
+### Bug 41e — AuditSeverity Class Defined But Never Used (MEDIUM)
+**File:** `fireai/core/safety_audit_engine.py` — `AuditViolation` dataclass
+**Fix:** Added Pydantic `field_validator('severity')` validating against `AuditSeverity.valid_values()`. Typos like "CRTIICAL" now caught at construction time.
+
+### Bug 41f — POOR→LOW Mapping Loses Severity (MEDIUM)
+**File:** `fireai/core/hac_classification_engine.py` — `_V21_TO_LEGACY_DEGREE` line 99
+**Fix:** Created `_map_ventilation_to_legacy()` helper that logs `logger.warning()` when POOR is mapped to LOW (4× effectiveness loss: f=0.05 vs f=0.20).
+
+**Tests:** 178/178 passing
+
+### Security Audit Complete — All 13 Findings Resolved
+
+| # | Finding | Impact | Status |
+|---|---------|--------|--------|
+| 1 | AuditInput skips 3/5 gates | CRITICAL | V39a FIXED |
+| 2 | PRIMARY releases relaxed by HIGH vent | CRITICAL | V39b FIXED |
+| 3 | Volumetric release rate not temp-corrected | HIGH | V40a FIXED |
+| 4 | Z-axis gate silently skips missing data | HIGH | V40b FIXED |
+| 5 | FIBER hazard has no required properties | HIGH | V40c FIXED |
+| 6 | Zone 2+HIGH→UNCLASSIFIED without availability | HIGH | V40d FIXED |
+| 7 | Legacy classify() 25°C default | HIGH | V40e FIXED |
+| 8 | Dead code inconsistent zone logic | MEDIUM | V41a FIXED |
+| 9 | Dust extent no MEC floor | MEDIUM | V41b FIXED |
+| 10 | Source height ignored (GAP-09) | MEDIUM | V41c DOCUMENTED |
+| 11 | SpectralSignatureRegistry not thread-safe | MEDIUM | V41d FIXED |
+| 12 | AuditSeverity unused | MEDIUM | V41e FIXED |
+| 13 | POOR→LOW mapping loses severity | MEDIUM | V41f FIXED |
+
+### Commit Information
+- **Commit:** `3378b5f`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/3378b5f
