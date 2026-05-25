@@ -579,20 +579,24 @@ class SafetyAuditEngine:
             else:
                 passed_checks += 1
         else:
-            # min_transmittance not provided — emit WARNING that
-            # effective transmittance check was skipped per agent.md V25
-            # finding #3. Silently skipping masks potential fouling risks.
+            # V31 FIX: min_transmittance not provided — severity depends on
+            # environment. In harsh environments (fouling < 0.85), skipping
+            # this check is CRITICAL because fouling will degrade detection.
+            # In clean environments, WARNING suffices.
+            # Per agent.md V25 finding #3: silently skipping masks risks.
             total_checks += 1
+            is_harsh_env = fouling < 0.85
             violations.append(AuditViolation(
                 gate="FOULING",
-                severity="WARNING",
+                severity="CRITICAL" if is_harsh_env else "WARNING",
                 code="FOUL-005",
                 message=(
-                    "Effective transmittance check SKIPPED — "
-                    "min_transmittance not provided. Optical path degradation "
-                    "from fouling, dust, or contaminant accumulation cannot be "
-                    "verified. This may mask reduced detection capability in "
-                    "industrial or harsh environments per FM Global DS 5-48 §3.2.1."
+                    f"Effective transmittance check SKIPPED — "
+                    f"min_transmittance not provided. Optical path degradation "
+                    f"from fouling, dust, or contaminant accumulation cannot be "
+                    f"verified. This may mask reduced detection capability in "
+                    f"industrial or harsh environments per FM Global DS 5-48 §3.2.1."
+                    f"{' HARSH ENVIRONMENT DETECTED: fouling factor=' + f'{fouling:.2f}' + ' < 0.85 — skipping this check is CRITICAL.' if is_harsh_env else ''}"
                 ),
                 standard_ref="FM Global DS 5-48 §3.2.1, IEC 60079-29-4 §6.2",
                 remediation=(

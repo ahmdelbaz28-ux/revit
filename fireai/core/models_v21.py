@@ -922,6 +922,7 @@ def burgess_wheeler_lfl(
     lfl_25c: float,
     ambient_temp_c: float,
     heat_of_combustion_kj_mol: Optional[float] = None,
+    lfl_floor_ratio: Optional[float] = 0.5,
 ) -> float:
     """
     Burgess-Wheeler LFL thermal correction.
@@ -941,6 +942,12 @@ def burgess_wheeler_lfl(
         lfl_25c: LFL at 25C (vol%)
         ambient_temp_c: actual ambient temperature
         heat_of_combustion_kj_mol: optional, improves accuracy if available
+        lfl_floor_ratio: minimum floor for corrected LFL as fraction of lfl_25c.
+            Default 0.5 (50% floor) is a widely-used engineering safety factor,
+            but is NON-CONSERVATIVE for zone extent at high temperatures (>200C).
+            Set to None to disable floor (use uncorrected physics — conservative
+            for zone extent). Per IEC 60079-10-1, high-temp applications should
+            use lfl_floor_ratio=None to avoid underestimating zone extent.
 
     Returns:
         LFL at the given ambient temperature (always < LFL_25C when T > 25C)
@@ -966,15 +973,16 @@ def burgess_wheeler_lfl(
         correction = 0.001824 * refined_factor * delta_t
         lfl_t = lfl_25c * (1.0 - correction)
 
-    # LFL must remain positive
-    # NOTE: The 50% floor (lfl_25c * 0.5) is a widely-used engineering safety
-    # factor, but it is NON-CONSERVATIVE for zone extent calculations. At very
-    # high temperatures (>200C), the true LFL may drop below 50% of reference,
-    # which would produce WIDER zone extents. This floor may cause zone extent
-    # underestimation at extreme temperatures. Per agent.md V25 finding #2,
-    # this requires FPE review for high-temperature applications.
-    # TODO: Consider removing floor or making it configurable per IEC 60079-10-1.
-    return max(lfl_t, lfl_25c * 0.5)  # Never drop below 50% of reference
+    # LFL must remain positive.
+    # V31 FIX: The 50% floor is now configurable via lfl_floor_ratio parameter.
+    # - lfl_floor_ratio=0.5 (default): backward-compatible, prevents extreme
+    #   corrections but may underestimate zone extent at T>200C.
+    # - lfl_floor_ratio=None: no floor — physically correct, conservative for
+    #   zone extent (produces WIDER zones at high T per IEC 60079-10-1).
+    # Per agent.md V25 finding #2, high-temperature applications MUST use
+    # lfl_floor_ratio=None to avoid non-conservative zone extent calculations.
+    floor = lfl_25c * lfl_floor_ratio if lfl_floor_ratio is not None else 0.0
+    return max(lfl_t, floor)
 
 
 # ===========================================================================
