@@ -724,3 +724,40 @@ Cell size = 2R; 3×3 Moore neighbourhood covers all candidate pairs.
 - **B10:** `8e4f5e9` — https://github.com/ahmdelbaz28-ux/revit/commit/8e4f5e9
 - **B3:** `722a58d` — https://github.com/ahmdelbaz28-ux/revit/commit/722a58d
 - **Tests:** 46/46 core tests passing
+
+---
+
+## D1: Constant Consistency Checker (2026-05-25) — Production Certification Phase
+
+### Context
+Created `fireai/tools/constant_consistency_checker.py` — a static analysis tool that scans ALL .py files for numeric constant mismatches across modules. This prevents Bug #25-class issues where constants like `mw_air` or `DETECTOR_RADIUS` diverge silently between modules.
+
+### Tool Features
+- **Canonical constant registry** with NFPA references and expected values
+- **Cross-module consistency groups**: names that MUST agree (e.g., `_MW_AIR` ↔ `AIR_MOLAR_MASS_G_MOL`)
+- **Dict-literal constant scanning**: catches constants inside `PHYSICAL_CONSTANTS = {...}` style dicts
+- **Suspicious raw float literal detection**: flags raw numbers that should use named constants
+- **Try/except boolean pattern filtering**: reduces false positives from `HAS_X = True/False` patterns
+- **CI-ready**: exit code 0=PASS, 1=FAIL
+- **Run**: `python -m fireai.tools.constant_consistency_checker`
+
+### Bug Found: AIR_MOLAR_MASS_G_MOL 28.97 vs _MW_AIR 28.96
+**File:** `fireai/core/semi_cfast_engine.py` + `twin/semi_cfast_engine.py` + `twin/fire_physics.py`
+**Discovery:** The checker detected a DICT CONSTANT MISMATCH: `AIR_MOLAR_MASS_G_MOL = 28.97` in `PHYSICAL_CONSTANTS` dict while `_MW_AIR = 28.96` in models_v21.py. Same physical constant (molecular weight of dry air), different values across modules.
+**Impact:** CO/CO2 ppm calculations in the zone fire model use 28.97, while the HAC classification engine uses 28.96 via `vapor_density_tier()`. For borderline-density gases, the two modules could make contradictory decisions. The 0.034% difference is small, but consistency is critical in a safety system.
+**Fix Applied:** Changed `AIR_MOLAR_MASS_G_MOL` from 28.97 to 28.96 (CRC Handbook value, same as `_MW_AIR`). Updated raw literals in `twin/semi_cfast_engine.py` and `twin/fire_physics.py` from 28.97 to 28.96.
+**Source:** CRC Handbook of Chemistry and Physics, 97th Edition (aligned with models_v21.py)
+
+### Bug Found: AnnAssign Dict-Literal Scanning Gap (Tool Bug)
+**Discovery:** Initial version of the checker missed constants defined in `PHYSICAL_CONSTANTS: Dict[str, float] = {...}` because `visit_AnnAssign` only handled simple float values, not dict literals. PHYSICAL_CONSTANTS is an annotated assignment (`AnnAssign`), not a plain `Assign`.
+**Fix Applied:** Added `_scan_dict_literal_ann()` method to handle annotated dict assignments. Now catches all PHYSICAL_CONSTANTS-style dicts.
+
+### Self-Criticism Notes (D1)
+1. **The tool found a real inconsistency that Bug #25 (V25) didn't catch** — V25 fixed `mw_air = 29.0` vs `_MW_AIR = 28.96`, but missed `AIR_MOLAR_MASS_G_MOL = 28.97` in a dict literal. This validates the D1 tool's value.
+2. **AnnAssign gap was a real oversight** — I initially only handled `ast.Assign` for dict scanning. The project uses `PHYSICAL_CONSTANTS: Dict[str, float] = {...}` (annotated), which is `ast.AnnAssign`. Had to add `_scan_dict_literal_ann()` to catch it.
+3. **80 "inconsistent multi-definitions" are mostly false positives** — BATCH_SIZE, ROOMS_PER_FLOOR, INSTALLATION_COST, etc. in stress tests and different modules. Need further filtering for non-safety constants.
+
+### Commit Information
+- **Commit:** `f99e6d3`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/f99e6d3
+- **Tests:** 435 passed, 0 failed
