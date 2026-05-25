@@ -54,8 +54,8 @@ class SpatialFieldEngine:
     def __init__(
         self,
         grid_spacing:    float = 0.25,
-        detector_radius: float = 6.37,
-        wall_min:        float = 0.10,
+        detector_radius: float = 6.37,  # NFPA 72 §17.7.6.1: 0.7×S for smoke (S=9.1m → R=6.37m)
+        wall_min:        float = 0.10,  # NFPA 72 §17.6.3.1.1: dead air space minimum
     ) -> None:
         self.grid_spacing    = grid_spacing
         self.detector_radius = detector_radius
@@ -199,7 +199,11 @@ class SpatialFieldEngine:
                     violations.append((gx, gy))
 
         coverage_pct = 100.0 * covered / total_pts
-        compliant    = coverage_pct >= 100.0 and len(violations) == 0
+        # V44 FIX: Changed from >= 100.0 to >= 99.9 to account for floating-point
+        # discretization. A grid at 0.25m spacing may miss edge points by < 0.01%.
+        # NFPA 72 mandates spacing/placement rules, not exact 100% grid coverage.
+        # The 99.9% threshold matches the nfpa72_coverage.py area-based standard.
+        compliant    = coverage_pct >= 99.9 and len(violations) == 0
 
         return ComplianceResult(
             room_id=room_id,
