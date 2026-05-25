@@ -103,6 +103,16 @@ class AuditInput(BaseModel):
         default=Jurisdiction.GLOBAL_IEC,
         description="Regulatory jurisdiction for audit rules"
     )
+    hazard_type: Optional[HazardType] = Field(
+        default=None,
+        description="Hazard type for zone mapping validation (GAS, DUST, HYBRID). "
+                   "If not provided, inferred from zone classification."
+    )
+    region: Optional[RegionProfile] = Field(
+        default=None,
+        description="Environmental region preset for MENA advisory checks. "
+                   "If not provided, inferred from jurisdiction."
+    )
 
 
 class AuditResult(BaseModel):
@@ -337,6 +347,13 @@ class SafetyAuditEngine:
         Key difference from run_audit: uses vapor_density_tier (ratio-based)
         for elevation classification instead of determine_gas_elevation_tier
         (heuristic-based). This is the precise physics engine path.
+        
+        All 5 audit gates are executed, matching run_audit() behavior:
+          Gate 1: Redundancy
+          Gate 2: Fouling / Transmittance
+          Gate 3: Zone Mapping
+          Gate 4: Elevation Mismatch (via vapor_density_tier)
+          Gate 5: MENA Region
         """
         violations: List[AuditViolation] = []
         total_checks = 0
@@ -356,8 +373,36 @@ class SafetyAuditEngine:
             ))
             return AuditResult(status="FAIL", violations=violations, total_checks=1, passed_checks=0)
         
-        # Build EnvironmentalContext from AuditInput jurisdiction
-        env_context = EnvironmentalContext(jurisdiction=audit_input.jurisdiction)
+        # Determine region: explicit from AuditInput, or inferred from jurisdiction
+        if audit_input.region is not None:
+            region = audit_input.region
+        else:
+            _JURISDICTION_REGION_MAP = {
+                Jurisdiction.SAUDI_HCIS: RegionProfile.GULF_HCIS,
+                Jurisdiction.EGYPTIAN_FIRE_CODE: RegionProfile.EGYPT_CODE,
+            }
+            region = _JURISDICTION_REGION_MAP.get(
+                audit_input.jurisdiction, RegionProfile.STANDARD_IEC
+            )
+        
+        # Build EnvironmentalContext from AuditInput jurisdiction and region
+        env_context = EnvironmentalContext(
+            jurisdiction=audit_input.jurisdiction,
+            region=region,
+        )
+        
+        # Determine hazard_type: explicit from AuditInput, or inferred from zone
+        if audit_input.hazard_type is not None:
+            hazard_type = audit_input.hazard_type
+        else:
+            _GAS_ZONES = {ZoneType.ZONE_0, ZoneType.ZONE_1, ZoneType.ZONE_2}
+            _DUST_ZONES = {ZoneType.ZONE_20, ZoneType.ZONE_21, ZoneType.ZONE_22}
+            if zone in _GAS_ZONES:
+                hazard_type = HazardType.GAS
+            elif zone in _DUST_ZONES:
+                hazard_type = HazardType.DUST
+            else:
+                hazard_type = None  # UNCLASSIFIED — no mapping to validate
         
         # ── Gate 1: Redundancy ──
         v, tc, pc = self._check_redundancy(zone, audit_input.min_redundancy, env_context)
@@ -365,9 +410,28 @@ class SafetyAuditEngine:
         total_checks += tc
         passed_checks += pc
         
-        # ── Gate 2: Elevation Mismatch (Z-Axis via vapor_density_tier) ──
+        # ── Gate 2: Fouling / Transmittance ──
+        v, tc, pc = self._check_fouling(audit_input.final_transmittance, env_context)
+        violations.extend(v)
+        total_checks += tc
+        passed_checks += pc
+        
+        # ── Gate 3: Zone Mapping ──
+        if hazard_type is not None:
+            v, tc, pc = self._check_zone_mapping(zone, hazard_type)
+            violations.extend(v)
+            total_checks += tc
+            passed_checks += pc
+        
+        # ── Gate 4: Elevation Mismatch (Z-Axis via vapor_density_tier) ──
         # Uses ratio-based buoyancy classification for precise physics
         v, tc, pc = self._check_elevation_mismatch(audit_input)
+        violations.extend(v)
+        total_checks += tc
+        passed_checks += pc
+        
+        # ── Gate 5: MENA Region ──
+        v, tc, pc = self._check_mena(zone, env_context)
         violations.extend(v)
         total_checks += tc
         passed_checks += pc
