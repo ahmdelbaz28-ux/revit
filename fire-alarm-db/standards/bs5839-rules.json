@@ -1,0 +1,418 @@
+{
+  "meta": {
+    "standard": "BS 5839-1:2017+A1:2020",
+    "title": "Fire detection and fire alarm systems for buildings — Code of practice for design, installation, commissioning and maintenance",
+    "publisher": "British Standards Institution (BSI)",
+    "country": "United Kingdom",
+    "scope": "Non-domestic premises",
+    "widely_used_in": ["UK", "Gulf countries (UAE, Saudi Arabia, Qatar, Kuwait)", "Egypt", "Singapore", "Hong Kong", "Australia (reference)"],
+    "last_reviewed": "2026-05-09"
+  },
+
+  "risk_categories": {
+    "description": "BS 5839 uses Category System (L, P, M) to define the level of protection required",
+    "categories": {
+      "L": {
+        "title": "Life Protection",
+        "subcategories": {
+          "L1": {
+            "description": "Maximum life protection — detectors throughout ALL areas of the building (except voids < 800mm)",
+            "coverage": "All rooms, circulation areas, stairwells, lift shafts, boiler rooms, storage rooms, toilets",
+            "exceptions": ["Voids less than 800mm depth", "Cupboards < 1m² floor area", "Toilets/washrooms (unless draft lobby)"],
+            "typical_use": "Hospitals, care homes, hotels, large public buildings, high-risk residential",
+            "manual_call_points": "Required at all exits"
+          },
+          "L2": {
+            "description": "Life protection in specific areas — detectors in all rooms defined in Table 1 of BS 5839-1",
+            "coverage": "All escape routes, all rooms opening onto escape routes, rooms with high fire risk",
+            "high_risk_rooms": [" boiler rooms, plant rooms", "Storage rooms > 5m²", "Kitchens (commercial)", "Sleeping areas", "Rooms with heat-producing equipment"],
+            "typical_use": "Offices, schools, shops, restaurants, medium-sized commercial",
+            "manual_call_points": "Required at all exits"
+          },
+          "L3": {
+            "description": "Life protection for escape routes — detectors protecting escape routes and rooms opening directly onto them",
+            "coverage": "All corridors, lobbies, stairwells, lift lobbies, hallways, any room opening directly onto escape route",
+            "typical_use": "Small offices, small shops, light industrial, commercial premises",
+            "manual_call_points": "Required at all exits"
+          },
+          "L4": {
+            "description": "Minimum life protection — detectors on escape routes ONLY",
+            "coverage": "Corridors, stairwells, hallways leading to final exits only",
+            "typical_use": "Small premises, HMO (Houses in Multiple Occupation), very small commercial",
+            "manual_call_points": "Required at all exits"
+          },
+          "L5": {
+            "description": "Custom life protection — designer selects areas based on specific fire risk assessment",
+            "coverage": "As determined by fire risk assessment — may include any combination of areas",
+            "typical_use": "Unique buildings, specific risk areas, heritage buildings",
+            "notes": "Requires documented fire risk assessment justification"
+          }
+        }
+      },
+      "P": {
+        "title": "Property Protection",
+        "subcategories": {
+          "P1": {
+            "description": "Maximum property protection — detectors throughout ALL areas",
+            "coverage": "All rooms, voids, risers, ceiling spaces, floor/ceiling voids > 800mm",
+            "typical_use": "Data centers, museums, archives, high-value storage, insurance requirement",
+            "notes": "May include aspirating detection in sensitive areas"
+          },
+          "P2": {
+            "description": "Property protection in defined areas — detectors in specific rooms identified by risk assessment",
+            "coverage": "High-value rooms, areas with high fire load, critical infrastructure areas",
+            "typical_use": "Server rooms, switch rooms, document storage, stock rooms",
+            "notes": "Requires documented risk assessment"
+          }
+        }
+      },
+      "M": {
+        "title": "Manual System Only",
+        "description": "Manual call points only — no automatic detection",
+        "coverage": "Call points at all exits and strategic locations",
+        "typical_use": "Very small premises, low-risk open-plan areas, temporary buildings",
+        "limitation": "Only suitable where fire will be detected by occupants before escape routes are compromised"
+      }
+    },
+    "combined_systems": {
+      "description": "Many installations use combined categories, e.g. L3 + P2 for mixed life/property protection",
+      "common_combinations": [
+        {"combo": "L2 + P1", "use": "Office building with server room"},
+        {"combo": "L3 + P2", "use": "Small commercial with stock room"},
+        {"combo": "L1 + P1", "use": "Hospital with critical areas"},
+        {"combo": "L4 + M", "use": "Small workshop (manual + escape route detection)"}
+      ]
+    }
+  },
+
+  "detector_spacing": {
+    "general_rule": {
+      "ceiling_mounted": {
+        "point_type_smoke": {
+          "nominal_spacing": "7.5m",
+          "radius_of_coverage": "5.3m",
+          "max_distance_from_wall": "3.75m (half nominal)",
+          "max_from_corner": "5.3m (diagonal to corner)",
+          "min_area_per_detector": "25m² (5m × 5m grid for small rooms)",
+          "reference": "BS 5839-1 Section 22.3",
+          "notes": "Spacing can be increased by 50% (to 11.25m) in corridors less than 2m wide"
+        },
+        "heat_detector": {
+          "rate_of_rise_ROR": {
+            "nominal_spacing": "5.3m",
+            "radius": "3.75m",
+            "max_from_wall": "2.65m",
+            "fixed_temp_rating": "58°C typical",
+            "reference": "BS 5839-1 Section 22.4"
+          },
+          "fixed_temperature": {
+            "nominal_spacing": "5.3m",
+            "notes": "Less sensitive — not preferred for life safety alone"
+          },
+          "combined_ROR_fixed": {
+            "nominal_spacing": "5.3m",
+            "notes": "Most commonly used heat detector type"
+          }
+        },
+        "multi_criteria_detector": {
+          "nominal_spacing": "7.5m (same as smoke)",
+          "description": "Combines smoke, heat, and sometimes CO sensing in one device",
+          "notes": "Preferred for areas prone to false alarms",
+          "reference": "BS 5839-1 Clause 21.3"
+        },
+        "beam_detector": {
+          "max_distance_between_transmitter_receiver": "100m",
+          "max_operating_distance": "The manufacturer's stated maximum (typically 40-100m)",
+          "max_spacing_between_beams": "12.5m from any point to nearest beam",
+          "reference": "BS 5839-1 Section 22.5",
+          "min_ceiling_height": "Typically used above 10.5m",
+          "notes": "Can also be reflective type (transmitter + reflector)"
+        },
+        "aspirating_smoke_detector": {
+          "description": "Pipe-based system drawing air samples to a central detector unit",
+          "sampling_points": "Up to 100 per pipe run (manufacturer dependent)",
+          "pipe_length_max": "Up to 200m total pipe length (varies by manufacturer)",
+          "sensitivity": "Class 1-5 per EN 54-20 (Class 1 = most sensitive)",
+          "typical_use": "Clean rooms, data centers, cold stores, atria, high-ceiling areas",
+          "reference": "BS 5839-1 Section 22.6 / EN 54-20"
+        }
+      },
+      "wall_mounted": {
+        "smoke_detector": {
+          "max_distance_from_ceiling": "150mm to 300mm from ceiling",
+          "min_distance_from_ceiling": "150mm",
+          "max_distance_from_corner": "5.3m",
+          "reference": "BS 5839-1 Clause 22.2"
+        },
+        "heat_detector": {
+          "max_distance_from_ceiling": "150mm to wall-mounted limit",
+          "reference": "BS 5839-1 Clause 22.2"
+        }
+      },
+      "corridor_spacing": {
+        "rule": "Spacing can be increased by 50% in corridors less than 2m wide",
+        "max_spacing_narrow_corridor": "11.25m (for smoke detectors in corridors < 2m wide)",
+        "reference": "BS 5839-1 Clause 22.3",
+        "notes": "Only applies when corridor width is ≤ 2m"
+      }
+    },
+
+    "ceiling_height_limits": {
+      "description": "BS 5839 defines maximum ceiling heights for reliable detection",
+      "limits": [
+        {"detector_type": "Point smoke", "max_height_standard": "10.5m", "max_height_with_justification": "12.5m (EN54-7 Class A1, A2, or B only)"},
+        {"detector_type": "Point heat", "max_height": "6m (fixed temp), 7.5m (rate-of-rise)"},
+        {"detector_type": "Beam smoke", "min_height": "10.5m", "max_height": "40m (manufacturer dependent)"},
+        {"detector_type": "Aspirating", "max_height": "No practical limit (pipe sampling)"},
+        {"detector_type": "Flame detector", "max_height": "No practical limit (line of sight)"},
+        {"detector_type": "Linear heat", "max_height": "No specific limit (cable-based)"}
+      ]
+    },
+
+    "spacing_adjustments": {
+      "sloped_ceilings": {
+        "slope_less_than_20_degrees": "Use flat ceiling spacing rules",
+        "slope_20_to_30_degrees": "Detectors within 600mm of ridge/peak",
+        "slope_30_to_60_degrees": "Detectors within 600mm of ridge AND within 600mm of eaves",
+        "slope_over_60_degrees": "Treat as vertical surface — detectors on ceiling AND upper wall",
+        "reference": "BS 5839-1 Clause 22.2.4"
+      },
+      "beamed_ceilings": {
+        "general": "Detectors generally not required in beam pockets if beam depth < 10% of ceiling height",
+        "beam_depth_10_to_20_percent": "May need additional detectors — engineering judgment required",
+        "beam_depth_over_20_percent": "Detectors in each pocket",
+        "reference": "BS 5839-1 Clause 22.2.5"
+      },
+      "vents_and_diffusers": {
+        "rule": "Avoid placing detectors directly in the path of HVAC supply air",
+        "min_distance_from_vent": "500mm from supply air diffuser (ideally 1m+)",
+        "reference": "BS 5839-1 Clause 22.2.2"
+      }
+    }
+  },
+
+  "manual_call_points": {
+    "location_requirements": {
+      "at_all_exits": "On every floor at every exit",
+      "at_final_exits": "At all final exit doors",
+      "height": "1.2m to 1.4m from finished floor level (operating element)",
+      "reference": "BS 5839-1 Section 19.1",
+      "color": "Red with white break-glass element",
+      "marking": "Permanently marked FIRE"
+    },
+    "travel_distance": {
+      "max_to_nearest_call_point": "30m measured along the route of travel (45m in exceptional circumstances with justification)",
+      "reference": "BS 5839-1 Clause 19.1.2",
+      "notes": "Measures along the normal path of travel, not direct distance"
+    },
+    "mounting": {
+      "min_height": "1.2m",
+      "max_height": "1.4m",
+      "to_operating_element": "Measured to the break-glass element or operating lever",
+      "reference": "BS 5839-1 Clause 19.1.1"
+    },
+    "additional_locations": [
+      "At each change of floor level in stairwells",
+      "At each change of direction in corridors > 45m",
+      "Near specific hazards identified by risk assessment",
+      "At entrance to dead-end corridors exceeding 9m length",
+      "At fire doors that form part of escape route"
+    ]
+  },
+
+  "notification": {
+    "sounders": {
+      "minimum_sound_level": "65 dBA OR 5 dBA above ambient noise level, whichever is greater",
+      "minimum_at_bedhead": "75 dBA in sleeping areas (hospitals, hotels, care homes)",
+      "max_sound_level": "120 dBA (to prevent hearing damage)",
+      "frequency": "500 Hz to 1000 Hz",
+      "pulse_pattern": "Distinct pulse (500-1000Hz tones, not steady) — per EN 54-3",
+      "reference": "BS 5839-1 Section 20.1.1",
+      "mounting_height": "2.0m to 2.4m from floor (wall-mounted)",
+      "spacing": {
+        "method": "Calculate based on sounder output rating and ambient noise",
+        "rule_of_thumb": "Typically 7.5m to 15m between sounders depending on output",
+        "overlap": "Coverage circles must overlap to ensure minimum level everywhere",
+        "notes": "Must verify with acoustic calculation or field measurement"
+      }
+    },
+    "visual_alarm_devices": {
+      "description": "Required where ambient noise exceeds 90 dBA, or for hearing-impaired occupants",
+      "type": "Xenon flash (red or white per local requirements)",
+      "standard": "EN 54-23 for visual alarm devices",
+      "reference": "BS 5839-1 Section 20.2",
+      "notes": "BS 5839 does not specify candela values like NFPA 72 — follows EN 54-23"
+    },
+    "voice_alarm": {
+      "description": "Voice alarm systems (VAS) for phased evacuation",
+      "intelligibility": "Per EN 60849 / IEC 60849",
+      "typical_use": "High-rise, large retail, transport terminals, entertainment venues",
+      "reference": "BS 5839-1 Section 20.3 / BS 5839-8 (Voice alarm systems)",
+      "notes": "BS 5839-8 is the dedicated standard for voice alarm systems"
+    }
+  },
+
+  "zoning": {
+    "general_rules": {
+      "description": "BS 5839 requires zones to help identify the location of a fire",
+      "max_area_per_zone": "2000m² per zone",
+      "max_floor_per_zone": "One zone should not cover more than one floor (except where floor area < 300m²)",
+      "max_search_distance": "60m — the distance a firefighter must travel to identify the exact location of a fire within a zone",
+      "max_detectors_per_conventional_zone": "20 detectors per zone (recommended for conventional systems)",
+      "addressable_systems": "Zones are virtual (software-defined) but same area rules apply",
+      "reference": "BS 5839-1 Section 23.2"
+    },
+    "zone_labeling": {
+      "format": "Zone 01, Zone 02, etc. — with clear floor plan reference",
+      "display": "Each zone must be clearly identified on the control panel and annunciator",
+      "zone_plan": "Zone chart must be displayed adjacent to the control panel",
+      "reference": "BS 5839-1 Clause 23.2.2"
+    },
+    "special_zones": {
+      "fire_doors": "Should be in separate zone from adjacent areas",
+      "lift_shafts": "Each shaft should be a separate zone",
+      "plant_rooms": "Should be zoned separately",
+      "stairwells": "Should be separate from floor areas",
+      "reference": "BS 5839-1 Clause 23.2.5"
+    }
+  },
+
+  "cabling": {
+    "cable_types": {
+      "fire_resistant": {
+        "standard": "BS EN 50200 / BS 5839-1 Section 26.2",
+        "description": "Cables that maintain circuit integrity under fire conditions (typically 30 min, 60 min, or 120 min resistance)",
+        "designation": "FP200, FP400, FP Plus, MINERAL insulated (MICC), etc.",
+        "required_for": [
+          "All circuits in Category L1/L2 systems",
+          "Sounder circuits in all categories",
+          "All circuits critical for evacuation",
+          "Interconnections between panels"
+        ],
+        "reference": "BS 5839-1 Table 5"
+      },
+      "standard_cable": {
+        "description": "Non-fire-resistant cables",
+        "permitted_for": [
+          "Detector circuits in L3/L4 systems (where not required for evacuation)",
+          "Minor ancillary circuits",
+          "Monitoring circuits where life safety is not dependent"
+        ],
+        "notes": "Must still be suitable for the environment and comply with BS 7671 (Wiring Regulations)"
+      }
+    },
+    "cable_routing": {
+      "separation": "Fire alarm cables should be separated from other services by minimum 50mm or use segregated trunking",
+      "avoid": "Do not route near high-voltage cables, fluorescent lighting, or sources of EMI",
+      "reference": "BS 5839-1 Section 26.3"
+    },
+    "circuit_designations": {
+      "description": "BS 5839 uses similar concepts to NFPA for circuit integrity",
+      "types": {
+        "non_fire_resistant": "Standard cable, monitored",
+        "fire_resistant_to_standard": "Fire-resistant cable maintaining integrity per BS EN 50200 PH30/PH60/PH120",
+        "enhanced_fire_resistant": "For highest criticality — longer fire resistance periods"
+      }
+    }
+  },
+
+  "control_and_indicating_equipment": {
+    "panel_location": {
+      "requirement": "At an entrance used by fire service or in a position agreed with fire service",
+      "height": "Centre of panel at 1.4m to 1.6m from floor",
+      "access": "Dedicated room or area with clear access (minimum 500mm clearance in front)",
+      "lighting": "Adequate lighting for reading panel display",
+      "reference": "BS 5839-1 Section 25.1"
+    },
+    "display_requirements": {
+      "minimum_display": "LED indicators for Alarm, Fault, Disable (Isolate) per zone",
+      "text_display": "Alpha-numeric display showing event details (standard in modern panels)",
+      "event_log": "Minimum 200 events stored",
+      "reference": "BS 5839-1 Clause 25.3"
+    },
+    "power_supplies": {
+      "primary": "Mains supply with dedicated circuit",
+      "secondary": "Standby batteries — minimum 24 hours standby in normal condition",
+      "secondary_alarm": "Minimum 30 minutes alarm duration after standby period",
+      "voice_alarm_secondary": "Minimum 24 hours standby + 60 minutes voice alarm",
+      "battery_type": "Sealed lead-acid or nickel-cadmium (NiCd)",
+      "battery_monitoring": "Charger fault and battery disconnect must be indicated as fault condition",
+      "reference": "BS 5839-1 Section 25.4"
+    }
+  },
+
+  "integration": {
+    "door_release": {
+      "description": "Fire doors held open by electromagnetic holders must be released on fire alarm",
+      "action": "All electromagnetic holders released to allow fire doors to close",
+      "power": "Must fail-safe — doors close on power failure",
+      "reference": "BS 5839-1 Section 21.1 / BS 7273-4"
+    },
+    "ventilation": {
+      "description": "HVAC system shutdown or smoke control activation",
+      "action": "Close fire dampers, shutdown air handling units, activate smoke clearance",
+      "reference": "BS 5839-1 Section 21.2"
+    },
+    "lift_control": {
+      "description": "Recall lifts to designated level on fire alarm",
+      "action": "All lifts recalled to designated level (typically ground floor)",
+      "reference": "BS 5839-1 Section 21.3 / BS EN 81-72"
+    },
+    "fire_suppression": {
+      "description": "Interfacing with sprinkler, gas suppression, or other suppression systems",
+      "monitoring": "Water flow, valve status, suppression system activation",
+      "reference": "BS 5839-1 Section 21.4"
+    },
+    "other_systems": [
+      "Emergency lighting activation",
+      "Access control release",
+      "Smoke curtain / barrier deployment",
+      "Stairwell pressurization",
+      "Smoke extraction / ventilation",
+      "Gas shut-off"
+    ]
+  },
+
+  "testing_and_maintenance": {
+    "periodic_testing": {
+      "weekly": "Test one manual call point (rotate to cover all within 13 weeks), check panel for faults",
+      "quarterly": "Test automatic detectors in high-risk areas (as per fire risk assessment)",
+      "annual": "Full system test — all detectors, call points, sounders tested (100%)",
+      "service_visit": "At least twice per year for Category L systems (quarterly recommended)",
+      "reference": "BS 5839-1 Section 47 / Table 6"
+    },
+    "special_inspection": {
+      "description": "Additional inspections may be required after:",
+      "events": ["Building modifications", "Change of occupancy", "Suspected false alarm cause investigation", "After any fault that affected system operation"]
+    }
+  },
+
+  "false_alarm_management": {
+    "categories": {
+      "unwanted_alarm": "Alarm caused by non-fire stimulus (cooking, steam, dust) — device operates as designed",
+      "false_alarm": "Alarm caused by equipment malfunction or damage",
+      "malicious_alarm": "Deliberate activation without fire",
+      "equipment_false_alarm": "Due to poor design, installation, or maintenance"
+    },
+    "mitigation_strategies": [
+      "Multi-criteria detectors in problem areas",
+      "Correct detector type selection (avoid smoke detectors in kitchens/bathrooms)",
+      "Appropriate sensitivity settings",
+      "Proper siting away from air vents and heat sources",
+      "Drift compensation in intelligent/analogue systems",
+      "Alarm verification (double-knock) where permitted",
+      "Staff training on causes and prevention"
+    ],
+    "alarm_verification": {
+      "description": "Where permitted, a second detection event can be required before full alarm",
+      "requirements": [
+        "Only permitted in P-category (property protection) systems",
+        "NOT permitted in L-category (life protection) systems",
+        "Maximum verification period: 90 seconds",
+        "Must still show pre-alarm indicator",
+        "Must automatically escalate to full alarm if second event occurs"
+      ],
+      "reference": "BS 5839-1 Clause 21.4"
+    }
+  }
+}

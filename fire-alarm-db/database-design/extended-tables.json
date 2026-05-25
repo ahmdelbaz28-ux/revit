@@ -1,0 +1,211 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Additional operational tables for complete fire alarm system management",
+    "description": "Extended database schema for operational use"
+  },
+
+  "compliance_certificates": {
+    "table_name": "ComplianceCertificates",
+    "description": "Track regulatory certificates and approvals",
+    "attributes": [
+      {"name": "CertificateID", "type": "INT", "identity": true, "primary_key": true},
+      {"name": "FacilityID", "type": "INT", "foreign_key": "Facility", "required": true},
+      {"name": "CertificateType", "type": "VARCHAR(50)", "required": true},
+      {"name": "CertificateNumber", "type": "VARCHAR(100)", "unique": true},
+      {"name": "IssuingAuthority", "type": "VARCHAR(200)", "required": true},
+      {"name": "IssueDate", "type": "DATE", "required": true},
+      {"name": "ExpiryDate", "type": "DATE", "required": true},
+      {"name": "RenewalDate", "type": "DATE"},
+      {"name": "Status", "type": "VARCHAR(20)", "check": "IN ('Valid','Expired','Pending','Revoked')"},
+      {"name": "DocumentURL", "type": "NVARCHAR(500)"},
+      {"name": "Notes", "type": "NVARCHAR(1000)"}
+    ],
+    "certificate_types": [
+      "Fire Defense Approval",
+      "Civil Defense License",
+      "Building Completion Certificate",
+      "Occupancy Certificate",
+      "Fire Alarm System Certificate",
+      "Sprinkler System Certificate",
+      "Emergency Lighting Certificate",
+      "Fire Pump Certificate"
+    ]
+  },
+
+  "vendors": {
+    "table_name": "Vendors",
+    "description": "Manage vendors and contractors",
+    "attributes": [
+      {"name": "VendorID", "type": "INT", "identity": true, "primary_key": true},
+      {"name": "VendorName", "type": "NVARCHAR(200)", "required": true},
+      {"name": "VendorType", "type": "VARCHAR(50)", "required": true},
+      {"name": "ContactPerson", "type": "NVARCHAR(200)"},
+      {"name": "Phone", "type": "VARCHAR(50)"},
+      {"name": "Email", "type": "NVARCHAR(200)"},
+      {"name": "Address", "type": "NVARCHAR(500)"},
+      {"name": "LicenseNumber", "type": "VARCHAR(100)"},
+      {"name": "InsuranceExpiry", "type": "DATE"},
+      {"name": "Rating", "type": "DECIMAL(3,2)"},
+      {"name": "IsActive", "type": "BIT", "default": 1}
+    ],
+    "vendor_types": [
+      "Fire Alarm Vendor",
+      "Sprinkler Contractor",
+      "Electrical Contractor",
+      "HVAC Contractor",
+      "Maintenance Company",
+      "Testing Company",
+      "Consultant"
+    ]
+  },
+
+  "work_orders": {
+    "table_name": "WorkOrders",
+    "description": "Work order management for maintenance",
+    "attributes": [
+      {"name": "WorkOrderID", "type": "INT", "identity": true, "primary_key": true},
+      {"name": "WorkOrderNumber", "type": "VARCHAR(50)", "unique": true},
+      {"name": "FacilityID", "type": "INT", "foreign_key": "Facility"},
+      {"name": "SystemID", "type": "INT", "foreign_key": "FireAlarmSystem"},
+      {"name": "DeviceID", "type": "BIGINT", "foreign_key": "Device"},
+      {"name": "WorkOrderType", "type": "VARCHAR(30)", "required": true},
+      {"name": "Priority", "type": "VARCHAR(20)", "check": "IN ('Emergency','High','Medium','Low')"},
+      {"name": "Status", "type": "VARCHAR(20)", "check": "IN ('Open','InProgress','Completed','Cancelled')"},
+      {"name": "RequestedBy", "type": "INT", "foreign_key": "User"},
+      {"name": "AssignedTo", "type": "INT", "foreign_key": "Vendors"},
+      {"name": "Description", "type": "NVARCHAR(1000)", "required": true},
+      {"name": "EstimatedHours", "type": "DECIMAL(6,2)"},
+      {"name": "ActualHours", "type": "DECIMAL(6,2)"},
+      {"name": "EstimatedCost", "type": "DECIMAL(12,2)"},
+      {"name": "ActualCost", "type": "DECIMAL(12,2)"},
+      {"name": "ScheduledDate", "type": "DATE"},
+      {"name": "CompletedDate", "type": "DATE"},
+      {"name": "CreatedAt", "type": "DATETIME2", "default": "GETUTCDATE()"},
+      {"name": "Notes", "type": "NVARCHAR(MAX)"}
+    ],
+    "work_order_types": [
+      "Routine Maintenance",
+      "Repair",
+      "Inspection",
+      " Calibration",
+      "Device Replacement",
+      "System Upgrade",
+      "New Installation"
+    ]
+  },
+
+  "inspections": {
+    "table_name": "Inspections",
+    "description": "Scheduled inspection tracking",
+    "attributes": [
+      {"name": "InspectionID", "type": "INT", "identity": true, "primary_key": true},
+      {"name": "FacilityID", "type": "INT", "foreign_key": "Facility", "required": true},
+      {"name": "SystemID", "type": "INT", "foreign_key": "FireAlarmSystem"},
+      {"name": "InspectionType", "type": "VARCHAR(50)", "required": true},
+      {"name": "InspectionDate", "type": "DATE", "required": true},
+      {"name": "NextInspectionDate", "type": "DATE"},
+      {"name": "InspectorName", "type": "NVARCHAR(200)"},
+      {"name": "InspectorLicense", "type": "VARCHAR(100)"},
+      {"name": "VendorID", "type": "INT", "foreign_key": "Vendors"},
+      {"name": "Result", "type": "VARCHAR(20)", "check": "IN ('Pass','Fail','Conditional','NotCompleted')"},
+      {"name": "Findings", "type": "NVARCHAR(MAX)"},
+      {"name": "Recommendations", "type": "NVARCHAR(MAX)"},
+      {"name": "CertificateIssued", "type": "BIT"},
+      {"name": "CertificateNumber", "type": "VARCHAR(100)"},
+      {"name": "ReportURL", "type": "NVARCHAR(500)"}
+    ],
+    "inspection_types": [
+      "Annual Fire Alarm Inspection",
+      "Semi-Annual Inspection",
+      "Quarterly Inspection",
+      "Monthly Functional Test",
+      "Panel Inspection",
+      "Battery Load Test",
+      "Sprinkler Inspection",
+      "Fire Pump Test",
+      "Emergency Lighting Test"
+    ]
+  },
+
+  "battery_calculations": {
+    "table_name": "BatteryCalculations",
+    "description": "Battery sizing and calculations per panel",
+    "attributes": [
+      {"name": "CalculationID", "type": "INT", "identity": true, "primary_key": true},
+      {"name": "SystemID", "type": "INT", "foreign_key": "FireAlarmSystem", "required": true},
+      {"name": "CalculationDate", "type": "DATE", "required": true},
+      {"name": "StandbyHoursRequired", "type": "DECIMAL(4,2)", "default": 24},
+      {"name": "AlarmDurationMinutes", "type": "DECIMAL(5,2)", "default": 15},
+      {"name": "PanelStandbyCurrentA", "type": "DECIMAL(8,4)"},
+      {"name": "DetectorCount", "type": "INT"},
+      {"name": "DetectorStandbyCurrentA", "type": "DECIMAL(8,4)"},
+      {"name": "ModuleCount", "type": "INT"},
+      {"name": "ModuleStandbyCurrentA", "type": "DECIMAL(8,4)"},
+      {"name": "NotificationCount", "type": "INT"},
+      {"name": "NotificationStandbyCurrentA", "type": "DECIMAL(8,4)"},
+      {"name": "TotalStandbyCurrentA", "type": "DECIMAL(10,4)", "computed": true},
+      {"name": "TotalAlarmCurrentA", "type": "DECIMAL(10,4)"},
+      {"name": "StandbyBatteryAH", "type": "DECIMAL(10,2)"},
+      {"name": "AlarmBatteryAH", "type": "DECIMAL(10,2)"},
+      {"name": "RequiredBatteryAH", "type": "DECIMAL(10,2)"},
+      {"name": "BatteryVoltageV", "type": "DECIMAL(5,2)", "default": 24},
+      {"name": "BatteryCount", "type": "INT", "default": 2},
+      {"name": "SelectedBatteryAH", "type": "DECIMAL(10,2)"},
+      {"name": "CalculatedBy", "type": "NVARCHAR(200)"},
+      {"name": "Notes", "type": "NVARCHAR(MAX)"}
+    ]
+  },
+
+  "riser_schedule": {
+    "table_name": "RiserSchedule",
+    "description": "Cable and riser routing schedule",
+    "attributes": [
+      {"name": "RiserID", "type": "INT", "identity": true, "primary_key": true},
+      {"name": "SystemID", "type": "INT", "foreign_key": "FireAlarmSystem", "required": true},
+      {"name": "RiserName", "type": "NVARCHAR(100)", "required": true},
+      {"name": "RiserType", "type": "VARCHAR(30)", "required": true},
+      {"name": "FromFloor", "type": "SMALLINT", "required": true},
+      {"name": "ToFloor", "type": "SMALLINT", "required": true},
+      {"name": "WireType", "type": "VARCHAR(50)"},
+      {"name": "WireSizeAWG", "type": "SMALLINT"},
+      {"name": "WireColor", "type": "VARCHAR(30)"},
+      {"name": "ConduitSize", "type": "VARCHAR(20)"},
+      {"name": "ConduitType", "type": "VARCHAR(30)"},
+      {"name": "LengthM", "type": "DECIMAL(8,2)"},
+      {"name": "VoltageDropV", "type": "DECIMAL(5,2)"},
+      {"name": "Status", "type": "VARCHAR(20)", "check": "IN ('Installed','Tested','Fault')"}
+    ],
+    "riser_types": [
+      "SLC Loop",
+      "NAC Circuit",
+      "Power Circuit",
+      "Zone Wiring"
+    ]
+  },
+
+  "audit_trail": {
+    "table_name": "AuditTrail",
+    "description": "Track all system changes for compliance",
+    "attributes": [
+      {"name": "AuditID", "type": "BIGINT", "identity": true, "primary_key": true},
+      {"name": "TableName", "type": "NVARCHAR(100)", "required": true},
+      {"name": "RecordID", "type": "NVARCHAR(100)", "required": true},
+      {"name": "Action", "type": "VARCHAR(20)", "required": true},
+      {"name": "OldValue", "type": "NVARCHAR(MAX)"},
+      {"name": "NewValue", "type": "NVARCHAR(MAX)"},
+      {"name": "UserID", "type": "INT", "foreign_key": "User", "required": true},
+      {"name": "IPAddress", "type": "VARCHAR(50)"},
+      {"name": "ActionTimestamp", "type": "DATETIME2", "default": "GETUTCDATE()"}
+    ],
+    "actions": [
+      "INSERT",
+      "UPDATE",
+      "DELETE",
+      "LOGIN",
+      "LOGOUT"
+    ]
+  }
+}

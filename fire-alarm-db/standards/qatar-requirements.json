@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["Qatar Civil Defense Requirements", "Qatar Construction Specifications"],
+    "specialization": "QATAR_FIRE_PROTECTION_REQUIREMENTS",
+    "validation_status": "VERIFIED"
+  },
+  "general_requirements": {
+    "authority": "Qatar Civil Defense",
+    "jurisdiction": "State of Qatar",
+    "reference": "Qatar Construction Code 2014",
+    "approval_process": [
+      "DESIGN_SUBMITTAL",
+      "TECHNICAL_EVALUATION",
+      "APPROVAL_CERTIFICATE",
+      "CONSTRUCTION_SUPERVISION",
+      "FINAL_INSPECTION"
+    ]
+  },
+  "fire_alarm_requirements": {
+    "commercial_over_2000sqm": "ADDRESSABLE_SYSTEM",
+    "all_hotels": "ADDRESSABLE_WITH_MONITORING",
+    "all_hospitals": "VOICE_SYSTEM_REQUIRED",
+    "buildings_over_50m": "VOICE_EVACUATION"
+  },
+  "monitoring": {
+    "central_station": "REQUIRED",
+    "civil_defense_notification": "REQUIRED"
+  },
+  "equipment_standards": [
+    "UL",
+    "FM",
+    "QCD_APPROVAL"
+  ],
+  "documentation_required": [
+    "Fire alarm design",
+    "Equipment schedule",
+    "Calculations"
+  ]
+}

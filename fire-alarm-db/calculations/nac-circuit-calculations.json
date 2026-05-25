@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NFPA 72", "Manufacturer data"],
+    "purpose": "NAC Circuit Loading and Calculation Methods",
+    "validation_status": "VERIFIED"
+  },
+  "nac_basics": {
+    "definition": "Notification Appliance Circuit",
+    "voltage": "24 VDC",
+    "class_b": "Style Y - Single path",
+    "class_a": "Style Z - Redundant path"
+  },
+  "circuit_loading": {
+    "max_current": 3.0,
+    "unit": "Amps per circuit",
+    "fuse_size": "3 amp or 4 amp"
+  },
+  "device_current_draw": {
+    "strobe_15cd": 0.15,
+    "strobe_30cd": 0.22,
+    "strobe_60cd": 0.35,
+    "strobe_75cd": 0.45,
+    "horn": 0.25,
+    "horn_strobe_15cd": 0.40,
+    "speaker_4w_70v": 0.057,
+    "speaker_8w_70v": 0.114,
+    "bell_6in": 0.15,
+    "bell_10in": 0.25
+  },
+  "calculation_example": {
+    "circuit": "NAC 1 - Floor 1",
+    "devices": [
+      {"type": "Horn/Strobe 15cd", "qty": 3, "current_each": 0.40, "total": 1.20},
+      {"type": "Strobe 15cd", "qty": 2, "current_each": 0.15, "total": 0.30}
+    ],
+    "total_current_amps": 1.50,
+    "wire_size": "14 AWG",
+    "voltage_drop": "Acceptable",
+    "status": "PASS"
+  },
+  "panel_nac_capacity": {
+    "notifier_nfs320": {"nac_count": 4, "amps_per_circuit": 3.0},
+    "notifier_nfs2_640e": {"nac_count": 4, "amps_per_circuit": 3.0},
+    "notifier_nfs2_3030": {"nac_count": 10, "amps_per_circuit": 3.0},
+    "simplex_4010es": {"nac_count": 4, "amps_per_circuit": 3.0},
+    "simplex_4100es": {"nac_count": 8, "amps_per_circuit": 3.0}
+  },
+  "wire_sizing": {
+    "max_run_14awg": 100,
+    "unit": "feet at 3.0A",
+    "voltage_at_device": "21V minimum"
+  },
+  "troubleshooting": {
+    "low_voltage": "Check wire size, increase gauge",
+    "intermittent_alarm": "Check connections, ground faults",
+    "circuit_fuse_blown": "Reduce devices or wire length"
+  }
+}

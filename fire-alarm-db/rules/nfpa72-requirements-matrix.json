@@ -1,0 +1,129 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "source": "NFPA 72 2022",
+    "purpose": "Code Requirements Cross-Reference Matrix",
+    "validation_status": "VERIFIED"
+  },
+  "occupancy_requirements": {
+    "assembly_A": {
+      "detection": "SMOKE_REQUIRED",
+      "manual_stations": "EVERY_EXIT",
+      "notification": "HORN_STROBE",
+      "voice": "RECOMMENDED_OVER_1000",
+      "monitoring": "CENTRAL_STATION",
+      "reference": "NFPA 72 29.3.5"
+    },
+    "business_B": {
+      "detection": "SMOKE_REQUIRED",
+      "manual_stations": "EVERY_FLOOR",
+      "notification": "STROBE_REQUIRED",
+      "monitoring": "CENTRAL_STATION",
+      "reference": "NFPA 72 29.3.6"
+    },
+    "educational_E": {
+      "detection": "SMOKE_REQUIRED",
+      "manual_stations": "EVERY_FLOOR_EXIT",
+      "notification": "STROBE_REQUIRED",
+      "monitoring": "CENTRAL_STATION",
+      "reference": "NFPA 72 29.3.7"
+    },
+    "industrial_F": {
+      "detection": "HEAT_OR_SMOKE",
+      "manual_stations": "EVERY_EXIT",
+      "notification": "HORN_STROBE",
+      "monitoring": "CENTRAL_STATION",
+      "reference": "NFPA 72 29.3.10"
+    },
+    "mercantile_M": {
+      "detection": "SMOKE_REQUIRED",
+      "manual_stations": "EVERY_EXIT",
+      "notification": "HORN_STROBE",
+      "voice": "RECOMMENDED",
+      "monitoring": "CENTRAL_STATION",
+      "reference": "NFPA 72 29.3.9"
+    },
+    "residential_R": {
+      "detection": "SMOKE_PER_ROOM",
+      "manual_stations": "NEAR_EXIT",
+      "notification": "SMOKE_ALARM",
+      "monitoring": "REQUIRED_FOR_HOTEL",
+      "reference": "NFPA 72 29.3.3"
+    },
+    "storage_S": {
+      "detection": "SMOKE_OR_HEAT",
+      "manual_stations": "EXIT_ACCESS",
+      "notification": "HORN_STROBE",
+      "monitoring": "CENTRAL_STATION",
+      "reference": "NFPA 72 29.3.11"
+    }
+  },
+  "detector_requirements": {
+    "smoke_photoelectric": {
+      "coverage_sqft": 2500,
+      "mounting_height_max_ft": 12,
+      "spacing_ft": 30,
+      "reference": "NFPA 72 21.2.1"
+    },
+    "heat_fixed": {
+      "coverage_sqft": 2500,
+      "spacing_ft": 50,
+      "temperature_rating": "135F_TO_145F",
+      "reference": "NFPA 72 21.2.2"
+    },
+    "heat_ror": {
+      "coverage_sqft": 2500,
+      "spacing_ft": 50,
+      "rate": "15F_PER_MIN",
+      "reference": "NFPA 72 21.2.2"
+    },
+    "manual_pull": {
+      "height_inches": 48,
+      "location": "EXIT_ROUTE",
+      "travel_distance_ft": 200,
+      "reference": "NFPA 72 21.2.3"
+    }
+  },
+  "notification_requirements": {
+    "audible": {
+      "minimum_dBA": 85,
+      "sleeping_areas_dBA": 70,
+      "reference": "NFPA 72 18.4.2"
+    },
+    "visual": {
+      "strobe_candela_min": 15,
+      "flash_rate_hz": "0.5_TO_2.0",
+      "reference": "NFPA 72 18.5.3"
+    },
+    "voice": {
+      "required_for": [
+        "HIGH_RISE_OVER_75FT",
+        "ASSEMBLY_OVER_1000",
+        "HEALTHCARE_I1_I2"
+      ],
+      "reference": "NFPA 72 24.4"
+    }
+  },
+  "power_requirements": {
+    "primary_power": {
+      "source": "BRANCH_CIRCUIT",
+      "breaker_dedicated": true,
+      "ampacity": "DESIGN_LOAD_125%"
+    },
+    "battery_backup": {
+      "standby_hours": 24,
+      "alarm_minutes": 15,
+      "reference": "NFPA 72 10.6"
+    }
+  },
+  "testing_frequency": {
+    "detector_sensitivity": "ANNUAL",
+    "manual_stations": "ANNUAL",
+    "notification": "ANNUAL",
+    "battery": "ANNUAL_DISCHARGE",
+    "central_station": "MONTHLY",
+    "reference": "NFPA 72 Table 14.4.1.2"
+  }
+}

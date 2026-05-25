@@ -1,0 +1,250 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Revit Families Library - Addressable Fire Alarm System",
+    "system_type": "ADDRESSABLE",
+    "validation_status": "VERIFIED"
+  },
+  "family_categories": {
+    "fire_alarm": "Fire Alarm",
+    "electrical_devices": "Electrical Devices"
+  },
+  "families": [
+    {
+      "family_name": "FACP_Addressable_NFS320",
+      "category": "Fire Alarm",
+      "subcategory": "Panels",
+      "description": "Notifier NFS-320 Addressable Fire Alarm Control Panel",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "PanelName", "type": "Text", "default": "FACP-1"},
+        {"name": "AddressablePoints", "type": "Integer", "default": 318},
+        {"name": "SLC_Loops", "type": "Integer", "default": 2},
+        {"name": "NAC_Circuits", "type": "Integer", "default": 4},
+        {"name": "Width", "type": "Length", "default": "450mm"},
+        {"name": "Height", "type": "Length", "default": "600mm"},
+        {"name": "Depth", "type": "Length", "default": "150mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "NFS-320"}
+      ],
+      "symbols": ["Plan", "Elevation", "3D"],
+      "mounting_height": "1200mm from finished floor"
+    },
+    {
+      "family_name": "FACP_Addressable_NFS2-3030D",
+      "category": "Fire Alarm",
+      "subcategory": "Panels",
+      "description": "Notifier NFS2-3030D Large Addressable Panel",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "PanelName", "type": "Text", "default": "FACP-MAIN"},
+        {"name": "AddressablePoints", "type": "Integer", "default": 3180},
+        {"name": "SLC_Loops", "type": "Integer", "default": 10},
+        {"name": "NAC_Circuits", "type": "Integer", "default": 10},
+        {"name": "Width", "type": "Length", "default": "800mm"},
+        {"name": "Height", "type": "Length", "default": "1000mm"},
+        {"name": "Depth", "type": "Length", "default": "200mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "NFS2-3030D"}
+      ],
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "Detector_Smoke_Addressable",
+      "category": "Fire Alarm",
+      "subcategory": "Detectors",
+      "description": "Addressable Smoke Detector with Base",
+      "hosting": "Ceiling Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "SLC_Loop", "type": "Integer", "default": 1},
+        {"name": "Sensitivity", "type": "Text", "default": "2.5%"},
+        {"name": "Diameter", "type": "Length", "default": "150mm"},
+        {"name": "Height", "type": "Length", "default": "55mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "FSP-851"}
+      ],
+      "symbols": ["Plan", "3D"],
+      "mark_parameters": ["SLC Loop", "Address", "Zone"]
+    },
+    {
+      "family_name": "Detector_Heat_Addressable",
+      "category": "Fire Alarm",
+      "subcategory": "Detectors",
+      "description": "Addressable Heat Detector",
+      "hosting": "Ceiling Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "HeatType", "type": "Text", "default": "Fixed 135F"},
+        {"name": "Diameter", "type": "Length", "default": "150mm"},
+        {"name": "Height", "type": "Length", "default": "55mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "FST-851"}
+      ],
+      "symbols": ["Plan", "3D"]
+    },
+    {
+      "family_name": "Detector_MultiSensor_Addressable",
+      "category": "Fire Alarm",
+      "subcategory": "Detectors",
+      "description": "Addressable Multi-Sensor Detector",
+      "hosting": "Ceiling Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "SensorTypes", "type": "Text", "default": "Smoke+CO+Heat"},
+        {"name": "Diameter", "type": "Length", "default": "150mm"},
+        {"name": "Height", "type": "Length", "default": "60mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "FCO-851"}
+      ],
+      "symbols": ["Plan", "3D"]
+    },
+    {
+      "family_name": "ManualPull_Addressable",
+      "category": "Fire Alarm",
+      "subcategory": "Manual Stations",
+      "description": "Addressable Manual Pull Station",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "Width", "type": "Length", "default": "100mm"},
+        {"name": "Height", "type": "Length", "default": "200mm"},
+        {"name": "Depth", "type": "Length", "default": "50mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "NGP-5511"}
+      ],
+      "mounting_height": "1200mm from finished floor (center)"
+    },
+    {
+      "family_name": "Module_Monitor",
+      "category": "Fire Alarm",
+      "subcategory": "Modules",
+      "description": "Addressable Monitor Module",
+      "hosting": "Wall or Panel Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "InputType", "type": "Text", "default": "Dry Contact"},
+        {"name": "Width", "type": "Length", "default": "100mm"},
+        {"name": "Height", "type": "Length", "default": "100mm"},
+        {"name": "Depth", "type": "Length", "default": "30mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "FMM-1"}
+      ],
+      "symbols": ["Plan", "3D"]
+    },
+    {
+      "family_name": "Module_Control",
+      "category": "Fire Alarm",
+      "subcategory": "Modules",
+      "description": "Addressable Control Module",
+      "hosting": "Wall or Panel Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "OutputType", "type": "Text", "default": "Form C Relay"},
+        {"name": "Rating", "type": "Text", "default": "5A 120VAC"},
+        {"name": "Width", "type": "Length", "default": "100mm"},
+        {"name": "Height", "type": "Length", "default": "100mm"},
+        {"name": "Depth", "type": "Length", "default": "30mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "FRM-1"}
+      ],
+      "symbols": ["Plan", "3D"]
+    },
+    {
+      "family_name": "Module_Isolator",
+      "category": "Fire Alarm",
+      "subcategory": "Modules",
+      "description": "Addressable Loop Isolator Module",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "Width", "type": "Length", "default": "100mm"},
+        {"name": "Height", "type": "Length", "default": "100mm"},
+        {"name": "Depth", "type": "Length", "default": "30mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "ISO-6"}
+      ],
+      "symbols": ["Plan", "3D"]
+    },
+    {
+      "family_name": "Notification_SpeakerStrobe",
+      "category": "Fire Alarm",
+      "subcategory": "Notification",
+      "description": "Addressable Speaker with Strobe",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "Wattage", "type": "Number", "default": 4},
+        {"name": "Voltage", "type": "Number", "default": 70.7},
+        {"name": "Candela", "type": "Number", "default": 15},
+        {"name": "Width", "type": "Length", "default": "150mm"},
+        {"name": "Height", "type": "Length", "default": "200mm"},
+        {"name": "Depth", "type": "Length", "default": "60mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "4209"}
+      ],
+      "mounting_height": "2100-2400mm from finished floor"
+    },
+    {
+      "family_name": "Notification_HornStrobe",
+      "category": "Fire Alarm",
+      "subcategory": "Notification",
+      "description": "Addressable Horn/Strobe",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "dBRating", "type": "Number", "default": 85},
+        {"name": "Candela", "type": "Number", "default": 15},
+        {"name": "Width", "type": "Length", "default": "130mm"},
+        {"name": "Height", "type": "Length", "default": "180mm"},
+        {"name": "Depth", "type": "Length", "default": "60mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "WTR-24"}
+      ],
+      "mounting_height": "2100-2400mm from finished floor"
+    },
+    {
+      "family_name": "Notification_VoiceSpeaker",
+      "category": "Fire Alarm",
+      "subcategory": "Notification",
+      "description": "Addressable Voice Evacuation Speaker",
+      "hosting": "Wall or Ceiling Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "WattageTap", "type": "Text", "default": "4W"},
+        {"name": "Voltage", "type": "Number", "default": 70.7},
+        {"name": "Frequency", "type": "Text", "default": "400-4000Hz"},
+        {"name": "Width", "type": "Length", "default": "150mm"},
+        {"name": "Height", "type": "Length", "default": "150mm"},
+        {"name": "Depth", "type": "Length", "default": "60mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "4208"}
+      ],
+      "symbols": ["Plan", "Elevation", "3D"]
+    }
+  ],
+  "revit_scheduling": {
+    "required_parameters": [
+      "Mark",
+      "SLC Loop",
+      "Address",
+      "Zone",
+      "Description",
+      "Manufacturer",
+      "Model"
+    ],
+    "optional_parameters": [
+      "System Classification",
+      "Room",
+      "Comments"
+    ]
+  },
+  "system_classifications": [
+    "Fire Alarm - Detection",
+    "Fire Alarm - Notification",
+    "Fire Alarm - Control",
+    "Fire Alarm - Monitoring"
+  ]
+}

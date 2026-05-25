@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "AutoCAD Installation Details Library - Detector Mounting",
+    "validation_status": "VERIFIED"
+  },
+  "smoke_detector_ceiling": {
+    "detail_id": "DET-SMOKE-CL-001",
+    "title": "Smoke Detector - Ceiling Mount Standard",
+    "description": "Standard photoelectric smoke detector ceiling mount",
+    "layer": "F-INSTALL-DET",
+    "components": [
+      {"component": "Smoke Detector", "model": "Notifier FSP-851 or equivalent"},
+      {"component": "Detector Base", "model": "Standard 4\" octagonal"},
+      {"component": "Mounting Bracket", "material": "Steel"},
+      {"component": "Wire", "type": "18 AWG 2C Shielded"}
+    ],
+    "dimensions": {
+      "base_diameter_inches": 4,
+      "detector_diameter_inches": 5.9,
+      "overall_height_inches": 2.2
+    },
+    "mounting_specs": {
+      "from_ceiling_inches": "6 minimum",
+      "from_wall_inches": "4 minimum",
+      "spacing_feet": "30 max between detectors",
+      "from_diffuser_inches": 36
+    },
+    "symbols": ["Plan", "Elevation", "Section", "3D"]
+  },
+  "smoke_detector_duct": {
+    "detail_id": "DET-SMOKE-DUCT-001",
+    "title": "Smoke Detector - Duct Mount",
+    "description": "Smoke detector for HVAC duct sampling",
+    "layer": "F-INSTALL-DET",
+    "components": [
+      {"component": "Duct Detector", "model": "Notifier DUCT-123"},
+      {"component": "Sampling Tube", "length": "Based on duct width"},
+      {"component": "Housing", "material": "Metal"},
+      {"component": "Tubing", "type": "1/4\" copper"}
+    ],
+    "mounting_specs": {
+      "duct_width_min_inches": 12,
+      "sample_tube_orientation": "Perpendicular to airflow",
+      "distance_from_filter_inches": "10 minimum",
+      "sampling_holes": "Facing airstream"
+    },
+    "symbols": ["Plan", "Section"]
+  },
+  "beam_detector": {
+    "detail_id": "DET-BEAM-001",
+    "title": "Beam Detector - Ceiling Mount",
+    "description": "Infrared beam smoke detector for large areas",
+    "layer": "F-INSTALL-DET",
+    "components": [
+      {"component": "Beam Detector", "model": "Notifier FSB-851"},
+      {"component": "Emitter/Receiver Unit", "qty": 2},
+      {"component": "Mounting Bracket", "material": "Steel"},
+      {"component": "Alignment Target", "type": "Integral"}
+    ],
+    "mounting_specs": {
+      "ceiling_height_feet": "Up to 100",
+      "beam_length_max_feet": 350,
+      "from_ceiling_inches": "8 to 24",
+      "perpendicular_to_airflow": true
+    },
+    "alignment": {
+      "angle_tolerance_degrees": 10,
+      "target_alignment_required": true
+    },
+    "symbols": ["Plan", "Elevation", "Section"]
+  },
+  "heat_detector_fixed": {
+    "detail_id": "DET-HEAT-FIX-001",
+    "title": "Heat Detector - Fixed Temperature",
+    "description": "Fixed temperature heat detector for areas not suitable for smoke",
+    "layer": "F-INSTALL-DET",
+    "components": [
+      {"component": "Heat Detector", "model": "Notifier FST-851"},
+      {"component": "Base", "type": "4\" octagonal"},
+      {"component": "Wire", "type": "18 AWG"}
+    ],
+    "mounting_specs": {
+      "ceiling_height_max_feet": 30,
+      "temperature_rating_F": "135 or 190",
+      "from_ceiling_inches": "4 to 12",
+      "spacing_feet": "50 max"
+    },
+    "symbols": ["Plan", "Elevation", "Section"]
+  },
+  "heat_detector_ros": {
+    "detail_id": "DET-HEAT-ROR-001",
+    "title": "Heat Detector - Rate of Rise",
+    "description": "Rate of rise heat detector for fast response",
+    "layer": "F-INSTALL-DET",
+    "components": [
+      {"component": "ROR Heat Detector", "model": "Notifier FST-851ROR"},
+      {"component": "Base", "type": "4\" octagonal"},
+      {"component": "Wire", "type": "18 AWG"}
+    ],
+    "mounting_specs": {
+      "ceiling_height_max_feet": 30,
+      "rate_of_rise_F_per_min": 15,
+      "fixed_temp_F": 135,
+      "spacing_feet": "50 max"
+    },
+    "symbols": ["Plan", "Elevation"]
+  },
+  "multi_sensor_detector": {
+    "detail_id": "DET-MULTI-001",
+    "title": "Multi-Sensor Detector",
+    "description": "Combined smoke and heat detection",
+    "layer": "F-INSTALL-DET",
+    "components": [
+      {"component": "Multi-Sensor", "model": "Notifier FCO-851"},
+      {"component": "Base", "type": "4\" octagonal"},
+      {"component": "Wire", "type": "18 AWG 2C"}
+    ],
+    "mounting_specs": {
+      "ceiling_height_max_feet": 20,
+      "sensitivity_adjustable": true,
+      "from_ceiling_inches": "6 minimum",
+      "from_wall_inches": "4 minimum"
+    },
+    "symbols": ["Plan", "Elevation", "3D"]
+  },
+  "aspirating_detector": {
+    "detail_id": "DET-VESDA-001",
+    "title": "Aspirating Smoke Detector (VESDA)",
+    "description": "Very early warning aspirating smoke detection system",
+    "layer": "F-INSTALL-DET",
+    "components": [
+      {"component": "VESDA Unit", "model": "VESDA VLP"},
+      {"component": "Sampling Pipes", "type": "CPVC"},
+      {"component": "Sampling Points", "qty": "Based on area"},
+      {"component": "Filter", "type": "ULPA"}
+    ],
+    "mounting_specs": {
+      "unit_location": "Accessible area",
+      "sampling_pipe_max_length_feet": 800,
+      "holes_per_pipe": "Every 10 feet",
+      "sensitivity_range": "0.005 to 20% obs/ft"
+    },
+    "symbols": ["Plan", "Riser", "Schematic"]
+  },
+  "manual_call_point": {
+    "detail_id": "MANUAL-CP-001",
+    "title": "Manual Call Point - Standard Wall Mount",
+    "description": "Manual pull station for fire alarm activation",
+    "layer": "F-INSTALL-MAN",
+    "components": [
+      {"component": "Manual Station", "model": "Notifier NGP-5511"},
+      {"component": "Backbox", "type": "Single gang"},
+      {"component": "Conduit", "size": "3/4\" EMT"},
+      {"component": "Wire", "type": "14 AWG 2C"}
+    ],
+    "mounting_specs": {
+      "center_height_inches": 48,
+      "range_inches": "42 to 54",
+      "from_door_inches": "4 minimum",
+      "travel_to_activate_inches": "1.5 to 3"
+    },
+    "symbols": ["Plan", "Elevation", "3D"]
+  },
+  "manual_weatherproof": {
+    "detail_id": "MANUAL-CP-WP-001",
+    "title": "Manual Call Point - Weatherproof",
+    "description": "Weather resistant manual pull station for outdoor use",
+    "layer": "F-INSTALL-MAN",
+    "components": [
+      {"component": "Weatherproof Station", "model": "Notifier WP-5511"},
+      {"component": "Weatherproof Box", "type": "NEMA 4X"},
+      {"component": "Conduit", "size": "3/4\" PVC or RMC"},
+      {"component": "Gasket", "type": "Neoprene"}
+    ],
+    "mounting_specs": {
+      "center_height_inches": 48,
+      "environment": "Outdoor/Wet location",
+      "rating": "NEMA 4X"
+    },
+    "symbols": ["Plan", "Elevation"]
+  }
+}

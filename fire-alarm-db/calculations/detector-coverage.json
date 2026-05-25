@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NFPA 72 2022", "manufacturer data", "electrical codes"],
+    "purpose": "Detector Coverage Area Calculation Methods",
+    "validation_status": "VERIFIED"
+  },
+  "coverage_calculation_methods": {
+    "basic_formula": {
+      "description": "Standard detector coverage calculation",
+      "formula": "COVERAGE_AREA = SPACING × SPACING",
+      "example": {
+        "spacing_ft": 30,
+        "coverage_sqft": 900
+      }
+    },
+    "reduced_spacing": {
+      "conditions": [
+        "Ceiling height over 10 feet",
+        "Obstructions present",
+        "Air movement over 300 fpm",
+        "Hazardous areas"
+      ],
+      "multipliers": {
+        "10_to_12_ft": 0.9,
+        "12_to_15_ft": 0.8,
+        "15_to_20_ft": 0.7,
+        "over_20_ft": 0.6
+      }
+    }
+  },
+  "detector_spacing_by_type": {
+    "smoke_detector": {
+      "standard_spacing": {
+        "value": 30,
+        "unit": "feet",
+        "area_sqft": 900
+      },
+      "obstructed_ceiling": {
+        "max_spacing": 30,
+        "unit": "feet",
+        "rule": "Reduce to 2/3 if ceiling height > 10ft"
+      }
+    },
+    "heat_detector": {
+      "standard_spacing": {
+        "value": 50,
+        "unit": "feet",
+        "area_sqft": 2500
+      },
+      "rate_of_rise": {
+        "max_spacing": 50,
+        "unit": "feet"
+      }
+    },
+    "beam_detector": {
+      "range": {
+        "min": 16,
+        "max": 230,
+        "unit": "feet"
+      },
+      "coverage": {
+        "width": 100,
+        "unit": "feet"
+      }
+    },
+    "aspirating_detector": {
+      "coverage": {
+        "max": 50000,
+        "unit": "sqft"
+      },
+      "sampling_points": {
+        "max": 64
+      }
+    }
+  },
+  "coverage_examples": {
+    "example_1": {
+      "room": "Office - 30ft × 40ft",
+      "ceiling_height": "9ft",
+      "detector_type": "Smoke Photoelectric",
+      "spacing": "30ft",
+      "detectors_needed": 1,
+      "coverage_area": "900 sqft",
+      "actual_coverage": "1200 sqft"
+    },
+    "example_2": {
+      "room": "Warehouse - 100ft × 200ft",
+      "ceiling_height": "25ft",
+      "detector_type": "Beam Detector",
+      "coverage_per_beam": "23000 sqft",
+      "detectors_needed": 9,
+      "layout": "3 rows × 3 beams"
+    },
+    "example_3": {
+      "room": "Data Center - 50ft × 80ft",
+      "ceiling_height": "12ft",
+      "detector_type": "VESDA Aspirating",
+      "coverage": "VESDA VLS covers up to 50,000 sqft",
+      "sampling_tube_length": "100ft total",
+      "note": "High sensitivity required - 0.2% OBSC"
+    }
+  },
+  "obstruction_rules": {
+    "beam_detectors": {
+      "obstruction_types": [
+        "High racks",
+        " partitions",
+        " Ceiling joists"
+      ],
+      "rule": "Reduce coverage by 50% if obstruction > 20% of ceiling height"
+    },
+    "standard_detectors": {
+      "ceiling_obstruction": {
+        "width_less_than_1ft": "No reduction",
+        "width_1_to_4ft": "Reduce spacing 25%",
+        "width_over_4ft": "Treat as separate room"
+      }
+    }
+  },
+  "special_area_calculations": {
+    "corridor": {
+      "width_up_to_10ft": "Standard spacing along corridor",
+      "width_over_10ft": "Treat as room - standard spacing"
+    },
+    "stairwell": {
+      "coverage": "25ft spacing",
+      "note": "Detector at each floor landing"
+    },
+    "elevator_machine_room": {
+      "coverage": "1 detector per 500 sqft",
+      "type": "Smoke detector required"
+    }
+  }
+}

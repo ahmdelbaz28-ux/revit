@@ -1,0 +1,310 @@
+{
+  "timestamp": "2026-05-13T13:32:34.624264",
+  "project_name": "167. Free Download Detailed CAD drawings for the ceiling layout design of a 3-story townhouse",
+  "source_dxf": "/workspace/167. Free Download Detailed CAD drawings for the ceiling layout design of a 3-story townhouse.dxf",
+  "version": "FireAI V5.1.2",
+  "status": "PASS",
+  "rooms": {
+    "total": 32,
+    "passed": 32,
+    "failed": 0,
+    "errored": 0
+  },
+  "detectors": {
+    "calculated": 39
+  },
+  "safety": {
+    "note": "NFPA 72 compliance verified via verify_full_coverage()"
+  },
+  "details": [
+    {
+      "room_id": "ROOM_001",
+      "status": "PASS",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_002",
+      "status": "PASS",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_003",
+      "status": "PASS",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_004",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_005",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_006",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_007",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_008",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_009",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_010",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_011",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_012",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_013",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_014",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_015",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_016",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_017",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_018",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_019",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_020",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_021",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_022",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_023",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_024",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_025",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_026",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_027",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_028",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_029",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_030",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_031",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "ROOM_032",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 4.55,
+      "warnings": [],
+      "errors": []
+    }
+  ],
+  "disclaimer": "This report is produced by FireAI V5.1.0. It MUST be reviewed by a licensed fire protection engineer. All calculations reference NFPA 72 (2022 Edition)."
+}

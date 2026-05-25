@@ -1,0 +1,92 @@
+{
+  "report_metadata": {
+    "source_file": "test_data/hybrid/single_office.pdf",
+    "generated_utc": "2026-05-15T16:31:57.742477Z",
+    "status": "PARTIAL",
+    "requires_pe_review": true,
+    "design_complete": false,
+    "review_reason": "3 rooms still unknown"
+  },
+  "rooms": [
+    {
+      "name": "room_1",
+      "area_sqm": 64.3,
+      "occupancy_type": "office",
+      "occupancy_source": "human_review",
+      "occupancy_verified": true,
+      "detector_type": "SMOKE",
+      "detector_count": 7,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": []
+    },
+    {
+      "name": "room_2",
+      "area_sqm": 36.0,
+      "occupancy_type": "kitchen",
+      "occupancy_source": "human_review",
+      "occupancy_verified": true,
+      "detector_type": "HEAT_FIXED_TEMP",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "Kitchen - SMOKE prohibited per NFPA 72 §17.6.4"
+      ]
+    },
+    {
+      "name": "room_3",
+      "area_sqm": 36.0,
+      "occupancy_type": "server_room",
+      "occupancy_source": "human_review",
+      "occupancy_verified": true,
+      "detector_type": "SMOKE_HEAT_COMBINATION",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": []
+    },
+    {
+      "name": "room_4",
+      "area_sqm": 36.0,
+      "occupancy_type": "unknown",
+      "occupancy_source": "human_review",
+      "occupancy_verified": false,
+      "detector_type": "UNKNOWN",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "compliant": true,
+      "warnings": []
+    },
+    {
+      "name": "room_5",
+      "area_sqm": 36.0,
+      "occupancy_type": "unknown",
+      "occupancy_source": "human_review",
+      "occupancy_verified": false,
+      "detector_type": "UNKNOWN",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "compliant": true,
+      "warnings": []
+    },
+    {
+      "name": "room_6",
+      "area_sqm": 36.0,
+      "occupancy_type": "unknown",
+      "occupancy_source": "human_review",
+      "occupancy_verified": false,
+      "detector_type": "UNKNOWN",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "compliant": true,
+      "warnings": []
+    }
+  ],
+  "summary": {
+    "total_rooms": 6,
+    "unverified_rooms": 3,
+    "total_detectors": 13,
+    "compliant": false
+  }
+}

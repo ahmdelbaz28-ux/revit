@@ -1,0 +1,177 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "AutoCAD Legend Library - Addressable Fire Alarm System",
+    "system_type": "ADDRESSABLE",
+    "validation_status": "VERIFIED"
+  },
+  "layer_standards": {
+    "F-ADDR-PANEL": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.50mm",
+      "description": "Addressable Fire Alarm Control Panel"
+    },
+    "F-ADDR-SLC": {
+      "color": "YELLOW",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.18mm",
+      "description": "Signaling Line Circuit (SLC Loop)"
+    },
+    "F-ADDR-NAC": {
+      "color": "ORANGE",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.18mm",
+      "description": "Notification Appliance Circuit"
+    },
+    "F-ADDR-DET-SMOKE": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.35mm",
+      "description": "Addressable Smoke Detector"
+    },
+    "F-ADDR-DET-HEAT": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.35mm",
+      "description": "Addressable Heat Detector"
+    },
+    "F-ADDR-DET-MULTI": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.35mm",
+      "description": "Addressable Multi-Sensor Detector"
+    },
+    "F-ADDR-MANUAL": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.35mm",
+      "description": "Addressable Manual Pull Station"
+    },
+    "F-ADDR-MOD-MON": {
+      "color": "MAGENTA",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Monitor Module"
+    },
+    "F-ADDR-MOD-CTL": {
+      "color": "MAGENTA",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Control Module"
+    },
+    "F-ADDR-MOD-ISO": {
+      "color": "CYAN",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Isolator Module"
+    },
+    "F-ADDR-HORN": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Horn"
+    },
+    "F-ADDR-STROBE": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Strobe Light"
+    },
+    "F-ADDR-SPEAKER": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Speaker"
+    },
+    "F-ADDR-SPK-STROBE": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Speaker/Strobe"
+    }
+  },
+  "symbols": {
+    "panel_addressable": {
+      "symbol_name": "F-PANEL-ADDR",
+      "description": "Addressable Fire Alarm Control Panel",
+      "block_content": "Large rectangle with display and indicators",
+      "layer": "F-ADDR-PANEL"
+    },
+    "smoke_detector_addressable": {
+      "symbol_name": "F-DET-ADDR-SMOKE",
+      "description": "Addressable Smoke Detector",
+      "block_content": "Circle R=5mm with 'S' and address number",
+      "layer": "F-ADDR-DET-SMOKE"
+    },
+    "heat_detector_addressable": {
+      "symbol_name": "F-DET-ADDR-HEAT",
+      "description": "Addressable Heat Detector",
+      "block_content": "Circle R=5mm with 'H' and address number",
+      "layer": "F-ADDR-DET-HEAT"
+    },
+    "multi_sensor_detector": {
+      "symbol_name": "F-DET-ADDR-MULTI",
+      "description": "Addressable Multi-Sensor Detector",
+      "block_content": "Circle R=5mm with 'M' and address number",
+      "layer": "F-ADDR-DET-MULTI"
+    },
+    "manual_pull_addressable": {
+      "symbol_name": "F-MAN-ADDR",
+      "description": "Addressable Manual Pull Station",
+      "block_content": "Rectangle with pull handle and address",
+      "layer": "F-ADDR-MANUAL"
+    },
+    "monitor_module": {
+      "symbol_name": "F-MOD-ADDR-MON",
+      "description": "Addressable Monitor Module",
+      "block_content": "Small square with 'M' and address",
+      "layer": "F-ADDR-MOD-MON"
+    },
+    "control_module": {
+      "symbol_name": "F-MOD-ADDR-CTL",
+      "description": "Addressable Control Module",
+      "block_content": "Small square with 'C' and address",
+      "layer": "F-ADDR-MOD-CTL"
+    },
+    "isolator_module": {
+      "symbol_name": "F-MOD-ADDR-ISO",
+      "description": "Addressable Isolator Module",
+      "block_content": "Small square with 'ISO' and address",
+      "layer": "F-ADDR-MOD-ISO"
+    },
+    "horn_strobe": {
+      "symbol_name": "F-HORN-STROBE-ADDR",
+      "description": "Addressable Horn/Strobe",
+      "block_content": "Trumpet with lightning, address number",
+      "layer": "F-ADDR-HORN"
+    },
+    "speaker_strobe": {
+      "symbol_name": "F-SPK-STROBE-ADDR",
+      "description": "Addressable Speaker/Strobe",
+      "block_content": "Speaker cone with strobe, address",
+      "layer": "F-ADDR-SPK-STROBE"
+    }
+  },
+  "labeling_standards": {
+    "panel_format": "FACP-{LOOP}-{PANEL}",
+    "sloop_format": "SLC-{LOOP_NUMBER}",
+    "device_format": "FAD-{ADDRESS}",
+    "module_format": "FAM-{ADDRESS}",
+    "nac_format": "NAC-{NUMBER}",
+    "wiring_notes": {
+      "slc": "2-Wire Shielded Twisted Pair 18AWG",
+      "nac": "2-Wire FPLR 14AWG",
+      "class": "Class B (Style 4) or Class A (Style 6)"
+    }
+  },
+  "drawing_notes": [
+    "SLC loop shown with device addresses",
+    "All devices to show individual address",
+    "Modules to show address and function",
+    "NAC circuits to show circuit number and wire size",
+    "Isolators shown at branch points"
+  ]
+}

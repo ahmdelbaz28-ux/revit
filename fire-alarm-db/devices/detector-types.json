@@ -1,0 +1,327 @@
+{
+  "meta": {
+    "title": "Fire Alarm Detector Types — Comprehensive Reference",
+    "description": "All detector categories with technical specifications, application guidance, and selection criteria",
+    "standards_referenced": ["NFPA 72", "BS 5839-1", "EN 54-5", "EN 54-7", "EN 54-10", "EN 54-20"],
+    "last_reviewed": "2026-05-09"
+  },
+
+  "smoke_detectors": [
+    {
+      "id": "smoke-photoelectric",
+      "type": "Photoelectric (Light Scattering)",
+      "principle": "LED light source + photodiode sensor — smoke particles scatter light into sensor",
+      "best_for": ["Smoldering fires", "Slow-developing fires", "Visible smoke detection", "General commercial use"],
+      "avoid_in": ["Kitchens", "Bathrooms/steam rooms", "Dusty industrial areas"],
+      "en54_class": ["A1", "A2", "B", "C", "D", "E"],
+      "typical_sensitivity": "0.12 to 0.25 dB/m obscuration",
+      "response_time": "Moderate (faster for smoldering fires than ionization)",
+      "false_alarm_resistance": "Good to moderate (depends on EN class and environment)",
+      "current_draw_mA": 0.1 to 0.5 (addressable) / 0.5 to 1.0 (conventional),
+      "coverage_spacing": {
+        "nfpa72": "30 ft (9.1m) nominal — smooth ceiling",
+        "bs5839": "7.5m nominal",
+        "en54_max_height": "10.5m (standard), 12.5m (Class A1/A2)"
+      },
+      "pros": ["Good response to smoldering fires", "Lower false alarm rate in most environments", "Easy maintenance", "Wide availability"],
+      "cons": ["Slower response to fast flaming fires", "Can be affected by dust accumulation", "Sensitive to insects entering chamber"]
+    },
+    {
+      "id": "smoke-ionization",
+      "type": "Ionization Chamber",
+      "principle": "Americium-241 source ionizes air — smoke particles reduce ion current",
+      "best_for": ["Fast flaming fires", "Clean environments"],
+      "avoid_in": ["Dusty areas", "Areas with chemical fumes", "High-humidity areas"],
+      "notes": "Being phased out in many countries due to radioactive material handling/disposal concerns",
+      "coverage_spacing": {
+        "nfpa72": "30 ft (9.1m) nominal",
+        "bs5839": "7.5m nominal"
+      },
+      "pros": ["Fast response to flaming fires", "Lower cost historically", "Compact size"],
+      "cons": ["Radioactive source disposal issues", "Higher false alarm rate", "Being phased out globally", "Poor smoldering fire detection"]
+    },
+    {
+      "id": "smoke-beam",
+      "type": "Beam Smoke Detector (Line-type)",
+      "principle": "Infra-red beam between transmitter and receiver — smoke obscures beam",
+      "subtypes": [
+        {"id": "beam-end-to-end", "description": "Separate transmitter and receiver units on opposite walls"},
+        {"id": "beam-reflective", "description": "Transmitter/receiver in one unit + reflector on opposite wall (single-sided installation)"}
+      ],
+      "best_for": ["High-ceiling areas (>10.5m)", "Atriums", "Warehouses", "Sports halls", "Cathedrals", "Airport terminals", "Areas where point detectors impractical"],
+      "coverage_spacing": {
+        "nfpa72": "60 ft (18.3m) maximum beam spacing",
+        "bs5839": "12.5m from any point to nearest beam, max 100m between Tx/Rx",
+        "en54_max_height": "No practical limit (line of sight dependent)",
+        "max_beam_length": "Typically 100m (end-to-end) or 50m (reflective) — manufacturer dependent"
+      },
+      "current_draw_mA": 5 to 20 (depends on type),
+      "pros": ["Single device covers large area", "Ideal for high ceilings", "Low maintenance", "Cost-effective for large spaces"],
+      "cons": ["Line of sight required", "Building movement can misalign", "Sensitive to dust on optics", "May not detect small local fires"]
+    },
+    {
+      "id": "smoke-aspirating",
+      "type": "Aspirating Smoke Detector (ASD)",
+      "principle": "Network of sampling pipes draws air to central laser-based detector unit",
+      "subtypes": [
+        {"id": "asd-single-chamber", "description": "One detection chamber — all pipes sample to same point"},
+        {"id": "asd-multi-chamber", "description": "Multiple detection chambers — different sensitivity per pipe run"},
+        {"id": "asd-laser", "description": "Laser-based detection — highest sensitivity (Class A)"},
+        {"id": "asd-led", "description": "LED-based — standard sensitivity, lower cost"}
+      ],
+      "best_for": ["Data centers", "Clean rooms", "Cold storage", "High-security areas", "Atriums", "Heritage buildings (concealed pipes)", "Warehouses", "Switch rooms", "Prison cells", "Hospital operating theaters"],
+      "en54_class": ["A", "B", "C", "D", "E"],
+      "sensitivity_range": "0.005 dB/m (Class A) to 2.0 dB/m (Class E)",
+      "sampling_points": "Up to 100 per unit (manufacturer dependent)",
+      "pipe_network": {
+        "max_total_length": "Up to 200m",
+        "max_single_pipe_length": "Up to 100m",
+        "pipe_material": "UPVC, CPVC, copper, or steel",
+        "pipe_diameter": "Typically 20-25mm",
+        "sampling_hole_diameter": "2-3mm",
+        "sampling_hole_spacing": "Typically 3-6m between holes"
+      },
+      "pros": ["Highest sensitivity available", "Hidden installation (pipes in ceiling void)", "Very early warning", "Multiple pipe runs from one unit", "Trend analysis and maintenance data"],
+      "cons": ["Higher cost", "Requires careful pipe design", "Commissioning is complex", "Pipe network maintenance"]
+    },
+    {
+      "id": "smoke-multi-criteria",
+      "type": "Multi-Criteria / Multi-Sensor Detector",
+      "principle": "Combines multiple sensing technologies in one device (typically smoke + heat + CO)",
+      "sensing_elements": [
+        {"element": "Photoelectric smoke", "description": "Scattered light for smoke detection"},
+        {"element": "Thermistor", "description": "Temperature measurement"},
+        {"element": "Carbon monoxide (CO)", "description": "CO gas detection — distinguishes fire from nuisance"},
+        {"element": "Infrared (IR)", "description": "Secondary IR sensor for additional discrimination"}
+      ],
+      "best_for": ["Areas with high false alarm potential", "Kitchens", "En-suite bathrooms", "Hotel rooms", "Corridors with cooking odors", "Laboratories", "Anywhere smoke detectors cause nuisance alarms"],
+      "en54_reference": "EN 54-29 (multi-sensor), EN 54-31 (with CO sensor)",
+      "coverage_spacing": {
+        "nfpa72": "30 ft (9.1m) nominal",
+        "bs5839": "7.5m nominal"
+      },
+      "pros": ["Best false alarm rejection", "Fastest overall response (uses all sensors)", "Intelligent algorithms distinguish fire types", "One device replaces multiple"],
+      "cons": ["Higher cost than single-sensor", "More complex to configure", "Proprietary algorithms vary between manufacturers"],
+      "notes": "Considered the gold standard for modern installations — recommended by most consultants for new projects"
+    },
+    {
+      "id": "smoke-duct",
+      "type": "Duct Smoke Detector",
+      "principle": "Smoke detector mounted in HVAC duct with sampling tube extending into air stream",
+      "best_for": ["HVAC supply air systems >2000 CFM", "Return air systems", "AHU rooms", "Exhaust air monitoring"],
+      "coverage": "One detector per air handling unit — not area-based coverage",
+      "installation_requirements": {
+        "sampling_tube": "Must extend across full duct width (minimum 75%)",
+        "access": "Within 3 ft of detector housing for maintenance",
+        "location_supply": "Downstream of filters, before branch connections",
+        "location_return": "Upstream of exhaust, before recirculation"
+      },
+      "response": "SHUTS DOWN HVAC fan to prevent smoke distribution",
+      "reference": "NFPA 72 Section 17.7.5"
+    }
+  ],
+
+  "heat_detectors": [
+    {
+      "id": "heat-fixed",
+      "type": "Fixed Temperature",
+      "principle": "Temperature-sensitive element (bimetallic, fusible link, thermistor) triggers at set point",
+      "temperature_ratings": [
+        {"rating_F": 135, "rating_C": 57, "color_code": "None/Black", "use": "Standard — offices, corridors, general areas", "max_ceiling_ft": 20},
+        {"rating_F": 155, "rating_C": 68, "color_code": "Blue", "use": "Moderate heat — server rooms, light industrial"},
+        {"rating_F": 190, "rating_C": 88, "color_code": "Red", "use": "Kitchens, boiler rooms, commercial cooking", "max_ceiling_ft": 30},
+        {"rating_F": 200, "rating_C": 93, "color_code": "Red", "use": "Industrial process areas"},
+        {"rating_F": 250, "rating_C": 121, "color_code": "Blue", "use": "High-temperature industrial, furnace areas"},
+        {"rating_F": 280, "rating_C": 138, "color_code": "Purple", "use": "Extreme temperature industrial"}
+      ],
+      "coverage_spacing": {
+        "nfpa72": "50 ft (15.2m) listed spacing — smooth ceiling",
+        "bs5839": "5.3m nominal (EN 54-5 rate-of-rise: 5.3m, fixed temp: 5.3m)"
+      },
+      "ceiling_height_limit": "20 ft (6m) for 57°C, 30 ft (9m) for higher ratings",
+      "best_for": ["Kitchens", "Boiler rooms", "Garages", "Areas where smoke detectors would false alarm", "Industrial environments"],
+      "avoid_in": ["Areas with rapid temperature fluctuations (use rate-of-rise instead)"]
+    },
+    {
+      "id": "heat-rate-of-rise",
+      "type": "Rate-of-Rise",
+      "principle": "Triggers when temperature rises faster than 15°F (8.3°C) per minute — regardless of starting temperature",
+      "also_includes_fixed": true,
+      "notes": "Almost all rate-of-rise detectors also have a fixed temperature backup (typically 135°F/57°C)",
+      "coverage_spacing": {
+        "nfpa72": "50 ft (15.2m) listed spacing",
+        "bs5839": "5.3m nominal"
+      },
+      "best_for": ["Areas where fast temperature rise indicates fire", "Storage rooms", "Workshops", "General purpose heat detection"],
+      "avoid_in": ["Areas with normal rapid temperature changes (foundries, near ovens)"]
+    },
+    {
+      "id": "heat-linear",
+      "type": "Linear Heat Detection Cable",
+      "principle": "Continuous cable with temperature-sensitive core — detects heat at any point along its length",
+      "types": [
+        {"type": "Digital (switching)", "description": "Cable changes resistance at specific temperature — indicates alarm zone"},
+        {"type": "Analog (proportional)", "description": "Resistance changes proportionally with temperature — indicates exact location and temperature"},
+        {"type": "Fiber optic", "description": "Optical fiber measures temperature — highest precision, longest runs"}
+      ],
+      "best_for": ["Cable trays", "Conveyor belts", "Tunnels", "Warehouses (ceiling-mounted)", "Parking garages", "Industrial racks", "Roof/deck spaces", "Freezer/cool storage areas"],
+      "cable_length": "Up to 1000m per zone (varies by manufacturer)",
+      "temperature_ratings": "68°C, 88°C, 105°C, 141°C, 185°C, 230°C — various options",
+      "pros": ["Continuous coverage of large areas", "Exact location identification (analog)", "Ideal for linear hazards", "Easy installation on cables/trays"],
+      "cons": ["Not resettable (digital type)", "Installation requires careful routing", "Replacement of damaged sections"],
+      "notes": "Ideal for detecting fire in electrical cable trays and conveyor systems"
+    }
+  ],
+
+  "flame_detectors": [
+    {
+      "id": "flame-ir",
+      "type": "Infrared (IR) Flame Detector",
+      "principle": "Detects infrared radiation emitted by flames (typically CO2 emission at 4.4µm)",
+      "best_for": ["Hydrocarbon fires", "Liquid fuel fires", "Indoor industrial", "Turbine enclosures", "Fuel storage areas"],
+      "response_time": "3 to 20 seconds (very fast)",
+      "detection_range": "15m to 45m (varies by manufacturer and model)",
+      "field_of_view": "Typically 90° cone",
+      "pros": ["Very fast response", "Good for hydrocarbon fires", "Relatively immune to sunlight with filters"],
+      "cons": ["Cannot see through obstacles", "Window must be kept clean", "Limited to line of sight"]
+    },
+    {
+      "id": "flame-uv",
+      "type": "Ultraviolet (UV) Flame Detector",
+      "principle": "Detects UV radiation (185-260nm) emitted by flames",
+      "best_for": ["Flammable gas fires", "Metal fires", "Chemical fires", "Outdoor applications"],
+      "response_time": "1 to 10 seconds (fastest)",
+      "detection_range": "10m to 25m",
+      "pros": ["Extremely fast response", "Detects all flame types including invisible hydrogen flames"],
+      "cons": ["Higher false alarm rate (arcing, lightning, UV lamps)", "Limited range", "Window fouling"]
+    },
+    {
+      "id": "flame-uvir",
+      "type": "Multi-Spectrum UV/IR Flame Detector",
+      "principle": "Combines UV and multiple IR wavelengths with advanced algorithms for fire discrimination",
+      "best_for": ["Industrial facilities", "Offshore platforms", "Refineries", "Chemical plants", "Mining", "Anywhere with high false alarm potential"],
+      "response_time": "5 to 30 seconds",
+      "detection_range": "30m to 65m",
+      "pros": ["Best false alarm rejection", "Longest detection range", "Suitable for harsh environments"],
+      "cons": ["Highest cost", "More complex", "Requires skilled installation"],
+      "notes": "The gold standard for industrial flame detection"
+    },
+    {
+      "id": "flame-video",
+      "type": "Video / CCTV Fire Detection",
+      "principle": "Software analyzes CCTV camera images to detect flame patterns and smoke",
+      "best_for": ["Large open areas", "Tunnels", "Aircraft hangars", "Warehouses", "Outdoor storage", "Power plants"],
+      "pros": ["Uses existing CCTV infrastructure", "Visual verification", "Covers very large areas", "Remote monitoring"],
+      "cons": ["Requires good lighting conditions", "Processing power needed", "Higher false alarm potential outdoors", "Privacy considerations"]
+    }
+  ],
+
+  "gas_detectors": [
+    {
+      "id": "gas-co",
+      "type": "Carbon Monoxide (CO) Detector",
+      "principle": "Electrochemical sensor detects CO concentration in air",
+      "best_for": ["Parking garages", "Tunnels", "Loading docks", "Generator rooms", "Boiler rooms"],
+      "alarm_levels": {
+        "warning": "70 ppm (30-minute average)",
+        "alarm": "150 ppm (10-minute average) OR 400 ppm (5-minute average)"
+      },
+      "notes": "CO detectors are LIFE SAFETY devices for occupied spaces (parking garages), NOT primary fire detection. Some fire multi-sensor detectors include CO sensing."
+    },
+    {
+      "id": "gas-combustible",
+      "type": "Combustible Gas Detector",
+      "principle": "Catalytic or infrared sensor detects flammable gas concentration",
+      "best_for": ["Gas meter rooms", "Boiler rooms", "Kitchens (commercial)", "Industrial gas storage"],
+      "alarm_levels": {
+        "low_alarm": "25% of LEL (Lower Explosive Limit)",
+        "high_alarm": "50% of LEL"
+      },
+      "notes": "Safety device — not a fire detector but often interfaced with fire alarm system"
+    }
+  ],
+
+  "detector_selection_guide": {
+    "by_environment": [
+      {
+        "environment": "Standard office / commercial",
+        "recommended": ["Photoelectric smoke detector", "Multi-criteria detector"],
+        "avoid": ["Ionization (being phased out)", "Heat only (insufficient for life safety)"]
+      },
+      {
+        "environment": "Hospital / healthcare",
+        "recommended": ["Multi-criteria detector (low false alarm)", "Photoelectric smoke (corridors/lobbies)"],
+        "special": "Voice evacuation required — see NFPA 72/BS 5839"
+      },
+      {
+        "environment": "Hotel bedroom",
+        "recommended": ["Multi-criteria detector (kitchen/cooking areas)", "Photoelectric smoke (general areas)"],
+        "avoid": ["Ionization (banned in many jurisdictions for sleeping areas)"]
+      },
+      {
+        "environment": "Data center / server room",
+        "recommended": ["Aspirating smoke detector (Class A or B)", "Multi-criteria as backup"],
+        "avoid": ["Heat detector alone (too slow for data center)"]
+      },
+      {
+        "environment": "Kitchen (commercial)",
+        "recommended": ["Heat detector (190°F/88°C)", "Multi-criteria with heat dominance"],
+        "avoid": ["Smoke detector (COOKING causes false alarms)"]
+      },
+      {
+        "environment": "Parking garage",
+        "recommended": ["Beam smoke detector OR linear heat", "CO detector (life safety for occupants)"],
+        "avoid": ["Point smoke detector (air movement and exhaust cause false alarms)"]
+      },
+      {
+        "environment": "Warehouse (standard)",
+        "recommended": ["Photoelectric smoke (if ceiling < 10m)", "Beam smoke (if ceiling > 10m)", "Linear heat (on racks)"],
+        "notes": "Consider ESFR sprinkler system — fire alarm may monitor water flow only"
+      },
+      {
+        "environment": "Warehouse (cold storage / freezer)",
+        "recommended": ["Aspirating smoke detector (pipes can be outside cold area)", "Linear heat cable"],
+        "avoid": ["Standard point detectors (condensation and temperature affect operation)", "Beam detectors (condensation on optics)"],
+        "notes": "Special low-temperature rated equipment required"
+      },
+      {
+        "environment": "Atrium / large open space",
+        "recommended": ["Beam smoke detectors", "Aspirating smoke detection", "Video flame detection"],
+        "avoid": ["Point detectors (insufficient coverage at height)"]
+      },
+      {
+        "environment": "Clean room / pharmaceutical",
+        "recommended": ["Aspirating smoke detector (Class A)"],
+        "avoid": ["Any device that introduces particles (standard point detectors)"],
+        "notes": "Sampling pipes must use clean, non-particle-shedding materials"
+      },
+      {
+        "environment": "Industrial / manufacturing",
+        "recommended": ["Multi-criteria (adjustable sensitivity)", "Flame detector (multi-spectrum UV/IR)", "Linear heat (on equipment/cable trays)"],
+        "avoid": ["Standard photoelectric (dust/chemical fumes cause false alarms)"],
+        "notes": "Use EN 54-7 Class D or E for dusty environments"
+      },
+      {
+        "environment": "Stairwell",
+        "recommended": ["Photoelectric smoke detector"],
+        "notes": "Required at each landing in most codes"
+      },
+      {
+        "environment": "Elevator shaft",
+        "recommended": ["Photoelectric smoke detector at top of shaft", "Heat detector in machine room"],
+        "reference": "NFPA 72 Section 17.13.3 / ASME A17.1"
+      },
+      {
+        "environment": "Bathroom / toilet",
+        "recommended": ["Heat detector ONLY if required"],
+        "avoid": ["Smoke detector (steam causes false alarms)"],
+        "notes": "Many codes do not require detection in small bathrooms"
+      },
+      {
+        "environment": "Outdoor / tank farm",
+        "recommended": ["Flame detector (multi-spectrum UV/IR)", "Linear heat cable (on pipes)"],
+        "notes": "Must be rated for outdoor use (IP66/IP67 minimum)"
+      }
+    ]
+  }
+}

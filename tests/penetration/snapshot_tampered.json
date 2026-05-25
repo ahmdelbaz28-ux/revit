@@ -1,0 +1,9 @@
+{
+    "zone_id": "Zone_101",
+    "width": 10.0,
+    "height": 10.0,
+    "detectors": [
+        {"id": "Det_1", "x": 5.01, "y": 5.0}
+    ],
+    "obstacles": []
+}

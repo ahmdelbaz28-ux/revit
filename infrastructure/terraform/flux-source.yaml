@@ -1,0 +1,12 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: firealarmai-repository
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/ahmdelbaz28-ux/revit
+  ref:
+    branch: main
+  secretRef:
+    name: github-credentials

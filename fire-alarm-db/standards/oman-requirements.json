@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["Oman Civil Defense Requirements", "Oman Building Code"],
+    "specialization": "OMAN_FIRE_PROTECTION_REQUIREMENTS",
+    "validation_status": "VERIFIED"
+  },
+  "general_requirements": {
+    "authority": "Civil Defence Department",
+    "jurisdiction": "Sultanate of Oman",
+    "municipality": "Muscat Municipality",
+    "approval_process": [
+      "DESIGN_SUBMITTAL",
+      "CIVIL_DEFENSE_REVIEW",
+      "APPROVAL",
+      "INSTALLATION",
+      "FINAL_INSPECTION"
+    ]
+  },
+  "fire_alarm_requirements": {
+    "buildings_over_15m": "ADDRESSABLE_REQUIRED",
+    "buildings_over_45m": "VOICE_SYSTEM_REQUIRED",
+    "all_public_buildings": "FIRE_ALARM_REQUIRED",
+    "hotels": "ADDRESSABLE_WITH_MONITORING",
+    "hospitals": "VOICE_SYSTEM_REQUIRED"
+  },
+  "monitoring": {
+    "central_station": "REQUIRED",
+    "civil_defense_connection": "REQUIRED"
+  },
+  "equipment_standards": [
+    "UL",
+    "FM",
+    "Civil Defence Approval"
+  ],
+  "documentation_required": [
+    "Fire alarm layout",
+    "System design",
+    "Equipment list",
+    "Calculations"
+  ]
+}

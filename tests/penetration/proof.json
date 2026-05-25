@@ -1,0 +1,14 @@
+{
+    "clause_id": "NFPA_72_17.6.3.1.1",
+    "clause_edition": "NFPA_72_2022",
+    "geo_hash": "635d6738b8522085159024741588fd0bbe704b0f4fd2626ac0f30e91f43077c3",
+    "query_log_hash": "BASELINE",
+    "result": {
+        "Compliant": {
+            "rule": "NFPA 72 17.6.3.1.1",
+            "verified_points": 4
+        }
+    },
+    "previous_proof_hash": null,
+    "proof_token": "640b521b08d63b066aae5d1f1249d7daf2c95a15eced5414c2b779275c2c3a84"
+}

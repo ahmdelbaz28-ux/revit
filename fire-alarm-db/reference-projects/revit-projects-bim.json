@@ -1,0 +1,370 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection & BIM Engineering Consultant",
+    "purpose": "Revit Fire Alarm Projects with BIM Specifications",
+    "validation_status": "VERIFIED"
+  },
+  "revit_project_templates": {
+    "lod_definitions": {
+      "LOD100": {
+        "description": "Conceptual - Approximate geometry",
+        "fire_alarm_info": "Generic symbols, no specific equipment"
+      },
+      "LOD200": {
+        "description": "Schematic Design - Generic systems",
+        "fire_alarm_info": "Generic families, approximate locations"
+      },
+      "LOD300": {
+        "description": "Design Development - Specific systems",
+        "fire_alarm_info": "Specific families, exact locations, preliminary scheduling"
+      },
+      "LOD350": {
+        "description": "Construction Documents",
+        "fire_alarm_info": "Detailed families, coordination, detailed scheduling"
+      },
+      "LOD400": {
+        "description": "Fabrication - Detailed for fabrication",
+        "fire_alarm_info": "Fabrication-level families, installation-ready"
+      }
+    }
+  },
+  "revit_project_examples": [
+    {
+      "project_id": "REV-PROJ-001",
+      "project_name": "Commercial Office Tower - 15 Floors BIM",
+      "location": "Dubai, UAE",
+      "building_type": "OFFICE_B",
+      "revit_details": {
+        "revit_version": "Revit 2024",
+        "lod": "LOD350",
+        "discipline": "MEP",
+        "worksets": [
+          "Fire Alarm - Devices",
+          "Fire Alarm - Wiring",
+          "Fire Alarm - Coordination"
+        ],
+        "phases": ["Existing", "New Construction"]
+      },
+      "modeling_details": {
+        "families_used": 45,
+        "devices_modeled": 380,
+        "systems_created": 12,
+        "schedules": [
+          "Detector Schedule",
+          "Manual Station Schedule",
+          "Notification Schedule",
+          "Module Schedule"
+        ]
+      },
+      "coordination": {
+        "linked_models": [
+          "Architectural",
+          "Structural",
+          "MEP - Mechanical",
+          "MEP - Electrical"
+        ],
+        "clash_detection": true,
+        "coordination_review": "Weekly"
+      },
+      "fire_alarm_systems": {
+        "system_type": "Addressable",
+        "brand": "Notifier",
+        "panels": 2,
+        "sloops": 4,
+        "devices": {
+          "smoke_detectors": 220,
+          "heat_detectors": 35,
+          "manual_stations": 32,
+          "horn_strobes": 65,
+          "modules": 28
+        }
+      },
+      "bim_outputs": [
+        "3D Model",
+        "2D Floor Plans",
+        "Section Views",
+        "Schedules",
+        "Material Takeoff",
+        "Shop Drawings from Revit"
+      ],
+      "cost_egp": 3200000
+    },
+    {
+      "project_id": "REV-PROJ-002",
+      "project_name": "Luxury Hotel - 30 Floors BIM",
+      "location": "Cairo, Egypt",
+      "building_type": "HOTEL_R1",
+      "revit_details": {
+        "revit_version": "Revit 2023",
+        "lod": "LOD400",
+        "discipline": "MEP",
+        "worksets": [
+          "Fire Alarm - Detection",
+          "Fire Alarm - Notification",
+          "Fire Alarm - Voice Evacuation",
+          "Fire Alarm - Integration"
+        ],
+        "phases": ["Existing", "Demolition", "New Construction"]
+      },
+      "modeling_details": {
+        "families_used": 85,
+        "devices_modeled": 850,
+        "systems_created": 25,
+        "voice_zones": 30,
+        "schedules": [
+          "Detector Schedule by Floor",
+          "Manual Station Schedule",
+          "Speaker Schedule",
+          "Module Schedule by Zone",
+          "Cable Tray Schedule"
+        ]
+      },
+      "coordination": {
+        "linked_models": [
+          "Architectural",
+          "Structural",
+          "MEP - HVAC",
+          "MEP - Plumbing",
+          "MEP - Electrical - Power",
+          "MEP - Electrical - Lighting"
+        ],
+        "clash_detection": true,
+        "revit_clash_detective": true,
+        "coordination_review": "Daily BIM meetings"
+      },
+      "fire_alarm_systems": {
+        "system_type": "Addressable with Voice",
+        "brand": "Notifier + AM2020",
+        "panels": 3,
+        "sloops": 10,
+        "voice_zones": 30,
+        "devices": {
+          "smoke_detectors": 480,
+          "heat_detectors": 60,
+          "multi_sensors": 40,
+          "manual_stations": 65,
+          "horn_strobes": 95,
+          "speakers": 180,
+          "modules": 55
+        }
+      },
+      "bim_outputs": [
+        "3D Model",
+        "Floor Plans per Floor",
+        "Riser Diagrams",
+        "Zone Matrix",
+        "Voice Evacuation Diagrams",
+        "Cable Tray Routing",
+        "Detailed Schedules",
+        "Material Quantities",
+        "IFC Export"
+      ],
+      "cost_egp": 6800000
+    },
+    {
+      "project_id": "REV-PROJ-003",
+      "project_name": "Shopping Mall - 4 Floors BIM",
+      "location": "Riyadh, Saudi Arabia",
+      "building_type": "MALL_A1",
+      "revit_details": {
+        "revit_version": "Revit 2024",
+        "lod": "LOD350",
+        "discipline": "MEP",
+        "worksets": [
+          "Fire Alarm - Common Areas",
+          "Fire Alarm - Retail Units",
+          "Fire Alarm - Food Court"
+        ],
+        "phases": ["New Construction"]
+      },
+      "modeling_details": {
+        "families_used": 65,
+        "devices_modeled": 620,
+        "systems_created": 18,
+        "schedules": [
+          "Common Area Devices",
+          "Retail Unit Devices",
+          "Food Court Devices"
+        ]
+      },
+      "fire_alarm_systems": {
+        "system_type": "Addressable with Voice",
+        "brand": "Simplex",
+        "panels": 2,
+        "voice_zones": 16,
+        "devices": {
+          "smoke_detectors": 420,
+          "heat_detectors": 45,
+          "manual_stations": 42,
+          "horn_strobes": 110,
+          "speakers": 165,
+          "modules": 38
+        }
+      },
+      "special_zoning": {
+        "food_court": true,
+        "atriums": true,
+        "parking": true
+      },
+      "cost_egp": 5200000
+    },
+    {
+      "project_id": "REV-PROJ-004",
+      "project_name": "Hospital - 10 Floors BIM",
+      "location": "Kuwait",
+      "building_type": "HOSPITAL_I1",
+      "revit_details": {
+        "revit_version": "Revit 2023",
+        "lod": "LOD400",
+        "discipline": "MEP",
+        "worksets": [
+          "Fire Alarm - Patient Areas",
+          "Fire Alarm - Operating Rooms",
+          "Fire Alarm - Public Areas",
+          "Fire Alarm - Mechanical Areas"
+        ],
+        "phases": ["New Construction"]
+      },
+      "modeling_details": {
+        "families_used": 95,
+        "devices_modeled": 580,
+        "systems_created": 30,
+        "schedules": [
+          "Patient Room Devices",
+          "ICU Devices",
+          "OR Devices",
+          "Public Area Devices"
+        ]
+      },
+      "fire_alarm_systems": {
+        "system_type": "Addressable with Voice",
+        "brand": "Notifier",
+        "panels": 3,
+        "voice_zones": 20,
+        "devices": {
+          "smoke_detectors": 350,
+          "multi_sensors": 95,
+          "manual_stations": 48,
+          "horn_strobes": 75,
+          "speakers": 120,
+          "modules": 65
+        }
+      },
+      "special_requirements": {
+        "patient_zoning": true,
+        "icu_separate": true,
+        "or_zones": true,
+        "no_general_alarm": true
+      },
+      "cost_egp": 5500000
+    },
+    {
+      "project_id": "REV-PROJ-005",
+      "project_name": "Data Center Tier 4 BIM",
+      "location": "Abu Dhabi, UAE",
+      "building_type": "DATA_CENTER",
+      "revit_details": {
+        "revit_version": "Revit 2024",
+        "lod": "LOD500",
+        "discipline": "MEP",
+        "worksets": [
+          "Fire Alarm - Server Rooms",
+          "Fire Alarm - Support Areas",
+          "VESDA Systems"
+        ],
+        "phases": ["New Construction"]
+      },
+      "modeling_details": {
+        "families_used": 55,
+        "devices_modeled": 180,
+        "systems_created": 15,
+        "vesda_modeled": true,
+        "schedules": [
+          "VESDA Schedule",
+          "Server Room Devices",
+          "Suppression System"
+        ]
+      },
+      "fire_alarm_systems": {
+        "system_type": "Addressable with VESDA",
+        "brand": "Notifier + VESDA",
+        "panels": 2,
+        "vesda_units": 6,
+        "devices": {
+          "vesda": 6,
+          "smoke_detectors": 65,
+          "heat_detectors": 25,
+          "manual_stations": 12,
+          "strobes": 35,
+          "modules": 30
+        }
+      },
+      "suppression": {
+        "type": "FM-200",
+        "modeled": true
+      },
+      "cost_egp": 4200000
+    }
+  ],
+  "revit_family_parameters": {
+    "detector_required_params": [
+      "Mark",
+      "SLC Loop",
+      "Address",
+      "Zone",
+      "Device Type",
+      "Manufacturer",
+      "Model",
+      "Sensitivity",
+      "Room",
+      "Elevation",
+      "System Classification"
+    ],
+    "panel_required_params": [
+      "Mark",
+      "Panel Name",
+      "Location",
+      "Manufacturer",
+      "Model",
+      "Number of Loops",
+      "Number of NACs",
+      "Voltage",
+      "Phase"
+    ]
+  },
+  "revit_systems": {
+    "system_types": [
+      "Fire Alarm - Detection",
+      "Fire Alarm - Notification",
+      "Fire Alarm - Voice Evacuation",
+      "Fire Alarm - Monitoring"
+    ],
+    "system_abbreviations": [
+      "FADet",
+      "FANot",
+      "FAVox",
+      "FAMon"
+    ]
+  },
+  "workset_standards": {
+    "recommended_worksets": [
+      "Fire Alarm - Detection",
+      "Fire Alarm - Notification",
+      "Fire Alarm - Control",
+      "Fire Alarm - Coordination"
+    ]
+  },
+  "bim_coordination": {
+    "clash_categories": [
+      "Fire Alarm vs HVAC",
+      "Fire Alarm vs Electrical",
+      "Fire Alarm vs Structural",
+      "Fire Alarm vs Architectural"
+    ],
+    "coordination_meetings": "Weekly recommended",
+    "revit_server": true,
+    "cloud_collaboration": "BIM 360 / Autodesk Docs"
+  }
+}

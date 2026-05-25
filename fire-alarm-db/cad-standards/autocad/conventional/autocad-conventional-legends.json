@@ -1,0 +1,140 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "AutoCAD Legend Library - Conventional Fire Alarm System",
+    "system_type": "CONVENTIONAL",
+    "validation_status": "VERIFIED"
+  },
+  "layer_standards": {
+    "F-CONV-PANEL": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.50mm",
+      "description": "Conventional Fire Alarm Control Panel"
+    },
+    "F-CONV-DET-SMOKE": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.35mm",
+      "description": "Conventional Smoke Detector"
+    },
+    "F-CONV-DET-HEAT": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.35mm",
+      "description": "Conventional Heat Detector"
+    },
+    "F-CONV-MANUAL": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.35mm",
+      "description": "Manual Pull Station"
+    },
+    "F-CONV-HORN": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Horn"
+    },
+    "F-CONV-STROBE": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Strobe Light"
+    },
+    "F-CONV-HORN-STROBE": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Horn/Strobe Combination"
+    },
+    "F-CONV-BELL": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.25mm",
+      "description": "Alarm Bell"
+    },
+    "F-CONV-WIRE": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.18mm",
+      "description": "Fire Alarm Wiring - NAC"
+    },
+    "F-CONV-ZONE": {
+      "color": "RED",
+      "linetype": "DASHED",
+      "lineweight": "0.18mm",
+      "description": "Zone Boundary"
+    }
+  },
+  "symbols": {
+    "panel_conventional_4zone": {
+      "symbol_name": "F-PANEL-CONV-4Z",
+      "description": "4 Zone Conventional Panel",
+      "block_content": "Rectangle 4x3 with zone LEDs",
+      "layer": "F-CONV-PANEL"
+    },
+    "panel_conventional_8zone": {
+      "symbol_name": "F-PANEL-CONV-8Z",
+      "description": "8 Zone Conventional Panel",
+      "block_content": "Rectangle 6x3 with zone LEDs",
+      "layer": "F-CONV-PANEL"
+    },
+    "smoke_detector": {
+      "symbol_name": "F-DET-CONV-SMOKE",
+      "description": "Conventional Smoke Detector",
+      "block_content": "Circle R=5mm with detector symbol",
+      "layer": "F-CONV-DET-SMOKE"
+    },
+    "heat_detector": {
+      "symbol_name": "F-DET-CONV-HEAT",
+      "description": "Conventional Heat Detector",
+      "block_content": "Circle R=5mm with temperature symbol",
+      "layer": "F-CONV-DET-HEAT"
+    },
+    "manual_pull": {
+      "symbol_name": "F-MAN-CONV",
+      "description": "Conventional Manual Pull Station",
+      "block_content": "Rectangle with pull handle symbol",
+      "layer": "F-CONV-MANUAL"
+    },
+    "horn": {
+      "symbol_name": "F-HORN-CONV",
+      "description": "Horn",
+      "block_content": "Trumpet symbol",
+      "layer": "F-CONV-HORN"
+    },
+    "strobe": {
+      "symbol_name": "F-STROBE-CONV",
+      "description": "Strobe Light",
+      "block_content": "Lightning bolt in circle",
+      "layer": "F-CONV-STROBE"
+    },
+    "horn_strobe": {
+      "symbol_name": "F-HORN-STROBE-CONV",
+      "description": "Horn/Strobe Combination",
+      "block_content": "Trumpet with lightning bolt",
+      "layer": "F-CONV-HORN-STROBE"
+    },
+    "bell": {
+      "symbol_name": "F-BELL-CONV",
+      "description": "Alarm Bell",
+      "block_content": "Bell symbol",
+      "layer": "F-CONV-BELL"
+    }
+  },
+  "labeling_standards": {
+    "panel_format": "FACP-{FLOOR}-{ZONE}",
+    "zone_format": "ZN-{FLOOR}-{NUMBER}",
+    "device_format": "F-{TYPE}-{ZONE}-{NUMBER}",
+    "wiring_note": "2-WIRE TO PANEL - 24VDC"
+  },
+  "drawing_notes": [
+    "All wiring to be FPLR 14/2 minimum",
+    "Maximum 25 devices per zone",
+    "Maximum 10 manual stations per zone",
+    "End-of-line resistor required (4.7K ohm)"
+  ]
+}

@@ -1,0 +1,620 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["Manufacturer catalogs", "UL listings", "Technical datasheets"],
+    "last_updated": "2026-05-09"
+  },
+  "manufacturer": {
+    "name": "Honeywell NOTIFIER",
+    "brand_names": ["Notifier", "Honeywell", "System Sensor"],
+    "headquarters": "Northford, Connecticut, USA",
+    "website": "www.notifier.com",
+    "year_established": 1899,
+    "ul_listings": "UL, ULC, FM, CSFM, NYC-MEA",
+    "representative_offices": {
+      "middle_east": ["Dubai, UAE", "Cairo, Egypt", "Riyadh, Saudi Arabia"],
+      "europe": ["UK", "Germany", "France"],
+      "asia": ["Singapore", "India", "China"]
+    }
+  },
+  "control_panels": [
+    {
+      "model": "NFS-320",
+      "type": "INTELLIGENT_ADDRESSABLE",
+      "series": "ONYX",
+      "points maximum": 318,
+      "s SLC": 2,
+      "devices per SLC": 159,
+      "notification circuits": 4,
+      " Built-In_Printer": false,
+      "network capable": true,
+      "voice capable": false,
+      "dimensions inches": "14.5 x 20 x 3",
+      "Input voltage": "120 or 240 VAC, 50/60 Hz",
+      "battery capacity max AH": 55,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "ULC", "FM", "CSFM", "NYC#200-1050E"],
+      "communicator built-in": "UDACT",
+      "features": [
+        "FlashScan protocol",
+        "Auto-programming",
+        "Drift compensation",
+        "Maintenance alerts"
+      ],
+      "applications": ["Small office", "Retail", "School", "Hotel wing"],
+      "price_range_usd": "8000-15000",
+      "manual_reference": "DN-0001"
+    },
+    {
+      "model": "NFS2-640E",
+      "type": "INTELLIGENT_ADDRESSABLE",
+      "series": "ONYX",
+      "points maximum": 636,
+      "SLC": 2,
+      "devices per SLC": 318,
+      "notification circuits": 4,
+      " Built-In_Printer": false,
+      "network capable": true,
+      "voice capable": true,
+      "dimensions inches": "14.5 x 20 x 3",
+      " Input voltage": "120 or 240 VAC, 50/60 Hz",
+      "battery capacity max AH": 55,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "ULC", "FM", "CSFM"],
+      "communicator built-in": "UDACT",
+      "features": [
+        "FlashScan protocol",
+        "CLIP mode backward compatible",
+        "Network up to 64 nodes",
+        "LCD front panel"
+      ],
+      "applications": ["Mid-size office", "Hospital wing", "Mall", "School"],
+      "price_range_usd": "15000-25000",
+      "manual_reference": "DN-0003"
+    },
+    {
+      "model": "NFS2-3030D",
+      "type": "INTELLIGENT_ADDRESSABLE",
+      "series": "ONYX",
+      "points maximum": 3180,
+      "SLC": 10,
+      "devices per SLC": 318,
+      "notification circuits": 10,
+      "Built-In_Printer": true,
+      "network capable": true,
+      "voice capable": true,
+      "dimensions inches": "24 x 30 x 5",
+      "Input voltage": "120 or 240 VAC, 50/60 Hz",
+      "battery capacity max AH": 110,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "ULC", "FM", "CSFM"],
+      "communicator built-in": "UDACT",
+      "features": [
+        "FlashScan protocol",
+        "Large display",
+        "Dual line graphics",
+        "Event history 1000 events",
+        "Programmable function keys"
+      ],
+      "applications": ["Large campus", "Airport terminal", "Hospital", "High-rise"],
+      "price_range_usd": "35000-60000",
+      "manual_reference": "DN-0005"
+    },
+    {
+      "model": "SYSTEM 5000",
+      "type": "CONVENTIONAL",
+      "series": "Conventional",
+      "zones": 10,
+      "notification circuits": 4,
+      " Built-In_Printer": false,
+      "network capable": false,
+      "voice capable": false,
+      "dimensions inches": "18 x 22 x 4",
+      "Input voltage": "120 VAC, 60 Hz",
+      "battery capacity max AH": 26,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "ULC", "FM", "CSFM", "NYC#200-0587"],
+      "communicator optional": "UDACT",
+      "features": [
+        "Field programmable",
+        "Style Z NACs",
+        " Auxiliary power",
+        "Configurable zones"
+      ],
+      "applications": ["Small building", "Warehouse section", "Strip mall"],
+      "price_range_usd": "2500-5000",
+      "manual_reference": "DN-0001"
+    },
+    {
+      "model": "SFP-2402",
+      "type": "CONVENTIONAL",
+      "series": "SFP",
+      "zones": 2,
+      "notification circuits": 2,
+      " Built-In_Printer": false,
+      "network capable": false,
+      "voice capable": false,
+      "dimensions inches": "12 x 14 x 3",
+      "Input voltage": "120 VAC, 60 Hz",
+      "battery capacity max AH": 18,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "CSFM"],
+      "communicator optional": "4XTMF",
+      "features": [
+        "Compact size",
+        "Style B or Y NACs",
+        "Battery onboard"
+      ],
+      "applications": ["Small office", "Retail", "Restaurant"],
+      "price_range_usd": "1200-2500",
+      "manual_reference": "P/N 51898"
+    },
+    {
+      "model": "SFP-2404",
+      "type": "CONVENTIONAL",
+      "series": "SFP",
+      "zones": 4,
+      "notification circuits": 4,
+      "Built-In_Printer": false,
+      "network capable": false,
+      "voice capable": false,
+      "dimensions inches": "14 x 18 x 3",
+      "Input voltage": "120 VAC, 60 Hz",
+      "battery capacity max AH": 26,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "CSFM"],
+      "communicator optional": "4XTMF",
+      "features": [
+        "Compact size",
+        "Style Z NACs",
+        "Relay outputs"
+      ],
+      "applications": ["Small building", "Strip retail"],
+      "price_range_usd": "1800-3500",
+      "manual_reference": "P/N 51898"
+    },
+    {
+      "model": "AM2020",
+      "type": "INTELLIGENT_ADDRESSABLE",
+      "series": "FIREWARDEN",
+      "points maximum": 2020,
+      " SLC": 2,
+      "devices per SLC": 1010,
+      "notification circuits": 10,
+      " Built-In_Printer": false,
+      "network capable": true,
+      "voice capable": true,
+      "voice zones": 20,
+      "dimensions inches": "22 x 24 x 5",
+      "Input voltage": "120 or 240 VAC",
+      "battery capacity max AH": 55,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "FM"],
+      "communicator built-in": true,
+      "features": [
+        "20 voice zones",
+        "Built-in amplifier",
+        "Digital voice",
+        "Microphone input"
+      ],
+      "applications": ["High-rise", "Hospital", "Assembly hall"],
+      "price_range_usd": "25000-40000",
+      "manual_reference": "P/N 52586"
+    },
+    {
+      "model": "AFP-1010",
+      "type": "INTELLIGENT_ADDRESSABLE",
+      "series": "FIREWARDEN",
+      "points maximum": 1010,
+      "SLC": 2,
+      "devices per SLC": 505,
+      "notification circuits": 10,
+      "Built-In_Printer": false,
+      "network capable": true,
+      "voice capable": true,
+      "voice zones": 10,
+      "dimensions inches": "22 x 24 x 5",
+      "Input voltage": "120 or 240 VAC",
+      "battery capacity max AH": 55,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "FM"],
+      "communicator built-in": true,
+      "features": [
+        "10 voice zones",
+        "Built-in amplifier",
+        "Digital message"
+      ],
+      "applications": ["Office building", "School"],
+      "price_range_usd": "18000-30000",
+      "manual_reference": "P/N 52586"
+    }
+  ],
+  "intelligent_detectors": [
+    {
+      "model": "FSP-851",
+      "type": "PHOTOELECTRIC_SMOKE",
+      "series": "TrueFire",
+      "addressable": true,
+      "sensitivity": {
+        "minimum": 0.53,
+        "maximum": 3.77,
+        "unit": "%_OBSC_FT"
+      },
+      "operating voltage": "15.5 to 30 VDC",
+      "standby current ma": 0.3,
+      "alarm current ma": 0.5,
+      "temp rating": "32 to 100 F",
+      "listings": ["UL", "ULC", "FM", "CSFM"],
+      "features": [
+        "FlashScan addressable",
+        "Auto drift compensation",
+        "Maintenance alert"
+      ],
+      "base model": "FSP-851BASE",
+      "price_usd": 45,
+      "applications": ["General occupancy", "Offices", "Schools"]
+    },
+    {
+      "model": "FST-851",
+      "type": "HEAT_DETECTOR",
+      "series": "TrueFire",
+      "addressable": true,
+      "temp rating": "135F fixed or 15F/min ROR",
+      "operating voltage": "15.5 to 30 VDC",
+      "standby current ma": 0.3,
+      "alarm current ma": 0.5,
+      "listings": ["UL", "FM"],
+      "base model": "FST-851BASE",
+      "price_usd": 35,
+      "applications": ["Kitchen", "Garage", "Dusty areas"]
+    },
+    {
+      "model": "FSL-851",
+      "type": "PHOTOELECTRIC_LOW_PROFILE",
+      "series": "TrueFire",
+      "addressable": true,
+      "sensitivity": "0.97 to 3.77 %OBSC/FT",
+      "operating voltage": "15.5 to 30 VDC",
+      "standby current ma": 0.3,
+      "alarm current ma": 0.5,
+      "listings": ["UL", "FM"],
+      "price_usd": 48,
+      "applications": ["Plenum spaces", "Drop ceiling"]
+    },
+    {
+      "model": "FCO-851",
+      "type": "MULTI_SENSOR",
+      "series": "TrueFire",
+      "addressable": true,
+      "sensors": ["Photoelectric", "CO", "Heat"],
+      "sensitivity photo": "0.53 to 3.77 %OBSC/FT",
+      "sensitivity heat": "135F or ROR",
+      "CO sensitivity": "35 to 200 PPM",
+      "listings": ["UL", "FM"],
+      "features": [
+        "Triple sensor",
+        "Programmable algorithm",
+        "Environmental compensation"
+      ],
+      "price_usd": 95,
+      "applications": ["Varying environments", "Server rooms"]
+    },
+    {
+      "model": "XPERT8",
+      "type": "SMOKE_THERMAL",
+      "series": "XPERT",
+      "addressable": true,
+      "sensitivity": "0.5 to 4.0 %OBSC/FT",
+      "base": "Standard 6 inch",
+      "color": "White",
+      "listings": ["UL", "FM", "CSFM"],
+      "price_usd": 55,
+      "applications": ["Apartment", "Hotel", "Office"]
+    }
+  ],
+  "manual_stations": [
+    {
+      "model": "NP-100",
+      "type": "MANUAL_PULL_STATION",
+      "addressable": false,
+      "operation": "SINGLE_ACTION",
+      "reset": "KEY_RESET",
+      "listings": ["UL", "FM", "CSFM", "NYC#200-1083"],
+      "surface mount": true,
+      "concealed mount": true,
+      "price_usd": 35,
+      "applications": ["General use"]
+    },
+    {
+      "model": "NBG-12",
+      "type": "MANUAL_PULL_STATION",
+      "addressable": false,
+      "operation": "DUAL_ACTION",
+      "reset": "KEY_RESET",
+      "listings": ["UL", "FM", "CSFM"],
+      "surface mount": true,
+      "price_usd": 40,
+      "applications": ["Schools", "Public areas"]
+    },
+    {
+      "model": "NGP-5511",
+      "type": "ADDRESSABLE_PULL_STATION",
+      "addressable": true,
+      "operation": "SINGLE_ACTION",
+      "reset": "KEY_RESET",
+      " protocols": ["FlashScan", "CLIP"],
+      "listings": ["UL", "FM"],
+      "price_usd": 75,
+      "applications": ["Addressable systems"]
+    }
+  ],
+  "notification_appliances": [
+    {
+      "model": "WTS-24",
+      "type": "STROBE",
+      "voltage": "24 VDC",
+      "candlepower": 15,
+      "flash rate": "1 Hz",
+      "color": "CLEAR",
+      "wall mount": true,
+      "ceiling mount": true,
+      "listings": ["UL", "ULC", "FM"],
+      "price_usd": 55,
+      "applications": ["General notification"]
+    },
+    {
+      "model": "WTS-24-C",
+      "type": "STROBE",
+      "voltage": "24 VDC",
+      "candlepower": 15,
+      "flash rate": "1 Hz",
+      "color": "CLEAR",
+      "ceiling mount": true,
+      "listings": ["UL"],
+      "price_usd": 55,
+      "applications": ["Ceiling applications"]
+    },
+    {
+      "model": "WTR-24",
+      "type": "HORN_STROBE",
+      "voltage": "24 VDC",
+      "candlepower": 15,
+      "dB level": "84",
+      "sound pattern": "Temporal/Steady",
+      "listings": ["UL", "FM"],
+      "price_usd": 70,
+      "applications": ["General notification"]
+    },
+    {
+      "model": "MT-121",
+      "type": "HORN",
+      "voltage": "24 VDC",
+      "dB level": 85,
+      "sound pattern": "Temporal/Steady",
+      "listings": ["UL"],
+      "price_usd": 40,
+      "applications": ["General use"]
+    },
+    {
+      "model": "4208",
+      "type": "SPEAKER",
+      "voltage": "25V or 70.7V",
+      "wattage": "4 to 8",
+      "dB level": "92 at 10ft",
+      "frequency response": "400 to 4000 Hz",
+      "listings": ["UL", "ULC", "FM"],
+      "price_usd": 65,
+      "applications": ["Voice alarm", "PA integration"]
+    },
+    {
+      "model": "4209",
+      "type": "SPEAKER_STROBE",
+      "voltage": "25V or 70.7V",
+      "wattage": "4 to 8",
+      "candlepower": 15,
+      "dB level": "92 at 10ft",
+      "listings": ["UL", "FM"],
+      "price_usd": 85,
+      "applications": ["Voice alarm with strobe"]
+    },
+    {
+      "model": "ESSER",
+      "type": "BELL",
+      "size_inches": 6,
+      "voltage": "24 VDC",
+      "dB level": 82,
+      "listings": ["UL", "FM"],
+      "price_usd": 45,
+      "applications": ["Legacy systems"]
+    }
+  ],
+  "modules": [
+    {
+      "model": "FMM-1",
+      "type": "MONITOR_MODULE",
+      "addressable": true,
+      "inputs": 1,
+      "operating voltage": "24 VDC",
+      "listings": ["UL", "FM"],
+      "price_usd": 95,
+      "applications": ["Monitor contacts", "Tamper switches"]
+    },
+    {
+      "model": "FZM-1",
+      "type": "ZONE_MODULE",
+      "addressable": true,
+      "style B": true,
+      "operating voltage": "24 VDC",
+      "listings": ["UL", "FM"],
+      "price_usd": 120,
+      "applications": ["Conventional zone interface"]
+    },
+    {
+      "model": "FRM-1",
+      "type": "CONTROL_MODULE",
+      "addressable": true,
+      "relay contacts": "Form C 5A",
+      "operating voltage": "24 VDC",
+      "listings": ["UL", "FM"],
+      "price_usd": 110,
+      "applications": ["HVAC shutdown", "Door release"]
+    },
+    {
+      "model": "FAD-1",
+      "type": "MONITOR_CONTROL_COMBO",
+      "addressable": true,
+      "inputs": 1,
+      "relay contacts": 1,
+      "listings": ["UL"],
+      "price_usd": 145,
+      "applications": ["Combination"]
+    },
+    {
+      "model": "ISO-6",
+      "type": "ISOLATOR",
+      "addressable": true,
+      "isolates": 6,
+      "operating voltage": "24 VDC",
+      "listings": ["UL", "FM"],
+      "price_usd": 75,
+      "applications": ["Loop fault isolation"]
+    }
+  ],
+  "system_sensor_products": {
+    "brand": "System Sensor",
+    "models": [
+      {
+        "model": "P12400",
+        "type": "CONVENTIONAL_SMOKE",
+        "technology": "PHOTOELECTRIC",
+        "sensitivity": "2.5 %OBSC/FT",
+        "voltage": "24 VDC",
+        "listings": ["UL", "FM", "CSFM"],
+        "price_usd": 25
+      },
+      {
+        "model": "H124CV",
+        "type": "CONVENTIONAL_HEAT",
+        "temperature": "135F fixed",
+        "voltage": "24 VDC",
+        "listings": ["UL", "FM"],
+        "price_usd": 22
+      },
+      {
+        "model": "D4120",
+        "type": "DUCT_SMOKE",
+        "voltage": "24 VDC",
+        "sensitivity": "0.5 to 2.5 %OBSC/FT",
+        "sampling tube": "required",
+        "listings": ["UL", "FM"],
+        "price_usd": 280,
+        "applications": ["HVAC ducts"]
+      },
+      {
+        "model": "BEAM-24",
+        "type": "BEAM_DETECTOR",
+        "range_ft": "16 to 230",
+        "voltage": "24 VDC",
+        "listings": ["UL", "FM"],
+        "price_usd": 450,
+        "applications": ["Large open areas"]
+      }
+    ]
+  },
+  "accessories": [
+    {
+      "model": "MMBF-1",
+      "type": "MOUNTING_BRACKET",
+      "description": "Mounting bracket for FSP",
+      "price_usd": 8
+    },
+    {
+      "model": "BACK-2",
+      "type": "BATTERY_BACKBOX",
+      " description": "Battery box 2 x 18AH",
+      "price_usd": 35
+    },
+    {
+      "model": "BB-26",
+      "type": "BATTERY_BACKBOX",
+      "description": "Battery box 26AH",
+      "price_usd": 45
+    }
+  ],
+  "commonly_used_equipment_combinations": {
+    "small_office_2500sqft": {
+      "description": "Small office up to 2500 sq ft",
+      "panel": "SFP-2402 or SYSTEM 5000 4Z",
+      "detectors": "6 to 8 P12400",
+      "manual_stations": "2 NBG-12",
+      "notification": "4 WTS-24 + 2 MT-121",
+      "wire": "FPLR 14/2, 2C 18AWG",
+      "battery": "12V 18AH"
+    },
+    "mid_office_10000sqft": {
+      "description": "Mid-size office up to 10000 sq ft",
+      "panel": "NFS-320",
+      "detectors": "20-30 FSP-851",
+      "manual_stations": "4 NGP-5511",
+      "notification": "6 WTR-24",
+      "wire": "FPLR 14/2, FPLR 14/4 SLC",
+      "battery": "12V 26AH",
+      "modules": "2 FMM-1"
+    },
+    "hotel_floor": {
+      "description": "Hotel floor (corridor)",
+      "panel": "NFS-320",
+      "detectors": "FSP-851 per guest room + corridor",
+      "manual_stations": "1 per stairwell",
+      "notification": "WTR-24 corridor, WTS-24 rooms",
+      "addressable": true,
+      "battery": "12V 55AH"
+    },
+    "hospital_wing": {
+      "description": "Hospital wing",
+      "panel": "NFS2-640E",
+      "detectors": "FSP-851 + FCO-851 critical areas",
+      "manual_stations": "Every corridor exit",
+      "notification": "WTR-24 (low dB option)",
+      "voice zones": "Per floor",
+      "battery": "12V 55AH"
+    },
+    "mall_store": {
+      "description": "Mall retail store",
+      "panel": "NFS-320 or NFS2-640E",
+      "detectors": "Based on square footage",
+      "manual_stations": "At each exit",
+      "notification": "WTS-24 + speakers",
+      "voice": "Recommended",
+      "battery": "12V 55AH"
+    }
+  },
+  "installation_wiring": {
+    "slc_wire": [
+      {"type": "FPLR 14/2", "use": "SLC loop", "max_current": "0.5A"},
+      {"type": "FPLR 16/2", "use": "SLC loop short runs", "max_current": "0.3A"}
+    ],
+    "notification_wire": [
+      {"type": "FPLR 14/2", "use": "NAC power", "max_current": "3.0A"},
+      {"type": "FPLR 16/2", "use": "NAC short runs", "max_current": "1.5A"}
+    ],
+    "power_wire": [
+      {"type": "THHN 14/1", "use": "AC power feed"},
+      {"type": "THHN 12/1", "use": "AC main feed"}
+    ]
+  },
+  "warranty": {
+    "panels": "3 years from manufacture date",
+    "detectors": "5 years",
+    "modules": "2 years",
+    "notification": "2 years"
+  },
+  "technical_support": {
+    "technical_assistance": "1-800-328-4462",
+    "website": "www.notifier.com",
+    "email": "tech@notifier.com",
+    "distributor_middle_east": ["Alfouz Trading (UAE)", "Al-Mashreq (Egypt)", "AlRajhi (Saudi)"]
+  }
+}

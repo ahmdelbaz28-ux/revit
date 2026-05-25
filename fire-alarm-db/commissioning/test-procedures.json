@@ -1,0 +1,276 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NFPA 72 2022", "NFPA 101 2024", "manufacturer requirements"],
+    "validation_status": "VERIFIED"
+  },
+  "commissioning_tests": {
+    "smoke_detector": {
+      "test_name": "Sensitivity Test",
+      "method": "CANNISTER_SMOKE",
+      "standard": "NFPA 72 17.7.4.2",
+      "acceptable_range": {
+        "min": 0.5,
+        "max": 4.0,
+        "unit": "%_OBSCURATION_PER_FT"
+      },
+      "test_frequency": {
+        "after_installation": true,
+        "annually": true,
+        "after_alarm": false
+      },
+      "procedures": [
+        "Use calibrated smoke detector test chamber",
+        "Introduce test smoke per manufacturer instructions",
+        "Verify alarm initiates within 60 seconds",
+        "Record sensitivity reading",
+        "Compare to listed sensitivity range"
+      ],
+      "fail_actions": [
+        "Replace detector if below minimum",
+        "Adjust sensitivity if within allowable range",
+        "Clean detector housing and retest"
+      ]
+    },
+    "heat_detector": {
+      "test_name": "Heat Detector Test",
+      "method": "FIXED_TEMP_OR_ROR",
+      "standard": "NFPA 72 17.8.4",
+      "fixed_temp_test": {
+        "temperature": 135,
+        "unit": "F_PLUS_10_DEGREES"
+      },
+      "ror_test": {
+        "rate": 15,
+        "unit": "DEGREES_F_PER_MIN"
+      },
+      "procedures": [
+        "Apply heat source to detector",
+        "Verify alarm within 60 seconds",
+        "Record temperature at alarm",
+        "Verify against listed rating"
+      ]
+    },
+    "manual_station": {
+      "test_name": "Manual Pull Station Test",
+      "method": "MANUAL_ACTIVATION",
+      "standard": "NFPA 72 17.11.3",
+      "procedures": [
+        "Pull alarm handle fully",
+        "Verify alarm indicator lights",
+        "Verify zone indication on panel",
+        "Reset per manufacturer instructions",
+        "Verify normal state restored"
+      ],
+      "frequency": "ANNUALLY_MINIMUM"
+    },
+    "notification_appliance": {
+      "test_name": "Notification Appliance Test",
+      "method": "MEASUREMENT",
+      "standard": "NFPA 72 18.4.3",
+      "sound_level": {
+        "minimum": 85,
+        "unit": "dBA_WEIGHTED",
+        "measurement_distance": 10,
+        "unit": "FEET"
+      },
+      "strobe": {
+        "verification": "VISUAL_FLASH",
+        "flash_rate": {
+          "min": 0.5,
+          "max": 2.0,
+          "unit": "HZ"
+        },
+        "intensity": {
+          "minimum": 15,
+          "unit": "cd_FOR_ROOM"
+        }
+      },
+      "procedures": [
+        "Activate alarm condition",
+        "Measure sound level at required points",
+        "Verify strobe operation",
+        "Verify notification in all covered areas"
+      ]
+    },
+    "battery": {
+      "test_name": "Battery Capacity Test",
+      "method": "DISCHARGE_TEST",
+      "standard": "NFPA 72 10.6.4",
+      "standby_duration": {
+        "standard": 24,
+        "unit": "HOURS_MINIMUM"
+      },
+      "alarm_duration": {
+        "standard": 15,
+        "unit": "MINUTES_MINIMUM"
+      },
+      "voltage_drop": {
+        "max": 20,
+        "unit": "PERCENT"
+      },
+      "test_method": "ACTUAL_DISCHARGE_PREFERRED",
+      "alternative": "SPECIFIC_GRAVITY_AND_LOAD_TEST",
+      "frequency": "ANNUALLY",
+      "procedures": [
+        "Disconnect AC power",
+        "Start alarm condition",
+        "Load all devices",
+        "Time until system failure",
+        "Record duration",
+        "Restore AC and verify charging"
+      ],
+      "fail_action": "REPLACE_BATTERY"
+    },
+    "panel_communication": {
+      "test_name": "Central Station Communication",
+      "method": "SIGNAL_TRANSMISSION",
+      "standard": "NFPA 72 26.3.1",
+      "procedures": [
+        "Simulate alarm condition",
+        "Verify signal received at central station",
+        "Verify correct zone identification",
+        "Verify signal receipt time under 90 seconds"
+      ],
+      "frequency": "MONTHLY_OR_AS_REQUIRED"
+    }
+  },
+  "inspection_checklist": {
+    "visual_inspection": [
+      {
+        "item": "Detector mounting - secure and undamaged",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Detector spacing - meets code requirements",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Detector not painted or contaminated",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Manual stations accessible and unobstructed",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Notification appliances installed and oriented correctly",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Panel installation - secure and clean",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Wiring properly supported and protected",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Conduit properly sealed at penetrations",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Battery installed and connected",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "System documentation present at panel",
+        "status": "PASS/FAIL/NA"
+      }
+    ],
+    "functional_tests": [
+      {
+        "item": "Zone alarm indication",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Trouble indication",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Supervisory indication",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Manual station operation",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Detector alarm initiation",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Notification appliance operation",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Battery backup operation",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Central station transmission",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Remote station operation",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "HVAC shutdown (if applicable)",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Elevator recall (if applicable)",
+        "status": "PASS/FAIL/NA"
+      },
+      {
+        "item": "Door holder release (if applicable)",
+        "status": "PASS/FAIL/NA"
+      }
+    ]
+  },
+  "documentation_required": {
+    "at_commissioning": [
+      "As-built drawings",
+      "Zone list",
+      "Device addresses/slocations",
+      "Programming matrix",
+      "Sequence of operations",
+      "Owner training log",
+      "Maintenance schedule",
+      "Warranty documentation"
+    ]
+  },
+  "maintenance_schedule": {
+    "weekly": [
+      "Check panel normal indication",
+      "Verify AC power",
+      "Check trouble indicators"
+    ],
+    "monthly": [
+      "Central station signal test",
+      "Notification appliances test (audible only)",
+      "Battery terminals check"
+    ],
+    "quarterly": [
+      "Detector sensitivity test (sampled)",
+      "Manual station test",
+      "Battery discharge test"
+    ],
+    "annually": [
+      "Complete functional test",
+      "Full detector sensitivity test",
+      "Notification appliance test (all)",
+      "Battery discharge test",
+      "Central station communication test",
+      "As-built drawing review"
+    ],
+    "5_years": [
+      "Complete detector replacement (smoke)",
+      "Complete battery replacement",
+      "Panel firmware update check"
+    ]
+  }
+}

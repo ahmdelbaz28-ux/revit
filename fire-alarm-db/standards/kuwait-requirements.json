@@ -1,0 +1,37 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["Kuwait Civil Defense Requirements", "Kuwait Municipality"],
+    "specialization": "KUWAIT_FIRE_PROTECTION_REQUIREMENTS",
+    "validation_status": "VERIFIED"
+  },
+  "general_requirements": {
+    "authority": "Kuwait Civil Defense",
+    "jurisdiction": "State of Kuwait",
+    "municipality": "Kuwait Municipality for Capital Governorate",
+    "approval_process": [
+      "DESIGN_SUBMISSION",
+      "CIVIL_DEFENSE_REVIEW",
+      "APPROVAL",
+      "INSTALLATION",
+      "FINAL_INSPECTION"
+    ]
+  },
+  "fire_alarm_requirements": {
+    "buildings_over_15m": "ADDRESSABLE_REQUIRED",
+    "buildings_over_45m": "VOICE_SYSTEM_REQUIRED",
+    "all_public_buildings": "FIRE_ALARM_REQUIRED"
+  },
+  "monitoring": {
+    "central_station": "REQUIRED",
+    "civil_defense_connection": "REQUIRED"
+  },
+  "documentation_required": [
+    "Layout drawings",
+    "System design",
+    "Equipment list",
+    "Calculations"
+  ]
+}

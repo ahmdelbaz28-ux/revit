@@ -1,0 +1,406 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection & BMS Engineering Consultant",
+    "purpose": "BMS Integration with Fire Alarm Systems - Complete Reference",
+    "validation_status": "VERIFIED"
+  },
+  "bms_overview": {
+    "definition": "Building Management System",
+    "description": "Centralized system that controls and monitors building equipment including HVAC, lighting, security, and fire safety systems.",
+    "fire_alarm_integration": "Critical for building safety and automation"
+  },
+  "integration_protocols": {
+    "bacnet": {
+      "name": "BACnet",
+      "full_name": "Building Automation and Control Network",
+      "protocol_standard": "ASHRAE 135",
+      "layer": "Application Layer",
+      "data_transport": "IP, MSTP, PTP, BVLL",
+      "commonly_used": "HVAC systems",
+      "fire_alarm_compatibility": "HIGH",
+      "integration_method": "BACnet Interface Module or Gateway"
+    },
+    "modbus": {
+      "name": "Modbus",
+      "full_name": "Modbus Serial/TCP",
+      "protocol_standard": "IDA",
+      "layer": "Application Layer",
+      "data_transport": "Serial (RTU/ASCII), TCP/IP",
+      "commonly_used": "Industrial, Power monitoring",
+      "fire_alarm_compatibility": "MEDIUM",
+      "integration_method": "Modbus Gateway"
+    },
+    "knx": {
+      "name": "KNX",
+      "full_name": "KNX Protocol",
+      "protocol_standard": "ISO/IEC 14543",
+      "layer": "Application Layer",
+      "data_transport": "Twisted pair, RF, IP",
+      "commonly_used": "European lighting, HVAC",
+      "fire_alarm_compatibility": "LOW",
+      "integration_method": "KNX Gateway"
+    },
+    "lonworks": {
+      "name": "LonWorks",
+      "full_name": "LonWorks/LON",
+      "protocol_standard": "Echelon",
+      "layer": "Network Layer",
+      "data_transport": "FTT-10, IP-852, PLC",
+      "commonly_used": "Building automation",
+      "fire_alarm_compatibility": "MEDIUM",
+      "integration_method": "LonWorks Gateway"
+    },
+    "opc": {
+      "name": "OPC",
+      "full_name": "OLE for Process Control",
+      "protocol_standard": "OPC Foundation",
+      "layer": "Application Layer",
+      "data_transport": "DCOM, OPC UA",
+      "commonly_used": "SCADA, Enterprise integration",
+      "fire_alarm_compatibility": "HIGH",
+      "integration_method": "OPC Server/Gateway"
+    }
+  },
+  "integration_methods": {
+    "hardwired_contacts": {
+      "description": "Simple dry contact inputs/outputs",
+      "used_for": ["Basic on/off status", "Alarm states"],
+      "wiring": "2-wire contacts",
+      "advantages": ["Simple", "Reliable", "Universal"],
+      "limitations": ["Limited data", "No detailed status"]
+    },
+    "voltage_free_relays": {
+      "description": "Form-C relay contacts for status",
+      "used_for": ["Alarm", "Trouble", "Supervisory"],
+      "wiring": "2-wire per signal",
+      "advantages": ["Simple integration", "Works with any BMS"],
+      "limitations": ["Binary only"]
+    },
+    "protocol_gateway": {
+      "description": "Converts fire alarm protocol to BMS protocol",
+      "used_for": ["Detailed status", "Device-level info", "Event logs"],
+      "examples": ["BACnet Gateway", "Modbus Gateway"],
+      "advantages": ["Rich data", "Bidirectional"],
+      "limitations": ["Complex setup", "Cost"]
+    },
+    "api_integration": {
+      "description": "Software-based integration via API",
+      "used_for": ["Cloud monitoring", "Mobile apps", "Analytics"],
+      "methods": ["REST API", "MQTT", "Webhooks"],
+      "advantages": ["Real-time data", "Flexible"],
+      "limitations": ["Network dependent", "Security concerns"]
+    }
+  },
+  "fire_alarm_to_bms_signals": {
+    "digital_inputs_to_bms": [
+      {
+        "signal": "FIRE_ALARM",
+        "priority": "CRITICAL",
+        "description": "Any fire alarm condition",
+        "bacnet_object": "BI-1",
+        "action": "Trigger building emergency response"
+      },
+      {
+        "signal": "FIRE_ZONE_ALARM",
+        "priority": "CRITICAL",
+        "description": "Specific zone in alarm",
+        "bacnet_object": "BI-1 to BI-N",
+        "action": "Show zone on BMS, trigger zone-specific response"
+      },
+      {
+        "signal": "SUPERVISORY",
+        "priority": "HIGH",
+        "description": "Sprinkler valve tamper, low pressure",
+        "bacnet_object": "BI",
+        "action": "Notify maintenance"
+      },
+      {
+        "signal": "TROUBLE",
+        "priority": "MEDIUM",
+        "description": "System fault or wiring issue",
+        "bacnet_object": "BI",
+        "action": "Generate maintenance ticket"
+      },
+      {
+        "signal": "DETECTOR_TROUBLE",
+        "priority": "MEDIUM",
+        "description": "Dirty detector, communication loss",
+        "bacnet_object": "BI",
+        "action": "Schedule cleaning/maintenance"
+      },
+      {
+        "signal": "AC_POWER_FAILURE",
+        "priority": "HIGH",
+        "description": "AC power lost, on battery",
+        "bacnet_object": "BI",
+        "action": "Monitor battery status"
+      },
+      {
+        "signal": "BATTERY_LOW",
+        "priority": "HIGH",
+        "description": "Battery voltage low",
+        "bacnet_object": "BI",
+        "action": "Immediate maintenance required"
+      }
+    ],
+    "analog_values_to_bms": [
+      {
+        "signal": "BATTERY_VOLTAGE",
+        "unit": "VDC",
+        "description": "Battery charge voltage",
+        "bacnet_object": "AV"
+      },
+      {
+        "signal": "BATTERY_CURRENT",
+        "unit": "Amps",
+        "description": "Charging/discharging current",
+        "bacnet_object": "AV"
+      },
+      {
+        "signal": "SYSTEM_AMPERAGE",
+        "unit": "Amps",
+        "description": "Total system current draw",
+        "bacnet_object": "AV"
+      }
+    ]
+  },
+  "bms_to_fire_alarm_signals": {
+    "digital_inputs_from_bms": [
+      {
+        "signal": "HVAC_SHUTDOWN_CONFIRM",
+        "description": "BMS confirms HVAC shut down",
+        "action": "Log confirmation"
+      },
+      {
+        "signal": "DAMPER_POSITION",
+        "description": "Smoke damper status (open/closed)",
+        "action": "Verify proper position"
+      },
+      {
+        "signal": "EMERGENCY_GEN_STATUS",
+        "description": "Generator running on emergency",
+        "action": "Monitor"
+      }
+    ]
+  },
+  "hvac_integration": {
+    "systems_controlled": [
+      {
+        "system": "AHU",
+        "full_name": "Air Handling Unit",
+        "actions": [
+          "Shutdown supply fan",
+          "Shutdown return fan",
+          "Close outside air dampers",
+          "Close smoke dampers"
+        ]
+      },
+      {
+        "system": "FCU",
+        "full_name": "Fan Coil Unit",
+        "actions": [
+          "Shutdown unit",
+          "Close damper"
+        ]
+      },
+      {
+        "system": "EXHAUST_FAN",
+        "full_name": "Exhaust Fan",
+        "actions": [
+          "Start on alarm",
+          "Stop on all-clear"
+        ]
+      },
+      {
+        "system": "SMOKE_DAMPER",
+        "full_name": "Smoke Damper",
+        "actions": [
+          "Close on alarm",
+          "Open on all-clear"
+        ]
+      }
+    ],
+    "sequence_of_operations": {
+      "trigger": "Fire alarm in zone",
+      "actions": [
+        "1. BMS receives fire alarm signal",
+        "2. BMS sends shutdown command to AHU in that zone",
+        "3. AHU shuts down supply and return fans",
+        "4. Smoke dampers close automatically",
+        "5. BMS confirms shutdown to fire panel",
+        "6. Exhaust fans start for smoke control"
+      ]
+    }
+  },
+  "elevator_integration": {
+    "systems": [
+      {
+        "elevator_type": "PASSENGER_ELEVATOR",
+        "actions": [
+          "Recall to lobby",
+          "Open doors at lobby",
+          "Disable hall calls"
+        ]
+      },
+      {
+        "elevator_type": "FIRE_SERVICE_ELEVATOR",
+        "actions": [
+          "Recall to fire service floor",
+          "Enable fire service mode",
+          "Allow fire department control"
+        ]
+      }
+    ],
+    "sequence": {
+      "trigger": "Fire alarm activated",
+      "actions": [
+        "1. Fire panel sends signal to elevator control",
+        "2. All passenger elevators recall to lobby",
+        "3. Fire service elevator goes to designated floor",
+        "4. Elevators remain on emergency power",
+        "5. Fire department can take control"
+      ]
+    }
+  },
+  "lighting_integration": {
+    "systems": [
+      {
+        "system": "EMERGENCY_LIGHTING",
+        "actions": [
+          "Turn on all emergency lights",
+          "Dim normal lighting",
+          "Illuminate exit paths"
+        ]
+      },
+      {
+        "system": "EXIT_SIGNAGE",
+        "actions": [
+          "Illuminate all exit signs",
+          "Activate direction arrows"
+        ]
+      }
+    ]
+  },
+  "access_control_integration": {
+    "systems": [
+      {
+        "system": "DOOR_LOCKS",
+        "actions": [
+          "Unlock all doors on alarm",
+          "Release electromagnetic locks",
+          "Disable card readers"
+        ]
+      },
+      {
+        "system": "TURNSTILES",
+        "actions": [
+          "Unlock all turnstiles",
+          "Free passage mode"
+        ]
+      }
+    ],
+    "important_note": "FAIL-SAFE design - doors unlock on fire alarm for evacuation"
+  },
+  "pump_systems": {
+    "systems": [
+      {
+        "system": "FIRE_PUMP",
+        "monitoring": [
+          "Pump running status",
+          "Pump failure",
+          "Main breaker status",
+          "Engine/driver status"
+        ]
+      },
+      {
+        "system": "JOCKEY_PUMP",
+        "monitoring": [
+          "Jockey pump activation",
+          "System pressure"
+        ]
+      }
+    ]
+  },
+  "generator_integration": {
+    "systems": [
+      {
+        "system": "EMERGENCY_GENERATOR",
+        "monitoring": [
+          "Generator running",
+          "Transfer switch position",
+          "Fuel level",
+          "Battery status"
+        ],
+        "actions": [
+          "Auto start on power failure",
+          "Transfer load to generator",
+          "Monitor runtime"
+        ]
+      }
+    ]
+  },
+  "integration_checklist": {
+    "required_signals": [
+      "Fire Alarm (general)",
+      "Fire Zone alarms",
+      "Supervisory signals",
+      "System trouble",
+      "AC power loss",
+      "Battery trouble"
+    ],
+    "recommended_signals": [
+      "Individual device alarms",
+      "Detector trouble",
+      "Ground fault",
+      "Communicator status"
+    ],
+    "hvac_signals": [
+      "AHU shutdown confirmation",
+      "Damper status",
+      "Fan status"
+    ],
+    "elevator_signals": [
+      "Recall status",
+      "Fire service mode",
+      "Car location"
+    ]
+  },
+  "manufacturer_integration_solutions": {
+    "notifier": {
+      "gateway": "NOTI-FIRE-NET",
+      "protocols": ["BACnet", "Modbus"],
+      "features": ["Full event monitoring", "Device status"]
+    },
+    "simplex": {
+      "gateway": "ES Net",
+      "protocols": ["BACnet", "Modbus"],
+      "features": ["Network integration"]
+    },
+    "siemens": {
+      "gateway": "Cerberus Connect",
+      "protocols": ["BACnet", "OPC"],
+      "features": ["Enterprise integration"]
+    }
+  },
+  "troubleshooting": {
+    "common_issues": [
+      {
+        "issue": "BMS not receiving fire alarm signals",
+        "cause": "Gateway not configured, wiring issue",
+        "solution": "Check gateway configuration, test wiring"
+      },
+      {
+        "issue": "Intermittent communication",
+        "cause": "Network issue, protocol mismatch",
+        "solution": "Check network, verify protocol settings"
+      },
+      {
+        "issue": "HVAC not shutting down",
+        "cause": "Control module failure, wiring",
+        "solution": "Test control module, check wiring"
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-05-23T22:06:48.733949",
+  "project_name": "Test",
+  "source_dxf": "",
+  "version": "FireAI V5.1.2",
+  "status": "APPROVED",
+  "rooms": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "errored": 0
+  },
+  "detectors": {
+    "calculated": 2
+  },
+  "safety": {
+    "method": "Exact Shapely area-based coverage verification",
+    "threshold": "99.9% area coverage required (NFPA 72)",
+    "note": "No arbitrary spare detector margin \u2014 coverage is mathematically verified"
+  },
+  "details": [
+    {
+      "room_id": "R2",
+      "status": "PASS",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "radius_m": 5.74,
+      "warnings": [],
+      "errors": []
+    }
+  ],
+  "disclaimer": "This report is produced by FireAI V5.1.0. It MUST be reviewed by a licensed fire protection engineer. All calculations reference NFPA 72 (2022 Edition)."
+}

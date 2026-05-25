@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Installation Details Library Index",
+    "validation_status": "VERIFIED"
+  },
+  "library_structure": {
+    "autocad": {
+      "conduit": "conduit-mounting-details.json",
+      "detectors": "detector-mounting-details.json",
+      "panels": "panel-installation-details.json",
+      "modules": "modules-wiring-details.json"
+    },
+    "revit": "installation-families.json"
+  },
+  "summary": {
+    "autocad_details": 25,
+    "revit_families": 16,
+    "categories": [
+      "Conduit and Mounting",
+      "Detector Installation",
+      "Panel Installation",
+      "Module and Wiring",
+      "Cable Routing",
+      "Backboxes",
+      "Grounding",
+      "Penetrations"
+    ]
+  }
+}

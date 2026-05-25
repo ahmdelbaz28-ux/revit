@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": [" manufacturer catalogs", "UL listings"],
+    "last_updated": "2026-05-09"
+  },
+  "manufacturer": {
+    "name": "Bosch Security Systems",
+    "brand_names": ["Bosch", "DSC"],
+    "headquarters": "Pennsylvania, USA",
+    "website": "www.boschsecurity.com",
+    "ul_listings": "UL, FM"
+  },
+  "control_panels": [
+    {
+      "model": "FPA-5000",
+      "type": "ADDRESSABLE",
+      "series": "Advanced",
+      "points maximum": 512,
+      "SLC": 2,
+      "notification circuits": 4,
+      "network capable": true,
+      "operating temp": "0 to 50 C",
+      "listings": ["UL", "FM"],
+      "price_range_usd": "15000-25000"
+    },
+    {
+      "model": "FPA-1000",
+      "type": "CONVENTIONAL",
+      "zones": 10,
+      "notification circuits": 4,
+      "price_range_usd": "3000-6000"
+    }
+  ],
+  "detectors": [
+    {
+      "model": "FAP-525",
+      "type": "PHOTOELECTRIC_SMOKE",
+      "addressable": true,
+      "price_usd": 42
+    },
+    {
+      "model": "FAP-520",
+      "type": "HEAT_ROR",
+      "addressable": true,
+      "price_usd": 35
+    }
+  ],
+  "technical_support": {
+    "phone": "1-800-289-0096",
+    "website": "www.bosch.us"
+  }
+}

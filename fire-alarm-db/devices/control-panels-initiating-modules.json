@@ -1,0 +1,321 @@
+{
+  "meta": {
+    "title": "Initiating Devices and Control Panels — Technical Reference",
+    "description": "Manual call points, interface modules, relay modules, and control panel specifications",
+    "standards_referenced": ["NFPA 72", "BS 5839-1", "EN 54-2", "EN 54-11", "EN 54-17", "EN 54-18"],
+    "last_reviewed": "2026-05-09"
+  },
+
+  "manual_initiating_devices": [
+    {
+      "id": "pull-station-single-action",
+      "type": "Single-Action Pull Station",
+      "description": "One pull motion to activate — no cover or latch",
+      "standards": "UL 38, EN 54-11",
+      "activation_force": "≤ 15 lbs (66N)",
+      "mounting_height": {
+        "nfpa72": "3.5 ft to 4.5 ft (1.07m to 1.37m) — to operable part",
+        "bs5839": "1.2m to 1.4m to operable part",
+        "notes": "NFPA and BS heights differ — use local standard"
+      },
+      "reset_method": "Key reset (resettable)",
+      "contacts": "Normally open (NO) dry contact — closes on activation",
+      "current_draw_mA": 1 to 3 (conventional), 0.5 to 1 (addressable),
+      "color": "Red housing",
+      "status_indicator": "LED indicator (some models)",
+      "notes": "Most common type in North America"
+    },
+    {
+      "id": "pull-station-dual-action",
+      "type": "Dual-Action Pull Station",
+      "description": "Requires two actions to activate (lift cover + pull lever) — prevents accidental activation",
+      "activation": "Lift protective cover, then pull handle downward",
+      "standards": "UL 38",
+      "use": "Areas where accidental activation is likely (schools, public areas, stadiums)",
+      "notes": "Required in some jurisdictions for specific occupancies"
+    },
+    {
+      "id": "call-point-break-glass",
+      "type": "Break-Glass Call Point (European Style)",
+      "description": "Smash glass element to activate — traditional European design",
+      "standards": "EN 54-11",
+      "activation_force": "≤ 15N on frangible element",
+      "mounting_height": "1.2m to 1.4m (BS 5839)",
+      "reset_method": "Replace glass element",
+      "notes": "Being replaced by resettable (plastic) elements in modern installations. EN 54-11 now prefers resettable elements.",
+      "status": "LEGACY — being phased out in favor of resettable type"
+    },
+    {
+      "id": "call-point-resettable",
+      "type": "Resettable Call Point (European Style)",
+      "description": "Push or poke element that resets without replacement — modern European standard",
+      "standards": "EN 54-11",
+      "activation_force": "≤ 15N",
+      "reset_method": "Special key tool resets element (no parts to replace)",
+      "notes": "Preferred modern type — lower maintenance cost, no consumable parts",
+      "status": "CURRENT STANDARD"
+    }
+  ],
+
+  "interface_modules": [
+    {
+      "id": "module-monitor-input",
+      "type": "Monitor Input Module (One-Shot / Two-Wire)",
+      "description": "Monitors a normally-open (NO) or normally-closed (NC) dry contact device",
+      "use_for": ["Sprinkler flow switches", "Sprinkler tamper valves", "Door contacts", "HVAC status", "Fire pump status", "Kitchen hood suppression"],
+      "connections": {
+        "input": "2 wires to dry contact device + 2 wires to SLC (addressable) or IDC (conventional)",
+        "type": "NO or NC (configurable, usually DIP switch)"
+      },
+      "current_draw_mA": 1 to 3,
+      "addressing": "Programmable address (addressable systems)",
+      "led_indicator": "LED shows device status (normal/alarm/trouble)",
+      "notes": "Most commonly used module type"
+    },
+    {
+      "id": "module-control-relay",
+      "type": "Control Relay Module (Output Module)",
+      "description": "Provides a relay output to control an external device",
+      "use_for": ["Elevator recall", "Door release (magnetic holders)", "HVAC shutdown", "Damper closure", "Gas valve shutdown", "Stairwell pressurization", "Access control release"],
+      "relay_specs": {
+        "contacts": "Normally open (NO) + Normally closed (NC) — form C",
+        "rating": "Typically 2A at 30VDC resistive",
+        "voltage": "Isolated relay — does not share common with system"
+      },
+      "current_draw_mA": 2 to 5,
+      "activation": "Programmed via panel software (on alarm, supervisory, or fault)",
+      "notes": "Critical for system integration — ensure relay ratings match controlled device"
+    },
+    {
+      "id": "module-control-monitor",
+      "type": "Dual Input/Output Module",
+      "description": "Combines monitor input and control relay in one module",
+      "use_for": ["Door release with status monitoring", "Damper control with position feedback", "Equipment shutdown with running-status feedback"],
+      "channels": "1 input + 1 output (typical)",
+      "notes": "Saves installation space and wiring"
+    },
+    {
+      "id": "module-isolator",
+      "type": "Short-Circuit Isolator Module",
+      "description": "Isolates a section of the SLC when a short-circuit is detected, allowing the rest of the loop to function",
+      "standards": "EN 54-17",
+      "isolation_time": "≤ 100 microseconds",
+      "automatic_reset": "Auto-resets when short circuit is removed",
+      "placement": "Between each floor or zone on the SLC loop, or every 20 devices",
+      "current_draw_mA": 0.5 to 1,
+      "notes": "Essential for reliability in addressable systems. Some detectors have built-in isolators."
+    },
+    {
+      "id": "module-relay-expansion",
+      "type": "Relay Expansion Board",
+      "description": "Provides multiple relay outputs from the control panel",
+      "relays": "4, 8, 16, or 24 relays per board",
+      "use_for": "Large buildings with many integration points",
+      "mounting": "Inside control panel cabinet"
+    },
+    {
+      "id": "module-signal-tracer",
+      "type": "Signal Tracer / Blanking Module",
+      "description": "Used during commissioning to identify devices on the SLC loop",
+      "function": "When plugged into a device, causes the panel to identify that specific address",
+      "notes": "Commissioning tool only — not permanent installation"
+    }
+  ],
+
+  "control_panels": [
+    {
+      "id": "panel-conventional",
+      "type": "Conventional Fire Alarm Panel",
+      "description": "Zoned panel — identifies alarm zone but not individual device",
+      "zone_capacity": "Typically 2 to 32 zones",
+      "zone_devices": "Maximum 20 detectors per zone (recommended for reliable supervision)",
+      "device_types": "2-wire or 4-wire smoke detectors, heat detectors, pull stations, bells/horns",
+      "identification": "Zone-level only (LED per zone or LCD with zone number)",
+      "pros": ["Lower cost", "Simple installation", "Easy to understand", "Less programming"],
+      "cons": ["No individual device identification", "Cannot pinpoint exact device in alarm", "No advanced diagnostics", "More wiring required (home-run per zone)"],
+      "typical_use": "Small buildings, simple layouts, schools, small offices, residential",
+      "typical_cost_range": "$500 to $3,000 (panel only)",
+      "brands": ["Simplex", "Edwards", "Notifier", "Honeywell", "Apollo", "Kiden", "Zeta"]
+    },
+    {
+      "id": "panel-addressable",
+      "type": "Addressable Fire Alarm Panel",
+      "description": "Communicates individually with every device on the SLC loop — identifies exact device in alarm",
+      "slc_loops": "Typically 1 to 10+ loops",
+      "devices_per_loop": "Typically 100 to 250 devices per loop (manufacturer dependent)",
+      "device_identification": "Individual device address — panel shows exact device type, location label, and status",
+      "protocols": [
+        {"protocol": "Proprietary", "examples": ["CLIP (Notifier)", "EST3 (Edwards)", "FlashScan (Simplex)", "Apollo Discovery", "Honeywell XLS"], "notes": "Panels only work with same-brand devices"},
+        {"protocol": "Open protocol", "examples": ["XP95 (Apollo)", "Argus (GST)", "Loops with EN 54-13 compliance"], "notes": "Allows mixing of compatible devices"}
+      ],
+      "features": [
+        "Individual device annunciation",
+        "Device-level fault isolation",
+        "Sensitivity adjustment per device",
+        "Drift compensation",
+        "Event logging (hundreds to thousands of events)",
+        "Multiple cause-and-effect programming",
+        "Network capability (multiple panels)",
+        "RS-232/485, Ethernet, USB interfaces"
+      ],
+      "pros": ["Exact device identification", "Fewer wires (loop instead of home-run)", "Advanced diagnostics", "Lower false alarm potential", "Easier maintenance and troubleshooting"],
+      "cons": ["Higher initial cost", "Requires skilled programming", "Proprietary protocols (vendor lock-in)", "More complex commissioning"],
+      "typical_use": "Medium to large buildings, hospitals, high-rise, industrial, shopping malls",
+      "typical_cost_range": "$2,000 to $20,000+ (panel only)",
+      "brands": ["Notifier (Honeywell)", "SimplexGrinnell (Carrier)", "Edwards (Carrier)", "Apollo (Honeywell)", "Kentec", "Advanced (Advanced Electronics)", "Hochiki", "Nohmi Bosai", "Kiden", "GST (Carrier)"]
+    },
+    {
+      "id": "panel-intelligent-analogue",
+      "type": "Intelligent/Analogue Addressable Panel",
+      "description": "Addressable panel where devices send actual sensor values (smoke level, temperature) — not just alarm/fault states",
+      "difference_from_addressable": "Standard addressable = device decides (on/off). Intelligent = panel decides based on algorithms and sensor data.",
+      "features": [
+        "Multi-criteria analysis (panel processes smoke + heat + CO data together)",
+        "Adjustable sensitivity thresholds",
+        "Automatic drift compensation",
+        "Pre-alarm / warning states",
+        "Trend analysis and data logging",
+        "Adaptive algorithms that learn normal environment",
+        "Maintenance alerts (dirty detector, approaching end-of-life)"
+      ],
+      "pros": ["Lowest false alarm rate", "Earliest detection (smoldering fire identification)", "Predictive maintenance", "Most flexible programming"],
+      "cons": ["Highest cost", "Most complex", "Requires experienced programmer", "Longer commissioning"],
+      "typical_use": ["Data centers", "Hospitals", "Museums", "Pharmaceutical facilities", "High-value commercial", "Government buildings", "Airports"],
+      "typical_cost_range": "$5,000 to $50,000+ (panel only)",
+      "brands": ["Notifier ONYX", "Simplex 4100ES", "Edwards EST3", "Hochiki (FIREscape)"]
+    },
+    {
+      "id": "panel-network",
+      "type": "Networked / Multi-Panel System",
+      "description": "Multiple fire alarm panels networked together to form a unified system across a campus or large building",
+      "network_types": [
+        {"type": "Proprietary network", "examples": "Notifier NOTI-FIRE-NET, Simplex 4100ES Network, Edwards EST Network"},
+        {"type": "Ethernet/IP network", "description": "Uses standard Ethernet networking — modern approach"},
+        {"type": "Fiber optic", "description": "Long-distance network backbone for campus installations"}
+      ],
+      "features": [
+        "Global cause-and-effect across all panels",
+        "Centralized monitoring and annunciation",
+        "Shared event database",
+        "Redundant communication paths",
+        "Cross-panel zone management"
+      ],
+      "typical_use": ["Hospital campuses", "University campuses", "Airport terminals", "Shopping mall complexes", "Industrial campuses", "Military bases"],
+      "notes": "Master panel (fire command center) can monitor and control all sub-panels in the network"
+    },
+    {
+      "id": "panel-voice-evacuation",
+      "type": "Voice Evacuation Panel / EVACS Panel",
+      "description": "Fire alarm panel with integrated voice evacuation amplifier and zone paging",
+      "amplifier_specs": {
+        "typical_channels": "1 to 8 amplifier channels",
+        "power_per_channel": "60W to 480W",
+        "speaker_impedance": "25V or 70V (US), 100V (international)",
+        "messages": "Pre-recorded (flash memory) + live microphone paging"
+      },
+      "required_in": ["High-rise > 75 ft (23m)", "Assembly > 1000 persons", "Malls", "Hospitals", "Underground buildings"],
+      "standards": "NFPA 72 Chapter 24, BS 5839-8",
+      "notes": "Often a separate panel that works in conjunction with the detection panel"
+    },
+    {
+      "id": "panel-wireless-base",
+      "type": "Wireless Fire Alarm Panel",
+      "description": "Panel with built-in wireless receiver for communication with wireless devices",
+      "wireless_devices_supported": "Typically 50 to 500 wireless devices",
+      "frequency_bands": [
+        {"band": "433 MHz", "region": "Europe / Middle East / Asia"},
+        {"band": "868 MHz", "region": "Europe"},
+        {"band": "315 MHz", "region": "Americas"}
+      ],
+      "signal_supervision": "Continuous monitoring of wireless signal strength",
+      "battery_monitoring": "Each wireless device battery level reported to panel",
+      "battery_life": "3 to 5 years typical for wireless detectors",
+      "standard": "EN 54-25 (wireless fire alarm components)",
+      "notes": "Must register with local radio frequency authority in some countries"
+    }
+  ],
+
+  "ancillary_equipment": [
+    {
+      "id": "annunciator-remote",
+      "type": "Remote Annunciator / Graphic Annunciator",
+      "description": "Remote display panel showing system status, zoned floor plan, and device status",
+      "display_types": [
+        {"type": "LED annunciator", "description": "LED matrix with zone labels — traditional"},
+        {"type": "LCD/graphic", "description": "Color LCD showing building floor plan with device status"},
+        {"type": "PC-based", "description": "Software running on dedicated PC with large monitor(s)"}
+      ],
+      "location": "Building entrance, fire command center, security desk, building management office",
+      "requirements": "Must show alarm, trouble, and supervisory status for all zones",
+      "reference": "NFPA 72 Section 17.4"
+    },
+    {
+      "id": " annunciator-graphic",
+      "type": "Graphic Annunciator with Building Floor Plan",
+      "description": "Custom engraved or printed building floor plan with LED indicators at each device/zone location",
+      "use": "Large facilities — provides instant visual identification of alarm location",
+      "notes": "Often required for healthcare, high-rise, and campus facilities"
+    },
+    {
+      "id": "door-holder-magnetic",
+      "type": "Electromagnetic Door Holder",
+      "description": "Holds fire-rated door open using electromagnetic force — releases on power removal",
+      "holding_force": "Typically 25 to 50 lbs (110 to 220N)",
+      "release": "Power removal (fail-safe) OR fire alarm signal",
+      "standard": "NFPA 80, BS 7273-4",
+      "current_draw": "50 to 200 mA at 24VDC per holder",
+      "notes": "Critical device — must be supervised by fire alarm panel"
+    },
+    {
+      "id": "end-of-line-resistor",
+      "type": "End-of-Line Resistor (EOL)",
+      "description": "Termination resistor for conventional circuits (Class B) — enables wire supervision",
+      "typical_values": {
+        "idc": "4.7 kΩ or 6.8 kΩ (manufacturer dependent)",
+        "nac": "4.7 kΩ or 6.8 kΩ",
+        "note": "ALWAYS use manufacturer-specified value — wrong value causes false troubles"
+      },
+      "location": "At the last device on the circuit (not in the panel)",
+      "reference": "NFPA 72 Section 10.6.7"
+    },
+    {
+      "id": "door-holder-ductor",
+      "type": "Duct Smoke Detector Housing",
+      "description": "Mounting housing for duct smoke detector with sampling tube",
+      "installation": "Mounted on side of duct with sampling tube extending into air stream",
+      "tube_length": "Must cross at least 75% of duct width",
+      "access_panel": "Removable cover for detector access and maintenance"
+    },
+    {
+      "id": "bender-conduit",
+      "type": "Fire Alarm Conduit and Fittings",
+      "description": "EMT, rigid, or flexible conduit for fire alarm wiring protection",
+      "notes": "Conduit requirements vary by code and installation type",
+      "reference": "NFPA 70 (NEC) Article 760"
+    }
+  ],
+
+  "nomenclature_map": {
+    "description": "Common abbreviations used in fire alarm systems",
+    "terms": {
+      "FACP": "Fire Alarm Control Panel",
+      "FACU": "Fire Alarm Control Unit (same as FACP)",
+      "IDC": "Initiating Device Circuit (conventional)",
+      "NAC": "Notification Appliance Circuit",
+      "SLC": "Signaling Line Circuit (addressable)",
+      "MCP": "Manual Call Point",
+      "MACP": "Manual Alarm Call Point",
+      "EOL": "End of Line",
+      "VAD": "Visual Alarm Device",
+      "VAS": "Voice Alarm System",
+      "EVACS": "Emergency Voice Alarm Communication System",
+      "ASD": "Aspirating Smoke Detector",
+      "CO": "Carbon Monoxide",
+      "ROR": "Rate-of-Rise (heat detector)",
+      "AHJ": "Authority Having Jurisdiction",
+      "FA": "Fire Alarm",
+      "SHC": "Short-Circuit Holder (isolator)",
+      "CIE": "Control and Indicating Equipment (EN 54 term for FACP)"
+    }
+  }
+}

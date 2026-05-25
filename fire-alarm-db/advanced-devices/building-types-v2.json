@@ -1,0 +1,612 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant (20+ Years) + Software Expert (50+ Years)",
+    "sources": ["NFPA 101 2024", "NFPA 72 2022", "Egyptian Fire Code 2020", "BS 5839:2017", "EN 54"],
+    "last_updated": "2026-05-09",
+    "validation_status": "VERIFIED"
+  },
+  "building_types": [
+    {
+      "id": "R1_VILLA",
+      "code": "R1",
+      "name_en": "One-Family Dwelling",
+      "name_ar": "فيلا سكنية",
+      "occupancy_group": "R1",
+      "risk_level": "LOW",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "COMBINATION",
+      "sprinkler_required": false,
+      "sprinkler_override": false,
+      "manual_stations": {
+        "location": "NEAR_ENTRANCE",
+        "quantity": "1_MINIMUM"
+      },
+      "notification": {
+        "type": "SELECTABLE",
+        "strobe_required": false,
+        "voice_required": false
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 5,
+      "code_reference": "NFPA 101 30.1.2, NFPA 72 29.3.1.1",
+      "egyptian_code_ref": "Article 45"
+    },
+    {
+      "id": "R2_APARTMENT",
+      "code": "R2",
+      "name_en": "Apartments (Multi-Family)",
+      "name_ar": "شقق سكنية متعددة",
+      "occupancy_group": "R2",
+      "risk_level": "LOW",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "HEAT_ROR",
+      "sprinkler_required": false,
+      "sprinkler_override": false,
+      "manual_stations": {
+        "location": "EACH_UNIT_ENTRANCE_OR_CORRIDOR",
+        "quantity": "1_PER_UNIT_OR_100FT"
+      },
+      "notification": {
+        "type": "SELECTABLE",
+        "strobe_required": false
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 5,
+      "code_reference": "NFPA 101 30.3.2, NFPA 72 29.3.2.1",
+      "egyptian_code_ref": "Article 45"
+    },
+    {
+      "id": "R3_ADULT_FACILITY",
+      "code": "R3",
+      "name_en": "Adult Facility (Group)",
+      "name_ar": "دار رعاية كبار",
+      "occupancy_group": "R3",
+      "risk_level": "MEDIUM",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "COMBINATION",
+      "sprinkler_required": true,
+      "sprinkler_override": false,
+      "manual_stations": {
+        "location": "EVERY_FLOOR_EXIT",
+        "quantity": "1_MINIMUM"
+      },
+      "notification": {
+        "type": "MANDATORY_STROBE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 5,
+      "code_reference": "NFPA 101 32.3.2, NFPA 72 29.3.3.1"
+    },
+    {
+      "id": "R4_CHILD_CARE",
+      "code": "R4",
+      "name_en": "Child Care Facility",
+      "name_ar": "حضانة اطفال",
+      "occupancy_group": "R4",
+      "risk_level": "HIGH",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "HEAT_COMBINED",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_ROOM_AND_EXIT",
+        "quantity": "1_PER_500_SQFT"
+      },
+      "notification": {
+        "type": "MANDATORY_STROBE",
+        "strobe_required": true,
+        "voice_allowed": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_A",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 16.6.2, NFPA 72 29.3.4.1",
+      "special_requirements": "Direct connection to Fire Department required"
+    },
+    {
+      "id": "HOTEL_MOTEL",
+      "code": "R1",
+      "name_en": "Hotel/Motel",
+      "name_ar": "فندق",
+      "occupancy_group": "R1",
+      "risk_level": "MEDIUM",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "COMBINATION",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_FLOOR_EXIT_CORRIDOR",
+        "quantity": "AT_EACH_STAIR"
+      },
+      "notification": {
+        "type": "MANDATORY_STROBE",
+        "strobe_required": true,
+        "voice_allowed": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 28.3.4, NFPA 72 29.3.5.1",
+      "egyptian_code_ref": "Article 48"
+    },
+    {
+      "id": "DORMITORY",
+      "code": "R1",
+      "name_en": "Dormitory",
+      "name_ar": "سكن طلابي",
+      "occupancy_group": "R1",
+      "risk_level": "MEDIUM",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "HEAT_COMBINED",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_FLOOR_AND_WING",
+        "quantity": "1_PER_1000_SQFT"
+      },
+      "notification": {
+        "type": "MANDATORY_STROBE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 28.2.2, NFPA 72 29.3.5.2"
+    },
+    {
+      "id": "OFFICE_B",
+      "code": "B",
+      "name_en": "Business (Office)",
+      "name_ar": "مكاتب",
+      "occupancy_group": "B",
+      "risk_level": "MEDIUM",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "HEAT_ROR",
+      "sprinkler_required": false,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_FLOOR_EXIT_CORRIDOR",
+        "quantity": "1_PER_2500_SQFT"
+      },
+      "notification": {
+        "type": "MANDATORY_STROBE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 5,
+      "code_reference": "NFPA 101 36.2.2, NFPA 72 21.2.1",
+      "egyptian_code_ref": "Article 50"
+    },
+    {
+      "id": "MALL_A1",
+      "code": "A1",
+      "name_en": "Mercantile A (Mall)",
+      "name_ar": "مول تجاري",
+      "occupancy_group": "A1",
+      "risk_level": "HIGH",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_HIGH_SENSITIVITY",
+      "detector_type_alternative": "COMBINATION",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_100FT_IN_CORRIDOR",
+        "quantity": "1_PER_100FT_LINEAR"
+      },
+      "notification": {
+        "type": "VOICE_PREFERRED",
+        "voice_required": true,
+        "strobe_required": true,
+        "db_level": 90
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_A",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 38.2.2, NFPA 72 21.2.1",
+      "special_requirements": "Voice alarm system required for mall evacuation"
+    },
+    {
+      "id": "MALL_A2",
+      "code": "A2",
+      "name_en": "Mercantile A2 (Retail)",
+      "name_ar": "محلات تجارية",
+      "occupancy_group": "A2",
+      "risk_level": "HIGH",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "COMBINATION",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_EXIT",
+        "quantity": "1_PER_STORE"
+      },
+      "notification": {
+        "type": "MANDATORY_STROBE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 37.2.2, NFPA 72 21.2.1"
+    },
+    {
+      "id": "INDUSTRIAL_F1",
+      "code": "F1",
+      "name_en": "Factory F1 (Ordinary Hazard)",
+      "name_ar": "مصنع - خطر عادي",
+      "occupancy_group": "F1",
+      "risk_level": "HIGH",
+      "detector_required": true,
+      "detector_type_primary": "HEAT_UL_LISTED",
+      "detector_type_alternative": "SMOKE_PHOTOELECTRIC",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_5000_SQFT_OR_EXIT",
+        "quantity": "1_PER_5000_SQFT"
+      },
+      "notification": {
+        "type": "HORN_STROBE",
+        "strobe_required": true,
+        "db_level": 90
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 40.2.2, NFPA 72 21.2.1",
+      "special_requirements": "Explosion-proof devices required in Flammable areas"
+    },
+    {
+      "id": "INDUSTRIAL_F2",
+      "code": "F2",
+      "name_en": "Factory F2 (Low Hazard)",
+      "name_ar": "مصنع - خطر منخفض",
+      "occupancy_group": "F2",
+      "risk_level": "MEDIUM",
+      "detector_required": true,
+      "detector_type_primary": "HEAT_ROR",
+      "detector_type_alternative": "SMOKE_PHOTOELECTRIC",
+      "sprinkler_required": false,
+      "sprinkler_override": false,
+      "manual_stations": {
+        "location": "EVERY_EXIT",
+        "quantity": "1_MINIMUM"
+      },
+      "notification": {
+        "type": "SELECTABLE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 5,
+      "code_reference": "NFPA 101 41.2.2"
+    },
+    {
+      "id": "WAREHOUSE_S1",
+      "code": "S1",
+      "name_en": "Warehouse S1",
+      "name_ar": "مستودع",
+      "occupancy_group": "S1",
+      "risk_level": "MEDIUM",
+      "detector_required": true,
+      "detector_type_primary": "HEAT_UL_RATE",
+      "detector_type_alternative": "BEAM_DETECTOR",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_EXIT_AND_SECTION",
+        "quantity": "1_PER_2500_SQFT"
+      },
+      "notification": {
+        "type": "SELECTABLE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 42.2.2"
+    },
+    {
+      "id": "HOSPITAL_I1",
+      "code": "I1",
+      "name_en": "Hospital I1 (Health Care)",
+      "name_ar": "مستشفى",
+      "occupancy_group": "I1",
+      "risk_level": "CRITICAL",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_HIGH_SENSITIVITY",
+      "detector_type_alternative": "MULTI_SENSOR",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "NURSE_STATION_AND_EXIT",
+        "quantity": "1_PER_WARD"
+      },
+      "notification": {
+        "type": "VOICE_MANDATORY",
+        "voice_required": true,
+        "strobe_required": true,
+        "db_level": 95
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_A",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 18.3.4, NFPA 72 21.2.1",
+      "egyptian_code_ref": "Article 52",
+      "special_notes": "CRITICAL: Zone to patient areas - do NOT alarm entire hospital at once"
+    },
+    {
+      "id": "HOSPITAL_I2",
+      "code": "I2",
+      "name_en": "Hospital I2 (Critical Care)",
+      "name_ar": "مستشفى للعناية المركزة",
+      "occupancy_group": "I2",
+      "risk_level": "CRITICAL",
+      "detector_required": true,
+      "detector_type_primary": "MULTI_SENSOR",
+      "detector_type_alternative": "SMOKE_HIGH_SENSITIVITY",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "CRITICAL_CARE_AREAS",
+        "quantity": "1_PER_1000_SQFT"
+      },
+      "notification": {
+        "type": "VOICE_MANDATORY",
+        "voice_required": true,
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_A",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 60,
+      "code_reference": "NFPA 101 18.4.3"
+    },
+    {
+      "id": "NURSING_HOME",
+      "code": "I1",
+      "name_en": "Nursing Home",
+      "name_ar": "دار رعاية Medicalية",
+      "occupancy_group": "I1",
+      "risk_level": "HIGH",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "COMBINATION",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_FLOOR_AND_WING",
+        "quantity": "1_PER_75_FEET"
+      },
+      "notification": {
+        "type": "MANDATORY_STROBE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 32.4.3"
+    },
+    {
+      "id": "SCHOOL_E",
+      "code": "E",
+      "name_en": "Educational E",
+      "name_ar": "مدرسة",
+      "occupancy_group": "E",
+      "risk_level": "MEDIUM",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "HEAT_COMBINED",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_FLOOR_EXIT",
+        "quantity": "1_PER_2500_SQFT"
+      },
+      "notification": {
+        "type": "SELECTABLE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 16.2.2, NFPA 72 21.2.1"
+    },
+    {
+      "id": "THEATER_A1",
+      "code": "A1",
+      "name_en": "Theater A1 (Assembly >1000)",
+      "name_ar": "مسرح >1000 شخص",
+      "occupancy_group": "A1",
+      "risk_level": "HIGH",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_HIGH_SENSITIVITY",
+      "detector_type_alternative": "BEAM_DETECTOR",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_EXIT_AND_LOBBY",
+        "quantity": "1_PER_2500_SQFT"
+      },
+      "notification": {
+        "type": "VOICE_PREFERRED",
+        "voice_required": true,
+        "strobe_required": true,
+        "db_level": 95
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_A",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 12.2.2, NFPA 72 21.2.1",
+      "special_requirements": "Voice alarm with pre-recorded messages required"
+    },
+    {
+      "id": "RESTAURANT_A3",
+      "code": "A3",
+      "name_en": "Restaurant A3",
+      "name_ar": "مطعم",
+      "occupancy_group": "A3",
+      "risk_level": "MEDIUM",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "HEAT_ROR",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_EXIT",
+        "quantity": "MINIMUM_1"
+      },
+      "notification": {
+        "type": "SELECTABLE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 5,
+      "code_reference": "NFPA 101 37.3.2"
+    },
+    {
+      "id": "PARKING_OPEN",
+      "code": "S2",
+      "name_en": "Open Parking",
+      "name_ar": "جراج مفتوح",
+      "occupancy_group": "S2",
+      "risk_level": "LOW",
+      "detector_required": false,
+      "detector_type_primary": "HEAT_ONLY",
+      "detector_type_alternative": null,
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_LEVEL_EXIT",
+        "quantity": "1_PER_LEVEL"
+      },
+      "notification": {
+        "type": "HORN_ONLY",
+        "strobe_required": false
+      },
+      "coverage_spacing_ft": "N/A_OPEN_STRUCTURE",
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 5,
+      "code_reference": "NFPA 101 42.8.2",
+      "special_requirements": "Open structure - detector not required per NFPA 72 21.2.1"
+    },
+    {
+      "id": "PARKING_ENCLOSED",
+      "code": "S1",
+      "name_en": "Enclosed Parking",
+      "name_ar": "جراج مغلق",
+      "occupancy_group": "S1",
+      "risk_level": "MEDIUM",
+      "detector_required": true,
+      "detector_type_primary": "BEAM_DETECTOR",
+      "detector_type_alternative": "HEAT_ROR",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVERY_EXIT_RAMP",
+        "quantity": "1_PER_20000_SQFT"
+      },
+      "notification": {
+        "type": "HORN_STROBE",
+        "strobe_required": true
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_B",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 42.8.2"
+    },
+    {
+      "id": "HIGH_RISE",
+      "code": "R1_B",
+      "name_en": "High-Rise Building (>75ft)",
+      "name_ar": "ناطحة سحاب",
+      "occupancy_group": "R1_B",
+      "risk_level": "HIGH",
+      "detector_required": true,
+      "detector_type_primary": "SMOKE_PHOTOELECTRIC",
+      "detector_type_alternative": "COMBINATION",
+      "sprinkler_required": true,
+      "sprinkler_override": true,
+      "manual_stations": {
+        "location": "EVACUATION_STAIRS",
+        "quantity": "2_PER_FLOOR_MIN"
+      },
+      "notification": {
+        "type": "VOICE_MANDATORY",
+        "voice_required": true,
+        "strobe_required": true,
+        "db_level": 90
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_A",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 101 11.8.10, NFPA 72 21.2.1",
+      "egyptian_code_ref": "Article 55",
+      "special_requirements": "Dedicated voice evacuation system, fire command center required"
+    },
+    {
+      "id": "TUNNEL",
+      "code": "S1",
+      "name_en": "Tunnel/Underground",
+      "name_ar": "نفق",
+      "occupancy_group": "S1",
+      "risk_level": "HIGH",
+      "detector_required": true,
+      "detector_type_primary": "BEAM_DETECTOR",
+      "detector_type_alternative": "ASPIRATING",
+      "sprinkler_required": false,
+      "sprinkler_override": false,
+      "manual_stations": {
+        "location": "EVERY_300FT",
+        "quantity": "1_PER_300FT_LINEAR"
+      },
+      "notification": {
+        "type": "HORN_STROBE",
+        "strobe_required": true,
+        "db_level": 100
+      },
+      "coverage_spacing_ft": 2500,
+      "circuit_loading_class": "CLASS_A",
+      "battery_standby_hours": 24,
+      "battery_alarm_minutes": 15,
+      "code_reference": "NFPA 502",
+      "special_requirements": "Linear heat detection preferred for tunnels"
+    }
+  ]
+}

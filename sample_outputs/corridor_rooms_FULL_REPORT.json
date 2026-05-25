@@ -1,0 +1,325 @@
+{
+  "report_metadata": {
+    "source_file": "test_data/hybrid/corridor_rooms.pdf",
+    "generated_utc": "2026-05-15T20:01:16.026657Z",
+    "status": "COMPLETE",
+    "requires_pe_review": true,
+    "design_complete": true,
+    "review_reason": null
+  },
+  "rooms": [
+    {
+      "name": "room_1",
+      "area_sqm": 24105.6,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "office",
+      "detector_type": "REVIEW_REQUIRED",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Large room (24105.6m² > 500.0m²) - MANUAL REVIEW REQUIRED",
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_2",
+      "area_sqm": 20088.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "lobby",
+      "detector_type": "REVIEW_REQUIRED",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Large room (20088.0m² > 500.0m²) - MANUAL REVIEW REQUIRED",
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_3",
+      "area_sqm": 9642.3,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "corridor",
+      "detector_type": "REVIEW_REQUIRED",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Large room (9642.3m² > 500.0m²) - MANUAL REVIEW REQUIRED",
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_4",
+      "area_sqm": 64.3,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 7,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_5",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "lobby",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_6",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "corridor",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_7",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_8",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "lobby",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_9",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "corridor",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_10",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_11",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "lobby",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_12",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "corridor",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_13",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_14",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "lobby",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_15",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "corridor",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_16",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_17",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "lobby",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_18",
+      "area_sqm": 36.0,
+      "occupancy_type": "corridor",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "corridor",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_19",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "office",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "is_flagged": false,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
+      ]
+    }
+  ],
+  "summary": {
+    "total_rooms": 19,
+    "unverified_rooms": 0,
+    "total_detectors": 47,
+    "compliant": true
+  }
+}

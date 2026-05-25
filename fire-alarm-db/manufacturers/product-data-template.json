@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "title": "Product Data Template — For Adding New Devices to Database",
+    "description": "Standardized template for entering any fire alarm device into the system database. Use this format to ensure consistency.",
+    "last_updated": "2026-05-09"
+  },
+
+  "_instructions": {
+    "how_to_use": "Copy this template for each new product. Fill in all applicable fields. Leave empty fields as null. Every device in the database must follow this schema."
+  },
+
+  "template": {
+    "device": {
+      "id": "UNIQUE-IDENTIFIER",
+      "manufacturer": "Brand Name",
+      "model": "Model Number",
+      "category": "detector | notification | initiating | module | panel | accessory",
+      "subcategory": "smoke-photoelectric | heat-fixed | horn-strobe | pull-station | monitor-module | etc.",
+      "technology": "photoelectric | ionization | beam | aspirating | multi-criteria | rate-of-rise | electronic-horn | xenon-strobe | etc.",
+
+      "certification": {
+        "en54": {
+          "certified": true,
+          "parts": ["EN 54-7"],
+          "class": "A2",
+          "certificate_number": "XXX-XXXXX",
+          "certificate_expiry": "2028-12-31"
+        },
+        "ul_listed": {
+          "listed": true,
+          "file_number": "XXXXXX",
+          "standard": "UL 268"
+        },
+        "other": ["VdS approved", "FM Global approved", "LPCB certified"]
+      },
+
+      "electrical": {
+        "voltage_range": "16-33VDC",
+        "nominal_voltage": "24VDC",
+        "standby_current_mA": 0.5,
+        "alarm_current_mA": 2.0,
+        "inrush_current_mA": null,
+        "max_wire_resistance_ohm": null,
+        "power_consumption_W": null
+      },
+
+      "addressable": {
+        "is_addressable": true,
+        "protocol": "Notifier N-IDC / Apollo Discovery / Hochiki ESP / etc.",
+        "address_range": {
+          "min": 1,
+          "max": 250
+        },
+        "auto_learn": false,
+        "drift_compensation": true,
+        "sensitivity_adjustable": true,
+        "sensitivity_levels": ["Low", "Medium", "High"],
+        "software_required": "Notifier ONYXWorks v4.x"
+      },
+
+      "detection_specs": {
+        "detection_type": "photoelectric | heat | flame | gas | multi-criteria | beam | aspirating",
+        "smoke_response": {
+          "sensitivity": "0.12-0.25 dB/m obscuration",
+          "en54_class": "A2",
+          "response_time_typical_s": 15,
+          "response_time_max_s": 45
+        },
+        "heat_response": {
+          "type": "rate-of-rise + fixed",
+          "fixed_temp_C": 57,
+          "fixed_temp_F": 135,
+          "rate_of Rise_threshold": "8.3 C/min",
+          "en54_class": "A1"
+        }
+      },
+
+      "coverage": {
+        "spacing_smooth_ceiling": {
+          "nfpa72_ft": 30,
+          "bs5839_m": 7.5,
+          "listed_spacing_ft": null
+        },
+        "max_wall_distance": {
+          "nfpa72_ft": 15,
+          "bs5839_m": 3.75
+        },
+        "max_ceiling_height": {
+          "nfpa72_ft": 30,
+          "bs5839_m": 10.5,
+          "notes": "Higher for EN54 Class A1/A2 detectors"
+        },
+        "corridor_spacing_bonus": null,
+        "notes": null
+      },
+
+      "notification_specs": {
+        "type": "horn | strobe | horn-strobe | speaker | speaker-strobe | bell | sounder",
+        "audible": {
+          "output_dBA_levels": [
+            {"setting": "Low", "dBA_at_1m": 87},
+            {"setting": "High", "dBA_at_1m": 95}
+          ],
+          "frequency_Hz": "500-3000",
+          "tone_patterns": ["Temporal Code 3", "Continuous", "March Time"]
+        },
+        "visual": {
+          "candela_rating": 95,
+          "candela_options": [15, 30, 75, 95, 110],
+          "flash_rate_Hz": 1,
+          "color": "White",
+          "coverage_radius_ft": 50,
+          "en54_23_class": null
+        },
+        "speaker": {
+          "power_taps_W": [0.25, 0.5, 1, 2],
+          "line_impedance": "25V / 70V",
+          "coverage_radius_ft": 15,
+          "intelligibility": "Per EN 54-24 / NFPA 72"
+        }
+      },
+
+      "physical": {
+        "dimensions_mm": {"width": 100, "height": 40, "depth": 50},
+        "dimensions_in": {"width": 3.9, "height": 1.6, "depth": 2.0},
+        "weight_g": 120,
+        "color": "White",
+        "ip_rating": "IP41",
+        "mounting": "ceiling | wall | surface | flush | duct",
+        "mounting_base": "Separate base required (model: XX-XXX)",
+        "backbox": "Standard UK/EU square or round backbox"
+      },
+
+      "environmental": {
+        "operating_temp_min_C": -10,
+        "operating_temp_max_C": 55,
+        "storage_temp_min_C": -40,
+        "storage_temp_max_C": 70,
+        "humidity_max_percent": 95,
+        "notes": "Not suitable for outdoor use"
+      },
+
+      "wiring": {
+        "terminals": "2 (SLC in/out for addressable) or 4 (SLC + aux for addressable)",
+        "wire_gauge_min": "18 AWG (0.82 mm²)",
+        "wire_type": "FPL, FPLP, FPLR per NEC 760",
+        "conduit_required": false,
+        "loop_topol:ogy": "Ring (Class A) or Radial (Class B)"
+      },
+
+      "compliance": {
+        "nfpa72_compliant": true,
+        "bs5839_compliant": true,
+        "egyptian_code_compliant": true,
+        "local_civil_defense_approved": true,
+        "project_specific_notes": null
+      },
+
+      "pricing": {
+        "unit_price_usd": null,
+        "unit_price_egp": null,
+        "base_required": true,
+        "base_model": "XX-XXX",
+        "notes": "Pricing to be updated per project quotation"
+      }
+    }
+  },
+
+  "example_filled": {
+    "device": {
+      "id": "NTF-SC501-A2",
+      "manufacturer": "Notifier (Honeywell)",
+      "model": "SCP-501 (Acclima Photoelectric)",
+      "category": "detector",
+      "subcategory": "smoke-photoelectric",
+      "technology": "photoelectric",
+      "certification": {
+        "en54": {"certified": true, "parts": ["EN 54-7"], "class": "A2"},
+        "ul_listed": {"listed": true, "standard": "UL 268"}
+      },
+      "electrical": {
+        "voltage_range": "15.5-33VDC",
+        "nominal_voltage": "24VDC",
+        "standby_current_mA": 0.45,
+        "alarm_current_mA": 2.1
+      },
+      "addressable": {
+        "is_addressable": true,
+        "protocol": "Notifier FlashScan",
+        "address_range": {"min": 1, "max": 159}
+      },
+      "coverage": {
+        "spacing_smooth_ceiling": {"nfpa72_ft": 30, "bs5839_m": 7.5},
+        "max_ceiling_height": {"nfpa72_ft": 30, "bs5839_m": 10.5}
+      },
+      "physical": {
+        "dimensions_mm": {"width": 106, "height": 52, "depth": 62},
+        "color": "White",
+        "ip_rating": "IP41",
+        "mounting": "ceiling or wall"
+      }
+    }
+  }
+}

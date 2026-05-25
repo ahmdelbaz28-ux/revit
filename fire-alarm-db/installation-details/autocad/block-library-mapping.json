@@ -1,0 +1,215 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "purpose": "AutoCAD Block Library Index with File References",
+    "status": "TEMPLATE_ONLY - Needs DWG files"
+  },
+  "block_mapping": {
+    "detectors": [
+      {
+        "detail_id": "DET-SMOKE-CL-001",
+        "block_name": "FA-DET-SMOKE-CEILING",
+        "device_type": "Smoke Detector",
+        "layer": "F-DEV-SMOKE",
+        "insertion_point": "Center",
+        "attributes": ["DeviceID", "Address", "Zone", "Room"],
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "DET-SMOKE-DUCT-001",
+        "block_name": "FA-DET-SMOKE-DUCT",
+        "device_type": "Duct Smoke Detector",
+        "layer": "F-DEV-SMOKE",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "DET-BEAM-001",
+        "block_name": "FA-DET-BEAM",
+        "device_type": "Beam Detector",
+        "layer": "F-DEV-SMOKE",
+        "insertion_point": "Emitter Position",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "DET-HEAT-FIX-001",
+        "block_name": "FA-DET-HEAT-FIXED",
+        "device_type": "Heat Detector (Fixed)",
+        "layer": "F-DEV-HEAT",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "DET-HEAT-ROR-001",
+        "block_name": "FA-DET-HEAT-ROR",
+        "device_type": "Heat Detector (ROR)",
+        "layer": "F-DEV-HEAT",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "DET-MULTI-001",
+        "block_name": "FA-DET-MULTI",
+        "device_type": "Multi-Sensor Detector",
+        "layer": "F-DEV-MULTI",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      }
+    ],
+    "manual_stations": [
+      {
+        "detail_id": "MANUAL-CP-001",
+        "block_name": "FA-MAN-STATION",
+        "device_type": "Manual Pull Station",
+        "layer": "F-DEV-MANUAL",
+        "insertion_point": "Bottom Left",
+        "attributes": ["DeviceID", "Address", "Zone"],
+        "mounting_height": "48 inches",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "MANUAL-CP-WP-001",
+        "block_name": "FA-MAN-STATION-WP",
+        "device_type": "Manual Pull (Weatherproof)",
+        "layer": "F-DEV-MANUAL",
+        "insertion_point": "Bottom Left",
+        "mounting_height": "48 inches",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      }
+    ],
+    "notification": [
+      {
+        "detail_id": "NOT-STROBE-001",
+        "block_name": "FA-NOT-STROBE-15",
+        "device_type": "Strobe 15cd",
+        "layer": "F-DEV-NOTIFY",
+        "insertion_point": "Center",
+        "attributes": ["Candela", "Location"],
+        "mounting_height": "80 inches",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "NOT-HORN-001",
+        "block_name": "FA-NOT-HORN",
+        "device_type": "Horn",
+        "layer": "F-DEV-NOTIFY",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "NOT-HS-001",
+        "block_name": "FA-NOT-HORN-STROBE",
+        "device_type": "Horn/Strobe Combo",
+        "layer": "F-DEV-NOTIFY",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "NOT-SPK-001",
+        "block_name": "FA-NOT-SPEAKER",
+        "device_type": "Speaker",
+        "layer": "F-DEV-NOTIFY",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "NOT-SPK-STB-001",
+        "block_name": "FA-NOT-SPK-STROBE",
+        "device_type": "Speaker/Strobe",
+        "layer": "F-DEV-NOTIFY",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      }
+    ],
+    "panels": [
+      {
+        "detail_id": "PANEL-MAIN-001",
+        "block_name": "FA-PANEL-MAIN",
+        "device_type": "Fire Alarm Control Panel",
+        "layer": "F-PANEL",
+        "insertion_point": "Bottom Left",
+        "mounting_height": "36 inches (bottom)",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "PANEL-ANN-001",
+        "block_name": "FA-PANEL-ANN",
+        "device_type": "Remote Annunciator",
+        "layer": "F-PANEL",
+        "insertion_point": "Bottom Left",
+        "mounting_height": "48 inches",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      }
+    ],
+    "modules": [
+      {
+        "detail_id": "MOD-MON-001",
+        "block_name": "FA-MOD-MONITOR",
+        "device_type": "Monitor Module",
+        "layer": "F-MOD",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "MOD-CTL-001",
+        "block_name": "FA-MOD-CONTROL",
+        "device_type": "Control Module",
+        "layer": "F-MOD",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "detail_id": "MOD-ISO-001",
+        "block_name": "FA-MOD-ISOLATOR",
+        "device_type": "Isolator Module",
+        "layer": "F-MOD",
+        "insertion_point": "Center",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      }
+    ],
+    "symbols": [
+      {
+        "symbol_id": "SYM-EOL",
+        "symbol_name": "FA-SYM-EOL",
+        "description": "End of Line Resistor",
+        "layer": "F-SYM",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      },
+      {
+        "symbol_id": "SYM-FACPWR",
+        "symbol_name": "FA-SYM-POWER",
+        "description": "Power Source Symbol",
+        "layer": "F-SYM",
+        "dwg_file_needed": true,
+        "status": "TEMPLATE"
+      }
+    ]
+  },
+  "implementation_guide": {
+    "step_1": "Create DWG block file for each device type",
+    "step_2": "Add attributes for dynamic data (Device ID, Address, Zone)",
+    "step_3": "Store block files in /blocks/ folder",
+    "step_4": "Update block_name with actual file path",
+    "step_5": "Write insertion code to query database and insert blocks"
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["Egyptian Fire Protection Code 2020", "Ministry of Interior", "Egyptian Civil Defense"],
+    "specialization": "EGYPT_FIRE_PROTECTION_REQUIREMENTS",
+    "validation_status": "VERIFIED"
+  },
+  "general_requirements": {
+    "authority": "Civil Defense Department",
+    "ministry": "Ministry of Interior",
+    "governorate_offices": "All Egyptian Governorates",
+    "approval_process": [
+      "DESIGN_SUBMITTAL_TO_CIVIL_DEFENSE",
+      "TECHNICAL_REVIEW",
+      "APPROVAL_OR_REJECTION",
+      "INSTALLATION_SUPERVISION",
+      "FINAL_INSPECTION",
+      "CERTIFICATE_ISSUANCE"
+    ]
+  },
+  "fire_alarm_requirements": {
+    "buildings": [
+      {
+        "type": "Commercial buildings",
+        "threshold": "Ground + 3 floors OR 1000 sqm",
+        "system": "ADDRESSABLE_RECOMMENDED"
+      },
+      {
+        "type": "Residential buildings",
+        "threshold": "Ground + 7 floors",
+        "system": "ADDRESSABLE_REQUIRED"
+      },
+      {
+        "type": "Hotels",
+        "threshold": "All sizes",
+        "system": "ADDRESSABLE_WITH_MONITORING"
+      },
+      {
+        "type": "Hospitals",
+        "threshold": "All sizes",
+        "system": "ADDRESSABLE_WITH_VOICE"
+      },
+      {
+        "type": "Schools",
+        "threshold": "All sizes",
+        "system": "REQUIRED"
+      },
+      {
+        "type": "Malls",
+        "threshold": "All sizes",
+        "system": "ADDRESSABLE_WITH_VOICE"
+      }
+    ],
+    "monitoring": {
+      "central_station": "RECOMMENDED",
+      "direct_to_civil_defense": "REQUIRED_FOR_LARGE_BUILDINGS",
+      "response_time": "ASAP"
+    }
+  },
+  "equipment_requirements": {
+    "certifications": [
+      "UL",
+      "FM",
+      "Egyptian Standard (E.S.)"
+    ],
+    "local_approval": "MINISTRY_OF_INTERIOR_APPROVAL",
+    "brands_distributed_egypt": [
+      "Notifier (Honeywell)",
+      "Simplex (JCI)",
+      "Siemens",
+      "Bosch",
+      "Hochiki"
+    ]
+  },
+  "documentation_required": [
+    "Layout drawings (AutoCAD)",
+    "Riser diagram",
+    "Zone matrix",
+    "Sequence of operations",
+    "Equipment schedule",
+    "Battery calculations",
+    "Voltage drop calculations",
+    "Manufacturer data"
+  ],
+  "inspection_requirements": {
+    "initial": "AFTER_INSTALLATION",
+    "final": "BEFORE_HANDOVER",
+    "frequency": "ANNUAL_CHECK",
+    "certificate_validity": "1_YEAR"
+  },
+  "egyptian_specific": {
+    "language": "Arabic documents preferred",
+    "currency": "Egyptian Pounds (EGP)",
+    "power_frequency": "50 Hz",
+    "standard_voltage": "220V"
+  },
+  "approved_companies": [
+    "Al-Mashreq Trading",
+    "Egyptian Fire Systems",
+    "MEP Gulf",
+    "Al-Ahram Engineering"
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Manufacturer Catalog Reference - Equipment Selection Guide",
+    "last_updated": "2026-05-09"
+  },
+  "summary": {
+    "total_brands": 5,
+    "catalog_files": [
+      "notifier.json - Honeywell NOTIFIER (Most complete)",
+      "simplex.json - Johnson Controls Simplex",
+      "siemens.json - Siemens Cerberus",
+      "bosch.json - Bosch Security"
+    ]
+  },
+  "brand_comparison": {
+    "addressable_panels": [
+      {
+        "brand": "Honeywell NOTIFIER",
+        "models": ["NFS-320", "NFS2-640E", "NFS2-3030D", "AM2020", "AFP-1010"],
+        "points_range": "318 to 3180",
+        "protocol": "FlashScan / CLIP",
+        "availability_mena": "HIGH - Best in Egypt",
+        "support": "Excellent"
+      },
+      {
+        "brand": "Simplex (Johnson Controls)",
+        "models": ["4010ES", "4017ES", "4100ES", "4100ESi"],
+        "points_range": "250 to 4000",
+        "protocol": "IDNet / TrueAlarm",
+        "availability_mena": "MEDIUM",
+        "support": "Good"
+      },
+      {
+        "brand": "Siemens",
+        "models": ["FC2070A", "FC2020A", "FC4040A", "FC7260A"],
+        "points_range": "127 to 2500",
+        "protocol": "C-BUS / AlgoTecc",
+        "availability_mena": "MEDIUM",
+        "support": "Good"
+      },
+      {
+        "brand": "Bosch",
+        "models": ["FPA-5000"],
+        "points_range": "512",
+        "protocol": "Proprietary",
+        "availability_mena": "LOW",
+        "support": "Limited"
+      }
+    ],
+    "detector_bridands": [
+      {
+        "brand": "Honeywell NOTIFIER",
+        "recommended": "FSP-851 (Photo)", "FCO-851 (Multi)",
+        "sensitivity_range": "0.53 to 3.77 %OBSC/FT",
+        "price_usd": "45 to 95"
+      },
+      {
+        "brand": "Simplex TrueAlarm",
+        "recommended": "4098-96", "4098-981 (Multi)",
+        "sensitivity_range": "0.73 to 2.89 %OBSC/FT",
+        "price_usd": "45 to 78"
+      },
+      {
+        "brand": "Siemens",
+        "recommended": "OP820", "OOHC820 (Multi)",
+        "sensitivity_range": "0.7 to 3.5 %OBSC/FT",
+        "price_usd": "48 to 85"
+      }
+    ]
+  },
+  "commonly_used_combinations_egypt": {
+    "small_office_2500sqft": {
+      "panel": {
+        "recommended": "Notifier SFP-2402",
+        "alt": "Simplex 4006EC"
+      },
+      "detectors": "6-8 conventional smoke",
+      "manual": "2 pull stations",
+      "notification": "4 strobes + 2 horns",
+      "estimated_cost_egp": "25000-35000"
+    },
+    "mid_office_10000sqft": {
+      "panel": {
+        "recommended": "Notifier NFS-320",
+        "alt": "Siemens FC2020A"
+      },
+      "detectors": "25-30 addressable",
+      "manual": "4 addressable",
+      "notification": "6 horn-strobes",
+      "wire": "FPLR 14/4 SLC + 14/2 NAC",
+      "estimated_cost_egp": "85000-120000"
+    },
+    "hotel_floor": {
+      "panel": {
+        "recommended": "Notifier NFS-320",
+        "alt": "Simplex 4017ES"
+      },
+      "detectors": "1 per room + corridor",
+      "manual": "1 per stairwell",
+      "notification": "Corridor horns, room strobes",
+      "voice": "Recommended for high-rise",
+      "estimated_cost_egp": "100000-150000 per floor"
+    },
+    "hospital_wing": {
+      "panel": {
+        "recommended": "Notifier NFS2-640E",
+        "alt": "Simplex 4100ES"
+      },
+      "detectors": "FSP-851 + FCO-851 critical",
+      "manual": "Corridor exits",
+      "notification": "Low dB option (patient areas)",
+      "voice_zones": "Per floor essential",
+      "battery": "24hr standby required",
+      "estimated_cost_egp": "250000-400000"
+    },
+    "mall_store": {
+      "panel": {
+        "recommended": "Notifier NFS2-640E",
+        "alt": "Siemens FC4040A"
+      },
+      "detectors": "Based on area calculation",
+      "manual": "Every exit",
+      "notification": "Strobes + speakers",
+      "voice": "Recommended for mall common areas",
+      "estimated_cost_egp": "150000-250000"
+    },
+    "high_rise_20_floors": {
+      "panel": {
+        "recommended": "Notifier NFS2-3030D or AM2020",
+        "alt": "Simplex 4100ES or 4007ES Voice"
+      },
+      "detectors": "Addressable per floor",
+      "manual": "2 per floor min",
+      "notification": "Voice system essential",
+      "fire_command_center": "Required",
+      "estimated_cost_egp": "2500000-4000000"
+    }
+  },
+  "equipment_selection_guide_by_application": {
+    "small_retail": {
+      "panel": "Notifier SFP-2402 or Simplex 4006EC",
+      "system_type": "Conventional",
+      "reason": "Cost effective for small area"
+    },
+    "office_building": {
+      "panel": "Notifier NFS-320 or Siemens FC2020A",
+      "system_type": "Addressable",
+      "reason": "Easy identification, zoning"
+    },
+    "hotel": {
+      "panel": "Notifier NFS-320/NFS2-640E or Simplex 4017ES",
+      "system_type": "Addressable with voice",
+      "reason": "Zone by floor, guest comfort"
+    },
+    "hospital": {
+      "panel": "Notifier NFS2-640E or Simplex 4100ES",
+      "system_type": "Addressable with voice",
+      "reason": "Critical care zoning, reliability"
+    },
+    "mall": {
+      "panel": "Notifier NFS2-3030D or AM2020",
+      "system_type": "Addressable with voice",
+      "reason": "Large area, evacuation capability"
+    },
+    "high_rise": {
+      "panel": "Notifier NFS2-3030D + AM2020 or Simplex 4100ES + 4007ES",
+      "system_type": "Networked with voice",
+      "reason": "Staged evacuation, fire command center"
+    },
+    "industrial_warehouse": {
+      "panel": "Notifier NFS-320 or Siemens FC4040A",
+      "system_type": "Addressable",
+      "reason": "Heat detectors, beam detectors option"
+    }
+  },
+  "technical_specifications_comparison": {
+    "panel_specifications": [
+      {
+        "specification": "Operating Voltage",
+        "Notifier": "120/240 VAC",
+        "Simplex": "120/240 VAC",
+        "Siemens": "230 VAC",
+        "Note": "All accept 120 and 230V for MENA region"
+      },
+      {
+        "specification": "Battery Capacity Max",
+        "Notifier": "55-110 AH",
+        "Simplex": "55-150 AH",
+        "Siemens": "65-150 AH"
+      },
+      {
+        "specification": "Operating Temp",
+        "Notifier": "32-120F",
+        "Simplex": "32-120F",
+        "Siemens": "-10 to +55C"
+      }
+    ],
+    "detector_specifications": [
+      {
+        "specification": "Smoke Sensitivity Range",
+        "Notifier": "0.53-3.77 %OBSC/FT",
+        "Simplex": "0.73-2.89 %OBSC/FT",
+        "Siemens": "0.7-3.5 %OBSC/FT",
+        "Note": "Notifier highest sensitivity range"
+      },
+      {
+        "specification": "Standby Current",
+        "Notifier": "0.3 mA",
+        "Simplex": "0.25 mA",
+        "Siemens": "0.35 mA"
+      },
+      {
+        "specification": "Alarm Current",
+        "Notifier": "0.5 mA",
+        "Simplex": "0.5 mA",
+        "Siemens": "0.5 mA"
+      }
+    ]
+  },
+  "approval_certification_notes": {
+    "gcc_countries": {
+      "required": ["UL", "FM", "Civil Defense approval"],
+      "notes": "Each GCC country has separate Civil Defense - check requirements"
+    },
+    "egypt": {
+      "required": ["UL", "FM", "Egyptian Civil Defense"],
+      "notes": "Ministry of Interior approval required"
+    },
+    "common_approvals": ["UL", "ULC", "FM", "LPCB", "VdS"]
+  },
+  "distributor_contacts_egypt": {
+    "notifier": ["Al-Mashreq Trading", "Egyptian Fire Systems"],
+    "simplex": ["Al-Mashreq Trading", "MEP Gulf"],
+    "siemens": ["Siemens Egypt office"],
+    "bosch": ["Al Sherif Engineering"]
+  },
+  "maintenance_contract_recommendations": {
+    "annual_inspection": "Required for all systems per NFPA 72",
+    "detector_cleaning": "Every 2 years smoke detectors",
+    "battery_replacement": "Every 5 years or as needed",
+    "service_contracts": "Recommend quarterly inspection"
+  }
+}

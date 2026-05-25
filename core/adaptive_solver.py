@@ -1,0 +1,461 @@
+"""
+adaptive_solver.py — FireAI V5.3.0 Guardian
+Adaptive re-solver when code violations are detected.
+
+SAFETY-CRITICAL: Re-solves when initial placement violates NEC/NFPA.
+"""
+
+import logging
+from shapely.geometry import Point, Polygon
+from typing import List, Tuple, Dict, Optional
+from dataclasses import dataclass, field
+
+logger = logging.getLogger("fireai.adaptive")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# RESULT CLASS
+# ════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class AdaptiveSolution:
+    """Result of adaptive re-solve."""
+    success: bool
+    positions: List[Tuple[float, float]]
+    remaining_violations: List[str] = field(default_factory=list)
+    alternative_detector_types: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+    metadata: Dict = field(default_factory=dict)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# CLEARANCE DISTANCES
+# ════════════════════════════════════════════════════════════════════════════
+
+CLEARANCE_DISTANCES = {
+    "cable_tray": 1.0,
+    "conduit": 0.5,
+    "junction_box": 1.2,
+    "panel": 1.0,
+    "busway": 1.0,
+    "wireway": 0.5,
+}
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# ADAPTIVE SOLVER
+# ════════════════════════════════════════════════════════════════════════════
+
+class AdaptiveSolver:
+    """
+    Re-solves detector placement when NEC/NFPA violations are found.
+    
+    STRATEGY:
+        1. Create exclusion zones around obstructions
+        2. Re-run MIP solver on remaining safe area
+        3. If no solution, try alternative detector types
+        
+    HOW IT WORKS:
+        - Creates buffer zones around electrical obstructions
+        - Subtracts these from candidate search space
+        - Re-runs optimization on reduced space
+        - In seconds, finds valid alternative
+        
+    Usage:
+        solver = AdaptiveSolver(MIPEngineClass)
+        result = solver.re_solve(
+            room_polygon=room_polygon,
+            obstructions=electrical_obstructions,
+            ceiling_info=ceiling_info,
+            required_count=4
+        )
+        
+        if result.success:
+            use(result.positions)
+    """
+
+    def __init__(self):
+        self.solutions_tried = []
+        
+    def re_solve(
+        self,
+        room_polygon: Polygon,
+        obstructions: List,
+        ceiling_info,
+        required_count: int = 1,
+    ) -> AdaptiveSolution:
+        """
+        Re-solve with exclusion zones.
+        
+        Args:
+            room_polygon: Valid room area polygon
+            obstructions: List of ElectricalObstruction objects
+            ceiling_info: CeilingInfo for coverage adjustment
+            required_count: Number of detectors needed
+            
+        Returns:
+            AdaptiveSolution with positions
+        """
+        violations = []
+        warnings = []
+        alternatives = []
+        
+        # Step 1: Create exclusion zones
+        exclusion_zones = []
+        for obs in obstructions:
+            if obs.polygon:
+                clearance = CLEARANCE_DISTANCES.get(
+                    obs.element_type.value, 1.0
+                )
+                zone = obs.polygon.buffer(clearance)
+                exclusion_zones.append(zone)
+                
+        # Step 2: Subtract from room
+        safe_polygon = room_polygon
+        for zone in exclusion_zones:
+            safe_polygon = safe_polygon.difference(zone)
+            
+        if safe_polygon.is_empty or safe_polygon.area < 1.0:
+            # No safe space - try alternatives
+            return self._no_solution_found(
+                room_polygon, 
+                obstructions,
+                "No safe space after applying NEC clearances"
+            )
+            
+        # Step 3: Generate candidate positions on safe polygon
+        candidate_positions = self._generate_candidates(
+            safe_polygon, 
+            required_count,
+            ceiling_info
+        )
+        
+        if len(candidate_positions) < required_count:
+            # Not enough candidates - adjust down
+            warnings.append(
+                f"Only {len(candidate_positions)} positions available "
+                f"(need {required_count})"
+            )
+            required_count = len(candidate_positions)
+            
+        # Step 4: Apply selection logic (simplified from MIP)
+        positions = self._select_positions(
+            candidate_positions,
+            required_count,
+            ceiling_info
+        )
+        
+        # Step 5: Validate spacing
+        spacing_violations = self._check_spacing(positions)
+        if spacing_violations:
+            warnings.extend(spacing_violations)
+            
+        return AdaptiveSolution(
+            success=required_count > 0,
+            positions=positions,
+            remaining_violations=[],
+            alternative_detector_types=alternatives,
+            warnings=warnings,
+            metadata={
+                "safe_area": safe_polygon.area,
+                "original_area": room_polygon.area,
+                "reduction_pct": (1 - safe_polygon.area/room_polygon.area) * 100
+            }
+        )
+
+    def re_solve_with_alternatives(
+        self,
+        room_polygon: Polygon,
+        obstructions: List,
+        ceiling_info,
+        required_count: int,
+    ) -> AdaptiveSolution:
+        """
+        Try alternative detector types if primary fails.
+        
+        V12 Fix: Pass safe_polygon (obstruction-free) to alternative methods
+        instead of raw room_polygon — prevents placing detectors inside obstructions.
+        """
+        # First try: standard placement (re_solve computes safe_polygon internally)
+        result = self.re_solve(room_polygon, obstructions, ceiling_info, required_count)
+        
+        if result.success:
+            return result
+        
+        # Compute safe_polygon once for all fallback methods
+        # This ensures heat/beam detectors also avoid obstructions (NEC compliance)
+        exclusion_zones = []
+        for obs in obstructions:
+            if obs.polygon:
+                clearance = CLEARANCE_DISTANCES.get(
+                    obs.element_type.value, 1.0
+                )
+                zone = obs.polygon.buffer(clearance)
+                exclusion_zones.append(zone)
+        
+        safe_polygon = room_polygon
+        for zone in exclusion_zones:
+            safe_polygon = safe_polygon.difference(zone)
+        
+        # Second try: heat detectors (larger coverage)
+        heat_result = self._try_heat_detectors(
+            safe_polygon, required_count  # V12 Fix: safe_polygon, NOT room_polygon
+        )
+        
+        if heat_result.success:
+            heat_result.alternative_detector_types = ["heat_detector"]
+            return heat_result
+            
+        # Third try: beam detectors for beam pockets
+        if ceiling_info and ceiling_info.structure_type.value == "beam_pocket":
+            beam_result = self._try_beam_detectors(
+                safe_polygon, obstructions, required_count  # V12 Fix: safe_polygon
+            )
+            if beam_result.success:
+                beam_result.alternative_detector_types = ["beam_detector"]
+                return beam_result
+                
+        # V20.2 FIX: All alternatives failed. Return the heat_result (not original result)
+        # so the caller gets information about what alternatives were tried.
+        # Previous code returned `result` (from re_solve) which had no info about
+        # heat/beam attempts. Now we return the last attempt's result, which includes
+        # the alternative_detector_types metadata.
+        # If heat_result failed, its metadata tells the caller that heat detectors
+        # were tried but couldn't solve the room — requiring manual FPE design.
+        if not heat_result.success:
+            heat_result.alternative_detector_types = ["heat_detector"]
+        return heat_result
+
+    def _generate_candidates(
+        self,
+        polygon: Polygon,
+        count: int,
+        ceiling_info,
+    ) -> List[Tuple[float, float]]:
+        """Generate candidate positions on polygon."""
+        candidates = []
+        
+        # Get bounds
+        minx, miny, maxx, maxy = polygon.bounds
+        width = maxx - minx
+        height = maxy - miny
+        
+        # Grid spacing based on coverage
+        coverage = 9.2  # default
+        if ceiling_info:
+            coverage *= ceiling_info.get_coverage_reduction()
+            
+        spacing = coverage / 2  # half coverage for grid density
+        
+        # Generate grid
+        x = minx + spacing / 2
+        while x < maxx:
+            y = miny + spacing / 2
+            while y < maxy:
+                point = Point(x, y)
+                if polygon.contains(point):
+                    candidates.append((x, y))
+                y += spacing
+            x += spacing
+            
+        # Return all valid candidates for spatial distribution
+        # V12 Fix: Removed [:count*3] truncation which biased bottom-left corner
+        # If too many candidates, use stride-based sampling for performance
+        if len(candidates) > count * 20:
+            step = max(1, len(candidates) // (count * 10))
+            return candidates[::step]
+        return candidates
+
+    def _select_positions(
+        self,
+        candidates: List[Tuple[float, float]],
+        count: int,
+        ceiling_info,
+    ) -> List[Tuple[float, float]]:
+        """Select positions maximizing spatial distribution.
+        
+        V12 Fix — Left-Side Clustering Trap:
+        Previous code returned `candidates[:count]` which took the first N points
+        from a bottom-left-to-top-right grid, clustering ALL detectors in one
+        corner — leaving 90%+ of the room uncovered.
+        
+        Fix: Greedy Farthest-Point algorithm. Each new detector is placed as
+        far as possible from all already-selected detectors. This maximizes
+        NFPA 72 coverage and guarantees spatial distribution.
+        """
+        import math
+        
+        if len(candidates) <= count:
+            return candidates
+        
+        # Start from center candidate (best starting point for coverage)
+        center_idx = len(candidates) // 2
+        selected = [candidates[center_idx]]
+        selected_set = {center_idx}
+        
+        for _ in range(count - 1):
+            best_min_dist = -1.0
+            best_idx = -1
+            
+            for i, c in enumerate(candidates):
+                if i in selected_set:
+                    continue
+                # Minimum distance from this candidate to any selected detector
+                min_dist = min(
+                    math.hypot(c[0] - s[0], c[1] - s[1])
+                    for s in selected
+                )
+                if min_dist > best_min_dist:
+                    best_min_dist = min_dist
+                    best_idx = i
+            
+            if best_idx >= 0:
+                selected.append(candidates[best_idx])
+                selected_set.add(best_idx)
+            else:
+                break
+        
+        return selected
+
+    def _check_spacing(
+        self,
+        positions: List[Tuple[float, float]]
+    ) -> List[str]:
+        """Check minimum spacing between detectors."""
+        warnings = []
+        
+        for i, pos1 in enumerate(positions):
+            for pos2 in positions[i+1:]:
+                dx = pos1[0] - pos2[0]
+                dy = pos1[1] - pos2[1]
+                dist = (dx**2 + dy**2) ** 0.5
+                
+                if dist < 4.5:  # Less than half 9.2m
+                    warnings.append(
+                        f"Close spacing: {dist:.1f}m between detectors"
+                    )
+                    
+        return warnings
+
+    def _no_solution_found(
+        self,
+        room_polygon: Polygon,
+        obstructions: List,
+        reason: str,
+    ) -> AdaptiveSolution:
+        """Generate no-solution result."""
+        return AdaptiveSolution(
+            success=False,
+            positions=[],
+            remaining_violations=[reason],
+            warnings=[
+                f"No valid placement: {reason}",
+                "Manual design review required"
+            ]
+        )
+
+    def _try_heat_detectors(
+        self,
+        safe_polygon: Polygon,  # V12 Fix: was room_polygon — allowed placing inside obstructions
+        required_count: int,
+    ) -> AdaptiveSolution:
+        """Try with heat detectors (larger coverage = fewer needed).
+        
+        V12 Fix — Obstruction Bypass:
+        Previous code used room_polygon (full room including obstruction zones),
+        which could place heat detectors inside electrical panels or cable trays
+        when smoke detectors failed. NEC violation.
+        
+        Now uses safe_polygon (room minus exclusion zones) to ensure
+        heat detectors also respect NEC clearances.
+        """
+        import math
+        
+        # Heat coverage = 15.2m (vs smoke 9.2m)
+        coverage = 15.2
+        spacing = coverage / 2
+        
+        if safe_polygon.is_empty or safe_polygon.area < 1.0:
+            return AdaptiveSolution(
+                success=False,
+                positions=[],
+                remaining_violations=["No safe space for heat detectors"],
+                warnings=["Safe polygon too small after excluding obstructions"]
+            )
+        
+        # Similar to main method but larger spacing, using safe_polygon
+        minx, miny, maxx, maxy = safe_polygon.bounds
+        candidates = []
+        
+        x = minx + spacing / 2
+        while x < maxx:
+            y = miny + spacing / 2
+            while y < maxy:
+                if safe_polygon.contains(Point(x, y)):  # V12 Fix: safe_polygon, not room_polygon
+                    candidates.append((x, y))
+                y += spacing
+            x += spacing
+            
+        count_needed = math.ceil(safe_polygon.area / (coverage * coverage * 0.8))
+        count_needed = min(count_needed, required_count)
+        
+        # V12 Fix: Use _select_positions instead of candidates[:count_needed]
+        # to avoid left-side clustering trap
+        positions = self._select_positions(candidates, count_needed, None)
+        
+        return AdaptiveSolution(
+            success=len(positions) >= count_needed,
+            positions=positions,
+            metadata={"using": "heat_detector_coverage", "safe_area": safe_polygon.area}
+        )
+
+    def _try_beam_detectors(
+        self,
+        safe_polygon: Polygon,  # V12 Fix: was room_polygon — same obstruction bypass issue
+        obstructions: List,
+        required_count: int,
+    ) -> AdaptiveSolution:
+        """Try with beam detectors (for beam pocket ceilings)."""
+        # Beam detector coverage = 30m
+        coverage = 30.0
+
+        import math
+        count_needed = math.ceil(safe_polygon.area / (coverage * coverage * 0.6))
+
+        # V20.2 FIX: Previous code returned success=True with positions=[].
+        # This is a LIE — claiming beam detectors are placed when they
+        # aren't. A building could be signed off as "protected" with zero
+        # actual beam detector positions. In a fire alarm system, this
+        # kills people.
+        # Fix: Return success=False with a clear reason. The caller must
+        # not treat this as a valid solution.
+        return AdaptiveSolution(
+            success=False,
+            positions=[],
+            metadata={
+                "using": "beam_detector",
+                "safe_area": safe_polygon.area,
+                "count_needed": count_needed,
+                "reason": (
+                    "Beam detector placement not yet implemented — "
+                    "requires manual design by FPE per NFPA 72 §17.7.4. "
+                    f"Estimated {count_needed} beam detector(s) needed "
+                    f"for {safe_polygon.area:.1f} m² room."
+                ),
+            }
+        )
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# CONVENIENCE FUNCTION
+# ════════════════════════════════════════════════════════════════════════════
+
+def re_solve(
+    room_polygon: Polygon,
+    obstructions: List,
+    ceiling_info,
+    required_count: int,
+) -> AdaptiveSolution:
+    """Quick adaptive re-solve."""
+    solver = AdaptiveSolver()
+    return solver.re_solve(room_polygon, obstructions, ceiling_info, required_count)

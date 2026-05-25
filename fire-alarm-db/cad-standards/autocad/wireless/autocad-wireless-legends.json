@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "AutoCAD Legend Library - Wireless Fire Alarm System",
+    "system_type": "WIRELESS",
+    "validation_status": "VERIFIED"
+  },
+  "layer_standards": {
+    "F-WL-GATEWAY": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.50mm",
+      "description": "Wireless Gateway"
+    },
+    "F-WL-DEVICE": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.35mm",
+      "description": "Wireless Device"
+    },
+    "F-WL-REPEATER": {
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "lineweight": "0.35mm",
+      "description": "Wireless Repeater"
+    },
+    "F-WL-WIRE": {
+      "color": "CYAN",
+      "linetype": "DASHED",
+      "lineweight": "0.18mm",
+      "description": "RF Communication Path (shown dashed)"
+    }
+  },
+  "symbols": {
+    "wireless_gateway": {
+      "symbol_name": "F-WL-GATEWAY",
+      "description": "Wireless Gateway to Panel",
+      "block_content": "Box with RF waves symbol",
+      "layer": "F-WL-GATEWAY"
+    },
+    "wireless_detector": {
+      "symbol_name": "F-WL-DETECTOR",
+      "description": "Wireless Smoke/Heat Detector",
+      "block_content": "Circle with RF waves, battery indicator",
+      "layer": "F-WL-DEVICE"
+    },
+    "wireless_manual": {
+      "symbol_name": "F-WL-MANUAL",
+      "description": "Wireless Manual Pull",
+      "block_content": "Rectangle with pull handle and RF waves",
+      "layer": "F-WL-DEVICE"
+    },
+    "wireless_repeater": {
+      "symbol_name": "F-WL-REPEATER",
+      "description": "Wireless Repeater",
+      "block_content": "Box with antenna symbol",
+      "layer": "F-WL-REPEATER"
+    }
+  },
+  "labeling_standards": {
+    "device_format": "F-WL-{ADDRESS}",
+    "gateway_format": "GW-{LOOP}",
+    "repeater_format": "RP-{NUMBER}",
+    "notes": "SHOW BATTERY STATUS"
+  }
+}

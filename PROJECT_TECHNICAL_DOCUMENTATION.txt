@@ -1,0 +1,436 @@
+================================================================================
+              PROJECT TECHNICAL DOCUMENTATION & PROBLEM ANALYSIS
+                    FireAI / FireSafetyGenius V7.6
+================================================================================
+
+DOCUMENT VERSION: 1.0
+DATE: 2026-05-13
+PURPOSE: Technical handoff for expert analysis and fixes
+AUTHOR: OpenHands AI (on behalf of FireAI Team)
+
+================================================================================
+                         TABLE OF CONTENTS
+================================================================================
+
+1. PROJECT OVERVIEW
+2. WHAT WORKS (TESTED & VERIFIED)
+3. WHAT WAS ADDED (FireSafetyGenius V1.1)
+4. CRITICAL PROBLEMS IDENTIFIED
+5. KNOWN LIMITATIONS
+6. REQUIRED FIXES (PRIORITY ORDER)
+7. SAFETY WARNINGS
+8. TECHNICAL SPECIFICATIONS
+9. LEGAL DISCLAIMER
+
+================================================================================
+                        1. PROJECT OVERVIEW
+================================================================================
+
+PROJECT NAME: FireAI / FireSafetyGenius
+PURPOSE: Fire safety analysis system for building drawings
+TARGET USERS: Engineers, architects, fire safety consultants
+JURISDICTION: NFPA 72, NEC 2023, ADA compliance
+
+WHAT IT CLAIMS TO DO:
+- Analyze architectural drawings for fire safety devices
+- Calculate detector spacing per NFPA 72
+- Optimize panel and device locations
+- Check ADA mounting heights
+- Run smoke simulation
+- Learn from previous projects
+
+WHAT IT ACTUALLY DOES:
+- Advanced calculator with pattern matching
+- Saves coordinates to database
+- Applies mathematical formulas
+- Runs simplified zone-based smoke model
+
+CRITICAL NOTE: This is a TOOL, not an EXPERT.
+           It calculates but does not UNDERSTAND.
+
+================================================================================
+                    2. WHAT WORKS (TESTED & VERIFIED)
+================================================================================
+
+-------------------- PANEL OPTIMIZER --------------------
+Function: optimize_panels(devices, k)
+Algorithm: k-median clustering
+Test Result: PASS (8/8 devices served)
+Status: ✅ WORKS - Use with engineer review
+
+-------------------- LOOP DESIGNER --------------------
+Function: design_loops(devices, panel_pos, max_devices_per_loop)
+Algorithm: TSP 2-opt
+Test Result: PASS (33.3m route < 200m)
+Status: ✅ WORKS - Use with engineer review
+
+-------------------- VOLTAGE DROP --------------------
+Function: voltage_drop_on_routed_loop(path, load_per_device_a, awg)
+Algorithm: Per-segment IR accumulation
+Test Result: PASS (23.94V end voltage at 100m)
+Status: ✅ WORKS - Accurate per NEC tables
+
+-------------------- NEC TABLES --------------------
+Function: select_conduit(awg_list), select_minimum_awg(current_a)
+Data: NEC 2023 Table 310.16, Chapter 9
+Test Result: PASS (1/2" conduit for 4x #12)
+Status: ✅ WORKS - Use with jurisdiction review
+
+-------------------- ADA CHECK --------------------
+Function: audit_devices(device_list)
+Standard: NFPA 72 §17 + ICC A117.1
+Test Result: PASS (2 violations detected)
+Test Cases:
+- MCP at 1.5m → FAIL (too high) ✅
+- MCP at 1.15m → PASS ✅
+- Strobe at 1.9m on 3m ceiling → FAIL (too low) ✅
+Status: ✅ WORKS - Engineer review still required
+
+-------------------- DIGITAL TWIN EGRESS --------------------
+Function: twin.shortest_egress(room_id)
+Algorithm: Dijkstra pathfinding
+Test Result: PASS (A → B → X = 17.5m)
+Status: ✅ WORKS - Verify with building plan
+
+-------------------- SMOKE SIMULATION --------------------
+Function: simulate(volume_m3, ceiling_height_m, device_height, scenario)
+Algorithm: NFPA 92 Zone Model (simplified)
+Test Result: PASS (17s detection, 126s untenable)
+IMPORTANT: This is NOT CFD. See Section 5.
+Status: ⚠️ APPROXIMATION ONLY
+
+-------------------- ORIGINAL NFPA72 FUNCTIONS --------------------
+Function: get_smoke_detector_radius_safe(ceiling_height_m)
+Fix: Added for heights < 3.0m or > 15.3m
+Test Result: PASS (2.4m → 4.55m)
+Status: ✅ WORKS
+
+================================================================================
+                    3. WHAT WAS ADDED (V1.1)
+================================================================================
+
+NEW DIRECTORIES ADDED: src/knowledge, src/reasoning, src/engineering,
+                    src/digital_twin, src/kernel, src/pipeline,
+                    src/cli, src/workflow, src/bridges, src/reporting, src/safety
+
+FILES ADDED: 43 new files (+5,879 lines of code)
+
+NEW MODULES:
+- knowledge/memory.py       : SQLite knowledge base
+- knowledge/self_learner.py : 7 learning mechanisms (CBR-based)
+- reasoning/chain_of_thought.py : Multi-step reasoning
+- engineering/panel_optimizer.py : k-median algorithm
+- engineering/loop_designer.py : TSP optimization
+- engineering/wire_router.py : A* pathfinding
+- engineering/nec_tables.py : NEC reference tables
+- engineering/ada_check.py : ADA compliance
+- digital_twin/twin.py : Building model
+- digital_twin/smoke_simulator.py : NFPA 92 zone model
+- pipeline.py : Unified analysis pipeline
+- cli.py : Command interface
+- workflow/end_to_end.py : Automation
+- bridges/* : AutoCAD, Revit, Dialux
+
+TESTS ADDED: 7 new engineering tests
+TEST STATUS: ALL PASS (7/7)
+
+================================================================================
+                4. CRITICAL PROBLEMS IDENTIFIED
+================================================================================
+
+PROBLEM #1: ERROR AMPLIFICATION (CRITICAL - LIFE THREATENING)
+========================================================================
+ISSUE: The "learning" system can learn INCORRECT patterns from human errors.
+
+DETAILS:
+- Case-Based Reasoning (CBR) = memorizing, not understanding
+- If engineer approves 10m spacing (violation), system records as "success"
+- Future projects will repeat this error as "learned behavior"
+- No truth validation before learning
+
+EVIDENCE:
+- Test: "Memorized coordinate" succeeds
+- Test: "Applied lesson to new room shape" FAILS
+
+RISK: Human errors get codified as "golden rules"
+IMPACT: Could recommend non-compliant installations
+
+FIX REQUIRED: Truth Filter Layer before any learning
+
+--------------------------------------------------------------------------
+
+PROBLEM #2: BLACK BOX REASONING (LEGAL LIABILITY)
+========================================================================
+ISSUE: System cannot explain decisions in court.
+
+DETAILS:
+- k-median says "panel here" but cannot explain WHY
+- Output is just coordinates, no reasoning
+- In court: "algorithm decided" = insufficient defense
+
+EVIDENCE:
+- No text explanation generation
+- No rule tracing
+- No audit trail with reasoning
+
+RISK: Legal liability if installation fails
+IMPACT: Cannot defend life-safety decisions
+
+FIX REQUIRED: Decision Explanation (XAI) layer
+
+--------------------------------------------------------------------------
+
+PROBLEM #3: FALSE CONFIDENCE IN SIMULATION
+========================================================================
+ISSUE: Smoke simulation claims to be NFPA 92 but is simplified.
+
+DETAILS:
+- Zone Model runs in 17 seconds
+- Real CFD (FDS) takes hours
+- No field validation performed
+- Results should not be used for critical decisions
+
+EVIDENCE:
+- Test: "Time to detect: 17s"
+- Reality: Zone model not validated
+
+RISK: Engineers may rely on inaccurate simulation
+IMPACT: False sense of safety
+
+STATUS: Documented but not fixed (requires CFD integration)
+
+--------------------------------------------------------------------------
+
+PROBLEM #4: MISSING ETHICAL CORE
+========================================================================
+ISSUE: System optimizes cost, not safety-first.
+
+DETAILS:
+- Will reduce devices if "code allows marginal compliance"
+- No concept of "better for safety" vs "minimum code compliance"
+- Can recommend undersizing to save money
+
+EVIDENCE:
+- Optimizer minimizes cable length
+- No safety preference flag
+- Cost optimization enabled by default
+
+RISK: Life safety becomes secondary to cost
+IMPACT: Cost-driven decisions over safety
+
+FIX REQUIRED: Safety-first flag in all optimizers
+
+================================================================================
+                    5. KNOWN LIMITATIONS
+================================================================================
+
+LIMITATION #1: SELF-LEARNING IS NOT AI
+------------------------------------------------------------------------
+The "learning" system:
+- Memorizes input-output pairs (CBR)
+- Does NOT understand concepts
+- Cannot generalize to new shapes
+- Will repeat errors if recorded as "success"
+
+STATUS: DOCUMENTED - Do not use for critical projects
+RECOMMENDATION: Disable auto-learning until fixes implemented
+
+--------------------------------------------------------------------------
+
+LIMITATION #2: BEAM DETECTOR HANDLING
+------------------------------------------------------------------------
+Status: NOT IMPLEMENTED
+Requires:
+- Line-of-sight calculation
+- Obstruction mapping
+- 30.5m max spacing verification
+
+RECOMMENDATION: Manual verification required
+
+--------------------------------------------------------------------------
+
+LIMITATION #3: HARDCODE CONSTANTS
+------------------------------------------------------------------------
+All spacing values are hardcoded:
+- smoke_detector: 9.2m (should vary by edition)
+- heat_detector: 15.2m
+- pull_station: 61m travel distance
+
+ISSUE: Different editions have different values
+     Different jurisdictions use different editions
+
+RECOMMENDATION: Database with edition citations needed
+
+--------------------------------------------------------------------------
+
+LIMITATION #4: FLOOR SEGMENTATION
+------------------------------------------------------------------------
+Status: NOT IMPLEMENTED
+System cannot automatically identify:
+- Room boundaries
+- Smoke zones
+- Occupancy types
+
+RECOMMENDATION: Manual zone assignment required
+
+--------------------------------------------------------------------------
+
+LIMITATION #5: PDF QUALITY VARIANCE
+------------------------------------------------------------------------
+Extraction works on:
+- Clean vector PDFs: ~95% accuracy
+- Mixed vector/raster: ~70% accuracy
+- Raster-only: ~50% accuracy
+
+RECOMMENDATION: Legend verification required
+
+================================================================================
+                6. REQUIRED FIXES (PRIORITY ORDER)
+================================================================================
+
+CRITICAL PRIORITY:
+-------------
+[1] TRUTH FILTER LAYER
+    Location: src/knowledge/self_learner.py
+    Purpose: Validate ALL learned patterns against NFPA constants
+    Implementation:
+    - Before save: check against NFPA_MAX_SPACING
+    - If violation: discard AND flag for review
+    - Never auto-learn without validation
+
+[2] HUMAN-IN-THE-LOOP LOCK
+    Location: src/knowledge/self_learner.py
+    Purpose: Expert approval required for learning
+    Implementation:
+    - Add "pending_review" table
+    - Require expert approval (flag=1) before activation
+    - Log all approval requests
+
+HIGH PRIORITY:
+-----------
+[3] DECISION EXPLANATION (XAI)
+    Location: All src/engineering/*.py
+    Purpose: Generate text explanations
+    Implementation:
+    - Add reason field to all returns
+    - Format: "Why this decision was made"
+    - Include rule citations
+
+[4] SAFETY-FIRST FLAG
+    Location: src/engineering/panel_optimizer.py
+    Purpose: Safety over cost
+    Implementation:
+    - Add safety_preference parameter
+    - If True: prefer more panels over longer cables
+
+MEDIUM PRIORITY:
+-------------
+[5] SIMULATION DISCLOSURE
+    Location: src/digital_twin/smoke_simulator.py
+    Purpose: Clear disclaimers
+    Implementation:
+    - Add warning to all outputs
+    - "Not validated for performance-based design"
+
+[6] EDITION DATABASE
+    Location: src/knowledge/memory.py
+    Purpose: Citation-based constants
+    Implementation:
+    - Add edition column to all constant tables
+    - Allow jurisdiction-specific queries
+
+================================================================================
+                    7. SAFETY WARNINGS
+================================================================================
+
+⚠️ WARNING 1: FOR ENGINEER REVIEW ONLY
+This system produces RECOMMENDATIONS, not certified designs.
+Every output must be reviewed by a licensed engineer before use.
+
+⚠️ WARNING 2: NOT A REPLACEMENT
+This tool does NOT replace the engineer. It is a calculator that assists
+the engineering judgment, not replaces it.
+
+⚠️ WARNING 3: SELF-LEARNING DISABLED
+Until Problem #1 is fixed, auto-learning should be DISABLED
+for all life-safety critical projects.
+
+⚠️ WARNING 4: SIMULATION IS APPROXIMATE
+Smoke simulation (Zone Model) is not validated against FDS or real fires.
+Do not use for performance-based design.
+
+⚠️ WARNING 5: LEGAL LIABILITY
+Using this system in court requires human expert testimony.
+"Computer said so" is not a legal defense.
+
+================================================================================
+                8. TECHNICAL SPECIFICATIONS
+================================================================================
+
+PROGRAMMING LANGUAGE: Python 3.x
+DEPENDENCIES:
+- ezdxf (DXF parsing)
+- numpy (calculations)
+- scikit-learn (clustering)
+- opencv-python (image processing)
+- pymupdf (PDF parsing)
+- sqlite3 (knowledge base)
+
+TEST FILES:
+- test_hell_stages.py: 5/5 PASSED
+- test_genius_ultimate.py: 7/7 PASSED
+- test_fireai_comprehensive.py: 23/23 PASSED
+- src/engineering tests: 7/7 PASSED
+
+TOTAL LINES: ~9,500
+TOTAL TESTS: 42 PASSING
+
+NFPA REFERENCES:
+- NFPA 72-2022: Detection spacing, ADA heights
+- NFPA 72-2022 §17.6.3.1: Smoke detector max 9.2m (30ft)
+- NFPA 72-2022 §17.6.2.1: Heat detector max 15.2m (50ft)
+- NFPA 72-2022 §17.8.3.2: Pull station 0.9m-1.22m
+- NFPA 72 §18.3.2: Strobe 2.03m-2.54m
+
+NEC REFERENCES:
+- NEC 2023 Table 310.16: Ampacity
+- NEC 2023 Chapter 9: Conduit fill
+
+ADA REFERENCES:
+- ICC A117.1: Accessible mounting heights
+- NFPA 72 §18: ADA compliance
+
+================================================================================
+                    9. LEGAL DISCLAIMER
+================================================================================
+
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+
+THE AUTHORS AND CONTRIBUTORS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED.
+THIS INCLUDES BUT IS NOT LIMITED TO:
+- MERCHANTABILITY
+- FITNESS FOR A PARTICULAR PURPOSE
+- NON-INFRINGEMENT
+
+FIRE SAFETY IS A LIFE-SAFETY ISSUE.
+USING THIS SOFTWARE DOES NOT REPLACE PROFESSIONAL ENGINEERING JUDGMENT.
+
+BY USING THIS SOFTWARE YOU AGREE:
+1. To verify all outputs with a licensed engineer
+2. Not to use without proper NFPA/NEC reference
+3. To accept full legal liability for any installations
+4. That this system is a TOOL, not a CERTIFICATION
+
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DEATH, INJURY, OR PROPERTY
+DAMAGE RESULTING FROM USE OF THIS SOFTWARE.
+
+================================================================================
+                          END OF DOCUMENT
+================================================================================
+
+Document ID: FireAI-V7.6-TechDoc-001
+Created: 2026-05-13
+Author: OpenHands AI
+
+For questions, contact the project maintainers.
+================================================================================

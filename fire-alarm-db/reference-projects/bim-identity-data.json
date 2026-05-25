@@ -1,0 +1,215 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection & BIM Engineering Consultant",
+    "purpose": "Complete BIM Family Parameters and Identity Data for Fire Alarm",
+    "validation_status": "VERIFIED"
+  },
+  "identity_data": {
+    "project_information": [
+      "Project Name",
+      "Project Number",
+      "Project Address",
+      "Building Name",
+      "Building Area",
+      "Number of Floors"
+    ],
+    "designer_information": [
+      "Designer Name",
+      "Designer Company",
+      "Designer Phone",
+      "Designer Email",
+      "Designer License Number"
+    ]
+  },
+  "device_identity_parameters": {
+    "detectors": [
+      {
+        "parameter": "Mark",
+        "type": "Text",
+        "description": "Unique identifier for device"
+      },
+      {
+        "parameter": "Device Type",
+        "type": "Text",
+        "description": "Smoke, Heat, Multi"
+      },
+      {
+        "parameter": "Manufacturer",
+        "type": "Text",
+        "description": "Device manufacturer"
+      },
+      {
+        "parameter": "Model",
+        "type": "Text",
+        "description": "Device model number"
+      },
+      {
+        "parameter": "SLC Loop",
+        "type": "Number",
+        "description": "Signaling Line Circuit number"
+      },
+      {
+        "parameter": "Address",
+        "type": "Number",
+        "description": "Device address on loop"
+      },
+      {
+        "parameter": "Zone",
+        "type": "Text",
+        "description": "Zone assignment"
+      },
+      {
+        "parameter": "Room",
+        "type": "Text",
+        "description": "Room name or number"
+      },
+      {
+        "parameter": "Sensitivity",
+        "type": "Text",
+        "description": "Detector sensitivity rating"
+      },
+      {
+        "parameter": "System Classification",
+        "type": "Text",
+        "description": "Fire Alarm - Detection"
+      },
+      {
+        "parameter": "Elevation",
+        "type": "Length",
+        "description": "Mounting elevation"
+      },
+      {
+        "parameter": "Comments",
+        "type": "Text",
+        "description": "Additional notes"
+      }
+    ],
+    "panels": [
+      {
+        "parameter": "Mark",
+        "type": "Text"
+      },
+      {
+        "parameter": "Panel Name",
+        "type": "Text"
+      },
+      {
+        "parameter": "Location",
+        "type": "Text"
+      },
+      {
+        "parameter": "Manufacturer",
+        "type": "Text"
+      },
+      {
+        "parameter": "Model",
+        "type": "Text"
+      },
+      {
+        "parameter": "Number of Loops",
+        "type": "Number"
+      },
+      {
+        "parameter": "Number of NACs",
+        "type": "Number"
+      },
+      {
+        "parameter": "Voltage",
+        "type": "Electrical Potential"
+      },
+      {
+        "parameter": "Phase",
+        "type": "Text"
+      }
+    ],
+    "modules": [
+      {
+        "parameter": "Mark",
+        "type": "Text"
+      },
+      {
+        "parameter": "Module Type",
+        "type": "Text",
+        "description": "Monitor, Control, Isolator"
+      },
+      {
+        "parameter": "Function",
+        "type": "Text",
+        "description": "HVAC, Door, Elevator"
+      },
+      {
+        "parameter": "Manufacturer",
+        "type": "Text"
+      },
+      {
+        "parameter": "Model",
+        "type": "Text"
+      },
+      {
+        "parameter": "Address",
+        "type": "Number"
+      },
+      {
+        "parameter": "Zone",
+        "type": "Text"
+      }
+    ]
+  },
+  "schedules": {
+    "detector_schedule": [
+      "Mark",
+      "Device Type",
+      "Manufacturer",
+      "Model",
+      "SLC Loop",
+      "Address",
+      "Zone",
+      "Room",
+      "Sensitivity",
+      "System Classification"
+    ],
+    "panel_schedule": [
+      "Mark",
+      "Panel Name",
+      "Location",
+      "Manufacturer",
+      "Model",
+      "Loops",
+      "NACs",
+      "Voltage"
+    ],
+    "notification_schedule": [
+      "Mark",
+      "Type",
+      "Manufacturer",
+      "Model",
+      "Location",
+      "Candela",
+      "dB Rating",
+      "Zone"
+    ]
+  },
+  "revit_systems_hierarchy": {
+    "level_1": "Fire Alarm",
+    "level_2": {
+      "Detection": ["Smoke Detection", "Heat Detection"],
+      "Notification": ["Horn/Strobe", "Speaker", "Bell"],
+      "Control": ["Panels", "Modules"]
+    },
+    "level_3": {
+      "Smoke Detection": ["Office", "Corridor", "Room"],
+      "Heat Detection": ["Kitchen", "Mechanical"]
+    }
+  },
+  "bim_exports": {
+    "ifc_mapping": {
+      "fire_alarm_panel": "IfcController",
+      "detector": "IfcSensor",
+      "notification": "IfcAlarm"
+    },
+    "COBie": true,
+    "gbXML": false
+  }
+}

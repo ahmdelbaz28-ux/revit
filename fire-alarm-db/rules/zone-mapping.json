@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "title": "Zone Mapping Rules — System Zoning Reference",
+    "description": "Rules for dividing fire alarm systems into zones for identification and response",
+    "standards_referenced": ["NFPA 72", "BS 5839-1 Section 23"],
+    "last_reviewed": "2026-05-09"
+  },
+
+  "zone_design_principles": {
+    "purpose": [
+      "Identify the general location of a fire for emergency responders",
+      "Enable phased evacuation in large buildings",
+      "Simplify system management and maintenance",
+      "Match annunciator display to building layout"
+    ],
+    "fundamental_rule": "Each zone should represent one identifiable fire compartment or area that can be quickly located by firefighters"
+  },
+
+  "bs5839_zoning": {
+    "max_area_per_zone": "2000m²",
+    "one_floor_per_zone": "Ideally one zone should not cover more than one floor",
+    "floor_area_exception": "If a floor is less than 300m², it MAY share a zone with adjacent floor (with justification)",
+    "max_search_distance": "60m — firefighter must not have to walk more than 60m within a zone to identify the fire location",
+    "max_detectors_conventional": "20 detectors per zone (recommended limit for conventional systems)",
+    "addressable_zones": "Virtual zones in software — same area rules apply but devices can be grouped flexibly",
+    "zone_identification": "Each zone must have a unique number and clear label matching the floor plan",
+
+    "special_zoning": {
+      "fire_doors": "Fire doors should be in a separate zone from the area they protect",
+      "lift_shafts": "Each lift shaft should be its own zone",
+      "stairwells": "Enclosed stairwells should be separate zones from floor areas",
+      "plant_rooms": "Boiler rooms, AHU rooms, generator rooms — separate zones",
+      "voids": "Ceiling voids > 800mm should be zoned separately or included with the room below",
+      "toilets": "Can be included with adjacent zone (if no detectors in toilet)",
+      "corridors": "Should be in the same zone as the rooms they serve"
+    },
+
+    "zone_plan": {
+      "requirement": "Zone chart (floor plan) must be displayed adjacent to the control panel",
+      "format": "Color-coded floor plan showing all zones with clear labels",
+      "scale": "Must be large enough to read easily (minimum A3 size for typical buildings)",
+      "reference": "BS 5839-1 Clause 23.2.2"
+    }
+  },
+
+  "nfpa72_zoning": {
+    "description": "NFPA 72 does not prescribe specific zone limits like BS 5839, but provides guidance",
+    "conventional_zones": {
+      "max_devices": "Varies by manufacturer — typically 20-30 devices per zone",
+      "guidance": "Zone should represent a fire compartment or identifiable area",
+      "floor_per_zone": "Recommended practice — one zone per floor"
+    },
+    "addressable_zones": {
+      "description": "Zones are software-defined groups of addresses",
+      "flexibility": "Multiple zones per floor or single zone across multiple floors (if justified)",
+      "mapping": "Zone map must match floor plan at annunciator"
+    },
+    "annunciator": {
+      "requirement": "Remote annunciator at building entrance or fire command center",
+      "display": "LED or LCD display showing alarm/trouble/supervisory status per zone",
+      "labels": "Permanent labels matching building floor plan",
+      "reference": "NFPA 72 Section 17.4"
+    }
+  },
+
+  "zone_labeling_convention": {
+    "description": "Recommended zone naming for clear identification",
+    "examples": [
+      {"zone": "01", "label": "Ground Floor — Lobby", "floor": "GF"},
+      {"zone": "02", "label": "Ground Floor — Office Area A", "floor": "GF"},
+      {"zone": "03", "label": "First Floor — Corridor & Stairwell", "floor": "1F"},
+      {"zone": "04", "label": "First Floor — Meeting Rooms", "floor": "1F"},
+      {"zone": "05", "label": "Second Floor — Plant Room", "floor": "2F"},
+      {"zone": "06", "label": "Lift Shaft — All Floors", "floor": "All"},
+      {"zone": "07", "label": "Basement — Parking", "floor": "B1"},
+      {"zone": "08", "label": "Roof — AHU Room", "floor": "RF"}
+    ],
+    "recommended_format": "Zone [Number]: [Floor] — [Area Name]",
+    "notes": "Always include floor number and area name — never just a number"
+  },
+
+  "zone_mapping_for_design_software": {
+    "data_model": {
+      "zone": {
+        "fields": ["zone_id", "zone_number", "zone_label", "floor_id", "area_m2", "occupancy_type", "device_count", "standard_applied"],
+        "relationships": {
+          "has_many_devices": true,
+          "belongs_to_floor": true,
+          "has_circuit": true,
+          "has_nac_circuit": true
+        }
+      },
+      "device": {
+        "fields": ["device_id", "address", "device_type", "manufacturer", "model", "location_x", "location_y", "zone_id"],
+        "placement_rules": [
+          "Each device must belong to exactly one zone",
+          "Address must be unique within the system (addressable)",
+          "Location coordinates must satisfy spacing rules for device type"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "rooms": [
+    {"name": "Office A", "polygon": [[0,0], [10,0], [10,10], [0,10], [0,0]], "room_type": "OFFICE", "ceiling_height": 2.8, "ceiling_type": "SMOOTH", "device_type": "SMOKE_PHOTOELECTRIC"},
+    {"name": "Corridor B", "polygon": [[10,0], [25,0], [25,4], [10,4], [10,0]], "room_type": "CORRIDOR", "ceiling_height": 2.8, "ceiling_type": "SMOOTH", "device_type": "SMOKE_PHOTOELECTRIC"}
+  ],
+  "standard": "NFPA72_2025"
+}

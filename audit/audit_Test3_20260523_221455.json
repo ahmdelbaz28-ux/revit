@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-05-23T22:14:55.678657",
+  "project_name": "Test3",
+  "source_dxf": "",
+  "version": "FireAI V20.2",
+  "status": "REQUIRES_MANUAL_REVIEW",
+  "rooms": {
+    "total": 3,
+    "passed": 1,
+    "failed": 2,
+    "errored": 0
+  },
+  "detectors": {
+    "calculated": 7
+  },
+  "safety": {
+    "method": "Exact Shapely area-based coverage verification",
+    "threshold": "99.9% area coverage required (NFPA 72)",
+    "note": "No arbitrary spare detector margin \u2014 coverage is mathematically verified"
+  },
+  "details": [
+    {
+      "room_id": "R1",
+      "status": "PASS",
+      "detector_count": 1,
+      "coverage_pct": 100.0,
+      "radius_m": 6.37,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "room_id": "R2",
+      "status": "FAIL",
+      "detector_count": 3,
+      "coverage_pct": 55.129157657634195,
+      "radius_m": 6.09,
+      "warnings": [],
+      "errors": [
+        "Coverage failed: 55.129157657634195%",
+        "Adaptive re-solve error: No module named 'core.spatial_engine.constraint_solver'. Manual design required."
+      ]
+    },
+    {
+      "room_id": "R3",
+      "status": "FAIL",
+      "detector_count": 3,
+      "coverage_pct": 0.0,
+      "radius_m": 5.74,
+      "warnings": [],
+      "errors": [
+        "Coverage failed: 0.0%",
+        "Adaptive re-solve error: No module named 'core.spatial_engine.constraint_solver'. Manual design required."
+      ]
+    }
+  ],
+  "disclaimer": "This report is produced by FireAI V20.2. It MUST be reviewed by a licensed fire protection engineer. All calculations reference NFPA 72 (2022 Edition)."
+}

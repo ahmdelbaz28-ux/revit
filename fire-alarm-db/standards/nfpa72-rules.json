@@ -1,0 +1,541 @@
+{
+  "meta": {
+    "standard": "NFPA 72",
+    "title": "National Fire Alarm and Signaling Code",
+    "edition": "2025",
+    "publisher": "National Fire Protection Association",
+    "scope": "Comprehensive fire alarm system design, installation, testing, and maintenance",
+    "jurisdiction": "Primary standard in USA, widely adopted in MENA, adopted by reference in many countries",
+    "last_reviewed": "2026-05-09"
+  },
+
+  "core_principles": {
+    "purpose": "The primary purpose of a fire alarm system is to provide early warning of fire to allow building occupants to safely evacuate and fire departments to respond.",
+    "fundamental_requirements": [
+      "Detection of fire or its products of combustion",
+      "Notification of building occupants",
+      "Notification of the fire department or emergency services",
+      "Control of building systems (elevators, HVAC, doors, etc.)",
+      "Annunciation of fire location for emergency response"
+    ]
+  },
+
+  "system_classifications": {
+    "by_technology": {
+      "conventional": {
+        "description": "Devices wired to zones; identifies zone of alarm, not individual device",
+        "pros": ["Lower cost", "Simple installation", "Easy to understand"],
+        "cons": ["Cannot identify specific device in alarm", "More wire required", "Limited diagnostics"],
+        "typical_use": "Small buildings, simple layouts, budget projects"
+      },
+      "addressable": {
+        "description": "Each device has a unique address; panel communicates individually with every device",
+        "pros": ["Exact device identification", "Less wire (loop)", "Advanced diagnostics", "Isolation of faults"],
+        "cons": ["Higher initial cost", "More complex programming", "Proprietary protocols"],
+        "typical_use": "Medium to large buildings, hospitals, high-rise, industrial"
+      },
+      "analog_intelligent": {
+        "description": "Addressable devices that send actual sensor readings (smoke density, temperature) to the panel",
+        "pros": ["Trend analysis", "Adjustable sensitivity", "Drift compensation", "Reduced false alarms"],
+        "cons": ["Highest cost", "Complex system design", "Requires skilled programming"],
+        "typical_use": "Critical facilities, data centers, museums, pharmaceutical"
+      },
+      "wireless": {
+        "description": "Devices communicate via radio frequency; no wiring between devices and panel",
+        "pros": ["Minimal wiring", "Easy retrofit", "Flexible placement"],
+        "cons": ["Battery maintenance", "Signal interference risk", "Limited device capacity", "Registration requirements"],
+        "typical_use": "Retrofit projects, historic buildings, temporary installations"
+      },
+      "hybrid": {
+        "description": "Combination of wired and wireless technology",
+        "pros": ["Best of both worlds", "Cost optimization", "Flexible expansion"],
+        "cons": ["Two technologies to maintain", "More complex commissioning"],
+        "typical_use": "Building expansions, mixed occupancy, phased projects"
+      }
+    },
+
+    "by_initiation": {
+      "automatic": {
+        "description": "System activated by fire detection devices (smoke, heat, flame, gas detectors)",
+        "required_in": ["Most commercial buildings", "Healthcare facilities", "Educational institutions", "High-rise buildings", "Assembly occupancies"]
+      },
+      "manual": {
+        "description": "System activated by human operation (pull stations, call points)",
+        "required_in": ["All occupied commercial buildings", "Must be within 5 ft (1.5m) of exit doors"],
+        "notes": "Manual systems alone are rarely sufficient; usually combined with automatic detection"
+      },
+      "automatic_with_manual": {
+        "description": "Combined automatic detection and manual initiation — standard requirement",
+        "required_in": ["Most code-mandated installations", "NFPA 72 Section 17.4"],
+        "notes": "This is the most common and code-required configuration"
+      },
+      "single_station": {
+        "description": "Self-contained alarm units (battery-operated smoke alarms in residential)",
+        "required_in": ["Residential dwellings (IRC)", "Hotels/motels sleeping rooms"],
+        "notes": "Not a building-wide fire alarm system; standalone devices"
+      },
+      "multiple_station": {
+        "description": "Interconnected single-station alarms that activate all units when one triggers",
+        "required_in": ["Multi-family residential", "Hotels", "Dormitories"],
+        "notes": "Provides whole-building notification in residential settings"
+      }
+    },
+
+    "by_notification": {
+      "public_mode": {
+        "description": "Alerts ALL building occupants — total evacuation signal",
+        "signal_type": "Temporal Code 3 (T-3): 0.5s ON, 0.5s OFF, 0.5s ON, 0.5s OFF, 0.5s ON, 1.5s OFF, repeat",
+        "typical_use": "Most commercial, educational, assembly buildings"
+      },
+      "private_mode": {
+        "description": "Alerts only designated personnel (staff, security, management)",
+        "typical_use": ["Hospitals (Stage 1 alarm)", "Theaters (staff notification)", "Detention facilities", "Certain industrial settings"],
+        "notes": "Must be able to convert to public mode if evacuation is needed"
+      },
+      "voice_evacuation": {
+        "description": "Uses speakers with live or pre-recorded voice messages for evacuation instructions",
+        "requirements": {
+          "intelligibility": "Minimum 0.50 Common Intelligibility Scale (CIS) or 0.70 Speech Transmission Index (STI)",
+          "speakers": "Distributed for even coverage, minimum 15 dBA above ambient",
+          "amplifiers": "Must have 24-hour backup, supervised",
+          "zones": "Must allow selective paging by zone/floor"
+        },
+        "required_in": ["High-rise buildings (>75 ft / 23m)", "Assembly occupancies >1000 persons", "Healthcare facilities", "Malls and covered malls", "Underground buildings"],
+        "reference": "NFPA 72 Chapter 24"
+      },
+      "emergency_voice_alarm_communication_systems": {
+        "description": "Full EVACS with live paging capability, zone selection, and firefighter phone",
+        "reference": "NFPA 72 Section 24.4"
+      }
+    }
+  },
+
+  "design_rules": {
+    "manual_initiation": {
+      "pull_station_placement": {
+        "rule": "Pull stations shall be located within 5 ft (1.5m) of the entrance to each exit",
+        "reference": "NFPA 72 Section 17.4.2.1",
+        "height": "3.5 ft to 4.5 ft (1.07m to 1.37m) from floor to operable part",
+        "visibility": "Must be visible and accessible",
+        "exceptions": ["Where approved by AHJ for specific building conditions"]
+      },
+      "travel_distance_to_pull_station": {
+        "rule": "Maximum travel distance to the nearest manual station shall not exceed 200 ft (61m)",
+        "reference": "NFPA 72 Section 17.4.2.3",
+        "notes": "Measured along the normal path of egress"
+      }
+    },
+
+    "automatic_detection": {
+      "general_spacing": {
+        "smooth_ceiling": {
+          "smoke_detector": {
+            "nominal_spacing": "30 ft (9.1m)",
+            "reference": "NFPA 72 Section 17.6.3.1",
+            "description": "Point spacing for spot-type smoke detectors on smooth ceilings",
+            "measurement": "Measured from detector center to detector center",
+            "wall_distance": "Maximum distance from detector to a wall = half the nominal spacing = 15 ft (4.6m)",
+            "notes": "This is the NOMINAL spacing. Actual spacing depends on ceiling height, airflow, and obstructions."
+          },
+          "heat_detector": {
+            "rate_of Rise": {
+              "nominal_spacing": "50 ft (15.2m) — but typically installed at 15-30 ft to match smoke detector spacing",
+              "fixed_temperature": {
+                "57C_135F": {
+                  "nominal_spacing": "50 ft (15.2m) smooth ceiling",
+                  "ceiling_height_limit": "20 ft (6.1m) for 57°C rated detectors",
+                  "reference": "NFPA 72 Section 17.6.4"
+                },
+                "71C_160F": {
+                  "nominal_spacing": "50 ft (15.2m) smooth ceiling",
+                  "ceiling_height_limit": "30 ft (9.1m)",
+                  "notes": "Used in environments with higher ambient temperatures"
+                },
+                "100C_212F": {
+                  "nominal_spacing": "50 ft (15.2m) smooth ceiling",
+                  "ceiling_height_limit": "30 ft (9.1m)",
+                  "notes": "Boiler rooms, kitchens, industrial process areas"
+                }
+              }
+            },
+            "wall_distance": "Half nominal spacing = 25 ft (7.6m)"
+          }
+        },
+        "high_sloped_ceilings": {
+          "description": "Ceiling slope affects detector placement",
+          "rules": [
+            {
+              "slope": "Less than 1:8 (12.5%)",
+              "treatment": "Use smooth ceiling spacing rules",
+              "reference": "NFPA 72 Section 17.6.3.2.1"
+            },
+            {
+              "slope": "1:8 to 1:6 (12.5% to 16.7%)",
+              "treatment": "Reduce spacing — detectors within 3 ft (0.9m) of peak",
+              "reference": "NFPA 72 Section 17.6.3.2.2"
+            },
+            {
+              "slope": "Greater than 1:6 (16.7%)",
+              "treatment": "Detectors within 3 ft (0.9m) of peak AND additional row at bottom of slope",
+              "reference": "NFPA 72 Section 17.6.3.2.3"
+            }
+          ]
+        },
+        "beamed_ceilings": {
+          "description": "Beam depth affects detector placement requirements",
+          "rules": [
+            {
+              "beam_depth": "Less than 10% of ceiling height",
+              "treatment": "Treat as smooth ceiling",
+              "reference": "NFPA 72 Section 17.6.3.3.1"
+            },
+            {
+              "beam_depth": "10% to 20% of ceiling height",
+              "treatment": "Install detectors in each pocket (space between beams)",
+              "reference": "NFPA 72 Section 17.6.3.3.2"
+            },
+            {
+              "beam_depth": "Greater than 20% of ceiling height",
+              "treatment": "Install detectors on the bottom of beams AND in each pocket",
+              "reference": "NFPA 72 Section 17.6.3.3.3"
+            }
+          ]
+        },
+        "ceiling_height_corrections": {
+          "description": "Spacing must be reduced for high ceilings due to smoke stratification",
+          "corrections": [
+            {
+              "ceiling_height_ft": "10 to 12",
+              "smoke_spacing_modifier": "1.0 (no change)",
+              "heat_spacing_modifier": "1.0 (no change)"
+            },
+            {
+              "ceiling_height_ft": "12 to 15",
+              "smoke_spacing_modifier": "0.90",
+              "heat_spacing_modifier": "0.91"
+            },
+            {
+              "ceiling_height_ft": "15 to 20",
+              "smoke_spacing_modifier": "0.80",
+              "heat_spacing_modifier": "0.83"
+            },
+            {
+              "ceiling_height_ft": "20 to 30",
+              "smoke_spacing_modifier": "0.70",
+              "heat_spacing_modifier": "0.67",
+              "notes": "Smoke detectors may need to be multi-criteria or aspirating for reliability"
+            },
+            {
+              "ceiling_height_ft": "Above 30",
+              "smoke_spacing_modifier": "Consider aspirating smoke detection (ASD) or beam detectors",
+              "notes": "NFPA 72 does not provide standard spacing above 30 ft for spot-type smoke detectors"
+            }
+          ]
+        }
+      },
+
+      "special_locations": {
+        "elevator_shafts": {
+          "smoke_detector_required": true,
+          "location": "Top of hoistway",
+          "reference": "NFPA 72 Section 17.13.3.1 / ASME A17.1",
+          "additional": "Some jurisdictions require pit detector as well"
+        },
+        "elevator_lobbies": {
+          "smoke_detector_required": true,
+          "location": "In front of each elevator door on every floor",
+          "reference": "NFPA 72 Section 21.6",
+          "purpose": "Phase 1 recall — sends elevator to designated level"
+        },
+        "HVAC_ducts": {
+          "duct_detector_required": "When HVAC system >2000 CFM and serving more than one floor, or as required by mechanical code",
+          "location": "In supply return air duct upstream of any filter, cooling coil, or air treatment device",
+          "reference": "NFPA 72 Section 17.7.4.1",
+          "response": "Shuts down HVAC fan to prevent smoke spread"
+        },
+        "stairwells": {
+          "detectors": "Smoke detectors at each floor level in enclosed stairwells",
+          "reference": "Building code specific — NFPA 101"
+        },
+        "corridors": {
+          "spacing": "30 ft (9.1m) on center for smoke detectors",
+          "coverage_per_detector": "30 ft x 15 ft (9.1m x 4.6m) — corridor mode",
+          "notes": "Corridor is defined as width ≤ 20 ft (6.1m)"
+        },
+        "storage_areas": {
+          "recommendation": "Rate-of-rise heat detectors (faster response to rapid temperature increase)",
+          "ceiling_height_note": "High-bay storage may require beam detectors or ASD"
+        },
+        "kitchens": {
+          "recommendation": "Heat detectors only — avoid smoke detectors due to nuisance alarms",
+          "fixed_temp": "135°F (57°C) or 190°F (88°C) depending on cooking equipment"
+        },
+        "bathrooms": {
+          "recommendation": "Avoid smoke detectors — steam causes false alarms",
+          "alternative": "Heat detector if required"
+        },
+        "parking_garages": {
+          "recommendation": "CO detectors or beam smoke detectors",
+          "notes": "Standard spot smoke detectors unreliable due to air movement and exhaust"
+        }
+      }
+    },
+
+    "notification_appliances": {
+      "general_requirements": {
+        "coverage": "All occupiable spaces must receive notification",
+        "reference": "NFPA 72 Chapter 18",
+        "audible_minimum": "15 dBA above ambient OR 5 dBA above maximum ambient, whichever is greater",
+        "audible_absolute_minimum": "75 dBA OR 15 dBA above ambient, whichever is greater",
+        "visible_minimum": "Required in all areas where audible minimum cannot be met, plus all public areas",
+        "mounting_height_wall": "80 in to 96 in (2.03m to 2.44m) from floor",
+        "mounting_height_ceiling": "Minimum 6 in (152mm) from ceiling"
+      },
+      "temporal_code_3": {
+        "pattern": "0.5s ON → 0.5s OFF → 0.5s ON → 0.5s OFF → 0.5s ON → 1.5s OFF → REPEAT",
+        "frequency": "500 Hz to 3000 Hz (fundamental frequency)",
+        "reference": "NFPA 72 Section 18.4.3",
+        "purpose": "Universal evacuation signal — must be used for public mode notification",
+        "notes": "NOT to be confused with temporal code 4 (CO alarms) or other patterns"
+      },
+      "strobe_requirements": {
+        "intensity": {
+          "general": "15 cd (candela) minimum in corridors",
+          "rooms": "0.0375 × room area (sq ft) = minimum cd, OR 1 cd per 20 sq ft",
+          "minimum_per_room": "15 cd",
+          "maximum_per_room": "110 cd for wall-mounted, 177 cd for ceiling-mounted",
+          "reference": "NFPA 72 Section 18.5.5.4"
+        },
+        "spacing": {
+          "wall_mount": "100 cd strobe: covers up to 50 ft (15.2m) from device; 110 cd: 55 ft (16.8m)",
+          "ceiling_mount": "177 cd covers 50 ft (15.2m) radius",
+          "reference": "NFPA 72 Table 18.5.5.2.1(a)"
+        },
+        "flash_rate": "1 to 2 Hz (60 to 120 flashes per minute)",
+        "reference": "NFPA 72 Section 18.5.5.1",
+        "color": "White or amber (amber permitted only if building owner requests)"
+      },
+      "horn_requirements": {
+        "output_ratings": [
+          {"rating_dBA": "90", "setting": "Low"},
+          {"rating_dBA": "95", "setting": "Medium"},
+          {"rating_dBA": "100", "setting": "High"}
+        ],
+        "current_draw": "Typical 10-30 mA at 24VDC per horn",
+        "frequency": "3100 Hz (Horn), 2400 Hz + 670 Hz (Temporal) — varies by manufacturer"
+      },
+      "speaker_requirements": {
+        "power_taps": "1/4W, 1/2W, 1W, 2W",
+        "coverage_radius": "Approximately 15 ft (4.6m) per speaker at appropriate tap setting",
+        "intelligibility": "CIS ≥ 0.50 or STI ≥ 0.70 — must be measured in field",
+        "reference": "NFPA 72 Section 24.4.1.2",
+        "ambient_noise": "Speaker output must be 15 dBA above ambient or 5 dBA above average, whichever is greater, minimum 75 dBA"
+      }
+    },
+
+    "control_panel_requirements": {
+      "location": {
+        "requirements": [
+          "Located at point of entry used by fire department",
+          "In a room dedicated to fire alarm / building systems",
+          "Accessible to authorized personnel only",
+          "Lighted with minimum 30 fc (323 lux)",
+          "Temperature controlled (40°F to 120°F / 4°C to 49°C)",
+          "Wall-mounted: center 48 in (1.22m) from floor (recommended 60 in / 1.52m)"
+        ],
+        "reference": "NFPA 72 Section 17.4.1"
+      },
+      "annunciator": {
+        "description": "Remote display showing zone/device status",
+        "location": "Main entrance, fire command center, or security desk",
+        "requirements": [
+          "Shows all zones with LED indicators (Normal / Trouble / Alarm / Supervisory)",
+          "Zoned to match building floors/areas",
+          "Labels must be permanent and match floor plans"
+        ]
+      },
+      "power_supplies": {
+        "primary": "Dedicated 120VAC or 240VAC circuit from building power",
+        "secondary": "Sealed lead-acid batteries — 24-hour standby + 5-minute alarm (general)",
+        "extended_secondary": "24-hour standby + 15-minute alarm (voice evacuation systems)",
+        "battery_calculation": "Must account for all connected loads during alarm condition",
+        "reference": "NFPA 72 Section 10.6"
+      },
+      "supervision": {
+        "description": "Panel must monitor integrity of all wiring and connections",
+        "monitored_items": [
+          "All initiating device circuits (IDC)",
+          "All notification appliance circuits (NAC)",
+          "Primary and secondary power",
+          "Battery voltage and charger",
+          "All signaling line circuits (SLC)",
+          "Communication to central station (if applicable)"
+        ],
+        "trouble_signal": "Distinct audible and visual signal when any monitored circuit faults",
+        "reference": "NFPA 72 Section 10.6.7"
+      }
+    },
+
+    "circuit_wiring": {
+      "classification": {
+        "class_A": {
+          "description": "Redundant path — system continues to operate if a single wire break occurs",
+          "requirement": "Return conductor required; end-of-line device not needed",
+          "reference": "NFPA 72 Section 12.4",
+          "typical_use": "Life safety critical paths, high-rise, healthcare"
+        },
+        "class_B": {
+          "description": "Single path — circuit goes into trouble if wire breaks",
+          "requirement": "End-of-line resistor/device required",
+          "reference": "NFPA 72 Section 12.4",
+          "typical_use": "Most standard installations"
+        },
+        "class_C": {
+          "description": "Addressable SLC with fault isolation",
+          "typical_use": "Addressable systems with isolator modules",
+          "notes": "Provides equivalent functionality to Class A through digital means"
+        },
+        "class_D": {
+          "description": "Addressable SLC with two-fault tolerance",
+          "typical_use": "Advanced addressable systems"
+        },
+        "class_E": {
+          "description": "Wireless path — no physical conductors",
+          "typical_use": "Wireless devices and circuits",
+          "notes": "Must meet signal strength and supervision requirements",
+          "reference": "NFPA 72 Section 12.5"
+        },
+        "class_X": {
+          "description": "Multiple-fault-tolerant path",
+          "typical_use": "Critical installations requiring highest reliability"
+        }
+      },
+      "wire_types": {
+        "FPL": "Fire Protective Signaling Cable — general purpose",
+        "FPLP": "Fire Protective Signaling Cable — Plenum-rated",
+        "FPLR": "Fire Protective Signaling Cable — Riser-rated",
+        "notes": "Must use appropriate rating for the space (plenum, riser, general)",
+        "reference": "NFPA 70 (NEC) Article 760"
+      },
+      "conductor_sizing": {
+        "minimum_gauge": "18 AWG (0.82 mm²) for signal circuits",
+        "common_gauges": {
+          "18_AWG": {"area_mm2": "0.82", "resistance_ohm_per_kft": "6.51", "typical_use": "SLC, IDC, short runs"},
+          "16_AWG": {"area_mm2": "1.31", "resistance_ohm_per_kft": "4.10", "typical_use": "NAC, longer runs"},
+          "14_AWG": {"area_mm2": "2.08", "resistance_ohm_per_kft": "2.58", "typical_use": "Long NAC runs, high current"},
+          "12_AWG": {"area_mm2": "3.31", "resistance_ohm_per_kft": "1.62", "typical_use": "Very long runs, high device count"}
+        },
+        "voltage_drop_limit": "Maximum 10% voltage drop from panel to farthest device",
+        "reference": "NFPA 72 Section 10.6.7.2.1 / NEC Article 725"
+      }
+    },
+
+    "integration_interfaces": {
+      "elevator_recall": {
+        "trigger": "Smoke detector in elevator lobby OR machine room",
+        "action_phase1": "All elevators recalled to designated recall floor (usually ground)",
+        "action_phase2": "If smoke detected in elevator shaft — all elevators recalled to designated alternate floor",
+        "inputs_to_panel": "Elevator lobby smoke detectors, hoistway smoke detectors, machine room heat detectors",
+        "outputs_from_panel": "Relay contacts to elevator controller",
+        "reference": "NFPA 72 Section 21.6 / ASME A17.1",
+        "notes": "Firefighter's service must be operable during recall"
+      },
+      "hvac_shutdown": {
+        "trigger": "Duct smoke detector OR zone smoke detector (depending on design)",
+        "action": "Shut down affected HVAC zone air handlers",
+        "purpose": "Prevent smoke migration through HVAC system",
+        "reference": "NFPA 72 Section 21.8 / IMC Section 607",
+        "notes": "May also close fire/smoke dampers via separate fire alarm interface"
+      },
+      "door_release": {
+        "trigger": "Smoke detector in area OR general alarm signal",
+        "action": "Release electromagnetic holders on fire doors and smoke barriers",
+        "purpose": "Close fire-rated doors to compartmentalize building",
+        "reference": "NFPA 72 Section 21.9 / NFPA 80",
+        "notes": "Must fail-safe (doors close on power loss)"
+      },
+      "sprinkler_system": {
+        "water_flow_switch": "Detects water flowing through sprinkler pipe — indicates activated sprinkler",
+        "tamper_switch": "Detects when sprinkler control valve is closed (system impaired)",
+        "reference": "NFPA 72 Section 17.14",
+        "signal": "Water flow = alarm signal; Valve tamper = supervisory signal"
+      },
+      "fire_pump": {
+        "monitor": "Running status, power failure, phase reversal, low oil pressure (diesel)",
+        "reference": "NFPA 20",
+        "notes": "May require separate fire alarm monitoring points"
+      },
+      "stairway_pressurization": {
+        "trigger": "Smoke detection in stairwell or adjacent area",
+        "action": "Activate stairway pressurization fans",
+        "purpose": "Keep stairwells clear of smoke for evacuation",
+        "reference": "NFPA 92"
+      },
+      "emergency_lighting": {
+        "trigger": "General alarm signal",
+        "action": "Activate emergency lighting systems",
+        "reference": "NFPA 101"
+      },
+      "access_control": {
+        "trigger": "General alarm signal",
+        "action": "Unlock electronic access control doors to allow free egress",
+        "notes": "Must fail-safe (doors unlock on power loss)"
+      },
+      "kitchen_hood_suppression": {
+        "monitor": "System activation (alarm signal), system off (supervisory), system trouble",
+        "reference": "NFPA 96 / NFPA 17A",
+        "notes": "Usually includes gas shut-off valve monitoring"
+      },
+      "smoke_control": {
+        "description": "Complex smoke management systems in atriums, malls, and high-rise buildings",
+        "includes": ["Exhaust fans", "Supply fans", "Damper control", "Floor-by-floor pressurization"],
+        "reference": "NFPA 92",
+        "notes": "Requires dedicated smoke control panel with sequence of operations"
+      }
+    },
+
+    "testing_and_maintenance": {
+      "acceptance_testing": {
+        "description": "Required upon initial installation or modification",
+        "frequency": "100% testing of all devices",
+        "reference": "NFPA 72 Section 14.4",
+        "includes": [
+          "Visual inspection of all devices",
+          "Functional test of each initiating device",
+          "Functional test of each notification appliance",
+          "Verification of zone mapping and annunciator",
+          "Communication test to monitoring station",
+          "Battery and power supply test",
+          "Voice intelligibility test (if applicable)",
+          "Voltage drop verification on all circuits"
+        ]
+      },
+      "periodic_inspection": {
+        "annual": "100% testing of all devices, battery load test, full system inspection",
+        "semi_annual": "Test 50% of devices (alternating halves each 6 months)",
+        "quarterly": "Inspect batteries, verify monitoring signals",
+        "monthly": "Visual inspection, verify panel is normal",
+        "weekly": "Verify no trouble signals on panel",
+        "reference": "NFPA 72 Chapter 14",
+        "notes": "Local AHJ may require more frequent testing"
+      }
+    }
+  },
+
+  "documentation_requirements": {
+    "shop_drawings_must_include": [
+      "Floor plans showing device locations (symbols per NFPA 170)",
+      "Device type and spacing calculations",
+      "Zone mapping and device listing per zone",
+      "Single-line wiring diagrams",
+      "Voltage drop calculations for all circuits",
+      "Battery calculation with standby and alarm loads",
+      "Sequence of operations for all integration interfaces",
+      "Manufacturer data sheets for all equipment",
+      "Panel programming details (point mapping)",
+      "Contractor installation details and methods"
+    ],
+    "as_built_drawings": "Required after installation — must reflect actual field conditions",
+    "record_documents": "Must be provided to building owner within 30 days of acceptance"
+  }
+}

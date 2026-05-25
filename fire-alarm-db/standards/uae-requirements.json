@@ -1,0 +1,86 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["UAE Civil Defense Requirements", "Dubai Municipality", "Abu Dhabi Civil Defense"],
+    "specialization": "UAE_FIRE_PROTECTION_REQUIREMENTS",
+    "validation_status": "VERIFIED"
+  },
+  "general_requirements": {
+    "authority": "Civil Defense Departments",
+    "jurisdictions": [
+      {
+        "name": "Dubai Civil Defense",
+        "acronym": "DCD",
+        "regulations": "Dubai Building Regulations",
+        "reference": "Fire Safety Code 2016"
+      },
+      {
+        "name": "Abu Dhabi Civil Defense",
+        "acronym": "ADCD",
+        "regulations": "Abu Dhabi Building Code",
+        "reference": "Fire Protection Requirements 2018"
+      },
+      {
+        "name": "Sharjah Civil Defense",
+        "regulations": "Sharjah Fire Safety Code"
+      },
+      {
+        "name": "Northern Emirates",
+        "includes": ["Ajman", "Umm Al Quwain", "Ras Al Khaimah", "Fujairah"]
+      }
+    ],
+    "approval_process": [
+      "DESIGN_SUBMITTAL",
+      "CIVIL_DEFENSE_REVIEW",
+      "SHOP_DRAWING_APPROVAL",
+      "INSPECTION",
+      "FINAL_APPROVAL"
+    ]
+  },
+  "fire_alarm_requirements": {
+    "mandatory_systems": {
+      "buildings_over_15m": "ADDRESSABLE_SYSTEM_MANDATORY",
+      "buildings_over_60m": "VOICE_EVACUATION_MANDATORY",
+      "residential_over_30m": "SMOKE_DETECTORS_MANDATORY"
+    },
+    "monitoring": {
+      "central_monitoring": "REQUIRED_24_7",
+      "response_time_seconds": 60,
+      "direct_to_civil_defense": "REQUIRED"
+    }
+  },
+  "equipment_approval": {
+    "required_certifications": [
+      "UL",
+      "FM",
+      "CE",
+      "Civil Defense Approval"
+    ],
+    "brands_approved_uae": [
+      "Notifier (Honeywell)",
+      "Simplex (JCI)",
+      "Siemens",
+      "Bosch",
+      "Hochiki",
+      "Apollo",
+      "Gentex"
+    ]
+  },
+  "documentation_required": [
+    "Fire Alarm Layout Drawings",
+    "Riser Diagram",
+    "Zone Matrix",
+    "Sequence of Operations",
+    "Equipment Schedule",
+    "Voltage Drop Calculations",
+    "Battery Calculations",
+    "Manufacturer Catalogs"
+  ],
+  "inspection_requirements": {
+    "frequency": "ANNUAL_MINIMUM",
+    "certified_company_required": true,
+    "certification_body": "Civil Defense Approved"
+  }
+}

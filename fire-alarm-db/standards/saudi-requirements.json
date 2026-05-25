@@ -1,0 +1,92 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["Saudi Civil Defense Requirements", "SASO Standards", "Saudi Building Code"],
+    "specialization": "SAUDI_ARABIA_FIRE_PROTECTION_REQUIREMENTS",
+    "validation_status": "VERIFIED"
+  },
+  "general_requirements": {
+    "authority": "Civil Defense Department",
+    "jurisdiction": "All regions of Saudi Arabia",
+    "main_office": "General Directorate of Civil Defense",
+    "approval_process": [
+      "Initial Design Approval",
+      "Shop Drawing Approval",
+      "Installation Inspection",
+      "Final Commissioning",
+      "Civil Defense Clearance Certificate"
+    ]
+  },
+  "fire_alarm_requirements": {
+    "mandatory_systems": {
+      "buildings_over_7_floors": "ADDRESSABLE_SYSTEM_MANDATORY",
+      "buildings_over_23m": "VOICE_EVACUATION_MANDATORY",
+      "all_commercial": "FIRE_ALARM_SYSTEM_REQUIRED",
+      "hotels": "ADDRESSABLE_WITH_MONITORING"
+    },
+    "monitoring": {
+      "central_monitoring": "REQUIRED",
+      "direct_to_civil_defense": "REQUIRED",
+      "response_time": "IMMEDIATE"
+    },
+    "inspection": {
+      "frequency": "ANNUAL",
+      "certified_company": "CIVIL_DEFENSE_APPROVED"
+    }
+  },
+  "equipment_requirements": {
+    "certifications_required": [
+      "UL",
+      "FM",
+      "SASO",
+      "Civil Defense Approval"
+    ],
+    "brands_approved": [
+      "Notifier (Honeywell)",
+      "Simplex (JCI)",
+      "Siemens",
+      "Bosch",
+      "Hochiki",
+      "Apollo"
+    ]
+  },
+  "documentation_required": [
+    "Fire Alarm Layout",
+    "Riser Diagram",
+    "Zone List",
+    "Sequence of Operations",
+    "Equipment Specifications",
+    "Voltage Drop Calculations",
+    "Battery Calculations",
+    "Manufacturer Approvals"
+  ],
+  "specific_requirements": {
+    "mosques": {
+      "detection": "SMOKE_DETECTOR_REQUIRED",
+      "notification": "HORN_STROBE",
+      "manual_stations": "NEAR_EXITS"
+    },
+    "schools": {
+      "detection": "SMOKE_PER_CLASSROOM",
+      "notification": "STROBE_IN_CORRIDORS",
+      "monitoring": "REQUIRED"
+    },
+    "hospitals": {
+      "detection": "ADDRESSABLE_HIGH_SENSITIVITY",
+      "voice_system": "REQUIRED",
+      "zoning": "PATIENT_AREA_SEPARATE"
+    },
+    "malls": {
+      "detection": "ADDRESSABLE",
+      "voice_system": "REQUIRED",
+      "common_area_monitoring": "REQUIRED"
+    }
+  },
+  "contractor_requirements": {
+    "license": "CIVIL_DEFENSE_LICENSE_REQUIRED",
+    "certified_technicians": "REQUIRED",
+    "inspection_company": "CIVIL_DEFENSE_APPROVED"
+  }
+}

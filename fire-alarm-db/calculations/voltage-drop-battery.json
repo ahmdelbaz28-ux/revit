@@ -1,0 +1,269 @@
+{
+  "meta": {
+    "title": "Electrical Calculations — Voltage Drop, Battery, and Wire Reference",
+    "description": "All formulas, tables, and examples for fire alarm electrical calculations",
+    "last_reviewed": "2026-05-09"
+  },
+
+  "voltage_drop": {
+    "formula": {
+      "name": "DC Voltage Drop (two-wire circuit)",
+      "formula": "Vdrop = (2 × I × R × L) / 1000",
+      "variables": {
+        "Vdrop": "Voltage drop in volts (V)",
+        "I": "Total circuit current in amps (A)",
+        "R": "Wire resistance per 1000 ft (Ω/kft)",
+        "L": "One-way wire length in feet (ft)",
+        "2": "Factor for two conductors (out and return)"
+      },
+      "metric_formula": "Vdrop = (2 × I × ρ × L) / A",
+      "metric_variables": {
+        "Vdrop": "Voltage drop in volts",
+        "I": "Current in amps",
+        "ρ": "Resistivity of copper = 0.0175 Ω·mm²/m at 20°C",
+        "L": "One-way wire length in meters",
+        "A": "Cross-sectional area of conductor in mm²"
+      },
+      "voltage_at_device": "Vdevice = Vpanel - Vdrop",
+      "acceptance_criteria": {
+        "voltage_at_farthest_device": "≥ 20VDC (recommended) / ≥ 16VDC (absolute minimum)",
+        "voltage_drop_percentage": "≤ 10% of nominal voltage (24V × 0.10 = 2.4V max drop)",
+        "notes": "Most manufacturers specify minimum operating voltage — always check datasheet"
+      }
+    },
+
+    "wire_resistance_table": {
+      "description": "Copper wire resistance at 20°C (68°F) — for voltage drop calculations",
+      "copper_conductors": [
+        {
+          "awg": "22",
+          "area_mm2": "0.32",
+          "diameter_mm": "0.64",
+          "resistance_ohm_per_kft": "16.46",
+          "resistance_ohm_per_km": "53.27",
+          "typical_use": "Not recommended for fire alarm (too thin)",
+          "notes": "NOT acceptable for fire alarm circuits"
+        },
+        {
+          "awg": "20",
+          "area_mm2": "0.52",
+          "diameter_mm": "0.81",
+          "resistance_ohm_per_kft": "10.35",
+          "resistance_ohm_per_km": "33.31",
+          "typical_use": "Short signal runs only",
+          "notes": "Marginal — not preferred"
+        },
+        {
+          "awg": "18",
+          "area_mm2": "0.82",
+          "diameter_mm": "1.02",
+          "resistance_ohm_per_kft": "6.51",
+          "resistance_ohm_per_km": "20.95",
+          "typical_use": "SLC, IDC, short NAC runs",
+          "notes": "MINIMUM acceptable gauge for fire alarm circuits"
+        },
+        {
+          "awg": "16",
+          "area_mm2": "1.31",
+          "diameter_mm": "1.29",
+          "resistance_ohm_per_kft": "4.10",
+          "resistance_ohm_per_km": "13.17",
+          "typical_use": "NAC circuits, longer SLC runs",
+          "notes": "Good balance of current capacity and ease of installation"
+        },
+        {
+          "awg": "14",
+          "area_mm2": "2.08",
+          "diameter_mm": "1.63",
+          "resistance_ohm_per_kft": "2.58",
+          "resistance_ohm_per_km": "8.28",
+          "typical_use": "Long NAC runs, high device count circuits",
+          "notes": "Recommended for NAC with many devices or long runs"
+        },
+        {
+          "awg": "12",
+          "area_mm2": "3.31",
+          "diameter_mm": "2.05",
+          "resistance_ohm_per_kft": "1.62",
+          "resistance_ohm_per_km": "5.21",
+          "typical_use": "Very long runs, high current, battery cables",
+          "notes": "Use when 14 AWG voltage drop is too high"
+        },
+        {
+          "awg": "10",
+          "area_mm2": "5.26",
+          "diameter_mm": "2.59",
+          "resistance_ohm_per_kft": "1.02",
+          "resistance_ohm_per_km": "3.28",
+          "typical_use": "Battery cables, very long outdoor runs",
+          "notes": "Rarely needed for signal circuits"
+        }
+      ],
+      "temperature_correction": {
+        "description": "Wire resistance increases with temperature",
+        "correction_factor": "Rt = R20 × [1 + α(T - 20)]",
+        "alpha_copper": "0.00393 per °C",
+        "notes": "For fire conditions (70°C max cable rating): resistance increases by approximately 20% — always design for worst case"
+      }
+    },
+
+    "calculation_examples": [
+      {
+        "id": "example-1-simple-nac",
+        "description": "NAC with 8 horn-strobe devices (95cd, high horn)",
+        "panel_voltage": "24VDC",
+        "wire_gauge": "16 AWG",
+        "one_way_length_ft": 400,
+        "devices": [
+          {"type": "Horn-Strobe 95cd High", "quantity": 8, "current_mA_each": 117}
+        ],
+        "calculation": {
+          "total_current_A": "8 × 0.117 = 0.936 A",
+          "wire_resistance": "4.10 Ω/kft (16 AWG)",
+          "vdrop": "2 × 0.936 × 4.10 × 400 / 1000 = 3.07V",
+          "voltage_at_last_device": "24 - 3.07 = 20.93V",
+          "result": "PASS — 20.93V > 20V (recommended) and > 16V (minimum)"
+        }
+      },
+      {
+        "id": "example-2-heavy-nac",
+        "description": "NAC with 20 horn-strobe devices (110cd, high horn) on long run",
+        "panel_voltage": "24VDC",
+        "wire_gauge": "18 AWG",
+        "one_way_length_ft": 600,
+        "devices": [
+          {"type": "Horn-Strobe 110cd High", "quantity": 20, "current_mA_each": 130}
+        ],
+        "calculation": {
+          "total_current_A": "20 × 0.130 = 2.60 A",
+          "wire_resistance": "6.51 Ω/kft (18 AWG)",
+          "vdrop": "2 × 2.60 × 6.51 × 600 / 1000 = 20.31V",
+          "voltage_at_last_device": "24 - 20.31 = 3.69V",
+          "result": "FAIL — 3.69V << 16V minimum",
+          "solution_1": "Change to 14 AWG: Vdrop = 2 × 2.60 × 2.58 × 600/1000 = 8.05V → Vdevice = 15.95V (still below 16V)",
+          "solution_2": "Change to 12 AWG: Vdrop = 2 × 2.60 × 1.62 × 600/1000 = 5.05V → Vdevice = 18.95V (PASS)",
+          "solution_3": "Split into 2 NACs with 10 devices each → total current per NAC = 1.30A → with 18 AWG: Vdrop = 2 × 1.30 × 6.51 × 600/1000 = 10.15V → Vdevice = 13.85V (still FAIL)",
+          "recommended_solution": "Use 12 AWG wire AND split into 2 circuits for best practice"
+        }
+      },
+      {
+        "id": "example-3-slc-loop",
+        "description": "Addressable SLC loop with 100 devices",
+        "panel_voltage": "24VDC",
+        "wire_gauge": "18 AWG",
+        "total_loop_length_ft": 2000,
+        "devices": [
+          {"type": "Addressable detector", "quantity": 80, "current_mA_each": 0.8},
+          {"type": "Addressable module", "quantity": 15, "current_mA_each": 2.0},
+          {"type": "Isolator module", "quantity": 5, "current_mA_each": 0.5}
+        ],
+        "calculation": {
+          "total_current_A": "(80×0.0008) + (15×0.002) + (5×0.0005) = 0.064 + 0.030 + 0.0025 = 0.0965 A",
+          "wire_resistance": "6.51 Ω/kft (18 AWG)",
+          "vdrop": "2 × 0.0965 × 6.51 × 2000/1000 = 2.51V",
+          "voltage_at_farthest_device": "24 - 2.51 = 21.49V",
+          "result": "PASS — addressable SLC currents are very low, voltage drop rarely an issue",
+          "notes": "SLC circuits rarely have voltage drop issues due to low device currents"
+        }
+      }
+    ]
+  },
+
+  "battery_calculation": {
+    "purpose": "Determine battery capacity (Ah) required to support the fire alarm system during primary power failure",
+    "standards": "NFPA 72 Section 10.6.7 / BS 5839-1 Section 25.4",
+    "requirements": {
+      "general_system": {
+        "standby_hours": 24,
+        "alarm_minutes": 5,
+        "description": "System must operate for 24 hours on battery (normal/quiescent), then 5 minutes in full alarm"
+      },
+      "voice_evacuation_system": {
+        "standby_hours": 24,
+        "alarm_minutes": 15,
+        "description": "EVACS requires 15 minutes of alarm (voice messages consume more power)"
+      }
+    },
+
+    "formula": {
+      "name": "Battery Capacity Calculation",
+      "standby_charge_Ah": "Total_standby_current_A × Standby_hours",
+      "alarm_charge_Ah": "Total_alarm_current_A × (Alarm_minutes / 60)",
+      "total_required_Ah": "(Standby_Ah + Alarm_Ah) × Safety_factor",
+      "safety_factor": "1.2 (20% margin) — recommended for conservative design",
+      "notes": "Always round UP to next standard battery size",
+      "derating": "Reduce battery capacity by 20% for temperatures above 25°C — batteries lose capacity in heat",
+      "end_of_life": "Batteries should be replaced when capacity drops to 80% of rated — account for this in design"
+    },
+
+    "current_categories": {
+      "description": "Every connected device draws current in BOTH standby and alarm states",
+      "device_currents": [
+        {"device": "Addressable smoke detector", "standby_mA": 0.5, "alarm_mA": 2.0, "notes": "Alarm current is momentary pulse, then drops back"},
+        {"device": "Addressable heat detector", "standby_mA": 0.3, "alarm_mA": 1.5},
+        {"device": "Addressable module (monitor)", "standby_mA": 0.5, "alarm_mA": 1.0},
+        {"device": "Addressable module (relay)", "standby_mA": 1.0, "alarm_mA": 3.0},
+        {"device": "Addressable horn-strobe (95cd, high)", "standby_mA": 0, "alarm_mA": 117, "notes": "Zero standby — only active during alarm"},
+        {"device": "Addressable horn-strobe (110cd, high)", "standby_mA": 0, "alarm_mA": 130},
+        {"device": "Conventional smoke detector (2-wire)", "standby_mA": 1.0, "alarm_mA": 5.0},
+        {"device": "Conventional pull station", "standby_mA": 1.0, "alarm_mA": 1.0},
+        {"device": "Remote annunciator", "standby_mA": 50, "alarm_mA": 100, "notes": "LED and display current"},
+        {"device": "System clock/calendar module", "standby_mA": 10, "alarm_mA": 10},
+        {"device": "Panel processor + display", "standby_mA": 200, "alarm_mA": 350, "notes": "Varies greatly by panel — check manufacturer data"},
+        {"device": "Cellular/IP communicator", "standby_mA": 100, "alarm_mA": 200},
+        {"device": "Door holder (electromagnetic)", "standby_mA": 150, "alarm_mA": 0, "notes": "Draws current in standby (holding door open), releases on alarm (no current)"}
+      ]
+    },
+
+    "calculation_example": {
+      "description": "Small commercial building — 1 panel, 50 detectors, 12 horn-strobes, remote annunciator",
+      "system_data": {
+        "standby_loads": [
+          {"item": "50 addressable detectors (standby)", "current_mA": "50 × 0.5 = 25"},
+          {"item": "10 monitor modules (standby)", "current_mA": "10 × 0.5 = 5"},
+          {"item": "5 relay modules (standby)", "current_mA": "5 × 1.0 = 5"},
+          {"item": "6 door holders (standby)", "current_mA": "6 × 150 = 900"},
+          {"item": "Remote annunciator", "current_mA": 50},
+          {"item": "Panel + processor", "current_mA": 200},
+          {"item": "Communicator", "current_mA": 100}
+        ],
+        "alarm_loads": [
+          {"item": "50 addressable detectors (alarm)", "current_mA": "50 × 2.0 = 100"},
+          {"item": "10 monitor modules (alarm)", "current_mA": "10 × 1.0 = 10"},
+          {"item": "5 relay modules (alarm)", "current_mA": "5 × 3.0 = 15"},
+          {"item": "12 horn-strobes 95cd high (alarm)", "current_mA": "12 × 117 = 1404"},
+          {"item": "Remote annunciator (alarm)", "current_mA": 100},
+          {"item": "Panel + processor (alarm)", "current_mA": 350},
+          {"item": "Communicator (alarm)", "current_mA": 200}
+        ]
+      },
+      "calculation": {
+        "total_standby_mA": "25 + 5 + 5 + 900 + 50 + 200 + 100 = 1285 mA = 1.285 A",
+        "total_alarm_mA": "100 + 10 + 15 + 1404 + 100 + 350 + 200 = 2179 mA = 2.179 A",
+        "standby_Ah": "1.285 × 24 = 30.84 Ah",
+        "alarm_Ah": "2.179 × (5/60) = 0.182 Ah",
+        "total_Ah": "30.84 + 0.182 = 31.02 Ah",
+        "with_safety_factor": "31.02 × 1.20 = 37.22 Ah",
+        "recommended_battery": "40 Ah or 50 Ah (standard sizes)",
+        "battery_configuration": "Two 12V batteries in series = 24V system, 40Ah each"
+      }
+    }
+  },
+
+  "standard_battery_sizes": {
+    "description": "Common sealed lead-acid (SLA) battery sizes for fire alarm systems",
+    "sizes": [
+      {"Ah": 7, "voltage": "12V", "typical_use": "Small conventional panels, single-zone systems"},
+      {"Ah": 12, "voltage": "12V", "typical_use": "Small addressable panels"},
+      {"Ah": 18, "voltage": "12V", "typical_use": "Medium addressable panels"},
+      {"Ah": 26, "voltage": "12V", "typical_use": "Medium-large panels"},
+      {"Ah": 33, "voltage": "12V", "typical_use": "Large panels"},
+      {"Ah": 40, "voltage": "12V", "typical_use": "Large panels, multiple NACs"},
+      {"Ah": 50, "voltage": "12V", "typical_use": "Very large panels, EVACS"},
+      {"Ah": 65, "voltage": "12V", "typical_use": "Campus / networked systems"},
+      {"Ah": 100, "voltage": "12V", "typical_use": "Very large installations, voice evacuation"},
+      {"Ah": 120, "voltage": "12V", "typical_use": "Maximum capacity SLA"}
+    ],
+    "notes": "Batteries are always installed in pairs (2 × 12V in series = 24V system). Always use batteries specified by panel manufacturer."
+  }
+}

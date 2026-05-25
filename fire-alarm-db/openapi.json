@@ -1,0 +1,758 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FireAlarmAI Multi-Domain Building Design Platform API",
+    "description": "API for the elite multi-domain building design platform. Manage projects, trigger AI-powered design pipelines across 7 engineering domains (FireAlarm, CCTV, PublicAddress, AccessControl, DataNetwork, Lighting, Power), approve and promote devices, and download generated outputs.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "FireAlarmAI Engineering Team"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.firealarmai.com/v1",
+      "description": "Production Server"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "Local Development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Domains",
+      "description": "Available engineering design domains"
+    },
+    {
+      "name": "Projects",
+      "description": "Design project management"
+    },
+    {
+      "name": "Design",
+      "description": "AI-powered design pipeline execution"
+    },
+    {
+      "name": "Devices",
+      "description": "Proposed and operational device management"
+    },
+    {
+      "name": "Tasks",
+      "description": "Async task status tracking"
+    },
+    {
+      "name": "Downloads",
+      "description": "Generated output file retrieval"
+    }
+  ],
+  "paths": {
+    "/domains": {
+      "get": {
+        "tags": ["Domains"],
+        "summary": "List available design domains",
+        "description": "Returns all configured engineering domains with their logic class identifiers.",
+        "operationId": "getAvailableDomains",
+        "responses": {
+          "200": {
+            "description": "Successful response with domain list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Domain"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects": {
+      "post": {
+        "tags": ["Projects"],
+        "summary": "Create a new design project",
+        "operationId": "createProject",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Projects"],
+        "summary": "List all projects",
+        "operationId": "listProjects",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "description": "Filter projects by domain name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter projects by status",
+            "schema": {
+              "type": "string",
+              "enum": ["Draft", "InProgress", "Routed", "Completed"]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedProjects"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}": {
+      "get": {
+        "tags": ["Projects"],
+        "summary": "Get project details",
+        "operationId": "getProject",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/rooms": {
+      "get": {
+        "tags": ["Projects"],
+        "summary": "List rooms in a project",
+        "operationId": "listProjectRooms",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectIdParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of rooms in the project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Room"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Projects"],
+        "summary": "Add a room to the project",
+        "operationId": "addProjectRoom",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectIdParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Room added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/elite-design": {
+      "post": {
+        "tags": ["Design"],
+        "summary": "Execute elite design pipeline",
+        "description": "Triggers the full multi-domain AI design pipeline (vision analysis, device placement, routing, output generation) for a given project and domain.",
+        "operationId": "executeEliteDesign",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/EliteDesignRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Design pipeline started. Returns task ID for status tracking.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAccepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters or missing file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unsupported domain or processing error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{task_id}": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "Get async task status",
+        "operationId": "getTaskStatus",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/downloads/{task_id}": {
+      "get": {
+        "tags": ["Downloads"],
+        "summary": "Download generated design outputs",
+        "description": "Returns a ZIP file containing all generated engineering deliverables (DWG, PDF, BOQ, schedule).",
+        "operationId": "downloadDesignOutputs",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP file download",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Output not yet available or task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{device_id}/approve": {
+      "put": {
+        "tags": ["Devices"],
+        "summary": "Approve a proposed device",
+        "operationId": "approveDevice",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Device approved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Device"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{device_id}/promote": {
+      "put": {
+        "tags": ["Devices"],
+        "summary": "Promote device to operational",
+        "description": "Promotes an approved device to the permanent operational tables, creating subtype entries and recording in loop topology.",
+        "operationId": "promoteDevice",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "system_id": {
+                    "type": "integer",
+                    "description": "Target fire alarm system ID"
+                  },
+                  "zone_id": {
+                    "type": "integer",
+                    "description": "Target zone ID"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Device promoted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Device"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Health check",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "healthy"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "ProjectIdParam": {
+        "name": "project_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "PageParam": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "LimitParam": {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      }
+    },
+    "schemas": {
+      "Domain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string",
+            "example": "CCTV"
+          },
+          "description": {
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProjectCreate": {
+        "type": "object",
+        "required": ["project_name", "domain"],
+        "properties": {
+          "project_name": {
+            "type": "string",
+            "example": "Cairo Office Tower"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "building_type": {
+            "type": "string",
+            "example": "Office"
+          },
+          "total_area": {
+            "type": "number"
+          },
+          "total_floors": {
+            "type": "integer"
+          },
+          "domain": {
+            "type": "string",
+            "description": "Engineering domain identifier",
+            "example": "FireAlarm"
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "project_name": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PaginatedProjects": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pages": {
+            "type": "integer"
+          }
+        }
+      },
+      "RoomCreate": {
+        "type": "object",
+        "required": ["name", "length", "width"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "default": "office"
+          },
+          "length": {
+            "type": "number"
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number",
+            "default": 3.0
+          },
+          "occupancy": {
+            "type": "integer",
+            "default": 0
+          }
+        }
+      },
+      "Room": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "length": {
+            "type": "number"
+          },
+          "width": {
+            "type": "number"
+          },
+          "area": {
+            "type": "number"
+          }
+        }
+      },
+      "EliteDesignRequest": {
+        "type": "object",
+        "required": ["project_name", "domain"],
+        "properties": {
+          "project_name": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string",
+            "description": "Target engineering domain (e.g., FireAlarm, CCTV)",
+            "example": "FireAlarm"
+          },
+          "image": {
+            "type": "string",
+            "format": "binary",
+            "description": "Floor plan image (JPG/PNG/PDF)"
+          },
+          "standard": {
+            "type": "string",
+            "default": "egyptian",
+            "description": "Design standard identifier"
+          }
+        }
+      },
+      "TaskAccepted": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "example": "processing"
+          }
+        }
+      },
+      "TaskStatus": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["processing", "completed", "failed"]
+          },
+          "download_url": {
+            "type": "string",
+            "description": "Present only if status is 'completed'"
+          },
+          "error_message": {
+            "type": "string",
+            "description": "Present only if status is 'failed'"
+          }
+        }
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "proposed_type": {
+            "type": "string"
+          },
+          "is_approved": {
+            "type": "boolean"
+          },
+          "operational_device_id": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}

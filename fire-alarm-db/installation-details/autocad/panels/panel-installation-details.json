@@ -1,0 +1,132 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "AutoCAD Installation Details Library - Panels and Cabinets",
+    "validation_status": "VERIFIED"
+  },
+  "control_panel_wall_mount": {
+    "detail_id": "PANEL-WALL-001",
+    "title": "Fire Alarm Control Panel - Wall Mount",
+    "description": "Standard wall mounted fire alarm control panel",
+    "layer": "F-INSTALL-PNL",
+    "components": [
+      {"component": "Control Panel", "model": "Notifier NFS2-640E or equivalent"},
+      {"component": "Backboard", "size": "36\" x 48\" x 3/4\""},
+      {"component": "Plywood", "type": "Marine grade treated"},
+      {"component": "Conduit Entry", "location": "Bottom"},
+      {"component": "Ground Wire", "size": "12 AWG"}
+    ],
+    "mounting_specs": {
+      "bottom_height_inches": 36,
+      "top_height_inches": 72,
+      "clearance_sides_inches": 12,
+      "clearance_front_inches": 36
+    },
+    "power_requirements": {
+      "voltage_vac": "120 or 240",
+      "circuit_amp": 20,
+      "dedicated_circuit": true
+    },
+    "symbols": ["Plan", "Elevation", "3D"]
+  },
+  "panel_grounding": {
+    "detail_id": "PANEL-GND-001",
+    "title": "Panel Grounding Connection",
+    "description": "Proper grounding for fire alarm panel",
+    "layer": "F-INSTALL-PNL",
+    "components": [
+      {"component": "Ground Bus", "type": "Copper bar"},
+      {"component": "Ground Wire", "size": "12 AWG green"},
+      {"component": "Building Steel Connection", "type": "Listed clamp"},
+      {"component": "Grounding Electrode", "type": "Water pipe or UFER"}
+    ],
+    "connection": {
+      "to_building_steel": true,
+      "to_cold_water_pipe": true,
+      "resistance_ohms": "25 ohms or less"
+    },
+    "symbols": ["Schematic", "Elevation"]
+  },
+  "battery_mounting": {
+    "detail_id": "PANEL-BAT-001",
+    "title": "Battery Cabinet Installation",
+    "description": "Sealed lead-acid battery cabinet for panel backup power",
+    "layer": "F-INSTALL-PNL",
+    "components": [
+      {"component": "Battery Cabinet", "size": "24\" x 18\" x 8\""},
+      {"component": "Battery", "type": "12V SLA", "ah": "18 to 65"},
+      {"component": "Battery Hold-down", "type": "Strap or bracket"},
+      {"component": "Ventilation", "type": "Natural or forced"}
+    ],
+    "mounting": {
+      "location": "Adjacent to panel or in cabinet",
+      "height_inches": "Floor or shelf mounted",
+      "ventilation_required": true
+    },
+    "clearance_inches": {
+      "sides": 2,
+      "top": 4
+    },
+    "symbols": ["Plan", "Elevation"]
+  },
+  "remote_annunciator": {
+    "detail_id": "PANEL-ANN-001",
+    "title": "Remote Annunciator Mount",
+    "description": "Remote LCD annunciator for fire alarm system",
+    "layer": "F-INSTALL-PNL",
+    "components": [
+      {"component": "Annunciator", "model": "LCD-80 or equivalent"},
+      {"component": "Backbox", "size": "16\" x 12\" x 4\""},
+      {"component": "Conduit", "size": "3/4\""},
+      {"component": "Data Cable", "type": "Shielded twisted pair"}
+    ],
+    "mounting": {
+      "location": "Security desk or entrance",
+      "height_inches": 48,
+      "visibility_required": true
+    },
+    "symbols": ["Plan", "Elevation"]
+  },
+  "network_node": {
+    "detail_id": "PANEL-NET-001",
+    "title": "Network Node Cabinet",
+    "description": "Network interface for multiple panel system",
+    "layer": "F-INSTALL-PNL",
+    "components": [
+      {"component": "Network Node", "model": "Noti. Net or equivalent"},
+      {"component": "Cabinet", "size": "24\" x 24\" x 6\""},
+      {"component": "Fiber Optic Patch Panel", "type": "ST or SC"},
+      {"component": "Ethernet Switch", "type": "Managed"}
+    ],
+    "mounting": {
+      "location": "Telecommunication room",
+      "type": "Wall or rack mount",
+      "ventilation": "Required"
+    },
+    "symbols": ["Plan", "Riser"]
+  },
+  "power_supply_auxiliary": {
+    "detail_id": "PANEL-PS-001",
+    "title": "Auxiliary Power Supply",
+    "description": "Remote power supply for notification circuits",
+    "layer": "F-INSTALL-PNL",
+    "components": [
+      {"component": "Power Supply", "model": "Notifier NPS-320"},
+      {"component": "Enclosure", "type": "NEMA 1"},
+      {"component": "Breaker", "size": "20 amp"},
+      {"component": "Battery", "type": "12V SLA"}
+    ],
+    "mounting": {
+      "location": "Adjacent to panel or remote",
+      "height_inches": 48,
+      "ventilation_required": true
+    },
+    "output": {
+      "voltage_vdc": 24,
+      "current_amps": "3.0 max per circuit"
+    },
+    "symbols": ["Plan", "Schematic"]
+  }
+}

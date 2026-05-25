@@ -1,0 +1,10 @@
+FireAlarmAI Safety Risk Assessment Report
+==================================================
+
+Room: office1
+Risk Level: CRITICAL
+Score: 11.5
+Confidence: 80.0%
+Recommendations: Immediate engineering review required, Increase detector coverage to meet 90% NFPA requirement, Add redundant detectors for critical area, Add additional exit for safe evacuation
+------------------------------
+

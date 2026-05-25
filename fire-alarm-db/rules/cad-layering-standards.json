@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "AutoCAD/Layering Standards for Fire Alarm Drawings",
+    "validation_status": "VERIFIED"
+  },
+  "layer_standards": {
+    "detection_devices": {
+      "layer": "F-DETECT",
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "description": "Smoke and heat detectors"
+    },
+    "manual_stations": {
+      "layer": "F-MANUAL",
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "description": "Manual pull stations"
+    },
+    "notification": {
+      "layer": "F-NOTIF",
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "description": "Horns, strobes, speakers"
+    },
+    "panel": {
+      "layer": "F-PANEL",
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "description": "Fire alarm control panel"
+    },
+    "wiring": {
+      "layer": "F-WIRE",
+      "color": "RED",
+      "linetype": "CONTINUOUS",
+      "description": "Fire alarm wiring"
+    },
+    "slu": {
+      "layer": "F-SLC",
+      "color": "YELLOW",
+      "linetype": "CONTINUOUS",
+      "description": "Signaling line circuit"
+    },
+    "nac": {
+      "layer": "F-NAC",
+      "color": "ORANGE",
+      "linetype": "CONTINUOUS",
+      "description": "Notification appliance circuit"
+    },
+    "text": {
+      "layer": "F-TEXT",
+      "color": "WHITE",
+      "description": "Device labels and notes"
+    }
+  },
+  "symbol_standards": {
+    "smoke_detector": "CIRCLE_R4",
+    "heat_detector": "TEMP_SYMBOL",
+    "manual_station": "RECTANGLE",
+    "strobe": "STROBE_SYMBOL",
+    "horn": "HORN_SYMBOL",
+    "speaker": "SPEAKER_SYMBOL",
+    "panel": "RECTANGLE_LARGE"
+  },
+  "labeling": {
+    "device_format": "FAD-XXX",
+    "zone_format": "ZONE-XX",
+    "floor_format": "Lv-XX"
+  },
+  "drawing_types": {
+    "floor_plan": "Fire alarm layout per floor",
+    "riser_diagram": "Vertical distribution",
+    "schematic": "System wiring diagram",
+    "details": "Installation details"
+  }
+}

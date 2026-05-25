@@ -1,0 +1,301 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "AutoCAD Installation Details Library - Conduit and Mounting Details",
+    "validation_status": "VERIFIED"
+  },
+  "conduit_mounting_details": {
+    "surface_mount_conduit": {
+      "detail_id": "CON-SURF-001",
+      "title": "Surface Mount Conduit on Concrete Wall",
+      "description": "EMT conduit surface mounted on concrete wall with straps",
+      "layer": "F-INSTALL-CON",
+      "components": [
+        {"component": "EMT Conduit", "size": "3/4\" to 1\""},
+        {"component": "Conduit Strap", "spacing": "Every 3 feet"},
+        {"component": "Conduit Clip", "type": "Single"},
+        {"component": "Screw", "size": "#10"}
+      ],
+      "dimensions": {
+        "conduit_od": "0.75 to 1.05 inches",
+        "strap_width": "1 inch",
+        "mounting_height": "8 feet max"
+      },
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    "conduit_mounting_wood_stud": {
+      "detail_id": "CON-WOOD-001",
+      "title": "Conduit Mounting on Wood Stud",
+      "description": "EMT conduit mounted on wood stud wall",
+      "layer": "F-INSTALL-CON",
+      "components": [
+        {"component": "EMT Conduit", "size": "3/4\""},
+        {"component": "Conduit Strap", "spacing": "Every 4 feet"},
+        {"component": "Wood Screw", "size": "#8 x 1.5\""}
+      ],
+      "symbols": ["Plan", "Elevation"]
+    },
+    "conduit_mounting_steel_stud": {
+      "detail_id": "CON-STEEL-001",
+      "title": "Conduit Mounting on Steel Stud",
+      "description": "EMT conduit mounted on steel stud wall",
+      "layer": "F-INSTALL-CON",
+      "components": [
+        {"component": "EMT Conduit", "size": "3/4\""},
+        {"component": "Steel Conduit Clip", "type": "Snap-in"},
+        {"component": "Self-Tapping Screw", "size": "#10"}
+      ],
+      "symbols": ["Plan", "Elevation"]
+    }
+  },
+  "backbox_details": {
+    "surface_mounted_box": {
+      "detail_id": "BB-SURF-001",
+      "title": "Surface Mounted Device Backbox",
+      "description": "Standard surface mounted backbox for smoke detector",
+      "layer": "F-INSTALL-BB",
+      "components": [
+        {"component": "Backbox", "size": "4\" x 4\" x 2\""},
+        {"component": "Cover Plate", "type": "Raised"},
+        {"component": "Conduit Connector", "size": "3/4\""},
+        {"component": "Mounting Screw", "size": "#6 x 1\""}
+      ],
+      "mounting": {
+        "height_inches": 8,
+        "orientation": "Vertical"
+      },
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    "recessed_backbox": {
+      "detail_id": "BB-REC-001",
+      "title": "Recessed Backbox in Wall",
+      "description": "Recessed backbox for clean wall appearance",
+      "layer": "F-INSTALL-BB",
+      "components": [
+        {"component": "Backbox", "size": "4\" x 4\" x 2.5\""},
+        {"component": "Extension Ring", "depth": "1\""},
+        {"component": "Cover Plate", "type": "Flat"},
+        {"component": "Wall Plate", "size": "Standard"}
+      ],
+      "mounting": {
+        "depth_inches": "2.5 to 3.5",
+        "wall_type": "Drywall"
+      },
+      "symbols": ["Plan", "Section"]
+    },
+    "junction_box": {
+      "detail_id": "BB-JUNC-001",
+      "title": "Fire Alarm Junction Box",
+      "description": "Standard junction box for fire alarm wiring",
+      "layer": "F-INSTALL-BB",
+      "components": [
+        {"component": "Junction Box", "size": "4\" x 4\" x 2.125\""},
+        {"component": "Blank Cover", "type": "Steel"},
+        {"component": "Conduit Knockouts", "size": "3/4\""},
+        {"component": "Grounding Screw", "type": "Green"}
+      ],
+      "wiring": {
+        "wire_fill": "Max 40%",
+        "splice_allowed": true
+      },
+      "symbols": ["Plan", "Elevation", "3D"]
+    }
+  },
+  "cable_routing_details": {
+    "cable_tray_fire_alarm": {
+      "detail_id": "CAB-TRAY-001",
+      "title": "Fire Alarm Cable in Ladder Tray",
+      "description": "Fire alarm wiring routed in cable ladder tray",
+      "layer": "F-INSTALL-CAB",
+      "components": [
+        {"component": "Ladder Tray", "width": "12 inches"},
+        {"component": "Fire Alarm Cable", "type": "FPLR"},
+        {"component": "Cable Tie", "spacing": "Every 6 inches"},
+        {"component": "Separation": "From power cables"}
+      ],
+      "clearance": {
+        "from_power_inches": 6,
+        "from_heavy_current_inches": 12
+      },
+      "symbols": ["Plan", "Section"]
+    },
+    "concealed_conduit_raceway": {
+      "detail_id": "CAB-CONC-001",
+      "title": "Concealed Conduit in Ceiling Space",
+      "description": "Concealed EMT conduit above ceiling",
+      "layer": "F-INSTALL-CAB",
+      "components": [
+        {"component": "EMT Conduit", "size": "3/4\""},
+        {"component": "Junction Box", "location": "Accessible"},
+        {"component": "Wire", "type": "FPLR 14/2"},
+        {"component": "Support Wire", "size": "12 AWG"}
+      ],
+      "routing": {
+        "ceiling_type": "Drop ceiling",
+        "access_required": true
+      },
+      "symbols": ["Plan", "Section"]
+    },
+    "surface_raceway": {
+      "detail_id": "CAB-SURF-001",
+      "title": "Surface Raceway for Fire Alarm",
+      "description": "Surface mounted raceway for exposed areas",
+      "layer": "F-INSTALL-CAB",
+      "components": [
+        {"component": "Raceway", "size": "1.5\" x 0.75\""},
+        {"component": "Base", "type": "Adhesive or screw"},
+        {"component": "Cover", "type": "Snap-on"},
+        {"component": "Fitting", "type": "Standard"}
+      ],
+      "application": {
+        "use": "Exposed walls or ceiling",
+        "environment": "Indoor dry"
+      },
+      "symbols": ["Plan", "Elevation", "3D"]
+    }
+  },
+  "panel_mounting_details": {
+    "wall_mount_panel": {
+      "detail_id": "PNL-WALL-001",
+      "title": "Fire Alarm Control Panel Wall Mount",
+      "description": "Standard wall mounted fire alarm control panel",
+      "layer": "F-INSTALL-PNL",
+      "components": [
+        {"component": "Backboard", "size": "3/4\" plywood"},
+        {"component": "Panel", "type": "Surface or recessed"},
+        {"component": "Conduit Entry", "location": "Bottom or top"},
+        {"component": "Ground Wire", "size": "12 AWG"}
+      ],
+      "mounting": {
+        "bottom_height_inches": 36,
+        "top_height_inches": 72,
+        "clearance_sides_inches": 12
+      },
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    "panel_grounding": {
+      "detail_id": "PNL-GND-001",
+      "title": "Panel Grounding Detail",
+      "description": "Proper grounding connection for fire alarm panel",
+      "layer": "F-INSTALL-PNL",
+      "components": [
+        {"component": "Ground Bus", "type": "Copper"},
+        {"component": "Ground Wire", "size": "12 AWG green"},
+        {"component": "Grounding Electrode", "type": "Building steel"},
+        {"component": "Connector", "type": "Listed"}
+      ],
+      "connection": {
+        "to_building_steel": true,
+        "to_ground_rod": false
+      },
+      "symbols": ["Schematic"]
+    }
+  },
+  "device_mounting_details": {
+    "ceiling_detector_mount": {
+      "detail_id": "DET-CL-001",
+      "title": "Smoke Detector Ceiling Mount",
+      "description": "Standard ceiling mounted smoke detector",
+      "layer": "F-INSTALL-DET",
+      "components": [
+        {"component": "Detector Base", "type": "Standard"},
+        {"component": "Mounting Bracket", "type": "4\" octagonal"},
+        {"component": "Conduit", "size": "3/4\" EMT"},
+        {"component": "Wire", "type": "18 AWG"}
+      ],
+      "mounting": {
+        "ceiling_clearance_inches": "6 inches minimum",
+        "from_wall_inches": "4 inches minimum",
+        "spacing_from_diffuser_inches": 36
+      },
+      "symbols": ["Plan", "Section", "3D"]
+    },
+    "wall_detector_mount": {
+      "detail_id": "DET-WALL-001",
+      "title": "Heat Detector Wall Mount",
+      "description": "Wall mounted heat detector for high ceilings",
+      "layer": "F-INSTALL-DET",
+      "components": [
+        {"component": "Detector Base", "type": "Wall mount"},
+        {"component": "Conduit", "size": "3/4\""},
+        {"component": "Junction Box", "size": "4\" square"}
+      ],
+      "mounting": {
+        "from_ceiling_inches": "4 to 12 inches",
+        "orientation": "Top of device 6\" from ceiling"
+      },
+      "symbols": ["Plan", "Elevation"]
+    },
+    "manual_station_mount": {
+      "detail_id": "MAN-WALL-001",
+      "title": "Manual Pull Station Wall Mount",
+      "description": "Standard manual pull station mounting",
+      "layer": "F-INSTALL-MAN",
+      "components": [
+        {"component": "Manual Station", "type": "Surface mount"},
+        {"component": "Backbox", "size": "Single gang"},
+        {"component": "Conduit", "size": "3/4\""},
+        {"component": "Wire", "type": "14 AWG"}
+      ],
+      "mounting": {
+        "center_height_inches": 48,
+        "range_inches": "42 to 54"
+      },
+      "symbols": ["Plan", "Elevation", "3D"]
+    }
+  },
+  "notification_mounting_details": {
+    "strobe_wall_mount": {
+      "detail_id": "NOT-STB-001",
+      "title": "Wall Mounted Strobe Light",
+      "description": "Wall mounted visual notification appliance",
+      "layer": "F-INSTALL-NOT",
+      "components": [
+        {"component": "Strobe Unit", "type": "Wall mount"},
+        {"component": "Backbox", "size": "4\" square"},
+        {"component": "Conduit", "size": "3/4\""},
+        {"component": "Wire", "type": "14 AWG"}
+      ],
+      "mounting": {
+        "center_height_inches": 80,
+        "range_inches": "72 to 96"
+      },
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    "speaker_ceiling_mount": {
+      "detail_id": "NOT-SPK-001",
+      "title": "Ceiling Mounted Speaker",
+      "description": "Ceiling mounted speaker for voice evacuation",
+      "layer": "F-INSTALL-NOT",
+      "components": [
+        {"component": "Speaker", "type": "Ceiling"},
+        {"component": "Backbox", "type": "0.5 cu ft"},
+        {"component": "Transformer", "type": "70V"},
+        {"component": "Wire", "type": "18 AWG"}
+      ],
+      "mounting": {
+        "ceiling_height_feet": "8 to 12",
+        "coverage_sqft": "400 to 800"
+      },
+      "symbols": ["Plan", "Section", "3D"]
+    },
+    "horn_strobe_combination": {
+      "detail_id": "NOT-HS-001",
+      "title": "Horn/Strobe Combination Mount",
+      "description": "Combined audible/visual notification",
+      "layer": "F-INSTALL-NOT",
+      "components": [
+        {"component": "Horn/Strobe", "type": "Wall mount"},
+        {"component": "Backbox", "size": "4\" square"},
+        {"component": "Conduit", "size": "3/4\""}
+      ],
+      "mounting": {
+        "center_height_inches": 80,
+        "clearance_inches": "4 from corner"
+      },
+      "symbols": ["Plan", "Elevation", "3D"]
+    }
+  }
+}

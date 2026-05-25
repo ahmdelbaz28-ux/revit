@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "standard": "EN 54 (Full Series)",
+    "title": "Fire detection and fire alarm systems — European product standard",
+    "publisher": "European Committee for Standardization (CEN)",
+    "scope": "Product certification requirements for all fire detection and alarm system components",
+    "notes": "EN 54 is a PRODUCT standard — it specifies how devices must perform. BS 5839 and NFPA 72 specify how to DESIGN with them.",
+    "mandatory_in": "All EU/EEA countries, widely referenced in Middle East, Africa, and Asia",
+    "certification_mark": "CE mark with EN 54 compliance",
+    "last_reviewed": "2026-05-09"
+  },
+
+  "parts": [
+    {
+      "part": "EN 54-1",
+      "title": "Introduction",
+      "scope": "Overview of the EN 54 series structure and general requirements"
+    },
+    {
+      "part": "EN 54-2",
+      "title": "Control and indicating equipment (CIE)",
+      "scope": "Requirements for fire alarm control panels",
+      "key_requirements": [
+        "Display and indicate fire, fault, and disable conditions",
+        "Provide audible and visual indicators",
+        "Accept signals from detectors and manual call points",
+        "Control outputs to notification appliances",
+        "Maintain event log",
+        "Battery backup supervision"
+      ]
+    },
+    {
+      "part": "EN 54-3",
+      "title": "Fire alarm devices — Sounders",
+      "scope": "Requirements for electronic sounders (horns/bells)",
+      "key_requirements": [
+        "Sound output: minimum 85 dBA at 1m",
+        "Frequency: 500 Hz to 3000 Hz fundamental",
+        "Pulse pattern requirements",
+        "IP rating per installation environment",
+        "Current consumption specifications"
+      ]
+    },
+    {
+      "part": "EN 54-4",
+      "title": "Power supply equipment",
+      "scope": "Requirements for power supply units and battery chargers",
+      "key_requirements": [
+        "24VDC standard system voltage",
+        "Battery charger specifications",
+        "Charger failure indication",
+        "Battery monitoring"
+      ]
+    },
+    {
+      "part": "EN 54-5",
+      "title": "Heat detectors — Point heat detectors",
+      "scope": "Classification and testing of point-type heat detectors",
+      "classes": [
+        {"class": "A1", "fixed_temp": "54°C to 65°C", "response_time_index": "less than specified", "notes": "Most common fixed-temp class"},
+        {"class": "A2", "fixed_temp": "54°C to 65°C", "response_time_index": "higher than A1", "notes": "Slightly slower response"},
+        {"class": "BR", "fixed_temp": "69°C to 85°C", "response_time_index": "rate-of-rise", "notes": "Higher temperature environments"},
+        {"class": "B", "fixed_temp": "69°C to 85°C", "response_time_index": "fixed only", "notes": "Boiler rooms, kitchens"},
+        {"class": "CR", "fixed_temp": "69°C to 85°C", "response_time_index": "rate-of-rise", "notes": "Combined rate-of-rise"},
+        {"class": "AR", "notes": "Rate-of-rise only, no fixed temperature element"}
+      ],
+      "reference": "BS 5839 detector selection guidance"
+    },
+    {
+      "part": "EN 54-7",
+      "title": "Smoke detectors — Point smoke detectors using scattered light, transmitted light or ionization",
+      "scope": "Classification and testing of point-type smoke detectors",
+      "classes": [
+        {"class": "A1", "sensitivity": "High sensitivity (0.065 to 0.12 dB/m obscuration)", "max_height": "12.5m", "notes": "Most sensitive — for high-ceiling or critical applications"},
+        {"class": "A2", "sensitivity": "Normal sensitivity (0.12 to 0.25 dB/m)", "max_height": "10.5m", "notes": "Standard commercial/general use"},
+        {"class": "B", "sensitivity": "Enhanced sensitivity", "max_height": "10.5m", "notes": "For specific risk areas"},
+        {"class": "C", "sensitivity": "Standard sensitivity", "max_height": "10.5m", "notes": "General purpose"},
+        {"class": "D", "sensitivity": "Lower sensitivity", "max_height": "10.5m", "notes": "Areas with moderate dust/steam"},
+        {"class": "E", "sensitivity": "Lowest sensitivity", "max_height": "10.5m", "notes": "Industrial, dusty environments"}
+      ],
+      "key_requirements": [
+        "Response to standard fire test fires (TF1-TF8)",
+        "Immunity to false alarm stimuli (steam, dust, insects)",
+        "Smoke entry test",
+        "Air velocity test",
+        "Electromagnetic compatibility (EMC)"
+      ],
+      "notes": "Class A1 and A2 detectors may be used at heights up to 12.5m per BS 5839-1 (Table 1)"
+    },
+    {
+      "part": "EN 54-10",
+      "title": "Flame detectors — Point flame detectors",
+      "scope": "Testing of flame detectors using infrared, ultraviolet, or multi-spectrum technology",
+      "types": [
+        {"type": "IR (Infrared)", "use": "Hydrocarbon fires, indoor industrial"},
+        {"type": "UV (Ultraviolet)", "use": "Flammable gas/liquid fires, outdoor"},
+        {"type": "Multi-spectrum IR/UV", "use": "General industrial, best false alarm rejection"},
+        {"type": "Video fire detection", "use": "Large open areas, tunnels, aircraft hangars"}
+      ],
+      "key_requirements": [
+        "Response to test fires at various distances",
+        "False alarm immunity tests",
+        "Field of view specifications"
+      ]
+    },
+    {
+      "part": "EN 54-11",
+      "title": "Manual call points",
+      "scope": "Requirements for manual fire alarm activation devices (pull stations / break-glass)",
+      "key_requirements": [
+        "Operating force: ≤ 100N for resettable, ≤ 15N for break-glass element",
+        "Resettable elements preferred (frangible glass is being phased out)",
+        "Must indicate activation visually",
+        "IP rating minimum IP43 for indoor"
+      ]
+    },
+    {
+      "part": "EN 54-13",
+      "title": "System performance assessment of components",
+      "scope": "System-level compatibility and interoperability testing",
+      "notes": "Requires combined testing of panel + detectors + sounders as a system, not just individual components"
+    },
+    {
+      "part": "EN 54-14",
+      "title": "Guidelines for planning, design, installation, commissioning, use and maintenance",
+      "scope": "Design and installation guidelines (complementary to BS 5839)",
+      "notes": "European Technical Specification (CEN/TS) — provides guidelines for all EU countries"
+    },
+    {
+      "part": "EN 54-17",
+      "title": "Short-circuit isolators",
+      "scope": "Requirements for short-circuit isolator modules",
+      "key_requirements": [
+        "Isolate short-circuit within 100µs",
+        "Allow remaining circuit to operate normally",
+        "Indicate isolation condition on panel"
+      ]
+    },
+    {
+      "part": "EN 54-18",
+      "title": "Input/output devices",
+      "scope": "Requirements for interface modules (monitored input modules, relay output modules)",
+      "types": [
+        {"type": "Input module", "function": "Monitor external contact (dry contact input)"},
+        {"type": "Output module", "function": "Control external device via relay output"},
+        {"type": "Input/Output module", "function": "Combined monitoring and control"}
+      ]
+    },
+    {
+      "part": "EN 54-20",
+      "title": "Aspirating smoke detectors",
+      "scope": "Requirements for aspirating (air sampling) smoke detection systems",
+      "classes": [
+        {"class": "Class A", "sensitivity": "0.005 to 0.1 dB/m", "notes": "Highest sensitivity — data centers, clean rooms"},
+        {"class": "Class B", "sensitivity": "0.01 to 0.2 dB/m", "notes": "High sensitivity — switch rooms, archives"},
+        {"class": "Class C", "sensitivity": "0.025 to 0.5 dB/m", "notes": "Standard — warehouses, offices"},
+        {"class": "Class D", "sensitivity": "0.05 to 1.0 dB/m", "notes": "Lower sensitivity — industrial, dusty areas"},
+        {"class": "Class E", "sensitivity": "0.1 to 2.0 dB/m", "notes": "Lowest sensitivity — harsh industrial environments"}
+      ],
+      "notes": "Multi-channel systems can have different sensitivity classes per pipe/channel"
+    },
+    {
+      "part": "EN 54-21",
+      "title": "Routing equipment",
+      "scope": "Requirements for fire alarm message routers and transmission equipment",
+      "use": "Network communication between panels and monitoring stations"
+    },
+    {
+      "part": "EN 54-23",
+      "title": "Fire alarm devices — Visual alarm devices",
+      "scope": "Requirements for visual notification appliances (strobe/beacon)",
+      "key_requirements": [
+        "Light output measured in candela",
+        "Flash rate: 0.5 Hz to 3 Hz",
+        "Coverage area specifications",
+        "Mounting height affects coverage"
+      ]
+    },
+    {
+      "part": "EN 54-25",
+      "title": "Components using radio links",
+      "scope": "Requirements for wireless fire alarm devices",
+      "key_requirements": [
+        "Radio signal strength monitoring",
+        "Battery supervision",
+        "Interference immunity",
+        "Signal path redundancy"
+      ]
+    },
+    {
+      "part": "EN 54-29",
+      "title": "Multi-sensor fire detectors — Multi-sensor detectors",
+      "scope": "Requirements for detectors combining multiple sensing technologies (smoke + heat + CO)",
+      "notes": "Multi-criteria detectors are the fastest growing segment — better false alarm rejection"
+    },
+    {
+      "part": "EN 54-31",
+      "title": "Multi-sensor fire detectors — Point fire detectors with CO sensor",
+      "scope": "Requirements for smoke + CO combination detectors",
+      "notes": "CO sensing helps distinguish between smoldering fires and nuisance sources"
+    }
+  ],
+
+  "fire_test_standards": {
+    "description": "EN 54 requires detectors to be tested against standardized fire test scenarios",
+    "test_fires": [
+      {"code": "TF1", "name": "Wood fire (smoldering)", "material": "European beech wood sticks", "notes": "Smoldering fire test — smoke before flame"},
+      {"code": "TF2", "name": "Wood fire (flaming)", "material": "European beech wood sticks, additional fuel", "notes": "Open flaming wood fire"},
+      {"code": "TF3", "name": "Cotton fire", "material": "Cotton wicks in heptane", "notes": "Fast flaming fire"},
+      {"code": "TF4", "name": "Polyurethane foam fire", "material": "Flexible polyurethane foam", "notes": "Toxic black smoke, fast development"},
+      {"code": "TF5", "name": "N-heptane fire", "material": "Heptane pool fire", "notes": "Liquid fuel fire — high heat, moderate smoke"},
+      {"code": "TF6", "name": "Methylated spirit fire", "material": "Ethanol/methylated spirit", "notes": "Low smoke, high heat — tests heat detectors"},
+      {"code": "TF7", "name": "Hidden fire", "material": "Wood fire behind obstruction", "notes": "Tests detector response to indirect smoke"},
+      {"code": "TF8", "name": "Filter paper fire", "material": "Cellulose filter paper smoldering", "notes": "Slow smoldering, high smoke output"}
+    ]
+  }
+}

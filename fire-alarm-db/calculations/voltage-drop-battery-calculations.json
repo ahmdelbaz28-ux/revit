@@ -1,0 +1,126 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NEC/NFPA 70", "NFPA 72", "Manufacturer data"],
+    "purpose": "Voltage Drop and Power Supply Calculations",
+    "validation_status": "VERIFIED"
+  },
+  "voltageDropFormula": {
+    "basic": {
+      "formula": "VD = (2 × L × I × K) / CM",
+      "variables": {
+        "VD": "Voltage drop (volts)",
+        "L": "One-way length (feet)",
+        "I": "Current (amps)",
+        "K": "Resistance (ohms per 1000 ft)",
+        "CM": "Wire circular mils"
+      }
+    },
+    "example_calculation": {
+      "wire": "14 AWG",
+      "length_ft": 200,
+      "current_amps": 2.0,
+      "resistance_ohms_1000ft": 2.5,
+      "circular_mils": 4110,
+      "calculation": "VD = (2 × 200 × 2.0 × 2.5) / 4110",
+      "voltage_drop_volts": 2.44,
+      "acceptable": "Yes (< 10% of 24V = 2.4V)"
+    }
+  },
+  "nacCircuitCalculations": {
+    "style_Y": {
+      "description": "Class B Style Y NAC",
+      "max_current": 3.0,
+      "max_wire_ft": "Based on voltage drop"
+    },
+    "style_Z": {
+      "description": "Class A Style Z NAC", 
+      "max_current": 3.0,
+      "wiring": "2 pairs"
+    },
+    "calculation_example": {
+      "scenario": "Notification circuit - 6 strobes",
+      "wire_size": "14 AWG",
+      "one_way_length_ft": 150,
+      "total_current_amps": 1.5,
+      "voltage_drop": 0.91,
+      "voltage_at_last_device": 23.09,
+      "result": "PASS - Within 10%"
+    }
+  },
+  "batteryCalculations": {
+    "method": {
+      "formula_standby": "BATTERY_AH = [(STANDBY_CURRENT × 24) × 1.2]",
+      "formula_alarm": "BATTERY_AH = [ALARM_CURRENT × (ALARM_DURATION_MINUTES / 60)]",
+      "total_required": "MAX(STANDBY, ALARM)"
+    },
+    "standby_calculations": {
+      "panel_ standby_current": 0.15,
+      "amps per detector": 0.0003,
+      "per_module": 0.001,
+      "per_notification": 0.0005,
+      "hours_required": 24
+    },
+    "alarm_calculations": {
+      "notification_amps": 0.5,
+      "duration_minutes": 15,
+      "total_required": "Calculated per device qty"
+    },
+    "example": {
+      "project": "Office building 10000 sqft",
+      "devices": {
+        "detectors": 30,
+        "modules": 5,
+        "notification": 8
+      },
+      "standby_calc": {
+        "panel": 0.15,
+        "detectors": 0.009,
+        "modules": 0.005,
+        "notification": 0.004,
+        "total_standby_amps": 0.168,
+        "battery_ah_standby": 4.84
+      },
+      "alarm_calc": {
+        "notification": 8,
+        "current_each": 0.5,
+        "total_alarm_amps": 4.0,
+        "battery_ah_alarm": 1.0
+      },
+      "battery_required_ah": 6,
+      "selected_battery": "12V 18AH"
+    }
+  },
+  "power_supply_sizing": {
+    "panel_power": {
+      "standard_voltage": "24 VDC",
+      "input": "120 or 240 VAC",
+      "charger_capacity": "1.5A to 5A"
+    },
+    "auxiliary_power": {
+      "rated_amps": "0.5A to 4A",
+      "uses": ["Notification circuits", "Access control", "Fans"]
+    },
+    "transformer_sizing": {
+      "method": "Total VA = (24V × Total Alarm Current) × 1.25",
+      "example": {
+        "alarm_current_amps": 3.0,
+        "va_required": 90,
+        "transformer的选择": "100VA"
+      }
+    }
+  },
+  "circuit_protection": {
+    "fuse_sizes": {
+      "nac_1amp": "3/4 amp",
+      "nac_2amp": "1.5 amp",
+      "nac_3amp": "2.5 amp"
+    },
+    "breaker": {
+      "main_power": "20 amp",
+      "battery_charger": "5 amp"
+    }
+  }
+}

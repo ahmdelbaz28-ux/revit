@@ -1,0 +1,160 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Revit Families Library - Conventional Fire Alarm System",
+    "system_type": "CONVENTIONAL",
+    "validation_status": "VERIFIED"
+  },
+  "family_categories": {
+    "fire_alarm": "Fire Alarm",
+    "electrical_devices": "Electrical Devices"
+  },
+  "families": [
+    {
+      "family_name": "FACP_Conventional_4Zone",
+      "category": "Fire Alarm",
+      "subcategory": "Panels",
+      "description": "4 Zone Conventional Fire Alarm Control Panel",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "ZoneCount", "type": "Integer", "default": 4},
+        {"name": "Width", "type": "Length", "default": "400mm"},
+        {"name": "Height", "type": "Length", "default": "500mm"},
+        {"name": "Depth", "type": "Length", "default": "150mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "SFP-2402"}
+      ],
+      "symbols": ["Plan", "Elevation", "3D"],
+      "comments": "Mounting height: 1200mm from finished floor"
+    },
+    {
+      "family_name": "FACP_Conventional_8Zone",
+      "category": "Fire Alarm",
+      "subcategory": "Panels",
+      "description": "8 Zone Conventional Fire Alarm Control Panel",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "ZoneCount", "type": "Integer", "default": 8},
+        {"name": "Width", "type": "Length", "default": "500mm"},
+        {"name": "Height", "type": "Length", "default": "600mm"},
+        {"name": "Depth", "type": "Length", "default": "150mm"}
+      ],
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "Detector_Smoke_Conventional",
+      "category": "Fire Alarm",
+      "subcategory": "Detectors",
+      "description": "Conventional Smoke Detector",
+      "hosting": "Ceiling Mounted",
+      "parameters": [
+        {"name": "Width", "type": "Length", "default": "150mm"},
+        {"name": "Height", "type": "Length", "default": "50mm"},
+        {"name": "DetectorType", "type": "Text", "default": "Photoelectric"}
+      ],
+      "symbols": ["Plan", "3D"],
+      "mounting_height": "150mm from ceiling"
+    },
+    {
+      "family_name": "Detector_Heat_Conventional",
+      "category": "Fire Alarm",
+      "subcategory": "Detectors",
+      "description": "Conventional Heat Detector",
+      "hosting": "Ceiling Mounted",
+      "parameters": [
+        {"name": "Width", "type": "Length", "default": "150mm"},
+        {"name": "Height", "type": "Length", "default": "50mm"},
+        {"name": "HeatRating", "type": "Text", "default": "135F"}
+      ],
+      "symbols": ["Plan", "3D"]
+    },
+    {
+      "family_name": "ManualPull_Conventional",
+      "category": "Fire Alarm",
+      "subcategory": "Manual Stations",
+      "description": "Conventional Manual Pull Station",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "Width", "type": "Length", "default": "100mm"},
+        {"name": "Height", "type": "Length", "default": "200mm"},
+        {"name": "Depth", "type": "Length", "default": "50mm"}
+      ],
+      "mounting_height": "1200mm from finished floor (center)"
+    },
+    {
+      "family_name": "Notification_Horn",
+      "category": "Fire Alarm",
+      "subcategory": "Notification",
+      "description": "Horn - Audible Notification Appliance",
+      "hosting": "Wall or Ceiling Mounted",
+      "parameters": [
+        {"name": "Width", "type": "Length", "default": "100mm"},
+        {"name": "Height", "type": "Length", "default": "100mm"},
+        {"name": "Depth", "type": "Length", "default": "50mm"},
+        {"name": "dBRating", "type": "Number", "default": 85}
+      ],
+      "mounting_height": "2100-2400mm from finished floor"
+    },
+    {
+      "family_name": "Notification_Strobe",
+      "category": "Fire Alarm",
+      "subcategory": "Notification",
+      "description": "Strobe Light - Visual Notification",
+      "hosting": "Wall or Ceiling Mounted",
+      "parameters": [
+        {"name": "Width", "type": "Length", "default": "100mm"},
+        {"name": "Height", "type": "Length", "default": "100mm"},
+        {"name": "Depth", "type": "Length", "default": "50mm"},
+        {"name": "Candela", "type": "Number", "default": 15}
+      ],
+      "mounting_height": "2100-2400mm from finished floor"
+    },
+    {
+      "family_name": "Notification_HornStrobe",
+      "category": "Fire Alarm",
+      "subcategory": "Notification",
+      "description": "Horn/Strobe Combination",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "Width", "type": "Length", "default": "100mm"},
+        {"name": "Height", "type": "Length", "default": "150mm"},
+        {"name": "Depth", "type": "Length", "default": "50mm"},
+        {"name": "dBRating", "type": "Number", "default": 85},
+        {"name": "Candela", "type": "Number", "default": 15}
+      ],
+      "mounting_height": "2100-2400mm from finished floor"
+    },
+    {
+      "family_name": "Notification_Bell",
+      "category": "Fire Alarm",
+      "subcategory": "Notification",
+      "description": "Alarm Bell",
+      "hosting": "Wall or Ceiling Mounted",
+      "parameters": [
+        {"name": "Diameter", "type": "Length", "default": "150mm"},
+        {"name": "Depth", "type": "Length", "default": "80mm"},
+        {"name": "dBRating", "type": "Number", "default": 82}
+      ],
+      "symbols": ["Plan", "Elevation", "3D"]
+    }
+  ],
+  "revit_properties": {
+    "system_classification": "Fire Alarm",
+    "family_category": "Fire Alarm",
+    " MEP_connected": true,
+    "electrical_data": {
+      "voltage": "24VDC",
+      "amperage": "0.15A typical"
+    }
+  },
+  "scheduling_parameters": [
+    "Mark",
+    "Description",
+    "Manufacturer",
+    "Model",
+    "Zone",
+    "System Classification"
+  ]
+}

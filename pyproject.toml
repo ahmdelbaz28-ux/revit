@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fireai"
+version = "1.0.0"
+description = "NFPA 72-2022 Automated Fire Detector Placement Engine"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+    { name = "FireAI Engineering Team" }
+]
+keywords = ["fire", "nfpa", "detector", "placement", "engineering", "safety"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "reportlab>=4.0.0",
+    "pulp>=2.7.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+    "pydantic>=2.0.0",
+    "shapely>=2.0.0",
+    "numpy>=1.26.0",
+]
+
+[project.optional-dependencies]
+revit = []
+autocad = []
+ifc = []
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "httpx>=0.27.0",
+]
+
+[project.scripts]
+fireai = "fireai.core.fire_cli:main"
+
+[project.urls]
+Homepage = "https://github.com/fireai/fireai"
+Documentation = "https://github.com/fireai/fireai#readme"
+Repository = "https://github.com/fireai/fireai"
+"Bug Tracker" = "https://github.com/fireai/fireai/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["fireai*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt", "*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+importmode = "prepend"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

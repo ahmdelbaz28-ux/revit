@@ -1,0 +1,258 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Revit Families Library - Installation Details",
+    "validation_status": "VERIFIED"
+  },
+  "revit_families": [
+    {
+      "family_name": "FADB_Conduit_SurfaceMount",
+      "category": "Fire Alarm",
+      "subcategory": "Conduit",
+      "description": "Surface mounted EMT conduit",
+      "parameters": [
+        {"name": "ConduitDiameter", "type": "Length", "default": "3/4 in"},
+        {"name": "ConduitLength", "type": "Length", "default": "3 ft"},
+        {"name": "Material", "type": "Text", "default": "EMT"},
+        {"name": "Finish", "type": "Text", "default": "Grey"}
+      ],
+      "hosting": "Wall or Ceiling",
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "FADB_Backbox_Surface",
+      "category": "Fire Alarm",
+      "subcategory": "Backbox",
+      "description": "Surface mounted device backbox",
+      "parameters": [
+        {"name": "Width", "type": "Length", "default": "4 in"},
+        {"name": "Height", "type": "Length", "default": "4 in"},
+        {"name": "Depth", "type": "Length", "default": "2 in"},
+        {"name": "BackboxType", "type": "Text", "default": "Standard"}
+      ],
+      "hosting": "Wall Mounted",
+      "mounting_height_inches": 48,
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "FADB_JunctionBox_Standard",
+      "category": "Fire Alarm",
+      "subcategory": "Junction Box",
+      "description": "Standard fire alarm junction box",
+      "parameters": [
+        {"name": "Width", "type": "Length", "default": "4 in"},
+        {"name": "Height", "type": "Length", "default": "4 in"},
+        {"name": "Depth", "type": "Length", "default": "2.125 in"},
+        {"name": "CoverType", "type": "Text", "default": "Blank"}
+      ],
+      "hosting": "Wall or Ceiling",
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "FADB_CableTray_FireAlarm",
+      "category": "Fire Alarm",
+      "subcategory": "Cable Routing",
+      "description": "Ladder tray for fire alarm cables",
+      "parameters": [
+        {"name": "TrayWidth", "type": "Length", "default": "12 in"},
+        {"name": "TrayLength", "type": "Length", "default": "10 ft"},
+        {"name": "SideRailHeight", "type": "Length", "default": "4 in"},
+        {"name": "Material", "type": "Text", "default": "Steel"}
+      ],
+      "hosting": "Ceiling or Wall",
+      "symbols": ["Plan", "Section", "3D"]
+    },
+    {
+      "family_name": "FADB_Panel_Backboard",
+      "category": "Fire Alarm",
+      "subcategory": "Panel",
+      "description": "Plywood backboard for panel mounting",
+      "parameters": [
+        {"name": "BoardWidth", "type": "Length", "default": "48 in"},
+        {"name": "BoardHeight", "type": "Length", "default": "36 in"},
+        {"name": "BoardThickness", "type": "Length", "default": "3/4 in"},
+        {"name": "Material", "type": "Text", "default": "Plywood"}
+      ],
+      "hosting": "Wall Mounted",
+      "mounting_height_inches": 36,
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "FADB_Battery_Cabinet",
+      "category": "Fire Alarm",
+      "subcategory": "Panel",
+      "description": "Battery cabinet for panel backup power",
+      "parameters": [
+        {"name": "CabinetWidth", "type": "Length", "default": "24 in"},
+        {"name": "CabinetHeight", "type": "Length", "default": "18 in"},
+        {"name": "CabinetDepth", "type": "Length", "default": "8 in"},
+        {"name": "BatterySize", "type": "Text", "default": "12V 18AH"}
+      ],
+      "hosting": "Floor or Wall",
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "FADB_Detector_CeilingMount",
+      "category": "Fire Alarm",
+      "subcategory": "Detector",
+      "description": "Smoke detector ceiling mount with base",
+      "parameters": [
+        {"name": "BaseDiameter", "type": "Length", "default": "4 in"},
+        {"name": "DetectorDiameter", "type": "Length", "default": "5.9 in"},
+        {"name": "Height", "type": "Length", "default": "2.2 in"},
+        {"name": "DetectorType", "type": "Text", "default": "Smoke"}
+      ],
+      "hosting": "Ceiling Mounted",
+      "mounting_clearance_inches": 6,
+      "symbols": ["Plan", "Section", "3D"]
+    },
+    {
+      "family_name": "FADB_Detector_DuctMount",
+      "category": "Fire Alarm",
+      "subcategory": "Detector",
+      "description": "Duct smoke detector assembly",
+      "parameters": [
+        {"name": "HousingWidth", "type": "Length", "default": "14 in"},
+        {"name": "HousingHeight", "type": "Length", "default": "8 in"},
+        {"name": "SampleTubeLength", "type": "Length", "default": "36 in"},
+        {"name": "DuctWidth", "type": "Length", "default": "24 in"}
+      ],
+      "hosting": "Duct Mounted",
+      "symbols": ["Plan", "Section", "3D"]
+    },
+    {
+      "family_name": "FADB_Detector_Beam",
+      "category": "Fire Alarm",
+      "subcategory": "Detector",
+      "description": "Beam detector emitter/receiver pair",
+      "parameters": [
+        {"name": "UnitWidth", "type": "Length", "default": "8 in"},
+        {"name": "UnitHeight", "type": "Length", "default": "10 in"},
+        {"name": "UnitDepth", "type": "Length", "default": "6 in"},
+        {"name": "BeamLength", "type": "Length", "default": "100 ft"}
+      ],
+      "hosting": "Wall or Ceiling Mounted",
+      "symbols": ["Plan", "Elevation", "Section"]
+    },
+    {
+      "family_name": "FADB_ManualStation_WallMount",
+      "category": "Fire Alarm",
+      "subcategory": "Manual",
+      "description": "Manual pull station wall mount",
+      "parameters": [
+        {"name": "StationWidth", "type": "Length", "default": "3.5 in"},
+        {"name": "StationHeight", "type": "Length", "default": "5 in"},
+        {"name": "StationDepth", "type": "Length", "default": "2 in"},
+        {"name": "StationType", "type": "Text", "default": "Single Action"}
+      ],
+      "hosting": "Wall Mounted",
+      "mounting_height_inches": 48,
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "FADB_Notification_Strobe",
+      "category": "Fire Alarm",
+      "subcategory": "Notification",
+      "description": "Wall mounted strobe light",
+      "parameters": [
+        {"name": "StrobeWidth", "type": "Length", "default": "5 in"},
+        {"name": "StrobeHeight", "type": "Length", "default": "5 in"},
+        {"name": "StrobeDepth", "type": "Length", "default": "2.5 in"},
+        {"name": "Candela", "type": "Number", "default": 15}
+      ],
+      "hosting": "Wall Mounted",
+      "mounting_height_inches": 80,
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "FADB_Notification_Speaker",
+      "category": "Fire Alarm",
+      "subcategory": "Notification",
+      "description": "Ceiling mounted speaker",
+      "parameters": [
+        {"name": "SpeakerDiameter", "type": "Length", "default": "12 in"},
+        {"name": "SpeakerDepth", "type": "Length", "default": "4 in"},
+        {"name": "Wattage", "type": "Number", "default": 4},
+        {"name": "Voltage", "type": "Number", "default": 70.7}
+      ],
+      "hosting": "Ceiling Mounted",
+      "symbols": ["Plan", "Section", "3D"]
+    },
+    {
+      "family_name": "FADB_Module_Monitor",
+      "category": "Fire Alarm",
+      "subcategory": "Module",
+      "description": "Addressable monitor module in enclosure",
+      "parameters": [
+        {"name": "ModuleWidth", "type": "Length", "default": "4 in"},
+        {"name": "ModuleHeight", "type": "Length", "default": "4 in"},
+        {"name": "ModuleDepth", "type": "Length", "default": "2 in"},
+        {"name": "ModuleType", "type": "Text", "default": "Monitor"}
+      ],
+      "hosting": "Wall Mounted",
+      "mounting_height_inches": 48,
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "FADB_Module_Control",
+      "category": "Fire Alarm",
+      "subcategory": "Module",
+      "description": "Addressable control module with relay",
+      "parameters": [
+        {"name": "ModuleWidth", "type": "Length", "default": "4 in"},
+        {"name": "ModuleHeight", "type": "Length", "default": "4 in"},
+        {"name": "ModuleDepth", "type": "Length", "default": "2 in"},
+        {"name": "RelayRating", "type": "Text", "default": "5A 120VAC"}
+      ],
+      "hosting": "Wall Mounted",
+      "symbols": ["Plan", "Elevation", "3D"]
+    },
+    {
+      "family_name": "FADB_Grounding_Bus",
+      "category": "Fire Alarm",
+      "subcategory": "Grounding",
+      "description": "Panel grounding bus bar",
+      "parameters": [
+        {"name": "BusWidth", "type": "Length", "default": "2 in"},
+        {"name": "BusHeight", "type": "Length", "default": "12 in"},
+        {"name": "BusThickness", "type": "Length", "default": "0.25 in"},
+        {"name": "Material", "type": "Text", "default": "Copper"}
+      ],
+      "hosting": "Wall Mounted",
+      "symbols": ["Plan", "Elevation", "Detail"]
+    },
+    {
+      "family_name": "FADB_Firestop_Conduit",
+      "category": "Fire Alarm",
+      "subcategory": "Firestop",
+      "description": "Firestop assembly for conduit penetration",
+      "parameters": [
+        {"name": "ConduitDiameter", "type": "Length", "default": "4 in"},
+        {"name": "OpeningDiameter", "type": "Length", "default": "4.5 in"},
+        {"name": "FirestopDepth", "type": "Length", "default": "4 in"},
+        {"name": "FireRating", "type": "Text", "default": "2 HR"}
+      ],
+      "hosting": "Wall or Floor Penetration",
+      "symbols": ["Section", "Detail", "3D"]
+    }
+  ],
+  "revit_parameters": {
+    "shared_parameters": [
+      "FADB_Phase",
+      "FADB_System",
+      "FADB_Manufacturer",
+      "FADB_Model",
+      "FADB_InstallDate",
+      "FADB_Status"
+    ]
+  },
+  "scheduling_parameters": [
+    "Mark",
+    "Description",
+    "Manufacturer",
+    "Model",
+    "Location"
+  ]
+}

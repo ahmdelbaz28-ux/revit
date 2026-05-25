@@ -1,0 +1,267 @@
+{
+  "meta": {
+    "title": "Integration Interfaces — Building System Interconnections",
+    "description": "All fire alarm system integration points with other building systems",
+    "standards_referenced": ["NFPA 72 Chapter 21", "BS 5839-1 Section 21", "ASME A17.1", "NFPA 80", "NFPA 92", "NFPA 20"],
+    "last_reviewed": "2026-05-09"
+  },
+
+  "interfaces": [
+    {
+      "id": "integration-elevator-recall",
+      "name": "Elevator Recall (Phase 1 & Phase 2)",
+      "priority": "CRITICAL — Life Safety",
+      "trigger_devices": ["Smoke detector in each elevator lobby", "Smoke detector in elevator machine room", "Heat detector in elevator machine room", "Smoke detector in elevator shaft (top)"],
+      "outputs": {
+        "phase1_recall": {
+          "description": "All elevators recalled to designated recall floor (typically ground floor)",
+          "action": "Elevators travel to recall floor, open doors, and go out of service",
+          "inputs_to_panel": [
+            {"device": "Lobby smoke detector — Floor X", "signal": "Alarm → initiate Phase 1 recall for elevators serving Floor X"},
+            {"device": "Machine room heat detector", "signal": "Alarm → initiate Phase 1 recall for ALL elevators"}
+          ],
+          "outputs_from_panel": [
+            {"destination": "Elevator controller", "signal": "Dry contact (NO) — closes on recall command", "quantity": "1 per elevator group or per car"}
+          ]
+        },
+        "phase2_recall": {
+          "description": "Firefighter's Phase 2 — if smoke in hoistway, recall to alternate floor",
+          "trigger": "Smoke detector in elevator shaft (hoistway)",
+          "action": "Elevators recalled to ALTERNATE designated floor",
+          "notes": "Only activated when Phase 1 has already been triggered"
+        }
+      },
+      "monitoring_points": {
+        "description": "Fire alarm panel must monitor elevator status",
+        "inputs_to_panel": [
+          "Elevator running status (each car)",
+          "Elevator at recall floor status",
+          "Elevator Phase 2 active status",
+          "Elevator trouble/fault status"
+        ]
+      },
+      "standards": "NFPA 72 Section 21.6 / ASME A17.1 Chapter 2 / BS 5839-1 Section 21.3 / BS EN 81-72",
+      "notes": "Elevator recall is one of the most critical fire alarm integrations — must be tested during commissioning with elevator contractor present"
+    },
+    {
+      "id": "integration-hvac",
+      "name": "HVAC Shutdown / Smoke Control",
+      "priority": "HIGH",
+      "trigger_devices": ["Duct smoke detectors (supply and return)", "Zone smoke detectors (if smoke control required)"],
+      "outputs": {
+        "fan_shutdown": {
+          "description": "Shut down air handling unit serving affected zone",
+          "action": "Energize relay to interrupt power to AHU motor starter",
+          "signal": "Dry contact from fire alarm control relay module"
+        },
+        "damper_closure": {
+          "description": "Close fire/smoke dampers in affected zone",
+          "action": "Release actuator power (fail-close) or energize close signal",
+          "type": "Fire dampers (fusible link — close at 165°F) OR smoke dampers (motorized — controlled by fire alarm)"
+        },
+        "smoke_control": {
+          "description": "Activate smoke exhaust and pressurization fans",
+          "action": "Sequence of operations to manage smoke movement",
+          "complexity": "May require dedicated smoke control panel with multiple stages",
+          "standard": "NFPA 92"
+        }
+      },
+      "duct_detector_locations": {
+        "supply_air": "Downstream of filters, before any branch or coil",
+        "return_air": "Before exhaust connection, after recirculation connection",
+        "access": "Within 3 ft (1m) of duct detector housing",
+        "required_when": "HVAC system > 2000 CFM serving more than one zone (NFPA) or per risk assessment (BS)"
+      },
+      "standards": "NFPA 72 Section 21.8 / BS 5839-1 Section 21.2 / IMC Section 607 / NFPA 92",
+      "notes": "HVAC shutdown prevents smoke distribution — one of the most important life safety integrations"
+    },
+    {
+      "id": "integration-door-release",
+      "name": "Fire Door Release / Magnetic Hold-Open",
+      "priority": "HIGH — Compartmentation",
+      "trigger": "Any fire alarm signal OR smoke detector in adjacent area",
+      "outputs": {
+        "magnetic_holder_release": {
+          "description": "Remove power from electromagnetic door holders to allow fire doors to close",
+          "action": "Fail-safe — doors close when power is removed",
+          "power": "24VDC from fire alarm panel (or separate power with fire alarm interface)",
+          "current": "50-200 mA per holder",
+          "devices_per_circuit": "Limited by current draw — use relay modules for multiple holders"
+        }
+      },
+      "monitoring": {
+        "description": "Fire alarm panel should monitor door holder status",
+        "inputs": "Door holder power status (monitor module)", 
+        "notes": "If door holder loses power unexpectedly → trouble signal"
+      },
+      "standards": "NFPA 72 Section 21.9 / NFPA 80 / BS 5839-1 Section 21.1 / BS 7273-4",
+      "notes": "Critical for fire compartmentation — ensure ALL fire doors are on hold-open release system"
+    },
+    {
+      "id": "integration-sprinkler",
+      "name": "Sprinkler System Monitoring",
+      "priority": "HIGH",
+      "monitoring_points": {
+        "water_flow_switch": {
+          "description": "Detects water flowing through sprinkler system — indicates activated sprinkler head(s)",
+          "signal_type": "ALARM",
+          "location": "On main sprinkler riser (one per system/zone)",
+          "notes": "Water flow = fire condition — highest priority alarm"
+        },
+        "control_valve_tamper": {
+          "description": "Detects when sprinkler control valve is partially or fully closed (system impaired)",
+          "signal_type": "SUPERVISORY",
+          "location": "On each sprinkler control valve (OS&Y or PIV)",
+          "notes": "Valve closed = system is impaired — must be corrected immediately",
+          "critical": "A closed sprinkler valve during a fire = catastrophic failure"
+        },
+        "low_pressure_switch": {
+          "description": "Monitors water pressure in sprinkler system",
+          "signal_type": "SUPERVISORY",
+          "notes": "Low pressure may indicate water supply issue or leak"
+        },
+        "fire_pump_running": {
+          "description": "Monitors fire pump running status",
+          "signal_type": "SUPERVISORY",
+          "notes": "Pump running when no flow = potential problem"
+        },
+        "fire_pump_fault": {
+          "description": "Monitors fire pump trouble conditions",
+          "signals": ["Engine trouble (diesel)", "Phase reversal (electric)", "Low oil pressure", "Overtemperature"],
+          "signal_type": "SUPERVISORY/TROUBLE"
+        }
+      },
+      "standards": "NFPA 72 Section 21.5 / NFPA 13 / NFPA 20 / BS 5839-1 Section 21.4"
+    },
+    {
+      "id": "integration-access-control",
+      "name": "Access Control System Release",
+      "priority": "MEDIUM-HIGH",
+      "trigger": "General fire alarm signal (all zones alarm)",
+      "outputs": {
+        "maglock_release": {
+          "description": "Release electromagnetic locks on egress doors",
+          "action": "Remove power to maglocks to allow free egress",
+          "fail_safe": "Must fail-safe — doors unlock on power loss"
+        },
+        "electric_strike_release": {
+          "description": "Release electric strikes on access-controlled doors",
+          "action": "Energize strike to unlock (or de-energize if fail-safe strike)"
+        }
+      },
+      "standards": "NFPA 72 Section 21.12 / NFPA 101 (Life Safety Code) / BS 5839-1",
+      "notes": "ALL access-controlled egress doors must release on fire alarm — this is a life safety requirement, not optional"
+    },
+    {
+      "id": "integration-stairwell-pressurization",
+      "name": "Stairwell Pressurization",
+      "priority": "HIGH",
+      "trigger": "Fire alarm signal (zone-specific or general)",
+      "outputs": {
+        "pressurization_fan_activation": {
+          "description": "Activate stairwell pressurization fans to keep stairwells smoke-free",
+          "action": "Start fans, open supply dampers, monitor differential pressure",
+          "pressure_target": "25-50 Pa positive pressure in stairwell relative to adjacent spaces"
+        },
+        "pressure_monitoring": {
+          "description": "Monitor and adjust stairwell pressure",
+          "inputs_to_panel": ["Fan running status", "Pressure differential switches", "Damper position"],
+          "notes": "May require dedicated pressure control system"
+        }
+      },
+      "standards": "NFPA 92 / BS EN 12101-6",
+      "typical_use": "High-rise buildings, underground buildings, shopping malls"
+    },
+    {
+      "id": "integration-emergency-lighting",
+      "name": "Emergency Lighting Activation",
+      "priority": "MEDIUM",
+      "trigger": "Fire alarm signal",
+      "outputs": {
+        "emergency_light_activation": {
+          "description": "Activate emergency lighting system (if not self-contained)",
+          "action": "Switch to battery-powered emergency lighting circuits"
+        }
+      },
+      "notes": "Many modern emergency lights are self-contained (battery within each fixture) and activate automatically on power failure — fire alarm interface may not be required",
+      "standards": "NFPA 101 / IEC 60364-5-56"
+    },
+    {
+      "id": "integration-gas-shutoff",
+      "name": "Gas Supply Shut-Off",
+      "priority": "HIGH (if applicable)",
+      "trigger": "Fire alarm signal in gas-equipped area",
+      "outputs": {
+        "gas_valve_closure": {
+          "description": "Close natural gas/LPG supply valve",
+          "action": "Energize fail-close gas solenoid valve",
+          "monitoring": "Valve open/closed status (supervisory input)"
+        }
+      },
+      "standards": "Local gas code / NFPA 54",
+      "typical_use": "Commercial kitchens, boiler rooms, industrial gas systems"
+    },
+    {
+      "id": "integration-kitchen-hood",
+      "name": "Kitchen Hood Fire Suppression System",
+      "priority": "HIGH",
+      "monitoring_points": {
+        "system_activated": "ALARM — suppression system has discharged",
+        "system_off": "SUPERVISORY — system is turned off or impaired",
+        "system_trouble": "TROUBLE — system malfunction"
+      },
+      "outputs": {
+        "gas_shut_off": "Close gas supply to cooking equipment",
+        "electrical_disconnect": "Shut off power to cooking equipment below hood"
+      },
+      "standards": "NFPA 96 / NFPA 17A / UL 300",
+      "notes": "Kitchen suppression systems are stand-alone but must be monitored by fire alarm"
+    },
+    {
+      "id": "integration-fire-pump",
+      "name": "Fire Pump Monitoring",
+      "priority": "CRITICAL",
+      "monitoring_points": {
+        "pump_running": "Engine/electric motor running status",
+        "pump_faul": "Phase reversal, overtemperature, low oil, battery charger failure",
+        "pump_controller_power": "Loss of power to fire pump controller"
+      },
+      "standards": "NFPA 20 / NFPA 72 Section 21.7"
+    },
+    {
+      "id": "integration-smoke-curtain",
+      "name": "Smoke Curtain / Barrier Deployment",
+      "priority": "MEDIUM-HIGH",
+      "trigger": "Zone-specific or general fire alarm",
+      "outputs": {
+        "curtain_deploy": "Deploy smoke curtain from ceiling-mounted housing",
+        "action": "Motorized or gravity deployment — close opening to prevent smoke spread"
+      },
+      "standards": "BS 8524 / EN 12101-1",
+      "typical_use": "Atriums, shopping malls, large open-plan buildings"
+    }
+  ],
+
+  "sequence_of_operations_template": {
+    "description": "Template for documenting cause-and-effect sequences in design drawings",
+    "format": {
+      "trigger": "Device/Zone that initiates action",
+      "action": "What the system does",
+      "output": "Which relay/module activates",
+      "destination": "Which system receives the signal",
+      "delay": "Any time delay before action",
+      "priority": "Alarm/Supervisory/Trouble",
+      "notes": "Special conditions or exceptions"
+    },
+    "example": {
+      "sequence_id": "SEQ-001",
+      "trigger": "Smoke detector — Elevator Lobby Floor 3",
+      "action": "Phase 1 Elevator Recall",
+      "output": "Relay Module RM-05 (Floor 3)",
+      "destination": "Elevator Controller — Car 1, 2, 3",
+      "delay": "0 seconds",
+      "priority": "ALARM",
+      "notes": "All cars serving Floor 3 recalled to Ground Floor"
+    }
+  }
+}

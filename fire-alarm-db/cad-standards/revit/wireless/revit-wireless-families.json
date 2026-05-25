@@ -1,0 +1,120 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "Revit Families Library - Wireless Fire Alarm System",
+    "system_type": "WIRELESS",
+    "validation_status": "VERIFIED"
+  },
+  "family_categories": {
+    "fire_alarm": "Fire Alarm",
+    "electrical_devices": "Electrical Devices"
+  },
+  "families": [
+    {
+      "family_name": "FACP_Wireless_Gateway",
+      "category": "Fire Alarm",
+      "subcategory": "Panels",
+      "description": "Wireless Fire Alarm Gateway",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "GatewayID", "type": "Text", "default": "GW-1"},
+        {"name": "MaxDevices", "type": "Integer", "default": 127},
+        {"name": "Frequency", "type": "Text", "default": "900 MHz"},
+        {"name": "Width", "type": "Length", "default": "300mm"},
+        {"name": "Height", "type": "Length", "default": "400mm"},
+        {"name": "Depth", "type": "Length", "default": "100mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "SWM"}
+      ],
+      "symbols": ["Plan", "Elevation", "3D"],
+      "mounting_height": "1200mm from finished floor"
+    },
+    {
+      "family_name": "Detector_Smoke_Wireless",
+      "category": "Fire Alarm",
+      "subcategory": "Detectors",
+      "description": "Wireless Smoke Detector with Battery",
+      "hosting": "Ceiling Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "GatewayID", "type": "Text", "default": "GW-1"},
+        {"name": "BatteryLife", "type": "Text", "default": "5 Years"},
+        {"name": "Sensitivity", "type": "Text", "default": "2.5%"},
+        {"name": "Diameter", "type": "Length", "default": "120mm"},
+        {"name": "Height", "type": "Length", "default": "60mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"},
+        {"name": "Model", "type": "Text", "default": "SWM-B"}
+      ],
+      "symbols": ["Plan", "3D"],
+      "special_note": "SHOW BATTERY ICON"
+    },
+    {
+      "family_name": "Detector_Heat_Wireless",
+      "category": "Fire Alarm",
+      "subcategory": "Detectors",
+      "description": "Wireless Heat Detector",
+      "hosting": "Ceiling Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "BatteryLife", "type": "Text", "default": "5 Years"},
+        {"name": "HeatRating", "type": "Text", "default": "135F"},
+        {"name": "Diameter", "type": "Length", "default": "120mm"},
+        {"name": "Height", "type": "Length", "default": "60mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"}
+      ],
+      "symbols": ["Plan", "3D"]
+    },
+    {
+      "family_name": "ManualPull_Wireless",
+      "category": "Fire Alarm",
+      "subcategory": "Manual Stations",
+      "description": "Wireless Manual Pull Station",
+      "hosting": "Wall Mounted",
+      "parameters": [
+        {"name": "DeviceAddress", "type": "Integer", "default": 1},
+        {"name": "BatteryLife", "type": "Text", "default": "5 Years"},
+        {"name": "Width", "type": "Length", "default": "80mm"},
+        {"name": "Height", "type": "Length", "default": "150mm"},
+        {"name": "Depth", "type": "Length", "default": "50mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"}
+      ],
+      "mounting_height": "1200mm from finished floor"
+    },
+    {
+      "family_name": "Repeater_Wireless",
+      "category": "Fire Alarm",
+      "subcategory": "Repeaters",
+      "description": "Wireless Signal Repeater",
+      "hosting": "Wall or Ceiling Mounted",
+      "parameters": [
+        {"name": "RepeaterID", "type": "Text", "default": "RP-1"},
+        {"name": "PowerSupply", "type": "Text", "default": "AC Powered"},
+        {"name": "Width", "type": "Length", "default": "150mm"},
+        {"name": "Height", "type": "Length", "default": "150mm"},
+        {"name": "Depth", "type": "Length", "default": "50mm"},
+        {"name": "Manufacturer", "type": "Text", "default": "Notifier"}
+      ],
+      "symbols": ["Plan", "3D"]
+    }
+  ],
+  "revit_properties": {
+    "system_classification": "Fire Alarm - Wireless",
+    "family_category": "Fire Alarm",
+    "special_parameters": [
+      "Battery Status",
+      "Signal Strength",
+      "Last Communication"
+    ]
+  },
+  "scheduling_parameters": [
+    "Mark",
+    "Gateway",
+    "Address",
+    "Battery Life",
+    "Signal Strength",
+    "Manufacturer",
+    "Model"
+  ]
+}

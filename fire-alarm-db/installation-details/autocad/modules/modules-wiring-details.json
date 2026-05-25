@@ -1,0 +1,205 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "AutoCAD Installation Details Library - Module and Wiring Details",
+    "validation_status": "VERIFIED"
+  },
+  "module_installations": {
+    "monitor_module": {
+      "detail_id": "MOD-MON-001",
+      "title": "Monitor Module Installation",
+      "description": "Addressable monitor module for monitoring dry contacts",
+      "layer": "F-INSTALL-MOD",
+      "components": [
+        {"component": "Monitor Module", "model": "Notifier FMM-1"},
+        {"component": "Enclosure", "type": "4\" square"},
+        {"component": "Conduit", "size": "3/4\""},
+        {"component": "Wire", "type": "18 AWG 2C"}
+      ],
+      "wiring": {
+        "input_type": "Dry contact supervised",
+        "wire_count": 2,
+        "eol_resistor": "4.7K ohm"
+      },
+      "mounting": {
+        "location": "Accessible area",
+        "height_inches": 48
+      },
+      "symbols": ["Plan", "Schematic"]
+    },
+    "control_module": {
+      "detail_id": "MOD-CTL-001",
+      "title": "Control Module Installation",
+      "description": "Addressable control module for output control",
+      "layer": "F-INSTALL-MOD",
+      "components": [
+        {"component": "Control Module", "model": "Notifier FRM-1"},
+        {"component": "Enclosure", "type": "4\" square"},
+        {"component": "Contactor", "type": "Based on load"},
+        {"component": "Wire", "type": "14 AWG"}
+      ],
+      "output": {
+        "relay_type": "Form-C",
+        "rating_amps": 5,
+        "rating_volts": "120VAC or 24VDC"
+      },
+      "symbols": ["Plan", "Schematic"]
+    },
+    "isolator_module": {
+      "detail_id": "MOD-ISO-001",
+      "title": "Loop Isolator Module",
+      "description": "Fault isolator for SLC loop protection",
+      "layer": "F-INSTALL-MOD",
+      "components": [
+        {"component": "Isolator Module", "model": "Notifier ISO-6"},
+        {"component": "Enclosure", "type": "4\" square"},
+        {"component": "Conduit", "size": "3/4\""}
+      ],
+      "wiring": {
+        "placement": "Every 20 devices or branch point"
+      },
+      "symbols": ["Plan", "Schematic"]
+    }
+  },
+  "splicing_details": {
+    "splice_in_junction_box": {
+      "detail_id": "SPLICE-JB-001",
+      "title": "Splice in Junction Box",
+      "description": "Approved splice method for fire alarm wiring",
+      "layer": "F-INSTALL-WIRE",
+      "components": [
+        {"component": "Junction Box", "size": "4\" x 4\""},
+        {"component": "Wire Nut", "type": "Listed for fire alarm"},
+        {"component": "Heat Shrink", "type": "Self-sealing"},
+        {"component": "Splice Cap", "type": "Insulated"}
+      ],
+      "requirements": {
+        "accessibility": "Accessible after installation",
+        "splice_count": "Maximum 4 conductors per wire nut",
+        "conduit_fill": "Maximum 40%"
+      },
+      "symbols": ["Detail", "Schematic"]
+    },
+    "wire_nut_connection": {
+      "detail_id": "SPLICE-WN-001",
+      "title": "Wire Nut Splice Detail",
+      "description": "Standard wire nut connection for fire alarm circuits",
+      "layer": "F-INSTALL-WIRE",
+      "components": [
+        {"component": "Wire Nut", "size": "Based on wire gauge"},
+        {"component": "Hot Glue", "type": "Heat shrink with adhesive"},
+        {"component": "Electrical Tape", "type": "Rubber splicing tape"}
+      ],
+      "sizes": {
+        "14_awg": "Orange nut",
+        "16_awg": "Yellow nut",
+        "18_awg": "Blue nut"
+      },
+      "symbols": ["Detail"]
+    }
+  },
+  "end_of_line_details": {
+    "eol_resistor": {
+      "detail_id": "EOL-RES-001",
+      "title": "End-of-Line Resistor Installation",
+      "description": "EOL resistor for supervised circuits",
+      "layer": "F-INSTALL-WIRE",
+      "components": [
+        {"component": "EOL Resistor", "value": "4.7K ohm", "watts": 1/2},
+        {"component": "Resistor Mount", "type": "Ceramic holder"},
+        {"component": "Junction Box", "location": "Last device"}
+      ],
+      "placement": {
+        "location": "Last device on circuit",
+        "connection": "Across positive and negative"
+      },
+      "symbols": ["Schematic", "Detail"]
+    },
+    "eol_diode": {
+      "detail_id": "EOL-DIODE-001",
+      "title": "End-of-Line Diode Assembly",
+      "description": "EOL for polarized notification circuits",
+      "layer": "F-INSTALL-WIRE",
+      "components": [
+        {"component": "Diode", "type": "1N4004"},
+        {"component": "Resistor", "value": "4.7K ohm"},
+        {"component": "Housing", "type": "EOL assembly"}
+      ],
+      "symbols": ["Schematic"]
+    }
+  },
+  "grounding_details": {
+    "panel_ground": {
+      "detail_id": "GRD-PNL-001",
+      "title": "Panel Ground Connection",
+      "description": "Equipment grounding for fire alarm panel",
+      "layer": "F-INSTALL-GRD",
+      "components": [
+        {"component": "Ground Wire", "size": "12 AWG green"},
+        {"component": "Ground Bus", "type": "Copper bar"},
+        {"component": "Terminal", "type": "Lug"},
+        {"component": "Building Steel", "connection": "Listed clamp"}
+      ],
+      "connection_points": [
+        "Panel ground bus",
+        "Building steel",
+        "Cold water pipe"
+      ],
+      "symbols": ["Schematic", "Detail"]
+    },
+    "device_ground": {
+      "detail_id": "GRD-DEV-001",
+      "title": "Device Ground Connection",
+      "description": "Equipment grounding for fire alarm devices",
+      "layer": "F-INSTALL-GRD",
+      "components": [
+        {"component": "Ground Wire", "size": "18 AWG green"},
+        {"component": "Ground Screw", "type": "Green grounding screw"}
+      ],
+      "application": [
+        "Metallic backboxes",
+        "Conduit grounding"
+      ],
+      "symbols": ["Detail"]
+    }
+  },
+  "penetration_details": {
+    "fire_rated_wall": {
+      "detail_id": "PEN-FRW-001",
+      "title": "Penetration Through Fire-Rated Wall",
+      "description": "Proper fire-stopping at wall penetrations",
+      "layer": "F-INSTALL-PEN",
+      "components": [
+        {"component": "Conduit", "type": "EMT or RMC"},
+        {"component": "Fire Stop", "type": "Listed caulk or putty"},
+        {"component": "Backing Material", "type": "Mineral wool"},
+        {"component": "Through-Penetration", "type": "Wrap or collar"}
+      ],
+      "requirements": {
+        "fire_rating": "Match wall rating",
+        "product": "Listed for fire stopping",
+        "installation": "Per manufacturer instructions"
+      },
+      "symbols": ["Section", "Detail"]
+    },
+    "floor_penetration": {
+      "detail_id": "PEN-FLR-001",
+      "title": "Penetration Through Floor",
+      "description": "Fire stopping at floor penetrations",
+      "layer": "F-INSTALL-PEN",
+      "components": [
+        {"component": "Conduit", "type": "RMC or PVC"},
+        {"component": "Fire Stop", "type": "Mortar or caulk"},
+        {"component": "Sleeve", "type": "Extended above floor"}
+      ],
+      "requirements": {
+        "fire_rating": "Match floor rating",
+        "sleeve_height_inches": 2,
+        "water_stop": "If below flood level"
+      },
+      "symbols": ["Section", "Detail"]
+    }
+  }
+}

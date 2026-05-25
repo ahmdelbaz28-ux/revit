@@ -1,0 +1,197 @@
+{
+  "report_metadata": {
+    "source_file": "test_data/hybrid/two_rooms.pdf",
+    "generated_utc": "2026-05-15T20:55:22.413201Z",
+    "status": "FAILED",
+    "requires_pe_review": true,
+    "design_complete": false,
+    "review_reason": "Design incomplete. 5 rooms require manual type verification."
+  },
+  "rooms": [
+    {
+      "name": "room_1",
+      "area_sqm": 19284.5,
+      "occupancy_type": "atrium",
+      "source": "manual",
+      "detector_type": "SMOKE",
+      "detector_count": 2143,
+      "coverage_pct": 100.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Large known room (19284.5m²) - verify coverage meets NFPA 72 §17.6.3.1.",
+        "⚠️ LARGE OPEN SPACE (atrium) - Engineer review REQUIRED",
+        "   Standard detectors may be unsuitable per NFPA 72"
+      ]
+    },
+    {
+      "name": "room_2",
+      "area_sqm": 9642.3,
+      "occupancy_type": "corridor",
+      "source": "manual",
+      "detector_type": "SMOKE",
+      "detector_count": 1071,
+      "coverage_pct": 100.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Large known room (9642.3m²) - verify coverage meets NFPA 72 §17.6.3.1."
+      ]
+    },
+    {
+      "name": "room_3",
+      "area_sqm": 64.3,
+      "occupancy_type": "kitchen",
+      "source": "manual",
+      "detector_type": "HEAT_FIXED_TEMP",
+      "detector_count": 3,
+      "coverage_pct": 100.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "Kitchen detected - SMOKE detectors prohibited per NFPA 72 §17.6.4"
+      ]
+    },
+    {
+      "name": "room_4",
+      "area_sqm": 36.0,
+      "occupancy_type": "bathroom",
+      "source": "manual",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": []
+    },
+    {
+      "name": "room_5",
+      "area_sqm": 36.0,
+      "occupancy_type": "storage",
+      "source": "manual",
+      "detector_type": "HEAT_RATE_OF_RISE",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": []
+    },
+    {
+      "name": "room_6",
+      "area_sqm": 36.0,
+      "occupancy_type": "mechanical",
+      "source": "manual",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": []
+    },
+    {
+      "name": "room_7",
+      "area_sqm": 36.0,
+      "occupancy_type": "electrical",
+      "source": "manual",
+      "detector_type": "HEAT",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": []
+    },
+    {
+      "name": "room_8",
+      "area_sqm": 36.0,
+      "occupancy_type": "storage",
+      "source": "manual",
+      "detector_type": "HEAT_RATE_OF_RISE",
+      "detector_count": 2,
+      "coverage_pct": 100.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": []
+    },
+    {
+      "name": "room_9",
+      "area_sqm": 36.0,
+      "occupancy_type": "unknown",
+      "source": "unverified",
+      "detector_type": "UNKNOWN",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "🔴 Type unknown - no detectors placed. MANUAL REVIEW REQUIRED.",
+        "🔴 MANUAL REVIEW REQUIRED - Design incomplete"
+      ]
+    },
+    {
+      "name": "room_10",
+      "area_sqm": 36.0,
+      "occupancy_type": "unknown",
+      "source": "unverified",
+      "detector_type": "UNKNOWN",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "🔴 Type unknown - no detectors placed. MANUAL REVIEW REQUIRED.",
+        "🔴 MANUAL REVIEW REQUIRED - Design incomplete"
+      ]
+    },
+    {
+      "name": "room_11",
+      "area_sqm": 36.0,
+      "occupancy_type": "unknown",
+      "source": "unverified",
+      "detector_type": "UNKNOWN",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "🔴 Type unknown - no detectors placed. MANUAL REVIEW REQUIRED.",
+        "🔴 MANUAL REVIEW REQUIRED - Design incomplete"
+      ]
+    },
+    {
+      "name": "room_12",
+      "area_sqm": 36.0,
+      "occupancy_type": "unknown",
+      "source": "unverified",
+      "detector_type": "UNKNOWN",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "🔴 Type unknown - no detectors placed. MANUAL REVIEW REQUIRED.",
+        "🔴 MANUAL REVIEW REQUIRED - Design incomplete"
+      ]
+    },
+    {
+      "name": "room_13",
+      "area_sqm": 36.0,
+      "occupancy_type": "unknown",
+      "source": "unverified",
+      "detector_type": "UNKNOWN",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
+      "compliant": true,
+      "warnings": [
+        "🔴 Type unknown - no detectors placed. MANUAL REVIEW REQUIRED.",
+        "🔴 MANUAL REVIEW REQUIRED - Design incomplete"
+      ]
+    }
+  ],
+  "summary": {
+    "total_rooms": 13,
+    "unverified_rooms": 5,
+    "total_detectors": 3227,
+    "compliant": false
+  }
+}

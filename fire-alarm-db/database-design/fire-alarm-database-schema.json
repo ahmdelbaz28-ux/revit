@@ -1,0 +1,285 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Database Architect - Fire Alarm Systems",
+    "purpose": "Comprehensive Fire Alarm Database Schema Design",
+    "description": "Complete database schema for fire alarm system with BMS integration"
+  },
+
+  "phase1_system_definition": {
+    "target_audience": {
+      "primary_users": [
+        {
+          "role": "Facility Manager",
+          "permissions": ["View All", "Acknowledge Alarms", "Generate Reports", "System Configuration"],
+          "use_case": "Overall system oversight, emergency response coordination"
+        },
+        {
+          "role": "Safety Officer",
+          "permissions": ["View All", "View Reports", "Compliance Audits"],
+          "use_case": "Regulatory compliance, safety audits"
+        },
+        {
+          "role": "Maintenance Technician",
+          "permissions": ["Device Management", "Maintenance Records", "Device Testing"],
+          "use_case": "Device maintenance, repairs, testing"
+        },
+        {
+          "role": "Emergency Services",
+          "permissions": ["View Only", "Real-time Monitoring"],
+          "use_case": "Emergency response coordination"
+        },
+        {
+          "role": "System Administrator",
+          "permissions": ["Full Access", "User Management", "System Configuration", "Integration Setup"],
+          "use_case": "System administration, security"
+        }
+      ]
+    },
+
+    "fire_alarm_components": {
+      "initiating_devices": ["Smoke Detector", "Heat Detector", "Multi-Sensor", "Beam Detector", "Duct Detector", "Manual Call Point", "Sprinkler Switch"],
+      "control_equipment": ["FACP", "Network Node", "Power Supply", "Battery"],
+      "notification_devices": ["Horn", "Strobe", "Horn/Strobe", "Speaker", "Bell"],
+      "modules": ["Monitor", "Control", "Isolator", "Relay"]
+    },
+
+    "integration_systems": [
+      {"system": "HVAC", "actions": ["Shutdown", "Close Dampers"]},
+      {"system": "Elevator", "actions": ["Recall", "Fire Service"]},
+      {"system": "Access Control", "actions": ["Unlock Doors"]},
+      {"system": "CCTV", "actions": ["Focus Camera"]},
+      {"system": "PA", "actions": ["Broadcast Message"]},
+      {"system": "BMS", "actions": ["Event Notification"]},
+      {"system": "Generator", "actions": ["Auto Start"]},
+      {"system": "Fire Pump", "actions": ["Monitor Status"]}
+    ],
+
+    "regulatory_compliance": {
+      "standards": ["NFPA 72", "EN 54", "BS 5839", "UAE Fire Code", "Saudi Civil Defense", "Egyptian Fire Code"],
+      "requirements": ["Central Station Monitoring", "24-hour Battery Backup", "Annual Inspection", "Event Logging (7 years)"]
+    },
+
+    "data_volume": {
+      "devices_per_installation": "50 to 20,000",
+      "event_frequency": "Real-time for alarms/faults, every 60 sec for heartbeat",
+      "data_retention": "7 years minimum for events"
+    }
+  },
+
+  "phase2_core_schema": {
+    "facility": {
+      "table_name": "Facilities",
+      "description": "Building or campus",
+      "attributes": [
+        {"name": "FacilityID", "type": "UUID", "primary_key": true},
+        {"name": "FacilityName", "type": "VARCHAR(255)", "required": true},
+        {"name": "BuildingType", "type": "ENUM", "values": ["Office", "Hotel", "Mall", "Hospital", "Residential", "Industrial"]},
+        {"name": "TotalAreaSQM", "type": "DECIMAL(12,2)"},
+        {"name": "NumberOfFloors", "type": "INTEGER"},
+        {"name": "Country", "type": "VARCHAR(100)"},
+        {"name": "Status", "type": "ENUM", "values": ["Active", "Inactive"]}
+      ]
+    },
+
+    "fire_alarm_system": {
+      "table_name": "FireAlarmSystems",
+      "description": "Main fire alarm system per facility",
+      "attributes": [
+        {"name": "SystemID", "type": "UUID", "primary_key": true},
+        {"name": "FacilityID", "type": "UUID", "foreign_key": "Facilities", "required": true},
+        {"name": "SystemName", "type": "VARCHAR(255)", "required": true},
+        {"name": "SystemType", "type": "ENUM", "values": ["Conventional", "Addressable", "AddressableWithVoice", "Wireless"]},
+        {"name": "Brand", "type": "VARCHAR(100)"},
+        {"name": "Model", "type": "VARCHAR(100)"},
+        {"name": "InstallationDate", "type": "DATE"},
+        {"name": "Status", "type": "ENUM", "values": ["Active", "Maintenance", "Disabled"]}
+      ]
+    },
+
+    "zones": {
+      "table_name": "Zones",
+      "description": "Logical divisions for fire detection",
+      "attributes": [
+        {"name": "ZoneID", "type": "UUID", "primary_key": true},
+        {"name": "SystemID", "type": "UUID", "foreign_key": "FireAlarmSystems", "required": true},
+        {"name": "ParentZoneID", "type": "UUID", "foreign_key": "Zones"},
+        {"name": "ZoneName", "type": "VARCHAR(255)", "required": true},
+        {"name": "FloorNumber", "type": "INTEGER"},
+        {"name": "AreaSQM", "type": "DECIMAL(10,2)"},
+        {"name": "ZoneType", "type": "ENUM", "values": ["Detection", "Notification", "Voice"]}
+      ]
+    },
+
+    "devices": {
+      "table_name": "Devices",
+      "description": "Base table for all fire alarm devices",
+      "attributes": [
+        {"name": "DeviceID", "type": "UUID", "primary_key": true},
+        {"name": "SystemID", "type": "UUID", "foreign_key": "FireAlarmSystems", "required": true},
+        {"name": "ZoneID", "type": "UUID", "foreign_key": "Zones"},
+        {"name": "DeviceType", "type": "ENUM", "values": ["SmokeDetector", "HeatDetector", "ManualCallPoint", "ControlPanel", "NotificationAppliance", "Module"], "required": true},
+        {"name": "DeviceName", "type": "VARCHAR(255)"},
+        {"name": "DeviceAddress", "type": "INTEGER"},
+        {"name": "SLCLoop", "type": "INTEGER"},
+        {"name": "Manufacturer", "type": "VARCHAR(100)"},
+        {"name": "Model", "type": "VARCHAR(100)"},
+        {"name": "SerialNumber", "type": "VARCHAR(100)", "unique": true},
+        {"name": "RoomNumber", "type": "VARCHAR(50)"},
+        {"name": "InstallationDate", "type": "DATE"},
+        {"name": "LastTestDate", "type": "DATE"},
+        {"name": "NextTestDate", "type": "DATE"},
+        {"name": "Status", "type": "ENUM", "values": ["Normal", "Alarm", "Fault", "Disabled", "Maintenance"]}
+      ],
+      "indexes": ["idx_device_system", "idx_device_zone", "idx_device_status", "idx_device_serial"]
+    },
+
+    "event_logs": {
+      "table_name": "EventLogs",
+      "description": "High-volume event logging",
+      "attributes": [
+        {"name": "EventID", "type": "UUID", "primary_key": true},
+        {"name": "SystemID", "type": "UUID", "foreign_key": "FireAlarmSystems"},
+        {"name": "DeviceID", "type": "UUID", "foreign_key": "Devices"},
+        {"name": "ZoneID", "type": "UUID", "foreign_key": "Zones"},
+        {"name": "EventType", "type": "ENUM", "values": ["Alarm", "Fault", "Supervisory", "Test", "StatusChange"], "required": true},
+        {"name": "EventDescription", "type": "TEXT"},
+        {"name": "EventTimestamp", "type": "TIMESTAMP", "required": true},
+        {"name": "Severity", "type": "ENUM", "values": ["Critical", "High", "Medium", "Low"]},
+        {"name": "AcknowledgedBy", "type": "UUID", "foreign_key": "Users"},
+        {"name": "AcknowledgedAt", "type": "TIMESTAMP"},
+        {"name": "ResolutionNotes", "type": "TEXT"}
+      ],
+      "partitioning": "Range by EventTimestamp (Monthly)",
+      "indexes": ["idx_event_timestamp", "idx_event_device", "idx_event_zone", "idx_event_type"]
+    },
+
+    "maintenance_records": {
+      "table_name": "MaintenanceRecords",
+      "description": "Device maintenance history",
+      "attributes": [
+        {"name": "RecordID", "type": "UUID", "primary_key": true},
+        {"name": "DeviceID", "type": "UUID", "foreign_key": "Devices", "required": true},
+        {"name": "MaintenanceType", "type": "ENUM", "values": ["RoutineCheck", "Repair", "Replacement", "Calibration"], "required": true},
+        {"name": "PerformedBy", "type": "UUID", "foreign_key": "Users"},
+        {"name": "DatePerformed", "type": "DATE", "required": true},
+        {"name": "Description", "type": "TEXT"},
+        {"name": "NextScheduledDate", "type": "DATE"},
+        {"name": "Result", "type": "ENUM", "values": ["Passed", "Failed", "Repaired"]}
+      ]
+    },
+
+    "users_and_roles": {
+      "table_name": "Users",
+      "attributes": [
+        {"name": "UserID", "type": "UUID", "primary_key": true},
+        {"name": "Username", "type": "VARCHAR(100)", "unique": true},
+        {"name": "Email", "type": "VARCHAR(255)", "unique": true},
+        {"name": "PasswordHash", "type": "VARCHAR(255)"},
+        {"name": "RoleID", "type": "UUID", "foreign_key": "Roles"},
+        {"name": "FacilityID", "type": "UUID", "foreign_key": "Facilities"},
+        {"name": "IsActive", "type": "BOOLEAN", "default": true}
+      ],
+      "roles_table": "Roles",
+      "roles": ["Admin", "Operator", "Technician", "SafetyOfficer", "Viewer"]
+    }
+  },
+
+  "phase3_integration_schema": {
+    "integration_systems": {
+      "table_name": "IntegrationSystems",
+      "description": "External systems integrating with fire alarm",
+      "attributes": [
+        {"name": "SystemID", "type": "UUID", "primary_key": true},
+        {"name": "SystemName", "type": "VARCHAR(200)", "required": true},
+        {"name": "SystemType", "type": "ENUM", "values": ["HVAC", "AccessControl", "CCTV", "Elevator", "PA", "BMS"], "required": true},
+        {"name": "Protocol", "type": "ENUM", "values": ["BACnet", "Modbus", "REST", "MQTT"]},
+        {"name": "IPAddress", "type": "VARCHAR(45)"},
+        {"name": "Port", "type": "INTEGER"},
+        {"name": "Status", "type": "ENUM", "values": ["Active", "Inactive", "Error"]}
+      ]
+    },
+
+    "integration_mappings": {
+      "table_name": "IntegrationMappings",
+      "description": "Rules for fire alarm to external system actions",
+      "attributes": [
+        {"name": "MappingID", "type": "UUID", "primary_key": true},
+        {"name": "IntegrationSystemID", "type": "UUID", "foreign_key": "IntegrationSystems", "required": true},
+        {"name": "TriggerEventType", "type": "ENUM", "values": ["Alarm", "Fault", "Supervisory"], "required": true},
+        {"name": "TriggerZoneID", "type": "UUID", "foreign_key": "Zones"},
+        {"name": "TargetAction", "type": "VARCHAR(255)", "required": true},
+        {"name": "ActionParameters", "type": "JSON"},
+        {"name": "DelaySeconds", "type": "INTEGER"},
+        {"name": "IsEnabled", "type": "BOOLEAN", "default": true}
+      ]
+    },
+
+    "integration_logs": {
+      "table_name": "IntegrationLogs",
+      "description": "Log of integration events",
+      "attributes": [
+        {"name": "LogID", "type": "UUID", "primary_key": true},
+        {"name": "MappingID", "type": "UUID", "foreign_key": "IntegrationMappings"},
+        {"name": "EventID", "type": "UUID", "foreign_key": "EventLogs"},
+        {"name": "ActionSent", "type": "VARCHAR(255)"},
+        {"name": "Success", "type": "BOOLEAN"},
+        {"name": "SentAt", "type": "TIMESTAMP"}
+      ]
+    }
+  },
+
+  "phase4_optimization": {
+    "indexing": [
+      "idx_device_status (Status)",
+      "idx_event_timestamp (EventTimestamp)",
+      "idx_device_serial (SerialNumber)",
+      "idx_event_zone_timestamp (ZoneID, EventTimestamp)"
+    ],
+    "partitioning": {
+      "event_logs": "Monthly by EventTimestamp",
+      "rationale": "High write volume, time-series queries"
+    },
+    "data_archiving": {
+      "event_logs": "12 months online, then archive table",
+      "maintenance_records": "10 years",
+      "alarm_events": "Permanently"
+    },
+    "high_availability": {
+      "replication": "Active-Passive",
+      "backup": "Daily full, hourly incremental",
+      "RTO": "< 30 minutes",
+      "RPO": "< 5 minutes"
+    },
+    "security": {
+      "encryption": "AES-256 for sensitive data",
+      "transport": "TLS 1.3",
+      "audit_logging": "All DDL/DML operations",
+      "sensitive_fields": ["PasswordHash", "AuthToken"]
+    },
+
+    "reporting_views": [
+      "Device Summary by Zone and Status",
+      "Events per Zone per Day",
+      "Maintenance Compliance",
+      "Integration Health Status"
+    ]
+  },
+
+  "entity_relationship_diagram": {
+    "tables": [
+      "Facilities (1) --> (M) FireAlarmSystems",
+      "FireAlarmSystems (1) --> (M) Zones",
+      "FireAlarmSystems (1) --> (M) Devices",
+      "Zones (1) --> (M) Devices",
+      "FireAlarmSystems (1) --> (M) EventLogs",
+      "Devices (1) --> (M) EventLogs",
+      "Devices (1) --> (M) MaintenanceRecords",
+      "FireAlarmSystems (1) --> (M) IntegrationMappings",
+      "Zones (1) --> (M) IntegrationMappings",
+      "IntegrationSystems (1) --> (M) IntegrationMappings",
+      "Users (M) --> (M) Roles"
+    ]
+  }
+}

@@ -1,0 +1,375 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["Simplex product catalog", "UL listings", "Technical datasheets"],
+    "last_updated": "2026-05-09"
+  },
+  "manufacturer": {
+    "name": "Johnson Controls - Simplex",
+    "brand_names": ["Simplex", "Grinnell", "Tyco Fire"],
+    "headquarters": "Milwaukee, Wisconsin, USA",
+    "website": "www.simplexfire.com",
+    "year_established": 1890,
+    "ul_listings": "UL, ULC, FM, CSFM",
+    "note": "Industry leader, purchased by Johnson Controls"
+  },
+  "control_panels": [
+    {
+      "model": "4003EC",
+      "type": "CONVENTIONAL",
+      "series": "SimpliFire",
+      "zones": 3,
+      "notification circuits": 2,
+      " Built-In Printer": false,
+      "network capable": false,
+      "voice capable": false,
+      "dimensions inches": "14 x 18 x 4",
+      "Input voltage": "120 VAC, 60 Hz",
+      "battery capacity max AH": 18,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "FM"],
+      "features": [
+        "Compact",
+        "Easy install",
+        "Low cost"
+      ],
+      "applications": ["Small retail", "Restaurant", "Office"],
+      "price_range_usd": "1800-3500"
+    },
+    {
+      "model": "4006EC",
+      "type": "CONVENTIONAL",
+      "series": "SimpliFire",
+      "zones": 6,
+      "notification circuits": 4,
+      " Built-In Printer": false,
+      "network capable": false,
+      "dimensions inches": "16 x 20 x 4",
+      "Input voltage": "120 VAC",
+      "battery capacity max AH": 26,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "FM"],
+      "features": [
+        "Expandable zones",
+        "Style Z NACs"
+      ],
+      "applications": ["Small building", "Warehouse section"],
+      "price_range_usd": "3000-5000"
+    },
+    {
+      "model": "4010ES",
+      "type": "ADDRESSABLE",
+      "series": "Foundation",
+      "points maximum": 250,
+      "SLC": 1,
+      "devices per SLC": 125,
+      "notification circuits": 4,
+      " Built-In Printer": false,
+      "network capable": true,
+      "voice capable": false,
+      "dimensions inches": "20 x 24 x 4",
+      "Input voltage": "120 or 240 VAC",
+      "battery capacity max AH": 55,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "FM"],
+      "communicator built-in": "Optional",
+      "features": [
+        "TrueAlarm sensors",
+        "IDNet protocol",
+        "Auto addressing"
+      ],
+      "applications": ["Office", "School", "Hotel floor"],
+      "price_range_usd": "10000-18000"
+    },
+    {
+      "model": "4017ES",
+      "type": "ADDRESSABLE",
+      "series": "Foundation",
+      "points maximum": 1000,
+      "SLC": 2,
+      "devices per SLC": 500,
+      "notification circuits": 6,
+      "Built-In Printer": false,
+      "network capable": true,
+      "voice capable": true,
+      "dimensions inches": "24 x 28 x 5",
+      "Input voltage": "120 or 240 VAC",
+      "battery capacity max AH": 55,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "FM"],
+      "communicator built-in": true,
+      "features": [
+        "TrueAlarm",
+        "IDNet",
+        "Voice ready"
+      ],
+      "applications": ["Mid-size building", "Hospital wing"],
+      "price_range_usd": "18000-28000"
+    },
+    {
+      "model": "4100ES",
+      "type": "INTELLIGENT",
+      "series": "ES",
+      "points maximum": 2500,
+      "SLC": 4,
+      "devices per SLC": 625,
+      "notification circuits": 8,
+      "Built-In Printer": true,
+      "network capable": true,
+      "voice capable": true,
+      "dimensions inches": "36 x 48 x 6",
+      "Input voltage": "120 or 240 VAC, 50/60 Hz",
+      "battery capacity max AH": 110,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "ULC", "FM", "CSFM"],
+      "communicator built-in": true,
+      "features": [
+        "TrueAlarm advanced",
+        "IDNet 2 protocol",
+        "InfoAlarm display",
+        "Network up to 64 nodes"
+      ],
+      "applications": ["Large campus", "Airport terminal", "Hospital", "High-rise"],
+      "price_range_usd": "35000-65000"
+    },
+    {
+      "model": "4100ESi",
+      "type": "INTELLIGENT",
+      "series": "ESi",
+      "points maximum": 4000,
+      "SLC": 8,
+      "devices per SLC": 500,
+      "notification circuits": 12,
+      "Built-In Printer": true,
+      "network capable": true,
+      "voice capable": true,
+      "dimensions inches": "48 x 60 x 8",
+      "Input voltage": "120/240 VAC",
+      "battery capacity max AH": 150,
+      "operating temp": "32 to 120 F",
+      "listings": ["UL", "ULC", "FM"],
+      "communicator built-in": true,
+      "features": [
+        "IDNet 2 enhanced",
+        "Touch display",
+        "Redundant CPU option"
+      ],
+      "applications": ["Airport", "Large hospital", "Campus"],
+      "price_range_usd": "55000-90000"
+    },
+    {
+      "model": "4007ES",
+      "type": "VOICE_EVACUATION",
+      "series": "ES",
+      "zones": 12,
+      "amplifier_watts": 500,
+      "network capable": true,
+      "voice capable": true,
+      "applications": ["High-rise", "Hospital", "Assembly"],
+      "price_range_usd": "40000-70000"
+    }
+  ],
+  "truealarm_detectors": [
+    {
+      "model": "4098-96",
+      "type": "PHOTOELECTRIC_SMOKE",
+      "series": "TrueAlarm",
+      "addressable": true,
+      "sensitivity": "0.73 to 2.89 %OBSC/FT",
+      "operating voltage": "22 to 28 VDC",
+      "standby current ma": 0.25,
+      "alarm current ma": 0.5,
+      "listings": ["UL", "FM", "CSFM"],
+      "features": [
+        "Drift compensation",
+        "Maintenance alert"
+      ],
+      "base model": "4098-00",
+      "price_usd": 45,
+      "applications": ["General use"]
+    },
+    {
+      "model": "4098-971",
+      "type": "PHOTOELECTRIC_LOW_PROFILE",
+      "series": "TrueAlarm",
+      "sensitivity": "1.5 to 3.5 %OBSC/FT",
+      "listings": ["UL"],
+      "price_usd": 48,
+      "applications": ["Plenum"]
+    },
+    {
+      "model": "4098-94",
+      "type": "HEAT_ROR",
+      "series": "TrueAlarm",
+      "temperature": "135F OR 15F/min",
+      "listings": ["UL", "FM"],
+      "price_usd": 38,
+      "applications": ["Kitchen", "Dusty"]
+    },
+    {
+      "model": "4098-9714",
+      "type": "HEAT_COMBO",
+      "series": "TrueAlarm",
+      "temperature": "135F fixed AND ROR",
+      "listings": ["UL"],
+      "price_usd": 52,
+      "applications": ["Variable areas"]
+    },
+    {
+      "model": "4098-981",
+      "type": "MULTI_CRITERIA",
+      "series": "TrueAlarm",
+      "sensors": ["Smoke", "Heat"],
+      "algorithms": ["Multiple"],
+      "listings": ["UL", "FM"],
+      "price_usd": 78,
+      "applications": ["Difficult environments"]
+    }
+  ],
+  "conventional_detectors": [
+    {
+      "model": "2098-10",
+      "type": "PHOTOELECTRIC_SMOKE",
+      "addressable": false,
+      "voltage": "24 VDC",
+      "listings": ["UL", "FM"],
+      "price_usd": 18,
+      "applications": ["Conventional"]
+    },
+    {
+      "model": "2098-90",
+      "type": "HEAT",
+      "addressable": false,
+      "temperature": "135F",
+      "price_usd": 15,
+      "applications": ["Conventional"]
+    }
+  ],
+  "manual_stations": [
+    {
+      "model": "4099-80",
+      "type": "MANUAL_PULL",
+      "operation": "SINGLE_ACTION",
+      "reset": "KEY_RESET",
+      "surface mount": true,
+      "listings": ["UL", "FM"],
+      "price_usd": 32,
+      "applications": ["General"]
+    },
+    {
+      "model": "4099-90",
+      "type": "MANUAL_PULL",
+      "operation": "DUAL_ACTION",
+      "reset": "KEY_RESET",
+      "listings": ["UL", "FM"],
+      "price_usd": 38,
+      "applications": ["Public"]
+    },
+    {
+      "model": "ES-KEY",
+      "type": "ADDRESSABLE_PULL",
+      "addressable": true,
+      "IDNet": true,
+      "price_usd": 70,
+      "applications": ["Addressable"]
+    }
+  ],
+  "notification": [
+    {
+      "model": "4370-80",
+      "type": "STROBE",
+      "voltage": "24 VDC",
+      "candlepower": 15,
+      "listings": ["UL", "FM"],
+      "price_usd": 52,
+      "applications": ["General"]
+    },
+    {
+      "model": "4370-90",
+      "type": "HORN_STROBE",
+      "voltage": "24 VDC",
+      "candlepower": 15,
+      "listings": ["UL", "FM"],
+      "price_usd": 68,
+      "applications": ["Notification"]
+    },
+    {
+      "model": "4373-80",
+      "type": "HORN",
+      "voltage": "24 VDC",
+      "dB level": 85,
+      "price_usd": 38,
+      "applications": ["General"]
+    },
+    {
+      "model": "4380-80",
+      "type": "SPEAKER",
+      "voltage": "25V or 70V",
+      "wattage": "4",
+      "dB level": 90,
+      "listings": ["UL", "FM"],
+      "price_usd": 58,
+      "applications": ["Voice"]
+    },
+    {
+      "model": "4380-90",
+      "type": "SPEAKER_STROBE",
+      "voltage": "25V/70V",
+      "wattage": "4",
+      "candlepower": 15,
+      "listings": ["UL"],
+      "price_usd": 78,
+      "applications": ["Voice + strobe"]
+    }
+  ],
+  "modules": [
+    {
+      "model": "4090-16",
+      "type": "MONITOR_MODULE",
+      "addressable": true,
+      "inputs": 4,
+      "IDNet": true,
+      "price_usd": 120,
+      "applications": ["Contacts"]
+    },
+    {
+      "model": "4090-20",
+      "type": "CONTROL_MODULE",
+      "addressable": true,
+      "relay": "Form C 3A",
+      "price_usd": 110,
+      "applications": ["HVAC", "Door"]
+    },
+    {
+      "model": "4090-80",
+      "type": "ISOLATOR",
+      "addressable": true,
+      "price_usd": 65
+    }
+  ],
+  "wiring": {
+    "idnet": {
+      "wire": "Twisted pair 18 AWG shielded",
+      "loop_length": "10000 feet max",
+      "resistance": "50 ohms max"
+    },
+    "nac": {
+      "wire": "FPLR 14 AWG",
+      "current": "3.0 A max"
+    }
+  },
+  "warranty": {
+    "panels": "3 years",
+    "detectors": "5 years",
+    "accessories": "2 years"
+  },
+  "technical_support": {
+    "phone": "1-800-354-2761",
+    "website": "www.simplexfire.com",
+    "distributors": {
+      "middle_east": ["Al Shirawi (UAE)", "AlMashreq (Egypt)", "AlRajhi (Saudi)"]
+    }
+  }
+}

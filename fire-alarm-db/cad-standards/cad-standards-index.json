@@ -1,0 +1,91 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "purpose": "CAD/Revit Standards Index",
+    "validation_status": "VERIFIED"
+  },
+  "overview": {
+    "total_folders": 6,
+    "description": "Complete library of AutoCAD legends and Revit families for Fire Alarm Systems"
+  },
+  "structure": {
+    "autocad": {
+      "conventional": "autocad-conventional-legends.json",
+      "addressable": "autocad-addressable-legends.json",
+      "wireless": "autocad-wireless-legends.json"
+    },
+    "revit": {
+      "conventional": "revit-conventional-families.json",
+      "addressable": "revit-addressable-families.json",
+      "wireless": "revit-wireless-families.json"
+    }
+  },
+  "autocad_layers": {
+    "conventional": {
+      "colors": {
+        "F-CONV-PANEL": "RED",
+        "F-CONV-WIRE": "RED",
+        "F-CONV-ZONE": "RED (DASHED)"
+      }
+    },
+    "addressable": {
+      "colors": {
+        "F-ADDR-PANEL": "RED",
+        "F-ADDR-SLC": "YELLOW",
+        "F-ADDR-NAC": "ORANGE",
+        "F-ADDR-MOD-MON": "MAGENTA",
+        "F-ADDR-MOD-ISO": "CYAN"
+      }
+    },
+    "wireless": {
+      "colors": {
+        "F-WL-GATEWAY": "RED",
+        "F-WL-WIRE": "CYAN (DASHED)"
+      }
+    }
+  },
+  "revit_parameters": {
+    "required": [
+      "Mark",
+      "Description",
+      "Manufacturer",
+      "Model",
+      "System Classification"
+    ],
+    "addressable_specific": [
+      "SLC Loop",
+      "Address",
+      "Zone"
+    ]
+  },
+  "recommended_families": {
+    "notifier": [
+      "FSP-851 (Smoke)",
+      "FST-851 (Heat)",
+      "FCO-851 (Multi)",
+      "NGP-5511 (Manual)",
+      "FMM-1 (Monitor)",
+      "FRM-1 (Control)",
+      "ISO-6 (Isolator)",
+      "NFS-320 (Panel)"
+    ],
+    "simplex": [
+      "4098-96 (Smoke)",
+      "4098-94 (Heat)",
+      "4099-80 (Manual)",
+      "4090-16 (Monitor)",
+      "4090-20 (Control)",
+      "4010ES (Panel)"
+    ],
+    "siemens": [
+      "OP820 (Smoke)",
+      "OH820 (Heat)",
+      "MS840A (Manual)",
+      "FDM-220 (Monitor)",
+      "FDR-220 (Control)",
+      "FC2020A (Panel)"
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+# FireAI V5.1.2 - Docker Compose
+# ============================
+version: '3.8'
+
+services:
+  fireai:
+    build: .
+    image: fireai/v5.1.2
+    container_name: fireai_parser
+    volumes:
+      - ./:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python -c "
+from parsers.dxf_parser import DXFParser
+from parsers.dwg_parser import DWGParser
+from parsers.pdf_parser import PDFParser
+
+print('=' * 50)
+print('FireAI V5.1.2 - Docker Environment')
+print('=' * 50)
+print('✅ DXFParser ready')
+print('✅ DWGParser ready (needs LibreDWG)')
+print('✅ PDFParser ready (needs OCR)')
+print('=' * 50)
+"
+
+networks:
+  default:
+    name: fireai_network

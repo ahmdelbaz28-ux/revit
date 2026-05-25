@@ -1,0 +1,240 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection & BMS Engineering Consultant",
+    "purpose": "Complete BMS Protocol Reference - BACnet, Modbus, KNX, LonWorks, OPC",
+    "validation_status": "VERIFIED"
+  },
+  "bacnet_protocol": {
+    "overview": {
+      "name": "BACnet",
+      "full_name": "Building Automation and Control Network",
+      "standard": "ASHRAE 135",
+      "year": 1995,
+      "current_version": "2020"
+    },
+    "architecture": {
+      "layers": [
+        "Application Layer",
+        "Network Layer",
+        "Data Link Layer",
+        "Physical Layer"
+      ]
+    },
+    "transport_options": [
+      {"type": "BACnet/IP", "description": "Over IP networks", "common": true},
+      {"type": "BACnet/MSTP", "description": "Master-Slave Token Passing", "common": true},
+      {"type": "BACnet/PTP", "description": "Point-to-Point", "common": false},
+      {"type": "BACnet/Ethernet", "description": "Classic Ethernet", "common": false},
+      {"type": "BACnet/ARCNET", "description": "ARCNET", "common": false}
+    ],
+    "object_types": [
+      {"code": "AI", "name": "Analog Input", "use": "Sensor values"},
+      {"code": "AO", "name": "Analog Output", "use": "Actuator values"},
+      {"code": "AV", "name": "Analog Value", "use": "Internal values"},
+      {"code": "BI", "name": "Binary Input", "use": "On/off sensors"},
+      {"code": "BO", "name": "Binary Output", "use": "On/off actuators"},
+      {"code": "BV", "name": "Binary Value", "use": "Internal values"},
+      {"code": "MSI", "name": "Multi-state Input", "use": "Status indicators"},
+      {"code": "MSO", "name": "Multi-state Output", "use": "Mode selectors"},
+      {"code": "MSV", "name": "Multi-state Value", "use": "Internal values"}
+    ],
+    "services": [
+      "ReadProperty",
+      "WriteProperty",
+      "ReadMultiple",
+      "WriteMultiple",
+      "SubscribeCOV",
+      "Event Notification"
+    ],
+    "fire_alarm_mapping": {
+      "fire_alarm": "Binary Input - 1",
+      "zone_alarm": "Binary Input - per zone",
+      "trouble": "Binary Input - 1",
+      "supervisory": "Binary Input - 1",
+      "battery_voltage": "Analog Value",
+      "system_status": "Multi-state Value"
+    }
+  },
+  "modbus_protocol": {
+    "overview": {
+      "name": "Modbus",
+      "standard": "IDA",
+      "year": 1979",
+      "current_version": "2012"
+    },
+    "types": [
+      {
+        "type": "Modbus RTU",
+        "transport": "Serial (RS-232/RS-485)",
+        "encoding": "Binary",
+        "speed": "9600-115200 bps"
+      },
+      {
+        "type": "Modbus ASCII",
+        "transport": "Serial",
+        "encoding": "ASCII",
+        "speed": "9600-19200 bps"
+      },
+      {
+        "type": "Modbus TCP",
+        "transport": "Ethernet/IP",
+        "encoding": "Binary",
+        "port": "502"
+      }
+    ],
+    "function_codes": [
+      {"code": 1, "name": "Read Coils", "use": "Binary outputs"},
+      {"code": 2, "name": "Read Discrete Inputs", "use": "Binary inputs"},
+      {"code": 3, "name": "Read Holding Registers", "use": "Analog outputs"},
+      {"code": 4, "name": "Read Input Registers", "use": "Analog inputs"},
+      {"code": 5, "name": "Write Single Coil", "use": "Binary output"},
+      {"code": 6, "name": "Write Single Register", "use": "Analog output"},
+      {"code": 15, "name": "Write Multiple Coils", "use": "Multiple outputs"},
+      {"code": 16, "name": "Write Multiple Registers", "use": "Multiple outputs"}
+    ],
+    "addressing": {
+      "coils": "00001-09999",
+      "discrete_inputs": "10001-19999",
+      "holding_registers": "40001-49999",
+      "input_registers": "30001-39999"
+    },
+    "fire_alarm_mapping": {
+      "fire_alarm": "Discrete Input 10001",
+      "zone_1": "Discrete Input 10002",
+      "zone_2": "Discrete Input 10003",
+      "trouble": "Discrete Input 10101"
+    }
+  },
+  "knx_protocol": {
+    "overview": {
+      "name": "KNX",
+      "standard": "ISO/IEC 14543-3",
+      "year": 1999",
+      "current_version": "2020"
+    },
+    "media": [
+      {"type": "KNX TP", "description": "Twisted Pair", "wiring": "2-wire bus"},
+      {"type": "KNX RF", "description": "Radio Frequency", "frequency": "868 MHz"},
+      {"type": "KNX IP", "description": "IP/Ethernet", "connection": "Network"},
+      {"type": "KNX PL", "description": "Powerline", "wiring": "Existing power lines"}
+    ],
+    "group_addresses": {
+      "format": "3-level (Main/Middle/Sub)",
+      "example": "1/1/1 = Building/Floor/Room"
+    },
+    "data_point_types": [
+      {"type": "DPT 1.001", "name": "Switch", "use": "On/Off"},
+      {"type": "DPT 1.002", "name": "Boolean", "use": "True/False"},
+      {"type": "DPT 5.001", "name": "Percentage", "use": "0-100%"},
+      {"type": "DPT 9.001", "name": "2-byte Float", "use": "Temperature, etc"},
+      {"type": "DPT 14.001", "name": "4-byte Float", "use": "Energy, etc"}
+    ],
+    "fire_alarm_limitation": "KNX not typically used for fire alarm - more for HVAC/Lighting"
+  },
+  "lonworks_protocol": {
+    "overview": {
+      "name": "LonWorks",
+      "standard": "Echelon",
+      "year": 1988,
+      "current_version": "2020"
+    },
+    "transceivers": [
+      {"type": "FTT-10", "description": "Free Topology Transceiver", "speed": "78 kbps"},
+      {"type": "PL-20", "description": "Powerline", "speed": "5.4 kbps"},
+      {"type": "IP-852", "description": "LonWorks/IP", "speed": "Network speed"}
+    ],
+    "standard_network_variables": "SNVT (Standard Network Variable Types)",
+    "common_snvt": [
+      {"type": "SNVT_switch", "use": "On/Off control"},
+      {"type": "SNVT_lev_disc", "use": "Level discrete"},
+      {"type": "SNVT_temp_p", "use": "Temperature"},
+      {"type": "SNVT_occupancy", "use": "Occupancy status"}
+    ],
+    "fire_alarm_limitation": "LonWorks used more for HVAC/lighting than fire"
+  },
+  "opc_protocol": {
+    "overview": {
+      "name": "OPC",
+      "full_name": "OLE for Process Control",
+      "standard": "OPC Foundation",
+      "year": 1996"
+    },
+    "versions": [
+      {
+        "name": "OPC Classic",
+        "variants": ["OPC DA", "OPC A&E", "OPC HDA"],
+        "interface": "DCOM"
+      },
+      {
+        "name": "OPC UA",
+        "full_name": "Unified Architecture",
+        "features": ["Platform independent", "Security", "Cloud ready"],
+        "interface": "TCP/IP"
+      }
+    ],
+    "data_access": {
+      "DA": "Real-time data",
+      "A&E": "Alarms and Events",
+      "HDA": "Historical Data"
+    },
+    "fire_alarm_integration": "OPC commonly used for enterprise integration to SCADA"
+  },
+  "protocol_comparison": {
+    "criteria": ["Ease of Use", "Cost", "Reliability", "Interoperability", "Fire Alarm Suitability"],
+    "bacnet": {
+      "ease": "Medium",
+      "cost": "Medium",
+      "reliability": "High",
+      "interoperability": "High",
+      "fire_alarm": "Excellent"
+    },
+    "modbus": {
+      "ease": "Easy",
+      "cost": "Low",
+      "reliability": "High",
+      "interoperability": "High",
+      "fire_alarm": "Good"
+    },
+    "knx": {
+      "ease": "Medium",
+      "cost": "Medium",
+      "reliability": "High",
+      "interoperability": "Medium",
+      "fire_alarm": "Poor"
+    },
+    "lonworks": {
+      "ease": "Hard",
+      "cost": "High",
+      "reliability": "High",
+      "interoperability": "Medium",
+      "fire_alarm": "Poor"
+    },
+    "opc": {
+      "ease": "Medium",
+      "cost": "High",
+      "reliability": "High",
+      "interoperability": "High",
+      "fire_alarm": "Good"
+    }
+  },
+  "integration_recommendations": {
+    "small_building": {
+      "recommended": "Hardwired contacts or Modbus gateway",
+      "reason": "Simple, cost-effective"
+    },
+    "medium_building": {
+      "recommended": "BACnet gateway",
+      "reason": "Standard for HVAC integration"
+    },
+    "large_building": {
+      "recommended": "BACnet + OPC",
+      "reason": "Full enterprise integration"
+    },
+    "campus": {
+      "recommended": "Multiple BACnet + OPC server",
+      "reason": "Centralized monitoring"
+    }
+  }
+}

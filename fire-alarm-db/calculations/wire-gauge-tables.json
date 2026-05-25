@@ -1,0 +1,146 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant",
+    "sources": ["NEC/NFPA 70", "NFPA 72", "Manufacturer requirements"],
+    "purpose": "Wire Gauge and Cable Selection Tables",
+    "validation_status": "VERIFIED"
+  },
+  "powerLimitedWiring": {
+    "fplr_cable": {
+      "description": "Fire Power Limited Riser Cable",
+      "use": "NAC Circuits, SLC Loops",
+      "temperature": "75C",
+      "applications": [
+        "Notification Appliance Circuits",
+        "Signaling Line Circuits",
+        "Zone Module Wiring"
+      ]
+    },
+    "fplp_cable": {
+      "description": "Fire Power Limited Plenum",
+      "use": "Plenum Spaces",
+      "rating": "Plenum Rated"
+    },
+    "fpl_cable": {
+      "description": "Fire Power Limited",
+      "use": "General Fire Alarm"
+    }
+  },
+  "wire_gauge_tables": {
+    "awg_to_metric": [
+      {"awg": 22, "metric_mm2": 0.326},
+      {"awg": 20, "metric_mm2": 0.518},
+      {"awg": 18, "metric_mm2": 0.823},
+      {"awg": 16, "metric_mm2": 1.31},
+      {"awg": 14, "metric_mm2": 2.08},
+      {"awg": 12, "metric_mm2": 3.31},
+      {"awg": 10, "metric_mm2": 5.26}
+    ],
+    "ampacity_18_to_14_awg": [
+      {"gauge": "18AWG", "ampacity_60c": 14, "ampacity_75c": 18, "ampacity_90c": 20},
+      {"gauge": "16AWG", "ampacity_60c": 18, "ampacity_75c": 22, "ampacity_90c": 25},
+      {"gauge": "14AWG", "ampacity_60c": 25, "ampacity_75c": 30, "ampacity_90c": 35}
+    ]
+  },
+  "voltageDropTables": {
+    "ohms_per_1000ft": [
+      {"gauge": "18AWG", "ohms_1000ft": 6.4},
+      {"gauge": "16AWG", "ohms_1000ft": 4.0},
+      {"gauge": "14AWG", "ohms_1000ft": 2.5},
+      {"gauge": "12AWG", "ohms_1000ft": 1.6},
+      {"gauge": "10AWG", "ohms_1000ft": 1.0}
+    ],
+    "maxCircuitLength": {
+      "description": "Maximum one-way circuit length in feet for 10% voltage drop at 24V",
+      "18AWG_1amp": 384,
+      "18AWG_2amp": 192,
+      "16AWG_1amp": 616,
+      "16AWG_2amp": 308,
+      "14AWG_1amp": 980,
+      "14AWG_2amp": 490,
+      "14AWG_3amp": 327,
+      "12AWG_1amp": 1568,
+      "12AWG_2amp": 784,
+      "12AWG_3amp": 523,
+      "12AWG_4amp": 392,
+      "10AWG_1amp": 2496,
+      "10AWG_2amp": 1248,
+      "10AWG_3amp": 832,
+      "10AWG_5amp": 499
+    }
+  },
+  "nacWiring": {
+    "classB_StyleY": {
+      "wire": "18AWG minimum",
+      "max_devices": 30,
+      "max_distance": "Based on voltage drop"
+    },
+    "classA_StyleZ": {
+      "wire": "18AWG minimum",
+      "max_devices": 30,
+      "wiring": "2 conductors + shield"
+    }
+  },
+  "slcWiring": {
+    "loop": {
+      "wire": "18-16AWG twisted pair shielded",
+      "max_length": "10000 feet",
+      "max_devices": "125-250 depending on panel",
+      "resistance": "50 ohms maximum"
+    }
+  },
+  "typicalApplications": {
+    "smoke_detector_power": {
+      "wire": "18AWG 2C",
+      "max_run_ft": 150,
+      "note": "Verify voltage at last detector"
+    },
+    "manual_station": {
+      "wire": "18AWG 2C",
+      "max_run_ft": 500
+    },
+    "notification_appliance": {
+      "wire": "14AWG 2C",
+      "max_run_ft": "Calculated by voltage drop"
+    },
+    "nac_circuit": {
+      "wire": "14AWG 2C",
+      "max_amps": 3.0,
+      "fuse_size": "4 amp"
+    },
+    "addressable_loop": {
+      "wire": "18AWG twisted pair shielded",
+      "max_length": 10000,
+      "style": "Class A or B"
+    }
+  },
+  "conduit_fill": {
+    "max_fill_percent": {
+      "3_or_fewer_wires": 53,
+      "4_or_more_wires": 31,
+      "note": "NEC Chapter 9 Table 1"
+    },
+    "common_conduit_sizes": {
+      "3_4_inch": {
+        "area_sq_in": 0.213,
+        "max_18awg": 4,
+        "max_16awg": 3,
+        "max_14awg": 2
+      },
+      "1_inch": {
+        "area_sq_in": 0.346,
+        "max_18awg": 7,
+        "max_16awg": 5,
+        "max_14awg": 4
+      },
+      "1_25_inch": {
+        "area_sq_in": 0.598,
+        "max_18awg": 12,
+        "max_16awg": 9,
+        "max_14awg": 7
+      }
+    }
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "meta": {
+    "title": "Building Occupancy Classification and Risk Categories",
+    "description": "Occupancy types per NFPA 101/IBC and risk categories per BS 5839 — determines fire alarm requirements",
+    "standards_referenced": ["NFPA 101 (Life Safety Code)", "IBC (International Building Code)", "BS 5839-1"],
+    "last_reviewed": "2026-05-09"
+  },
+
+  "nfpa101_occupancy_types": {
+    "description": "NFPA 101 classifies buildings by use/occupancy — this determines fire alarm requirements",
+    "groups": [
+      {
+        "group": "Assembly (A)",
+        "description": "Gathering places for 50+ persons",
+        "subgroups": {
+          "A-1": "Fixed seating (theaters, cinemas, auditoriums)",
+          "A-2": "Food/drink (restaurants, bars, nightclubs)",
+          "A-3": "Miscellaneous (churches, museums, galleries, bowling alleys)",
+          "A-4": "Indoor arenas (stadiums, swimming pools, ice rinks)",
+          "A-5": "Outdoor arenas (stadiums, amusement parks, grandstands)"
+        },
+        "fire_alarm_required": "Yes — when occupant load ≥ 300, or ≥ 100 above/below ground level",
+        "voice_evacuation": "Required when occupant load ≥ 1000",
+        "typical_category": "L2 or L1 (BS 5839)"
+      },
+      {
+        "group": "Business (B)",
+        "description": "Office buildings, professional services, outpatient clinics",
+        "fire_alarm_required": "Yes — when occupant load ≥ 500, or ≥ 100 above/below grade, or >3 stories, or >3000 sq ft per floor",
+        "voice_evacuation": "Typically NOT required (unless high-rise)",
+        "typical_category": "L3 or L2 (BS 5839)"
+      },
+      {
+        "group": "Educational (E)",
+        "description": "Schools (K-12), daycare centers",
+        "fire_alarm_required": "YES — ALWAYS required",
+        "voice_evacuation": "Recommended for large schools",
+        "typical_category": "L2 or L1 (BS 5839)"
+      },
+      {
+        "group": "Factory/Industrial (F)",
+        "description": "Manufacturing, fabrication, assembly",
+        "subgroups": {
+          "F-1": "Moderate hazard (electronics, textiles, wood products)",
+          "F-2": "Low hazard (ceramics, glass, non-combustible goods)"
+        },
+        "fire_alarm_required": "Yes — when occupant load ≥ 500, or ≥ 100 above/below grade",
+        "typical_category": "L3 or P2 (BS 5839)"
+      },
+      {
+        "group": "High-Hazard (H)",
+        "description": "Storage/handling of hazardous materials",
+        "subgroups": {
+          "H-1": "Explosion hazard",
+          "H-2": "Deflagration hazard",
+          "H-3": "Combustion hazard",
+          "H-4": "Health hazard (corrosive/toxic)",
+          "H-5": "Semiconductor fabrication"
+        },
+        "fire_alarm_required": "Yes — generally always required",
+        "special_detection": "Flame detectors, gas detectors, special suppression monitoring",
+        "typical_category": "P1 + special systems (BS 5839)"
+      },
+      {
+        "group": "Institutional (I)",
+        "description": "Facilities with supervised occupants",
+        "subgroups": {
+          "I-1": "Residential care (nursing homes, assisted living)",
+          "I-2": "Hospitals, mental health facilities",
+          "I-3": "Detention/correctional",
+          "I-4": "Daycare (≥5 children)"
+        },
+        "fire_alarm_required": "YES — ALWAYS required",
+        "voice_evacuation": "Required for I-1, I-2 (phased evacuation)",
+        "special": "Two-stage alarm for healthcare — staff notification before evacuation",
+        "typical_category": "L1 (BS 5839)"
+      },
+      {
+        "group": "Mercantile (M)",
+        "description": "Retail stores, malls, markets",
+        "fire_alarm_required": "Yes — when occupant load ≥ 500, or ≥ 100 above/below grade, or >3 stories",
+        "voice_evacuation": "Required in covered malls (NFPA 101 Section 40.8)",
+        "typical_category": "L2 or L3 (BS 5839)"
+      },
+      {
+        "group": "Residential (R)",
+        "description": "Dwellings, hotels, dormitories",
+        "subgroups": {
+          "R-1": "Transient (hotels, motels, boarding houses)",
+          "R-2": "Residential (apartments, dormitories, convents)",
+          "R-3": "One/two family dwellings, care facilities < 5 persons",
+          "R-4": "Residential care (3-16 persons)"
+        },
+        "fire_alarm_required": "Yes — R-1, R-2 always; R-3/R-4 when >3 stories or >10 occupants per unit",
+        "voice_evacuation": "Required in hotels (R-1) when >3 stories",
+        "typical_category": "L1 (hotels), L5 (apartments — risk assessment) (BS 5839)"
+      },
+      {
+        "group": "Storage (S)",
+        "description": "Warehouses, storage facilities",
+        "subgroups": {
+          "S-1": "Moderate hazard storage (furniture, paper, clothing)",
+          "S-2": "Low hazard storage (non-combustible goods, vehicles)"
+        },
+        "fire_alarm_required": "Yes — when >12,000 sq ft, or multi-story, or as required by sprinkler system",
+        "typical_category": "P1 or P2 (BS 5839)"
+      },
+      {
+        "group": "Utility/Miscellaneous (U)",
+        "description": "Ancillary buildings (carports, sheds, greenhouses)",
+        "fire_alarm_required": "Generally NOT required unless occupied or contains hazards",
+        "typical_category": "M or none (BS 5839)"
+      }
+    ]
+  },
+
+  "highrise_requirements": {
+    "definition": "Building with occupied floor > 75 ft (23m) above lowest fire department access level",
+    "fire_alarm_required": "YES — ALWAYS",
+    "voice_evacuation": "YES — REQUIRED",
+    "additional_requirements": [
+      "Fire alarm system with voice evacuation",
+      "Emergency voice alarm communication system (EVACS)",
+      "Fire command center (dedicated room)",
+      "Firefighter's telephone system",
+      "Emergency responder communication system",
+      "Elevator recall (Phase 1 and Phase 2)",
+      "Stairwell pressurization or smoke control",
+      "Refuge areas (where required)",
+      "Class A circuits for all life safety functions",
+      "Two-way communication between fire command center and each elevator lobby",
+      "Automatic sprinkler system (typically required)"
+    ],
+    "reference": "NFPA 72 Chapter 24 / NFPA 101 Section 403 / IBC Section 403"
+  },
+
+  "bs5839_risk_categories": {
+    "description": "See standards/bs5839-rules.json for full details",
+    "summary": {
+      "L1": "Maximum life protection — ALL areas",
+      "L2": "Life protection — escape routes + defined risk areas",
+      "L3": "Life protection — escape routes only",
+      "L4": "Minimum life protection — circulation areas only",
+      "L5": "Custom — risk assessment defined",
+      "P1": "Maximum property protection — ALL areas",
+      "P2": "Property protection — defined risk areas",
+      "M": "Manual system only — call points, no automatic detection"
+    },
+    "selection_guidance": [
+      {"building_type": "Hospital / care home", "recommended": "L1 (mandatory in UK)", "rationale": "Vulnerable occupants cannot self-evacuate"},
+      {"building_type": "Hotel", "recommended": "L1", "rationale": "Sleeping occupants, transient population"},
+      {"building_type": "Shopping mall", "recommended": "L2 + P1", "rationale": "High public occupancy + property value"},
+      {"building_type": "Office building", "recommended": "L3 or L2", "rationale": "Standard commercial — depends on size and layout"},
+      {"building_type": "Data center", "recommended": "P1 (ASD)", "rationale": "Property protection critical, low occupancy"},
+      {"building_type": "School", "recommended": "L2 or L1", "rationale": "Young occupants, education authority requirements"},
+      {"building_type": "Warehouse", "recommended": "P1 or P2", "rationale": "Property protection, low occupancy"},
+      {"building_type": "Residential apartment", "recommended": "L5 or L1 (per local code)", "rationale": "Depends on jurisdiction — Egypt requires L1 equivalent"},
+      {"building_type": "Industrial factory", "recommended": "L3 + P2", "rationale": "Life safety for escape routes + property in high-risk areas"},
+      {"building_type": "Parking garage", "recommended": "L5 or P2", "rationale": "Open areas, low occupancy — detection in risk areas only"}
+    ]
+  },
+
+  "decision_matrix_for_software": {
+    "description": "Logic for the design software to determine fire alarm requirements based on building input",
+    "input_fields": [
+      {"field": "building_type", "type": "enum", "options": ["assembly", "business", "educational", "factory", "high_hazard", "institutional", "mercantile", "residential", "storage", "utility"]},
+      {"field": "number_of_floors", "type": "integer"},
+      {"field": "floor_height_above_grade_ft", "type": "float"},
+      {"field": "total_area_sqft", "type": "float"},
+      {"field": "occupant_load", "type": "integer", "notes": "Calculated from floor plans or user input"},
+      {"field": "has_sprinkler_system", "type": "boolean"},
+      {"field": "has_standpipe_system", "type": "boolean"},
+      {"field": "applicable_standard", "type": "enum", "options": ["NFPA 72", "BS 5839-1", "Egyptian Code", "EN 54-14"]}
+    ],
+    "output": {
+      "fire_alarm_required": "boolean",
+      "recommended_category": "string (e.g., L2, P1)",
+      "voice_evacuation_required": "boolean",
+      "minimum_detection_level": "string",
+      "manual_call_points_required": "boolean",
+      "special_requirements": ["array of strings"],
+      "referenced_code_sections": ["array of strings"]
+    }
+  }
+}

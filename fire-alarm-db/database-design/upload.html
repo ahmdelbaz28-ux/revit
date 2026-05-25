@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Alarm Elite Design</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .drag-zone {
+            border: 2px dashed #3b82f6;
+            transition: all 0.3s ease;
+        }
+        .drag-zone.dragover {
+            border-color: #60a5fa;
+            background-color: #eff6ff;
+            transform: scale(1.02);
+        }
+        .spinner {
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen">
+    <div class="container mx-auto px-4 py-12 max-w-2xl">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-white mb-2">
+                🔥 Fire Alarm Elite Design
+            </h1>
+            <p class="text-slate-400">AI-Powered Fire Alarm System Designer</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-slate-800 rounded-2xl shadow-2xl p-8">
+            <!-- Form -->
+            <form id="designForm" class="space-y-6">
+                <!-- Project Name -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        Project Name
+                    </label>
+                    <input 
+                        type="text" 
+                        id="projectName" 
+                        name="project_name"
+                        required
+                        placeholder="Enter project name"
+                        class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                    >
+                </div>
+
+                <!-- Drag & Drop Zone -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        Floor Plan Image (optional)
+                    </label>
+                    <div 
+                        id="dropZone" 
+                        class="drag-zone rounded-xl p-8 text-center cursor-pointer"
+                    >
+                        <input 
+                            type="file" 
+                            id="fileInput" 
+                            name="image"
+                            accept="image/*"
+                            class="hidden"
+                        >
+                        <div class="space-y-3">
+                            <div class="text-5xl">📤</div>
+                            <p class="text-slate-300 font-medium">
+                                Drag & drop floor plan here
+                            </p>
+                            <p class="text-slate-500 text-sm">
+                                or click to browse (PNG, JPG, PDF)
+                            </p>
+                        </div>
+                        <div id="filePreview" class="hidden mt-4">
+                            <p class="text-green-400 font-medium" id="fileName"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Standard Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        Design Standard
+                    </label>
+                    <select 
+                        id="standard" 
+                        name="standard"
+                        class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                    >
+                        <option value="egyptian">Egyptian (ECF)</option>
+                        <option value="nfpa">NFPA 72 (USA)</option>
+                        <option value="british">British (BS)</option>
+                    </select>
+                </div>
+
+                <!-- Submit Button -->
+                <button 
+                    type="submit"
+                    id="submitBtn"
+                    class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <span id="btnText">⚡ Design Now</span>
+                    <span id="btnLoading" class="hidden">
+                        <span class="spinner inline-block mr-2"></span>
+                        Processing...
+                    </span>
+                </button>
+            </form>
+
+            <!-- Progress Section (hidden initially) -->
+            <div id="progressSection" class="hidden mt-8">
+                <div class="border-t border-slate-700 pt-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">
+                        Design Progress
+                    </h3>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-slate-400 mb-1">
+                            <span>Status</span>
+                            <span id="statusText">Processing...</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3">
+                            <div 
+                                id="progressBar" 
+                                class="bg-blue-500 h-3 rounded-full transition-all duration-500"
+                                style="width: 0%"
+                            ></div>
+                        </div>
+                    </div>
+
+                    <!-- Status Message -->
+                    <div id="statusMessage" class="text-center text-slate-400 text-sm">
+                        Analyzing floor plan and placing devices...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Section (hidden initially) -->
+            <div id="resultSection" class="hidden mt-8">
+                <div class="border-t border-slate-700 pt-6">
+                    <div class="text-center">
+                        <div class="text-5xl mb-4">✅</div>
+                        <h3 class="text-xl font-bold text-green-400 mb-2">
+                            Design Complete!
+                        </h3>
+                        <p class="text-slate-400 mb-6">
+                            Your fire alarm design is ready for download.
+                        </p>
+                        <a 
+                            id="downloadLink"
+                            href="#"
+                            class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition"
+                        >
+                            📥 Download Results
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Section (hidden initially) -->
+            <div id="errorSection" class="hidden mt-8">
+                <div class="border-t border-slate-700 pt-6">
+                    <div class="text-center">
+                        <div class="text-5xl mb-4">❌</div>
+                        <h3 class="text-xl font-bold text-red-400 mb-2">
+                            Design Failed
+                        </h3>
+                        <p id="errorMessage" class="text-slate-400 mb-6">
+                            An error occurred.
+                        </p>
+                        <button 
+                            onclick="resetForm()"
+                            class="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg transition"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-slate-500 text-sm">
+            <p>Powered by FireAlarmAI • Elite Pipeline v1.0</p>
+        </div>
+    </div>
+
+    <script>
+        // Elements
+        const form = document.getElementById('designForm');
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoading = document.getElementById('btnLoading');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('statusText');
+        const statusMessage = document.getElementById('statusMessage');
+        const resultSection = document.getElementById('resultSection');
+        const downloadLink = document.getElementById('downloadLink');
+        const errorSection = document.getElementById('errorSection');
+        const errorMessage = document.getElementById('errorMessage');
+
+        let taskId = null;
+        let pollInterval = null;
+
+        // Drag & Drop
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                fileInput.files = files;
+                showFileName(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                showFileName(e.target.files[0]);
+            }
+        });
+
+        function showFileName(file) {
+            fileName.textContent = file.name;
+            filePreview.classList.remove('hidden');
+        }
+
+        // Form Submit
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Disable button
+            submitBtn.disabled = true;
+            btnText.classList.add('hidden');
+            btnLoading.classList.remove('hidden');
+            
+            // Show progress
+            progressSection.classList.remove('hidden');
+            resultSection.classList.add('hidden');
+            errorSection.classList.add('hidden');
+            
+            // Create FormData
+            const formData = new FormData(form);
+            
+            try {
+                // Submit to server
+                const response = await fetch('/api/elite-design', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to submit design request');
+                }
+                
+                const data = await response.json();
+                taskId = data.task_id;
+                
+                // Start polling
+                pollStatus();
+                pollInterval = setInterval(pollStatus, 2000);
+                
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        function pollStatus() {
+            fetch(`/api/task/${taskId}`)
+                .then(res => res.json())
+                .then(data => {
+                    updateProgress(data);
+                    
+                    if (data.status === 'completed') {
+                        clearInterval(pollInterval);
+                        showResult(data.download_url);
+                    } else if (data.status === 'error') {
+                        clearInterval(pollInterval);
+                        showError(data.error || 'Unknown error');
+                    }
+                })
+                .catch(error => {
+                    clearInterval(pollInterval);
+                    showError(error.message);
+                });
+        }
+
+        function updateProgress(data) {
+            // Update progress bar (simulated stages)
+            let progress = 10;
+            let message = 'Initializing...';
+            
+            if (data.status === 'processing') {
+                progress = Math.min(90, 10 + Math.random() * 80);
+                message = 'Analyzing floor plan and running AI design...';
+            } else if (data.status === 'completed') {
+                progress = 100;
+                message = 'Complete!';
+            }
+            
+            progressBar.style.width = `${progress}%`;
+            statusText.textContent = data.status;
+            statusMessage.textContent = message;
+        }
+
+        function showResult(downloadUrl) {
+            progressSection.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+            
+            downloadLink.href = downloadUrl;
+            
+            // Re-enable button
+            submitBtn.disabled = false;
+            btnText.classList.remove('hidden');
+            btnLoading.classList.add('hidden');
+        }
+
+        function showError(error) {
+            progressSection.classList.add('hidden');
+            errorSection.classList.remove('hidden');
+            errorMessage.textContent = error;
+            
+            // Re-enable button
+            submitBtn.disabled = false;
+            btnText.classList.remove('hidden');
+            btnLoading.classList.add('hidden');
+        }
+
+        function resetForm() {
+            form.reset();
+            filePreview.classList.add('hidden');
+            progressSection.classList.add('hidden');
+            resultSection.classList.add('hidden');
+            errorSection.classList.add('hidden');
+            progressBar.style.width = '0%';
+            taskId = null;
+            
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+        }
+    </script>
+</body>
+</html>

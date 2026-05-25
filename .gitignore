@@ -1,0 +1,61 @@
+# Python compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Type checking
+.mypy_cache/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+*.env.*
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test cache
+.pytest_cache/
+
+# JSONL files (often generated)
+*.jsonl
+
+# Backup/dump files
+*.bak
+*.backup
+*.dump
+
+# Build artifacts
+dist/
+build/
+target/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# FireAlarm Engine specific
+vv_results.db
+fireai_memory.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Virtual environments
+venv/
+.venv/
+
+# Analysis outputs
+analysis_result.json

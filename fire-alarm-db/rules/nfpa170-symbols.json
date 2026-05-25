@@ -1,0 +1,232 @@
+{
+  "meta": {
+    "title": "NFPA 170 Fire Safety Symbols — Drawing Symbol Reference",
+    "description": "Standard symbols for fire alarm system drawings and floor plans. Essential for CAD/design software.",
+    "standard": "NFPA 170 — Standard for Fire Safety and Emergency Symbols",
+    "last_reviewed": "2026-05-09",
+    "notes": "NFPA 170 defines symbols used on fire alarm shop drawings. All design software must use these symbols."
+  },
+
+  "initiating_device_symbols": [
+    {
+      "id": "sym-smoke-detector",
+      "name": "Smoke Detector (Spot Type)",
+      "symbol_description": "Circle with dot in center or triangular shape pointing up",
+      "autocad_block": "Smoke Detector",
+      "category": "Automatic Detector"
+    },
+    {
+      "id": "sym-heat-detector-fixed",
+      "name": "Heat Detector (Fixed Temperature)",
+      "symbol_description": "Circle with H or HT inside",
+      "autocad_block": "Heat Detector Fixed"
+    },
+    {
+      "id": "sym-heat-detector-ror",
+      "name": "Heat Detector (Rate-of-Rise)",
+      "symbol_description": "Circle with ROR or rate symbol inside",
+      "autocad_block": "Heat Detector ROR"
+    },
+    {
+      "id": "sym-multi-criteria",
+      "name": "Multi-Criteria Detector",
+      "symbol_description": "Circle with MC or triangle with internal detail",
+      "autocad_block": "Multi Detector"
+    },
+    {
+      "id": "sym-beam-detector",
+      "name": "Beam Smoke Detector",
+      "symbol_description": "Line between Tx and Rx units with label",
+      "autocad_block": "Beam Detector"
+    },
+    {
+      "id": "sym-duct-detector",
+      "name": "Duct Smoke Detector",
+      "symbol_description": "Detector symbol on duct with sampling tube notation",
+      "autocad_block": "Duct Detector"
+    },
+    {
+      "id": "sym-pull-station",
+      "name": "Manual Pull Station / Call Point",
+      "symbol_description": "Small square with fire icon or MCP label",
+      "autocad_block": "Pull Station",
+      "bs5839_equivalent": "Break-glass call point — similar symbol"
+    },
+    {
+      "id": "sym-flame-detector",
+      "name": "Flame Detector",
+      "symbol_description": "Circle with flame icon",
+      "autocad_block": "Flame Detector"
+    },
+    {
+      "id": "sym-gas-detector",
+      "name": "Gas Detector (CO/Combustible)",
+      "symbol_description": "Circle with GAS or CO label",
+      "autocad_block": "Gas Detector"
+    }
+  ],
+
+  "notification_device_symbols": [
+    {
+      "id": "sym-horn",
+      "name": "Fire Alarm Horn",
+      "symbol_description": "Circle with horn/trumpet icon",
+      "autocad_block": "Horn"
+    },
+    {
+      "id": "sym-strobe",
+      "name": "Fire Alarm Strobe (Visual)",
+      "symbol_description": "Circle with zigzag/flash icon",
+      "autocad_block": "Strobe"
+    },
+    {
+      "id": "sym-horn-strobe",
+      "name": "Horn-Strobe Combination",
+      "symbol_description": "Circle with combined horn and flash icon",
+      "autocad_block": "Horn Strobe"
+    },
+    {
+      "id": "sym-speaker",
+      "name": "Fire Alarm Speaker",
+      "symbol_description": "Circle with speaker cone icon",
+      "autocad_block": "Speaker"
+    },
+    {
+      "id": "sym-speaker-strobe",
+      "name": "Speaker-Strobe Combination",
+      "symbol_description": "Circle with speaker and flash icon",
+      "autocad_block": "Speaker Strobe"
+    },
+    {
+      "id": "sym-bell",
+      "name": "Fire Alarm Bell (Mechanical)",
+      "symbol_description": "Circle with bell icon",
+      "autocad_block": "Bell",
+      "status": "Legacy"
+    }
+  ],
+
+  "panel_and_equipment_symbols": [
+    {
+      "id": "sym-facp",
+      "name": "Fire Alarm Control Panel (FACP)",
+      "symbol_description": "Rectangle with FACP or FACU label",
+      "autocad_block": "FACP"
+    },
+    {
+      "id": "sym-annunciator",
+      "name": "Remote Annunciator",
+      "symbol_description": "Rectangle with ANN label",
+      "autocad_block": "Annunciator"
+    },
+    {
+      "id": "sym-monitor-module",
+      "name": "Monitor Input Module",
+      "symbol_description": "Small diamond or square with MM label",
+      "autocad_block": "Monitor Module"
+    },
+    {
+      "id": "sym-control-module",
+      "name": "Control Relay Module",
+      "symbol_description": "Small diamond or square with CM or RM label",
+      "autocad_block": "Control Module"
+    },
+    {
+      "id": "sym-isolator",
+      "name": "Short-Circuit Isolator",
+      "symbol_description": "Small circle with ISO label or X",
+      "autocad_block": "Isolator"
+    },
+    {
+      "id": "sym-battery-cabinet",
+      "name": "Battery Cabinet",
+      "symbol_description": "Rectangle with BAT label",
+      "autocad_block": "Battery Cabinet"
+    }
+  ],
+
+  "wiring_symbols": [
+    {
+      "id": "wire-slc",
+      "name": "Signaling Line Circuit (Addressable Loop)",
+      "line_style": "Solid line with SLC label",
+      "color_recommendation": "Red"
+    },
+    {
+      "id": "wire-idc",
+      "name": "Initiating Device Circuit (Conventional)",
+      "line_style": "Solid line with IDC label",
+      "color_recommendation": "Red"
+    },
+    {
+      "id": "wire-nac",
+      "name": "Notification Appliance Circuit",
+      "line_style": "Solid line with NAC label",
+      "color_recommendation": "Blue"
+    },
+    {
+      "id": "wire-class-a",
+      "name": "Class A Wiring (Return Path)",
+      "line_style": "Solid line with 'A' designation",
+      "notes": "Indicates redundant return path"
+    },
+    {
+      "id": "wire-class-b",
+      "name": "Class B Wiring (Single Path)",
+      "line_style": "Solid line with EOL at end",
+      "notes": "Indicates EOL resistor/device at termination"
+    }
+  ],
+
+  "zone_and_label_symbols": [
+    {
+      "id": "sym-zone-label",
+      "name": "Zone Boundary/Label",
+      "description": "Dashed boundary line with zone number and label",
+      "example": "ZONE 03 — 2nd Floor Corridor"
+    },
+    {
+      "id": "sym-device-tag",
+      "name": "Device Tag / Schedule Number",
+      "description": "Each device on drawing should have a tag number referencing the device schedule",
+      "example": "SD-001 (Smoke Detector 001), HS-001 (Horn Strobe 001), PS-001 (Pull Station 001)"
+    }
+  ],
+
+  "drawing_requirements": {
+    "title_block": [
+      "Project name and address",
+      "Drawing title (Fire Alarm Floor Plan — Level X)",
+      "Drawing number",
+      "Scale (typically 1:100 for floors, 1:50 for details)",
+      "Date and revision number",
+      "Design engineer stamp/license number",
+      "Contractor name"
+    ],
+    "legend": [
+      "All symbols used on the drawing",
+      "Abbreviation list",
+      "Device schedule reference",
+      "Wire type and gauge notation",
+      "Zone reference table"
+    ],
+    "notes": [
+      "Applicable codes and standards",
+      "Device spacing method used",
+      "Voltage drop calculation reference",
+      "Battery calculation reference",
+      "Special conditions or deviations",
+      "Installation notes",
+      "Commissioning requirements"
+    ],
+    "schedules": [
+      "Device schedule (all devices listed with tag, type, manufacturer, model, zone)",
+      "Detector spacing schedule",
+      "NAC loading schedule",
+      "Battery calculation sheet",
+      "Voltage drop calculation sheets",
+      "Sequence of operations",
+      "Zone map"
+    ]
+  }
+}

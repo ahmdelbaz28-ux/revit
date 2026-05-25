@@ -1,0 +1,284 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-05-09",
+    "author": "Fire Protection Engineering Consultant - Power Systems Specialist",
+    "sources": ["NFPA 72", "IEC 62624", "IEEE 979", "Egyptian Electrical Code", "Power Plant Standards"],
+    "specialization": "POWER_PLANTS_AND_ELECTRICAL_INFRASTRUCTURE",
+    "validation_status": "VERIFIED"
+  },
+  "generation_power_plants": {
+    "types": [
+      {
+        "type": "COMBINED_CYCLE_GAS_TURBINE",
+        "fuel": "NATURAL_GAS",
+        "risk_level": "HIGH",
+        "hazards": ["GAS_LEAKAGE", "OIL_FIRE", "HYDRAULIC_FLUID", "TURBINE_FIRE"]
+      },
+      {
+        "type": "STEAM_TURBINE",
+        "fuel": "NATURAL_GAS/COAL/OIL",
+        "risk_level": "HIGH",
+        "hazards": ["STEAM_LEAK", "OIL_FIRE", "COAL_DUST", "BOILER_EXPLOSION"]
+      },
+      {
+        "type": "DIESEL_GENERATOR",
+        "fuel": "DIESEL",
+        "risk_level": "HIGH",
+        "hazards": ["FUEL_LEAK", "EXHAUST", "BATTERY_ROOM"]
+      },
+      {
+        "type": "HYDROELECTRIC",
+        "risk_level": "MEDIUM",
+        "hazards": ["TURBINE_ROOM", "PENSTOCK"]
+      },
+      {
+        "type": "SOLAR_PV_FARM",
+        "risk_level": "LOW",
+        "hazards": ["BATTERY_STORAGE", "INVERTER_FIRE"]
+      }
+    ],
+    "fire_protection_zones": [
+      {
+        "zone": "TURBINE_HALL",
+        "fire_risk": "HIGH",
+        "detection": "LINEAR_HEAT_PLUS_SMOKE",
+        "suppression": "WATER_MIST_OR_CO2",
+        "special": "EXPLOSION_PROOF_EQUIPMENT"
+      },
+      {
+        "zone": "BOILER_AREA",
+        "fire_risk": "HIGH",
+        "detection": "FLAME_PLUS_HEAT",
+        "suppression": "STEAM_QUENCH_OR_CO2",
+        "special": "HIGH_TEMPERATURE_RATED"
+      },
+      {
+        "zone": "FUEL_OIL_STORAGE",
+        "fire_risk": "CRITICAL",
+        "detection": "FLAME_DETECTORS",
+        "suppression": "FOAM_SYSTEM",
+        "special": "FOAM_DIKE_REQUIRED"
+      },
+      {
+        "zone": "TRANSFORMER_YARD",
+        "fire_risk": "HIGH",
+        "detection": "LINEAR_HEAT",
+        "suppression": "WATER_DELUGE",
+        "special": "OIL_CONTAINMENT"
+      },
+      {
+        "zone": "CABLE_BASEMENT",
+        "fire_risk": "HIGH",
+        "detection": "ASPIRATING_SMOKE",
+        "suppression": "FM200_OR_CO2",
+        "special": "SEALED_ROOM"
+      },
+      {
+        "zone": "CONTROL_ROOM",
+        "fire_risk": "MEDIUM",
+        "detection": "SMOKE_HIGH_SENSITIVITY",
+        "suppression": "FM200",
+        "special": "CRITICAL_EQUIPMENT"
+      },
+      {
+        "zone": "BATTERY_ROOM",
+        "fire_risk": "HIGH",
+        "detection": "SMOKE_PLUS_GAS",
+        "suppression": "FM200_OR_WATER_MIST",
+        "special": "HYDROGEN_VENTILATION"
+      }
+    ]
+  },
+  "electrical_substations": {
+    "voltage_classes": [
+      {"class": "500kV_AND_ABOVE", "name": "Extra High Voltage"},
+      {"class": "132-220kV", "name": "High Voltage"},
+      {"class": "33-66kV", "name": "Medium Voltage"},
+      {"class": "11kV_AND_BELOW", "name": "Distribution Voltage"}
+    ],
+    "fire_hazards": [
+      {
+        "equipment": "OIL_FILLED_TRANSFORMER",
+        "hazard": "MINERAL_OIL_30K_LITERS",
+        "fire_risk": "CRITICAL",
+        "detection": "LINEAR_HEAT_165F_MIN",
+        "suppression": "WATER_DELUGE_OR_CO2"
+      },
+      {
+        "equipment": "CABLE_TUNNEL",
+        "hazard": "PVC_XLPE_INSULATION",
+        "fire_risk": "HIGH",
+        "detection": "ASPIRATING_SMOKE_OR_LINEAR_HEAT",
+        "suppression": "FM200_OR_WATER_MIST"
+      },
+      {
+        "equipment": "SWITCHGEAR",
+        "hazard": "SF6_GAS_ARC",
+        "fire_risk": "HIGH",
+        "detection": "HEAT_OR_FLAME",
+        "suppression": "CO2_OR_FM200"
+      },
+      {
+        "equipment": "BATTERY_ROOM",
+        "hazard": "HYDROGEN_GAS",
+        "fire_risk": "HIGH",
+        "detection": "GAS_PLUS_SMOKE",
+        "suppression": "VENTILATION_PLUS_FM200"
+      }
+    ],
+    "protection_schemes": {
+      "transformer_protection": [
+        "BUCHHOLZ_RELAY",
+        "MAGERMOL_RELAY",
+        "TEMPERATURE_MONITORING",
+        "OIL_LEVEL_MONITORING",
+        "PRESSURE_RELIEF_DEVICE"
+      ],
+      "cable_protection": [
+        "FIRE_RATED_CABLE_TRAY",
+        "FIRE_STOP_AT_PENETRATIONS",
+        "SMOKE_DETECTION_IN_TUNNEL",
+        "LINEAR_HEAT_DETECTION"
+      ]
+    }
+  },
+  "transformer_protection": {
+    "oil_immersed_transformer": {
+      "fire_risk": "CRITICAL",
+      "oil_quantity_liters": "10000_TO_50000",
+      "detection": {
+        "primary": "LINEAR_HEAT_165F_OR_238F",
+        "secondary": "FLAME_DETECTOR",
+        "tertiary": "GAS_DETECTION_FOR_ARCING"
+      },
+      "suppression": {
+        "primary": "WATER_DELUGE_SYSTEM",
+        "secondary": "FOAM_SYSTEM",
+        "design": "FULL_FLOODING"
+      },
+      "oil_containment": {
+        "capacity": "110%_OIL_VOLUME",
+        "drainage": "GRAVITY_TO_CONTAINMENT"
+      },
+      "isolation": {
+        "automatic": "TRIP_ON_FIRE_DETECTION",
+        "main_bay_isolation": "REQUIRED"
+      }
+    },
+    "dry_type_transformer": {
+      "fire_risk": "MEDIUM",
+      "detection": "SMOKE_DETECTOR",
+      "suppression": "WATER_SPRINKLER_OR_WATER_MIST"
+    }
+  },
+  "cable_tunnel_protection": {
+    "fire_risk": "HIGH",
+    "cable_types": ["POWER_CABLES", "CONTROL_CABLES", "FIBER_OPTIC"],
+    "detection": {
+      "primary": "ASPIRATING_SMOKE_VESDA",
+      "secondary": "LINEAR_HEAT_175F",
+      "placement": "CEILING_AND_TRAY_ABOVE"
+    },
+    "suppression": {
+      "primary": "FM200_OR_CO2",
+      "secondary": "WATER_MIST",
+      "design": "TOTAL_FLOODING"
+    },
+    "ventilation": {
+      "normal": "CONTINUOUS_AIR_CHANGE",
+      "fire_mode": "SHUTDOWN_AND_SEAK"
+    },
+    "fire_stopping": {
+      "required_at": "EVERY_PENETRATION",
+      "rating": "2_HOUR_MINIMUM",
+      "test_standard": "ASTM_E814"
+    }
+  },
+  "battery_room_protection": {
+    "types": [
+      {
+        "battery": "LEAD_ACID",
+        "hazards": ["HYDROGEN_GAS", "SULFURIC_ACID"],
+        "ventilation": "EXHAUST_1_AIR_CHANGE_PER_HOUR"
+      },
+      {
+        "battery": "VRLA_VALVE_REGULATED",
+        "hazards": ["HYDROGEN_GAS"],
+        "ventilation": "NATURAL_OR_FORCED"
+      },
+      {
+        "battery": "LITHIUM_ION",
+        "hazards": ["THERMAL_RUNAWAY", "TOXIC_FUMES"],
+        "detection": "SMOKE_PLUS_HEAT",
+        "suppression": "WATER_MIST_RECOMMENDED"
+      }
+    ],
+    "detection": {
+      "hydrogen": "GAS_DETECTOR_10%_LEL",
+      "smoke": "PHOTOELECTRIC_SMOKE",
+      "temperature": "HIGH_TEMP_ALARM"
+    },
+    "suppression": {
+      "preferred": "FM200",
+      "alternative": "WATER_MIST",
+      "not_recommended": "CO2_LIFE_HAZARD"
+    }
+  },
+  "generator_protection": {
+    "diesel_generator_set": {
+      "fuel_tank": "INTEGRATED_OR_SEPARATE",
+      "day_tank": "530_GALLONS_MAX_INDOOR",
+      "detection": "SMOKE_IN_ENCLOSURE",
+      "suppression": "FM200_OR_DRY_PIPE"
+    },
+    "gas_turbine_generator": {
+      "fuel": "NATURAL_GAS",
+      "detection": "FLAME_IN_COMBUSTION_CHAMBER",
+      "suppression": "SPECIALIZED_GAS_SUPPRESSION"
+    }
+  },
+  "control_room_protection": {
+    "critical_systems": [
+      "SCADA_SYSTEMS",
+      "PROTECTION_RELAYS",
+      "COMMUNICATION_EQUIPMENT",
+      "SERVER_ROOM"
+    ],
+    "detection": "HIGH_SENSITIVITY_SMOKE",
+    "suppression": "FM200",
+    "special": "AIR_SAMPLING_RECOMMENDED"
+  },
+  "fire_protection_checklist": {
+    "power_plant_essentials": [
+      "Fire alarm control panel in protected location",
+      "Voice evacuation system for personnel safety",
+      "Emergency shutdown systems tied to fire detection",
+      "Fire pump with dedicated power source",
+      "Emergency lighting in all corridors and exits",
+      "Fire department access road",
+      "Water supply for fire fighting"
+    ],
+    "electrical_essentials": [
+      "Transformer yard deluge system",
+      "Cable tunnel suppression system",
+      "Oil containment system",
+      "Fire stopping at all penetrations",
+      "Explosion proof equipment in hazardous areas",
+      "Emergency generator for fire pumps"
+    ]
+  },
+  "applicable_codes": {
+    "power_plants": [
+      "NFPA 850 - Electric Generating Plants",
+      "NFPA 72 - Fire Alarm",
+      "IEC 62624 - Fire Protection",
+      "IEEE 979 - Substation Fire Protection"
+    ],
+    "substations": [
+      "NFPA 70E - Electrical Safety",
+      "IEEE 979 - Guide for Fire Protection",
+      "IEC 62305 - Lightning Protection"
+    ]
+  }
+}

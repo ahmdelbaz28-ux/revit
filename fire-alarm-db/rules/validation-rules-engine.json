@@ -1,0 +1,845 @@
+{
+  "meta": {
+    "title": "Validation Rules Engine — Design Compliance Checks",
+    "description": "Every validation rule the software must check. Each rule has: condition, check logic, error message, code reference, severity. The backend reads this JSON and executes checks programmatically.",
+    "last_updated": "2026-05-09",
+    "total_rules": 42
+  },
+
+  "validation_rules": [
+    {
+      "id": "VAL-DET-001",
+      "category": "detector_spacing",
+      "name": "Smoke Detector — Smooth Ceiling Spacing (NFPA)",
+      "standard": "NFPA72",
+      "section": "17.6.3.1",
+      "severity": "error",
+      "check_type": "spacing_between_devices",
+      "applies_to": ["smoke_detector"],
+      "conditions": {
+        "ceiling_type": "smooth",
+        "standard": "NFPA72"
+      },
+      "rule": {
+        "description": "Distance between any two adjacent spot-type smoke detectors must not exceed 30 ft (9.1m) on smooth ceilings",
+        "max_spacing_m": 9.1,
+        "max_spacing_ft": 30,
+        "measurement": "center_to_center",
+        "note": "The 30 ft spacing is measured along the diagonal of the square grid. Side-by-side spacing = 21 ft (6.4m). This is a common mistake."
+      },
+      "calculation": {
+        "method": "For each pair of adjacent detectors on the same floor/zone, calculate Euclidean distance between their (x,y) positions. If distance > max_spacing → FAIL.",
+        "formula": "distance = sqrt((x2-x1)² + (y2-y1)²)",
+        "apply_correction": "Multiply max_spacing by ceiling_height_correction_factor if ceiling > 10 ft"
+      },
+      "error_message": "Smoke detector spacing violation: {actual_distance}m exceeds maximum {max_spacing}m (NFPA 72 Section 17.6.3.1)",
+      "resolution": "Reduce spacing between detectors or add additional detector(s)"
+    },
+    {
+      "id": "VAL-DET-002",
+      "category": "detector_spacing",
+      "name": "Smoke Detector — Wall Distance (NFPA)",
+      "standard": "NFPA72",
+      "section": "17.6.3.1",
+      "severity": "error",
+      "check_type": "distance_from_wall",
+      "applies_to": ["smoke_detector"],
+      "conditions": {
+        "ceiling_type": "smooth",
+        "standard": "NFPA72"
+      },
+      "rule": {
+        "description": "Distance from any smoke detector to the nearest wall must not exceed half the nominal spacing = 15 ft (4.6m)",
+        "max_wall_distance_m": 4.6,
+        "max_wall_distance_ft": 15,
+        "formula": "max_wall = nominal_spacing / 2"
+      },
+      "calculation": {
+        "method": "For each detector, find minimum distance to any wall boundary of the room/floor. If min_wall_dist > max_wall_distance → FAIL.",
+        "requires": "Room boundary polygon or floor boundary polygon"
+      },
+      "error_message": "Detector {device_tag} is {actual}m from wall — exceeds maximum {max}m (NFPA 72 Section 17.6.3.1)",
+      "resolution": "Move detector closer to wall or add additional detector"
+    },
+    {
+      "id": "VAL-DET-003",
+      "category": "detector_spacing",
+      "name": "Smoke Detector — Corridor Spacing (NFPA)",
+      "standard": "NFPA72",
+      "section": "17.6.3.1.1",
+      "severity": "error",
+      "check_type": "corridor_spacing",
+      "applies_to": ["smoke_detector"],
+      "conditions": {
+        "room_type": "corridor",
+        "corridor_width_max_ft": 20,
+        "corridor_width_max_m": 6.1,
+        "standard": "NFPA72"
+      },
+      "rule": {
+        "description": "In corridors, detectors spaced max 30 ft (9.1m) on center, within 5 ft (1.5m) of end walls",
+        "max_center_to_center_m": 9.1,
+        "max_center_to_center_ft": 30,
+        "max_from_end_wall_m": 1.5,
+        "max_from_end_wall_ft": 5,
+        "coverage": "30 ft × corridor width per detector"
+      },
+      "calculation": {
+        "method": "Check corridor width ≤ 20 ft. Check center-to-center distance ≤ 30 ft. Check distance from first/last detector to end walls ≤ 5 ft."
+      },
+      "error_message": "Corridor detector spacing: {issue_type} — detector {device_tag} violates NFPA 72 Section 17.6.3.1.1",
+      "resolution": "Adjust detector positions or add detector(s)"
+    },
+    {
+      "id": "VAL-DET-004",
+      "category": "detector_spacing",
+      "name": "Smoke Detector — BS 5839 Spacing",
+      "standard": "BS5839",
+      "section": "22.3",
+      "severity": "error",
+      "check_type": "spacing_between_devices",
+      "applies_to": ["smoke_detector"],
+      "conditions": {
+        "ceiling_type": "smooth",
+        "standard": "BS5839"
+      },
+      "rule": {
+        "description": "Nominal spacing between smoke detectors = 7.5m (BS 5839-1). Coverage radius = 5.3m. Max wall distance = 3.75m.",
+        "max_spacing_m": 7.5,
+        "coverage_radius_m": 5.3,
+        "max_wall_distance_m": 3.75
+      },
+      "calculation": {
+        "method": "Check distance between adjacent detectors ≤ 7.5m. Check distance from detector to nearest wall ≤ 3.75m."
+      },
+      "error_message": "Detector spacing: {actual}m exceeds BS 5839 maximum {max}m (BS 5839-1 Section 22.3)",
+      "resolution": "Reduce spacing or add detector(s)"
+    },
+    {
+      "id": "VAL-DET-005",
+      "category": "detector_spacing",
+      "name": "Smoke Detector — BS 5839 Corridor Bonus",
+      "standard": "BS5839",
+      "section": "22.3",
+      "severity": "info",
+      "check_type": "corridor_bonus_eligibility",
+      "applies_to": ["smoke_detector"],
+      "conditions": {
+        "room_type": "corridor",
+        "corridor_width_max_m": 2.0,
+        "standard": "BS5839"
+      },
+      "rule": {
+        "description": "In corridors less than 2m wide, spacing can be increased by 50% to 11.25m (BS 5839-1 Clause 22.3)",
+        "normal_spacing_m": 7.5,
+        "bonus_spacing_m": 11.25,
+        "condition": "corridor width ≤ 2.0m"
+      },
+      "calculation": {
+        "method": "If corridor width ≤ 2.0m, apply bonus spacing of 11.25m. If > 2.0m, use normal 7.5m spacing."
+      },
+      "message": "INFO: Corridor {corridor_name} is {width}m wide — bonus spacing (11.25m) applies per BS 5839-1 Clause 22.3"
+    },
+    {
+      "id": "VAL-DET-006",
+      "category": "detector_spacing",
+      "name": "Heat Detector — Spacing (NFPA)",
+      "standard": "NFPA72",
+      "section": "17.6.4",
+      "severity": "error",
+      "check_type": "spacing_between_devices",
+      "applies_to": ["heat_detector"],
+      "conditions": {
+        "ceiling_type": "smooth",
+        "standard": "NFPA72"
+      },
+      "rule": {
+        "description": "Heat detector listed spacing = 50 ft (15.2m) on smooth ceilings. Max wall distance = 25 ft (7.6m).",
+        "max_spacing_m": 15.2,
+        "max_spacing_ft": 50,
+        "max_wall_distance_m": 7.6,
+        "max_wall_distance_ft": 25,
+        "note": "Some heat detectors have different listed spacing — use manufacturer data when available."
+      },
+      "calculation": {
+        "method": "Same as smoke detector spacing check, but using heat detector values. Check for ceiling height corrections (heat detectors have stricter height limits)."
+      },
+      "error_message": "Heat detector spacing: {actual}m exceeds maximum {max}m (NFPA 72 Section 17.6.4)",
+      "resolution": "Reduce spacing or add heat detector(s)"
+    },
+    {
+      "id": "VAL-DET-007",
+      "category": "detector_spacing",
+      "name": "Heat Detector — Spacing (BS 5839)",
+      "standard": "BS5839",
+      "section": "22.4",
+      "severity": "error",
+      "check_type": "spacing_between_devices",
+      "applies_to": ["heat_detector"],
+      "conditions": {
+        "ceiling_type": "smooth",
+        "standard": "BS5839"
+      },
+      "rule": {
+        "description": "BS 5839 heat detector nominal spacing = 5.3m. Coverage radius = 3.75m. Max wall distance = 2.65m.",
+        "max_spacing_m": 5.3,
+        "coverage_radius_m": 3.75,
+        "max_wall_distance_m": 2.65,
+        "note": "BS 5839 heat spacing is MUCH tighter than NFPA — this is a significant difference designers often miss."
+      },
+      "calculation": {
+        "method": "Check distance between adjacent heat detectors ≤ 5.3m. Check wall distance ≤ 2.65m."
+      },
+      "error_message": "Heat detector spacing: {actual}m exceeds BS 5839 maximum {max}m (BS 5839-1 Section 22.4)",
+      "resolution": "Reduce spacing or add heat detector(s)"
+    },
+    {
+      "id": "VAL-DET-008",
+      "category": "detector_ceiling_height",
+      "name": "Ceiling Height Exceeds Detector Maximum",
+      "standard": "NFPA72",
+      "section": "17.6.3.3",
+      "severity": "error",
+      "check_type": "ceiling_height_limit",
+      "applies_to": ["smoke_detector", "heat_detector"],
+      "conditions": {
+        "standard": "NFPA72"
+      },
+      "rule": {
+        "description": "Point-type smoke detectors should not be installed on ceilings higher than 30 ft (9.1m). Above this, use beam detectors or aspirating systems.",
+        "smoke_max_height_ft": 30,
+        "smoke_max_height_m": 9.1,
+        "heat_max_height_ft": 30,
+        "heat_max_height_m": 9.1,
+        "recommendation": "For ceilings > 10.5m: consider beam or ASD (BS 5839). For > 30ft: use beam or ASD (NFPA)."
+      },
+      "calculation": {
+        "method": "Compare floor ceiling_height_m against device max_ceiling_height_m. If ceiling > max → ERROR."
+      },
+      "error_message": "Ceiling height {height}m exceeds maximum {max}m for {device_type} — use beam detector or aspirating system (NFPA 72 Section 17.6.3.3.1)"
+    },
+    {
+      "id": "VAL-DET-009",
+      "category": "detector_ceiling_height",
+      "name": "Ceiling Height Correction Not Applied",
+      "standard": "NFPA72",
+      "section": "17.6.3.3.1",
+      "severity": "warning",
+      "check_type": "height_correction",
+      "applies_to": ["smoke_detector", "heat_detector"],
+      "conditions": {
+        "ceiling_type": "smooth",
+        "ceiling_height_gt_ft": 10,
+        "standard": "NFPA72"
+      },
+      "rule": {
+        "description": "When ceiling height exceeds 10 ft (3m), detector spacing must be reduced according to height correction table.",
+        "trigger_height_ft": 10,
+        "correction_table_source": "NFPA 72 / BS 5839 ceiling height correction factors"
+      },
+      "calculation": {
+        "method": "If ceiling_height > 10ft, check that spacing between detectors has been multiplied by the appropriate correction factor. If spacing was NOT corrected → WARNING."
+      },
+      "error_message": "WARNING: Ceiling height is {height}m but spacing does not appear to be corrected for height. Verify that height correction factor has been applied (NFPA 72 Section 17.6.3.3.1)"
+    },
+    {
+      "id": "VAL-DET-010",
+      "category": "detector_placement",
+      "name": "Detector Too Close to HVAC Diffuser",
+      "standard": "BS5839",
+      "section": "22.2.2",
+      "severity": "warning",
+      "check_type": "proximity_check",
+      "applies_to": ["smoke_detector", "multi_criteria_detector"],
+      "conditions": {},
+      "rule": {
+        "description": "Detectors should not be placed within 500mm of HVAC supply air diffusers to prevent false alarms and delayed detection.",
+        "min_distance_from_diffuser_m": 0.5,
+        "nfpa_min_distance_ft": 3.0
+      },
+      "calculation": {
+        "method": "If HVAC diffuser positions are known on the floor plan, check distance from each detector to nearest diffuser. If < 0.5m → WARNING."
+      },
+      "error_message": "WARNING: Detector {device_tag} is within 0.5m of HVAC diffuser — risk of false alarm (BS 5839-1 Clause 22.2.2)"
+    },
+    {
+      "id": "VAL-DET-011",
+      "category": "detector_placement",
+      "name": "Smoke Detector in Kitchen/Bathroom",
+      "standard": "BEST_PRACTICE",
+      "section": "N/A",
+      "severity": "warning",
+      "check_type": "room_type_check",
+      "applies_to": ["smoke_detector"],
+      "conditions": {
+        "room_type": ["kitchen", "bathroom", "shower", "steam_room"]
+      },
+      "rule": {
+        "description": "Smoke detectors should NOT be installed in kitchens or bathrooms due to nuisance alarms from cooking steam and moisture.",
+        "recommendation": "Use heat detector (135°F/57°C or 190°F/88°C) instead of smoke detector"
+      },
+      "calculation": {
+        "method": "If room_type is kitchen/bathroom/shower AND device is smoke_detector → WARNING."
+      },
+      "error_message": "WARNING: Smoke detector in {room_type} ({room_name}) — use heat detector instead to avoid false alarms"
+    },
+    {
+      "id": "VAL-DET-012",
+      "category": "detector_placement",
+      "name": "Detector in Dead Air Space",
+      "standard": "BEST_PRACTICE",
+      "section": "N/A",
+      "severity": "warning",
+      "check_type": "dead_air_check",
+      "applies_to": ["smoke_detector", "heat_detector"],
+      "conditions": {
+        "ceiling_type": ["sloped", "beamed"]
+      },
+      "rule": {
+        "description": "Avoid placing detectors in dead air spaces: ceiling corners, peaks of sloped ceilings, behind deep beams, above obstructions.",
+        "dead_air_spaces": ["corner where two walls meet ceiling", "peak of sloped ceiling > 3ft from detector", "behind beam deeper than 10% of ceiling height"]
+      },
+      "calculation": {
+        "method": "Check if detector is within 600mm of ceiling peak (sloped) or in beam pocket (beamed). Visual check — flag for engineer review."
+      },
+      "error_message": "WARNING: Detector {device_tag} may be in a dead air space — verify placement (best practice)"
+    },
+    {
+      "id": "VAL-PS-001",
+      "category": "pull_station",
+      "name": "Pull Station Near Exit (NFPA)",
+      "standard": "NFPA72",
+      "section": "17.14.1",
+      "severity": "error",
+      "check_type": "proximity_to_exit",
+      "applies_to": ["pull_station"],
+      "conditions": {
+        "standard": "NFPA72"
+      },
+      "rule": {
+        "description": "Manual fire alarm boxes must be located within 5 ft (1.5m) of every exit doorway on every floor.",
+        "max_distance_from_exit_m": 1.5,
+        "max_distance_from_exit_ft": 5
+      },
+      "calculation": {
+        "method": "For each exit door on the floor plan, check that there is a pull station within 1.5m (5ft). If any exit has no pull station within range → ERROR."
+      },
+      "error_message": "Exit door on {floor_name} has no pull station within {max}m — required per NFPA 72 Section 17.14.1",
+      "resolution": "Add pull station within 1.5m of the exit door"
+    },
+    {
+      "id": "VAL-PS-002",
+      "category": "pull_station",
+      "name": "Pull Station Travel Distance (NFPA)",
+      "standard": "NFPA72",
+      "section": "17.14.1.3",
+      "severity": "error",
+      "check_type": "travel_distance",
+      "applies_to": ["pull_station"],
+      "conditions": {
+        "standard": "NFPA72"
+      },
+      "rule": {
+        "description": "Maximum travel distance to nearest manual station = 200 ft (61m) measured along normal path of travel.",
+        "max_travel_distance_m": 61,
+        "max_travel_distance_ft": 200
+      },
+      "calculation": {
+        "method": "Calculate shortest path from any point on floor to nearest pull station along corridors/walkways. If any point > 61m → ERROR."
+      },
+      "error_message": "Maximum travel distance {actual}m to nearest pull station exceeds {max}m (NFPA 72 Section 17.14.1.3)",
+      "resolution": "Add pull station(s) to reduce travel distance"
+    },
+    {
+      "id": "VAL-PS-003",
+      "category": "pull_station",
+      "name": "Pull Station Mounting Height (NFPA)",
+      "standard": "NFPA72",
+      "section": "17.14.1.2",
+      "severity": "error",
+      "check_type": "mounting_height",
+      "applies_to": ["pull_station"],
+      "conditions": {
+        "standard": "NFPA72"
+      },
+      "rule": {
+        "description": "Pull station operable part must be mounted at 3.5 ft to 4.5 ft (1.07m to 1.37m) above floor.",
+        "min_height_m": 1.07,
+        "max_height_m": 1.37,
+        "min_height_ft": 3.5,
+        "max_height_ft": 4.5
+      },
+      "calculation": {
+        "method": "Check mounting_height_m of each pull station. If outside range → ERROR."
+      },
+      "error_message": "Pull station {device_tag} mounting height {actual}m is outside required range {min}-{max}m (NFPA 72 Section 17.14.1.2)"
+    },
+    {
+      "id": "VAL-PS-004",
+      "category": "pull_station",
+      "name": "Pull Station Travel Distance (BS 5839)",
+      "standard": "BS5839",
+      "section": "19.1.2",
+      "severity": "error",
+      "check_type": "travel_distance",
+      "applies_to": ["call_point"],
+      "conditions": {
+        "standard": "BS5839"
+      },
+      "rule": {
+        "description": "Maximum travel distance to nearest manual call point = 30m (45m in exceptional circumstances). BS 5839 is much stricter than NFPA.",
+        "max_travel_m": 30,
+        "exceptional_max_m": 45
+      },
+      "calculation": {
+        "method": "Calculate shortest path from any point to nearest call point. If > 30m → ERROR."
+      },
+      "error_message": "Travel distance {actual}m exceeds BS 5839 maximum {max}m (BS 5839-1 Clause 19.1.2)",
+      "resolution": "Add call point(s)"
+    },
+    {
+      "id": "VAL-NOT-001",
+      "category": "notification_coverage",
+      "name": "Audible Level Below Minimum",
+      "standard": "NFPA72",
+      "section": "18.4.3",
+      "severity": "error",
+      "check_type": "sound_level_check",
+      "applies_to": ["horn", "horn_strobe", "speaker", "speaker_strobe", "bell"],
+      "conditions": {},
+      "rule": {
+        "description": "Audible notification must produce minimum 75 dBA OR 15 dBA above ambient, whichever is greater, at ear level throughout occupiable spaces.",
+        "min_dBA_absolute": 75,
+        "min_dBA_above_ambient": 15,
+        "bedroom_min_dBA": 75
+      },
+      "calculation": {
+        "method": "For each point in the floor plan, check that combined sound level from all audible devices ≥ required minimum. Uses inverse-square law: dBA_at_point = dBA_source - 20×log10(distance/1m).",
+        "note": "This is an approximate calculation — field measurement required for final verification."
+      },
+      "error_message": "Audible level {actual} dBA at {location} is below minimum {min} dBA (NFPA 72 Section 18.4.3)",
+      "resolution": "Add or relocate notification appliance(s), or increase output setting"
+    },
+    {
+      "id": "VAL-NOT-002",
+      "category": "notification_coverage",
+      "name": "Strobe Candela Below Room Requirement",
+      "standard": "NFPA72",
+      "section": "18.5.5.4",
+      "severity": "error",
+      "check_type": "strobe_candela_check",
+      "applies_to": ["strobe", "horn_strobe", "speaker_strobe"],
+      "conditions": {},
+      "rule": {
+        "description": "Minimum strobe candela = max(0.0375 × room_area_sqft, room_area_sqft / 20, 15 cd). Maximum = 110 cd (wall-mount) or 177 cd (ceiling-mount).",
+        "formula": "required_cd = max(0.0375 × area_ft², area_ft² / 20, 15)",
+        "min_cd": 15,
+        "max_wall_cd": 110,
+        "max_ceiling_cd": 177
+      },
+      "calculation": {
+        "method": "Calculate room area in sqft. Compute required_cd. Check that installed strobe(s) total candela ≥ required_cd. If required > max for single device → need multiple devices."
+      },
+      "error_message": "Strobe candela {actual} cd in room {room_name} ({area} sqft) is below required {required} cd (NFPA 72 Section 18.5.5.4)",
+      "resolution": "Increase strobe candela setting or add additional strobe(s)"
+    },
+    {
+      "id": "VAL-NOT-003",
+      "category": "notification_coverage",
+      "name": "Notification Missing in Occupiable Space",
+      "standard": "NFPA72",
+      "section": "18.4",
+      "severity": "error",
+      "check_type": "coverage_gap_check",
+      "applies_to": [],
+      "conditions": {"room_requires_notification": true},
+      "rule": {
+        "description": "Every occupiable space must have both audible and visible notification (unless code exception applies).",
+        "requirement": "Check every room flagged as requiring notification has at least one audible device AND one visual device."
+      },
+      "calculation": {
+        "method": "For each room with requires_notification=true, check that devices array includes at least one device from notification category. If no notification device → ERROR."
+      },
+      "error_message": "Room {room_name} requires notification but has no notification devices installed (NFPA 72 Section 18.4)",
+      "resolution": "Add horn-strobe or speaker-strobe in the room"
+    },
+    {
+      "id": "VAL-CIR-001",
+      "category": "circuit_loading",
+      "name": "NAC Current Exceeds Panel Limit",
+      "standard": "NFPA72",
+      "section": "10.6.7",
+      "severity": "error",
+      "check_type": "current_limit",
+      "applies_to": ["circuit"],
+      "conditions": {"circuit_type": "NAC"},
+      "rule": {
+        "description": "Total current draw on a NAC must not exceed the panel's maximum NAC current rating.",
+        "check": "total_current_mA ≤ max_nac_current_mA"
+      },
+      "calculation": {
+        "method": "Sum alarm_current_mA of all devices on the NAC. Compare against panel max_nac_current_per_circuit. If sum > max → FAIL."
+      },
+      "error_message": "NAC {circuit_label}: total load {total} mA exceeds panel limit {max} mA — circuit overloaded",
+      "resolution": "Add another NAC circuit or reduce device count on this circuit"
+    },
+    {
+      "id": "VAL-CIR-002",
+      "category": "circuit_loading",
+      "name": "Voltage Drop Exceeds Limit",
+      "standard": "NFPA72",
+      "section": "10.6.7.2.1",
+      "severity": "error",
+      "check_type": "voltage_drop",
+      "applies_to": ["circuit"],
+      "conditions": {"circuit_type": ["NAC", "IDC", "SLC"]},
+      "rule": {
+        "description": "Voltage drop must not exceed 10% of nominal voltage (2.4V for 24VDC system). Voltage at farthest device must be ≥ 16VDC (minimum operating voltage).",
+        "max_drop_V": 2.4,
+        "max_drop_pct": 10,
+        "min_device_voltage_V": 16,
+        "recommended_min_V": 20,
+        "formula": "Vdrop = (2 × I_total × R_wire × L_one_way) / 1000"
+      },
+      "calculation": {
+        "method": "For each circuit: get total current (sum of device alarm currents), wire gauge resistance (Ω/kft), one-way wire length (ft). Calculate Vdrop = 2 × I × R × L / 1000. Check Vdrop ≤ 2.4V and V_panel - Vdrop ≥ 16V."
+      },
+      "error_message": "Circuit {circuit_label}: voltage drop {actual_drop}V exceeds {max_drop}V — voltage at farthest device is {device_voltage}V (minimum required: 16V)",
+      "resolution": "Increase wire gauge, shorten wire run, or add another circuit"
+    },
+    {
+      "id": "VAL-CIR-003",
+      "category": "circuit_loading",
+      "name": "SLC Device Count Exceeds Loop Maximum",
+      "standard": "MANUFACTURER",
+      "section": "Panel specification",
+      "severity": "error",
+      "check_type": "device_count",
+      "applies_to": ["circuit"],
+      "conditions": {"circuit_type": "SLC"},
+      "rule": {
+        "description": "Total number of devices on an SLC loop must not exceed the panel manufacturer's maximum device count per loop.",
+        "typical_max": "100-250 (varies by manufacturer and panel model)"
+      },
+      "calculation": {
+        "method": "Count all devices assigned to this SLC loop. Compare against panel max_devices_per_loop. If count > max → FAIL."
+      },
+      "error_message": "SLC {circuit_label}: {count} devices exceeds maximum {max} devices per loop for panel {panel_model}",
+      "resolution": "Add another SLC loop or redistribute devices"
+    },
+    {
+      "id": "VAL-CIR-004",
+      "category": "circuit_loading",
+      "name": "Conventional Zone Device Count Exceeds 20",
+      "standard": "BEST_PRACTICE",
+      "section": "N/A",
+      "severity": "warning",
+      "check_type": "device_count",
+      "applies_to": ["circuit"],
+      "conditions": {"circuit_type": "IDC", "system_type": "conventional"},
+      "rule": {
+        "description": "Conventional zones should have maximum 20 devices per zone for reliable supervision and fault identification.",
+        "max_devices": 20
+      },
+      "calculation": {
+        "method": "Count devices per zone/circuit. If count > 20 → WARNING."
+      },
+      "error_message": "WARNING: Zone {zone_label} has {count} devices — recommended maximum is 20 for conventional zones"
+    },
+    {
+      "id": "VAL-ZON-001",
+      "category": "zone_rules",
+      "name": "Zone Area Exceeds 2000m² (BS 5839)",
+      "standard": "BS5839",
+      "section": "23.2",
+      "severity": "error",
+      "check_type": "zone_area",
+      "applies_to": ["zone"],
+      "conditions": {"standard": "BS5839"},
+      "rule": {
+        "description": "No fire alarm zone should exceed 2000m² area (BS 5839-1 Section 23.2).",
+        "max_area_m2": 2000
+      },
+      "calculation": {
+        "method": "Sum areas of all rooms assigned to this zone. If total > 2000 → ERROR."
+      },
+      "error_message": "Zone {zone_label} area ({actual} m²) exceeds maximum 2000 m² (BS 5839-1 Section 23.2)",
+      "resolution": "Split into multiple zones"
+    },
+    {
+      "id": "VAL-ZON-002",
+      "category": "zone_rules",
+      "name": "Zone Covers Multiple Floors (BS 5839)",
+      "standard": "BS5839",
+      "section": "23.2",
+      "severity": "warning",
+      "check_type": "zone_floor_check",
+      "applies_to": ["zone"],
+      "conditions": {"standard": "BS5839"},
+      "rule": {
+        "description": "One zone should ideally not cover more than one floor (unless floor area < 300m²).",
+        "max_floors": 1,
+        "exception_area_m2": 300
+      },
+      "calculation": {
+        "method": "Count distinct floors assigned to this zone. If > 1 AND zone area > 300m² → WARNING."
+      },
+      "error_message": "WARNING: Zone {zone_label} covers {count} floors — BS 5839 recommends one zone per floor (BS 5839-1 Section 23.2)"
+    },
+    {
+      "id": "VAL-ZON-003",
+      "category": "zone_rules",
+      "name": "Stairwell Not in Separate Zone (BS 5839)",
+      "standard": "BS5839",
+      "section": "23.2.5",
+      "severity": "warning",
+      "check_type": "zone_dedication",
+      "applies_to": ["zone"],
+      "conditions": {"standard": "BS5839", "room_type": "stairwell"},
+      "rule": {
+        "description": "Enclosed stairwells should be in a separate zone from floor areas.",
+        "requirement": "Stairwell devices should be in their own dedicated zone"
+      },
+      "calculation": {
+        "method": "Check if any stairwell has detectors assigned to a zone that also contains non-stairwell areas. If yes → WARNING."
+      },
+      "error_message": "WARNING: Stairwell detectors share zone with floor area — should be in dedicated zone (BS 5839-1 Clause 23.2.5)"
+    },
+    {
+      "id": "VAL-BAT-001",
+      "category": "battery",
+      "name": "Battery Capacity Insufficient",
+      "standard": "NFPA72",
+      "section": "10.6.7.2.1",
+      "severity": "error",
+      "check_type": "battery_calculation",
+      "applies_to": ["system"],
+      "conditions": {},
+      "rule": {
+        "description": "Battery must support 24-hour standby + 5-minute alarm (general) or 24-hour + 15-minute alarm (voice evacuation).",
+        "standby_hours": 24,
+        "alarm_minutes_general": 5,
+        "alarm_minutes_voice_evac": 15,
+        "safety_factor": 1.2,
+        "formula": "required_Ah = (standby_load_A × 24 + alarm_load_A × alarm_minutes/60) × 1.2"
+      },
+      "calculation": {
+        "method": "Sum standby_current_mA of ALL devices (24hr). Sum alarm_current_mA of ALL devices. Calculate required Ah. Compare against installed battery Ah. If installed < required → FAIL."
+      },
+      "error_message": "Battery capacity {installed} Ah is insufficient — required {required} Ah (NFPA 72 Section 10.6.7.2.1)",
+      "resolution": "Increase battery size to {required_rounded} Ah or greater"
+    },
+    {
+      "id": "VAL-INT-001",
+      "category": "integration",
+      "name": "Elevator Lobby Missing Smoke Detector",
+      "standard": "NFPA72",
+      "section": "21.6",
+      "severity": "error",
+      "check_type": "integration_check",
+      "applies_to": ["system"],
+      "conditions": {"has_elevator": true},
+      "rule": {
+        "description": "Smoke detector required in each elevator lobby on every floor served by elevator for Phase 1 recall.",
+        "requirement": "One smoke detector in front of each elevator door on every floor"
+      },
+      "calculation": {
+        "method": "If building has_elevator=true, check each floor has at least one smoke detector near elevator lobby area. If any floor missing → ERROR."
+      },
+      "error_message": "Floor {floor_name}: elevator lobby missing smoke detector — required for elevator Phase 1 recall (NFPA 72 Section 21.6)"
+    },
+    {
+      "id": "VAL-INT-002",
+      "category": "integration",
+      "name": "Elevator Shaft Missing Smoke Detector",
+      "standard": "NFPA72",
+      "section": "17.13.3",
+      "severity": "warning",
+      "check_type": "integration_check",
+      "applies_to": ["system"],
+      "conditions": {"has_elevator": true},
+      "rule": {
+        "description": "Smoke detector should be installed at the top of each elevator hoistway (shaft). Required by ASME A17.1.",
+        "location": "Top of elevator shaft",
+        "reference": "NFPA 72 Section 17.13.3.1 / ASME A17.1"
+      },
+      "calculation": {
+        "method": "If building has elevators, check that hoistway smoke detectors are assigned. Flag if missing."
+      },
+      "error_message": "WARNING: Elevator hoistway smoke detector not detected — verify installation at top of shaft (NFPA 72 Section 17.13.3)"
+    },
+    {
+      "id": "VAL-INT-003",
+      "category": "integration",
+      "name": "Duct Detector Missing for Large HVAC",
+      "standard": "NFPA72",
+      "section": "17.7.5.1",
+      "severity": "error",
+      "check_type": "integration_check",
+      "applies_to": ["system"],
+      "conditions": {"has_hvac": true, "hvac_cfm": ">2000"},
+      "rule": {
+        "description": "Duct smoke detector required in supply and return air systems when HVAC system > 2000 CFM and serving more than one zone.",
+        "min_cfm": 2000
+      },
+      "calculation": {
+        "method": "If building has HVAC with CFM > 2000, check that duct smoke detectors are specified for supply and return air systems."
+      },
+      "error_message": "HVAC system ({cfm} CFM > 2000 CFM) requires duct smoke detectors — not found (NFPA 72 Section 17.7.5.1)"
+    },
+    {
+      "id": "VAL-INT-004",
+      "category": "integration",
+      "name": "Door Holders Not Connected",
+      "standard": "NFPA72",
+      "section": "21.9",
+      "severity": "warning",
+      "check_type": "integration_check",
+      "applies_to": ["system"],
+      "conditions": {"has_fire_doors": true},
+      "rule": {
+        "description": "Electromagnetic fire door holders must be connected to fire alarm system for release on alarm.",
+        "requirement": "All fire door holders must have interface module connection to fire alarm panel"
+      },
+      "calculation": {
+        "method": "If building has fire-rated doors with magnetic holders, check that control relay modules are specified for door release."
+      },
+      "error_message": "WARNING: Fire door holders detected but no release interface modules specified — doors will not release on alarm (NFPA 72 Section 21.9)"
+    },
+    {
+      "id": "VAL-HVAC-001",
+      "category": "integration",
+      "name": "Sprinkler Monitoring Missing",
+      "standard": "NFPA72",
+      "section": "21.5",
+      "severity": "error",
+      "check_type": "integration_check",
+      "applies_to": ["system"],
+      "conditions": {"has_sprinkler": true},
+      "rule": {
+        "description": "If building has sprinkler system, water flow switches and control valve tamper switches must be monitored by the fire alarm system.",
+        "required_monitors": ["water_flow_switch", "control_valve_tamper"],
+        "signal_types": {"water_flow": "alarm", "valve_tamper": "supervisory"}
+      },
+      "calculation": {
+        "method": "If has_sprinkler=true, check that monitor modules are specified for water flow and valve tamper switches."
+      },
+      "error_message": "Sprinkler system detected but monitoring points missing — water flow and valve tamper must be monitored (NFPA 72 Section 21.5)"
+    },
+    {
+      "id": "VAL-GEN-001",
+      "category": "general",
+      "name": "Floor Missing Detection",
+      "standard": "CODE",
+      "section": "N/A",
+      "severity": "error",
+      "check_type": "floor_coverage",
+      "applies_to": ["system"],
+      "conditions": {},
+      "rule": {
+        "description": "Every floor of the building must have at least one detection device (or documented reason for no detection).",
+        "minimum": "At least one detector, pull station, or call point per floor"
+      },
+      "calculation": {
+        "method": "For each floor in the building, check that at least one device is assigned. If no devices on a floor → ERROR."
+      },
+      "error_message": "Floor {floor_name} has NO fire alarm devices — every floor must have detection",
+      "resolution": "Add at minimum one smoke detector and one pull station/call point"
+    },
+    {
+      "id": "VAL-GEN-002",
+      "category": "general",
+      "name": "Panel Not Specified",
+      "standard": "CODE",
+      "section": "N/A",
+      "severity": "error",
+      "check_type": "system_check",
+      "applies_to": ["system"],
+      "conditions": {},
+      "rule": {
+        "description": "Every fire alarm system must have a control panel specified.",
+        "requirement": "At least one control panel must be assigned to the project"
+      },
+      "calculation": {
+        "method": "Check that project has at least one control panel device. If none → ERROR."
+      },
+      "error_message": "No fire alarm control panel (FACP) specified — required for every fire alarm system"
+    },
+    {
+      "id": "VAL-GEN-003",
+      "category": "general",
+      "name": "Devices Without Zone Assignment",
+      "standard": "CODE",
+      "section": "N/A",
+      "severity": "error",
+      "check_type": "zone_assignment",
+      "applies_to": ["device"],
+      "conditions": {},
+      "rule": {
+        "description": "Every device must be assigned to a zone.",
+        "requirement": "All detectors, pull stations, and modules must have a zone_id"
+      },
+      "calculation": {
+        "method": "Check all devices in the project. If any device has zone_id = null → ERROR."
+      },
+      "error_message": "Device {device_tag} is not assigned to any zone — all devices must be zoned",
+      "resolution": "Assign device to appropriate zone"
+    },
+    {
+      "id": "VAL-GEN-004",
+      "category": "general",
+      "name": "Duplicate Device Address",
+      "standard": "SYSTEM",
+      "section": "N/A",
+      "severity": "error",
+      "check_type": "address_uniqueness",
+      "applies_to": ["device"],
+      "conditions": {"system_type": "addressable"},
+      "rule": {
+        "description": "Each addressable device on the same SLC loop must have a unique address. Duplicate addresses cause communication failure.",
+        "requirement": "device_address must be unique within each slc_loop_id"
+      },
+      "calculation": {
+        "method": "For each SLC loop, check that no two devices share the same device_address. If duplicate found → ERROR."
+      },
+      "error_message": "Duplicate address {address} on SLC loop {loop_id} — devices {device1} and {device2} have the same address",
+      "resolution": "Change address of one device to resolve conflict"
+    },
+    {
+      "id": "VAL-GEN-005",
+      "category": "general",
+      "name": "High-Rise Voice Evacuation Required",
+      "standard": "NFPA72",
+      "section": "24.4",
+      "severity": "error",
+      "check_type": "code_requirement",
+      "applies_to": ["system"],
+      "conditions": {"is_highrise": true},
+      "rule": {
+        "description": "Buildings with occupied floors > 75 ft (23m) above fire department access level MUST have emergency voice alarm communication system (EVACS).",
+        "trigger_height_ft": 75,
+        "trigger_height_m": 23,
+        "required": ["Voice evacuation panel", "Speakers on every floor", " firefighter telephone"]
+      },
+      "calculation": {
+        "method": "If building.is_highrise=true, check that project has voice evacuation equipment specified (voice panel, speakers). If missing → ERROR."
+      },
+      "error_message": "Building is high-rise ({height}m > 23m) — emergency voice evacuation system is REQUIRED (NFPA 72 Chapter 24)",
+      "resolution": "Specify voice evacuation panel and speakers on all floors"
+    }
+  ],
+
+  "validation_checklist": {
+    "description": "Master checklist for design review — every item must pass before submission",
+    "categories": {
+      "DETECTION": ["VAL-DET-001","VAL-DET-002","VAL-DET-003","VAL-DET-004","VAL-DET-005","VAL-DET-006","VAL-DET-007","VAL-DET-008","VAL-DET-009","VAL-DET-010","VAL-DET-011","VAL-DET-012"],
+      "MANUAL": ["VAL-PS-001","VAL-PS-002","VAL-PS-003","VAL-PS-004"],
+      "NOTIFICATION": ["VAL-NOT-001","VAL-NOT-002","VAL-NOT-003"],
+      "CIRCUITS": ["VAL-CIR-001","VAL-CIR-002","VAL-CIR-003","VAL-CIR-004"],
+      "ZONES": ["VAL-ZON-001","VAL-ZON-002","VAL-ZON-003"],
+      "BATTERY": ["VAL-BAT-001"],
+      "INTEGRATION": ["VAL-INT-001","VAL-INT-002","VAL-INT-003","VAL-INT-004","VAL-HVAC-001"],
+      "GENERAL": ["VAL-GEN-001","VAL-GEN-002","VAL-GEN-003","VAL-GEN-004","VAL-GEN-005"]
+    }
+  }
+}

@@ -1,0 +1,35 @@
+# Fire Alarm Elite Pipeline - Requirements
+# =======================================
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# Database
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.12
+
+# Image Processing
+opencv-python>=4.8.0
+Pillow>=10.0.0
+pdf2image>=1.16.3
+
+# OCR
+pytesseract>=0.3.13
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.0.0
+
+# PDF Generation
+reportlab>=4.5.0
+
+# CAD/DWG
+ezdxf>=0.21.0
+
+# Data Processing
+numpy>=1.24.0
+networkx>=3.1
+requests>=2.31.0
