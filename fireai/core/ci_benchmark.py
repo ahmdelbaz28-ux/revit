@@ -24,6 +24,7 @@ import os
 import sys
 import time
 import argparse
+import warnings
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -42,6 +43,7 @@ class BenchResult:
     std_dev_pct:   float    # % standard deviation (lower = more stable)
     passed:        bool = True
     regression_pct: float = 0.0   # negative = improvement
+    is_stub:       bool = False  # True when real benchmark couldn't run (import failure)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -50,6 +52,7 @@ class BenchResult:
             "latency_us":    round(self.latency_us, 3),
             "n_iterations":  self.n_iterations,
             "std_dev_pct":   round(self.std_dev_pct, 2),
+            "is_stub":       self.is_stub,
         }
 
 
@@ -248,10 +251,14 @@ class CIBenchmarkSuite:
             try:
                 result = fn()
                 self.results.append(result)
-                status = "PASS" if result.passed else "FAIL"
+                if result.is_stub:
+                    status = "STUB"
+                else:
+                    status = "PASS" if result.passed else "FAIL"
                 print(f"  {status} {result.name:<45} "
                       f"{result.ops_per_sec:>12.0f} ops/sec  "
-                      f"{result.latency_us:>8.2f} us")
+                      f"{result.latency_us:>8.2f} us"
+                      f"{'  (SYNTHETIC)' if result.is_stub else ''}")
             except Exception as exc:
                 print(f"  ERR {fn.__name__:<45} ERROR: {exc}")
 
@@ -293,6 +300,11 @@ class CIBenchmarkSuite:
         print("-" * 80)
 
         for result in self.results:
+            if result.is_stub:
+                print(f"  SKIP {result.name:<43} {'N/A':>12} "
+                      f"{'N/A':>12} {'N/A':>8}  (stub — not comparable)")
+                continue
+
             base_entry = base_data.get(result.name)
             if base_entry is None:
                 print(f"  NEW  {result.name:<43} {'N/A':>12} "
@@ -318,7 +330,16 @@ class CIBenchmarkSuite:
 
     @staticmethod
     def _stub(name: str, expected_ops: float) -> "BenchResult":
-        return BenchResult(name, expected_ops, 1e6/expected_ops, 0, 0.0)
+        warnings.warn(
+            f"Benchmark '{name}' used STUB data (expected_ops={expected_ops:.0f}). "
+            f"Real measurement could not run — import failure. "
+            f"Stub results must NOT be used for regression decisions.",
+            stacklevel=3,
+        )
+        return BenchResult(
+            name, expected_ops, 1e6/expected_ops, 0, 0.0,
+            passed=False, is_stub=True,
+        )
 
 
 # ---------------------------------------------------------------------------
