@@ -1368,3 +1368,32 @@ V33 documented "DeltaCache SQLite persistence is incomplete" as LOW priority. Pe
 ### Commit Information
 - **Commit:** `42086cd`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/42086cd
+
+---
+
+## V37 Fix (2026-05-25) — analyse_rooms_batch n_workers Implementation
+
+### Context
+V33 documented "API stability `analyse_rooms_batch()` ignores `n_workers` parameter" as LOW priority. Per Rule 18, continuing the closed-loop pipeline.
+
+### Bug 37 — analyse_rooms_batch Silently Ignores n_workers (LOW — Performance Only)
+**File:** `fireai/core/api_stability.py` — `analyse_rooms_batch()` method
+**Discovery:** The function accepts `n_workers` parameter for parallelism but uses simple list comprehension regardless. The parameter was silently ignored.
+**Root Cause Analysis (per Rule 17):** The parameter was a placeholder — parallelization was never implemented. However, before implementing blindly, I analyzed thread safety:
+- **Fallback mode** (`self._engine is None`): Thread-safe — `_fallback_analyse_room()` is pure Python, reads only immutable inputs, creates new objects per call
+- **Engine mode** (`self._engine is not None`): NOT thread-safe — `DensityOptimizer.optimize()` temporarily mutates instance state (`self.R`, `self.R_place`, `self.S_g`, `self.Ry_g`) then restores in `finally` block — classic race condition under concurrency. Additionally, CBC (PuLP solver) is C-level and doesn't release GIL; `ProcessPoolExecutor` with CBC causes deadlocks on fork per V0.3 Safety Guard in `building_engine.py`
+**Fix Applied:** Three-tier implementation:
+1. `n_workers <= 1` or ≤1 room: Sequential list comprehension (unchanged)
+2. Engine mode + `n_workers > 1`: WARNING log explaining why parallelization is unsafe, falls back to sequential
+3. Fallback mode + `n_workers > 1`: `ThreadPoolExecutor` with indexed futures, preserving input order, `max_workers` capped at `min(n_workers, len(rooms))`
+**Tests:** 27/27 V29 integration tests passing
+
+### Self-Criticism Notes (V37)
+
+1. **Blindly parallelizing would have been catastrophic** — Per Rule 12 (Safety-First Thinking), implementing ThreadPoolExecutor for the engine path would have introduced race conditions in DensityOptimizer, potentially corrupting coverage calculations. The WARNING approach is the correct safety-first decision.
+2. **ProcessPoolExecutor is explicitly forbidden** — V0.3 Safety Guard in `building_engine.py` documents CBC deadlock risk on fork. This is a system-level constraint, not a code issue.
+3. **The n_workers parameter was a trap** — Accepting a parameter and silently ignoring it is worse than not having the parameter at all, because it creates false expectations. The fix makes the behavior explicit.
+
+### Commit Information
+- **Commit:** `046c38a`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/046c38a
