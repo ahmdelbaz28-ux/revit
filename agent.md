@@ -1345,3 +1345,26 @@ V33 documented "HAC engine has duplicate Burgess-Wheeler implementation" as MEDI
 ### Commit Information
 - **Commit:** `04ff20c`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/04ff20c
+
+---
+
+## V36 Fix (2026-05-25) — DeltaCache SQLite Persistence Write Path
+
+### Context
+V33 documented "DeltaCache SQLite persistence is incomplete" as LOW priority. Per Rule 18, continuing the closed-loop pipeline. The read path existed but was useless without writes — cache results were silently discarded every session.
+
+### Bug 36 — DeltaCache persist() Never Writes LRU Entries to SQLite (LOW — Persistence Failure)
+**File:** `fireai/core/delta_cache.py` — `persist()` method
+**Discovery:** `persist()` performed only 2 of 3 required steps: (1) CREATE TABLE, (2) DELETE stale entries, but (3) INSERT/UPSERT of in-memory LRU entries was MISSING entirely. The read path `_load_from_db()` worked correctly but had nothing to load after a fresh session because no entries were ever written.
+**Root Cause Analysis (per Rule 17):** The persistence was architecturally incomplete, not a bug in existing logic. The write path was simply never implemented. A half-solution would have been adding `INSERT` for only the latest entry. The root-cause fix is to iterate ALL in-memory LRU entries and write them to SQLite.
+**Fix Applied:** Added iteration over `self._cache._data` inside `persist()`, between DELETE and `conn.commit()`. For each entry: extracts room_id from cache key, serializes result to JSON, executes `INSERT OR REPLACE` with all required SQLite schema fields. Thread-safe via `self._cache._lock` acquisition during iteration.
+**Tests:** 27/27 V29 integration tests passing
+
+### Self-Criticism Notes (V36)
+
+1. **The cache was never actually persisting** — Every `BuildingEngine.analyse()` call ended with `persist()` which silently discarded all results. This is a data loss bug, not just a performance issue.
+2. **Default values for ceiling_height and detector_type** — These aren't stored in CacheEntry, so we use 0.0/"unknown" defaults. Future enhancement: store these in CacheEntry for more precise SQLite records.
+
+### Commit Information
+- **Commit:** `42086cd`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/42086cd
