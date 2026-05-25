@@ -103,6 +103,15 @@ class SpatialFieldEngine:
             mask     = shapely.contains_properly(room_polygon, pts_geom)
             grid_pts = [grid_pts[i] for i in range(len(grid_pts)) if mask[i]]
 
+            # V44 FIX: Enforce wall_min (NFPA 72 §17.6.3.1.1 dead air space).
+            # Points within wall_min of the room boundary are in dead air space
+            # and are excluded from coverage calculation — NFPA 72 acknowledges
+            # this zone is problematic for smoke detection.
+            if self.wall_min > 0:
+                boundary = room_polygon.boundary
+                wall_mask = shapely.distance(shapely.points(grid_pts), boundary) >= self.wall_min
+                grid_pts = [grid_pts[i] for i in range(len(grid_pts)) if wall_mask[i]]
+
         total_pts = len(grid_pts)
         if total_pts == 0:
             return ComplianceResult(room_id=room_id, coverage_pct=100.0)
