@@ -541,6 +541,8 @@ def _stage5_release_gates(
     nfpa_result: Dict,
     coverage_pct: float,
     proof_valid: bool,
+    safety_tier: str,
+    wall_violations: int,
     battery_result: Optional[BatteryResult] = None,
     loop_data: Optional[Dict] = None,
 ) -> Dict:
@@ -548,6 +550,9 @@ def _stage5_release_gates(
     nfpa_gate_result = {
         "is_compliant": nfpa_result.get("is_compliant", False),
         "violations":   nfpa_result.get("violations", None),  # None = unknown (blocked)
+        "coverage_pct": coverage_pct,
+        "wall_violations": wall_violations,
+        "safety_tier":  safety_tier,
     }
 
     # Build battery result dict if we have it
@@ -819,7 +824,7 @@ def analyze_room(
     s5 = _run_stage(
         "S5_release_gates", _stage5_release_gates,
         validated, nfpa_result, coverage_pct, proof_valid,
-        battery_result, loop_data,
+        safety_tier, wall_violations, battery_result, loop_data,
     )
     stages.append(s5)
     gate_result = s5.data if s5.success else {

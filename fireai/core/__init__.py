@@ -42,6 +42,40 @@ from fireai.core.rules_engine.api_contract import (
     ContractSeverity,
 )
 
+# ─── Pipeline-core imports (always available since V95.1) ──────────────────
+from fireai.core.contracts_validation import (
+    ContractViolation,
+    validate_room_input,
+)
+from fireai.core.nfpa72_engine import (
+    SpacingResult,
+    BatteryResult,
+    VoltageDropResult,
+    calculate_battery,
+    calculate_voltage_drop,
+    get_detector_spacing,
+    estimate_detector_count,
+    verify_fault_isolator_placement,
+)
+from fireai.core.safety_assurance import (
+    SafetyTier,
+    classify_safety_tier,
+    apply_fail_safe,
+    tier_requires_fpe_review,
+    tier_can_submit,
+    OverrideRole,
+    OverrideRecord,
+    EngineeringEvidencePackage,
+    ABSOLUTE_MINIMUM_COVERAGE,
+    MINIMUM_COVERAGE_FOR_SUBMISSION,
+    STANDARD_COVERAGE_THRESHOLD,
+    PROOF_VERIFIED_THRESHOLD,
+)
+from fireai.core.release_gates import (
+    verify_and_evaluate,
+    describe_blockers,
+)
+
 # ─── Best-effort imports — these modules may not be on disk ──────────────────
 
 # Core analysers
@@ -156,17 +190,8 @@ try:
 except ImportError:
     _logger.debug("fireai.core.spatial_engine.proof_certificate not available")
 
-# Safety Assurance
-try:
-    from fireai.core.safety_assurance import (
-        SafetyTier, classify_safety_tier, apply_fail_safe,
-        tier_requires_fpe_review, tier_can_submit,
-        OverrideRole, OverrideRecord, EngineeringEvidencePackage,
-        ABSOLUTE_MINIMUM_COVERAGE, MINIMUM_COVERAGE_FOR_SUBMISSION,
-        STANDARD_COVERAGE_THRESHOLD, PROOF_VERIFIED_THRESHOLD,
-    )
-except ImportError:
-    _logger.debug("fireai.core.safety_assurance not available")
+# Safety Assurance — now always available (imported above as always-available)
+# (Previously a try/except block; module is now on disk)
 
 # V12 — Class A Routing + Firestopping + Safe Building Engine + DXF Schedule
 try:
@@ -453,6 +478,31 @@ __all__ = [
     "ComplianceReport",
     "ContractValidator",
     "ContractSeverity",
+    # V95.1 — Pipeline-core modules (always available)
+    "ContractViolation",
+    "validate_room_input",
+    "SpacingResult",
+    "BatteryResult",
+    "VoltageDropResult",
+    "calculate_battery",
+    "calculate_voltage_drop",
+    "get_detector_spacing",
+    "estimate_detector_count",
+    "verify_fault_isolator_placement",
+    "SafetyTier",
+    "classify_safety_tier",
+    "apply_fail_safe",
+    "tier_requires_fpe_review",
+    "tier_can_submit",
+    "OverrideRole",
+    "OverrideRecord",
+    "EngineeringEvidencePackage",
+    "ABSOLUTE_MINIMUM_COVERAGE",
+    "MINIMUM_COVERAGE_FOR_SUBMISSION",
+    "STANDARD_COVERAGE_THRESHOLD",
+    "PROOF_VERIFIED_THRESHOLD",
+    "verify_and_evaluate",
+    "describe_blockers",
 ]
 
 # Dynamically add successfully imported names to __all__
