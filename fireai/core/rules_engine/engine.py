@@ -398,6 +398,14 @@ class RulesEngine:
         all_results: List[RuleResult] = []
         previous_fact_count = -1
 
+        # Reset per-cycle counters for this evaluation pass.
+        # SAFETY: _iteration MUST be reset here, not only in reset().
+        # Without this, repeated evaluate() calls silently exhaust
+        # max_iterations across calls (e.g. 25 calls x 4 iters = 100 -> stops).
+        # In a continuously-running fire alarm system, this causes the engine
+        # to silently stop evaluating rules — a life-safety hazard.
+        self._iteration = 0
+
         # Reset fired combinations for new evaluation cycle
         self._fired_combinations.clear()
 
@@ -522,26 +530,30 @@ class RulesEngine:
                 except Exception:
                     pass  # Audit callback must not crash the engine
 
-        # Also log rules that did NOT fire (for audit completeness)
+        # Log rules that did NOT fire — only once per evaluate() call (iteration=1).
+        # SAFETY: We still log every not-fired rule, but only in the first pass.
+        # This prevents audit log inflation where the same rule is logged
+        # N times (once per iteration) even though facts have not changed.
+        # Inflated audit logs obscure genuine not-fired reasons in reports.
         fired_ids = {rule.rule_id for rule, _ in candidates}
-        # Also include rules that fired via join conditions
-        for rule in self._rules.values():
-            if rule.rule_id not in fired_ids:
-                audit = RuleAuditEntry(
-                    rule_id=rule.rule_id,
-                    rule_name=rule.rule_name,
-                    nfpa_reference=rule.nfpa_reference,
-                    evaluated_at=datetime.now(timezone.utc).isoformat(),
-                    fired=False,
-                    reason="No matching facts",
-                    session_id=self.session_id,
-                )
-                self._audit_log.append(audit)
-                if self.audit_callback:
-                    try:
-                        self.audit_callback(audit)
-                    except Exception:
-                        pass
+        if self._iteration == 1:  # Only log not-fired in first pass
+            for rule in self._rules.values():
+                if rule.rule_id not in fired_ids:
+                    audit = RuleAuditEntry(
+                        rule_id=rule.rule_id,
+                        rule_name=rule.rule_name,
+                        nfpa_reference=rule.nfpa_reference,
+                        evaluated_at=datetime.now(timezone.utc).isoformat(),
+                        fired=False,
+                        reason="No matching facts",
+                        session_id=self.session_id,
+                    )
+                    self._audit_log.append(audit)
+                    if self.audit_callback:
+                        try:
+                            self.audit_callback(audit)
+                        except Exception:
+                            pass
 
         return results
 
