@@ -7225,3 +7225,99 @@ in results`, extract the list. Falls back to list handling for backward compat.
 2. **Alpha/Beta network conflict was a REAL bug** — discovered through honest integration testing, not through code review alone. Tests passed before because NFPA72-010 was silently failing.
 3. **Pipeline integration was already done** — Stage 3.5 in pipeline.py already uses NFPA72ComplianceChecker. No additional pipeline work was needed.
 4. **The only real missing pieces were:** __init__.py exports, test file locations, and the alpha/beta network bug fix.
+
+---
+
+## V57 — Deterministic Cable Routing Engine (2026-05-30)
+
+### Deliverables
+
+4 Python modules + 106 test cases implementing a complete deterministic
+cable routing engine for Fire Alarm systems.
+
+#### 1. `fireai/core/ifc_parser.py` — IFC Building Geometry Extraction
+
+Reads building geometry from IFC files (ISO 16739) and produces a 3D
+occupancy grid at 100mm resolution for the cable routing engine.
+
+- **Extracted IFC Entities**: IfcWall, IfcSlab, IfcBeam, IfcSpace,
+  IfcDoor, IfcWindow, IfcColumn, IfcCurtainWall
+- **Cell States**: FREE, BLOCKED, DOOR_OPENING, SHAFT, ELECTRICAL
+- **Key Functions**: `parse_ifc_file()`, `build_abstract_model()`,
+  `get_cell_state()`, `world_to_grid()`, `grid_to_world()`
+- **IfcOpenShell** integration with graceful fallback when unavailable
+- **Safety limit**: Grid capped at 50M cells to prevent memory overflow
+- **Fire rating extraction** from IFC property sets
+
+#### 2. `fireai/core/constraint_engine.py` — Code-Based Routing Constraints
+
+Every constraint traces to a published code section. No approximations.
+No probabilistic decisions. Pure deterministic logic.
+
+| Constraint | Code Reference | Severity |
+|-----------|---------------|----------|
+| NAC circuit max length | NFPA 72 §23.6.2 | CRITICAL |
+| Voltage drop (×2 DC return) | NFPA 72 §10.6.4 | CRITICAL |
+| Electrical separation ≥ 300mm | Project Spec / NEC 760.24 | CRITICAL |
+| Cable fastening ≤ 457mm | NEC 760.24(A) | MEDIUM |
+| Min conduit ¾" EMT | Project Spec | HIGH |
+| Bend radius = 6 × Ø | Project Spec / NEC 344.24 | HIGH |
+| Conduit fill ≤ 40% | NEC 760.154 / Ch.9 Table 4 | HIGH |
+| Class A path separation | NFPA 72 §12.2.2 | CRITICAL |
+
+- **A* Cost Function**: bend penalty (0.5m), elevation (2.0m),
+  electrical proximity (1.0m)
+- **Manhattan Heuristic**: admissible for 6-directional orthogonal
+- **ConstraintSource enum**: every constraint has a traceable origin
+
+#### 3. `fireai/core/cable_router.py` — Orthogonal A* Cable Router
+
+6-directional movement only (X±, Y±, Z±). NO diagonals.
+Real conduits don't go diagonal.
+
+- **Algorithm**: A* with Manhattan distance heuristic
+- **Cost Function**: straight (L×1.0) + bend (+0.5m) + elevation (+2.0m)
+  + electrical proximity (+1.0m)
+- **Deterministic**: same input → same output hash, always
+- **Obstacle avoidance**: BLOCKED cells are impassable
+- **Bend detection**: direction changes logged with NEC code references
+- **Voltage drop**: ×2 DC return factor per NEC Chapter 9, Table 8
+- **Decision log**: every A* decision traceable to code reference
+- **Multi-route scheduling**: `route_all()` produces complete RoutingSchedule
+- **Input validation**: NaN/Inf rejected (QOMN-FIRE Layer 0)
+
+#### 4. `fireai/core/revit_exporter.py` — IFC & Revit Output
+
+- **IFC Elements**: IfcPipeSegment (straight runs), IfcPipeFitting (elbows)
+- **Workset**: All elements on "FA-CABLES" per project specification
+- **Cable Schedule**: CSV with Device_ID, From, To, Length, Type, V-drop
+- **IFC JSON**: Interoperability export with element geometry
+- **Revit Model Lines**: On dedicated workset with code references
+- **Text Report**: Code references, compliance summary, computation hash
+
+### Test Results
+
+- **106 new tests** covering all 4 modules
+- **804 total tests passing** (698 existing + 106 new)
+- **Golden file tests**: Route hash stability verified (5 identical runs)
+- **Zero ML verification**: No random/sklearn/torch imports
+- **End-to-end integration**: Building → Route → Export pipeline
+
+### Self-Criticism Notes (V57)
+
+1. **IFC parser handles IfcOpenShell absence gracefully** — raises
+   ImportError with clear message, not a cryptic crash.
+2. **Conduit fill test was initially wrong** — 4 × 5mm cables in 15.8mm
+   conduit actually exceeds 40% fill. Fixed test to use 2 × 3mm.
+3. **Fastening test underestimated required fasteners** — 100m cable at
+   457mm intervals needs 220+ fasteners, not 30. Fixed.
+4. **Route compliance may show "VIOLATIONS FOUND" for cable fastening**
+   — this is correct behavior; the router doesn't auto-calculate fastener
+   count. The caller must specify it.
+5. **Electrical zone pre-computation is a placeholder** — full IFC
+   property set parsing for electrical classification is needed for
+   production use.
+
+### Commit Information
+- **Commit:** `f2698d8`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/f2698d8
