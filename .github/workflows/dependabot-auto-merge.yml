@@ -1,0 +1,67 @@
+name: Auto-merge Dependabot PRs
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: read
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Wait for status checks
+        id: wait-for-status-checks
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const ref = context.payload.pull_request.head.sha;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Wait up to 30 minutes for checks to complete
+            const timeout = 30 * 60 * 1000;
+            const start = Date.now();
+            
+            while (Date.now() - start < timeout) {
+              const { data: statuses } = await github.rest.repos.listCommitStatuses({
+                owner, repo, ref
+              });
+              
+              // Check if there are any required status checks
+              const { data: branch } = await github.rest.repos.getBranch({ owner, repo, branch: context.payload.pull_request.base.ref });
+              
+              // If there are no pending statuses and all are success, we're good
+              const hasPending = statuses.some(s => s.state === 'pending');
+              
+              if (!hasPending && statuses.length > 0) {
+                const allSuccess = statuses.every(s => s.state === 'success');
+                if (allSuccess) {
+                  core.setOutput('ready', 'true');
+                  return;
+                }
+              } else if (statuses.length === 0) {
+                // No status checks configured - proceed
+                core.setOutput('ready', 'true');
+                return;
+              }
+              
+              await new Promise(resolve => setTimeout(resolve, 30000));
+            }
+            
+            core.setOutput('ready', 'false');
+
+      - name: Enable auto-merge
+        if: steps.wait-for-status-checks.outputs.ready == 'true'
+        run: |
+          gh pr merge --admin --squash "${{ github.event.pull_request.number }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
