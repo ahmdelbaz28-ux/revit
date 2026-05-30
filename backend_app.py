@@ -52,6 +52,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ── Security Audit Logging & Log Rotation ──────────────────────────────────
+# SECURITY FIX (V100): Add structured security event logging with:
+# 1. Dedicated security_audit.log (separate from application log)
+# 2. Tamper-evident chain hashing for security events
+# 3. Automatic sensitive data masking in all log output
+# 4. Size-based log rotation (50 MB per file, 10 backups)
+try:
+    from fireai.core.security_logging import (
+        SecurityEventType,
+        configure_log_rotation,
+        security_audit,
+    )
+    configure_log_rotation(logger, "fireai.log")
+    configure_log_rotation(
+        logging.getLogger("fireai.security_audit"),
+        "security_audit.log",
+    )
+    _SECURITY_AUDIT_AVAILABLE = True
+except ImportError:
+    logger.warning("security_logging module not available — security audit disabled")
+    _SECURITY_AUDIT_AVAILABLE = False
+
 # ── Application lifecycle ──────────────────────────────────────────────────
 
 @asynccontextmanager
@@ -173,26 +195,103 @@ app = FastAPI(
 )
 
 # ── CORS middleware ────────────────────────────────────────────────────────
+# SECURITY FIX (V100): Environment-aware CORS configuration.
+# Production deployments use a hardcoded whitelist that cannot be overridden
+# by environment variables. Development mode uses localhost-only defaults.
 
-_cors_origins = os.getenv(
-    "CORS_ORIGINS",
-    "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,"
-    "http://localhost:8000,http://127.0.0.1:8000",
-).split(",")
+# Production whitelist — these origins are the ONLY ones allowed in production.
+# To add a new production origin, you MUST modify this list and redeploy.
+# This prevents misconfiguration via environment variables.
+_PRODUCTION_TRUSTED_ORIGINS = [
+    # Add your production domains here, e.g.:
+    # "https://fireai.example.com",
+    # "https://app.fireai.example.com",
+]
 
-# SECURITY FIX: Validate CORS origins — reject wildcards when credentials are enabled.
-# Browsers actually reject `Access-Control-Allow-Origin: *` with credentials, but
-# detecting it at startup prevents misconfiguration from being silently accepted in
-# non-browser contexts (API gateways, proxy servers).
-if "*" in _cors_origins:
-    logger.critical(
-        "SECURITY: CORS_ORIGINS contains '*' wildcard. "
-        "allow_credentials=True with wildcard origins is a security risk — "
-        "any website can make authenticated cross-origin requests. "
-        "Remove '*' from CORS_ORIGINS and specify explicit origins."
-    )
-    # Remove the wildcard to prevent accidental exposure
-    _cors_origins = [o for o in _cors_origins if o != "*"]
+# Development defaults — localhost only
+_DEVELOPMENT_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+
+def _get_cors_origins() -> list:
+    """Resolve CORS origins based on deployment environment.
+
+    Security model:
+    - Production (FIREAI_ENV=production or unset):
+        Uses _PRODUCTION_TRUSTED_ORIGINS ONLY. If the list is empty,
+        reads from CORS_ORIGINS env var (with wildcard rejection).
+        This dual approach allows zero-code production deployment while
+        still requiring explicit origin configuration.
+    - Development (FIREAI_ENV=development):
+        Uses localhost defaults. Additional origins can be added via
+        CORS_ORIGINS env var for testing.
+    - Wildcards (*) are ALWAYS rejected when allow_credentials=True.
+    """
+    env = os.getenv("FIREAI_ENV", "production")
+
+    if env == "development":
+        # Development: start with localhost defaults
+        origins = list(_DEVELOPMENT_ORIGINS)
+        # Allow additional origins from env var for testing
+        extra = os.getenv("CORS_ORIGINS", "")
+        if extra:
+            for o in extra.split(","):
+                o = o.strip()
+                if o and o != "*" and o not in origins:
+                    origins.append(o)
+        logger.info(f"CORS: development mode — {len(origins)} origins configured")
+        return origins
+
+    # Production: use hardcoded whitelist if available
+    if _PRODUCTION_TRUSTED_ORIGINS:
+        logger.info(
+            f"CORS: production mode — using hardcoded whitelist "
+            f"({len(_PRODUCTION_TRUSTED_ORIGINS)} origins)"
+        )
+        return list(_PRODUCTION_TRUSTED_ORIGINS)
+
+    # Production without hardcoded whitelist: require CORS_ORIGINS env var
+    env_origins = os.getenv("CORS_ORIGINS", "")
+    if not env_origins:
+        logger.critical(
+            "SECURITY: No CORS origins configured for production. "
+            "Either populate _PRODUCTION_TRUSTED_ORIGINS in source code or "
+            "set CORS_ORIGINS environment variable. No cross-origin requests "
+            "will be allowed until this is resolved."
+        )
+        return []  # Fail-closed: no origins = no CORS
+
+    origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+
+    # SECURITY: Reject wildcards in production
+    if "*" in origins:
+        logger.critical(
+            "SECURITY: CORS_ORIGINS contains '*' wildcard in production. "
+            "allow_credentials=True with wildcard origins is a security risk — "
+            "any website can make authenticated cross-origin requests. "
+            "Wildcard has been REMOVED. Specify explicit origins."
+        )
+        origins = [o for o in origins if o != "*"]
+
+    # Validate all origins start with https:// in production
+    for o in origins:
+        if not o.startswith("https://") and not o.startswith("http://localhost"):
+            logger.warning(
+                f"SECURITY: CORS origin '{o}' does not use HTTPS. "
+                f"Production origins should use HTTPS to prevent MITM attacks."
+            )
+
+    logger.info(f"CORS: production mode — {len(origins)} origins from env var")
+    return origins
+
+
+_cors_origins = _get_cors_origins()
 
 app.add_middleware(
     CORSMiddleware,
@@ -326,6 +425,12 @@ if _FIREAI_API_KEY and _FIREAI_API_KEY.lower() in _PLACEHOLDER_API_KEYS:
         "trivially guessable. Generate a random key with: "
         "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
     )
+    if _SECURITY_AUDIT_AVAILABLE:
+        security_audit.log_event(
+            SecurityEventType.PLACEHOLDER_KEY_DETECTED,
+            key_type="FIREAI_API_KEY",
+            placeholder_value=_FIREAI_API_KEY,
+        )
 
 class ApiKeyMiddleware:
     """
@@ -407,6 +512,15 @@ class ApiKeyMiddleware:
                 f"Unauthorized {method} request to {path} "
                 f"from origin={origin or 'none'} client={client_addr}"
             )
+            # Log to security audit
+            if _SECURITY_AUDIT_AVAILABLE:
+                security_audit.log_event(
+                    SecurityEventType.AUTH_FAILURE,
+                    method=method,
+                    path=path,
+                    origin=origin or "none",
+                    client_ip=client_addr,
+                )
             # Send 401 response directly via ASGI
             body = b'{"success":false,"error":"Invalid or missing X-API-Key header"}'
             await send({

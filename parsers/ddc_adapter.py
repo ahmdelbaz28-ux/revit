@@ -158,6 +158,67 @@ class DDCAdapter:
         if not input_path_obj.exists():
             raise FileNotFoundError(f"Input file not found: {input_path}")
 
+        # SECURITY FIX: Resolve the path and verify it's within an allowed
+        # directory. This prevents path traversal attacks where a malicious
+        # input_path like "/etc/passwd" or "../../../etc/shadow" could be
+        # passed to the subprocess. Only files within designated upload/data
+        # directories are permitted.
+        safe_path = input_path_obj.resolve()
+
+        # Allowed base directories (configurable via env var)
+        _allowed_bases_str = os.getenv(
+            "FIREAI_ALLOWED_UPLOAD_DIRS",
+            "/tmp,/var/tmp,/var/fireai/uploads",
+        )
+        _allowed_bases = [
+            Path(d).resolve() for d in _allowed_bases_str.split(",") if d.strip()
+        ]
+
+        # Always allow temp directories (created by tempfile.mkdtemp)
+        _temp_dir = Path(tempfile.gettempdir()).resolve()
+        if _temp_dir not in _allowed_bases:
+            _allowed_bases.append(_temp_dir)
+
+        # Also allow the current working directory (for development)
+        _cwd = Path.cwd().resolve()
+        if _cwd not in _allowed_bases:
+            _allowed_bases.append(_cwd)
+
+        # Verify path is within an allowed directory
+        _path_in_allowed_dir = False
+        for base in _allowed_bases:
+            try:
+                safe_path.relative_to(base)
+                _path_in_allowed_dir = True
+                break
+            except ValueError:
+                continue
+
+        if not _path_in_allowed_dir:
+            raise ValueError(
+                f"SECURITY: Input file path '{safe_path}' is outside allowed "
+                f"directories. Path traversal detected. Allowed bases: "
+                f"{[str(b) for b in _allowed_bases]}"
+            )
+
+        # SECURITY FIX: Verify the resolved path hasn't been tampered with
+        # via symlinks pointing outside allowed directories.
+        if safe_path.is_symlink():
+            real_target = safe_path.readlink().resolve()
+            _real_in_allowed = False
+            for base in _allowed_bases:
+                try:
+                    real_target.relative_to(base)
+                    _real_in_allowed = True
+                    break
+                except ValueError:
+                    continue
+            if not _real_in_allowed:
+                raise ValueError(
+                    f"SECURITY: Symlink target '{real_target}' is outside "
+                    f"allowed directories. Symlink traversal detected."
+                )
+
         ext = input_path_obj.suffix.lower()
 
         # SECURITY FIX: Validate file extension against allowed set BEFORE
@@ -190,7 +251,7 @@ class DDCAdapter:
             output_dir = _temp
 
         try:
-            cmd = [binary, str(input_path_obj)]
+            cmd = [binary, str(safe_path)]
             if export_mode and ext in (".rvt", ".rfa"):
                 # SECURITY FIX: Whitelist export_mode to prevent command
                 # injection. Without validation, a malicious export_mode
