@@ -45,6 +45,19 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
+# V61: Late import for cable routing (optional, may not be available)
+try:
+    from fireai.core.cable_router import CableRouter, CableRoute
+    _CABLE_ROUTER_AVAILABLE = True
+except ImportError:
+    _CABLE_ROUTER_AVAILABLE = False
+
+try:
+    from fireai.core.constraint_engine import ConstraintEngine
+    _CONSTRAINT_ENGINE_AVAILABLE = True
+except ImportError:
+    _CONSTRAINT_ENGINE_AVAILABLE = False
+
 from fireai.core.contracts_validation import ContractViolation, validate_room_input
 from fireai.core.nfpa72_engine import (
     BatteryResult,
@@ -116,6 +129,7 @@ class PipelineResult:
     warnings:       List[str]
     nfpa_references: List[str]
     timestamp:      str
+    cable_routing:   Optional[Dict] = None  # V61: Cable routing schedule summary
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -721,6 +735,8 @@ def analyze_room(
     awg_gauge:         str = "14",
     loop_data:         Optional[Dict] = None,
     ambient_temperature_c: float = 20.0,
+    cable_connections: Optional[List[Dict[str, Any]]] = None,
+    building_model:    Optional[Any] = None,
 ) -> PipelineResult:
     """
     Run the complete FireAI analysis pipeline for one room.
@@ -888,6 +904,41 @@ def analyze_room(
                     f"SLC fault isolation violations: {sf.data.get('violations', [])}"
                 )
 
+    # ── Optional: Cable Routing (V61) ──────────────────────────────────────
+    cable_routing_dict: Optional[Dict] = None
+    if cable_connections and building_model and _CABLE_ROUTER_AVAILABLE:
+        try:
+            constraint_engine = None
+            if _CONSTRAINT_ENGINE_AVAILABLE:
+                constraint_engine = ConstraintEngine()
+
+            router = CableRouter(
+                model=building_model,
+                constraint_engine=constraint_engine,
+            )
+
+            scr = _run_stage(
+                "S_cable_routing", router.route_all, cable_connections,
+            )
+            stages.append(scr)
+            if scr.success and "result" in scr.data:
+                schedule = scr.data["result"]
+                cable_routing_dict = {
+                    "total_cable_length_m": schedule.total_cable_length_m,
+                    "total_bends":         schedule.total_bends,
+                    "max_circuit_length_m": schedule.max_circuit_length_m,
+                    "compliance_summary":  schedule.compliance_summary,
+                    "num_routes":          len(schedule.routes),
+                    "computation_hash":    schedule.computation_hash,
+                }
+                if schedule.compliance_summary != "ALL_PASS":
+                    warnings.append(
+                        f"Cable routing violations: {schedule.compliance_summary}"
+                    )
+        except Exception as e:
+            warnings.append(f"Cable routing stage failed: {e}")
+            log.warning("Cable routing stage failed: %s", e)
+
     # ── Stage 3.5: Rules Engine Compliance (MOVED after battery/voltage/fault) ─
     # Now runs AFTER nfpa72_engine calculations so that battery,
     # voltage drop, and fault isolation results are fed as facts
@@ -968,6 +1019,7 @@ def analyze_room(
         battery             = battery_dict,
         voltage_drop        = voltage_dict,
         fault_isolation     = fault_isolation_dict,
+        cable_routing       = cable_routing_dict,
         stages              = stages,
         release_gates       = gate_result,
         evidence_hash       = evidence_hash,
