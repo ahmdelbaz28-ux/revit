@@ -25,6 +25,18 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+# ── Load .env file BEFORE any os.getenv() calls ────────────────────────────
+# V68 FIX: Without python-dotenv, .env file is never read. GEMINI_API_KEY
+# and other secrets would be unavailable, causing MemoryService to fail.
+# load_dotenv() does NOT override existing env vars (safe for Docker/K8s).
+try:
+    from dotenv import load_dotenv
+    _env_path = Path(__file__).resolve().parent.parent / ".env"
+    if _env_path.is_file():
+        load_dotenv(_env_path, override=False)
+except ImportError:
+    pass  # python-dotenv not installed — rely on OS env vars (Docker/K8s)
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
