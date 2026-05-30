@@ -866,20 +866,28 @@ def check_ampacity(
         base_ampacity = amp_90
 
     if base_ampacity <= 0:
-        # Small gauge wires may not have ampacity in all columns
-        # Use the highest available rating
-        base_ampacity = max(amp_60, amp_75, amp_90)
-        if base_ampacity <= 0:
-            return AmpacityResult(
-                awg_gauge=gauge,
-                base_ampacity_a=0,
-                ambient_derating=0.0,
-                conductor_derating=0.0,
-                adjusted_ampacity_a=0.0,
-                actual_current_a=alarm_current_a,
-                is_compliant=False,
-                formula=f"AWG {gauge} has no NEC 310.16 ampacity rating",
-            )
+        # V63 FIX: AWG 18/16 have NO ampacity rating in the 60°C and
+        # 75°C columns per NEC 310.16. Previously, the code fell through
+        # to max(amp_60, amp_75, amp_90), using the 90°C column value
+        # (e.g., 14A for AWG 18) for a 60°C rated conductor.
+        # This is DANGEROUS: a 60°C rated conductor CANNOT carry 14A.
+        # Using the 90°C column for a lower-rated conductor overstates
+        # ampacity, potentially causing overheating and fire.
+        # Correct behavior: report no rating → non-compliant.
+        return AmpacityResult(
+            awg_gauge=gauge,
+            base_ampacity_a=0,
+            ambient_derating=0.0,
+            conductor_derating=0.0,
+            adjusted_ampacity_a=0.0,
+            actual_current_a=alarm_current_a,
+            is_compliant=False,
+            formula=(
+                f"AWG {gauge} has no NEC 310.16 ampacity rating "
+                f"at {conductor_temp_rating_c}°C — use 90°C rated "
+                f"insulation (THHN/THWN-2) or larger wire gauge"
+            ),
+        )
 
     # Apply NEC 310.15(B)(2)(A) ambient temperature derating
     ambient_derating = get_ambient_derating_factor(

@@ -197,14 +197,20 @@ class BuildingModel:
 
     def __post_init__(self):
         if self.computation_hash == "" and self.grid_data:
-            raw = (
+            # V64 FIX: Hash all data together, not concatenate two hashes
+            # then truncate. Previous code did:
+            #   h = sha256(raw).hex() + sha256(grid_data).hex()  # 128 chars
+            #   hash = h[:32]  # Only keeps first 32 chars of sha256(raw)!
+            # The grid_data hash was COMPLETELY LOST — two models with
+            # different grids but same metadata produced the same hash.
+            hasher = hashlib.sha256()
+            hasher.update(
                 f"{self.grid_origin}|{self.grid_size}|"
                 f"{self.grid_resolution}|{len(self.elements)}|"
-                f"{len(self.spaces)}"
+                f"{len(self.spaces)}".encode()
             )
-            h = hashlib.sha256(raw.encode()).hexdigest()
-            h += hashlib.sha256(self.grid_data).hexdigest()
-            object.__setattr__(self, "computation_hash", h[:32])
+            hasher.update(self.grid_data)
+            object.__setattr__(self, "computation_hash", hasher.hexdigest()[:32])
 
 
 # ─── IFC Parser ─────────────────────────────────────────────────────────────
@@ -621,12 +627,16 @@ def _build_occupancy_grid(
 
     for elem in elements:
         # Convert element bounds to grid indices
-        ix_min = max(0, int((elem.min_x - min_x) / resolution))
-        iy_min = max(0, int((elem.min_y - min_y) / resolution))
-        iz_min = max(0, int((elem.min_z - min_z) / resolution))
-        ix_max = min(nx - 1, int((elem.max_x - min_x) / resolution))
-        iy_max = min(ny - 1, int((elem.max_y - min_y) / resolution))
-        iz_max = min(nz - 1, int((elem.max_z - min_z) / resolution))
+        # V64 FIX: Use math.floor instead of int() for grid coordinate
+        # conversion. int() truncates toward zero, mapping negative
+        # offsets to cell 0 instead of -1. Same V63 bug pattern —
+        # elements near grid origin could be placed in wrong cells.
+        ix_min = max(0, math.floor((elem.min_x - min_x) / resolution))
+        iy_min = max(0, math.floor((elem.min_y - min_y) / resolution))
+        iz_min = max(0, math.floor((elem.min_z - min_z) / resolution))
+        ix_max = min(nx - 1, math.floor((elem.max_x - min_x) / resolution))
+        iy_max = min(ny - 1, math.floor((elem.max_y - min_y) / resolution))
+        iz_max = min(nz - 1, math.floor((elem.max_z - min_z) / resolution))
 
         # Determine cell state
         if elem.element_type in _BLOCKING_TYPES:
@@ -707,9 +717,9 @@ def get_cell_state(
     ox, oy, oz = model.grid_origin
     nx, ny, nz = model.grid_size
 
-    ix = int((x - ox) / model.grid_resolution)
-    iy = int((y - oy) / model.grid_resolution)
-    iz = int((z - oz) / model.grid_resolution)
+    ix = math.floor((x - ox) / model.grid_resolution)
+    iy = math.floor((y - oy) / model.grid_resolution)
+    iz = math.floor((z - oz) / model.grid_resolution)
 
     if ix < 0 or ix >= nx or iy < 0 or iy >= ny or iz < 0 or iz >= nz:
         return CellState.BLOCKED
@@ -727,6 +737,13 @@ def world_to_grid(
 ) -> Tuple[int, int, int]:
     """Convert world coordinates (meters) to grid indices.
 
+    V63 FIX: Uses math.floor instead of int() for coordinate
+    conversion. int() truncates toward zero, which incorrectly
+    maps small negative offsets to cell 0 instead of -1. This
+    caused points slightly outside the grid to appear as valid
+    in-bounds cells, potentially routing cables through points
+    outside the building model.
+
     Args:
         model: BuildingModel with grid.
         x, y, z: World coordinates in meters.
@@ -736,9 +753,9 @@ def world_to_grid(
     """
     ox, oy, oz = model.grid_origin
     return (
-        int((x - ox) / model.grid_resolution),
-        int((y - oy) / model.grid_resolution),
-        int((z - oz) / model.grid_resolution),
+        math.floor((x - ox) / model.grid_resolution),
+        math.floor((y - oy) / model.grid_resolution),
+        math.floor((z - oz) / model.grid_resolution),
     )
 
 

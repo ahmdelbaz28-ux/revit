@@ -42,6 +42,12 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+# V63 FIX: Use math.floor instead of int() for grid coordinate
+# conversion. int() truncates toward zero, which maps negative
+# offsets to cell 0 instead of -1, causing points slightly
+# outside the grid to appear as valid in-bounds cells.
+_floor = math.floor
+
 # ─── Internal imports ───────────────────────────────────────────────────────
 
 from fireai.core.ifc_parser import (
@@ -380,12 +386,16 @@ class CableRouter:
             # + sep_cells which was double-buffering to 600mm). The 0.3m
             # offset in the coordinate calculation already provides the
             # required 300mm separation per NEC 760.24.
-            ix_min = max(0, int((elem.min_x - 0.3 - ox) / res))
-            iy_min = max(0, int((elem.min_y - 0.3 - oy) / res))
-            iz_min = max(0, int((elem.min_z - 0.3 - oz) / res))
-            ix_max = min(nx - 1, int((elem.max_x + 0.3 - ox) / res))
-            iy_max = min(ny - 1, int((elem.max_y + 0.3 - oy) / res))
-            iz_max = min(nz - 1, int((elem.max_z + 0.3 - oz) / res))
+            # V64 FIX: Use math.floor instead of int() for grid coordinate
+            # conversion. int() truncates toward zero, which maps negative
+            # offsets to cell 0 instead of -1. Same V63 bug pattern —
+            # electrical zone cells near grid origin could be misclassified.
+            ix_min = max(0, _floor((elem.min_x - 0.3 - ox) / res))
+            iy_min = max(0, _floor((elem.min_y - 0.3 - oy) / res))
+            iz_min = max(0, _floor((elem.min_z - 0.3 - oz) / res))
+            ix_max = min(nx - 1, _floor((elem.max_x + 0.3 - ox) / res))
+            iy_max = min(ny - 1, _floor((elem.max_y + 0.3 - oy) / res))
+            iz_max = min(nz - 1, _floor((elem.max_z + 0.3 - oz) / res))
 
             for iz in range(iz_min, iz_max + 1):
                 for iy in range(iy_min, iy_max + 1):
@@ -918,8 +928,16 @@ class CableRouter:
         ambient_temp_c: float = 20.0,
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
+        conductor_operating_temp_c: Optional[float] = None,
     ) -> RoutingSchedule:
         """Route all cable connections and produce a complete schedule.
+
+        V63 FIX: Added conductor_operating_temp_c parameter. Previously,
+        route_all() did NOT pass this to route(), meaning the V62 fix
+        (splitting ambient vs operating temperature) was NOT applied in
+        multi-route scheduling. With ambient_temp_c=40°C (Egypt summer),
+        voltage drop used R at 40°C instead of 75°C, underestimating
+        voltage drop by ~15%. This partially undid the V62 fix.
 
         Args:
             connections: List of dicts with keys:
@@ -931,11 +949,15 @@ class CableRouter:
             wire_gauge: Wire gauge for all routes.
             ps_voltage: Power supply voltage.
             project_name: Project name for the schedule.
-            ambient_temp_c: Conductor operating temperature in degC.
-                Default 20 degC (backward compatible).
-                CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN.
+            ambient_temp_c: Ambient AIR temperature in degC for ampacity
+                derating. Default 20 degC (backward compatible).
+                CRITICAL FOR EGYPT: Use 40-50 degC for summer conditions.
             num_current_carrying: Number of current-carrying conductors.
             conductor_temp_rating_c: Conductor insulation rating (60, 75, 90).
+            conductor_operating_temp_c: Conductor OPERATING temperature in
+                degC for resistance correction in voltage drop. Default None
+                (falls back to ambient_temp_c for backward compatibility).
+                CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
 
         Returns:
             RoutingSchedule with all routes and compliance summary.
@@ -961,6 +983,7 @@ class CableRouter:
                 alarm_current_a=current_a,
                 route_id=rid,
                 ambient_temp_c=conn_ambient,
+                conductor_operating_temp_c=conductor_operating_temp_c,
                 num_current_carrying=num_current_carrying,
                 conductor_temp_rating_c=conductor_temp_rating_c,
             )

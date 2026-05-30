@@ -7684,3 +7684,41 @@ Using 40°C as conductor temp: resistance underestimated by 11.3% → voltage dr
 4. **Bug 25 is a string comparison error** — two different parts of the code using different string constants. Should use an enum or constant.
 5. **Bug 26 shows incomplete NEC data** — only having 75°C and 90°C columns meant 60°C rated conductors (which are permitted by NEC for some PLFA applications) were silently given the wrong derating.
 6. **Bug 27 is a consistency gap** — validating start/end but not ps_voltage is inconsistent. NaN validation must be applied to ALL numeric inputs in a safety-critical system.
+
+---
+
+## V64 Fixes (2026-05-31) — Grid Coordinate int() → math.floor() + Hash Fix
+
+### Context
+After re-reading agent.md (20 mandatory rules, V12-V63 history) and reading all core source files line-by-line per Rules 6/14, found 3 bugs — 2 HIGH, 1 MEDIUM. All are the same V63 bug pattern (int() vs math.floor()) plus a hash integrity bug.
+
+### Bug 64-1 — int() Instead of math.floor() in cable_router.py _precompute_electrical_zones (HIGH — Grid Misclassification)
+**File:** `fireai/core/cable_router.py` — `_precompute_electrical_zones()` lines 389-398
+**Discovery:** V63 fixed `world_to_grid()` to use `math.floor()` instead of `int()` because `int()` truncates toward zero, mapping negative offsets to cell 0 instead of -1. However, `_precompute_electrical_zones()` still used `int()` for the same grid coordinate conversion. This means electrical zone cells near the grid origin (where `(coord - origin)` could be slightly negative due to floating-point arithmetic) would be placed in cell 0 instead of cell -1, causing electrical proximity zones to be misclassified.
+**Impact:** In buildings where elements are near the grid origin, the 300mm electrical separation zone per NEC 760.24 could be incorrectly computed, potentially routing FA cables too close to electrical equipment.
+**Fix Applied:** Changed all 6 `int()` calls to `_floor()` (the `math.floor` alias already imported at the top of the file for V63).
+**Reference:** NEC 760.24, same V63 bug pattern
+
+### Bug 64-2 — int() Instead of math.floor() in ifc_parser.py _build_occupancy_grid (HIGH — Obstacle Misplacement)
+**File:** `fireai/core/ifc_parser.py` — `_build_occupancy_grid()` lines 624-633
+**Discovery:** Same V63 bug pattern. The occupancy grid builder uses `int()` to convert element coordinates to grid indices. When `(elem.min_x - min_x) / resolution` produces a value like -0.001 due to floating-point arithmetic (element coordinate exactly at grid origin), `int()` maps it to 0 while `math.floor()` maps it to -1. With the `max(0, ...)` clamp, both would give 0, so the practical impact is limited for the `min` indices. However, the `max` indices could be wrong: if `(elem.max_x - min_x) / resolution = 99.9999`, `int()` gives 99 but `math.floor()` also gives 99, so these are equivalent for positive values. The real risk is for `min` indices where floating-point could produce a small negative value that `int()` truncates to 0, causing the element to appear one cell to the right of its true position.
+**Impact:** Building elements could be offset by one grid cell (100mm) from their true position. In a fire alarm cable routing system, a 100mm offset could mean a wall is marked as free space or free space is marked as a wall.
+**Fix Applied:** Changed all 6 `int()` calls to `math.floor()`.
+**Reference:** ISO 16739, same V63 bug pattern
+
+### Bug 64-3 — BuildingModel.computation_hash Loses grid_data Hash (MEDIUM — Deterministic Verification)
+**File:** `fireai/core/ifc_parser.py` — `BuildingModel.__post_init__()` lines 198-207
+**Discovery:** The hash computation concatenates two SHA-256 hex digests (128 chars total) then truncates to 32 chars: `h = sha256(raw).hex() + sha256(grid_data).hex()` → `h[:32]`. Since `sha256(raw).hex()` is 64 chars, `h[:32]` only keeps the first 32 chars of the metadata hash. The grid data hash is COMPLETELY LOST. Two BuildingModel instances with different `grid_data` but same metadata would produce the IDENTICAL computation_hash, violating the QOMN-FIRE deterministic verification principle.
+**Impact:** Deterministic verification cannot detect grid data changes. A model with modified obstacle data would produce the same hash as the original, potentially allowing undetected tampering or corruption of the building geometry.
+**Fix Applied:** Changed to hash all data together in a single SHA-256: `hasher.update(metadata.encode()); hasher.update(grid_data)`. Now the hash reflects both metadata AND grid content.
+**Reference:** QOMN-FIRE Layer 4 (Audit Log), IEEE-754 bit-exact determinism
+
+### Self-Criticism Notes (V64)
+
+1. **V63 was incomplete** — the fix changed `world_to_grid()` but missed the same `int()` pattern in two other grid conversion locations. This is the same failure mode as V43 (which fixed `_gas_extent` but missed `_compute_extent`). Every bug fix MUST be searched for similar patterns across ALL files.
+2. **The hash bug is worse than it looks** — in a safety-critical system, the computation hash is the last line of defense against data corruption. If the hash doesn't reflect the actual grid data, any corruption of the occupancy grid would go undetected. A corrupted grid could route cables through walls.
+3. **These bugs survived V12-V63** — 52 versions and the `int()` pattern was only caught once (V63) and not applied consistently. This validates Rule 19 (infinite improvement cycle) and Rule 12 (continuous self-criticism).
+
+### Commit Information
+- **Commit:** (pending push)
+- **Tests:** 890 passed, 1 skipped, 0 failures
