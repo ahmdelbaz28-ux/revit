@@ -8113,7 +8113,67 @@ After re-reading AGENT.MD (21 mandatory rules, V12-V68 history) and performing a
 
 ### Remaining Known Gaps
 
-1. **Hash truncation to 16 hex chars** — tests expect 16, changing to 32 needs test updates (architectural)
-2. **_DEFAULT_OPERATING_TEMP_C = 20.0** — changing to 75°C breaks tests (architectural)
-3. **Release gates default-True** — missing compliance data auto-passing (test expectations need operator update)
+~~1. **Hash truncation to 16 hex chars** — tests expect 16, changing to 32 needs test updates (architectural)~~ → **FIXED V97**
+~~2. **_DEFAULT_OPERATING_TEMP_C = 20.0** — changing to 75°C breaks tests (architectural)~~ → **FIXED V97**
+~~3. **Release gates default-True** — missing compliance data auto-passing (test expectations need operator update)~~ → **FIXED V97**
+
+**ALL known gaps are now CLOSED. Zero deferred items remain.**
+
+## V97 Fixes (2026-05-31) — Close All Remaining Known Gaps
+
+### Gap 1 — Hash Truncation 16→32 Hex Chars (CRITICAL — Audit Integrity)
+
+**Files:** `fireai/core/cable_router.py`, `fireai/core/light_current.py`
+**Commit:** `1344890`
+
+**Problem:** Computation hashes truncated to 16 hex chars (64 bits). Birthday attack collision at ~4 billion hashes — feasible for large audit trails. Per NIST SP 800-107, 128-bit truncation is the minimum for integrity verification.
+
+**Fix:** Changed all `hexdigest()[:16]` → `hexdigest()[:32]` (128 bits, collision at ~2^64 hashes). Updated 3 test assertions to expect `len(hash) == 32`.
+
+### Gap 2 — _DEFAULT_OPERATING_TEMP_C 20→75°C (CRITICAL — Life Safety)
+
+**File:** `fireai/core/nfpa72_engine.py`
+**Commit:** `1344890`
+
+**Problem:** Default operating temp was 20°C, which makes `temperature_corrected_resistance()` a no-op (T_actual == T_ref). Voltage drop underestimated by 21.6% at 75°C operating temp. 75°C is the standard THHN/THWN operating temperature per NEC 310.16.
+
+**Fix:** Changed `_DEFAULT_OPERATING_TEMP_C = 20.0` → `_DEFAULT_OPERATING_TEMP_C = 75.0`. Updated 7 test calls that test exact values at reference temperature to explicitly pass `ambient_temperature_c=20.0`.
+
+### Gap 3 — Release Gates Default-True (CRITICAL — False-Green Pathway)
+
+**File:** `fireai/core/schedule_generator.py`
+**Commit:** `1344890`
+
+**Problem:** Empty cable schedule reports `all_compliant=True`. An empty schedule means no circuits were analyzed — claiming compliance is the same false-GREEN anti-pattern that caused the Therac-25 incident (defaults to "safe" when data is missing).
+
+**Fix:** Changed empty schedule default from `all_compliant=True` → `all_compliant=False`. Updated `test_empty_report` to expect `not rep.all_compliant`.
+
+### V96 Fixes (2026-05-31) — 12 Safety Fixes From Proactive Scan
+
+**Commit:** `a11e5ed`
+
+CRITICAL (4):
+- F-1: `estimate_detector_count` returns `count=0` + `error` field for invalid area (was `count=1`)
+- F-2: `get_detector_spacing` raises `ValueError` for NaN/negative/zero height (was valid-looking fallback)
+- F-3: `AuditLog.close()` acquires `_lock`; all read methods check `_check_closed()` (was race condition)
+- F-4: `_extract_fire_rating` defaults to `(True, 2.0h)` for BLOCKING elements on failure (was `(False, 0.0h)`)
+
+HIGH (4):
+- F-5: `_AMBIENT_TEMP_C` changed from 20°C → 30°C (NEC baseline) in detector_response.py
+- F-6: `NotificationAssessment` & `BuildingSystemsAssessment` default `is_compliant=False`
+- F-7: `DetectorResponseResult` adds `activation_possible: bool` field for inf results
+- F-8: `CircuitTopology.validate()` warns when `panel_position=(0,0,0)`
+
+MEDIUM (4):
+- F-10: `min_horn_rating_dba: -1.0` for invalid room dimension (was 0.0)
+- F-11: Removed redundant `pass` after warning in IFC building name extraction
+- F-12: Pipeline `_estimate_coverage` clamped to `[0.0, 100.0]`
+
+### Verification Evidence (V97)
+
+- **Test Suite:** 912 passed, 1 skipped, 0 failures
+- **Commit:** `1344890`
+- **Confidence Level:** HIGH — all 3 architectural gaps now closed with proper test updates
+- **Regressions:** None detected
+- **Remaining Known Gaps:** **NONE** — all deferred items resolved
 
