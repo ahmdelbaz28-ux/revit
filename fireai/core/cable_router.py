@@ -303,16 +303,75 @@ class CableRouter:
         NEC 760.24 / Project Spec: 300mm separation required.
         We expand electrical element bounding boxes by 300mm
         and mark those cells for the A* penalty.
+
+        An element is considered "electrical" if any of these apply:
+        1. Its element_id contains 'electrical', 'power', or 'elec'
+           (common IFC naming conventions)
+        2. Its ifc_class contains 'CableCarrier', 'CableSegment',
+           'ElectricDistributionBoard', or similar electrical IFC types
+
+        For a production system, IFC property sets (Pset_ElectricalDevice)
+        should be parsed. This implementation uses heuristic element
+        classification that works for typical IFC exports.
         """
-        separation_cells = int(math.ceil(0.3 / self._model.grid_resolution))
+        if not self._model.grid_data or self._model.grid_size == (0, 0, 0):
+            return
+
+        nx, ny, nz = self._model.grid_size
+        ox, oy, oz = self._model.grid_origin
+        res = self._model.grid_resolution
+
+        # Separation distance in grid cells (300mm / resolution)
+        sep_cells = int(math.ceil(0.3 / res))
+
+        # IFC class keywords that indicate electrical systems
+        _ELECTRICAL_IFC_KEYWORDS = {
+            'cablecarrier', 'cablesegment', 'electric', 'power',
+            'distributionboard', 'switchboard', 'panelboard',
+            'transformer', 'generator', 'motor',
+        }
+
+        # Element ID keywords that indicate electrical systems
+        _ELECTRICAL_ID_KEYWORDS = {
+            'electrical', 'elec', 'power', 'panel', 'mdb',
+            'sdb', 'db-', 'swgr', 'xfmr',
+        }
 
         for elem in self._model.elements:
-            if elem.element_type == IfcElementType.UNKNOWN:
+            # Check if this element is electrical
+            is_electrical = False
+
+            # Check IFC class
+            ifc_lower = elem.ifc_class.lower()
+            for kw in _ELECTRICAL_IFC_KEYWORDS:
+                if kw in ifc_lower:
+                    is_electrical = True
+                    break
+
+            # Check element ID
+            if not is_electrical:
+                id_lower = elem.element_id.lower()
+                for kw in _ELECTRICAL_ID_KEYWORDS:
+                    if kw in id_lower:
+                        is_electrical = True
+                        break
+
+            if not is_electrical:
                 continue
-            # In a real implementation, we'd check element properties
-            # for "electrical" classification. For now, we skip
-            # unless explicitly marked.
-            # This is a placeholder for full IFC property set parsing.
+
+            # Expand element bounding box by 300mm in all directions
+            # and mark those cells as electrical zones
+            ix_min = max(0, int((elem.min_x - 0.3 - ox) / res) - sep_cells)
+            iy_min = max(0, int((elem.min_y - 0.3 - oy) / res) - sep_cells)
+            iz_min = max(0, int((elem.min_z - 0.3 - oz) / res) - sep_cells)
+            ix_max = min(nx - 1, int((elem.max_x + 0.3 - ox) / res) + sep_cells)
+            iy_max = min(ny - 1, int((elem.max_y + 0.3 - oy) / res) + sep_cells)
+            iz_max = min(nz - 1, int((elem.max_z + 0.3 - oz) / res) + sep_cells)
+
+            for iz in range(iz_min, iz_max + 1):
+                for iy in range(iy_min, iy_max + 1):
+                    for ix in range(ix_min, ix_max + 1):
+                        self._electrical_cells.add((ix, iy, iz))
 
     def route(
         self,

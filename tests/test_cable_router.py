@@ -639,6 +639,43 @@ class TestCableRouterBasic:
         with pytest.raises(ValueError, match="BLOCKED"):
             router.route(start=(5.0, 5.0, 1.5), end=(5.0, 10.1, 1.5))
 
+    def test_electrical_zone_detection(self):
+        """Verify electrical elements create proximity zones in router."""
+        obstacles = [
+            BoundingBox3D(
+                element_id="wall-1",
+                element_type=IfcElementType.WALL,
+                min_x=0.0, min_y=0.0, min_z=0.0,
+                max_x=10.0, max_y=0.2, max_z=3.0,
+            ),
+            BoundingBox3D(
+                element_id="electrical-panel-1",  # "electrical" keyword
+                element_type=IfcElementType.UNKNOWN,
+                ifc_class="IfcElectricDistributionBoard",
+                min_x=4.0, min_y=4.0, min_z=1.0,
+                max_x=4.5, max_y=4.5, max_z=2.0,
+            ),
+        ]
+        model = build_abstract_model(obstacles, building_name="Electrical Test")
+        router = CableRouter(model)
+        # Electrical cells should be populated
+        assert len(router._electrical_cells) > 0
+
+    def test_non_electrical_no_zone(self):
+        """Verify non-electrical elements don't create proximity zones."""
+        obstacles = [
+            BoundingBox3D(
+                element_id="wall-1",
+                element_type=IfcElementType.WALL,
+                min_x=0.0, min_y=0.0, min_z=0.0,
+                max_x=10.0, max_y=0.2, max_z=3.0,
+            ),
+        ]
+        model = build_abstract_model(obstacles, building_name="No Electrical Test")
+        router = CableRouter(model)
+        # No electrical cells should be populated
+        assert len(router._electrical_cells) == 0
+
 
 class TestCableRouterDeterminism:
     """Verify deterministic routing — same input → same output."""
