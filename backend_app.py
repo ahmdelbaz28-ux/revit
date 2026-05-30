@@ -491,6 +491,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 from backend.routers import projects, devices, connections, reports, exports, sync, health, elements, conflicts, connections_v2, environment, workflow, memory
 from backend.routers.analyze import router as analyze_router, project_router as analyze_project_router
+from backend.routers.qomn import router as qomn_router
 
 # Health check at /api/health
 app.include_router(health.router, prefix="/api")
@@ -536,6 +537,11 @@ app.include_router(analyze_router, prefix="/api")
 
 # NFPA 72 analysis engine — per-project analysis
 app.include_router(analyze_project_router, prefix="/api")
+
+# QOMN-FIRE Deterministic Engineering Kernel — Layer 0-4 pipeline
+# Endpoints: /api/qomn/* — smoke spacing, heat spacing, battery, voltage drop,
+# device placement, duct detection, audit log, physics guards, golden tests
+app.include_router(qomn_router, prefix="/api")
 
 # WebSocket at /ws
 app.include_router(sync.ws_router)
