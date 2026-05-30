@@ -45,7 +45,6 @@ frontend/.cache/
 
 # Databases — NEVER commit SQLite or vector DB files
 # These contain runtime state and project data, not source code
-db/
 *.db
 *.db-wal
 *.db-shm
@@ -82,11 +81,11 @@ logs/
 *.log
 
 # Empty placeholder directories (artifact of git reset operations)
+# NOTE: core/ removed — fireai/core/ is source code, not an artifact
 backend/
-core/
 repos/
-fireai/infrastructure/
 download/
+fireai/infrastructure/
 
 # Temporary files
 *.tmp

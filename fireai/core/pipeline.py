@@ -996,6 +996,14 @@ def analyze_room(
     evidence_hash = s6.data.get("evidence_hash", "") if s6.success else ""
     nfpa_refs     = s6.data.get("nfpa_references", []) if s6.success else []
 
+    # ── Stage 7: Cable Routing (optional — does not block completion) ─────────
+    s7 = _run_stage(
+        "S7_cable_routing", _stage7_cable_routing,
+        validated, positions,
+    )
+    stages.append(s7)
+    cable_routing_data = s7.data if s7.success else {}
+
     total_ms = (time.perf_counter() - t_total) * 1000.0
 
     # Determine overall success
@@ -1029,6 +1037,125 @@ def analyze_room(
         nfpa_references     = nfpa_refs,
         timestamp           = datetime.now(timezone.utc).isoformat(),
     )
+
+
+
+def _stage7_cable_routing(
+    validated: Dict,
+    positions: List[Tuple[float, float]],
+    room_z_m: float = 0.0,
+) -> Dict:
+    """
+    Stage 7: Cable routing between detector positions.
+
+    Uses CableRoutingEngine to route NAC/SLC circuits between
+    detector positions. Returns routing schedule with voltage drop
+    analysis per NFPA 72 §10.14.1 and §23.6.2.
+
+    OPTIONAL STAGE: Returns partial result on import failure.
+    Does not block Stages 0-6 from completing.
+
+    References:
+      - NFPA 72 §23.6.2: NAC circuit max length
+      - NEC 760.24(A): cable support spacing
+      - System Req §4: cable schedule output
+    """
+    try:
+        from fireai.core.cable_router import CableRouter, build_abstract_model
+        from fireai.core.constraint_engine import ConstraintEngine
+        from fireai.core.schedule_generator import ScheduleGenerator
+    except ImportError:
+        return {
+            "status": "unavailable",
+            "reason": "cable routing modules not installed",
+        }
+
+    if len(positions) < 2:
+        return {
+            "status": "skipped",
+            "reason": "fewer than 2 detector positions — no routing needed",
+            "routes": [],
+        }
+
+    room = validated.get("room", {})
+    polygon = room.get("polygon_points", [])
+    area_m2 = validated.get("area_m2", 0.0)
+
+    # Estimate bounding box from polygon or area
+    if polygon:
+        xs = [p[0] for p in polygon]
+        ys = [p[1] for p in polygon]
+        bbox_x = (min(xs), max(xs))
+        bbox_y = (min(ys), max(ys))
+    else:
+        side = float(area_m2) ** 0.5
+        bbox_x = (0.0, side)
+        bbox_y = (0.0, side)
+
+    grid_res_m = 0.1
+    nx = max(2, int((bbox_x[1] - bbox_x[0]) / grid_res_m) + 4)
+    ny = max(2, int((bbox_y[1] - bbox_y[0]) / grid_res_m) + 4)
+    nz = max(2, int(3.0 / grid_res_m) + 2)   # default 3m ceiling
+
+    try:
+        # Build model from polygon walls
+        building_model = None
+        if polygon:
+            try:
+                building_model = build_abstract_model(polygon, room_height_m=3.0)
+            except Exception:
+                building_model = None
+
+        constraint_engine = ConstraintEngine()
+        router = CableRouter(
+            building_model=building_model,
+            grid_nx=nx, grid_ny=ny, grid_nz=nz,
+            grid_res_m=grid_res_m,
+            grid_origin=(bbox_x[0], bbox_y[0], room_z_m),
+            constraint_engine=constraint_engine,
+            source_voltage_v=24.0,
+        )
+
+        # Build device list: (device_id, (x, y, z))
+        devices = []
+        for i, (x, y) in enumerate(positions):
+            z = room_z_m + 2.7  # detector on ceiling at 2.7m
+            dev_id = f"SD-{i+1:02d}"
+            devices.append((dev_id, (x, y, z)))
+
+        # Add FACP at origin as first device
+        devices.insert(0, ("FACP-01", (bbox_x[0], bbox_y[0], room_z_m + 0.5)))
+
+        schedules = router.route_all(devices, wire_gauge="14 AWG")
+
+        sg = ScheduleGenerator()
+        if hasattr(schedules, '__iter__') and not hasattr(schedules, 'waypoints'):
+            rows = sg.from_route_results(list(schedules))
+        else:
+            rows = sg.from_routing_schedule(schedules)
+
+        report = sg.to_report(rows)
+
+        return {
+            "status": "completed",
+            "total_cable_length_m": report.total_cable_length_m,
+            "total_bends": report.total_bends,
+            "max_circuit_length_m": report.max_circuit_length_m,
+            "min_end_voltage_v": report.min_end_voltage_v,
+            "all_compliant": report.all_compliant,
+            "route_count": report.route_count,
+            "violations_count": report.violations_count,
+            "csv": sg.to_csv(rows),
+            "code_refs": report.code_refs,
+        }
+
+    except Exception as e:
+        logger.warning(f"Stage 7 cable routing failed: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": str(e),
+            "routes": [],
+        }
 
 
 def _count_wall_violations(

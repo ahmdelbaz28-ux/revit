@@ -412,6 +412,24 @@ except ImportError:
     _logger.debug("fireai.core.cable_routing_engine not available")
 
 try:
+    from fireai.core.cable_router import (
+        CableRouter,
+        CableRoute,
+        RoutingSchedule,
+    )
+except ImportError:
+    _logger.debug("fireai.core.cable_router not available")
+
+try:
+    from fireai.core.schedule_generator import (
+        ScheduleGenerator,
+        ScheduleRow,
+        ScheduleReport,
+    )
+except ImportError:
+    _logger.debug("fireai.core.schedule_generator not available")
+
+try:
     from fireai.core.digital_twin_sync import (
         DigitalTwinSync,
         SyncResult,
@@ -583,6 +601,8 @@ _optional_names = [
     "AcousticCoverageDetail", "SurvivabilityClass",
     "CableRoutingEngine", "RouteResult", "CircuitTopology", "WireGauge",
     "RoutingObstacle3D", "VoltageDropSegment",
+    "CableRouter", "CableRoute", "RoutingSchedule",
+    "ScheduleGenerator", "ScheduleRow", "ScheduleReport",
     "DigitalTwinSync", "SyncResult", "DriftReport",
     "CoverageValidationResult", "SyncReport",
     "AcousticsEngine", "AcousticCoverageResult",

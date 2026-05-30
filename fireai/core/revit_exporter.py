@@ -172,6 +172,11 @@ class RevitExporter:
         report = exporter.generate_report(routing_result, "My Project")
     """
 
+    @property
+    def workset(self) -> str:
+        """Public workset name. System req 4: always FA-CABLES."""
+        return self._workset
+
     def __init__(self, workset: str = FA_WORKSET):
         """Initialize the exporter.
 
