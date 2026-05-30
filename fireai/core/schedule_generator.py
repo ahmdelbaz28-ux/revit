@@ -99,7 +99,7 @@ class ScheduleGenerator:
                 voltage_drop_v=float(getattr(schedule, 'voltage_drop_v', 0)),
                 end_voltage_v=float(getattr(schedule, 'end_voltage_v', 24.0)),
                 bend_count=int(getattr(schedule, 'bend_count', 0)),
-                compliant=bool(getattr(schedule, 'is_compliant', True)),
+                compliant=bool(getattr(schedule, 'is_compliant', False)),  # V69-10 FIX: fail-safe default
             ))
         return rows
 
@@ -116,7 +116,7 @@ class ScheduleGenerator:
                 voltage_drop_v=float(getattr(r, 'voltage_drop_v', 0)),
                 end_voltage_v=float(getattr(r, 'end_voltage_v', 24.0)),
                 bend_count=int(getattr(r, 'bend_count', 0)),
-                compliant=bool(getattr(r, 'compliant', True)),
+                compliant=bool(getattr(r, 'compliant', False)),  # V69-10 FIX: fail-safe default
             ))
         return rows
 

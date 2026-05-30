@@ -469,6 +469,21 @@ def calculate_battery(
         raise ValueError(
             "Both standby and alarm current cannot be zero — no load specified"
         )
+    # V69-6 FIX: Validate safety_margin, standby_hours, alarm_minutes
+    # A negative safety_margin reduces required capacity — life safety hazard.
+    # standby_hours ≤ 0 or alarm_minutes ≤ 0 violates NFPA 72 §10.6.7.
+    if not math.isfinite(safety_margin) or safety_margin < 0:
+        raise ValueError(
+            f"safety_margin must be non-negative finite, got {safety_margin}"
+        )
+    if not math.isfinite(standby_hours) or standby_hours <= 0:
+        raise ValueError(
+            f"standby_hours must be positive finite, got {standby_hours}"
+        )
+    if not math.isfinite(alarm_minutes) or alarm_minutes <= 0:
+        raise ValueError(
+            f"alarm_minutes must be positive finite, got {alarm_minutes}"
+        )
 
     # Step 1: Calculate raw Ah requirement
     # Standby: 24 hours at standby current
@@ -979,13 +994,20 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
         isolator_count, nfpa_section.
     """
     if not devices:
+        # V69-4 FIX: Empty device list is NOT compliant — fail-safe
+        # Empty list could indicate a data extraction failure (parser bug),
+        # not that the circuit is genuinely compliant.
         return {
-            "compliant": True,
-            "violations": [],
+            "compliant": False,
+            "violations": [{
+                "type": "no_devices_to_verify",
+                "nfpa_section": "NFPA 72 §12.3",
+                "message": "No devices to verify — cannot confirm fault isolation compliance",
+            }],
             "device_count": 0,
             "isolator_count": 0,
             "nfpa_section": "NFPA 72 §12.3",
-            "message": "No devices to verify",
+            "message": "No devices to verify — BLOCKED (fail-safe)",
         }
 
     violations = []
@@ -1001,7 +1023,21 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
 
         # Track circuit changes
         if current_circuit != circuit:
-            # New circuit — check previous segment
+            # V69-3 FIX: Check multi-zone segment before resetting
+            if len(segment_zone_ids) > 1:
+                violations.append({
+                    "type": "multi_zone_segment",
+                    "device_id": dev_id,
+                    "zones": sorted(segment_zone_ids),
+                    "nfpa_section": "NFPA 72 §12.3",
+                    "message": (
+                        f"Segment contains devices from {len(segment_zone_ids)} "
+                        f"zones ({', '.join(sorted(segment_zone_ids))}) — "
+                        f"single fault could disable multiple zones "
+                        f"per NFPA 72 §12.3"
+                    ),
+                })
+            # Check previous segment for device count
             if current_segment_devices > _MAX_DEVICES_BETWEEN_ISOLATORS:
                 violations.append({
                     "type": "too_many_devices_between_isolators",
@@ -1020,6 +1056,21 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
             current_circuit = circuit
 
         if "isolator" in dev_type:
+            # V69-3 FIX: Check multi-zone segment before resetting at isolator
+            if len(segment_zone_ids) > 1:
+                violations.append({
+                    "type": "multi_zone_segment",
+                    "device_id": dev_id,
+                    "zones": sorted(segment_zone_ids),
+                    "nfpa_section": "NFPA 72 §12.3",
+                    "message": (
+                        f"Segment before isolator '{dev_id}' contains devices "
+                        f"from {len(segment_zone_ids)} zones "
+                        f"({', '.join(sorted(segment_zone_ids))}) — "
+                        f"single fault could disable multiple zones "
+                        f"per NFPA 72 §12.3"
+                    ),
+                })
             # Check segment ending at this isolator
             if current_segment_devices > _MAX_DEVICES_BETWEEN_ISOLATORS:
                 violations.append({
@@ -1042,6 +1093,21 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
             zone = dev.get("zone_id")
             if zone:
                 segment_zone_ids.add(zone)
+
+    # V69-3 FIX: Check multi-zone in last segment too
+    if len(segment_zone_ids) > 1:
+        violations.append({
+            "type": "multi_zone_segment",
+            "zones": sorted(segment_zone_ids),
+            "nfpa_section": "NFPA 72 §12.3",
+            "message": (
+                f"End-of-circuit segment contains devices from "
+                f"{len(segment_zone_ids)} zones "
+                f"({', '.join(sorted(segment_zone_ids))}) — "
+                f"single fault could disable multiple zones "
+                f"per NFPA 72 §12.3"
+            ),
+        })
 
     # Check last segment (after last isolator)
     if current_segment_devices > _MAX_DEVICES_BETWEEN_ISOLATORS:

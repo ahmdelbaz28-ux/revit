@@ -565,7 +565,7 @@ def _stage35_rules_compliance(
             )
         if fault_isolation_dict is not None:
             checker.add_fault_isolation_result(
-                compliant=fault_isolation_dict.get("compliant", True),
+                compliant=fault_isolation_dict.get("compliant", False),
                 violations=fault_isolation_dict.get("violations", []),
                 device_count=fault_isolation_dict.get("device_count", 0),
                 isolator_count=fault_isolation_dict.get("isolator_count", 0),
@@ -901,7 +901,7 @@ def analyze_room(
         stages.append(sf)
         if sf.success:
             fault_isolation_dict = sf.data
-            if not sf.data.get("compliant", True):
+            if not sf.data.get("compliant", False):
                 warnings.append(
                     f"SLC fault isolation violations: {sf.data.get('violations', [])}"
                 )
@@ -1093,8 +1093,8 @@ def _stage7_cable_routing(
             "routes": [],
         }
 
-    room = validated.get("room", {})
-    polygon = room.get("polygon_points", [])
+    # V69-9 FIX: Use correct key "room_polygon" (not "room"/"polygon_points")
+    polygon = validated.get("room_polygon", [])
     area_m2 = validated.get("area_m2", 0.0)
 
     # Estimate bounding box from polygon or area

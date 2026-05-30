@@ -776,9 +776,13 @@ class CableRoutingEngine:
         # Class A return path verification
         if circuit.circuit_class == CircuitClass.CLASS_A:
             if circuit.return_length_m > 0 and total_current > 0:
-                r_per_km = wire_gauge.resistance_ohm_per_km
+                # V69-1 FIX: Use temperature-corrected resistance for return path
+                # (same as outgoing path — conductor operating temp, not 20°C)
+                r_per_km_return = temperature_corrected_resistance(
+                    wire_gauge.resistance_ohm_per_km, self._conductor_operating_temp_c
+                )
                 return_length_km = circuit.return_length_m / 1000.0
-                return_drop = total_current * 2.0 * r_per_km * return_length_km
+                return_drop = total_current * 2.0 * r_per_km_return * return_length_km
                 # For Class A, the return path must also maintain voltage
                 # The total loop voltage drop includes the return
                 total_loop_drop = cumulative_drop_v + return_drop
@@ -806,10 +810,15 @@ class CableRoutingEngine:
 
         # Formula summary
         total_outgoing = sum(sl[1] for sl in segment_lengths)
+        # V69-7 FIX: Show temperature-corrected resistance in formula, not 20°C value
+        r_corrected_display = temperature_corrected_resistance(
+            wire_gauge.resistance_ohm_per_km, self._conductor_operating_temp_c
+        )
         formula = (
-            f"V_drop_total = Σ(I × 2 × R × L_seg) = "
+            f"V_drop_total = Σ(I × 2 × R(T) × L_seg) = "
             f"{total_current:.4f}A × 2 × "
-            f"{wire_gauge.resistance_ohm_per_km:.3f}Ω/km × "
+            f"{r_corrected_display:.3f}Ω/km "
+            f"(at {self._conductor_operating_temp_c:.0f}°C) × "
             f"{total_outgoing / 1000:.6f}km = "
             f"{cumulative_drop_v:.4f}V ({total_drop_pct:.2f}%)"
         )
@@ -866,12 +875,15 @@ class CableRoutingEngine:
             # Fast check: can this gauge handle the total length?
             # Use the existing calculate_voltage_drop from nfpa72_engine
             if total_current > 0 and total_outgoing > 0:
+                # V69-2 FIX: Pass conductor operating temp to fast-check
+                # Without this, auto-gauge selects based on 20°C resistance
                 vd_result = calculate_voltage_drop(
                     alarm_current_a=total_current,
                     circuit_length_m=total_outgoing,
                     awg_gauge=gauge.awg_value,
                     ps_voltage=ps_voltage,
                     max_drop_pct=self._max_drop_pct,
+                    ambient_temperature_c=self._conductor_operating_temp_c,
                 )
                 if vd_result.is_compliant:
                     # This gauge works — do full route

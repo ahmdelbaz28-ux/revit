@@ -958,10 +958,15 @@ class TestVerifyFaultIsolatorPlacement:
     # --- Empty list ---
 
     def test_empty_device_list(self):
-        """Empty device list — compliant by default."""
+        """V69-4 FIX: Empty device list is NOT compliant — fail-safe.
+        
+        An empty device list could indicate a data extraction failure
+        (parser bug), not that the circuit is genuinely compliant.
+        Missing compliance data = BLOCKED per V67 safety principle.
+        """
         result = verify_fault_isolator_placement([])
-        assert result["compliant"] is True
-        assert result["violations"] == []
+        assert result["compliant"] is False
+        assert len(result["violations"]) > 0  # Should have a "no devices" violation
         assert result["device_count"] == 0
         assert result["isolator_count"] == 0
         assert "No devices" in result["message"]

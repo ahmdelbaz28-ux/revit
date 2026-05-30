@@ -24,6 +24,7 @@ import hashlib
 import hmac
 import json
 import sqlite3
+import threading
 import uuid
 from dataclasses import dataclass, fields, asdict
 from datetime import datetime, timezone
@@ -208,6 +209,10 @@ class AuditLog:
     def __init__(self, db_path: str = ":memory:", hmac_key: Optional[bytes] = None) -> None:
         self._db_path = db_path
         self._hmac_key = hmac_key
+        # V69-11 FIX: Thread-safe lock for hash chain integrity
+        # Without this, concurrent append() calls break the hash chain
+        # because both read the same prev_entry_hash before either writes.
+        self._lock = threading.Lock()
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL;")
         self._conn.execute("PRAGMA synchronous=NORMAL;")
@@ -237,53 +242,55 @@ class AuditLog:
             but does not match the recomputed hash **after** fixing
             ``prev_entry_hash``.
         """
-        # --- Fix hash-chain link ---
-        last_hash = self._last_entry_hash()
-        expected_prev = last_hash if last_hash else GENESIS_PREV_HASH
+        # V69-11 FIX: Lock entire append for hash chain integrity
+        with self._lock:
+            # --- Fix hash-chain link ---
+            last_hash = self._last_entry_hash()
+            expected_prev = last_hash if last_hash else GENESIS_PREV_HASH
 
-        chain_fixed = False
-        if entry.prev_entry_hash != expected_prev:
-            object.__setattr__(entry, "prev_entry_hash", expected_prev)
-            chain_fixed = True
+            chain_fixed = False
+            if entry.prev_entry_hash != expected_prev:
+                object.__setattr__(entry, "prev_entry_hash", expected_prev)
+                chain_fixed = True
 
-        # --- Recompute entry_hash (always needed if chain was fixed) ---
-        recomputed = compute_entry_hash(entry)
-        if recomputed != entry.entry_hash:
-            if entry.entry_hash == "" or chain_fixed:
-                object.__setattr__(entry, "entry_hash", recomputed)
-            else:
-                raise ValueError(
-                    f"Entry hash mismatch: expected {recomputed}, "
-                    f"got {entry.entry_hash}"
-                )
+            # --- Recompute entry_hash (always needed if chain was fixed) ---
+            recomputed = compute_entry_hash(entry)
+            if recomputed != entry.entry_hash:
+                if entry.entry_hash == "" or chain_fixed:
+                    object.__setattr__(entry, "entry_hash", recomputed)
+                else:
+                    raise ValueError(
+                        f"Entry hash mismatch: expected {recomputed}, "
+                        f"got {entry.entry_hash}"
+                    )
 
-        # --- HMAC signature ---
-        hmac_sig: Optional[str] = None
-        if self._hmac_key is not None:
-            hmac_sig = compute_hmac(entry.entry_hash, self._hmac_key)
-            object.__setattr__(entry, "hmac_signature", hmac_sig)
+            # --- HMAC signature ---
+            hmac_sig: Optional[str] = None
+            if self._hmac_key is not None:
+                hmac_sig = compute_hmac(entry.entry_hash, self._hmac_key)
+                object.__setattr__(entry, "hmac_signature", hmac_sig)
 
-        # --- Persist ---
-        self._conn.execute(
-            _INSERT_SQL,
-            (
-                entry.entry_id,
-                entry.timestamp,
-                entry.analysis_id,
-                entry.layer,
-                entry.input_hash,
-                entry.formula_reference,
-                entry.computation_description,
-                entry.output_value,
-                entry.output_hash,
-                entry.status,
-                entry.prev_entry_hash,
-                entry.entry_hash,
-                entry.hmac_signature,
-            ),
-        )
-        self._conn.commit()
-        return entry.entry_id
+            # --- Persist ---
+            self._conn.execute(
+                _INSERT_SQL,
+                (
+                    entry.entry_id,
+                    entry.timestamp,
+                    entry.analysis_id,
+                    entry.layer,
+                    entry.input_hash,
+                    entry.formula_reference,
+                    entry.computation_description,
+                    entry.output_value,
+                    entry.output_hash,
+                    entry.status,
+                    entry.prev_entry_hash,
+                    entry.entry_hash,
+                    entry.hmac_signature,
+                ),
+            )
+            self._conn.commit()
+            return entry.entry_id
 
     def verify_chain(self) -> Tuple[bool, List[str]]:
         """Verify the integrity of the entire hash chain.
