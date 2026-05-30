@@ -7563,3 +7563,19 @@ Maximize utilization of three external resources for FireAI:
 - **Commit:** `870ea97`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/870ea97
 - **Tests:** 890 passed, 1 skipped, 0 failed
+
+### V61 Phase 2 — Pipeline Integration (2026-05-30)
+
+**What was done:** Integrated `CableRouter` and `ConstraintEngine` into the main analysis pipeline as optional stages.
+
+**Changes to `pipeline.py`:**
+1. Added late imports for `CableRouter` and `ConstraintEngine` with graceful fallback (no crash if modules unavailable)
+2. Added `cable_connections` and `building_model` parameters to `analyze_room()`
+3. Added `S_cable_routing` optional stage after fault isolation
+4. Added `cable_routing: Optional[Dict]` field to `PipelineResult`
+5. Cable routing results include: total cable length, bends, max circuit, compliance summary, computation hash
+
+**Why optional:** Cable routing requires a `BuildingModel` from IFC parser, which is not always available. The pipeline works without it (backward compatible) and adds cable routing only when both `cable_connections` and `building_model` are provided.
+
+**Commit:** `70003e6`
+**Link:** https://github.com/ahmdelbaz28-ux/revit/commit/70003e6
