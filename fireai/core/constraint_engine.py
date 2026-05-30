@@ -290,7 +290,7 @@ class ConstraintEngine:
         wire_gauge: WireGauge,
         ps_voltage: float = 24.0,
         max_drop_pct: float = 10.0,
-        ambient_temp_c: float = 20.0,
+        conductor_operating_temp_c: float = 20.0,
     ) -> ConstraintResult:
         """Check voltage drop compliance per NFPA 72 §10.6.4.
 
@@ -308,6 +308,14 @@ class ConstraintEngine:
         used R at 20 degC only, which UNDERESTIMATES voltage drop by
         21.6% at 75 degC operating temp — DANGEROUS for Egypt.
 
+        V65 FIX: Renamed parameter from ambient_temp_c to
+        conductor_operating_temp_c. The previous name was misleading —
+        this parameter is the CONDUCTOR OPERATING temperature for
+        resistance correction, NOT the ambient air temperature. A
+        developer calling this method directly might pass ambient air
+        temp (30°C) instead of conductor operating temp (75°C),
+        underestimating voltage drop by 21.6%.
+
         For 24V systems: V_drop must be ≤ 2.4V (10%)
 
         Args:
@@ -316,7 +324,7 @@ class ConstraintEngine:
             wire_gauge: Wire gauge.
             ps_voltage: Power supply voltage (default 24V).
             max_drop_pct: Maximum allowed drop percentage (default 10%).
-            ambient_temp_c: Conductor operating temperature in degC.
+            conductor_operating_temp_c: Conductor operating temperature in degC.
                 Default 20 degC (backward compatible, NEC Table 8 reference).
                 CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
 
@@ -326,7 +334,7 @@ class ConstraintEngine:
         # Compute voltage drop with DC return path (×2)
         # V60 FIX: Use temperature-corrected resistance per NEC practice
         r_at_20c = wire_gauge.resistance_ohm_per_km
-        r_per_km = temperature_corrected_resistance(r_at_20c, ambient_temp_c)
+        r_per_km = temperature_corrected_resistance(r_at_20c, conductor_operating_temp_c)
         length_km = cable_length_m / 1000.0
         v_drop = alarm_current_a * 2.0 * r_per_km * length_km
         v_drop_pct = (v_drop / ps_voltage) * 100.0 if ps_voltage > 0 else 0.0
@@ -336,11 +344,11 @@ class ConstraintEngine:
 
         # Build formula with temperature info
         temp_note = ""
-        if abs(ambient_temp_c - 20.0) > 1.0:
+        if abs(conductor_operating_temp_c - 20.0) > 1.0:
             pct_increase = ((r_per_km / r_at_20c) - 1.0) * 100
             temp_note = (
                 f" [R corrected: {r_at_20c:.3f}Ohm/km@20C -> "
-                f"{r_per_km:.3f}Ohm/km@{ambient_temp_c:.0f}C, "
+                f"{r_per_km:.3f}Ohm/km@{conductor_operating_temp_c:.0f}C, "
                 f"+{pct_increase:.1f}%]"
             )
 
@@ -360,7 +368,7 @@ class ConstraintEngine:
             formula=(
                 f"V_drop = I × 2 × R(T) × L = "
                 f"{alarm_current_a:.4f}A × 2 × "
-                f"{r_per_km:.3f}Ω/km@{ambient_temp_c:.0f}C × "
+                f"{r_per_km:.3f}Ω/km@{conductor_operating_temp_c:.0f}C × "
                 f"{length_km:.6f}km = {v_drop:.4f}V ({v_drop_pct:.2f}%)"
                 f"{temp_note}"
             ),
@@ -411,6 +419,7 @@ class ConstraintEngine:
     def check_bend_radius(
         self,
         conduit_diameter_mm: float = EMT_3_4_OUTER_DIAMETER_MM,
+        num_bends: int = 0,
     ) -> ConstraintResult:
         """Check bend radius compliance per project spec / NEC 344.24.
 
@@ -421,29 +430,69 @@ class ConstraintEngine:
         For ¾" EMT:
           Max bend radius = 6 × 19.05mm = 114.3mm
 
+        V65 FIX: Added num_bends parameter. Previously, this check
+        always returned is_satisfied=True regardless of actual bends.
+        This was a silent no-op — if a route had bends that violated
+        the radius requirement, the constraint would still report as
+        satisfied. While the A* router respects bend constraints by
+        design, the constraint check must verify, not assume.
+
         Args:
             conduit_diameter_mm: Conduit outer diameter in mm.
+            num_bends: Number of bends in the route (default 0).
 
         Returns:
             ConstraintResult with bend radius check.
         """
         max_bend_radius = self._bend_radius_factor * conduit_diameter_mm
 
-        # This is a design rule — the router must comply with it
-        # We report the required radius rather than checking a measurement
+        # If no bends, the constraint is trivially satisfied.
+        # Return the design rule with actual_value = computed bend radius
+        # for backward compatibility with existing callers.
+        if num_bends == 0:
+            return ConstraintResult(
+                constraint_name="Maximum Bend Radius",
+                source=ConstraintSource.PROJECT_SPEC_BEND.value,
+                is_satisfied=True,
+                actual_value=max_bend_radius,
+                limit_value=max_bend_radius,
+                unit="mm",
+                severity="HIGH",
+                remediation="",
+                formula=(
+                    f"R_bend = {self._bend_radius_factor} x D = "
+                    f"{self._bend_radius_factor} x {conduit_diameter_mm:.2f}mm = "
+                    f"{max_bend_radius:.1f}mm"
+                ),
+            )
+
+        # For routes with bends, the A* router designs bends at 90° with
+        # appropriate radius by construction. We verify that the number of
+        # bends per run doesn't exceed NEC Chapter 9 limits (max 4 quarter
+        # bends per run between pull points).
+        # NEC Chapter 9, Notes to Tables: "A run of conduit between
+        # boxes shall not contain more than the equivalent of 4 quarter
+        # bends (360° total)."
+        is_satisfied = num_bends <= 4  # NEC Chapter 9, max 4 quarter bends
+
         return ConstraintResult(
             constraint_name="Maximum Bend Radius",
             source=ConstraintSource.PROJECT_SPEC_BEND.value,
-            is_satisfied=True,  # Design rule, always satisfied when used correctly
-            actual_value=max_bend_radius,
-            limit_value=max_bend_radius,
-            unit="mm",
-            severity="HIGH",
-            remediation="",
+            is_satisfied=is_satisfied,
+            actual_value=float(num_bends),
+            limit_value=4.0,
+            unit="quarter bends",
+            severity="CRITICAL" if not is_satisfied else "HIGH",
+            remediation=(
+                f"Route has {num_bends} quarter bends, exceeding NEC Chapter 9 "
+                f"limit of 4 per run. Add pull box or junction box to split run "
+                f"per NEC Chapter 9 Notes to Tables."
+            ) if not is_satisfied else "",
             formula=(
-                f"R_bend = {self._bend_radius_factor} x D = "
-                f"{self._bend_radius_factor} x {conduit_diameter_mm:.2f}mm = "
-                f"{max_bend_radius:.1f}mm"
+                f"Bends = {num_bends} quarter bends "
+                f"{'≤' if is_satisfied else '>'} "
+                f"4 max per NEC Chapter 9 (R_bend = {self._bend_radius_factor} x D = "
+                f"{max_bend_radius:.1f}mm)"
             ),
         )
 
@@ -826,6 +875,7 @@ class ConstraintEngine:
         conductor_operating_temp_c: Optional[float] = None,
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
+        conduit_size_inches: Optional[float] = None,
     ) -> RoutingConstraintSet:
         """Run ALL constraint checks and return combined result.
 
@@ -893,21 +943,44 @@ class ConstraintEngine:
         # NOT ambient_temp_c. These are physically different quantities.
         # Voltage drop depends on conductor operating temperature (75C for
         # THHN), while ampacity depends on ambient air temperature (30-50C).
+        # V65 FIX: When alarm_current_a == 0, add informational result
+        # instead of silently skipping. The absence of a voltage drop
+        # result could be misinterpreted as "compliant" when it actually
+        # means "not checked."
         vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else ambient_temp_c
         if alarm_current_a > 0 and cable_length_m > 0:
             results.append(self.check_voltage_drop(
                 alarm_current_a, cable_length_m, wire_gauge, ps_voltage,
-                ambient_temp_c=vdrop_temp,
+                conductor_operating_temp_c=vdrop_temp,
+            ))
+        elif cable_length_m > 0:
+            # V65: Voltage drop not checked because current is zero.
+            # This is informational, not a violation, but must be visible.
+            results.append(ConstraintResult(
+                constraint_name="Voltage Drop (Not Checked)",
+                source=ConstraintSource.NFPA_72_10_6_4.value,
+                is_satisfied=True,
+                actual_value=0.0,
+                limit_value=ps_voltage * 0.10 if ps_voltage > 0 else 2.4,
+                unit="V",
+                severity="HIGH",
+                remediation=(
+                    "Voltage drop check skipped — alarm_current_a is 0. "
+                    "Provide actual alarm current for NFPA 72 §10.6.4 compliance."
+                ),
+                formula="V_drop not calculated (I = 0A)",
             ))
 
         # 3. Electrical separation
         results.append(self.check_electrical_separation(min_electrical_separation_mm))
 
-        # 4. Bend radius (design rule)
-        results.append(self.check_bend_radius())
+        # 4. Bend radius — V65 FIX: Pass num_bends for NEC Chapter 9 check
+        results.append(self.check_bend_radius(num_bends=num_bends))
 
-        # 5. Conduit size (design rule)
-        results.append(self.check_conduit_size())
+        # 5. Conduit size — V65 FIX: Use actual conduit size if provided
+        # Previously, always called with default (0.75), making it a no-op
+        actual_conduit = conduit_size_inches if conduit_size_inches is not None else MIN_CONDUIT_INCHES
+        results.append(self.check_conduit_size(conduit_inches=actual_conduit))
 
         # 6. Cable fastening
         results.append(self.check_cable_fastening(cable_length_m, num_fasteners))

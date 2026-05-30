@@ -41,6 +41,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from fireai.core.nfpa72_engine import (
     calculate_voltage_drop,
     AWG_RESISTANCE_OHM_PER_KM,
+    temperature_corrected_resistance,
 )
 
 # Import circuit topology class
@@ -429,6 +430,7 @@ class CableRoutingEngine:
         obstacles: Optional[List[RoutingObstacle3D]] = None,
         ps_voltage: float = _SYSTEM_VOLTAGE,
         max_voltage_drop_pct: float = _MAX_VOLTAGE_DROP_PCT,
+        conductor_operating_temp_c: float = 20.0,
     ) -> None:
         """Initialize the cable routing engine.
 
@@ -437,6 +439,12 @@ class CableRoutingEngine:
             ps_voltage: Power supply nominal voltage (default 24V).
             max_voltage_drop_pct: Maximum allowed voltage drop percentage
                                   (default 10% per NFPA 72 §10.6.4).
+            conductor_operating_temp_c: Conductor operating temperature in
+                degC for resistance correction per NEC Ch.9 Table 8 + physics.
+                Default 20.0 degC (backward compatible with NEC Table 8
+                reference temperature).
+                CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
+                At 75 degC, resistance is 21.6% higher than at 20 degC.
 
         Raises:
             ValueError: If ps_voltage or max_voltage_drop_pct is invalid.
@@ -454,6 +462,7 @@ class CableRoutingEngine:
         self._obstacles: List[RoutingObstacle3D] = list(obstacles or [])
         self._ps_voltage = ps_voltage
         self._max_drop_pct = max_voltage_drop_pct
+        self._conductor_operating_temp_c = conductor_operating_temp_c
 
     # ─── Public API ────────────────────────────────────────────────────────
 
@@ -706,11 +715,17 @@ class CableRoutingEngine:
 
         for seg_id, length_m, start_pt, end_pt in segment_lengths:
             # Voltage drop per segment using NEC Chapter 9, Table 8
-            # V_drop = I × 2 × R/km × L(km)
+            # V_drop = I × 2 × R_wire(T) × L(km)
             # The ×2 factor is for DC return path — CRITICAL for life safety
+            # V65 FIX: Use temperature-corrected resistance per NEC practice.
+            # Previously used R at 20°C directly, underestimating voltage drop
+            # by 21.6% at 75°C operating temp — DANGEROUS for Egypt.
+            r_at_20c = wire_gauge.resistance_ohm_per_km
+            r_per_km = temperature_corrected_resistance(
+                r_at_20c, self._conductor_operating_temp_c
+            )
+            length_km = length_m / 1000.0
             if length_m > 0 and total_current > 0:
-                r_per_km = wire_gauge.resistance_ohm_per_km
-                length_km = length_m / 1000.0
                 v_drop = total_current * 2.0 * r_per_km * length_km
             else:
                 v_drop = 0.0
@@ -735,7 +750,7 @@ class CableRoutingEngine:
                 is_compliant=True,  # Per-segment; overall checked below
                 formula=(
                     f"V_drop = {total_current:.4f} × 2 × "
-                    f"{wire_gauge.resistance_ohm_per_km:.3f}Ω/km × "
+                    f"{r_per_km:.3f}Ω/km@{self._conductor_operating_temp_c:.0f}C × "
                     f"{length_m / 1000:.6f}km = {v_drop:.4f}V"
                 ),
                 nfpa_section="NFPA 72 §10.6.4",

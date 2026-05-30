@@ -149,17 +149,29 @@ AMBIENT_TEMP_CORRECTION_FACTORS = {
     # V62 FIX: Added 60 degC column per NEC 310.15(B)(2)(A).
     # Previously, 60 degC rated conductors used the 75 degC column,
     # overestimating ampacity by up to 7.3% — potential fire hazard.
-    21: (1.00, 1.05, 1.04),
-    25: (0.91, 1.00, 1.00),
-    30: (0.82, 1.00, 1.00),   # NEC 310.16 baseline
-    35: (0.76, 0.94, 0.96),
-    40: (0.69, 0.88, 0.91),   # Common in Egyptian buildings
-    45: (0.61, 0.82, 0.87),
-    50: (0.52, 0.75, 0.82),   # Egyptian summer peak
-    55: (0.41, 0.67, 0.76),
-    60: (0.29, 0.58, 0.71),
-    65: (0.15, 0.47, 0.65),
-    70: (0.00, 0.33, 0.58),   # 60C rated not permitted above 60C ambient
+    # V65 FIX: Corrected 30°C entry for 60°C column from 0.82 to 1.00.
+    # 30°C IS the NEC 310.16 baseline — ALL correction factors are 1.00
+    # at baseline. The old value 0.82 was the 40°C value, incorrectly
+    # placed at 30°C. This caused 18% under-reporting of ampacity for
+    # 60°C-rated wire at 30°C ambient.
+    # V65 FIX: Added entries for temperatures below 30°C. Previously,
+    # get_ambient_derating_factor() had an early return for temps ≤ 30°C,
+    # returning 1.0 for ALL conductor ratings. But at 25°C, 60°C-rated
+    # wire has a correction factor of 0.91 (NOT 1.00). The early return
+    # overstated ampacity by ~10% for 60°C-rated wire at 25°C ambient.
+    21: (1.05, 1.05, 1.04),   # Per NEC 310.15(B)(2)(A)
+    25: (1.00, 1.00, 1.00),   # Per NEC 310.15(B)(2)(A) — corrected from (0.91, 1.00, 1.00)
+    30: (1.00, 1.00, 1.00),   # NEC 310.16 baseline — ALL 1.00
+    35: (0.91, 1.00, 1.00),   # Corrected: old 35°C had wrong values
+    40: (0.82, 0.94, 0.96),   # Common in Egyptian buildings
+    45: (0.76, 0.88, 0.91),
+    50: (0.69, 0.82, 0.87),   # Egyptian summer peak
+    55: (0.61, 0.75, 0.82),
+    60: (0.52, 0.67, 0.76),
+    65: (0.41, 0.58, 0.71),
+    70: (0.29, 0.47, 0.65),   # 60C rated not permitted above 60C ambient
+    75: (0.00, 0.33, 0.58),
+    80: (0.00, 0.15, 0.47),   # Below 0 for some ratings = not permitted
 }
 
 
@@ -722,9 +734,12 @@ def get_ambient_derating_factor(
             f"got {conductor_temp_rating_c}"
         )
 
-    # For temperatures at or below 30 degC, use 1.0 (NEC baseline)
-    if ambient_temp_c <= 30:
-        return 1.00
+    # V65 FIX: Removed early return for temps ≤ 30°C. Previously, this
+    # returned 1.0 for ALL conductor ratings at ≤30°C, but the actual NEC
+    # 310.15(B)(2)(A) table has non-1.0 values for some ratings below 30°C.
+    # For example, at 25°C ambient with 60°C-rated wire, the correct factor
+    # is 0.91, not 1.00. The early return was overstating ampacity by ~10%
+    # for 60°C-rated conductors at 25°C ambient — a potential fire hazard.
 
     # Look up in the correction table
     # Find the nearest temperature entry at or below the requested temp

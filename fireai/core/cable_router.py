@@ -175,6 +175,10 @@ class CableRoute:
                 f"{self.voltage_drop_pct:.6f}|{int(self.is_compliant)}|"
                 f"{wp_coords}"
             )
+            # V65 FIX NOTE: Hash is 16 hex chars (64 bits) for backward
+            # compatibility with existing tests. A future version should
+            # extend to 32 hex chars (128 bits) per NIST SP 800-107 when
+            # test expectations are updated.
             object.__setattr__(
                 self, "computation_hash",
                 hashlib.sha256(raw.encode()).hexdigest()[:16],

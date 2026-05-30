@@ -48,9 +48,11 @@ from typing import Any, Dict, List, Optional, Tuple
 # V61: Late import for cable routing (optional, may not be available)
 try:
     from fireai.core.cable_router import CableRouter, CableRoute
+    from fireai.core.cable_routing_engine import WireGauge
     _CABLE_ROUTER_AVAILABLE = True
 except ImportError:
     _CABLE_ROUTER_AVAILABLE = False
+    WireGauge = None  # type: ignore[assignment,misc]
 
 try:
     from fireai.core.constraint_engine import ConstraintEngine
@@ -917,8 +919,22 @@ def analyze_room(
                 constraint_engine=constraint_engine,
             )
 
+            # V65 FIX: Pass temperature parameters to cable routing.
+            # Previously, route_all() used default ambient_temp_c=20°C
+            # and conductor_operating_temp_c=None (falls back to 20°C).
+            # For Egyptian summer conditions (40-50°C ambient), this
+            # underestimated voltage drop by up to 21.6%. The pipeline
+            # already has ambient_temperature_c for voltage drop — it
+            # MUST be forwarded to cable routing as well.
+            # conductor_operating_temp_c=75.0 per NEC practice for
+            # THHN/THWN operating temperature.
             scr = _run_stage(
                 "S_cable_routing", router.route_all, cable_connections,
+                wire_gauge=WireGauge.AWG_14 if WireGauge is not None else None,
+                ps_voltage=24.0,
+                ambient_temp_c=max(ambient_temperature_c, 40.0),  # Min 40°C for Egypt
+                conductor_operating_temp_c=75.0,  # THHN operating temp per NEC
+                conductor_temp_rating_c=90,  # THHN/THWN-2 rating
             )
             stages.append(scr)
             if scr.success and "result" in scr.data:
