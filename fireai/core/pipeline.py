@@ -526,10 +526,16 @@ def _estimate_coverage(
     min_x, max_x = min(xs), max(xs)
     min_y, max_y = min(ys), max(ys)
 
-    # Adaptive step: larger rooms get coarser grid for performance
     bbox_area = (max_x - min_x) * (max_y - min_y)
+
+    # V98 FIX: Adaptive step based on coverage radius.
+    # Old fixed step=0.5m was too coarse for heat detectors (R≈3m) in small
+    # rooms: step/radius ratio = 0.5/3 = 17% → high quantization error →
+    # false compliance. New formula: min(0.25m, radius_m / 10.0) ensures
+    # at least 10 sample points across the radius for accuracy.
+    # For large rooms (>100m²), use coarser step for performance.
     if step <= 0:
-        step = 0.5 if bbox_area <= 100.0 else 1.0
+        step = min(0.25, radius_m / 10.0) if bbox_area <= 100.0 else min(0.5, radius_m / 5.0)
 
     total = 0
     covered = 0
@@ -1262,7 +1268,31 @@ def _stage7_cable_routing(
         building_model = None
         if polygon:
             try:
-                building_model = build_abstract_model(polygon, room_height_m=3.0)
+                # V98 FIX: build_abstract_model signature is (obstacles, spaces, building_name, resolution)
+                # NOT (polygon, room_height_m=...). The old call passed room_height_m which
+                # doesn't exist in the signature, causing TypeError every run.
+                # We pass polygon walls as BoundingBox3D obstacles for cable routing.
+                from fireai.core.ifc_parser import BoundingBox3D, IfcElementType
+                walls_as_obstacles = []
+                for i in range(len(polygon)):
+                    x1, y1 = polygon[i]
+                    x2, y2 = polygon[(i + 1) % len(polygon)]
+                    # Create thin wall bounding box for each polygon edge
+                    wall = BoundingBox3D(
+                        element_id=f"wall_seg_{i}",
+                        element_type=IfcElementType.WALL,
+                        min_x=min(x1, x2) - 0.15,
+                        min_y=min(y1, y2) - 0.15,
+                        min_z=0.0,
+                        max_x=max(x1, x2) + 0.15,
+                        max_y=max(y1, y2) + 0.15,
+                        max_z=3.0,
+                        is_fire_rated=True,
+                        fire_rating_hours=1.0,
+                        ifc_class="IfcWallStandardCase",
+                    )
+                    walls_as_obstacles.append(wall)
+                building_model = build_abstract_model(walls_as_obstacles, resolution=grid_res_m)
             except Exception as bme:
                 logger.critical(
                     "V67 SAFETY: build_abstract_model() failed — "
@@ -1284,11 +1314,10 @@ def _stage7_cable_routing(
                 "safety_block": True,
             }
 
+        # V98 FIX: CableRouter.__init__ signature is (self, model, constraint_engine=None)
+        # NOT (building_model=...). Must pass model as positional arg.
         constraint_engine = ConstraintEngine()
-        router = CableRouter(
-            model=building_model,
-            constraint_engine=constraint_engine,
-        )
+        router = CableRouter(building_model, constraint_engine=constraint_engine)
 
         # Build device list: (device_id, (x, y, z))
         devices = []
