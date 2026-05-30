@@ -7907,3 +7907,50 @@ Previous self-criticism identified V66-3 as "CRITICAL — Documented, Not Fixed.
 ### Commit Information
 - **Commit:** (pending push)
 - **Tests:** 912 passed, 1 skipped, 0 failures
+
+---
+
+## V68 — Add python-dotenv for Gemini API Key Loading (2026-05-31)
+
+### Operator Request
+Add Gemini API Key to the provider list so the MemoryService can use Gemini as a fallback when OpenAI is unavailable (403 region blocking in Egypt).
+
+### Modification
+**File:** `backend_app.py` — top of file, before any `os.getenv()` calls
+**Change:** Added `python-dotenv` loading with `load_dotenv(override=False)`
+- `.env` file is read from project root before any env var access
+- `override=False` ensures existing env vars (from Docker/K8s) are preserved
+- `ImportError` is caught gracefully — if python-dotenv not installed, relies on OS env vars
+- `.env` file is in `.gitignore` — secrets never committed to repository
+
+**File:** `.env` — created (NEW, git-ignored)
+**Contents:** `GEMINI_API_KEY=<operator-provided-key>` (actual key stored in .env only, never committed)
+- Other keys left empty (OPENAI_API_KEY, FIREAI_API_KEY, etc.)
+- This file is NEVER committed to git (verified via .gitignore)
+
+### Provider Cascade (unchanged — already supported in code)
+1. OpenAI Direct (if `OPENAI_API_KEY` set) → gpt-4o + text-embedding-3-small (1536d)
+2. Gemini Fallback (if `GEMINI_API_KEY` set) → gemini-2.0-flash + HuggingFace all-MiniLM-L6-v2 (384d)
+3. No provider → MemoryService not initialized, calculations proceed normally
+
+### Why This Was Needed
+- The `memory_service.py` already reads `os.getenv("GEMINI_API_KEY")` at line 232
+- Without `load_dotenv()`, the `.env` file was never read
+- In Egypt, OpenAI returns 403 (region-blocked), so Gemini is the ONLY available provider
+- Without the key, MemoryService would fail to initialize entirely
+
+### Verification Evidence
+- `python3 -c "from dotenv import load_dotenv; ..."` → Key loaded successfully (verified first 10 chars match)
+- `git status` → `.env` not tracked (confirmed git-ignored)
+- `git diff HEAD` → Only `backend_app.py` modified (12 lines added)
+
+### Commit Information
+- **Commit:** `06668a9`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/06668a9
+
+### Self-Criticism Notes (V68)
+
+1. **This should have been done when MemoryService was first created** — Adding `load_dotenv()` is basic infrastructure that was overlooked in V76. Every Python web app that uses `.env.example` should load `.env` automatically.
+2. **The `.env.example` already had `GEMINI_API_KEY=`** — but no code was reading the `.env` file. This is a disconnect between documentation and implementation.
+3. **Security consideration** — `override=False` is critical. If we used `override=True`, a `.env` file could override Docker/K8s secrets, which would be a security risk in production.
+4. **No test changes needed** — This is infrastructure only. The MemoryService tests use mock env vars, not the `.env` file.
