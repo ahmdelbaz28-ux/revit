@@ -1,5 +1,18 @@
 # FireAI v8.0 — Multi-Layer Fire Alarm Design Engine
 
+> A comprehensive fire alarm system design engine for compliance with NFPA 72 standards.
+
+## Table of Contents
+- [Engineering Foundations](#الأسس-الهندسية)
+- [Architecture Overview](#البنية-المعمارية--ثلاث-طبقات)
+- [DensityOptimizer V7.3](#densityoptimizer-v73--نتائج-الاختبار)
+- [FloorAnalyser V2.1](#flooranalyser-v21--floor-level-analysis)
+- [BuildingEngine V0.1](#buildingengine-v01--building-level-analysis)
+- [AuditTrail & AuditStore](#audittrail-v52--auditstore)
+- [Known Limitations](#القيود-المعروفة-والفاشلات-الموثقة--densityoptimizer)
+- [Safety Notice](#️-تحذير-الأمان)
+- [References & Credits](#الاعتمادات-والمراجع)
+
 ## الأسس الهندسية
 - **نصف قطر التغطية (R):** يُحسب ديناميكيًا كـ R = 0.7 × S — NFPA 72 §17.7.4.2.3.1
   - عند h≤3.0m (smoke): R = 0.7 × 9.10m = **6.37m**
@@ -24,6 +37,8 @@
 
 ## البنية المعمارية — ثلاث طبقات
 
+The system uses a three-layer composition pattern where each layer delegates to the next:
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │  BuildingEngine V0.1  (مبنى متعدد الطوابق)         │
@@ -38,6 +53,8 @@
     AuditStore (SQLite)  AuditTrail V5.2    Triple-Check Gate
     Hash chain + HMAC    Thread-safe log   proof+nfpa+!fallback
 ```
+
+See [`backend_app.py`](../backend_app.py) for the main application entry point.
 
 ### المبدأ: تكوين لا إعادة تنفيذ
 - `FloorAnalyser` تستخدم `DensityOptimizer` مباشرة
@@ -74,12 +91,12 @@
 | nfpa_valid | zero NFPA spacing violations | Reject room, log error |
 | fallback_used | hex/rect strategy must win | Reject room, log warning |
 
-### جديد V2.1 عن V2.0
-- `theoretical_lower_bound` + `efficiency_ratio` في RoomSummary
+### New in V2.1
+- `theoretical_lower_bound` + `efficiency_ratio` in RoomSummary
 - `detector_type` + `duct_devices` + `warnings` في RoomSummary
 - `total_theoretical_lower_bound` في FloorReport
 - تحذير BOUNDARY_LIMIT حي (coverage > 99.9% لكن proof_valid=False)
-- تكامل AuditStore اختياري (أحداث حرجة في سلسلة هش غير قابلة للتعدیل)
+- تكامل AuditStore اختياري (أحداث حرجة في سلسلة هش غير قابلة للتعديل)
 - تكامل AuditTrail اختياري
 
 ## BuildingEngine V0.1 — Building-Level Analysis
@@ -100,6 +117,7 @@
 | unsafe_floors | floors with any UNSAFE room | Blocks building |
 
 ### Integration
+
 ```python
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 from fireai.core.building_engine import BuildingEngine
