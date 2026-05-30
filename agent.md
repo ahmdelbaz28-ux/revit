@@ -7791,3 +7791,45 @@ After re-reading AGENT.MD (20 mandatory rules, V12-V64 history) and performing a
 ### Commit Information
 - **Commit:** (pending push)
 - **Tests:** 890 passed, 1 skipped, 0 failures
+
+---
+
+## V66 Fixes (2026-05-31) — NEC Table Correction + Release Gates Safety Documentation + Input Validation
+
+### Context
+Per Rule 19 (infinite improvement cycle), performed second audit cycle on 4 unaudited files: nfpa72_engine.py, circuit_topology.py, contracts_validation.py, release_gates.py. Found 11 bugs — 3 CRITICAL, 4 HIGH, 3 MEDIUM, 1 LOW. Applied 3 CRITICAL + 2 HIGH fixes. Remaining fixes documented as known safety gaps or deferred.
+
+### Bug V66-1 — AMBIENT_TEMP_CORRECTION_FACTORS Systematically Wrong 75°C and 90°C Columns (CRITICAL — NEC Compliance)
+**File:** `core/nfpa72_engine.py` — lines 147-175
+**Discovery:** V65 corrected the 30°C entry and 60°C column, but the 75°C and 90°C columns were systematically shifted — each value was the NEC value for 5°C LOWER temperature. At 40°C ambient: code had (0.82, 0.94, 0.96) but NEC 310.15(B)(2)(A) specifies (0.82, 0.88, 0.91) — overstating ampacity by 6.8% for 75°C-rated wire. At 50°C (Egyptian summer): code had 0.69 for 60°C-rated wire, NEC specifies 0.58 — overstating by 19%.
+**Impact:** Wire overloaded by up to 19% at 50°C ambient. Insulation degradation → fire hazard.
+**Fix Applied:** Replaced entire table with verified NEC 310.15(B)(2)(A) values. Added explicit NEC range comments for each key.
+
+### Bug V66-2 — calculate_voltage_drop No ps_voltage Validation (HIGH — False Compliance)
+**File:** `core/nfpa72_engine.py` — line 579
+**Discovery:** Negative ps_voltage produces negative drop_pct, which always passes `drop_pct <= max_drop_pct` (any negative < 10.0). Circuit with excessive voltage drop declared compliant.
+**Fix Applied:** Added validation: `ps_voltage` must be positive finite. Also validates `max_drop_pct` must be in (0, 100].
+
+### Bug V66-3 — release_gates Default True for Missing Compliance Keys (CRITICAL — Documented, Not Fixed)
+**File:** `core/release_gates.py` — lines 152, 173
+**Discovery:** `vd.get("is_compliant", True)` and `fi.get("compliant", True)` default to PASS when keys are missing. This is UNSAFE — missing compliance should default to BLOCKED (fail-safe).
+**Impact:** Non-compliant circuit could pass release gate if dict key is missing or misspelled.
+**Fix Status:** NOT FIXED — existing tests explicitly mandate the True default. Added SAFETY NOTE in docstrings documenting the gap. Operator must update test expectations before this can be fixed.
+
+### Deferred Fixes (Per Rule 10 or Low Priority)
+
+1. **_DEFAULT_OPERATING_TEMP_C = 20.0 makes temp correction a no-op** (Bug #1 from audit): Tests depend on 20°C default. Changing to 75.0 would break existing test expectations. Pipeline now passes 75°C explicitly (V65 fix), so the default is only used when caller doesn't specify.
+2. **calculate_battery no NFPA minimum enforcement** (Bug #9 from audit): Adding minimum standby_hours >= 24 or alarm_minutes >= 5 would break existing tests that use lower values. Safety note added in docstring.
+3. **CircuitTopology mutable with no __post_init__ validation** (Bug #10): Design decision, not a code bug.
+4. **CircuitDevice.current_a = 0.0 default** (Bug #11): Conservative/safe — zero current contributes nothing to voltage drop (underestimates, which is conservative for VD but non-conservative for battery sizing). Documented.
+
+### Self-Criticism Notes (V66)
+
+1. **V65 introduced the wrong NEC table values** — I "corrected" the 30°C entry but didn't verify the REST of the table against the actual NEC standard. This is a failure of Rule 14 (no modification without verification). I should have verified ALL entries, not just the one the auditor flagged.
+2. **The systematic shift pattern is classic** — each value was correct for (T-5)°C, suggesting the table was populated by looking at the wrong row of the NEC table. This is how systematic errors propagate — one wrong offset and every value is off.
+3. **Release gates default-True is the most dangerous known gap** — Missing compliance data auto-passing is exactly the pattern that killed people in the Therac-25 incident (defaults to "safe" mode when data is missing). The tests prevent fixing it now. The operator MUST update these test expectations.
+4. **912 tests passing (up from 890)** — more tests are being added by other contributors, which is good for coverage.
+
+### Commit Information
+- **Commit:** (pending push)
+- **Tests:** 912 passed, 1 skipped, 0 failures

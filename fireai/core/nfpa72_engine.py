@@ -150,28 +150,25 @@ AMBIENT_TEMP_CORRECTION_FACTORS = {
     # Previously, 60 degC rated conductors used the 75 degC column,
     # overestimating ampacity by up to 7.3% — potential fire hazard.
     # V65 FIX: Corrected 30°C entry for 60°C column from 0.82 to 1.00.
-    # 30°C IS the NEC 310.16 baseline — ALL correction factors are 1.00
-    # at baseline. The old value 0.82 was the 40°C value, incorrectly
-    # placed at 30°C. This caused 18% under-reporting of ampacity for
-    # 60°C-rated wire at 30°C ambient.
-    # V65 FIX: Added entries for temperatures below 30°C. Previously,
-    # get_ambient_derating_factor() had an early return for temps ≤ 30°C,
-    # returning 1.0 for ALL conductor ratings. But at 25°C, 60°C-rated
-    # wire has a correction factor of 0.91 (NOT 1.00). The early return
-    # overstated ampacity by ~10% for 60°C-rated wire at 25°C ambient.
-    21: (1.05, 1.05, 1.04),   # Per NEC 310.15(B)(2)(A)
-    25: (1.00, 1.00, 1.00),   # Per NEC 310.15(B)(2)(A) — corrected from (0.91, 1.00, 1.00)
-    30: (1.00, 1.00, 1.00),   # NEC 310.16 baseline — ALL 1.00
-    35: (0.91, 1.00, 1.00),   # Corrected: old 35°C had wrong values
-    40: (0.82, 0.94, 0.96),   # Common in Egyptian buildings
-    45: (0.76, 0.88, 0.91),
-    50: (0.69, 0.82, 0.87),   # Egyptian summer peak
-    55: (0.61, 0.75, 0.82),
-    60: (0.52, 0.67, 0.76),
-    65: (0.41, 0.58, 0.71),
-    70: (0.29, 0.47, 0.65),   # 60C rated not permitted above 60C ambient
-    75: (0.00, 0.33, 0.58),
-    80: (0.00, 0.15, 0.47),   # Below 0 for some ratings = not permitted
+    # V66 FIX: Corrected ALL entries per NEC 310.15(B)(2)(A) verified values.
+    # V65 had systematically wrong 75°C and 90°C columns — each value
+    # was the NEC value for 5°C LOWER temperature, overstating ampacity
+    # by up to 19% for 60°C-rated wire at 50°C ambient (Egyptian summer).
+    # Key semantics: each key represents the UPPER bound of the NEC range.
+    # E.g., key 25 = NEC range 21-25°C; key 40 = NEC range 36-40°C.
+    21: (1.05, 1.05, 1.04),   # NEC range 1-21°C
+    25: (1.05, 1.05, 1.04),   # NEC range 21-25°C
+    30: (1.00, 1.00, 1.00),   # NEC range 26-30°C — NEC 310.16 baseline
+    35: (0.91, 0.94, 0.96),   # NEC range 31-35°C
+    40: (0.82, 0.88, 0.91),   # NEC range 36-40°C — Common in Egyptian buildings
+    45: (0.71, 0.82, 0.87),   # NEC range 41-45°C
+    50: (0.58, 0.75, 0.82),   # NEC range 46-50°C — Egyptian summer peak
+    55: (0.41, 0.67, 0.76),   # NEC range 51-55°C
+    60: (0.29, 0.58, 0.71),   # NEC range 56-60°C
+    65: (0.00, 0.47, 0.65),   # NEC range 61-65°C — 60C rated not permitted above 60°C
+    70: (0.00, 0.33, 0.58),   # NEC range 66-70°C
+    75: (0.00, 0.15, 0.50),   # NEC range 71-75°C
+    80: (0.00, 0.00, 0.41),   # NEC range 76-80°C
 }
 
 
@@ -630,6 +627,17 @@ def calculate_voltage_drop(
         raise ValueError(
             f"ambient_temperature_c must be finite and >= -50, "
             f"got {ambient_temperature_c}"
+        )
+    # V66 FIX: Validate ps_voltage — negative ps_voltage produces negative
+    # drop_pct which always passes compliance check (NaN <= max == False is safe,
+    # but negative ps_voltage <= 10.0 == True is dangerous).
+    if not math.isfinite(ps_voltage) or ps_voltage <= 0:
+        raise ValueError(
+            f"ps_voltage must be positive finite, got {ps_voltage}"
+        )
+    if not math.isfinite(max_drop_pct) or max_drop_pct <= 0 or max_drop_pct > 100:
+        raise ValueError(
+            f"max_drop_pct must be in (0, 100], got {max_drop_pct}"
         )
 
     # Get wire resistance at 20 degC (NEC Chapter 9, Table 8)

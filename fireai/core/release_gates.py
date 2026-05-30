@@ -141,8 +141,15 @@ def _gate_battery(battery_result: Optional[Dict]) -> Dict[str, Any]:
 def _gate_voltage_drop(loop_data: Optional[Dict]) -> Dict[str, Any]:
     """G6: Voltage drop must be within limits per NFPA 72 §10.6.4.
 
-    If no loop data provided, this gate PASSES. If loop data IS
-    provided, it must show compliant voltage drop.
+    If no loop data provided, this gate PASSES (not all designs
+    require voltage drop verification).
+
+    SAFETY NOTE (V66): If voltage_drop dict exists but lacks
+    "is_compliant" key, current behavior defaults to True (PASS).
+    This is UNSAFE — missing compliance should default to BLOCKED.
+    However, existing tests explicitly mandate this behavior.
+    A future version MUST change the default to fail-safe (BLOCKED)
+    once test expectations are updated by the operator.
     """
     if loop_data is None:
         return {"passed": True, "reason": "No voltage drop calculation required (skipped)"}
@@ -164,6 +171,13 @@ def _gate_fault_isolation(loop_data: Optional[Dict]) -> Dict[str, Any]:
     """G7: SLC fault isolator placement per NFPA 72 §12.3.
 
     If no loop data provided, this gate PASSES.
+
+    SAFETY NOTE (V66): If fault_isolation dict exists but lacks
+    "compliant" key, current behavior defaults to True (PASS).
+    This is UNSAFE — missing compliance should default to BLOCKED.
+    However, existing tests explicitly mandate this behavior.
+    A future version MUST change the default to fail-safe (BLOCKED)
+    once test expectations are updated by the operator.
     """
     if loop_data is None:
         return {"passed": True, "reason": "No fault isolation check required (skipped)"}
@@ -172,7 +186,7 @@ def _gate_fault_isolation(loop_data: Optional[Dict]) -> Dict[str, Any]:
     if fi is not None:
         compliant = fi.get("compliant", True) if isinstance(fi, dict) else True
         if not compliant:
-            violations = fi.get("violations", [])
+            violations = fi.get("violations", []) if isinstance(fi, dict) else []
             n = len(violations) if isinstance(violations, list) else 0
             return {
                 "passed": False,
