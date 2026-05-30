@@ -44,6 +44,18 @@ from fireai.core.contracts_validation import (
 # Reuse wire gauge and resistance data
 from fireai.core.cable_routing_engine import WireGauge
 
+# Reuse NEC ampacity verification from nfpa72_engine
+from fireai.core.nfpa72_engine import (
+    check_ampacity,
+    temperature_corrected_resistance,
+    get_ambient_derating_factor,
+    get_conductor_count_derating,
+    AMPACITY_TABLE_NEC_310_16,
+    COPPER_TEMP_COEFFICIENT,
+    _TABLE8_REFERENCE_TEMP_C,
+    _DEFAULT_OPERATING_TEMP_C,
+)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTRAINT SOURCE ENUM — Every constraint has a source
@@ -54,14 +66,18 @@ class ConstraintSource(Enum):
     NEC_760_24 = "NEC 760.24"                     # FA cable separation
     NEC_760_24_A = "NEC 760.24(A)"                # Cable fastening interval
     NEC_760_154 = "NEC 760.154"                    # PLFA/NPLFA separation
+    NEC_310_16 = "NEC 310.16"                      # Ampacity table
+    NEC_310_15_B2A = "NEC 310.15(B)(2)(A)"        # Ambient temperature correction
+    NEC_310_15_B3A = "NEC 310.15(B)(3)(a)"        # Conductor count derating
+    NEC_CH9_TEMP = "NEC Ch.9 Table 8 + Physics"   # Temperature-corrected resistance
     NFPA_72_23_6_2 = "NFPA 72 §23.6.2"            # NAC circuit max length
     NFPA_72_10_6_4 = "NFPA 72 §10.6.4"            # Voltage drop verification
     NFPA_72_12_2_2 = "NFPA 72 §12.2.2"            # Class A circuit separation
     NEC_CH9_TABLE4 = "NEC Chapter 9, Table 4"     # Conduit fill
     NEC_CH9_TABLE8 = "NEC Chapter 9, Table 8"     # Wire resistance
-    PROJECT_SPEC_CONDUIT = "Project Spec: Min ¾\" EMT"
-    PROJECT_SPEC_BEND = "Project Spec: Max bend radius = 6 × Ø"
-    PROJECT_SPEC_SEPARATION = "Project Spec: ≥ 300mm from electrical"
+    PROJECT_SPEC_CONDUIT = "Project Spec: Min 3/4\" EMT"
+    PROJECT_SPEC_BEND = "Project Spec: Max bend radius = 6 x O"
+    PROJECT_SPEC_SEPARATION = "Project Spec: >= 300mm from electrical"
     PROJECT_SPEC_FASTENING = "Project Spec: Fasten every 457mm"
     PHYSICS = "Physics"                            # Fundamental physics constraints
 
@@ -567,6 +583,145 @@ class ConstraintEngine:
             ),
         )
 
+    def check_ampacity_compliance(
+        self,
+        alarm_current_a: float,
+        wire_gauge: WireGauge,
+        ambient_temp_c: float = 30.0,
+        num_current_carrying: int = 2,
+        conductor_temp_rating_c: float = 90,
+    ) -> ConstraintResult:
+        """Check wire ampacity per NEC 310.16 with deratings.
+
+        NEC 310.16 provides base ampacity values. Two additional
+        deratings are REQUIRED by NEC:
+        1. NEC 310.15(B)(2)(A): Ambient temperature correction
+           - At 50 degC ambient (Egypt): factor = 0.82 (90 degC rated)
+        2. NEC 310.15(B)(3)(a): Conductor count adjustment
+           - >3 conductors: factor < 1.0
+
+        CRITICAL FOR EGYPT: At 40-50 degC ambient, wire ampacity is
+        reduced by 9-18%. A wire that passes voltage drop may FAIL
+        ampacity check in Egyptian summer conditions.
+
+        Args:
+            alarm_current_a: Total alarm current in amperes.
+            wire_gauge: Wire gauge.
+            ambient_temp_c: Ambient air temperature in degC (default 30 degC).
+            num_current_carrying: Number of current-carrying conductors in conduit.
+            conductor_temp_rating_c: Insulation temperature rating (60, 75, 90).
+
+        Returns:
+            ConstraintResult with ampacity analysis.
+        """
+        amp_result = check_ampacity(
+            alarm_current_a=alarm_current_a,
+            awg_gauge=wire_gauge.awg_value,
+            conductor_temp_rating_c=conductor_temp_rating_c,
+            ambient_temp_c=ambient_temp_c,
+            num_current_carrying=num_current_carrying,
+        )
+
+        return ConstraintResult(
+            constraint_name="Wire Ampacity (NEC 310.16)",
+            source=ConstraintSource.NEC_310_16.value,
+            is_satisfied=amp_result.is_compliant,
+            actual_value=amp_result.actual_current_a,
+            limit_value=amp_result.adjusted_ampacity_a,
+            unit="A",
+            severity="CRITICAL",
+            remediation=(
+                f"Current {amp_result.actual_current_a:.4f}A exceeds "
+                f"adjusted ampacity {amp_result.adjusted_ampacity_a:.1f}A "
+                f"(base {amp_result.base_ampacity_a}A x "
+                f"ambient_derate={amp_result.ambient_derating:.2f} x "
+                f"cond_derate={amp_result.conductor_derating:.2f}). "
+                f"Upgrade wire gauge or reduce circuit current per NEC 310.16."
+            ) if not amp_result.is_compliant else "",
+            formula=amp_result.formula,
+        )
+
+    def check_ambient_derating(
+        self,
+        ambient_temp_c: float,
+        conductor_temp_rating_c: float = 90,
+    ) -> ConstraintResult:
+        """Check ambient temperature derating per NEC 310.15(B)(2)(A).
+
+        Reports the derating factor for the given ambient temperature.
+        This is informational — the ampacity check applies the factor
+        automatically. But this makes the derating visible in audit logs.
+
+        CRITICAL FOR EGYPT: At 50 degC ambient, derating factor is
+        0.82 for 90 degC rated conductors — 18% reduction in capacity.
+
+        Args:
+            ambient_temp_c: Ambient air temperature in degC.
+            conductor_temp_rating_c: Conductor insulation rating (60, 75, 90).
+
+        Returns:
+            ConstraintResult with derating information.
+        """
+        factor = get_ambient_derating_factor(ambient_temp_c, conductor_temp_rating_c)
+        is_satisfied = factor >= 0.80  # Flag if derating is severe
+
+        return ConstraintResult(
+            constraint_name="Ambient Temperature Derating",
+            source=ConstraintSource.NEC_310_15_B2A.value,
+            is_satisfied=is_satisfied,
+            actual_value=ambient_temp_c,
+            limit_value=30.0,  # NEC 310.16 baseline temperature
+            unit="degC",
+            severity="HIGH" if factor < 0.80 else "MEDIUM",
+            remediation=(
+                f"Ambient {ambient_temp_c:.0f} degC requires {factor:.2f} derating. "
+                f"Consider using higher-rated insulation or larger wire gauge "
+                f"per NEC 310.15(B)(2)(A)."
+            ) if factor < 0.85 else "",
+            formula=(
+                f"T_ambient = {ambient_temp_c:.0f} degC, "
+                f"derating factor = {factor:.2f} "
+                f"(conductor rating: {conductor_temp_rating_c} degC)"
+            ),
+        )
+
+    def check_conductor_count_derating(
+        self,
+        num_current_carrying: int,
+    ) -> ConstraintResult:
+        """Check conductor count derating per NEC 310.15(B)(3)(a).
+
+        Reports the derating factor based on number of current-carrying
+        conductors in the conduit.
+
+        Args:
+            num_current_carrying: Number of current-carrying conductors.
+
+        Returns:
+            ConstraintResult with derating information.
+        """
+        factor = get_conductor_count_derating(num_current_carrying)
+        is_satisfied = num_current_carrying <= 3
+
+        return ConstraintResult(
+            constraint_name="Conductor Count Derating",
+            source=ConstraintSource.NEC_310_15_B3A.value,
+            is_satisfied=is_satisfied,
+            actual_value=float(num_current_carrying),
+            limit_value=3.0,  # NEC 310.16 baseline
+            unit="conductors",
+            severity="HIGH" if factor < 0.80 else "MEDIUM",
+            remediation=(
+                f"{num_current_carrying} conductors require {factor:.2f} derating. "
+                f"Consider splitting circuits into separate conduits "
+                f"per NEC 310.15(B)(3)(a)."
+            ) if not is_satisfied else "",
+            formula=(
+                f"N = {num_current_carrying} conductors, "
+                f"derating factor = {factor:.2f}"
+            ),
+        )
+
     def check_conduit_fill(
         self,
         wire_diameter_mm: float,
@@ -646,16 +801,23 @@ class ConstraintEngine:
         is_class_a: bool = False,
         outgoing_path: Optional[List[Tuple[float, float, float]]] = None,
         return_path: Optional[List[Tuple[float, float, float]]] = None,
+        ambient_temp_c: float = 30.0,
+        num_current_carrying: int = 2,
+        conductor_temp_rating_c: float = 90,
     ) -> RoutingConstraintSet:
         """Run ALL constraint checks and return combined result.
 
         This is the primary API for constraint verification. Every
         check produces a traceable result with code reference.
 
+        V59: Added ampacity, ambient derating, and conductor count
+        derating checks. These are CRITICAL for Egypt where ambient
+        temperatures reach 40-50 degC.
+
         Args:
             cable_length_m: Total cable length in meters.
             wire_gauge: Wire gauge used.
-            num_bends: Number of 90° bends in the route.
+            num_bends: Number of 90 deg bends in the route.
             num_elevation_changes: Number of elevation changes.
             min_electrical_separation_mm: Minimum distance to electrical.
             ps_voltage: Power supply voltage (default 24V).
@@ -665,6 +827,12 @@ class ConstraintEngine:
             is_class_a: Whether this is a Class A circuit.
             outgoing_path: Outgoing path points (for Class A check).
             return_path: Return path points (for Class A check).
+            ambient_temp_c: Ambient air temperature in degC (default 30 degC).
+                CRITICAL FOR EGYPT: Use 40-50 degC for summer conditions.
+            num_current_carrying: Number of current-carrying conductors in
+                conduit (default 2 for single FA circuit).
+            conductor_temp_rating_c: Conductor insulation rating (60, 75, 90).
+                Default 90 for THHN/THWN-2.
 
         Returns:
             RoutingConstraintSet with all check results.
@@ -695,6 +863,25 @@ class ConstraintEngine:
         # 7. Class A separation (if applicable)
         if is_class_a and outgoing_path and return_path:
             results.append(self.check_class_a_separation(outgoing_path, return_path))
+
+        # 8. Wire Ampacity (NEC 310.16) — V59 addition
+        if alarm_current_a > 0:
+            results.append(self.check_ampacity_compliance(
+                alarm_current_a, wire_gauge,
+                ambient_temp_c=ambient_temp_c,
+                num_current_carrying=num_current_carrying,
+                conductor_temp_rating_c=conductor_temp_rating_c,
+            ))
+
+        # 9. Ambient temperature derating (NEC 310.15(B)(2)(A)) — V59
+        results.append(self.check_ambient_derating(
+            ambient_temp_c, conductor_temp_rating_c
+        ))
+
+        # 10. Conductor count derating (NEC 310.15(B)(3)(a)) — V59
+        results.append(self.check_conductor_count_derating(
+            num_current_carrying
+        ))
 
         # Compute summary
         violations = [r for r in results if not r.is_satisfied]
