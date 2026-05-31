@@ -9462,3 +9462,126 @@ A GitHub Personal Access Token (prefix: `github_pat_11CCHF...`) was transmitted 
    - IP allowlist if available
 4. NEVER transmit tokens in plaintext channels again
 5. Audit all repository files and commit history for other hardcoded secrets
+
+---
+
+## V116 — PDF Hardening Blueprint Implementation (2026-05-31)
+
+### Context
+Per operator instruction, read the uploaded PDF "From Prototype to Production-Grade: A Hardening Blueprint for the REVIT Fire Safety Optimizer" and implemented its 4-phase hardening roadmap with step-by-step code review.
+
+### Phase 1: Foundational Lockdown — Security Hardening
+
+**File:** `.pre-commit-config.yaml` — NEW
+- detect-secrets v1.5.0 with baseline scanning
+- gitleaks v8.21.2 for git history secret detection
+- bandit v1.8.3 for Python security linting
+- ruff v0.11.7 for code quality (lint + format)
+- pre-commit-hooks v5.0.0 (trailing whitespace, YAML validation, merge conflict detection, large file blocking, main branch protection)
+- Pre-commit installed at `.git/hooks/pre-commit`
+
+**File:** `.secrets.baseline` — NEW
+- Baseline scan of entire repository for known secret patterns
+- All existing secrets catalogued for audit
+
+### Phase 2: Architectural Rigidity — Centralized Constants + Pydantic Schemas
+
+**File:** `fireai/constants/__init__.py` — NEW (430+ lines)
+- NFPA 72 detector spacing and coverage constants with clause citations
+- NFPA 72 voltage drop and circuit constants (DC return path, terminal voltage, continuous load)
+- NFPA 72 battery calculation constants (standby hours, alarm minutes, safety factor)
+- NEC wire gauge resistance table at 75°C
+- IEC 60079-10-1 hazardous area constants (MW_AIR, Burgess-Wheeler coefficient, vapor density tiers)
+- NFPA 92/NFPA 101 stairwell smoke control constants
+- Every constant includes NFPA/NEC/IEC clause citation and V-number bug fix history
+
+**File:** `fireai/constants/nec.py` — NEW (150+ lines)
+- NEC Chapter 9 Table 1 conduit fill limits (53%/31%/40%)
+- NEC Table 310.15(B)(3)(a) conductor derating for bundling
+- NEC Table 310.15(B)(2)(a) ambient temperature correction
+- NEC Chapter 9 Table 4 conduit specs (EMT + RMC)
+- All values sourced from NEC 2023 Edition with clause citations
+
+**File:** `fireai/core/nfpa72_schemas.py` — NEW (350+ lines)
+- `NFPA72Input` Pydantic model: spacing, ceiling height, ceiling type, HVAC velocity, beam depth
+  - Field validators: NaN/Inf rejection, ceiling type cross-validation
+  - `compute_coverage_radius()`: R = 0.7×S with HVAC derating and beam pocket correction
+- `VoltageDropInput` Pydantic model: supply voltage, current, resistance, length, temperature, conductors
+  - DC return path factor (2×) per NFPA 72 §10.14
+  - Temperature correction per NEC Table 310.15(B)(2)(a)
+  - Conductor bundling derating per NEC Table 310.15(B)(3)(a)
+  - Continuous load factor (125%) per NEC §210.19(A)(1)
+- `ConvergenceConfig` Pydantic model: epsilon, max_iterations, monotonicity, timeout
+
+### Phase 3: Domain Verification — Property-Based Tests + Compliance Engine
+
+**File:** `tests/test_pdf_hardening_properties.py` — NEW (280+ lines)
+- 11 property-based tests using hypothesis:
+  1. `test_coverage_radius_properties`: R > 0, R finite, R ≤ S, HVAC monotonicity (500 examples)
+  2. `test_coverage_radius_from_height_properties`: R decreases with height, R = 0.7×S (200 examples)
+  3. `test_voltage_drop_properties`: positive drop, increases with length, DC return path (500 examples)
+  4. `test_voltage_drop_with_temperature_correction`: temp correction increases drop (200 examples)
+  5. `test_convergence_config_properties`: epsilon/iterations validation (100 examples)
+  6. `test_nan_inf_rejected_in_schemas`: NaN/Inf rejection in all Pydantic models
+  7-11. Invariant tests: coverage factor = 0.7, smoke radius = 6.37, DC factor = 2, spacing table monotonic, wall distance > 0
+
+**File:** `fireai/validation/compliance_engine.py` — NEW (170+ lines)
+- `ComplianceRule` dataclass: clause_id, description, validator, remediation, severity
+- `ComplianceEngine` with 14 clause-mapped rules:
+  - NFPA 72 §17.6.3.1.2: Detector spacing vs. ceiling height
+  - NFPA 72 §17.6.3.1.2(a): Sloped ceiling spacing reduction
+  - NFPA 72 §17.6.3.1.1: Minimum coverage ≥ 99.9%
+  - NFPA 72 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
+  - NFPA 72 §10.14: Terminal voltage ≥ 16VDC
+  - NEC §210.19(A)(1): Branch circuit voltage drop ≤ 3%
+  - NEC §215.2(A)(2): Total voltage drop ≤ 5%
+  - NFPA 72 §21.4.2: 1:1 sprinkler-to-HD mapping
+  - NFPA 92 §6.4.2: Stairwell pressure ≤ 85 Pa
+  - NFPA 92 §6.4: Stairwell pressure ≥ 25 Pa
+  - NFPA 101 §7.2.3.9: Stairwell > 75ft requires pressurization
+  - IEC 60079-10-1 §4.3: CONTINUOUS release protection
+  - IEC 60079-0 §5: Zone 0 EPL Ga requirement
+- `validate()` and `validate_and_report()` methods
+
+### Phase 4: CI/CD — GitHub Actions Pipeline + Validation Script
+
+**File:** `.github/workflows/ci.yml` — UPDATED
+- 5-gate validation matrix pipeline:
+  - Gate 1: Static Analysis (ruff lint + format, bandit security scan)
+  - Gate 2: Test Suite (pytest with coverage, fail-under 60%)
+  - Gate 3: Property-Based Tests (hypothesis)
+  - Gate 4: Regression Check (core NFPA 72 tests)
+  - Gate 5: Dependency Audit (pip-audit)
+- Deployment gate: only merges to main after all 5 gates pass
+- Concurrency: cancel previous runs on same branch
+
+**File:** `scripts/run_validation_matrix.sh` — NEW
+- Local validation matrix execution script per PDF Appendix D
+- Captures evidence from each gate into timestamped directory
+- Generates SHA256 checksum for evidence integrity
+- Produces SUMMARY.md with pass/fail status
+
+### Test Results
+- **Before:** 1104 passed, 1 skipped
+- **After:** 1115 passed, 1 skipped (+11 new property-based tests)
+- **0 regressions** — all existing tests still pass
+
+### Self-Criticism Notes (V116)
+
+1. **The PDF's claim that "R = 0.7 × S is applied uniformly" is OUTDATED** — V9-V114 already implemented height-adjusted spacing from NFPA 72 Table 17.6.3.1.1. The PDF was analyzing a much earlier version of the code. This validates agent.md Rule 6 (verify before changing).
+
+2. **The PDF's claim that "requirements.txt doesn't exist" is OUTDATED** — requirements.txt exists with categorized dependencies. V113 already addressed this.
+
+3. **The PDF's claim that "no secret scanning exists" is now FIXED** — `.pre-commit-config.yaml` with detect-secrets and gitleaks now scans every commit.
+
+4. **The PDF's NFPA72Input Pydantic model was a good recommendation** — we implemented it with improvements: HVAC velocity derating, beam pocket correction, NaN/Inf rejection per V114 fix pattern, cross-field validation for sloped ceilings.
+
+5. **The temperature correction formula needed fixing** — Initially implemented as ampacity derating (which reduces drop), but the correct model for voltage drop is resistance increase with temperature (copper positive temperature coefficient 0.00393/°C). Hypothesis property tests caught this.
+
+6. **The compliance engine is a prototype** — 14 rules is a starting point. A production system would need 50+ rules covering all NFPA 72 chapters.
+
+7. **Constant centralization is incomplete** — `fireai/constants/` provides new constants with clause citations, but existing code still uses inline values (449 raw literals identified in D1). Migration should be incremental to avoid regressions.
+
+### Commit Information
+- **Commit:** (pending)
+- **Tests:** 1115 passed, 1 skipped

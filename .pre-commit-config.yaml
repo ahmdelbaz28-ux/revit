@@ -1,0 +1,78 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# FireAI — Pre-Commit Security & Quality Gates
+# ═══════════════════════════════════════════════════════════════════════════
+# PDF Audit Phase 1: Foundational Lockdown
+# Per "From Prototype to Production-Grade" hardening blueprint:
+#   - Secret scanning (detect-secrets + gitleaks)
+#   - Security linting (bandit)
+#   - Code quality (ruff)
+#   - Type checking (mypy — manual only, not pre-commit due to speed)
+#
+# Installation:
+#   pip install pre-commit detect-secrets gitleaks bandit ruff
+#   pre-commit install
+#   pre-commit run --all-files   (first run to baseline)
+# ═══════════════════════════════════════════════════════════════════════════
+
+repos:
+  # ── Secret Detection ─────────────────────────────────────────────────────
+  # Prevents credential leakage per PDF §Phase 1 recommendation #3.
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        name: Scan for secrets (detect-secrets)
+        exclude: package-lock\.json|\.env\.example
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        name: Scan for secrets (gitleaks)
+
+  # ── Security Linting ─────────────────────────────────────────────────────
+  # Bandit identifies common Python security issues (SQL injection, hardcoded
+  # temp paths, assert usage in production, etc.) per PDF §Phase 2.
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.3
+    hooks:
+      - id: bandit
+        name: Security linter (Bandit)
+        args: ['-c', 'pyproject.toml', '-r', 'fireai/', '--severity-level', 'medium']
+        additional_dependencies: ['bandit[toml]']
+
+  # ── Code Quality ─────────────────────────────────────────────────────────
+  # Ruff replaces flake8 + isort + pyupgrade in a single tool.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.7
+    hooks:
+      - id: ruff
+        name: Lint (Ruff)
+        args: ['--fix', '--exit-non-zero-on-fix']
+      - id: ruff-format
+        name: Format (Ruff)
+
+  # ── Trailing Whitespace / YAML / Merge Conflicts ────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix end-of-file
+      - id: check-yaml
+        name: Validate YAML syntax
+      - id: check-merge-conflict
+        name: Detect merge conflict markers
+      - id: check-added-large-files
+        name: Block large files (>1MB)
+        args: ['--maxkb=1024']
+      - id: no-commit-to-branch
+        name: Prevent direct commits to main
+        args: ['--branch', 'main']
+
+# ── Global Settings ────────────────────────────────────────────────────────
+ci:
+  autofix_commit_msg: "pre-commit: auto-fix"
+  autofix_prs: true
