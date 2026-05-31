@@ -1,13 +1,14 @@
 """
 QOMN-FIRE ORTHOGONAL 3D PATHFINDER ROUTING ENGINE
-Reference Standard: NEC 2023 Article 358.26 (Conduit Bend Limits).
+A* algorithm for conduit routing with NEC 360-degree bend limit enforcement.
 """
 
-import math
 import heapq
+import math
 from typing import List, Tuple, Dict, Set
 from qomn_fire.core.types import Point3D, ConduitType, ConduitRun, Fitting, FittingType
 from qomn_fire.core.errors import Result, NECViolationError
+
 
 class GridMap3D:
     def __init__(self, step_m: float = 0.5):
@@ -31,6 +32,7 @@ class GridMap3D:
     def add_obstacle(self, p: Point3D):
         self.obstacles.add(self.to_grid(p))
 
+
 def astar_route_3d(
     grid_map: GridMap3D,
     start: Point3D,
@@ -43,9 +45,9 @@ def astar_route_3d(
 
     if g_start in grid_map.obstacles or g_end in grid_map.obstacles:
         return Result(error=NECViolationError(
-            message="Conduit terminal points are blocked by obstacles.",
+            message="Conduit terminal endpoints are blocked.",
             code_ref="NEC Art 300.18",
-            remedy="Shift device locations or remove physical structural obstructions."
+            remedy="Clear coordinate clearances or relocate the terminal devices."
         ))
 
     heap_counter = 0
@@ -103,9 +105,9 @@ def astar_route_3d(
 
             if bends > 360:
                 return Result(error=NECViolationError(
-                    message=f"Conduit bends exceed 360 degree threshold limit ({bends} degrees).",
+                    message=f"Conduit run exceeds 360 degrees of bend limits ({bends} degrees).",
                     code_ref="NEC Article 358.26",
-                    remedy="Insert pull boxes or redesign physical path to reduce elbows."
+                    remedy="Install junction boxes to partition the conduit run segment."
                 ))
 
             run = ConduitRun(
@@ -134,7 +136,7 @@ def astar_route_3d(
                 heapq.heappush(open_set, (f, heap_counter, neighbor))
 
     return Result(error=NECViolationError(
-        message="No orthogonal path could be routed through grid space obstacles.",
+        message="No compliant orthogonal paths could be routed to targets.",
         code_ref="NEC Art 300.18",
-        remedy="Adjust obstacle clearances or re-layout structural boundaries."
+        remedy="Clear structural blockings from grid boundaries."
     ))
