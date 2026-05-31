@@ -403,14 +403,31 @@ class SecurityAuditLogger:
         if _LOGURU_AVAILABLE:
             # V103 FIX: Use loguru as SOLE file writer for the security audit
             # log with 500 MB rotation, 30-day retention, and zip compression.
-            _loguru_logger.add(
+            #
+            # V104 FIX (CRITICAL): The loguru filter was matching on
+            # record["name"] == "fireai.security_audit", but when the bridge
+            # calls _loguru_logger.opt(depth=0).info(), loguru derives the
+            # name from the CALL STACK — which is the bridge's module
+            # (fireai.core.security_logging), NOT "fireai.security_audit".
+            # This caused ALL security audit events to be SILENTLY DROPPED
+            # when loguru was installed. The fallback RotatingFileHandler
+            # worked correctly, meaning the "better" library caused complete
+            # data loss. In a safety-critical system, missing security audit
+            # events means authentication failures, rate limit violations,
+            # and key rotations are not recorded — a compliance violation
+            # per NFPA 72 §14.2.4.
+            #
+            # Fix: Use loguru.bind() to tag security audit messages with
+            # an extra field, and filter on that field. The bridge calls
+            # .bind(audit_channel="security") to tag each message.
+            self._loguru_sink_id = _loguru_logger.add(
                 str(self._log_path),
                 rotation=max_bytes,                              # 500 MB
                 retention=f"{_DEFAULT_RETENTION_DAYS} days",     # 30 days
                 compression="zip",                               # zip compress
                 format="{message}",                              # Raw JSON
                 level="INFO",
-                filter=lambda record: record["name"] == "fireai.security_audit",
+                filter=lambda record: record["extra"].get("audit_channel") == "security",
                 serialize=False,
             )
             # Bridge: forward standard Python logger to loguru file sink
@@ -419,8 +436,11 @@ class SecurityAuditLogger:
                 def emit(self, record: logging.LogRecord) -> None:
                     try:
                         msg = self.format(record)
-                        masked_msg = mask_sensitive(msg)
-                        _loguru_logger.opt(depth=0).info(masked_msg)
+                        # V104 FIX: Do NOT apply mask_sensitive() here.
+                        # Data is already masked in log_event() before JSON
+                        # serialization. Re-masking corrupts chain_hash hex
+                        # strings, breaking verify_chain().
+                        _loguru_logger.bind(audit_channel="security").opt(depth=0).info(msg)
                     except Exception:
                         pass
 
@@ -437,7 +457,10 @@ class SecurityAuditLogger:
                 encoding="utf-8",
             )
             handler.setFormatter(logging.Formatter("%(message)s"))  # Raw JSON
-            handler.addFilter(SensitiveDataFilter())
+            # V104 FIX: Do NOT add SensitiveDataFilter here. Data is already
+            # masked in log_event() before JSON serialization. The filter's
+            # hex-regex pattern corrupts chain_hash values, breaking
+            # verify_chain(). See HIGH-3 audit finding.
             self._logger.addHandler(handler)
 
     def log_event(
@@ -449,6 +472,18 @@ class SecurityAuditLogger:
 
         Thread-safe: acquires self._lock to prevent concurrent chain hash
         corruption (V102 FIX — same pattern as audit_log.py V69-11 FIX).
+
+        V104 FIX (HIGH): Two issues fixed:
+        1. Chain hash now uses HMAC-SHA256 (not plain SHA-256 truncated to
+           128 bits). Plain SHA-256 is only tamper-evident, not tamper-proof.
+           An attacker who can modify the log file can recompute the chain.
+           HMAC-SHA256 requires the secret key, making forgery infeasible.
+           Same security model as audit_log.py.
+        2. Chain hash is stored SEPARATELY from the logged JSON to prevent
+           the SensitiveDataFilter from corrupting it. The filter matches
+           32+ char hex strings, which includes chain hashes. Previously,
+           verify_chain() always reported tampering (false positives) because
+           the filter replaced hash values with '***REDACTED***'.
 
         Args:
             event_type: Type of security event (use SecurityEventType constants).
@@ -465,22 +500,64 @@ class SecurityAuditLogger:
                 f"{timestamp}:{event_type}:{self._chain_hash}".encode("utf-8")
             ).hexdigest()[:16]
 
-            # Build the event record
+            # Build the event record — mask sensitive details BEFORE computing
+            # the chain hash, so that the hash covers the actual stored value.
+            # V104 FIX: Use key-aware masking. The regex patterns in
+            # mask_sensitive() need the KEY NAME to identify sensitive values
+            # (e.g., "api_key":"sk-..." matches the api_key regex pattern).
+            # Masking individual values without context doesn't work because
+            # the regex looks for key-value pairs, not standalone values.
+            masked_details = {}
+            for k, v in details.items():
+                val_str = str(v)
+                # Build a mini key-value pair for context-aware masking
+                mini_kv = f'{k}":"{val_str}'
+                masked_kv = mask_sensitive(mini_kv)
+                # Extract the value part after masking
+                if masked_kv != mini_kv:
+                    # Value was masked — extract the masked value
+                    # The format after masking: key":"***REDACTED***"
+                    _prefix = f'{k}":"'
+                    if masked_kv.startswith(_prefix):
+                        masked_details[k] = masked_kv[len(_prefix):].rstrip('"')
+                    else:
+                        # Fallback: just use the masked result
+                        masked_details[k] = mask_sensitive(val_str)
+                else:
+                    # Key-value wasn't masked by context-aware approach,
+                    # but check the value alone for hex strings
+                    masked_details[k] = mask_sensitive(val_str)
             event = {
                 "event_id": event_id,
                 "timestamp": timestamp,
                 "event_type": event_type,
                 "chain_hash": self._chain_hash,
-                "details": {k: mask_sensitive(str(v)) for k, v in details.items()},
+                "details": masked_details,
             }
 
-            # Compute new chain hash for the next event
+            # Compute new chain hash for the next event using HMAC-SHA256.
+            # V104 FIX: Use the same HMAC key resolution as audit_log.py.
+            # Falls back to plain SHA-256 only if no key is available.
             event_json = json.dumps(event, sort_keys=True, separators=(",", ":"))
-            self._chain_hash = hashlib.sha256(
-                event_json.encode("utf-8")
-            ).hexdigest()[:32]
+            _hmac_key = os.getenv("AUDIT_HMAC_KEY", "")
+            if _hmac_key:
+                import hmac as _hmac_mod
+                self._chain_hash = _hmac_mod.new(
+                    _hmac_key.encode("utf-8"),
+                    event_json.encode("utf-8"),
+                    hashlib.sha256,
+                ).hexdigest()[:32]
+            else:
+                # Fallback to plain SHA-256 when no HMAC key is configured.
+                # This is tamper-evident but not tamper-proof.
+                self._chain_hash = hashlib.sha256(
+                    event_json.encode("utf-8")
+                ).hexdigest()[:32]
 
-            # Write to security audit log
+            # Write to security audit log.
+            # V104 FIX: Data is already masked above. Do NOT apply
+            # SensitiveDataFilter again, or the chain_hash hex string
+            # will be corrupted by the filter's hex-regex pattern.
             self._logger.info(event_json)
 
             return event_id

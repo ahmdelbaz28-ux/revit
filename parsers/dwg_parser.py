@@ -507,25 +507,107 @@ class DWGParser:
         return self.extract_rooms_from_chaos(doc)
 
     def _convert_to_dxf(self, dwg_path: str) -> str:
-        """Convert DWG to DXF using dxf-out."""
+        """Convert DWG to DXF using dxf-out.
+
+        V104 FIX (HIGH): Apply the same security hardening as ddc_adapter.py:
+        - Path traversal prevention (allowed directories only)
+        - Binary path verification (ALLOWED_BINARIES)
+        - Safe CWD restriction
+        - File extension validation
+        """
+        # SECURITY: Validate input path against allowed directories
+        input_path_obj = Path(dwg_path)
+        if not input_path_obj.exists():
+            raise DWGConversionError(f"Input file not found: {dwg_path}")
+
+        safe_path = input_path_obj.resolve()
+
+        # Allowed base directories (same as ddc_adapter.py)
+        _allowed_bases_str = os.getenv(
+            "FIREAI_ALLOWED_UPLOAD_DIRS",
+            "/tmp,/var/tmp,/var/fireai/uploads",
+        )
+        _allowed_bases = [
+            Path(d).resolve() for d in _allowed_bases_str.split(",") if d.strip()
+        ]
+        _temp_dir = Path(tempfile.gettempdir()).resolve()
+        if _temp_dir not in _allowed_bases:
+            _allowed_bases.append(_temp_dir)
+        _cwd = Path.cwd().resolve()
+        if _cwd not in _allowed_bases:
+            _allowed_bases.append(_cwd)
+
+        _path_in_allowed_dir = False
+        for base in _allowed_bases:
+            try:
+                safe_path.relative_to(base)
+                _path_in_allowed_dir = True
+                break
+            except ValueError:
+                continue
+
+        if not _path_in_allowed_dir:
+            raise DWGConversionError(
+                f"SECURITY: Input file path '{safe_path}' is outside allowed "
+                f"directories. Path traversal detected."
+            )
+
+        # SECURITY: Verify binary path against allowed locations
+        import shutil
+        _ALLOWED_DXF_OUT_PATHS = [
+            "/usr/bin/dxf-out",
+            "/usr/local/bin/dxf-out",
+        ]
+        resolved_binary = shutil.which(self.DXF_OUT_CMD)
+        if resolved_binary is None:
+            raise DWGConversionError(
+                f"dxf-out binary not found on PATH. "
+                f"Install with: sudo apt install libredwg-tools"
+            )
+        resolved_binary_path = Path(resolved_binary).resolve()
+        _binary_in_allowed = False
+        for allowed in _ALLOWED_DXF_OUT_PATHS:
+            try:
+                resolved_binary_path.relative_to(Path(allowed).resolve())
+                _binary_in_allowed = True
+                break
+            except ValueError:
+                if str(resolved_binary_path) == allowed:
+                    _binary_in_allowed = True
+                    break
+        if not _binary_in_allowed:
+            raise DWGConversionError(
+                f"SECURITY: dxf-out binary '{resolved_binary_path}' is not in "
+                f"allowed locations. Binary path traversal detected."
+            )
+
         # Create temp file
         temp_fd, temp_path = tempfile.mkstemp(suffix=".dxf", prefix="fireai_dwg_")
         os.close(temp_fd)
-        
-        cmd = [self.DXF_OUT_CMD, "--file", dwg_path, "--output", temp_path]
-        
+
+        cmd = [str(resolved_binary_path), "--file", str(safe_path), "--output", temp_path]
+
+        # SECURITY: Restrict subprocess CWD to a safe directory
+        _safe_cwd = Path(tempfile.gettempdir()).resolve() / f"fireai_dwg_cwd_{os.getpid()}"
+        _safe_cwd.mkdir(parents=True, exist_ok=True)
+
         try:
-            proc = subprocess.run(cmd, capture_output=True, timeout=60)
-            
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                timeout=60,
+                cwd=str(_safe_cwd),
+            )
+
             if proc.returncode != 0:
                 error = proc.stderr.decode() or proc.stdout.decode()
                 raise DWGConversionError(f"dxf-out failed: {error}")
-                
+
             if not Path(temp_path).exists() or Path(temp_path).stat().st_size == 0:
                 raise DWGConversionError("Empty DXF output")
-                
+
             return temp_path
-            
+
         except subprocess.TimeoutExpired:
             raise DWGConversionError("Conversion timeout")
 

@@ -228,23 +228,32 @@ class DDCAdapter:
                 f"{[str(b) for b in _allowed_bases]}"
             )
 
-        # SECURITY FIX: Verify the resolved path hasn't been tampered with
-        # via symlinks pointing outside allowed directories.
-        if safe_path.is_symlink():
-            real_target = safe_path.readlink().resolve()
-            _real_in_allowed = False
-            for base in _allowed_bases:
-                try:
-                    real_target.relative_to(base)
-                    _real_in_allowed = True
-                    break
-                except ValueError:
-                    continue
-            if not _real_in_allowed:
-                raise ValueError(
-                    f"SECURITY: Symlink target '{real_target}' is outside "
-                    f"allowed directories. Symlink traversal detected."
-                )
+        # V104 FIX (HIGH): The previous symlink check was dead code.
+        # Path.resolve() follows ALL symlinks, so safe_path.is_symlink()
+        # was ALWAYS False after resolve(). The check never fired.
+        #
+        # The real protection needed is: if the ORIGINAL (pre-resolve) path
+        # is a symlink, verify that the RESOLVED TARGET is still within an
+        # allowed directory. This catches attacks where a symlink inside an
+        # allowed directory points to a sensitive file also inside an allowed
+        # directory (e.g., /tmp/upload/link.ifc → /tmp/secret_config.json).
+        #
+        # However, for files within allowed directories that the user has
+        # legitimate access to, the path traversal check above (relative_to)
+        # is sufficient — resolve() already ensures we follow symlinks to
+        # their final destination and verify THAT destination is allowed.
+        # The original check was trying to add an extra restriction (deny
+        # symlinks even within allowed dirs) but was never effective.
+        #
+        # New approach: Check the ORIGINAL path for symlinks BEFORE resolve.
+        # If the original is a symlink, log it and verify the resolved target
+        # is within allowed dirs (which the check above already does, since
+        # safe_path IS the resolved target).
+        if input_path_obj.is_symlink():
+            logger.info(
+                f"Input path is a symlink: {input_path_obj} → {safe_path}. "
+                f"Resolved target verified within allowed directories."
+            )
 
         ext = input_path_obj.suffix.lower()
 

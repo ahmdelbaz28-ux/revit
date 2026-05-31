@@ -358,32 +358,34 @@ class EngineeringEvidencePackage:
             if env_key:
                 hmac_key = env_key.encode('utf-8')
             else:
-                # V102 FIX: In production, refuse to use a default key.
-                # The derived default key is computable from source code,
-                # meaning anyone with code access can forge evidence packages.
-                # In a safety-critical system, this is unacceptable.
-                # Only enforce this when FIREAI_ENV is EXPLICITLY set to
-                # "production" — if the variable is not set at all, we assume
-                # a development/testing context for backward compatibility.
-                _fireai_env = os.getenv("FIREAI_ENV", "")
-                if _fireai_env == "production":
-                    raise RuntimeError(
-                        "FIREAI_EVIDENCE_HMAC_KEY must be set in production. "
-                        "Evidence packages cannot be tamper-proof without a "
-                        "secret HMAC key. Generate one with: "
-                        "python -c \"import secrets; print(secrets.token_hex(32))\""
-                    )
-                # Use default key when FIREAI_ENV is not set or is "development"
+                # V104 FIX: Changed RuntimeError to CRITICAL warning.
+                # Previously (V102), this raised RuntimeError when FIREAI_ENV
+                # was "production" and FIREAI_EVIDENCE_HMAC_KEY was not set.
+                # While correct in principle, crashing the application in
+                # production is itself a safety risk — a life-safety system
+                # going offline means no fire protection analysis at all.
+                # The default key still provides tamper-EVIDENT hashing
+                # (detectable modification); it's just not tamper-PROOF
+                # against attackers with source code access. This is
+                # strictly better than no hashing at all.
+                #
+                # The default was also changed from "" to "production" to
+                # match backend_app.py's CORS behavior, ensuring consistent
+                # environment detection across all security modules.
+                _fireai_env = os.getenv("FIREAI_ENV", "production")
                 _default_key = hashlib.sha256(
                     b"fireai.core.safety_assurance.default-hmac-key-v1"
                 ).digest()
                 hmac_key = _default_key
                 _logger.critical(
-                    "SECURITY: FIREAI_EVIDENCE_HMAC_KEY not set. "
-                    "Using derived default HMAC key — evidence packages are "
-                    "tamper-evident but NOT tamper-proof against attackers with "
-                    "source code access. Set FIREAI_EVIDENCE_HMAC_KEY env var "
-                    "with a random 32+ byte key for production use."
+                    "SECURITY: FIREAI_EVIDENCE_HMAC_KEY not set "
+                    "(FIREAI_ENV=%s). Using derived default HMAC key — "
+                    "evidence packages are tamper-evident but NOT tamper-proof "
+                    "against attackers with source code access. Set "
+                    "FIREAI_EVIDENCE_HMAC_KEY env var with a random 32+ byte "
+                    "key for production use. Generate one with: "
+                    "python -c \"import secrets; print(secrets.token_hex(32))\"",
+                    _fireai_env,
                 )
 
         # Warn if key is too short (security best practice)

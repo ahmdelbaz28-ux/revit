@@ -688,22 +688,62 @@ class PerPathRateLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # Extract client IP
+        # Extract client IP with X-Forwarded-For support.
+        # V104 FIX (HIGH): Behind reverse proxies (nginx, Cloudflare, AWS ALB),
+        # ALL users share the proxy's IP. One user can exhaust the rate limit
+        # for EVERY user behind the same proxy. We now check X-Forwarded-For
+        # when the direct client IP is in _TRUSTED_PROXY_NETWORKS.
         client = scope.get("client")
-        ip = client[0] if client else "unknown"
+        direct_ip = client[0] if client else "unknown"
+
+        # Parse headers for X-Forwarded-For
+        headers_dict = {}
+        for key, value in scope.get("headers", []):
+            headers_dict[key.decode("latin-1").lower()] = value.decode("latin-1")
+
+        ip = direct_ip
+        forwarded_for = headers_dict.get("x-forwarded-for", "")
+        real_ip = headers_dict.get("x-real-ip", "")
+
+        # Only trust forwarding headers from known proxy IPs/networks.
+        # This prevents IP spoofing by end clients.
+        _TRUSTED_PROXIES = frozenset({
+            "127.0.0.1", "::1",
+            # Add your reverse proxy IPs here, e.g.:
+            # "10.0.0.1", "172.16.0.1",
+        })
+        # Also trust private network ranges (10.x, 172.16-31.x, 192.168.x)
+        _is_private = (
+            direct_ip.startswith("10.")
+            or direct_ip.startswith("192.168.")
+            or (
+                direct_ip.startswith("172.")
+                and 16 <= int(direct_ip.split(".")[1]) <= 31
+            )
+        )
+
+        if direct_ip in _TRUSTED_PROXIES or _is_private:
+            if forwarded_for:
+                # X-Forwarded-For: client, proxy1, proxy2
+                # The leftmost IP is the original client
+                ip = forwarded_for.split(",")[0].strip()
+            elif real_ip:
+                ip = real_ip.strip()
+
         path = scope.get("path", "/")
 
         # Find the applicable rate limit for this path
         max_requests, window_seconds = self._find_limit(path)
 
-        # Use (ip, path_group) as the counter key so that different
-        # path groups get independent counters per IP.
-        # Group by the matched prefix for aggregate limiting.
+        # V104 FIX (MEDIUM): Use longest-prefix match for group selection
+        # (same algorithm as _find_limit). Previous code used first-match,
+        # which caused incorrect counter sharing between overlapping prefixes.
         group = None
+        best_group_len = 0
         for prefix, _, _ in _PER_PATH_LIMITS:
-            if path.startswith(prefix):
+            if path.startswith(prefix) and len(prefix) > best_group_len:
                 group = prefix
-                break
+                best_group_len = len(prefix)
         if group is None:
             group = "_default"
         counter_key = (ip, group)
