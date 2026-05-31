@@ -253,7 +253,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 30  # Minimum coverage percentage (V50.3: reduced from 60 to match CI reality)
+fail_under = 45  # V55: Increased from 30 to 45% (was 31% in V54). Path to 60%: add tests for remaining large modules.
 show_missing = true
 skip_empty = true
 exclude_lines = [

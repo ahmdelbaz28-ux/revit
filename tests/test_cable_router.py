@@ -393,9 +393,9 @@ class TestVoltageDrop:
             wire_gauge=WireGauge.AWG_14,
             ps_voltage=24.0,
         )
-        # R_AWG14 = 8.450 Ω/km, L = 0.1km
-        # V_drop = 1.0 × 2 × 8.450 × 0.1 = 1.690V
-        assert abs(result.actual_value - 1.690) < 0.01
+        # V58 FIX: R_AWG14 = 10.07 Ω/km at 75°C (was 8.450 at 20°C), L = 0.1km
+        # V_drop = 1.0 × 2 × 10.07 × 0.1 = 2.014V
+        assert abs(result.actual_value - 2.014) < 0.01
 
     def test_formula_contains_return_factor(self, constraint_engine):
         result = constraint_engine.check_voltage_drop(
@@ -1242,15 +1242,15 @@ class TestNoApproximation:
     def test_voltage_drop_formula_exact(self):
         """Voltage drop must use exact NEC Chapter 9, Table 8 values."""
         engine = ConstraintEngine()
-        # AWG 14: 8.450 Ω/km, I=1A, L=100m
-        # V_drop = 1.0 × 2 × 8.450 × 0.1 = 1.690V
+        # V58 FIX: AWG 14: 10.07 Ω/km at 75°C (was 8.450 at 20°C), I=1A, L=100m
+        # V_drop = 1.0 × 2 × 10.07 × 0.1 = 2.014V
         result = engine.check_voltage_drop(
             alarm_current_a=1.0,
             cable_length_m=100.0,
             wire_gauge=WireGauge.AWG_14,
             ps_voltage=24.0,
         )
-        assert abs(result.actual_value - 1.690) < 0.001
+        assert abs(result.actual_value - 2.014) < 0.001
 
     def test_conduit_fill_formula_exact(self):
         """Conduit fill must use exact cross-sectional areas."""

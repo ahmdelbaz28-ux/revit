@@ -101,19 +101,29 @@ def simple_nac_class_b() -> CircuitTopology:
 
 
 class TestWireGauge:
-    """Wire gauge resistance values — NEC Chapter 9, Table 8."""
+    """Wire gauge resistance values — NEC Chapter 9, Table 8.
+
+    V58 FIX: Resistance values updated from 20°C to 75°C per NEC Chapter 9
+    Table 8 (copper, stranded, DC resistance at 75°C). Previous values at
+    20°C caused voltage drop underestimation by 16-20%, potentially approving
+    non-compliant circuits where horns/strobes could fail during a fire.
+    """
 
     def test_awg12_resistance(self):
-        assert WireGauge.AWG_12.resistance_ohm_per_km == pytest.approx(5.310, abs=0.001)
+        # AWG 12: 6.33 Ω/km at 75°C (was 5.310 at 20°C)
+        assert WireGauge.AWG_12.resistance_ohm_per_km == pytest.approx(6.33, abs=0.01)
 
     def test_awg14_resistance(self):
-        assert WireGauge.AWG_14.resistance_ohm_per_km == pytest.approx(8.450, abs=0.001)
+        # AWG 14: 10.07 Ω/km at 75°C (was 8.450 at 20°C)
+        assert WireGauge.AWG_14.resistance_ohm_per_km == pytest.approx(10.07, abs=0.01)
 
     def test_awg16_resistance(self):
-        assert WireGauge.AWG_16.resistance_ohm_per_km == pytest.approx(13.40, abs=0.001)
+        # AWG 16: 16.04 Ω/km at 75°C (was 13.40 at 20°C)
+        assert WireGauge.AWG_16.resistance_ohm_per_km == pytest.approx(16.04, abs=0.01)
 
     def test_awg18_resistance(self):
-        assert WireGauge.AWG_18.resistance_ohm_per_km == pytest.approx(21.40, abs=0.001)
+        # AWG 18: 25.49 Ω/km at 75°C (was 21.40 at 20°C)
+        assert WireGauge.AWG_18.resistance_ohm_per_km == pytest.approx(25.49, abs=0.01)
 
     def test_awg_values(self):
         assert {g.awg_value for g in WireGauge} == {"12", "14", "16", "18"}
@@ -412,8 +422,9 @@ class TestVoltageDrop:
         c.add_device(CircuitDevice("HS1", "horn_strobe", 100.0, 0.0, 0.0, 0.100))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_14)
 
-        # Expected: 0.100A × 2 × 8.450Ω/km × 0.100km = 0.1690V
-        expected = 0.100 * 2.0 * 8.450 * (100.0 / 1000.0)
+        # V58 FIX: Resistance at 75°C per NEC Ch.9 Table 8
+        # Expected: 0.100A × 2 × 10.07Ω/km × 0.100km = 0.2014V
+        expected = 0.100 * 2.0 * 10.07 * (100.0 / 1000.0)
         assert result.total_voltage_drop_v == pytest.approx(expected, rel=1e-4), (
             f"Voltage drop formula wrong. Expected {expected:.4f}V (includes ×2 return), "
             f"got {result.total_voltage_drop_v:.4f}V. "

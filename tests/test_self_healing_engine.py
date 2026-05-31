@@ -33,10 +33,16 @@ class TestQomnFireSelfHealing(unittest.TestCase):
         self.assertAlmostEqual(res.value, 100.0, places=4)
 
     def test_tier_1_zero_division(self):
-        """Verify ZeroDivisionError triggers IEEE-754 infinity fallback."""
+        """Verify ZeroDivisionError triggers safe_minimum fallback (V58 FIX)."""
         res = calculate_sprinkler_pressure(100.0, 0.0)
         self.assertEqual(res.status, "HEALED")
-        self.assertEqual(res.value, float('inf'))
+        # V58 FIX (BUG #8): Heal to safe_minimum (7.0) instead of float('inf').
+        # float('inf') violates the QOMN kernel safety principle:
+        # "NaN/Inf NEVER propagate — always caught and rejected."
+        # If float('inf') is fed into any QOMN kernel computation
+        # (voltage drop, battery), it crashes with PhysicsGuardError.
+        # The safe_minimum (7.0 psi) is the correct conservative value.
+        self.assertEqual(res.value, 7.0)
         self.assertEqual(res.metadata["rule"], "ZeroDivisionError")
 
     def test_tier_1_index_error_recovery(self):
