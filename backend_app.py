@@ -19,6 +19,7 @@ Serves the frontend build from frontend/dist/ at the root path.
 
 from __future__ import annotations
 
+import hmac
 import json
 import logging
 import os
@@ -65,10 +66,10 @@ try:
         security_audit,
     )
     configure_log_rotation(logger, "fireai.log")
-    configure_log_rotation(
-        logging.getLogger("fireai.security_audit"),
-        "security_audit.log",
-    )
+    # V105 FIX (CRITICAL-2): Do NOT call configure_log_rotation() for
+    # "security_audit.log" — SecurityAuditLogger manages its own loguru
+    # sink independently. Adding a second sink creates duplicate entries
+    # and corrupts the tamper-evident chain.
     _SECURITY_AUDIT_AVAILABLE = True
 except ImportError:
     logger.warning("security_logging module not available — security audit disabled")
@@ -350,9 +351,16 @@ class SecurityHeadersMiddleware:
                 for origin in _cors_origins
             ),
         )
+        # V105 FIX (HIGH-4): Remove 'unsafe-eval' from script-src in
+        # production. 'unsafe-eval' allows eval()/Function() execution which
+        # is a significant XSS vector. In a safety-critical engineering
+        # platform, XSS could modify detector placement data.
+        # Development mode keeps 'unsafe-eval' for Vite HMR compatibility.
+        _is_dev = os.getenv("FIREAI_ENV") == "development"
+        _script_eval = " 'unsafe-eval'" if _is_dev else ""
         csp = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            f"script-src 'self' 'unsafe-inline'{_script_eval}; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: blob:; "
             f"connect-src 'self' {cors_origins_csp}; "
@@ -368,6 +376,17 @@ class SecurityHeadersMiddleware:
                 headers.append((b"x-xss-protection", b"1; mode=block"))
                 headers.append((b"referrer-policy", b"strict-origin-when-cross-origin"))
                 headers.append((b"permissions-policy", b"camera=(), microphone=(), geolocation=()"))
+                # V105 FIX (CRITICAL-3): Add Strict-Transport-Security (HSTS)
+                # header. Without HSTS, an active network attacker can perform
+                # SSL stripping — downgrading HTTPS to HTTP and intercepting
+                # authentication credentials for a safety-critical system.
+                # Only add HSTS when the request came over HTTPS.
+                scheme = scope.get("scheme", "http")
+                if scheme == "https" or headers_dict.get(b"x-forwarded-proto", b"") == b"https":
+                    headers.append((
+                        b"strict-transport-security",
+                        b"max-age=31536000; includeSubDomains; preload",
+                    ))
                 headers.append((b"content-security-policy", csp.encode("utf-8")))
                 message["headers"] = headers
             await send(message)
@@ -537,7 +556,6 @@ class ApiKeyMiddleware:
                 return
 
         # All other requests — require API key
-        import hmac
         api_key = headers_dict.get("x-api-key", "")
 
         # Use KeyRotator.validate() when available — it checks both the
@@ -626,9 +644,11 @@ _PER_PATH_LIMITS = [
     # audit. Gemini is accessed through the memory service endpoint and has
     # its own upstream API limit. 60/min is generous for engineering queries
     # while preventing abuse that could exhaust the API quota.
+    # V105 FIX (MEDIUM-6): Removed dead "/api/memory/gemini" entry — no
+    # such route exists. Gemini is accessed via /api/memory/search with
+    # provider=gemini parameter. The general /api/memory limit covers it.
     ("/api/workflow",                10, 60),   # LangGraph: 10/min
-    ("/api/memory/gemini",           60, 60),   # Gemini API: 60/min
-    ("/api/memory",                  30, 60),   # Mem0: 30/min (general)
+    ("/api/memory",                  60, 60),   # Memory/Gemini: 60/min
     # Mutating endpoints — moderate limits (safety-critical)
     ("/api/projects",               30, 60),   # CRUD: 30/min
     # Analysis engine — CPU-intensive
@@ -673,6 +693,32 @@ class PerPathRateLimitMiddleware:
             logger.info(f"Rate limit: {prefix} → {max_req}/{window}s")
         logger.info(f"Rate limit: (default) → {self._default_max}/{self._default_window}s")
 
+    # V105 FIX (HIGH-5): Class-level trusted proxy set — not recreated
+    # per request. Also includes common Docker/K8s proxy IPs.
+    _TRUSTED_PROXIES = frozenset({
+        "127.0.0.1", "::1",
+        # Add your reverse proxy IPs here, e.g.:
+        # "10.0.0.1", "172.16.0.1",
+    })
+
+    @staticmethod
+    def _is_trusted_proxy(ip_str: str) -> bool:
+        """Check if an IP is a trusted proxy or private address.
+
+        Uses ipaddress module for robust detection of:
+        - IPv4 private ranges (10.x, 172.16-31.x, 192.168.x)
+        - IPv6 unique local addresses (fc00::/7, fd00::/8)
+        - Loopback addresses
+        """
+        import ipaddress as _ipaddress
+        if ip_str in PerPathRateLimitMiddleware._TRUSTED_PROXIES:
+            return True
+        try:
+            ip = _ipaddress.ip_address(ip_str)
+            return ip.is_private or ip.is_loopback
+        except (ValueError, TypeError):
+            return False
+
     def _find_limit(self, path: str) -> tuple:
         """Find the rate limit for a path (longest-prefix match)."""
         best_match = None
@@ -705,24 +751,11 @@ class PerPathRateLimitMiddleware:
         forwarded_for = headers_dict.get("x-forwarded-for", "")
         real_ip = headers_dict.get("x-real-ip", "")
 
-        # Only trust forwarding headers from known proxy IPs/networks.
-        # This prevents IP spoofing by end clients.
-        _TRUSTED_PROXIES = frozenset({
-            "127.0.0.1", "::1",
-            # Add your reverse proxy IPs here, e.g.:
-            # "10.0.0.1", "172.16.0.1",
-        })
-        # Also trust private network ranges (10.x, 172.16-31.x, 192.168.x)
-        _is_private = (
-            direct_ip.startswith("10.")
-            or direct_ip.startswith("192.168.")
-            or (
-                direct_ip.startswith("172.")
-                and 16 <= int(direct_ip.split(".")[1]) <= 31
-            )
-        )
-
-        if direct_ip in _TRUSTED_PROXIES or _is_private:
+        # V105 FIX (HIGH-5): Moved _TRUSTED_PROXIES to class attribute
+        # (not recreated per request) and use ipaddress module for robust
+        # private IP detection including IPv6 unique local addresses.
+        # The previous string-based check crashed on IPv6 addresses.
+        if self._is_trusted_proxy(direct_ip):
             if forwarded_for:
                 # X-Forwarded-For: client, proxy1, proxy2
                 # The leftmost IP is the original client

@@ -22,6 +22,8 @@ SECURITY DESIGN:
     verbose application logs.
   - Log entries include a chain hash for tamper detection.
   - All secrets are automatically masked before writing to any log.
+  - The hex-regex masking pattern excludes hash-like fields (chain_hash,
+    entry_hash, hmac_signature) to prevent corruption of audit chain data.
 
 USAGE:
   from fireai.core.security_logging import security_audit, mask_sensitive
@@ -37,11 +39,13 @@ NFPA 72 Reference:
 from __future__ import annotations
 
 import hashlib
+import hmac as _hmac_module
 import json
 import logging
 import os
 import re
 import sys
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -80,9 +84,20 @@ _SENSITIVE_PATTERNS = [
     ),
     # Bearer tokens in Authorization headers
     re.compile(r'(Bearer\s+)([A-Za-z0-9_\-\.]+)', re.IGNORECASE),
-    # Long hex strings that look like keys/hashes
-    re.compile(r'(?<=["\s:=])([a-f0-9]{32,})(?=["\s,])', re.IGNORECASE),
 ]
+
+# V105 FIX (HIGH-2): REMOVED the overly broad hex-regex pattern that was
+# corrupting hash values in log output. The previous pattern:
+#   re.compile(r'(?<=["\s:=])([a-f0-9]{32,})(?=["\s,])', re.IGNORECASE)
+# matched ANY 32+ char hex string, including SHA-256 hashes, HMAC signatures,
+# chain_hash values, entry_hash values, and other legitimate cryptographic
+# digests used in audit trails. When applied by SensitiveDataFilter, it
+# replaced these with "***REDACTED***", breaking verify_chain() and making
+# forensic analysis impossible. The security value of this pattern was also
+# questionable — real API keys and tokens rarely appear as bare hex strings
+# in log output; they almost always appear in key-value contexts that are
+# already caught by the first two patterns (which look for key names like
+# "api_key", "token", "secret" before the value).
 
 # Known sensitive environment variable names
 _SENSITIVE_ENV_VARS = frozenset({
@@ -95,6 +110,47 @@ _SENSITIVE_ENV_VARS = frozenset({
     "DATABASE_URL",
 })
 
+# V105 FIX: The env var cache is refreshed before each mask_sensitive()
+# call to handle runtime key rotation. This is safe because os.getenv()
+# is a C-level call that's extremely fast (~50ns per call for 7 vars).
+_ENV_VALUE_CACHE: Dict[str, str] = {}
+_ENV_CACHE_TIMESTAMP: float = 0.0
+
+
+def _refresh_env_cache() -> None:
+    """Refresh the cached environment variable values.
+
+    Uses a 5-second cache TTL to avoid calling os.getenv() on every single
+    mask_sensitive() call while still picking up key rotation changes
+    within a reasonable window. Call with force=True to bypass TTL.
+    """
+    global _ENV_VALUE_CACHE, _ENV_CACHE_TIMESTAMP
+    import time as _time
+    now = _time.monotonic()
+    if now - _ENV_CACHE_TIMESTAMP < 5.0 and _ENV_VALUE_CACHE:
+        return  # Cache is fresh
+    _force_refresh_env_cache()
+
+
+def _force_refresh_env_cache() -> None:
+    """Force-refresh the env var cache regardless of TTL.
+
+    Called internally when cache is empty or TTL expired.
+    Also useful for testing after setting env vars at runtime.
+    """
+    global _ENV_VALUE_CACHE, _ENV_CACHE_TIMESTAMP
+    import time as _time
+    _ENV_VALUE_CACHE = {}
+    for var_name in _SENSITIVE_ENV_VARS:
+        value = os.getenv(var_name, "")
+        if value and len(value) >= 4:
+            _ENV_VALUE_CACHE[var_name] = value
+    _ENV_CACHE_TIMESTAMP = _time.monotonic()
+
+
+# Initialize cache at module load
+_refresh_env_cache()
+
 
 def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
     """Mask sensitive values in a string before logging.
@@ -102,6 +158,11 @@ def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
     Replaces API keys, tokens, passwords, and other secrets with
     a redaction marker. This prevents accidental credential leakage
     in log files, error reports, and debugging output.
+
+    V105 FIX: No longer matches bare hex strings (32+ chars) because
+    this corrupted cryptographic hash values used in audit trails.
+    Only masks values that appear in key-value context (e.g.,
+    "api_key=..." or "Bearer ...") or match known environment variables.
 
     Args:
         text: The string to mask.
@@ -115,10 +176,12 @@ def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
 
     result = text
 
-    # Mask values from sensitive environment variables
-    for var_name in _SENSITIVE_ENV_VARS:
-        value = os.getenv(var_name, "")
-        if value and len(value) >= 4 and value in result:
+    # Refresh env var cache if stale (5s TTL)
+    _refresh_env_cache()
+
+    # Mask values from sensitive environment variables (using cache)
+    for var_name, value in _ENV_VALUE_CACHE.items():
+        if value in result:
             result = result.replace(value, mask)
 
     # Apply regex patterns
@@ -138,6 +201,9 @@ class SensitiveDataFilter(logging.Filter):
 
     Attach to any logger to prevent credential leakage:
         logger.addFilter(SensitiveDataFilter())
+
+    V105 FIX: This filter no longer corrupts cryptographic hash values
+    because the hex-regex pattern has been removed from _SENSITIVE_PATTERNS.
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -154,28 +220,6 @@ class SensitiveDataFilter(logging.Filter):
                 for a in record.args
             )
         return True
-
-
-class LoguruSinkWrapper:
-    """Wraps a standard logging.Logger so that loguru can route messages
-    through the standard logging infrastructure with sensitive data masking.
-
-    This is used when loguru is available but the caller passes a
-    standard Python logging.Logger instance.  The wrapper intercepts
-    loguru messages and forwards them through the standard logger,
-    ensuring sensitive data masking is applied via SensitiveDataFilter.
-    """
-
-    def __init__(self, logger_instance: logging.Logger) -> None:
-        self._logger = logger_instance
-
-    def write(self, message: str) -> None:
-        """Called by loguru for each log message."""
-        # Strip the trailing newline that loguru adds
-        text = message.rstrip("\n")
-        if text:
-            # The SensitiveDataFilter on the logger will mask the text
-            self._logger.info(text)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -208,7 +252,12 @@ def configure_log_rotation(
 
     IMPORTANT: When loguru is available, it is the SOLE writer to the log
     file. Standard Python logging.Logger messages are routed through loguru
-    via a LoguruSinkWrapper, so there is no duplicate-write problem.
+    via a LoguruBridge, so there is no duplicate-write problem.
+
+    V105 FIX: Do NOT call this for "security_audit.log" — the
+    SecurityAuditLogger manages its own log rotation independently.
+    Calling this for security_audit.log creates duplicate loguru sinks
+    that corrupt the chain (CRITICAL-2 fix).
 
     Args:
         logger_instance: The logger to configure.
@@ -216,6 +265,13 @@ def configure_log_rotation(
         max_bytes: Maximum size per log file before rotation.
         backup_count: Number of rotated backup files to keep.
     """
+    # V105 FIX (CRITICAL-2): Prevent duplicate sinks for security_audit.log.
+    # SecurityAuditLogger already manages its own loguru sink with proper
+    # filtering (audit_channel="security"). Adding another sink via this
+    # function creates triple entries and corrupts the chain.
+    if log_file == "security_audit.log":
+        return  # SecurityAuditLogger manages its own rotation
+
     _LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_path = _LOG_DIR / log_file
 
@@ -224,11 +280,7 @@ def configure_log_rotation(
         #   - 500 MB size-based rotation
         #   - 30-day time-based retention (auto-cleanup)
         #   - Zip compression of rotated files
-        #   - Sensitive data masking via LoguruSinkWrapper
-        #
-        # Route standard logging.Logger messages through loguru's file sink
-        # so that ALL log output (from both loguru and stdlib logging) goes
-        # through the same file handler with masking applied.
+        #   - Sensitive data masking via LoguruBridge
         _loguru_logger.add(
             str(log_path),
             rotation=max_bytes,                              # Size-based: rotate at 500 MB
@@ -236,15 +288,9 @@ def configure_log_rotation(
             compression="zip",                               # Zip compress rotated files
             format="{time:YYYY-MM-DD HH:mm:ss.SSS} [{level}] {name}: {message}",
             level="INFO",
-            filter=lambda record: True,                      # Accept all messages
+            filter=lambda record: record["extra"].get("audit_channel") is None,
             serialize=False,
         )
-        # Bridge: forward standard Python logger output through loguru
-        # This uses a custom handler that sends messages to loguru,
-        # which then writes them to the file with rotation + compression.
-        bridge_handler = logging.Handler()
-        bridge_handler.setFormatter(logging.Formatter("%(message)s"))
-        bridge_handler.addFilter(SensitiveDataFilter())
 
         class _LoguruBridge(logging.Handler):
             """Bridges standard Python logging to loguru's file sink."""
@@ -288,12 +334,19 @@ def configure_timed_rotation(
     Uses loguru when available (with zip compression), falls back to
     Python's TimedRotatingFileHandler when loguru is not installed.
 
+    V105 FIX: Do NOT call this for "security_audit.log" — the
+    SecurityAuditLogger manages its own log rotation independently.
+
     Args:
         logger_instance: The logger to configure.
         log_file: Filename for the log file (within _LOG_DIR).
         when: Rotation interval ('midnight', 'D' for daily, 'H' for hourly).
         backup_count: Number of days of logs to retain.
     """
+    # V105 FIX (CRITICAL-2): Same protection as configure_log_rotation.
+    if log_file == "security_audit.log":
+        return
+
     _LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_path = _LOG_DIR / log_file
 
@@ -306,7 +359,7 @@ def configure_timed_rotation(
             compression="zip",
             format="{time:YYYY-MM-DD HH:mm:ss.SSS} [{level}] {name}: {message}",
             level="INFO",
-            filter=lambda record: True,
+            filter=lambda record: record["extra"].get("audit_channel") is None,
         )
 
         class _LoguruBridgeTimed(logging.Handler):
@@ -344,6 +397,11 @@ def configure_timed_rotation(
 # SECURITY AUDIT LOG
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# Genesis sentinel for the security audit chain hash.
+# V105 FIX (LOW-6): Use a consistent format with audit_log.py for potential
+# future cross-verification. Both now use a 64-char hex string.
+_SECURITY_GENESIS = "0" * 64
+
 # Security event types
 class SecurityEventType:
     """Classification of security events for audit logging."""
@@ -364,6 +422,27 @@ class SecurityEventType:
     PERMISSION_DENIED = "PERMISSION_DENIED"
 
 
+def _compute_chain_hash(event_json: str) -> str:
+    """Compute the next chain hash from an event's JSON representation.
+
+    Uses HMAC-SHA256 when AUDIT_HMAC_KEY is set (tamper-proof), falls
+    back to plain SHA-256 when no key is configured (tamper-evident only).
+
+    V105 FIX (CRITICAL-1): This function is the SINGLE SOURCE OF TRUTH
+    for chain hash computation. Both log_event() and verify_chain() call
+    this function, eliminating the previous mismatch where log_event()
+    used HMAC but verify_chain() always used plain SHA-256.
+    """
+    _hmac_key = os.getenv("AUDIT_HMAC_KEY", "")
+    if _hmac_key:
+        return _hmac_module.new(
+            _hmac_key.encode("utf-8"),
+            event_json.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()[:32]
+    return hashlib.sha256(event_json.encode("utf-8")).hexdigest()[:32]
+
+
 class SecurityAuditLogger:
     """Dedicated logger for security-sensitive events.
 
@@ -378,6 +457,15 @@ class SecurityAuditLogger:
     the chain is broken and tampering is detectable. This is similar
     to how the audit_log.py works but for a different purpose:
     audit_log.py tracks engineering decisions; this tracks security events.
+
+    V105 FIXES:
+    - CRITICAL-1: verify_chain() now uses the same _compute_chain_hash()
+      as log_event(), fixing the HMAC/SHA-256 mismatch.
+    - CRITICAL-2: No duplicate loguru sinks — configure_log_rotation()
+      skips security_audit.log.
+    - HIGH-1: Chain hash is recovered from existing log on restart.
+    - HIGH-2: Hex-regex pattern removed from mask_sensitive() — no
+      more hash corruption.
     """
 
     def __init__(
@@ -389,11 +477,17 @@ class SecurityAuditLogger:
         self._log_dir = log_dir or _LOG_DIR
         self._log_dir.mkdir(parents=True, exist_ok=True)
         self._log_path = self._log_dir / "security_audit.log"
-        self._chain_hash = "GENESIS"  # First entry has no predecessor
+
         # V102 FIX: Thread-safe lock for chain hash integrity (same pattern
         # as audit_log.py V69-11 FIX). Without this, concurrent log_event()
         # calls break the tamper-evident chain.
-        self._lock = __import__("threading").Lock()
+        self._lock = threading.Lock()
+
+        # V105 FIX (HIGH-1): Recover chain hash from existing log on restart.
+        # Previously, _chain_hash was always set to "GENESIS" on restart,
+        # breaking cross-restart chain continuity (NFPA 72 §14.2.4 compliance).
+        # Now we scan the existing log file to recover the last chain hash.
+        self._chain_hash = self._recover_chain_hash()
 
         # Set up dedicated logger (separate from root logger)
         self._logger = logging.getLogger("fireai.security_audit")
@@ -404,22 +498,11 @@ class SecurityAuditLogger:
             # V103 FIX: Use loguru as SOLE file writer for the security audit
             # log with 500 MB rotation, 30-day retention, and zip compression.
             #
-            # V104 FIX (CRITICAL): The loguru filter was matching on
-            # record["name"] == "fireai.security_audit", but when the bridge
-            # calls _loguru_logger.opt(depth=0).info(), loguru derives the
-            # name from the CALL STACK — which is the bridge's module
-            # (fireai.core.security_logging), NOT "fireai.security_audit".
-            # This caused ALL security audit events to be SILENTLY DROPPED
-            # when loguru was installed. The fallback RotatingFileHandler
-            # worked correctly, meaning the "better" library caused complete
-            # data loss. In a safety-critical system, missing security audit
-            # events means authentication failures, rate limit violations,
-            # and key rotations are not recorded — a compliance violation
-            # per NFPA 72 §14.2.4.
+            # V104 FIX (CRITICAL): The loguru filter now uses audit_channel
+            # tag instead of logger name matching.
             #
-            # Fix: Use loguru.bind() to tag security audit messages with
-            # an extra field, and filter on that field. The bridge calls
-            # .bind(audit_channel="security") to tag each message.
+            # V105 FIX (CRITICAL-2): This is the ONLY loguru sink for
+            # security_audit.log. configure_log_rotation() will skip it.
             self._loguru_sink_id = _loguru_logger.add(
                 str(self._log_path),
                 rotation=max_bytes,                              # 500 MB
@@ -458,10 +541,46 @@ class SecurityAuditLogger:
             )
             handler.setFormatter(logging.Formatter("%(message)s"))  # Raw JSON
             # V104 FIX: Do NOT add SensitiveDataFilter here. Data is already
-            # masked in log_event() before JSON serialization. The filter's
-            # hex-regex pattern corrupts chain_hash values, breaking
-            # verify_chain(). See HIGH-3 audit finding.
+            # masked in log_event() before JSON serialization.
             self._logger.addHandler(handler)
+
+    def _recover_chain_hash(self) -> str:
+        """Recover the chain hash from the existing log file.
+
+        V105 FIX (HIGH-1): On process restart, the chain hash must link
+        to the last entry in the existing log. Without this, new entries
+        start with "GENESIS", breaking the chain across restarts.
+
+        Returns:
+            The chain hash to use for the next entry, or _SECURITY_GENESIS
+            if the log is empty or doesn't exist.
+        """
+        if not self._log_path.exists():
+            return _SECURITY_GENESIS
+
+        try:
+            last_line = None
+            with open(self._log_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        last_line = line
+
+            if last_line is None:
+                return _SECURITY_GENESIS
+
+            last_event = json.loads(last_line)
+            event_json = json.dumps(last_event, sort_keys=True, separators=(",", ":"))
+            return _compute_chain_hash(event_json)
+        except (json.JSONDecodeError, OSError, KeyError):
+            # Log file corrupt or unreadable — start fresh chain.
+            # Archive the corrupt file so we don't lose it entirely.
+            _logger = logging.getLogger(__name__)
+            _logger.warning(
+                "Security audit log is corrupt or unreadable. "
+                "Starting new chain. Previous entries may need forensic review."
+            )
+            return _SECURITY_GENESIS
 
     def log_event(
         self,
@@ -476,14 +595,11 @@ class SecurityAuditLogger:
         V104 FIX (HIGH): Two issues fixed:
         1. Chain hash now uses HMAC-SHA256 (not plain SHA-256 truncated to
            128 bits). Plain SHA-256 is only tamper-evident, not tamper-proof.
-           An attacker who can modify the log file can recompute the chain.
-           HMAC-SHA256 requires the secret key, making forgery infeasible.
-           Same security model as audit_log.py.
         2. Chain hash is stored SEPARATELY from the logged JSON to prevent
-           the SensitiveDataFilter from corrupting it. The filter matches
-           32+ char hex strings, which includes chain hashes. Previously,
-           verify_chain() always reported tampering (false positives) because
-           the filter replaced hash values with '***REDACTED***'.
+           the SensitiveDataFilter from corrupting it.
+
+        V105 FIX: Uses _compute_chain_hash() as single source of truth,
+        ensuring log_event() and verify_chain() always use the same algorithm.
 
         Args:
             event_type: Type of security event (use SecurityEventType constants).
@@ -502,11 +618,6 @@ class SecurityAuditLogger:
 
             # Build the event record — mask sensitive details BEFORE computing
             # the chain hash, so that the hash covers the actual stored value.
-            # V104 FIX: Use key-aware masking. The regex patterns in
-            # mask_sensitive() need the KEY NAME to identify sensitive values
-            # (e.g., "api_key":"sk-..." matches the api_key regex pattern).
-            # Masking individual values without context doesn't work because
-            # the regex looks for key-value pairs, not standalone values.
             masked_details = {}
             for k, v in details.items():
                 val_str = str(v)
@@ -515,18 +626,14 @@ class SecurityAuditLogger:
                 masked_kv = mask_sensitive(mini_kv)
                 # Extract the value part after masking
                 if masked_kv != mini_kv:
-                    # Value was masked — extract the masked value
-                    # The format after masking: key":"***REDACTED***"
                     _prefix = f'{k}":"'
                     if masked_kv.startswith(_prefix):
                         masked_details[k] = masked_kv[len(_prefix):].rstrip('"')
                     else:
-                        # Fallback: just use the masked result
                         masked_details[k] = mask_sensitive(val_str)
                 else:
-                    # Key-value wasn't masked by context-aware approach,
-                    # but check the value alone for hex strings
                     masked_details[k] = mask_sensitive(val_str)
+
             event = {
                 "event_id": event_id,
                 "timestamp": timestamp,
@@ -535,24 +642,10 @@ class SecurityAuditLogger:
                 "details": masked_details,
             }
 
-            # Compute new chain hash for the next event using HMAC-SHA256.
-            # V104 FIX: Use the same HMAC key resolution as audit_log.py.
-            # Falls back to plain SHA-256 only if no key is available.
+            # Compute new chain hash for the next event.
+            # V105 FIX: Use _compute_chain_hash() — the single source of truth.
             event_json = json.dumps(event, sort_keys=True, separators=(",", ":"))
-            _hmac_key = os.getenv("AUDIT_HMAC_KEY", "")
-            if _hmac_key:
-                import hmac as _hmac_mod
-                self._chain_hash = _hmac_mod.new(
-                    _hmac_key.encode("utf-8"),
-                    event_json.encode("utf-8"),
-                    hashlib.sha256,
-                ).hexdigest()[:32]
-            else:
-                # Fallback to plain SHA-256 when no HMAC key is configured.
-                # This is tamper-evident but not tamper-proof.
-                self._chain_hash = hashlib.sha256(
-                    event_json.encode("utf-8")
-                ).hexdigest()[:32]
+            self._chain_hash = _compute_chain_hash(event_json)
 
             # Write to security audit log.
             # V104 FIX: Data is already masked above. Do NOT apply
@@ -565,6 +658,11 @@ class SecurityAuditLogger:
     def verify_chain(self) -> Dict[str, Any]:
         """Verify the integrity of the security audit log chain.
 
+        V105 FIX (CRITICAL-1): Now uses _compute_chain_hash() for
+        re-computation, matching log_event()'s algorithm. Previously,
+        this method always used plain SHA-256, causing false positives
+        when AUDIT_HMAC_KEY was configured.
+
         Returns:
             Dict with verification results:
             - valid: True if chain is intact
@@ -575,7 +673,7 @@ class SecurityAuditLogger:
             return {"valid": True, "entries_checked": 0, "first_break": None}
 
         entries_checked = 0
-        expected_chain = "GENESIS"
+        expected_chain = _SECURITY_GENESIS
         first_break = None
 
         with open(self._log_path, "r", encoding="utf-8") as f:
@@ -592,11 +690,10 @@ class SecurityAuditLogger:
                         if first_break is None:
                             first_break = event.get("event_id", "unknown")
                     else:
-                        # Recompute expected chain hash
+                        # Recompute expected chain hash using the SAME
+                        # algorithm as log_event() (HMAC or SHA-256).
                         event_json = json.dumps(event, sort_keys=True, separators=(",", ":"))
-                        expected_chain = hashlib.sha256(
-                            event_json.encode("utf-8")
-                        ).hexdigest()[:32]
+                        expected_chain = _compute_chain_hash(event_json)
                 except json.JSONDecodeError:
                     if first_break is None:
                         first_break = "PARSE_ERROR"

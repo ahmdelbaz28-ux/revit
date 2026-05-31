@@ -133,18 +133,19 @@ class DDCAdapter:
         self._platform = "windows" if os.name == "nt" else "linux"
 
     def is_available(self, file_ext: str) -> bool:
-        """Check if DDC converter is available for the given file extension."""
+        """Check if DDC converter is available for the given file extension.
+
+        V105 FIX (LOW-5): Use shutil.which() instead of spawning a subprocess.
+        This is faster and doesn't leak information about installed binaries.
+        """
         ext = file_ext.lower()
         binary = self._get_binary(ext)
         if binary is None:
             return False
         try:
-            result = subprocess.run(
-                ["which", binary] if self._platform == "linux" else ["where", binary],
-                capture_output=True,
-                timeout=5,
-            )
-            return result.returncode == 0
+            import shutil
+            resolved = shutil.which(binary)
+            return resolved is not None
         except Exception:
             return False
 
@@ -206,10 +207,14 @@ class DDCAdapter:
         if _temp_dir not in _allowed_bases:
             _allowed_bases.append(_temp_dir)
 
-        # Also allow the current working directory (for development)
-        _cwd = Path.cwd().resolve()
-        if _cwd not in _allowed_bases:
-            _allowed_bases.append(_cwd)
+        # Also allow the current working directory (for development only)
+        # V105 FIX (MEDIUM-8): Only add CWD in development mode. In
+        # production containers, CWD=/app allows any file under /app to be
+        # passed to the DDC converter, potentially including .env files.
+        if os.getenv("FIREAI_ENV") == "development":
+            _cwd = Path.cwd().resolve()
+            if _cwd not in _allowed_bases:
+                _allowed_bases.append(_cwd)
 
         # Verify path is within an allowed directory
         _path_in_allowed_dir = False
@@ -322,6 +327,16 @@ class DDCAdapter:
                     f"SECURITY: DDC binary '{resolved_binary_path}' is not in "
                     f"allowed locations. Binary path traversal detected. "
                     f"Allowed: {_allowed_paths}"
+                )
+        else:
+            # V105 FIX (MEDIUM-9): When _allowed_paths is empty and
+            # platform is Windows without converter_dir, REJECT the binary
+            # (fail-closed). Previously, empty list = no validation.
+            if not (self._platform == "windows" and self._converter_dir):
+                raise ValueError(
+                    f"SECURITY: DDC binary '{_binary_name}' has no allowed "
+                    f"paths configured. Refusing to execute unknown binary. "
+                    f"Add allowed paths to _ALLOWED_BINARIES or set converter_dir."
                 )
 
         try:
