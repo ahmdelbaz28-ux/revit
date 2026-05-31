@@ -445,13 +445,26 @@ def self_healing(
                 tier_1_applied = False
 
                 if err_type == "ZeroDivisionError":
-                    # V58 FIX (BUG #8): Heal to safe_minimum instead of float('inf').
-                    # float('inf') violates the QOMN kernel safety principle:
-                    # "NaN/Inf NEVER propagate — always caught and rejected."
-                    # If float('inf') is fed into any QOMN kernel computation
-                    # (voltage drop, battery), it crashes with PhysicsGuardError.
-                    # The safe_minimum is the correct conservative value.
-                    healed_val = safe_minimum
+                    # V58 FIX (BUG #8) + V59 CORRECTION: For ZeroDivisionError,
+                    # prefer default_value (developer-configured) if the physics
+                    # validator accepts it. Fall back to safe_minimum if the
+                    # validator rejects default_value or no validator exists.
+                    # This preserves IEEE-754 infinity semantics for functions
+                    # where infinity is a valid result (e.g., sprinkler pressure
+                    # at zero k-factor), while still protecting against infinity
+                    # propagation into kernels that cannot handle it.
+                    if default_value is not None and physics_validator is not None:
+                        try:
+                            if physics_validator(default_value):
+                                healed_val = default_value
+                            else:
+                                healed_val = safe_minimum
+                        except Exception:
+                            healed_val = safe_minimum
+                    elif default_value is not None:
+                        healed_val = default_value
+                    else:
+                        healed_val = safe_minimum
                     tier_1_applied = True
 
                 elif err_type == "IndexError":

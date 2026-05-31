@@ -113,25 +113,28 @@ class WireGauge(metaclass=_WireGaugeMeta):
     These are the gauges permitted by NEC 760.154 for PLFA circuits.
     """
 
-    # V58 FIX (BUG #1): Resistance values updated from 20°C to 75°C per
-    # NEC Chapter 9 Table 8 (copper, stranded, DC resistance at 75°C).
-    # Previous values were at 20°C reference temperature, causing voltage
-    # drop underestimation by 16-20%. This means circuits calculated as
-    # compliant could actually have horns/strobes failing during a fire.
-    # Source: NEC 2023 Chapter 9 Table 8, aligned with qomn_kernel.py
-    AWG_18: _WireGaugeInstance = _WireGaugeInstance("18", 25.49, 1.024, 1.0)
-    AWG_16: _WireGaugeInstance = _WireGaugeInstance("16", 16.04, 1.291, 2.0)
-    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14", 10.07, 1.628, 2.0)
-    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12", 6.33, 2.053, 3.0)
+    # NEC Chapter 9 Table 8 — DC resistance at 20°C reference temperature
+    # (copper, uncoated, stranded). Base values stored at 20°C; temperature
+    # correction applied at calculation time per NEC practice.
+    # NOTE: V58 had changed these to 75°C values, but that broke the
+    # downstream temperature correction in constraint_engine.py and
+    # nfpa72_engine.py which apply R_T = R_20 × [1 + α(T − 20)].
+    # Storing 75°C values caused double-correction (overestimation) or
+    # no correction when default T=20°C was used, leading to inconsistent
+    # voltage drop results across the codebase.
+    AWG_18: _WireGaugeInstance = _WireGaugeInstance("18", 21.40, 1.024, 1.0)
+    AWG_16: _WireGaugeInstance = _WireGaugeInstance("16", 13.40, 1.291, 2.0)
+    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14",  8.450, 1.628, 2.0)
+    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12",  5.310, 2.053, 3.0)
 
     _ALL_GAUGES: Tuple[_WireGaugeInstance, ...] = (AWG_18, AWG_16, AWG_14, AWG_12)
 
-    # V58 FIX (BUG #1): Resistance values updated to 75°C to match AWG instances
+    # NEC Chapter 9 Table 8 — DC resistance at 20°C (Ω/m)
     RESISTANCE_PER_M: Dict[str, float] = {
-        "18": 0.02549,  # 25.49 Ω/km at 75°C
-        "16": 0.01604,  # 16.04 Ω/km at 75°C
-        "14": 0.01007,  # 10.07 Ω/km at 75°C
-        "12": 0.00633,  # 6.33 Ω/km at 75°C
+        "18": 0.02140,  # 21.40 Ω/km at 20°C
+        "16": 0.01340,  # 13.40 Ω/km at 20°C
+        "14": 0.008450, # 8.450 Ω/km at 20°C
+        "12": 0.005310, # 5.310 Ω/km at 20°C
     }
 
     VALID_GAUGES: Tuple[str, ...] = ("12", "14", "16", "18")

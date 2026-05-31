@@ -139,6 +139,7 @@ class FireAlarmPanel:
     nac_capacity: int
     supports_networking: bool
     supports_voice: bool
+    supports_releasing: bool
     max_slc_loops: int
     listings: Tuple[str, ...]
     standby_current_amps: float
@@ -164,6 +165,7 @@ class PanelRecommendation:
     capacity_utilization: float
     nac_utilization: float
     battery_size_ah: float
+    battery_derating_details: Dict[str, Any]
     power_supply_watts: int
     listings: Tuple[str, ...]
     code_compliance: Tuple[str, ...]

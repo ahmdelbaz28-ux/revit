@@ -1,13 +1,21 @@
 """
 QOMN-FIRE FACP SELECTION ENGINE
 Reference Standard: NFPA 72 (2022) §10.6.10, UL 864 10th Edition.
+
+V54 Bug Fixes Preserved:
+  F2: NAC capacity uses EXACT match — required_nacs = nac_circuit_count
+  F3: Sort prefers SMALLEST adequate capacity on ties (right-sizing)
+  F4: supports_releasing field + filter logic present
+  F5: Battery sizing uses NFPA 72 compliant tiered derating (NOT flat 1.2x)
+  F6: Per-device standby current = 0.8 mA (not 1.0 mA)
 """
 
 import hashlib
-from typing import List, Optional, Tuple
+from typing import List, Tuple, Dict, Any
 from qomn_fire.core.types import ProjectRequirements, PanelRecommendation, FireAlarmPanel
 from qomn_fire.core.errors import Result, FACPSelectionError
 from qomn_fire.engine.panel_database import MASTER_PANEL_DATABASE
+
 
 class SelectionEngine:
     @staticmethod
@@ -16,26 +24,55 @@ class SelectionEngine:
         nac_circuit_count: int,
         panel: FireAlarmPanel,
         requires_voice: bool
-    ) -> float:
+    ) -> Tuple[float, Dict[str, Any]]:
         """
-        Calculates battery capacity per NFPA 72 §10.6.10.
-        - Standby: 24 Hours
-        - Alarm: 15 Mins (0.25h) if Voice Evacuation is required; else 5 Mins (0.0833h)
-        - Safety Margin: 20%
+        Calculates battery capacity per NFPA 72 §10.6.10 with tiered derating.
+
+        Derating methodology (V54 FIX F5 — NOT flat 1.2x):
+          1. Temperature derating: 1.10 (10% compensation for capacity loss at low temp)
+          2. Aging derating: 1.15 (15% compensation for battery end-of-life per IEEE 1188)
+          3. NFPA margin: 1.20 (20% mandatory margin per NFPA 72 §10.6.10)
+
+        Per-device standby current: 0.8 mA (V54 FIX F6 — NOT 1.0 mA).
+
+        Returns:
+            Tuple of (battery_size_ah, derating_details_dict)
         """
-        standby_load = (device_count * 0.001) + panel.standby_current_amps
+        # V54 FIX F6: Per-device standby current = 0.0008 A (0.8 mA), NOT 0.001 A
+        standby_load = (device_count * 0.0008) + panel.standby_current_amps
         alarm_load = (nac_circuit_count * 2.0) + (device_count * 0.005) + panel.alarm_current_amps
         alarm_duration_h = 0.25 if requires_voice else 0.0833
 
         raw_capacity = (standby_load * 24.0) + (alarm_load * alarm_duration_h)
-        return round(raw_capacity * 1.2, 2)
+
+        # V54 FIX F5: Tiered derating — NOT flat 1.2x
+        temperature_derating = 1.10
+        aging_derating = 1.15
+        nfpa_margin = 1.20
+        combined_safety_factor = round(
+            temperature_derating * aging_derating * nfpa_margin, 6
+        )
+
+        battery_size = round(raw_capacity * combined_safety_factor, 2)
+
+        derating_details = {
+            "method": "NFPA 72 §10.6.10 tiered derating",
+            "temperature_derating": temperature_derating,
+            "aging_derating": aging_derating,
+            "nfpa_margin": nfpa_margin,
+            "combined_safety_factor": combined_safety_factor,
+            "enhanced_safety_factor": combined_safety_factor,
+            "raw_capacity_ah": round(raw_capacity, 4),
+            "per_device_standby_mA": 0.8,
+        }
+
+        return battery_size, derating_details
 
     @classmethod
     def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:
-        # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.10)
+        # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.10.2)
         required_points = req.device_count * 1.2
-        # NAC circuits are sized by battery calculation, not blanket margin.
-        # The 20% margin applies to address points only (NFPA 72 §10.6.10.2).
+        # V54 FIX F2: NAC circuits sized by exact count, NOT 1.2x
         required_nacs = req.nac_circuit_count
 
         eligible_panels: List[Tuple[FireAlarmPanel, float]] = []
@@ -48,6 +85,9 @@ class SelectionEngine:
             if req.requires_network and not p.supports_networking:
                 continue
             if req.requires_voice and not p.supports_voice:
+                continue
+            # V54 FIX F4: Releasing service filter
+            if req.requires_releasing and not p.supports_releasing:
                 continue
             if req.jurisdiction == "FDNY" and "FDNY" not in p.listings:
                 continue
@@ -79,7 +119,7 @@ class SelectionEngine:
                 remedy="Reduce required device loads or transition to a multi-node networked panel architecture."
             ))
 
-        # Deterministic sorting: Right-sizing principle
+        # V54 FIX F3: Deterministic sorting with right-sizing principle
         # Primary: highest score. Tie-break: smallest capacity (right-sizing),
         # then lowest standby draw, then model name for determinism.
         eligible_panels.sort(
@@ -99,7 +139,7 @@ class SelectionEngine:
         elif capacity_util < 0.30:
             warnings.append("FACP is significantly oversized for the current device loading.")
 
-        battery_size = cls.compute_battery_ah(
+        battery_size, derating_details = cls.compute_battery_ah(
             req.device_count,
             req.nac_circuit_count,
             selected,
@@ -116,6 +156,7 @@ class SelectionEngine:
             capacity_utilization=round(capacity_util, 4),
             nac_utilization=round(nac_util, 4),
             battery_size_ah=battery_size,
+            battery_derating_details=derating_details,
             power_supply_watts=selected.power_supply_watts,
             listings=selected.listings,
             code_compliance=(
