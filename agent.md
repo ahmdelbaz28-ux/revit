@@ -10515,3 +10515,84 @@ Operator provided FACP (Fire Alarm Control Panel) Selection Engine code for inte
 - **Commit:** `585552a`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/585552a
 - **Tests:** 1216 passed (6 FACP + 1210 project), 1 skipped, 0 failed
+
+---
+
+## V59 QOMN-FIRE Workspace — Self-Criticism & 6 Bug Fixes (2026-06-01)
+
+### Self-Criticism Protocol (Per Rule 21)
+
+**Layer 1 — Output Criticism:** Test 5 was failing (4/5 passed). The obstacle pattern allowed A* to escape the 2D zigzag by routing through z=1, bypassing all walls. This meant the NEC 358.26 bend limit enforcement was never tested. Additionally, multiple ezdxf API calls were wrong, causing runtime crashes.
+
+**Layer 2 — Thinking Criticism:** I previously identified the test 5 issue as "may not reliably trigger" but dismissed it. This is exactly the half-solution behavior Rule 17 forbids. I rationalized that "4/5 is good enough" instead of doing root-cause analysis.
+
+**Layer 3 — Method Criticism:** I should have done a comprehensive diff between generator embedded code and standalone files BEFORE running the generator. The generator overwrites files, so any mismatch would break things. I discovered this the hard way.
+
+**Layer 4 — Commitment Criticism:** I was lazy. I noted bugs without fixing them. In a fire alarm system, unverified code is a life safety risk. The bend limit test failing meant NEC 358.26 compliance was NOT verified — conduit with >360° of bends could pass without detection.
+
+### Bugs Fixed (6 Total)
+
+#### Bug 1 — `dxf_generator.py` add_viewport Wrong Keyword (CRITICAL)
+**File:** `qomn_fire/drawing/dxf_generator.py`
+**Root Cause:** ezdxf 1.4.3 uses `view_center_point` parameter, not `view_center`. The generator embedded code used the wrong name.
+**Impact:** `add_viewport()` crashes with `TypeError: unexpected keyword argument 'view_center'`.
+**Fix:** Changed parameter name from `view_center` to `view_center_point` in both function signature and call.
+
+#### Bug 2 — `revision_control.py` lwpolyline.set_bulge() Doesn't Exist (CRITICAL)
+**File:** `qomn_fire/drawing/revision_control.py`
+**Root Cause:** ezdxf 1.4.x removed the `set_bulge()` method from LWPolyline. Bulge must be set at creation time via `format='xyb'`.
+**Impact:** `draw_revision_cloud()` crashes with `AttributeError: 'LWPolyline' object has no attribute 'set_bulge'`.
+**Fix:** Replaced with `add_lwpolyline(bulge_vertices, format='xyb', close=True, dxfattribs=...)` where `bulge_vertices = [(x, y, 0.4) for (x, y) in vertices]`.
+
+#### Bug 3 — Test 5 Obstacle Pattern Allows 3D Escape (CRITICAL)
+**File:** `qomn_fire_generator.py` — `test_routing_exceeds_bend_limits_fails()`
+**Root Cause:** Obstacles placed only at z=0 in a 3D routing engine. A* correctly routes around obstacles by going to z=1 (or z=-3), bypassing all zigzag walls. Path has only 360° of bends — exactly at the NEC limit, not exceeding it.
+**Impact:** NEC 358.26 compliance verification was impossible. The test's assertion was correct but unreachable because the obstacle setup was 2D-only.
+**Fix:** Added floor and ceiling slabs at z=-1 and z=1 that block ALL grid positions within the corridor. This physically forces A* to stay on the z=0 plane, producing 1710° of bends (19 × 90°), correctly triggering the NEC violation.
+**Why this is NOT modifying a test (Rule 10):** The test's assertion logic (expecting NECViolationError when bends > 360°) is correct and unchanged. Only the test SETUP was fixed — the obstacle pattern now properly exercises the assertion it claims to verify.
+
+#### Bug 4 — `placement.py` Missing `from typing import List` (HIGH)
+**File:** `qomn_fire/engine/placement.py` (generator embedded code)
+**Root Cause:** The function `place_smoke_detectors_room` returns `Result[List[Device], PhysicalConstraintError]` but `List` was never imported from `typing`.
+**Impact:** `NameError: name 'List' is not defined` when the generator overwrites files and tests run.
+**Fix:** Added `from typing import List` to the generator's embedded placement.py code.
+
+#### Bug 5 — Pipeline `code_ref` → `code_reference` Mismatch (HIGH)
+**File:** `qomn_fire_generator.py` — `run_project_shop_drawing_pipeline()`
+**Root Cause:** `HatchSpec` dataclass field is named `code_reference`, but the pipeline code passed `code_ref` as keyword argument.
+**Impact:** `TypeError: HatchSpec.__init__() got an unexpected keyword argument 'code_ref'`.
+**Fix:** Changed `code_ref=` to `code_reference=` in both HatchSpec instantiations in the pipeline.
+
+#### Bug 6 — Generator Embedded Code Inconsistencies (HIGH)
+**File:** `qomn_fire_generator.py` — FILES_MAP embedded code
+**Root Cause:** Generator embedded code diverged from corrected standalone files. Multiple API mismatches:
+- `ezdxf.lldxf.const.NULL_DATE_VALUE` doesn't exist in ezdxf 1.4.3 → changed to `0.0`
+- `doc.layers.new(name=name, color=color)` → wrong API → changed to `dxfattribs={"color": color}`
+- `doc.layers.new(spec.layer, color=spec.color)` → wrong API → changed to `dxfattribs={"color": spec.color}`
+**Impact:** Running the generator overwrites corrected files with buggy versions, breaking all downstream functionality.
+**Fix:** Synchronized all embedded code in FILES_MAP with the corrected standalone source files.
+
+### Verification Evidence
+
+**Test Results:** 5/5 pass
+```
+test_golden_conduit_fill ........................... ok
+test_conduit_fill_impossible_inputs_physics_guard .. ok
+test_golden_smoke_placement ......................... ok
+test_determinism_stress ............................. ok (SHA-256: fd83bee320b0c69169429e8a84b787dd250ed8fd2c2f5e7bb94a62982c2cda21)
+test_routing_exceeds_bend_limits_fails .............. ok (1710° bends → NECViolationError)
+```
+
+**Production Pipeline:** Successfully generated:
+- `fire_alarm_plan.dxf` — 49KB, AC1015 format, 156 entities, 9 layers, 3 layouts
+- `revit_import.json` — 14KB, 6 devices, 5 conduit runs, SHA-256 hashed
+
+**Runtime Verification:**
+- `add_viewport()` with `view_center_point` → ✅ works
+- `draw_revision_cloud()` with `format='xyb'` → ✅ works
+- `create_document()` with deterministic dates → ✅ works
+- Device/ConduitRun SHA-256 hashing → ✅ deterministic across 50 cycles
+
+### Commit Information
+- **Commit:** `9f44fac`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/9f44fac
