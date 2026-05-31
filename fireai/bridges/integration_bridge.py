@@ -273,8 +273,8 @@ class CableRoutingResult:
         warnings: Aggregated warnings across all circuits.
     """
     routes: List[Any] = field(default_factory=list)
-    all_routes_valid: bool = True
-    all_voltage_drop_compliant: bool = True
+    all_routes_valid: bool = False  # V112: FAIL-SAFE — routes not valid until verified
+    all_voltage_drop_compliant: bool = False  # V112: FAIL-SAFE — voltage drop not compliant until verified
     total_cable_length_m: float = 0.0
     circuit_count: int = 0
     violations: List[str] = field(default_factory=list)

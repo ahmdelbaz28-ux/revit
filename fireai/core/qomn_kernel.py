@@ -712,7 +712,7 @@ class QOMNAuditLog:
         input_data: Dict,
         formula_ref: str,
         output_data: Dict,
-        layer3_passed: bool = True,
+        layer3_passed: bool = False,  # V112: FAIL-SAFE — layer3 not passed until verified
     ) -> AuditEntry:
         """Record a computation to the immutable audit log."""
         timestamp = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())

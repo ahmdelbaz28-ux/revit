@@ -60,7 +60,7 @@ class ExactCoverageResult:
     room_area_sqm: float = 0.0
     effective_radius_m: float = 0.0
     n_sensors: int = 0
-    room_shape_valid: bool = True
+    room_shape_valid: bool = False  # V112: FAIL-SAFE — room shape not valid until verified
     warnings: List[str] = field(default_factory=list)
     details: str = ""
 

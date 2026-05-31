@@ -262,7 +262,7 @@ class RouteResult:
     num_bends: int = 0
     max_segment_m: float = 0.0
     obstacles_avoided: int = 0
-    valid: bool = True
+    valid: bool = False  # V112: FAIL-SAFE — route not valid until verified
     violations: List[str] = field(default_factory=list)
     solver: str = "lazy_astar_strtree"
     version: str = FIREAI_VERSION

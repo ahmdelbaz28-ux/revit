@@ -369,8 +369,8 @@ class RiserRoutingResult:
     cable_length_m: float = 0.0
     wire_gauge: str = "14"
     voltage_drop_pct: float = 0.0
-    voltage_drop_compliant: bool = True
-    route_valid: bool = True
+    voltage_drop_compliant: bool = False  # V112: FAIL-SAFE — not compliant until verified
+    route_valid: bool = False  # V112: FAIL-SAFE — route not valid until verified
     violations: List[str] = field(default_factory=list)
     nfpa_reference: str = "NFPA 72-2022 §27.4.1 / NEC Art. 760"
 

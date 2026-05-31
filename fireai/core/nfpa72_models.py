@@ -533,8 +533,8 @@ class CoverageResult:
     coverage_percentage: float = 0.0
     detectors_in_coverage: int = 0
     # V12 compatibility fields
-    proof_valid: bool = True
-    coverage_fraction: float = 1.0
+    proof_valid: bool = False  # V112: FAIL-SAFE — proof not valid until explicitly verified
+    coverage_fraction: float = 0.0  # V112: FAIL-SAFE — no coverage until verified
     max_gap_m: float = 0.0
     
     def __bool__(self):
