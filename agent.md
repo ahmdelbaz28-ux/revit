@@ -7487,7 +7487,8 @@ Maximize utilization of three external resources for FireAI:
 5. **No existing tests were broken** — All new files are additive. No modifications to existing production code.
 
 ### Commit Information
-- **Pending commit** — changes staged but not yet pushed to GitHub
+- **Commit: `d670b2d`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/d670b2d** — changes staged but not yet pushed to GitHub
 - Will commit after operator verification
 
 ---
@@ -9953,7 +9954,8 @@ After line-by-line code review per Rules 6 and 14, the following was confirmed:
 - `templates/revit_addin/ThreadSafeQueueHandler.cs`
 
 ### Commit
-- Pending commit and push to GitHub
+- Commit: `d670b2d`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/d670b2d and push to GitHub
 
 ---
 
@@ -10834,4 +10836,5 @@ The user's `qomn_parser_workspace.py` contains an OLDER version of the parser co
 4. **BUG-10 + BUG-11 work together** — The group code overwrite bug made polyline extraction impossible, but the extraction method was also broken independently. Both had to be fixed for the text-based DXF path to work.
 
 ### Commit Information
-- Pending commit
+- Commit: `d670b2d`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/d670b2d
