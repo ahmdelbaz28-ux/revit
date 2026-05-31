@@ -82,24 +82,47 @@ class ScheduleGenerator:
 
     def from_routing_schedule(self, schedule) -> List[ScheduleRow]:
         """
-        Convert a RoutingSchedule (from CableRouter) to ScheduleRow list.
-        RoutingSchedule.waypoints contains RouteWaypoint objects.
+        Convert a RoutingSchedule (from CableRouter.route_all) to ScheduleRow list.
+
+        REAL RoutingSchedule fields (verified from cable_router.py):
+          schedule.routes: Tuple[CableRoute]         — all routes
+          schedule.total_cable_length_m: float
+          schedule.total_bends: int
+          schedule.max_circuit_length_m: float
+          schedule.computation_hash: str
+
+        REAL CableRoute fields (verified from cable_router.py):
+          route.route_id: str
+          route.start: Tuple[float, float, float]
+          route.end:   Tuple[float, float, float]
+          route.total_length_m: float
+          route.num_bends: int
+          route.wire_gauge: WireGauge (has .awg_value property)
+          route.voltage_drop_v: float
+          route.is_compliant: bool
+
+        BUG HISTORY: Previous version read schedule.waypoints (never existed)
+        and schedule.wire_gauge (on CableRoute, not RoutingSchedule).
+        Fixed to iterate schedule.routes and read per-CableRoute fields.
         """
         rows = []
-        waypoints = getattr(schedule, 'waypoints', [])
-        for i in range(len(waypoints) - 1):
-            wp_a = waypoints[i]
-            wp_b = waypoints[i + 1]
+        for route in getattr(schedule, "routes", ()):
+            start  = getattr(route, "start", (0.0, 0.0, 0.0))
+            end    = getattr(route, "end",   (0.0, 0.0, 0.0))
+            gauge  = getattr(route, "wire_gauge", None)
+            awg    = gauge.awg_value if (gauge and hasattr(gauge, "awg_value")) else "14"
+            vdrop  = float(getattr(route, "voltage_drop_v", 0.0))
+            ps_v   = 24.0  # RoutingSchedule does not store ps_voltage
             rows.append(ScheduleRow(
-                device_id=f"{getattr(wp_a,'device_id',f'DEV-{i}')}→{getattr(wp_b,'device_id',f'DEV-{i+1}')}",
-                from_location=str(getattr(wp_a, 'world_position', (0, 0, 0))),
-                to_location=str(getattr(wp_b, 'world_position', (0, 0, 0))),
-                length_m=float(getattr(schedule, 'total_length_m', 0)),
-                wire_type=f"{getattr(schedule,'wire_gauge','14 AWG')} in 3/4\" RED EMT",
-                voltage_drop_v=float(getattr(schedule, 'voltage_drop_v', 0)),
-                end_voltage_v=float(getattr(schedule, 'end_voltage_v', 24.0)),
-                bend_count=int(getattr(schedule, 'bend_count', 0)),
-                compliant=bool(getattr(schedule, 'is_compliant', False)),  # V69-10 FIX: fail-safe default
+                device_id     = str(getattr(route, "route_id", "ROUTE")),
+                from_location = f"({start[0]:.2f},{start[1]:.2f},{start[2]:.2f})",
+                to_location   = f"({end[0]:.2f},{end[1]:.2f},{end[2]:.2f})",
+                length_m      = float(getattr(route, "total_length_m", 0.0)),
+                wire_type     = f"{awg} AWG in 3/4\" RED EMT",
+                voltage_drop_v= vdrop,
+                end_voltage_v = ps_v - vdrop,
+                bend_count    = int(getattr(route, "num_bends", 0)),
+                compliant     = bool(getattr(route, "is_compliant", False)),
             ))
         return rows
 

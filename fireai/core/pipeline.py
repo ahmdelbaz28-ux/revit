@@ -1319,23 +1319,40 @@ def _stage7_cable_routing(
         constraint_engine = ConstraintEngine()
         router = CableRouter(building_model, constraint_engine=constraint_engine)
 
-        # Build device list: (device_id, (x, y, z))
-        devices = []
-        for i, (x, y) in enumerate(positions):
-            z = room_z_m + 2.7  # detector on ceiling at 2.7m
-            dev_id = f"SD-{i+1:02d}"
-            devices.append((dev_id, (x, y, z)))
+        # Build connections list per route_all() real API (verified cable_router.py:930):
+        # connections: List[Dict] with keys: start, end, route_id, alarm_current_a
+        # FACP at one corner; detectors at ceiling height
+        FACP_HEIGHT_M  = room_z_m + 1.5   # panel at 1.5m above floor
+        DET_HEIGHT_M   = room_z_m + 2.7   # detector 300mm below 3m ceiling
 
-        # Add FACP at origin as first device
-        devices.insert(0, ("FACP-01", (bbox_x[0], bbox_y[0], room_z_m + 0.5)))
+        facp_xyz = (bbox_x[0] + 0.5, bbox_y[0] + 0.5, FACP_HEIGHT_M)
+        det_xyzs = [(x, y, DET_HEIGHT_M) for (x, y) in positions]
 
-        schedules = router.route_all(devices, wire_gauge="14 AWG")
+        # Route FACP→SD-01→SD-02→...  (daisy chain NAC circuit)
+        all_points = [facp_xyz] + det_xyzs
+        connections = [
+            {
+                "start": all_points[i],
+                "end":   all_points[i + 1],
+                "route_id": f"FACP-to-SD-{i+1:02d}",
+                "alarm_current_a": 0.04,   # 40mA per NFPA 72 §18.3 sounder
+            }
+            for i in range(len(all_points) - 1)
+        ]
 
+        # WireGauge enum — NOT string. "14 AWG" would cause TypeError.
+        from fireai.core.cable_routing_engine import WireGauge
+        schedule = router.route_all(
+            connections=connections,
+            wire_gauge=WireGauge.AWG_14,
+            ps_voltage=24.0,
+            project_name=f"FA-{validated.get('room_id', 'room')}",
+            ambient_temp_c=float(validated.get("ambient_temp_c", 40.0)),
+        )
+
+        # from_routing_schedule reads schedule.routes (Tuple[CableRoute])
         sg = ScheduleGenerator()
-        if hasattr(schedules, '__iter__') and not hasattr(schedules, 'waypoints'):
-            rows = sg.from_route_results(list(schedules))
-        else:
-            rows = sg.from_routing_schedule(schedules)
+        rows = sg.from_routing_schedule(schedule)
 
         report = sg.to_report(rows)
 
