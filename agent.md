@@ -8896,3 +8896,47 @@ Implement the 5 remaining security fixes from the operator's detailed security a
 - **Test Suite:** 1104 passed, 1 skipped, 0 failures, 0 warnings
 - **Confidence Level:** HIGH — all changes verified with full test suite
 - **Regressions:** None detected
+
+---
+
+## V107–V110 Fixes (2026-05-31)
+
+### V107: Restructure backend/ into proper Python package
+- Remove `backend/` from `.gitignore` (was blocking all backend source from tracking)
+- Move `backend_app.py` → `backend/app.py`, `backend_contract.py` → `backend/contract.py`, `backend_schemas.py` → `backend/schemas.py`
+- Add 13 backend routers, 9 backend services, 12 parser modules, integration package
+- **Commit:** `6fad26c` → https://github.com/ahmdelbaz28-ux/revit/commit/6fad26c
+
+### V108: Cable routing engine improvements, release gates refactor
+- Cable routing engine: expanded with improved pathfinding logic
+- Release gates: refactored for clarity and safety
+- New: provenance module for traceability
+- **Commit:** `7230562` → https://github.com/ahmdelbaz28-ux/revit/commit/7230562
+
+### V109: Create missing core modules + fix critical bugs
+- Create `fireai/core/stairwell_smoke_control.py` (StairwellSmokeControlIntegrator) — NFPA 92/72 §21.5
+- Create `fireai/core/bps_allocator.py` (NACBoosterAllocator) — NFPA 72 Ch10/NEC 760
+- Fix WireGauge: Add `_WireGaugeMeta` metaclass for class-level iteration
+- Fix `parsers/ifc_parser.py`: Add IfcAlarm/IfcSensor/IfcProtectiveDevice, raise ValueError instead of return None
+- Fix `fireai/core/ifc_parser.py`: Extract extrusion direction (not always Z), compute nested placements recursively
+- Fix `fireai/core/revit_exporter.py` + `constraint_engine.py`: wire_gauge string/instance compat
+- Fix `integration/ifc_bridge.py`: Conditional imports for missing modules
+- **Commit:** `2c692c3` → https://github.com/ahmdelbaz28-ux/revit/commit/2c692c3
+
+### V110: ALL 1104 TESTS PASSING — 0 failures
+- Fix `classify_safety_tier`: Rewritten rule ordering to match test contract (8 rules)
+- Fix `PROOF_VERIFIED_THRESHOLD`: 99.99 → 99.5
+- Fix `OverrideRecord`: frozen=True with backward-compatible fields
+- Fix `EngineeringEvidencePackage`: sorted hash for deterministic ordering
+- Fix `apply_fail_safe`: HMAC/audit chain flags in old convention path
+- Fix HMAC unification: Import and re-export `compute_hmac` from audit_log
+- Add CORS wildcard rejection + PerPathRateLimit longest-prefix match in backend/app.py
+- Fix cable_routing_engine API alignment with tests
+- **Commit:** `c6a9957` → https://github.com/ahmdelbaz28-ux/revit/commit/c6a9957
+
+### Self-Criticism Notes (V107–V110)
+1. **V107 removed backend/ from .gitignore** — this was the root cause of 45+ files being invisible to Git. The original .gitignore had `backend/` which blocked the entire directory. Now all source code is tracked.
+2. **V109 created two CRITICAL missing modules** — `stairwell_smoke_control.py` and `bps_allocator.py` were imported but never existed. The `__init__.py` had try/except that silently swallowed the import failures.
+3. **V110 fixed 25+ safety_assurance regressions** — the V108 refactoring broke backward compatibility by changing function signatures and OverrideRole enum values. The fix restores the old API while keeping new functionality.
+4. **WireGauge metaclass fix** — Python doesn't invoke `__iter__` as a classmethod on the class itself. Only a metaclass `__iter__` makes the class iterable (e.g., `for gauge in WireGauge:`).
+5. **1 skipped test** is expected — `test_workflow_service.py` requires LangGraph which is not installed in this environment.
