@@ -10838,3 +10838,59 @@ The user's `qomn_parser_workspace.py` contains an OLDER version of the parser co
 ### Commit Information
 - Commit: `d670b2d`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/d670b2d
+
+---
+
+## V59 Safety Hardening — Deep Code Audit and Bug Fixes (2026-06-01)
+
+### Self-Criticism Protocol — Four-Layer Analysis
+
+**Layer 1 — Output Criticism:** I previously accepted the test suite passing as evidence of correctness. This was WRONG. 53 tests passed but 15 bugs existed. Tests validate what they check, not what they don't. The code had critical safety gaps that no test covered.
+
+**Layer 2 — Thinking Criticism:** I assumed "all tests pass = code is correct." This is confirmation bias. I should have asked: "What safety properties are NOT tested?" The most dangerous bug (BUG-8: fallback geometry passing validation) had zero test coverage precisely because it was a gap no one thought to check.
+
+**Layer 3 — Method Criticism:** My approach was superficial — I read the code but didn't execute adversarial scenarios. I should have asked: "What happens if I feed invalid data through the happy path?" Running actual Python tests against the API surface exposed bugs immediately.
+
+**Layer 4 — Commitment Criticism:** I violated Rule 14 (No modification without verification) by not reading the code line-by-line before the previous session. I violated Rule 6 (Verify before changing) by accepting test pass rates as evidence of correctness. I violated Rule 12 (Self-criticism) by not being aggressive enough in finding bugs. I am correcting this now.
+
+### 15 Bugs Fixed
+
+| # | Bug | Severity | File | Impact |
+|---|-----|----------|------|--------|
+| BUG-1 | Result monad accepts both value AND error | CRITICAL | errors.py | Silent logic error — Result in undefined state |
+| BUG-3 | BaseEngineeringError not Exception subclass | HIGH | errors.py | Errors escape `except Exception` — silent failure |
+| BUG-5/16 | bend_count stores degrees not count | HIGH | routing.py | Field misleading; NEC check accidentally correct |
+| BUG-8 | GeometryValidator ignores has_fallback_geometry | CRITICAL | geometry_validator.py | Fallback geometry PASSES = WRONG fire designs |
+| BUG-12 | Room area_m2 can differ from calculated area | HIGH | geometry_validator.py | Area can be fabricated without detection |
+| BUG-14 | Building.units not validated to METERS | HIGH | geometry_validator.py | Non-meter units = wrong NFPA calculations |
+| BUG-19 | Conduit fill rejects FPLP/FPL/FPLR cables | HIGH | fill.py | Cannot size fire alarm conduit — PRIMARY use case |
+| BUG-20 | Route length = len(path)*step instead of (len-1)*step | CRITICAL | routing.py | All lengths overstated by one grid step |
+| BUG-22 | No boundary for diagonal conduit segments | MEDIUM | cable_hatch.py | Hatch placement fails for non-axis-aligned routes |
+| BUG-26 | DxfParser silently returns on read error | MEDIUM | dxf_parser.py | Silent failures in safety-critical system |
+| BUG-27 | ConduitRun.trade_size hardcoded to "1/2" | HIGH | routing.py | Wrong conduit size regardless of type |
+| BUG-30 | Building hash excludes wall geometry | HIGH | types.py | Different walls produce same hash |
+| BUG-36 | Building hash excludes openings | HIGH | types.py | Buildings with/without openings same hash |
+| BUG-37 | Result has no __repr__ | MEDIUM | errors.py | Impossible to debug Result state |
+| BUG-39 | DXF version hardcoded to R2000 | MEDIUM | dxf_parser.py | Wrong version information |
+
+### Most Dangerous Bug: BUG-8 (Fallback Geometry Passes Validation)
+
+**Scenario:** User uploads an empty DXF file. Parser creates fallback 10x10 room. GeometryValidator PASSES because the room has valid geometry. Downstream systems use this fake room for NFPA detector placement. Result: Fire protection design for a 100m² room that DOESN'T EXIST in the real building. If the real building has a 500m² open office, it gets ZERO detector coverage.
+
+**Fix:** GeometryValidator now checks has_fallback_geometry flag at Check 0. If True, returns GeometryError immediately. The pipeline STOPS. User must provide a valid BIM file.
+
+### Second Most Dangerous: BUG-20 (Route Length Off By One)
+
+**Scenario:** A* finds a path of 11 grid points for a 5m straight route. Code calculates: 11 * 0.5 = 5.5m. Actual distance: 10 segments * 0.5 = 5.0m. Error: 0.5m per route. For a 50m cable run, this adds 0.5m of phantom length. Voltage drop is calculated on inflated length, causing OVER-ESTIMATION of voltage drop (conservative but wrong). For material quantities, conduit and wire are OVER-ORDERED.
+
+**Fix:** Changed to `max(len(path) - 1, 0) * step_m`.
+
+### Test Results
+- 58 qomn_fire tests: ALL PASS
+- 298 qomn-specific tests: ALL PASS
+- 5 NEW test cases added for bug fixes
+- 8 pre-existing failures in cable_routing (resistance values) and self_healing — NOT related to this commit
+
+### Commit Information
+- **Commit:** `d7fd895`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/d7fd895
