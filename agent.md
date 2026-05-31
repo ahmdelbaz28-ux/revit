@@ -8722,3 +8722,96 @@ Implement the 5 remaining security fixes from the operator's detailed security a
 - **Test Suite:** 1057 passed, 1 skipped, 0 failures
 - **Confidence Level:** HIGH — all changes verified with full test suite
 - **Regressions:** None detected
+
+---
+
+## V105 Fixes (2026-05-31) — Comprehensive Security & Quality Audit
+
+**Self-Criticism (Pre-V105):** The V104 fixes addressed individual symptoms but did not do a holistic cross-module review. The verify_chain() function was fixed for masking corruption but was still using plain SHA-256 for re-computation while log_event() used HMAC-SHA256. This made chain verification ALWAYS report false positives when AUDIT_HMAC_KEY was set — the "fix" was itself broken. Additionally, configure_log_rotation() was adding a second loguru sink to security_audit.log, causing triple entries and more chain corruption. The root cause was a failure to test verify_chain() end-to-end after the V104 fixes.
+
+### CRITICAL-1: verify_chain() Always Reports False Positives (HMAC Mismatch)
+
+**File:** fireai/core/security_logging.py, lines 542-549 (log_event) vs 596-599 (verify_chain)
+**Root Cause:** log_event() computed chain hash with HMAC-SHA256 when AUDIT_HMAC_KEY was set, but verify_chain() always recomputed using plain SHA-256. The two algorithms produce completely different outputs, so chain verification ALWAYS failed when HMAC was configured.
+**Fix:** Created _compute_chain_hash() as the SINGLE SOURCE OF TRUTH for chain hash computation. Both log_event() and verify_chain() now call this function, eliminating algorithm divergence.
+
+### CRITICAL-2: Duplicate loguru Sinks for security_audit.log
+
+**File:** backend_app.py, lines 68-71 + security_logging.py, line 423
+**Root Cause:** SecurityAuditLogger.__init__() creates its own loguru sink for security_audit.log with audit_channel="security" filter. Then backend_app.py called configure_log_rotation(logging.getLogger("fireai.security_audit"), "security_audit.log"), which added a SECOND loguru sink to the SAME file with filter=lambda record: True (accepts all). Every security event appeared 3 times in the log, and the timestamped-format entries broke JSON parsing in verify_chain().
+**Fix:** configure_log_rotation() now skips "security_audit.log" — SecurityAuditLogger manages its own rotation independently.
+
+### CRITICAL-3: Missing Strict-Transport-Security (HSTS) Header
+
+**File:** backend_app.py, lines 363-371 (SecurityHeadersMiddleware)
+**Root Cause:** All other security headers were present (X-Frame-Options, CSP, etc.) but HSTS was missing. Without HSTS, an active network attacker can downgrade HTTPS to HTTP and intercept authentication credentials for this safety-critical system.
+**Fix:** Added HSTS header (max-age=31536000; includeSubDomains; preload) when request is over HTTPS.
+
+### HIGH-1: Chain Hash Resets to GENESIS on Process Restart
+
+**File:** fireai/core/security_logging.py, line 392
+**Root Cause:** SecurityAuditLogger.__init__() always set _chain_hash = "GENESIS". On process restart, the existing security_audit.log had previous entries, but new entries started with a fresh chain that didn't link to the last pre-restart entry. This broke cross-restart chain integrity (NFPA 72 §14.2.4).
+**Fix:** Added _recover_chain_hash() method that reads the last entry from the existing log and recomputes the chain hash to continue the chain.
+
+### HIGH-2: SensitiveDataFilter Hex-Regex Corrupts Hash Values
+
+**File:** fireai/core/security_logging.py, line 84
+**Root Cause:** The regex r'(?<=["\s:=])([a-f0-9]{32,})(?=["\s,])' matched ANY 32+ char hex string, including SHA-256 hashes, chain_hash values, HMAC signatures, and entry_hash values. Even though V104 removed the filter from the security audit handler, the filter was still applied to the fireai root logger (line 619-620), corrupting hash values in the general fireai.log.
+**Fix:** Removed the hex-regex pattern entirely from _SENSITIVE_PATTERNS. Bare hex strings are no longer masked — only key-value patterns with context clues (e.g., "api_key=...", "Bearer ...") are masked. This preserves hash values while still masking real secrets.
+
+### HIGH-4: CSP Allows 'unsafe-eval' in Production
+
+**File:** backend_app.py, lines 354-355
+**Root Cause:** CSP script-src included 'unsafe-eval' unconditionally, allowing eval()/Function() execution which is a significant XSS vector. For a safety-critical engineering platform, XSS could modify detector placement data.
+**Fix:** 'unsafe-eval' is now only included in development mode (for Vite HMR). Production CSP uses script-src 'self' 'unsafe-inline' only.
+
+### HIGH-5: Rate Limiter IPv6 Crash + Per-Request Proxy Set Recreation
+
+**File:** backend_app.py, lines 710-723
+**Root Cause:** (1) _TRUSTED_PROXIES frozenset was recreated on every request as a local variable. (2) Private IP range check used string parsing (direct_ip.split(".")[1]) which crashes on IPv6 addresses. (3) IPv6 unique local addresses (fc00::/7) were not recognized as private.
+**Fix:** Moved _TRUSTED_PROXIES to class attribute. Created _is_trusted_proxy() static method using ipaddress.ip_address().is_private for robust detection.
+
+### MEDIUM-2: .env.example Stale Defaults
+
+**File:** .env.example, lines 50-51
+**Root Cause:** FIREAI_LOG_MAX_BYTES=52428800 (50 MB) contradicted code default of 500 MB. FIREAI_LOG_BACKUP_COUNT=10 contradicted code default of 20.
+**Fix:** Updated .env.example to match code defaults.
+
+### MEDIUM-6: Dead /api/memory/gemini Rate Limit Entry
+
+**File:** backend_app.py, line 630
+**Root Cause:** Rate limit table included ("/api/memory/gemini", 60, 60) but no such route exists. Gemini is accessed via /api/memory/search with provider=gemini parameter.
+**Fix:** Removed dead entry, changed /api/memory to 60/min to cover Gemini usage.
+
+### MEDIUM-8: CWD Always in DDC Allowed Directories
+
+**File:** parsers/ddc_adapter.py, lines 209-212
+**Root Cause:** Path.cwd() was always added to allowed upload directories. In Docker containers (CWD=/app), this allows any file under /app including .env files.
+**Fix:** Only add CWD in development mode.
+
+### MEDIUM-9: Windows _ALLOWED_BINARIES Empty Lists = No Security
+
+**File:** parsers/ddc_adapter.py, lines 82-85
+**Root Cause:** Windows binary entries had empty allowed path lists. The check `if _allowed_paths:` skipped validation when empty, meaning any binary with the right name anywhere on PATH would be executed.
+**Fix:** When _allowed_paths is empty and no converter_dir is set, REJECT the binary (fail-closed).
+
+### Other Fixes
+- LOW-4: import hmac moved to module level in backend_app.py
+- LOW-5: is_available() uses shutil.which() instead of subprocess
+- LOW-6: Consistent genesis sentinel (_SECURITY_GENESIS = '0'*64) matching audit_log.py
+- MEDIUM-1: Env var cache with 5s TTL + force refresh for key rotation
+- Test fixes: Updated _PER_PATH_LIMITS copy, genesis sentinel, hex masking test, flaky strong key test
+
+### Self-Criticism Notes (V105)
+
+1. **V104's verify_chain fix was ITSELF broken** — it removed SensitiveDataFilter but didn't fix the algorithm mismatch. This is a textbook example of fixing the symptom but not the root cause. The chain was STILL broken; we just moved the break point.
+2. **No end-to-end verify_chain test** — V104 didn't add a test that actually calls verify_chain() after logging events. If it had, the HMAC/SHA-256 mismatch would have been caught immediately.
+3. **Duplicate sinks went unnoticed** — The configure_log_rotation() call for security_audit.log was in backend_app.py but the SecurityAuditLogger was in security_logging.py. Neither module knew about the other's sink. Cross-module integration review was missing.
+4. **The hex-regex was always a bad idea** — Matching bare hex strings as "sensitive" is fundamentally flawed because hash values ARE hex strings. The correct approach is context-aware masking (key name + value), which the key-value regex patterns already provide.
+
+### Commit Information
+- **Commit:** 4cf66c7
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/4cf66c7
+- **Test Suite:** 1058 passed, 1 skipped, 0 failures
+- **Confidence Level:** HIGH — all changes verified with full test suite
+- **Regressions:** None detected
