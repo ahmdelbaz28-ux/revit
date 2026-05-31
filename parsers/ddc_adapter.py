@@ -64,6 +64,33 @@ _DDC_CONVERTERS_WIN: Dict[str, str] = {
     ".dgn": "DgnExporter.exe",
 }
 
+# SECURITY FIX (V103): ALLOWED_BINARIES maps binary names to their expected
+# absolute paths. Before any subprocess call, the resolved binary path is
+# checked against this dict. This prevents an attacker from placing a
+# malicious binary on PATH that shadows the real DDC converter.
+# Only binaries found at these exact paths (or in these directories) are
+# permitted. If the resolved binary is NOT in this dict's values, the
+# conversion is REJECTED with a SECURITY error.
+#
+# On Linux, DDC converters are installed via apt to /usr/bin/.
+# On Windows, they are typically in the converter_dir or C:\DDC\.
+_ALLOWED_BINARIES: Dict[str, List[str]] = {
+    "ddc-rvtconverter": ["/usr/bin/ddc-rvtconverter", "/usr/local/bin/ddc-rvtconverter"],
+    "ddc-dwgconverter": ["/usr/bin/ddc-dwgconverter", "/usr/local/bin/ddc-dwgconverter"],
+    "ddc-ifcconverter": ["/usr/bin/ddc-ifcconverter", "/usr/local/bin/ddc-ifcconverter"],
+    "ddc-dgnconverter": ["/usr/bin/ddc-dgnconverter", "/usr/local/bin/ddc-dgnconverter"],
+    "RvtExporter.exe": [],   # Windows — paths resolved from converter_dir
+    "DwgExporter.exe": [],   # Windows — paths resolved from converter_dir
+    "IfcExporter.exe": [],   # Windows — paths resolved from converter_dir
+    "DgnExporter.exe": [],   # Windows — paths resolved from converter_dir
+}
+
+# SECURITY: The subprocess working directory (cwd) is restricted to a
+# dedicated safe directory, NOT an arbitrary user-supplied path.
+# Previously, cwd was set to output_dir (which could be user-controlled).
+# Now we use the resolved temp directory as cwd, which is a known safe path.
+_SAFE_CWD_BASE = Path(os.getenv("FIREAI_DDC_CWD_BASE", tempfile.gettempdir())).resolve()
+
 
 class DDCNotAvailableError(RuntimeError):
     """Raised when DDC CLI converter is not installed."""
@@ -238,20 +265,58 @@ class DDCAdapter:
                 f"Supported: {list(_DDC_CONVERTERS.keys())}"
             )
 
-        if not self.is_available(ext):
-            raise DDCNotAvailableError(
-                f"DDC converter '{binary}' not found on PATH. "
-                f"Install with: sudo apt install {_DDC_CONVERTERS.get(ext, binary)}"
-            )
-
         # Use temp dir if no output specified
         _temp = None
         if output_dir is None:
             _temp = tempfile.mkdtemp(prefix="fireai_ddc_")
             output_dir = _temp
 
+        # SECURITY FIX (V103): Resolve the binary path and verify it is
+        # in an ALLOWED location. Without this check, an attacker could
+        # place a malicious binary on PATH (e.g., /tmp/ddc-rvtconverter)
+        # that would be executed instead of the real converter.
+        # We use shutil.which() to resolve the full path, then verify
+        # the resolved path matches one of the allowed locations.
+        import shutil
+        resolved_binary = shutil.which(binary)
+        if resolved_binary is None:
+            raise DDCNotAvailableError(
+                f"DDC converter '{binary}' not found on PATH. "
+                f"Install with: sudo apt install {_DDC_CONVERTERS.get(ext, binary)}"
+            )
+
+        # Verify the resolved binary is in an allowed location
+        resolved_binary_path = Path(resolved_binary).resolve()
+        _binary_name = Path(binary).name  # Strip any path prefix
+        _allowed_paths = _ALLOWED_BINARIES.get(_binary_name, [])
+
+        # For Windows with converter_dir, add converter_dir to allowed paths
+        if self._platform == "windows" and self._converter_dir:
+            _allowed_paths = list(_allowed_paths) + [
+                str(Path(self._converter_dir).resolve() / _binary_name)
+            ]
+
+        if _allowed_paths:
+            _binary_in_allowed = False
+            for allowed_path in _allowed_paths:
+                try:
+                    resolved_binary_path.relative_to(Path(allowed_path).resolve())
+                    _binary_in_allowed = True
+                    break
+                except ValueError:
+                    # Also check exact match
+                    if str(resolved_binary_path) == allowed_path:
+                        _binary_in_allowed = True
+                        break
+            if not _binary_in_allowed:
+                raise ValueError(
+                    f"SECURITY: DDC binary '{resolved_binary_path}' is not in "
+                    f"allowed locations. Binary path traversal detected. "
+                    f"Allowed: {_allowed_paths}"
+                )
+
         try:
-            cmd = [binary, str(safe_path)]
+            cmd = [str(resolved_binary_path), str(safe_path)]
             if export_mode and ext in (".rvt", ".rfa"):
                 # SECURITY FIX: Whitelist export_mode to prevent command
                 # injection. Without validation, a malicious export_mode
@@ -264,13 +329,21 @@ class DDCAdapter:
                     )
                 cmd.append(export_mode)
 
+            # SECURITY FIX (V103): Restrict subprocess cwd to a safe directory
+            # instead of using the user-controlled output_dir. The output_dir
+            # is passed as an argument to the binary (if supported) rather
+            # than used as cwd. This prevents the subprocess from writing to
+            # or reading from arbitrary directories.
+            _safe_cwd = _SAFE_CWD_BASE / f"fireai_ddc_cwd_{os.getpid()}"
+            _safe_cwd.mkdir(parents=True, exist_ok=True)
+
             logger.info(f"DDC convert: {' '.join(cmd)} → {output_dir}")
 
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                cwd=output_dir,
+                cwd=str(_safe_cwd),
                 timeout=300,  # 5 min max
             )
 

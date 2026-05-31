@@ -622,8 +622,13 @@ _PER_PATH_LIMITS = [
     ("/api/environment/hazmat",      30, 60),   # Local DB: 30/min
     ("/api/environment/region",      10, 60),   # REST Countries: 10/min
     # AI/LLM endpoints — moderate limits
+    # V103 FIX: Added explicit Gemini rate limit (60/min) per the security
+    # audit. Gemini is accessed through the memory service endpoint and has
+    # its own upstream API limit. 60/min is generous for engineering queries
+    # while preventing abuse that could exhaust the API quota.
     ("/api/workflow",                10, 60),   # LangGraph: 10/min
-    ("/api/memory",                  10, 60),   # Mem0: 10/min
+    ("/api/memory/gemini",           60, 60),   # Gemini API: 60/min
+    ("/api/memory",                  30, 60),   # Mem0: 30/min (general)
     # Mutating endpoints — moderate limits (safety-critical)
     ("/api/projects",               30, 60),   # CRUD: 30/min
     # Analysis engine — CPU-intensive
