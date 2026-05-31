@@ -93,3 +93,4 @@ fireai/infrastructure/
 tmp/
 temp/
 .env
+repos/
