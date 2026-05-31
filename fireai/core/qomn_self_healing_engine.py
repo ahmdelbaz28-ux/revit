@@ -689,7 +689,7 @@ def query_local_ollama_engine(
     }
 
     req_body = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
+    req = urllib.request.Request(  # noqa: S310 — URL is localhost API endpoint, not user-supplied
         url,
         data=req_body,
         headers={"Content-Type": "application/json"},
@@ -698,7 +698,7 @@ def query_local_ollama_engine(
 
     try:
         # Enforce strict 2-second timeout to prevent stalling the safety thread
-        with urllib.request.urlopen(req, timeout=2.0) as response:
+        with urllib.request.urlopen(req, timeout=2.0) as response:  # noqa: S310
             res_body = response.read().decode("utf-8")
             res_json = json.loads(res_body)
             llm_text = res_json.get("response", "{}")
