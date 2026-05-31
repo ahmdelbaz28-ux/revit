@@ -23,9 +23,12 @@ This uses Shapely's Voronoi implementation for geometric computation.
 Falls back to brute-force sampling if Shapely Voronoi unavailable.
 """
 
+import logging
 import math
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional
+
+logger = logging.getLogger(__name__)
 
 try:
     from shapely.geometry import Point, Polygon, MultiPoint
@@ -160,7 +163,8 @@ class VoronoiVerifier:
                             if dist > max_gap:
                                 max_gap = dist
                                 max_gap_loc = (ix, iy)
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"V112: _verify_voronoi: failed to compute Voronoi cell boundary intersection: {e!r}")
                     pass
 
             # Also check room corners (they might be in small Voronoi cells)

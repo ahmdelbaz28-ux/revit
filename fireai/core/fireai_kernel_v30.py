@@ -742,9 +742,24 @@ class SafetyLedger:
     def __init__(
         self,
         ledger_path: Path,
-        secret_key:  bytes = b"fireai-safety-secret",
+        secret_key:  bytes = None,  # V112: NO default — caller MUST provide via env var
     ) -> None:
         import hmac as _hmac
+        import os
+        # V112: Security — secret_key MUST be provided, never use a default.
+        # A hardcoded secret defeats the entire HMAC audit trail.
+        # NFPA 72 §10.6.1: tamper-evidence requires unique, secret keys.
+        if secret_key is None:
+            env_key = os.environ.get("FIREAI_HMAC_SECRET_KEY")
+            if env_key:
+                secret_key = env_key.encode("utf-8")
+            else:
+                raise ValueError(
+                    "AuditLedger requires a secret_key. "
+                    "Pass secret_key= or set FIREAI_HMAC_SECRET_KEY env var. "
+                    "A hardcoded default HMAC key defeats the audit trail — "
+                    "this is a safety-critical system per NFPA 72 §10.6.1."
+                )
         self._path       = ledger_path
         self._key        = secret_key
         self._hmac       = _hmac

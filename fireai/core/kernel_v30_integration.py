@@ -21,6 +21,7 @@ What this file does:
 from __future__ import annotations
 
 import array
+import logging
 import math
 import mmap
 import multiprocessing
@@ -34,6 +35,8 @@ import platform
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+logger = logging.getLogger(__name__)
+
 try:
     import numpy as np
     _HAS_NUMPY = True
@@ -43,7 +46,8 @@ try:
         try:
             # NumPy exposes CPU info on some builds
             info = np.__config__.blas_opt_info
-        except Exception:
+        except Exception as e:
+            logger.debug(f"V112: _detect_simd: failed to read numpy BLAS config: {e!r}")
             pass
         # Heuristic: try to execute AVX2 instruction via numpy
         try:
@@ -54,7 +58,8 @@ try:
                 return "AVX2"
             elif platform.machine() in ("arm64", "aarch64"):
                 return "NEON"
-        except Exception:
+        except Exception as e:
+            logger.debug(f"V112: _detect_simd: AVX2/NEON detection failed, falling back to SCALAR: {e!r}")
             pass
         return "SCALAR"
 except ImportError:
@@ -364,7 +369,8 @@ class MmapResultCache:
                 self._data_ptr += data_len
                 self._set_entry_count(n + 1)
                 return True
-            except Exception:
+            except Exception as e:
+                logger.warning(f"V112: MmapResultCache.put: failed to write room_id={room_id!r} to mmap cache: {e!r}")
                 return False
 
     def get(self, room_id: str) -> Optional[str]:
@@ -383,21 +389,22 @@ class MmapResultCache:
                         data_off, data_len = entry[1], entry[2]
                         return self._mmap[data_off: data_off + data_len].decode("utf-8")
                 return None
-            except Exception:
+            except Exception as e:
+                logger.warning(f"V112: MmapResultCache.get: failed to read room_id={room_id!r} from mmap cache: {e!r}")
                 return None
 
     def close(self) -> None:
         with self._lock:
             if self._mmap:
                 try: self._mmap.flush(); self._mmap.close()
-                except Exception: pass
+                except Exception as e: logger.debug(f"V112: MmapResultCache.close: mmap flush/close failed: {e!r}"); pass
             if self._file:
                 try: self._file.close()
-                except Exception: pass
+                except Exception as e: logger.debug(f"V112: MmapResultCache.close: file close failed: {e!r}"); pass
 
     def __del__(self) -> None:
         try: self.close()
-        except Exception: pass
+        except Exception as e: logger.debug(f"V112: MmapResultCache.__del__: close failed: {e!r}"); pass
 
     def __enter__(self):
         return self
@@ -448,7 +455,8 @@ class KernelV30Dispatcher:
         if enable_mmap_cache:
             try:
                 self._cache = MmapResultCache()
-            except Exception:
+            except Exception as e:
+                logger.warning(f"V112: KernelV30Dispatcher.__init__: failed to create MmapResultCache: {e!r}")
                 pass
 
         # Lazy import DensityOptimizer for fallback
@@ -483,7 +491,8 @@ class KernelV30Dispatcher:
                 try:
                     cached_data = json.loads(cached)
                     return self._dict_to_layout(cached_data, room)
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"V112: optimize: failed to deserialize cached data for room_id={room_id!r}: {e!r}")
                     pass
 
         # SIMD path — with fallback when proof fails
@@ -511,7 +520,8 @@ class KernelV30Dispatcher:
                     room_id,
                     json.dumps(self._layout_to_dict(layout), default=str),
                 )
-            except Exception:
+            except Exception as e:
+                logger.warning(f"V112: optimize: failed to cache result for room_id={room_id!r}: {e!r}")
                 pass
 
         return layout
@@ -761,7 +771,8 @@ class KernelV30Dispatcher:
                 radius_warning="",
                 nfpa_table_ref="NFPA 72-2022 Table 17.6.3.1.1",
             )
-        except Exception:
+        except Exception as e:
+            logger.warning(f"V112: _dict_to_layout: failed to reconstruct DetectorLayout from cached data: {e!r}")
             return None
 
     def shutdown(self) -> None:

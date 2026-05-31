@@ -39,10 +39,13 @@ NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 D3 DELIVERABLE: Closes the single-engine vulnerability for complex rooms.
 """
 
+import logging
 import math
 import enum
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional
+
+logger = logging.getLogger(__name__)
 
 from .consensus_engine import (
     ConsensusEngine, ConsensusResult, ConfidenceLevel,
@@ -175,7 +178,8 @@ def grid_polygon_verify(
         room_poly = Polygon(room_coords)
         if not room_poly.is_valid:
             room_poly = room_poly.buffer(0)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"V112: grid_polygon_verify: failed to construct room polygon from coords: {e!r}")
         return False, 0.0
 
     min_x, min_y, max_x, max_y = polygon_bounds(room_coords)
@@ -199,7 +203,8 @@ def grid_polygon_verify(
                         if (x - dx) ** 2 + (y - dy) ** 2 <= R2_eff:
                             covered_points += 1
                             break
-            except Exception:
+            except Exception as e:
+                logger.warning(f"V112: grid_polygon_verify: failed to check grid point ({x:.2f}, {y:.2f}) containment: {e!r}")
                 pass
             y += step
         x += step

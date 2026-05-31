@@ -501,7 +501,8 @@ class ElevatorShuntTripAuditor:
                     ),
                     violations=violations if violations else None,
                 )
-            except Exception:
+            except Exception as e:
+                logger.warning(f"V112: audit_hoistway_machine_room: failed to construct DecisionProvenance audit result: {e!r}")
                 pass
 
         # Fallback: plain dict

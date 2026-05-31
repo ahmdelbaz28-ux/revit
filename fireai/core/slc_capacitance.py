@@ -370,7 +370,8 @@ class SLCCapacitanceAuditor:
                     ),
                     violations=violations if violations else None,
                 )
-            except Exception:
+            except Exception as e:
+                logger.warning(f"V112: audit_slc_loops: failed to construct DecisionProvenance audit result: {e!r}")
                 pass
 
         return {

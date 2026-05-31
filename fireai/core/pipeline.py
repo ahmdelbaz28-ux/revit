@@ -928,7 +928,7 @@ def analyze_room(
     )
     stages.append(s05)
     qomn_audit = s05.data.get("audit_log") if s05.success else None
-    if s05.success and not s05.data.get("physics_guard_passed", True):
+    if s05.success and not s05.data.get("physics_guard_passed", False):  # V112: FAIL-SAFE — missing guard = FAILED
         # Physics guard rejected input — critical warning (not blocking)
         for err in s05.data.get("guard_errors", []):
             warnings.append(f"[QOMN PHYSICS GUARD] {err}")

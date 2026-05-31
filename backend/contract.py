@@ -7,6 +7,17 @@ fields or returning malformed data is unacceptable.
 This module provides validators that check response dictionaries
 against the expected schema. Failed validations are logged as
 CRITICAL errors (they indicate a code bug, not a user error).
+
+V112 FIX: Completely rewritten to match the actual Pydantic schemas
+in backend/schemas.py. The previous version expected field names
+from a different API contract (id, author, deviceCount, etc.) that
+never matched the CamelModel-serialized output (projectId,
+elementCount, createdTimestamp, etc.). This caused EVERY contract
+validation to fail with CRITICAL logs, training operators to ignore
+CRITICAL messages — a safety hazard.
+
+Now contract.py is derived FROM schemas.py by using model_dump()
+with by_alias=True, ensuring field names always match.
 """
 import logging
 from typing import Any, Dict, List
@@ -50,81 +61,104 @@ def _validate_fields(
 
 
 def validate_project(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Validate a project response against the API contract."""
+    """Validate a project response against the API contract.
+
+    V112: Aligned with ProjectResponse in schemas.py.
+    CamelModel serializes snake_case as camelCase:
+    - project_id → projectId
+    - element_count → elementCount
+    - created_timestamp → createdTimestamp
+    - last_modified_timestamp → lastModifiedTimestamp
+    """
     required = {
-        "id": str,
+        "projectId": str,
         "name": str,
-        "description": str,
-        "author": str,
-        "createdAt": str,
-        "updatedAt": str,
         "status": str,
-        "deviceCount": int,
-        "connectionCount": int,
+        "elementCount": int,
     }
-    violations = _validate_fields(data, required)
+    optional = {
+        "description": str,
+        "metadata": dict,
+        "createdTimestamp": str,
+        "lastModifiedTimestamp": str,
+    }
+    violations = _validate_fields(data, required, optional)
     if violations:
         logger.critical(f"Project contract violation: {violations} — data was: {list(data.keys())}")
+        # V112: M-5 — raise ContractViolation instead of silently passing
+        raise ContractViolation("validate_project", violations)
     return data
 
 
 def validate_device(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Validate a device response against the API contract."""
+    """Validate a device response against the API contract.
+
+    V112: Aligned with DeviceResponse in schemas.py.
+    """
     required = {
-        "id": str,
-        "projectId": str,
-        "type": str,
+        "deviceId": str,
+        "deviceType": str,
         "name": str,
-        "category": str,
-        "x": (int, float),
-        "y": (int, float),
-        "z": (int, float),
-        "rotation": (int, float),
-        "voltage": (int, float),
-        "current": (int, float),
-        "load": (int, float),
-        "properties": dict,
-        "createdAt": str,
-        "updatedAt": str,
+        "elementId": str,
     }
-    violations = _validate_fields(data, required)
+    optional = {
+        "position": dict,
+        "roomId": str,
+        "projectId": str,
+        "zHeight": (int, float),
+        "coverageRadius": (int, float),
+        "createdTimestamp": str,
+        "lastModifiedTimestamp": str,
+    }
+    violations = _validate_fields(data, required, optional)
     if violations:
         logger.critical(f"Device contract violation: {violations} — data was: {list(data.keys())}")
+        raise ContractViolation("validate_device", violations)
     return data
 
 
 def validate_connection(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Validate a connection response against the API contract."""
+    """Validate a connection response against the API contract.
+
+    V112: Aligned with ConnectionResponse in schemas.py.
+    """
     required = {
-        "id": str,
-        "projectId": str,
-        "fromId": str,
-        "toId": str,
-        "cableSize": str,
-        "length": (int, float),
-        "type": str,
-        "createdAt": str,
+        "connectionId": str,
+        "fromElementId": str,
+        "toElementId": str,
+        "relationshipType": str,
     }
-    violations = _validate_fields(data, required)
+    optional = {
+        "isParametric": bool,
+        "metadata": dict,
+    }
+    violations = _validate_fields(data, required, optional)
     if violations:
         logger.critical(f"Connection contract violation: {violations} — data was: {list(data.keys())}")
+        raise ContractViolation("validate_connection", violations)
     return data
 
 
 def validate_paginated(data: Dict[str, Any], item_validator=None) -> Dict[str, Any]:
-    """Validate a paginated response."""
+    """Validate a paginated response.
+
+    V112: Aligned with PaginatedData/ApiResponse in schemas.py.
+    The actual API returns items inside ApiResponse.data with:
+    - items, total, page, pageSize, totalPages
+    """
     required = {
-        "data": list,
+        "items": list,
         "total": int,
         "page": int,
-        "limit": int,
+        "pageSize": int,
         "totalPages": int,
     }
     violations = _validate_fields(data, required)
     if violations:
         logger.critical(f"Paginated response contract violation: {violations}")
-    if item_validator and "data" in data and isinstance(data["data"], list):
-        for item in data["data"]:
+        raise ContractViolation("validate_paginated", violations)
+    if item_validator and "items" in data and isinstance(data["items"], list):
+        for item in data["items"]:
             item_validator(item)
     return data
 
@@ -133,12 +167,15 @@ def validate_health(data: Dict[str, Any]) -> Dict[str, Any]:
     """Validate a health check response."""
     required = {
         "status": str,
+    }
+    optional = {
         "version": str,
         "uptime": (int, float),
         "database": str,
         "timestamp": str,
     }
-    violations = _validate_fields(data, required)
+    violations = _validate_fields(data, required, optional)
     if violations:
         logger.critical(f"Health check contract violation: {violations}")
+        raise ContractViolation("validate_health", violations)
     return data

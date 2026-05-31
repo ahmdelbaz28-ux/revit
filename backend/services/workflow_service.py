@@ -223,6 +223,29 @@ def node_initialize(state: PipelineState) -> PipelineState:
     import os
 
     file_path = state.get("file_path", "")
+
+    # V112: Path traversal validation — prevent reading arbitrary files.
+    # In a safety-critical system, file access MUST be restricted to
+    # allowed directories. Path traversal can leak secrets, configs,
+    # or audit logs to unauthorized users.
+    ALLOWED_DATA_DIRS = os.environ.get(
+        "FIREAI_DATA_DIRS",
+        "/tmp/fireai_uploads:/data:/uploads",
+    ).split(":")
+
+    if file_path:
+        real_path = os.path.realpath(file_path)
+        if not any(real_path.startswith(os.path.realpath(d)) for d in ALLOWED_DATA_DIRS if d):
+            return {
+                **state,
+                "status": WorkflowStatus.FAILED.value,
+                "error_message": (
+                    f"Path traversal blocked: '{file_path}' resolves to "
+                    f"'{real_path}' which is outside allowed directories. "
+                    f"Per safety policy, file access is restricted."
+                ),
+            }
+
     if not file_path or not os.path.exists(file_path):
         return {
             **state,

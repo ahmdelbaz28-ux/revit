@@ -1008,7 +1008,7 @@ class StairwellSmokeControlIntegrator:
         """
         design_pressure_pa = stair.get("design_pressure_pa", None)
         has_fire_alarm_interlock = stair.get(
-            "has_fire_alarm_interlock", True
+            "has_fire_alarm_interlock", False  # V112: FAIL-SAFE — missing interlock data = NOT verified
         )
         has_pressurization_fan = stair.get(
             "has_pressurization_fan", False
@@ -1138,7 +1138,7 @@ class StairwellSmokeControlIntegrator:
         Returns:
             FireAlarmActivationResult with activation assessment.
         """
-        has_interlock = stair.get("has_fire_alarm_interlock", True)
+        has_interlock = stair.get("has_fire_alarm_interlock", False)  # V112: FAIL-SAFE
         activation_delay_s = stair.get("activation_delay_s", FAN_ACTIVATION_DELAY_S)
 
         # Validate activation_delay_s
@@ -1516,7 +1516,7 @@ class StairwellSmokeControlIntegrator:
             ))
 
         # --- Fire alarm interlock monitoring ---
-        has_interlock = stair.get("has_fire_alarm_interlock", True)
+        has_interlock = stair.get("has_fire_alarm_interlock", False)  # V112: FAIL-SAFE
         if not has_interlock:
             injections.append(PressurizationInjection(
                 device_type="MON_FIRE_ALARM_INTERLOCK",

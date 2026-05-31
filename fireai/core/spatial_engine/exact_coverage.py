@@ -29,9 +29,12 @@ Rationale (Consultant #5 Criticism #1 — partially accepted):
 NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 """
 
+import logging
 import math
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional
+
+logger = logging.getLogger(__name__)
 
 try:
     from shapely.geometry import Polygon, Point, MultiPolygon
@@ -230,7 +233,8 @@ class ExactCoverageEngine:
                     obs_poly = Polygon(obs_coords)
                     if obs_poly.is_valid and room_poly.intersects(obs_poly):
                         room_poly = room_poly.difference(obs_poly)
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"V112: verify_with_obstacles: failed to subtract obstacle polygon: {e!r}")
                     pass  # Skip invalid obstacles
 
         # Build sensor coverage circles using effective radius (2% safety)
@@ -244,7 +248,8 @@ class ExactCoverageEngine:
                 clipped = sensor_circle.intersection(room_poly)
                 if not clipped.is_empty:
                     sensor_areas.append(clipped)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"V112: verify_with_obstacles: failed to build sensor coverage circle at loc={loc!r}: {e!r}")
                 continue
 
         if not sensor_areas:
