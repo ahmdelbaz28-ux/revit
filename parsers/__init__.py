@@ -1,15 +1,10 @@
 """
 Parsers Package - Input Layer for NFPA 72 Engine
 =================================================
-يحتوي على:
-- ParserConfidence: يقيّم صلاحية الرسم للتحليل الآلي
-- GeometryExtractor: يستخلص الجدران المغلقة من PDF vector
-- SymbolExtractor: يستخلص رموز الحماية من نصوص PDF
-- DimensionExtractor: يستخلص الأبعاد ويحولها إلى متر
-
-الاستخدام:
-    from parsers import ParserConfidence, GeometryExtractor
-    from parsers import SymbolExtractor, DimensionExtractor
+Contains:
+- ParserConfidence: evaluates drawing suitability for automated analysis
+- GeometryExtractor: extracts closed walls from PDF vector
+- SymbolExtractor: extracts protection symbols from PDF text
 """
 
 from .parser_confidence import (
@@ -26,7 +21,7 @@ from .geometry_extractor import (
     extract_walls_from_pdf
 )
 
-# SymbolExtractor - from src/core/ or parsers/
+# SymbolExtractor — local parser module (no src.core fallback)
 try:
     from .symbol_extractor import (
         SymbolExtractor,
@@ -35,28 +30,10 @@ try:
         extract_symbols_from_pdf
     )
 except ImportError:
-    from src.core.symbol_extractor import (
-        SymbolExtractor,
-        SymbolElement,
-        SymbolType,
-        extract_symbols_from_pdf
-    )
-
-# DimensionExtractor - same logic
-try:
-    from .dimension_extractor import (
-        DimensionExtractor,
-        DimensionElement,
-        extract_dimensions_from_pdf,
-        extract_scale_from_pdf,
-    )
-except ImportError:
-    from src.core.dimension_extractor import (
-        DimensionExtractor,
-        DimensionElement,
-        extract_dimensions_from_pdf,
-        extract_scale_from_pdf,
-    )
+    SymbolExtractor = None
+    SymbolElement = None
+    SymbolType = None
+    extract_symbols_from_pdf = None
 
 __all__ = [
     "ParserConfidence",
@@ -70,7 +47,4 @@ __all__ = [
     "SymbolElement",
     "SymbolType",
     "extract_symbols_from_pdf",
-    "DimensionExtractor",
-    "DimensionElement",
-    "extract_dimensions_from_pdf",
 ]

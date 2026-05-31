@@ -1,0 +1,874 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "NexusCAD Pro - Digital Twin API",
+    "description": "REST API for Digital Twin / BIM / CAD application with device management, drawing synchronization, report generation, and CAD/BIM export capabilities.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "NexusCAD Pro Support",
+      "email": "support@nexuscad.pro"
+    },
+    "license": {
+      "name": "Proprietary"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.nexuscad.pro/api",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    { "name": "Projects", "description": "Project management operations" },
+    { "name": "Devices", "description": "Device CRUD operations" },
+    { "name": "Connections", "description": "Electrical connection management" },
+    { "name": "Reports", "description": "Report generation and export" },
+    { "name": "Export", "description": "CAD/BIM file export (DXF, Revit, IFC)" },
+    { "name": "Sync", "description": "Real-time synchronization" },
+    { "name": "Health", "description": "System health and status" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "description": "Returns system health status including database connectivity",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "System is healthy",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseHealth" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "tags": ["Projects"],
+        "summary": "List all projects",
+        "operationId": "getProjects",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/LimitParam" },
+          { "$ref": "#/components/parameters/SortParam" },
+          { "$ref": "#/components/parameters/OrderParam" }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of projects",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePaginatedProjects" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Projects"],
+        "summary": "Create a new project",
+        "operationId": "createProject",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateProjectInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseProject" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}": {
+      "get": {
+        "tags": ["Projects"],
+        "summary": "Get project by ID",
+        "operationId": "getProject",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "responses": {
+          "200": {
+            "description": "Project details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseProject" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Projects"],
+        "summary": "Update project",
+        "operationId": "updateProject",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateProjectInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseProject" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Projects"],
+        "summary": "Delete project",
+        "operationId": "deleteProject",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "responses": {
+          "204": { "description": "Project deleted" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/projects/{projectId}/devices": {
+      "get": {
+        "tags": ["Devices"],
+        "summary": "List devices in a project",
+        "operationId": "getDevices",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/LimitParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of devices",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePaginatedDevices" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Devices"],
+        "summary": "Add a device to a project",
+        "operationId": "createDevice",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateDeviceInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Device created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseDevice" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/devices/{deviceId}": {
+      "get": {
+        "tags": ["Devices"],
+        "summary": "Get device by ID",
+        "operationId": "getDevice",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          { "$ref": "#/components/parameters/DeviceIdParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Device details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseDevice" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Devices"],
+        "summary": "Update device",
+        "operationId": "updateDevice",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          { "$ref": "#/components/parameters/DeviceIdParam" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateDeviceInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Device updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseDevice" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Devices"],
+        "summary": "Delete device",
+        "operationId": "deleteDevice",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          { "$ref": "#/components/parameters/DeviceIdParam" }
+        ],
+        "responses": {
+          "204": { "description": "Device deleted" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/projects/{projectId}/connections": {
+      "get": {
+        "tags": ["Connections"],
+        "summary": "List connections in a project",
+        "operationId": "getConnections",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/LimitParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of connections",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePaginatedConnections" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Connections"],
+        "summary": "Create a connection",
+        "operationId": "createConnection",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateConnectionInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Connection created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseConnection" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/connections/{connectionId}": {
+      "delete": {
+        "tags": ["Connections"],
+        "summary": "Delete a connection",
+        "operationId": "deleteConnection",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          { "$ref": "#/components/parameters/ConnectionIdParam" }
+        ],
+        "responses": {
+          "204": { "description": "Connection deleted" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/projects/{projectId}/reports": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "List reports for a project",
+        "operationId": "getReports",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/LimitParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of reports",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePaginatedReports" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Reports"],
+        "summary": "Generate a new report",
+        "operationId": "generateReport",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GenerateReportInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Report generation started",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseReport" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/reports/{reportId}": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get report by ID",
+        "operationId": "getReport",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          { "$ref": "#/components/parameters/ReportIdParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseReport" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/reports/{reportId}/export": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Export report in specified format",
+        "operationId": "exportReport",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          { "$ref": "#/components/parameters/ReportIdParam" },
+          {
+            "name": "format",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["pdf", "excel", "csv", "json", "html"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report file",
+            "content": {
+              "application/pdf": { "schema": { "type": "string", "format": "binary" } },
+              "application/vnd.ms-excel": { "schema": { "type": "string", "format": "binary" } },
+              "text/csv": { "schema": { "type": "string", "format": "binary" } },
+              "application/json": { "schema": { "type": "string", "format": "binary" } },
+              "text/html": { "schema": { "type": "string", "format": "binary" } }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/export/dxf": {
+      "get": {
+        "tags": ["Export"],
+        "summary": "Export project to AutoCAD DXF",
+        "operationId": "exportToDXF",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "responses": {
+          "200": {
+            "description": "DXF file",
+            "content": {
+              "application/dxf": { "schema": { "type": "string", "format": "binary" } }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/export/revit": {
+      "get": {
+        "tags": ["Export"],
+        "summary": "Export project to Revit JSON",
+        "operationId": "exportToRevit",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "responses": {
+          "200": {
+            "description": "Revit JSON file",
+            "content": {
+              "application/json": { "schema": { "type": "string", "format": "binary" } }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/export/ifc": {
+      "get": {
+        "tags": ["Export"],
+        "summary": "Export project to IFC format",
+        "operationId": "exportToIFC",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdParam" },
+          {
+            "name": "version",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["IFC2x3", "IFC4"], "default": "IFC4" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "IFC file",
+            "content": {
+              "application/x-step": { "schema": { "type": "string", "format": "binary" } }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/sync": {
+      "get": {
+        "tags": ["Sync"],
+        "summary": "Get sync status",
+        "operationId": "getSyncStatus",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "responses": {
+          "200": {
+            "description": "Sync status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseSyncStatus" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Sync"],
+        "summary": "Trigger project sync",
+        "operationId": "syncProject",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdParam" }],
+        "responses": {
+          "200": {
+            "description": "Sync initiated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseSyncStatus" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "ProjectIdParam": {
+        "name": "projectId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" }
+      },
+      "DeviceIdParam": {
+        "name": "deviceId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" }
+      },
+      "ConnectionIdParam": {
+        "name": "connectionId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" }
+      },
+      "ReportIdParam": {
+        "name": "reportId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" }
+      },
+      "PageParam": {
+        "name": "page",
+        "in": "query",
+        "schema": { "type": "integer", "default": 1, "minimum": 1 }
+      },
+      "LimitParam": {
+        "name": "limit",
+        "in": "query",
+        "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 }
+      },
+      "SortParam": {
+        "name": "sort",
+        "in": "query",
+        "schema": { "type": "string", "default": "createdAt" }
+      },
+      "OrderParam": {
+        "name": "order",
+        "in": "query",
+        "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+      }
+    },
+    "responses": {
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ApiError" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": { "type": "string" },
+          "message": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApiResponseHealth": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/HealthStatus" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HealthStatus": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["ok", "degraded", "error"] },
+          "version": { "type": "string" },
+          "uptime": { "type": "number" },
+          "database": { "type": "string", "enum": ["connected", "disconnected"] },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApiResponseProject": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/Project" },
+          "message": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApiResponsePaginatedProjects": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/PaginatedProjects" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PaginatedProjects": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "author": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["active", "archived", "draft"] },
+          "deviceCount": { "type": "integer" },
+          "connectionCount": { "type": "integer" }
+        }
+      },
+      "CreateProjectInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "description": { "type": "string" },
+          "author": { "type": "string" }
+        }
+      },
+      "UpdateProjectInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "description": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "archived", "draft"] }
+        }
+      },
+      "ApiResponseDevice": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/Device" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApiResponsePaginatedDevices": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/PaginatedDevices" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PaginatedDevices": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Device" } },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        }
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "projectId": { "type": "string", "format": "uuid" },
+          "type": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "z": { "type": "number" },
+          "rotation": { "type": "number" },
+          "voltage": { "type": "number" },
+          "current": { "type": "number" },
+          "load": { "type": "number" },
+          "properties": { "type": "object" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateDeviceInput": {
+        "type": "object",
+        "required": ["type", "name", "category", "x", "y"],
+        "properties": {
+          "type": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "z": { "type": "number", "default": 0 },
+          "rotation": { "type": "number", "default": 0 },
+          "voltage": { "type": "number", "default": 230 },
+          "current": { "type": "number", "default": 0 },
+          "load": { "type": "number", "default": 0 },
+          "properties": { "type": "object" }
+        }
+      },
+      "UpdateDeviceInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "z": { "type": "number" },
+          "rotation": { "type": "number" },
+          "voltage": { "type": "number" },
+          "current": { "type": "number" },
+          "load": { "type": "number" },
+          "properties": { "type": "object" }
+        }
+      },
+      "ApiResponseConnection": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/Connection" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApiResponsePaginatedConnections": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/PaginatedConnections" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PaginatedConnections": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Connection" } },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        }
+      },
+      "Connection": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "projectId": { "type": "string", "format": "uuid" },
+          "fromId": { "type": "string", "format": "uuid" },
+          "toId": { "type": "string", "format": "uuid" },
+          "cableSize": { "type": "string" },
+          "length": { "type": "number" },
+          "type": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateConnectionInput": {
+        "type": "object",
+        "required": ["fromId", "toId"],
+        "properties": {
+          "fromId": { "type": "string", "format": "uuid" },
+          "toId": { "type": "string", "format": "uuid" },
+          "cableSize": { "type": "string", "default": "2.5mm2" },
+          "length": { "type": "number" },
+          "type": { "type": "string", "default": "power" }
+        }
+      },
+      "ApiResponseReport": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/Report" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApiResponsePaginatedReports": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/PaginatedReports" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PaginatedReports": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Report" } },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        }
+      },
+      "Report": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "projectId": { "type": "string", "format": "uuid" },
+          "type": { "type": "string" },
+          "name": { "type": "string" },
+          "parameters": { "type": "object" },
+          "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "GenerateReportInput": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string" },
+          "name": { "type": "string" },
+          "parameters": { "type": "object" }
+        }
+      },
+      "ApiResponseSyncStatus": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "$ref": "#/components/schemas/SyncStatus" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SyncStatus": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["syncing", "synced", "error"] },
+          "lastSync": { "type": "string", "format": "date-time" },
+          "pendingChanges": { "type": "integer" },
+          "error": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -272,7 +272,7 @@ class DXFParser:
         """Convert CIRCLE to Polygon approximation (36 points)"""
         c = Point(entity.dxf.center.x * scale, entity.dxf.center.y * scale)
         r = entity.dxf.radius * scale
-        return c.buffer(r, resolution=36)  # 36 points
+        return c.buffer(r, quad_segs=36)  # V108 FIX: quad_segs= replaces deprecated resolution= in Shapely 2.x
 
     def _arc_to_segments(self, entity, scale, num_points: int = 32):
         """Convert ARC to LineString segments (default 32 points)"""

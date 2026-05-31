@@ -162,45 +162,33 @@ class ParserConfidence:
             
             if is_raster and has_completeness and has_scale and final >= 0.5:
                 # First try standard text extraction
-                from src.core.dimension_extractor import extract_scale_from_pdf
-                actual_scale = extract_scale_from_pdf(self.pdf_path)
-                scale_confidence = 0.95 if actual_scale else 0.0
+                # V108 FIX: All src.core.* imports replaced with try/except guards.
+                # These modules (dimension_extractor, scale_bar_detector,
+                # raster_enhancer, reverse_scale_estimator) don't exist in the
+                # current codebase. Scale extraction falls through to default.
+                actual_scale = None
+                scale_confidence = 0.0
                 
-                # If standard extraction fails, try CV (raster enhancer)
+                # Try dimension extraction from PDF text (local module)
+                try:
+                    from .pdf_input_layer import extract_scale_from_pdf as _extract_scale
+                    actual_scale = _extract_scale(self.pdf_path)
+                    scale_confidence = 0.95 if actual_scale else 0.0
+                except (ImportError, Exception):
+                    pass
+                
+                # If still no scale, try PDF parser as fallback
                 if not actual_scale:
                     try:
-                        from src.core.scale_bar_detector import detect_scale_bar
-                        cv_result = detect_scale_bar(self.pdf_path)
-                        if cv_result.found and cv_result.meters_per_unit:
-                            actual_scale = cv_result.meters_per_unit
-                            scale_confidence = cv_result.confidence  # CV confidence
+                        from .pdf_parser import PDFParser
+                        _parser = PDFParser(self.pdf_path)
+                        _result = _parser.parse()
+                        if hasattr(_result, 'scale') and _result.scale:
+                            actual_scale = _result.scale
+                            scale_confidence = 0.8
                             has_scale = True
-                    except Exception as e:
+                    except (ImportError, Exception):
                         scale_confidence = 0.0
-                
-                if not actual_scale:
-                    # Try RasterEnhancer as last resort
-                    try:
-                        from src.core.raster_enhancer import enhance_raster
-                        enh_result = enhance_raster(self.pdf_path)
-                        if enh_result.success and enh_result.scale_estimate:
-                            actual_scale = enh_result.scale_estimate
-                            scale_confidence = enh_result.confidence
-                            has_scale = True
-                    except Exception as e:
-                        scale_confidence = 0.0
-                
-                # Try reverse scale estimation if nothing found
-                if not actual_scale:
-                    try:
-                        from src.core.reverse_scale_estimator import estimate_reverse_scale
-                        reverse_result = estimate_reverse_scale(self.pdf_path)
-                        if reverse_result.found and reverse_result.meters_per_unit:
-                            actual_scale = reverse_result.meters_per_unit
-                            scale_confidence = reverse_result.confidence
-                            has_scale = True
-                    except Exception as e:
-                        pass
                 
                 CRITICAL_SAFETY_THRESHOLD = 0.95
                 

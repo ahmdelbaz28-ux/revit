@@ -732,28 +732,31 @@ class FireAIMemory:
         limit: int = 5,
     ) -> List[Dict]:
         """Search memory for fire safety standards and engineering context."""
-        # mem0 v2: parameter is top_k (not limit). filters contains entity IDs.
-        _filters: dict = {
-            "user_id": self.engineer_id,
-            "agent_id": self.agent_id,
+        kwargs = {
+            "query": query,
+            "limit": limit,
+            "filters": {
+                "user_id": self.engineer_id,
+                "agent_id": self.agent_id,
+            },
         }
         if project_id:
-            _filters["run_id"] = project_id
-        raw = self.mem0.search(query=query, top_k=limit, filters=_filters)
-        # mem0 v2 returns {"results": [...]} — normalise to list for callers
-        return raw.get("results", []) if isinstance(raw, dict) else (raw if isinstance(raw, list) else [])
+            kwargs["filters"]["run_id"] = project_id
+
+        return self.mem0.search(**kwargs)
 
     def get_all_memories(self, project_id: Optional[str] = None) -> List[Dict]:
         """Get all stored memories for the engineer."""
-        _filters: dict = {
-            "user_id": self.engineer_id,
-            "agent_id": self.agent_id,
+        kwargs = {
+            "filters": {
+                "user_id": self.engineer_id,
+                "agent_id": self.agent_id,
+            },
         }
         if project_id:
-            _filters["run_id"] = project_id
-        raw = self.mem0.get_all(filters=_filters)
-        # mem0 v2 returns {"results": [...]} — normalise to list
-        return raw.get("results", []) if isinstance(raw, dict) else (raw if isinstance(raw, list) else [])
+            kwargs["filters"]["run_id"] = project_id
+
+        return self.mem0.get_all(**kwargs)
 
     def delete_memory(self, memory_id: str) -> Dict:
         """Delete a specific memory by ID."""

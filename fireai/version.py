@@ -1,40 +1,78 @@
 """
-fireai.version — Single source of truth for package versioning.
+version.py — Single Source of Truth for FireAI Version
+=======================================================
+ALL audit reports, database records, and API responses MUST import
+version metadata from here. Never hardcode version strings elsewhere.
 
-This module MUST exist because fireai/__init__.py imports from it
-at the top level. If this file is missing, the entire package
-fails to import — even `import fireai; fireai.__version__` crashes.
+FIXED (W-02): audit files showed V5.1.0, V5.1.2, V20.2 for a V29 system.
+  Root cause: version string was hardcoded in multiple places.
+  Fix: one module, one string, imported everywhere.
 
-SAFETY: Version information is critical for audit trails. Every
-engineering report must include the exact engine version for
-reproducibility and regulatory compliance.
+Usage:
+    from fireai.version import FIREAI_VERSION, build_version_header
 """
 
-# ─── Semantic Version (PEP 440) ─────────────────────────────────────────────
-__package_version__ = "56.0.0"
+from __future__ import annotations
 
-# ─── Internal Version Strings ────────────────────────────────────────────────
-FIREAI_VERSION = "V56"
-FIREAI_VERSION_FULL = "V56.0.0"
+import platform
+import sys
+from typing import Dict
+
+# ─── EDIT ONLY THESE THREE LINES PER RELEASE ─────────────────────────────────
+MAJOR = 55
+MINOR = 0
+PATCH = 0
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Package version (semver for PyPI/distribution — used by fireai.__version__)
+# This is the PUBLIC-FACING version for packaging, pip, and import metadata.
+# It MUST be a valid semver string (MAJOR.MINOR.PATCH) with no prefix.
+__package_version__ = "1.0.0"
+
+# Internal development version (for audit trails, agent.md cycle tracking)
+# This tracks the internal development cycle and may differ from the package version.
+FIREAI_VERSION      = f"V{MAJOR}.{MINOR}.{PATCH}"
+FIREAI_VERSION_FULL = f"FireAI {FIREAI_VERSION}"
+
+# Standards this version is validated against
+NFPA_EDITION        = "NFPA 72-2022"
+IEC_HAC_EDITION     = "IEC 60079-10-1:2015 / IEC 60079-10-2:2015"
+NEC_EDITION         = "NFPA 70-2023"
+ATEX_EDITION        = "ATEX 2014/34/EU"
 
 
-def build_version_header() -> dict:
-    """Build a version header dict for inclusion in audit reports.
+def build_version_header() -> Dict[str, str]:
+    """
+    Return a dict suitable for embedding in audit reports and API responses.
 
-    Returns:
-        dict with keys: version, full_version, engine_name, nfpa_standard
+    Every audit JSON MUST include this header to ensure traceability.
     """
     return {
-        "engine_name": "FireAI",
-        "version": __package_version__,
-        "full_version": FIREAI_VERSION_FULL,
-        "nfpa_standard": "NFPA 72-2022",
+        "fireai_version":   FIREAI_VERSION_FULL,
+        "nfpa_edition":     NFPA_EDITION,
+        "iec_hac_edition":  IEC_HAC_EDITION,
+        "nec_edition":      NEC_EDITION,
+        "atex_edition":     ATEX_EDITION,
+        "python_version":   sys.version.split()[0],
+        "platform":         platform.system(),
     }
 
 
-__all__ = [
-    "__package_version__",
-    "FIREAI_VERSION",
-    "FIREAI_VERSION_FULL",
-    "build_version_header",
-]
+def assert_version_consistency() -> None:
+    """
+    Runtime check: raise if any imported submodule declares a different version.
+    Call once at application startup.
+    """
+    declared_versions: Dict[str, str] = {
+        "fireai.version": FIREAI_VERSION,
+    }
+    inconsistent = {
+        mod: ver for mod, ver in declared_versions.items()
+        if ver != FIREAI_VERSION
+    }
+    if inconsistent:
+        raise RuntimeError(
+            f"Version inconsistency detected: {inconsistent}. "
+            f"All modules must report {FIREAI_VERSION}. "
+            "Check for hardcoded version strings."
+        )

@@ -12,6 +12,27 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
+# V108 FIX: Add camelCase alias generator so Pydantic schemas serialize
+# to camelCase (matching the API contract in backend/contract.py) while
+# keeping Python snake_case attribute names internally.
+def _to_camel(field_name: str) -> str:
+    """Convert snake_case to camelCase for API serialization."""
+    components = field_name.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
+
+
+# V108 FIX: Base model with camelCase serialization.
+# All Response schemas serialize to camelCase (e.g., element_id → elementId),
+# matching the API contract in backend/contract.py. Create/Update schemas
+# also accept camelCase input via populate_by_name=True.
+class CamelModel(BaseModel):
+    """Base model that serializes snake_case fields as camelCase."""
+    model_config = ConfigDict(
+        alias_generator=_to_camel,
+        populate_by_name=True,  # Accept both snake_case and camelCase input
+    )
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # ENUMERATIONS (mirroring core/models.py)
 # ════════════════════════════════════════════════════════════════════════════
@@ -57,7 +78,7 @@ class Point3DCreate(BaseModel):
     z: float = 0.0
 
 
-class Point3DResponse(BaseModel):
+class Point3DResponse(CamelModel):
     x: float
     y: float
     z: float = 0.0
@@ -68,7 +89,7 @@ class GeometryCreate(BaseModel):
     polyline_closed: bool = False
 
 
-class GeometryResponse(BaseModel):
+class GeometryResponse(CamelModel):
     points: List[Point3DResponse]
     polyline_closed: bool = False
     area: float = 0.0
@@ -105,7 +126,7 @@ class SemanticPropertiesUpdate(BaseModel):
     revit_category: Optional[str] = None
 
 
-class SemanticPropertiesResponse(BaseModel):
+class SemanticPropertiesResponse(CamelModel):
     element_type: str
     name: str
     description: Optional[str] = None
@@ -151,7 +172,7 @@ class ElementUpdate(BaseModel):
     is_deleted: Optional[bool] = None
 
 
-class ElementResponse(BaseModel):
+class ElementResponse(CamelModel):
     """Full element response."""
     element_id: str
     properties: Optional[SemanticPropertiesResponse] = None
@@ -168,7 +189,7 @@ class ElementResponse(BaseModel):
     project_id: Optional[str] = None
 
 
-class ElementListResponse(BaseModel):
+class ElementListResponse(CamelModel):
     """Paginated element list response."""
     items: List[ElementResponse]
     total: int
@@ -197,7 +218,7 @@ class ProjectUpdate(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
-class ProjectResponse(BaseModel):
+class ProjectResponse(CamelModel):
     """Full project response."""
     project_id: str
     name: str
@@ -209,7 +230,7 @@ class ProjectResponse(BaseModel):
     last_modified_timestamp: Optional[str] = None
 
 
-class ProjectListResponse(BaseModel):
+class ProjectListResponse(CamelModel):
     """Paginated project list response."""
     items: List[ProjectResponse]
     total: int
@@ -235,7 +256,7 @@ class DeviceCreate(BaseModel):
     geometry: Optional[GeometryCreate] = None
 
 
-class DeviceResponse(BaseModel):
+class DeviceResponse(CamelModel):
     """Device response."""
     device_id: str
     device_type: str
@@ -277,7 +298,7 @@ class ConnectionCreate(BaseModel):
         return v
 
 
-class ConnectionResponse(BaseModel):
+class ConnectionResponse(CamelModel):
     """Connection response."""
     connection_id: str
     from_element_id: str
@@ -287,7 +308,7 @@ class ConnectionResponse(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
-class ConnectionListResponse(BaseModel):
+class ConnectionListResponse(CamelModel):
     """Paginated connection list response."""
     items: List[ConnectionResponse]
     total: int
@@ -306,7 +327,7 @@ class ConflictResolveRequest(BaseModel):
     resolution: Optional[Dict[str, Any]] = None
 
 
-class ConflictResponse(BaseModel):
+class ConflictResponse(CamelModel):
     """Conflict response."""
     conflict_id: str
     element_id: str = ""
@@ -320,7 +341,7 @@ class ConflictResponse(BaseModel):
     resolved: bool = False
 
 
-class ConflictListResponse(BaseModel):
+class ConflictListResponse(CamelModel):
     """Paginated conflict list response."""
     items: List[ConflictResponse]
     total: int
@@ -333,7 +354,7 @@ class ConflictListResponse(BaseModel):
 # STATISTICS SCHEMAS
 # ════════════════════════════════════════════════════════════════════════════
 
-class StatisticsResponse(BaseModel):
+class StatisticsResponse(CamelModel):
     """Database statistics response."""
     total_elements: int = 0
     deleted_elements: int = 0
@@ -356,14 +377,14 @@ class StatisticsResponse(BaseModel):
 T = TypeVar("T")
 
 
-class ApiResponse(BaseModel, Generic[T]):
+class ApiResponse(CamelModel, Generic[T]):
     """Universal response wrapper for all API endpoints."""
     success: bool
     data: Optional[T] = None
     message: Optional[str] = None
 
 
-class PaginatedData(BaseModel, Generic[T]):
+class PaginatedData(CamelModel, Generic[T]):
     """Wrapper for paginated data inside ApiResponse."""
     items: List[T]
     total: int
