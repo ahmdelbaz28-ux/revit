@@ -51,17 +51,16 @@ Usage:
 
 from __future__ import annotations
 
-import math
 from typing import Any, Dict, List, Optional, Tuple
 
 # Import the correct provenance shim (not the consultant's fireai.v8_core path)
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -72,18 +71,11 @@ except ImportError:
 
 # Import the physics-correct implementation from fireai.core
 from fireai.core.aset_rset_calculator import (
+    TENABILITY_THRESHOLDS,
     calculate_aset,
     calculate_rset,
-    validate_aset_vs_rset,
     perform_aset_rset_analysis,
-    ASETResult,
-    RSETResult,
-    AsetRsetValidation,
-    TENABILITY_THRESHOLDS,
-    PREMOVEMENT_DELAYS,
-    WALKING_SPEEDS,
-    SAFETY_FACTORS,
-    RISK_CATEGORIES,
+    validate_aset_vs_rset,
 )
 
 
@@ -229,18 +221,20 @@ class TenabilityEvaluator:
         if DecisionProvenance is not None:
             violations = []
             if not validation.is_safe:
-                violations.append(Violation(
-                    severity="CRITICAL",
-                    citation="SFPE/NFPA 101 Performance Based",
-                    description=(
-                        f"Smoke will asphyxiate escaping occupants. "
-                        f"RSET = {rset_result.rset_seconds:.0f}s, "
-                        f"RSET × SF = {rset_result.rset_with_safety_s:.0f}s, "
-                        f"but ASET = {aset_result.aset_seconds:.0f}s. "
-                        f"Deficit: {abs(validation.safety_margin_s):.0f}s. "
-                        f"LIMITING FACTOR: {aset_result.limiting_factor}"
-                    ),
-                ))
+                violations.append(
+                    Violation(
+                        severity="CRITICAL",
+                        citation="SFPE/NFPA 101 Performance Based",
+                        description=(
+                            f"Smoke will asphyxiate escaping occupants. "
+                            f"RSET = {rset_result.rset_seconds:.0f}s, "
+                            f"RSET × SF = {rset_result.rset_with_safety_s:.0f}s, "
+                            f"but ASET = {aset_result.aset_seconds:.0f}s. "
+                            f"Deficit: {abs(validation.safety_margin_s):.0f}s. "
+                            f"LIMITING FACTOR: {aset_result.limiting_factor}"
+                        ),
+                    )
+                )
 
             rules = [
                 RuleApplied(

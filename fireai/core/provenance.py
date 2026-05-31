@@ -25,14 +25,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIDENCE LEVELS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class ConfidenceLevel(Enum):
     """Confidence level for engineering decisions.
-    
+
     Matches ISO 13849 PL (Performance Level) hierarchy:
       DETERMINISTIC: Mathematically proven (PL e equivalent)
       HIGH: Validated by multiple independent methods (PL d)
@@ -40,6 +40,7 @@ class ConfidenceLevel(Enum):
       LOW: Best engineering judgment, needs manual verification (PL b)
       UNCERTAIN: Insufficient data, manual review required (PL a)
     """
+
     DETERMINISTIC = "DETERMINISTIC"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -51,16 +52,18 @@ class ConfidenceLevel(Enum):
 # PROVENANCE DATA CLASSES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class ConfidenceScore:
     """Quantified confidence in an engineering decision.
-    
+
     Attributes:
         level: Qualitative confidence level.
         value: Numeric confidence (0.0 to 1.0).
         reason: Human-readable justification.
         standard_reference: Applicable standard (e.g., 'NFPA 72 §17.6.3.1.1').
     """
+
     level: ConfidenceLevel = ConfidenceLevel.MEDIUM
     value: float = 0.5
     reason: str = ""
@@ -74,7 +77,7 @@ class ConfidenceScore:
 @dataclass(frozen=True)
 class RuleApplied:
     """Record of a specific rule or standard applied during decision-making.
-    
+
     Attributes:
         rule_id: Unique rule identifier (e.g., 'NFPA72-17.6.3.1.1').
         description: Human-readable rule description.
@@ -82,6 +85,7 @@ class RuleApplied:
         section: Section number (e.g., '§17.6.3.1.1').
         result: Outcome of applying this rule ('PASS', 'FAIL', 'WARNING', 'N/A').
     """
+
     rule_id: str = ""
     description: str = ""
     standard: str = ""
@@ -96,7 +100,7 @@ class RuleApplied:
 @dataclass(frozen=True)
 class Violation:
     """A violation found during rule application.
-    
+
     Attributes:
         rule_id: Rule that was violated.
         severity: 'CRITICAL', 'HIGH', 'MEDIUM', or 'LOW'.
@@ -104,6 +108,7 @@ class Violation:
         nfpa_section: Applicable NFPA section.
         remediation: Suggested fix.
     """
+
     rule_id: str = ""
     severity: str = "HIGH"
     description: str = ""
@@ -118,14 +123,14 @@ class Violation:
 @dataclass
 class DecisionProvenance:
     """Complete provenance record for an engineering decision.
-    
+
     This is the central audit artifact — every safety-critical decision
     in FireAI must produce a DecisionProvenance object that can be:
     1. Stored in the audit trail
     2. Reviewed by a human engineer
     3. Verified by the compliance engine
     4. Presented as evidence in AHJ submittals
-    
+
     Attributes:
         decision_id: Unique identifier for this decision.
         decision_type: Category (e.g., 'DEVICE_PLACEMENT', 'CABLE_ROUTING').
@@ -138,6 +143,7 @@ class DecisionProvenance:
         parent_id: ID of parent decision (for hierarchical decisions).
         computation_hash: SHA-256 hash for tamper detection.
     """
+
     decision_id: str = ""
     decision_type: str = ""
     description: str = ""
@@ -151,62 +157,67 @@ class DecisionProvenance:
 
     def compute_hash(self) -> str:
         """Compute SHA-256 hash of the decision for tamper detection."""
-        canonical = json.dumps({
-            "decision_id": self.decision_id,
-            "decision_type": self.decision_type,
-            "description": self.description,
-            "confidence_value": self.confidence.value,
-            "rules": [r.rule_id for r in self.rules_applied],
-            "violations": [v.rule_id for v in self.violations],
-            "evidence_keys": sorted(self.evidence.keys()),
-        }, sort_keys=True, default=str)
+        canonical = json.dumps(
+            {
+                "decision_id": self.decision_id,
+                "decision_type": self.decision_type,
+                "description": self.description,
+                "confidence_value": self.confidence.value,
+                "rules": [r.rule_id for r in self.rules_applied],
+                "violations": [v.rule_id for v in self.violations],
+                "evidence_keys": sorted(self.evidence.keys()),
+            },
+            sort_keys=True,
+            default=str,
+        )
         return hashlib.sha256(canonical.encode()).hexdigest()[:32]
 
     def __post_init__(self):
         if not self.computation_hash and self.decision_id:
-            object.__setattr__(self, 'computation_hash', self.compute_hash())
+            object.__setattr__(self, "computation_hash", self.compute_hash())
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PROVENANCE STORE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class ProvenanceStore:
     """In-memory store for decision provenance records.
-    
+
     Thread-safe storage for all engineering decisions made during
     a FireAI analysis session. Supports lookup by decision_id,
     decision_type, and parent_id for hierarchical traversal.
     """
-    
+
     def __init__(self):
         self._records: Dict[str, DecisionProvenance] = {}
         self._by_type: Dict[str, List[str]] = {}
-    
+
     def add(self, provenance: DecisionProvenance) -> None:
         """Add a provenance record to the store."""
         self._records[provenance.decision_id] = provenance
         if provenance.decision_type not in self._by_type:
             self._by_type[provenance.decision_type] = []
         self._by_type[provenance.decision_type].append(provenance.decision_id)
-    
+
     def get(self, decision_id: str) -> Optional[DecisionProvenance]:
         """Get a provenance record by ID."""
         return self._records.get(decision_id)
-    
+
     def get_by_type(self, decision_type: str) -> List[DecisionProvenance]:
         """Get all provenance records of a given type."""
         ids = self._by_type.get(decision_type, [])
         return [self._records[i] for i in ids if i in self._records]
-    
+
     def get_children(self, parent_id: str) -> List[DecisionProvenance]:
         """Get all child decisions of a parent."""
         return [p for p in self._records.values() if p.parent_id == parent_id]
-    
+
     def all_records(self) -> List[DecisionProvenance]:
         """Get all stored records."""
         return list(self._records.values())
-    
+
     def verify_integrity(self) -> Tuple[int, int]:
         """Verify all computation hashes. Returns (valid_count, tampered_count)."""
         valid = 0
@@ -218,7 +229,7 @@ class ProvenanceStore:
             else:
                 tampered += 1
         return valid, tampered
-    
+
     def summary(self) -> Dict[str, Any]:
         """Generate a summary of the provenance store."""
         return {
@@ -226,8 +237,7 @@ class ProvenanceStore:
             "decision_types": {k: len(v) for k, v in self._by_type.items()},
             "total_violations": sum(len(r.violations) for r in self._records.values()),
             "critical_violations": sum(
-                1 for r in self._records.values() 
-                for v in r.violations if v.severity == "CRITICAL"
+                1 for r in self._records.values() for v in r.violations if v.severity == "CRITICAL"
             ),
         }
 

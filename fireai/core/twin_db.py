@@ -256,7 +256,9 @@ class TwinSystemOfRecord:
     POLYGON_TOLERANCE_M = 0.005  # 5mm
 
     def diff_snapshots(
-        self, old_snapshot_id: str, new_snapshot_id: str,
+        self,
+        old_snapshot_id: str,
+        new_snapshot_id: str,
         movement_threshold_m: Optional[float] = None,
         polygon_tolerance_m: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
@@ -282,22 +284,10 @@ class TwinSystemOfRecord:
         old_bundle = self.load_snapshot_bundle(old_snapshot_id)
         new_bundle = self.load_snapshot_bundle(new_snapshot_id)
 
-        old_rooms = {
-            room.get("room_id"): room
-            for room in old_bundle["snapshot"].get("rooms", [])
-        }
-        new_rooms = {
-            room.get("room_id"): room
-            for room in new_bundle["snapshot"].get("rooms", [])
-        }
-        old_results = {
-            item.get("room_id"): item
-            for item in old_bundle["analysis"].get("room_results", [])
-        }
-        new_results = {
-            item.get("room_id"): item
-            for item in new_bundle["analysis"].get("room_results", [])
-        }
+        old_rooms = {room.get("room_id"): room for room in old_bundle["snapshot"].get("rooms", [])}
+        new_rooms = {room.get("room_id"): room for room in new_bundle["snapshot"].get("rooms", [])}
+        old_results = {item.get("room_id"): item for item in old_bundle["analysis"].get("room_results", [])}
+        new_results = {item.get("room_id"): item for item in new_bundle["analysis"].get("room_results", [])}
 
         drift: List[Dict[str, Any]] = []
         for room_id in sorted(set(old_rooms.keys()) | set(new_rooms.keys())):
@@ -315,14 +305,15 @@ class TwinSystemOfRecord:
             old_polygon = old_room.get("polygon", [])
             new_polygon = new_room.get("polygon", [])
             if not self._polygons_approx_equal(
-                old_polygon, new_polygon,
-                tolerance_m=polygon_tolerance_m or self.POLYGON_TOLERANCE_M
+                old_polygon, new_polygon, tolerance_m=polygon_tolerance_m or self.POLYGON_TOLERANCE_M
             ):
-                drift.append({
-                    "room_id": room_id,
-                    "drift_type": "geometry_changed",
-                    "detail": "Room polygon geometry changed beyond tolerance",
-                })
+                drift.append(
+                    {
+                        "room_id": room_id,
+                        "drift_type": "geometry_changed",
+                        "detail": "Room polygon geometry changed beyond tolerance",
+                    }
+                )
 
             # STRENGTHENED v2: Ceiling height change detection.
             # Ceiling height directly affects detector spacing per NFPA 72
@@ -335,18 +326,20 @@ class TwinSystemOfRecord:
                 try:
                     h_diff = abs(float(new_h) - float(old_h))
                     if h_diff > CEILING_HEIGHT_TOLERANCE_M:
-                        drift.append({
-                            "room_id": room_id,
-                            "drift_type": "ceiling_height_changed",
-                            "old_height_m": float(old_h),
-                            "new_height_m": float(new_h),
-                            "height_diff_m": round(h_diff, 4),
-                            "detail": (
-                                f"Ceiling height changed from {float(old_h):.2f}m to "
-                                f"{float(new_h):.2f}m — affects detector spacing per "
-                                f"NFPA 72 §17.6.3.1.1"
-                            ),
-                        })
+                        drift.append(
+                            {
+                                "room_id": room_id,
+                                "drift_type": "ceiling_height_changed",
+                                "old_height_m": float(old_h),
+                                "new_height_m": float(new_h),
+                                "height_diff_m": round(h_diff, 4),
+                                "detail": (
+                                    f"Ceiling height changed from {float(old_h):.2f}m to "
+                                    f"{float(new_h):.2f}m — affects detector spacing per "
+                                    f"NFPA 72 §17.6.3.1.1"
+                                ),
+                            }
+                        )
                 except (TypeError, ValueError):
                     pass  # Non-numeric heights — skip comparison
 
@@ -356,42 +349,42 @@ class TwinSystemOfRecord:
             old_dtype = old_room.get("detector_type")
             new_dtype = new_room.get("detector_type")
             if old_dtype is not None and new_dtype is not None and old_dtype != new_dtype:
-                drift.append({
-                    "room_id": room_id,
-                    "drift_type": "detector_type_changed",
-                    "old_type": old_dtype,
-                    "new_type": new_dtype,
-                    "detail": (
-                        f"Detector type changed from {old_dtype} to {new_dtype} — "
-                        f"changes spacing requirements per NFPA 72"
-                    ),
-                })
+                drift.append(
+                    {
+                        "room_id": room_id,
+                        "drift_type": "detector_type_changed",
+                        "old_type": old_dtype,
+                        "new_type": new_dtype,
+                        "detail": (
+                            f"Detector type changed from {old_dtype} to {new_dtype} — "
+                            f"changes spacing requirements per NFPA 72"
+                        ),
+                    }
+                )
 
             # Detector changes
-            old_detectors = {
-                d.get("detector_id"): d
-                for d in old_results.get(room_id, {}).get("detectors", [])
-            }
-            new_detectors = {
-                d.get("detector_id"): d
-                for d in new_results.get(room_id, {}).get("detectors", [])
-            }
+            old_detectors = {d.get("detector_id"): d for d in old_results.get(room_id, {}).get("detectors", [])}
+            new_detectors = {d.get("detector_id"): d for d in new_results.get(room_id, {}).get("detectors", [])}
             for det_id in sorted(set(old_detectors.keys()) | set(new_detectors.keys())):
                 old_det = old_detectors.get(det_id)
                 new_det = new_detectors.get(det_id)
                 if old_det is None:
-                    drift.append({
-                        "room_id": room_id,
-                        "drift_type": "detector_added",
-                        "detector_id": det_id,
-                    })
+                    drift.append(
+                        {
+                            "room_id": room_id,
+                            "drift_type": "detector_added",
+                            "detector_id": det_id,
+                        }
+                    )
                     continue
                 if new_det is None:
-                    drift.append({
-                        "room_id": room_id,
-                        "drift_type": "detector_removed",
-                        "detector_id": det_id,
-                    })
+                    drift.append(
+                        {
+                            "room_id": room_id,
+                            "drift_type": "detector_removed",
+                            "detector_id": det_id,
+                        }
+                    )
                     continue
                 old_pos = (old_det.get("x"), old_det.get("y"), old_det.get("z"))
                 new_pos = (new_det.get("x"), new_det.get("y"), new_det.get("z"))
@@ -399,14 +392,16 @@ class TwinSystemOfRecord:
                 move_dist = self._position_distance(old_pos, new_pos)
                 threshold = movement_threshold_m or self.MOVEMENT_THRESHOLD_M
                 if move_dist > threshold:
-                    drift.append({
-                        "room_id": room_id,
-                        "drift_type": "detector_moved",
-                        "detector_id": det_id,
-                        "old_position": old_pos,
-                        "new_position": new_pos,
-                        "move_distance_m": round(move_dist, 4),
-                    })
+                    drift.append(
+                        {
+                            "room_id": room_id,
+                            "drift_type": "detector_moved",
+                            "detector_id": det_id,
+                            "old_position": old_pos,
+                            "new_position": new_pos,
+                            "move_distance_m": round(move_dist, 4),
+                        }
+                    )
 
         return drift
 
@@ -414,9 +409,7 @@ class TwinSystemOfRecord:
         """List all snapshot IDs in the database, newest first."""
         conn = self._connect()
         try:
-            rows = conn.execute(
-                "SELECT snapshot_id FROM snapshots ORDER BY created_at DESC"
-            ).fetchall()
+            rows = conn.execute("SELECT snapshot_id FROM snapshots ORDER BY created_at DESC").fetchall()
             return [row[0] for row in rows]
         finally:
             conn.close()
@@ -428,6 +421,7 @@ class TwinSystemOfRecord:
         Handles None coordinates by treating them as 0.0.
         """
         import math
+
         ax, ay = float(pos_a[0] or 0), float(pos_a[1] or 0)
         az = float(pos_a[2] or 0) if len(pos_a) > 2 else 0.0
         bx, by = float(pos_b[0] or 0), float(pos_b[1] or 0)
@@ -435,9 +429,7 @@ class TwinSystemOfRecord:
         return math.sqrt((ax - bx) ** 2 + (ay - by) ** 2 + (az - bz) ** 2)
 
     @staticmethod
-    def _polygons_approx_equal(
-        poly_a: list, poly_b: list, tolerance_m: float = 0.005
-    ) -> bool:
+    def _polygons_approx_equal(poly_a: list, poly_b: list, tolerance_m: float = 0.005) -> bool:
         """Check if two polygons are approximately equal within tolerance.
 
         Compares point-by-point. Returns False if:

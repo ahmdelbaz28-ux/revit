@@ -34,6 +34,7 @@ Fail-safe principle:
 Thread safety:
   NOT thread-safe. Create one instance per thread / sequential call.
 """
+
 from __future__ import annotations
 
 import logging
@@ -41,21 +42,20 @@ import math
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 # ── Internal imports ──────────────────────────────────────────────────────
 from fireai.core.floor_orchestrator import FloorOrchestrator, RoomResult
-
 from fireai.core.voltage_drop import (
-    calculate_voltage_drop,
-    calculate_max_circuit_length,
-    recommend_wire_gauge,
     NOMINAL_VOLTAGE_FA,
+    calculate_voltage_drop,
+    recommend_wire_gauge,
 )
 
 # ── Graceful import: CableRoutingEngine (may not yet exist) ──────────────
 try:
     from fireai.core.cable_routing_engine import CableRoutingEngine
+
     _HAS_CABLE_ROUTING = True
 except ImportError:
     CableRoutingEngine = None  # type: ignore[assignment,misc]
@@ -67,6 +67,7 @@ try:
         ElevatorShuntTripAuditor,
         ShuntTripResult,
     )
+
     _HAS_SHUNT_TRIP = True
 except ImportError:
     ElevatorShuntTripAuditor = None  # type: ignore[assignment,misc]
@@ -76,10 +77,11 @@ except ImportError:
 # ── Graceful import: Stairwell smoke control ─────────────────────────────
 try:
     from fireai.core.stairwell_smoke_control import (
+        MIN_HEIGHT_FOR_PRESSURIZATION_M,
         StairwellSmokeControlIntegrator,
         StairwellZone,
-        MIN_HEIGHT_FOR_PRESSURIZATION_M,
     )
+
     _HAS_STAIRWELL = True
 except ImportError:
     StairwellSmokeControlIntegrator = None  # type: ignore[assignment,misc]
@@ -89,7 +91,8 @@ except ImportError:
 
 # ── Graceful import: Duct detector ───────────────────────────────────────
 try:
-    from fireai.core.duct_detector import analyse_duct, DuctSpec, DuctAnalysisResult
+    from fireai.core.duct_detector import DuctAnalysisResult, DuctSpec, analyse_duct
+
     _HAS_DUCT_DETECTOR = True
 except ImportError:
     analyse_duct = None  # type: ignore[assignment,misc]
@@ -108,8 +111,8 @@ logger = logging.getLogger(__name__)
 MAX_SLC_DEVICES_PER_LOOP: int = 250
 
 # NFPA 72-2022 §21.3.3: Vertical zone floor limits
-RESIDENTIAL_FLOORS_PER_ZONE: int = 1   # Residential: 1 floor per zone
-OTHER_FLOORS_PER_ZONE: int = 2         # Other occupancies: 2 floors per zone
+RESIDENTIAL_FLOORS_PER_ZONE: int = 1  # Residential: 1 floor per zone
+OTHER_FLOORS_PER_ZONE: int = 2  # Other occupancies: 2 floors per zone
 
 # NFPA 72-2022 §21.3.4: Maximum zone area
 MAX_ZONE_AREA_SQFT: float = 20_000.0
@@ -130,23 +133,26 @@ _CITE_NFPA72_21_3_2 = "NFPA 72-2022 §21.3.2"
 _CITE_NFPA72_21_3_3 = "NFPA 72-2022 §21.3.3"
 _CITE_NFPA72_21_3_4 = "NFPA 72-2022 §21.3.4"
 _CITE_NFPA72_21_4_1 = "NFPA 72-2022 §21.4.1"
-_CITE_NFPA72_21_6   = "NFPA 72-2022 §21.6"
-_CITE_NFPA92_6_1    = "NFPA 92-2024 §6.1"
-_CITE_ASME_A17_1    = "ASME A17.1"
+_CITE_NFPA72_21_6 = "NFPA 72-2022 §21.6"
+_CITE_NFPA92_6_1 = "NFPA 92-2024 §6.1"
+_CITE_ASME_A17_1 = "ASME A17.1"
 
 
 # ============================================================================
 # Enums
 # ============================================================================
 
+
 class SLCLoopClass(str, Enum):
     """SLC loop wiring class per NFPA 72 §12.3."""
+
     CLASS_A = "A"  # Ring topology — continues to operate with single break
     CLASS_B = "B"  # Home-run topology — devices beyond break lose comms
 
 
 class OccupancyType(str, Enum):
     """Building occupancy classification for zone design per NFPA 72 §21.3.3."""
+
     RESIDENTIAL = "residential"
     BUSINESS = "business"
     MERCANTILE = "mercantile"
@@ -159,13 +165,15 @@ class OccupancyType(str, Enum):
 
 class ElevatorRecallPhase(str, Enum):
     """Elevator recall phases per NFPA 72 §21.3.2 / ASME A17.1."""
-    PHASE_I = "PHASE_I"    # Recall to designated floor
+
+    PHASE_I = "PHASE_I"  # Recall to designated floor
     PHASE_II = "PHASE_II"  # Independent service for firefighters
     SHUNT_TRIP = "SHUNT_TRIP"  # Power disconnect per §21.4.1
 
 
 class SmokeSpreadPathway(str, Enum):
     """Smoke spread pathway types through a building."""
+
     ELEVATOR_SHAFT = "elevator_shaft"
     STAIRWELL = "stairwell"
     HVAC_DUCT = "hvac_duct"
@@ -177,6 +185,7 @@ class SmokeSpreadPathway(str, Enum):
 # ============================================================================
 # Dataclasses — Results
 # ============================================================================
+
 
 @dataclass
 class SLCLoop:
@@ -195,6 +204,7 @@ class SLCLoop:
         warnings: Advisory warnings.
         nfpa_reference: Applicable NFPA 72 section.
     """
+
     loop_id: str
     loop_class: SLCLoopClass = SLCLoopClass.CLASS_B
     device_count: int = 0
@@ -240,6 +250,7 @@ class VerticalZone:
         warnings: Advisory warnings.
         nfpa_reference: Applicable NFPA 72 section.
     """
+
     zone_id: str
     floor_ids: List[str] = field(default_factory=list)
     floors_per_zone: int = OTHER_FLOORS_PER_ZONE
@@ -276,6 +287,7 @@ class FloorAssignment:
         vertical_zone_id: Vertical zone this floor belongs to.
         warnings: Advisory warnings for this floor.
     """
+
     floor_id: str
     floor_index: int = 0
     elevation_m: float = 0.0
@@ -307,6 +319,7 @@ class SmokeSpreadResult:
         warnings: Advisory warnings.
         nfpa_reference: Applicable NFPA section.
     """
+
     pathway: SmokeSpreadPathway = SmokeSpreadPathway.STAIRWELL
     source_floor: str = ""
     affected_floors: List[str] = field(default_factory=list)
@@ -337,6 +350,7 @@ class ElevatorRecallResult:
         warnings: Advisory warnings.
         nfpa_reference: Applicable NFPA 72 section.
     """
+
     elevator_id: str = ""
     floors_served: List[str] = field(default_factory=list)
     designated_recall_floor: str = DEFAULT_RECALL_FLOOR
@@ -366,6 +380,7 @@ class RiserRoutingResult:
         violations: Any constraint violations.
         nfpa_reference: Applicable NFPA/NEC section.
     """
+
     from_floor: str = ""
     to_floor: str = ""
     cable_length_m: float = 0.0
@@ -403,6 +418,7 @@ class BuildingAnalysis:
         errors: Building-level errors (non-fatal, logged at CRITICAL).
         disclaimer: Legal disclaimer.
     """
+
     building_id: str = ""
     total_floors: int = 0
     floor_assignments: List[FloorAssignment] = field(default_factory=list)
@@ -429,6 +445,7 @@ class BuildingAnalysis:
 # ============================================================================
 # Multi-Floor Orchestrator
 # ============================================================================
+
 
 class MultiFloorOrchestrator:
     """Orchestrates full multi-floor building fire alarm analysis.
@@ -492,9 +509,7 @@ class MultiFloorOrchestrator:
                 f"Per {_CITE_NFPA72_21_2_2}, max 250 devices per SLC loop."
             )
         if building_height_m < 0:
-            raise ValueError(
-                f"building_height_m={building_height_m} must be >= 0."
-            )
+            raise ValueError(f"building_height_m={building_height_m} must be >= 0.")
 
         self.floor_orchestrator = floor_orchestrator or FloorOrchestrator(grid_res=grid_res)
         self.slc_loop_class = slc_loop_class
@@ -688,11 +703,14 @@ class MultiFloorOrchestrator:
         analysis.analysis_time_s = round(time.monotonic() - t0, 3)
 
         logger.info(
-            "MultiFloorOrchestrator: building=%s floors=%d devices=%d "
-            "loops=%d zones=%d compliant=%s t=%.2fs",
-            building_id, analysis.total_floors, analysis.total_devices,
-            analysis.total_slc_loops, analysis.total_vertical_zones,
-            analysis.compliant, analysis.analysis_time_s,
+            "MultiFloorOrchestrator: building=%s floors=%d devices=%d loops=%d zones=%d compliant=%s t=%.2fs",
+            building_id,
+            analysis.total_floors,
+            analysis.total_devices,
+            analysis.total_slc_loops,
+            analysis.total_vertical_zones,
+            analysis.compliant,
+            analysis.analysis_time_s,
         )
 
         return analysis
@@ -785,7 +803,10 @@ class MultiFloorOrchestrator:
 
             logger.info(
                 "MFO: floor=%s devices=%d detectors=%d area=%.0fsqm",
-                floor_id, fa.total_devices, fa.total_detectors, fa.area_sqm,
+                floor_id,
+                fa.total_devices,
+                fa.total_detectors,
+                fa.area_sqm,
             )
 
     # ──────────────────────────────────────────────────────────────────
@@ -861,9 +882,7 @@ class MultiFloorOrchestrator:
                 # Assign device addresses
                 for i in range(assign_count):
                     address_counter += 1
-                    current_loop.device_addresses.append(
-                        f"{current_loop.loop_id}:{address_counter:03d}"
-                    )
+                    current_loop.device_addresses.append(f"{current_loop.loop_id}:{address_counter:03d}")
 
                 current_loop.device_count += assign_count
                 current_loop.floors_served.add(fa.floor_id)
@@ -893,7 +912,9 @@ class MultiFloorOrchestrator:
                 )
                 logger.critical(
                     "SLC loop %s over-capacity: %d/%d devices [%s]",
-                    loop.loop_id, loop.device_count, loop.max_devices,
+                    loop.loop_id,
+                    loop.device_count,
+                    loop.max_devices,
                     _CITE_NFPA72_21_2_2,
                 )
 
@@ -1047,7 +1068,9 @@ class MultiFloorOrchestrator:
                 )
                 logger.warning(
                     "Vertical zone %s over-area: %.0f/%.0f sqm [%s]",
-                    zone.zone_id, current_area, MAX_ZONE_AREA_SQM,
+                    zone.zone_id,
+                    current_area,
+                    MAX_ZONE_AREA_SQM,
                     _CITE_NFPA72_21_3_4,
                 )
             if len(zone.floor_ids) > floors_per_zone:
@@ -1080,7 +1103,10 @@ class MultiFloorOrchestrator:
 
         logger.info(
             "Vertical zones: %d zones for %d floors (occupancy=%s, max_floors=%d) [%s]",
-            len(zones), len(sorted_floors), occ_normalized, floors_per_zone,
+            len(zones),
+            len(sorted_floors),
+            occ_normalized,
+            floors_per_zone,
             _CITE_NFPA72_21_3_3,
         )
 
@@ -1266,8 +1292,7 @@ class MultiFloorOrchestrator:
                     )
                 except Exception as exc:
                     result.warnings.append(
-                        f"StairwellSmokeControlIntegrator failed for "
-                        f"'{stair_id}': {exc}. Manual review required."
+                        f"StairwellSmokeControlIntegrator failed for '{stair_id}': {exc}. Manual review required."
                     )
 
         # ── 3. HVAC duct smoke detection ───────────────────────────────
@@ -1329,9 +1354,7 @@ class MultiFloorOrchestrator:
                             f"Alternative detection method required."
                         )
                 except Exception as exc:
-                    result.warnings.append(
-                        f"Duct detector analysis failed for '{duct_id}': {exc}."
-                    )
+                    result.warnings.append(f"Duct detector analysis failed for '{duct_id}': {exc}.")
 
             results.append(result)
 
@@ -1368,8 +1391,7 @@ class MultiFloorOrchestrator:
                     affected_floors=floor_ids,
                     pressurization_required=True,
                     propagation_time_s=(
-                        building_height_m / STACK_EFFECT_VELOCITY_MPS
-                        if building_height_m > 0 else 0.0
+                        building_height_m / STACK_EFFECT_VELOCITY_MPS if building_height_m > 0 else 0.0
                     ),
                     nfpa_reference=_CITE_NFPA92_6_1,
                 )
@@ -1557,7 +1579,9 @@ class MultiFloorOrchestrator:
 
                         # Extract compliance from audit result
                         if isinstance(audit_result, dict):
-                            if not audit_result.get("safe", False):  # V111 FIX: Fail-safe default — missing key = UNSAFE
+                            if not audit_result.get(
+                                "safe", False
+                            ):  # V111 FIX: Fail-safe default — missing key = UNSAFE
                                 result.shunt_trip_compliant = False
                                 result.violations.append(
                                     f"Shunt-trip audit FAILED for elevator "
@@ -1574,7 +1598,8 @@ class MultiFloorOrchestrator:
 
         logger.info(
             "Elevator recall: %d elevators checked [%s]",
-            len(results), _CITE_NFPA72_21_3_2,
+            len(results),
+            _CITE_NFPA72_21_3_2,
         )
 
         return results
@@ -1632,9 +1657,9 @@ class MultiFloorOrchestrator:
             # Determine loop current for voltage drop
             # Find SLC loops serving these floors
             serving_loops = [
-                loop for loop in slc_loops
-                if fa_current.floor_id in loop.floors_served
-                or fa_next.floor_id in loop.floors_served
+                loop
+                for loop in slc_loops
+                if fa_current.floor_id in loop.floors_served or fa_next.floor_id in loop.floors_served
             ]
             # Estimate current: devices in serving loops × 0.05A/device
             total_current = sum(loop.device_count * 0.05 for loop in serving_loops)
@@ -1701,19 +1726,16 @@ class MultiFloorOrchestrator:
 
             except Exception as exc:
                 logger.warning(
-                    "CableRoutingEngine routing failed: %s. "
-                    "Using geometric estimation fallback.",
+                    "CableRoutingEngine routing failed: %s. Using geometric estimation fallback.",
                     exc,
                 )
         else:
-            logger.info(
-                "CableRoutingEngine not available — using geometric "
-                "estimation for riser cable lengths."
-            )
+            logger.info("CableRoutingEngine not available — using geometric estimation for riser cable lengths.")
 
         logger.info(
             "Riser routing: %d segments [%s]",
-            len(results), "NFPA 72-2022 §27.4.1 / NEC Art. 760",
+            len(results),
+            "NFPA 72-2022 §27.4.1 / NEC Art. 760",
         )
 
         return results

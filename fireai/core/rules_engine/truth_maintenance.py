@@ -29,7 +29,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Set
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +46,11 @@ class DependencyRecord:
     2. Retraction cascading (remove invalid conclusions)
     3. Re-derivation (re-evaluate rules after retraction)
     """
+
     derived_fact_id: str
     supporting_fact_ids: List[str]
     producing_rule_id: str
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def is_still_valid(self, existing_fact_ids: Set[str]) -> bool:
         """Check if all supporting facts still exist."""
@@ -110,13 +109,10 @@ class TruthMaintenanceSystem:
             self._support_index[support_id].add(derived_fact_id)
 
         logger.debug(
-            f"TMS: Recorded dependency: {derived_fact_id} depends on "
-            f"{supporting_fact_ids} via rule {producing_rule_id}"
+            f"TMS: Recorded dependency: {derived_fact_id} depends on {supporting_fact_ids} via rule {producing_rule_id}"
         )
 
-    def retract_support(
-        self, retracted_fact_id: str
-    ) -> List[str]:
+    def retract_support(self, retracted_fact_id: str) -> List[str]:
         """Process the retraction of a supporting fact.
 
         Returns a list of derived fact IDs that must also be retracted
@@ -165,18 +161,16 @@ class TruthMaintenanceSystem:
 
             # Log the retraction
             dep = self._dependencies.get(affected_id)
-            reason = (
-                f"Supporting fact {retracted_fact_id} retracted"
-                if dep
-                else "Unknown dependency"
+            reason = f"Supporting fact {retracted_fact_id} retracted" if dep else "Unknown dependency"
+            self._retraction_log.append(
+                {
+                    "fact_id": affected_id,
+                    "retracted_because": retracted_fact_id,
+                    "producing_rule": dep.producing_rule_id if dep else "unknown",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "reason": reason,
+                }
             )
-            self._retraction_log.append({
-                "fact_id": affected_id,
-                "retracted_because": retracted_fact_id,
-                "producing_rule": dep.producing_rule_id if dep else "unknown",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "reason": reason,
-            })
 
             retracted_ids.append(affected_id)
 
@@ -202,8 +196,7 @@ class TruthMaintenanceSystem:
 
         if retracted_ids:
             logger.info(
-                f"TMS: Retraction cascade from {retracted_fact_id}: "
-                f"{len(retracted_ids)} derived facts invalidated"
+                f"TMS: Retraction cascade from {retracted_fact_id}: {len(retracted_ids)} derived facts invalidated"
             )
 
         return retracted_ids
@@ -264,10 +257,7 @@ class TruthMaintenanceSystem:
                 }
                 for r in chain
             ],
-            "retraction_history": [
-                r for r in self._retraction_log
-                if r["fact_id"] == fact_id
-            ],
+            "retraction_history": [r for r in self._retraction_log if r["fact_id"] == fact_id],
         }
 
     def validate_consistency(self, existing_fact_ids: Set[str]) -> List[str]:

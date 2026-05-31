@@ -52,9 +52,9 @@ import multiprocessing
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Tuple
 
-from fireai.version import FIREAI_VERSION, NFPA_EDITION
+from fireai.version import FIREAI_VERSION
 
 log = logging.getLogger(__name__)
 
@@ -85,12 +85,13 @@ except ImportError:
 # Setting to None with a clear warning so that any code attempting to use
 # them will fail visibly rather than silently producing wrong results.
 Geometry = None  # type: ignore — NOT IMPLEMENTED
-Point3D = None   # type: ignore — NOT IMPLEMENTED
+Point3D = None  # type: ignore — NOT IMPLEMENTED
 
 
 # ════════════════════════════════════════════════════════════════════════════
 # Batch Result
 # ════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class BatchResult:
@@ -116,6 +117,7 @@ class BatchResult:
     version : str
         Engine version for audit trail.
     """
+
     results: Dict[str, Any] = field(default_factory=dict)
     total_rooms: int = 0
     successful: int = 0
@@ -129,6 +131,7 @@ class BatchResult:
 # ════════════════════════════════════════════════════════════════════════════
 # Worker Function (module-level for pickle compatibility)
 # ════════════════════════════════════════════════════════════════════════════
+
 
 def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
     """
@@ -157,8 +160,7 @@ def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
                 points = room_spec_dict["vertices"]
                 if Point3D is not None:
                     points = [
-                        Point3D(x=p[0], y=p[1], z=p[2] if len(p) > 2 else 0.0)
-                        if not isinstance(p, Point3D) else p
+                        Point3D(x=p[0], y=p[1], z=p[2] if len(p) > 2 else 0.0) if not isinstance(p, Point3D) else p
                         for p in points
                     ]
                 if Geometry is not None:
@@ -183,11 +185,7 @@ def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
         optimizer = DensityOptimizer()
 
         # Run optimization
-        result = optimizer.optimize(
-            room_spec=spec,
-            detector_type=detector_type,
-            **kwargs
-        )
+        result = optimizer.optimize(room_spec=spec, detector_type=detector_type, **kwargs)
 
         return (room_id, result)
 
@@ -199,6 +197,7 @@ def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
 # ════════════════════════════════════════════════════════════════════════════
 # Density Optimizer Batch V2
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class DensityOptimizerV2:
     """
@@ -254,17 +253,9 @@ class DensityOptimizerV2:
         self.timeout_per_room_s = timeout_per_room_s
 
         if DensityOptimizer is None:
-            log.warning(
-                "DensityOptimizer not available — "
-                "batch optimization will return errors for all rooms"
-            )
+            log.warning("DensityOptimizer not available — batch optimization will return errors for all rooms")
 
-    def optimize_batch(
-        self,
-        room_specs: Dict[str, Any],
-        detector_type: str = "smoke",
-        **kwargs
-    ) -> BatchResult:
+    def optimize_batch(self, room_specs: Dict[str, Any], detector_type: str = "smoke", **kwargs) -> BatchResult:
         """
         Optimize detector placement for a batch of rooms.
 
@@ -286,8 +277,11 @@ class DensityOptimizerV2:
 
         if total == 0:
             return BatchResult(
-                total_rooms=0, successful=0, failed=0,
-                total_time_s=0.0, rooms_per_sec=0.0,
+                total_rooms=0,
+                successful=0,
+                failed=0,
+                total_time_s=0.0,
+                rooms_per_sec=0.0,
                 n_workers=self.n_workers,
             )
 
@@ -299,14 +293,13 @@ class DensityOptimizerV2:
                 ceiling_h = spec.get("ceiling_height_m", 3.0)
                 if isinstance(ceiling_h, (int, float)) and not math.isfinite(ceiling_h):
                     log.error(
-                        f"Room {room_id}: ceiling_height_m={ceiling_h} is NaN/Inf — "
-                        f"SKIPPING per Life-Safety Rule 2"
+                        f"Room {room_id}: ceiling_height_m={ceiling_h} is NaN/Inf — SKIPPING per Life-Safety Rule 2"
                     )
                     continue
                 vertices = spec.get("vertices", [])
                 has_invalid = False
                 for v in vertices:
-                    for coord in (v if isinstance(v, (list, tuple)) else [v]):
+                    for coord in v if isinstance(v, (list, tuple)) else [v]:
                         if isinstance(coord, float) and not math.isfinite(coord):
                             log.error(
                                 f"Room {room_id}: vertex coordinate={coord} is NaN/Inf — "
@@ -322,20 +315,15 @@ class DensityOptimizerV2:
 
         if len(validated_specs) < total:
             log.warning(
-                f"Rejected {total - len(validated_specs)}/{total} rooms "
-                f"due to NaN/Inf geometry per Life-Safety Rule 2"
+                f"Rejected {total - len(validated_specs)}/{total} rooms due to NaN/Inf geometry per Life-Safety Rule 2"
             )
 
         # ── Sequential mode (n_workers=1) ──
         if self.n_workers <= 1 or len(validated_specs) <= 1:
-            return self._optimize_sequential(
-                validated_specs, detector_type, kwargs, t0
-            )
+            return self._optimize_sequential(validated_specs, detector_type, kwargs, t0)
 
         # ── Multiprocessing mode ──
-        return self._optimize_parallel(
-            validated_specs, detector_type, kwargs, t0
-        )
+        return self._optimize_parallel(validated_specs, detector_type, kwargs, t0)
 
     def _optimize_sequential(
         self,
@@ -351,9 +339,7 @@ class DensityOptimizerV2:
 
         for room_id, spec in room_specs.items():
             try:
-                room_id_result, result = _optimize_room_worker(
-                    (room_id, spec, detector_type, kwargs)
-                )
+                room_id_result, result = _optimize_room_worker((room_id, spec, detector_type, kwargs))
                 if isinstance(result, dict) and "error" in result:
                     failed += 1
                     log.error(f"Room {room_id}: {result['error']}")
@@ -387,10 +373,7 @@ class DensityOptimizerV2:
     ) -> BatchResult:
         """Multiprocessing batch optimization."""
         # Prepare work items
-        work_items = [
-            (room_id, spec, detector_type, kwargs)
-            for room_id, spec in room_specs.items()
-        ]
+        work_items = [(room_id, spec, detector_type, kwargs) for room_id, spec in room_specs.items()]
 
         results: Dict[str, Any] = {}
         successful = 0
@@ -412,14 +395,9 @@ class DensityOptimizerV2:
 
                 # Wait with timeout
                 try:
-                    worker_results = async_results.get(
-                        timeout=self.timeout_per_room_s * len(work_items)
-                    )
+                    worker_results = async_results.get(timeout=self.timeout_per_room_s * len(work_items))
                 except multiprocessing.TimeoutError:
-                    log.error(
-                        f"Batch optimization timed out after "
-                        f"{self.timeout_per_room_s * len(work_items)}s"
-                    )
+                    log.error(f"Batch optimization timed out after {self.timeout_per_room_s * len(work_items)}s")
                     worker_results = []
 
                 for room_id, result in worker_results:
@@ -436,9 +414,7 @@ class DensityOptimizerV2:
             for room_id, spec in room_specs.items():
                 if room_id not in results:
                     try:
-                        _, result = _optimize_room_worker(
-                            (room_id, spec, detector_type, kwargs)
-                        )
+                        _, result = _optimize_room_worker((room_id, spec, detector_type, kwargs))
                         if isinstance(result, dict) and "error" in result:
                             failed += 1
                         else:
@@ -461,13 +437,7 @@ class DensityOptimizerV2:
             n_workers=self.n_workers,
         )
 
-    def optimize_single(
-        self,
-        room_id: str,
-        room_spec: Any,
-        detector_type: str = "smoke",
-        **kwargs
-    ) -> Any:
+    def optimize_single(self, room_id: str, room_spec: Any, detector_type: str = "smoke", **kwargs) -> Any:
         """
         Optimize a single room (convenience wrapper).
 
@@ -484,9 +454,7 @@ class DensityOptimizerV2:
         -------
         Optimization result.
         """
-        _, result = _optimize_room_worker(
-            (room_id, room_spec, detector_type, kwargs)
-        )
+        _, result = _optimize_room_worker((room_id, room_spec, detector_type, kwargs))
         return result
 
 
@@ -500,6 +468,7 @@ DensityOptimizerBatch = DensityOptimizerV2
 # ════════════════════════════════════════════════════════════════════════════
 # Self-Test
 # ════════════════════════════════════════════════════════════════════════════
+
 
 def _self_test():
     """Run self-test for DensityOptimizerV2."""
@@ -524,11 +493,13 @@ def _self_test():
     check("Sequential mode init", batch.n_workers == 1)
 
     # ── 2. NaN/Inf rejection ──
-    nan_room = {"nan_room": {"ceiling_height_m": float('nan'), "vertices": []}}
+    nan_room = {"nan_room": {"ceiling_height_m": float("nan"), "vertices": []}}
     result = batch.optimize_batch(nan_room)
-    check("NaN ceiling_height rejected",
-          result.total_rooms == 0 or result.failed > 0 or result.total_rooms == 0,
-          f"total={result.total_rooms}, failed={result.failed}")
+    check(
+        "NaN ceiling_height rejected",
+        result.total_rooms == 0 or result.failed > 0 or result.total_rooms == 0,
+        f"total={result.total_rooms}, failed={result.failed}",
+    )
 
     # ── 3. Empty batch ──
     empty_result = batch.optimize_batch({})
@@ -536,26 +507,25 @@ def _self_test():
 
     # ── 4. n_workers validation ──
     batch_neg = DensityOptimizerV2(n_workers=-1)
-    check("Negative n_workers clamped", batch_neg.n_workers == 1,
-          f"n_workers={batch_neg.n_workers}")
+    check("Negative n_workers clamped", batch_neg.n_workers == 1, f"n_workers={batch_neg.n_workers}")
 
     batch_huge = DensityOptimizerV2(n_workers=1000)
     cpu_count = os.cpu_count() or 4
-    check("Huge n_workers clamped", batch_huge.n_workers <= cpu_count * 2,
-          f"n_workers={batch_huge.n_workers}, cpu_count={cpu_count}")
+    check(
+        "Huge n_workers clamped",
+        batch_huge.n_workers <= cpu_count * 2,
+        f"n_workers={batch_huge.n_workers}, cpu_count={cpu_count}",
+    )
 
     # ── 5. BatchResult structure ──
-    check("BatchResult version", empty_result.version == FIREAI_VERSION,
-          f"version={empty_result.version}")
+    check("BatchResult version", empty_result.version == FIREAI_VERSION, f"version={empty_result.version}")
 
     # ── 6. Chunk size validation ──
     batch_chunk = DensityOptimizerV2(chunk_size=0)
-    check("Zero chunk_size clamped", batch_chunk.chunk_size == 1,
-          f"chunk_size={batch_chunk.chunk_size}")
+    check("Zero chunk_size clamped", batch_chunk.chunk_size == 1, f"chunk_size={batch_chunk.chunk_size}")
 
     # ── 7. Timeout validation ──
-    check("Default timeout", batch.timeout_per_room_s == 60.0,
-          f"timeout={batch.timeout_per_room_s}")
+    check("Default timeout", batch.timeout_per_room_s == 60.0, f"timeout={batch.timeout_per_room_s}")
 
     print(f"\n{'=' * 60}")
     print(f"Density Optimizer V2 Self-Test: {passed} PASS, {failed} FAIL")

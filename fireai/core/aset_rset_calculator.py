@@ -50,7 +50,6 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-
 # ============================================================================
 # Tenability Criteria — SFPE / NFPA / BS 7974
 # ============================================================================
@@ -63,19 +62,15 @@ TENABILITY_THRESHOLDS = {
     # Smoke layer interface height below this = untenable
     # (NFPA 101, SFPE Handbook — 1.8m = typical occupant height)
     "min_smoke_layer_height_m": 1.8,
-
     # Temperature at occupant level above this = untenable
     # (SFPE: 60°C for sustained exposure, 100°C for brief exposure)
     "max_temperature_c": 60.0,
-
     # Visibility below this = untenable
     # (BS 7974-6: 10m for familiar occupants, 30m for unfamiliar)
     "min_visibility_m": 10.0,
-
     # CO concentration above this = untenable
     # (SFPE: 1500 ppm for impaired escape, 3000 ppm for incapacitation)
     "max_co_ppm": 1500.0,
-
     # O2 concentration below this = untenable
     # (SFPE: 12% minimum for escape capability)
     "min_o2_fraction": 0.12,
@@ -91,15 +86,15 @@ TENABILITY_THRESHOLDS = {
 PREMOVEMENT_DELAYS = {
     # occupancy_type: (typical_min_s, typical_max_s, design_value_s)
     # design_value = conservative (high) end for life-safety design
-    "assembly":      (60, 180, 120),    # Theaters, churches — crowds delay
-    "business":      (30, 120, 90),     # Offices — moderate response
-    "educational":   (30, 90, 60),      # Schools — trained, fast response
-    "healthcare":    (60, 300, 180),    # Hospitals — patients need help
-    "industrial":    (30, 120, 60),     # Factories — trained workforce
-    "mercantile":    (60, 180, 120),    # Stores — unfamiliar occupants
-    "residential":   (60, 300, 180),    # Hotels/apartments — sleeping risk
-    "storage":       (30, 120, 60),     # Warehouses — few occupants
-    "high_hazard":   (15, 60, 30),      # Hazardous — trained, immediate
+    "assembly": (60, 180, 120),  # Theaters, churches — crowds delay
+    "business": (30, 120, 90),  # Offices — moderate response
+    "educational": (30, 90, 60),  # Schools — trained, fast response
+    "healthcare": (60, 300, 180),  # Hospitals — patients need help
+    "industrial": (30, 120, 60),  # Factories — trained workforce
+    "mercantile": (60, 180, 120),  # Stores — unfamiliar occupants
+    "residential": (60, 300, 180),  # Hotels/apartments — sleeping risk
+    "storage": (30, 120, 60),  # Warehouses — few occupants
+    "high_hazard": (15, 60, 30),  # Hazardous — trained, immediate
 }
 
 DEFAULT_PREMOVEMENT_DELAY_S = 90.0  # Default if occupancy type unknown
@@ -109,15 +104,15 @@ DEFAULT_PREMOVEMENT_DELAY_S = 90.0  # Default if occupancy type unknown
 WALKING_SPEEDS = {
     # occupancy_type: (unimpeded_mps, design_mps)
     # design_mps accounts for crowd density and mixed populations
-    "assembly":      (1.2, 0.8),   # Crowds slow movement
-    "business":      (1.2, 1.0),   # Normal office population
-    "educational":   (1.2, 0.9),   # Children move slower
-    "healthcare":    (1.0, 0.5),   # Patients, wheelchairs, beds
-    "industrial":    (1.3, 1.0),   # Fit workers
-    "mercantile":    (1.2, 0.8),   # Crowds, families
-    "residential":   (1.0, 0.7),   # Elderly, children, sleeping
-    "storage":       (1.3, 1.0),   # Fit workers, few people
-    "high_hazard":   (1.3, 1.1),   # Trained personnel
+    "assembly": (1.2, 0.8),  # Crowds slow movement
+    "business": (1.2, 1.0),  # Normal office population
+    "educational": (1.2, 0.9),  # Children move slower
+    "healthcare": (1.0, 0.5),  # Patients, wheelchairs, beds
+    "industrial": (1.3, 1.0),  # Fit workers
+    "mercantile": (1.2, 0.8),  # Crowds, families
+    "residential": (1.0, 0.7),  # Elderly, children, sleeping
+    "storage": (1.3, 1.0),  # Fit workers, few people
+    "high_hazard": (1.3, 1.1),  # Trained personnel
 }
 
 DEFAULT_DESIGN_WALKING_SPEED_MPS = 0.8  # Conservative default
@@ -125,22 +120,22 @@ DEFAULT_DESIGN_WALKING_SPEED_MPS = 0.8  # Conservative default
 # Safety factors per SFPE Engineering Guide
 # Higher uncertainty → higher safety factor
 SAFETY_FACTORS = {
-    "prescriptive": 1.0,    # When all prescriptive rules are met
-    "standard":     1.5,    # Standard performance-based design
-    "high_risk":    2.0,    # Hospitals, assembly, high hazard
-    "very_high":    2.5,    # Sleeping risk, vulnerable populations
+    "prescriptive": 1.0,  # When all prescriptive rules are met
+    "standard": 1.5,  # Standard performance-based design
+    "high_risk": 2.0,  # Hospitals, assembly, high hazard
+    "very_high": 2.5,  # Sleeping risk, vulnerable populations
 }
 
 RISK_CATEGORIES = {
-    "assembly":      "high_risk",
-    "business":      "standard",
-    "educational":   "standard",
-    "healthcare":    "very_high",
-    "industrial":    "standard",
-    "mercantile":    "high_risk",
-    "residential":   "very_high",
-    "storage":       "standard",
-    "high_hazard":   "high_risk",
+    "assembly": "high_risk",
+    "business": "standard",
+    "educational": "standard",
+    "healthcare": "very_high",
+    "industrial": "standard",
+    "mercantile": "high_risk",
+    "residential": "very_high",
+    "storage": "standard",
+    "high_hazard": "high_risk",
 }
 
 
@@ -148,12 +143,14 @@ RISK_CATEGORIES = {
 # Data Structures
 # ============================================================================
 
+
 @dataclass
 class ASETResult:
     """Available Safe Egress Time calculation result."""
+
     aset_seconds: float
-    limiting_factor: str        # What made conditions untenable
-    aset_method: str            # "tenability_check" or "smoke_fill_estimate"
+    limiting_factor: str  # What made conditions untenable
+    aset_method: str  # "tenability_check" or "smoke_fill_estimate"
     smoke_layer_at_aset_m: Optional[float] = None
     temperature_at_aset_c: Optional[float] = None
     details: Dict[str, Any] = field(default_factory=dict)
@@ -162,6 +159,7 @@ class ASETResult:
 @dataclass
 class RSETResult:
     """Required Safe Egress Time calculation result."""
+
     rset_seconds: float
     premovement_delay_s: float
     travel_time_s: float
@@ -169,27 +167,29 @@ class RSETResult:
     travel_distance_m: float
     occupancy_type: str
     safety_factor: float
-    rset_with_safety_s: float     # rset × safety_factor
+    rset_with_safety_s: float  # rset × safety_factor
 
 
 @dataclass
 class AsetRsetValidation:
     """ASET vs RSET comparison result."""
+
     is_safe: bool
     aset_seconds: float
     rset_seconds: float
     rset_with_safety_s: float
-    safety_margin_s: float       # aset - rset_with_safety
+    safety_margin_s: float  # aset - rset_with_safety
     safety_factor_used: float
-    limiting_factor: str         # What limits ASET
+    limiting_factor: str  # What limits ASET
     occupancy_type: str
-    verdict: str                 # Human-readable PASS/FAIL
+    verdict: str  # Human-readable PASS/FAIL
     details: Dict[str, Any] = field(default_factory=dict)
 
 
 # ============================================================================
 # ASET Calculation
 # ============================================================================
+
 
 def calculate_aset(
     smoke_layer_height_series: Optional[List[Tuple[float, float]]] = None,
@@ -285,6 +285,7 @@ def calculate_aset(
         # Fail-safe: set ASET=0 (assume immediately untenable).
         if _nan_detected_in_series:
             import logging as _nan_log
+
             _nan_log.getLogger(__name__).critical(
                 "ASET-CALC-001: NaN/Inf detected in tenability time-series data. "
                 "Cannot determine ASET reliably. Setting ASET=0 (fail-safe: "
@@ -382,6 +383,7 @@ def calculate_aset(
 # RSET Calculation
 # ============================================================================
 
+
 def calculate_rset(
     travel_distance_m: float,
     occupancy_type: str = "business",
@@ -420,11 +422,13 @@ def calculate_rset(
         # by ~50%, allowing a building that should FAIL to PASS. Now uses the MOST
         # conservative occupancy type and emits a CRITICAL warning.
         import logging as _log
+
         _log.getLogger(__name__).critical(
             "ASET-RSET-001: Unknown occupancy type '%s'. "
             "Using 'healthcare' (most conservative: premovement=180s, SF=2.5). "
             "Provide a valid occupancy type: %s. Per NFPA 101 §9.3.",
-            occupancy_type, sorted(PREMOVEMENT_DELAYS.keys()),
+            occupancy_type,
+            sorted(PREMOVEMENT_DELAYS.keys()),
         )
         occ = "healthcare"  # Most conservative default
 
@@ -436,6 +440,7 @@ def calculate_rset(
         # makes ASET > RSET check meaningless.
         if not math.isfinite(pm_delay):
             import logging as _nan_log2
+
             _nan_log2.getLogger(__name__).critical(
                 "RSET-CALC-001: NaN/Inf premovement_delay_s=%r. "
                 "Using conservative default 180s (healthcare). Per NFPA 101 §9.3.",
@@ -451,6 +456,7 @@ def calculate_rset(
         # V57 FIX: NaN walking speed → NaN travel_time → NaN RSET → meaningless
         if not math.isfinite(speed):
             import logging as _nan_log3
+
             _nan_log3.getLogger(__name__).critical(
                 "RSET-CALC-002: NaN/Inf walking_speed_mps=%r. "
                 "Using conservative default 0.2 m/s (minimum mobility). Per SFPE.",
@@ -487,6 +493,7 @@ def calculate_rset(
         dt = detection_time_s
     else:
         import logging as _log
+
         _log.getLogger(__name__).critical(
             "ASET-RSET-002: detection_time_s not provided — RSET calculation "
             "EXCLUDES detection time (dt=0.0). Per SFPE Engineering Guide and "
@@ -506,6 +513,7 @@ def calculate_rset(
         # ASET > NaN is False (fail-safe) but the verdict formatting crashes.
         if not math.isfinite(sf) or sf < 1.0:
             import logging as _nan_log4
+
             _nan_log4.getLogger(__name__).critical(
                 "RSET-CALC-003: Invalid safety_factor=%r (must be >= 1.0 and finite). "
                 "Using default 2.5 (healthcare/conservative). Per SFPE Engineering Guide.",
@@ -537,6 +545,7 @@ def calculate_rset(
 # ASET vs RSET Validation
 # ============================================================================
 
+
 def validate_aset_vs_rset(
     aset_result: ASETResult,
     rset_result: RSETResult,
@@ -567,7 +576,7 @@ def validate_aset_vs_rset(
     # NaN > 0 is False (fail-safe) but verdict formatting crashes with division.
     if not math.isfinite(aset) or not math.isfinite(rset) or not math.isfinite(sf):
         is_safe = False
-        margin = float('nan')
+        margin = float("nan")
         verdict = (
             f"FAIL: Invalid ASET/RSET/SF values — cannot verify life safety. "
             f"ASET={aset}, RSET={rset}, SF={sf}. "
@@ -581,7 +590,7 @@ def validate_aset_vs_rset(
             safe_aset = aset if aset > 0 else 1.0  # Prevent division by zero
             verdict = (
                 f"PASS: ASET ({aset:.1f}s) > RSET×SF ({rset_with_sf:.1f}s). "
-                f"Safety margin: {margin:.1f}s ({margin/safe_aset*100:.0f}% of ASET)."
+                f"Safety margin: {margin:.1f}s ({margin / safe_aset * 100:.0f}% of ASET)."
             )
         else:
             verdict = (
@@ -616,6 +625,7 @@ def validate_aset_vs_rset(
 # ============================================================================
 # Integrated ASET/RSET Analysis — Connects semi_cfast_engine to release_gates
 # ============================================================================
+
 
 def perform_aset_rset_analysis(
     room_area_m2: float,
@@ -676,11 +686,15 @@ def perform_aset_rset_analysis(
     """
     try:
         from fireai.core.semi_cfast_engine import (
-            calculate_aset as _cfast_aset,
-            calculate_rset as _cfast_rset,
             FireScenario,
             TenabilityCriteria,
             verify_aset_rset,
+        )
+        from fireai.core.semi_cfast_engine import (
+            calculate_aset as _cfast_aset,
+        )
+        from fireai.core.semi_cfast_engine import (
+            calculate_rset as _cfast_rset,
         )
 
         # Build fire scenario from room parameters
@@ -704,11 +718,11 @@ def perform_aset_rset_analysis(
             "mercantile": "retail",
             "educational": "education",
             "high_hazard": "industrial",
-            "storage": "industrial",     # Storage maps to industrial (similar speeds)
+            "storage": "industrial",  # Storage maps to industrial (similar speeds)
             "residential": "residential",  # Same name but ensure mapping
             "healthcare": "elderly_care",  # Healthcare → elderly care (conservative)
-            "assembly": "assembly",         # Same name
-            "industrial": "industrial",     # Same name
+            "assembly": "assembly",  # Same name
+            "industrial": "industrial",  # Same name
         }
         cfast_occupancy = _OCCUPANCY_TYPE_MAP.get(occupancy_type, occupancy_type)
 
@@ -757,9 +771,9 @@ def perform_aset_rset_analysis(
 
         # Extract limiting criterion from ASETResult
         limiting = "unknown"
-        if hasattr(aset_result, 'limiting_criterion'):
+        if hasattr(aset_result, "limiting_criterion"):
             limiting = str(aset_result.limiting_criterion)
-        elif hasattr(aset_result, 'limiting_factor'):
+        elif hasattr(aset_result, "limiting_factor"):
             limiting = str(aset_result.limiting_factor)
 
         return {
@@ -776,9 +790,11 @@ def perform_aset_rset_analysis(
                     "method": "semi_cfast_engine_time_stepping",
                     "limiting_criterion": limiting,
                     "smoke_layer_at_aset_m": aset_result.smoke_layer_at_aset_m
-                        if hasattr(aset_result, 'smoke_layer_at_aset_m') else None,
+                    if hasattr(aset_result, "smoke_layer_at_aset_m")
+                    else None,
                     "temperature_at_aset_c": aset_result.temperature_at_aset_c
-                        if hasattr(aset_result, 'temperature_at_aset_c') else None,
+                    if hasattr(aset_result, "temperature_at_aset_c")
+                    else None,
                 },
                 "rset_details": {
                     "detection_time_s": detection_time_s,
@@ -821,7 +837,9 @@ def perform_aset_rset_analysis(
             "is_safe": validation.is_safe,
             "limiting_factor": aset_result.limiting_factor,
             "occupancy_type": occupancy_type,
-            "verdict": validation.verdict.split(":")[0] if ":" in validation.verdict else ("PASS" if validation.is_safe else "FAIL"),
+            "verdict": validation.verdict.split(":")[0]
+            if ":" in validation.verdict
+            else ("PASS" if validation.is_safe else "FAIL"),
             "details": {
                 "aset_details": {
                     "method": "simplified_estimate_fallback",

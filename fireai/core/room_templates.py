@@ -5,7 +5,8 @@ Usage:
     from fireai.core.room_templates import office, warehouse, corridor
     room = office(width=10, depth=10)
 """
-from fireai.core.nfpa72_models import RoomSpec, CeilingSpec, CeilingType
+
+from fireai.core.nfpa72_models import CeilingSpec, CeilingType, RoomSpec
 
 
 def office(width: float = 10, depth: float = 10, height: float = 3.0) -> RoomSpec:

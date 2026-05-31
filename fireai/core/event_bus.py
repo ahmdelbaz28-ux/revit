@@ -37,14 +37,14 @@ import threading
 import time
 import uuid
 from collections import deque
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
-
 
 # ===========================================================================
 # Event Data Model
 # ===========================================================================
+
 
 @dataclass
 class Event:
@@ -58,15 +58,14 @@ class Event:
       - timestamp: When the event was created (monotonic for ordering)
       - event_id: Unique identifier for forensic tracing
     """
+
     event_type: str
     data: Dict[str, Any] = field(default_factory=dict)
     source: str = ""
     correlation_id: str = ""
     timestamp: float = field(default_factory=time.monotonic)
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    _wall_clock_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    _wall_clock_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     @property
     def datetime_utc(self) -> str:
@@ -89,6 +88,7 @@ class Event:
 # ===========================================================================
 # Event Type Constants
 # ===========================================================================
+
 
 class Events:
     """Central registry of all event type strings in the FireAI system.
@@ -164,6 +164,7 @@ __all__ = [
 # EventRecorder
 # ===========================================================================
 
+
 class EventRecorder:
     """Records all events for forensic replay and debugging.
 
@@ -224,6 +225,7 @@ class EventRecorder:
 # ===========================================================================
 # EventBus
 # ===========================================================================
+
 
 class EventBus:
     """Central pub/sub event bus for the FireAI engineering system.
@@ -307,9 +309,7 @@ class EventBus:
         it's the caller's responsibility to manage subscriptions.
         """
         if not callable(callback):
-            raise TypeError(
-                f"callback must be callable, got {type(callback).__name__}"
-            )
+            raise TypeError(f"callback must be callable, got {type(callback).__name__}")
         with self._lock:
             self._listeners.setdefault(event_type, []).append(callback)
 
@@ -378,9 +378,12 @@ class EventBus:
                 # In a safety-critical system, silent failures are
                 # unacceptable. We catch to survive, but we log to inform.
                 import logging as _logging
+
                 _logging.getLogger(__name__).error(
                     "EventBus subscriber error on %s: %s: %s",
-                    event_type, type(exc).__name__, exc,
+                    event_type,
+                    type(exc).__name__,
+                    exc,
                 )
 
         return event

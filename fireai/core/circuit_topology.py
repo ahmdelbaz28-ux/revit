@@ -33,10 +33,10 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # CIRCUIT CLASS DESIGNATION — NFPA 72 §12.2
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class CircuitClass(enum.Enum):
     """NFPA 72 circuit class designations.
@@ -54,6 +54,7 @@ class CircuitClass(enum.Enum):
       Per NFPA 72 §12.2.3, Class B circuits must still operate all
       devices under normal (non-fault) conditions.
     """
+
     CLASS_A = "CLASS_A"  # Loop circuit — return path, survives single open
     CLASS_B = "CLASS_B"  # Star/branch circuit — no return path
 
@@ -61,6 +62,7 @@ class CircuitClass(enum.Enum):
 # ═══════════════════════════════════════════════════════════════════════════════
 # CIRCUIT TYPE — SLC vs NAC
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class CircuitType(enum.Enum):
     """Fire alarm circuit functional types.
@@ -73,6 +75,7 @@ class CircuitType(enum.Enum):
       (horns, strobes, speakers). Per NFPA 72 §18.3, NACs must be
       supervised and capable of operating all connected appliances.
     """
+
     SLC = "SLC"  # Signaling Line Circuit — addressable data circuit
     NAC = "NAC"  # Notification Appliance Circuit — audible/visible signaling
 
@@ -97,6 +100,7 @@ MAX_NAC_DEVICES_DEFAULT = 99
 # CIRCUIT DEVICE — A device on a circuit
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class CircuitDevice:
     """A device connected to a fire alarm circuit.
@@ -115,18 +119,20 @@ class CircuitDevice:
         current_a: Current draw in alarm condition (amperes).
         zone_id: Optional zone identifier for NFPA 72 zone mapping.
     """
-    device_id:    str
-    device_type:  str
-    position_x:   float = 0.0
-    position_y:   float = 0.0
-    position_z:   float = 0.0
-    current_a:    float = 0.0
-    zone_id:      Optional[str] = None
+
+    device_id: str
+    device_type: str
+    position_x: float = 0.0
+    position_y: float = 0.0
+    position_z: float = 0.0
+    current_a: float = 0.0
+    zone_id: Optional[str] = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CIRCUIT TOPOLOGY — Main class
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class CircuitTopology:
@@ -160,13 +166,13 @@ class CircuitTopology:
                         or NAC power source.
     """
 
-    circuit_id:      str
-    circuit_class:   CircuitClass = CircuitClass.CLASS_B
-    circuit_type:    CircuitType  = CircuitType.SLC
-    devices:         List[CircuitDevice] = field(default_factory=list)
-    cable_length_m:  float = 0.0
+    circuit_id: str
+    circuit_class: CircuitClass = CircuitClass.CLASS_B
+    circuit_type: CircuitType = CircuitType.SLC
+    devices: List[CircuitDevice] = field(default_factory=list)
+    cable_length_m: float = 0.0
     return_length_m: float = 0.0
-    panel_position:  Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    panel_position: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
     # ─── Device management ─────────────────────────────────────────────────
 
@@ -206,10 +212,7 @@ class CircuitTopology:
         Returns:
             List of indices where devices have 'isolator' in their type.
         """
-        return [
-            i for i, dev in enumerate(self.devices)
-            if "isolator" in dev.device_type.lower()
-        ]
+        return [i for i, dev in enumerate(self.devices) if "isolator" in dev.device_type.lower()]
 
     def get_device_count_between_isolators(self) -> List[int]:
         """Calculate device counts between consecutive isolators.
@@ -228,10 +231,7 @@ class CircuitTopology:
 
         # If no isolators, all devices are in one segment
         if not isolator_indices:
-            non_isolator_count = sum(
-                1 for d in self.devices
-                if "isolator" not in d.device_type.lower()
-            )
+            non_isolator_count = sum(1 for d in self.devices if "isolator" not in d.device_type.lower())
             return [non_isolator_count]
 
         counts = []
@@ -297,172 +297,171 @@ class CircuitTopology:
             segment_counts = self.get_device_count_between_isolators()
             for i, count in enumerate(segment_counts):
                 if count > MAX_DEVICES_BETWEEN_ISOLATORS:
-                    violations.append({
-                        "type": "too_many_devices_between_isolators",
-                        "segment_index": i,
-                        "device_count": count,
-                        "max_allowed": MAX_DEVICES_BETWEEN_ISOLATORS,
-                        "nfpa_section": "NFPA 72 §12.3.1",
-                        "message": (
-                            f"SLC segment {i} has {count} devices between "
-                            f"isolators (max {MAX_DEVICES_BETWEEN_ISOLATORS} "
-                            f"per NFPA 72 §12.3.1)"
-                        ),
-                    })
+                    violations.append(
+                        {
+                            "type": "too_many_devices_between_isolators",
+                            "segment_index": i,
+                            "device_count": count,
+                            "max_allowed": MAX_DEVICES_BETWEEN_ISOLATORS,
+                            "nfpa_section": "NFPA 72 §12.3.1",
+                            "message": (
+                                f"SLC segment {i} has {count} devices between "
+                                f"isolators (max {MAX_DEVICES_BETWEEN_ISOLATORS} "
+                                f"per NFPA 72 §12.3.1)"
+                            ),
+                        }
+                    )
 
             # Warning: SLC with many devices but no isolators
-            if (len(self.devices) > MAX_DEVICES_BETWEEN_ISOLATORS
-                    and not self.get_isolator_indices()):
-                warnings.append({
-                    "type": "no_isolators_on_large_slc",
-                    "device_count": len(self.devices),
-                    "max_without_isolators": MAX_DEVICES_BETWEEN_ISOLATORS,
-                    "nfpa_section": "NFPA 72 §12.3",
-                    "message": (
-                        f"SLC has {len(self.devices)} devices with no fault "
-                        f"isolators — NFPA 72 §12.3 requires isolators when "
-                        f"device count exceeds {MAX_DEVICES_BETWEEN_ISOLATORS}"
-                    ),
-                })
+            if len(self.devices) > MAX_DEVICES_BETWEEN_ISOLATORS and not self.get_isolator_indices():
+                warnings.append(
+                    {
+                        "type": "no_isolators_on_large_slc",
+                        "device_count": len(self.devices),
+                        "max_without_isolators": MAX_DEVICES_BETWEEN_ISOLATORS,
+                        "nfpa_section": "NFPA 72 §12.3",
+                        "message": (
+                            f"SLC has {len(self.devices)} devices with no fault "
+                            f"isolators — NFPA 72 §12.3 requires isolators when "
+                            f"device count exceeds {MAX_DEVICES_BETWEEN_ISOLATORS}"
+                        ),
+                    }
+                )
 
         # ── Check 2: Class A return path (NFPA 72 §12.2.2) ──
         if self.circuit_class == CircuitClass.CLASS_A:
             if self.return_length_m <= 0:
-                violations.append({
-                    "type": "class_a_missing_return_path",
-                    "return_length_m": self.return_length_m,
-                    "nfpa_section": "NFPA 72 §12.2.2",
-                    "message": (
-                        "Class A circuit requires a return path with positive "
-                        "length per NFPA 72 §12.2.2"
-                    ),
-                })
+                violations.append(
+                    {
+                        "type": "class_a_missing_return_path",
+                        "return_length_m": self.return_length_m,
+                        "nfpa_section": "NFPA 72 §12.2.2",
+                        "message": ("Class A circuit requires a return path with positive length per NFPA 72 §12.2.2"),
+                    }
+                )
 
             # Return path length should be reasonable relative to outgoing
             # (typically similar but may differ due to routing)
-            if (self.cable_length_m > 0
-                    and self.return_length_m > self.cable_length_m * 3.0):
-                warnings.append({
-                    "type": "class_a_return_path_excessively_long",
-                    "outgoing_m": self.cable_length_m,
-                    "return_m": self.return_length_m,
-                    "ratio": round(
-                        self.return_length_m / self.cable_length_m, 2
-                    ),
-                    "nfpa_section": "NFPA 72 §12.2.2",
-                    "message": (
-                        f"Class A return path ({self.return_length_m:.1f}m) "
-                        f"is >3× outgoing path ({self.cable_length_m:.1f}m) "
-                        f"— verify routing separation per NFPA 72 §12.2.2"
-                    ),
-                })
+            if self.cable_length_m > 0 and self.return_length_m > self.cable_length_m * 3.0:
+                warnings.append(
+                    {
+                        "type": "class_a_return_path_excessively_long",
+                        "outgoing_m": self.cable_length_m,
+                        "return_m": self.return_length_m,
+                        "ratio": round(self.return_length_m / self.cable_length_m, 2),
+                        "nfpa_section": "NFPA 72 §12.2.2",
+                        "message": (
+                            f"Class A return path ({self.return_length_m:.1f}m) "
+                            f"is >3× outgoing path ({self.cable_length_m:.1f}m) "
+                            f"— verify routing separation per NFPA 72 §12.2.2"
+                        ),
+                    }
+                )
         else:
             # Class B should not have return length
             if self.return_length_m > 0:
-                warnings.append({
-                    "type": "class_b_has_return_length",
-                    "return_length_m": self.return_length_m,
-                    "nfpa_section": "NFPA 72 §12.2.3",
-                    "message": (
-                        f"Class B circuit has return_length_m={self.return_length_m} "
-                        f"— Class B circuits do not have return paths"
-                    ),
-                })
+                warnings.append(
+                    {
+                        "type": "class_b_has_return_length",
+                        "return_length_m": self.return_length_m,
+                        "nfpa_section": "NFPA 72 §12.2.3",
+                        "message": (
+                            f"Class B circuit has return_length_m={self.return_length_m} "
+                            f"— Class B circuits do not have return paths"
+                        ),
+                    }
+                )
 
         # ── Check 3: Device coordinate validity ──
         for i, dev in enumerate(self.devices):
             if not math.isfinite(dev.position_x):
-                violations.append({
-                    "type": "invalid_device_coordinate",
-                    "device_id": dev.device_id,
-                    "coordinate": "position_x",
-                    "value": dev.position_x,
-                    "nfpa_section": "DATA_INTEGRITY",
-                    "message": (
-                        f"Device '{dev.device_id}' has non-finite "
-                        f"position_x={dev.position_x}"
-                    ),
-                })
+                violations.append(
+                    {
+                        "type": "invalid_device_coordinate",
+                        "device_id": dev.device_id,
+                        "coordinate": "position_x",
+                        "value": dev.position_x,
+                        "nfpa_section": "DATA_INTEGRITY",
+                        "message": (f"Device '{dev.device_id}' has non-finite position_x={dev.position_x}"),
+                    }
+                )
             if not math.isfinite(dev.position_y):
-                violations.append({
-                    "type": "invalid_device_coordinate",
-                    "device_id": dev.device_id,
-                    "coordinate": "position_y",
-                    "value": dev.position_y,
-                    "nfpa_section": "DATA_INTEGRITY",
-                    "message": (
-                        f"Device '{dev.device_id}' has non-finite "
-                        f"position_y={dev.position_y}"
-                    ),
-                })
+                violations.append(
+                    {
+                        "type": "invalid_device_coordinate",
+                        "device_id": dev.device_id,
+                        "coordinate": "position_y",
+                        "value": dev.position_y,
+                        "nfpa_section": "DATA_INTEGRITY",
+                        "message": (f"Device '{dev.device_id}' has non-finite position_y={dev.position_y}"),
+                    }
+                )
             if not math.isfinite(dev.position_z):
-                violations.append({
-                    "type": "invalid_device_coordinate",
-                    "device_id": dev.device_id,
-                    "coordinate": "position_z",
-                    "value": dev.position_z,
-                    "nfpa_section": "DATA_INTEGRITY",
-                    "message": (
-                        f"Device '{dev.device_id}' has non-finite "
-                        f"position_z={dev.position_z}"
-                    ),
-                })
+                violations.append(
+                    {
+                        "type": "invalid_device_coordinate",
+                        "device_id": dev.device_id,
+                        "coordinate": "position_z",
+                        "value": dev.position_z,
+                        "nfpa_section": "DATA_INTEGRITY",
+                        "message": (f"Device '{dev.device_id}' has non-finite position_z={dev.position_z}"),
+                    }
+                )
 
         # ── Check 4: Cable length validity ──
         if not math.isfinite(self.cable_length_m) or self.cable_length_m < 0:
-            violations.append({
-                "type": "invalid_cable_length",
-                "cable_length_m": self.cable_length_m,
-                "nfpa_section": "DATA_INTEGRITY",
-                "message": (
-                    f"cable_length_m must be non-negative finite, "
-                    f"got {self.cable_length_m}"
-                ),
-            })
+            violations.append(
+                {
+                    "type": "invalid_cable_length",
+                    "cable_length_m": self.cable_length_m,
+                    "nfpa_section": "DATA_INTEGRITY",
+                    "message": (f"cable_length_m must be non-negative finite, got {self.cable_length_m}"),
+                }
+            )
 
-        if (self.circuit_class == CircuitClass.CLASS_A
-                and (not math.isfinite(self.return_length_m)
-                     or self.return_length_m < 0)):
-            violations.append({
-                "type": "invalid_return_length",
-                "return_length_m": self.return_length_m,
-                "nfpa_section": "DATA_INTEGRITY",
-                "message": (
-                    f"return_length_m must be non-negative finite, "
-                    f"got {self.return_length_m}"
-                ),
-            })
+        if self.circuit_class == CircuitClass.CLASS_A and (
+            not math.isfinite(self.return_length_m) or self.return_length_m < 0
+        ):
+            violations.append(
+                {
+                    "type": "invalid_return_length",
+                    "return_length_m": self.return_length_m,
+                    "nfpa_section": "DATA_INTEGRITY",
+                    "message": (f"return_length_m must be non-negative finite, got {self.return_length_m}"),
+                }
+            )
 
         # ── Check 5: Panel position at origin (0,0,0) — V96 FIX ──
         # A panel at (0,0,0) likely means the position was never set, which
         # causes segment lengths to be computed from the building origin
         # instead of the actual panel location — catastrophic voltage drop errors.
         if self.panel_position == (0.0, 0.0, 0.0) and len(self.devices) > 0:
-            warnings.append({
-                "type": "panel_at_origin",
-                "panel_position": self.panel_position,
-                "nfpa_section": "DATA_INTEGRITY",
-                "message": (
-                    "Panel position is (0,0,0) — if this is not the actual "
-                    "panel location, segment lengths and voltage drops will be "
-                    "WRONG. Set panel_position to the real coordinates."
-                ),
-            })
+            warnings.append(
+                {
+                    "type": "panel_at_origin",
+                    "panel_position": self.panel_position,
+                    "nfpa_section": "DATA_INTEGRITY",
+                    "message": (
+                        "Panel position is (0,0,0) — if this is not the actual "
+                        "panel location, segment lengths and voltage drops will be "
+                        "WRONG. Set panel_position to the real coordinates."
+                    ),
+                }
+            )
 
         # ── Check 6: NAC device current draw ──
         if self.circuit_type == CircuitType.NAC:
             for dev in self.devices:
                 if not math.isfinite(dev.current_a) or dev.current_a < 0:
-                    violations.append({
-                        "type": "invalid_device_current",
-                        "device_id": dev.device_id,
-                        "current_a": dev.current_a,
-                        "nfpa_section": "NFPA 72 §10.6.4",
-                        "message": (
-                            f"NAC device '{dev.device_id}' has invalid "
-                            f"current_a={dev.current_a}"
-                        ),
-                    })
+                    violations.append(
+                        {
+                            "type": "invalid_device_current",
+                            "device_id": dev.device_id,
+                            "current_a": dev.current_a,
+                            "nfpa_section": "NFPA 72 §10.6.4",
+                            "message": (f"NAC device '{dev.device_id}' has invalid current_a={dev.current_a}"),
+                        }
+                    )
 
         compliant = len(violations) == 0
 
@@ -502,7 +501,4 @@ class CircuitTopology:
             ("position_z", device.position_z),
         ]:
             if not math.isfinite(value):
-                raise ValueError(
-                    f"Device '{device.device_id}' has non-finite "
-                    f"{name}={value}"
-                )
+                raise ValueError(f"Device '{device.device_id}' has non-finite {name}={value}")

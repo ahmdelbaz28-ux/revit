@@ -18,14 +18,11 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from fireai.core.fault_isolator_injector import (
-    inject_fault_isolators,
     verify_isolator_compliance,
 )
 from fireai.core.nfpa72_calculations import (
-    required_battery_capacity_ah,
     auto_select_awg,
-    check_voltage_drop,
-    AWG_RESISTANCE_TABLE,
+    required_battery_capacity_ah,
 )
 
 __all__ = [
@@ -59,11 +56,11 @@ UNIT_COSTS: Dict[str, float] = {
     "monitor_module": 55.0,
     "control_module": 65.0,
     "fire_alarm_panel": 3500.0,
-    "battery_ah": 12.0,          # per Ah
+    "battery_ah": 12.0,  # per Ah
     "cable_fpl_per_m": 1.80,
     "cable_fplr_per_m": 2.10,
     "cable_fplp_per_m": 2.80,
-    "cable_ci_per_m": 4.50,      # Circuit Integrity cable (2-hour rated)
+    "cable_ci_per_m": 4.50,  # Circuit Integrity cable (2-hour rated)
     "conduit_per_m": 4.50,
     "conduit_rated_2hr_per_m": 18.00,  # 2-hour fire-rated conduit
     "junction_box": 25.0,
@@ -72,9 +69,20 @@ UNIT_COSTS: Dict[str, float] = {
 
 # Standard VRLA / lead-acid battery sizes commonly available (Ah)
 STANDARD_BATTERY_SIZES: List[float] = [
-    7.0, 12.0, 18.0, 26.0, 33.0, 40.0,
-    55.0, 75.0, 90.0, 100.0, 120.0,
-    150.0, 180.0, 200.0,
+    7.0,
+    12.0,
+    18.0,
+    26.0,
+    33.0,
+    40.0,
+    55.0,
+    75.0,
+    90.0,
+    100.0,
+    120.0,
+    150.0,
+    180.0,
+    200.0,
 ]
 
 # NFPA 72 §17.6.3.1 – nominal spacing for spot-type smoke detectors (m)
@@ -100,6 +108,7 @@ LONG_LOOP_WARNING_M: float = 1000.0
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class BOQItem:
@@ -151,6 +160,7 @@ class BOQResult:
 # Helper – standard battery size
 # ---------------------------------------------------------------------------
 
+
 def standard_battery_size(required_ah: float) -> float:
     """Return the next standard battery size >= *required_ah*.
 
@@ -174,6 +184,7 @@ def standard_battery_size(required_ah: float) -> float:
 # ---------------------------------------------------------------------------
 # Battery calculation
 # ---------------------------------------------------------------------------
+
 
 def calculate_battery_for_panels(
     panel_count: int,
@@ -222,6 +233,7 @@ def calculate_battery_for_panels(
 # ---------------------------------------------------------------------------
 # Detector BOQ
 # ---------------------------------------------------------------------------
+
 
 def generate_detector_boq(
     rooms: List[Dict],
@@ -284,23 +296,23 @@ def generate_detector_boq(
     for det_type, quantity in sorted(type_counts.items()):
         unit_cost = UNIT_COSTS.get(det_type, 0.0)
         nfpa_ref = (
-            "NFPA 72 §17.6" if "smoke" in det_type
-            else "NFPA 72 §17.9" if "heat" in det_type
-            else "NFPA 72 §17.13"
+            "NFPA 72 §17.6" if "smoke" in det_type else "NFPA 72 §17.9" if "heat" in det_type else "NFPA 72 §17.13"
         )
         unit_label = "ea" if det_type != "duct_detector" else "ea"
 
-        items.append(BOQItem(
-            item_type=det_type,
-            description=f"{det_type.replace('_', ' ').title()}",
-            quantity=quantity,
-            unit=unit_label,
-            unit_cost_usd=unit_cost,
-            nfpa_reference=nfpa_ref,
-            notes=f"Ceiling height {ceiling_height_m:.1f} m; derating={derating:.2f}"
-            if ceiling_height_m > 3.0
-            else "",
-        ))
+        items.append(
+            BOQItem(
+                item_type=det_type,
+                description=f"{det_type.replace('_', ' ').title()}",
+                quantity=quantity,
+                unit=unit_label,
+                unit_cost_usd=unit_cost,
+                nfpa_reference=nfpa_ref,
+                notes=f"Ceiling height {ceiling_height_m:.1f} m; derating={derating:.2f}"
+                if ceiling_height_m > 3.0
+                else "",
+            )
+        )
 
     return items
 
@@ -308,6 +320,7 @@ def generate_detector_boq(
 # ---------------------------------------------------------------------------
 # Isolator BOQ
 # ---------------------------------------------------------------------------
+
 
 def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
     """Generate BOQ line items for fault isolators using compliance verification.
@@ -347,7 +360,9 @@ def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
 
         if not compliance.get("compliant", False):  # V111 FIX: Fail-safe default — missing key = NOT compliant
             # Estimate needed isolators from the worst segment
-            worst_segment = compliance.get("max_segment_devices", 0)  # 0 is safe default — no segment = no isolator need
+            worst_segment = compliance.get(
+                "max_segment_devices", 0
+            )  # 0 is safe default — no segment = no isolator need
             # Each isolator splits a segment; need enough to bring
             # all segments under max_between
             if worst_segment > max_between:
@@ -363,15 +378,17 @@ def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
 
     if total_isolators_needed > 0:
         unit_cost = UNIT_COSTS["fault_isolator"]
-        items.append(BOQItem(
-            item_type="fault_isolator",
-            description="Fault Isolator Module",
-            quantity=total_isolators_needed,
-            unit="ea",
-            unit_cost_usd=unit_cost,
-            nfpa_reference="NFPA 72 §12.3",
-            notes=f"Additional isolators to achieve compliance across {len(loops)} loop(s)",
-        ))
+        items.append(
+            BOQItem(
+                item_type="fault_isolator",
+                description="Fault Isolator Module",
+                quantity=total_isolators_needed,
+                unit="ea",
+                unit_cost_usd=unit_cost,
+                nfpa_reference="NFPA 72 §12.3",
+                notes=f"Additional isolators to achieve compliance across {len(loops)} loop(s)",
+            )
+        )
 
     return items
 
@@ -379,6 +396,7 @@ def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
 # ---------------------------------------------------------------------------
 # Cable BOQ
 # ---------------------------------------------------------------------------
+
 
 def generate_cable_boq(
     loops: List[Dict],
@@ -474,65 +492,75 @@ def generate_cable_boq(
     # Cable item
     if cable_with_waste > 0:
         unit_cost = UNIT_COSTS.get(cable_key, UNIT_COSTS["cable_fpl_per_m"])
-        items.append(BOQItem(
-            item_type=f"cable_{cable_type_upper}",
-            description=f"Fire Alarm Cable – {cable_type_upper} (per metre)",
-            quantity=cable_with_waste,
-            unit="m",
-            unit_cost_usd=unit_cost,
-            nfpa_reference="NFPA 72 §12.2 / §12.4 / NEC Art. 760",
-            notes=f"Includes 10% waste factor; raw length={total_cable_m:.0f}m{awg_note}",
-        ))
+        items.append(
+            BOQItem(
+                item_type=f"cable_{cable_type_upper}",
+                description=f"Fire Alarm Cable – {cable_type_upper} (per metre)",
+                quantity=cable_with_waste,
+                unit="m",
+                unit_cost_usd=unit_cost,
+                nfpa_reference="NFPA 72 §12.2 / §12.4 / NEC Art. 760",
+                notes=f"Includes 10% waste factor; raw length={total_cable_m:.0f}m{awg_note}",
+            )
+        )
 
     # Conduit – estimated at 60 % of cable length
     conduit_m = math.ceil(cable_with_waste * 0.60)
     if conduit_m > 0:
         if require_rated_enclosure:
-            items.append(BOQItem(
-                item_type="conduit_rated_2hr",
-                description="2-Hour Fire-Rated Conduit for FA Wiring (per metre)",
-                quantity=conduit_m,
-                unit="m",
-                unit_cost_usd=UNIT_COSTS["conduit_rated_2hr_per_m"],
-                nfpa_reference="NFPA 72 §12.4.2 / IBC §714",
-                notes="2-hour fire-rated enclosure per survivability Level 3",
-            ))
+            items.append(
+                BOQItem(
+                    item_type="conduit_rated_2hr",
+                    description="2-Hour Fire-Rated Conduit for FA Wiring (per metre)",
+                    quantity=conduit_m,
+                    unit="m",
+                    unit_cost_usd=UNIT_COSTS["conduit_rated_2hr_per_m"],
+                    nfpa_reference="NFPA 72 §12.4.2 / IBC §714",
+                    notes="2-hour fire-rated enclosure per survivability Level 3",
+                )
+            )
         else:
-            items.append(BOQItem(
-                item_type="conduit",
-                description="EMT Conduit for Fire Alarm Wiring (per metre)",
-                quantity=conduit_m,
-                unit="m",
-                unit_cost_usd=UNIT_COSTS["conduit_per_m"],
-                nfpa_reference="NEC Art. 760",
-                notes="Estimated at 60% of cable length",
-            ))
+            items.append(
+                BOQItem(
+                    item_type="conduit",
+                    description="EMT Conduit for Fire Alarm Wiring (per metre)",
+                    quantity=conduit_m,
+                    unit="m",
+                    unit_cost_usd=UNIT_COSTS["conduit_per_m"],
+                    nfpa_reference="NEC Art. 760",
+                    notes="Estimated at 60% of cable length",
+                )
+            )
 
     # Junction boxes – rough estimate: one every 30 m of conduit
     if conduit_m > 0:
         jb_count = max(1, math.ceil(conduit_m / 30.0))
-        items.append(BOQItem(
-            item_type="junction_box",
-            description="Junction Box (4×4)",
-            quantity=jb_count,
-            unit="ea",
-            unit_cost_usd=UNIT_COSTS["junction_box"],
-            nfpa_reference="",
-            notes="Estimated 1 per 30 m of conduit run",
-        ))
+        items.append(
+            BOQItem(
+                item_type="junction_box",
+                description="Junction Box (4×4)",
+                quantity=jb_count,
+                unit="ea",
+                unit_cost_usd=UNIT_COSTS["junction_box"],
+                nfpa_reference="",
+                notes="Estimated 1 per 30 m of conduit run",
+            )
+        )
 
     # Firestopping – one penetration per floor per riser
     if require_rated_enclosure or cable_type_upper == "CI":
         floor_count = max(1, loop_count)
-        items.append(BOQItem(
-            item_type="firestop_penetration",
-            description="Firestopping Penetration Seal (rated assembly)",
-            quantity=floor_count,
-            unit="ea",
-            unit_cost_usd=UNIT_COSTS["firestop_penetration"],
-            nfpa_reference="IBC 2021 §714 / NFPA 72 §12.4",
-            notes="One penetration per floor for rated enclosure through-penetration",
-        ))
+        items.append(
+            BOQItem(
+                item_type="firestop_penetration",
+                description="Firestopping Penetration Seal (rated assembly)",
+                quantity=floor_count,
+                unit="ea",
+                unit_cost_usd=UNIT_COSTS["firestop_penetration"],
+                nfpa_reference="IBC 2021 §714 / NFPA 72 §12.4",
+                notes="One penetration per floor for rated enclosure through-penetration",
+            )
+        )
 
     return items
 
@@ -540,6 +568,7 @@ def generate_cable_boq(
 # ---------------------------------------------------------------------------
 # Full BOQ
 # ---------------------------------------------------------------------------
+
 
 def generate_full_boq(
     rooms: List[Dict],
@@ -580,14 +609,16 @@ def generate_full_boq(
     all_items: List[BOQItem] = []
 
     # --- Panels ---
-    all_items.append(BOQItem(
-        item_type="fire_alarm_panel",
-        description="Fire Alarm Control Panel (FACP)",
-        quantity=panels,
-        unit="ea",
-        unit_cost_usd=UNIT_COSTS["fire_alarm_panel"],
-        nfpa_reference="NFPA 72 §10.6",
-    ))
+    all_items.append(
+        BOQItem(
+            item_type="fire_alarm_panel",
+            description="Fire Alarm Control Panel (FACP)",
+            quantity=panels,
+            unit="ea",
+            unit_cost_usd=UNIT_COSTS["fire_alarm_panel"],
+            nfpa_reference="NFPA 72 §10.6",
+        )
+    )
 
     # --- Detectors ---
     detector_items = generate_detector_boq(rooms)
@@ -602,22 +633,22 @@ def generate_full_boq(
     # --- Cable ---
     cable_items = generate_cable_boq(loops)
     all_items.extend(cable_items)
-    cable_meters = sum(
-        it.quantity for it in cable_items if it.item_type.startswith("cable_")
-    )
+    cable_meters = sum(it.quantity for it in cable_items if it.item_type.startswith("cable_"))
 
     # --- Batteries ---
     battery_info = calculate_battery_for_panels(panels, battery_spec)
     installed_ah = battery_info["installed_ah"]
-    all_items.append(BOQItem(
-        item_type="battery",
-        description=f"VRLA Battery {installed_ah:.0f} Ah @ {battery_spec.panel_voltage_v:.0f} V",
-        quantity=battery_info["battery_count"],
-        unit="ea",
-        unit_cost_usd=round(installed_ah * UNIT_COSTS["battery_ah"], 2),
-        nfpa_reference="NFPA 72 §10.6.7",
-        notes="Two batteries per panel for redundancy per §10.6.7",
-    ))
+    all_items.append(
+        BOQItem(
+            item_type="battery",
+            description=f"VRLA Battery {installed_ah:.0f} Ah @ {battery_spec.panel_voltage_v:.0f} V",
+            quantity=battery_info["battery_count"],
+            unit="ea",
+            unit_cost_usd=round(installed_ah * UNIT_COSTS["battery_ah"], 2),
+            nfpa_reference="NFPA 72 §10.6.7",
+            notes="Two batteries per panel for redundancy per §10.6.7",
+        )
+    )
 
     # --- Notification appliances (acoustic-calculator-based sizing) ---
     if include_notification:
@@ -639,6 +670,7 @@ def generate_full_boq(
 
                 try:
                     from fireai.core.acoustic_calculator import calculate_min_speakers_for_room
+
                     speaker_result = calculate_min_speakers_for_room(
                         room_length_m=room_side,
                         room_width_m=room_side,
@@ -655,42 +687,47 @@ def generate_full_boq(
                 # Strobes: 1 per room minimum for accessibility (ADA/NFPA 72 §18.5)
                 total_strobes += 1
 
-            all_items.append(BOQItem(
-                item_type="speaker_strobe",
-                description="Speaker/Strobe Combination",
-                quantity=total_speakers,
-                unit="ea",
-                unit_cost_usd=UNIT_COSTS["speaker_strobe"],
-                nfpa_reference="NFPA 72 §18.5 / §18.4.3",
-                notes=(
-                    f"Speaker count from acoustic_calculator (distance-based SPL). "
-                    f"Total across {room_count} rooms."
-                ),
-            ))
-            all_items.append(BOQItem(
-                item_type="strobe",
-                description="Strobe Only (corridors/common areas)",
-                quantity=max(1, total_strobes // 2),
-                unit="ea",
-                unit_cost_usd=UNIT_COSTS["strobe"],
-                nfpa_reference="NFPA 72 §18.5",
-                notes="Additional strobes for corridors — 1 per 2 rooms estimated",
-            ))
+            all_items.append(
+                BOQItem(
+                    item_type="speaker_strobe",
+                    description="Speaker/Strobe Combination",
+                    quantity=total_speakers,
+                    unit="ea",
+                    unit_cost_usd=UNIT_COSTS["speaker_strobe"],
+                    nfpa_reference="NFPA 72 §18.5 / §18.4.3",
+                    notes=(
+                        f"Speaker count from acoustic_calculator (distance-based SPL). Total across {room_count} rooms."
+                    ),
+                )
+            )
+            all_items.append(
+                BOQItem(
+                    item_type="strobe",
+                    description="Strobe Only (corridors/common areas)",
+                    quantity=max(1, total_strobes // 2),
+                    unit="ea",
+                    unit_cost_usd=UNIT_COSTS["strobe"],
+                    nfpa_reference="NFPA 72 §18.5",
+                    notes="Additional strobes for corridors — 1 per 2 rooms estimated",
+                )
+            )
 
     # --- Pull stations (manual fire alarm boxes) ---
     # NFPA 72 §17.13.2 – within 1.5 m of each exit
     if len(rooms) > 0:
         # Estimate one pull station per floor / major exit group
         pull_count = max(1, math.ceil(len(rooms) / 10))
-        all_items.append(BOQItem(
-            item_type="pull_station",
-            description="Manual Pull Station",
-            quantity=pull_count,
-            unit="ea",
-            unit_cost_usd=UNIT_COSTS["pull_station"],
-            nfpa_reference="NFPA 72 §17.13.2",
-            notes="Within 1.5 m of each exit – verify with egress plan",
-        ))
+        all_items.append(
+            BOQItem(
+                item_type="pull_station",
+                description="Manual Pull Station",
+                quantity=pull_count,
+                unit="ea",
+                unit_cost_usd=UNIT_COSTS["pull_station"],
+                nfpa_reference="NFPA 72 §17.13.2",
+                notes="Within 1.5 m of each exit – verify with egress plan",
+            )
+        )
 
     # --- Totals ---
     total_items = sum(it.quantity for it in all_items)
@@ -710,14 +747,10 @@ def generate_full_boq(
             f"Verify voltage drop and signal integrity per NFPA 72 §12.2."
         )
     if detector_count == 0:
-        warnings.append(
-            "No detectors in BOQ. Verify that detection requirements are met "
-            "per NFPA 72 §17.3."
-        )
+        warnings.append("No detectors in BOQ. Verify that detection requirements are met per NFPA 72 §17.3.")
     if panels > 3:
         warnings.append(
-            f"Multiple panels ({panels}) – ensure network configuration "
-            f"complies with NFPA 72 §10.6.7 and §23.8."
+            f"Multiple panels ({panels}) – ensure network configuration complies with NFPA 72 §10.6.7 and §23.8."
         )
     if not battery_info["is_adequate"]:
         warnings.append(
@@ -742,6 +775,7 @@ def generate_full_boq(
 # ---------------------------------------------------------------------------
 # Battery Result for Release Gate 8
 # ---------------------------------------------------------------------------
+
 
 def generate_battery_result_for_release_gate(
     panel_count: int = 1,

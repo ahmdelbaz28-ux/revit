@@ -44,11 +44,10 @@ import json
 import logging
 import os
 import re
-import sys
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +61,7 @@ logger = logging.getLogger(__name__)
 # standard structured logging library with built-in rotation + compression.
 try:
     from loguru import logger as _loguru_logger
+
     _LOGURU_AVAILABLE = True
     # V103 FIX: Remove loguru's default stderr handler. We configure our own
     # file sinks with rotation/compression. Without this removal, every
@@ -80,12 +80,12 @@ except ImportError:
 _SENSITIVE_PATTERNS = [
     # API keys and tokens (common variable names in logs)
     re.compile(
-        r'(api[_-]?key|token|secret|password|auth[_-]?key|bearer|credential)'
+        r"(api[_-]?key|token|secret|password|auth[_-]?key|bearer|credential)"
         r'["\s:=]+["\']?([A-Za-z0-9_\-\.]{8,})',
         re.IGNORECASE,
     ),
     # Bearer tokens in Authorization headers
-    re.compile(r'(Bearer\s+)([A-Za-z0-9_\-\.]+)', re.IGNORECASE),
+    re.compile(r"(Bearer\s+)([A-Za-z0-9_\-\.]+)", re.IGNORECASE),
 ]
 
 # V105 FIX (HIGH-2): REMOVED the overly broad hex-regex pattern that was
@@ -102,15 +102,17 @@ _SENSITIVE_PATTERNS = [
 # "api_key", "token", "secret" before the value).
 
 # Known sensitive environment variable names
-_SENSITIVE_ENV_VARS = frozenset({
-    "FIREAI_API_KEY",
-    "FIREAI_EVIDENCE_HMAC_KEY",
-    "AUDIT_HMAC_KEY",
-    "OPENAI_API_KEY",
-    "GEMINI_API_KEY",
-    "FIREAI_OPENAI_API_KEY",
-    "DATABASE_URL",
-})
+_SENSITIVE_ENV_VARS = frozenset(
+    {
+        "FIREAI_API_KEY",
+        "FIREAI_EVIDENCE_HMAC_KEY",
+        "AUDIT_HMAC_KEY",
+        "OPENAI_API_KEY",
+        "GEMINI_API_KEY",
+        "FIREAI_OPENAI_API_KEY",
+        "DATABASE_URL",
+    }
+)
 
 # V105 FIX: The env var cache is refreshed before each mask_sensitive()
 # call to handle runtime key rotation. This is safe because os.getenv()
@@ -128,6 +130,7 @@ def _refresh_env_cache() -> None:
     """
     global _ENV_VALUE_CACHE, _ENV_CACHE_TIMESTAMP
     import time as _time
+
     now = _time.monotonic()
     if now - _ENV_CACHE_TIMESTAMP < 5.0 and _ENV_VALUE_CACHE:
         return  # Cache is fresh
@@ -142,6 +145,7 @@ def _force_refresh_env_cache() -> None:
     """
     global _ENV_VALUE_CACHE, _ENV_CACHE_TIMESTAMP
     import time as _time
+
     _ENV_VALUE_CACHE = {}
     for var_name in _SENSITIVE_ENV_VARS:
         value = os.getenv(var_name, "")
@@ -189,9 +193,7 @@ def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
     # Apply regex patterns
     for pattern in _SENSITIVE_PATTERNS:
         result = pattern.sub(
-            lambda m: m.group(0).replace(
-                m.group(m.lastindex or 0), mask
-            ) if m.lastindex else m.group(0),
+            lambda m: m.group(0).replace(m.group(m.lastindex or 0), mask) if m.lastindex else m.group(0),
             result,
         )
 
@@ -212,15 +214,9 @@ class SensitiveDataFilter(logging.Filter):
         if isinstance(record.msg, str):
             record.msg = mask_sensitive(record.msg)
         if record.args and isinstance(record.args, dict):
-            record.args = {
-                k: mask_sensitive(str(v)) if isinstance(v, str) else v
-                for k, v in record.args.items()
-            }
+            record.args = {k: mask_sensitive(str(v)) if isinstance(v, str) else v for k, v in record.args.items()}
         elif record.args and isinstance(record.args, tuple):
-            record.args = tuple(
-                mask_sensitive(str(a)) if isinstance(a, str) else a
-                for a in record.args
-            )
+            record.args = tuple(mask_sensitive(str(a)) if isinstance(a, str) else a for a in record.args)
         return True
 
 
@@ -285,17 +281,18 @@ def configure_log_rotation(
         #   - Sensitive data masking via LoguruBridge
         _loguru_logger.add(
             str(log_path),
-            rotation=max_bytes,                              # Size-based: rotate at 500 MB
-            retention=f"{_DEFAULT_RETENTION_DAYS} days",     # Time-based: keep 30 days
-            compression="zip",                               # Zip compress rotated files
+            rotation=max_bytes,  # Size-based: rotate at 500 MB
+            retention=f"{_DEFAULT_RETENTION_DAYS} days",  # Time-based: keep 30 days
+            compression="zip",  # Zip compress rotated files
             format="{time:YYYY-MM-DD HH:mm:ss.SSS} [{level}] {name}: {message}",
             level="INFO",
-            filter=lambda record: True,                      # Accept all messages
+            filter=lambda record: True,  # Accept all messages
             serialize=False,
         )
 
         class _LoguruBridge(logging.Handler):
             """Bridges standard Python logging to loguru's file sink."""
+
             def emit(self, record: logging.LogRecord) -> None:
                 try:
                     msg = self.format(record)
@@ -305,22 +302,19 @@ def configure_log_rotation(
                     logger.error("LoguruBridge.emit failed — security log message dropped: %s", exc)
 
         bridge = _LoguruBridge()
-        bridge.setFormatter(logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-        ))
+        bridge.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
         logger_instance.addHandler(bridge)
     else:
         # Fallback: standard RotatingFileHandler without compression
         from logging.handlers import RotatingFileHandler
+
         handler = RotatingFileHandler(
             log_path,
             maxBytes=max_bytes,
             backupCount=backup_count,
             encoding="utf-8",
         )
-        handler.setFormatter(logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-        ))
+        handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
         handler.addFilter(SensitiveDataFilter())
         logger_instance.addHandler(handler)
 
@@ -366,6 +360,7 @@ def configure_timed_rotation(
 
         class _LoguruBridgeTimed(logging.Handler):
             """Bridges standard Python logging to loguru's file sink."""
+
             def emit(self, record: logging.LogRecord) -> None:
                 try:
                     msg = self.format(record)
@@ -375,22 +370,19 @@ def configure_timed_rotation(
                     logger.error("LoguruBridgeTimed.emit failed — security log message dropped: %s", exc)
 
         bridge = _LoguruBridgeTimed()
-        bridge.setFormatter(logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-        ))
+        bridge.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
         logger_instance.addHandler(bridge)
     else:
         # Fallback: standard TimedRotatingFileHandler without compression
         from logging.handlers import TimedRotatingFileHandler
+
         handler = TimedRotatingFileHandler(
             log_path,
             when=when,
             backupCount=backup_count,
             encoding="utf-8",
         )
-        handler.setFormatter(logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-        ))
+        handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
         handler.addFilter(SensitiveDataFilter())
         logger_instance.addHandler(handler)
 
@@ -404,9 +396,11 @@ def configure_timed_rotation(
 # future cross-verification. Both now use a 64-char hex string.
 _SECURITY_GENESIS = "0" * 64
 
+
 # Security event types
 class SecurityEventType:
     """Classification of security events for audit logging."""
+
     AUTH_SUCCESS = "AUTH_SUCCESS"
     AUTH_FAILURE = "AUTH_FAILURE"
     AUTH_KEY_ROTATION = "AUTH_KEY_ROTATION"
@@ -507,6 +501,7 @@ class SecurityAuditLogger:
         # for a safety-critical audit log. The application-level log
         # (fireai.log) still uses loguru with compression.
         from logging.handlers import RotatingFileHandler
+
         self._logger = logging.getLogger(f"fireai.security_audit.{id(self)}")
         self._logger.setLevel(logging.INFO)
         self._logger.propagate = False  # Don't duplicate to root logger
@@ -590,9 +585,7 @@ class SecurityAuditLogger:
             timestamp = datetime.now(timezone.utc).isoformat()
 
             # Generate event ID
-            event_id = hashlib.sha256(
-                f"{timestamp}:{event_type}:{self._chain_hash}".encode("utf-8")
-            ).hexdigest()[:16]
+            event_id = hashlib.sha256(f"{timestamp}:{event_type}:{self._chain_hash}".encode("utf-8")).hexdigest()[:16]
 
             # Build the event record — mask sensitive details BEFORE computing
             # the chain hash, so that the hash covers the actual stored value.
@@ -606,7 +599,7 @@ class SecurityAuditLogger:
                 if masked_kv != mini_kv:
                     _prefix = f'{k}":"'
                     if masked_kv.startswith(_prefix):
-                        masked_details[k] = masked_kv[len(_prefix):].rstrip('"')
+                        masked_details[k] = masked_kv[len(_prefix) :].rstrip('"')
                     else:
                         masked_details[k] = mask_sensitive(val_str)
                 else:

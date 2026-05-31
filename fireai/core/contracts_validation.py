@@ -22,7 +22,7 @@ This module is the GATEKEEPER. No invalid data enters the pipeline.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 class ContractViolation(Exception):
@@ -41,43 +41,44 @@ class ContractViolation(Exception):
 # ─── Required Fields ────────────────────────────────────────────────────────
 
 _REQUIRED_FIELDS = {
-    "room_id":       (str,   "Room identifier (e.g. 'R-101')"),
-    "room_polygon":  (list,  "List of (x, y) tuples defining room boundary"),
+    "room_id": (str, "Room identifier (e.g. 'R-101')"),
+    "room_polygon": (list, "List of (x, y) tuples defining room boundary"),
     "ceiling_height_m": ((int, float), "Ceiling height in meters"),
-    "detector_type": (str,   "'smoke' or 'heat'"),
+    "detector_type": (str, "'smoke' or 'heat'"),
 }
 
 _OPTIONAL_FIELDS = {
-    "area_m2":        ((int, float), "Room area in m² (computed from polygon if missing)"),
-    "occupancy_type": (str,   "Occupancy classification (e.g. 'office', 'warehouse')"),
-    "ceiling_type":   (str,   "'flat', 'sloped', 'beamed', 'corridor'"),
+    "area_m2": ((int, float), "Room area in m² (computed from polygon if missing)"),
+    "occupancy_type": (str, "Occupancy classification (e.g. 'office', 'warehouse')"),
+    "ceiling_type": (str, "'flat', 'sloped', 'beamed', 'corridor'"),
 }
 
 _VALID_DETECTOR_TYPES = {"smoke", "heat"}
-_VALID_CEILING_TYPES  = {"flat", "sloped", "beamed", "corridor", ""}
+_VALID_CEILING_TYPES = {"flat", "sloped", "beamed", "corridor", ""}
 
 # ─── QOMN-FIRE Layer 0 Physics Guard Constants ─────────────────────────────────
 # Every bound is traceable to a published standard.
 
-_MAX_CEILING_HEIGHT_M   = 18.3   # 60 ft — NFPA 72 §17.7.3.2.4 table limit
-_MIN_CEILING_HEIGHT_M   = 0.1    # 4 inches — physically minimum slab thickness
-_MAX_ROOM_AREA_M2       = 10000.0  # Single fire zone practical maximum
-_MIN_ROOM_AREA_M2       = 0.01   # ~0.1m × 0.1m minimum
-_MAX_FA_VOLTAGE_V       = 48.0   # NEC 760 — standard FA system voltage upper bound
-_MIN_FA_VOLTAGE_V       = 12.0   # NEC 760 — standard FA system voltage lower bound
-_MAX_CIRCUIT_CURRENT_A  = 100.0  # NEC 760 — physically impossible on single FA circuit
-_MIN_TEMPERATURE_C      = -50.0  # Physically reasonable building environment lower bound
-_MAX_TEMPERATURE_C      = 10000.0  # Physically reasonable upper bound (fire conditions)
-_MAX_OCCUPANT_COUNT     = 100000  # Single zone practical maximum per NFPA 101
-_MAX_HRR_KW             = 1000000.0  # 1 GW — physically impossible HRR upper bound
-_MIN_HRR_KW             = 0.1    # 100W — minimum meaningful HRR
-_MAX_COORDINATE_M       = 10000.0  # 10km — building coordinate practical limit
-_MAX_SAFETY_MARGIN      = 1.0    # 100% — maximum reasonable safety margin
-_MIN_SAFETY_MARGIN      = 0.0    # 0% — minimum safety margin
-_MAX_DERATING_FACTOR    = 1.0    # No derating beyond 100%
-_MIN_DERATING_FACTOR    = 0.5    # Minimum 50% derating (extreme aging)
+_MAX_CEILING_HEIGHT_M = 18.3  # 60 ft — NFPA 72 §17.7.3.2.4 table limit
+_MIN_CEILING_HEIGHT_M = 0.1  # 4 inches — physically minimum slab thickness
+_MAX_ROOM_AREA_M2 = 10000.0  # Single fire zone practical maximum
+_MIN_ROOM_AREA_M2 = 0.01  # ~0.1m × 0.1m minimum
+_MAX_FA_VOLTAGE_V = 48.0  # NEC 760 — standard FA system voltage upper bound
+_MIN_FA_VOLTAGE_V = 12.0  # NEC 760 — standard FA system voltage lower bound
+_MAX_CIRCUIT_CURRENT_A = 100.0  # NEC 760 — physically impossible on single FA circuit
+_MIN_TEMPERATURE_C = -50.0  # Physically reasonable building environment lower bound
+_MAX_TEMPERATURE_C = 10000.0  # Physically reasonable upper bound (fire conditions)
+_MAX_OCCUPANT_COUNT = 100000  # Single zone practical maximum per NFPA 101
+_MAX_HRR_KW = 1000000.0  # 1 GW — physically impossible HRR upper bound
+_MIN_HRR_KW = 0.1  # 100W — minimum meaningful HRR
+_MAX_COORDINATE_M = 10000.0  # 10km — building coordinate practical limit
+_MAX_SAFETY_MARGIN = 1.0  # 100% — maximum reasonable safety margin
+_MIN_SAFETY_MARGIN = 0.0  # 0% — minimum safety margin
+_MAX_DERATING_FACTOR = 1.0  # No derating beyond 100%
+_MIN_DERATING_FACTOR = 0.5  # Minimum 50% derating (extreme aging)
 
 # ─── NaN/Inf Detection ──────────────────────────────────────────────────────
+
 
 def _has_nan_inf(value: Any, path: str = "") -> List[str]:
     """Recursively check for NaN/Inf in any data structure."""
@@ -101,6 +102,7 @@ def _has_nan_inf(value: Any, path: str = "") -> List[str]:
 
 
 # ─── Polygon Validation ─────────────────────────────────────────────────────
+
 
 def _validate_polygon(polygon: Any) -> List[str]:
     """Validate room polygon for geometric correctness."""
@@ -130,6 +132,7 @@ def _validate_polygon(polygon: Any) -> List[str]:
 
 # ─── Area Computation ───────────────────────────────────────────────────────
 
+
 def _compute_area_from_polygon(polygon: List) -> float:
     """Compute polygon area using the Shoelace formula.
 
@@ -150,6 +153,7 @@ def _compute_area_from_polygon(polygon: List) -> float:
 
 
 # ─── Main Validation Function ───────────────────────────────────────────────
+
 
 def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Validate room input payload against the engineering contract.
@@ -174,8 +178,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     nan_violations = _has_nan_inf(payload)
     if nan_violations:
         raise ContractViolation(
-            f"NaN/Inf detected in input — these bypass safety checks silently. "
-            f"Violations: {'; '.join(nan_violations)}",
+            f"NaN/Inf detected in input — these bypass safety checks silently. Violations: {'; '.join(nan_violations)}",
             field="payload",
             value=nan_violations,
         )
@@ -329,9 +332,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
         result["ceiling_type"] = "flat"
         warnings.append("ceiling_type defaulted to 'flat'")
     elif result["ceiling_type"] not in _VALID_CEILING_TYPES:
-        warnings.append(
-            f"Unknown ceiling_type '{result['ceiling_type']}' — may not apply special rules"
-        )
+        warnings.append(f"Unknown ceiling_type '{result['ceiling_type']}' — may not apply special rules")
 
     # Default occupancy_type
     if "occupancy_type" not in result:
@@ -345,6 +346,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ─── QOMN-FIRE Layer 0 Extended Physics Guard Functions ─────────────────────────
+
 
 def validate_voltage(value_v: float, field_name: str = "voltage") -> float:
     """Validate that a voltage value is within standard FA system range.
@@ -365,15 +367,13 @@ def validate_voltage(value_v: float, field_name: str = "voltage") -> float:
     """
     if not isinstance(value_v, (int, float)) or not math.isfinite(value_v):
         raise ContractViolation(
-            f"{field_name} = {value_v!r} is not a finite number. "
-            f"NEC 760 requires a valid voltage for FA circuits.",
+            f"{field_name} = {value_v!r} is not a finite number. NEC 760 requires a valid voltage for FA circuits.",
             field=field_name,
             value=value_v,
         )
     if value_v <= 0:
         raise ContractViolation(
-            f"{field_name} = {value_v}V is not positive. "
-            f"FA system voltage must be positive per NEC 760.",
+            f"{field_name} = {value_v}V is not positive. FA system voltage must be positive per NEC 760.",
             field=field_name,
             value=value_v,
         )
@@ -512,7 +512,9 @@ def validate_battery_params(
         errors.append(f"alarm_load_a = {alarm_load_a}A exceeds {_MAX_CIRCUIT_CURRENT_A}A limit")
 
     if standby_load_a == 0 and alarm_load_a == 0:
-        errors.append("Both standby_load_a and alarm_load_a are zero — no battery capacity to compute (NFPA 72 §10.6.7)")
+        errors.append(
+            "Both standby_load_a and alarm_load_a are zero — no battery capacity to compute (NFPA 72 §10.6.7)"
+        )
 
     if not math.isfinite(standby_hours) or standby_hours < 0:
         errors.append(f"standby_hours = {standby_hours} — must be non-negative finite")
@@ -520,7 +522,9 @@ def validate_battery_params(
         errors.append(f"alarm_minutes = {alarm_minutes} — must be non-negative finite")
 
     if not math.isfinite(derating) or derating < _MIN_DERATING_FACTOR or derating > _MAX_DERATING_FACTOR:
-        errors.append(f"derating = {derating} — must be in [{_MIN_DERATING_FACTOR}, {_MAX_DERATING_FACTOR}] (NFPA 72 §10.6.7.2.1)")
+        errors.append(
+            f"derating = {derating} — must be in [{_MIN_DERATING_FACTOR}, {_MAX_DERATING_FACTOR}] (NFPA 72 §10.6.7.2.1)"
+        )
 
     if not math.isfinite(safety_margin) or safety_margin < _MIN_SAFETY_MARGIN or safety_margin > _MAX_SAFETY_MARGIN:
         errors.append(f"safety_margin = {safety_margin} — must be in [{_MIN_SAFETY_MARGIN}, {_MAX_SAFETY_MARGIN}]")

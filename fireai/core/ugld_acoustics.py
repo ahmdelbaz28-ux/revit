@@ -87,7 +87,6 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-
 # ===========================================================================
 # ISO 9613-1 Atmospheric Attenuation — Frequency-Dependent
 # ===========================================================================
@@ -183,10 +182,7 @@ def atmospheric_attenuation_db_per_m(
             alpha_lower = _ISO_9613_ALPHA_20C_50RH[lower]
             alpha_upper = _ISO_9613_ALPHA_20C_50RH[upper]
             # Linear interpolation in log-frequency space
-            log_frac = (
-                math.log10(center_frequency_hz / lower)
-                / math.log10(upper / lower)
-            )
+            log_frac = math.log10(center_frequency_hz / lower) / math.log10(upper / lower)
             base_alpha = alpha_lower + log_frac * (alpha_upper - alpha_lower)
 
     # Temperature correction: at ultrasonic frequencies, higher temperature
@@ -218,6 +214,7 @@ def atmospheric_attenuation_db_per_m(
 # Pydantic Models (frozen, strict — project standard)
 # ===========================================================================
 
+
 class UGLDFrequencyBand(str, Enum):
     """Ultrasonic frequency bands for UGLD classification.
 
@@ -225,10 +222,11 @@ class UGLDFrequencyBand(str, Enum):
     Higher frequencies detect smaller leaks but have shorter range.
     Reference: IEC 60079-29-4, ISA-TR 84.00.07
     """
-    ULTRASOUND_LOW  = "ULTRASOUND_LOW"   # 20-35 kHz (long range)
-    ULTRASOUND_MID  = "ULTRASOUND_MID"   # 35-55 kHz (standard)
-    ULTRASOUND_HIGH = "ULTRASOUND_HIGH"   # 55-80 kHz (high sensitivity)
-    ULTRASOUND_VHF  = "ULTRASOUND_VHF"    # 80-100 kHz (very short range)
+
+    ULTRASOUND_LOW = "ULTRASOUND_LOW"  # 20-35 kHz (long range)
+    ULTRASOUND_MID = "ULTRASOUND_MID"  # 35-55 kHz (standard)
+    ULTRASOUND_HIGH = "ULTRASOUND_HIGH"  # 55-80 kHz (high sensitivity)
+    ULTRASOUND_VHF = "ULTRASOUND_VHF"  # 80-100 kHz (very short range)
 
 
 class UltrasonicSensor(BaseModel):
@@ -249,6 +247,7 @@ class UltrasonicSensor(BaseModel):
 
     Reference: ISA-TR 84.00.07 §4.3, General Monitors Gassonic Application Guide
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     sensor_id: str = Field(
@@ -256,14 +255,13 @@ class UltrasonicSensor(BaseModel):
         description="Unique sensor identifier for audit trail.",
     )
     trigger_threshold_db: float = Field(
-        default=74.0, gt=0.0,
-        description=(
-            "Minimum SPL (dB) to trigger alarm at sensor. "
-            "Typical: 65-80 dB SPL depending on manufacturer."
-        ),
+        default=74.0,
+        gt=0.0,
+        description=("Minimum SPL (dB) to trigger alarm at sensor. Typical: 65-80 dB SPL depending on manufacturer."),
     )
     background_noise_db: float = Field(
-        default=60.0, ge=0.0,
+        default=60.0,
+        ge=0.0,
         description=(
             "Ambient ultrasonic noise floor at installation point (dB SPL). "
             "MUST come from site survey or conservative estimate — NOT a "
@@ -272,7 +270,8 @@ class UltrasonicSensor(BaseModel):
         ),
     )
     center_frequency_hz: float = Field(
-        default=_DEFAULT_UGLD_FREQUENCY_HZ, gt=0.0,
+        default=_DEFAULT_UGLD_FREQUENCY_HZ,
+        gt=0.0,
         description=(
             "Sensor center operating frequency (Hz). Determines detection "
             "range via atmospheric attenuation. 40 kHz is most common for "
@@ -280,7 +279,9 @@ class UltrasonicSensor(BaseModel):
         ),
     )
     directivity_deg: float = Field(
-        default=360.0, gt=0.0, le=360.0,
+        default=360.0,
+        gt=0.0,
+        le=360.0,
         description=(
             "Sensor directivity angle (degrees). 360 = omnidirectional "
             "(typical for UGLD). Values < 360 indicate directional sensors."
@@ -315,10 +316,12 @@ class AcousticPropagation(BaseModel):
 
     Reference: ISO 9613-1:1993, IEC 60079-29-4
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     leak_spl_at_1m: float = Field(
-        ..., gt=0.0,
+        ...,
+        gt=0.0,
         description=(
             "Source noise level of the leak at 1 meter reference distance "
             "(dB SPL). Depends on gas pressure, orifice size, and gas type. "
@@ -326,18 +329,22 @@ class AcousticPropagation(BaseModel):
         ),
     )
     distance_meters: float = Field(
-        ..., gt=0.0,
+        ...,
+        gt=0.0,
         description="Distance from leak source to UGLD sensor (meters).",
     )
     center_frequency_hz: float = Field(
-        default=_DEFAULT_UGLD_FREQUENCY_HZ, gt=0.0,
+        default=_DEFAULT_UGLD_FREQUENCY_HZ,
+        gt=0.0,
         description=(
             "Center frequency of the ultrasonic signal (Hz). Must match "
             "the sensor's operating frequency for accurate attenuation."
         ),
     )
     temp_c: float = Field(
-        default=40.0, ge=-40.0, le=85.0,
+        default=40.0,
+        ge=-40.0,
+        le=85.0,
         description=(
             "Ambient temperature (C). MUST be consistent with "
             "EnvironmentalContext.ambient_temp_c to prevent Dual-Path "
@@ -346,29 +353,36 @@ class AcousticPropagation(BaseModel):
         ),
     )
     relative_humidity_pct: float = Field(
-        default=50.0, ge=0.0, le=100.0,
+        default=50.0,
+        ge=0.0,
+        le=100.0,
         description="Relative humidity (%). Affects atmospheric attenuation.",
     )
 
     # ── Computed fields (set by model_validator) ──
     speed_of_sound_mps: float = Field(
-        default=0.0, init=False,
+        default=0.0,
+        init=False,
         description="Computed speed of sound (m/s).",
     )
     geometric_loss_db: float = Field(
-        default=0.0, init=False,
+        default=0.0,
+        init=False,
         description="Computed geometric spreading loss (dB).",
     )
     atmospheric_loss_db: float = Field(
-        default=0.0, init=False,
+        default=0.0,
+        init=False,
         description="Computed atmospheric absorption loss (dB).",
     )
     final_spl_db: float = Field(
-        default=0.0, init=False,
+        default=0.0,
+        init=False,
         description="Computed SPL at sensor position (dB SPL).",
     )
     alpha_db_per_m: float = Field(
-        default=0.0, init=False,
+        default=0.0,
+        init=False,
         description="Computed atmospheric attenuation coefficient (dB/m).",
     )
 
@@ -432,6 +446,7 @@ class UGLDTriggerResult(BaseModel):
 
     Reference: ISA-TR 84.00.07, IEC 61508 SIL verification
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     triggered: bool
@@ -445,10 +460,7 @@ class UGLDTriggerResult(BaseModel):
         description="Margin above trigger threshold = final_spl_db - trigger_threshold_db",
     )
     margin_to_snr_db: float = Field(
-        description=(
-            "Margin above SNR requirement = "
-            "snr_db - 6 dB minimum. Negative = insufficient SNR."
-        ),
+        description=("Margin above SNR requirement = snr_db - 6 dB minimum. Negative = insufficient SNR."),
     )
     fail_reason: Optional[str] = Field(
         default=None,
@@ -459,6 +471,7 @@ class UGLDTriggerResult(BaseModel):
 # ===========================================================================
 # Core Detection Logic
 # ===========================================================================
+
 
 def check_ugld_trigger(
     propagation: AcousticPropagation,
@@ -593,6 +606,7 @@ def max_detection_range_m(
 # ===========================================================================
 # Speed of Sound Utility
 # ===========================================================================
+
 
 def speed_of_sound(temp_c: float) -> float:
     """

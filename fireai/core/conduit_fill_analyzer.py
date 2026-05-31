@@ -47,8 +47,8 @@ Usage:
 
 from __future__ import annotations
 
-import math
 import logging
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
@@ -60,32 +60,34 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
-    DecisionProvenance = None   # type: ignore[misc,assignment]
-    RuleApplied = None          # type: ignore[misc,assignment]
-    Violation = None            # type: ignore[misc,assignment]
-    ConfidenceScore = None      # type: ignore[misc,assignment]
-    ConfidenceLevel = None      # type: ignore[misc,assignment]
+    DecisionProvenance = None  # type: ignore[misc,assignment]
+    RuleApplied = None  # type: ignore[misc,assignment]
+    Violation = None  # type: ignore[misc,assignment]
+    ConfidenceScore = None  # type: ignore[misc,assignment]
+    ConfidenceLevel = None  # type: ignore[misc,assignment]
 
 
 # ============================================================================
 # Cable Insulation Types — NEC Chapter 9 Table 5
 # ============================================================================
 
+
 class InsulationType(str, Enum):
     """Fire alarm cable insulation types per NEC Chapter 9 Table 5."""
-    FPLP = "FPLP"   # Fire Power Limited Plenum — most common for FA
-    FPLR = "FPLR"   # Fire Power Limited Riser
-    FPL = "FPL"     # Fire Power Limited (general)
-    THHN = "THHN"   # Thermoplastic High Heat Nylon — for NAC circuits
-    THWN = "THWN"   # Thermoplastic Heat and Water Resistant Nylon
-    XHHW = "XHHW"   # Cross-linked Polyethylene
+
+    FPLP = "FPLP"  # Fire Power Limited Plenum — most common for FA
+    FPLR = "FPLR"  # Fire Power Limited Riser
+    FPL = "FPL"  # Fire Power Limited (general)
+    THHN = "THHN"  # Thermoplastic High Heat Nylon — for NAC circuits
+    THWN = "THWN"  # Thermoplastic Heat and Water Resistant Nylon
+    XHHW = "XHHW"  # Cross-linked Polyethylene
 
 
 class CircuitClass(str, Enum):
@@ -94,9 +96,10 @@ class CircuitClass(str, Enum):
     CRITICAL: NEC 760.154 PROHIBITS mixing PLFA and NPLFA circuits
     in the same conduit. The consultant's code ignored this entirely.
     """
-    PLFA = "PLFA"       # Power-Limited Fire Alarm (typical SLC, NAC)
-    NPLFA = "NPLFA"     # Non-Power-Limited Fire Alarm (high-voltage NAC)
-    COMBO = "COMBO"     # Mixed — ILLEGAL in same conduit per NEC 760.154
+
+    PLFA = "PLFA"  # Power-Limited Fire Alarm (typical SLC, NAC)
+    NPLFA = "NPLFA"  # Non-Power-Limited Fire Alarm (high-voltage NAC)
+    COMBO = "COMBO"  # Mixed — ILLEGAL in same conduit per NEC 760.154
 
 
 # ============================================================================
@@ -134,8 +137,8 @@ WIRE_DIAMETERS_MM: Dict[Tuple[str, int], float] = {
     ("XHHW", 14): 3.05,
     ("XHHW", 12): 3.56,
     # Fiber optic / composite cables
-    ("FIBER_2STR", 0): 5.80,   # 2-strand fiber
-    ("FIBER_4STR", 0): 6.60,   # 4-strand fiber
+    ("FIBER_2STR", 0): 5.80,  # 2-strand fiber
+    ("FIBER_4STR", 0): 6.60,  # 4-strand fiber
     # Shielded cable (common in FA for EMI protection)
     ("FPLP_SHIELDED", 18): 4.20,
     ("FPLP_SHIELDED", 16): 4.60,
@@ -147,15 +150,17 @@ WIRE_DIAMETERS_MM: Dict[Tuple[str, int], float] = {
 # Conduit Specifications — NEC Chapter 9 Table 4
 # ============================================================================
 
+
 class ConduitType(str, Enum):
     """Conduit types per NEC Chapter 9 Table 4."""
-    EMT = "EMT"           # Electrical Metallic Tubing
-    RMC = "RMC"           # Rigid Metal Conduit
-    IMC = "IMC"           # Intermediate Metal Conduit
-    PVC_SCHEDULE_40 = "PVC40"   # PVC Schedule 40
-    PVC_SCHEDULE_80 = "PVC80"   # PVC Schedule 80
-    LFMC = "LFMC"         # Liquidtight Flexible Metal Conduit
-    FMC = "FMC"           # Flexible Metal Conduit
+
+    EMT = "EMT"  # Electrical Metallic Tubing
+    RMC = "RMC"  # Rigid Metal Conduit
+    IMC = "IMC"  # Intermediate Metal Conduit
+    PVC_SCHEDULE_40 = "PVC40"  # PVC Schedule 40
+    PVC_SCHEDULE_80 = "PVC80"  # PVC Schedule 80
+    LFMC = "LFMC"  # Liquidtight Flexible Metal Conduit
+    FMC = "FMC"  # Flexible Metal Conduit
 
 
 # Conduit internal dimensions — NEC Chapter 9 Table 4
@@ -163,75 +168,69 @@ class ConduitType(str, Enum):
 # Values from NEC Chapter 9 Table 4 (verified against 2023 edition)
 CONDUIT_SPECS: Dict[Tuple[str, str], Dict[str, float]] = {
     # EMT — Electrical Metallic Tubing
-    ("EMT", "1/2"):  {"id_mm": 15.80, "area_mm2": 196.07},
-    ("EMT", "3/4"):  {"id_mm": 20.93, "area_mm2": 343.98},
-    ("EMT", "1"):    {"id_mm": 26.64, "area_mm2": 557.49},
+    ("EMT", "1/2"): {"id_mm": 15.80, "area_mm2": 196.07},
+    ("EMT", "3/4"): {"id_mm": 20.93, "area_mm2": 343.98},
+    ("EMT", "1"): {"id_mm": 26.64, "area_mm2": 557.49},
     ("EMT", "1-1/4"): {"id_mm": 35.05, "area_mm2": 965.81},
     ("EMT", "1-1/2"): {"id_mm": 40.89, "area_mm2": 1313.87},
-    ("EMT", "2"):    {"id_mm": 52.50, "area_mm2": 2164.77},
+    ("EMT", "2"): {"id_mm": 52.50, "area_mm2": 2164.77},
     ("EMT", "2-1/2"): {"id_mm": 63.00, "area_mm2": 3117.25},
-    ("EMT", "3"):    {"id_mm": 78.50, "area_mm2": 4839.61},
+    ("EMT", "3"): {"id_mm": 78.50, "area_mm2": 4839.61},
     ("EMT", "3-1/2"): {"id_mm": 90.50, "area_mm2": 6429.68},
-    ("EMT", "4"):    {"id_mm": 102.50, "area_mm2": 8255.46},
-
+    ("EMT", "4"): {"id_mm": 102.50, "area_mm2": 8255.46},
     # RMC — Rigid Metal Conduit
-    ("RMC", "1/2"):  {"id_mm": 16.10, "area_mm2": 203.58},
-    ("RMC", "3/4"):  {"id_mm": 21.20, "area_mm2": 352.99},
-    ("RMC", "1"):    {"id_mm": 27.00, "area_mm2": 572.56},
+    ("RMC", "1/2"): {"id_mm": 16.10, "area_mm2": 203.58},
+    ("RMC", "3/4"): {"id_mm": 21.20, "area_mm2": 352.99},
+    ("RMC", "1"): {"id_mm": 27.00, "area_mm2": 572.56},
     ("RMC", "1-1/4"): {"id_mm": 35.40, "area_mm2": 984.20},
     ("RMC", "1-1/2"): {"id_mm": 41.20, "area_mm2": 1334.66},
-    ("RMC", "2"):    {"id_mm": 52.90, "area_mm2": 2198.44},
-
+    ("RMC", "2"): {"id_mm": 52.90, "area_mm2": 2198.44},
     # IMC — Intermediate Metal Conduit
-    ("IMC", "1/2"):  {"id_mm": 16.80, "area_mm2": 221.67},
-    ("IMC", "3/4"):  {"id_mm": 21.80, "area_mm2": 373.25},
-    ("IMC", "1"):    {"id_mm": 27.60, "area_mm2": 598.45},
+    ("IMC", "1/2"): {"id_mm": 16.80, "area_mm2": 221.67},
+    ("IMC", "3/4"): {"id_mm": 21.80, "area_mm2": 373.25},
+    ("IMC", "1"): {"id_mm": 27.60, "area_mm2": 598.45},
     ("IMC", "1-1/4"): {"id_mm": 36.00, "area_mm2": 1017.88},
     ("IMC", "1-1/2"): {"id_mm": 41.80, "area_mm2": 1372.88},
-    ("IMC", "2"):    {"id_mm": 53.50, "area_mm2": 2248.93},
-
+    ("IMC", "2"): {"id_mm": 53.50, "area_mm2": 2248.93},
     # V20.2 FIX: PVC Schedule 40 — NEC Chapter 9 Table 4
     # PVC is commonly used for fire alarm installations per NEC 760.154.
     # Missing specs caused silent fallback to cable tray recommendation.
-    ("PVC40", "1/2"):  {"id_mm": 15.30, "area_mm2": 183.85},
-    ("PVC40", "3/4"):  {"id_mm": 20.40, "area_mm2": 326.85},
-    ("PVC40", "1"):    {"id_mm": 26.10, "area_mm2": 535.02},
+    ("PVC40", "1/2"): {"id_mm": 15.30, "area_mm2": 183.85},
+    ("PVC40", "3/4"): {"id_mm": 20.40, "area_mm2": 326.85},
+    ("PVC40", "1"): {"id_mm": 26.10, "area_mm2": 535.02},
     ("PVC40", "1-1/4"): {"id_mm": 34.50, "area_mm2": 934.79},
     ("PVC40", "1-1/2"): {"id_mm": 40.40, "area_mm2": 1281.65},
-    ("PVC40", "2"):    {"id_mm": 52.00, "area_mm2": 2123.72},
+    ("PVC40", "2"): {"id_mm": 52.00, "area_mm2": 2123.72},
     ("PVC40", "2-1/2"): {"id_mm": 62.10, "area_mm2": 3029.09},
-    ("PVC40", "3"):    {"id_mm": 77.60, "area_mm2": 4729.90},
+    ("PVC40", "3"): {"id_mm": 77.60, "area_mm2": 4729.90},
     ("PVC40", "3-1/2"): {"id_mm": 89.50, "area_mm2": 6291.77},
-    ("PVC40", "4"):    {"id_mm": 101.50, "area_mm2": 8089.43},
-
+    ("PVC40", "4"): {"id_mm": 101.50, "area_mm2": 8089.43},
     # V20.2 FIX: PVC Schedule 80 — NEC Chapter 9 Table 4
-    ("PVC80", "1/2"):  {"id_mm": 13.20, "area_mm2": 136.85},
-    ("PVC80", "3/4"):  {"id_mm": 17.90, "area_mm2": 251.79},
-    ("PVC80", "1"):    {"id_mm": 23.10, "area_mm2": 419.10},
+    ("PVC80", "1/2"): {"id_mm": 13.20, "area_mm2": 136.85},
+    ("PVC80", "3/4"): {"id_mm": 17.90, "area_mm2": 251.79},
+    ("PVC80", "1"): {"id_mm": 23.10, "area_mm2": 419.10},
     ("PVC80", "1-1/4"): {"id_mm": 31.10, "area_mm2": 759.65},
     ("PVC80", "1-1/2"): {"id_mm": 36.50, "area_mm2": 1046.35},
-    ("PVC80", "2"):    {"id_mm": 47.80, "area_mm2": 1793.94},
+    ("PVC80", "2"): {"id_mm": 47.80, "area_mm2": 1793.94},
     ("PVC80", "2-1/2"): {"id_mm": 57.20, "area_mm2": 2569.30},
-    ("PVC80", "3"):    {"id_mm": 71.90, "area_mm2": 4059.87},
-    ("PVC80", "4"):    {"id_mm": 95.30, "area_mm2": 7131.27},
-
+    ("PVC80", "3"): {"id_mm": 71.90, "area_mm2": 4059.87},
+    ("PVC80", "4"): {"id_mm": 95.30, "area_mm2": 7131.27},
     # V20.2 FIX: LFMC — Liquidtight Flexible Metal Conduit
-    ("LFMC", "3/8"):  {"id_mm": 12.40, "area_mm2": 120.76},
-    ("LFMC", "1/2"):  {"id_mm": 15.70, "area_mm2": 193.59},
-    ("LFMC", "3/4"):  {"id_mm": 20.40, "area_mm2": 326.85},
-    ("LFMC", "1"):    {"id_mm": 25.90, "area_mm2": 526.90},
+    ("LFMC", "3/8"): {"id_mm": 12.40, "area_mm2": 120.76},
+    ("LFMC", "1/2"): {"id_mm": 15.70, "area_mm2": 193.59},
+    ("LFMC", "3/4"): {"id_mm": 20.40, "area_mm2": 326.85},
+    ("LFMC", "1"): {"id_mm": 25.90, "area_mm2": 526.90},
     ("LFMC", "1-1/4"): {"id_mm": 34.30, "area_mm2": 923.89},
     ("LFMC", "1-1/2"): {"id_mm": 40.10, "area_mm2": 1262.92},
-    ("LFMC", "2"):    {"id_mm": 51.60, "area_mm2": 2089.88},
-
+    ("LFMC", "2"): {"id_mm": 51.60, "area_mm2": 2089.88},
     # V20.2 FIX: FMC — Flexible Metal Conduit
-    ("FMC", "3/8"):  {"id_mm": 12.30, "area_mm2": 118.82},
-    ("FMC", "1/2"):  {"id_mm": 15.60, "area_mm2": 191.13},
-    ("FMC", "3/4"):  {"id_mm": 20.30, "area_mm2": 323.65},
-    ("FMC", "1"):    {"id_mm": 25.80, "area_mm2": 522.79},
+    ("FMC", "3/8"): {"id_mm": 12.30, "area_mm2": 118.82},
+    ("FMC", "1/2"): {"id_mm": 15.60, "area_mm2": 191.13},
+    ("FMC", "3/4"): {"id_mm": 20.30, "area_mm2": 323.65},
+    ("FMC", "1"): {"id_mm": 25.80, "area_mm2": 522.79},
     ("FMC", "1-1/4"): {"id_mm": 34.20, "area_mm2": 918.51},
     ("FMC", "1-1/2"): {"id_mm": 40.00, "area_mm2": 1256.64},
-    ("FMC", "2"):    {"id_mm": 51.50, "area_mm2": 2081.81},
+    ("FMC", "2"): {"id_mm": 51.50, "area_mm2": 2081.81},
 }
 
 
@@ -240,8 +239,8 @@ CONDUIT_SPECS: Dict[Tuple[str, str], Dict[str, float]] = {
 # ============================================================================
 
 FILL_LIMITS = {
-    1: 0.53,   # Single conductor: 53%
-    2: 0.31,   # Two conductors: 31%
+    1: 0.53,  # Single conductor: 53%
+    2: 0.31,  # Two conductors: 31%
     # 3 or more: 40%
 }
 DEFAULT_FILL_LIMIT = 0.40  # 3+ conductors
@@ -286,6 +285,7 @@ def get_derating_factor(conductor_count: int) -> float:
 # Wire Spec Dataclass
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class WireSpec:
     """Specification of a wire/cable for conduit fill calculation.
@@ -296,6 +296,7 @@ class WireSpec:
         outer_diameter_mm: Outer diameter in millimetres.
         circuit_class: PLFA or NPLFA — affects conduit separation.
     """
+
     awg: int
     insulation: InsulationType = InsulationType.FPLP
     outer_diameter_mm: float = 0.0
@@ -311,10 +312,7 @@ class WireSpec:
             else:
                 # Conservative estimate: 3.5mm default
                 object.__setattr__(self, "outer_diameter_mm", 3.5)
-                logger.warning(
-                    f"No diameter data for {self.insulation.value} AWG {self.awg}, "
-                    f"using default 3.5mm"
-                )
+                logger.warning(f"No diameter data for {self.insulation.value} AWG {self.awg}, using default 3.5mm")
 
     @property
     def cross_section_mm2(self) -> float:
@@ -325,6 +323,7 @@ class WireSpec:
 # ============================================================================
 # Conduit Sizing Result
 # ============================================================================
+
 
 @dataclass
 class ConduitFillResult:
@@ -344,6 +343,7 @@ class ConduitFillResult:
         violations: List of violation dicts.
         warnings: List of warning strings.
     """
+
     bundle_id: str
     total_cable_area_mm2: float
     conductor_count: int
@@ -361,6 +361,7 @@ class ConduitFillResult:
 # ============================================================================
 # Conduit Sizer
 # ============================================================================
+
 
 class ConduitSizer:
     """NEC Chapter 9 Conduit Fill Analyzer for fire alarm cable bundles.
@@ -439,10 +440,7 @@ class ConduitSizer:
                 insulation = InsulationType(insul_str)
             except ValueError:
                 insulation = InsulationType.FPLP
-                warnings.append(
-                    f"Unknown insulation type '{insul_str}' for AWG {awg}, "
-                    f"defaulting to FPLP."
-                )
+                warnings.append(f"Unknown insulation type '{insul_str}' for AWG {awg}, defaulting to FPLP.")
 
             # Resolve circuit class
             try:
@@ -464,19 +462,23 @@ class ConduitSizer:
         plfa_nplfa_separated = True
         if has_plfa and has_nplfa and enforce_plfa_separation:
             plfa_nplfa_separated = False
-            violations.append(Violation(
-                severity="CRITICAL",
-                citation="NEC 760.154",
-                description=(
-                    f"Bundle '{bundle_id}' contains BOTH PLFA and NPLFA circuits "
-                    f"in the same conduit. NEC 760.154 PROHIBITS this mixing. "
-                    f"Separate into distinct conduits immediately."
-                ),
-            ) if Violation else {
-                "severity": "CRITICAL",
-                "citation": "NEC 760.154",
-                "description": "PLFA/NPLFA mixing prohibited",
-            })
+            violations.append(
+                Violation(
+                    severity="CRITICAL",
+                    citation="NEC 760.154",
+                    description=(
+                        f"Bundle '{bundle_id}' contains BOTH PLFA and NPLFA circuits "
+                        f"in the same conduit. NEC 760.154 PROHIBITS this mixing. "
+                        f"Separate into distinct conduits immediately."
+                    ),
+                )
+                if Violation
+                else {
+                    "severity": "CRITICAL",
+                    "citation": "NEC 760.154",
+                    "description": "PLFA/NPLFA mixing prohibited",
+                }
+            )
 
         # --- Determine fill limit (NEC Chapter 9 Table 1) ---
         if conductor_count == 1:
@@ -499,8 +501,7 @@ class ConduitSizer:
                 conduit_order.append(ct.value)
 
         for ct in conduit_order:
-            for trade_size in ["1/2", "3/4", "1", "1-1/4", "1-1/2", "2",
-                               "2-1/2", "3", "3-1/2", "4"]:
+            for trade_size in ["1/2", "3/4", "1", "1-1/4", "1-1/2", "2", "2-1/2", "3", "3-1/2", "4"]:
                 key = (ct, trade_size)
                 if key not in CONDUIT_SPECS:
                     continue
@@ -521,36 +522,35 @@ class ConduitSizer:
 
         if not optimal_size:
             # Exceeds all conduit sizes — recommend cable tray
-            violations.append(Violation(
-                severity="CRITICAL",
-                citation="NEC Chapter 9 Table 1",
-                description=(
-                    f"Cable bundle ({total_area:.1f} mm²) exceeds all standard "
-                    f"conduit fill limits. Use cable tray or multiple conduits."
-                ),
-            ) if Violation else {
-                "severity": "CRITICAL",
-                "citation": "NEC Chapter 9",
-                "description": "Exceeds all conduit sizes",
-            })
+            violations.append(
+                Violation(
+                    severity="CRITICAL",
+                    citation="NEC Chapter 9 Table 1",
+                    description=(
+                        f"Cable bundle ({total_area:.1f} mm²) exceeds all standard "
+                        f"conduit fill limits. Use cable tray or multiple conduits."
+                    ),
+                )
+                if Violation
+                else {
+                    "severity": "CRITICAL",
+                    "citation": "NEC Chapter 9",
+                    "description": "Exceeds all conduit sizes",
+                }
+            )
             optimal_size = "> 2 Inch / Cable Tray"
-            actual_fill_pct = (total_area / CONDUIT_SPECS.get(
-                (c_type, "4"), {"area_mm2": 8255.46}
-            )["area_mm2"]) * 100.0
+            actual_fill_pct = (total_area / CONDUIT_SPECS.get((c_type, "4"), {"area_mm2": 8255.46})["area_mm2"]) * 100.0
 
         # --- Conductor derating check (NEC 310.15) ---
         derating = get_derating_factor(conductor_count)
         if derating < 1.0:
             warnings.append(
                 f"NEC 310.15(B)(3)(a): {conductor_count} current-carrying "
-                f"conductors require {derating*100:.0f}% ampacity derating."
+                f"conductors require {derating * 100:.0f}% ampacity derating."
             )
 
         # Build result
-        is_compliant = (
-            actual_fill_pct <= fill_limit * 100
-            and plfa_nplfa_separated
-        )
+        is_compliant = actual_fill_pct <= fill_limit * 100 and plfa_nplfa_separated
 
         result = ConduitFillResult(
             bundle_id=bundle_id,
@@ -574,11 +574,13 @@ class ConduitSizer:
                 if isinstance(v, Violation):
                     prov_violations.append(v)
                 elif isinstance(v, dict):
-                    prov_violations.append(Violation(
-                        severity=v.get("severity", "WARNING"),
-                        citation=v.get("citation", "NEC"),
-                        description=v.get("description", ""),
-                    ))
+                    prov_violations.append(
+                        Violation(
+                            severity=v.get("severity", "WARNING"),
+                            citation=v.get("citation", "NEC"),
+                            description=v.get("description", ""),
+                        )
+                    )
 
             rules = [
                 RuleApplied(
@@ -596,12 +598,14 @@ class ConduitSizer:
             ]
 
             if derating < 1.0:
-                rules.append(RuleApplied(
-                    citation="NEC 310.15(B)(3)(a)",
-                    constant_id="CONDUCTOR_DERATING",
-                    value_used=derating,
-                    unit="Factor",
-                ))
+                rules.append(
+                    RuleApplied(
+                        citation="NEC 310.15(B)(3)(a)",
+                        constant_id="CONDUCTOR_DERATING",
+                        value_used=derating,
+                        unit="Factor",
+                    )
+                )
 
             conf_level = ConfidenceLevel.LOW if not is_compliant else ConfidenceLevel.HIGH
             conf = ConfidenceScore(
@@ -644,7 +648,7 @@ class ConduitSizer:
                 confidence=conf,
                 selected_because=(
                     f"Minimum valid conduit ensuring free air separation "
-                    f"preserving {fill_limit*100:.0f}% NEC fill parameter."
+                    f"preserving {fill_limit * 100:.0f}% NEC fill parameter."
                 ),
                 warnings=warnings,
                 violations=prov_violations,
@@ -724,10 +728,12 @@ class ConduitSizer:
             modified_inventory.append(modified_cable)
 
             if upgraded_awg != original_awg:
-                overrides_applied.append({
-                    "original_awg": original_awg,
-                    "upgraded_awg": upgraded_awg,
-                })
+                overrides_applied.append(
+                    {
+                        "original_awg": original_awg,
+                        "upgraded_awg": upgraded_awg,
+                    }
+                )
                 logger.info(
                     f"Conduit-wire feedback loop: bundle '{bundle_id}' "
                     f"AWG {original_awg} → {upgraded_awg} "
@@ -773,10 +779,7 @@ class ConduitSizer:
 
             # If the fill changed, add a warning
             if overrides_applied:
-                override_desc = ", ".join(
-                    f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG"
-                    for o in overrides_applied
-                )
+                override_desc = ", ".join(f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG" for o in overrides_applied)
                 if hasattr(result, "warnings") and isinstance(result.warnings, list):
                     result.warnings.append(
                         f"NEC_WIRE_UPSIZE_FEEDBACK: Wire upsizing ({override_desc}) "
@@ -789,10 +792,7 @@ class ConduitSizer:
             result["wire_size_overrides"] = wire_size_overrides
             result["overrides_applied"] = overrides_applied
             if overrides_applied:
-                override_desc = ", ".join(
-                    f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG"
-                    for o in overrides_applied
-                )
+                override_desc = ", ".join(f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG" for o in overrides_applied)
                 result.setdefault("warnings", []).append(
                     f"NEC_WIRE_UPSIZE_FEEDBACK: Wire upsizing ({override_desc}) "
                     f"applied to conduit fill calculation. Conduit may need "

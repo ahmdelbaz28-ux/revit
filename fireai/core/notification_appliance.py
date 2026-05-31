@@ -34,7 +34,6 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # NAC SIZING — NFPA 72 §10.6.4, §18.3
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -61,14 +60,15 @@ class NACLoadResult:
       - Inrush current spikes during alarm activation
       - Manufacturing tolerance in appliance current draw
     """
-    total_current_a:   float
-    max_allowed_a:     float
-    nac_rating_a:      float
-    device_count:      int
-    is_compliant:      bool
-    headroom_a:        float
-    formula:           str
-    nfpa_section:      str
+
+    total_current_a: float
+    max_allowed_a: float
+    nac_rating_a: float
+    device_count: int
+    is_compliant: bool
+    headroom_a: float
+    formula: str
+    nfpa_section: str
 
 
 @dataclass(frozen=True)
@@ -84,11 +84,12 @@ class NotificationDevice:
       - Speaker (25V, 1W): ~0.040 A per unit
       - Speaker (25V, 2W): ~0.080 A per unit
     """
-    device_id:    str
-    device_type:  str    # "horn", "strobe", "horn_strobe", "speaker"
-    current_a:    float  # Current draw in amperes
-    candela:      Optional[float] = None  # For strobes
-    wattage:      Optional[float] = None  # For speakers
+
+    device_id: str
+    device_type: str  # "horn", "strobe", "horn_strobe", "speaker"
+    current_a: float  # Current draw in amperes
+    candela: Optional[float] = None  # For strobes
+    wattage: Optional[float] = None  # For speakers
 
 
 def calculate_nac_load(
@@ -115,16 +116,12 @@ def calculate_nac_load(
     """
     # Input validation — safety first
     if not math.isfinite(nac_rating_a) or nac_rating_a <= 0:
-        raise ValueError(
-            f"nac_rating_a must be positive finite, got {nac_rating_a}"
-        )
+        raise ValueError(f"nac_rating_a must be positive finite, got {nac_rating_a}")
 
     total_current = 0.0
     for i, dev in enumerate(devices):
         if not math.isfinite(dev.current_a) or dev.current_a < 0:
-            raise ValueError(
-                f"Device '{dev.device_id}' has invalid current: {dev.current_a}"
-            )
+            raise ValueError(f"Device '{dev.device_id}' has invalid current: {dev.current_a}")
         total_current += dev.current_a
 
     max_allowed = nac_rating_a * _NAC_LOAD_FACTOR
@@ -186,14 +183,15 @@ class SPLResult:
     This is a point-source model. In corridors, reflections may provide
     higher SPL than predicted. In open spaces, attenuation may be greater.
     """
-    spl_dba:           float
-    distance_m:        float
-    ambient_dba:       float
-    min_required_dba:  float
-    is_compliant:      bool
-    exceeds_max:       bool
-    formula:           str
-    nfpa_section:      str
+
+    spl_dba: float
+    distance_m: float
+    ambient_dba: float
+    min_required_dba: float
+    is_compliant: bool
+    exceeds_max: bool
+    formula: str
+    nfpa_section: str
 
 
 def calculate_spl(
@@ -342,21 +340,21 @@ def min_horn_rating_for_room(
 _STROBE_CANDELA_TABLE_LOW_CEILING = [
     # (max_room_area_sqft, min_candela)
     # NFPA 72 Table 18.5.5.1(a) — rooms ≤ 100 ft²
-    (100,   15),    # 15 cd for small rooms
-    (400,   30),    # 30 cd for medium rooms
-    (1000,  75),    # 75 cd for larger rooms
-    (2000,  110),   # 110 cd for large rooms
-    (4000,  177),   # 177 cd for very large rooms
+    (100, 15),  # 15 cd for small rooms
+    (400, 30),  # 30 cd for medium rooms
+    (1000, 75),  # 75 cd for larger rooms
+    (2000, 110),  # 110 cd for large rooms
+    (4000, 177),  # 177 cd for very large rooms
 ]
 
 # NFPA 72 Table 18.5.5.1(b) — for rooms > 100 ft² with ceiling >10ft
 _STROBE_CANDELA_TABLE_HIGH_CEILING = [
     # (max_room_area_sqft, min_candela)
-    (100,   15),
-    (400,   34),
-    (1000,  95),
-    (2000,  150),
-    (4000,  220),
+    (100, 15),
+    (400, 34),
+    (1000, 95),
+    (2000, 150),
+    (4000, 220),
 ]
 
 # Conversion: 1 m² = 10.764 ft²
@@ -383,16 +381,17 @@ class StrobeResult:
       visible from the entire corridor length. A strobe behind a
       partition may not be visible to occupants on the other side.
     """
-    required_candela:    float
-    room_area_sqft:      float
-    room_area_m2:        float
-    ceiling_height_ft:   float
-    strobe_count:        int
-    candela_per_strobe:  float
-    is_compliant:        bool
-    table_used:          str
-    formula:             str
-    nfpa_section:        str
+
+    required_candela: float
+    room_area_sqft: float
+    room_area_m2: float
+    ceiling_height_ft: float
+    strobe_count: int
+    candela_per_strobe: float
+    is_compliant: bool
+    table_used: str
+    formula: str
+    nfpa_section: str
 
 
 def calculate_strobe_candela(
@@ -425,13 +424,9 @@ def calculate_strobe_candela(
     """
     # Input validation
     if not math.isfinite(room_area_m2) or room_area_m2 <= 0:
-        raise ValueError(
-            f"room_area_m2 must be positive finite, got {room_area_m2}"
-        )
+        raise ValueError(f"room_area_m2 must be positive finite, got {room_area_m2}")
     if not math.isfinite(ceiling_height_m) or ceiling_height_m <= 0:
-        raise ValueError(
-            f"ceiling_height_m must be positive finite, got {ceiling_height_m}"
-        )
+        raise ValueError(f"ceiling_height_m must be positive finite, got {ceiling_height_m}")
     if strobe_count < 1:
         raise ValueError(f"strobe_count must be ≥1, got {strobe_count}")
 
@@ -463,9 +458,7 @@ def calculate_strobe_candela(
     # Check compliance if installed value provided
     if installed_candela is not None:
         if not math.isfinite(installed_candela) or installed_candela < 0:
-            raise ValueError(
-                f"installed_candela must be non-negative finite, got {installed_candela}"
-            )
+            raise ValueError(f"installed_candela must be non-negative finite, got {installed_candela}")
         is_compliant = installed_candela >= candela_per_strobe
     else:
         # No installed value — just check if we CAN comply
@@ -514,14 +507,15 @@ class CorridorStrobeResult:
       - Minimum candela per strobe in corridors: 15 cd
       - If corridor length ≤ 100 ft, one strobe at center may suffice
     """
-    corridor_length_m:    float
-    strobe_count:         int
-    spacing_m:            float
-    end_distance_m:       float
-    is_compliant:         bool
-    min_candela_per:      float
-    violations:           List[str]
-    nfpa_section:         str
+
+    corridor_length_m: float
+    strobe_count: int
+    spacing_m: float
+    end_distance_m: float
+    is_compliant: bool
+    min_candela_per: float
+    violations: List[str]
+    nfpa_section: str
 
 
 def calculate_corridor_strobes(
@@ -546,9 +540,7 @@ def calculate_corridor_strobes(
         CorridorStrobeResult with count, spacing, compliance.
     """
     if not math.isfinite(corridor_length_m) or corridor_length_m <= 0:
-        raise ValueError(
-            f"corridor_length_m must be positive finite, got {corridor_length_m}"
-        )
+        raise ValueError(f"corridor_length_m must be positive finite, got {corridor_length_m}")
 
     violations = []
 
@@ -584,8 +576,7 @@ def calculate_corridor_strobes(
 
     if spacing_m > _MAX_CORRIDOR_STROBE_SPACING_M:
         violations.append(
-            f"Strobe spacing {spacing_m:.2f}m exceeds maximum "
-            f"{_MAX_CORRIDOR_STROBE_SPACING_M}m per NFPA 72 §18.5.5.4"
+            f"Strobe spacing {spacing_m:.2f}m exceeds maximum {_MAX_CORRIDOR_STROBE_SPACING_M}m per NFPA 72 §18.5.5.4"
         )
         is_compliant = False
 
@@ -614,6 +605,7 @@ def calculate_corridor_strobes(
 # COMBINED NOTIFICATION ASSESSMENT
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class NotificationAssessment:
     """Combined assessment of notification appliance coverage for a room.
@@ -621,14 +613,15 @@ class NotificationAssessment:
     This brings together all notification calculations into a single
     assessment result that can be used by the release gate system.
     """
-    room_id:              str
-    nac_result:           Optional[NACLoadResult]   = None
-    spl_result:           Optional[SPLResult]       = None
-    strobe_result:        Optional[StrobeResult]    = None
-    corridor_strobe:      Optional[CorridorStrobeResult] = None
-    is_compliant:         bool = False  # V96 FIX: Fail-safe default — unevaluated must NOT claim compliance
-    violations:           List[str] = field(default_factory=list)
-    nfpa_references:      List[str] = field(default_factory=list)
+
+    room_id: str
+    nac_result: Optional[NACLoadResult] = None
+    spl_result: Optional[SPLResult] = None
+    strobe_result: Optional[StrobeResult] = None
+    corridor_strobe: Optional[CorridorStrobeResult] = None
+    is_compliant: bool = False  # V96 FIX: Fail-safe default — unevaluated must NOT claim compliance
+    violations: List[str] = field(default_factory=list)
+    nfpa_references: List[str] = field(default_factory=list)
 
     def evaluate(self) -> None:
         """Run all compliance checks and aggregate results."""
@@ -651,8 +644,7 @@ class NotificationAssessment:
                 self.is_compliant = False
                 if self.spl_result.exceeds_max:
                     self.violations.append(
-                        f"SPL {self.spl_result.spl_dba:.1f} dBA exceeds "
-                        f"maximum {_MAX_SPL_DBA} dBA (NFPA 72 §18.4.3)"
+                        f"SPL {self.spl_result.spl_dba:.1f} dBA exceeds maximum {_MAX_SPL_DBA} dBA (NFPA 72 §18.4.3)"
                     )
                 else:
                     self.violations.append(

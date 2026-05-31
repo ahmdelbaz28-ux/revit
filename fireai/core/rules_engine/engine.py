@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 # DATA STRUCTURES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class RulePriority(IntEnum):
     """Priority levels for conflict resolution.
 
@@ -43,12 +44,13 @@ class RulePriority(IntEnum):
     Reference: This mirrors durable_rules' `pri` attribute but with
     explicit safety categories instead of arbitrary integers.
     """
-    CRITICAL_SAFETY = 0      # Life-safety rules (e.g., coverage < 100%)
-    SAFETY_VIOLATION = 10    # Code violations (e.g., spacing exceeded)
-    COMPLIANCE_CHECK = 20    # Standard compliance checks
-    DERIVED_FACT = 30        # Facts derived from other facts
-    ADVISORY = 40            # Warnings and recommendations
-    INFORMATIONAL = 50       # Information-only rules
+
+    CRITICAL_SAFETY = 0  # Life-safety rules (e.g., coverage < 100%)
+    SAFETY_VIOLATION = 10  # Code violations (e.g., spacing exceeded)
+    COMPLIANCE_CHECK = 20  # Standard compliance checks
+    DERIVED_FACT = 30  # Facts derived from other facts
+    ADVISORY = 40  # Warnings and recommendations
+    INFORMATIONAL = 50  # Information-only rules
 
 
 @dataclass(frozen=True)
@@ -64,14 +66,13 @@ class Fact:
     Immutable to prevent accidental mutation — a changed fact must
     be retracted and re-asserted, which triggers truth maintenance.
     """
+
     fact_type: str
     properties: Dict[str, Any] = field(default_factory=dict)
     fact_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     source: str = "user_input"  # or 'derived', 'sensor', 'import'
     nfpa_reference: Optional[str] = None  # e.g., "NFPA 72 §17.6.3.1"
-    asserted_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    asserted_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def matches(self, fact_type: str, **conditions) -> bool:
         """Check if this fact matches a type and optional conditions.
@@ -112,6 +113,7 @@ class RuleResult:
     Contains the action taken, any new facts asserted, any facts
     retracted, and a severity level for audit purposes.
     """
+
     rule_id: str
     rule_name: str
     nfpa_reference: Optional[str]
@@ -121,9 +123,7 @@ class RuleResult:
     retracted_fact_ids: List[str] = field(default_factory=list)
     matched_facts: List[str] = field(default_factory=list)  # fact_ids
     session_id: str = ""
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     confidence: float = 1.0  # 0.0 to 1.0 — for uncertain inferences
 
 
@@ -135,6 +135,7 @@ class RuleAuditEntry:
     This is a safety-critical requirement — you must be able to
     trace exactly why a rule did or did not fire.
     """
+
     rule_id: str
     rule_name: str
     nfpa_reference: Optional[str]
@@ -149,7 +150,7 @@ class RuleAuditEntry:
 # Type aliases for rule conditions and actions
 ConditionFn = Callable[[Fact], bool]
 JoinConditionFn = Callable[[Fact, Fact], bool]
-ActionFn = Callable[[List[Fact], 'RulesEngine'], List[RuleResult]]
+ActionFn = Callable[[List[Fact], "RulesEngine"], List[RuleResult]]
 
 
 @dataclass
@@ -164,6 +165,7 @@ class Rule:
 
     Rules are defined declaratively and evaluated deterministically.
     """
+
     rule_id: str
     rule_name: str
     nfpa_reference: Optional[str]  # e.g., "NFPA 72 §17.6.3.1"
@@ -177,9 +179,7 @@ class Rule:
 
     # Multi-fact join conditions (beta network)
     # List of (fact_type_1, fact_type_2, join_predicate)
-    join_conditions: List[Tuple[str, str, JoinConditionFn]] = field(
-        default_factory=list
-    )
+    join_conditions: List[Tuple[str, str, JoinConditionFn]] = field(default_factory=list)
 
     # Action: what happens when the rule fires
     action: Optional[ActionFn] = None
@@ -199,8 +199,7 @@ class Rule:
             return self.condition(fact)
         except Exception as e:
             logger.error(
-                f"Rule {self.rule_id} condition error on fact "
-                f"{fact.fact_id}: {e}",
+                f"Rule {self.rule_id} condition error on fact {fact.fact_id}: {e}",
                 exc_info=True,
             )
             # SAFETY: On condition error, do NOT fire the rule.
@@ -211,6 +210,7 @@ class Rule:
 # ═══════════════════════════════════════════════════════════════════════════════
 # RULES ENGINE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class RulesEngine:
     """Forward-chaining rules engine with audit trail and truth maintenance.
@@ -256,7 +256,7 @@ class RulesEngine:
 
         # TMS dependency tracking
         self._derived_from: Dict[str, List[str]] = {}  # derived_fact_id → [source_fact_ids]
-        self._supports: Dict[str, List[str]] = {}      # source_fact_id → [derived_fact_ids]
+        self._supports: Dict[str, List[str]] = {}  # source_fact_id → [derived_fact_ids]
 
         # Thread safety
         self._lock = threading.Lock()
@@ -302,8 +302,7 @@ class RulesEngine:
                 self._alpha_index[rule.fact_type].append(rule.rule_id)
 
         logger.debug(
-            f"Rule added: {rule.rule_id} ({rule.rule_name}) "
-            f"priority={rule.priority.name} nfpa={rule.nfpa_reference}"
+            f"Rule added: {rule.rule_id} ({rule.rule_name}) priority={rule.priority.name} nfpa={rule.nfpa_reference}"
         )
 
     def add_rules(self, rules: Sequence[Rule]) -> None:
@@ -327,10 +326,7 @@ class RulesEngine:
                 self._retract_fact_internal(fact.fact_id, trigger_tms=True)
 
             self._facts[fact.fact_id] = fact
-            logger.debug(
-                f"Fact asserted: {fact.fact_type} id={fact.fact_id} "
-                f"source={fact.source}"
-            )
+            logger.debug(f"Fact asserted: {fact.fact_type} id={fact.fact_id} source={fact.source}")
             return fact.fact_id
 
     def retract_fact(self, fact_id: str) -> bool:
@@ -342,9 +338,7 @@ class RulesEngine:
         with self._lock:
             return self._retract_fact_internal(fact_id, trigger_tms=True)
 
-    def _retract_fact_internal(
-        self, fact_id: str, trigger_tms: bool = True
-    ) -> bool:
+    def _retract_fact_internal(self, fact_id: str, trigger_tms: bool = True) -> bool:
         """Internal retract — called with lock already held."""
         if fact_id not in self._facts:
             return False
@@ -356,8 +350,7 @@ class RulesEngine:
             derived_ids = list(self._supports[fact_id])
             for derived_id in derived_ids:
                 logger.info(
-                    f"TMS: Retracting derived fact {derived_id} because "
-                    f"supporting fact {fact_id} was retracted"
+                    f"TMS: Retracting derived fact {derived_id} because supporting fact {fact_id} was retracted"
                 )
                 self._retract_fact_internal(derived_id, trigger_tms=True)
 
@@ -508,15 +501,11 @@ class RulesEngine:
                         result.session_id = self.session_id
                         for new_fact in result.asserted_facts:
                             # Record dependency: new_fact depends on matched_facts
-                            self._derived_from[new_fact.fact_id] = [
-                                f.fact_id for f in matched_facts
-                            ]
+                            self._derived_from[new_fact.fact_id] = [f.fact_id for f in matched_facts]
                             for source in matched_facts:
                                 if source.fact_id not in self._supports:
                                     self._supports[source.fact_id] = []
-                                self._supports[source.fact_id].append(
-                                    new_fact.fact_id
-                                )
+                                self._supports[source.fact_id].append(new_fact.fact_id)
                             # Actually assert the derived fact
                             self.assert_fact(new_fact)
 
@@ -576,9 +565,7 @@ class RulesEngine:
 
         return results
 
-    def _evaluate_joins(
-        self, alpha_candidates: List[Tuple[Rule, List[Fact]]]
-    ) -> List[Tuple[Rule, List[Fact]]]:
+    def _evaluate_joins(self, alpha_candidates: List[Tuple[Rule, List[Fact]]]) -> List[Tuple[Rule, List[Fact]]]:
         """Evaluate beta network join conditions.
 
         For rules with join_conditions, find pairs of facts that
@@ -648,26 +635,18 @@ class RulesEngine:
 
     def get_safety_violations(self) -> List[RuleResult]:
         """Get all CRITICAL_SAFETY and SAFETY_VIOLATION results."""
-        return [
-            r for r in self._results
-            if r.severity <= RulePriority.SAFETY_VIOLATION
-        ]
+        return [r for r in self._results if r.severity <= RulePriority.SAFETY_VIOLATION]
 
     def get_compliance_summary(self) -> Dict[str, Any]:
         """Get a summary of compliance status from rule results.
 
         Returns a structured summary suitable for engineering reports.
         """
-        critical = [
-            r for r in self._results
-            if r.severity == RulePriority.CRITICAL_SAFETY
-        ]
-        violations = [
-            r for r in self._results
-            if r.severity == RulePriority.SAFETY_VIOLATION
-        ]
+        critical = [r for r in self._results if r.severity == RulePriority.CRITICAL_SAFETY]
+        violations = [r for r in self._results if r.severity == RulePriority.SAFETY_VIOLATION]
         compliant = [
-            r for r in self._results
+            r
+            for r in self._results
             if r.severity == RulePriority.COMPLIANCE_CHECK  # FIX: was >=, included advisory/info
         ]
 
@@ -681,11 +660,7 @@ class RulesEngine:
             "total_facts": len(self._facts),
             "derived_facts": len(self._derived_from),
             "is_safe": len(critical) == 0 and len(violations) == 0,
-            "nfpa_references": list({
-                r.nfpa_reference
-                for r in self._results
-                if r.nfpa_reference
-            }),
+            "nfpa_references": list({r.nfpa_reference for r in self._results if r.nfpa_reference}),
         }
 
     def reset(self) -> None:
@@ -731,10 +706,7 @@ class RulesEngine:
         producing_rule = None
         for audit in self._audit_log:
             if audit.fired and audit.result:
-                if fact_id in [
-                    f.fact_id
-                    for f in audit.result.asserted_facts
-                ]:
+                if fact_id in [f.fact_id for f in audit.result.asserted_facts]:
                     producing_rule = {
                         "rule_id": audit.rule_id,
                         "rule_name": audit.rule_name,

@@ -20,18 +20,15 @@ What this file does:
 
 from __future__ import annotations
 
-import array
 import logging
 import math
 import mmap
-import multiprocessing
 import os
+import platform
 import queue
 import struct
 import threading
 import time
-import ctypes
-import platform
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -39,7 +36,9 @@ logger = logging.getLogger(__name__)
 
 try:
     import numpy as np
+
     _HAS_NUMPY = True
+
     # Real SIMD detection via numpy
     def _detect_simd() -> str:
         """Detect actual SIMD capability."""
@@ -64,6 +63,7 @@ try:
         return "SCALAR"
 except ImportError:
     _HAS_NUMPY = False
+
     def _detect_simd() -> str:
         return "SCALAR"
 
@@ -72,13 +72,14 @@ except ImportError:
 # SIMD-aware distance kernel (was theoretical — now real)
 # ---------------------------------------------------------------------------
 
+
 def _compute_coverage_mask_avx2(
-    grid_x: Any,    # np.ndarray float32
-    grid_y: Any,    # np.ndarray float32
-    det_x:  Any,    # np.ndarray float32
-    det_y:  Any,    # np.ndarray float32
-    r_sq:   float,
-) -> Any:           # np.ndarray bool
+    grid_x: Any,  # np.ndarray float32
+    grid_y: Any,  # np.ndarray float32
+    det_x: Any,  # np.ndarray float32
+    det_y: Any,  # np.ndarray float32
+    r_sq: float,
+) -> Any:  # np.ndarray bool
     """
     Vectorised coverage mask: which grid points are covered by any detector.
     Uses NumPy broadcasting — numpy internally uses SIMD (AVX2/SSE4/NEON).
@@ -89,22 +90,19 @@ def _compute_coverage_mask_avx2(
     # (G, 1) - (1, D) -> (G, D) broadcast
     dx = grid_x[:, np.newaxis] - det_x[np.newaxis, :]
     dy = grid_y[:, np.newaxis] - det_y[np.newaxis, :]
-    dist2 = dx * dx + dy * dy          # (G, D)
-    return (dist2 <= r_sq).any(axis=1) # (G,) — True = covered
+    dist2 = dx * dx + dy * dy  # (G, D)
+    return (dist2 <= r_sq).any(axis=1)  # (G,) — True = covered
 
 
 def _compute_coverage_mask_scalar(
-    grid_pts:  List[Tuple[float, float]],
+    grid_pts: List[Tuple[float, float]],
     detectors: List[Tuple[float, float]],
-    r_sq:      float,
+    r_sq: float,
 ) -> List[bool]:
     """Pure Python fallback for SCALAR path."""
     result = []
     for gx, gy in grid_pts:
-        covered = any(
-            (gx - dx) ** 2 + (gy - dy) ** 2 <= r_sq
-            for dx, dy in detectors
-        )
+        covered = any((gx - dx) ** 2 + (gy - dy) ** 2 <= r_sq for dx, dy in detectors)
         result.append(covered)
     return result
 
@@ -113,19 +111,20 @@ def _compute_coverage_mask_scalar(
 # MPSC Worker Queue (was defined but never started in V30)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _WorkItem:
-    room_id:    str
-    room_data:  Dict[str, Any]
-    callback:   Callable
-    submit_ts:  float = field(default_factory=time.perf_counter)
+    room_id: str
+    room_data: Dict[str, Any]
+    callback: Callable
+    submit_ts: float = field(default_factory=time.perf_counter)
 
 
 @dataclass
 class _WorkResult:
-    room_id:  str
-    result:   Any
-    error:    Optional[str]
+    room_id: str
+    result: Any
+    error: Optional[str]
     latency_s: float
 
 
@@ -146,15 +145,15 @@ class MPSCWorkerPool:
         n_workers: int = 0,
         optimize_fn: Optional[Callable] = None,
     ) -> None:
-        self.n_workers   = n_workers or max(1, (os.cpu_count() or 4) - 1)
+        self.n_workers = n_workers or max(1, (os.cpu_count() or 4) - 1)
         self.optimize_fn = optimize_fn or self._default_optimize
-        self._inbox:  queue.Queue[Optional[_WorkItem]]  = queue.Queue()
-        self._outbox: queue.Queue[_WorkResult]           = queue.Queue()
+        self._inbox: queue.Queue[Optional[_WorkItem]] = queue.Queue()
+        self._outbox: queue.Queue[_WorkResult] = queue.Queue()
         self._workers: List[threading.Thread] = []
         self._running = threading.Event()
         self._running.set()
         self._pending: Dict[str, _WorkItem] = {}
-        self._lock    = threading.Lock()
+        self._lock = threading.Lock()
         self._start_workers()
 
     def _start_workers(self) -> None:
@@ -173,25 +172,26 @@ class MPSCWorkerPool:
                 item = self._inbox.get(timeout=0.1)
                 if item is None:
                     break
-                t0  = time.perf_counter()
+                t0 = time.perf_counter()
                 try:
                     result = self.optimize_fn(item.room_data)
-                    err    = None
+                    err = None
                 except Exception as exc:
                     result = None
-                    err    = str(exc)
-                self._outbox.put(_WorkResult(
-                    room_id=item.room_id,
-                    result=result,
-                    error=err,
-                    latency_s=time.perf_counter() - t0,
-                ))
+                    err = str(exc)
+                self._outbox.put(
+                    _WorkResult(
+                        room_id=item.room_id,
+                        result=result,
+                        error=err,
+                        latency_s=time.perf_counter() - t0,
+                    )
+                )
                 self._inbox.task_done()
             except queue.Empty:
                 continue
 
-    def submit(self, room_id: str, room_data: Dict[str, Any],
-               callback: Callable = None) -> None:
+    def submit(self, room_id: str, room_data: Dict[str, Any], callback: Callable = None) -> None:
         item = _WorkItem(
             room_id=room_id,
             room_data=room_data,
@@ -250,16 +250,17 @@ class MPSCWorkerPool:
                 y += spacing
             x += spacing
         return {
-            "room_id":   room_data.get("room_id", ""),
+            "room_id": room_data.get("room_id", ""),
             "detectors": dets,
-            "count":     len(dets),
-            "method":    "v30_default_grid",
+            "count": len(dets),
+            "method": "v30_default_grid",
         }
 
 
 # ---------------------------------------------------------------------------
 # mmap-backed shared result cache (was opened but unused in V30)
 # ---------------------------------------------------------------------------
+
 
 class MmapResultCache:
     """
@@ -278,15 +279,15 @@ class MmapResultCache:
       Bytes 65536+:  JSON result data
     """
 
-    MAGIC      = b"V30C"
-    HEADER_SZ  = 65536    # 64KB index
+    MAGIC = b"V30C"
+    HEADER_SZ = 65536  # 64KB index
     MAX_ENTRIES = 4096
-    ENTRY_SZ   = 16       # 8-byte hash + 4-byte offset + 4-byte length
+    ENTRY_SZ = 16  # 8-byte hash + 4-byte offset + 4-byte length
 
     def __init__(
         self,
-        filepath: str = "",   # Empty = auto-detect from env var or /tmp
-        size_mb:  int = 64,
+        filepath: str = "",  # Empty = auto-detect from env var or /tmp
+        size_mb: int = 64,
     ) -> None:
         if not filepath:
             filepath = os.environ.get(
@@ -294,11 +295,11 @@ class MmapResultCache:
                 "/tmp/fireai_v30_cache.mmap",
             )
         self._filepath = filepath
-        self._size     = size_mb * 1024 * 1024
-        self._lock     = threading.Lock()
-        self._mmap:    Optional[mmap.mmap] = None
-        self._file     = None
-        self._data_ptr = self.HEADER_SZ   # next write position in data region
+        self._size = size_mb * 1024 * 1024
+        self._lock = threading.Lock()
+        self._mmap: Optional[mmap.mmap] = None
+        self._file = None
+        self._data_ptr = self.HEADER_SZ  # next write position in data region
         self._open()
 
     def _open(self) -> None:
@@ -315,12 +316,11 @@ class MmapResultCache:
                 self._file.write(b"\x00")
                 self._file.flush()
             self._mmap = mmap.mmap(
-                self._file.fileno(), self._size,
+                self._file.fileno(),
+                self._size,
                 access=mmap.ACCESS_WRITE,
             )
-            if not exists:
-                self._init_header()
-            elif self._mmap[:4] != self.MAGIC:
+            if not exists or self._mmap[:4] != self.MAGIC:
                 self._init_header()
         except Exception as exc:
             self._mmap = None  # Degrade gracefully
@@ -328,9 +328,9 @@ class MmapResultCache:
     def _init_header(self) -> None:
         if self._mmap is None:
             return
-        self._mmap[:4]  = self.MAGIC
+        self._mmap[:4] = self.MAGIC
         self._mmap[4:8] = struct.pack("<I", 0)
-        self._data_ptr  = self.HEADER_SZ
+        self._data_ptr = self.HEADER_SZ
 
     def _get_entry_count(self) -> int:
         if self._mmap is None:
@@ -343,6 +343,7 @@ class MmapResultCache:
 
     def _hash_key(self, key: str) -> int:
         import hashlib
+
         h = hashlib.sha256(key.encode()).digest()
         return struct.unpack("<Q", h[:8])[0]
 
@@ -352,20 +353,21 @@ class MmapResultCache:
             return False
         with self._lock:
             try:
-                n       = self._get_entry_count()
+                n = self._get_entry_count()
                 if n >= self.MAX_ENTRIES:
                     return False  # Cache full — eviction not implemented
                 key_hash = self._hash_key(room_id)
-                data     = result_json.encode("utf-8")
+                data = result_json.encode("utf-8")
                 data_len = len(data)
                 if self._data_ptr + data_len > self._size:
                     return False  # No space
                 # Write data
-                self._mmap[self._data_ptr: self._data_ptr + data_len] = data
+                self._mmap[self._data_ptr : self._data_ptr + data_len] = data
                 # Write index entry
                 entry_off = 8 + n * self.ENTRY_SZ
-                self._mmap[entry_off: entry_off + self.ENTRY_SZ] = struct.pack(
-                    "<QII", key_hash, self._data_ptr, data_len)
+                self._mmap[entry_off : entry_off + self.ENTRY_SZ] = struct.pack(
+                    "<QII", key_hash, self._data_ptr, data_len
+                )
                 self._data_ptr += data_len
                 self._set_entry_count(n + 1)
                 return True
@@ -380,14 +382,13 @@ class MmapResultCache:
         with self._lock:
             try:
                 key_hash = self._hash_key(room_id)
-                n        = self._get_entry_count()
+                n = self._get_entry_count()
                 for i in range(n):
-                    off   = 8 + i * self.ENTRY_SZ
-                    entry = struct.unpack("<QII",
-                        self._mmap[off: off + self.ENTRY_SZ])
+                    off = 8 + i * self.ENTRY_SZ
+                    entry = struct.unpack("<QII", self._mmap[off : off + self.ENTRY_SZ])
                     if entry[0] == key_hash:
                         data_off, data_len = entry[1], entry[2]
-                        return self._mmap[data_off: data_off + data_len].decode("utf-8")
+                        return self._mmap[data_off : data_off + data_len].decode("utf-8")
                 return None
             except Exception as e:
                 logger.warning(f"V112: MmapResultCache.get: failed to read room_id={room_id!r} from mmap cache: {e!r}")
@@ -396,15 +397,25 @@ class MmapResultCache:
     def close(self) -> None:
         with self._lock:
             if self._mmap:
-                try: self._mmap.flush(); self._mmap.close()
-                except Exception as e: logger.debug(f"V112: MmapResultCache.close: mmap flush/close failed: {e!r}"); pass
+                try:
+                    self._mmap.flush()
+                    self._mmap.close()
+                except Exception as e:
+                    logger.debug(f"V112: MmapResultCache.close: mmap flush/close failed: {e!r}")
+                    pass
             if self._file:
-                try: self._file.close()
-                except Exception as e: logger.debug(f"V112: MmapResultCache.close: file close failed: {e!r}"); pass
+                try:
+                    self._file.close()
+                except Exception as e:
+                    logger.debug(f"V112: MmapResultCache.close: file close failed: {e!r}")
+                    pass
 
     def __del__(self) -> None:
-        try: self.close()
-        except Exception as e: logger.debug(f"V112: MmapResultCache.__del__: close failed: {e!r}"); pass
+        try:
+            self.close()
+        except Exception as e:
+            logger.debug(f"V112: MmapResultCache.__del__: close failed: {e!r}")
+            pass
 
     def __enter__(self):
         return self
@@ -417,6 +428,7 @@ class MmapResultCache:
 # ---------------------------------------------------------------------------
 # KernelV30Dispatcher — the missing integration layer
 # ---------------------------------------------------------------------------
+
 
 class KernelV30Dispatcher:
     """
@@ -440,14 +452,14 @@ class KernelV30Dispatcher:
 
     def __init__(
         self,
-        n_workers:        int   = 0,
-        coverage_radius:  float = 6.37,
+        n_workers: int = 0,
+        coverage_radius: float = 6.37,
         enable_mmap_cache: bool = True,
-        enable_simd:      bool  = True,
+        enable_simd: bool = True,
     ) -> None:
-        self.R           = coverage_radius
-        self._simd_mode  = _detect_simd() if enable_simd else "SCALAR"
-        self._pool       = MPSCWorkerPool(
+        self.R = coverage_radius
+        self._simd_mode = _detect_simd() if enable_simd else "SCALAR"
+        self._pool = MPSCWorkerPool(
             n_workers=n_workers,
             optimize_fn=self._optimize_worker,
         )
@@ -466,6 +478,7 @@ class KernelV30Dispatcher:
         if self._fallback is None:
             try:
                 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
+
                 self._fallback = DensityOptimizer(radius=self.R)
             except ImportError:
                 pass
@@ -537,24 +550,25 @@ class KernelV30Dispatcher:
         """
         room_dicts = []
         for room in rooms:
-            room_dicts.append({
-                "room_id":        getattr(room, "room_id", str(id(room))),
-                "width":          getattr(room, "width",  10.0),
-                "length":         getattr(room, "length",  8.0),
-                "ceiling_height": getattr(room, "ceiling_height", 3.0),
-                "detector_type":  getattr(room, "detector_type", "smoke"),
-                "coverage_radius": self.R,
-                "_room_obj":      room,
-            })
+            room_dicts.append(
+                {
+                    "room_id": getattr(room, "room_id", str(id(room))),
+                    "width": getattr(room, "width", 10.0),
+                    "length": getattr(room, "length", 8.0),
+                    "ceiling_height": getattr(room, "ceiling_height", 3.0),
+                    "detector_type": getattr(room, "detector_type", "smoke"),
+                    "coverage_radius": self.R,
+                    "_room_obj": room,
+                }
+            )
 
         results_raw = self._pool.submit_batch(room_dicts, timeout_per_room=timeout)
-        layouts     = []
+        layouts = []
         for res in results_raw:
             if res.error:
                 # Fallback for failed rooms
                 idx = next(
-                    (i for i, r in enumerate(rooms)
-                     if getattr(r, "room_id", str(id(r))) == res.room_id),
+                    (i for i, r in enumerate(rooms) if getattr(r, "room_id", str(id(r))) == res.room_id),
                     None,
                 )
                 if idx is not None:
@@ -563,12 +577,10 @@ class KernelV30Dispatcher:
                         layouts.append(fb.optimize(rooms[idx]))
             elif res.result:
                 room_obj = next(
-                    (r for r in rooms
-                     if getattr(r, "room_id", str(id(r))) == res.room_id),
+                    (r for r in rooms if getattr(r, "room_id", str(id(r))) == res.room_id),
                     None,
                 )
-                layouts.append(
-                    self._dict_to_layout(res.result, room_obj))
+                layouts.append(self._dict_to_layout(res.result, room_obj))
 
         return layouts
 
@@ -584,10 +596,11 @@ class KernelV30Dispatcher:
         with wall offsets of R/2, matching DensityOptimizer._hex_guarded.
         """
         import numpy as np
+
         from fireai.core.spatial_engine.density_optimizer import DetectorLayout
 
-        w = getattr(room, "width",  10.0)
-        l = getattr(room, "length",  8.0)
+        w = getattr(room, "width", 10.0)
+        l = getattr(room, "length", 8.0)
         WALL = 0.10
         R_eff = R - 0.1414  # delta-conservative for verification
 
@@ -596,11 +609,11 @@ class KernelV30Dispatcher:
         col_sp = R
         row_sp = R * math.sqrt(3) / 2.0
         positions = []
-        row  = 0
-        y    = WALL + R / 2.0   # Start at R/2 from wall (NFPA 72 §17.6.3)
+        row = 0
+        y = WALL + R / 2.0  # Start at R/2 from wall (NFPA 72 §17.6.3)
         while y < l - WALL:
             x_off = (col_sp / 2.0) if row % 2 == 1 else 0.0  # Odd rows offset
-            x = WALL + R / 2.0 + x_off   # R/2 from wall (NFPA 72)
+            x = WALL + R / 2.0 + x_off  # R/2 from wall (NFPA 72)
             while x < w - WALL:
                 positions.append((round(x, 4), round(y, 4)))
                 x += col_sp
@@ -615,18 +628,16 @@ class KernelV30Dispatcher:
         step = 0.20
         xs = np.arange(WALL, w - WALL, step, dtype=np.float32)
         ys = np.arange(WALL, l - WALL, step, dtype=np.float32)
-        gx, gy   = np.meshgrid(xs, ys)
-        grid_x   = gx.ravel()
-        grid_y   = gy.ravel()
-        det_arr  = np.array(positions, dtype=np.float32)
-        R_eff_sq = float(R_eff ** 2)
+        gx, gy = np.meshgrid(xs, ys)
+        grid_x = gx.ravel()
+        grid_y = gy.ravel()
+        det_arr = np.array(positions, dtype=np.float32)
+        R_eff_sq = float(R_eff**2)
 
-        covered_mask = _compute_coverage_mask_avx2(
-            grid_x, grid_y, det_arr[:, 0], det_arr[:, 1], R_eff_sq
-        )
-        total    = len(grid_x)
-        covered  = int(covered_mask.sum())
-        cov_pct  = 100.0 * covered / total if total > 0 else 0.0
+        covered_mask = _compute_coverage_mask_avx2(grid_x, grid_y, det_arr[:, 0], det_arr[:, 1], R_eff_sq)
+        total = len(grid_x)
+        covered = int(covered_mask.sum())
+        cov_pct = 100.0 * covered / total if total > 0 else 0.0
 
         proof_valid = cov_pct >= 100.0
 
@@ -652,16 +663,16 @@ class KernelV30Dispatcher:
         """Scalar fallback — uses DensityOptimizer or simple grid."""
         from fireai.core.spatial_engine.density_optimizer import DetectorLayout
 
-        w = getattr(room, "width",  10.0)
-        l = getattr(room, "length",  8.0)
+        w = getattr(room, "width", 10.0)
+        l = getattr(room, "length", 8.0)
         WALL = 0.10
         R_eff = R - 0.1414
 
         col_sp = R_eff
         row_sp = R_eff * math.sqrt(3) / 2.0
         positions = []
-        row  = 0
-        y    = WALL + row_sp / 2.0
+        row = 0
+        y = WALL + row_sp / 2.0
         while y < l - WALL:
             x_off = (col_sp / 2.0) if row % 2 == 0 else 0.0
             x = WALL + col_sp / 2.0 + x_off
@@ -676,12 +687,8 @@ class KernelV30Dispatcher:
 
         # Scalar verification
         step = 0.50
-        grid_pts = [
-            (x, y)
-            for x in self._frange(WALL, w - WALL, step)
-            for y in self._frange(WALL, l - WALL, step)
-        ]
-        R_sq = R_eff ** 2
+        grid_pts = [(x, y) for x in self._frange(WALL, w - WALL, step) for y in self._frange(WALL, l - WALL, step)]
+        R_sq = R_eff**2
         mask = _compute_coverage_mask_scalar(grid_pts, positions, R_sq)
         total = len(grid_pts)
         covered = sum(mask)
@@ -729,10 +736,10 @@ class KernelV30Dispatcher:
             row += 1
 
         return {
-            "room_id":   room_data.get("room_id", ""),
+            "room_id": room_data.get("room_id", ""),
             "detectors": positions,
-            "count":     len(positions),
-            "method":    "v30_worker_hex",
+            "count": len(positions),
+            "method": "v30_worker_hex",
             "coverage_radius": R,
         }
 
@@ -754,6 +761,7 @@ class KernelV30Dispatcher:
         """Convert cached dict back to DetectorLayout."""
         try:
             from fireai.core.spatial_engine.density_optimizer import DetectorLayout
+
             return DetectorLayout(
                 room=room,
                 detectors=[tuple(d) for d in data.get("detectors", [])],

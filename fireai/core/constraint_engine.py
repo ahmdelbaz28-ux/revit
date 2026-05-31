@@ -30,19 +30,12 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-
-# Reuse physics guards from contracts_validation
-from fireai.core.contracts_validation import (
-    ContractViolation,
-    validate_voltage,
-    validate_current,
-    _MIN_FA_VOLTAGE_V,
-    _MAX_FA_VOLTAGE_V,
-)
+from typing import List, Optional, Tuple
 
 # Reuse wire gauge and resistance data
 from fireai.core.cable_routing_engine import WireGauge
+
+# Reuse physics guards from contracts_validation
 
 
 def _resolve_wire_gauge(wire_gauge):
@@ -58,42 +51,40 @@ def _resolve_wire_gauge(wire_gauge):
         raise ValueError(f"Unknown wire gauge: '{wire_gauge}'")
     return wire_gauge
 
+
 # Reuse NEC ampacity verification from nfpa72_engine
 from fireai.core.nfpa72_engine import (
     check_ampacity,
-    temperature_corrected_resistance,
     get_ambient_derating_factor,
     get_conductor_count_derating,
-    AMPACITY_TABLE_NEC_310_16,
-    COPPER_TEMP_COEFFICIENT,
-    _TABLE8_REFERENCE_TEMP_C,
-    _DEFAULT_OPERATING_TEMP_C,
+    temperature_corrected_resistance,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTRAINT SOURCE ENUM — Every constraint has a source
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class ConstraintSource(Enum):
     """Source of a routing constraint — every rule must cite its origin."""
-    NEC_760_24 = "NEC 760.24"                     # FA cable separation
-    NEC_760_24_A = "NEC 760.24(A)"                # Cable fastening interval
-    NEC_760_154 = "NEC 760.154"                    # PLFA/NPLFA separation
-    NEC_310_16 = "NEC 310.16"                      # Ampacity table
-    NEC_310_15_B2A = "NEC 310.15(B)(2)(A)"        # Ambient temperature correction
-    NEC_310_15_B3A = "NEC 310.15(B)(3)(a)"        # Conductor count derating
-    NEC_CH9_TEMP = "NEC Ch.9 Table 8 + Physics"   # Temperature-corrected resistance
-    NFPA_72_23_6_2 = "NFPA 72 §23.6.2"            # NAC circuit max length
-    NFPA_72_10_6_4 = "NFPA 72 §10.6.4"            # Voltage drop verification
-    NFPA_72_12_2_2 = "NFPA 72 §12.2.2"            # Class A circuit separation
-    NEC_CH9_TABLE4 = "NEC Chapter 9, Table 4"     # Conduit fill
-    NEC_CH9_TABLE8 = "NEC Chapter 9, Table 8"     # Wire resistance
-    PROJECT_SPEC_CONDUIT = "Project Spec: Min 3/4\" EMT"
+
+    NEC_760_24 = "NEC 760.24"  # FA cable separation
+    NEC_760_24_A = "NEC 760.24(A)"  # Cable fastening interval
+    NEC_760_154 = "NEC 760.154"  # PLFA/NPLFA separation
+    NEC_310_16 = "NEC 310.16"  # Ampacity table
+    NEC_310_15_B2A = "NEC 310.15(B)(2)(A)"  # Ambient temperature correction
+    NEC_310_15_B3A = "NEC 310.15(B)(3)(a)"  # Conductor count derating
+    NEC_CH9_TEMP = "NEC Ch.9 Table 8 + Physics"  # Temperature-corrected resistance
+    NFPA_72_23_6_2 = "NFPA 72 §23.6.2"  # NAC circuit max length
+    NFPA_72_10_6_4 = "NFPA 72 §10.6.4"  # Voltage drop verification
+    NFPA_72_12_2_2 = "NFPA 72 §12.2.2"  # Class A circuit separation
+    NEC_CH9_TABLE4 = "NEC Chapter 9, Table 4"  # Conduit fill
+    NEC_CH9_TABLE8 = "NEC Chapter 9, Table 8"  # Wire resistance
+    PROJECT_SPEC_CONDUIT = 'Project Spec: Min 3/4" EMT'
     PROJECT_SPEC_BEND = "Project Spec: Max bend radius = 6 x D"
     PROJECT_SPEC_SEPARATION = "Project Spec: >= 300mm from electrical"
     PROJECT_SPEC_FASTENING = "Project Spec: Fasten every 457mm"
-    PHYSICS = "Physics"                            # Fundamental physics constraints
+    PHYSICS = "Physics"  # Fundamental physics constraints
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -101,9 +92,9 @@ class ConstraintSource(Enum):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Project Spec: Minimum conduit ¾" EMT, red painted
-MIN_CONDUIT_INCHES = 0.75          # ¾" per project specification
-MIN_CONDUIT_MM = 19.05             # ¾" = 19.05mm
-EMT_3_4_INNER_DIAMETER_MM = 15.8   # NEC Chapter 9, Table 4 — ¾" EMT inner diameter
+MIN_CONDUIT_INCHES = 0.75  # ¾" per project specification
+MIN_CONDUIT_MM = 19.05  # ¾" = 19.05mm
+EMT_3_4_INNER_DIAMETER_MM = 15.8  # NEC Chapter 9, Table 4 — ¾" EMT inner diameter
 EMT_3_4_OUTER_DIAMETER_MM = 19.05  # ¾" EMT outer diameter
 
 # Project Spec: Maximum bend radius = 6 × conduit diameter
@@ -130,14 +121,14 @@ MAX_CONDUIT_FILL_PCT = 0.40  # 40% fill per NEC 760.154
 # for typical 24V NAC circuits with standard device loads
 # V108 FIX: WireGauge uses string keys ("12", "14", etc.), not enum attributes
 _NAC_MAX_LENGTHS_M = {
-    "12": 914.0,    # 3000 ft practical max (12 AWG)
-    "14": 610.0,    # 2000 ft practical max (14 AWG)
-    "16": 381.0,    # 1250 ft practical max (16 AWG)
-    "18": 229.0,    # 750 ft practical max (18 AWG)
+    "12": 914.0,  # 3000 ft practical max (12 AWG)
+    "14": 610.0,  # 2000 ft practical max (14 AWG)
+    "16": 381.0,  # 1250 ft practical max (16 AWG)
+    "18": 229.0,  # 750 ft practical max (18 AWG)
 }
 
 # Cable routing penalty constants (in meters equivalent)
-BEND_PENALTY_M = 0.5       # 90° bend = equivalent to 0.5m extra length
+BEND_PENALTY_M = 0.5  # 90° bend = equivalent to 0.5m extra length
 ELEVATION_PENALTY_M = 2.0  # Elevation change = equivalent to 2.0m extra length
 ELECTRICAL_PROXIMITY_PENALTY_M = 1.0  # Proximity to electrical = 1.0m penalty
 
@@ -145,6 +136,7 @@ ELECTRICAL_PROXIMITY_PENALTY_M = 1.0  # Proximity to electrical = 1.0m penalty
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTRAINT RESULT — Every check produces an auditable result
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass(frozen=True)
 class ConstraintResult:
@@ -168,6 +160,7 @@ class ConstraintResult:
         remediation: What to do if the constraint is violated.
         formula: The formula used for the check, with values.
     """
+
     constraint_name: str
     source: str
     is_satisfied: bool
@@ -189,6 +182,7 @@ class RoutingConstraintSet:
         critical_violations: Count of CRITICAL severity violations.
         total_violations: Count of all violations.
     """
+
     results: Tuple[ConstraintResult, ...]
     # V114 FIX: Fail-safe — all_satisfied must be PROVEN, not assumed
     all_satisfied: bool = False
@@ -199,6 +193,7 @@ class RoutingConstraintSet:
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTRAINT ENGINE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class ConstraintEngine:
     """Deterministic constraint engine for fire alarm cable routing.
@@ -288,10 +283,9 @@ class ConstraintEngine:
             limit_value=max_length,
             unit="m",
             severity="CRITICAL",
-            remediation=(
-                f"Reduce circuit length to ≤{max_length}m or upgrade to "
-                f"larger wire gauge per NFPA 72 §23.6.2"
-            ) if not is_satisfied else "",
+            remediation=(f"Reduce circuit length to ≤{max_length}m or upgrade to larger wire gauge per NFPA 72 §23.6.2")
+            if not is_satisfied
+            else "",
             formula=(
                 f"L_actual = {cable_length_m:.1f}m "
                 f"{'≤' if is_satisfied else '>'} "
@@ -380,7 +374,9 @@ class ConstraintEngine:
                 f"Voltage drop {v_drop:.2f}V ({v_drop_pct:.1f}%) exceeds "
                 f"maximum {max_drop_pct}% ({max_drop_v:.1f}V). "
                 f"Upgrade wire gauge or reduce circuit length per NFPA 72 §10.6.4."
-            ) if not is_satisfied else "",
+            )
+            if not is_satisfied
+            else "",
             formula=(
                 f"V_drop = I × 2 × R(T) × L = "
                 f"{alarm_current_a:.4f}A × 2 × "
@@ -424,7 +420,9 @@ class ConstraintEngine:
             remediation=(
                 f"Increase separation to ≥{self._min_electrical_separation_mm}mm "
                 f"from electrical conduits per Project Specification and NEC 760.24"
-            ) if not is_satisfied else "",
+            )
+            if not is_satisfied
+            else "",
             formula=(
                 f"d_actual = {actual_separation_mm:.0f}mm "
                 f"{'≥' if is_satisfied else '<'} "
@@ -503,7 +501,9 @@ class ConstraintEngine:
                 f"Route has {num_bends} quarter bends, exceeding NEC Chapter 9 "
                 f"limit of 4 per run. Add pull box or junction box to split run "
                 f"per NEC Chapter 9 Notes to Tables."
-            ) if not is_satisfied else "",
+            )
+            if not is_satisfied
+            else "",
             formula=(
                 f"Bends = {num_bends} quarter bends "
                 f"{'≤' if is_satisfied else '>'} "
@@ -536,13 +536,9 @@ class ConstraintEngine:
             limit_value=self._min_conduit_inches,
             unit="inches",
             severity="HIGH",
-            remediation=(
-                f"Use minimum ¾\" red painted EMT per project specification"
-            ) if not is_satisfied else "",
+            remediation=(f'Use minimum ¾" red painted EMT per project specification') if not is_satisfied else "",
             formula=(
-                f"Ø_conduit = {conduit_inches}\" "
-                f"{'≥' if is_satisfied else '<'} "
-                f"Ø_min = {self._min_conduit_inches}\""
+                f'Ø_conduit = {conduit_inches}" {"≥" if is_satisfied else "<"} Ø_min = {self._min_conduit_inches}"'
             ),
         )
 
@@ -618,7 +614,9 @@ class ConstraintEngine:
             remediation=(
                 f"Add more fasteners — current interval {actual_interval_mm:.0f}mm "
                 f"exceeds {max_interval_mm}mm per NEC 760.24(A)"
-            ) if not is_satisfied else "",
+            )
+            if not is_satisfied
+            else "",
             formula=(
                 f"interval = L / (n+1) = "
                 f"{cable_length_m * 1000:.0f}mm / {num_fasteners + 1} = "
@@ -651,17 +649,13 @@ class ConstraintEngine:
         Returns:
             ConstraintResult with separation check.
         """
-        min_distance = float('inf')
+        min_distance = float("inf")
 
         # Check minimum distance between any point on outgoing path
         # and any point on return path
         for p1 in outgoing_path:
             for p2 in return_path:
-                dist = math.sqrt(
-                    (p1[0] - p2[0]) ** 2
-                    + (p1[1] - p2[1]) ** 2
-                    + (p1[2] - p2[2]) ** 2
-                )
+                dist = math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2 + (p1[2] - p2[2]) ** 2)
                 if dist < min_distance:
                     min_distance = dist
 
@@ -682,12 +676,10 @@ class ConstraintEngine:
                 f"Minimum separation {min_distance:.2f}m is below "
                 f"required {min_separation_m}m. Route return path through "
                 f"different penetration per NFPA 72 §12.2.2"
-            ) if not is_satisfied else "",
-            formula=(
-                f"d_min = {min_distance:.2f}m "
-                f"{'≥' if is_satisfied else '<'} "
-                f"d_required = {min_separation_m}m"
-            ),
+            )
+            if not is_satisfied
+            else "",
+            formula=(f"d_min = {min_distance:.2f}m {'≥' if is_satisfied else '<'} d_required = {min_separation_m}m"),
         )
 
     def check_ampacity_compliance(
@@ -744,7 +736,9 @@ class ConstraintEngine:
                 f"ambient_derate={amp_result.ambient_derating:.2f} x "
                 f"cond_derate={amp_result.conductor_derating:.2f}). "
                 f"Upgrade wire gauge or reduce circuit current per NEC 310.16."
-            ) if not amp_result.is_compliant else "",
+            )
+            if not amp_result.is_compliant
+            else "",
             formula=amp_result.formula,
         )
 
@@ -784,7 +778,9 @@ class ConstraintEngine:
                 f"Ambient {ambient_temp_c:.0f} degC requires {factor:.2f} derating. "
                 f"Consider using higher-rated insulation or larger wire gauge "
                 f"per NEC 310.15(B)(2)(A)."
-            ) if factor < 0.85 else "",
+            )
+            if factor < 0.85
+            else "",
             formula=(
                 f"T_ambient = {ambient_temp_c:.0f} degC, "
                 f"derating factor = {factor:.2f} "
@@ -822,11 +818,10 @@ class ConstraintEngine:
                 f"{num_current_carrying} conductors require {factor:.2f} derating. "
                 f"Consider splitting circuits into separate conduits "
                 f"per NEC 310.15(B)(3)(a)."
-            ) if not is_satisfied else "",
-            formula=(
-                f"N = {num_current_carrying} conductors, "
-                f"derating factor = {factor:.2f}"
-            ),
+            )
+            if not is_satisfied
+            else "",
+            formula=(f"N = {num_current_carrying} conductors, derating factor = {factor:.2f}"),
         )
 
     def check_conduit_fill(
@@ -884,7 +879,9 @@ class ConstraintEngine:
                 f"Conduit fill {fill_pct:.1f}% exceeds {max_fill_pct:.0f}% "
                 f"per NEC 760.154 / Chapter 9 Table 4. "
                 f"Reduce cables or increase conduit size."
-            ) if not is_satisfied else "",
+            )
+            if not is_satisfied
+            else "",
             formula=(
                 f"Fill = N × A_wire / A_conduit = "
                 f"{num_cables} × {wire_area:.1f}mm² / {conduit_area:.1f}mm² = "
@@ -986,10 +983,15 @@ class ConstraintEngine:
         # means "not checked."
         vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else ambient_temp_c
         if alarm_current_a > 0 and cable_length_m > 0:
-            results.append(self.check_voltage_drop(
-                alarm_current_a, cable_length_m, wire_gauge, ps_voltage,
-                conductor_operating_temp_c=vdrop_temp,
-            ))
+            results.append(
+                self.check_voltage_drop(
+                    alarm_current_a,
+                    cable_length_m,
+                    wire_gauge,
+                    ps_voltage,
+                    conductor_operating_temp_c=vdrop_temp,
+                )
+            )
         elif cable_length_m > 0:
             # V67 SAFETY FIX: Voltage drop not checked because current is zero.
             # Previous behavior (V65-V66) set is_satisfied=True, creating a
@@ -998,21 +1000,23 @@ class ConstraintEngine:
             # Zero current is physically impossible in a real FA circuit — if
             # it occurs, it's a data error upstream, not a real condition.
             # The safe default is: unchecked = NOT satisfied.
-            results.append(ConstraintResult(
-                constraint_name="Voltage Drop (Not Checked)",
-                source=ConstraintSource.NFPA_72_10_6_4.value,
-                is_satisfied=False,
-                actual_value=0.0,
-                limit_value=ps_voltage * 0.10 if ps_voltage > 0 else 2.4,
-                unit="V",
-                severity="HIGH",
-                remediation=(
-                    "Voltage drop check BLOCKED — alarm_current_a is 0. "
-                    "This is physically impossible in a real fire alarm circuit. "
-                    "Provide actual alarm current for NFPA 72 §10.6.4 compliance."
-                ),
-                formula="V_drop not calculated (I = 0A) — treated as non-compliant per V67 safety fix",
-            ))
+            results.append(
+                ConstraintResult(
+                    constraint_name="Voltage Drop (Not Checked)",
+                    source=ConstraintSource.NFPA_72_10_6_4.value,
+                    is_satisfied=False,
+                    actual_value=0.0,
+                    limit_value=ps_voltage * 0.10 if ps_voltage > 0 else 2.4,
+                    unit="V",
+                    severity="HIGH",
+                    remediation=(
+                        "Voltage drop check BLOCKED — alarm_current_a is 0. "
+                        "This is physically impossible in a real fire alarm circuit. "
+                        "Provide actual alarm current for NFPA 72 §10.6.4 compliance."
+                    ),
+                    formula="V_drop not calculated (I = 0A) — treated as non-compliant per V67 safety fix",
+                )
+            )
 
         # 3. Electrical separation
         results.append(self.check_electrical_separation(min_electrical_separation_mm))
@@ -1037,34 +1041,35 @@ class ConstraintEngine:
         # NOT conductor_operating_temp_c. Ampacity derating per NEC
         # 310.15(B)(2)(A) uses AMBIENT AIR temperature.
         if alarm_current_a > 0:
-            results.append(self.check_ampacity_compliance(
-                alarm_current_a, wire_gauge,
-                ambient_temp_c=ambient_temp_c,
-                num_current_carrying=num_current_carrying,
-                conductor_temp_rating_c=conductor_temp_rating_c,
-            ))
+            results.append(
+                self.check_ampacity_compliance(
+                    alarm_current_a,
+                    wire_gauge,
+                    ambient_temp_c=ambient_temp_c,
+                    num_current_carrying=num_current_carrying,
+                    conductor_temp_rating_c=conductor_temp_rating_c,
+                )
+            )
 
         # 9. Ambient temperature derating (NEC 310.15(B)(2)(A)) — V59
-        results.append(self.check_ambient_derating(
-            ambient_temp_c, conductor_temp_rating_c
-        ))
+        results.append(self.check_ambient_derating(ambient_temp_c, conductor_temp_rating_c))
 
         # 10. Conductor count derating (NEC 310.15(B)(3)(a)) — V59
-        results.append(self.check_conductor_count_derating(
-            num_current_carrying
-        ))
+        results.append(self.check_conductor_count_derating(num_current_carrying))
 
         # 11. Conduit fill (NEC Chapter 9 Table 4 / 760.154) — V61
         # V61 FIX: Previously missing from check_all. Overfilled conduit
         # causes overheating — NEC code violation and fire hazard.
         if num_current_carrying > 0:
             # Estimate wire diameter from gauge (conservative default)
-            wire_diameter_mm = getattr(wire_gauge, 'diameter_mm', None)
+            wire_diameter_mm = getattr(wire_gauge, "diameter_mm", None)
             if wire_diameter_mm is not None:
-                results.append(self.check_conduit_fill(
-                    wire_diameter_mm=wire_diameter_mm,
-                    num_cables=num_current_carrying,
-                ))
+                results.append(
+                    self.check_conduit_fill(
+                        wire_diameter_mm=wire_diameter_mm,
+                        num_cables=num_current_carrying,
+                    )
+                )
 
         # Compute summary
         violations = [r for r in results if not r.is_satisfied]

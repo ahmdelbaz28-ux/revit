@@ -43,23 +43,24 @@ Provenance:
   Returns ``DecisionProvenance`` via the ``.new()`` factory when
   ``src.v8_core`` is available; degrades gracefully to plain dict.
 """
+
 from __future__ import annotations
 
 import logging
 from collections import deque
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
 # ---------------------------------------------------------------------------
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -94,6 +95,7 @@ class PanelNode:
         location: (x, y) coordinate for routing.
         is_master: Whether this is the master (central) panel.
     """
+
     panel_id: str
     building_id: str
     location: Tuple[float, float] = (0.0, 0.0)
@@ -112,6 +114,7 @@ class NetworkLink:
         is_class_x: Whether this link has redundant path (Class X).
         length_m: Physical cable length in metres.
     """
+
     link_id: str
     from_panel: str
     to_panel: str
@@ -189,17 +192,21 @@ class NetworkTopologyAuditor:
                 f"alarm sequences."
             )
             if Violation is not None:
-                violations.append(Violation(
-                    severity="CRITICAL",
-                    citation=_CITE_NFPA72_23_8,
-                    description=desc,
-                ))
+                violations.append(
+                    Violation(
+                        severity="CRITICAL",
+                        citation=_CITE_NFPA72_23_8,
+                        description=desc,
+                    )
+                )
             else:
-                violations.append({
-                    "severity": "CRITICAL",
-                    "citation": _CITE_NFPA72_23_8,
-                    "description": desc,
-                })
+                violations.append(
+                    {
+                        "severity": "CRITICAL",
+                        "citation": _CITE_NFPA72_23_8,
+                        "description": desc,
+                    }
+                )
             logger.critical(desc)
 
         # MEDIUM: Multiple masters silently overwritten
@@ -211,17 +218,21 @@ class NetworkTopologyAuditor:
                 f"failures."
             )
             if Violation is not None:
-                violations.append(Violation(
-                    severity="HIGH",
-                    citation=_CITE_NFPA72_23_8,
-                    description=desc,
-                ))
+                violations.append(
+                    Violation(
+                        severity="HIGH",
+                        citation=_CITE_NFPA72_23_8,
+                        description=desc,
+                    )
+                )
             else:
-                violations.append({
-                    "severity": "HIGH",
-                    "citation": _CITE_NFPA72_23_8,
-                    "description": desc,
-                })
+                violations.append(
+                    {
+                        "severity": "HIGH",
+                        "citation": _CITE_NFPA72_23_8,
+                        "description": desc,
+                    }
+                )
             logger.warning(desc)
 
         # Build adjacency list (undirected)
@@ -270,35 +281,41 @@ class NetworkTopologyAuditor:
                     f"this panel from the master."
                 )
                 if Violation is not None:
-                    violations.append(Violation(
-                        severity="CRITICAL",
-                        citation=_CITE_NFPA72_23_8,
-                        description=desc,
-                    ))
+                    violations.append(
+                        Violation(
+                            severity="CRITICAL",
+                            citation=_CITE_NFPA72_23_8,
+                            description=desc,
+                        )
+                    )
                 else:
-                    violations.append({
-                        "severity": "CRITICAL",
-                        "citation": _CITE_NFPA72_23_8,
-                        "description": desc,
-                    })
+                    violations.append(
+                        {
+                            "severity": "CRITICAL",
+                            "citation": _CITE_NFPA72_23_8,
+                            "description": desc,
+                        }
+                    )
                 logger.critical(desc)
 
         # Check 2: All non-Class-X links are single points of failure
         for lid, details in link_details.items():
             if not details["is_class_x"]:
-                fiber_recommendations.append({
-                    "link_id": lid,
-                    "from": details["from"],
-                    "to": details["to"],
-                    "current_type": details["link_type"],
-                    "recommended_type": "fiber_dual",
-                    "reason": (
-                        f"{details['link_type']} link without Class X "
-                        f"redundancy is a single point of failure. "
-                        f"Replace with dual fiber optic ring per "
-                        f"NFPA 72 §23.8."
-                    ),
-                })
+                fiber_recommendations.append(
+                    {
+                        "link_id": lid,
+                        "from": details["from"],
+                        "to": details["to"],
+                        "current_type": details["link_type"],
+                        "recommended_type": "fiber_dual",
+                        "reason": (
+                            f"{details['link_type']} link without Class X "
+                            f"redundancy is a single point of failure. "
+                            f"Replace with dual fiber optic ring per "
+                            f"NFPA 72 §23.8."
+                        ),
+                    }
+                )
 
         # Check 3: Master panel must have ≥2 connections (if network >1)
         if master_id and len(panel_ids) > 1:
@@ -311,17 +328,21 @@ class NetworkTopologyAuditor:
                     f"network. Ring topology requires ≥2 connections."
                 )
                 if Violation is not None:
-                    violations.append(Violation(
-                        severity="CRITICAL",
-                        citation=_CITE_NFPA72_23_8,
-                        description=desc,
-                    ))
+                    violations.append(
+                        Violation(
+                            severity="CRITICAL",
+                            citation=_CITE_NFPA72_23_8,
+                            description=desc,
+                        )
+                    )
                 else:
-                    violations.append({
-                        "severity": "CRITICAL",
-                        "citation": _CITE_NFPA72_23_8,
-                        "description": desc,
-                    })
+                    violations.append(
+                        {
+                            "severity": "CRITICAL",
+                            "citation": _CITE_NFPA72_23_8,
+                            "description": desc,
+                        }
+                    )
                 logger.critical(desc)
 
         # Determine topology type
@@ -337,17 +358,21 @@ class NetworkTopologyAuditor:
                 f"on a single connected Class X network."
             )
             if Violation is not None:
-                violations.append(Violation(
-                    severity="CRITICAL",
-                    citation=_CITE_NFPA72_23_8,
-                    description=desc,
-                ))
+                violations.append(
+                    Violation(
+                        severity="CRITICAL",
+                        citation=_CITE_NFPA72_23_8,
+                        description=desc,
+                    )
+                )
             else:
-                violations.append({
-                    "severity": "CRITICAL",
-                    "citation": _CITE_NFPA72_23_8,
-                    "description": desc,
-                })
+                violations.append(
+                    {
+                        "severity": "CRITICAL",
+                        "citation": _CITE_NFPA72_23_8,
+                        "description": desc,
+                    }
+                )
             logger.critical(desc)
 
         # V20.2 FIX: Check 4 — Bridge detection (2-edge-connectivity).
@@ -387,17 +412,21 @@ class NetworkTopologyAuditor:
                         f"Add a redundant path between these panels."
                     )
                     if Violation is not None:
-                        violations.append(Violation(
-                            severity="CRITICAL",
-                            citation=_CITE_NFPA72_23_8,
-                            description=desc,
-                        ))
+                        violations.append(
+                            Violation(
+                                severity="CRITICAL",
+                                citation=_CITE_NFPA72_23_8,
+                                description=desc,
+                            )
+                        )
                     else:
-                        violations.append({
-                            "severity": "CRITICAL",
-                            "citation": _CITE_NFPA72_23_8,
-                            "description": desc,
-                        })
+                        violations.append(
+                            {
+                                "severity": "CRITICAL",
+                                "citation": _CITE_NFPA72_23_8,
+                                "description": desc,
+                            }
+                        )
                     logger.critical(desc)
 
         # Classify overall compliance
@@ -553,8 +582,8 @@ class NetworkTopologyAuditor:
         """
         # Tarjan's bridge-finding: O(V + E)
         visited = set()
-        disc = {}   # discovery time
-        low = {}    # low-link value
+        disc = {}  # discovery time
+        low = {}  # low-link value
         parent = {}
         bridges = []
         timer = [0]  # mutable counter

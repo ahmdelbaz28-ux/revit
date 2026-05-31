@@ -50,9 +50,8 @@ import sqlite3
 import threading
 import time
 from collections import OrderedDict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, FrozenSet, List, Optional, Set, Tuple
-
 
 logger = logging.getLogger(__name__)
 
@@ -61,14 +60,14 @@ logger = logging.getLogger(__name__)
 # Content hash — O(1) change detection
 # ---------------------------------------------------------------------------
 
+
 def _content_hash(obj: Any) -> str:
     """
     SHA-256 of serialised content. Used for change detection.
     Consistent: same logical content → same hash (sorted keys).
     """
     try:
-        payload = json.dumps(obj, sort_keys=True, default=str,
-                             separators=(",", ":"), ensure_ascii=False)
+        payload = json.dumps(obj, sort_keys=True, default=str, separators=(",", ":"), ensure_ascii=False)
     except (TypeError, ValueError):
         payload = str(obj)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
@@ -78,28 +77,32 @@ def _content_hash(obj: Any) -> str:
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CacheEntry:
     """One cached computation result."""
-    key:          str          # (node_id, content_hash) → combined key
-    result:       Any          # Cached computation output
-    content_hash: str          # Hash of input that produced this result
-    computed_at:  float        # Unix timestamp
-    hit_count:    int = 0
+
+    key: str  # (node_id, content_hash) → combined key
+    result: Any  # Cached computation output
+    content_hash: str  # Hash of input that produced this result
+    computed_at: float  # Unix timestamp
+    hit_count: int = 0
     compute_time_s: float = 0.0
 
 
 @dataclass
 class DependencyEdge:
     """Directed edge: source_id depends on target_id."""
-    source_id: str   # The dependent (e.g. cable_route_id)
-    target_id: str   # The dependency (e.g. room_id)
-    edge_type: str   # "room→cable", "room→floor", "floor→report"
+
+    source_id: str  # The dependent (e.g. cable_route_id)
+    target_id: str  # The dependency (e.g. room_id)
+    edge_type: str  # "room→cable", "room→floor", "floor→report"
 
 
 # ---------------------------------------------------------------------------
 # LRU Cache with TTL
 # ---------------------------------------------------------------------------
+
 
 class _LRUCache:
     """
@@ -109,11 +112,11 @@ class _LRUCache:
 
     def __init__(self, maxsize: int = 10_000, ttl_s: float = 0.0) -> None:
         self._maxsize = maxsize
-        self._ttl     = ttl_s
-        self._data:   OrderedDict[str, CacheEntry] = OrderedDict()
-        self._lock    = threading.Lock()
-        self.hits     = 0
-        self.misses   = 0
+        self._ttl = ttl_s
+        self._data: OrderedDict[str, CacheEntry] = OrderedDict()
+        self._lock = threading.Lock()
+        self.hits = 0
+        self.misses = 0
 
     def get(self, key: str) -> Optional[CacheEntry]:
         with self._lock:
@@ -168,10 +171,10 @@ class _LRUCache:
 
     def stats(self) -> Dict[str, Any]:
         return {
-            "size":     self.size,
-            "maxsize":  self._maxsize,
-            "hits":     self.hits,
-            "misses":   self.misses,
+            "size": self.size,
+            "maxsize": self._maxsize,
+            "hits": self.hits,
+            "misses": self.misses,
             "hit_rate": round(self.hit_rate * 100, 2),
         }
 
@@ -179,6 +182,7 @@ class _LRUCache:
 # ---------------------------------------------------------------------------
 # Dependency Graph
 # ---------------------------------------------------------------------------
+
 
 class _DependencyGraph:
     """
@@ -218,7 +222,7 @@ class _DependencyGraph:
         These must all be invalidated when node_id changes.
         """
         visited: Set[str] = set()
-        queue:   List[str] = [node_id]
+        queue: List[str] = [node_id]
         with self._lock:
             while queue:
                 current = queue.pop()
@@ -231,9 +235,9 @@ class _DependencyGraph:
     def stats(self) -> Dict[str, int]:
         with self._lock:
             return {
-                "nodes":       len(self._dependents) + len(self._dependencies),
+                "nodes": len(self._dependents) + len(self._dependencies),
                 "unique_nodes": len(set(self._dependents) | set(self._dependencies)),
-                "edges":       sum(len(v) for v in self._dependencies.values()),
+                "edges": sum(len(v) for v in self._dependencies.values()),
             }
 
 
@@ -248,6 +252,7 @@ _ALGORITHM_VERSION = "v30.0"
 # ---------------------------------------------------------------------------
 # DeltaCache — Main Public API
 # ---------------------------------------------------------------------------
+
 
 class DeltaCache:
     """
@@ -277,24 +282,24 @@ class DeltaCache:
 
     def __init__(
         self,
-        maxsize:  int   = 50_000,
-        ttl_s:    float = 0.0,     # 0 = no TTL
-        hash_fn:  Optional[Callable] = None,
+        maxsize: int = 50_000,
+        ttl_s: float = 0.0,  # 0 = no TTL
+        hash_fn: Optional[Callable] = None,
         # Legacy parameters (backward compatible with BuildingEngine)
-        db_path:  Optional[str] = None,
+        db_path: Optional[str] = None,
         algorithm_version: str = _ALGORITHM_VERSION,
     ) -> None:
         self._cache = _LRUCache(maxsize=maxsize, ttl_s=ttl_s)
         self._graph = _DependencyGraph()
-        self._hash  = hash_fn or _content_hash
-        self._lock  = threading.RLock()
+        self._hash = hash_fn or _content_hash
+        self._lock = threading.RLock()
         self._db_path = db_path
         self._algorithm_version = algorithm_version
 
         # Metrics
-        self.total_computes:    int   = 0
-        self.total_invalidates: int   = 0
-        self.saved_computes:    int   = 0
+        self.total_computes: int = 0
+        self.total_invalidates: int = 0
+        self.saved_computes: int = 0
 
         # Legacy stats (backward compat)
         self._legacy_stats = {"hits": 0, "misses": 0, "invalidations": 0}
@@ -309,8 +314,8 @@ class DeltaCache:
 
     def get_or_compute(
         self,
-        node_id:    str,
-        content:    Any,
+        node_id: str,
+        content: Any,
         compute_fn: Callable[[], Any],
         depends_on: Optional[List[str]] = None,
     ) -> Any:
@@ -326,7 +331,7 @@ class DeltaCache:
         blocking other cache operations during computation.
         """
         content_hash = self._hash(content)
-        cache_key    = f"{node_id}:{content_hash}"
+        cache_key = f"{node_id}:{content_hash}"
 
         # Register dependencies
         if depends_on:
@@ -340,18 +345,21 @@ class DeltaCache:
             return entry.result
 
         # Cache miss — compute OUTSIDE the lock
-        t0     = time.perf_counter()
+        t0 = time.perf_counter()
         result = compute_fn()
         elapsed = time.perf_counter() - t0
 
-        self._cache.put(cache_key, CacheEntry(
-            key=cache_key,
-            result=result,
-            content_hash=content_hash,
-            computed_at=time.time(),
-            compute_time_s=elapsed,
-        ))
-        self.total_computes += 1   # V44 NOTE: Not thread-safe but acceptable for stats counter
+        self._cache.put(
+            cache_key,
+            CacheEntry(
+                key=cache_key,
+                result=result,
+                content_hash=content_hash,
+                computed_at=time.time(),
+                compute_time_s=elapsed,
+            ),
+        )
+        self.total_computes += 1  # V44 NOTE: Not thread-safe but acceptable for stats counter
         return result
 
     def invalidate(
@@ -386,7 +394,7 @@ class DeltaCache:
     def invalidate_batch(
         self,
         node_ids: List[str],
-        cascade:  bool = True,
+        cascade: bool = True,
     ) -> FrozenSet[str]:
         """Invalidate multiple nodes. Returns union of all invalidated ids."""
         all_invalidated: Set[str] = set()
@@ -400,7 +408,7 @@ class DeltaCache:
 
     def add_dependency(
         self,
-        node_id:    str,
+        node_id: str,
         depends_on: str,
     ) -> None:
         """Register: node_id's result depends on depends_on."""
@@ -418,12 +426,16 @@ class DeltaCache:
     def put(self, node_id: str, content: Any, result: Any) -> None:
         """Directly store a pre-computed result."""
         content_hash = self._hash(content)
-        cache_key    = f"{node_id}:{content_hash}"
-        self._cache.put(cache_key, CacheEntry(
-            key=cache_key, result=result,
-            content_hash=content_hash,
-            computed_at=time.time(),
-        ))
+        cache_key = f"{node_id}:{content_hash}"
+        self._cache.put(
+            cache_key,
+            CacheEntry(
+                key=cache_key,
+                result=result,
+                content_hash=content_hash,
+                computed_at=time.time(),
+            ),
+        )
 
     def get(self, node_id: str, content: Any) -> Optional[Any]:
         """Direct cache lookup without compute fallback."""
@@ -519,7 +531,7 @@ class DeltaCache:
                     cached_with_meta["_cache_hit"] = True
                     cached_with_meta["_geometry_hash"] = self._compute_geometry_hash(room_dict)
                     results.append(cached_with_meta)
-                    time_saved += (time.time() - t_room)
+                    time_saved += time.time() - t_room
                     continue
 
             # Cache miss — run full analysis
@@ -631,14 +643,12 @@ class DeltaCache:
     def stats_summary(self) -> Dict[str, Any]:
         """Detailed statistics (Section 11.2 API)."""
         return {
-            "cache":          self._cache.stats(),
-            "graph":          self._graph.stats(),
+            "cache": self._cache.stats(),
+            "graph": self._graph.stats(),
             "total_computes": self.total_computes,
             "saved_computes": self.saved_computes,
-            "invalidates":    self.total_invalidates,
-            "efficiency_pct": round(
-                100.0 * self.saved_computes /
-                max(self.saved_computes + self.total_computes, 1), 2),
+            "invalidates": self.total_invalidates,
+            "efficiency_pct": round(100.0 * self.saved_computes / max(self.saved_computes + self.total_computes, 1), 2),
         }
 
     # Alias: test calls cache.stats() expecting the dict return
@@ -689,20 +699,22 @@ class DeltaCache:
         try:
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT room_id, geometry_hash, algorithm_version,
                        ceiling_height, detector_type, result_json,
                        timestamp, hit_count
                 FROM delta_cache
                 WHERE algorithm_version = ?
-            """, (self._algorithm_version,))
+            """,
+                (self._algorithm_version,),
+            )
 
             rows = cursor.fetchall()
             conn.close()
 
             for row in rows:
-                (room_id, geo_hash, algo_ver, ceiling_h,
-                 det_type, result_json, ts, hit_count) = row
+                (room_id, geo_hash, algo_ver, ceiling_h, det_type, result_json, ts, hit_count) = row
                 try:
                     result = json.loads(result_json)
                 except json.JSONDecodeError:
@@ -713,13 +725,16 @@ class DeltaCache:
                 content_hash = self._hash(content)
                 cache_key = f"{room_id}:{content_hash}"
 
-                self._cache.put(cache_key, CacheEntry(
-                    key=cache_key,
-                    result=result,
-                    content_hash=content_hash,
-                    computed_at=ts,
-                    hit_count=hit_count,
-                ))
+                self._cache.put(
+                    cache_key,
+                    CacheEntry(
+                        key=cache_key,
+                        result=result,
+                        content_hash=content_hash,
+                        computed_at=ts,
+                        hit_count=hit_count,
+                    ),
+                )
 
             logger.info("DeltaCache: Loaded %d entries from %s", len(rows), self._db_path)
 

@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 # 4-TIER CONFIDENCE SCORING
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class SafetyTier(enum.Enum):
     """4-tier confidence scoring for fire safety designs.
 
@@ -75,16 +76,17 @@ class SafetyTier(enum.Enum):
       both are "VERIFIED" by the engines. The 4th tier distinguishes
       mathematical certainty from statistical likelihood.
     """
+
     PROOF_VERIFIED = "PROOF_VERIFIED"  # Tier 1: coverage ≥ 99.99%
-    PROOF_VALID = "PROOF_VALID"        # Tier 2: coverage 99%–99.99%
-    FALLBACK_USED = "FALLBACK_USED"    # Tier 3: coverage 95%–99%
-    REJECTED = "REJECTED"              # Tier 4: coverage < 95%
+    PROOF_VALID = "PROOF_VALID"  # Tier 2: coverage 99%–99.99%
+    FALLBACK_USED = "FALLBACK_USED"  # Tier 3: coverage 95%–99%
+    REJECTED = "REJECTED"  # Tier 4: coverage < 95%
 
 
 # Coverage thresholds (internal quality gates; NFPA 72 requires 100% coverage)
-MINIMUM_COVERAGE_FOR_SUBMISSION = 95.0   # Below this = REJECTED
-STANDARD_COVERAGE_THRESHOLD = 99.0       # Below this = FALLBACK_USED
-PROOF_VERIFIED_THRESHOLD = 99.5          # Above this = PROOF_VERIFIED
+MINIMUM_COVERAGE_FOR_SUBMISSION = 95.0  # Below this = REJECTED
+STANDARD_COVERAGE_THRESHOLD = 99.0  # Below this = FALLBACK_USED
+PROOF_VERIFIED_THRESHOLD = 99.5  # Above this = PROOF_VERIFIED
 
 # Absolute minimum coverage — CANNOT be overridden even by FPE
 ABSOLUTE_MINIMUM_COVERAGE = 90.0
@@ -122,6 +124,7 @@ def classify_safety_tier(
     # With proof_valid=True, NaN falls through to PROOF_VALID (Tier 2, submittable).
     # This allows a design with unknown coverage to be submitted to an AHJ.
     import math as _safety_math
+
     if coverage_pct is None or not _safety_math.isfinite(coverage_pct):
         return SafetyTier.REJECTED
 
@@ -170,6 +173,7 @@ def tier_can_submit(tier: SafetyTier) -> bool:
 # ═══════════════════════════════════════════════════════════════════════════════
 # FAIL-SAFE BEHAVIOR RULES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class FailSafeRule:
     """Fail-safe rules for the FireAI system.
@@ -310,8 +314,7 @@ def apply_fail_safe(
     if coverage_pct is not None:
         if coverage_pct < ABSOLUTE_MINIMUM_COVERAGE:
             reasons.append(
-                f"Coverage {coverage_pct:.1f}% is below absolute minimum "
-                f"{ABSOLUTE_MINIMUM_COVERAGE}%. Cannot override."
+                f"Coverage {coverage_pct:.1f}% is below absolute minimum {ABSOLUTE_MINIMUM_COVERAGE}%. Cannot override."
             )
             actions_list = ["Coverage below absolute minimum — redesign required"]
             if coverage_pct < 90:
@@ -319,9 +322,7 @@ def apply_fail_safe(
                     f"Catastrophically low coverage ({coverage_pct:.1f}%) — fire will spread undetected"
                 )
             elif coverage_pct < 95:
-                actions_list.append(
-                    f"Insufficient coverage ({coverage_pct:.1f}%) — add more detectors per NFPA 72"
-                )
+                actions_list.append(f"Insufficient coverage ({coverage_pct:.1f}%) — add more detectors per NFPA 72")
             actions_list.extend(f"Error: {e}" for e in (errors or [])[:5])
             return {
                 "safe_to_submit": False,
@@ -343,10 +344,8 @@ def apply_fail_safe(
     # V52 FIX: `coverage_pct or 0.0` returns NaN when coverage_pct=NaN
     # because NaN is truthy in Python. NaN propagates into classifier.
     import math as _fs_math
-    safe_coverage = (
-        coverage_pct if (coverage_pct is not None and _fs_math.isfinite(coverage_pct))
-        else 0.0
-    )
+
+    safe_coverage = coverage_pct if (coverage_pct is not None and _fs_math.isfinite(coverage_pct)) else 0.0
     tier = classify_safety_tier(
         coverage_pct=safe_coverage,
         proof_valid=proof_valid or False,
@@ -380,7 +379,8 @@ def apply_fail_safe(
         pass  # No actions needed — proof verified means design is safe
 
     recommendation = (
-        "Design meets safety requirements and may be submitted." if safe
+        "Design meets safety requirements and may be submitted."
+        if safe
         else "Do NOT submit — safety requirements not met. Redesign required."
     )
 
@@ -402,6 +402,7 @@ def apply_fail_safe(
 # OVERRIDE AUTHORIZATION MATRIX
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class OverrideRole(enum.Enum):
     """Roles that can override safety decisions.
 
@@ -412,37 +413,38 @@ class OverrideRole(enum.Enum):
       - SENIOR_ENGINEER: Senior engineer (limited overrides)
       - QA_AUDITOR: Quality assurance auditor (can verify/approve overrides)
     """
-    FPE = "FPE"                          # Fire Protection Engineer
-    AHJ = "AHJ"                          # Authority Having Jurisdiction
+
+    FPE = "FPE"  # Fire Protection Engineer
+    AHJ = "AHJ"  # Authority Having Jurisdiction
     SENIOR_ENGINEER = "SENIOR_ENGINEER"  # Senior engineer
-    QA_AUDITOR = "QA_AUDITOR"            # Quality assurance auditor
+    QA_AUDITOR = "QA_AUDITOR"  # Quality assurance auditor
 
 
 # What CANNOT be overridden — ever
 NON_OVERRIDABLE = {
-    "proof_valid_false",       # Failed proof is never acceptable
-    "coverage_below_90",       # Absolute minimum
-    "audit_chain_broken",      # System integrity
-    "hmac_key_invalid",        # System integrity
+    "proof_valid_false",  # Failed proof is never acceptable
+    "coverage_below_90",  # Absolute minimum
+    "audit_chain_broken",  # System integrity
+    "hmac_key_invalid",  # System integrity
 }
 
 
 # What CAN be overridden and by whom
 OVERRIDE_PERMISSIONS = {
     OverrideRole.FPE: {
-        "coverage_threshold",   # Can lower to 90% minimum
-        "wall_distance",        # Can waive with justification
-        "detector_type",        # Can change with NFPA reference
+        "coverage_threshold",  # Can lower to 90% minimum
+        "wall_distance",  # Can waive with justification
+        "detector_type",  # Can change with NFPA reference
         "spacing_calculation",  # Can adjust with manual verification
     },
     OverrideRole.AHJ: {
-        "coverage_threshold",   # AHJ has authority over all technical parameters
+        "coverage_threshold",  # AHJ has authority over all technical parameters
         "wall_distance",
         "detector_type",
         "spacing_calculation",
     },
     OverrideRole.SENIOR_ENGINEER: {
-        "coverage_threshold",   # Can lower to 90% for standard rooms only
+        "coverage_threshold",  # Can lower to 90% for standard rooms only
     },
     OverrideRole.QA_AUDITOR: set(),  # QA auditor verifies but does not override
 }
@@ -469,6 +471,7 @@ class OverrideRecord:
       risk_assessment: Assessment of risk from the override.
       timestamp: UTC ISO timestamp (auto-generated if not provided).
     """
+
     override_id: str
     tier_from: str
     tier_to: str
@@ -476,17 +479,13 @@ class OverrideRecord:
     authorizer_role: OverrideRole
     justification: str
     risk_assessment: str
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def __post_init__(self):
         # V110 FIX: Removed 50-char minimum — test contract allows short justifications.
         # The justification field is still required (non-empty) for audit trail.
         if not self.justification or not self.justification.strip():
-            raise ValueError(
-                "Override justification must not be empty"
-            )
+            raise ValueError("Override justification must not be empty")
         # V109: Check if tier_from is non-overridable
         if self.tier_from in NON_OVERRIDABLE:
             raise ValueError(
@@ -563,53 +562,75 @@ def check_review_triggers(
     # (NaN < 99.0 = False) also suppressed all triggers.
     # Now: None/NaN = UNKNOWN = MUST trigger review (conservative/fail-safe).
     import math as _review_math
+
     triggers = []
 
     # coverage_pct: None or non-finite → MUST trigger review
     if coverage_pct is None or not _review_math.isfinite(coverage_pct) or coverage_pct < 99.0:
-        val_str = (f"coverage={'NaN/Inf' if coverage_pct is not None and not _review_math.isfinite(coverage_pct) else coverage_pct}%"
-                   if coverage_pct is not None else "coverage=UNKNOWN")
-        triggers.append({
-            **MANDATORY_REVIEW_TRIGGERS["coverage_below_99"],
-            "actual_value": val_str,
-        })
+        val_str = (
+            f"coverage={'NaN/Inf' if coverage_pct is not None and not _review_math.isfinite(coverage_pct) else coverage_pct}%"
+            if coverage_pct is not None
+            else "coverage=UNKNOWN"
+        )
+        triggers.append(
+            {
+                **MANDATORY_REVIEW_TRIGGERS["coverage_below_99"],
+                "actual_value": val_str,
+            }
+        )
 
     # room_shape: None or non-rectangular → MUST trigger review
     if room_shape is None or room_shape != "rectangular":
-        triggers.append({
-            **MANDATORY_REVIEW_TRIGGERS["non_rectangular_room"],
-            "actual_value": f"shape={room_shape if room_shape is not None else 'UNKNOWN'}",
-        })
+        triggers.append(
+            {
+                **MANDATORY_REVIEW_TRIGGERS["non_rectangular_room"],
+                "actual_value": f"shape={room_shape if room_shape is not None else 'UNKNOWN'}",
+            }
+        )
 
     # ceiling_height_m: None or non-finite or > 9.1m → MUST trigger review
     if ceiling_height_m is None or not _review_math.isfinite(ceiling_height_m) or ceiling_height_m > 9.1:
-        val_str = (f"height={'NaN/Inf' if ceiling_height_m is not None and not _review_math.isfinite(ceiling_height_m) else ceiling_height_m:.1f}m"
-                   if ceiling_height_m is not None else "height=UNKNOWN")
-        triggers.append({
-            **MANDATORY_REVIEW_TRIGGERS["ceiling_height_above_9.1m"],
-            "actual_value": val_str,
-        })
+        val_str = (
+            f"height={'NaN/Inf' if ceiling_height_m is not None and not _review_math.isfinite(ceiling_height_m) else ceiling_height_m:.1f}m"
+            if ceiling_height_m is not None
+            else "height=UNKNOWN"
+        )
+        triggers.append(
+            {
+                **MANDATORY_REVIEW_TRIGGERS["ceiling_height_above_9.1m"],
+                "actual_value": val_str,
+            }
+        )
 
     if override_used:
-        triggers.append({
-            **MANDATORY_REVIEW_TRIGGERS["override_used"],
-            "actual_value": "override_applied=True",
-        })
+        triggers.append(
+            {
+                **MANDATORY_REVIEW_TRIGGERS["override_used"],
+                "actual_value": "override_applied=True",
+            }
+        )
 
     # confidence_score: None or non-finite or < 80 → MUST trigger review
     if confidence_score is None or not _review_math.isfinite(confidence_score) or confidence_score < 80.0:
-        val_str = (f"confidence={'NaN/Inf' if confidence_score is not None and not _review_math.isfinite(confidence_score) else confidence_score:.1f}"
-                   if confidence_score is not None else "confidence=UNKNOWN")
-        triggers.append({
-            **MANDATORY_REVIEW_TRIGGERS["system_confidence_below_80"],
-            "actual_value": val_str,
-        })
+        val_str = (
+            f"confidence={'NaN/Inf' if confidence_score is not None and not _review_math.isfinite(confidence_score) else confidence_score:.1f}"
+            if confidence_score is not None
+            else "confidence=UNKNOWN"
+        )
+        triggers.append(
+            {
+                **MANDATORY_REVIEW_TRIGGERS["system_confidence_below_80"],
+                "actual_value": val_str,
+            }
+        )
 
     if total_rooms > 0 and (flagged_rooms / total_rooms) > 0.10:
-        triggers.append({
-            **MANDATORY_REVIEW_TRIGGERS["more_than_10pct_rooms_flagged"],
-            "actual_value": f"flagged={flagged_rooms}/{total_rooms}",
-        })
+        triggers.append(
+            {
+                **MANDATORY_REVIEW_TRIGGERS["more_than_10pct_rooms_flagged"],
+                "actual_value": f"flagged={flagged_rooms}/{total_rooms}",
+            }
+        )
 
     return triggers
 
@@ -617,6 +638,7 @@ def check_review_triggers(
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENGINEERING EVIDENCE PACKAGE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class EngineeringEvidencePackage:
@@ -633,6 +655,7 @@ class EngineeringEvidencePackage:
       - Audit trail (hash chain, HMAC signatures)
       - Signatures (engineer, FPE, system authenticity)
     """
+
     package_id: str
     room_id: str
     room_polygon: List[Tuple[float, float]]
@@ -668,9 +691,7 @@ class EngineeringEvidencePackage:
     system_certificate: Optional[str] = None
 
     # Metadata
-    created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     algorithm_version: str = "V20.2"
 
     def __post_init__(self):
@@ -686,7 +707,7 @@ class EngineeringEvidencePackage:
         computation — if they differ, the package was tampered with.
         """
         if self.proof_hash is None:
-            object.__setattr__(self, 'proof_hash', self.compute_integrity_hash())
+            object.__setattr__(self, "proof_hash", self.compute_integrity_hash())
 
     def compute_integrity_hash(self) -> str:
         """Compute SHA-256 hash of the entire evidence package for integrity.
@@ -697,32 +718,35 @@ class EngineeringEvidencePackage:
         to avoid high-ceiling derating, and the hash would still validate.
         Now includes all design-critical fields per NFPA 72 §7.4.
         """
-        payload = json.dumps({
-            "package_id": self.package_id,
-            "room_id": self.room_id,
-            "detector_positions": sorted(self.detector_positions),
-            "coverage_pct": self.coverage_pct,
-            "proof_valid": self.proof_valid,
-            "safety_tier": self.safety_tier,
-            "algorithm_version": self.algorithm_version,
-            # V43: Added design-critical fields previously excluded
-            "room_polygon": getattr(self, "room_polygon", None),
-            "ceiling_height_m": getattr(self, "ceiling_height_m", None),
-            "spacing_m": getattr(self, "spacing_m", None),
-            "ceiling_type": getattr(self, "ceiling_type", None),
-            "wall_violations": getattr(self, "wall_violations", 0),
-            "nfpa_references": sorted(getattr(self, "nfpa_references", [])),
-            "audit_chain_valid": getattr(self, "audit_chain_valid", None),
-            # V53 FIX (AUDIT-010): occupancy_type and detector_type omitted from
-            # integrity hash. Changing hospital→warehouse or smoke→heat after
-            # hashing goes undetected. These determine NFPA 72 spacing rules
-            # (§17.6.3 vs §17.7.4) — tampering is life-safety critical.
-            "occupancy_type": self.occupancy_type,
-            "detector_type": self.detector_type,
-            "room_area_m2": self.room_area_m2,
-            "coverage_radius_m": self.coverage_radius_m,
-            "compliance_status": self.compliance_status,
-        }, sort_keys=True)
+        payload = json.dumps(
+            {
+                "package_id": self.package_id,
+                "room_id": self.room_id,
+                "detector_positions": sorted(self.detector_positions),
+                "coverage_pct": self.coverage_pct,
+                "proof_valid": self.proof_valid,
+                "safety_tier": self.safety_tier,
+                "algorithm_version": self.algorithm_version,
+                # V43: Added design-critical fields previously excluded
+                "room_polygon": getattr(self, "room_polygon", None),
+                "ceiling_height_m": getattr(self, "ceiling_height_m", None),
+                "spacing_m": getattr(self, "spacing_m", None),
+                "ceiling_type": getattr(self, "ceiling_type", None),
+                "wall_violations": getattr(self, "wall_violations", 0),
+                "nfpa_references": sorted(getattr(self, "nfpa_references", [])),
+                "audit_chain_valid": getattr(self, "audit_chain_valid", None),
+                # V53 FIX (AUDIT-010): occupancy_type and detector_type omitted from
+                # integrity hash. Changing hospital→warehouse or smoke→heat after
+                # hashing goes undetected. These determine NFPA 72 spacing rules
+                # (§17.6.3 vs §17.7.4) — tampering is life-safety critical.
+                "occupancy_type": self.occupancy_type,
+                "detector_type": self.detector_type,
+                "room_area_m2": self.room_area_m2,
+                "coverage_radius_m": self.coverage_radius_m,
+                "compliance_status": self.compliance_status,
+            },
+            sort_keys=True,
+        )
         return hashlib.sha256(payload.encode()).hexdigest()
 
 

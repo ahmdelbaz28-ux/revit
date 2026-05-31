@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ __all__ = [
 # Data Structures
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class SubmittalSection:
     """A section of the AHJ submittal package.
@@ -57,6 +58,7 @@ class SubmittalSection:
         nfpa_ref:  NFPA 72 reference for this section.
         required:  Whether this section is mandatory per NFPA 72.
     """
+
     title: str
     section_id: str = ""
     content: str = ""
@@ -80,6 +82,7 @@ class SubmittalPackage:
         warnings:         Non-fatal advisories.
         errors:           Fatal issues.
     """
+
     project_name: str = ""
     project_address: str = ""
     engineer_name: str = ""
@@ -103,6 +106,7 @@ class SubmittalResult:
         warnings:   Non-fatal advisories.
         errors:     Fatal issues.
     """
+
     output_path: str = ""
     section_count: int = 0
     file_count: int = 0
@@ -114,6 +118,7 @@ class SubmittalResult:
 # ============================================================================
 # Generator
 # ============================================================================
+
 
 class AHJSubmittalGenerator:
     """Generate an AHJ submittal package from FireAI outputs.
@@ -189,101 +194,121 @@ class AHJSubmittalGenerator:
         )
 
         # Section 1: Cover Page
-        pkg.sections.append(SubmittalSection(
-            section_id="1.0",
-            title="Cover Page",
-            content=self._cover_page_content(pkg),
-            nfpa_ref="NFPA 72 §7.4.1",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="1.0",
+                title="Cover Page",
+                content=self._cover_page_content(pkg),
+                nfpa_ref="NFPA 72 §7.4.1",
+                required=True,
+            )
+        )
 
         # Section 2: Riser Diagram (placeholder — actual DXF generated separately)
-        pkg.sections.append(SubmittalSection(
-            section_id="2.0",
-            title="System Riser Diagram",
-            content="See attached riser diagram DXF file.",
-            nfpa_ref="NFPA 72 §7.4.5",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="2.0",
+                title="System Riser Diagram",
+                content="See attached riser diagram DXF file.",
+                nfpa_ref="NFPA 72 §7.4.5",
+                required=True,
+            )
+        )
 
         # Section 3: Floor Plans (placeholder)
-        pkg.sections.append(SubmittalSection(
-            section_id="3.0",
-            title="Floor Plans",
-            content="See attached floor plan DXF files with device placement.",
-            nfpa_ref="NFPA 72 §7.4.2",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="3.0",
+                title="Floor Plans",
+                content="See attached floor plan DXF files with device placement.",
+                nfpa_ref="NFPA 72 §7.4.2",
+                required=True,
+            )
+        )
 
         # Section 4: Equipment Specifications
         equipment_content = self._equipment_specs_content(boq_result)
-        pkg.sections.append(SubmittalSection(
-            section_id="4.0",
-            title="Equipment Specifications",
-            content=equipment_content,
-            nfpa_ref="NFPA 72 §7.4.3",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="4.0",
+                title="Equipment Specifications",
+                content=equipment_content,
+                nfpa_ref="NFPA 72 §7.4.3",
+                required=True,
+            )
+        )
 
         # Section 5: BOQ
         boq_content = self._boq_content(boq_result)
-        pkg.sections.append(SubmittalSection(
-            section_id="5.0",
-            title="Bill of Quantities",
-            content=boq_content,
-            nfpa_ref="NFPA 72 §7.4.4",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="5.0",
+                title="Bill of Quantities",
+                content=boq_content,
+                nfpa_ref="NFPA 72 §7.4.4",
+                required=True,
+            )
+        )
 
         # Section 6: Voltage Drop Calculations
         vd_content = self._voltage_drop_content(voltage_drop_results)
-        pkg.sections.append(SubmittalSection(
-            section_id="6.0",
-            title="Voltage Drop Calculations",
-            content=vd_content,
-            nfpa_ref="NFPA 72 §10.14",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="6.0",
+                title="Voltage Drop Calculations",
+                content=vd_content,
+                nfpa_ref="NFPA 72 §10.14",
+                required=True,
+            )
+        )
 
         # Section 7: Battery Calculations
         bat_content = self._battery_content(battery_result)
-        pkg.sections.append(SubmittalSection(
-            section_id="7.0",
-            title="Battery Calculations",
-            content=bat_content,
-            nfpa_ref="NFPA 72 §10.6.7",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="7.0",
+                title="Battery Calculations",
+                content=bat_content,
+                nfpa_ref="NFPA 72 §10.6.7",
+                required=True,
+            )
+        )
 
         # Section 8: Pathway Survivability
         surv_content = self._survivability_content(survivability_result)
-        pkg.sections.append(SubmittalSection(
-            section_id="8.0",
-            title="Pathway Survivability Classification",
-            content=surv_content,
-            nfpa_ref="NFPA 72 §12.4",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="8.0",
+                title="Pathway Survivability Classification",
+                content=surv_content,
+                nfpa_ref="NFPA 72 §12.4",
+                required=True,
+            )
+        )
 
         # Section 9: NAC Circuit Loading
         nac_content = self._nac_content(nac_loading)
-        pkg.sections.append(SubmittalSection(
-            section_id="9.0",
-            title="NAC Circuit Loading",
-            content=nac_content,
-            nfpa_ref="NFPA 72 §18.5",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="9.0",
+                title="NAC Circuit Loading",
+                content=nac_content,
+                nfpa_ref="NFPA 72 §18.5",
+                required=True,
+            )
+        )
 
         # Section 10: Compliance Certification
         cert_content = self._certification_content(pkg, building_report)
-        pkg.sections.append(SubmittalSection(
-            section_id="10.0",
-            title="Compliance Certification",
-            content=cert_content,
-            nfpa_ref="NFPA 72 §7.4.6",
-            required=True,
-        ))
+        pkg.sections.append(
+            SubmittalSection(
+                section_id="10.0",
+                title="Compliance Certification",
+                content=cert_content,
+                nfpa_ref="NFPA 72 §7.4.6",
+                required=True,
+            )
+        )
 
         return pkg
 
@@ -310,8 +335,7 @@ class AHJSubmittalGenerator:
 
         if missing:
             package.warnings.append(
-                f"Missing required sections: {missing}. "
-                f"NFPA 72 §7.4 requires all these sections for submittal."
+                f"Missing required sections: {missing}. NFPA 72 §7.4 requires all these sections for submittal."
             )
 
         # Generate index
@@ -391,9 +415,7 @@ class AHJSubmittalGenerator:
         if hasattr(boq_result, "items"):
             for item in boq_result.items:
                 lines.append(
-                    f"  {item.item_type}: {item.description} "
-                    f"(Qty: {item.quantity} {item.unit}) "
-                    f"[{item.nfpa_reference}]"
+                    f"  {item.item_type}: {item.description} (Qty: {item.quantity} {item.unit}) [{item.nfpa_reference}]"
                 )
         return "\n".join(lines)
 
@@ -420,9 +442,9 @@ class AHJSubmittalGenerator:
         lines = ["VOLTAGE DROP CALCULATIONS\n", "NFPA 72 §10.14\n"]
         for i, vd in enumerate(results):
             lines.append(
-                f"  Circuit {i+1}: "
+                f"  Circuit {i + 1}: "
                 f"drop={vd.get('drop_v', 0):.2f}V "
-                f"({vd.get('drop_fraction', 0)*100:.1f}%) "
+                f"({vd.get('drop_fraction', 0) * 100:.1f}%) "
                 f"{'COMPLIANT' if vd.get('compliant') else 'NON-COMPLIANT'}"
             )
         return "\n".join(lines)
@@ -455,13 +477,8 @@ class AHJSubmittalGenerator:
         if hasattr(result, "cable_requirements"):
             lines.append("\nCable Requirements:")
             for req in result.cable_requirements:
-                enclosure = (
-                    f" in {req.enclosure_rating_hr:.0f}hr rated enclosure"
-                    if req.in_rated_enclosure else ""
-                )
-                lines.append(
-                    f"  • {req.route_type}: {req.cable_type.value} cable{enclosure}"
-                )
+                enclosure = f" in {req.enclosure_rating_hr:.0f}hr rated enclosure" if req.in_rated_enclosure else ""
+                lines.append(f"  • {req.route_type}: {req.cable_type.value} cable{enclosure}")
         return "\n".join(lines)
 
     @staticmethod

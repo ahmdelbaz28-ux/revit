@@ -13,23 +13,23 @@ V9 CHANGES (2026-05-14):
 - Added lru_cache memoization to pure calculation functions
 - Added get_smoke_detector_coverage_max_safe import
 """
+
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple, Optional, Literal
 from functools import lru_cache
+from typing import Any, Dict, List, Literal, Optional, Tuple
+
 from .nfpa72_models import (
     CeilingSpec,
-    RoomSpec,
     DetectorType,
-    HeatDetectionMode,
-    CeilingType,
-    CeilingHeightError,
-    get_smoke_detector_radius,
-    get_smoke_detector_radius_safe,          # V9: safe fallback
-    get_smoke_detector_coverage_max,
-    get_smoke_detector_coverage_max_safe,    # V9: safe fallback
     HeatDetectorSpec,
+    RoomSpec,
+    get_smoke_detector_coverage_max,
+    get_smoke_detector_radius,
+    get_smoke_detector_radius_safe,  # V9: safe fallback
 )
+
+
 def get_heat_detector_placement_params(
     spec: HeatDetectorSpec,
     ceiling_height_m: float,
@@ -55,6 +55,7 @@ def get_heat_detector_placement_params(
         # Height-adjusted reduction: use the heat spacing from NFPA 72 Table 17.6.3.1.1
         # This table is in nfpa72_calculations.py's _NFPA72_TABLE_17_6_3_1_1
         from .nfpa72_calculations import _NFPA72_TABLE_17_6_3_1_1
+
         for h_max, _, heat_spacing in _NFPA72_TABLE_17_6_3_1_1:
             if ceiling_height_m <= h_max:
                 adjusted_spacing = heat_spacing
@@ -66,6 +67,8 @@ def get_heat_detector_placement_params(
         "max_detector_spacing_m": adjusted_spacing,
         "coverage_type": "square_grid",
     }
+
+
 # ============================================================================
 # SMOKE DETECTOR RADIUS CALCULATIONS
 # ============================================================================
@@ -82,10 +85,10 @@ def calculate_smoke_detector_radius(ceiling_height_m: float) -> float:
         when spacing allows.
     """
     return get_smoke_detector_radius_safe(ceiling_height_m)  # V9: safe fallback
+
+
 def calculate_smoke_detector_spacing(
-    ceiling_spec: CeilingSpec,
-    room_width_m: float,
-    room_depth_m: float
+    ceiling_spec: CeilingSpec, room_width_m: float, room_depth_m: float
 ) -> Tuple[int, int]:
     """
     Calculate number of smoke detectors needed per NFPA 72 spacing.
@@ -106,15 +109,13 @@ def calculate_smoke_detector_spacing(
     num_width = max(1, math.ceil(room_width_m / spacing))
     num_depth = max(1, math.ceil(room_depth_m / spacing))
     return (num_width, num_depth)
+
+
 # ============================================================================
 # HEAT DETECTOR PLACEMENT - SQUARE GRID (Chebyshev Distance)
 # ============================================================================
 def calculate_heat_detector_coverage_chebyshev(
-    detector_x: float,
-    detector_y: float,
-    point_x: float,
-    point_y: float,
-    spacing_m: float = 6.1
+    detector_x: float, detector_y: float, point_x: float, point_y: float, spacing_m: float = 6.1
 ) -> bool:
     """
     Check if a point is covered by a heat detector using Chebyshev distance.
@@ -140,10 +141,10 @@ def calculate_heat_detector_coverage_chebyshev(
     dy = abs(point_y - detector_y)
     # Use >= to include boundary points
     return dx <= max_distance and dy <= max_distance
+
+
 def calculate_heat_detector_spacing_rectangular(
-    room_width_m: float,
-    room_depth_m: float,
-    spacing_m: float = 6.1
+    room_width_m: float, room_depth_m: float, spacing_m: float = 6.1
 ) -> Tuple[int, int]:
     """
     Calculate number of heat detectors needed using rectangular spacing.
@@ -158,10 +159,10 @@ def calculate_heat_detector_spacing_rectangular(
     num_width = max(1, math.ceil(room_width_m / spacing_m))
     num_depth = max(1, math.ceil(room_depth_m / spacing_m))
     return (num_width, num_depth)
+
+
 def generate_heat_detector_positions(
-    room_spec: RoomSpec,
-    ceiling_spec: CeilingSpec,
-    spacing_m: float = None
+    room_spec: RoomSpec, ceiling_spec: CeilingSpec, spacing_m: float = None
 ) -> List[Tuple[float, float]]:
     """
     Generate heat detector positions using square grid pattern.
@@ -177,9 +178,7 @@ def generate_heat_detector_positions(
     """
     if spacing_m is None:
         # Apply NFPA 72 height-adjusted spacing for heat detectors
-        heat_spec = calculate_coverage_radius_from_height(
-            ceiling_spec.height_m, detector_type="heat"
-        )
+        heat_spec = calculate_coverage_radius_from_height(ceiling_spec.height_m, detector_type="heat")
         spacing = heat_spec.spacing_max
     else:
         spacing = spacing_m
@@ -193,10 +192,10 @@ def generate_heat_detector_positions(
             y += spacing
         x += spacing
     return positions
+
+
 def is_point_covered_by_heat_detectors(
-    point: Tuple[float, float],
-    detector_positions: List[Tuple[float, float]],
-    spacing_m: float = 6.1
+    point: Tuple[float, float], detector_positions: List[Tuple[float, float]], spacing_m: float = 6.1
 ) -> bool:
     """
     Check if a point is covered by any heat detector.
@@ -214,13 +213,13 @@ def is_point_covered_by_heat_detectors(
         if calculate_heat_detector_coverage_chebyshev(dx, dy, px, py, spacing_m):
             return True
     return False
+
+
 # ============================================================================
 # SLOPED CEILING CALCULATIONS - Ridge Zone
 # ============================================================================
 def calculate_ridge_zone_boundary(
-    ridge_line: Tuple[float, float, float, float],
-    slope_degrees: float,
-    buffer_m: float = 0.9
+    ridge_line: Tuple[float, float, float, float], slope_degrees: float, buffer_m: float = 0.9
 ) -> Tuple[float, float, float, float]:
     """
     Calculate ridge zone boundary for sloped ceiling.
@@ -237,15 +236,14 @@ def calculate_ridge_zone_boundary(
         return ridge_line  # No ridge zone needed
     x1, y1, x2, y2 = ridge_line
     # Ridge zone is parallel to ridge line
-    return (
-        x1 - buffer_m, y1,
-        x2 + buffer_m, y2
-    )
+    return (x1 - buffer_m, y1, x2 + buffer_m, y2)
+
+
 def is_in_ridge_zone(
     point: Tuple[float, float],
     ridge_line: Tuple[float, float, float, float],
     slope_degrees: float,
-    buffer_m: float = 0.9
+    buffer_m: float = 0.9,
 ) -> bool:
     """
     Check if a point is in the ridge zone.
@@ -263,19 +261,19 @@ def is_in_ridge_zone(
     x1, y1, x2, y2 = ridge_line
     # Calculate perpendicular distance to ridge line
     # Using point-to-line distance formula
-    line_length = math.sqrt((x2-x1)**2 + (y2-y1)**2)
+    line_length = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     if line_length == 0:
         return False
     # Distance from point to ridge line
-    distance = abs((y2-y1)*px - (x2-x1)*py + x2*y1 - y2*x1) / line_length
+    distance = abs((y2 - y1) * px - (x2 - x1) * py + x2 * y1 - y2 * x1) / line_length
     # Check if within buffer and between endpoints
     min_x = min(x1, x2) - buffer_m
     max_x = max(x1, x2) + buffer_m
     min_y = min(y1, y2) - buffer_m
     max_y = max(y1, y2) + buffer_m
-    return (distance <= buffer_m and
-            min_x <= px <= max_x and
-            min_y <= py <= max_y)
+    return distance <= buffer_m and min_x <= px <= max_x and min_y <= py <= max_y
+
+
 def requires_ridge_zone_detector(ceiling_spec: CeilingSpec) -> bool:
     """
     Check if ceiling requires ridge zone detector.
@@ -285,13 +283,13 @@ def requires_ridge_zone_detector(ceiling_spec: CeilingSpec) -> bool:
         True if ridge zone detector is required
     """
     return ceiling_spec.is_sloped
+
+
 # ============================================================================
 # COMBINED CALCULATIONS
 # ============================================================================
 def calculate_detector_requirements(
-    room_spec: RoomSpec,
-    ceiling_spec: CeilingSpec,
-    detector_type: DetectorType = DetectorType.SMOKE
+    room_spec: RoomSpec, ceiling_spec: CeilingSpec, detector_type: DetectorType = DetectorType.SMOKE
 ) -> dict:
     """
     Calculate detector requirements for a room.
@@ -312,9 +310,7 @@ def calculate_detector_requirements(
     if detector_type == DetectorType.SMOKE:
         result["radius"] = get_smoke_detector_radius_safe(ceiling_spec.height_m)
         result["max_coverage"] = get_smoke_detector_coverage_max(ceiling_spec.height_m)
-        num_w, num_d = calculate_smoke_detector_spacing(
-            ceiling_spec, room_spec.width_m, room_spec.depth_m
-        )
+        num_w, num_d = calculate_smoke_detector_spacing(ceiling_spec, room_spec.width_m, room_spec.depth_m)
         result["detectors_width"] = num_w
         result["detectors_depth"] = num_d
         result["total_detectors"] = num_w * num_d
@@ -322,61 +318,42 @@ def calculate_detector_requirements(
         # CRITICAL FIX: Was hardcoded 9.1m (smoke spacing). Now uses
         # NFPA 72 height-adjusted spacing from Table 17.6.3.5.1.
         # At h≤3.0m: 6.1m (20ft), reducing at higher ceilings.
-        heat_spec = calculate_coverage_radius_from_height(
-            ceiling_spec.height_m, detector_type="heat"
-        )
+        heat_spec = calculate_coverage_radius_from_height(ceiling_spec.height_m, detector_type="heat")
         spacing = heat_spec.spacing_max
         result["spacing"] = spacing
-        num_w, num_d = calculate_heat_detector_spacing_rectangular(
-            room_spec.width_m, room_spec.depth_m, spacing
-        )
+        num_w, num_d = calculate_heat_detector_spacing_rectangular(room_spec.width_m, room_spec.depth_m, spacing)
         result["detectors_width"] = num_w
         result["detectors_depth"] = num_d
         result["total_detectors"] = num_w * num_d
     return result
+
+
 # Test exported symbols
-__all__ = [\
-\
+__all__ = [
     # Smoke calculations\
-\
-    "calculate_smoke_detector_radius",\
-\
-    "calculate_smoke_detector_spacing",\
-\
-    "get_smoke_detector_radius",\
-\
-    "get_smoke_detector_coverage_max",\
-\
+    "calculate_smoke_detector_radius",
+    "calculate_smoke_detector_spacing",
+    "get_smoke_detector_radius",
+    "get_smoke_detector_coverage_max",
     # Heat calculations\
-\
-    "calculate_heat_detector_coverage_chebyshev",\
-\
-    "calculate_heat_detector_spacing_rectangular",\
-\
-    "generate_heat_detector_positions",\
-\
-    "is_point_covered_by_heat_detectors",\
-\
-    "get_heat_detector_placement_params",\
-\
+    "calculate_heat_detector_coverage_chebyshev",
+    "calculate_heat_detector_spacing_rectangular",
+    "generate_heat_detector_positions",
+    "is_point_covered_by_heat_detectors",
+    "get_heat_detector_placement_params",
     # Sloped ceiling\
-\
-    "calculate_ridge_zone_boundary",\
-\
-    "is_in_ridge_zone",\
-\
-    "requires_ridge_zone_detector",\
-\
+    "calculate_ridge_zone_boundary",
+    "is_in_ridge_zone",
+    "requires_ridge_zone_detector",
     # Combined\
-\
-    "calculate_detector_requirements",\
-\
+    "calculate_detector_requirements",
 ]
 
 
 # ============================================================================
 # MISSING FUNCTIONS FOR V10 COMPATIBILITY
 # ============================================================================
+
 
 def calculate_max_spacing(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
     """NFPA 72 §17.6.3 - spacing between detectors.
@@ -426,17 +403,18 @@ def calculate_max_wall_distance(ceiling: "CeilingSpec", detector_type: "Detector
 def estimate_detector_count_polygon(polygon, ceiling_height_m: float, detector_type: str) -> int:
     """Estimate detector count for a polygon based on coverage area."""
     import math
+
     from shapely.geometry import Polygon
     # CRITICAL: Use module-level import (already from .nfpa72_models) — bare import
     # would resolve to stale root copy with wrong values.
-    
+
     if not isinstance(polygon, Polygon):
         return 0
-    
+
     area = polygon.area
     radius = get_smoke_detector_coverage_max(ceiling_height_m)
     # Each detector covers π * r²
-    coverage_per_detector = math.pi * (radius ** 2)
+    coverage_per_detector = math.pi * (radius**2)
     if coverage_per_detector <= 0:
         return 0
     # Use 0.7 factor for spacing efficiency
@@ -509,15 +487,15 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 #
 # (ceiling_height_max_meters, smoke_adjusted_spacing_m, heat_adjusted_spacing_m)
 _NFPA72_TABLE_17_6_3_1_1 = [
-    (3.0,   9.10,  6.10),   # Smoke: 30ft listed; Heat: 20ft listed
-    (3.7,   8.70,  5.80),
-    (4.6,   8.20,  5.50),
-    (5.5,   7.70,  5.20),
-    (6.1,   7.30,  4.90),
-    (7.6,   6.80,  4.60),
-    (9.1,   6.40,  4.30),
-    (10.7,  6.00,  4.00),
-    (12.2,  5.60,  3.70),
+    (3.0, 9.10, 6.10),  # Smoke: 30ft listed; Heat: 20ft listed
+    (3.7, 8.70, 5.80),
+    (4.6, 8.20, 5.50),
+    (5.5, 7.70, 5.20),
+    (6.1, 7.30, 4.90),
+    (7.6, 6.80, 4.60),
+    (9.1, 6.40, 4.30),
+    (10.7, 6.00, 4.00),
+    (12.2, 5.60, 3.70),
 ]
 
 _NFPA72_ABSOLUTE_MAX_HEIGHT = 12.2
@@ -526,12 +504,12 @@ _NFPA72_ABSOLUTE_MAX_HEIGHT = 12.2
 # More conservative than the h=12.2m entry (5.60m / 3.70m).
 # Coverage radius will be computed as R = 0.7 * spacing_fallback.
 _NFPA72_SMOKE_SPACING_FALLBACK = 5.20  # → R = 3.64m
-_NFPA72_HEAT_SPACING_FALLBACK  = 3.50  # → R = 2.45m
+_NFPA72_HEAT_SPACING_FALLBACK = 3.50  # → R = 2.45m
 
 # Legacy aliases (deprecated — use spacing fallback constants above)
 # These preserve backward compatibility for code that reads these constants.
 _NFPA72_SMOKE_FALLBACK = round(0.7 * _NFPA72_SMOKE_SPACING_FALLBACK, 2)  # 3.64m
-_NFPA72_HEAT_FALLBACK  = round(0.7 * _NFPA72_HEAT_SPACING_FALLBACK, 2)   # 2.45m
+_NFPA72_HEAT_FALLBACK = round(0.7 * _NFPA72_HEAT_SPACING_FALLBACK, 2)  # 2.45m
 
 
 @dataclass(frozen=True)
@@ -560,6 +538,7 @@ class CoverageSpec:
         nfpa_ref: NFPA 72 table reference string.
         warning: Optional warning for out-of-range heights.
     """
+
     radius: float
     height: float
     detector_type: DetectorTypeSimple
@@ -624,11 +603,7 @@ def calculate_coverage_radius_from_height(
 
     if ceiling_height > _NFPA72_ABSOLUTE_MAX_HEIGHT:
         # Use conservative fallback spacing for heights beyond the table
-        spacing = (
-            _NFPA72_SMOKE_SPACING_FALLBACK
-            if detector_type.lower() == "smoke"
-            else _NFPA72_HEAT_SPACING_FALLBACK
-        )
+        spacing = _NFPA72_SMOKE_SPACING_FALLBACK if detector_type.lower() == "smoke" else _NFPA72_HEAT_SPACING_FALLBACK
         radius = round(0.7 * spacing, 2)
         wall_dist = round(spacing / 2.0, 2)
         warning = (
@@ -640,7 +615,7 @@ def calculate_coverage_radius_from_height(
             radius=radius,
             height=ceiling_height,
             detector_type=detector_type,
-            area=round(math.pi * radius ** 2, 2),
+            area=round(math.pi * radius**2, 2),
             spacing_max=round(spacing, 2),
             wall_distance_max=wall_dist,
             nfpa_ref="NFPA 72-2022 Table 17.6.3.1.1 — extrapolated beyond 12.2m",
@@ -650,15 +625,15 @@ def calculate_coverage_radius_from_height(
     for h_max, smoke_spacing, heat_spacing in _NFPA72_TABLE_17_6_3_1_1:
         if ceiling_height <= h_max:
             spacing = smoke_spacing if detector_type.lower() == "smoke" else heat_spacing
-            radius = round(0.7 * spacing, 2)          # R = 0.7 × S (coverage radius)
-            wall_dist = round(spacing / 2.0, 2)        # S/2 (max wall distance)
+            radius = round(0.7 * spacing, 2)  # R = 0.7 × S (coverage radius)
+            wall_dist = round(spacing / 2.0, 2)  # S/2 (max wall distance)
             if ceiling_height > 9.1:
                 warning = "High-bay space — consider beam smoke detectors per NFPA 72 §17.7."
             return CoverageSpec(
                 radius=radius,
                 height=ceiling_height,
                 detector_type=detector_type,
-                area=round(math.pi * radius ** 2, 2),
+                area=round(math.pi * radius**2, 2),
                 spacing_max=round(spacing, 2),
                 wall_distance_max=wall_dist,
                 warning=warning,
@@ -672,7 +647,7 @@ def calculate_coverage_radius_from_height(
         radius=radius,
         height=ceiling_height,
         detector_type=detector_type,
-        area=round(math.pi * radius ** 2, 2),
+        area=round(math.pi * radius**2, 2),
         spacing_max=round(spacing, 2),
         wall_distance_max=wall_dist,
     )
@@ -738,6 +713,7 @@ def beam_pocket_correction_factor(
 # Corridor spacing  (NFPA 72 §17.6.3.3)
 # ---------------------------------------------------------------------------
 
+
 def calculate_corridor_spacing(
     ceiling: "CeilingSpec",
     detector_type: "DetectorType",
@@ -765,7 +741,7 @@ def calculate_corridor_spacing(
     # Previous code used base/2.0 (S/2 = 4.55m) instead of 0.7×S (6.37m).
     # NFPA 72 §17.7.4.2.3.1 defines the coverage radius as R = 0.7×S.
     rated_radius = base * 0.7  # R = 0.7 × S (coverage radius, not S/2)
-    half_width   = corridor_width_m / 2.0
+    half_width = corridor_width_m / 2.0
     if rated_radius <= half_width:
         return base
     along = 2.0 * math.sqrt(rated_radius**2 - half_width**2)
@@ -820,8 +796,8 @@ def calculate_duct_detector_positions(
         for i in range(1, len(arc_lengths)):
             if arc_lengths[i] >= target:
                 seg_start_len = arc_lengths[i - 1]
-                seg_end_len   = arc_lengths[i]
-                seg_len       = seg_end_len - seg_start_len
+                seg_end_len = arc_lengths[i]
+                seg_len = seg_end_len - seg_start_len
                 t = (target - seg_start_len) / seg_len if seg_len > 0 else 0.0
                 x0, y0 = centreline[i - 1]
                 x1, y1 = centreline[i]
@@ -836,6 +812,7 @@ def calculate_duct_detector_positions(
 # ---------------------------------------------------------------------------
 # Voltage drop check  (NFPA 72 §10.14)
 # ---------------------------------------------------------------------------
+
 
 def check_voltage_drop(
     supply_voltage_v: float,
@@ -893,18 +870,19 @@ def check_voltage_drop(
         raise ValueError(f"max_drop_fraction must be in (0, 1], got {max_drop_fraction}")
 
     total_resistance = cable_resistance_ohm_per_m * cable_length_m * 2  # return path
-    drop_v           = load_current_a * total_resistance
-    drop_fraction    = drop_v / supply_voltage_v if supply_voltage_v > 0 else float("inf")
+    drop_v = load_current_a * total_resistance
+    drop_fraction = drop_v / supply_voltage_v if supply_voltage_v > 0 else float("inf")
     return {
-        "drop_v":        round(drop_v, 4),
+        "drop_v": round(drop_v, 4),
         "drop_fraction": round(drop_fraction, 6),
-        "compliant":     drop_fraction <= max_drop_fraction,
+        "compliant": drop_fraction <= max_drop_fraction,
     }
 
 
 # ---------------------------------------------------------------------------
 # Battery standby calculation  (NFPA 72 §10.6.7)
 # ---------------------------------------------------------------------------
+
 
 def required_battery_capacity_ah(
     standby_current_ma: float,
@@ -955,7 +933,7 @@ def required_battery_capacity_ah(
         raise ValueError(f"safety_factor must be >= 1.0, got {safety_factor} — below 1.0 undersizes battery")
 
     standby_ah = (standby_current_ma / 1000.0) * standby_hours
-    alarm_ah   = (alarm_current_ma   / 1000.0) * (alarm_minutes / 60.0)
+    alarm_ah = (alarm_current_ma / 1000.0) * (alarm_minutes / 60.0)
     return round((standby_ah + alarm_ah) * safety_factor, 3)
 
 
@@ -967,11 +945,11 @@ def required_battery_capacity_ah(
 
 AWG_RESISTANCE_TABLE: Dict[int, Dict[str, float]] = {
     # AWG: {"ohm_per_1000ft": R, "ohm_per_m": R/304.8, "metric_mm2": area, "ampacity_75c": A}
-    18: {"ohm_per_1000ft": 6.40,  "ohm_per_m": 0.02101, "metric_mm2": 0.823, "ampacity_75c": 18},
-    16: {"ohm_per_1000ft": 4.00,  "ohm_per_m": 0.01312, "metric_mm2": 1.31,  "ampacity_75c": 22},
-    14: {"ohm_per_1000ft": 2.50,  "ohm_per_m": 0.00820, "metric_mm2": 2.08,  "ampacity_75c": 30},
-    12: {"ohm_per_1000ft": 1.60,  "ohm_per_m": 0.00525, "metric_mm2": 3.31,  "ampacity_75c": 35},
-    10: {"ohm_per_1000ft": 1.00,  "ohm_per_m": 0.00328, "metric_mm2": 5.26,  "ampacity_75c": 45},
+    18: {"ohm_per_1000ft": 6.40, "ohm_per_m": 0.02101, "metric_mm2": 0.823, "ampacity_75c": 18},
+    16: {"ohm_per_1000ft": 4.00, "ohm_per_m": 0.01312, "metric_mm2": 1.31, "ampacity_75c": 22},
+    14: {"ohm_per_1000ft": 2.50, "ohm_per_m": 0.00820, "metric_mm2": 2.08, "ampacity_75c": 30},
+    12: {"ohm_per_1000ft": 1.60, "ohm_per_m": 0.00525, "metric_mm2": 3.31, "ampacity_75c": 35},
+    10: {"ohm_per_1000ft": 1.00, "ohm_per_m": 0.00328, "metric_mm2": 5.26, "ampacity_75c": 45},
 }
 
 # Available AWG gauges for auto-selection (smallest to largest)
@@ -987,17 +965,17 @@ AWG_GAUGES: List[int] = sorted(AWG_RESISTANCE_TABLE.keys(), reverse=True)  # [18
 
 DEVICE_CURRENT_DRAW: Dict[str, Dict[str, float]] = {
     # device_type: {"steady_a": steady-state, "inrush_a": peak inrush, "inrush_factor": multiplier}
-    "strobe_15cd":       {"steady_a": 0.15, "inrush_a": 0.38, "inrush_factor": 2.5},
-    "strobe_30cd":       {"steady_a": 0.22, "inrush_a": 0.55, "inrush_factor": 2.5},
-    "strobe_60cd":       {"steady_a": 0.35, "inrush_a": 0.88, "inrush_factor": 2.5},
-    "strobe_75cd":       {"steady_a": 0.45, "inrush_a": 1.13, "inrush_factor": 2.5},
-    "horn":              {"steady_a": 0.25, "inrush_a": 0.50, "inrush_factor": 2.0},
-    "horn_strobe_15cd":  {"steady_a": 0.40, "inrush_a": 1.00, "inrush_factor": 2.5},
-    "horn_strobe_30cd":  {"steady_a": 0.47, "inrush_a": 1.18, "inrush_factor": 2.5},
-    "speaker_4w_70v":    {"steady_a": 0.057, "inrush_a": 0.057, "inrush_factor": 1.0},
-    "speaker_8w_70v":    {"steady_a": 0.114, "inrush_a": 0.114, "inrush_factor": 1.0},
-    "bell_6in":          {"steady_a": 0.15, "inrush_a": 0.30, "inrush_factor": 2.0},
-    "bell_10in":         {"steady_a": 0.25, "inrush_a": 0.50, "inrush_factor": 2.0},
+    "strobe_15cd": {"steady_a": 0.15, "inrush_a": 0.38, "inrush_factor": 2.5},
+    "strobe_30cd": {"steady_a": 0.22, "inrush_a": 0.55, "inrush_factor": 2.5},
+    "strobe_60cd": {"steady_a": 0.35, "inrush_a": 0.88, "inrush_factor": 2.5},
+    "strobe_75cd": {"steady_a": 0.45, "inrush_a": 1.13, "inrush_factor": 2.5},
+    "horn": {"steady_a": 0.25, "inrush_a": 0.50, "inrush_factor": 2.0},
+    "horn_strobe_15cd": {"steady_a": 0.40, "inrush_a": 1.00, "inrush_factor": 2.5},
+    "horn_strobe_30cd": {"steady_a": 0.47, "inrush_a": 1.18, "inrush_factor": 2.5},
+    "speaker_4w_70v": {"steady_a": 0.057, "inrush_a": 0.057, "inrush_factor": 1.0},
+    "speaker_8w_70v": {"steady_a": 0.114, "inrush_a": 0.114, "inrush_factor": 1.0},
+    "bell_6in": {"steady_a": 0.15, "inrush_a": 0.30, "inrush_factor": 2.0},
+    "bell_10in": {"steady_a": 0.25, "inrush_a": 0.50, "inrush_factor": 2.0},
 }
 
 # Maximum NAC circuit current (typical panel limit)
@@ -1011,6 +989,7 @@ DEVICE_MIN_OPERATING_VOLTAGE_V: float = 16.0
 # ---------------------------------------------------------------------------
 # Inrush Current Calculation — NFPA 72 §10.14.1
 # ---------------------------------------------------------------------------
+
 
 def calculate_inrush_current(
     device_type: str,
@@ -1065,6 +1044,7 @@ def calculate_inrush_current(
 # ---------------------------------------------------------------------------
 # NAC Circuit Loading — NFPA 72 §18.5
 # ---------------------------------------------------------------------------
+
 
 def calculate_nac_loading(
     devices: List[Dict[str, Any]],
@@ -1130,6 +1110,7 @@ def calculate_nac_loading(
 # Automatic AWG Wire Gauge Selection — NEC Art. 760 + NFPA 72 §10.14
 # ---------------------------------------------------------------------------
 
+
 def auto_select_awg(
     supply_voltage_v: float,
     load_current_a: float,
@@ -1183,10 +1164,7 @@ def auto_select_awg(
         )
 
         voltage_at_device = supply_voltage_v - vd["drop_v"]
-        compliant = (
-            vd["compliant"]
-            and voltage_at_device >= min_device_voltage_v
-        )
+        compliant = vd["compliant"] and voltage_at_device >= min_device_voltage_v
 
         candidate = {
             "awg": awg,
@@ -1216,7 +1194,7 @@ def auto_select_awg(
             "error": (
                 f"No AWG gauge satisfies voltage drop constraint "
                 f"(supply={supply_voltage_v}V, load={load_current_a}A, "
-                f"length={cable_length_m}m, max_drop={max_drop_fraction*100:.0f}%). "
+                f"length={cable_length_m}m, max_drop={max_drop_fraction * 100:.0f}%). "
                 f"Reduce circuit length or split into multiple circuits."
             ),
         }

@@ -4,9 +4,9 @@ fireai – NFPA 72-2022 Automated Fire Detector Placement Engine
 
 # W-02 FIX: Single source of truth — import from fireai.version
 # Package version (semver) for __version__ — distinct from internal FIREAI_VERSION_FULL
-from fireai.version import __package_version__ as __version__
 # Backward compat: also expose the V-prefixed string and dev version
 from fireai.version import FIREAI_VERSION, FIREAI_VERSION_FULL, build_version_header
+from fireai.version import __package_version__ as __version__
 
 # CRITICAL FIX: Replaced wildcard import with lazy __getattr__.
 # The old `from fireai.core import *` eagerly imported the entire engine
@@ -20,29 +20,67 @@ from fireai.version import FIREAI_VERSION, FIREAI_VERSION_FULL, build_version_he
 
 # Public API names that can be imported from this package
 _PUBLIC_NAMES = [
-    "FloorAnalyser", "BuildingEngine", "DensityOptimizer",
-    "SensitivityAnalyzer", "ParameterOptimizer", "ProjectLearner",
-    "ScenarioRunner", "ScenarioLibrary", "ScenarioReporter",
-    "PolygonDensityOptimizer", "AuditTrail", "AuditStore",
-    "generate_pdf", "EventBus", "Event", "Events", "EventRecorder",
-    "RoomState", "RoomTransition", "RoomLifecycle", "RoomLifecycleManager",
-    "DigitalTwinInterface", "DigitalTwinState", "TwinModelVersion", "ChangeRecord",
-    "DigitalTwin", "AnalysisPipeline", "PipelineStage", "PipelineResult",
-    "ConsensusEngine", "ConsensusResult", "ConfidenceLevel",
-    "ProofCertificateGenerator", "ProofCertificate",
-    "SafetyTier", "classify_safety_tier", "apply_fail_safe",
-    "tier_requires_fpe_review", "tier_can_submit",
-    "OverrideRole", "OverrideRecord", "EngineeringEvidencePackage",
-    "ABSOLUTE_MINIMUM_COVERAGE", "MINIMUM_COVERAGE_FOR_SUBMISSION",
-    "STANDARD_COVERAGE_THRESHOLD", "PROOF_VERIFIED_THRESHOLD",
-    "FireAISystem", "EnhancedRoomResult",
+    "FloorAnalyser",
+    "BuildingEngine",
+    "DensityOptimizer",
+    "SensitivityAnalyzer",
+    "ParameterOptimizer",
+    "ProjectLearner",
+    "ScenarioRunner",
+    "ScenarioLibrary",
+    "ScenarioReporter",
+    "PolygonDensityOptimizer",
+    "AuditTrail",
+    "AuditStore",
+    "generate_pdf",
+    "EventBus",
+    "Event",
+    "Events",
+    "EventRecorder",
+    "RoomState",
+    "RoomTransition",
+    "RoomLifecycle",
+    "RoomLifecycleManager",
+    "DigitalTwinInterface",
+    "DigitalTwinState",
+    "TwinModelVersion",
+    "ChangeRecord",
+    "DigitalTwin",
+    "AnalysisPipeline",
+    "PipelineStage",
+    "PipelineResult",
+    "ConsensusEngine",
+    "ConsensusResult",
+    "ConfidenceLevel",
+    "ProofCertificateGenerator",
+    "ProofCertificate",
+    "SafetyTier",
+    "classify_safety_tier",
+    "apply_fail_safe",
+    "tier_requires_fpe_review",
+    "tier_can_submit",
+    "OverrideRole",
+    "OverrideRecord",
+    "EngineeringEvidencePackage",
+    "ABSOLUTE_MINIMUM_COVERAGE",
+    "MINIMUM_COVERAGE_FOR_SUBMISSION",
+    "STANDARD_COVERAGE_THRESHOLD",
+    "PROOF_VERIFIED_THRESHOLD",
+    "FireAISystem",
+    "EnhancedRoomResult",
     # V17 Critical Life-Safety Triad
-    "AcousticSPLCalculator", "StrictBatterySizer", "TenabilityEvaluator",
+    "AcousticSPLCalculator",
+    "StrictBatterySizer",
+    "TenabilityEvaluator",
     "EnterpriseOrchestrator",
     # V19 High-Rise Engineering Suite
-    "ElevatorShuntTripAuditor", "NACBoosterAllocator", "SeismicJointPenalyer",
+    "ElevatorShuntTripAuditor",
+    "NACBoosterAllocator",
+    "SeismicJointPenalyer",
     # V20 Digital Signaling & Master Network Architecture
-    "SLCCapacitanceAuditor", "StairwellSmokeControlIntegrator", "NetworkTopologyAuditor",
+    "SLCCapacitanceAuditor",
+    "StairwellSmokeControlIntegrator",
+    "NetworkTopologyAuditor",
 ]
 
 
@@ -53,19 +91,29 @@ def __getattr__(name):
         _V17_NAMES = {"AcousticSPLCalculator", "StrictBatterySizer", "TenabilityEvaluator"}
         if name in _V17_NAMES:
             from fireai.v17_core import AcousticSPLCalculator, StrictBatterySizer, TenabilityEvaluator
-            return {"AcousticSPLCalculator": AcousticSPLCalculator, "StrictBatterySizer": StrictBatterySizer, "TenabilityEvaluator": TenabilityEvaluator}[name]
+
+            return {
+                "AcousticSPLCalculator": AcousticSPLCalculator,
+                "StrictBatterySizer": StrictBatterySizer,
+                "TenabilityEvaluator": TenabilityEvaluator,
+            }[name]
         if name == "EnterpriseOrchestrator":
             from fireai.bridges.enterprise_pipeline import EnterpriseOrchestrator
+
             return EnterpriseOrchestrator
 
         from fireai.core import __dict__ as core_dict
+
         if name in core_dict:
             return core_dict[name]
         # Fallback: try direct import from known modules
         try:
-            from fireai.core.fireai_core import FireAISystem, EnhancedRoomResult
+            from fireai.core.fireai_core import EnhancedRoomResult, FireAISystem
+
             if name in ("FireAISystem", "EnhancedRoomResult"):
-                return locals().get(name) or {"FireAISystem": FireAISystem, "EnhancedRoomResult": EnhancedRoomResult}[name]
+                return (
+                    locals().get(name) or {"FireAISystem": FireAISystem, "EnhancedRoomResult": EnhancedRoomResult}[name]
+                )
         except ImportError:
             pass
         raise AttributeError(f"module 'fireai' has no attribute '{name}'")
@@ -73,4 +121,3 @@ def __getattr__(name):
 
 
 __all__ = ["__version__"] + _PUBLIC_NAMES
-

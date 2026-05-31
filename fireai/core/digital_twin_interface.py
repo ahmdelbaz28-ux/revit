@@ -60,13 +60,13 @@ import json
 import logging
 import threading
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
+from .digital_twin import NFPA72_DEFAULT_CEILING_M, NFPA72_SMOKE_RADIUS_M
 from .event_bus import EventBus, Events
-from .digital_twin import NFPA72_SMOKE_RADIUS_M, NFPA72_DEFAULT_CEILING_M
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,7 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════
 # Digital Twin State Enum
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class DigitalTwinState(Enum):
     """Synchronization state of the Digital Twin with the BIM model.
@@ -90,16 +91,17 @@ class DigitalTwinState(Enum):
     """
 
     DISCONNECTED = "disconnected"  # No BIM connection
-    CONNECTED = "connected"        # Connected to BIM, not synced
-    SYNCING = "syncing"            # Synchronization in progress
-    SYNCED = "synced"              # Fully synchronized with BIM model
-    CONFLICT = "conflict"          # Conflict detected (BIM changed independently)
-    ERROR = "error"                # Sync error
+    CONNECTED = "connected"  # Connected to BIM, not synced
+    SYNCING = "syncing"  # Synchronization in progress
+    SYNCED = "synced"  # Fully synchronized with BIM model
+    CONFLICT = "conflict"  # Conflict detected (BIM changed independently)
+    ERROR = "error"  # Sync error
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # Data Models
 # ═══════════════════════════════════════════════════════════════════════
+
 
 @dataclass(frozen=True)
 class TwinModelVersion:
@@ -183,6 +185,7 @@ class ChangeRecord:
 # IFC / gBXML GUID Generation Helpers
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def _generate_ifc_guid() -> str:
     """Generate an IFC-compatible GUID (22-character base64-like string).
 
@@ -196,6 +199,7 @@ def _generate_ifc_guid() -> str:
 # ═══════════════════════════════════════════════════════════════════════
 # Digital Twin Interface
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class DigitalTwinInterface:
     """Bidirectional synchronization interface between FireAI and BIM.
@@ -252,9 +256,7 @@ class DigitalTwinInterface:
             TypeError: If new_state is not a DigitalTwinState enum.
         """
         if not isinstance(new_state, DigitalTwinState):
-            raise TypeError(
-                f"state must be DigitalTwinState, got {type(new_state).__name__}"
-            )
+            raise TypeError(f"state must be DigitalTwinState, got {type(new_state).__name__}")
         with self._lock:
             old_state = self._state
             self._state = new_state
@@ -400,10 +402,7 @@ class DigitalTwinInterface:
                     old_value={"room_count": old_version.room_count},
                     new_value={"room_count": new_version.room_count},
                     author="system",
-                    reason=(
-                        f"Room count changed from {old_version.room_count} "
-                        f"to {new_version.room_count}"
-                    ),
+                    reason=(f"Room count changed from {old_version.room_count} to {new_version.room_count}"),
                 )
             )
 
@@ -422,8 +421,7 @@ class DigitalTwinInterface:
                     new_value={"detector_count": new_version.detector_count},
                     author="system",
                     reason=(
-                        f"Detector count changed from {old_version.detector_count} "
-                        f"to {new_version.detector_count}"
+                        f"Detector count changed from {old_version.detector_count} to {new_version.detector_count}"
                     ),
                 )
             )
@@ -433,16 +431,10 @@ class DigitalTwinInterface:
             room_results = list(self._current_room_results)
 
         if room_results:
-            old_detectors = self._reconstruct_detector_map(
-                old_version, room_results
-            )
-            new_detectors = self._reconstruct_detector_map(
-                new_version, room_results
-            )
+            old_detectors = self._reconstruct_detector_map(old_version, room_results)
+            new_detectors = self._reconstruct_detector_map(new_version, room_results)
 
-            all_room_ids = set(old_detectors.keys()) | set(
-                new_detectors.keys()
-            )
+            all_room_ids = set(old_detectors.keys()) | set(new_detectors.keys())
 
             for room_id in all_room_ids:
                 old_dets = old_detectors.get(room_id, [])
@@ -451,20 +443,12 @@ class DigitalTwinInterface:
                 # Rooms added/removed
                 if room_id not in old_detectors and room_id in new_detectors:
                     for idx, det in enumerate(new_dets):
-                        changes.append(
-                            self._make_change(
-                                "added", room_id, idx, None, det, now
-                            )
-                        )
+                        changes.append(self._make_change("added", room_id, idx, None, det, now))
                     continue
 
                 if room_id in old_detectors and room_id not in new_detectors:
                     for idx, det in enumerate(old_dets):
-                        changes.append(
-                            self._make_change(
-                                "removed", room_id, idx, det, None, now
-                            )
-                        )
+                        changes.append(self._make_change("removed", room_id, idx, det, None, now))
                     continue
 
                 # Per-detector comparison
@@ -503,9 +487,7 @@ class DigitalTwinInterface:
                             or abs(old_det.get("y", 0) - new_det.get("y", 0)) > 1e-6
                             or abs(old_det.get("z", 0) - new_det.get("z", 0)) > 1e-6
                         )
-                        radius_changed = abs(
-                            old_det.get("radius", 0) - new_det.get("radius", 0)
-                        ) > 1e-6
+                        radius_changed = abs(old_det.get("radius", 0) - new_det.get("radius", 0)) > 1e-6
 
                         if position_changed:
                             changes.append(
@@ -655,13 +637,9 @@ class DigitalTwinInterface:
                         "name": "Pset_FireAI_RoomNFPA",
                         "properties": {
                             "RoomID": room_id,
-                            "OccupancyType": room.get(
-                                "occupancy_type", "office"
-                            ),
+                            "OccupancyType": room.get("occupancy_type", "office"),
                             "CeilingHeight_m": height,
-                            "DetectorType": room.get(
-                                "detector_type", "smoke"
-                            ),
+                            "DetectorType": room.get("detector_type", "smoke"),
                             "FloorName": floor_name,
                         },
                         "related_entity": space_guid,
@@ -708,9 +686,7 @@ class DigitalTwinInterface:
                             "name": "Pset_FireAI_DetectorNFPA",
                             "properties": {
                                 "DetectorIndex": idx + 1,
-                                "CoverageRadius_m": float(
-                                    det.get("radius", NFPA72_SMOKE_RADIUS_M)
-                                ),
+                                "CoverageRadius_m": float(det.get("radius", NFPA72_SMOKE_RADIUS_M)),
                                 "DetectorType": det_type,
                                 "NFPAReference": "NFPA 72-2022 Table 17.6.3.1.1",
                                 "X_m": x,
@@ -737,9 +713,7 @@ class DigitalTwinInterface:
 
     # ── gBXML Export ─────────────────────────────────────────────────
 
-    def export_gbxml_payload(
-        self, room_results: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def export_gbxml_payload(self, room_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Export detector placements as a gBXML-compatible payload.
 
         Produces a structured dictionary that maps to the Green
@@ -813,9 +787,7 @@ class DigitalTwinInterface:
                 # Sensor elements for each detector
                 detectors = room.get("detectors", [])
                 for idx, det in enumerate(detectors):
-                    sensor_id = (
-                        f"Sensor_{room_id}_{idx + 1}_{uuid.uuid4().hex[:4]}"
-                    )
+                    sensor_id = f"Sensor_{room_id}_{idx + 1}_{uuid.uuid4().hex[:4]}"
                     det_type = room.get("detector_type", "smoke").upper()
 
                     x = float(det.get("x", 0.0))
@@ -834,9 +806,7 @@ class DigitalTwinInterface:
                                 "y_m": y,
                                 "z_m": z,
                             },
-                            "coverage_radius_m": float(
-                                det.get("radius", NFPA72_SMOKE_RADIUS_M)
-                            ),
+                            "coverage_radius_m": float(det.get("radius", NFPA72_SMOKE_RADIUS_M)),
                             "nfpa_reference": "NFPA 72-2022 Table 17.6.3.1.1",
                         }
                     )
@@ -915,9 +885,7 @@ class DigitalTwinInterface:
             return hashlib.sha256(b"no_detectors").hexdigest()
 
         # Normalize positions to 6 decimal places and sort for determinism
-        normalized = sorted(
-            [tuple(round(float(c), 6) for c in pos) for pos in detector_positions]
-        )
+        normalized = sorted([tuple(round(float(c), 6) for c in pos) for pos in detector_positions])
         raw = json.dumps(normalized, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(raw.encode()).hexdigest()
 
@@ -957,9 +925,7 @@ class DigitalTwinInterface:
         is_valid = current_checksum == current_version.checksum
 
         if is_valid:
-            logger.debug(
-                "Synchronization valid: checksum=%s", current_checksum[:16]
-            )
+            logger.debug("Synchronization valid: checksum=%s", current_checksum[:16])
         else:
             logger.warning(
                 "Synchronization MISMATCH: current=%s version=%s",
@@ -1066,9 +1032,7 @@ class DigitalTwinInterface:
         )
 
 
-def _describe_change(
-    change_type: str, room_id: str, detector_index: int
-) -> str:
+def _describe_change(change_type: str, room_id: str, detector_index: int) -> str:
     """Generate a human-readable reason string for a change.
 
     Args:
@@ -1083,9 +1047,7 @@ def _describe_change(
         "added": f"Detector {detector_index + 1} added in room {room_id}",
         "removed": f"Detector {detector_index + 1} removed from room {room_id}",
         "modified": f"Detector {detector_index + 1} properties changed in room {room_id}",
-        "repositioned": (
-            f"Detector {detector_index + 1} repositioned in room {room_id}"
-        ),
+        "repositioned": (f"Detector {detector_index + 1} repositioned in room {room_id}"),
     }
     return descriptions.get(
         change_type,
@@ -1261,10 +1223,7 @@ if __name__ == "__main__":
     assert "IFCBUILDINGSTOREY" in entity_types
     assert "IFCSPACE" in entity_types
     assert "IFCFLOWSENSOR" in entity_types
-    print(
-        f"   ✓ IFC4 payload: {len(ifc['entities'])} entities, "
-        f"{len(ifc['property_sets'])} property sets"
-    )
+    print(f"   ✓ IFC4 payload: {len(ifc['entities'])} entities, {len(ifc['property_sets'])} property sets")
     print(f"   ✓ Entity types: {sorted(set(entity_types))}")
 
     # ── Test 9: gBXML Export ──────────────────────────────────────────
@@ -1274,10 +1233,7 @@ if __name__ == "__main__":
     assert "campus" in gbxml
     assert "spaces" in gbxml
     assert "sensors" in gbxml
-    print(
-        f"   ✓ gBXML payload: {len(gbxml['spaces'])} spaces, "
-        f"{len(gbxml['sensors'])} sensors"
-    )
+    print(f"   ✓ gBXML payload: {len(gbxml['spaces'])} spaces, {len(gbxml['sensors'])} sensors")
 
     # ── Test 10: validate_synchronization ────────────────────────────
     print("\n[TEST 10] validate_synchronization")

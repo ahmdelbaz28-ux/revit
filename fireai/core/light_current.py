@@ -23,17 +23,18 @@ QOMN-FIRE Principles:
 
 from __future__ import annotations
 
-import math
 import hashlib
-from dataclasses import dataclass, field
+import math
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Tuple
 
 # ─── Contract Violation (reuse from contracts_validation if available) ────────
 
+
 class ContractViolation(Exception):
     """Raised when input data violates the engineering contract."""
+
     def __init__(self, message: str, code_ref: str = ""):
         super().__init__(message)
         self.code_ref = code_ref
@@ -41,8 +42,10 @@ class ContractViolation(Exception):
 
 # ─── Enums ──────────────────────────────────────────────────────────────────
 
+
 class CableType(Enum):
     """Structured cabling types per TIA-568."""
+
     CAT6 = "CAT6"
     CAT6A = "CAT6A"
     CAT7 = "CAT7"
@@ -50,6 +53,7 @@ class CableType(Enum):
 
 class FiberType(Enum):
     """Fiber optic types per TIA-598."""
+
     OS1 = "OS1"
     OS2 = "OS2"
     OM3 = "OM3"
@@ -58,6 +62,7 @@ class FiberType(Enum):
 
 class EgressType(Enum):
     """Access control egress types per NFPA 101."""
+
     FAIL_SAFE = "fail_safe"
     FAIL_SECURE = "fail_secure"
 
@@ -137,28 +142,30 @@ _FIBER_SPECS = {
 
 # CCTV Lens Specifications
 _LENS_COVERAGE = {
-    3.6: 90.0,   # 3.6mm lens = 90° coverage
-    6.0: 60.0,   # 6mm lens = 60° coverage
+    3.6: 90.0,  # 3.6mm lens = 90° coverage
+    6.0: 60.0,  # 6mm lens = 60° coverage
     12.0: 30.0,  # 12mm lens = 30° coverage
 }
 
-_MIN_CCTV_HEIGHT_M = 2.5   # Minimum height for facial recognition
-_MAX_CCTV_HEIGHT_M = 3.5   # Maximum height for facial recognition
-_MIN_LUX_COLOR = 50.0      # Minimum lux for color camera
-_MIN_LUX_IR = 0.1          # Minimum lux for IR camera
-_MIN_OVERLAP_PCT = 20.0    # Minimum overlap between adjacent cameras
+_MIN_CCTV_HEIGHT_M = 2.5  # Minimum height for facial recognition
+_MAX_CCTV_HEIGHT_M = 3.5  # Maximum height for facial recognition
+_MIN_LUX_COLOR = 50.0  # Minimum lux for color camera
+_MIN_LUX_IR = 0.1  # Minimum lux for IR camera
+_MIN_OVERLAP_PCT = 20.0  # Minimum overlap between adjacent cameras
 
 # Access Control Specifications per NFPA 101 / ADA
-_MIN_READER_HEIGHT_M = 1.07   # 42" AFF per ADA
-_MAX_READER_HEIGHT_M = 1.22   # 48" AFF per ADA
+_MIN_READER_HEIGHT_M = 1.07  # 42" AFF per ADA
+_MAX_READER_HEIGHT_M = 1.22  # 48" AFF per ADA
 _DEFAULT_READER_HEIGHT_M = 1.22  # 48" AFF (standard practice)
 
 
 # ─── Frozen Result Dataclasses ──────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class StructuredCablingResult:
     """Result of structured cabling validation per TIA-568."""
+
     max_horizontal_m: float
     max_total_m: float
     bend_radius_mm: float
@@ -172,12 +179,13 @@ class StructuredCablingResult:
     def __post_init__(self):
         if self.computation_hash == "":
             raw = f"{self.max_horizontal_m}|{self.max_total_m}|{self.cable_type}|{self.is_compliant}"
-            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:32])
+            object.__setattr__(self, "computation_hash", hashlib.sha256(raw.encode()).hexdigest()[:32])
 
 
 @dataclass(frozen=True)
 class FiberOpticResult:
     """Result of fiber optic link validation per TIA-598."""
+
     fiber_type: str
     max_length_m: float
     max_attenuation_db_km: float
@@ -193,12 +201,13 @@ class FiberOpticResult:
     def __post_init__(self):
         if self.computation_hash == "":
             raw = f"{self.fiber_type}|{self.max_length_m}|{self.is_compliant}|{self.total_attenuation_db}"
-            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:32])
+            object.__setattr__(self, "computation_hash", hashlib.sha256(raw.encode()).hexdigest()[:32])
 
 
 @dataclass(frozen=True)
 class CCTVResult:
     """Result of CCTV camera coverage calculation."""
+
     camera_count: int
     lens_mm: float
     coverage_angle_deg: float
@@ -212,12 +221,13 @@ class CCTVResult:
     def __post_init__(self):
         if self.computation_hash == "":
             raw = f"{self.camera_count}|{self.lens_mm}|{self.height_m}|{self.is_compliant}"
-            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:32])
+            object.__setattr__(self, "computation_hash", hashlib.sha256(raw.encode()).hexdigest()[:32])
 
 
 @dataclass(frozen=True)
 class AccessControlResult:
     """Result of access control validation per NFPA 101 / ADA."""
+
     reader_height_m: float
     egress_type: str
     has_door_switch: bool
@@ -230,17 +240,17 @@ class AccessControlResult:
     def __post_init__(self):
         if self.computation_hash == "":
             raw = f"{self.reader_height_m}|{self.egress_type}|{self.has_door_switch}|{self.has_rte}|{self.is_compliant}"
-            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:32])
+            object.__setattr__(self, "computation_hash", hashlib.sha256(raw.encode()).hexdigest()[:32])
 
 
 # ─── Input Validation Helpers ───────────────────────────────────────────────
+
 
 def _validate_finite(value: float, name: str) -> None:
     """Validate that a value is finite (not NaN or Inf)."""
     if not isinstance(value, (int, float)) or not math.isfinite(value):
         raise ContractViolation(
-            f"{name} = {value!r} is not a finite number — "
-            f"QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
+            f"{name} = {value!r} is not a finite number — QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
             code_ref="IEEE-754 / QOMN-FIRE L0",
         )
 
@@ -250,13 +260,13 @@ def _validate_positive(value: float, name: str, code_ref: str = "") -> None:
     _validate_finite(value, name)
     if value <= 0:
         raise ContractViolation(
-            f"{name} = {value} must be positive. "
-            f"Physically impossible negative or zero value.",
+            f"{name} = {value} must be positive. Physically impossible negative or zero value.",
             code_ref=code_ref,
         )
 
 
 # ─── Structured Cabling ────────────────────────────────────────────────────
+
 
 def validate_horizontal_cable(
     length_m: float,
@@ -294,15 +304,13 @@ def validate_horizontal_cable(
 
     if length_m > spec["max_horizontal_m"]:
         violations.append(
-            f"Horizontal length {length_m:.1f}m exceeds maximum {spec['max_horizontal_m']}m "
-            f"per {spec['standard_ref']}"
+            f"Horizontal length {length_m:.1f}m exceeds maximum {spec['max_horizontal_m']}m per {spec['standard_ref']}"
         )
         is_compliant = False
 
     if total_m > spec["max_total_m"]:
         violations.append(
-            f"Total channel length {total_m:.1f}m exceeds maximum {spec['max_total_m']}m "
-            f"per {spec['standard_ref']}"
+            f"Total channel length {total_m:.1f}m exceeds maximum {spec['max_total_m']}m per {spec['standard_ref']}"
         )
         is_compliant = False
 
@@ -319,6 +327,7 @@ def validate_horizontal_cable(
 
 
 # ─── Fiber Optic ────────────────────────────────────────────────────────────
+
 
 def validate_fiber_link(
     length_m: float,
@@ -390,6 +399,7 @@ def validate_fiber_link(
 
 # ─── CCTV ────────────────────────────────────────────────────────────────────
 
+
 def calculate_cctv_coverage(
     room_length_m: float,
     room_width_m: float,
@@ -449,14 +459,12 @@ def calculate_cctv_coverage(
 
     if height_m < _MIN_CCTV_HEIGHT_M:
         violations.append(
-            f"Camera height {height_m:.1f}m is below minimum {_MIN_CCTV_HEIGHT_M}m "
-            f"for facial recognition per IEC 62676"
+            f"Camera height {height_m:.1f}m is below minimum {_MIN_CCTV_HEIGHT_M}m for facial recognition per IEC 62676"
         )
         is_compliant = False
     if height_m > _MAX_CCTV_HEIGHT_M:
         violations.append(
-            f"Camera height {height_m:.1f}m exceeds maximum {_MAX_CCTV_HEIGHT_M}m "
-            f"for facial recognition per IEC 62676"
+            f"Camera height {height_m:.1f}m exceeds maximum {_MAX_CCTV_HEIGHT_M}m for facial recognition per IEC 62676"
         )
         is_compliant = False
 
@@ -472,6 +480,7 @@ def calculate_cctv_coverage(
 
 
 # ─── Access Control ──────────────────────────────────────────────────────────
+
 
 def validate_access_control(
     reader_height_m: float = 1.22,
@@ -512,15 +521,14 @@ def validate_access_control(
     if reader_height_m < _MIN_READER_HEIGHT_M or reader_height_m > _MAX_READER_HEIGHT_M:
         violations.append(
             f"Reader height {reader_height_m:.2f}m is outside ADA range "
-            f"{_MIN_READER_HEIGHT_M}m-{_MAX_READER_HEIGHT_M}m (42\"-48\" AFF)"
+            f'{_MIN_READER_HEIGHT_M}m-{_MAX_READER_HEIGHT_M}m (42"-48" AFF)'
         )
         is_compliant = False
 
     # Egress type check per NFPA 101 §7.2.1.6
     if egress_type not in ("fail_safe", "fail_secure"):
         violations.append(
-            f"Egress type '{egress_type}' is not recognized. "
-            f"Must be 'fail_safe' or 'fail_secure' per NFPA 101 §7.2.1.6"
+            f"Egress type '{egress_type}' is not recognized. Must be 'fail_safe' or 'fail_secure' per NFPA 101 §7.2.1.6"
         )
         is_compliant = False
 

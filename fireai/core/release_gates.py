@@ -31,26 +31,26 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Optional
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # GATE DEFINITIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _GATE_NAMES = {
-    "G1_input_validation":    "Input Validation",
-    "G2_nfpa_spacing":        "NFPA 72 Spacing",
-    "G3_coverage":            "Coverage Verification",
-    "G4_wall_distance":       "Wall Distance Check",
-    "G5_battery":             "Battery Adequacy",
-    "G6_voltage_drop":        "Voltage Drop",
-    "G7_fault_isolation":     "Fault Isolator Placement",
-    "G8_safety_tier":         "Safety Tier Classification",
+    "G1_input_validation": "Input Validation",
+    "G2_nfpa_spacing": "NFPA 72 Spacing",
+    "G3_coverage": "Coverage Verification",
+    "G4_wall_distance": "Wall Distance Check",
+    "G5_battery": "Battery Adequacy",
+    "G6_voltage_drop": "Voltage Drop",
+    "G7_fault_isolation": "Fault Isolator Placement",
+    "G8_safety_tier": "Safety Tier Classification",
 }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # INDIVIDUAL GATE CHECKS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def _gate_input_validation(input_payload: Optional[Dict]) -> Dict[str, Any]:
     """G1: Input payload must have been validated (not None)."""
@@ -213,7 +213,11 @@ def _gate_fault_isolation(loop_data: Optional[Dict]) -> Dict[str, Any]:
         if not compliant:
             violations = fi.get("violations", [])
             n = len(violations) if isinstance(violations, list) else 0
-            reason_detail = f"SLC fault isolation has {n} violation(s)" if "compliant" in fi else "SLC fault isolation compliance unknown (compliant not specified)"
+            reason_detail = (
+                f"SLC fault isolation has {n} violation(s)"
+                if "compliant" in fi
+                else "SLC fault isolation compliance unknown (compliant not specified)"
+            )
             return {
                 "passed": False,
                 "reason": f"{reason_detail} (NFPA 72 §12.3)",
@@ -240,6 +244,7 @@ def _gate_safety_tier(safety_tier_value: Optional[str]) -> Dict[str, Any]:
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN GATE EVALUATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def verify_and_evaluate(
     input_payload: Optional[Dict] = None,

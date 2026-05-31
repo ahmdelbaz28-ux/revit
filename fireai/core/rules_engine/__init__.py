@@ -23,39 +23,35 @@ Architecture:
 Reference: NFPA 72-2022, IEC 60079-10-1:2015, NEC Chapter 9
 """
 
-from fireai.core.rules_engine.engine import (
-    RulesEngine,
-    Rule,
-    Fact,
-    RulePriority,
-    RuleResult,
-    RuleAuditEntry,
-)
-
-from fireai.core.rules_engine.truth_maintenance import (
-    TruthMaintenanceSystem,
-    DependencyRecord,
-)
-
-from fireai.core.rules_engine.nfpa72_rules import NFPA72RuleSet
-
-from fireai.core.rules_engine.compliance_bridge import (
-    NFPA72ComplianceChecker,
-    ComplianceReport,
-    room_to_facts,
-    detector_to_fact,
-    hvac_to_fact,
-    elevator_to_fact,
-    results_to_report,
-)
-
 from fireai.core.rules_engine.api_contract import (
     APIContract,
-    ContractValidator,
     ContractSeverity,
+    ContractValidator,
     ContractViolationDetail,
     create_contract_aware_router,
     generate_typescript_config,
+)
+from fireai.core.rules_engine.compliance_bridge import (
+    ComplianceReport,
+    NFPA72ComplianceChecker,
+    detector_to_fact,
+    elevator_to_fact,
+    hvac_to_fact,
+    results_to_report,
+    room_to_facts,
+)
+from fireai.core.rules_engine.engine import (
+    Fact,
+    Rule,
+    RuleAuditEntry,
+    RulePriority,
+    RuleResult,
+    RulesEngine,
+)
+from fireai.core.rules_engine.nfpa72_rules import NFPA72RuleSet
+from fireai.core.rules_engine.truth_maintenance import (
+    DependencyRecord,
+    TruthMaintenanceSystem,
 )
 
 __all__ = [

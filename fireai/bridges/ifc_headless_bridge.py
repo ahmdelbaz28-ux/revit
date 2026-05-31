@@ -35,15 +35,16 @@ Standards:
   - NFPA 72-2022 §17.8.3.4  — detector placement & topology
   - IEC 60079-0:2017         — ATEX compliance property sets
 """
+
 from __future__ import annotations
 
 import logging
-import math
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     import ifcopenshell
     from ifcopenshell.api import run
+
     IFC_AVAILABLE = True
 except ImportError:
     ifcopenshell = None
@@ -51,6 +52,7 @@ except ImportError:
 
 try:
     import ifcopenshell.geom
+
     GEOM_AVAILABLE = True
 except ImportError:
     GEOM_AVAILABLE = False
@@ -60,10 +62,13 @@ logger = logging.getLogger(__name__)
 
 # ── Geometry helpers (for extract_obstructions / extract_spaces_enhanced) ──
 
+
 def _convex_hull_2d(pts: List[Tuple[float, float, float]]) -> List[Tuple[float, float, float]]:
     """Andrew's monotone chain convex hull on XY plane."""
+
     def cross(o, a, b):
-        return (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0])
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
     sorted_pts = sorted(set(pts))
     if len(sorted_pts) < 3:
         return list(sorted_pts)
@@ -112,14 +117,18 @@ class HeadlessIFCBridge:
 
     # IFC types that are structural obstructions for ray-tracing
     OBSTRUCTION_TYPES = (
-        "IfcWall", "IfcWallStandardCase",
-        "IfcBeam", "IfcBeamStandardCase",
-        "IfcColumn", "IfcColumnStandardCase",
+        "IfcWall",
+        "IfcWallStandardCase",
+        "IfcBeam",
+        "IfcBeamStandardCase",
+        "IfcColumn",
+        "IfcColumnStandardCase",
         "IfcMember",
-        "IfcDuctSegment", "IfcDuctFitting",
+        "IfcDuctSegment",
+        "IfcDuctFitting",
         "IfcPipeSegment",
-        "IfcCovering",          # lowered ceilings
-        "IfcSlab",              # intermediate floors
+        "IfcCovering",  # lowered ceilings
+        "IfcSlab",  # intermediate floors
     )
 
     def __init__(self, ifc_path: str):
@@ -157,11 +166,15 @@ class HeadlessIFCBridge:
             try:
                 placement = space.ObjectPlacement
                 x, y, z = self._resolve_local_placement(placement)
-                rooms.append({
-                    'guid': space.GlobalId,
-                    'name': space.LongName or space.Name or 'UNNAMED_SPACE',
-                    'x': x, 'y': y, 'z': z,
-                })
+                rooms.append(
+                    {
+                        "guid": space.GlobalId,
+                        "name": space.LongName or space.Name or "UNNAMED_SPACE",
+                        "x": x,
+                        "y": y,
+                        "z": z,
+                    }
+                )
             except Exception as e:
                 logger.warning(f"Error processing space {space.GlobalId}: {e}")
         return rooms
@@ -201,9 +214,10 @@ class HeadlessIFCBridge:
             fa_type = "SMOKESENSOR" if "SMOKE" in dev.get("type", "").upper() else "HEATSENSOR"
 
             device_elem = run(
-                "root.create_entity", self.model,
+                "root.create_entity",
+                self.model,
                 ifc_class="IfcSensor",
-                name=dev.get('device_id', 'FA_Device'),
+                name=dev.get("device_id", "FA_Device"),
             )
 
             x, y, z = dev.get("x", 0.0), dev.get("y", 0.0), dev.get("z", 3.0)
@@ -219,12 +233,17 @@ class HeadlessIFCBridge:
                 run("spatial.assign_container", self.model, relating_structure=target_storey, products=[device_elem])
 
             pset = run("pset.add_pset", self.model, product=device_elem, name="Pset_FireAI_Compliance")
-            run("pset.edit_pset", self.model, pset=pset, properties={
-                "Loop_ID": str(dev.get("loop_id", "UNK")),
-                "Device_Address": str(dev.get("address", "UNK")),
-                "Validation_Hash": str(dev.get("checksum", "INVALID")),
-                "NFPA72_Compliant": True,
-            })
+            run(
+                "pset.edit_pset",
+                self.model,
+                pset=pset,
+                properties={
+                    "Loop_ID": str(dev.get("loop_id", "UNK")),
+                    "Device_Address": str(dev.get("address", "UNK")),
+                    "Validation_Hash": str(dev.get("checksum", "INVALID")),
+                    "NFPA72_Compliant": True,
+                },
+            )
 
         self.model.write(output_path)
         logger.info(f"Successfully exported Level-3 BIM IFC Model with Native Topology: {output_path}")
@@ -249,11 +268,13 @@ class HeadlessIFCBridge:
         result = []
         for storey in self.model.by_type("IfcBuildingStorey"):
             elev = self._resolve_storey_elevation(storey)
-            result.append({
-                "guid": storey.GlobalId,
-                "name": storey.Name or "",
-                "elevation": elev,
-            })
+            result.append(
+                {
+                    "guid": storey.GlobalId,
+                    "name": storey.Name or "",
+                    "elevation": elev,
+                }
+            )
         result.sort(key=lambda s: s["elevation"])
         return result
 
@@ -338,14 +359,14 @@ class HeadlessIFCBridge:
         x, y, z = 0.0, 0.0, 0.0
         current = placement
         while current:
-            if hasattr(current, 'RelativePlacement') and current.RelativePlacement:
+            if hasattr(current, "RelativePlacement") and current.RelativePlacement:
                 rel = current.RelativePlacement
-                if hasattr(rel, 'Location') and rel.Location:
+                if hasattr(rel, "Location") and rel.Location:
                     coords = rel.Location.Coordinates
                     x += coords[0] if len(coords) > 0 else 0.0
                     y += coords[1] if len(coords) > 1 else 0.0
                     z += coords[2] if len(coords) > 2 else 0.0
-            if hasattr(current, 'PlacementRelTo') and current.PlacementRelTo:
+            if hasattr(current, "PlacementRelTo") and current.PlacementRelTo:
                 current = current.PlacementRelTo
             else:
                 break
@@ -418,8 +439,7 @@ class HeadlessIFCBridge:
             # Fallback: use LocalPlacement centre
             cx, cy, cz = self._resolve_local_placement(space.ObjectPlacement)
             center = (cx, cy, cz)
-            polygon = [(cx-1, cy-1, cz), (cx+1, cy-1, cz),
-                       (cx+1, cy+1, cz), (cx-1, cy+1, cz)]
+            polygon = [(cx - 1, cy - 1, cz), (cx + 1, cy - 1, cz), (cx + 1, cy + 1, cz), (cx - 1, cy + 1, cz)]
             height = 3.0
             area = 4.0
             volume = 12.0
@@ -457,22 +477,21 @@ class HeadlessIFCBridge:
             return None, (0, 0, 0), 3.0, 0.0, 0.0
 
         # Parse vertices into (x, y, z) tuples
-        pts = [(verts[i], verts[i+1], verts[i+2])
-               for i in range(0, len(verts), 3)]
+        pts = [(verts[i], verts[i + 1], verts[i + 2]) for i in range(0, len(verts), 3)]
 
         xs = [p[0] for p in pts]
         ys = [p[1] for p in pts]
         zs = [p[2] for p in pts]
         z_min, z_max = min(zs), max(zs)
         height = max(z_max - z_min, 0.01)
-        center = ((min(xs)+max(xs))/2, (min(ys)+max(ys))/2, (z_min+z_max)/2)
+        center = ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, (z_min + z_max) / 2)
 
         # Floor polygon: vertices at min Z level (tolerance 5 cm)
         floor_tol = 0.05
         floor_pts = [(p[0], p[1], p[2]) for p in pts if abs(p[2] - z_min) <= floor_tol]
         polygon = _convex_hull_2d(floor_pts) if len(floor_pts) >= 3 else None
 
-        area = _polygon_area_2d(polygon) if polygon else (max(xs)-min(xs))*(max(ys)-min(ys))
+        area = _polygon_area_2d(polygon) if polygon else (max(xs) - min(xs)) * (max(ys) - min(ys))
         volume = area * height
 
         return polygon, center, height, round(area, 3), round(volume, 3)
@@ -486,8 +505,7 @@ class HeadlessIFCBridge:
                 shape = ifcopenshell.geom.create_shape(settings, entity)
                 verts = shape.geometry.verts
                 if verts:
-                    pts = [(verts[i], verts[i+1], verts[i+2])
-                           for i in range(0, len(verts), 3)]
+                    pts = [(verts[i], verts[i + 1], verts[i + 2]) for i in range(0, len(verts), 3)]
                     xs = [p[0] for p in pts]
                     ys = [p[1] for p in pts]
                     zs = [p[2] for p in pts]
@@ -506,10 +524,14 @@ class HeadlessIFCBridge:
                     # 8 corner vertices
                     lo, hi = aabb_min, aabb_max
                     aabb_vertices = [
-                        (lo[0],lo[1],lo[2]), (hi[0],lo[1],lo[2]),
-                        (hi[0],hi[1],lo[2]), (lo[0],hi[1],lo[2]),
-                        (lo[0],lo[1],hi[2]), (hi[0],lo[1],hi[2]),
-                        (hi[0],hi[1],hi[2]), (lo[0],hi[1],hi[2]),
+                        (lo[0], lo[1], lo[2]),
+                        (hi[0], lo[1], lo[2]),
+                        (hi[0], hi[1], lo[2]),
+                        (lo[0], hi[1], lo[2]),
+                        (lo[0], lo[1], hi[2]),
+                        (hi[0], lo[1], hi[2]),
+                        (hi[0], hi[1], hi[2]),
+                        (lo[0], hi[1], hi[2]),
                     ]
 
                     return {
@@ -534,10 +556,14 @@ class HeadlessIFCBridge:
                 "aabb_min": (x - half, y - half, z - half),
                 "aabb_max": (x + half, y + half, z + half),
                 "aabb_vertices": [
-                    (x-half,y-half,z-half), (x+half,y-half,z-half),
-                    (x+half,y+half,z-half), (x-half,y+half,z-half),
-                    (x-half,y-half,z+half), (x+half,y-half,z+half),
-                    (x+half,y+half,z+half), (x-half,y+half,z+half),
+                    (x - half, y - half, z - half),
+                    (x + half, y - half, z - half),
+                    (x + half, y + half, z - half),
+                    (x - half, y + half, z - half),
+                    (x - half, y - half, z + half),
+                    (x + half, y - half, z + half),
+                    (x + half, y + half, z + half),
+                    (x - half, y + half, z + half),
                 ],
             }
         except Exception:

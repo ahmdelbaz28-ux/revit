@@ -93,9 +93,10 @@ from typing import Any, Dict, List, Optional, Tuple
 try:
     from fireai.core.cable_routing_engine import (
         CableRoutingEngine,
-        RouteResult,
         CircuitTopology,
+        RouteResult,
     )
+
     _HAS_CABLE_ROUTING = True
 except ImportError as _exc_cable:
     CableRoutingEngine = None  # type: ignore[assignment,misc]
@@ -112,6 +113,7 @@ try:
         DigitalTwinSync,
         SyncResult,
     )
+
     _HAS_TWIN_SYNC = True
 except ImportError as _exc_twin:
     DigitalTwinSync = None  # type: ignore[assignment,misc]
@@ -124,10 +126,11 @@ else:
 # ── Subsystem 3: Acoustics Engine ────────────────────────────────────────────
 try:
     from fireai.core.acoustics_engine import (
-        AcousticsEngine,
         AcousticCoverageResult,
+        AcousticsEngine,
         UGLDCoverageResult,
     )
+
     _HAS_ACOUSTICS = True
 except ImportError as _exc_acoustics:
     AcousticsEngine = None  # type: ignore[assignment,misc]
@@ -141,9 +144,10 @@ else:
 # ── Subsystem 4: Multi-Floor Orchestrator ────────────────────────────────────
 try:
     from fireai.core.multi_floor_orchestrator import (
-        MultiFloorOrchestrator,
         BuildingAnalysis,
+        MultiFloorOrchestrator,
     )
+
     _HAS_MULTI_FLOOR = True
 except ImportError as _exc_mfo:
     MultiFloorOrchestrator = None  # type: ignore[assignment,misc]
@@ -160,6 +164,7 @@ logger = logging.getLogger(__name__)
 # LOCAL DATACLASSES — types needed by IntegrationConfig / IntegrationResult
 # that are not provided by the subsystem modules.
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class FloorData:
@@ -180,6 +185,7 @@ class FloorData:
         room_specs: Optional list of room specification dicts for
             per-room analysis by FloorOrchestrator.
     """
+
     floor_id: str
     elevation_m: float = 0.0
     area_sqm: float = 0.0
@@ -193,13 +199,10 @@ class FloorData:
             val = getattr(self, name)
             if not math.isfinite(val):
                 raise ValueError(
-                    f"FloorData.{name}={val} is NaN/Inf — "
-                    f"life-safety integration cannot operate on invalid geometry"
+                    f"FloorData.{name}={val} is NaN/Inf — life-safety integration cannot operate on invalid geometry"
                 )
         if self.area_sqm < 0:
-            raise ValueError(
-                f"FloorData.area_sqm={self.area_sqm} must be non-negative"
-            )
+            raise ValueError(f"FloorData.area_sqm={self.area_sqm} must be non-negative")
         if self.ceiling_height_m <= 0:
             raise ValueError(
                 f"FloorData.ceiling_height_m={self.ceiling_height_m} must be "
@@ -228,6 +231,7 @@ class AcousticConfig:
         include_ugld: Whether to include UGLD (ultrasonic gas leak
             detection) analysis per ISA-TR84.00.07.
     """
+
     mode: str = "public"
     ambient_noise_dba: Optional[float] = None
     speaker_rating_dba: float = 95.0
@@ -238,8 +242,7 @@ class AcousticConfig:
         valid_modes = {"public", "private", "sleeping"}
         if self.mode not in valid_modes:
             raise ValueError(
-                f"AcousticConfig.mode='{self.mode}' is invalid. "
-                f"Must be one of {sorted(valid_modes)} per NFPA 72 §18.4."
+                f"AcousticConfig.mode='{self.mode}' is invalid. Must be one of {sorted(valid_modes)} per NFPA 72 §18.4."
             )
         if self.speaker_rating_dba <= 0:
             raise ValueError(
@@ -248,10 +251,7 @@ class AcousticConfig:
                 f"meaningless and violates NFPA 72 §18.4.1.2"
             )
         if self.ambient_noise_dba is not None and self.ambient_noise_dba < 0:
-            raise ValueError(
-                f"AcousticConfig.ambient_noise_dba={self.ambient_noise_dba} "
-                f"must be non-negative"
-            )
+            raise ValueError(f"AcousticConfig.ambient_noise_dba={self.ambient_noise_dba} must be non-negative")
 
 
 @dataclass
@@ -272,6 +272,7 @@ class CableRoutingResult:
         violations: Aggregated violations across all circuits.
         warnings: Aggregated warnings across all circuits.
     """
+
     routes: List[Any] = field(default_factory=list)
     all_routes_valid: bool = False  # V112: FAIL-SAFE — routes not valid until verified
     all_voltage_drop_compliant: bool = False  # V112: FAIL-SAFE — voltage drop not compliant until verified
@@ -289,6 +290,7 @@ class CableRoutingResult:
 # ═══════════════════════════════════════════════════════════════════════════════
 # INTEGRATION CONFIG
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class IntegrationConfig:
@@ -313,6 +315,7 @@ class IntegrationConfig:
             Supported values: 2019, 2022.  Used for edition-specific
             rule selection throughout all subsystems.
     """
+
     building_id: str
     floors: List[FloorData] = field(default_factory=list)
     panel_positions: List[Tuple[float, float, float]] = field(default_factory=list)
@@ -361,26 +364,22 @@ class IntegrationConfig:
         for i, polygon in enumerate(self.obstacle_polygons):
             if len(polygon) < 3:
                 raise ValueError(
-                    f"obstacle_polygons[{i}] has {len(polygon)} vertices — "
-                    f"a polygon requires at least 3 vertices."
+                    f"obstacle_polygons[{i}] has {len(polygon)} vertices — a polygon requires at least 3 vertices."
                 )
             for j, vertex in enumerate(polygon):
                 if len(vertex) != 2:
-                    raise ValueError(
-                        f"obstacle_polygons[{i}][{j}]={vertex} must be a "
-                        f"2-tuple (x, y)."
-                    )
+                    raise ValueError(f"obstacle_polygons[{i}][{j}]={vertex} must be a 2-tuple (x, y).")
                 for k, coord in enumerate(vertex):
                     if not math.isfinite(coord):
                         raise ValueError(
-                            f"obstacle_polygons[{i}][{j}][{k}]={coord} is "
-                            f"NaN/Inf — invalid obstacle geometry."
+                            f"obstacle_polygons[{i}][{j}][{k}]={coord} is NaN/Inf — invalid obstacle geometry."
                         )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # INTEGRATION RESULT
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class IntegrationResult:
@@ -417,8 +416,9 @@ class IntegrationResult:
             that successfully executed reported compliance.
         execution_time_s: Total wall-clock execution time in seconds.
     """
+
     cable_result: Optional[CableRoutingResult] = None
-    twin_result: Optional[Any] = None   # SyncResult — Any because import may fail
+    twin_result: Optional[Any] = None  # SyncResult — Any because import may fail
     acoustic_result: Optional[Any] = None  # AcousticCoverageResult
     multi_floor_result: Optional[Any] = None  # BuildingAnalysis
     errors: List[str] = field(default_factory=list)
@@ -430,6 +430,7 @@ class IntegrationResult:
 # ═══════════════════════════════════════════════════════════════════════════════
 # INTEGRATION BRIDGE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class IntegrationBridge:
     """Unified pipeline that wires together four FireAI subsystems.
@@ -647,7 +648,8 @@ class IntegrationBridge:
 
         # ── Final log ────────────────────────────────────────────────────
         subsystems_ok = sum(
-            1 for r in [
+            1
+            for r in [
                 result.cable_result,
                 result.twin_result,
                 result.acoustic_result,
@@ -656,8 +658,7 @@ class IntegrationBridge:
             if r is not None
         )
         logger.info(
-            "IntegrationBridge complete: building=%s compliant=%s "
-            "subsystems_ok=%d/4 errors=%d warnings=%d t=%.2fs",
+            "IntegrationBridge complete: building=%s compliant=%s subsystems_ok=%d/4 errors=%d warnings=%d t=%.2fs",
             self._config.building_id,
             result.overall_compliant,
             subsystems_ok,
@@ -693,9 +694,7 @@ class IntegrationBridge:
             NEC Article 760 (fire alarm wiring)
         """
         if not _HAS_CABLE_ROUTING:
-            logger.info(
-                "%s skipped — subsystem unavailable.", self._SUB_CABLE
-            )
+            logger.info("%s skipped — subsystem unavailable.", self._SUB_CABLE)
             return None
 
         config = self._config
@@ -716,16 +715,18 @@ class IntegrationBridge:
                 min_x, max_x = min(xs), max(xs)
                 min_y, max_y = min(ys), max(ys)
 
-                obstacles.append(RoutingObstacle3D(
-                    obstacle_type="architectural",
-                    x=min_x,
-                    y=min_y,
-                    z=0.0,
-                    width=max_x - min_x,
-                    height=max_y - min_y,
-                    depth=3.0,  # Default floor height
-                    clearance_m=0.05,
-                ))
+                obstacles.append(
+                    RoutingObstacle3D(
+                        obstacle_type="architectural",
+                        x=min_x,
+                        y=min_y,
+                        z=0.0,
+                        width=max_x - min_x,
+                        height=max_y - min_y,
+                        depth=3.0,  # Default floor height
+                        clearance_m=0.05,
+                    )
+                )
 
         # Create routing engine
         engine = CableRoutingEngine(obstacles=obstacles)
@@ -748,17 +749,21 @@ class IntegrationBridge:
                         detectors = room.get("detectors", [])
                         for det in detectors:
                             if isinstance(det, dict):
-                                device_positions.append((
-                                    float(det.get("x", 0.0)),
-                                    float(det.get("y", 0.0)),
-                                    float(det.get("z", floor.ceiling_height_m)),
-                                ))
+                                device_positions.append(
+                                    (
+                                        float(det.get("x", 0.0)),
+                                        float(det.get("y", 0.0)),
+                                        float(det.get("z", floor.ceiling_height_m)),
+                                    )
+                                )
                             elif isinstance(det, (list, tuple)) and len(det) >= 2:
-                                device_positions.append((
-                                    float(det[0]),
-                                    float(det[1]),
-                                    floor.ceiling_height_m,
-                                ))
+                                device_positions.append(
+                                    (
+                                        float(det[0]),
+                                        float(det[1]),
+                                        floor.ceiling_height_m,
+                                    )
+                                )
 
             if not device_positions:
                 warnings.append(
@@ -793,9 +798,7 @@ class IntegrationBridge:
                 )
 
             for v in route.violations:
-                violations.append(
-                    f"Circuit {route.circuit_id}: {v}"
-                )
+                violations.append(f"Circuit {route.circuit_id}: {v}")
 
         cable_result.routes = all_routes
         cable_result.all_routes_valid = all_valid
@@ -807,16 +810,14 @@ class IntegrationBridge:
 
         if cable_result.compliant:
             logger.info(
-                "%s PASS: %d circuits, %.1fm total cable, "
-                "all voltage drop compliant per NFPA 72-2022 §10.14",
+                "%s PASS: %d circuits, %.1fm total cable, all voltage drop compliant per NFPA 72-2022 §10.14",
                 self._SUB_CABLE,
                 cable_result.circuit_count,
                 cable_result.total_cable_length_m,
             )
         else:
             logger.warning(
-                "%s FAIL: %d circuits, %d violations. "
-                "Cable routing must be corrected before AHJ submittal.",
+                "%s FAIL: %d circuits, %d violations. Cable routing must be corrected before AHJ submittal.",
                 self._SUB_CABLE,
                 cable_result.circuit_count,
                 len(cable_result.violations),
@@ -847,9 +848,7 @@ class IntegrationBridge:
             §14.3.4 (decommissioned devices)
         """
         if not _HAS_TWIN_SYNC:
-            logger.info(
-                "%s skipped — subsystem unavailable.", self._SUB_TWIN
-            )
+            logger.info("%s skipped — subsystem unavailable.", self._SUB_TWIN)
             return None
 
         config = self._config
@@ -865,18 +864,21 @@ class IntegrationBridge:
                     detectors = room.get("detectors", [])
                     for det in detectors:
                         if isinstance(det, dict):
-                            design_detectors.append({
-                                "detector_id": det.get("detector_id", det.get("id", "")),
-                                "room_id": room_id,
-                                "x": float(det.get("x", 0.0)),
-                                "y": float(det.get("y", 0.0)),
-                                "z": float(det.get("z", floor.ceiling_height_m)),
-                                "detector_type": det.get("detector_type", "smoke"),
-                                "coverage_radius": det.get("coverage_radius"),
-                            })
+                            design_detectors.append(
+                                {
+                                    "detector_id": det.get("detector_id", det.get("id", "")),
+                                    "room_id": room_id,
+                                    "x": float(det.get("x", 0.0)),
+                                    "y": float(det.get("y", 0.0)),
+                                    "z": float(det.get("z", floor.ceiling_height_m)),
+                                    "detector_type": det.get("detector_type", "smoke"),
+                                    "coverage_radius": det.get("coverage_radius"),
+                                }
+                            )
 
         # Create DigitalTwin instance for this building
         from fireai.core.digital_twin import DigitalTwin
+
         twin = DigitalTwin(building_id=config.building_id)
 
         # Create sync engine with the twin instance
@@ -891,8 +893,7 @@ class IntegrationBridge:
 
         if sync_result and sync_result.success:
             logger.info(
-                "%s PASS: building=%s %d detectors synced, "
-                "drift=%d critical, coverage=%.1f%%",
+                "%s PASS: building=%s %d detectors synced, drift=%d critical, coverage=%.1f%%",
                 self._SUB_TWIN,
                 config.building_id,
                 sync_result.synced_count,
@@ -901,8 +902,7 @@ class IntegrationBridge:
             )
         else:
             logger.warning(
-                "%s: sync completed with warnings for building=%s "
-                "(errors=%d, synced=%d)",
+                "%s: sync completed with warnings for building=%s (errors=%d, synced=%d)",
                 self._SUB_TWIN,
                 config.building_id,
                 sync_result.error_count if sync_result else 0,
@@ -938,9 +938,7 @@ class IntegrationBridge:
             §18.4.4 (private mode +10 dB)
         """
         if not _HAS_ACOUSTICS:
-            logger.info(
-                "%s skipped — subsystem unavailable.", self._SUB_ACOUSTICS
-            )
+            logger.info("%s skipped — subsystem unavailable.", self._SUB_ACOUSTICS)
             return None
 
         config = self._config
@@ -974,22 +972,26 @@ class IntegrationBridge:
 
                 # Convert dicts to Speaker/CheckPoint objects if needed
                 try:
-                    from fireai.core.acoustic_calculator import Speaker, CheckPoint
+                    from fireai.core.acoustic_calculator import CheckPoint, Speaker
 
                     typed_speakers = []
                     for sp in speakers:
                         if isinstance(sp, Speaker):
                             typed_speakers.append(sp)
                         elif isinstance(sp, dict):
-                            typed_speakers.append(Speaker(
-                                x=float(sp.get("x", 0.0)),
-                                y=float(sp.get("y", 0.0)),
-                                z=float(sp.get("z", floor.ceiling_height_m)),
-                                rating_dba=float(sp.get(
-                                    "rating_dba",
-                                    acoustic_cfg.speaker_rating_dba,
-                                )),
-                            ))
+                            typed_speakers.append(
+                                Speaker(
+                                    x=float(sp.get("x", 0.0)),
+                                    y=float(sp.get("y", 0.0)),
+                                    z=float(sp.get("z", floor.ceiling_height_m)),
+                                    rating_dba=float(
+                                        sp.get(
+                                            "rating_dba",
+                                            acoustic_cfg.speaker_rating_dba,
+                                        )
+                                    ),
+                                )
+                            )
                         else:
                             continue
 
@@ -998,11 +1000,13 @@ class IntegrationBridge:
                         if isinstance(cp, CheckPoint):
                             typed_checkpoints.append(cp)
                         elif isinstance(cp, dict):
-                            typed_checkpoints.append(CheckPoint(
-                                x=float(cp.get("x", 0.0)),
-                                y=float(cp.get("y", 0.0)),
-                                z=float(cp.get("z", 1.5)),
-                            ))
+                            typed_checkpoints.append(
+                                CheckPoint(
+                                    x=float(cp.get("x", 0.0)),
+                                    y=float(cp.get("y", 0.0)),
+                                    z=float(cp.get("z", 1.5)),
+                                )
+                            )
                         else:
                             continue
 
@@ -1033,37 +1037,31 @@ class IntegrationBridge:
                     all_compliant = False
 
                 # Track the worst result
-                if (
-                    worst_result is None
-                    or (
-                        hasattr(room_result, "margin_dba")
-                        and hasattr(worst_result, "margin_dba")
-                        and room_result.margin_dba < worst_result.margin_dba
-                    )
+                if worst_result is None or (
+                    hasattr(room_result, "margin_dba")
+                    and hasattr(worst_result, "margin_dba")
+                    and room_result.margin_dba < worst_result.margin_dba
                 ):
                     worst_result = room_result
 
         if worst_result is not None:
             if all_compliant:
                 logger.info(
-                    "%s PASS: all rooms compliant, mode=%s, "
-                    "worst margin=%.1f dB per NFPA 72-2022 §18.4",
+                    "%s PASS: all rooms compliant, mode=%s, worst margin=%.1f dB per NFPA 72-2022 §18.4",
                     self._SUB_ACOUSTICS,
                     acoustic_cfg.mode,
                     worst_result.margin_dba,
                 )
             else:
                 logger.warning(
-                    "%s FAIL: one or more rooms non-compliant, mode=%s, "
-                    "worst margin=%.1f dB per NFPA 72-2022 §18.4",
+                    "%s FAIL: one or more rooms non-compliant, mode=%s, worst margin=%.1f dB per NFPA 72-2022 §18.4",
                     self._SUB_ACOUSTICS,
                     acoustic_cfg.mode,
                     worst_result.margin_dba,
                 )
         else:
             logger.info(
-                "%s: no rooms with speaker/check point data found — "
-                "acoustic analysis produced no results.",
+                "%s: no rooms with speaker/check point data found — acoustic analysis produced no results.",
                 self._SUB_ACOUSTICS,
             )
 
@@ -1094,9 +1092,7 @@ class IntegrationBridge:
             §21.7.1 (HVAC shutdown)
         """
         if not _HAS_MULTI_FLOOR:
-            logger.info(
-                "%s skipped — subsystem unavailable.", self._SUB_MULTI_FLOOR
-            )
+            logger.info("%s skipped — subsystem unavailable.", self._SUB_MULTI_FLOOR)
             return None
 
         config = self._config
@@ -1141,8 +1137,7 @@ class IntegrationBridge:
 
         if analysis.compliant:
             logger.info(
-                "%s PASS: building=%s floors=%d devices=%d "
-                "loops=%d zones=%d compliant=%s",
+                "%s PASS: building=%s floors=%d devices=%d loops=%d zones=%d compliant=%s",
                 self._SUB_MULTI_FLOOR,
                 config.building_id,
                 analysis.total_floors,
@@ -1153,8 +1148,7 @@ class IntegrationBridge:
             )
         else:
             logger.warning(
-                "%s FAIL: building=%s — analysis indicates non-compliance. "
-                "%d errors recorded per NFPA 72-2022 §21.",
+                "%s FAIL: building=%s — analysis indicates non-compliance. %d errors recorded per NFPA 72-2022 §21.",
                 self._SUB_MULTI_FLOOR,
                 config.building_id,
                 len(analysis.errors),
@@ -1191,14 +1185,18 @@ class IntegrationBridge:
 
         # Cable Routing: check our aggregated result
         if result.cable_result is not None:
-            compliance_checks.append((
-                "Cable Routing",
-                result.cable_result.compliant,
-            ))
+            compliance_checks.append(
+                (
+                    "Cable Routing",
+                    result.cable_result.compliant,
+                )
+            )
 
         # Digital Twin Sync: check for success attribute
         if result.twin_result is not None:
-            twin_compliant = getattr(result.twin_result, "success", False)  # V112: FAIL-SAFE — missing success = NOT compliant
+            twin_compliant = getattr(
+                result.twin_result, "success", False
+            )  # V112: FAIL-SAFE — missing success = NOT compliant
             # Also check for a 'compliant' attribute if it exists
             if hasattr(result.twin_result, "compliant"):
                 twin_compliant = result.twin_result.compliant
@@ -1206,16 +1204,12 @@ class IntegrationBridge:
 
         # Acoustics: check the AcousticCoverageResult
         if result.acoustic_result is not None:
-            acoustic_compliant = getattr(
-                result.acoustic_result, "compliant", True
-            )
+            acoustic_compliant = getattr(result.acoustic_result, "compliant", True)
             compliance_checks.append(("Acoustics", acoustic_compliant))
 
         # Multi-Floor: check the BuildingAnalysis
         if result.multi_floor_result is not None:
-            mf_compliant = getattr(
-                result.multi_floor_result, "compliant", True
-            )
+            mf_compliant = getattr(result.multi_floor_result, "compliant", True)
             compliance_checks.append(("Multi-Floor", mf_compliant))
 
         # If no subsystems produced results, we cannot claim compliance
@@ -1233,14 +1227,11 @@ class IntegrationBridge:
         # Log the breakdown
         for name, compliant in compliance_checks:
             status = "PASS" if compliant else "FAIL"
-            logger.info(
-                "Compliance gate: %s — %s", name, status
-            )
+            logger.info("Compliance gate: %s — %s", name, status)
 
         if overall:
             logger.info(
-                "Overall compliance: PASS — all %d available subsystems "
-                "compliant.",
+                "Overall compliance: PASS — all %d available subsystems compliant.",
                 len(compliance_checks),
             )
         else:

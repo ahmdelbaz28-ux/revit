@@ -38,7 +38,7 @@ import hmac
 import secrets
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from fireai.core.security_logging import SecurityEventType, security_audit
@@ -47,6 +47,7 @@ from fireai.core.security_logging import SecurityEventType, security_audit
 @dataclass
 class _KeyRecord:
     """Internal record for a rotated key."""
+
     fingerprint: str  # SHA-256 fingerprint of the key (NOT the key itself)
     rotated_at: float  # time.monotonic() when rotation occurred
     grace_period_s: float  # How long the old key remains valid
@@ -237,8 +238,15 @@ class KeyRotator:
         # Check for common placeholder patterns
         lower_key = key.lower()
         _bad_patterns = [
-            "password", "changeme", "placeholder", "secret",
-            "test", "dev", "example", "default", "admin",
+            "password",
+            "changeme",
+            "placeholder",
+            "secret",
+            "test",
+            "dev",
+            "example",
+            "default",
+            "admin",
         ]
         for pattern in _bad_patterns:
             if pattern in lower_key:

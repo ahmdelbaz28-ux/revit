@@ -29,7 +29,7 @@ import logging
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-from fireai.core.models_v21 import RegulatoryFramework, RegSelectorResult
+from fireai.core.models_v21 import RegSelectorResult, RegulatoryFramework
 
 logger = logging.getLogger(__name__)
 
@@ -38,48 +38,49 @@ logger = logging.getLogger(__name__)
 # Enums — preserved for backward compatibility
 # ---------------------------------------------------------------------------
 
+
 class HazardSystem(str, Enum):
-    NEC_DIVISION = "NEC_DIVISION"    # USA (NFPA 70 Art. 500-506)
-    CEC_ZONE     = "CEC_ZONE"       # Canada (CEC Section 18, CSA C22.1)
-    ATEX_ZONE    = "ATEX_ZONE"       # EU, UK (2014/34/EU, EN 60079)
-    IECEX_ZONE   = "IECEX_ZONE"      # Global (IEC 60079)
-    AS_NZS_ZONE  = "AS_NZS_ZONE"     # Australia, New Zealand
-    GOST_ZONE    = "GOST_ZONE"       # Russia, CIS (GOST R 51330)
-    GB_ZONE      = "GB_ZONE"         # China (GB 3836)
+    NEC_DIVISION = "NEC_DIVISION"  # USA (NFPA 70 Art. 500-506)
+    CEC_ZONE = "CEC_ZONE"  # Canada (CEC Section 18, CSA C22.1)
+    ATEX_ZONE = "ATEX_ZONE"  # EU, UK (2014/34/EU, EN 60079)
+    IECEX_ZONE = "IECEX_ZONE"  # Global (IEC 60079)
+    AS_NZS_ZONE = "AS_NZS_ZONE"  # Australia, New Zealand
+    GOST_ZONE = "GOST_ZONE"  # Russia, CIS (GOST R 51330)
+    GB_ZONE = "GB_ZONE"  # China (GB 3836)
 
 
 class JurisdictionRegion(str, Enum):
-    USA           = "USA"
-    CANADA        = "CANADA"
-    EU            = "EU"
-    EFTA          = "EFTA"
-    UK            = "UK"
-    AUSTRALIA     = "AUSTRALIA"
-    NEW_ZEALAND   = "NEW_ZEALAND"
-    RUSSIA        = "RUSSIA"
-    KAZAKHSTAN    = "KAZAKHSTAN"
-    CHINA         = "CHINA"
-    JAPAN         = "JAPAN"
-    SOUTH_KOREA   = "SOUTH_KOREA"
-    BRAZIL        = "BRAZIL"
-    MIDDLE_EAST   = "MIDDLE_EAST"
-    INDIA         = "INDIA"
-    SOUTH_AFRICA  = "SOUTH_AFRICA"
-    ASEAN         = "ASEAN"
-    TURKEY        = "TURKEY"
-    NORTH_AFRICA  = "NORTH_AFRICA"
-    WEST_AFRICA   = "WEST_AFRICA"
+    USA = "USA"
+    CANADA = "CANADA"
+    EU = "EU"
+    EFTA = "EFTA"
+    UK = "UK"
+    AUSTRALIA = "AUSTRALIA"
+    NEW_ZEALAND = "NEW_ZEALAND"
+    RUSSIA = "RUSSIA"
+    KAZAKHSTAN = "KAZAKHSTAN"
+    CHINA = "CHINA"
+    JAPAN = "JAPAN"
+    SOUTH_KOREA = "SOUTH_KOREA"
+    BRAZIL = "BRAZIL"
+    MIDDLE_EAST = "MIDDLE_EAST"
+    INDIA = "INDIA"
+    SOUTH_AFRICA = "SOUTH_AFRICA"
+    ASEAN = "ASEAN"
+    TURKEY = "TURKEY"
+    NORTH_AFRICA = "NORTH_AFRICA"
+    WEST_AFRICA = "WEST_AFRICA"
     SOUTH_AMERICA = "SOUTH_AMERICA"
-    CENTRAL_ASIA  = "CENTRAL_ASIA"
-    GLOBAL        = "GLOBAL"
+    CENTRAL_ASIA = "CENTRAL_ASIA"
+    GLOBAL = "GLOBAL"
 
 
 class HazardClass(str, Enum):
-    CLASS_I   = "CLASS_I"    # Flammable gases/vapors (NEC Art. 501)
-    CLASS_II  = "CLASS_II"   # Combustible dust (NEC Art. 502)
+    CLASS_I = "CLASS_I"  # Flammable gases/vapors (NEC Art. 501)
+    CLASS_II = "CLASS_II"  # Combustible dust (NEC Art. 502)
     CLASS_III = "CLASS_III"  # Ignitable fibers (NEC Art. 503)
     GAS_VAPOR = "GAS_VAPOR"  # Zone 0/1/2 or Div 1/2
-    DUST      = "DUST"       # Zone 20/21/22 or Div 1/2
+    DUST = "DUST"  # Zone 20/21/22 or Div 1/2
 
 
 class NECDivision(str, Enum):
@@ -88,18 +89,19 @@ class NECDivision(str, Enum):
 
 
 class ATEXZone(str, Enum):
-    ZONE_0  = "ZONE_0"
-    ZONE_1  = "ZONE_1"
-    ZONE_2  = "ZONE_2"
+    ZONE_0 = "ZONE_0"
+    ZONE_1 = "ZONE_1"
+    ZONE_2 = "ZONE_2"
     ZONE_20 = "ZONE_20"
     ZONE_21 = "ZONE_21"
     ZONE_22 = "ZONE_22"
-    SAFE    = "SAFE"
+    SAFE = "SAFE"
 
 
 # ---------------------------------------------------------------------------
 # Q3: UnknownCountryError — RAISES, never silently falls back
 # ---------------------------------------------------------------------------
+
 
 class UnknownCountryError(Exception):
     """
@@ -107,6 +109,7 @@ class UnknownCountryError(Exception):
     Prevents exporting legally incorrect specifications.
     Criminal liability protection for life-safety systems.
     """
+
     def __init__(self, country_code: str):
         self.country_code = country_code
         super().__init__(
@@ -146,10 +149,10 @@ COUNTRY_FRAMEWORK_MAP: Dict[str, RegulatoryFramework] = {
     "GR": RegulatoryFramework.ATEX_EU,
     "IE": RegulatoryFramework.ATEX_EU,
     # EFTA (not EU) — Fix #3
-    "NO": RegulatoryFramework.EFTA,   # Norway: EEA but not EU
-    "CH": RegulatoryFramework.EFTA,   # Switzerland
-    "IS": RegulatoryFramework.EFTA,   # Iceland
-    "LI": RegulatoryFramework.EFTA,   # Liechtenstein
+    "NO": RegulatoryFramework.EFTA,  # Norway: EEA but not EU
+    "CH": RegulatoryFramework.EFTA,  # Switzerland
+    "IS": RegulatoryFramework.EFTA,  # Iceland
+    "LI": RegulatoryFramework.EFTA,  # Liechtenstein
     # NEC USA / Mexico
     "US": RegulatoryFramework.NEC_US,
     "MX": RegulatoryFramework.NEC_US,
@@ -213,11 +216,11 @@ COUNTRY_FRAMEWORK_MAP: Dict[str, RegulatoryFramework] = {
 }
 
 _ZONE_SYSTEM = {
-    RegulatoryFramework.ATEX_EU:    "ZONE",
-    RegulatoryFramework.IECEX:      "ZONE",
-    RegulatoryFramework.CEC_CANADA: "ZONE",   # Fix #1: Canada uses Zone since 1998
-    RegulatoryFramework.EFTA:       "ZONE",
-    RegulatoryFramework.NEC_US:     "DIVISION",
+    RegulatoryFramework.ATEX_EU: "ZONE",
+    RegulatoryFramework.IECEX: "ZONE",
+    RegulatoryFramework.CEC_CANADA: "ZONE",  # Fix #1: Canada uses Zone since 1998
+    RegulatoryFramework.EFTA: "ZONE",
+    RegulatoryFramework.NEC_US: "DIVISION",
 }
 
 # Fix #2: Division-to-Zone conversion with hazard class distinction
@@ -237,19 +240,22 @@ _DIVISION_TO_ZONE: Dict[Tuple[str, str], Optional[str]] = {
 # Legacy dataclass-based RegulatoryFramework for backward compatibility
 from dataclasses import dataclass as _dataclass
 
+
 @_dataclass(frozen=True)
 class RegulatoryFrameworkLegacy:
     """Legacy regulatory framework dataclass — for backward compatibility."""
-    region:             JurisdictionRegion
-    system:             HazardSystem
-    primary_standard:   str
+
+    region: JurisdictionRegion
+    system: HazardSystem
+    primary_standard: str
     secondary_standards: Tuple[str, ...] = ()
-    atex_directive:     Optional[str]  = None
-    iec_standard:       Optional[str]  = None
-    zone_based:         bool           = True
-    requires_notified_body: bool       = False
-    equipment_marking:  str            = ""
-    legal_note:         str            = ""
+    atex_directive: Optional[str] = None
+    iec_standard: Optional[str] = None
+    zone_based: bool = True
+    requires_notified_body: bool = False
+    equipment_marking: str = ""
+    legal_note: str = ""
+
 
 # Legacy framework definitions
 _FRAMEWORKS: Dict[HazardSystem, RegulatoryFrameworkLegacy] = {
@@ -258,8 +264,10 @@ _FRAMEWORKS: Dict[HazardSystem, RegulatoryFrameworkLegacy] = {
         system=HazardSystem.NEC_DIVISION,
         primary_standard="NFPA 70-2023 Art. 500-506",
         secondary_standards=(
-            "OSHA 29 CFR 1910.307", "API RP 505",
-            "NFPA 497 (Gas/Vapor)", "NFPA 499 (Dust)",
+            "OSHA 29 CFR 1910.307",
+            "API RP 505",
+            "NFPA 497 (Gas/Vapor)",
+            "NFPA 499 (Dust)",
         ),
         zone_based=False,
         requires_notified_body=False,
@@ -272,7 +280,8 @@ _FRAMEWORKS: Dict[HazardSystem, RegulatoryFrameworkLegacy] = {
         primary_standard="CEC Section 18 / CSA C22.1",
         secondary_standards=(
             "CEC Section 18 (Zone classification)",
-            "CSA C22.2 No. 30", "CSA C22.2 No. 213",
+            "CSA C22.2 No. 30",
+            "CSA C22.2 No. 213",
         ),
         zone_based=True,
         requires_notified_body=False,
@@ -300,8 +309,10 @@ _FRAMEWORKS: Dict[HazardSystem, RegulatoryFrameworkLegacy] = {
         system=HazardSystem.IECEX_ZONE,
         primary_standard="IEC 60079 series",
         secondary_standards=(
-            "IEC 60079-10-1", "IEC 60079-10-2",
-            "IEC 60079-14", "IEC 60079-17",
+            "IEC 60079-10-1",
+            "IEC 60079-10-2",
+            "IEC 60079-14",
+            "IEC 60079-17",
         ),
         iec_standard="IEC 60079-0",
         zone_based=True,
@@ -344,104 +355,155 @@ _FRAMEWORKS: Dict[HazardSystem, RegulatoryFrameworkLegacy] = {
 
 # Country -> Region mapping (for legacy interface)
 _COUNTRY_TO_REGION: Dict[str, JurisdictionRegion] = {
-    "US": JurisdictionRegion.USA, "USA": JurisdictionRegion.USA,
+    "US": JurisdictionRegion.USA,
+    "USA": JurisdictionRegion.USA,
     "UNITED STATES": JurisdictionRegion.USA,
-    "CA": JurisdictionRegion.CANADA, "CANADA": JurisdictionRegion.CANADA,
-    "DE": JurisdictionRegion.EU, "GERMANY": JurisdictionRegion.EU,
-    "FR": JurisdictionRegion.EU, "FRANCE": JurisdictionRegion.EU,
-    "IT": JurisdictionRegion.EU, "ITALY": JurisdictionRegion.EU,
-    "ES": JurisdictionRegion.EU, "SPAIN": JurisdictionRegion.EU,
-    "NL": JurisdictionRegion.EU, "NETHERLANDS": JurisdictionRegion.EU,
-    "BE": JurisdictionRegion.EU, "BELGIUM": JurisdictionRegion.EU,
-    "PL": JurisdictionRegion.EU, "POLAND": JurisdictionRegion.EU,
-    "SE": JurisdictionRegion.EU, "SWEDEN": JurisdictionRegion.EU,
-    "DK": JurisdictionRegion.EU, "DENMARK": JurisdictionRegion.EU,
-    "FI": JurisdictionRegion.EU, "FINLAND": JurisdictionRegion.EU,
-    "AT": JurisdictionRegion.EU, "AUSTRIA": JurisdictionRegion.EU,
-    "PT": JurisdictionRegion.EU, "PORTUGAL": JurisdictionRegion.EU,
-    "GR": JurisdictionRegion.EU, "GREECE": JurisdictionRegion.EU,
-    "CZ": JurisdictionRegion.EU, "CZECH REPUBLIC": JurisdictionRegion.EU,
-    "RO": JurisdictionRegion.EU, "ROMANIA": JurisdictionRegion.EU,
-    "HU": JurisdictionRegion.EU, "HUNGARY": JurisdictionRegion.EU,
-    "IE": JurisdictionRegion.EU, "IRELAND": JurisdictionRegion.EU,
-    "NO": JurisdictionRegion.EFTA, "NORWAY": JurisdictionRegion.EFTA,
-    "CH": JurisdictionRegion.EFTA, "SWITZERLAND": JurisdictionRegion.EFTA,
-    "IS": JurisdictionRegion.EFTA, "ICELAND": JurisdictionRegion.EFTA,
-    "LI": JurisdictionRegion.EFTA, "LIECHTENSTEIN": JurisdictionRegion.EFTA,
-    "GB": JurisdictionRegion.UK, "UK": JurisdictionRegion.UK,
-    "AU": JurisdictionRegion.AUSTRALIA, "AUSTRALIA": JurisdictionRegion.AUSTRALIA,
-    "NZ": JurisdictionRegion.NEW_ZEALAND, "NEW ZEALAND": JurisdictionRegion.NEW_ZEALAND,
-    "RU": JurisdictionRegion.RUSSIA, "RUSSIA": JurisdictionRegion.RUSSIA,
-    "CN": JurisdictionRegion.CHINA, "CHINA": JurisdictionRegion.CHINA,
-    "JP": JurisdictionRegion.JAPAN, "JAPAN": JurisdictionRegion.JAPAN,
-    "KR": JurisdictionRegion.SOUTH_KOREA, "SOUTH KOREA": JurisdictionRegion.SOUTH_KOREA,
-    "SG": JurisdictionRegion.ASEAN, "SINGAPORE": JurisdictionRegion.ASEAN,
-    "MY": JurisdictionRegion.ASEAN, "MALAYSIA": JurisdictionRegion.ASEAN,
-    "ID": JurisdictionRegion.ASEAN, "INDONESIA": JurisdictionRegion.ASEAN,
-    "TH": JurisdictionRegion.ASEAN, "THAILAND": JurisdictionRegion.ASEAN,
-    "PH": JurisdictionRegion.ASEAN, "PHILIPPINES": JurisdictionRegion.ASEAN,
-    "VN": JurisdictionRegion.ASEAN, "VIETNAM": JurisdictionRegion.ASEAN,
-    "TR": JurisdictionRegion.TURKEY, "TURKEY": JurisdictionRegion.TURKEY,
-    "BR": JurisdictionRegion.BRAZIL, "BRAZIL": JurisdictionRegion.BRAZIL,
-    "CO": JurisdictionRegion.SOUTH_AMERICA, "COLOMBIA": JurisdictionRegion.SOUTH_AMERICA,
-    "AR": JurisdictionRegion.SOUTH_AMERICA, "ARGENTINA": JurisdictionRegion.SOUTH_AMERICA,
-    "CL": JurisdictionRegion.SOUTH_AMERICA, "CHILE": JurisdictionRegion.SOUTH_AMERICA,
-    "SA": JurisdictionRegion.MIDDLE_EAST, "SAUDI ARABIA": JurisdictionRegion.MIDDLE_EAST,
-    "AE": JurisdictionRegion.MIDDLE_EAST, "UAE": JurisdictionRegion.MIDDLE_EAST,
-    "QA": JurisdictionRegion.MIDDLE_EAST, "QATAR": JurisdictionRegion.MIDDLE_EAST,
-    "KW": JurisdictionRegion.MIDDLE_EAST, "KUWAIT": JurisdictionRegion.MIDDLE_EAST,
-    "IR": JurisdictionRegion.MIDDLE_EAST, "IRAN": JurisdictionRegion.MIDDLE_EAST,
-    "IN": JurisdictionRegion.INDIA, "INDIA": JurisdictionRegion.INDIA,
-    "PK": JurisdictionRegion.CENTRAL_ASIA, "PAKISTAN": JurisdictionRegion.CENTRAL_ASIA,
-    "ZA": JurisdictionRegion.SOUTH_AFRICA, "SOUTH AFRICA": JurisdictionRegion.SOUTH_AFRICA,
-    "EG": JurisdictionRegion.NORTH_AFRICA, "EGYPT": JurisdictionRegion.NORTH_AFRICA,
-    "NG": JurisdictionRegion.WEST_AFRICA, "NIGERIA": JurisdictionRegion.WEST_AFRICA,
+    "CA": JurisdictionRegion.CANADA,
+    "CANADA": JurisdictionRegion.CANADA,
+    "DE": JurisdictionRegion.EU,
+    "GERMANY": JurisdictionRegion.EU,
+    "FR": JurisdictionRegion.EU,
+    "FRANCE": JurisdictionRegion.EU,
+    "IT": JurisdictionRegion.EU,
+    "ITALY": JurisdictionRegion.EU,
+    "ES": JurisdictionRegion.EU,
+    "SPAIN": JurisdictionRegion.EU,
+    "NL": JurisdictionRegion.EU,
+    "NETHERLANDS": JurisdictionRegion.EU,
+    "BE": JurisdictionRegion.EU,
+    "BELGIUM": JurisdictionRegion.EU,
+    "PL": JurisdictionRegion.EU,
+    "POLAND": JurisdictionRegion.EU,
+    "SE": JurisdictionRegion.EU,
+    "SWEDEN": JurisdictionRegion.EU,
+    "DK": JurisdictionRegion.EU,
+    "DENMARK": JurisdictionRegion.EU,
+    "FI": JurisdictionRegion.EU,
+    "FINLAND": JurisdictionRegion.EU,
+    "AT": JurisdictionRegion.EU,
+    "AUSTRIA": JurisdictionRegion.EU,
+    "PT": JurisdictionRegion.EU,
+    "PORTUGAL": JurisdictionRegion.EU,
+    "GR": JurisdictionRegion.EU,
+    "GREECE": JurisdictionRegion.EU,
+    "CZ": JurisdictionRegion.EU,
+    "CZECH REPUBLIC": JurisdictionRegion.EU,
+    "RO": JurisdictionRegion.EU,
+    "ROMANIA": JurisdictionRegion.EU,
+    "HU": JurisdictionRegion.EU,
+    "HUNGARY": JurisdictionRegion.EU,
+    "IE": JurisdictionRegion.EU,
+    "IRELAND": JurisdictionRegion.EU,
+    "NO": JurisdictionRegion.EFTA,
+    "NORWAY": JurisdictionRegion.EFTA,
+    "CH": JurisdictionRegion.EFTA,
+    "SWITZERLAND": JurisdictionRegion.EFTA,
+    "IS": JurisdictionRegion.EFTA,
+    "ICELAND": JurisdictionRegion.EFTA,
+    "LI": JurisdictionRegion.EFTA,
+    "LIECHTENSTEIN": JurisdictionRegion.EFTA,
+    "GB": JurisdictionRegion.UK,
+    "UK": JurisdictionRegion.UK,
+    "AU": JurisdictionRegion.AUSTRALIA,
+    "AUSTRALIA": JurisdictionRegion.AUSTRALIA,
+    "NZ": JurisdictionRegion.NEW_ZEALAND,
+    "NEW ZEALAND": JurisdictionRegion.NEW_ZEALAND,
+    "RU": JurisdictionRegion.RUSSIA,
+    "RUSSIA": JurisdictionRegion.RUSSIA,
+    "CN": JurisdictionRegion.CHINA,
+    "CHINA": JurisdictionRegion.CHINA,
+    "JP": JurisdictionRegion.JAPAN,
+    "JAPAN": JurisdictionRegion.JAPAN,
+    "KR": JurisdictionRegion.SOUTH_KOREA,
+    "SOUTH KOREA": JurisdictionRegion.SOUTH_KOREA,
+    "SG": JurisdictionRegion.ASEAN,
+    "SINGAPORE": JurisdictionRegion.ASEAN,
+    "MY": JurisdictionRegion.ASEAN,
+    "MALAYSIA": JurisdictionRegion.ASEAN,
+    "ID": JurisdictionRegion.ASEAN,
+    "INDONESIA": JurisdictionRegion.ASEAN,
+    "TH": JurisdictionRegion.ASEAN,
+    "THAILAND": JurisdictionRegion.ASEAN,
+    "PH": JurisdictionRegion.ASEAN,
+    "PHILIPPINES": JurisdictionRegion.ASEAN,
+    "VN": JurisdictionRegion.ASEAN,
+    "VIETNAM": JurisdictionRegion.ASEAN,
+    "TR": JurisdictionRegion.TURKEY,
+    "TURKEY": JurisdictionRegion.TURKEY,
+    "BR": JurisdictionRegion.BRAZIL,
+    "BRAZIL": JurisdictionRegion.BRAZIL,
+    "CO": JurisdictionRegion.SOUTH_AMERICA,
+    "COLOMBIA": JurisdictionRegion.SOUTH_AMERICA,
+    "AR": JurisdictionRegion.SOUTH_AMERICA,
+    "ARGENTINA": JurisdictionRegion.SOUTH_AMERICA,
+    "CL": JurisdictionRegion.SOUTH_AMERICA,
+    "CHILE": JurisdictionRegion.SOUTH_AMERICA,
+    "SA": JurisdictionRegion.MIDDLE_EAST,
+    "SAUDI ARABIA": JurisdictionRegion.MIDDLE_EAST,
+    "AE": JurisdictionRegion.MIDDLE_EAST,
+    "UAE": JurisdictionRegion.MIDDLE_EAST,
+    "QA": JurisdictionRegion.MIDDLE_EAST,
+    "QATAR": JurisdictionRegion.MIDDLE_EAST,
+    "KW": JurisdictionRegion.MIDDLE_EAST,
+    "KUWAIT": JurisdictionRegion.MIDDLE_EAST,
+    "IR": JurisdictionRegion.MIDDLE_EAST,
+    "IRAN": JurisdictionRegion.MIDDLE_EAST,
+    "IN": JurisdictionRegion.INDIA,
+    "INDIA": JurisdictionRegion.INDIA,
+    "PK": JurisdictionRegion.CENTRAL_ASIA,
+    "PAKISTAN": JurisdictionRegion.CENTRAL_ASIA,
+    "ZA": JurisdictionRegion.SOUTH_AFRICA,
+    "SOUTH AFRICA": JurisdictionRegion.SOUTH_AFRICA,
+    "EG": JurisdictionRegion.NORTH_AFRICA,
+    "EGYPT": JurisdictionRegion.NORTH_AFRICA,
+    "NG": JurisdictionRegion.WEST_AFRICA,
+    "NIGERIA": JurisdictionRegion.WEST_AFRICA,
 }
 
 _REGION_TO_SYSTEM: Dict[JurisdictionRegion, HazardSystem] = {
-    JurisdictionRegion.USA:          HazardSystem.NEC_DIVISION,
-    JurisdictionRegion.CANADA:       HazardSystem.CEC_ZONE,
-    JurisdictionRegion.EU:           HazardSystem.ATEX_ZONE,
-    JurisdictionRegion.EFTA:         HazardSystem.ATEX_ZONE,
-    JurisdictionRegion.UK:           HazardSystem.ATEX_ZONE,
-    JurisdictionRegion.AUSTRALIA:    HazardSystem.AS_NZS_ZONE,
-    JurisdictionRegion.NEW_ZEALAND:  HazardSystem.AS_NZS_ZONE,
-    JurisdictionRegion.RUSSIA:       HazardSystem.GOST_ZONE,
-    JurisdictionRegion.KAZAKHSTAN:   HazardSystem.GOST_ZONE,
-    JurisdictionRegion.CHINA:        HazardSystem.GB_ZONE,
-    JurisdictionRegion.JAPAN:        HazardSystem.IECEX_ZONE,
-    JurisdictionRegion.SOUTH_KOREA:  HazardSystem.IECEX_ZONE,
-    JurisdictionRegion.BRAZIL:       HazardSystem.IECEX_ZONE,
-    JurisdictionRegion.MIDDLE_EAST:  HazardSystem.IECEX_ZONE,
-    JurisdictionRegion.INDIA:        HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.USA: HazardSystem.NEC_DIVISION,
+    JurisdictionRegion.CANADA: HazardSystem.CEC_ZONE,
+    JurisdictionRegion.EU: HazardSystem.ATEX_ZONE,
+    JurisdictionRegion.EFTA: HazardSystem.ATEX_ZONE,
+    JurisdictionRegion.UK: HazardSystem.ATEX_ZONE,
+    JurisdictionRegion.AUSTRALIA: HazardSystem.AS_NZS_ZONE,
+    JurisdictionRegion.NEW_ZEALAND: HazardSystem.AS_NZS_ZONE,
+    JurisdictionRegion.RUSSIA: HazardSystem.GOST_ZONE,
+    JurisdictionRegion.KAZAKHSTAN: HazardSystem.GOST_ZONE,
+    JurisdictionRegion.CHINA: HazardSystem.GB_ZONE,
+    JurisdictionRegion.JAPAN: HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.SOUTH_KOREA: HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.BRAZIL: HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.MIDDLE_EAST: HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.INDIA: HazardSystem.IECEX_ZONE,
     JurisdictionRegion.SOUTH_AFRICA: HazardSystem.IECEX_ZONE,
-    JurisdictionRegion.ASEAN:        HazardSystem.IECEX_ZONE,
-    JurisdictionRegion.TURKEY:       HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.ASEAN: HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.TURKEY: HazardSystem.IECEX_ZONE,
     JurisdictionRegion.NORTH_AFRICA: HazardSystem.IECEX_ZONE,
-    JurisdictionRegion.WEST_AFRICA:  HazardSystem.IECEX_ZONE,  # Nigeria, Ghana etc. use IECEx
-    JurisdictionRegion.SOUTH_AMERICA:HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.WEST_AFRICA: HazardSystem.IECEX_ZONE,  # Nigeria, Ghana etc. use IECEx
+    JurisdictionRegion.SOUTH_AMERICA: HazardSystem.IECEX_ZONE,
     JurisdictionRegion.CENTRAL_ASIA: HazardSystem.IECEX_ZONE,
-    JurisdictionRegion.GLOBAL:       HazardSystem.IECEX_ZONE,
+    JurisdictionRegion.GLOBAL: HazardSystem.IECEX_ZONE,
 }
 
 # Zone <-> Division conversion maps (legacy)
 DIVISION_TO_ZONE: Dict[Tuple[NECDivision, HazardClass], Optional[ATEXZone]] = {
-    (NECDivision.DIVISION_1, HazardClass.CLASS_I):   ATEXZone.ZONE_1,
-    (NECDivision.DIVISION_2, HazardClass.CLASS_I):   ATEXZone.ZONE_2,
-    (NECDivision.DIVISION_1, HazardClass.CLASS_II):  ATEXZone.ZONE_21,
-    (NECDivision.DIVISION_2, HazardClass.CLASS_II):  ATEXZone.ZONE_22,
+    (NECDivision.DIVISION_1, HazardClass.CLASS_I): ATEXZone.ZONE_1,
+    (NECDivision.DIVISION_2, HazardClass.CLASS_I): ATEXZone.ZONE_2,
+    (NECDivision.DIVISION_1, HazardClass.CLASS_II): ATEXZone.ZONE_21,
+    (NECDivision.DIVISION_2, HazardClass.CLASS_II): ATEXZone.ZONE_22,
     (NECDivision.DIVISION_1, HazardClass.GAS_VAPOR): ATEXZone.ZONE_1,
     (NECDivision.DIVISION_2, HazardClass.GAS_VAPOR): ATEXZone.ZONE_2,
-    (NECDivision.DIVISION_1, HazardClass.DUST):      ATEXZone.ZONE_21,
-    (NECDivision.DIVISION_2, HazardClass.DUST):      ATEXZone.ZONE_22,
+    (NECDivision.DIVISION_1, HazardClass.DUST): ATEXZone.ZONE_21,
+    (NECDivision.DIVISION_2, HazardClass.DUST): ATEXZone.ZONE_22,
     (NECDivision.DIVISION_1, HazardClass.CLASS_III): None,
     (NECDivision.DIVISION_2, HazardClass.CLASS_III): None,
 }
 
 ZONE_TO_DIVISION: Dict[ATEXZone, Tuple[NECDivision, HazardClass]] = {
-    ATEXZone.ZONE_0:  (NECDivision.DIVISION_1, HazardClass.CLASS_I),
-    ATEXZone.ZONE_1:  (NECDivision.DIVISION_1, HazardClass.CLASS_I),
-    ATEXZone.ZONE_2:  (NECDivision.DIVISION_2, HazardClass.CLASS_I),
+    ATEXZone.ZONE_0: (NECDivision.DIVISION_1, HazardClass.CLASS_I),
+    ATEXZone.ZONE_1: (NECDivision.DIVISION_1, HazardClass.CLASS_I),
+    ATEXZone.ZONE_2: (NECDivision.DIVISION_2, HazardClass.CLASS_I),
     ATEXZone.ZONE_20: (NECDivision.DIVISION_1, HazardClass.CLASS_II),
     ATEXZone.ZONE_21: (NECDivision.DIVISION_1, HazardClass.CLASS_II),
     ATEXZone.ZONE_22: (NECDivision.DIVISION_2, HazardClass.CLASS_II),
@@ -451,6 +513,7 @@ ZONE_TO_DIVISION: Dict[ATEXZone, Tuple[NECDivision, HazardClass]] = {
 # ---------------------------------------------------------------------------
 # V21 resolve() — raises UnknownCountryError, no silent fallback
 # ---------------------------------------------------------------------------
+
 
 def resolve(country_code: str) -> RegSelectorResult:
     """
@@ -513,16 +576,18 @@ def convert_division_to_zone(
 # Legacy InternationalRegSelector class — backward compatible
 # ---------------------------------------------------------------------------
 
+
 @_dataclass(frozen=True)
 class JurisdictionResult:
     """Result of jurisdiction resolution (legacy)."""
-    country_input:      str
-    region:             JurisdictionRegion
-    framework:          RegulatoryFrameworkLegacy
-    equivalent_zone:    Optional[ATEXZone]    = None
+
+    country_input: str
+    region: JurisdictionRegion
+    framework: RegulatoryFrameworkLegacy
+    equivalent_zone: Optional[ATEXZone] = None
     equivalent_division: Optional[NECDivision] = None
-    warnings:           Tuple[str, ...]        = ()
-    errors:             Tuple[str, ...]        = ()
+    warnings: Tuple[str, ...] = ()
+    errors: Tuple[str, ...] = ()
 
     @property
     def is_valid(self) -> bool:
@@ -573,8 +638,7 @@ class InternationalRegSelector:
         if region == JurisdictionRegion.EFTA:
             if key in ("NO", "NORWAY"):
                 warnings.append(
-                    "Norway uses ATEX via EEA agreement. "
-                    "Local regulator: DSB. Verify specific Norwegian requirements."
+                    "Norway uses ATEX via EEA agreement. Local regulator: DSB. Verify specific Norwegian requirements."
                 )
             elif key in ("CH", "SWITZERLAND"):
                 warnings.append(
@@ -591,8 +655,7 @@ class InternationalRegSelector:
             )
 
         if override_system is not None and override_system != system:
-            if not (region == JurisdictionRegion.CANADA
-                    and override_system == HazardSystem.NEC_DIVISION):
+            if not (region == JurisdictionRegion.CANADA and override_system == HazardSystem.NEC_DIVISION):
                 warnings.append(
                     f"System overridden from {system.value} to "
                     f"{override_system.value} for {country!r}. "
@@ -621,13 +684,13 @@ class InternationalRegSelector:
             return None
         div, mapped_class = mapping
 
-        if mapped_class != hazard_class and hazard_class not in (
-            HazardClass.CLASS_I, HazardClass.GAS_VAPOR
-        ):
+        if mapped_class != hazard_class and hazard_class not in (HazardClass.CLASS_I, HazardClass.GAS_VAPOR):
             logger.warning(
-                "Zone %s maps to %s/%s but requested hazard_class=%s. "
-                "Verify equipment group compatibility.",
-                zone.value, div.value, mapped_class.value, hazard_class.value,
+                "Zone %s maps to %s/%s but requested hazard_class=%s. Verify equipment group compatibility.",
+                zone.value,
+                div.value,
+                mapped_class.value,
+                hazard_class.value,
             )
         return div
 
@@ -641,8 +704,7 @@ class InternationalRegSelector:
 
         if result is None and hazard_class == HazardClass.CLASS_III:
             logger.warning(
-                "CLASS_III (ignitable fibers, NFPA 70 Art. 503) has no "
-                "IEC 60079 zone equivalent. Use NFPA 70 Art. 503."
+                "CLASS_III (ignitable fibers, NFPA 70 Art. 503) has no IEC 60079 zone equivalent. Use NFPA 70 Art. 503."
             )
 
         return result

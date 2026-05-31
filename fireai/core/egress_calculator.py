@@ -26,8 +26,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-
+from typing import Any, Dict
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTS
@@ -56,7 +55,7 @@ _MIN_EGRESS_WIDTH_M = 0.71  # 28 inches
 _SAFETY_FACTOR = 1.5
 
 # Pre-movement time range (seconds) — PD 7974-6
-_PREMOVEMENT_MIN_S = 30.0   # Alerted, trained occupants
+_PREMOVEMENT_MIN_S = 30.0  # Alerted, trained occupants
 _PREMOVEMENT_MAX_S = 180.0  # Sleeping occupants
 
 
@@ -83,15 +82,16 @@ class EgressResult:
         exit_capacity_ps:   Exit capacity (persons/second)
         nfpa_section:       NFPA 101 reference
     """
-    travel_time_s:       float
-    premovement_time_s:  float
-    rset_s:              float
-    aset_s:              float
-    safety_factor:       float
-    is_adequate:         bool
-    occupant_count:      int
-    exit_capacity_ps:    float
-    nfpa_section:        str
+
+    travel_time_s: float
+    premovement_time_s: float
+    rset_s: float
+    aset_s: float
+    safety_factor: float
+    is_adequate: bool
+    occupant_count: int
+    exit_capacity_ps: float
+    nfpa_section: str
 
 
 def calculate_egress_time(
@@ -143,7 +143,7 @@ def calculate_egress_time(
             premovement_time_s=0.0,
             rset_s=0.0,
             aset_s=aset_s,
-            safety_factor=float('inf'),
+            safety_factor=float("inf"),
             is_adequate=True,
             occupant_count=0,
             exit_capacity_ps=0.0,
@@ -173,7 +173,7 @@ def calculate_egress_time(
     if rset > 0:
         safety_factor = aset_s / rset
     else:
-        safety_factor = float('inf')
+        safety_factor = float("inf")
 
     is_adequate = safety_factor >= _SAFETY_FACTOR
 
@@ -217,7 +217,7 @@ def minimum_exit_width(
     available_time = required_rset_s - premovement_time_s
     if available_time <= 0:
         return {
-            "min_width_m": float('inf'),
+            "min_width_m": float("inf"),
             "error": "RSET ≤ premovement time — impossible egress",
             "nfpa_section": "NFPA 101 §7.3",
         }

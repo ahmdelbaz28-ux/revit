@@ -48,15 +48,14 @@ import hashlib
 import json
 import logging
 import threading
-import time
 import uuid
 from collections import deque
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from .event_bus import EventBus, Events, Event
+from .event_bus import EventBus, Events
 
 # Optional AuditStore — graceful fallback if unavailable
 try:
@@ -113,6 +112,7 @@ NFPA72_MAX_SPACING_M = 9.1
 # Enums
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class DetectorStatus(Enum):
     """Lifecycle status of a fire detector.
 
@@ -143,6 +143,7 @@ class DetectorStatus(Enum):
         PLANNED → FAULT           (never installed, can't be faulty)
         PLANNED → OFFLINE         (never installed, can't go offline)
     """
+
     PLANNED = "planned"
     OK = "ok"
     FAULT = "fault"
@@ -162,25 +163,25 @@ class DetectorStatus(Enum):
 LEGAL_STATUS_TRANSITIONS: Dict[DetectorStatus, set] = {
     # A detector that exists in design but is not yet installed.
     DetectorStatus.PLANNED: {
-        DetectorStatus.OK,              # Installed + commissioned
+        DetectorStatus.OK,  # Installed + commissioned
         DetectorStatus.DECOMMISSIONED,  # Cancelled before install
     },
     # An active, operational detector.
     DetectorStatus.OK: {
-        DetectorStatus.FAULT,           # Fault detected
-        DetectorStatus.OFFLINE,         # Communication lost
+        DetectorStatus.FAULT,  # Fault detected
+        DetectorStatus.OFFLINE,  # Communication lost
         DetectorStatus.DECOMMISSIONED,  # Permanently removed
     },
     # A detector with a known fault — still physically present.
     DetectorStatus.FAULT: {
-        DetectorStatus.OK,              # Fault resolved
-        DetectorStatus.OFFLINE,         # Fault + comm lost
+        DetectorStatus.OK,  # Fault resolved
+        DetectorStatus.OFFLINE,  # Fault + comm lost
         DetectorStatus.DECOMMISSIONED,  # Permanently removed
     },
     # A detector that lost communication — still physically present.
     DetectorStatus.OFFLINE: {
-        DetectorStatus.OK,              # Communication restored, healthy
-        DetectorStatus.FAULT,           # Came back with a fault
+        DetectorStatus.OK,  # Communication restored, healthy
+        DetectorStatus.FAULT,  # Came back with a fault
         DetectorStatus.DECOMMISSIONED,  # Permanently removed
     },
     # Terminal state — no transitions allowed.
@@ -190,6 +191,7 @@ LEGAL_STATUS_TRANSITIONS: Dict[DetectorStatus, set] = {
 
 class EventType(Enum):
     """Types of events recorded by the Digital Twin."""
+
     DETECTOR_REGISTERED = "detector.registered"
     DETECTOR_STATUS_CHANGED = "detector.status_changed"
     DETECTOR_REMOVED = "detector.removed"
@@ -202,16 +204,18 @@ class EventType(Enum):
 
 class DriftType(Enum):
     """Categories of drift between design model and as-built reality."""
-    POSITION_DRIFT = "position_drift"          # Detector moved from design position
-    STATUS_DRIFT = "status_drift"              # Detector status disagrees with design
-    MISSING_DETECTOR = "missing_detector"       # Designed detector not found in field
-    EXTRA_DETECTOR = "extra_detector"           # Field detector not in design model
-    TYPE_MISMATCH = "type_mismatch"             # Detector type differs from design
+
+    POSITION_DRIFT = "position_drift"  # Detector moved from design position
+    STATUS_DRIFT = "status_drift"  # Detector status disagrees with design
+    MISSING_DETECTOR = "missing_detector"  # Designed detector not found in field
+    EXTRA_DETECTOR = "extra_detector"  # Field detector not in design model
+    TYPE_MISMATCH = "type_mismatch"  # Detector type differs from design
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # Data Models
 # ═══════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class DetectorState:
@@ -233,6 +237,7 @@ class DetectorState:
         last_verified_at: ISO 8601 timestamp of last verification.
         metadata: Additional key-value metadata.
     """
+
     detector_id: str
     room_id: str
     x: float
@@ -264,11 +269,7 @@ class DetectorState:
     @property
     def position_drift_m(self) -> float:
         """Euclidean distance from design position to current position."""
-        return (
-            (self.x - self.design_x) ** 2
-            + (self.y - self.design_y) ** 2
-            + (self.z - self.design_z) ** 2
-        ) ** 0.5
+        return ((self.x - self.design_x) ** 2 + (self.y - self.design_y) ** 2 + (self.z - self.design_z) ** 2) ** 0.5
 
     @property
     def is_active(self) -> bool:
@@ -307,6 +308,7 @@ class TwinEvent:
     Unlike EventBus events (which are ephemeral pub/sub), TwinEvents
     are persisted within the twin for audit and replay.
     """
+
     event_id: str
     event_type: EventType
     timestamp: str
@@ -343,6 +345,7 @@ class DriftRecord:
         timestamp: When the drift was detected.
         resolved: Whether the drift has been resolved.
     """
+
     drift_id: str
     drift_type: DriftType
     detector_id: str
@@ -372,6 +375,7 @@ class TwinHealthReport:
 
     Generated by ``DigitalTwin.health_report()``.
     """
+
     building_id: str
     timestamp: str
     total_detectors: int
@@ -410,6 +414,7 @@ class SimulationResult:
         new_active_count: Simulated count of active detectors.
         notes: Additional observations.
     """
+
     simulation_id: str
     description: str
     timestamp: str
@@ -429,6 +434,7 @@ class SimulationResult:
 # TwinDriftAnalyzer
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TwinDriftAnalyzer:
     """Detects drift between the design model and as-built reality.
 
@@ -444,9 +450,9 @@ class TwinDriftAnalyzer:
     """
 
     POSITION_TOLERANCE_M = 0.01  # 1cm measurement noise
-    POSITION_WARN_M = 0.30       # 30cm warning threshold
-    POSITION_HIGH_M = 1.0        # 1m — approaching NFPA spacing limits
-    POSITION_CRITICAL_M = 1.5    # 1.5m — definite NFPA spacing violation
+    POSITION_WARN_M = 0.30  # 30cm warning threshold
+    POSITION_HIGH_M = 1.0  # 1m — approaching NFPA spacing limits
+    POSITION_CRITICAL_M = 1.5  # 1.5m — definite NFPA spacing violation
 
     def analyze(self, detectors: Dict[str, DetectorState]) -> List[DriftRecord]:
         """Analyze all detectors for drift.
@@ -465,30 +471,34 @@ class TwinDriftAnalyzer:
             pos_drift = det.position_drift_m
             if pos_drift >= self.POSITION_TOLERANCE_M:
                 severity = self._classify_position_drift(pos_drift)
-                drifts.append(DriftRecord(
-                    drift_id=str(uuid.uuid4()),
-                    drift_type=DriftType.POSITION_DRIFT,
-                    detector_id=det_id,
-                    room_id=det.room_id,
-                    expected=f"design=({det.design_x:.3f}, {det.design_y:.3f}, {det.design_z:.3f})",
-                    actual=f"current=({det.x:.3f}, {det.y:.3f}, {det.z:.3f})",
-                    severity=severity,
-                    timestamp=now,
-                ))
+                drifts.append(
+                    DriftRecord(
+                        drift_id=str(uuid.uuid4()),
+                        drift_type=DriftType.POSITION_DRIFT,
+                        detector_id=det_id,
+                        room_id=det.room_id,
+                        expected=f"design=({det.design_x:.3f}, {det.design_y:.3f}, {det.design_z:.3f})",
+                        actual=f"current=({det.x:.3f}, {det.y:.3f}, {det.z:.3f})",
+                        severity=severity,
+                        timestamp=now,
+                    )
+                )
 
             # Status drift: PLANNED detectors that should be OK by now
             # (This is informational — the caller decides if it's actionable)
             if det.status == DetectorStatus.PLANNED:
-                drifts.append(DriftRecord(
-                    drift_id=str(uuid.uuid4()),
-                    drift_type=DriftType.STATUS_DRIFT,
-                    detector_id=det_id,
-                    room_id=det.room_id,
-                    expected="installed+commissioned",
-                    actual="planned (not yet installed)",
-                    severity="medium",
-                    timestamp=now,
-                ))
+                drifts.append(
+                    DriftRecord(
+                        drift_id=str(uuid.uuid4()),
+                        drift_type=DriftType.STATUS_DRIFT,
+                        detector_id=det_id,
+                        room_id=det.room_id,
+                        expected="installed+commissioned",
+                        actual="planned (not yet installed)",
+                        severity="medium",
+                        timestamp=now,
+                    )
+                )
 
         return drifts
 
@@ -506,6 +516,7 @@ class TwinDriftAnalyzer:
 # ═══════════════════════════════════════════════════════════════════════
 # TwinSimulator
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TwinSimulator:
     """What-if scenario simulator for the Digital Twin.
@@ -559,16 +570,11 @@ class TwinSimulator:
         Returns:
             SimulationResult showing impact of full commissioning.
         """
-        planned_ids = [
-            did for did, d in detectors.items()
-            if d.status == DetectorStatus.PLANNED
-        ]
+        planned_ids = [did for did, d in detectors.items() if d.status == DetectorStatus.PLANNED]
         return self._run_simulation(
             detectors,
             f"Commission all {len(planned_ids)} PLANNED detector(s)",
-            lambda dets: self._apply_status_change(
-                dets, planned_ids, DetectorStatus.OK
-            ),
+            lambda dets: self._apply_status_change(dets, planned_ids, DetectorStatus.OK),
         )
 
     def simulate_add_detector(
@@ -605,7 +611,9 @@ class TwinSimulator:
             dets[new_id] = DetectorState(
                 detector_id=new_id,
                 room_id=room_id,
-                x=x, y=y, z=z,
+                x=x,
+                y=y,
+                z=z,
                 detector_type=detector_type,
                 status=DetectorStatus.OK,
                 coverage_radius=effective_radius,
@@ -652,17 +660,13 @@ class TwinSimulator:
         )
 
     @staticmethod
-    def _apply_offline(
-        dets: Dict[str, DetectorState], ids: List[str]
-    ) -> None:
+    def _apply_offline(dets: Dict[str, DetectorState], ids: List[str]) -> None:
         for did in ids:
             if did in dets:
                 dets[did].status = DetectorStatus.OFFLINE
 
     @staticmethod
-    def _apply_status_change(
-        dets: Dict[str, DetectorState], ids: List[str], status: DetectorStatus
-    ) -> None:
+    def _apply_status_change(dets: Dict[str, DetectorState], ids: List[str], status: DetectorStatus) -> None:
         for did in ids:
             if did in dets:
                 dets[did].status = status
@@ -690,15 +694,14 @@ class TwinSimulator:
         if not dets:
             return 0.0
         rooms = set(d.room_id for d in dets.values())
-        covered = set(
-            d.room_id for d in dets.values() if d.status == DetectorStatus.OK
-        )
+        covered = set(d.room_id for d in dets.values() if d.status == DetectorStatus.OK)
         return round(len(covered) / len(rooms) * 100, 2) if rooms else 0.0
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # TwinSerializer
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TwinSerializer:
     """JSON serialization/deserialization for DigitalTwin state.
@@ -720,9 +723,7 @@ class TwinSerializer:
         with twin._lock:
             state = {
                 "building_id": twin._building_id,
-                "detectors": {
-                    did: det.to_dict() for did, det in twin._detectors.items()
-                },
+                "detectors": {did: det.to_dict() for did, det in twin._detectors.items()},
                 "events": [evt.to_dict() for evt in twin._events],
                 "drift_records": [dr.to_dict() for dr in twin._drift_records],
                 "room_ids": sorted(twin._room_ids),
@@ -757,17 +758,12 @@ class TwinSerializer:
         twin = DigitalTwin.__new__(DigitalTwin)
         twin._lock = threading.RLock()
         twin._building_id = state["building_id"]
-        twin._detectors = {
-            did: DetectorState.from_dict(ddata)
-            for did, ddata in state["detectors"].items()
-        }
+        twin._detectors = {did: DetectorState.from_dict(ddata) for did, ddata in state["detectors"].items()}
         twin._events = deque(
             [TwinEvent.from_dict(edata) for edata in state.get("events", [])],
             maxlen=10_000,
         )
-        twin._drift_records = [
-            DriftRecord.from_dict(ddata) for ddata in state.get("drift_records", [])
-        ]
+        twin._drift_records = [DriftRecord.from_dict(ddata) for ddata in state.get("drift_records", [])]
         twin._room_ids = set(state.get("room_ids", []))
         twin._created_at = state["created_at"]
         twin._bus = EventBus.instance()
@@ -784,6 +780,7 @@ class TwinSerializer:
 # ═══════════════════════════════════════════════════════════════════════
 # DigitalTwin — Main Orchestrator
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class DigitalTwin:
     """Central orchestrator for the FireAI Digital Twin.
@@ -893,22 +890,21 @@ class DigitalTwin:
         """
         # V20.2 FIX: Select default radius based on detector_type
         effective_radius = (
-            coverage_radius if coverage_radius is not None
-            else TwinSimulator.DEFAULT_COVERAGE_RADII.get(
-                detector_type, NFPA72_SMOKE_RADIUS_M
-            )
+            coverage_radius
+            if coverage_radius is not None
+            else TwinSimulator.DEFAULT_COVERAGE_RADII.get(detector_type, NFPA72_SMOKE_RADIUS_M)
         )
 
         with self._lock:
             if detector_id in self._detectors:
-                raise ValueError(
-                    f"Detector {detector_id} already registered"
-                )
+                raise ValueError(f"Detector {detector_id} already registered")
 
             det = DetectorState(
                 detector_id=detector_id,
                 room_id=room_id,
-                x=x, y=y, z=z,
+                x=x,
+                y=y,
+                z=z,
                 detector_type=detector_type,
                 status=status,
                 coverage_radius=effective_radius,
@@ -959,7 +955,10 @@ class DigitalTwin:
 
         logger.info(
             "Registered detector %s in room %s (%s, status=%s)",
-            detector_id, room_id, detector_type, status.value,
+            detector_id,
+            room_id,
+            detector_type,
+            status.value,
         )
 
         return det
@@ -1025,9 +1024,10 @@ class DigitalTwin:
 
             if force:
                 logger.warning(
-                    "FORCE bypassing status transition validation for %s: "
-                    "%s → %s (SAFETY CHECK BYPASSED)",
-                    detector_id, old_status.value, new_status.value,
+                    "FORCE bypassing status transition validation for %s: %s → %s (SAFETY CHECK BYPASSED)",
+                    detector_id,
+                    old_status.value,
+                    new_status.value,
                 )
             else:
                 self.validate_status_transition(old_status, new_status)
@@ -1083,7 +1083,10 @@ class DigitalTwin:
 
         logger.info(
             "Detector %s: %s → %s (verified_by=%s)",
-            detector_id, old_status.value, new_status.value, verified_by or "N/A",
+            detector_id,
+            old_status.value,
+            new_status.value,
+            verified_by or "N/A",
         )
 
         return det
@@ -1196,12 +1199,8 @@ class DigitalTwin:
                 data={
                     "building_id": self._building_id,
                     "drift_count": len(drifts),
-                    "critical_count": sum(
-                        1 for d in drifts if d.severity == "critical"
-                    ),
-                    "high_count": sum(
-                        1 for d in drifts if d.severity == "high"
-                    ),
+                    "critical_count": sum(1 for d in drifts if d.severity == "critical"),
+                    "high_count": sum(1 for d in drifts if d.severity == "high"),
                 },
                 source="DigitalTwin",
             )
@@ -1240,9 +1239,7 @@ class DigitalTwin:
         with self._lock:
             detectors = dict(self._detectors)
             drift_count = len(self._drift_records)
-            unresolved_drifts = sum(
-                1 for d in self._drift_records if not d.resolved
-            )
+            unresolved_drifts = sum(1 for d in self._drift_records if not d.resolved)
 
         total = len(detectors)
         active = sum(1 for d in detectors.values() if d.status == DetectorStatus.OK)
@@ -1257,9 +1254,7 @@ class DigitalTwin:
         with self._lock:
             all_rooms = set(self._room_ids)
         rooms = all_rooms
-        rooms_with_ok = set(
-            d.room_id for d in detectors.values() if d.status == DetectorStatus.OK
-        )
+        rooms_with_ok = set(d.room_id for d in detectors.values() if d.status == DetectorStatus.OK)
         rooms_without_ok = rooms - rooms_with_ok
 
         # Coverage percentage (only rooms with at least one OK detector count)
@@ -1291,15 +1286,11 @@ class DigitalTwin:
 
         if rooms_without_ok:
             critical_issues.append(
-                f"{len(rooms_without_ok)} room(s) have ZERO active detectors: "
-                f"{sorted(rooms_without_ok)}"
+                f"{len(rooms_without_ok)} room(s) have ZERO active detectors: {sorted(rooms_without_ok)}"
             )
 
         if planned > 0:
-            warnings.append(
-                f"{planned} detector(s) are PLANNED (not yet installed) — "
-                f"they provide NO fire protection"
-            )
+            warnings.append(f"{planned} detector(s) are PLANNED (not yet installed) — they provide NO fire protection")
 
         if faulted > 0:
             warnings.append(f"{faulted} detector(s) are in FAULT state")
@@ -1439,9 +1430,7 @@ class DigitalTwin:
         with self._lock:
             detectors_copy = dict(self._detectors)
 
-        result = self._simulator.simulate_add_detector(
-            detectors_copy, room_id, x, y, z, detector_type
-        )
+        result = self._simulator.simulate_add_detector(detectors_copy, room_id, x, y, z, detector_type)
 
         self._record_event(
             event_type=EventType.SIMULATION_RUN,
@@ -1474,9 +1463,7 @@ class DigitalTwin:
         """
         with self._lock:
             if not self._detectors:
-                return hashlib.sha256(
-                    f"empty_twin:{self._building_id}".encode()
-                ).hexdigest()
+                return hashlib.sha256(f"empty_twin:{self._building_id}".encode()).hexdigest()
 
             # Include building_id + sorted detector positions + coverage_radius
             # coverage_radius is included because two detectors at the same
@@ -1484,8 +1471,7 @@ class DigitalTwin:
             # a heat detector (R=5.3) vs smoke (R=6.37) has different coverage.
             positions = sorted(
                 (
-                    (did, det.x, det.y, det.z, det.status.value,
-                     det.coverage_radius)
+                    (did, det.x, det.y, det.z, det.status.value, det.coverage_radius)
                     for did, det in self._detectors.items()
                 )
             )
@@ -1583,7 +1569,9 @@ class DigitalTwin:
 
         logger.info(
             "Loaded building report: %d rooms, %d detectors (status=%s)",
-            len(room_results), count, default_status.value,
+            len(room_results),
+            count,
+            default_status.value,
         )
 
         return count
@@ -1690,10 +1678,7 @@ class DigitalTwin:
             # Check if first element is a PipelineResult
             first = report[0]
             if hasattr(first, "room_id") and hasattr(first, "layout"):
-                return [
-                    DigitalTwin._pipeline_result_to_room_dict(pr)
-                    for pr in report
-                ]
+                return [DigitalTwin._pipeline_result_to_room_dict(pr) for pr in report]
 
             # Assume it's a list of room dicts
             return list(report)
@@ -1751,19 +1736,23 @@ class DigitalTwin:
                 for d in detectors_raw:
                     if isinstance(d, (list, tuple)) and len(d) >= 2:
                         # (x, y) tuple from DensityOptimizer
-                        det_list.append({
-                            "x": float(d[0]),
-                            "y": float(d[1]),
-                            "z": float(ceiling_h),
-                            "radius": float(layout_radius),
-                        })
+                        det_list.append(
+                            {
+                                "x": float(d[0]),
+                                "y": float(d[1]),
+                                "z": float(ceiling_h),
+                                "radius": float(layout_radius),
+                            }
+                        )
                     elif isinstance(d, dict):
-                        det_list.append({
-                            "x": float(d.get("x", 0.0)),
-                            "y": float(d.get("y", 0.0)),
-                            "z": float(d.get("z", ceiling_h)),
-                            "radius": float(d.get("radius", layout_radius)),
-                        })
+                        det_list.append(
+                            {
+                                "x": float(d.get("x", 0.0)),
+                                "y": float(d.get("y", 0.0)),
+                                "z": float(d.get("z", ceiling_h)),
+                                "radius": float(d.get("radius", layout_radius)),
+                            }
+                        )
             result["detectors"] = det_list
 
             # Extract coverage info
@@ -1813,8 +1802,11 @@ if __name__ == "__main__":
 
     # ── Test 2: Registering a detector ───────────────────────────
     det = twin.register_detector(
-        room_id="R-01", detector_id="D-001",
-        x=3.0, y=2.5, z=3.0,
+        room_id="R-01",
+        detector_id="D-001",
+        x=3.0,
+        y=2.5,
+        z=3.0,
         detector_type="smoke",
         status=DetectorStatus.PLANNED,
     )
@@ -1826,8 +1818,11 @@ if __name__ == "__main__":
 
     # Register second detector
     twin.register_detector(
-        room_id="R-01", detector_id="D-002",
-        x=7.0, y=5.5, z=3.0,
+        room_id="R-01",
+        detector_id="D-002",
+        x=7.0,
+        y=5.5,
+        z=3.0,
         detector_type="smoke",
         status=DetectorStatus.PLANNED,
     )
@@ -1836,8 +1831,11 @@ if __name__ == "__main__":
 
     # Register detector in another room
     twin.register_detector(
-        room_id="R-02", detector_id="D-003",
-        x=5.0, y=4.0, z=3.5,
+        room_id="R-02",
+        detector_id="D-003",
+        x=5.0,
+        y=4.0,
+        z=3.5,
         detector_type="heat",
         status=DetectorStatus.OK,
     )
@@ -1898,8 +1896,11 @@ if __name__ == "__main__":
 
     # Test with an uncovered room
     twin.register_detector(
-        room_id="R-03", detector_id="D-004",
-        x=2.0, y=2.0, z=3.0,
+        room_id="R-03",
+        detector_id="D-004",
+        x=2.0,
+        y=2.0,
+        z=3.0,
         status=DetectorStatus.PLANNED,
     )
     report2 = twin.health_report()
@@ -1951,15 +1952,14 @@ if __name__ == "__main__":
                 twin_ts.register_detector(
                     room_id=f"R-{prefix}",
                     detector_id=f"D-{prefix}-{i}",
-                    x=float(i), y=0.0, z=3.0,
+                    x=float(i),
+                    y=0.0,
+                    z=3.0,
                 )
         except Exception as exc:
             errors.append(f"{prefix}: {exc}")
 
-    threads = [
-        threading.Thread(target=register_many, args=(f"T{t}",))
-        for t in range(4)
-    ]
+    threads = [threading.Thread(target=register_many, args=(f"T{t}",)) for t in range(4)]
     for t in threads:
         t.start()
     for t in threads:
@@ -2000,8 +2000,7 @@ if __name__ == "__main__":
 
     # Verify detectors were registered as PLANNED by default
     dets_b1 = twin_audit.get_detectors_by_room("R-B1")
-    check("Building report detectors PLANNED",
-          all(d.status == DetectorStatus.PLANNED for d in dets_b1))
+    check("Building report detectors PLANNED", all(d.status == DetectorStatus.PLANNED for d in dets_b1))
 
     # Test from_building_report with INSTALLED status
     twin_audit2 = DigitalTwin(building_id="INSTALLED-TEST")

@@ -45,18 +45,19 @@ V11 ECDSA LAYER (Consultant #5 Criticism #2 - partially accepted):
       - Opt-in: no change to existing behavior unless enabled
 """
 
-import json
-import sqlite3
-import hmac
-import hashlib
 import datetime
-import os
+import hashlib
+import hmac
+import json
 import logging
-from typing import List, Dict, Optional, Any, Tuple
+import os
+import sqlite3
+from typing import Any, Dict, List, Optional
 
 # Optional ECDSA support - graceful degradation if not installed
 try:
-    from ecdsa import SigningKey, VerifyingKey, NIST256p, BadSignatureError
+    from ecdsa import BadSignatureError, NIST256p, SigningKey, VerifyingKey
+
     HAS_ECDSA = True
 except ImportError:
     HAS_ECDSA = False
@@ -75,6 +76,7 @@ _MIN_HMAC_KEY_LENGTH = 32
 
 class SecurityError(Exception):
     """Raised when a security requirement is not met."""
+
     pass
 
 
@@ -117,7 +119,7 @@ def _get_hmac_key() -> str:
                 f"AUDIT_HMAC_KEY is too short ({len(key)} chars). "
                 f"Minimum required: {_MIN_HMAC_KEY_LENGTH} characters. "
                 f"Generate one with: "
-                f"python -c \"import secrets; print(secrets.token_hex(32))\""
+                f'python -c "import secrets; print(secrets.token_hex(32))"'
             )
         return key
 
@@ -126,6 +128,7 @@ def _get_hmac_key() -> str:
     # This is NOT for production - the warning makes that clear.
     if _DEV_HMAC_KEY is None:
         import secrets as _secrets
+
         _DEV_HMAC_KEY = _secrets.token_hex(32)
 
     if not _DEV_KEY_WARNED:
@@ -135,7 +138,7 @@ def _get_hmac_key() -> str:
             "AUDIT_HMAC_KEY not set - using auto-generated dev key.\n"
             "This is INSECURE for production!\n"
             "Set AUDIT_HMAC_KEY env var (32+ chars) for production.\n"
-            "Generate: python -c \"import secrets; print(secrets.token_hex(32))\""
+            'Generate: python -c "import secrets; print(secrets.token_hex(32))"'
         )
 
     return _DEV_HMAC_KEY
@@ -195,9 +198,7 @@ def _init_database() -> None:
         cursor.execute("SELECT ecdsa_signature FROM audit_log LIMIT 1")
     except sqlite3.OperationalError:
         try:
-            cursor.execute(
-                "ALTER TABLE audit_log ADD COLUMN ecdsa_signature TEXT"
-            )
+            cursor.execute("ALTER TABLE audit_log ADD COLUMN ecdsa_signature TEXT")
             logger.info("Migrated audit_log: added ecdsa_signature column")
         except Exception:
             pass  # Column may already exist from a concurrent migration
@@ -231,7 +232,7 @@ def _init_database() -> None:
 
 def _get_connection() -> sqlite3.Connection:
     """Get database connection (initializes on first call).
-    
+
     For :memory: databases, returns the SAME persistent connection,
     because sqlite3.connect(":memory:") creates a new empty database
     each time — the schema and data would be lost otherwise.
@@ -244,7 +245,7 @@ def _get_connection() -> sqlite3.Connection:
 
 def _release_connection(conn: sqlite3.Connection) -> None:
     """Release a database connection.
-    
+
     For :memory: databases, do NOT close the persistent connection.
     For file databases, close normally.
     """
@@ -256,8 +257,8 @@ def _release_connection(conn: sqlite3.Connection) -> None:
 # HASH CHAIN LOGIC
 # ============================================================================
 
-def _compute_hash(timestamp: str, event_type: str, room_id: str,
-                 details_json: str, previous_hash: str) -> str:
+
+def _compute_hash(timestamp: str, event_type: str, room_id: str, details_json: str, previous_hash: str) -> str:
     """Compute SHA-256 hash for the event."""
     payload = f"{timestamp}|{event_type}|{room_id}|{details_json}|{previous_hash}"
     return hashlib.sha256(payload.encode()).hexdigest()
@@ -266,11 +267,7 @@ def _compute_hash(timestamp: str, event_type: str, room_id: str,
 def _compute_signature(current_hash: str) -> str:
     """Compute HMAC-SHA256 signature using unified key."""
     key = _get_hmac_key()
-    return hmac.new(
-        key.encode(),
-        current_hash.encode(),
-        hashlib.sha256
-    ).hexdigest()
+    return hmac.new(key.encode(), current_hash.encode(), hashlib.sha256).hexdigest()
 
 
 def _get_last_hash() -> str:
@@ -348,7 +345,7 @@ def _compute_ecdsa_signature(current_hash: str) -> Optional[str]:
     if sk is None:
         return None
     try:
-        sig = sk.sign(current_hash.encode('utf-8'))
+        sig = sk.sign(current_hash.encode("utf-8"))
         return sig.hex()
     except Exception as e:
         logger.warning("ECDSA signing failed: %s", e)
@@ -379,10 +376,7 @@ def verify_ecdsa_signature(record: Dict[str, Any], public_key_pem: str) -> bool:
         ImportError: If ecdsa library is not installed.
     """
     if not HAS_ECDSA:
-        raise ImportError(
-            "ecdsa library required for ECDSA verification. "
-            "Install with: pip install ecdsa"
-        )
+        raise ImportError("ecdsa library required for ECDSA verification. Install with: pip install ecdsa")
 
     try:
         vk = VerifyingKey.from_pem(public_key_pem)
@@ -391,32 +385,25 @@ def verify_ecdsa_signature(record: Dict[str, Any], public_key_pem: str) -> bool:
         return False
 
     # Check for ECDSA signature
-    ecdsa_sig = record.get('ecdsa_signature')
+    ecdsa_sig = record.get("ecdsa_signature")
     if not ecdsa_sig:
         logger.warning("No ECDSA signature in record")
         return False
 
     # Verify hash integrity first
     details_json = (
-        json.dumps(record['details'], sort_keys=True)
-        if isinstance(record['details'], dict)
-        else record['details']
+        json.dumps(record["details"], sort_keys=True) if isinstance(record["details"], dict) else record["details"]
     )
     expected_hash = _compute_hash(
-        record['timestamp'], record['event_type'],
-        record.get('room_id', ''), details_json,
-        record['previous_hash']
+        record["timestamp"], record["event_type"], record.get("room_id", ""), details_json, record["previous_hash"]
     )
-    if expected_hash != record['current_hash']:
+    if expected_hash != record["current_hash"]:
         logger.warning("Hash mismatch in ECDSA verification")
         return False
 
     # Verify ECDSA signature
     try:
-        vk.verify(
-            bytes.fromhex(ecdsa_sig),
-            record['current_hash'].encode('utf-8')
-        )
+        vk.verify(bytes.fromhex(ecdsa_sig), record["current_hash"].encode("utf-8"))
         return True
     except BadSignatureError:
         logger.warning("ECDSA signature verification FAILED - record may be forged")
@@ -429,6 +416,7 @@ def verify_ecdsa_signature(record: Dict[str, Any], public_key_pem: str) -> bool:
 # ============================================================================
 # PUBLIC API
 # ============================================================================
+
 
 def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> str:
     """Add a new audit event to the chain with optional ECDSA signing.
@@ -455,7 +443,7 @@ def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> st
         raise ValueError("details_dict must be a dictionary")
 
     # Generate timestamp
-    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
+    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 
     # Get previous hash
     previous_hash = _get_last_hash()
@@ -475,10 +463,13 @@ def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> st
     # Insert event
     conn = _get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO audit_log (timestamp, event_type, room_id, details, previous_hash, current_hash, signature, ecdsa_signature)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (timestamp, event_type, room_id, details_json, previous_hash, current_hash, hmac_signature, ecdsa_sig))
+    """,
+        (timestamp, event_type, room_id, details_json, previous_hash, current_hash, hmac_signature, ecdsa_sig),
+    )
     conn.commit()
     _release_connection(conn)
 
@@ -523,7 +514,7 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
                 "room_id": room_id,
                 "reason": "Hash mismatch - data tampered",
                 "expected": expected_hash,
-                "actual": current_hash
+                "actual": current_hash,
             }
 
         # 2. Verify signature
@@ -536,11 +527,7 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
             }
 
         # Compute expected signature
-        expected_signature = hmac.new(
-            key.encode(),
-            expected_hash.encode(),
-            hashlib.sha256
-        ).hexdigest()
+        expected_signature = hmac.new(key.encode(), expected_hash.encode(), hashlib.sha256).hexdigest()
 
         if expected_signature != signature:
             return False, {
@@ -549,7 +536,7 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
                 "room_id": room_id,
                 "reason": "HMAC signature mismatch - key invalid or event tampered",
                 "expected": expected_signature,
-                "actual": signature
+                "actual": signature,
             }
 
     return True, None
@@ -570,7 +557,17 @@ def get_events() -> List[Dict[str, Any]]:
     for row in rows:
         # V11: row may have 8 or 9 columns (with/without ecdsa_signature)
         if len(row) >= 9:
-            event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature, ecdsa_sig = row[:9]
+            (
+                event_id,
+                timestamp,
+                event_type,
+                room_id,
+                details_json,
+                previous_hash,
+                current_hash,
+                signature,
+                ecdsa_sig,
+            ) = row[:9]
         else:
             event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature = row[:8]
             ecdsa_sig = None
@@ -595,6 +592,7 @@ def get_events() -> List[Dict[str, Any]]:
 # ============================================================================
 # FACADE CLASS - public API surface
 # ============================================================================
+
 
 class AuditStore:
     """Facade class for tamper-evident audit log operations.

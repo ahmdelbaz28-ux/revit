@@ -18,6 +18,7 @@ Usage:
     from fireai.core.pdf_report import generate_building_report
     generate_building_report(report, "output.pdf")
 """
+
 from __future__ import annotations
 
 import traceback
@@ -26,7 +27,7 @@ from typing import Dict, List, Optional
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
     BaseDocTemplate,
@@ -40,7 +41,6 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
-from reportlab.platypus.flowables import Flowable
 
 # ---------------------------------------------------------------------------
 # Type-only imports (avoid circular deps)
@@ -55,18 +55,18 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Colour palette
 # ---------------------------------------------------------------------------
-C_GREEN       = colors.HexColor("#1A7A4A")
+C_GREEN = colors.HexColor("#1A7A4A")
 C_GREEN_LIGHT = colors.HexColor("#D6F0E0")
-C_RED         = colors.HexColor("#B22222")
-C_RED_LIGHT   = colors.HexColor("#FAD7D7")
-C_YELLOW_LIGHT= colors.HexColor("#FFF8DC")
-C_BLUE_DARK   = colors.HexColor("#1B3A6B")
-C_BLUE_MID    = colors.HexColor("#2E5FA3")
-C_BLUE_LIGHT  = colors.HexColor("#E8EEF8")
-C_GREY_HEAD   = colors.HexColor("#4A4A4A")
-C_GREY_ALT    = colors.HexColor("#F5F5F5")
-C_WHITE       = colors.white
-C_BLACK       = colors.black
+C_RED = colors.HexColor("#B22222")
+C_RED_LIGHT = colors.HexColor("#FAD7D7")
+C_YELLOW_LIGHT = colors.HexColor("#FFF8DC")
+C_BLUE_DARK = colors.HexColor("#1B3A6B")
+C_BLUE_MID = colors.HexColor("#2E5FA3")
+C_BLUE_LIGHT = colors.HexColor("#E8EEF8")
+C_GREY_HEAD = colors.HexColor("#4A4A4A")
+C_GREY_ALT = colors.HexColor("#F5F5F5")
+C_WHITE = colors.white
+C_BLACK = colors.black
 
 PAGE_W, PAGE_H = A4
 MARGIN = 2 * cm
@@ -74,6 +74,7 @@ MARGIN = 2 * cm
 # ---------------------------------------------------------------------------
 # Styles
 # ---------------------------------------------------------------------------
+
 
 def _build_styles():
     base = getSampleStyleSheet()
@@ -83,27 +84,19 @@ def _build_styles():
             base.add(ParagraphStyle(name=name, parent=base[parent], **kw))
         return base[name]
 
-    add("CoverTitle",   fontName="Helvetica-Bold",   fontSize=22,
-        textColor=C_BLUE_DARK,  spaceAfter=10, leading=28)
-    add("CoverSub",     fontName="Helvetica",         fontSize=13,
-        textColor=C_GREY_HEAD,  spaceAfter=6,  leading=18)
-    add("CoverVerdict", fontName="Helvetica-Bold",   fontSize=18,
-        spaceAfter=4,  leading=24)
-    add("SectionHead",  fontName="Helvetica-Bold",   fontSize=13,
-        textColor=C_BLUE_DARK,  spaceBefore=14, spaceAfter=6)
-    add("SubHead",      fontName="Helvetica-Bold",   fontSize=10,
-        textColor=C_GREY_HEAD,  spaceBefore=8,  spaceAfter=4)
-    add("Body",         fontName="Helvetica",         fontSize=9,
-        spaceAfter=3,  leading=13)
-    add("BodyBold",     fontName="Helvetica-Bold",   fontSize=9,
-        spaceAfter=3,  leading=13)
-    add("Small",        fontName="Helvetica",         fontSize=8,
-        textColor=C_GREY_HEAD,  spaceAfter=2,  leading=11)
-    add("TableCell",    fontName="Helvetica",         fontSize=8,  leading=11)
-    add("TableCellB",   fontName="Helvetica-Bold",   fontSize=8,  leading=11)
-    add("Footer",       fontName="Helvetica",         fontSize=7,
-        textColor=C_GREY_HEAD)
+    add("CoverTitle", fontName="Helvetica-Bold", fontSize=22, textColor=C_BLUE_DARK, spaceAfter=10, leading=28)
+    add("CoverSub", fontName="Helvetica", fontSize=13, textColor=C_GREY_HEAD, spaceAfter=6, leading=18)
+    add("CoverVerdict", fontName="Helvetica-Bold", fontSize=18, spaceAfter=4, leading=24)
+    add("SectionHead", fontName="Helvetica-Bold", fontSize=13, textColor=C_BLUE_DARK, spaceBefore=14, spaceAfter=6)
+    add("SubHead", fontName="Helvetica-Bold", fontSize=10, textColor=C_GREY_HEAD, spaceBefore=8, spaceAfter=4)
+    add("Body", fontName="Helvetica", fontSize=9, spaceAfter=3, leading=13)
+    add("BodyBold", fontName="Helvetica-Bold", fontSize=9, spaceAfter=3, leading=13)
+    add("Small", fontName="Helvetica", fontSize=8, textColor=C_GREY_HEAD, spaceAfter=2, leading=11)
+    add("TableCell", fontName="Helvetica", fontSize=8, leading=11)
+    add("TableCellB", fontName="Helvetica-Bold", fontSize=8, leading=11)
+    add("Footer", fontName="Helvetica", fontSize=7, textColor=C_GREY_HEAD)
     return base
+
 
 STYLES = _build_styles()
 
@@ -111,27 +104,27 @@ STYLES = _build_styles()
 # Page templates
 # ---------------------------------------------------------------------------
 
+
 def _header_footer(canvas, doc):
     canvas.saveState()
     w, h = A4
     # Header bar
     canvas.setFillColor(C_BLUE_DARK)
-    canvas.rect(MARGIN, h - MARGIN - 0.6*cm, w - 2*MARGIN, 0.6*cm, fill=1, stroke=0)
+    canvas.rect(MARGIN, h - MARGIN - 0.6 * cm, w - 2 * MARGIN, 0.6 * cm, fill=1, stroke=0)
     canvas.setFillColor(C_WHITE)
     canvas.setFont("Helvetica-Bold", 8)
-    canvas.drawString(MARGIN + 4, h - MARGIN - 0.38*cm,
-                      "FireAI  -  NFPA 72-2022 Compliance Report")
+    canvas.drawString(MARGIN + 4, h - MARGIN - 0.38 * cm, "FireAI  -  NFPA 72-2022 Compliance Report")
     canvas.setFont("Helvetica", 7)
-    canvas.drawRightString(w - MARGIN - 4, h - MARGIN - 0.38*cm,
-                           f"CONFIDENTIAL - Page {doc.page}")
+    canvas.drawRightString(w - MARGIN - 4, h - MARGIN - 0.38 * cm, f"CONFIDENTIAL - Page {doc.page}")
     # Footer line
     canvas.setStrokeColor(C_BLUE_MID)
     canvas.setLineWidth(0.5)
-    canvas.line(MARGIN, MARGIN - 0.1*cm, w - MARGIN, MARGIN - 0.1*cm)
+    canvas.line(MARGIN, MARGIN - 0.1 * cm, w - MARGIN, MARGIN - 0.1 * cm)
     canvas.setFillColor(C_GREY_HEAD)
     canvas.setFont("Helvetica", 7)
-    canvas.drawString(MARGIN, MARGIN * 0.55,
-                      "Generated by FireAI automated design engine. Not a substitute for engineer review.")
+    canvas.drawString(
+        MARGIN, MARGIN * 0.55, "Generated by FireAI automated design engine. Not a substitute for engineer review."
+    )
     canvas.restoreState()
 
 
@@ -141,50 +134,60 @@ def _build_doc(output_path: str) -> BaseDocTemplate:
         pagesize=A4,
         leftMargin=MARGIN,
         rightMargin=MARGIN,
-        topMargin=MARGIN + 1.0*cm,
-        bottomMargin=MARGIN + 0.6*cm,
+        topMargin=MARGIN + 1.0 * cm,
+        bottomMargin=MARGIN + 0.6 * cm,
     )
     content_frame = Frame(
-        MARGIN, MARGIN + 0.4*cm,
-        PAGE_W - 2*MARGIN, PAGE_H - 2*MARGIN - 1.8*cm,
+        MARGIN,
+        MARGIN + 0.4 * cm,
+        PAGE_W - 2 * MARGIN,
+        PAGE_H - 2 * MARGIN - 1.8 * cm,
         id="content",
     )
     cover_frame = Frame(
-        MARGIN, MARGIN,
-        PAGE_W - 2*MARGIN, PAGE_H - 2*MARGIN,
+        MARGIN,
+        MARGIN,
+        PAGE_W - 2 * MARGIN,
+        PAGE_H - 2 * MARGIN,
         id="cover",
     )
-    doc.addPageTemplates([
-        PageTemplate(id="cover",   frames=[cover_frame]),
-        PageTemplate(id="content", frames=[content_frame],
-                     onPage=_header_footer),
-    ])
+    doc.addPageTemplates(
+        [
+            PageTemplate(id="cover", frames=[cover_frame]),
+            PageTemplate(id="content", frames=[content_frame], onPage=_header_footer),
+        ]
+    )
     return doc
+
 
 # ---------------------------------------------------------------------------
 # Table style helpers
 # ---------------------------------------------------------------------------
 
+
 def _base_table_style(col_count: int) -> TableStyle:
-    return TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, 0),  C_BLUE_DARK),
-        ("TEXTCOLOR",     (0, 0), (-1, 0),  C_WHITE),
-        ("FONTNAME",      (0, 0), (-1, 0),  "Helvetica-Bold"),
-        ("FONTSIZE",      (0, 0), (-1, 0),  8),
-        ("BOTTOMPADDING", (0, 0), (-1, 0),  5),
-        ("TOPPADDING",    (0, 0), (-1, 0),  5),
-        ("FONTNAME",      (0, 1), (-1, -1), "Helvetica"),
-        ("FONTSIZE",      (0, 1), (-1, -1), 8),
-        ("TOPPADDING",    (0, 1), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 1), (-1, -1), 3),
-        ("GRID",          (0, 0), (-1, -1), 0.3, colors.HexColor("#CCCCCC")),
-        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [C_WHITE, C_GREY_ALT]),
-        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-    ])
+    return TableStyle(
+        [
+            ("BACKGROUND", (0, 0), (-1, 0), C_BLUE_DARK),
+            ("TEXTCOLOR", (0, 0), (-1, 0), C_WHITE),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 5),
+            ("TOPPADDING", (0, 0), (-1, 0), 5),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 1), (-1, -1), 8),
+            ("TOPPADDING", (0, 1), (-1, -1), 3),
+            ("BOTTOMPADDING", (0, 1), (-1, -1), 3),
+            ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#CCCCCC")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [C_WHITE, C_GREY_ALT]),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]
+    )
 
 
 def _row_colour(style: TableStyle, row: int, colour):
     style.add("BACKGROUND", (0, row), (-1, row), colour)
+
 
 # ---------------------------------------------------------------------------
 # Section builders
@@ -192,38 +195,38 @@ def _row_colour(style: TableStyle, row: int, colour):
 
 # -- 1. Cover page --
 
+
 def _cover_page(report: BuildingReport) -> List:
     elems = []
-    elems.append(Spacer(1, 3*cm))
+    elems.append(Spacer(1, 3 * cm))
 
     # Top accent bar (via table)
-    bar = Table([[""]], colWidths=[PAGE_W - 2*MARGIN], rowHeights=[0.4*cm])
-    bar.setStyle(TableStyle([("BACKGROUND", (0,0), (-1,-1), C_BLUE_MID)]))
+    bar = Table([[""]], colWidths=[PAGE_W - 2 * MARGIN], rowHeights=[0.4 * cm])
+    bar.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), C_BLUE_MID)]))
     elems.append(bar)
-    elems.append(Spacer(1, 0.5*cm))
+    elems.append(Spacer(1, 0.5 * cm))
 
-    elems.append(Paragraph("FireAI", ParagraphStyle(
-        "logo", fontName="Helvetica-Bold", fontSize=36,
-        textColor=C_BLUE_DARK, spaceAfter=2)))
-    elems.append(Paragraph("NFPA 72-2022 Compliance Report",
-                            STYLES["CoverTitle"]))
-    elems.append(Spacer(1, 0.3*cm))
-    elems.append(HRFlowable(width="100%", thickness=1,
-                             color=C_BLUE_MID, spaceAfter=14))
+    elems.append(
+        Paragraph(
+            "FireAI",
+            ParagraphStyle("logo", fontName="Helvetica-Bold", fontSize=36, textColor=C_BLUE_DARK, spaceAfter=2),
+        )
+    )
+    elems.append(Paragraph("NFPA 72-2022 Compliance Report", STYLES["CoverTitle"]))
+    elems.append(Spacer(1, 0.3 * cm))
+    elems.append(HRFlowable(width="100%", thickness=1, color=C_BLUE_MID, spaceAfter=14))
 
     date_str = datetime.now(timezone.utc).strftime("%d %B %Y, %H:%M UTC")  # V54 FIX (AUDIT-012): timezone-aware UTC
     meta = [
-        ("Building ID",    report.building_id),
+        ("Building ID", report.building_id),
         ("Date Generated", date_str),
-        ("NFPA Version",   "NFPA 72-2022"),
-        ("Engine",         "FireAI Automated Design Engine"),
+        ("NFPA Version", "NFPA 72-2022"),
+        ("Engine", "FireAI Automated Design Engine"),
     ]
     for label, val in meta:
-        elems.append(Paragraph(
-            f'<font name="Helvetica-Bold">{label}:</font>  {val}',
-            STYLES["CoverSub"]))
+        elems.append(Paragraph(f'<font name="Helvetica-Bold">{label}:</font>  {val}', STYLES["CoverSub"]))
 
-    elems.append(Spacer(1, 1.2*cm))
+    elems.append(Spacer(1, 1.2 * cm))
 
     # Verdict box
     if report.safe_to_submit:
@@ -234,37 +237,46 @@ def _cover_page(report: BuildingReport) -> List:
         bg, fg = C_RED_LIGHT, C_RED
 
     verdict_style = ParagraphStyle(
-        "VBox", fontName="Helvetica-Bold", fontSize=20,
-        textColor=fg, alignment=1, leading=26)
-    vbox = Table([[Paragraph(verdict_text, verdict_style)]],
-                 colWidths=[PAGE_W - 2*MARGIN - 2*cm],
-                 rowHeights=[1.4*cm])
-    vbox.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0), (-1,-1), bg),
-        ("BOX",           (0,0), (-1,-1), 1.5, fg),
-        ("ALIGN",         (0,0), (-1,-1), "CENTER"),
-        ("VALIGN",        (0,0), (-1,-1), "MIDDLE"),
-        ("LEFTPADDING",   (0,0), (-1,-1), 10),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
-    ]))
+        "VBox", fontName="Helvetica-Bold", fontSize=20, textColor=fg, alignment=1, leading=26
+    )
+    vbox = Table(
+        [[Paragraph(verdict_text, verdict_style)]], colWidths=[PAGE_W - 2 * MARGIN - 2 * cm], rowHeights=[1.4 * cm]
+    )
+    vbox.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), bg),
+                ("BOX", (0, 0), (-1, -1), 1.5, fg),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ]
+        )
+    )
     elems.append(vbox)
 
     if report.non_compliant_floors:
-        elems.append(Spacer(1, 0.5*cm))
-        elems.append(Paragraph(
-            "Non-compliant floors: " + ", ".join(report.non_compliant_floors),
-            ParagraphStyle("NCF", fontName="Helvetica", fontSize=9,
-                           textColor=C_RED, spaceAfter=4)))
+        elems.append(Spacer(1, 0.5 * cm))
+        elems.append(
+            Paragraph(
+                "Non-compliant floors: " + ", ".join(report.non_compliant_floors),
+                ParagraphStyle("NCF", fontName="Helvetica", fontSize=9, textColor=C_RED, spaceAfter=4),
+            )
+        )
 
-    elems.append(Spacer(1, 2*cm))
-    bar2 = Table([[""]], colWidths=[PAGE_W - 2*MARGIN], rowHeights=[0.2*cm])
-    bar2.setStyle(TableStyle([("BACKGROUND", (0,0), (-1,-1), C_BLUE_MID)]))
+    elems.append(Spacer(1, 2 * cm))
+    bar2 = Table([[""]], colWidths=[PAGE_W - 2 * MARGIN], rowHeights=[0.2 * cm])
+    bar2.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), C_BLUE_MID)]))
     elems.append(bar2)
-    elems.append(Spacer(1, 0.3*cm))
-    elems.append(Paragraph(
-        "This document was generated automatically. It must be reviewed and "
-        "countersigned by a licensed fire protection engineer before submission.",
-        STYLES["Small"]))
+    elems.append(Spacer(1, 0.3 * cm))
+    elems.append(
+        Paragraph(
+            "This document was generated automatically. It must be reviewed and "
+            "countersigned by a licensed fire protection engineer before submission.",
+            STYLES["Small"],
+        )
+    )
 
     elems.append(NextPageTemplate("content"))
     elems.append(PageBreak())
@@ -273,26 +285,26 @@ def _cover_page(report: BuildingReport) -> List:
 
 # -- 2. Building summary --
 
+
 def _building_summary(report: BuildingReport) -> List:
     elems = []
     elems.append(Paragraph("Building Summary", STYLES["SectionHead"]))
-    elems.append(HRFlowable(width="100%", thickness=0.5,
-                             color=C_BLUE_MID, spaceAfter=8))
+    elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
 
     total_rooms = sum(len(f.room_summaries) for f in report.floor_reports)
     compliant_floors = len(report.floor_reports) - len(report.non_compliant_floors)
 
     kv = [
-        ("Total Floors",            len(report.floor_reports)),
-        ("Total Rooms",             total_rooms),
+        ("Total Floors", len(report.floor_reports)),
+        ("Total Rooms", total_rooms),
         ("Total Ceiling Detectors", report.total_detectors),
-        ("Total Duct Detectors",    report.total_duct_devices),
-        ("Compliant Floors",        f"{compliant_floors} / {len(report.floor_reports)}"),
-        ("Overall Compliant",       "Yes" if report.fully_compliant else "No"),
-        ("Safe to Submit",          "Yes" if report.safe_to_submit else "No"),
+        ("Total Duct Detectors", report.total_duct_devices),
+        ("Compliant Floors", f"{compliant_floors} / {len(report.floor_reports)}"),
+        ("Overall Compliant", "Yes" if report.fully_compliant else "No"),
+        ("Safe to Submit", "Yes" if report.safe_to_submit else "No"),
     ]
     data = [["Parameter", "Value"]] + [[k, str(v)] for k, v in kv]
-    tbl = Table(data, colWidths=[9*cm, PAGE_W - 2*MARGIN - 9*cm])
+    tbl = Table(data, colWidths=[9 * cm, PAGE_W - 2 * MARGIN - 9 * cm])
     ts = _base_table_style(2)
     # colour unsafe rows
     for i, (k, v) in enumerate(kv, start=1):
@@ -303,7 +315,7 @@ def _building_summary(report: BuildingReport) -> List:
 
     # Warnings
     if report.building_warnings:
-        elems.append(Spacer(1, 0.4*cm))
+        elems.append(Spacer(1, 0.4 * cm))
         elems.append(Paragraph("Building Warnings", STYLES["SubHead"]))
         for w in report.building_warnings:
             elems.append(Paragraph(f"  {w}", STYLES["Body"]))
@@ -311,17 +323,16 @@ def _building_summary(report: BuildingReport) -> List:
     # Project profile
     pp = getattr(report, "project_profile", None)
     if pp is not None:
-        elems.append(Spacer(1, 0.4*cm))
+        elems.append(Spacer(1, 0.4 * cm))
         elems.append(Paragraph("Project Profile", STYLES["SubHead"]))
         profile_kv = []
-        for attr in ("global_dominant_strategy", "n_clusters", "avg_efficiency",
-                     "total_rooms", "generated_at"):
+        for attr in ("global_dominant_strategy", "n_clusters", "avg_efficiency", "total_rooms", "generated_at"):
             val = getattr(pp, attr, None)
             if val is not None:
                 profile_kv.append((attr.replace("_", " ").title(), str(val)))
         if profile_kv:
             pdata = [["Attribute", "Value"]] + profile_kv
-            ptbl = Table(pdata, colWidths=[8*cm, PAGE_W - 2*MARGIN - 8*cm])
+            ptbl = Table(pdata, colWidths=[8 * cm, PAGE_W - 2 * MARGIN - 8 * cm])
             ptbl.setStyle(_base_table_style(2))
             elems.append(ptbl)
 
@@ -331,15 +342,14 @@ def _building_summary(report: BuildingReport) -> List:
 
 # -- 3. Per-floor tables --
 
+
 def _floor_tables(report: BuildingReport) -> List:
     elems = []
     elems.append(Paragraph("Per-Floor Room Details", STYLES["SectionHead"]))
-    elems.append(HRFlowable(width="100%", thickness=0.5,
-                             color=C_BLUE_MID, spaceAfter=8))
+    elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
 
-    headers = ["Room ID", "Name", "Dimensions (m)",
-               "Detectors", "Coverage %", "Method", "Status"]
-    col_w = [2.8*cm, 3.0*cm, 3.2*cm, 2.0*cm, 2.2*cm, 2.8*cm, 2.0*cm]
+    headers = ["Room ID", "Name", "Dimensions (m)", "Detectors", "Coverage %", "Method", "Status"]
+    col_w = [2.8 * cm, 3.0 * cm, 3.2 * cm, 2.0 * cm, 2.2 * cm, 2.8 * cm, 2.0 * cm]
 
     for floor in report.floor_reports:
         elems.append(Paragraph(f"Floor: {floor.floor_id}", STYLES["SubHead"]))
@@ -356,13 +366,13 @@ def _floor_tables(report: BuildingReport) -> List:
 
             cov = getattr(rs, "coverage_pct", 0)
             cov_str = f"{cov:.1f}%"
-            method  = getattr(rs, "method", getattr(rs, "detector_type", "-"))
+            method = getattr(rs, "method", getattr(rs, "detector_type", "-"))
             # V114 FIX: Fail-safe defaults — missing attribute = NOT compliant
             # A room without nfpa_valid/proof_valid must NEVER appear as PASS
             # in the PDF report that goes to the AHJ for building permits.
-            nfpa_ok = getattr(rs, "nfpa_valid",   False)
-            proof_ok= getattr(rs, "proof_valid",  False)
-            has_warn= bool(getattr(rs, "warnings", []) or getattr(rs, "errors", []))
+            nfpa_ok = getattr(rs, "nfpa_valid", False)
+            proof_ok = getattr(rs, "proof_valid", False)
+            has_warn = bool(getattr(rs, "warnings", []) or getattr(rs, "errors", []))
 
             if not nfpa_ok or not proof_ok:
                 status = "FAIL"
@@ -374,16 +384,17 @@ def _floor_tables(report: BuildingReport) -> List:
                 status = "PASS"
                 row_colours.append(C_GREEN_LIGHT)
 
-            data.append([
-                str(getattr(rs, "room_id", "-")),
-                str(getattr(rs, "name", "-")),
-                dims,
-                str(getattr(rs, "detector_count",
-                    getattr(rs, "count", "-"))),
-                cov_str,
-                str(method),
-                status,
-            ])
+            data.append(
+                [
+                    str(getattr(rs, "room_id", "-")),
+                    str(getattr(rs, "name", "-")),
+                    dims,
+                    str(getattr(rs, "detector_count", getattr(rs, "count", "-"))),
+                    cov_str,
+                    str(method),
+                    status,
+                ]
+            )
 
         tbl = Table(data, colWidths=col_w, repeatRows=1)
         ts = _base_table_style(len(headers))
@@ -391,7 +402,7 @@ def _floor_tables(report: BuildingReport) -> List:
             _row_colour(ts, i, colour)
         tbl.setStyle(ts)
         elems.append(tbl)
-        elems.append(Spacer(1, 0.4*cm))
+        elems.append(Spacer(1, 0.4 * cm))
 
     elems.append(PageBreak())
     return elems
@@ -399,34 +410,28 @@ def _floor_tables(report: BuildingReport) -> List:
 
 # -- 4. Scenario verification --
 
-def _scenario_section(
-    scenario_results: Dict[str, "ScenarioBatteryResult"]
-) -> List:
+
+def _scenario_section(scenario_results: Dict[str, "ScenarioBatteryResult"]) -> List:
     elems = []
     elems.append(Paragraph("Scenario Verification", STYLES["SectionHead"]))
-    elems.append(HRFlowable(width="100%", thickness=0.5,
-                             color=C_BLUE_MID, spaceAfter=8))
+    elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
 
-    headers = ["Room ID", "Scenarios", "Pass", "Fail",
-               "Worst Detection (s)", "Blind Spots"]
-    col_w = [3.0*cm, 2.2*cm, 1.8*cm, 1.8*cm, 3.5*cm, 5.7*cm]
+    headers = ["Room ID", "Scenarios", "Pass", "Fail", "Worst Detection (s)", "Blind Spots"]
+    col_w = [3.0 * cm, 2.2 * cm, 1.8 * cm, 1.8 * cm, 3.5 * cm, 5.7 * cm]
 
     data = [headers]
     row_colours = []
 
     for room_id, battery in scenario_results.items():
-        sc_count  = getattr(battery, "total_scenarios",
-                    getattr(battery, "scenario_count",
-                    len(getattr(battery, "results", []))))
-        sc_pass   = getattr(battery, "passed",
-                    getattr(battery, "pass_count", "-"))
-        sc_fail   = getattr(battery, "failed",
-                    getattr(battery, "fail_count",
-                    getattr(battery, "scenario_fail_count", "-")))
-        worst     = getattr(battery, "worst_detection_time",
-                    getattr(battery, "worst_detection_time_s", "-"))
-        blind     = getattr(battery, "blind_spots",
-                    getattr(battery, "total_blind_spots", []))
+        sc_count = getattr(
+            battery, "total_scenarios", getattr(battery, "scenario_count", len(getattr(battery, "results", [])))
+        )
+        sc_pass = getattr(battery, "passed", getattr(battery, "pass_count", "-"))
+        sc_fail = getattr(
+            battery, "failed", getattr(battery, "fail_count", getattr(battery, "scenario_fail_count", "-"))
+        )
+        worst = getattr(battery, "worst_detection_time", getattr(battery, "worst_detection_time_s", "-"))
+        blind = getattr(battery, "blind_spots", getattr(battery, "total_blind_spots", []))
         blind_str = "; ".join(str(b) for b in (blind if isinstance(blind, list) else [])) if blind else "None"
 
         fail_val = sc_fail if sc_fail != "-" else 0
@@ -436,14 +441,16 @@ def _scenario_section(
             colour = C_GREEN_LIGHT
         row_colours.append(colour)
 
-        data.append([
-            str(room_id),
-            str(sc_count),
-            str(sc_pass),
-            str(sc_fail),
-            str(worst),
-            blind_str,
-        ])
+        data.append(
+            [
+                str(room_id),
+                str(sc_count),
+                str(sc_pass),
+                str(sc_fail),
+                str(worst),
+                blind_str,
+            ]
+        )
 
     tbl = Table(data, colWidths=col_w, repeatRows=1)
     ts = _base_table_style(len(headers))
@@ -457,15 +464,13 @@ def _scenario_section(
 
 # -- 5. Duct detector summary --
 
+
 def _duct_section(report: BuildingReport) -> List:
     elems = []
     elems.append(Paragraph("Duct Detector Summary", STYLES["SectionHead"]))
-    elems.append(HRFlowable(width="100%", thickness=0.5,
-                             color=C_BLUE_MID, spaceAfter=8))
+    elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
 
-    elems.append(Paragraph(
-        f"Total duct detectors placed: <b>{report.total_duct_devices}</b>",
-        STYLES["Body"]))
+    elems.append(Paragraph(f"Total duct detectors placed: <b>{report.total_duct_devices}</b>", STYLES["Body"]))
 
     all_warnings = []
     for floor in report.floor_reports:
@@ -474,12 +479,12 @@ def _duct_section(report: BuildingReport) -> List:
                 all_warnings.append((rs.room_id, w))
 
     if all_warnings:
-        elems.append(Spacer(1, 0.3*cm))
+        elems.append(Spacer(1, 0.3 * cm))
         elems.append(Paragraph("Duct Warnings", STYLES["SubHead"]))
         data = [["Room ID", "Warning"]]
         for room_id, w in all_warnings:
             data.append([str(room_id), str(w)])
-        tbl = Table(data, colWidths=[4*cm, PAGE_W - 2*MARGIN - 4*cm])
+        tbl = Table(data, colWidths=[4 * cm, PAGE_W - 2 * MARGIN - 4 * cm])
         ts = _base_table_style(2)
         for i in range(1, len(data)):
             _row_colour(ts, i, C_YELLOW_LIGHT)
@@ -494,32 +499,34 @@ def _duct_section(report: BuildingReport) -> List:
 
 # -- 6. Audit trail --
 
+
 def _audit_section(audit_summary: dict) -> List:
     elems = []
     elems.append(Paragraph("Audit Trail Summary", STYLES["SectionHead"]))
-    elems.append(HRFlowable(width="100%", thickness=0.5,
-                             color=C_BLUE_MID, spaceAfter=8))
+    elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
 
-    total   = audit_summary.get("total_records", audit_summary.get("count", "N/A"))
-    chain_ok= audit_summary.get("hash_chain_valid", None)
+    total = audit_summary.get("total_records", audit_summary.get("count", "N/A"))
+    chain_ok = audit_summary.get("hash_chain_valid")
 
     elems.append(Paragraph(f"Total audit records: <b>{total}</b>", STYLES["Body"]))
 
     if chain_ok is not None:
         status_str = "INTACT" if chain_ok else "TAMPERED"
         colour_str = "#1A7A4A" if chain_ok else "#B22222"
-        elems.append(Paragraph(
-            f'Hash chain status: <font color="{colour_str}"><b>{status_str}</b></font>',
-            STYLES["Body"]))
+        elems.append(
+            Paragraph(f'Hash chain status: <font color="{colour_str}"><b>{status_str}</b></font>', STYLES["Body"])
+        )
 
-    extras = {k: v for k, v in audit_summary.items()
-              if k not in ("total_records", "count",
-                           "tamper_detected", "hash_chain_valid")}
+    extras = {
+        k: v
+        for k, v in audit_summary.items()
+        if k not in ("total_records", "count", "tamper_detected", "hash_chain_valid")
+    }
     if extras:
         data = [["Key", "Value"]] + [[k, str(v)] for k, v in extras.items()]
-        tbl = Table(data, colWidths=[7*cm, PAGE_W - 2*MARGIN - 7*cm])
+        tbl = Table(data, colWidths=[7 * cm, PAGE_W - 2 * MARGIN - 7 * cm])
         tbl.setStyle(_base_table_style(2))
-        elems.append(Spacer(1, 0.3*cm))
+        elems.append(Spacer(1, 0.3 * cm))
         elems.append(tbl)
 
     elems.append(PageBreak())
@@ -548,27 +555,28 @@ _LIMITATIONS = [
 def _notes_section() -> List:
     elems = []
     elems.append(Paragraph("Notes & Limitations", STYLES["SectionHead"]))
-    elems.append(HRFlowable(width="100%", thickness=0.5,
-                             color=C_BLUE_MID, spaceAfter=8))
+    elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
 
     elems.append(Paragraph("NFPA 72-2022 Clauses Referenced", STYLES["SubHead"]))
     for clause in _NFPA_CLAUSES:
         elems.append(Paragraph(f"  {clause}", STYLES["Body"]))
 
-    elems.append(Spacer(1, 0.4*cm))
+    elems.append(Spacer(1, 0.4 * cm))
     elems.append(Paragraph("Tool Limitations", STYLES["SubHead"]))
     for lim in _LIMITATIONS:
         elems.append(Paragraph(f"  {lim}", STYLES["Body"]))
 
-    elems.append(Spacer(1, 0.6*cm))
-    elems.append(HRFlowable(width="100%", thickness=0.5,
-                             color=C_BLUE_MID, spaceAfter=8))
-    elems.append(Paragraph(
-        "This document was generated automatically by FireAI. It must be reviewed "
-        "and countersigned by a licensed fire protection engineer before submission "
-        "to the Authority Having Jurisdiction (AHJ). NFPA 72-2022 compliance "
-        "determination requires professional engineering judgement.",
-        STYLES["Small"]))
+    elems.append(Spacer(1, 0.6 * cm))
+    elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
+    elems.append(
+        Paragraph(
+            "This document was generated automatically by FireAI. It must be reviewed "
+            "and countersigned by a licensed fire protection engineer before submission "
+            "to the Authority Having Jurisdiction (AHJ). NFPA 72-2022 compliance "
+            "determination requires professional engineering judgement.",
+            STYLES["Small"],
+        )
+    )
 
     return elems
 
@@ -576,6 +584,7 @@ def _notes_section() -> List:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def generate_building_report(
     report: BuildingReport,
@@ -648,11 +657,11 @@ def generate_building_report(
         except OSError:
             # Last resort: write to /tmp
             import tempfile as _tf
+
             fb_tmp = _os.path.join(_tf.gettempdir(), "fireai_report_ERROR.txt")
             try:
                 with open(fb_tmp, "w") as f:
-                    f.write(f"PDF generation failed: {exc}\n"
-                            f"Original path: {output_path}\n\n")
+                    f.write(f"PDF generation failed: {exc}\nOriginal path: {output_path}\n\n")
                     traceback.print_exc(file=f)
                 return fb_tmp
             except Exception:

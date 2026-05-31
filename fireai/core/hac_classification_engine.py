@@ -34,17 +34,24 @@ from __future__ import annotations
 import logging
 import math
 import warnings as _warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-from fireai.core.models_v21 import (
-    SubstanceProperties, HACResult, ZoneExtent, ZoneType,
-    VentilationLevel, HazardType, _select_temp_class, TemperatureClass,
-    EnvironmentalContext, burgess_wheeler_lfl,
-)
 from fireai.core.international_reg_selector import (
-    ATEXZone, HazardClass, HazardSystem, NECDivision,
+    ATEXZone,
+    HazardClass,
+)
+from fireai.core.models_v21 import (
+    EnvironmentalContext,
+    HACResult,
+    HazardType,
+    SubstanceProperties,
+    VentilationLevel,
+    ZoneExtent,
+    ZoneType,
+    _select_temp_class,
+    burgess_wheeler_lfl,
 )
 
 logger = logging.getLogger(__name__)
@@ -54,37 +61,38 @@ logger = logging.getLogger(__name__)
 # Legacy Enums (preserved for backward compatibility)
 # ---------------------------------------------------------------------------
 
+
 class ReleaseGrade(str, Enum):
-    CONTINUOUS  = "CONTINUOUS"
-    PRIMARY     = "PRIMARY"
-    SECONDARY   = "SECONDARY"
+    CONTINUOUS = "CONTINUOUS"
+    PRIMARY = "PRIMARY"
+    SECONDARY = "SECONDARY"
 
 
 class VentilationDegree(str, Enum):
-    HIGH    = "HIGH"
-    MEDIUM  = "MEDIUM"
-    LOW     = "LOW"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
 
 
 class VentilationAvailability(str, Enum):
-    GOOD    = "GOOD"
-    FAIR    = "FAIR"
-    POOR    = "POOR"
+    GOOD = "GOOD"
+    FAIR = "FAIR"
+    POOR = "POOR"
 
 
 class HazardousMaterial(str, Enum):
-    GAS         = "GAS"
-    VAPOR       = "VAPOR"
-    DUST_COMB   = "DUST_COMB"
+    GAS = "GAS"
+    VAPOR = "VAPOR"
+    DUST_COMB = "DUST_COMB"
     DUST_HYBRID = "DUST_HYBRID"
-    MIST        = "MIST"
+    MIST = "MIST"
 
 
 class SoRGeometry(str, Enum):
-    POINT    = "POINT"
-    LINE     = "LINE"
-    AREA     = "AREA"
-    VOLUME   = "VOLUME"
+    POINT = "POINT"
+    LINE = "LINE"
+    AREA = "AREA"
+    VOLUME = "VOLUME"
 
 
 # ---------------------------------------------------------------------------
@@ -93,10 +101,10 @@ class SoRGeometry(str, Enum):
 
 # Convert V21 VentilationLevel to legacy VentilationDegree
 _V21_TO_LEGACY_DEGREE = {
-    VentilationLevel.HIGH:   VentilationDegree.HIGH,
+    VentilationLevel.HIGH: VentilationDegree.HIGH,
     VentilationLevel.MEDIUM: VentilationDegree.MEDIUM,
-    VentilationLevel.LOW:    VentilationDegree.LOW,
-    VentilationLevel.POOR:   VentilationDegree.LOW,  # POOR→LOW loses 4× ventilation effectiveness (0.05 vs 0.20)
+    VentilationLevel.LOW: VentilationDegree.LOW,
+    VentilationLevel.POOR: VentilationDegree.LOW,  # POOR→LOW loses 4× ventilation effectiveness (0.05 vs 0.20)
 }
 
 
@@ -117,59 +125,71 @@ def _map_ventilation_to_legacy(vent: VentilationLevel) -> VentilationDegree:
         )
     return result
 
+
 # Convert V21 ZoneType to legacy ATEXZone
 _V21_TO_ATEX_ZONE = {
-    ZoneType.ZONE_0:       ATEXZone.ZONE_0,
-    ZoneType.ZONE_1:       ATEXZone.ZONE_1,
-    ZoneType.ZONE_2:       ATEXZone.ZONE_2,
-    ZoneType.ZONE_20:      ATEXZone.ZONE_20,
-    ZoneType.ZONE_21:      ATEXZone.ZONE_21,
-    ZoneType.ZONE_22:      ATEXZone.ZONE_22,
+    ZoneType.ZONE_0: ATEXZone.ZONE_0,
+    ZoneType.ZONE_1: ATEXZone.ZONE_1,
+    ZoneType.ZONE_2: ATEXZone.ZONE_2,
+    ZoneType.ZONE_20: ATEXZone.ZONE_20,
+    ZoneType.ZONE_21: ATEXZone.ZONE_21,
+    ZoneType.ZONE_22: ATEXZone.ZONE_22,
     ZoneType.UNCLASSIFIED: ATEXZone.SAFE,
 }
 
 # Convert V21 HazardType to legacy HazardousMaterial
 _V21_TO_HAZMAT = {
-    HazardType.GAS:    HazardousMaterial.GAS,
-    HazardType.DUST:   HazardousMaterial.DUST_COMB,
+    HazardType.GAS: HazardousMaterial.GAS,
+    HazardType.DUST: HazardousMaterial.DUST_COMB,
     HazardType.HYBRID: HazardousMaterial.DUST_HYBRID,
-    HazardType.FIBER:  HazardousMaterial.DUST_COMB,
+    HazardType.FIBER: HazardousMaterial.DUST_COMB,
 }
 
 # Temperature class limits (legacy, used by _check_temperature_class)
 T_CLASS_MAX_TEMP: Dict[str, float] = {
-    "T1": 450.0, "T2": 300.0, "T2A": 280.0, "T2B": 260.0,
-    "T2C": 230.0, "T2D": 215.0, "T3": 200.0, "T3A": 180.0,
-    "T3B": 165.0, "T3C": 160.0, "T4": 135.0, "T4A": 120.0,
-    "T5": 100.0, "T6": 85.0,
+    "T1": 450.0,
+    "T2": 300.0,
+    "T2A": 280.0,
+    "T2B": 260.0,
+    "T2C": 230.0,
+    "T2D": 215.0,
+    "T3": 200.0,
+    "T3A": 180.0,
+    "T3B": 165.0,
+    "T3C": 160.0,
+    "T4": 135.0,
+    "T4A": 120.0,
+    "T5": 100.0,
+    "T6": 85.0,
 }
 
 # Zone hazard ordering (legacy)
 _ZONE_HAZARD_ORDER: Dict[ATEXZone, int] = {
-    ATEXZone.ZONE_0:  0,
+    ATEXZone.ZONE_0: 0,
     ATEXZone.ZONE_20: 1,
-    ATEXZone.ZONE_1:  2,
+    ATEXZone.ZONE_1: 2,
     ATEXZone.ZONE_21: 3,
-    ATEXZone.ZONE_2:  4,
+    ATEXZone.ZONE_2: 4,
     ATEXZone.ZONE_22: 5,
-    ATEXZone.SAFE:    99,
+    ATEXZone.SAFE: 99,
 }
 
 # Base radii per IEC 60079-10-1 Annex A (legacy)
 _BASE_RADII_M: Dict[ATEXZone, float] = {
-    ATEXZone.ZONE_0:  3.0,
-    ATEXZone.ZONE_1:  6.0,
-    ATEXZone.ZONE_2:  10.0,
+    ATEXZone.ZONE_0: 3.0,
+    ATEXZone.ZONE_1: 6.0,
+    ATEXZone.ZONE_2: 10.0,
     ATEXZone.ZONE_20: 1.5,
     ATEXZone.ZONE_21: 3.0,
     ATEXZone.ZONE_22: 6.0,
-    ATEXZone.SAFE:    0.0,
+    ATEXZone.SAFE: 0.0,
 }
 
 
 # ---------------------------------------------------------------------------
 # Legacy dataclasses (preserved for backward compatibility)
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SubstancePropertiesLegacy:
@@ -184,63 +204,67 @@ class SubstancePropertiesLegacy:
     Both changes are backward-compatible — existing callers passing
     explicit values are unaffected.
     """
-    substance_name:   str
-    cas_number:       str = ""
-    lfl_vol_pct:      Optional[float] = None
-    ufl_vol_pct:      Optional[float] = None
-    flash_point_c:    Optional[float] = None
-    autoignition_c:   Optional[float] = None
-    vapor_density:    float = 1.0
-    mec_g_m3:         Optional[float] = None
-    mie_mj:           Optional[float] = None
-    kst_bar_m_s:      Optional[float] = None
-    pmax_bar:         Optional[float] = None
-    dust_group:       str = ""
-    nec_group:        str = ""
+
+    substance_name: str
+    cas_number: str = ""
+    lfl_vol_pct: Optional[float] = None
+    ufl_vol_pct: Optional[float] = None
+    flash_point_c: Optional[float] = None
+    autoignition_c: Optional[float] = None
+    vapor_density: float = 1.0
+    mec_g_m3: Optional[float] = None
+    mie_mj: Optional[float] = None
+    kst_bar_m_s: Optional[float] = None
+    pmax_bar: Optional[float] = None
+    dust_group: str = ""
+    nec_group: str = ""
     temperature_class: str = "T3"
-    material_type:    HazardousMaterial = HazardousMaterial.GAS
+    material_type: HazardousMaterial = HazardousMaterial.GAS
 
 
 @dataclass(frozen=True)
 class ReleaseSource:
     """Source of hazardous material release."""
-    source_id:    str
-    grade:        ReleaseGrade
-    geometry:     SoRGeometry
+
+    source_id: str
+    grade: ReleaseGrade
+    geometry: SoRGeometry
     release_rate_kg_s: float = 0.0
-    diameter_m:   float = 0.0
-    length_m:     float = 0.0
-    area_m2:      float = 0.0
+    diameter_m: float = 0.0
+    length_m: float = 0.0
+    area_m2: float = 0.0
 
 
 @dataclass(frozen=True)
 class ZoneExtentLegacy:
     """Legacy zone extent dataclass."""
-    zone:          ATEXZone
-    radius_m:      float
-    area_m2:       float
-    volume_m3:     float
+
+    zone: ATEXZone
+    radius_m: float
+    area_m2: float
+    volume_m3: float
     is_negligible: bool
 
 
 @dataclass(frozen=True)
 class HACResultLegacy:
     """Legacy HAC result dataclass."""
-    space_id:          str
-    substance:         SubstancePropertiesLegacy
-    release_sources:   Tuple[ReleaseSource, ...]
+
+    space_id: str
+    substance: SubstancePropertiesLegacy
+    release_sources: Tuple[ReleaseSource, ...]
     ventilation_degree: VentilationDegree
-    ventilation_avail:  VentilationAvailability
-    classified_zone:   ATEXZone
-    zone_extent:       ZoneExtentLegacy
-    hazard_class:      HazardClass
-    nec_division:      Optional[str]    = None
-    temperature_class: str              = "T3"
-    confidence_pct:    float            = 100.0
-    assumptions:       Tuple[str, ...]  = ()
-    warnings:          Tuple[str, ...]  = ()
-    nfpa_reference:    str              = ""
-    iec_reference:     str              = ""
+    ventilation_avail: VentilationAvailability
+    classified_zone: ATEXZone
+    zone_extent: ZoneExtentLegacy
+    hazard_class: HazardClass
+    nec_division: Optional[str] = None
+    temperature_class: str = "T3"
+    confidence_pct: float = 100.0
+    assumptions: Tuple[str, ...] = ()
+    warnings: Tuple[str, ...] = ()
+    nfpa_reference: str = ""
+    iec_reference: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -251,10 +275,10 @@ class HACResultLegacy:
 
 # IEC 60079-10-1:2015 Annex B Table B.2 — ventilation effectiveness (f)
 _VENT_EFFECTIVENESS: Dict[str, float] = {
-    "HIGH":   1.0,   # f = 1.0 (well-ventilated, uniform flow)
-    "MEDIUM": 0.5,   # f = 0.5 (moderate, some dead zones)
-    "LOW":    0.2,   # f = 0.2 (poor distribution, stratification)
-    "POOR":   0.05,  # f = 0.05 (almost stagnant)
+    "HIGH": 1.0,  # f = 1.0 (well-ventilated, uniform flow)
+    "MEDIUM": 0.5,  # f = 0.5 (moderate, some dead zones)
+    "LOW": 0.2,  # f = 0.2 (poor distribution, stratification)
+    "POOR": 0.05,  # f = 0.05 (almost stagnant)
 }
 
 # IEC 60079-10-1:2015 Annex B Table B.1 — concentration factor Ck
@@ -264,29 +288,29 @@ _VENT_EFFECTIVENESS: Dict[str, float] = {
 # A regulatory audit would flag this as incorrect. Using IEC value for compliance.
 _RELEASE_GRADE_CK: Dict[str, float] = {
     "CONTINUOUS": 0.25,  # Zone 0 vicinity — IEC 60079-10-1 Annex B Table B.1
-    "PRIMARY":    0.50,  # Zone 1 vicinity — IEC 60079-10-1 Annex B Table B.1
-    "SECONDARY":  0.50,  # Zone 2 vicinity — IEC 60079-10-1 Annex B Table B.1
+    "PRIMARY": 0.50,  # Zone 1 vicinity — IEC 60079-10-1 Annex B Table B.1
+    "SECONDARY": 0.50,  # Zone 2 vicinity — IEC 60079-10-1 Annex B Table B.1
 }
 
 # Minimum air changes per hour (ACH) by ventilation level
 _VENT_ACH: Dict[str, float] = {
-    "HIGH":   12.0,  # forced ventilation
-    "MEDIUM":  6.0,  # general mechanical ventilation
-    "LOW":     1.0,  # natural ventilation
-    "POOR":    0.1,  # effectively enclosed
+    "HIGH": 12.0,  # forced ventilation
+    "MEDIUM": 6.0,  # general mechanical ventilation
+    "LOW": 1.0,  # natural ventilation
+    "POOR": 0.1,  # effectively enclosed
 }
 
 # ── GAP-02: IEC 60079-10-1 §4.2 release_grade × ventilation matrix ─────
 
 _GAS_ZONE_RELEASE_BASE: Dict[str, ZoneType] = {
     "CONTINUOUS": ZoneType.ZONE_0,
-    "PRIMARY":    ZoneType.ZONE_1,
-    "SECONDARY":  ZoneType.ZONE_2,
+    "PRIMARY": ZoneType.ZONE_1,
+    "SECONDARY": ZoneType.ZONE_2,
 }
 _DUST_ZONE_RELEASE_BASE: Dict[str, ZoneType] = {
     "CONTINUOUS": ZoneType.ZONE_20,
-    "PRIMARY":    ZoneType.ZONE_21,
-    "SECONDARY":  ZoneType.ZONE_22,
+    "PRIMARY": ZoneType.ZONE_21,
+    "SECONDARY": ZoneType.ZONE_22,
 }
 
 # IEC 60079-10-1:2015 §4.3 — ventilation modifies zone
@@ -294,10 +318,10 @@ _DUST_ZONE_RELEASE_BASE: Dict[str, ZoneType] = {
 # (move to higher index = less severe zone), POOR should increase severity
 # (move to lower index = more severe zone).
 _VENT_ZONE_DELTA: Dict[str, int] = {
-    "HIGH":   +1,   # reduces severity (e.g. Zone 1 → Zone 2)
-    "MEDIUM":  0,   # no change to zone type
-    "LOW":     0,   # no change, but extent increases
-    "POOR":   -1,   # increases severity (e.g. Zone 2 → Zone 1)
+    "HIGH": +1,  # reduces severity (e.g. Zone 1 → Zone 2)
+    "MEDIUM": 0,  # no change to zone type
+    "LOW": 0,  # no change, but extent increases
+    "POOR": -1,  # increases severity (e.g. Zone 2 → Zone 1)
 }
 
 _GAS_ZONE_ORDER = ["ZONE_0", "ZONE_1", "ZONE_2"]
@@ -324,8 +348,7 @@ def _iec_annex_b_extent(
     lfl_vol_pct = substance.lfl_vol_pct
     if lfl_vol_pct is None:
         raise ValueError(
-            f"Substance '{substance.name}' has no lfl_vol_pct; "
-            "cannot apply IEC 60079-10-1 Annex B formula."
+            f"Substance '{substance.name}' has no lfl_vol_pct; cannot apply IEC 60079-10-1 Annex B formula."
         )
 
     # LFL temperature correction — Burgess-Wheeler
@@ -339,8 +362,7 @@ def _iec_annex_b_extent(
     mw = substance.molecular_weight
     if mw is None or mw <= 0.0:
         raise ValueError(
-            f"Substance '{substance.name}' has no molecular_weight; "
-            "cannot apply IEC 60079-10-1 Annex B formula."
+            f"Substance '{substance.name}' has no molecular_weight; cannot apply IEC 60079-10-1 Annex B formula."
         )
     # BUG FIX: Molecular weight is ALWAYS in g/mol in FireAI (SubstanceProperties
     # model). The previous heuristic `mw > 10.0` assumed MW < 10 meant kg/mol,
@@ -400,7 +422,9 @@ def _iec_annex_b_extent(
     #      new: BREATHING_ZONE=1.0).
     #
     # Reference: IEC 60079-10-1:2015 §B.4, NFPA 497-2021 §4.5
-    from fireai.core.models_v21 import vapor_density_tier, ElevationTier as _ElevTier
+    from fireai.core.models_v21 import ElevationTier as _ElevTier
+    from fireai.core.models_v21 import vapor_density_tier
+
     # V48 FIX: r_hz computation now includes buoyancy factor.
     # Previously computed r_hz assuming uniform hemisphere (r_hz = r_vz), then
     # adjusted r_vz by buoyancy. But this violates the volume constraint:
@@ -412,11 +436,11 @@ def _iec_annex_b_extent(
     # to be computed from the same volume constraint.
     tier = vapor_density_tier(mw)
     if tier == _ElevTier.HIGH:
-        k_buoy = 1.5   # Light gas → rises → larger vertical extent
+        k_buoy = 1.5  # Light gas → rises → larger vertical extent
     elif tier == _ElevTier.LOW:
-        k_buoy = 0.5   # Heavy gas → sinks → smaller vertical extent
+        k_buoy = 0.5  # Heavy gas → sinks → smaller vertical extent
     else:
-        k_buoy = 1.0   # Near-air density → uniform sphere
+        k_buoy = 1.0  # Near-air density → uniform sphere
 
     # Compute r_hz from Vz using buoyancy-adjusted formula
     if is_indoor:
@@ -435,6 +459,7 @@ def _iec_annex_b_extent(
     # Cap Vz at room volume and set the entire room as the zone extent.
     if room_volume_m3 > 0 and Vz_diluted_m3 > room_volume_m3:
         import logging as _hac_log
+
         _hac_log.getLogger(__name__).critical(
             f"IEC Annex B: Computed Vz ({Vz_diluted_m3:.1f} m³) exceeds room volume "
             f"({room_volume_m3:.1f} m³). Entire room is potentially hazardous. "
@@ -466,9 +491,9 @@ def _iec_annex_b_extent(
     r_vz = max(r_vz, 0.3)
     # Recompute volume from final radii (consistent with ZoneExtent validator)
     if is_indoor:
-        zone_vol_m3 = (2.0 / 3.0) * math.pi * r_hz ** 2 * r_vz
+        zone_vol_m3 = (2.0 / 3.0) * math.pi * r_hz**2 * r_vz
     else:
-        zone_vol_m3 = (4.0 / 3.0) * math.pi * r_hz ** 2 * r_vz
+        zone_vol_m3 = (4.0 / 3.0) * math.pi * r_hz**2 * r_vz
 
     return r_hz, r_vz, zone_vol_m3
 
@@ -531,19 +556,19 @@ class HACClassificationEngine:
 
     def classify_v21(
         self,
-        substance:   SubstanceProperties,
+        substance: SubstanceProperties,
         ventilation: VentilationLevel,
-        is_indoor:   bool = True,
+        is_indoor: bool = True,
         source_height_m: float = 0.0,
         # BUG FIX H-1: Default ambient_temp_c aligned with EnvironmentalContext
         # default (40°C). Previous default of 20°C was non-conservative —
         # Burgess-Wheeler LFL correction only activates above 25°C, so 20°C
         # produced no correction and narrower zone extents.
-        ambient_temp_c:  float = 40.0,
-        env_context:     Optional[EnvironmentalContext] = None,
-        release_grade:   Optional[ReleaseGrade] = None,
+        ambient_temp_c: float = 40.0,
+        env_context: Optional[EnvironmentalContext] = None,
+        release_grade: Optional[ReleaseGrade] = None,
         release_rate_kg_s: float = 0.0,
-        room_volume_m3:  float = 1000.0,
+        room_volume_m3: float = 1000.0,
     ) -> HACResult:
         """
         V21.2 classify using Pydantic models — fail-fast on invalid input.
@@ -581,9 +606,7 @@ class HACClassificationEngine:
             if env_context is not None:
                 effective_temp_c = env_context.ambient_temp_c
 
-            lfl_corrected = burgess_wheeler_lfl(
-                substance.lfl_vol_pct, effective_temp_c
-            )
+            lfl_corrected = burgess_wheeler_lfl(substance.lfl_vol_pct, effective_temp_c)
             if lfl_corrected < substance.lfl_vol_pct:
                 pct_reduction = (1.0 - lfl_corrected / substance.lfl_vol_pct) * 100.0
                 warnings.append(
@@ -604,15 +627,17 @@ class HACClassificationEngine:
             gas_zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=True)
             dust_zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=False)
             severity = [
-                ZoneType.ZONE_0, ZoneType.ZONE_20,
-                ZoneType.ZONE_1, ZoneType.ZONE_21,
-                ZoneType.ZONE_2, ZoneType.ZONE_22,
+                ZoneType.ZONE_0,
+                ZoneType.ZONE_20,
+                ZoneType.ZONE_1,
+                ZoneType.ZONE_21,
+                ZoneType.ZONE_2,
+                ZoneType.ZONE_22,
                 ZoneType.UNCLASSIFIED,
             ]
             zone = gas_zone if severity.index(gas_zone) <= severity.index(dust_zone) else dust_zone
             warnings.append(
-                "HYBRID hazard: zone determined from most severe of gas and dust analysis. "
-                "[IEC 60079-10-1:2015 §5.3]"
+                "HYBRID hazard: zone determined from most severe of gas and dust analysis. [IEC 60079-10-1:2015 §5.3]"
             )
         elif is_gas:
             zone = _resolve_zone_with_grade_vent(release_grade, ventilation, is_gas=True)
@@ -668,10 +693,7 @@ class HACClassificationEngine:
                     f"room_volume={room_volume_m3:.1f} m3)."
                 )
             except (ValueError, ZeroDivisionError) as exc:
-                warnings.append(
-                    f"IEC Annex B calculation failed ({exc}); "
-                    "falling back to simplified k/LFL method."
-                )
+                warnings.append(f"IEC Annex B calculation failed ({exc}); falling back to simplified k/LFL method.")
                 use_annex_b = False
 
         if not use_annex_b:
@@ -683,23 +705,23 @@ class HACClassificationEngine:
             # so dust extent was never computed — only gas extent was used.
             if substance.hazard_type == HazardType.HYBRID:
                 # Compute both gas and dust extents
-                gas_ext = self._compute_extent_v21(
-                    effective_lfl, ventilation, is_indoor, source_height_m)
+                gas_ext = self._compute_extent_v21(effective_lfl, ventilation, is_indoor, source_height_m)
                 dust_ext = self._compute_extent_dust_v21(
-                    substance.mec_g_m3 or 15.0, ventilation, is_indoor, source_height_m)
+                    substance.mec_g_m3 or 15.0, ventilation, is_indoor, source_height_m
+                )
                 # Take the most severe (larger) extent per IEC §5.7
                 r_h = max(gas_ext.horizontal_m, dust_ext.horizontal_m)
                 r_v = max(gas_ext.vertical_m, dust_ext.vertical_m)
                 vol_m3 = max(gas_ext.volume_m3, dust_ext.volume_m3)
             elif is_dust and not is_gas:
                 extent = self._compute_extent_dust_v21(
-                    substance.mec_g_m3 or 15.0, ventilation, is_indoor, source_height_m)
+                    substance.mec_g_m3 or 15.0, ventilation, is_indoor, source_height_m
+                )
                 r_h = extent.horizontal_m
                 r_v = extent.vertical_m
                 vol_m3 = extent.volume_m3
             else:
-                extent = self._compute_extent_v21(
-                    effective_lfl, ventilation, is_indoor, source_height_m)
+                extent = self._compute_extent_v21(effective_lfl, ventilation, is_indoor, source_height_m)
                 r_h = extent.horizontal_m
                 r_v = extent.vertical_m
                 vol_m3 = extent.volume_m3
@@ -738,9 +760,7 @@ class HACClassificationEngine:
             )
 
         # Fix #11: POOR ventilation + Zone 0/20 critical flag
-        if ventilation == VentilationLevel.POOR and zone in (
-            ZoneType.ZONE_0, ZoneType.ZONE_20
-        ):
+        if ventilation == VentilationLevel.POOR and zone in (ZoneType.ZONE_0, ZoneType.ZONE_20):
             flag = (
                 "CRITICAL: Zone 0/20 with POOR ventilation — "
                 "most dangerous possible classification. "
@@ -759,7 +779,14 @@ class HACClassificationEngine:
         )
 
     def _classify_gas_v21(
-        self, sub, vent, indoor, src_h, ambient, warnings, critical_flags,
+        self,
+        sub,
+        vent,
+        indoor,
+        src_h,
+        ambient,
+        warnings,
+        critical_flags,
         lfl_corrected=None,
     ) -> HACResult:
         """IEC 60079-10-1 gas zone classification (V21.2 with LFL correction)."""
@@ -769,7 +796,7 @@ class HACClassificationEngine:
             if sub.flash_point_c > ambient + 20.0:
                 warnings.append(
                     f"Flash point ({sub.flash_point_c}C) > ambient+20C "
-                    f"({ambient+20:.0f}C). Liquid may not produce flammable "
+                    f"({ambient + 20:.0f}C). Liquid may not produce flammable "
                     f"atmosphere unless heated. [NFPA 497 §4.2]"
                 )
 
@@ -777,9 +804,7 @@ class HACClassificationEngine:
         if sub.autoignition_c is not None:
             t_class = _select_temp_class(sub.autoignition_c)
             warnings.append(
-                f"Max temperature class for autoignition "
-                f"{sub.autoignition_c}C -> {t_class.value} "
-                f"[IEC 60079-0 §7.3]"
+                f"Max temperature class for autoignition {sub.autoignition_c}C -> {t_class.value} [IEC 60079-0 §7.3]"
             )
 
         # Zone determination from ventilation
@@ -800,8 +825,7 @@ class HACClassificationEngine:
 
         # V21.2: Use corrected LFL if available (wider zone)
         effective_lfl = lfl_corrected if lfl_corrected is not None else (sub.lfl_vol_pct or 1.0)
-        extent = self._compute_extent_v21(
-            effective_lfl, vent, indoor, src_h)
+        extent = self._compute_extent_v21(effective_lfl, vent, indoor, src_h)
 
         return HACResult(
             zone=zone,
@@ -813,7 +837,13 @@ class HACClassificationEngine:
         )
 
     def _classify_dust_v21(
-        self, sub, vent, indoor, src_h, warnings, critical_flags,
+        self,
+        sub,
+        vent,
+        indoor,
+        src_h,
+        warnings,
+        critical_flags,
     ) -> HACResult:
         """IEC 60079-10-2 dust zone classification (V21)."""
 
@@ -828,8 +858,7 @@ class HACClassificationEngine:
         # Kst classification
         if sub.kst_bar_m_s is not None and sub.kst_bar_m_s > 300:
             warnings.append(
-                f"Kst={sub.kst_bar_m_s} bar*m/s — St3 class dust, "
-                f"extremely explosive. [IEC 60079-10-2 §5.2]"
+                f"Kst={sub.kst_bar_m_s} bar*m/s — St3 class dust, extremely explosive. [IEC 60079-10-2 §5.2]"
             )
 
         # Fix #6: Ventilation determines dust zone
@@ -846,8 +875,7 @@ class HACClassificationEngine:
             )
             critical_flags.append(flag)
 
-        extent = self._compute_extent_dust_v21(
-            sub.mec_g_m3 or 15.0, vent, indoor, src_h)
+        extent = self._compute_extent_dust_v21(sub.mec_g_m3 or 15.0, vent, indoor, src_h)
 
         return HACResult(
             zone=zone,
@@ -859,7 +887,14 @@ class HACClassificationEngine:
         )
 
     def _classify_hybrid_v21(
-        self, sub, vent, indoor, src_h, ambient, warnings, critical_flags,
+        self,
+        sub,
+        vent,
+        indoor,
+        src_h,
+        ambient,
+        warnings,
+        critical_flags,
         lfl_corrected=None,
     ) -> HACResult:
         """Fix #8: Hybrid = classify separately, take most severe (V21.2).
@@ -880,17 +915,26 @@ class HACClassificationEngine:
             stacklevel=2,
         )
         warnings.append(
-            "HYBRID mixture: classified independently for gas and dust. "
-            "Most severe zone applies. [IEC 60079-10-1 §5.7]"
+            "HYBRID mixture: classified independently for gas and dust. Most severe zone applies. [IEC 60079-10-1 §5.7]"
         )
 
         gas_result = self._classify_gas_v21(
-            sub, vent, indoor, src_h, ambient,
-            warnings=[], critical_flags=[], lfl_corrected=lfl_corrected,
+            sub,
+            vent,
+            indoor,
+            src_h,
+            ambient,
+            warnings=[],
+            critical_flags=[],
+            lfl_corrected=lfl_corrected,
         )
         dust_result = self._classify_dust_v21(
-            sub, vent, indoor, src_h,
-            warnings=[], critical_flags=[],
+            sub,
+            vent,
+            indoor,
+            src_h,
+            warnings=[],
+            critical_flags=[],
         )
 
         warnings.extend(gas_result.warnings)
@@ -900,12 +944,15 @@ class HACClassificationEngine:
 
         # Severity order (most severe first)
         severity = [
-            ZoneType.ZONE_0, ZoneType.ZONE_20,
-            ZoneType.ZONE_1, ZoneType.ZONE_21,
-            ZoneType.ZONE_2, ZoneType.ZONE_22,
+            ZoneType.ZONE_0,
+            ZoneType.ZONE_20,
+            ZoneType.ZONE_1,
+            ZoneType.ZONE_21,
+            ZoneType.ZONE_2,
+            ZoneType.ZONE_22,
             ZoneType.UNCLASSIFIED,
         ]
-        gas_sev  = severity.index(gas_result.zone)
+        gas_sev = severity.index(gas_result.zone)
         dust_sev = severity.index(dust_result.zone)
         final_zone = gas_result.zone if gas_sev <= dust_sev else dust_result.zone
 
@@ -913,8 +960,8 @@ class HACClassificationEngine:
         d_ext = dust_result.extent
         extent = ZoneExtent(
             horizontal_m=max(g_ext.horizontal_m, d_ext.horizontal_m),
-            vertical_m  =max(g_ext.vertical_m,   d_ext.vertical_m),
-            volume_m3   =max(g_ext.volume_m3,     d_ext.volume_m3),
+            vertical_m=max(g_ext.vertical_m, d_ext.vertical_m),
+            volume_m3=max(g_ext.volume_m3, d_ext.volume_m3),
         )
 
         return HACResult(
@@ -931,19 +978,19 @@ class HACClassificationEngine:
     @staticmethod
     def _gas_zone_from_ventilation_v21(vent: VentilationLevel) -> ZoneType:
         return {
-            VentilationLevel.HIGH:   ZoneType.ZONE_2,
+            VentilationLevel.HIGH: ZoneType.ZONE_2,
             VentilationLevel.MEDIUM: ZoneType.ZONE_1,
-            VentilationLevel.LOW:    ZoneType.ZONE_1,
-            VentilationLevel.POOR:   ZoneType.ZONE_0,
+            VentilationLevel.LOW: ZoneType.ZONE_1,
+            VentilationLevel.POOR: ZoneType.ZONE_0,
         }[vent]
 
     @staticmethod
     def _apply_ventilation_gas_v21(zone: ZoneType, vent: VentilationLevel) -> ZoneType:
         """Fix #6: Ventilation modifiers for GAS zones."""
         upgrades = {
-            (ZoneType.ZONE_1, VentilationLevel.HIGH):   ZoneType.ZONE_2,
+            (ZoneType.ZONE_1, VentilationLevel.HIGH): ZoneType.ZONE_2,
             (ZoneType.ZONE_1, VentilationLevel.MEDIUM): ZoneType.ZONE_1,
-            (ZoneType.ZONE_1, VentilationLevel.LOW):    ZoneType.ZONE_0,
+            (ZoneType.ZONE_1, VentilationLevel.LOW): ZoneType.ZONE_0,
             (ZoneType.ZONE_2, VentilationLevel.MEDIUM): ZoneType.ZONE_2,
             # FIX #6 (HIGH): (ZONE_2, HIGH) → UNCLASSIFIED is only valid when
             # ventilation availability is GOOD per IEC 60079-10-1 §4.3. Without
@@ -952,7 +999,7 @@ class HACClassificationEngine:
             # Kept as ZONE_2 (conservative) until availability is confirmed.
             # When availability is verified GOOD, the calling code may apply
             # UNCLASSIFIED after explicit confirmation per IEC §4.3.
-            (ZoneType.ZONE_2, VentilationLevel.HIGH):   ZoneType.ZONE_2,
+            (ZoneType.ZONE_2, VentilationLevel.HIGH): ZoneType.ZONE_2,
         }
         return upgrades.get((zone, vent), zone)
 
@@ -960,17 +1007,20 @@ class HACClassificationEngine:
     def _dust_zone_from_ventilation_v21(vent: VentilationLevel) -> ZoneType:
         """Fix #6: Ventilation determines dust zone."""
         return {
-            VentilationLevel.HIGH:   ZoneType.ZONE_22,
+            VentilationLevel.HIGH: ZoneType.ZONE_22,
             VentilationLevel.MEDIUM: ZoneType.ZONE_21,
-            VentilationLevel.LOW:    ZoneType.ZONE_21,
-            VentilationLevel.POOR:   ZoneType.ZONE_20,
+            VentilationLevel.LOW: ZoneType.ZONE_21,
+            VentilationLevel.POOR: ZoneType.ZONE_20,
         }[vent]
 
     # ── V21 Extent calculations ─────────────────────────────────────────────
 
     @staticmethod
     def _compute_extent_v21(
-        lfl: float, vent: VentilationLevel, indoor: bool, src_h: float,
+        lfl: float,
+        vent: VentilationLevel,
+        indoor: bool,
+        src_h: float,
     ) -> ZoneExtent:
         """Fix #7 + Fix #13: No x10, hemisphere for indoor, IEC Annex A.
 
@@ -983,17 +1033,17 @@ class HACClassificationEngine:
         extent for elevated releases.
         """
         k = {
-            VentilationLevel.HIGH:   2.0,
+            VentilationLevel.HIGH: 2.0,
             VentilationLevel.MEDIUM: 5.0,
-            VentilationLevel.LOW:    8.0,
-            VentilationLevel.POOR:   15.0,
+            VentilationLevel.LOW: 8.0,
+            VentilationLevel.POOR: 15.0,
         }[vent]
 
         # BUG FIX C-2: Guard against division by very small LFL producing
         # physically meaningless zone extents (e.g., LFL=0.001 → 15000m).
         # Cap at 50m matching the dust formula's guard (IEC 60079-10-1 Annex A).
         r_h = k / max(lfl, 0.01)  # Floor LFL at 0.01 vol% (no real gas has LFL < 0.01%)
-        r_h = min(r_h, 50.0)      # Physical limit per IEC 60079-10-1
+        r_h = min(r_h, 50.0)  # Physical limit per IEC 60079-10-1
         # V45 FIX: Simplified k/LFL method uses uniform hemisphere/sphere per
         # IEC 60079-10-1 Annex A. The V43 fix incorrectly applied the
         # hemi-ellipsoid model (r_v = 0.5 × r_h) to the simplified method.
@@ -1007,20 +1057,23 @@ class HACClassificationEngine:
         r_v = r_h  # Uniform hemisphere/sphere per IEC simplified method
 
         if indoor:
-            vol = (2.0 / 3.0) * math.pi * r_h ** 3   # Hemisphere (IEC Annex A)
+            vol = (2.0 / 3.0) * math.pi * r_h**3  # Hemisphere (IEC Annex A)
         else:
-            vol = (4.0 / 3.0) * math.pi * r_h ** 3   # Full sphere (IEC Annex A)
+            vol = (4.0 / 3.0) * math.pi * r_h**3  # Full sphere (IEC Annex A)
 
         return ZoneExtent(
             horizontal_m=round(r_h, 2),
-            vertical_m  =round(r_v, 2),
-            volume_m3   =round(vol, 2),
-            is_outdoor  =not indoor,
+            vertical_m=round(r_v, 2),
+            volume_m3=round(vol, 2),
+            is_outdoor=not indoor,
         )
 
     @staticmethod
     def _compute_extent_dust_v21(
-        mec: float, vent: VentilationLevel, indoor: bool, src_h: float,
+        mec: float,
+        vent: VentilationLevel,
+        indoor: bool,
+        src_h: float,
     ) -> ZoneExtent:
         """Dust extent per IEC 60079-10-2 Annex A.
 
@@ -1031,10 +1084,10 @@ class HACClassificationEngine:
         for floor-level releases.
         """
         k = {
-            VentilationLevel.HIGH:   3.0,
+            VentilationLevel.HIGH: 3.0,
             VentilationLevel.MEDIUM: 6.0,
-            VentilationLevel.LOW:    10.0,
-            VentilationLevel.POOR:   20.0,
+            VentilationLevel.LOW: 10.0,
+            VentilationLevel.POOR: 20.0,
         }[vent]
 
         # MEC floor: no real combustible dust has MEC < 1 g/m³.
@@ -1049,29 +1102,29 @@ class HACClassificationEngine:
         r_v = r_h  # Uniform hemisphere/sphere per IEC simplified method
 
         if indoor:
-            vol = (2.0 / 3.0) * math.pi * r_h ** 3   # Hemisphere (IEC Annex A)
+            vol = (2.0 / 3.0) * math.pi * r_h**3  # Hemisphere (IEC Annex A)
         else:
-            vol = (4.0 / 3.0) * math.pi * r_h ** 3   # Full sphere (IEC Annex A)
+            vol = (4.0 / 3.0) * math.pi * r_h**3  # Full sphere (IEC Annex A)
 
         return ZoneExtent(
             horizontal_m=round(r_h, 2),
-            vertical_m  =round(r_v, 2),
-            volume_m3   =round(vol, 2),
-            is_outdoor  =not indoor,
+            vertical_m=round(r_v, 2),
+            volume_m3=round(vol, 2),
+            is_outdoor=not indoor,
         )
 
     # ── Legacy API ──────────────────────────────────────────────────────────
 
     def classify(
         self,
-        space_id:            str,
-        substance:           SubstancePropertiesLegacy,
-        release_sources:     List[ReleaseSource],
-        ventilation_degree:  VentilationDegree,
-        ventilation_avail:   VentilationAvailability,
-        room_volume_m3:      float = 100.0,
-        is_indoor:           bool = True,
-        ambient_temp_c:      float = 40.0,
+        space_id: str,
+        substance: SubstancePropertiesLegacy,
+        release_sources: List[ReleaseSource],
+        ventilation_degree: VentilationDegree,
+        ventilation_avail: VentilationAvailability,
+        room_volume_m3: float = 100.0,
+        is_indoor: bool = True,
+        ambient_temp_c: float = 40.0,
     ) -> HACResultLegacy:
         """
         Legacy classify — backward compatible with dataclass inputs.
@@ -1099,29 +1152,27 @@ class HACClassificationEngine:
         base_zone = self._grade_to_base_zone(worst_grade, substance)
 
         if substance.material_type == HazardousMaterial.DUST_HYBRID:
-            base_zone = self._classify_hybrid(
-                worst_grade, ventilation_degree, ventilation_avail)
+            base_zone = self._classify_hybrid(worst_grade, ventilation_degree, ventilation_avail)
             warnings.append(
                 "Hybrid mixture (gas + dust): classified for both gas and "
                 "dust, using more stringent result per IEC 60079-10-1 §5.7."
             )
         else:
-            base_zone, zone_note = self._apply_ventilation_degree(
-                base_zone, ventilation_degree, substance)
+            base_zone, zone_note = self._apply_ventilation_degree(base_zone, ventilation_degree, substance)
             if zone_note:
                 assumptions.append(zone_note)
-            base_zone = self._apply_ventilation_availability(
-                base_zone, ventilation_avail, warnings)
+            base_zone = self._apply_ventilation_availability(base_zone, ventilation_avail, warnings)
 
         zone = base_zone
-        extent = self._compute_extent(
-            zone, release_sources, ventilation_degree,
-            room_volume_m3, is_indoor, substance)
+        extent = self._compute_extent(zone, release_sources, ventilation_degree, room_volume_m3, is_indoor, substance)
 
         if self._can_be_negligible(zone, ventilation_degree, ventilation_avail):
             extent = ZoneExtentLegacy(
-                zone=zone, radius_m=0.0, area_m2=0.0,
-                volume_m3=0.0, is_negligible=True,
+                zone=zone,
+                radius_m=0.0,
+                area_m2=0.0,
+                volume_m3=0.0,
+                is_negligible=True,
             )
             assumptions.append(
                 "Zone reduced to negligible extent due to HIGH ventilation "
@@ -1134,7 +1185,8 @@ class HACClassificationEngine:
 
         # V49 FIX: Handle lfl_vol_pct=None (changed from default 0.0 to None)
         if (substance.lfl_vol_pct is None or substance.lfl_vol_pct <= 0) and substance.material_type in (
-            HazardousMaterial.GAS, HazardousMaterial.VAPOR
+            HazardousMaterial.GAS,
+            HazardousMaterial.VAPOR,
         ):
             warnings.append(
                 f"Substance {substance.substance_name!r} has LFL <= 0% or missing. "
@@ -1144,14 +1196,13 @@ class HACClassificationEngine:
         hazard_class = self._substance_to_hazard_class(substance)
         nec_div = self._zone_to_nec_division(zone)
         nfpa_ref = (
-            "NFPA 497-2021" if substance.material_type not in (
-                HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
+            "NFPA 497-2021"
+            if substance.material_type not in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
             else "NFPA 499-2021"
         )
         iec_ref = (
             "IEC 60079-10-1:2015"
-            if substance.material_type not in (
-                HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
+            if substance.material_type not in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
             else "IEC 60079-10-2:2015"
         )
 
@@ -1182,19 +1233,18 @@ class HACClassificationEngine:
 
     @staticmethod
     def _grade_to_base_zone(grade, substance):
-        is_dust = substance.material_type in (
-            HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
+        is_dust = substance.material_type in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
         if is_dust:
             mapping = {
                 ReleaseGrade.CONTINUOUS: ATEXZone.ZONE_20,
-                ReleaseGrade.PRIMARY:    ATEXZone.ZONE_21,
-                ReleaseGrade.SECONDARY:  ATEXZone.ZONE_22,
+                ReleaseGrade.PRIMARY: ATEXZone.ZONE_21,
+                ReleaseGrade.SECONDARY: ATEXZone.ZONE_22,
             }
         else:
             mapping = {
                 ReleaseGrade.CONTINUOUS: ATEXZone.ZONE_0,
-                ReleaseGrade.PRIMARY:    ATEXZone.ZONE_1,
-                ReleaseGrade.SECONDARY:  ATEXZone.ZONE_2,
+                ReleaseGrade.PRIMARY: ATEXZone.ZONE_1,
+                ReleaseGrade.SECONDARY: ATEXZone.ZONE_2,
             }
         return mapping[grade]
 
@@ -1206,7 +1256,7 @@ class HACClassificationEngine:
         # but should NOT relax zone type for CONTINUOUS releases.
         # Zone 0/20 = CONTINUOUS hazard → always stays Zone 0/20.
         gas_upgrade = {
-            ATEXZone.ZONE_0: ATEXZone.ZONE_0,   # V48: was ZONE_1 — IEC §4.3 violation
+            ATEXZone.ZONE_0: ATEXZone.ZONE_0,  # V48: was ZONE_1 — IEC §4.3 violation
             ATEXZone.ZONE_1: ATEXZone.ZONE_2,
             ATEXZone.ZONE_2: ATEXZone.ZONE_2,
         }
@@ -1231,14 +1281,14 @@ class HACClassificationEngine:
             lookup = dust_upgrade if is_dust else gas_upgrade
             new_zone = lookup.get(base_zone, base_zone)
             if new_zone != base_zone:
-                std = 'IEC 60079-10-2' if is_dust else 'IEC 60079-10-1'
+                std = "IEC 60079-10-2" if is_dust else "IEC 60079-10-1"
                 note = f"Zone upgraded {base_zone.value}->{new_zone.value} due to HIGH ventilation. {std} §6.2."
             return new_zone, note
         elif degree == VentilationDegree.LOW:
             lookup = dust_downgrade if is_dust else gas_downgrade
             new_zone = lookup.get(base_zone, base_zone)
             if new_zone != base_zone:
-                std = 'IEC 60079-10-2' if is_dust else 'IEC 60079-10-1'
+                std = "IEC 60079-10-2" if is_dust else "IEC 60079-10-1"
                 note = f"Zone downgraded {base_zone.value}->{new_zone.value} due to LOW ventilation. {std} §6.2."
             return new_zone, note
         return base_zone, note
@@ -1247,8 +1297,8 @@ class HACClassificationEngine:
     def _apply_ventilation_availability(zone, avail, warnings):
         if avail == VentilationAvailability.POOR:
             downgrade = {
-                ATEXZone.ZONE_2:  ATEXZone.ZONE_1,
-                ATEXZone.ZONE_1:  ATEXZone.ZONE_0,
+                ATEXZone.ZONE_2: ATEXZone.ZONE_1,
+                ATEXZone.ZONE_1: ATEXZone.ZONE_0,
                 ATEXZone.ZONE_22: ATEXZone.ZONE_21,
                 ATEXZone.ZONE_21: ATEXZone.ZONE_20,
             }
@@ -1273,26 +1323,29 @@ class HACClassificationEngine:
                 kst_factor = 1.0 + (substance.kst_bar_m_s - 200) / 400.0
                 kst_factor = min(kst_factor, 2.0)
         vent_factor = {
-            VentilationDegree.HIGH: 0.5, VentilationDegree.MEDIUM: 1.0,
-            VentilationDegree.LOW:  1.5,
+            VentilationDegree.HIGH: 0.5,
+            VentilationDegree.MEDIUM: 1.0,
+            VentilationDegree.LOW: 1.5,
         }.get(ventilation, 1.0)
         location_factor = 1.0 if is_indoor else 1.5
         radius = base_r * rate_factor * vent_factor * location_factor * kst_factor
         r_h = radius
         r_v = radius * 0.5  # V44: consistent with _gas_extent — vertical = 0.5 × horizontal per IEC 60079-10-1
-        area = math.pi * r_h ** 2
+        area = math.pi * r_h**2
         # V44 FIX: Volume must use r_h² × r_v (hemi-ellipsoid/ellipsoid), not r_h³ (uniform sphere).
         # Per IEC 60079-10-1:2015 Annex A, zone extents are modeled as hemi-ellipsoids
         # when r_v ≠ r_h. This was already fixed in _gas_extent and _dust_extent (V43),
         # but this legacy _compute_extent method was missed.
         if is_indoor:
-            volume = (2.0 / 3.0) * math.pi * r_h ** 2 * r_v   # Hemi-ellipsoid
+            volume = (2.0 / 3.0) * math.pi * r_h**2 * r_v  # Hemi-ellipsoid
         else:
-            volume = (4.0 / 3.0) * math.pi * r_h ** 2 * r_v   # Ellipsoid
+            volume = (4.0 / 3.0) * math.pi * r_h**2 * r_v  # Ellipsoid
         volume = min(volume, room_volume_m3)
         return ZoneExtentLegacy(
-            zone=zone, radius_m=round(radius, 2),
-            area_m2=round(area, 2), volume_m3=round(volume, 2),
+            zone=zone,
+            radius_m=round(radius, 2),
+            area_m2=round(area, 2),
+            volume_m3=round(volume, 2),
             is_negligible=False,
         )
 
@@ -1313,9 +1366,12 @@ class HACClassificationEngine:
     @staticmethod
     def _zone_to_nec_division(zone):
         mapping = {
-            ATEXZone.ZONE_0: "DIVISION_1", ATEXZone.ZONE_1: "DIVISION_1",
-            ATEXZone.ZONE_2: "DIVISION_2", ATEXZone.ZONE_20: "DIVISION_1",
-            ATEXZone.ZONE_21: "DIVISION_1", ATEXZone.ZONE_22: "DIVISION_2",
+            ATEXZone.ZONE_0: "DIVISION_1",
+            ATEXZone.ZONE_1: "DIVISION_1",
+            ATEXZone.ZONE_2: "DIVISION_2",
+            ATEXZone.ZONE_20: "DIVISION_1",
+            ATEXZone.ZONE_21: "DIVISION_1",
+            ATEXZone.ZONE_22: "DIVISION_2",
             ATEXZone.SAFE: None,
         }
         return mapping.get(zone)
@@ -1329,17 +1385,22 @@ class HACClassificationEngine:
 
     def _safe_result(self, space_id, substance):
         return HACResultLegacy(
-            space_id=space_id, substance=substance,
+            space_id=space_id,
+            substance=substance,
             release_sources=(),
             ventilation_degree=VentilationDegree.HIGH,
             ventilation_avail=VentilationAvailability.GOOD,
             classified_zone=ATEXZone.SAFE,
             zone_extent=ZoneExtentLegacy(
-                zone=ATEXZone.SAFE, radius_m=0.0, area_m2=0.0,
-                volume_m3=0.0, is_negligible=True,
+                zone=ATEXZone.SAFE,
+                radius_m=0.0,
+                area_m2=0.0,
+                volume_m3=0.0,
+                is_negligible=True,
             ),
             hazard_class=HazardClass.GAS_VAPOR,
-            nec_division=None, confidence_pct=100.0,
+            nec_division=None,
+            confidence_pct=100.0,
             assumptions=("No release sources defined — space classified SAFE.",),
             warnings=(),
             nfpa_reference="NFPA 497-2021",
@@ -1348,19 +1409,21 @@ class HACClassificationEngine:
 
     def _classify_hybrid(self, grade, ventilation_degree, ventilation_avail):
         gas_zone = self._grade_to_base_zone(
-            grade, SubstancePropertiesLegacy(
-                substance_name="_hybrid_gas", material_type=HazardousMaterial.GAS))
+            grade, SubstancePropertiesLegacy(substance_name="_hybrid_gas", material_type=HazardousMaterial.GAS)
+        )
         gas_zone, _ = self._apply_ventilation_degree(
-            gas_zone, ventilation_degree,
-            SubstancePropertiesLegacy(
-                substance_name="_hybrid_gas", material_type=HazardousMaterial.GAS))
+            gas_zone,
+            ventilation_degree,
+            SubstancePropertiesLegacy(substance_name="_hybrid_gas", material_type=HazardousMaterial.GAS),
+        )
         dust_zone = self._grade_to_base_zone(
-            grade, SubstancePropertiesLegacy(
-                substance_name="_hybrid_dust", material_type=HazardousMaterial.DUST_COMB))
+            grade, SubstancePropertiesLegacy(substance_name="_hybrid_dust", material_type=HazardousMaterial.DUST_COMB)
+        )
         dust_zone, _ = self._apply_ventilation_degree(
-            dust_zone, ventilation_degree,
-            SubstancePropertiesLegacy(
-                substance_name="_hybrid_dust", material_type=HazardousMaterial.DUST_COMB))
+            dust_zone,
+            ventilation_degree,
+            SubstancePropertiesLegacy(substance_name="_hybrid_dust", material_type=HazardousMaterial.DUST_COMB),
+        )
         dummy_warnings = []
         gas_zone = self._apply_ventilation_availability(gas_zone, ventilation_avail, dummy_warnings)
         dust_zone = self._apply_ventilation_availability(dust_zone, ventilation_avail, dummy_warnings)
@@ -1370,8 +1433,10 @@ class HACClassificationEngine:
 
     @staticmethod
     def _check_flash_point(substance, worst_grade, ambient_temp_c, warnings):
-        if (substance.flash_point_c is not None
-                and substance.material_type in (HazardousMaterial.VAPOR, HazardousMaterial.GAS)):
+        if substance.flash_point_c is not None and substance.material_type in (
+            HazardousMaterial.VAPOR,
+            HazardousMaterial.GAS,
+        ):
             margin = substance.flash_point_c - ambient_temp_c
             if margin > 20 and worst_grade != ReleaseGrade.CONTINUOUS:
                 warnings.append(
@@ -1385,15 +1450,11 @@ class HACClassificationEngine:
         if substance.material_type not in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID):
             return
         if substance.mie_mj is not None and substance.mie_mj < 3.0:
-            warnings.append(
-                f"MIE = {substance.mie_mj:.1f} mJ < 3 mJ. Static ignition risk. "
-                "IEC 60079-10-2 §5.2."
-            )
+            warnings.append(f"MIE = {substance.mie_mj:.1f} mJ < 3 mJ. Static ignition risk. IEC 60079-10-2 §5.2.")
         if substance.kst_bar_m_s is not None and substance.kst_bar_m_s > 200:
             st_class = "St-2" if substance.kst_bar_m_s <= 300 else "St-3"
             warnings.append(
-                f"Kst = {substance.kst_bar_m_s:.0f} bar*m/s ({st_class}). "
-                "Enhanced protection required. NFPA 654."
+                f"Kst = {substance.kst_bar_m_s:.0f} bar*m/s ({st_class}). Enhanced protection required. NFPA 654."
             )
 
     @staticmethod
@@ -1403,13 +1464,13 @@ class HACClassificationEngine:
         max_surface_temp = T_CLASS_MAX_TEMP.get(substance.temperature_class)
         if max_surface_temp is None:
             warnings.append(
-                f"Unknown temperature class {substance.temperature_class!r}. "
-                "Cannot validate against autoignition."
+                f"Unknown temperature class {substance.temperature_class!r}. Cannot validate against autoignition."
             )
             return
         if max_surface_temp >= substance.autoignition_c:
             safe_classes = [
-                tc for tc, temp in sorted(T_CLASS_MAX_TEMP.items(), key=lambda x: x[1])
+                tc
+                for tc, temp in sorted(T_CLASS_MAX_TEMP.items(), key=lambda x: x[1])
                 if temp < substance.autoignition_c
             ]
             recommended = safe_classes[-1] if safe_classes else "T6 or lower"

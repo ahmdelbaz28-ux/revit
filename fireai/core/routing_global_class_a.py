@@ -17,15 +17,19 @@ Why this wrapper exists:
 
 The canonical engine: fireai.core.routing_engine_v10.EliteClassARouter
 """
+
 from __future__ import annotations
 
-import math
 from typing import List, Tuple
 
-from fireai.core.routing_engine_v10 import EliteClassARouter, ArchitecturalWall
 from fireai.core.provenance import (
-    DecisionProvenance, RuleApplied, ConfidenceScore, ConfidenceLevel, Violation,
+    ConfidenceLevel,
+    ConfidenceScore,
+    DecisionProvenance,
+    RuleApplied,
+    Violation,
 )
+from fireai.core.routing_engine_v10 import EliteClassARouter
 
 
 class EliteGlobalRouter:
@@ -59,7 +63,9 @@ class EliteGlobalRouter:
         """
         pass  # Delegated to EliteClassARouter internally
 
-    def route_class_a_loop(self, panel: Tuple[float, float], terminal_device: Tuple[float, float]) -> DecisionProvenance:
+    def route_class_a_loop(
+        self, panel: Tuple[float, float], terminal_device: Tuple[float, float]
+    ) -> DecisionProvenance:
         """
         Compute a full Class A loop via EliteClassARouter and wrap
         the result in a DecisionProvenance for audit trail compatibility.

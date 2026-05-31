@@ -32,17 +32,14 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from fireai.core.models_v21 import (
-    SubstanceProperties,
     FlameDetectorSpec,
-    Obstruction,
-    VolumetricMedium,
     HazardType,
+    Obstruction,
+    SubstanceProperties,
     WavelengthBand,
-    ZoneType,
-    VentilationLevel,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,9 +49,11 @@ logger = logging.getLogger(__name__)
 # Import Error Tracking
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ImportError:
     """Record of a data import error for reporting back to the BIM engineer."""
+
     element_id: str
     field_name: str
     raw_value: Any
@@ -72,6 +71,7 @@ class ImportError:
 @dataclass
 class ImportReport:
     """Summary of all errors encountered during data import."""
+
     total_elements: int = 0
     successful: int = 0
     skipped: int = 0
@@ -85,12 +85,18 @@ class ImportReport:
     def has_warnings(self) -> bool:
         return any(e.severity == "WARNING" for e in self.errors)
 
-    def add_error(self, element_id: str, field_name: str,
-                  raw_value: Any, message: str, severity: str = "WARNING") -> None:
-        self.errors.append(ImportError(
-            element_id=element_id, field_name=field_name,
-            raw_value=raw_value, error_message=message, severity=severity,
-        ))
+    def add_error(
+        self, element_id: str, field_name: str, raw_value: Any, message: str, severity: str = "WARNING"
+    ) -> None:
+        self.errors.append(
+            ImportError(
+                element_id=element_id,
+                field_name=field_name,
+                raw_value=raw_value,
+                error_message=message,
+                severity=severity,
+            )
+        )
 
     def summary(self) -> str:
         n_err = sum(1 for e in self.errors if e.severity == "ERROR")
@@ -113,17 +119,34 @@ class ImportReport:
 # ---------------------------------------------------------------------------
 
 _HAZARD_TYPE_ALIASES: Dict[str, str] = {
-    "GAS": "GAS", "VAPOR": "GAS", "GAS/VAPOR": "GAS", "G": "GAS",
-    "DUST": "DUST", "D": "DUST", "COMBUSTIBLE_DUST": "DUST",
-    "HYBRID": "HYBRID", "H": "HYBRID", "MIXED": "HYBRID",
-    "FIBER": "FIBER", "F": "FIBER", "FIBRES": "FIBER",
+    "GAS": "GAS",
+    "VAPOR": "GAS",
+    "GAS/VAPOR": "GAS",
+    "G": "GAS",
+    "DUST": "DUST",
+    "D": "DUST",
+    "COMBUSTIBLE_DUST": "DUST",
+    "HYBRID": "HYBRID",
+    "H": "HYBRID",
+    "MIXED": "HYBRID",
+    "FIBER": "FIBER",
+    "F": "FIBER",
+    "FIBRES": "FIBER",
 }
 
 _WAVELENGTH_BAND_ALIASES: Dict[str, str] = {
-    "UV": "UV", "ULTRAVIOLET": "UV",
-    "VIS": "VIS", "VISIBLE": "VIS", "V": "VIS",
-    "IR1": "IR1", "NEAR_IR": "IR1", "NIR": "IR1",
-    "IR3": "IR3", "MID_IR": "IR3", "MIR": "IR3", "CO2": "IR3",
+    "UV": "UV",
+    "ULTRAVIOLET": "UV",
+    "VIS": "VIS",
+    "VISIBLE": "VIS",
+    "V": "VIS",
+    "IR1": "IR1",
+    "NEAR_IR": "IR1",
+    "NIR": "IR1",
+    "IR3": "IR3",
+    "MID_IR": "IR3",
+    "MIR": "IR3",
+    "CO2": "IR3",
 }
 
 
@@ -152,6 +175,7 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
 # Revit Substance DTO (Flexible Input)
 # ---------------------------------------------------------------------------
 
+
 class RevitSubstanceDTO(BaseModel):
     """
     Anti-Corruption Layer for substance data from Revit/BIM exports.
@@ -165,19 +189,20 @@ class RevitSubstanceDTO(BaseModel):
     - Missing autoignition -> None (with warning)
     - Negative flash point strings -> proper float
     """
+
     model_config = ConfigDict(frozen=False, strict=False, extra="allow")
 
-    element_id:     str = "UNKNOWN"
-    name:           str = ""
-    hazard_type:    str = "GAS"  # Raw string, will be normalized
-    lfl_vol_pct:    Any = None
-    ufl_vol_pct:    Any = None
-    flash_point_c:  Any = None
+    element_id: str = "UNKNOWN"
+    name: str = ""
+    hazard_type: str = "GAS"  # Raw string, will be normalized
+    lfl_vol_pct: Any = None
+    ufl_vol_pct: Any = None
+    flash_point_c: Any = None
     autoignition_c: Any = None
-    mec_g_m3:       Any = None
-    kst_bar_m_s:    Any = None
-    mie_mj:         Any = None
-    density_kg_m3:  Any = None
+    mec_g_m3: Any = None
+    kst_bar_m_s: Any = None
+    mie_mj: Any = None
+    density_kg_m3: Any = None
     molecular_weight: Any = None
 
     @model_validator(mode="before")
@@ -198,9 +223,17 @@ class RevitSubstanceDTO(BaseModel):
                 data["hazard_type"] = normalized
 
         # Convert numeric strings to floats
-        for key in ("lfl_vol_pct", "ufl_vol_pct", "flash_point_c",
-                     "autoignition_c", "mec_g_m3", "kst_bar_m_s",
-                     "mie_mj", "density_kg_m3", "molecular_weight"):
+        for key in (
+            "lfl_vol_pct",
+            "ufl_vol_pct",
+            "flash_point_c",
+            "autoignition_c",
+            "mec_g_m3",
+            "kst_bar_m_s",
+            "mie_mj",
+            "density_kg_m3",
+            "molecular_weight",
+        ):
             if key in data and data[key] is not None:
                 data[key] = _safe_float(data[key], default=0.0) or None
 
@@ -228,7 +261,9 @@ class RevitSubstanceDTO(BaseModel):
         except ValueError:
             if report:
                 report.add_error(
-                    self.element_id, "hazard_type", self.hazard_type,
+                    self.element_id,
+                    "hazard_type",
+                    self.hazard_type,
                     f"Unknown hazard type '{self.hazard_type}'. Expected: GAS, DUST, HYBRID, FIBER.",
                     "ERROR",
                 )
@@ -251,7 +286,9 @@ class RevitSubstanceDTO(BaseModel):
         except Exception as exc:
             if report:
                 report.add_error(
-                    self.element_id, "to_domain", str(exc),
+                    self.element_id,
+                    "to_domain",
+                    str(exc),
                     f"Failed to create SubstanceProperties: {exc}",
                     "ERROR",
                 )
@@ -262,17 +299,19 @@ class RevitSubstanceDTO(BaseModel):
 # Revit Obstruction DTO
 # ---------------------------------------------------------------------------
 
+
 class RevitObstructionDTO(BaseModel):
     """
     Anti-Corruption Layer for obstruction data from Revit/BIM exports.
     Handles: missing transparency data, vertex format variations, etc.
     """
+
     model_config = ConfigDict(frozen=False, strict=False, extra="allow")
 
-    element_id:     str = "UNKNOWN"
+    element_id: str = "UNKNOWN"
     obstruction_id: str = ""
-    vertices:       Any = []
-    transparency_uv:  Any = 0.0
+    vertices: Any = []
+    transparency_uv: Any = 0.0
     transparency_vis: Any = 0.0
     transparency_ir1: Any = 0.0
     transparency_ir3: Any = 0.0
@@ -295,10 +334,7 @@ class RevitObstructionDTO(BaseModel):
             if len(verts) > 0 and isinstance(verts[0], (int, float)):
                 # Flat list -> convert to [[x,y,z], [x,y,z], ...]
                 if len(verts) % 3 == 0:
-                    data["vertices"] = [
-                        [verts[i], verts[i+1], verts[i+2]]
-                        for i in range(0, len(verts), 3)
-                    ]
+                    data["vertices"] = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
 
         # Safely convert transparency values
         for key in ("transparency_uv", "transparency_vis", "transparency_ir1", "transparency_ir3"):
@@ -316,7 +352,9 @@ class RevitObstructionDTO(BaseModel):
             if len(verts) < 2:
                 if report:
                     report.add_error(
-                        self.element_id, "vertices", self.vertices,
+                        self.element_id,
+                        "vertices",
+                        self.vertices,
                         f"Obstruction needs >= 2 vertices, got {len(verts)}",
                         "ERROR",
                     )
@@ -326,7 +364,7 @@ class RevitObstructionDTO(BaseModel):
                 obstruction_id=self.obstruction_id or self.element_id,
                 vertices=verts,
                 spectral_transparency={
-                    WavelengthBand.UV:  float(self.transparency_uv or 0.0),
+                    WavelengthBand.UV: float(self.transparency_uv or 0.0),
                     WavelengthBand.VIS: float(self.transparency_vis or 0.0),
                     WavelengthBand.IR1: float(self.transparency_ir1 or 0.0),
                     WavelengthBand.IR3: float(self.transparency_ir3 or 0.0),
@@ -335,7 +373,9 @@ class RevitObstructionDTO(BaseModel):
         except Exception as exc:
             if report:
                 report.add_error(
-                    self.element_id, "to_domain", str(exc),
+                    self.element_id,
+                    "to_domain",
+                    str(exc),
                     f"Failed to create Obstruction: {exc}",
                     "ERROR",
                 )
@@ -346,19 +386,21 @@ class RevitObstructionDTO(BaseModel):
 # Revit Detector DTO
 # ---------------------------------------------------------------------------
 
+
 class RevitDetectorDTO(BaseModel):
     """
     Anti-Corruption Layer for flame detector data from Revit/BIM exports.
     """
+
     model_config = ConfigDict(frozen=False, strict=False, extra="allow")
 
-    element_id:      str = "UNKNOWN"
-    detector_id:     str = ""
-    position:        Any = [0.0, 0.0, 3.0]
-    orientation:     Any = [0.0, 0.0, -1.0]
-    rated_range_m:   Any = 20.0
-    aoc_deg:         Any = 90.0
-    spectral_bands:  Any = ["IR3"]
+    element_id: str = "UNKNOWN"
+    detector_id: str = ""
+    position: Any = [0.0, 0.0, 3.0]
+    orientation: Any = [0.0, 0.0, -1.0]
+    rated_range_m: Any = 20.0
+    aoc_deg: Any = 90.0
+    spectral_bands: Any = ["IR3"]
 
     @model_validator(mode="before")
     @classmethod
@@ -408,7 +450,9 @@ class RevitDetectorDTO(BaseModel):
         except Exception as exc:
             if report:
                 report.add_error(
-                    self.element_id, "to_domain", str(exc),
+                    self.element_id,
+                    "to_domain",
+                    str(exc),
                     f"Failed to create FlameDetectorSpec: {exc}",
                     "ERROR",
                 )
@@ -418,6 +462,7 @@ class RevitDetectorDTO(BaseModel):
 # ---------------------------------------------------------------------------
 # Batch Import Function
 # ---------------------------------------------------------------------------
+
 
 def import_substances_from_revit(
     raw_data: List[Dict[str, Any]],

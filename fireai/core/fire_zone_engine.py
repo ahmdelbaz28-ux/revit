@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,7 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────
 # Zone Constraints
 # ──────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class ZoneConstraints:
@@ -77,6 +78,7 @@ class ZoneConstraints:
             (Consultant #7 — concept accepted, threshold corrected: 250 is
             the SLC loop limit, NOT the zone limit. Zone default remains 100.)
     """
+
     max_area_sqm: float = 1858.0  # NFPA 72 §21.3.4 limit ≈ 20,000 sq ft = 1,858 sqm
     max_detectors_per_zone: int = 100
     max_rooms_per_zone: int = 0  # no limit
@@ -88,6 +90,7 @@ class ZoneConstraints:
 # ──────────────────────────────────────────────────────────────────
 # Fire Zone
 # ──────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class FireZone:
@@ -102,6 +105,7 @@ class FireZone:
         floor_id: Floor identifier this zone belongs to.
         zone_type: "alarm", "supervisory", or "trouble".
     """
+
     zone_id: str
     rooms: List[str] = field(default_factory=list)
     total_area_sqm: float = 0.0
@@ -114,6 +118,7 @@ class FireZone:
 # ──────────────────────────────────────────────────────────────────
 # Zone Report
 # ──────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class ZoneReport:
@@ -128,6 +133,7 @@ class ZoneReport:
         warnings: List of advisory warnings.
         unzoned_rooms: Room IDs that couldn't be assigned (overflow).
     """
+
     floor_id: str
     zones: List[FireZone] = field(default_factory=list)
     total_zones: int = 0
@@ -140,6 +146,7 @@ class ZoneReport:
 # ──────────────────────────────────────────────────────────────────
 # Fire Zone Engine
 # ──────────────────────────────────────────────────────────────────
+
 
 class FireZoneEngine:
     """NFPA 72 fire zone clustering engine.
@@ -211,13 +218,15 @@ class FireZoneEngine:
             detectors = r.get("detectors", r.get("detector_count", 0))
             occupancy = r.get("occupancy", r.get("room_type", "standard"))
             centroid = r.get("centroid", None)
-            normalized.append({
-                "id": room_id,
-                "area": float(area),
-                "detectors": int(detectors),
-                "occupancy": str(occupancy).lower(),
-                "centroid": centroid,
-            })
+            normalized.append(
+                {
+                    "id": room_id,
+                    "area": float(area),
+                    "detectors": int(detectors),
+                    "occupancy": str(occupancy).lower(),
+                    "centroid": centroid,
+                }
+            )
 
         # Step 1: Group by occupancy type (if required)
         if self.constraints.separate_occupancy_types:
@@ -261,8 +270,7 @@ class FireZoneEngine:
 
         if report.unzoned_rooms:
             report.warnings.append(
-                f"UNZONED rooms (could not assign): {report.unzoned_rooms}. "
-                f"Review manually for zone assignment."
+                f"UNZONED rooms (could not assign): {report.unzoned_rooms}. Review manually for zone assignment."
             )
 
         # Validate constraints
@@ -293,7 +301,10 @@ class FireZoneEngine:
 
         logger.info(
             "FireZoneEngine: floor=%s zones=%d rooms=%d detectors=%d",
-            floor_id, report.total_zones, len(normalized), report.total_detectors,
+            floor_id,
+            report.total_zones,
+            len(normalized),
+            report.total_detectors,
         )
 
         return report
@@ -395,18 +406,9 @@ class FireZoneEngine:
             room_occ = room["occupancy"]
 
             # Check if adding this room would exceed constraints
-            area_ok = (
-                max_area <= 0
-                or current.total_area_sqm + room_area <= max_area
-            )
-            det_ok = (
-                max_det <= 0
-                or current.total_detectors + room_det <= max_det
-            )
-            rooms_ok = (
-                max_rooms <= 0
-                or len(current.rooms) < max_rooms
-            )
+            area_ok = max_area <= 0 or current.total_area_sqm + room_area <= max_area
+            det_ok = max_det <= 0 or current.total_detectors + room_det <= max_det
+            rooms_ok = max_rooms <= 0 or len(current.rooms) < max_rooms
 
             if not area_ok or not det_ok or not rooms_ok:
                 # Close current zone and start a new one

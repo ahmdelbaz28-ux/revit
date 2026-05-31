@@ -23,22 +23,23 @@ Provenance:
   Uses DecisionProvenance when ``src.v8_core`` is available; degrades
   gracefully to plain dicts when it is not.
 """
+
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
 # ---------------------------------------------------------------------------
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -58,27 +59,33 @@ _CITE_UL864_NFPA72_10_6_7 = "UL 864 / NFPA 72 §10.6.7"
 # ============================================================================
 # Detector / module classification sets
 # ============================================================================
-DETECTOR_DEVICE_TYPES: frozenset[str] = frozenset({
-    "SMOKE_PHOTOELECTRIC",
-    "SMOKE_IONIZATION",
-    "SMOKE_MULTI_CRITERIA",
-    "HEAT_FIXED",
-    "HEAT_RATE_OF_RISE",
-})
+DETECTOR_DEVICE_TYPES: frozenset[str] = frozenset(
+    {
+        "SMOKE_PHOTOELECTRIC",
+        "SMOKE_IONIZATION",
+        "SMOKE_MULTI_CRITERIA",
+        "HEAT_FIXED",
+        "HEAT_RATE_OF_RISE",
+    }
+)
 
 # Exact-match module types
-_EXACT_MODULE_TYPES: frozenset[str] = frozenset({
-    "MANUAL_PULL_STATION",
-    "DUCT_SMOKE",
-})
+_EXACT_MODULE_TYPES: frozenset[str] = frozenset(
+    {
+        "MANUAL_PULL_STATION",
+        "DUCT_SMOKE",
+    }
+)
 
 # Substring-match keywords for additional module identification
-_MODULE_KEYWORDS: frozenset[str] = frozenset({
-    "MODULE",
-    "MONITOR",
-    "RELAY",
-    "OUTPUT",
-})
+_MODULE_KEYWORDS: frozenset[str] = frozenset(
+    {
+        "MODULE",
+        "MONITOR",
+        "RELAY",
+        "OUTPUT",
+    }
+)
 
 
 # ============================================================================
@@ -102,6 +109,7 @@ class FACP_Profile:
         slc_max_current_ma:    Maximum quiescent current per SLC loop (mA).
             Exceeding this can burn the SLC card's output circuit.
     """
+
     manufacturer: str
     max_detectors_per_slc: int
     max_modules_per_slc: int
@@ -161,10 +169,7 @@ def get_default_profile(manufacturer: str) -> FACP_Profile:
     key = manufacturer.strip().lower()
     if key not in _MANUFACTURER_PROFILES:
         valid = ", ".join(sorted(_MANUFACTURER_PROFILES.keys()))
-        raise ValueError(
-            f"Unknown manufacturer '{manufacturer}'. "
-            f"Valid options: {valid}"
-        )
+        raise ValueError(f"Unknown manufacturer '{manufacturer}'. Valid options: {valid}")
     return _MANUFACTURER_PROFILES[key]
 
 
@@ -226,7 +231,9 @@ def _build_rule_applied(
                 unit="n/a",
             )
         except Exception as e:
-            logger.warning(f"V112: _build_rule_applied: failed to construct RuleApplied provenance for rule_id={rule_id!r}: {e!r}")
+            logger.warning(
+                f"V112: _build_rule_applied: failed to construct RuleApplied provenance for rule_id={rule_id!r}: {e!r}"
+            )
             pass
     return entry
 
@@ -316,9 +323,7 @@ class FACPCapacityAuditor:
         per_nac_rule = _build_rule_applied(
             rule_id="FACP-NAC-PER-CIRCUIT",
             description=(
-                f"Each NAC circuit inrush must not exceed "
-                f"{self.profile.max_amps_per_nac:.1f} A "
-                f"({_CITE_NEC_760_121})"
+                f"Each NAC circuit inrush must not exceed {self.profile.max_amps_per_nac:.1f} A ({_CITE_NEC_760_121})"
             ),
         )
         rules_applied.append(per_nac_rule)
@@ -590,7 +595,9 @@ class FACPCapacityAuditor:
                     ),
                 )
             except Exception as e:
-                logger.warning(f"V112: audit_slc_protocol_limits: failed to construct DecisionProvenance audit result: {e!r}")
+                logger.warning(
+                    f"V112: audit_slc_protocol_limits: failed to construct DecisionProvenance audit result: {e!r}"
+                )
                 pass
 
         return result

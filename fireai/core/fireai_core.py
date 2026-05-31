@@ -19,16 +19,16 @@ CRITICAL FIX (2026-05-20):
   - Fixed audit chain restart issue: warn but don't fail on key mismatch
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
 from fireai.core.audit_store import AuditStore, SecurityError
-from fireai.core.nfpa72_models import RoomSpec, DetectorType
 from fireai.core.learning_store import LearningStore
+from fireai.core.nfpa72_models import DetectorType, RoomSpec
 
 # Lazy import — IntegrationBridge wires 8 subsystems together
 # (cable routing, digital twin sync, acoustics, multi-floor,
@@ -46,8 +46,10 @@ logger = logging.getLogger(__name__)
 # like .confidence, .resilience, .placement_proof, etc.
 # This adapter wraps the real FireExpertSystem output into the expected shape.
 
+
 class ConfidenceLevel(Enum):
     """Confidence level for analysis results."""
+
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
@@ -57,6 +59,7 @@ class ConfidenceLevel(Enum):
 @dataclass
 class PlacementProof:
     """Proof of coverage for detector placement."""
+
     coverage_fraction: float = 0.0
     proof_valid: bool = False
     max_gap_m: float = 0.0
@@ -65,6 +68,7 @@ class PlacementProof:
 @dataclass
 class ResilienceResult:
     """Resilience check result."""
+
     resilient: bool = False
     pass_rate: float = 0.0
     failure_detail: str = ""
@@ -74,11 +78,12 @@ class ResilienceResult:
 @dataclass
 class EnhancedRoomResult:
     """Adapter: wraps FireExpertSystem output into shape expected by API layers.
-    
+
     CRITICAL FIX: The original code imported `analyse_room_enhanced` from a
     non-existent module. This class provides the same interface using the
     actual FireExpertSystem engine that exists.
     """
+
     room_id: str = ""
     detector_positions: List[Tuple[float, float]] = field(default_factory=list)
     detector_type: Any = DetectorType.SMOKE
@@ -103,6 +108,7 @@ class EnhancedRoomResult:
     def coverage_result(self):
         """Compatibility property for fireai_api.py."""
         from fireai.core.nfpa72_models import CoverageResult
+
         return CoverageResult(
             is_covered=self.compliant,
             coverage_percentage=self.placement_proof.coverage_fraction * 100 if self.placement_proof else 0.0,
@@ -190,7 +196,8 @@ class FireAISystem:
                     logger.warning(
                         "Audit chain verification failed (dev mode: AUDIT_HMAC_KEY not set). "
                         "Set AUDIT_HMAC_KEY in production for tamper-evident chain. "
-                        "Error: %s", error
+                        "Error: %s",
+                        error,
                     )
         except Exception as exc:
             logger.warning("Could not verify audit chain on startup: %s", exc)
@@ -206,6 +213,7 @@ class FireAISystem:
         """Lazily initialize the FireExpertSystem engine."""
         if self._expert is None:
             from fireai.core.fire_expert_system import FireExpertSystem
+
             self._expert = FireExpertSystem()
         return self._expert
 
@@ -229,7 +237,7 @@ class FireAISystem:
         Returns:
             EnhancedRoomResult with full analysis results
         """
-        if not room_spec or not hasattr(room_spec, 'room_id'):
+        if not room_spec or not hasattr(room_spec, "room_id"):
             raise ValueError("room_spec must have a room_id attribute")
         if not user_id or not isinstance(user_id, str):
             raise ValueError("user_id must be a non-empty string")
@@ -255,24 +263,24 @@ class FireAISystem:
 
         # Extract detector positions from layout
         detector_positions = []
-        if hasattr(analysis, 'layout') and analysis.layout:
-            if hasattr(analysis.layout, 'detectors'):
+        if hasattr(analysis, "layout") and analysis.layout:
+            if hasattr(analysis.layout, "detectors"):
                 detector_positions = list(analysis.layout.detectors)
-        
+
         # Compute coverage fraction
-        coverage_pct = analysis.coverage if hasattr(analysis, 'coverage') and analysis.coverage else 0.0
+        coverage_pct = analysis.coverage if hasattr(analysis, "coverage") and analysis.coverage else 0.0
         coverage_fraction = coverage_pct / 100.0 if coverage_pct > 1 else coverage_pct
 
         # Determine compliance
         is_compliant = False
-        if hasattr(analysis, 'passed'):
+        if hasattr(analysis, "passed"):
             is_compliant = analysis.passed
-        elif hasattr(analysis, 'proof_valid'):
+        elif hasattr(analysis, "proof_valid"):
             is_compliant = analysis.proof_valid
 
         # Wall violations
         wall_violations = []
-        if hasattr(analysis, 'wall_violations') and analysis.wall_violations:
+        if hasattr(analysis, "wall_violations") and analysis.wall_violations:
             wall_violations = analysis.wall_violations
 
         # Confidence level
@@ -286,7 +294,7 @@ class FireAISystem:
             confidence = ConfidenceLevel.UNSAFE
 
         # Build placement proof
-        proof_valid = analysis.proof_valid if hasattr(analysis, 'proof_valid') else is_compliant
+        proof_valid = analysis.proof_valid if hasattr(analysis, "proof_valid") else is_compliant
         placement_proof = PlacementProof(
             coverage_fraction=coverage_fraction,
             proof_valid=proof_valid,
@@ -300,11 +308,14 @@ class FireAISystem:
         if run_resilience and len(detector_positions) > 0:
             try:
                 from fireai.core.monte_carlo_pipeline import MCPipelineAdapter
+
                 mc_adapter = MCPipelineAdapter(n_trials=500)  # Fast default for interactive use
                 mc_result = mc_adapter._sim.simulate_room_reliability(
-                    detectors=[(d[0], d[1]) if isinstance(d, (list, tuple)) and len(d) >= 2
-                               else (d.x, d.y) for d in detector_positions
-                               if hasattr(d, '__len__') or hasattr(d, 'x')],
+                    detectors=[
+                        (d[0], d[1]) if isinstance(d, (list, tuple)) and len(d) >= 2 else (d.x, d.y)
+                        for d in detector_positions
+                        if hasattr(d, "__len__") or hasattr(d, "x")
+                    ],
                     room_width=room_spec.width_m,
                     room_length=room_spec.depth_m,
                     coverage_radius=6.37,
@@ -370,7 +381,8 @@ class FireAISystem:
         # HashChainAuditStore for tamper-evident forensic chain per NFPA 72 §10.6.
         try:
             from fireai.core.audit_blockchain_bridge import HashChainAuditStore
-            if not hasattr(self, '_hash_chain'):
+
+            if not hasattr(self, "_hash_chain"):
                 self._hash_chain = HashChainAuditStore(db_path=":memory:")
             self._hash_chain.log(
                 event_type="room_analysis",
@@ -413,7 +425,7 @@ class FireAISystem:
                     greedy_retries=0,
                     proof_valid=proof_valid,
                     compliant=result.compliant,
-                    timestamp_utc=datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+                    timestamp_utc=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 )
                 self.learning.maybe_recalibrate()
             except Exception as e:
@@ -564,10 +576,10 @@ class FireAISystem:
             NFPA 72-2022 §10.14, §12.2, §18.4, §21
         """
         from fireai.bridges.integration_bridge import (
+            AcousticConfig,
+            FloorData,
             IntegrationBridge,
             IntegrationConfig,
-            FloorData,
-            AcousticConfig,
         )
 
         # Build FloorData objects from dicts
@@ -577,14 +589,16 @@ class FireAISystem:
                 if isinstance(fd, FloorData):
                     floor_data_list.append(fd)
                 elif isinstance(fd, dict):
-                    floor_data_list.append(FloorData(
-                        floor_id=fd.get("floor_id", "UNKNOWN"),
-                        elevation_m=fd.get("elevation_m", 0.0),
-                        area_sqm=fd.get("area_sqm", 0.0),
-                        ceiling_height_m=fd.get("ceiling_height_m", 3.0),
-                        occupancy_type=fd.get("occupancy_type", "business"),
-                        room_specs=fd.get("room_specs"),
-                    ))
+                    floor_data_list.append(
+                        FloorData(
+                            floor_id=fd.get("floor_id", "UNKNOWN"),
+                            elevation_m=fd.get("elevation_m", 0.0),
+                            area_sqm=fd.get("area_sqm", 0.0),
+                            ceiling_height_m=fd.get("ceiling_height_m", 3.0),
+                            occupancy_type=fd.get("occupancy_type", "business"),
+                            room_specs=fd.get("room_specs"),
+                        )
+                    )
 
         # Build AcousticConfig from dict
         ac = None
@@ -618,6 +632,7 @@ class FireAISystem:
         if enable_kernel_v30:
             try:
                 from fireai.core.kernel_v30_integration import KernelV30Dispatcher, MPSCWorkerPool
+
                 dispatcher = KernelV30Dispatcher()
                 # Process rooms through V30 kernel if room specs available
                 rooms_optimized = []
@@ -647,6 +662,7 @@ class FireAISystem:
         if enable_hash_chain_audit:
             try:
                 from fireai.core.audit_blockchain_bridge import HashChainAuditStore
+
                 chain_store = HashChainAuditStore(db_path=":memory:")
                 # Log the integration run itself as an audit entry
                 chain_store.log(
@@ -680,6 +696,7 @@ class FireAISystem:
         if enable_monte_carlo:
             try:
                 from fireai.core.monte_carlo_pipeline import MCPipelineAdapter
+
                 mc_adapter = MCPipelineAdapter(n_trials=1000)
                 # Run MC on rooms from floor data
                 room_mc_results = []
@@ -692,10 +709,12 @@ class FireAISystem:
                                     det_tuples = []
                                     for d in detectors:
                                         if isinstance(d, dict):
-                                            det_tuples.append((
-                                                float(d.get("x", 0.0)),
-                                                float(d.get("y", 0.0)),
-                                            ))
+                                            det_tuples.append(
+                                                (
+                                                    float(d.get("x", 0.0)),
+                                                    float(d.get("y", 0.0)),
+                                                )
+                                            )
                                         elif isinstance(d, (list, tuple)) and len(d) >= 2:
                                             det_tuples.append((float(d[0]), float(d[1])))
                                     if det_tuples:
@@ -710,7 +729,8 @@ class FireAISystem:
                     "status": "completed",
                     "rooms_simulated": len(room_mc_results),
                     "all_reliable": all(
-                        r.get("is_reliable", False) for r in room_mc_results  # V111 FIX: Fail-safe default
+                        r.get("is_reliable", False)
+                        for r in room_mc_results  # V111 FIX: Fail-safe default
                     ),
                 }
             except Exception as exc:
@@ -725,6 +745,7 @@ class FireAISystem:
         if enable_bim_sync:
             try:
                 from fireai.bridges.revit_bim_sync import BIMSyncOrchestrator
+
                 bim_orchestrator = BIMSyncOrchestrator()
                 bim_result = {
                     "status": "available",
@@ -762,12 +783,10 @@ class FireAISystem:
             "core_subsystems": {
                 "cable_routing": {
                     "compliant": (
-                        integration_result.cable_result.compliant
-                        if integration_result.cable_result else None
+                        integration_result.cable_result.compliant if integration_result.cable_result else None
                     ),
                     "circuit_count": (
-                        integration_result.cable_result.circuit_count
-                        if integration_result.cable_result else 0
+                        integration_result.cable_result.circuit_count if integration_result.cable_result else 0
                     ),
                 },
                 "digital_twin_sync": {
@@ -796,8 +815,11 @@ class FireAISystem:
             room_id=building_id,
             details_dict={
                 "overall_compliant": integration_result.overall_compliant,
-                "subsystems_run": sum(1 for k in ("kernel_v30", "hash_chain_audit", "monte_carlo", "bim_sync")
-                                      if result["advanced_subsystems"][k] is not None),
+                "subsystems_run": sum(
+                    1
+                    for k in ("kernel_v30", "hash_chain_audit", "monte_carlo", "bim_sync")
+                    if result["advanced_subsystems"][k] is not None
+                ),
                 "user_id": user_id,
                 "nfpa_year": nfpa_year,
             },

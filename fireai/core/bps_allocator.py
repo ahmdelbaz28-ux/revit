@@ -51,14 +51,14 @@ Provenance:
   Returns DecisionProvenance via the .new() factory when
   src.v8_core is available; degrades gracefully to plain dict otherwise.
 """
+
 from __future__ import annotations
 
 import hashlib
 import logging
 import math
 import struct
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
@@ -66,11 +66,11 @@ from typing import Any, Dict, List, Optional, Tuple
 # ---------------------------------------------------------------------------
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -87,6 +87,7 @@ logger = logging.getLogger(__name__)
 # QOMN-FIRE Specification: Reject any input that is physically impossible
 # or outside code bounds before any computation begins.
 # ============================================================================
+
 
 def _guard_finite(value: float, field_name: str) -> float:
     """IEEE-754 guard: reject NaN and Inf before any computation.
@@ -106,13 +107,11 @@ def _guard_finite(value: float, field_name: str) -> float:
     """
     if not isinstance(value, (int, float)):
         raise ValueError(
-            f"[L0 REJECTION] {field_name}={value!r}: must be numeric, "
-            f"got {type(value).__name__}. IEEE-754-2008 §7."
+            f"[L0 REJECTION] {field_name}={value!r}: must be numeric, got {type(value).__name__}. IEEE-754-2008 §7."
         )
     if math.isnan(value):
         raise ValueError(
-            f"[L0 REJECTION] {field_name}=NaN: NaN is not permitted in "
-            f"safety-critical computation. IEEE-754-2008 §7.2."
+            f"[L0 REJECTION] {field_name}=NaN: NaN is not permitted in safety-critical computation. IEEE-754-2008 §7.2."
         )
     if math.isinf(value):
         raise ValueError(
@@ -137,10 +136,7 @@ def _guard_positive_finite(value: float, field_name: str) -> float:
     """
     v = _guard_finite(value, field_name)
     if v <= 0:
-        raise ValueError(
-            f"[L0 REJECTION] {field_name}={v}: must be > 0 for "
-            f"physical quantities. NFPA 72 §10.6."
-        )
+        raise ValueError(f"[L0 REJECTION] {field_name}={v}: must be > 0 for physical quantities. NFPA 72 §10.6.")
     return v
 
 
@@ -159,10 +155,7 @@ def _guard_non_negative_finite(value: float, field_name: str) -> float:
     """
     v = _guard_finite(value, field_name)
     if v < 0:
-        raise ValueError(
-            f"[L0 REJECTION] {field_name}={v}: must be >= 0. "
-            f"NFPA 72 §10.6 / NEC 760."
-        )
+        raise ValueError(f"[L0 REJECTION] {field_name}={v}: must be >= 0. NFPA 72 §10.6 / NEC 760.")
     return v
 
 
@@ -189,18 +182,16 @@ MAX_VOLTAGE_DROP_FRACTION: float = 0.20
 # These values are at 75°C per NEC Chapter 9 Table 8 notes.
 # NEC 760 requires voltage drop calculations for fire alarm circuits.
 WIRE_RESISTANCE_OHM_PER_1000FT: Dict[int, float] = {
-    18: 6.51,   # AWG 18 — 6.51 Ω/1000ft
-    16: 4.09,   # AWG 16 — 4.09 Ω/1000ft
-    14: 2.58,   # AWG 14 — 2.58 Ω/1000ft (standard fire alarm wire)
-    12: 1.62,   # AWG 12 — 1.62 Ω/1000ft
-    10: 1.02,   # AWG 10 — 1.02 Ω/1000ft
+    18: 6.51,  # AWG 18 — 6.51 Ω/1000ft
+    16: 4.09,  # AWG 16 — 4.09 Ω/1000ft
+    14: 2.58,  # AWG 14 — 2.58 Ω/1000ft (standard fire alarm wire)
+    12: 1.62,  # AWG 12 — 1.62 Ω/1000ft
+    10: 1.02,  # AWG 10 — 1.02 Ω/1000ft
 }
 
 # --- Wire Resistance in ohm/ft (derived for per-segment calculations) ---
 # V_drop = 2 × I × R_per_ft × L_ft (NEC 760 DC return path factor)
-WIRE_RESISTANCE_OHM_PER_FT: Dict[int, float] = {
-    awg: r / 1000.0 for awg, r in WIRE_RESISTANCE_OHM_PER_1000FT.items()
-}
+WIRE_RESISTANCE_OHM_PER_FT: Dict[int, float] = {awg: r / 1000.0 for awg, r in WIRE_RESISTANCE_OHM_PER_1000FT.items()}
 
 # --- Standard NAC Panel Ratings (amps) ---
 # Typical NAC circuit ratings per UL 864 10th Edition
@@ -249,20 +240,20 @@ STROBE_CURRENT_PER_CANDELA_A: float = 0.00567
 
 # Pre-calculated strobe currents for common ratings
 STROBE_CURRENT_TABLE_A: Dict[float, float] = {
-    15.0:  0.085,   # 15 candela — small rooms, corridors
-    30.0:  0.095,   # 30 candela
-    75.0:  0.115,   # 75 candela — standard room coverage
-    95.0:  0.130,   # 95 candela
-    110.0: 0.155,   # 110 candela — large rooms
-    150.0: 0.185,   # 150 candela
-    177.0: 0.210,   # 177 candela — sleeping areas per NFPA 72 §18.5.5.7
-    220.0: 0.260,   # 220 candela
+    15.0: 0.085,  # 15 candela — small rooms, corridors
+    30.0: 0.095,  # 30 candela
+    75.0: 0.115,  # 75 candela — standard room coverage
+    95.0: 0.130,  # 95 candela
+    110.0: 0.155,  # 110 candela — large rooms
+    150.0: 0.185,  # 150 candela
+    177.0: 0.210,  # 177 candela — sleeping areas per NFPA 72 §18.5.5.7
+    220.0: 0.260,  # 220 candela
 }
 
 # Horn/Strobe combination current (typical combo device)
 # Per UL 1971, a horn/strobe combo draws horn + strobe current
-TYPICAL_HORN_STROBE_15CD_CURRENT_A: float = 0.135   # 0.050 + 0.085
-TYPICAL_HORN_STROBE_75CD_CURRENT_A: float = 0.165   # 0.050 + 0.115
+TYPICAL_HORN_STROBE_15CD_CURRENT_A: float = 0.135  # 0.050 + 0.085
+TYPICAL_HORN_STROBE_75CD_CURRENT_A: float = 0.165  # 0.050 + 0.115
 TYPICAL_HORN_STROBE_110CD_CURRENT_A: float = 0.205  # 0.050 + 0.155
 
 # --- Synchronization ---
@@ -289,6 +280,7 @@ _CITE_UL864 = "UL 864 10th Ed."
 # All computations use IEEE-754 double precision (float64).
 # No approximations. No fast-math. Explicit NaN/Inf handling.
 # ============================================================================
+
 
 def _f64_hash(*values: float) -> str:
     """Compute deterministic IEEE-754 bit-level hash of float64 values.
@@ -359,10 +351,7 @@ def calculate_device_current(
     dt = device_type.lower().strip()
 
     if dt not in ("horn", "strobe", "horn_strobe", "speaker"):
-        raise ValueError(
-            f"Unknown device_type '{device_type}'. "
-            f"Must be one of: horn, strobe, horn_strobe, speaker."
-        )
+        raise ValueError(f"Unknown device_type '{device_type}'. Must be one of: horn, strobe, horn_strobe, speaker.")
 
     if horn_current_a is not None:
         h_current = _guard_non_negative_finite(horn_current_a, "horn_current_a")
@@ -375,8 +364,7 @@ def calculate_device_current(
     if dt == "strobe":
         if candela is None:
             raise ValueError(
-                "candela is required for strobe device type. "
-                f"Per {_CITE_UL1971}, strobe intensity must be specified."
+                f"candela is required for strobe device type. Per {_CITE_UL1971}, strobe intensity must be specified."
             )
         return calculate_strobe_current(candela)
 
@@ -504,9 +492,7 @@ def calculate_eol_voltage(
         ValueError: If inputs are NaN/Inf.
     """
     v_nom = _guard_positive_finite(nominal_voltage_vdc, "nominal_voltage_vdc")
-    v_drop = calculate_voltage_drop_vdc(
-        total_current_a, one_way_length_ft, awg, v_nom
-    )
+    v_drop = calculate_voltage_drop_vdc(total_current_a, one_way_length_ft, awg, v_nom)
     v_eol = v_nom - v_drop
     return round(v_eol, 6)
 
@@ -558,8 +544,11 @@ def select_minimum_wire_gauge(
         "EOL voltage >= %.1f VDC for %.3f A over %.1f ft. "
         "Engineering review required — consider BPS insertion or larger "
         "conductor. Per %s / %s.",
-        min_eol_voltage_vdc, i, l,
-        _CITE_NFPA72_10_6_4, _CITE_NEC_760,
+        min_eol_voltage_vdc,
+        i,
+        l,
+        _CITE_NFPA72_10_6_4,
+        _CITE_NEC_760,
     )
     return 0
 
@@ -616,6 +605,7 @@ def calculate_max_circuit_length_ft(
 # FROZEN DATACLASSES — LAYER 2 RESULT TYPES
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class NACDeviceSegment:
     """A single notification device on a NAC circuit with voltage drop info.
@@ -623,16 +613,17 @@ class NACDeviceSegment:
     Represents one device along the circuit path from source to end-of-line,
     including the cumulative voltage at that point after wire resistance losses.
     """
+
     device_id: str
     device_type: str
     current_a: float
     candela: Optional[float]
     x_ft: float
     y_ft: float
-    segment_length_ft: float       # Wire length from previous device to this one
-    cumulative_length_ft: float    # Total wire length from source to this device
-    voltage_at_device_vdc: float   # Voltage available at this device
-    is_voltage_acceptable: bool    # True if voltage >= min EOL voltage
+    segment_length_ft: float  # Wire length from previous device to this one
+    cumulative_length_ft: float  # Total wire length from source to this device
+    voltage_at_device_vdc: float  # Voltage available at this device
+    is_voltage_acceptable: bool  # True if voltage >= min EOL voltage
 
 
 @dataclass(frozen=True)
@@ -643,6 +634,7 @@ class NACCircuitResult:
     1. Total current <= NAC rating
     2. End-of-line voltage >= 80% of nominal (19.2 VDC for 24 VDC)
     """
+
     circuit_id: str
     nac_rating_a: float
     total_current_a: float
@@ -665,6 +657,7 @@ class BPSPlacement:
     Per NFPA 72 §10.6 and UL 864 10th Ed., a BPS provides additional
     NAC circuits when the FACP cannot serve all devices.
     """
+
     booster_id: str
     x_ft: float
     y_ft: float
@@ -677,6 +670,7 @@ class BPSPlacement:
 @dataclass(frozen=True)
 class FloorNACProfile:
     """NAC current demand profile for a single floor."""
+
     floor_name: str
     nac_current: float
     centroid_location: Tuple[float, float] = (0.0, 0.0)
@@ -686,6 +680,7 @@ class FloorNACProfile:
 @dataclass(frozen=True)
 class BoosterAllocation:
     """Represents a single deployed BPS panel."""
+
     booster_id: str
     x: float
     y: float
@@ -700,6 +695,7 @@ class AllocationResult:
     Contains all BPS placements, NAC circuit assignments, voltage drop
     analysis, and compliance status per NFPA 72 Chapter 10 and NEC 760.
     """
+
     total_current_a: float
     facp_native_load_a: float
     facp_nac_rating_a: float
@@ -718,6 +714,7 @@ class AllocationResult:
 # LAYER 3 — VALIDATION ENGINE (Post-Computation Verification)
 # ============================================================================
 
+
 def _validate_nac_circuit_result(result: NACCircuitResult) -> NACCircuitResult:
     """Validate a NAC circuit result against physical and code limits.
 
@@ -733,8 +730,7 @@ def _validate_nac_circuit_result(result: NACCircuitResult) -> NACCircuitResult:
         ValueError: If any computed value is NaN/Inf (computation error).
     """
     # Check for NaN/Inf in computed results
-    for attr_name in ("total_current_a", "eol_voltage_vdc",
-                      "current_headroom_a", "total_wire_length_ft"):
+    for attr_name in ("total_current_a", "eol_voltage_vdc", "current_headroom_a", "total_wire_length_ft"):
         val = getattr(result, attr_name)
         if not math.isfinite(val):
             raise ValueError(
@@ -748,19 +744,22 @@ def _validate_nac_circuit_result(result: NACCircuitResult) -> NACCircuitResult:
         logger.error(
             "BPS-ALLOC-L3: Current compliance flag mismatch for circuit %s. "
             "Flag=%s, actual=%s (current=%.4fA, rating=%.1fA).",
-            result.circuit_id, result.is_current_compliant,
+            result.circuit_id,
+            result.is_current_compliant,
             result.total_current_a <= result.nac_rating_a,
-            result.total_current_a, result.nac_rating_a,
+            result.total_current_a,
+            result.nac_rating_a,
         )
 
     # Verify voltage compliance flag
     if result.is_voltage_compliant != (result.eol_voltage_vdc >= result.min_eol_voltage_vdc):
         logger.error(
-            "BPS-ALLOC-L3: Voltage compliance flag mismatch for circuit %s. "
-            "Flag=%s, actual=%s (eol=%.2fV, min=%.2fV).",
-            result.circuit_id, result.is_voltage_compliant,
+            "BPS-ALLOC-L3: Voltage compliance flag mismatch for circuit %s. Flag=%s, actual=%s (eol=%.2fV, min=%.2fV).",
+            result.circuit_id,
+            result.is_voltage_compliant,
             result.eol_voltage_vdc >= result.min_eol_voltage_vdc,
-            result.eol_voltage_vdc, result.min_eol_voltage_vdc,
+            result.eol_voltage_vdc,
+            result.min_eol_voltage_vdc,
         )
 
     return result
@@ -769,6 +768,7 @@ def _validate_nac_circuit_result(result: NACCircuitResult) -> NACCircuitResult:
 # ============================================================================
 # NACBoosterAllocator — Main Allocation Class
 # ============================================================================
+
 
 class NACBoosterAllocator:
     """Automatically distributes NAC load across FACP and BPS panels
@@ -841,9 +841,7 @@ class NACBoosterAllocator:
         self.bps_nac_rating = _guard_positive_finite(bps_nac_rating_a, "bps_nac_rating_a")
         self.nac_circuits_per_bps = nac_circuits_per_bps
         if nac_circuits_per_bps < 1:
-            raise ValueError(
-                f"nac_circuits_per_bps={nac_circuits_per_bps} must be >= 1."
-            )
+            raise ValueError(f"nac_circuits_per_bps={nac_circuits_per_bps} must be >= 1.")
         self.bps_offset_x_ft = _guard_finite(bps_offset_x_ft, "bps_offset_x_ft")
         self.bps_offset_y_ft = _guard_finite(bps_offset_y_ft, "bps_offset_y_ft")
         self.source_voltage = _guard_positive_finite(source_voltage_vdc, "source_voltage_vdc")
@@ -868,10 +866,16 @@ class NACBoosterAllocator:
             "NACBoosterAllocator initialized: FACP_NAC=%.1fA, BPS=%.1fA, "
             "BPS_NAC=%.1fA × %d circuits, V_nom=%.1fVDC, V_min=%.1fVDC, AWG=%d. "
             "Per %s / %s / %s.",
-            self.facp_nac_rating, self.booster_capacity,
-            self.bps_nac_rating, self.nac_circuits_per_bps,
-            self.source_voltage, self.min_eol_voltage, self.default_awg,
-            _CITE_NFPA72_10_6, _CITE_NEC_760, _CITE_UL864,
+            self.facp_nac_rating,
+            self.booster_capacity,
+            self.bps_nac_rating,
+            self.nac_circuits_per_bps,
+            self.source_voltage,
+            self.min_eol_voltage,
+            self.default_awg,
+            _CITE_NFPA72_10_6,
+            _CITE_NEC_760,
+            _CITE_UL864,
         )
 
     # ------------------------------------------------------------------
@@ -938,8 +942,7 @@ class NACBoosterAllocator:
                     f"NAC sub-circuits on this floor. "
                     f"Per {_CITE_NFPA72_10_6} / {_CITE_NFPA72_21_2}."
                 )
-                self._add_violation(violations, "CRITICAL",
-                                    f"{_CITE_NFPA72_10_6} / {_CITE_NFPA72_21_2}", desc)
+                self._add_violation(violations, "CRITICAL", f"{_CITE_NFPA72_10_6} / {_CITE_NFPA72_21_2}", desc)
                 logger.critical(desc)
 
             # Check against NAC circuit rating (not just total BPS capacity)
@@ -951,15 +954,11 @@ class NACBoosterAllocator:
                     f"Floor must be split across multiple NAC circuits. "
                     f"Per {_CITE_NFPA72_10_6_4} / {_CITE_NEC_760}."
                 )
-                self._add_violation(violations, "WARNING",
-                                    f"{_CITE_NFPA72_10_6_4} / {_CITE_NEC_760}", desc)
+                self._add_violation(violations, "WARNING", f"{_CITE_NFPA72_10_6_4} / {_CITE_NEC_760}", desc)
                 logger.warning(desc)
 
             # Determine zone capacity (FACP native vs BPS)
-            zone_capacity = (
-                self.facp_nac_rating if not panel_allocation
-                else self.bps_nac_rating
-            )
+            zone_capacity = self.facp_nac_rating if not panel_allocation else self.bps_nac_rating
 
             if current_load + f_current > zone_capacity:
                 pos = f_centroid if isinstance(f_centroid, tuple) else (0.0, 0.0)
@@ -1026,21 +1025,15 @@ class NACBoosterAllocator:
                 "during fire. Provide devices_line per floor for full "
                 "Pass 1 + Pass 2 allocation per NFPA 72 §10.6.4 / §10.14."
             )
-            self._add_violation(violations, "CRITICAL",
-                                _CITE_NFPA72_10_14, desc)
+            self._add_violation(violations, "CRITICAL", _CITE_NFPA72_10_14, desc)
             logger.critical(desc)
             safe = False
 
         # Build provenance result
-        num_bps = sum(
-            1 for b in panel_allocation if b.get("type") == "NAC_BOOSTER_BPS"
-        )
+        num_bps = sum(1 for b in panel_allocation if b.get("type") == "NAC_BOOSTER_BPS")
         facp_native_load = round(
-            cumulative_load - sum(
-                b.get("peak_load", 0.0)
-                for b in panel_allocation
-                if b.get("type") == "NAC_BOOSTER_BPS"
-            ),
+            cumulative_load
+            - sum(b.get("peak_load", 0.0) for b in panel_allocation if b.get("type") == "NAC_BOOSTER_BPS"),
             4,
         )
 
@@ -1199,8 +1192,7 @@ class NACBoosterAllocator:
                             f"circuit parameters must be physically valid."
                         )
                         logger.critical(desc)
-                        self._add_violation(violations, "CRITICAL",
-                                            _CITE_NFPA72_10_6_4, desc)
+                        self._add_violation(violations, "CRITICAL", _CITE_NFPA72_10_6_4, desc)
 
         # Get wire resistance
         if awg not in WIRE_RESISTANCE_OHM_PER_FT:
@@ -1208,7 +1200,8 @@ class NACBoosterAllocator:
                 "BPS-001: Unknown AWG gauge '%s' — no wire resistance data available. "
                 "Using most conservative (highest resistance) known value. "
                 "Per %s, provide a valid AWG gauge.",
-                awg, _CITE_NEC_CH9_T8,
+                awg,
+                _CITE_NEC_CH9_T8,
             )
             # Use highest resistance (thinnest = AWG 18 = 6.51 Ω/1000ft)
             ohm_per_ft = max(WIRE_RESISTANCE_OHM_PER_FT.values())
@@ -1217,9 +1210,7 @@ class NACBoosterAllocator:
 
         running_voltage = self.source_voltage
         # Aggregate downstream current (all devices from this point to EOL)
-        running_current_tail = sum(
-            float(d.get("inrush_a", 0.2)) for d in devices_line
-        )
+        running_current_tail = sum(float(d.get("inrush_a", 0.2)) for d in devices_line)
         running_length = 0.0
 
         # FACP-to-first-device voltage drop
@@ -1250,20 +1241,27 @@ class NACBoosterAllocator:
 
             # Check if voltage has collapsed below minimum
             if running_voltage < self.min_eol_voltage:
-                booster_placements.append({
-                    "insert_node": curr_pt,
-                    "at_device": dev.get("id", f"DEV-{i}"),
-                    "terminal_voltage": round(running_voltage, 2),
-                    "running_length_ft": round(running_length, 1),
-                    "nfpa_reference": _CITE_NFPA72_10_6_4,
-                })
+                booster_placements.append(
+                    {
+                        "insert_node": curr_pt,
+                        "at_device": dev.get("id", f"DEV-{i}"),
+                        "terminal_voltage": round(running_voltage, 2),
+                        "running_length_ft": round(running_length, 1),
+                        "nfpa_reference": _CITE_NFPA72_10_6_4,
+                    }
+                )
                 logger.info(
                     "BPS insertion at device '%s' (x=%.1f, y=%.1f): "
                     "terminal voltage %.2f VDC < %.2f VDC minimum. "
                     "Wire length=%.1f ft. Per %s / %s.",
-                    dev.get("id", f"DEV-{i}"), curr_pt[0], curr_pt[1],
-                    running_voltage, self.min_eol_voltage,
-                    running_length, _CITE_NFPA72_10_6_4, _CITE_NEC_760,
+                    dev.get("id", f"DEV-{i}"),
+                    curr_pt[0],
+                    curr_pt[1],
+                    running_voltage,
+                    self.min_eol_voltage,
+                    running_length,
+                    _CITE_NFPA72_10_6_4,
+                    _CITE_NEC_760,
                 )
                 # Reset: BPS regenerates clean source voltage
                 running_voltage = self.source_voltage
@@ -1276,8 +1274,7 @@ class NACBoosterAllocator:
                 f"maximum branch distance ({max_cable_length_ft:.0f} ft) per "
                 f"{_CITE_NFPA72_10_14} / {_CITE_NEC_760}."
             )
-            self._add_violation(violations, "CRITICAL",
-                                f"{_CITE_NFPA72_10_14} / {_CITE_NEC_760}", desc)
+            self._add_violation(violations, "CRITICAL", f"{_CITE_NFPA72_10_14} / {_CITE_NEC_760}", desc)
             logger.critical(desc)
 
         safe = len(violations) == 0
@@ -1599,8 +1596,10 @@ class NACBoosterAllocator:
             ValueError: If inputs are NaN/Inf or AWG is unknown.
         """
         return calculate_max_circuit_length_ft(
-            total_current_a, awg,
-            self.source_voltage, self.min_eol_voltage,
+            total_current_a,
+            awg,
+            self.source_voltage,
+            self.min_eol_voltage,
         )
 
     # ------------------------------------------------------------------
@@ -1664,22 +1663,27 @@ class NACBoosterAllocator:
             mapped_severity = "HIGH"
 
         if Violation is not None:
-            violations.append(Violation(
-                severity=mapped_severity,
-                description=description,
-                nfpa_section=citation,
-            ))
+            violations.append(
+                Violation(
+                    severity=mapped_severity,
+                    description=description,
+                    nfpa_section=citation,
+                )
+            )
         else:
-            violations.append({
-                "severity": severity,
-                "citation": citation,
-                "description": description,
-            })
+            violations.append(
+                {
+                    "severity": severity,
+                    "citation": citation,
+                    "description": description,
+                }
+            )
 
 
 # ============================================================================
 # MODULE-LEVEL CONVENIENCE FUNCTIONS
 # ============================================================================
+
 
 def quick_voltage_check(
     total_current_a: float,

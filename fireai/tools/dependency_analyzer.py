@@ -23,21 +23,21 @@ bypass verification engines, creating life-safety risks.
 from __future__ import annotations
 
 import ast
-import os
 import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, Optional
-
+from typing import Dict, List, Optional, Set, Tuple
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Data Classes
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class ImportInfo:
     """Information about an import statement."""
+
     source_file: Path
     line: int
     module_name: str
@@ -47,6 +47,7 @@ class ImportInfo:
 @dataclass
 class CircularImport:
     """A circular import chain."""
+
     cycle: List[str]
     severity: str  # "CRITICAL" (import-time side effects) or "WARNING"
 
@@ -54,6 +55,7 @@ class CircularImport:
 @dataclass
 class DeadCodeIssue:
     """A dead code issue."""
+
     file: Path
     line: int
     issue_type: str  # "unused_import", "unreachable_code", "unused_function"
@@ -64,6 +66,7 @@ class DeadCodeIssue:
 @dataclass
 class DependencyReport:
     """Complete dependency analysis report."""
+
     n_modules: int = 0
     n_imports: int = 0
     circular_imports: List[CircularImport] = field(default_factory=list)
@@ -75,6 +78,7 @@ class DependencyReport:
 # ═══════════════════════════════════════════════════════════════════════════════
 # Import Collector (AST Visitor)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class ImportCollector(ast.NodeVisitor):
     """AST visitor that extracts import statements from a Python file."""
@@ -92,25 +96,29 @@ class ImportCollector(ast.NodeVisitor):
             module_name = alias.name
             # Only track project-internal imports
             if self._is_internal(module_name):
-                self.imports.append(ImportInfo(
-                    source_file=self.filepath,
-                    line=node.lineno,
-                    module_name=module_name,
-                    import_type="absolute",
-                ))
+                self.imports.append(
+                    ImportInfo(
+                        source_file=self.filepath,
+                        line=node.lineno,
+                        module_name=module_name,
+                        import_type="absolute",
+                    )
+                )
             # Track imported name as defined
-            bound_name = alias.asname or alias.name.split('.')[0]
+            bound_name = alias.asname or alias.name.split(".")[0]
             self._scope_stack[-1].add(bound_name)
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module and self._is_internal(node.module):
-            self.imports.append(ImportInfo(
-                source_file=self.filepath,
-                line=node.lineno,
-                module_name=node.module,
-                import_type="absolute" if not node.level else "relative",
-            ))
+            self.imports.append(
+                ImportInfo(
+                    source_file=self.filepath,
+                    line=node.lineno,
+                    module_name=node.module,
+                    import_type="absolute" if not node.level else "relative",
+                )
+            )
         # Track imported names
         if node.names:
             for alias in node.names:
@@ -149,19 +157,20 @@ class ImportCollector(ast.NodeVisitor):
     def _is_internal(self, module_name: str) -> bool:
         """Check if a module is part of the FireAI project."""
         return (
-            module_name.startswith("fireai") or
-            module_name.startswith("core") or
-            module_name.startswith("spatial_engine") or
-            module_name.startswith("bridges") or
-            module_name.startswith("parsers") or
-            module_name.startswith("twin") or
-            module_name.startswith("src")
+            module_name.startswith("fireai")
+            or module_name.startswith("core")
+            or module_name.startswith("spatial_engine")
+            or module_name.startswith("bridges")
+            or module_name.startswith("parsers")
+            or module_name.startswith("twin")
+            or module_name.startswith("src")
         )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Analysis Functions
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def _find_root(start: Path) -> Path:
     """Walk up until we find fireai/ or pyproject.toml."""
@@ -175,8 +184,16 @@ def _find_root(start: Path) -> Path:
 def _gather_py_files(root: Path) -> List[Path]:
     """Gather all Python files in the project."""
     skip_dirs = {
-        ".git", "__pycache__", ".tox", ".venv", "venv", "build",
-        "dist", "node_modules", "skills", "elite_drawing_analyzer",
+        ".git",
+        "__pycache__",
+        ".tox",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+        "node_modules",
+        "skills",
+        "elite_drawing_analyzer",
         "fire-alarm-db",
     }
     files: List[Path] = []
@@ -246,10 +263,12 @@ def _find_circular_imports(graph: Dict[str, Set[str]]) -> List[CircularImport]:
                 found_cycles.add(cycle)
                 # Determine severity
                 severity = "CRITICAL" if len(cycle) <= 3 else "WARNING"
-                cycles.append(CircularImport(
-                    cycle=list(cycle),
-                    severity=severity,
-                ))
+                cycles.append(
+                    CircularImport(
+                        cycle=list(cycle),
+                        severity=severity,
+                    )
+                )
             return
 
         if node in visited:
@@ -291,18 +310,17 @@ def _find_dead_code(
             base_name = imp.module_name.split(".")[0]
             if base_name not in collector.used_names:
                 # Check all names from this import
-                is_used = any(
-                    part in collector.used_names
-                    for part in imp.module_name.split(".")
-                )
+                is_used = any(part in collector.used_names for part in imp.module_name.split("."))
                 if not is_used:
-                    issues.append(DeadCodeIssue(
-                        file=filepath,
-                        line=imp.line,
-                        issue_type="unused_import",
-                        name=imp.module_name,
-                        details=f"Module '{imp.module_name}' imported but never used",
-                    ))
+                    issues.append(
+                        DeadCodeIssue(
+                            file=filepath,
+                            line=imp.line,
+                            issue_type="unused_import",
+                            name=imp.module_name,
+                            details=f"Module '{imp.module_name}' imported but never used",
+                        )
+                    )
 
     return issues
 
@@ -336,6 +354,7 @@ def _find_unused_public_modules(
 # ═══════════════════════════════════════════════════════════════════════════════
 # Report Generation
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def _print_report(report: DependencyReport, root: Path) -> int:
     """Print the dependency analysis report and return exit code."""
@@ -406,6 +425,7 @@ def _print_report(report: DependencyReport, root: Path) -> int:
 # ═══════════════════════════════════════════════════════════════════════════════
 # Main
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def main(root: Optional[Path] = None) -> int:
     """Run the dependency analysis."""

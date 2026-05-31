@@ -28,12 +28,13 @@ NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional, Dict, Set
+from typing import Dict, List, Set, Tuple
 
 
 @dataclass
 class AnalyticalResult:
     """Result from analytical verification."""
+
     is_covered: bool = False
     wall_coverage_complete: bool = False
     corner_coverage_complete: bool = False
@@ -67,7 +68,7 @@ class AnalyticalVerifier:
     def __init__(self, coverage_radius: float, wall_min: float = 0.10):
         self.R = coverage_radius
         self.wm = wall_min
-        self.R2 = coverage_radius ** 2 + 1e-9
+        self.R2 = coverage_radius**2 + 1e-9
 
     def verify(
         self,
@@ -143,7 +144,10 @@ class AnalyticalVerifier:
     ) -> bool:
         """Check all 4 room corners are covered."""
         corners = [
-            (0, 0), (width, 0), (0, length), (width, length),
+            (0, 0),
+            (width, 0),
+            (0, length),
+            (width, length),
         ]
         all_covered = True
         for cx, cy in corners:
@@ -177,7 +181,7 @@ class AnalyticalVerifier:
             return True
 
         two_r = 2.0 * self.R
-        cell = two_r   # bin size = 2R so adjacent bins contain all candidates
+        cell = two_r  # bin size = 2R so adjacent bins contain all candidates
 
         # Build spatial bin index
         bins: Dict[Tuple[int, int], List[int]] = defaultdict(list)
@@ -206,9 +210,9 @@ class AnalyticalVerifier:
                         x2, y2 = detectors[j]
                         dx = xi - x2
                         dy = yi - y2
-                        dist2 = dx*dx + dy*dy
+                        dist2 = dx * dx + dy * dy
                         if dist2 > two_r * two_r:
-                            continue   # too far apart — midpoint trivially covered
+                            continue  # too far apart — midpoint trivially covered
                         pairs_checked += 1
                         mx = (xi + x2) * 0.5
                         my = (yi + y2) * 0.5
@@ -232,7 +236,7 @@ class AnalyticalVerifier:
         if not self._check_wall(
             detectors,
             perp_fn=lambda d: d[1],  # distance from bottom wall
-            par_fn=lambda d: d[0],   # position along wall
+            par_fn=lambda d: d[0],  # position along wall
             wall_length=width,
             wall_name="bottom",
             result=result,
@@ -326,18 +330,14 @@ class AnalyticalVerifier:
                 gap_len = min(start, wall_length) - covered_up_to
                 if gap_len > 1e-6:
                     result.wall_gaps.append((wall_name, covered_up_to, start))
-                    result.details += (
-                        f"Wall '{wall_name}': gap [{covered_up_to:.2f}, {start:.2f}m]. "
-                    )
+                    result.details += f"Wall '{wall_name}': gap [{covered_up_to:.2f}, {start:.2f}m]. "
             covered_up_to = max(covered_up_to, end)
             if covered_up_to >= wall_length - 1e-9:
                 break
 
         if covered_up_to < wall_length - 1e-9:
             result.wall_gaps.append((wall_name, covered_up_to, wall_length))
-            result.details += (
-                f"Wall '{wall_name}': gap at end [{covered_up_to:.2f}, {wall_length:.2f}m]. "
-            )
+            result.details += f"Wall '{wall_name}': gap at end [{covered_up_to:.2f}, {wall_length:.2f}m]. "
             return False
 
         return True
@@ -360,7 +360,7 @@ class AnalyticalVerifier:
 
         # Simple upper bound: sum of individual detector coverage areas
         # This overestimates when detectors overlap
-        total_coverage_area = len(detectors) * math.pi * self.R ** 2
+        total_coverage_area = len(detectors) * math.pi * self.R**2
 
         # Cap at 100%
         estimate = min(100.0, 100.0 * total_coverage_area / room_area)
@@ -368,10 +368,15 @@ class AnalyticalVerifier:
         # For a more accurate estimate, sample key points
         # (corners, center, edge midpoints, detector midpoints)
         test_points = [
-            (0, 0), (width, 0), (0, length), (width, length),
+            (0, 0),
+            (width, 0),
+            (0, length),
+            (width, length),
             (width / 2, length / 2),
-            (width / 2, 0), (width / 2, length),
-            (0, length / 2), (width, length / 2),
+            (width / 2, 0),
+            (width / 2, length),
+            (0, length / 2),
+            (width, length / 2),
         ]
         # Add detector midpoints
         for i in range(len(detectors)):
@@ -403,15 +408,20 @@ class AnalyticalVerifier:
 
         # Check room corners, center, and edge midpoints
         test_points = [
-            (0, 0), (width, 0), (0, length), (width, length),
+            (0, 0),
+            (width, 0),
+            (0, length),
+            (width, length),
             (width / 2, length / 2),
-            (width / 2, 0), (width / 2, length),
-            (0, length / 2), (width, length / 2),
+            (width / 2, 0),
+            (width / 2, length),
+            (0, length / 2),
+            (width, length / 2),
         ]
 
         max_dist = 0.0
         for px, py in test_points:
-            min_dist = float('inf')
+            min_dist = float("inf")
             for dx, dy in detectors:
                 d = math.hypot(px - dx, py - dy)
                 min_dist = min(min_dist, d)

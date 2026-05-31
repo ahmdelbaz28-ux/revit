@@ -40,15 +40,14 @@ import io
 import json
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
-from fireai.core.cable_router import CableRoute, RoutingSchedule, RouteWaypoint
-from fireai.core.cable_routing_engine import WireGauge
-
+from fireai.core.cable_router import RoutingSchedule
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # OUTPUT DATA STRUCTURES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass(frozen=True)
 class ScheduleRow:
@@ -66,6 +65,7 @@ class ScheduleRow:
         is_compliant: Whether this route meets all constraints.
         code_reference: Applicable code sections.
     """
+
     device_id: str
     from_location: str
     to_location: str
@@ -93,6 +93,7 @@ class IFCElement:
         workset: Dedicated workset name ("FA-CABLES").
         route_id: Parent route identifier.
     """
+
     global_id: str
     ifc_class: str
     name: str
@@ -121,6 +122,7 @@ class ReportSummary:
         code_references: All code sections referenced.
         computation_hash: SHA-256 hash for verification.
     """
+
     project_name: str
     total_routes: int
     total_cable_length_m: float
@@ -206,12 +208,8 @@ class RevitExporter:
 
         for route in schedule.routes:
             # Format location strings
-            from_loc = (
-                f"({route.start[0]:.2f}, {route.start[1]:.2f}, {route.start[2]:.2f})"
-            )
-            to_loc = (
-                f"({route.end[0]:.2f}, {route.end[1]:.2f}, {route.end[2]:.2f})"
-            )
+            from_loc = f"({route.start[0]:.2f}, {route.start[1]:.2f}, {route.start[2]:.2f})"
+            to_loc = f"({route.end[0]:.2f}, {route.end[1]:.2f}, {route.end[2]:.2f})"
 
             # Compile code references
             code_refs = ["NFPA 72 §10.6.4", "NEC 760.24"]
@@ -220,18 +218,20 @@ class RevitExporter:
             if route.num_elevation_changes > 0:
                 code_refs.append("NEC 760.24 (vertical routing)")
 
-            rows.append(ScheduleRow(
-                device_id=route.route_id,
-                from_location=from_loc,
-                to_location=to_loc,
-                length_m=route.total_length_m,
-                cable_type=f"AWG {route.wire_gauge if isinstance(route.wire_gauge, str) else route.wire_gauge.awg_value} in {CONDUIT_TYPE}",
-                voltage_drop_v=route.voltage_drop_v,
-                voltage_drop_pct=route.voltage_drop_pct,
-                num_bends=route.num_bends,
-                is_compliant=route.is_compliant,
-                code_reference=", ".join(code_refs),
-            ))
+            rows.append(
+                ScheduleRow(
+                    device_id=route.route_id,
+                    from_location=from_loc,
+                    to_location=to_loc,
+                    length_m=route.total_length_m,
+                    cable_type=f"AWG {route.wire_gauge if isinstance(route.wire_gauge, str) else route.wire_gauge.awg_value} in {CONDUIT_TYPE}",
+                    voltage_drop_v=route.voltage_drop_v,
+                    voltage_drop_pct=route.voltage_drop_pct,
+                    num_bends=route.num_bends,
+                    is_compliant=route.is_compliant,
+                    code_reference=", ".join(code_refs),
+                )
+            )
 
         return rows
 
@@ -252,27 +252,37 @@ class RevitExporter:
         writer = csv.writer(output)
 
         # Header
-        writer.writerow([
-            "Device_ID", "From_Location", "To_Location",
-            "Length_m", "Cable_Type", "Voltage_Drop_V",
-            "Voltage_Drop_Pct", "Num_Bends", "Compliant",
-            "Code_Reference",
-        ])
+        writer.writerow(
+            [
+                "Device_ID",
+                "From_Location",
+                "To_Location",
+                "Length_m",
+                "Cable_Type",
+                "Voltage_Drop_V",
+                "Voltage_Drop_Pct",
+                "Num_Bends",
+                "Compliant",
+                "Code_Reference",
+            ]
+        )
 
         # Data rows
         for row in rows:
-            writer.writerow([
-                row.device_id,
-                row.from_location,
-                row.to_location,
-                f"{row.length_m:.2f}",
-                row.cable_type,
-                f"{row.voltage_drop_v:.4f}",
-                f"{row.voltage_drop_pct:.2f}",
-                row.num_bends,
-                "YES" if row.is_compliant else "NO",
-                row.code_reference,
-            ])
+            writer.writerow(
+                [
+                    row.device_id,
+                    row.from_location,
+                    row.to_location,
+                    f"{row.length_m:.2f}",
+                    row.cable_type,
+                    f"{row.voltage_drop_v:.4f}",
+                    f"{row.voltage_drop_pct:.2f}",
+                    row.num_bends,
+                    "YES" if row.is_compliant else "NO",
+                    row.code_reference,
+                ]
+            )
 
         return output.getvalue()
 
@@ -325,17 +335,19 @@ class RevitExporter:
                     f"Per NEC 760.24, NFPA 72 §10.6.4"
                 )
 
-                elements.append(IFCElement(
-                    global_id=seg_hash,
-                    ifc_class="IfcPipeSegment",
-                    name=f"FA-Cable-{route.route_id}-Seg{i:03d}",
-                    description=description,
-                    start_point=(wp_start.x, wp_start.y, wp_start.z),
-                    end_point=(wp_end.x, wp_end.y, wp_end.z),
-                    length_m=round(seg_length, 4),
-                    workset=self._workset,
-                    route_id=route.route_id,
-                ))
+                elements.append(
+                    IFCElement(
+                        global_id=seg_hash,
+                        ifc_class="IfcPipeSegment",
+                        name=f"FA-Cable-{route.route_id}-Seg{i:03d}",
+                        description=description,
+                        start_point=(wp_start.x, wp_start.y, wp_start.z),
+                        end_point=(wp_end.x, wp_end.y, wp_end.z),
+                        length_m=round(seg_length, 4),
+                        workset=self._workset,
+                        route_id=route.route_id,
+                    )
+                )
 
                 # If next waypoint is a bend, add IfcPipeFitting
                 if wp_end.is_bend:
@@ -348,17 +360,19 @@ class RevitExporter:
                         f"Bend added per NEC Chapter 9"
                     )
 
-                    elements.append(IFCElement(
-                        global_id=bend_hash,
-                        ifc_class="IfcPipeFitting",
-                        name=f"FA-Elbow-{route.route_id}-F{i:03d}",
-                        description=bend_desc,
-                        start_point=(wp_end.x, wp_end.y, wp_end.z),
-                        end_point=(wp_end.x, wp_end.y, wp_end.z),
-                        length_m=0.0,  # Fitting has no length
-                        workset=self._workset,
-                        route_id=route.route_id,
-                    ))
+                    elements.append(
+                        IFCElement(
+                            global_id=bend_hash,
+                            ifc_class="IfcPipeFitting",
+                            name=f"FA-Elbow-{route.route_id}-F{i:03d}",
+                            description=bend_desc,
+                            start_point=(wp_end.x, wp_end.y, wp_end.z),
+                            end_point=(wp_end.x, wp_end.y, wp_end.z),
+                            length_m=0.0,  # Fitting has no length
+                            workset=self._workset,
+                            route_id=route.route_id,
+                        )
+                    )
 
         return elements
 
@@ -386,17 +400,19 @@ class RevitExporter:
         }
 
         for elem in elements:
-            output["elements"].append({
-                "GlobalId": elem.global_id,
-                "IFC_Class": elem.ifc_class,
-                "Name": elem.name,
-                "Description": elem.description,
-                "StartPoint": list(elem.start_point),
-                "EndPoint": list(elem.end_point),
-                "Length_m": elem.length_m,
-                "Workset": elem.workset,
-                "RouteID": elem.route_id,
-            })
+            output["elements"].append(
+                {
+                    "GlobalId": elem.global_id,
+                    "IFC_Class": elem.ifc_class,
+                    "Name": elem.name,
+                    "Description": elem.description,
+                    "StartPoint": list(elem.start_point),
+                    "EndPoint": list(elem.end_point),
+                    "Length_m": elem.length_m,
+                    "Workset": elem.workset,
+                    "RouteID": elem.route_id,
+                }
+            )
 
         return json.dumps(output, indent=2, sort_keys=False)
 
@@ -488,13 +504,15 @@ class RevitExporter:
                     code_refs.add(ref)
 
         # Always include primary references
-        code_refs.update([
-            "NFPA 72 §10.6.4",
-            "NFPA 72 §23.6.2",
-            "NEC 760.24",
-            "NEC 760.24(A)",
-            "NEC Chapter 9, Table 8",
-        ])
+        code_refs.update(
+            [
+                "NFPA 72 §10.6.4",
+                "NFPA 72 §23.6.2",
+                "NEC 760.24",
+                "NEC 760.24(A)",
+                "NEC Chapter 9, Table 8",
+            ]
+        )
 
         return ReportSummary(
             project_name=project_name or schedule.project_name,
@@ -537,8 +555,7 @@ class RevitExporter:
             f"Total Cable Length:         {report.total_cable_length_m:.2f} m",
             f"Total Bends (90 deg):      {report.total_bends}",
             f"Max Circuit Length:         {report.max_circuit_length_m:.2f} m",
-            f"Max Voltage Drop:           {report.max_voltage_drop_v:.4f} V "
-            f"({report.max_voltage_drop_pct:.2f}%)",
+            f"Max Voltage Drop:           {report.max_voltage_drop_v:.4f} V ({report.max_voltage_drop_pct:.2f}%)",
             f"Compliance Status:         {report.compliance_status}",
             f"Constraint Violations:      {report.constraint_violations}",
             "",
@@ -549,11 +566,13 @@ class RevitExporter:
         for ref in report.code_references:
             lines.append(f"  - {ref}")
 
-        lines.extend([
-            "",
-            "ROUTE DETAILS",
-            "-" * 40,
-        ])
+        lines.extend(
+            [
+                "",
+                "ROUTE DETAILS",
+                "-" * 40,
+            ]
+        )
 
         for route in schedule.routes:
             status = "COMPLIANT" if route.is_compliant else "VIOLATIONS"
@@ -563,7 +582,9 @@ class RevitExporter:
             lines.append(f"    Length: {route.total_length_m:.2f}m")
             lines.append(f"    Bends: {route.num_bends}")
             lines.append(f"    V-drop: {route.voltage_drop_v:.4f}V ({route.voltage_drop_pct:.2f}%)")
-            lines.append(f"    Wire: AWG {route.wire_gauge if isinstance(route.wire_gauge, str) else route.wire_gauge.awg_value}")
+            lines.append(
+                f"    Wire: AWG {route.wire_gauge if isinstance(route.wire_gauge, str) else route.wire_gauge.awg_value}"
+            )
 
             if route.constraint_results and not route.constraint_results.all_satisfied:
                 lines.append("    VIOLATIONS:")
@@ -574,11 +595,13 @@ class RevitExporter:
             lines.append("")
 
         # Verification hash
-        lines.extend([
-            "=" * 60,
-            f"Computation Hash: {report.computation_hash or schedule.computation_hash}",
-            "Same input → same output, always (QOMN-FIRE deterministic)",
-            "=" * 60,
-        ])
+        lines.extend(
+            [
+                "=" * 60,
+                f"Computation Hash: {report.computation_hash or schedule.computation_hash}",
+                "Same input → same output, always (QOMN-FIRE deterministic)",
+                "=" * 60,
+            ]
+        )
 
         return "\n".join(lines)

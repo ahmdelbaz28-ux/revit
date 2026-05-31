@@ -33,19 +33,21 @@ import enum
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from .analytical_verifier import AnalyticalVerifier, AnalyticalResult
-from .voronoi_verifier import VoronoiVerifier, VoronoiResult
+from .analytical_verifier import AnalyticalVerifier
+from .voronoi_verifier import VoronoiVerifier
 
 
 class ConfidenceLevel(enum.Enum):
     """Consensus confidence level."""
-    VERIFIED = "VERIFIED"    # 3/3 engines agree — safe to deploy
-    WARNING = "WARNING"      # 2/3 engines agree — investigate
-    FAIL = "FAIL"            # 1/3 or 0/3 — DO NOT deploy
+
+    VERIFIED = "VERIFIED"  # 3/3 engines agree — safe to deploy
+    WARNING = "WARNING"  # 2/3 engines agree — investigate
+    FAIL = "FAIL"  # 1/3 or 0/3 — DO NOT deploy
 
 
 class EngineName(enum.Enum):
     """Verification engine identifiers."""
+
     ANALYTICAL = "analytical"
     VORONOI = "voronoi"
     GRID = "grid"
@@ -54,6 +56,7 @@ class EngineName(enum.Enum):
 @dataclass
 class EngineVerdict:
     """Result from a single verification engine."""
+
     engine: EngineName
     passed: bool
     details: str = ""
@@ -63,6 +66,7 @@ class EngineVerdict:
 @dataclass
 class ConsensusResult:
     """Combined result from all verification engines."""
+
     confidence: ConfidenceLevel
     is_safe: bool  # True only if VERIFIED (3/3)
     engines: List[EngineVerdict] = field(default_factory=list)
@@ -129,55 +133,67 @@ class ConsensusEngine:
         # Engine 1: Analytical
         try:
             anal_result = self._analytical.verify(width, length, detectors)
-            verdicts.append(EngineVerdict(
-                engine=EngineName.ANALYTICAL,
-                passed=anal_result.is_covered,
-                details=anal_result.details or (
-                    "PASS" if anal_result.is_covered else
-                    f"FAIL: corners={anal_result.corner_coverage_complete}, "
-                    f"midpoints={anal_result.midpoint_coverage_complete}, "
-                    f"walls={anal_result.wall_coverage_complete}"
-                ),
-                raw_result=anal_result,
-            ))
+            verdicts.append(
+                EngineVerdict(
+                    engine=EngineName.ANALYTICAL,
+                    passed=anal_result.is_covered,
+                    details=anal_result.details
+                    or (
+                        "PASS"
+                        if anal_result.is_covered
+                        else f"FAIL: corners={anal_result.corner_coverage_complete}, "
+                        f"midpoints={anal_result.midpoint_coverage_complete}, "
+                        f"walls={anal_result.wall_coverage_complete}"
+                    ),
+                    raw_result=anal_result,
+                )
+            )
         except Exception as e:
-            verdicts.append(EngineVerdict(
-                engine=EngineName.ANALYTICAL,
-                passed=False,
-                details=f"ERROR: {e}",
-            ))
+            verdicts.append(
+                EngineVerdict(
+                    engine=EngineName.ANALYTICAL,
+                    passed=False,
+                    details=f"ERROR: {e}",
+                )
+            )
 
         # Engine 2: Voronoi
         try:
             voro_result = self._voronoi.verify(width, length, detectors)
-            verdicts.append(EngineVerdict(
-                engine=EngineName.VORONOI,
-                passed=voro_result.is_covered,
-                details=(
-                    f"Max gap: {voro_result.max_gap_m:.2f}m "
-                    f"(R={self.R:.2f}m, {'PASS' if voro_result.is_covered else 'FAIL'})"
-                ),
-                raw_result=voro_result,
-            ))
+            verdicts.append(
+                EngineVerdict(
+                    engine=EngineName.VORONOI,
+                    passed=voro_result.is_covered,
+                    details=(
+                        f"Max gap: {voro_result.max_gap_m:.2f}m "
+                        f"(R={self.R:.2f}m, {'PASS' if voro_result.is_covered else 'FAIL'})"
+                    ),
+                    raw_result=voro_result,
+                )
+            )
         except Exception as e:
-            verdicts.append(EngineVerdict(
-                engine=EngineName.VORONOI,
-                passed=False,
-                details=f"ERROR: {e}",
-            ))
+            verdicts.append(
+                EngineVerdict(
+                    engine=EngineName.VORONOI,
+                    passed=False,
+                    details=f"ERROR: {e}",
+                )
+            )
 
         # Engine 3: Grid-Based (use external result)
         if grid_proof_valid is not None:
             grid_passed = grid_proof_valid and (grid_coverage_pct is None or grid_coverage_pct >= 99.9)
-            verdicts.append(EngineVerdict(
-                engine=EngineName.GRID,
-                passed=grid_passed,
-                details=(
-                    f"proof_valid={grid_proof_valid}, "
-                    f"coverage={grid_coverage_pct:.1f}%" if grid_coverage_pct is not None
-                    else f"proof_valid={grid_proof_valid}"
-                ),
-            ))
+            verdicts.append(
+                EngineVerdict(
+                    engine=EngineName.GRID,
+                    passed=grid_passed,
+                    details=(
+                        f"proof_valid={grid_proof_valid}, coverage={grid_coverage_pct:.1f}%"
+                        if grid_coverage_pct is not None
+                        else f"proof_valid={grid_proof_valid}"
+                    ),
+                )
+            )
 
         # Compute consensus
         n_pass = sum(1 for v in verdicts if v.passed)
@@ -217,7 +233,7 @@ class ConsensusEngine:
             confidence = ConfidenceLevel.WARNING if n_pass == 1 else ConfidenceLevel.FAIL
 
         # Safety: is_safe ONLY if VERIFIED (all engines agree)
-        is_safe = (confidence == ConfidenceLevel.VERIFIED)
+        is_safe = confidence == ConfidenceLevel.VERIFIED
 
         # Recommendation
         if confidence == ConfidenceLevel.VERIFIED:

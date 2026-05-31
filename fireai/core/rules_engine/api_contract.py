@@ -24,11 +24,10 @@ Architecture:
 
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar, get_args
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -41,11 +40,13 @@ T = TypeVar("T", bound=BaseModel)
 # CONTRACT DEFINITION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class ContractSeverity(str, Enum):
     """How strictly to enforce the contract."""
-    STRICT = "strict"       # Raise exception on violation
-    LOG = "log"             # Log violation but return response
-    DISABLED = "disabled"   # No validation (development only)
+
+    STRICT = "strict"  # Raise exception on violation
+    LOG = "log"  # Log violation but return response
+    DISABLED = "disabled"  # No validation (development only)
 
 
 class APIContract(BaseModel, Generic[T]):
@@ -60,9 +61,10 @@ class APIContract(BaseModel, Generic[T]):
     This replaces the manual contract.py validation with
     automatic, type-safe validation.
     """
+
     endpoint: str
     method: str = "GET"
-    request_schema: Optional[str] = None   # Pydantic model class name
+    request_schema: Optional[str] = None  # Pydantic model class name
     response_schema: Optional[str] = None  # Pydantic model class name
     nfpa_reference: Optional[str] = None
     safety_critical: bool = False
@@ -72,6 +74,7 @@ class APIContract(BaseModel, Generic[T]):
 
 class ContractViolationDetail(BaseModel):
     """Detailed information about a contract violation."""
+
     endpoint: str
     method: str
     violation_type: str  # "response_schema", "request_schema", "missing_field"
@@ -79,14 +82,13 @@ class ContractViolationDetail(BaseModel):
     expected_type: str = ""
     actual_value: Any = None
     severity: ContractSeverity = ContractSeverity.STRICT
-    timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONTRACT VALIDATOR
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class ContractValidator:
     """Validates API responses against their declared contracts.
@@ -227,10 +229,7 @@ class ContractValidator:
             if self.severity == ContractSeverity.STRICT:
                 raise
 
-            logger.error(
-                f"Contract violation on {key}: {e.errors()}. "
-                f"Returning unvalidated response (severity=LOG)."
-            )
+            logger.error(f"Contract violation on {key}: {e.errors()}. Returning unvalidated response (severity=LOG).")
             return data
 
     def validate_request(
@@ -259,9 +258,7 @@ class ContractValidator:
                 actual_value=data,
             )
             self._violation_log.append(violation)
-            logger.error(
-                f"Request validation failed on {method}:{endpoint}: {e.errors()}"
-            )
+            logger.error(f"Request validation failed on {method}:{endpoint}: {e.errors()}")
             raise
 
     def get_violations(self) -> List[ContractViolationDetail]:
@@ -294,19 +291,22 @@ class ContractValidator:
         for key, contract in self._contracts.items():
             method, endpoint = key.split(":", 1)
             response_model: Type[BaseModel] = contract["response_model"]
-            summary.append({
-                "method": method,
-                "endpoint": endpoint,
-                "response_type": response_model.__name__,
-                "nfpa_reference": contract.get("nfpa_reference"),
-                "safety_critical": contract.get("safety_critical", False),
-            })
+            summary.append(
+                {
+                    "method": method,
+                    "endpoint": endpoint,
+                    "response_type": response_model.__name__,
+                    "nfpa_reference": contract.get("nfpa_reference"),
+                    "safety_critical": contract.get("safety_critical", False),
+                }
+            )
         return summary
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FASTAPI INTEGRATION HELPER
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def create_contract_aware_router(
     validator: ContractValidator,
@@ -339,6 +339,7 @@ def create_contract_aware_router(
 # ═══════════════════════════════════════════════════════════════════════════════
 # TYPE GENERATION HELPER
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def generate_typescript_config(
     openapi_url: str = "http://localhost:8000/openapi.json",

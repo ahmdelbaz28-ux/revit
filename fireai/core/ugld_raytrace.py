@@ -82,19 +82,17 @@ Usage:
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from fireai.core.ugld_acoustics import (
     AcousticPropagation,
-    UltrasonicSensor,
     UGLDTriggerResult,
+    UltrasonicSensor,
     check_ugld_trigger,
-    atmospheric_attenuation_db_per_m,
     speed_of_sound,
 )
-
 
 # ===========================================================================
 # Surface Absorption Coefficients for Acoustic Barriers
@@ -118,21 +116,22 @@ from fireai.core.ugld_acoustics import (
 _SURFACE_ABSORPTION: Dict[str, float] = {
     # surface_type: absorption_coefficient (0=perfect reflector, 1=perfect absorber)
     # At ultrasonic frequencies, most surfaces are highly reflective
-    "steel_plate": 0.01,      # Polished steel — almost perfect reflector
-    "concrete_wall": 0.03,    # Concrete — slightly absorbing
-    "brick_wall": 0.04,       # Brick — slightly more absorbing
-    "glass_panel": 0.02,      # Glass — very reflective
-    "drywall": 0.05,          # Drywall — slightly more absorbing
+    "steel_plate": 0.01,  # Polished steel — almost perfect reflector
+    "concrete_wall": 0.03,  # Concrete — slightly absorbing
+    "brick_wall": 0.04,  # Brick — slightly more absorbing
+    "glass_panel": 0.02,  # Glass — very reflective
+    "drywall": 0.05,  # Drywall — slightly more absorbing
     "insulated_panel": 0.15,  # Acoustic insulation — more absorbing
-    "open_lattice": 0.50,     # Grating/lattice — partial barrier (50% open)
-    "mesh_screen": 0.70,      # Wire mesh — mostly transparent acoustically
-    "custom": 0.05,           # Default custom — moderate
+    "open_lattice": 0.50,  # Grating/lattice — partial barrier (50% open)
+    "mesh_screen": 0.70,  # Wire mesh — mostly transparent acoustically
+    "custom": 0.05,  # Default custom — moderate
 }
 
 
 # ===========================================================================
 # Maekawa Barrier Diffraction Model
 # ===========================================================================
+
 
 def maekawa_insertion_loss(
     path_difference_m: float,
@@ -240,9 +239,7 @@ def compute_path_difference(
     ox_max, oy_max, oz_max = obstacle_max
 
     # Direct distance
-    d = math.sqrt(
-        (rx - sx) ** 2 + (ry - sy) ** 2 + (rz - sz) ** 2
-    )
+    d = math.sqrt((rx - sx) ** 2 + (ry - sy) ** 2 + (rz - sz) ** 2)
     if d < 1e-9:
         return 0.0
 
@@ -333,12 +330,8 @@ def compute_path_difference(
     diff_z = oz_max  # Top of obstacle
 
     # Path lengths
-    a = math.sqrt(
-        (diff_x - sx) ** 2 + (diff_y - sy) ** 2 + (diff_z - sz) ** 2
-    )
-    b = math.sqrt(
-        (rx - diff_x) ** 2 + (ry - diff_y) ** 2 + (rz - diff_z) ** 2
-    )
+    a = math.sqrt((diff_x - sx) ** 2 + (diff_y - sy) ** 2 + (diff_z - sz) ** 2)
+    b = math.sqrt((rx - diff_x) ** 2 + (ry - diff_y) ** 2 + (rz - diff_z) ** 2)
 
     delta = (a + b) - d
     return max(0.0, delta)
@@ -347,6 +340,7 @@ def compute_path_difference(
 # ===========================================================================
 # Ray-AABB Intersection (Slab Method — reused from Layer 5)
 # ===========================================================================
+
 
 def _ray_intersects_aabb(
     origin: Tuple[float, float, float],
@@ -394,6 +388,7 @@ def _ray_intersects_aabb(
 # Pydantic Models
 # ===========================================================================
 
+
 class AcousticObstacle(BaseModel):
     """
     An obstacle in the UGLD acoustic propagation path.
@@ -409,6 +404,7 @@ class AcousticObstacle(BaseModel):
 
     Reference: ISO 9613-2:1996 §7, Beranek & Ver (1992)
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     obstacle_id: str = Field(
@@ -459,6 +455,7 @@ class ObstacleHit(BaseModel):
     """
     Record of a single obstacle intersection with computed Maekawa IL.
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     obstacle_id: str
@@ -483,6 +480,7 @@ class AcousticRayResult(BaseModel):
 
     Reference: ISO 9613-2:1996 Annex A, ISA-TR 84.00.07
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     has_los: bool = Field(
@@ -524,6 +522,7 @@ class AcousticRayResult(BaseModel):
 # ===========================================================================
 # Core Ray Tracing Logic
 # ===========================================================================
+
 
 def trace_acoustic_ray(
     leak_point: Tuple[float, float, float],
@@ -606,7 +605,10 @@ def trace_acoustic_ray(
 
                 # Compute Maekawa IL using AABB geometry
                 delta = compute_path_difference(
-                    leak_point, sensor_point, bmin, bmax,
+                    leak_point,
+                    sensor_point,
+                    bmin,
+                    bmax,
                 )
 
                 il = maekawa_insertion_loss(
@@ -615,11 +617,13 @@ def trace_acoustic_ray(
                     temp_c=temp_c,
                 )
 
-                obstacle_hits.append(ObstacleHit(
-                    obstacle_id=obs.obstacle_id,
-                    insertion_loss_db=il,
-                    path_difference_m=round(delta, 4),
-                ))
+                obstacle_hits.append(
+                    ObstacleHit(
+                        obstacle_id=obs.obstacle_id,
+                        insertion_loss_db=il,
+                        path_difference_m=round(delta, 4),
+                    )
+                )
 
         # 4. Sum Maekawa IL from all intersected obstacles
         # For multiple obstacles, the IL values are additive in dB
@@ -658,10 +662,7 @@ def trace_acoustic_ray(
                     f"({threshold:.1f} dB). Deficit: {abs(margin_threshold):.1f} dB."
                 )
             if not snr_met:
-                reasons.append(
-                    f"SNR ({snr:.1f} dB) below minimum 6 dB. "
-                    f"Deficit: {abs(margin_snr):.1f} dB."
-                )
+                reasons.append(f"SNR ({snr:.1f} dB) below minimum 6 dB. Deficit: {abs(margin_snr):.1f} dB.")
             fail_reason = " | ".join(reasons)
 
         trigger_result = UGLDTriggerResult(

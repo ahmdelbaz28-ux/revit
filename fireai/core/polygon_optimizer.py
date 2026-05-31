@@ -26,24 +26,26 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
-from fireai.core.spatial_engine.density_optimizer import (
-    DensityOptimizer, Room, DETECTOR_RADIUS, MAX_SPACING_M,
-)
 from fireai.core.geometry_utils import (
-    is_rectangular,
     bounding_rect_dimensions,
+    is_rectangular,
     point_in_polygon,
-    polygon_area,
 )
 from fireai.core.nfpa72_calculations import (
-    calculate_coverage_radius_from_height,
     CoverageSpec,
+    calculate_coverage_radius_from_height,
+)
+from fireai.core.spatial_engine.density_optimizer import (
+    DETECTOR_RADIUS,
+    MAX_SPACING_M,
+    DensityOptimizer,
+    Room,
 )
 
-
 # ── Polygon Room model ──────────────────────────────────────
+
 
 @dataclass
 class PolygonRoom:
@@ -58,12 +60,13 @@ class PolygonRoom:
         ducts:          Optional list of duct specification dicts.
         name:           Display name (default same as room_id).
     """
-    room_id:        str
-    polygon:        List[Tuple[float, float]]
-    ceiling_height: float             = 3.0
-    detector_type:  str               = "smoke"
-    ducts:          List[dict]         = field(default_factory=list)
-    name:           str               = ""
+
+    room_id: str
+    polygon: List[Tuple[float, float]]
+    ceiling_height: float = 3.0
+    detector_type: str = "smoke"
+    ducts: List[dict] = field(default_factory=list)
+    name: str = ""
 
     def __post_init__(self):
         if not self.name:
@@ -83,8 +86,7 @@ class PolygonRoom:
         ox, oy = origin
         return cls(
             room_id=room_id,
-            polygon=[(ox, oy), (ox + width, oy),
-                     (ox + width, oy + length), (ox, oy + length)],
+            polygon=[(ox, oy), (ox + width, oy), (ox + width, oy + length), (ox, oy + length)],
             ceiling_height=ceiling_height,
             detector_type=detector_type,
         )
@@ -108,16 +110,31 @@ class PolygonRoom:
         cw, cl = cutout_width, cutout_length
 
         corners = {
-            "NE": [(ox, oy), (ox + tw, oy), (ox + tw, oy + tl - cl),
-                   (ox + tw - cw, oy + tl - cl), (ox + tw - cw, oy + tl),
-                   (ox, oy + tl)],
-            "NW": [(ox, oy), (ox + tw, oy), (ox + tw, oy + tl),
-                   (ox + cw, oy + tl), (ox + cw, oy + tl - cl),
-                   (ox, oy + tl - cl)],
-            "SE": [(ox, oy), (ox + tw - cw, oy), (ox + tw - cw, oy + cl),
-                   (ox + tw, oy + cl), (ox + tw, oy + tl), (ox, oy + tl)],
-            "SW": [(ox, oy), (ox + tw, oy), (ox + tw, oy + tl),
-                   (ox, oy + tl), (ox, oy + cl), (ox + cw, oy + cl)],
+            "NE": [
+                (ox, oy),
+                (ox + tw, oy),
+                (ox + tw, oy + tl - cl),
+                (ox + tw - cw, oy + tl - cl),
+                (ox + tw - cw, oy + tl),
+                (ox, oy + tl),
+            ],
+            "NW": [
+                (ox, oy),
+                (ox + tw, oy),
+                (ox + tw, oy + tl),
+                (ox + cw, oy + tl),
+                (ox + cw, oy + tl - cl),
+                (ox, oy + tl - cl),
+            ],
+            "SE": [
+                (ox, oy),
+                (ox + tw - cw, oy),
+                (ox + tw - cw, oy + cl),
+                (ox + tw, oy + cl),
+                (ox + tw, oy + tl),
+                (ox, oy + tl),
+            ],
+            "SW": [(ox, oy), (ox + tw, oy), (ox + tw, oy + tl), (ox, oy + tl), (ox, oy + cl), (ox + cw, oy + cl)],
         }
         return cls(
             room_id=room_id,
@@ -128,6 +145,7 @@ class PolygonRoom:
 
 
 # ── Output model ─────────────────────────────────────────────
+
 
 @dataclass
 class PolygonRoomSummary:
@@ -154,27 +172,29 @@ class PolygonRoomSummary:
         duct_devices:   List of duct detector results.
         duct_warnings:  List of duct analysis warnings.
     """
-    room_id:           str
-    detector_type:     str
-    polygon:           List[Tuple[float, float]]
-    detectors:         List[Tuple[float, float]]
-    count:             int
-    coverage_pct:      float
-    proof_valid:       bool
-    nfpa_valid:        bool
-    wall_violations:   int
-    method:            str
-    spacing_violations: List[str]          = field(default_factory=list)
-    coverage_radius:   float              = DETECTOR_RADIUS
-    ceiling_height:    Optional[float]    = None
-    nfpa_table_ref:    str                = "NFPA 72-2022 Table 17.6.3.1.1"
-    radius_warning:    Optional[str]      = None
-    analysis_ms:       float              = 0.0
-    duct_devices:      List               = field(default_factory=list)
-    duct_warnings:     List[str]          = field(default_factory=list)
+
+    room_id: str
+    detector_type: str
+    polygon: List[Tuple[float, float]]
+    detectors: List[Tuple[float, float]]
+    count: int
+    coverage_pct: float
+    proof_valid: bool
+    nfpa_valid: bool
+    wall_violations: int
+    method: str
+    spacing_violations: List[str] = field(default_factory=list)
+    coverage_radius: float = DETECTOR_RADIUS
+    ceiling_height: Optional[float] = None
+    nfpa_table_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
+    radius_warning: Optional[str] = None
+    analysis_ms: float = 0.0
+    duct_devices: List = field(default_factory=list)
+    duct_warnings: List[str] = field(default_factory=list)
 
 
 # ── Internal helpers ─────────────────────────────────────────
+
 
 def _generate_interior_grid(
     polygon: List[Tuple[float, float]],
@@ -221,10 +241,7 @@ def _greedy_set_cover(
     n = len(interior_points)
     coverage: List[List[int]] = []
     for ci, cand in enumerate(interior_points):
-        covered = [
-            i for i, pt in enumerate(interior_points)
-            if (pt[0] - cand[0]) ** 2 + (pt[1] - cand[1]) ** 2 <= r2
-        ]
+        covered = [i for i, pt in enumerate(interior_points) if (pt[0] - cand[0]) ** 2 + (pt[1] - cand[1]) ** 2 <= r2]
         coverage.append(covered)
 
     uncovered = set(range(n))
@@ -252,11 +269,7 @@ def _coverage_percentage(
         return 100.0
     r2 = radius * radius
     covered = sum(
-        1 for pt in interior_points
-        if any(
-            (pt[0] - d[0]) ** 2 + (pt[1] - d[1]) ** 2 <= r2
-            for d in detectors
-        )
+        1 for pt in interior_points if any((pt[0] - d[0]) ** 2 + (pt[1] - d[1]) ** 2 <= r2 for d in detectors)
     )
     return round(100.0 * covered / len(interior_points), 4)
 
@@ -287,7 +300,7 @@ def _audit_nfpa_spacing(
     violations: List[str] = []
     max_gap = 0.0
     for i, (x1, y1) in enumerate(detectors):
-        min_dist = float('inf')
+        min_dist = float("inf")
         for j, (x2, y2) in enumerate(detectors):
             if i == j:
                 continue
@@ -295,14 +308,12 @@ def _audit_nfpa_spacing(
         max_gap = max(max_gap, min_dist)
 
     if max_gap > max_spacing * 1.01:
-        violations.append(
-            f"Max inter-detector spacing {max_gap:.2f}m > "
-            f"S={max_spacing:.2f}m (NFPA 72 §17.6.3)"
-        )
+        violations.append(f"Max inter-detector spacing {max_gap:.2f}m > S={max_spacing:.2f}m (NFPA 72 §17.6.3)")
     return violations
 
 
 # ── Main optimizer ───────────────────────────────────────────
+
 
 class PolygonDensityOptimizer:
     """
@@ -383,7 +394,10 @@ class PolygonDensityOptimizer:
     # ------------------------------------------------------------------
 
     def _optimize_rectangular(
-        self, room: PolygonRoom, radius: float, spec: CoverageSpec,
+        self,
+        room: PolygonRoom,
+        radius: float,
+        spec: CoverageSpec,
     ) -> PolygonRoomSummary:
         """Delegate rectangular rooms to the proven DensityOptimizer."""
         width, length, min_x, min_y = bounding_rect_dimensions(room.polygon)
@@ -396,10 +410,7 @@ class PolygonDensityOptimizer:
         layout = self._rect_optimizer.optimize(rect_room, coverage_radius=radius)
 
         # Translate detectors back to polygon coordinate space
-        translated = [
-            (round(x + min_x, 4), round(y + min_y, 4))
-            for x, y in layout.detectors
-        ]
+        translated = [(round(x + min_x, 4), round(y + min_y, 4)) for x, y in layout.detectors]
 
         return PolygonRoomSummary(
             room_id=room.room_id,
@@ -420,7 +431,10 @@ class PolygonDensityOptimizer:
     # ------------------------------------------------------------------
 
     def _optimize_greedy(
-        self, room: PolygonRoom, radius: float, spec: CoverageSpec,
+        self,
+        room: PolygonRoom,
+        radius: float,
+        spec: CoverageSpec,
     ) -> PolygonRoomSummary:
         """
         Greedy Set Cover placement for non-rectangular polygons.
@@ -466,7 +480,9 @@ class PolygonDensityOptimizer:
     # ------------------------------------------------------------------
 
     def _inject_duct_analysis(
-        self, room: PolygonRoom, summary: PolygonRoomSummary,
+        self,
+        room: PolygonRoom,
+        summary: PolygonRoomSummary,
     ) -> None:
         """
         Run duct detector analysis using the existing duct_detector module.
@@ -492,13 +508,9 @@ class PolygonDensityOptimizer:
                 try:
                     duct_specs.append(DuctSpec(**d))
                 except TypeError:
-                    summary.duct_warnings.append(
-                        f"Invalid duct spec: {d}"
-                    )
+                    summary.duct_warnings.append(f"Invalid duct spec: {d}")
             else:
-                summary.duct_warnings.append(
-                    f"Duct entry must be DuctSpec or dict, got {type(d).__name__}"
-                )
+                summary.duct_warnings.append(f"Duct entry must be DuctSpec or dict, got {type(d).__name__}")
 
         if not duct_specs:
             return

@@ -51,7 +51,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from .event_bus import EventBus, Events
+from .event_bus import EventBus
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,7 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════
 # RoomState Enum
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class RoomState(enum.Enum):
     """Finite states for room analysis lifecycle.
@@ -97,22 +98,23 @@ class RoomState(enum.Enum):
 # ═══════════════════════════════════════════════════════════════════════
 
 LEGAL_TRANSITIONS: Dict[RoomState, set] = {
-    RoomState.PENDING:    {RoomState.ANALYZING, RoomState.FAILED},
-    RoomState.ANALYZING:  {RoomState.OPTIMIZED, RoomState.FAILED},
-    RoomState.OPTIMIZED:  {RoomState.VERIFYING, RoomState.FAILED},
-    RoomState.VERIFYING:  {RoomState.VERIFIED, RoomState.WARNING, RoomState.FAILED},
-    RoomState.WARNING:    {RoomState.VERIFYING, RoomState.VERIFIED, RoomState.FAILED},
-    RoomState.VERIFIED:   {RoomState.CERTIFYING, RoomState.FAILED},
+    RoomState.PENDING: {RoomState.ANALYZING, RoomState.FAILED},
+    RoomState.ANALYZING: {RoomState.OPTIMIZED, RoomState.FAILED},
+    RoomState.OPTIMIZED: {RoomState.VERIFYING, RoomState.FAILED},
+    RoomState.VERIFYING: {RoomState.VERIFIED, RoomState.WARNING, RoomState.FAILED},
+    RoomState.WARNING: {RoomState.VERIFYING, RoomState.VERIFIED, RoomState.FAILED},
+    RoomState.VERIFIED: {RoomState.CERTIFYING, RoomState.FAILED},
     RoomState.CERTIFYING: {RoomState.CERTIFIED, RoomState.FAILED},
-    RoomState.CERTIFIED:  {RoomState.REJECTED},
-    RoomState.FAILED:     {RoomState.PENDING},
-    RoomState.REJECTED:   {RoomState.PENDING},
+    RoomState.CERTIFIED: {RoomState.REJECTED},
+    RoomState.FAILED: {RoomState.PENDING},
+    RoomState.REJECTED: {RoomState.PENDING},
 }
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # RoomTransition Dataclass
 # ═══════════════════════════════════════════════════════════════════════
+
 
 @dataclass(frozen=True)
 class RoomTransition:
@@ -155,6 +157,7 @@ class RoomTransition:
 # ═══════════════════════════════════════════════════════════════════════
 # RoomLifecycle Class
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class RoomLifecycle:
     """State machine for a single room's analysis lifecycle.
@@ -426,15 +429,13 @@ class RoomLifecycle:
             }
 
     def __repr__(self) -> str:
-        return (
-            f"RoomLifecycle(room_id={self._room_id!r}, "
-            f"state={self._state.value})"
-        )
+        return f"RoomLifecycle(room_id={self._room_id!r}, state={self._state.value})"
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # RoomLifecycleManager Class
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class RoomLifecycleManager:
     """Manages lifecycles for all rooms in a building.
@@ -595,10 +596,7 @@ class RoomLifecycleManager:
         with self._lock:
             if not self._rooms:
                 return False
-            return all(
-                lc.state == RoomState.CERTIFIED
-                for lc in self._rooms.values()
-            )
+            return all(lc.state == RoomState.CERTIFIED for lc in self._rooms.values())
 
     def any_failed(self) -> bool:
         """Check if any room in the building is in FAILED state.
@@ -607,10 +605,7 @@ class RoomLifecycleManager:
             True if at least one room is FAILED.
         """
         with self._lock:
-            return any(
-                lc.state == RoomState.FAILED
-                for lc in self._rooms.values()
-            )
+            return any(lc.state == RoomState.FAILED for lc in self._rooms.values())
 
     def any_warnings(self) -> bool:
         """Check if any room in the building is in WARNING state.
@@ -619,18 +614,12 @@ class RoomLifecycleManager:
             True if at least one room is in WARNING state.
         """
         with self._lock:
-            return any(
-                lc.state == RoomState.WARNING
-                for lc in self._rooms.values()
-            )
+            return any(lc.state == RoomState.WARNING for lc in self._rooms.values())
 
     def certified_count(self) -> int:
         """Return the number of rooms in CERTIFIED state."""
         with self._lock:
-            return sum(
-                1 for lc in self._rooms.values()
-                if lc.state == RoomState.CERTIFIED
-            )
+            return sum(1 for lc in self._rooms.values() if lc.state == RoomState.CERTIFIED)
 
     def certification_progress(self) -> float:
         """Return the certification progress as a percentage (0.0–100.0).
@@ -642,10 +631,7 @@ class RoomLifecycleManager:
         with self._lock:
             if not self._rooms:
                 return 0.0
-            certified = sum(
-                1 for lc in self._rooms.values()
-                if lc.state == RoomState.CERTIFIED
-            )
+            certified = sum(1 for lc in self._rooms.values() if lc.state == RoomState.CERTIFIED)
             return (certified / len(self._rooms)) * 100.0
 
     # ── Bulk Operations ───────────────────────────────────────────────
@@ -680,20 +666,13 @@ class RoomLifecycleManager:
             return {
                 "room_count": len(self._rooms),
                 "certification_progress": self.certification_progress(),
-                "building_status": {
-                    s.value: count for s, count in self.building_status().items()
-                },
-                "rooms": {
-                    rid: lc.to_dict() for rid, lc in self._rooms.items()
-                },
+                "building_status": {s.value: count for s, count in self.building_status().items()},
+                "rooms": {rid: lc.to_dict() for rid, lc in self._rooms.items()},
             }
 
     def __repr__(self) -> str:
         with self._lock:
-            return (
-                f"RoomLifecycleManager(rooms={len(self._rooms)}, "
-                f"certified={self.certified_count()})"
-            )
+            return f"RoomLifecycleManager(rooms={len(self._rooms)}, certified={self.certified_count()})"
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -732,22 +711,21 @@ if __name__ == "__main__":
     lc.transition_to(RoomState.ANALYZING, "Begin placement optimization", "system")
     assert lc.state == RoomState.ANALYZING
 
-    lc.transition_to(RoomState.OPTIMIZED, "3 smoke detectors placed", "system",
-                      metadata={"detector_count": 3, "coverage_pct": 100.0})
+    lc.transition_to(
+        RoomState.OPTIMIZED, "3 smoke detectors placed", "system", metadata={"detector_count": 3, "coverage_pct": 100.0}
+    )
     assert lc.state == RoomState.OPTIMIZED
 
     lc.transition_to(RoomState.VERIFYING, "Triple consensus start", "system")
     assert lc.state == RoomState.VERIFYING
 
-    lc.transition_to(RoomState.VERIFIED, "3/3 engines PASS", "system",
-                      metadata={"n_pass": 3, "n_total": 3})
+    lc.transition_to(RoomState.VERIFIED, "3/3 engines PASS", "system", metadata={"n_pass": 3, "n_total": 3})
     assert lc.state == RoomState.VERIFIED
 
     lc.transition_to(RoomState.CERTIFYING, "Generating proof certificate", "system")
     assert lc.state == RoomState.CERTIFYING
 
-    lc.transition_to(RoomState.CERTIFIED, "SHA-256 sealed", "system",
-                      metadata={"sha256": "abc123def456"})
+    lc.transition_to(RoomState.CERTIFIED, "SHA-256 sealed", "system", metadata={"sha256": "abc123def456"})
     assert lc.state == RoomState.CERTIFIED
     assert lc.is_terminal()
     assert len(lc.history) == 6
@@ -770,8 +748,7 @@ if __name__ == "__main__":
     lc3.transition_to(RoomState.ANALYZING, "Start", "system")
     lc3.transition_to(RoomState.OPTIMIZED, "Done", "system")
     lc3.transition_to(RoomState.VERIFYING, "Verify", "system")
-    lc3.transition_to(RoomState.WARNING, "2/3 engines agree", "system",
-                       metadata={"n_pass": 2, "n_total": 3})
+    lc3.transition_to(RoomState.WARNING, "2/3 engines agree", "system", metadata={"n_pass": 2, "n_total": 3})
     assert lc3.state == RoomState.WARNING
     assert not lc3.is_failed()
 
@@ -788,8 +765,12 @@ if __name__ == "__main__":
     lc4.transition_to(RoomState.OPTIMIZED, "Done", "system")
     lc4.transition_to(RoomState.VERIFYING, "Verify", "system")
     lc4.transition_to(RoomState.WARNING, "2/3 engines agree", "system")
-    lc4.transition_to(RoomState.VERIFIED, "PE reviewed and approved", "pe",
-                       metadata={"pe_license": "PE-12345", "override_reason": "Grid engine false positive"})
+    lc4.transition_to(
+        RoomState.VERIFIED,
+        "PE reviewed and approved",
+        "pe",
+        metadata={"pe_license": "PE-12345", "override_reason": "Grid engine false positive"},
+    )
     assert lc4.state == RoomState.VERIFIED
     assert lc4.history[-1].actor == "pe"
     print(f"   ✓ PE override: WARNING → VERIFIED with actor='pe'")
@@ -798,8 +779,7 @@ if __name__ == "__main__":
     print("\n[TEST 5] FAILED → PENDING (retry)")
     lc5 = RoomLifecycle(room_id="R-105")
     lc5.transition_to(RoomState.ANALYZING, "Start", "system")
-    lc5.transition_to(RoomState.FAILED, "Geometry error", "system",
-                       metadata={"error": "Room has zero area"})
+    lc5.transition_to(RoomState.FAILED, "Geometry error", "system", metadata={"error": "Room has zero area"})
     assert lc5.state == RoomState.FAILED
     assert lc5.is_failed()
 
@@ -816,8 +796,12 @@ if __name__ == "__main__":
     lc6.transition_to(RoomState.VERIFIED, "3/3 PASS", "system")
     lc6.transition_to(RoomState.CERTIFYING, "Generate cert", "system")
     lc6.transition_to(RoomState.CERTIFIED, "SHA-256 sealed", "system")
-    lc6.transition_to(RoomState.REJECTED, "AHJ requires additional detectors", "ahj",
-                       metadata={"ahj_inspector": "Inspector Smith", "case_number": "AHJ-2024-001"})
+    lc6.transition_to(
+        RoomState.REJECTED,
+        "AHJ requires additional detectors",
+        "ahj",
+        metadata={"ahj_inspector": "Inspector Smith", "case_number": "AHJ-2024-001"},
+    )
     assert lc6.state == RoomState.REJECTED
     assert lc6.is_terminal()
 
@@ -956,9 +940,7 @@ if __name__ == "__main__":
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         futures = []
         for _ in range(10):
-            futures.append(executor.submit(
-                transition_worker, "PENDING", RoomState.ANALYZING, "Thread test"
-            ))
+            futures.append(executor.submit(transition_worker, "PENDING", RoomState.ANALYZING, "Thread test"))
         concurrent.futures.wait(futures)
 
     assert len(errors) == 0, f"Thread safety errors: {errors}"

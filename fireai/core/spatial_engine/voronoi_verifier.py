@@ -25,14 +25,15 @@ Falls back to brute-force sampling if Shapely Voronoi unavailable.
 
 import logging
 import math
-from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 try:
-    from shapely.geometry import Point, Polygon, MultiPoint
+    from shapely.geometry import MultiPoint, Point, Polygon
     from shapely.ops import voronoi_diagram
+
     HAS_SHAPELY_VORONOI = True
 except ImportError:
     HAS_SHAPELY_VORONOI = False
@@ -41,6 +42,7 @@ except ImportError:
 @dataclass
 class VoronoiResult:
     """Result from Voronoi verification."""
+
     is_covered: bool
     max_gap_m: float  # Distance from farthest point to nearest detector
     max_gap_location: Optional[Tuple[float, float]] = None
@@ -145,7 +147,7 @@ class VoronoiVerifier:
                 # is on the boundary
 
                 # Check boundary vertices
-                boundary_coords = list(region.boundary.coords) if hasattr(region.boundary, 'coords') else []
+                boundary_coords = list(region.boundary.coords) if hasattr(region.boundary, "coords") else []
                 for bx, by in boundary_coords:
                     # Only consider points inside the room
                     if 0 <= bx <= width and 0 <= by <= length:
@@ -157,14 +159,16 @@ class VoronoiVerifier:
                 # Also check intersection with room boundary
                 try:
                     intersection = region.intersection(room_poly.boundary)
-                    if hasattr(intersection, 'coords'):
+                    if hasattr(intersection, "coords"):
                         for ix, iy in intersection.coords:
                             dist = math.hypot(ix - gx, iy - gy)
                             if dist > max_gap:
                                 max_gap = dist
                                 max_gap_loc = (ix, iy)
                 except Exception as e:
-                    logger.warning(f"V112: _verify_voronoi: failed to compute Voronoi cell boundary intersection: {e!r}")
+                    logger.warning(
+                        f"V112: _verify_voronoi: failed to compute Voronoi cell boundary intersection: {e!r}"
+                    )
                     pass
 
             # Also check room corners (they might be in small Voronoi cells)
@@ -208,10 +212,15 @@ class VoronoiVerifier:
 
         # Critical test points
         test_points = [
-            (0, 0), (width, 0), (0, length), (width, length),
+            (0, 0),
+            (width, 0),
+            (0, length),
+            (width, length),
             (width / 2, length / 2),
-            (width / 2, 0), (width / 2, length),
-            (0, length / 2), (width, length / 2),
+            (width / 2, 0),
+            (width / 2, length),
+            (0, length / 2),
+            (width, length / 2),
         ]
 
         # Add detector-to-detector midpoints (these are the hardest points)

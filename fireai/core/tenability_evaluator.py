@@ -27,9 +27,7 @@ ENGINEERING SOURCES:
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
+from dataclasses import dataclass
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TENABILITY LIMITS
@@ -69,14 +67,15 @@ class TenabilityResult:
 
     A failure in ANY single criterion means the space is NOT tenable.
     """
-    is_tenable:           bool
-    temperature_c:        float
-    visibility_m:         float
-    co_ppm:               float
-    co2_ppm:              float
-    radiant_flux_kw_m2:   float
-    violations:           tuple   # Tuple of violation strings
-    nfpa_references:      tuple   # Tuple of NFPA references
+
+    is_tenable: bool
+    temperature_c: float
+    visibility_m: float
+    co_ppm: float
+    co2_ppm: float
+    radiant_flux_kw_m2: float
+    violations: tuple  # Tuple of violation strings
+    nfpa_references: tuple  # Tuple of NFPA references
 
 
 def evaluate_tenability(
@@ -128,48 +127,37 @@ def evaluate_tenability(
 
     # Apply safety margin: tighten thresholds by 20%
     max_temp = _MAX_TEMPERATURE_C * (1.0 - _TENABILITY_SAFETY_MARGIN)  # 48°C
-    min_vis = _MIN_VISIBILITY_M * (1.0 + _TENABILITY_SAFETY_MARGIN)    # 12.5m
-    max_co = _MAX_CO_PPM * (1.0 - _TENABILITY_SAFETY_MARGIN)          # 960 ppm
-    max_co2 = _MAX_CO2_PPM * (1.0 - _TENABILITY_SAFETY_MARGIN)        # 32000 ppm
+    min_vis = _MIN_VISIBILITY_M * (1.0 + _TENABILITY_SAFETY_MARGIN)  # 12.5m
+    max_co = _MAX_CO_PPM * (1.0 - _TENABILITY_SAFETY_MARGIN)  # 960 ppm
+    max_co2 = _MAX_CO2_PPM * (1.0 - _TENABILITY_SAFETY_MARGIN)  # 32000 ppm
     max_flux = _MAX_RADIANT_FLUX_KW_M2 * (1.0 - _TENABILITY_SAFETY_MARGIN)  # 2.0 kW/m²
 
     # Check temperature
     if temperature_c > max_temp:
-        violations.append(
-            f"Temperature {temperature_c:.1f}°C exceeds tenable limit "
-            f"{max_temp:.1f}°C (SFPE/NFPA 101)"
-        )
+        violations.append(f"Temperature {temperature_c:.1f}°C exceeds tenable limit {max_temp:.1f}°C (SFPE/NFPA 101)")
     references.append("SFPE/NFPA 101 §7")
 
     # Check visibility
     if visibility_m < min_vis:
         violations.append(
-            f"Visibility {visibility_m:.1f}m below tenable minimum "
-            f"{min_vis:.1f}m (SFPE Engineering Guide)"
+            f"Visibility {visibility_m:.1f}m below tenable minimum {min_vis:.1f}m (SFPE Engineering Guide)"
         )
     references.append("SFPE Engineering Guide")
 
     # Check CO
     if co_ppm > max_co:
-        violations.append(
-            f"CO {co_ppm:.0f} ppm exceeds tenable limit "
-            f"{max_co:.0f} ppm (ISO 13571)"
-        )
+        violations.append(f"CO {co_ppm:.0f} ppm exceeds tenable limit {max_co:.0f} ppm (ISO 13571)")
     references.append("ISO 13571")
 
     # Check CO2
     if co2_ppm > max_co2:
-        violations.append(
-            f"CO2 {co2_ppm:.0f} ppm exceeds tenable limit "
-            f"{max_co2:.0f} ppm (ISO 13571)"
-        )
+        violations.append(f"CO2 {co2_ppm:.0f} ppm exceeds tenable limit {max_co2:.0f} ppm (ISO 13571)")
     references.append("ISO 13571")
 
     # Check radiant heat flux
     if radiant_flux_kw_m2 > max_flux:
         violations.append(
-            f"Radiant flux {radiant_flux_kw_m2:.2f} kW/m² exceeds tenable "
-            f"limit {max_flux:.2f} kW/m² (SFPE)"
+            f"Radiant flux {radiant_flux_kw_m2:.2f} kW/m² exceeds tenable limit {max_flux:.2f} kW/m² (SFPE)"
         )
     references.append("SFPE")
 

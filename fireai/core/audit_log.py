@@ -26,7 +26,7 @@ import json
 import sqlite3
 import threading
 import uuid
-from dataclasses import dataclass, fields, asdict
+from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 
@@ -68,6 +68,7 @@ SELECT entry_hash FROM audit_entries ORDER BY rowid DESC LIMIT 1;
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
+
 
 def compute_entry_hash(entry: AuditEntry) -> str:
     """Compute SHA-256 hash of all entry fields *except* entry_hash and hmac_signature.
@@ -156,8 +157,8 @@ def create_audit_entry(
         output_hash=output_hash,
         status=status,
         prev_entry_hash=prev_entry_hash,
-        entry_hash="",          # placeholder — computed below
-        hmac_signature=None,    # filled in by AuditLog.append
+        entry_hash="",  # placeholder — computed below
+        hmac_signature=None,  # filled in by AuditLog.append
     )
 
     # Compute and assign the entry hash
@@ -168,6 +169,7 @@ def create_audit_entry(
 # ---------------------------------------------------------------------------
 # Data class
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AuditEntry:
@@ -191,6 +193,7 @@ class AuditEntry:
 # ---------------------------------------------------------------------------
 # Audit log
 # ---------------------------------------------------------------------------
+
 
 class AuditLog:
     """Append-only, tamper-evident audit log backed by SQLite.
@@ -268,10 +271,7 @@ class AuditLog:
                 if entry.entry_hash == "" or chain_fixed:
                     object.__setattr__(entry, "entry_hash", recomputed)
                 else:
-                    raise ValueError(
-                        f"Entry hash mismatch: expected {recomputed}, "
-                        f"got {entry.entry_hash}"
-                    )
+                    raise ValueError(f"Entry hash mismatch: expected {recomputed}, got {entry.entry_hash}")
 
             # --- HMAC signature ---
             hmac_sig: Optional[str] = None
@@ -325,9 +325,7 @@ class AuditLog:
         """Internal: verify chain (caller must hold self._lock)."""
         errors: List[str] = []
 
-        cur = self._conn.execute(
-            "SELECT entry_id, prev_entry_hash, entry_hash FROM audit_entries ORDER BY rowid ASC;"
-        )
+        cur = self._conn.execute("SELECT entry_id, prev_entry_hash, entry_hash FROM audit_entries ORDER BY rowid ASC;")
         rows = cur.fetchall()
 
         if not rows:
@@ -336,28 +334,18 @@ class AuditLog:
         # First entry must link to genesis
         first_id, first_prev, first_hash = rows[0]
         if first_prev != GENESIS_PREV_HASH:
-            errors.append(
-                f"Entry {first_id}: prev_entry_hash is {first_prev}, "
-                f"expected genesis {GENESIS_PREV_HASH}"
-            )
+            errors.append(f"Entry {first_id}: prev_entry_hash is {first_prev}, expected genesis {GENESIS_PREV_HASH}")
 
         # Verify each subsequent link
         prev_hash = first_hash
         for entry_id, prev_entry_hash, entry_hash in rows[1:]:
             if prev_entry_hash != prev_hash:
-                errors.append(
-                    f"Entry {entry_id}: prev_entry_hash is {prev_entry_hash}, "
-                    f"expected {prev_hash}"
-                )
+                errors.append(f"Entry {entry_id}: prev_entry_hash is {prev_entry_hash}, expected {prev_hash}")
             prev_hash = entry_hash
 
         # Additionally verify each entry's self-hash
-        all_rows = self._conn.execute(
-            "SELECT * FROM audit_entries ORDER BY rowid ASC;"
-        ).fetchall()
-        col_names = [desc[0] for desc in self._conn.execute(
-            "SELECT * FROM audit_entries LIMIT 0;"
-        ).description]
+        all_rows = self._conn.execute("SELECT * FROM audit_entries ORDER BY rowid ASC;").fetchall()
+        col_names = [desc[0] for desc in self._conn.execute("SELECT * FROM audit_entries LIMIT 0;").description]
 
         for row in all_rows:
             row_dict = dict(zip(col_names, row))
@@ -369,18 +357,13 @@ class AuditLog:
 
             recomputed = compute_entry_hash(entry)
             if recomputed != entry.entry_hash:
-                errors.append(
-                    f"Entry {entry.entry_id}: entry_hash is {entry.entry_hash}, "
-                    f"recomputed {recomputed}"
-                )
+                errors.append(f"Entry {entry.entry_id}: entry_hash is {entry.entry_hash}, recomputed {recomputed}")
 
             # Verify HMAC if present and key available
             if entry.hmac_signature is not None and self._hmac_key is not None:
                 expected_hmac = compute_hmac(entry.entry_hash, self._hmac_key)
                 if not hmac.compare_digest(expected_hmac, entry.hmac_signature):
-                    errors.append(
-                        f"Entry {entry.entry_id}: HMAC signature invalid"
-                    )
+                    errors.append(f"Entry {entry.entry_id}: HMAC signature invalid")
 
         is_valid = len(errors) == 0
         return is_valid, errors
@@ -397,9 +380,7 @@ class AuditLog:
         """
         with self._lock:
             self._check_closed()
-            cur = self._conn.execute(
-                "SELECT * FROM audit_entries WHERE entry_id = ?;", (entry_id,)
-            )
+            cur = self._conn.execute("SELECT * FROM audit_entries WHERE entry_id = ?;", (entry_id,))
             row = cur.fetchone()
             if row is None:
                 return None
@@ -496,8 +477,7 @@ class AuditLog:
             recomputed = compute_entry_hash(entry)
             if recomputed != entry.entry_hash:
                 return False, (
-                    f"Entry {entry.entry_id}: entry_hash mismatch "
-                    f"(expected {recomputed}, got {entry.entry_hash})"
+                    f"Entry {entry.entry_id}: entry_hash mismatch (expected {recomputed}, got {entry.entry_hash})"
                 )
 
             if entry.hmac_signature is not None and self._hmac_key is not None:

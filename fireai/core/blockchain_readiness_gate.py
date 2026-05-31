@@ -53,9 +53,8 @@ Usage:
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 # ============================================================================
 # Constants
@@ -74,6 +73,7 @@ NFPA 72 compliance."""
 # Helper Functions
 # ============================================================================
 
+
 def _sha256_hex(data: str) -> str:
     """Compute SHA-256 hex digest of a string."""
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
@@ -91,6 +91,7 @@ def _hash_pair(left: str, right: str) -> str:
 # Merkle Proof
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class MerkleProof:
     """Merkle inclusion proof per RFC 6962 §2.1.1.
@@ -105,6 +106,7 @@ class MerkleProof:
         siblings: List of sibling hashes from bottom to top.
         merkle_root: Expected root hash for verification.
     """
+
     leaf_index: int
     leaf_hash: str
     siblings: Tuple[str, ...]
@@ -140,10 +142,10 @@ class MerkleProof:
 # Need to import Tuple for the frozen dataclass
 from typing import Tuple
 
-
 # ============================================================================
 # Merkle Tree
 # ============================================================================
+
 
 class MerkleTree:
     """Merkle tree implementation per RFC 6962 §2.1.
@@ -251,9 +253,7 @@ class MerkleTree:
             IndexError: If index is out of range.
         """
         if index < 0 or index >= len(self._leaves):
-            raise IndexError(
-                f"Leaf index {index} out of range [0, {len(self._leaves)})"
-            )
+            raise IndexError(f"Leaf index {index} out of range [0, {len(self._leaves)})")
 
         siblings: List[str] = []
         current_index = index
@@ -297,6 +297,7 @@ class MerkleTree:
 # ============================================================================
 # Blockchain Readiness Gate
 # ============================================================================
+
 
 class BlockchainReadinessGate:
     """Readiness gate using Merkle tree for design manifest integrity.

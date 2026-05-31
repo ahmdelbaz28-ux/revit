@@ -28,66 +28,62 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from fireai.core.qomn_kernel import (
-    QOMNKernel,
-    PhysicsGuardError,
-    guard_ceiling_height_m,
-    guard_area_m2,
-    compute_smoke_detector_spacing,
-    compute_heat_detector_spacing,
-    NFPA72_SMOKE_MAX_SPACING_M,
-    NFPA72_HEAT_MAX_SPACING_M,
-    NFPA72_PULL_STATION_HEIGHT_M,
-    NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M,
-    NFPA72_PULL_STATION_FROM_EXIT_M,
-    NFPA72_NAC_WALL_HEIGHT_M,
     NFPA72_NAC_MIN_CD,
     NFPA72_NAC_SLEEPING_MIN_CD,
-    NFPA72_COVERAGE_RADIUS_FACTOR,
+    NFPA72_NAC_WALL_HEIGHT_M,
+    NFPA72_PULL_STATION_FROM_EXIT_M,
+    NFPA72_PULL_STATION_HEIGHT_M,
+    PhysicsGuardError,
+    QOMNKernel,
+    compute_heat_detector_spacing,
+    guard_ceiling_height_m,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENUMERATIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class DetectorType(str, Enum):
-    SMOKE     = "smoke"
-    HEAT      = "heat"
-    DUCT      = "duct"
-    BEAM      = "beam"
+    SMOKE = "smoke"
+    HEAT = "heat"
+    DUCT = "duct"
+    BEAM = "beam"
     ASPIRATING = "aspirating"
-    MULTI     = "multi"
+    MULTI = "multi"
 
 
 class OccupancyType(str, Enum):
     """Occupancy types per NFPA 101-2021."""
-    ASSEMBLY     = "assembly"
-    BUSINESS     = "business"
-    EDUCATIONAL  = "educational"
-    HEALTH_CARE  = "health_care"
-    RESIDENTIAL  = "residential"
-    MERCANTILE   = "mercantile"
-    INDUSTRIAL   = "industrial"
-    STORAGE      = "storage"
+
+    ASSEMBLY = "assembly"
+    BUSINESS = "business"
+    EDUCATIONAL = "educational"
+    HEALTH_CARE = "health_care"
+    RESIDENTIAL = "residential"
+    MERCANTILE = "mercantile"
+    INDUSTRIAL = "industrial"
+    STORAGE = "storage"
     SPECIAL_PURPOSE = "special_purpose"
-    HIGH_HAZARD  = "high_hazard"
+    HIGH_HAZARD = "high_hazard"
 
 
 class CeilingType(str, Enum):
-    FLAT      = "flat"
-    SLOPED    = "sloped"
-    PEAKED    = "peaked"
-    BEAM      = "beam"
-    COFFERED  = "coffered"
+    FLAT = "flat"
+    SLOPED = "sloped"
+    PEAKED = "peaked"
+    BEAM = "beam"
+    COFFERED = "coffered"
     OPEN_JOIST = "open_joist"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ROOM SPECIFICATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class BeamObstruction:
@@ -96,11 +92,12 @@ class BeamObstruction:
     Rule: if beam_depth > 0.10 × ceiling_height, treat beam as wall.
     Source: NFPA 72-2022 §17.7.3.2.7
     """
+
     x_start_m: float
     y_start_m: float
-    x_end_m:   float
-    y_end_m:   float
-    depth_m:   float    # beam depth (hanging below ceiling surface)
+    x_end_m: float
+    y_end_m: float
+    depth_m: float  # beam depth (hanging below ceiling surface)
 
 
 @dataclass
@@ -109,9 +106,10 @@ class ExitDoor:
 
     Source: NFPA 72-2022 §17.15.3
     """
+
     x_m: float
     y_m: float
-    door_width_m: float = 0.914   # 3 ft standard
+    door_width_m: float = 0.914  # 3 ft standard
 
 
 @dataclass
@@ -120,17 +118,18 @@ class RoomSpec:
 
     All coordinates in meters from room origin (0,0).
     """
-    room_id:          str
-    width_m:          float
-    length_m:         float
+
+    room_id: str
+    width_m: float
+    length_m: float
     ceiling_height_m: float
-    ceiling_type:     CeilingType        = CeilingType.FLAT
-    occupancy_type:   OccupancyType      = OccupancyType.BUSINESS
-    is_sleeping_area: bool               = False
-    slope_degrees:    float              = 0.0   # for sloped ceilings
-    beams:            List[BeamObstruction] = field(default_factory=list)
-    exit_doors:       List[ExitDoor]        = field(default_factory=list)
-    detector_type:    DetectorType       = DetectorType.SMOKE
+    ceiling_type: CeilingType = CeilingType.FLAT
+    occupancy_type: OccupancyType = OccupancyType.BUSINESS
+    is_sleeping_area: bool = False
+    slope_degrees: float = 0.0  # for sloped ceilings
+    beams: List[BeamObstruction] = field(default_factory=list)
+    exit_doors: List[ExitDoor] = field(default_factory=list)
+    detector_type: DetectorType = DetectorType.SMOKE
 
     @property
     def area_m2(self) -> float:
@@ -141,14 +140,14 @@ class RoomSpec:
         guard_ceiling_height_m(self.ceiling_height_m)
         if self.width_m <= 0 or self.length_m <= 0:
             raise PhysicsGuardError(
-                "room_dimensions", f"{self.width_m}×{self.length_m}",
-                "room dimensions must be > 0", "Physics"
+                "room_dimensions", f"{self.width_m}×{self.length_m}", "room dimensions must be > 0", "Physics"
             )
         if self.slope_degrees < 0 or self.slope_degrees > 45:
             raise PhysicsGuardError(
-                "slope_degrees", self.slope_degrees,
+                "slope_degrees",
+                self.slope_degrees,
                 "slope must be 0–45°; steeper slopes require special engineering",
-                "NFPA 72-2022 §17.7.3.2.5"
+                "NFPA 72-2022 §17.7.3.2.5",
             )
 
 
@@ -156,28 +155,31 @@ class RoomSpec:
 # PLACED DEVICE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class PlacedDevice:
     """A placed fire alarm device with its engineering justification."""
-    device_id:       str
-    device_type:     DetectorType
-    x_m:             float
-    y_m:             float
-    z_m:             float      # mounting height AFF
-    spacing_used_m:  float
-    radius_m:        float
-    nfpa_section:    str
-    formula:         str
-    beam_section:    Optional[str] = None   # Beam sub-section if applicable
+
+    device_id: str
+    device_type: DetectorType
+    x_m: float
+    y_m: float
+    z_m: float  # mounting height AFF
+    spacing_used_m: float
+    radius_m: float
+    nfpa_section: str
+    formula: str
+    beam_section: Optional[str] = None  # Beam sub-section if applicable
 
 
 @dataclass
 class PlacedPullStation:
     """Placed manual pull station."""
-    device_id:    str
-    x_m:          float
-    y_m:          float
-    z_m:          float   # = NFPA72_PULL_STATION_HEIGHT_M (48" AFF)
+
+    device_id: str
+    x_m: float
+    y_m: float
+    z_m: float  # = NFPA72_PULL_STATION_HEIGHT_M (48" AFF)
     near_exit_id: str
     nfpa_section: str = "NFPA 72-2022 §17.15"
 
@@ -185,33 +187,36 @@ class PlacedPullStation:
 @dataclass
 class PlacedNotificationAppliance:
     """Placed strobe/horn notification appliance."""
-    device_id:      str
-    x_m:            float
-    y_m:            float
-    z_m:            float        # = NFPA72_NAC_WALL_HEIGHT_M (80" AFF)
-    candela:        int
-    is_combo:       bool = False  # combined horn+strobe
-    nfpa_section:   str = "NFPA 72-2022 Chapter 18"
+
+    device_id: str
+    x_m: float
+    y_m: float
+    z_m: float  # = NFPA72_NAC_WALL_HEIGHT_M (80" AFF)
+    candela: int
+    is_combo: bool = False  # combined horn+strobe
+    nfpa_section: str = "NFPA 72-2022 Chapter 18"
 
 
 @dataclass
 class PlacementResult:
     """Complete placement result for a room."""
-    room_id:              str
-    detectors:            List[PlacedDevice]
-    pull_stations:        List[PlacedPullStation]
+
+    room_id: str
+    detectors: List[PlacedDevice]
+    pull_stations: List[PlacedPullStation]
     notification_appliances: List[PlacedNotificationAppliance]
-    coverage_pct:         float
-    beam_sections:        int     # Number of beam-separated sections
-    is_fully_compliant:   bool
-    violations:           List[str]
-    nfpa_references:      List[str]
-    computation_hash:     str
+    coverage_pct: float
+    beam_sections: int  # Number of beam-separated sections
+    is_fully_compliant: bool
+    violations: List[str]
+    nfpa_references: List[str]
+    computation_hash: str
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DETECTOR PLACEMENT ENGINE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class DetectorPlacementEngine:
     """NFPA 72-2022 compliant detector placement.
@@ -246,20 +251,22 @@ class DetectorPlacementEngine:
         detectors: List[PlacedDevice] = []
 
         # ── Compute spacing ────────────────────────────────────────────────────
-        if room.detector_type in (DetectorType.SMOKE, DetectorType.DUCT,
-                                   DetectorType.BEAM, DetectorType.ASPIRATING,
-                                   DetectorType.MULTI):
+        if room.detector_type in (
+            DetectorType.SMOKE,
+            DetectorType.DUCT,
+            DetectorType.BEAM,
+            DetectorType.ASPIRATING,
+            DetectorType.MULTI,
+        ):
             spacing_result = self._kernel.smoke_detector_spacing(room.ceiling_height_m)
             nfpa_refs.append("NFPA 72-2022 §17.7.3 / Table 17.6.3.1")
         else:  # HEAT
-            spacing_result = compute_heat_detector_spacing(
-                room.ceiling_height_m, room.area_m2
-            )
+            spacing_result = compute_heat_detector_spacing(room.ceiling_height_m, room.area_m2)
             nfpa_refs.append("NFPA 72-2022 §17.6.3.1")
 
         S = spacing_result.get("listed_spacing_m") or spacing_result.get("spacing_m")
         R = spacing_result.get("coverage_radius_m")
-        wall_min = spacing_result.get("wall_min_m", 0.305)   # default 0.3m
+        wall_min = spacing_result.get("wall_min_m", 0.305)  # default 0.3m
 
         # ── Beam obstruction check ─────────────────────────────────────────────
         beam_sections = self._check_beam_obstructions(room, S)
@@ -294,26 +301,31 @@ class DetectorPlacementEngine:
             nfpa_refs.append("NFPA 72-2022 Chapter 18")
 
         # ── Compute result hash ────────────────────────────────────────────────
-        import hashlib, json
-        hash_data = json.dumps({
-            "room_id": room.room_id,
-            "detector_count": len(detectors),
-            "coverage_pct": coverage_pct,
-            "spacing_m": S,
-        }, sort_keys=True)
+        import hashlib
+        import json
+
+        hash_data = json.dumps(
+            {
+                "room_id": room.room_id,
+                "detector_count": len(detectors),
+                "coverage_pct": coverage_pct,
+                "spacing_m": S,
+            },
+            sort_keys=True,
+        )
         result_hash = hashlib.sha256(hash_data.encode()).hexdigest()[:24]
 
         return PlacementResult(
-            room_id                  = room.room_id,
-            detectors                = detectors,
-            pull_stations            = pull_stations,
-            notification_appliances  = notifs,
-            coverage_pct             = coverage_pct,
-            beam_sections            = beam_sections,
-            is_fully_compliant       = len(violations) == 0,
-            violations               = violations,
-            nfpa_references          = list(set(nfpa_refs)),
-            computation_hash         = result_hash,
+            room_id=room.room_id,
+            detectors=detectors,
+            pull_stations=pull_stations,
+            notification_appliances=notifs,
+            coverage_pct=coverage_pct,
+            beam_sections=beam_sections,
+            is_fully_compliant=len(violations) == 0,
+            violations=violations,
+            nfpa_references=list(set(nfpa_refs)),
+            computation_hash=result_hash,
         )
 
     def _hex_grid_placement(
@@ -332,7 +344,7 @@ class DetectorPlacementEngine:
         Source: NFPA 72-2022 §17.7.3 / §17.7.4.2.3.1
         """
         devices: List[PlacedDevice] = []
-        row_height = spacing_m * (math.sqrt(3) / 2.0)   # hex row spacing
+        row_height = spacing_m * (math.sqrt(3) / 2.0)  # hex row spacing
         device_num = 1
 
         y = wall_min_m
@@ -342,17 +354,19 @@ class DetectorPlacementEngine:
             x = wall_min_m + offset
             while x <= room.width_m - wall_min_m:
                 if self._point_in_room(x, y, room):
-                    devices.append(PlacedDevice(
-                        device_id      = f"{room.room_id}-D{device_num:03d}",
-                        device_type    = room.detector_type,
-                        x_m            = round(x, 4),
-                        y_m            = round(y, 4),
-                        z_m            = round(room.ceiling_height_m - 0.05, 4),
-                        spacing_used_m = spacing_m,
-                        radius_m       = radius_m,
-                        nfpa_section   = "NFPA 72-2022 §17.7.4.2.3.1",
-                        formula        = f"Hex grid: S={spacing_m:.3f}m, R={radius_m:.3f}m",
-                    ))
+                    devices.append(
+                        PlacedDevice(
+                            device_id=f"{room.room_id}-D{device_num:03d}",
+                            device_type=room.detector_type,
+                            x_m=round(x, 4),
+                            y_m=round(y, 4),
+                            z_m=round(room.ceiling_height_m - 0.05, 4),
+                            spacing_used_m=spacing_m,
+                            radius_m=radius_m,
+                            nfpa_section="NFPA 72-2022 §17.7.4.2.3.1",
+                            formula=f"Hex grid: S={spacing_m:.3f}m, R={radius_m:.3f}m",
+                        )
+                    )
                     device_num += 1
                 x += spacing_m
             y += row_height
@@ -362,17 +376,19 @@ class DetectorPlacementEngine:
         if not devices:
             cx = room.width_m / 2.0
             cy = room.length_m / 2.0
-            devices.append(PlacedDevice(
-                device_id      = f"{room.room_id}-D001",
-                device_type    = room.detector_type,
-                x_m            = round(cx, 4),
-                y_m            = round(cy, 4),
-                z_m            = round(room.ceiling_height_m - 0.05, 4),
-                spacing_used_m = spacing_m,
-                radius_m       = radius_m,
-                nfpa_section   = "NFPA 72-2022 §17.7.4.2.3.1",
-                formula        = "Centroid placement (small room)",
-            ))
+            devices.append(
+                PlacedDevice(
+                    device_id=f"{room.room_id}-D001",
+                    device_type=room.detector_type,
+                    x_m=round(cx, 4),
+                    y_m=round(cy, 4),
+                    z_m=round(room.ceiling_height_m - 0.05, 4),
+                    spacing_used_m=spacing_m,
+                    radius_m=radius_m,
+                    nfpa_section="NFPA 72-2022 §17.7.4.2.3.1",
+                    formula="Centroid placement (small room)",
+                )
+            )
 
         return devices
 
@@ -386,11 +402,11 @@ class DetectorPlacementEngine:
         Rule: beam_depth > 0.10 × ceiling_height → treat as wall.
         Source: NFPA 72-2022 §17.7.3.2.7
         """
-        threshold = 0.10 * room.ceiling_height_m   # 10% of ceiling height
+        threshold = 0.10 * room.ceiling_height_m  # 10% of ceiling height
         sections = 0
         for beam in room.beams:
             if beam.depth_m > threshold:
-                sections += 1   # Each qualifying beam creates separate section
+                sections += 1  # Each qualifying beam creates separate section
         return sections
 
     def _verify_coverage(
@@ -438,21 +454,20 @@ class DetectorPlacementEngine:
         """
         stations: List[PlacedPullStation] = []
         for i, exit_door in enumerate(room.exit_doors):
-            x = min(exit_door.x_m + NFPA72_PULL_STATION_FROM_EXIT_M,
-                    room.width_m - 0.1)
-            stations.append(PlacedPullStation(
-                device_id    = f"{room.room_id}-MPS{i+1:02d}",
-                x_m          = round(x, 4),
-                y_m          = round(exit_door.y_m, 4),
-                z_m          = NFPA72_PULL_STATION_HEIGHT_M,
-                near_exit_id = f"EXIT-{i+1}",
-                nfpa_section = "NFPA 72-2022 §17.15",
-            ))
+            x = min(exit_door.x_m + NFPA72_PULL_STATION_FROM_EXIT_M, room.width_m - 0.1)
+            stations.append(
+                PlacedPullStation(
+                    device_id=f"{room.room_id}-MPS{i + 1:02d}",
+                    x_m=round(x, 4),
+                    y_m=round(exit_door.y_m, 4),
+                    z_m=NFPA72_PULL_STATION_HEIGHT_M,
+                    near_exit_id=f"EXIT-{i + 1}",
+                    nfpa_section="NFPA 72-2022 §17.15",
+                )
+            )
         return stations
 
-    def _place_notification_appliances(
-        self, room: RoomSpec
-    ) -> List[PlacedNotificationAppliance]:
+    def _place_notification_appliances(self, room: RoomSpec) -> List[PlacedNotificationAppliance]:
         """Place strobes/horns per NFPA 72 Chapter 18.
 
         Candela: 75 cd minimum, 177 cd for sleeping areas.
@@ -464,21 +479,23 @@ class DetectorPlacementEngine:
 
         # Place one appliance per wall facing (minimum)
         positions = [
-            (room.width_m / 4.0,       0.305),   # south wall
-            (3 * room.width_m / 4.0,   0.305),   # south wall #2
-            (room.width_m / 2.0,       room.length_m - 0.305),  # north wall
+            (room.width_m / 4.0, 0.305),  # south wall
+            (3 * room.width_m / 4.0, 0.305),  # south wall #2
+            (room.width_m / 2.0, room.length_m - 0.305),  # north wall
         ]
 
         for i, (x, y) in enumerate(positions):
-            appliances.append(PlacedNotificationAppliance(
-                device_id    = f"{room.room_id}-NAC{i+1:02d}",
-                x_m          = round(x, 4),
-                y_m          = round(y, 4),
-                z_m          = NFPA72_NAC_WALL_HEIGHT_M,
-                candela      = cd,
-                is_combo     = True,   # default: combo horn+strobe
-                nfpa_section = "NFPA 72-2022 §18.5",
-            ))
+            appliances.append(
+                PlacedNotificationAppliance(
+                    device_id=f"{room.room_id}-NAC{i + 1:02d}",
+                    x_m=round(x, 4),
+                    y_m=round(y, 4),
+                    z_m=NFPA72_NAC_WALL_HEIGHT_M,
+                    candela=cd,
+                    is_combo=True,  # default: combo horn+strobe
+                    nfpa_section="NFPA 72-2022 §18.5",
+                )
+            )
 
         return appliances
 
@@ -488,6 +505,7 @@ class DetectorPlacementEngine:
 # Source: NFPA 72-2022 §17.7.4
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class DuctDetectorSpec:
     """Duct smoke detector specification.
@@ -495,10 +513,11 @@ class DuctDetectorSpec:
     Placed in supply and return air ducts to detect smoke in HVAC.
     Source: NFPA 72-2022 §17.7.4
     """
-    duct_id:        str
-    width_m:        float
-    height_m:       float    # duct cross-section height
-    velocity_m_s:   float    # air velocity in duct
+
+    duct_id: str
+    width_m: float
+    height_m: float  # duct cross-section height
+    velocity_m_s: float  # air velocity in duct
 
 
 def place_duct_detector(spec: DuctDetectorSpec) -> Dict[str, Any]:
@@ -513,23 +532,23 @@ def place_duct_detector(spec: DuctDetectorSpec) -> Dict[str, Any]:
     """
     v = spec.velocity_m_s
     if not math.isfinite(v) or v <= 0:
-        raise PhysicsGuardError(
-            "velocity_m_s", v, "air velocity must be > 0", "NFPA 72-2022 §17.7.4.2.2"
-        )
+        raise PhysicsGuardError("velocity_m_s", v, "air velocity must be > 0", "NFPA 72-2022 §17.7.4.2.2")
 
-    MIN_VEL = 0.305   # 60 fpm
-    MAX_VEL = 15.24   # 3000 fpm
+    MIN_VEL = 0.305  # 60 fpm
+    MAX_VEL = 15.24  # 3000 fpm
     if v < MIN_VEL:
         raise PhysicsGuardError(
-            "velocity_m_s", f"{v:.3f}m/s",
+            "velocity_m_s",
+            f"{v:.3f}m/s",
             f"below minimum {MIN_VEL}m/s (60 fpm). Detector may not respond.",
-            "NFPA 72-2022 §17.7.4.2.2"
+            "NFPA 72-2022 §17.7.4.2.2",
         )
     if v > MAX_VEL:
         raise PhysicsGuardError(
-            "velocity_m_s", f"{v:.3f}m/s",
+            "velocity_m_s",
+            f"{v:.3f}m/s",
             f"exceeds maximum {MAX_VEL}m/s (3000 fpm). Detector may false alarm.",
-            "NFPA 72-2022 §17.7.4.2.2"
+            "NFPA 72-2022 §17.7.4.2.2",
         )
 
     # Number of detectors based on duct width
@@ -542,10 +561,10 @@ def place_duct_detector(spec: DuctDetectorSpec) -> Dict[str, Any]:
         n_detectors = math.ceil(W / 0.914) + 1
 
     return {
-        "duct_id":          spec.duct_id,
-        "n_detectors":      n_detectors,
-        "duct_width_m":     W,
+        "duct_id": spec.duct_id,
+        "n_detectors": n_detectors,
+        "duct_width_m": W,
         "air_velocity_m_s": v,
-        "nfpa_section":     "NFPA 72-2022 §17.7.4",
-        "compliance_note":  f"{n_detectors} detector(s) required for {W:.3f}m width duct",
+        "nfpa_section": "NFPA 72-2022 §17.7.4",
+        "compliance_note": f"{n_detectors} detector(s) required for {W:.3f}m width duct",
     }

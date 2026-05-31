@@ -29,8 +29,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTS
@@ -40,8 +38,8 @@ from typing import Any, Dict, Optional
 _RESPONSE_TIME_SAFETY_MARGIN = 0.25
 
 # Typical RTI values for heat detectors (m^0.5 × s^0.5)
-_RTI_SPOT_HEAT_LOW  = 15.0   # Fast-response spot heat detector
-_RTI_SPOT_HEAT_MED  = 50.0   # Standard spot heat detector
+_RTI_SPOT_HEAT_LOW = 15.0  # Fast-response spot heat detector
+_RTI_SPOT_HEAT_MED = 50.0  # Standard spot heat detector
 _RTI_SPOT_HEAT_HIGH = 120.0  # Slow spot heat detector
 
 # Smoke detector typical response velocities (m/s)
@@ -84,16 +82,17 @@ class DetectorResponseResult:
         ceiling_height_m:    Ceiling height
         nfpa_section:        NFPA 72 reference
     """
-    activation_time_s:   float
-    safety_margin_s:     float
-    total_with_margin:   float
-    activation_possible: bool = True   # V96 FIX: explicit flag for inf results
-    model_used:          str = ""
-    detector_type:       str = ""
-    fire_hrr_kw:         float = 0.0
-    distance_to_fire_m:  float = 0.0
-    ceiling_height_m:    float = 0.0
-    nfpa_section:        str = ""
+
+    activation_time_s: float
+    safety_margin_s: float
+    total_with_margin: float
+    activation_possible: bool = True  # V96 FIX: explicit flag for inf results
+    model_used: str = ""
+    detector_type: str = ""
+    fire_hrr_kw: float = 0.0
+    distance_to_fire_m: float = 0.0
+    ceiling_height_m: float = 0.0
+    nfpa_section: str = ""
 
 
 def calculate_heat_detector_response(
@@ -162,10 +161,10 @@ def calculate_heat_detector_response(
     # Using simplified form for engineering estimates
     if r <= 0.2 * H:
         # Near plume center
-        delta_T = 16.9 * (Q ** (2.0/3.0)) / (H ** (5.0/3.0))
+        delta_T = 16.9 * (Q ** (2.0 / 3.0)) / (H ** (5.0 / 3.0))
     else:
         # Away from plume
-        delta_T = 5.38 * ((Q / r) ** (2.0/3.0)) / H
+        delta_T = 5.38 * ((Q / r) ** (2.0 / 3.0)) / H
 
     # Ceiling jet temperature
     T_gas = ambient_temp_c + delta_T
@@ -175,9 +174,9 @@ def calculate_heat_detector_response(
         # V96 FIX: Set activation_possible=False so downstream code can
         # detect non-activation without checking for float('inf').
         return DetectorResponseResult(
-            activation_time_s=float('inf'),
-            safety_margin_s=float('inf'),
-            total_with_margin=float('inf'),
+            activation_time_s=float("inf"),
+            safety_margin_s=float("inf"),
+            total_with_margin=float("inf"),
             activation_possible=False,
             model_used="Alpert_ceiling_jet_RTI",
             detector_type="heat",
@@ -189,20 +188,20 @@ def calculate_heat_detector_response(
 
     # Ceiling jet velocity (Alpert)
     if r <= 0.2 * H:
-        u = 0.96 * (Q / H) ** (1.0/3.0)
+        u = 0.96 * (Q / H) ** (1.0 / 3.0)
     else:
-        u = 0.2 * (Q ** (1.0/3.0) / H ** (1.0/2.0)) * (H / r) ** (1.0/6.0)
+        u = 0.2 * (Q ** (1.0 / 3.0) / H ** (1.0 / 2.0)) * (H / r) ** (1.0 / 6.0)
 
     # RTI model: simplified activation time
     # t = RTI / sqrt(u) × ln((T_gas - T_amb) / (T_gas - T_act))
     if u > 0:
         denominator = T_gas - activation_temp_c
         if denominator <= 0:
-            activation_time = float('inf')
+            activation_time = float("inf")
         else:
             activation_time = (rti / math.sqrt(u)) * math.log(delta_T / denominator)
     else:
-        activation_time = float('inf')
+        activation_time = float("inf")
 
     # Ensure non-negative
     activation_time = max(0.0, activation_time)
@@ -270,16 +269,16 @@ def calculate_smoke_detector_response(
 
     # Plume centerline velocity at ceiling (Zukoski model)
     # u_plume = 1.2 × (Q/H)^(1/3)
-    u_plume = 1.2 * (Q / H) ** (1.0/3.0)
+    u_plume = 1.2 * (Q / H) ** (1.0 / 3.0)
 
     # Time for smoke to reach ceiling
     t_plume = H / max(u_plume, 0.01)
 
     # Ceiling jet velocity (Alpert)
     if r <= 0.2 * H:
-        u_cj = 0.96 * (Q / H) ** (1.0/3.0)
+        u_cj = 0.96 * (Q / H) ** (1.0 / 3.0)
     else:
-        u_cj = 0.2 * (Q ** (1.0/3.0) / H ** (1.0/2.0)) * (H / max(r, 0.01)) ** (1.0/6.0)
+        u_cj = 0.2 * (Q ** (1.0 / 3.0) / H ** (1.0 / 2.0)) * (H / max(r, 0.01)) ** (1.0 / 6.0)
 
     # Ceiling jet transport time
     t_transport = r / max(u_cj, 0.01)

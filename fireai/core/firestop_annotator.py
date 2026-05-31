@@ -21,13 +21,14 @@ Safety:
   - Every penetration point is marked with a diamond symbol and
     "FIRESTOP REQ'D [IBC 714]" text annotation.
 """
+
 from __future__ import annotations
 
-import ezdxf
-from typing import List, Tuple, Any
+from typing import Any, List, Tuple
 
 try:
     from shapely.geometry import LineString, Polygon
+
     SHAPELY_AVAILABLE = True
 except ImportError:
     SHAPELY_AVAILABLE = False
@@ -75,9 +76,9 @@ class FirestoppingAnnotator:
         for wall in self.fire_lines:
             if cable_path.intersects(wall):
                 intersections = cable_path.intersection(wall)
-                if intersections.geom_type == 'Point':
+                if intersections.geom_type == "Point":
                     penetration_coords.append((intersections.x, intersections.y))
-                elif intersections.geom_type == 'MultiPoint':
+                elif intersections.geom_type == "MultiPoint":
                     for point in intersections.geoms:
                         penetration_coords.append((point.x, point.y))
 

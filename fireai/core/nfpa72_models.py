@@ -17,22 +17,25 @@ V9 CHANGES (2026-05-14):
 - Added CeilingSpec.create_safe() factory method (clamps + warns)
 - create_safe() is now the recommended production constructor
 """
+
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import ClassVar, List, Tuple, Optional
+from typing import ClassVar, List, Optional, Tuple
+
 from shapely.geometry import Polygon as ShapelyPolygon
 
 logger = logging.getLogger(__name__)
 
 # Constants
-_NFPA_HEIGHT_MIN_M = 3.0   # NFPA 72 min ceiling height
+_NFPA_HEIGHT_MIN_M = 3.0  # NFPA 72 min ceiling height
 _NFPA_HEIGHT_MAX_M = 15.24  # NFPA 72 max ceiling height
 MIN_WALL_DISTANCE_M = 0.10  # 4 inches per NFPA 72 §17.6.3.1.1
 MAX_DIMENSION_M = 1000.0  # Max room dimension in meters
 MAX_POLYGON_VERTICES = 5000  # Max polygon vertices
 MAX_STRING_LENGTH = 200  # Max string input length
 import math
+
 
 # ============================================================================
 # INPUT SANITIZATION
@@ -47,14 +50,15 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
     if len(value) > effective_max:
         raise ValueError(f"Input too long (max {effective_max} characters)")
     # Check for SQL injection patterns
-    dangerous = {'\0', '\n', '\r', '\t', ';', '\'', '"', '\\', '\x00', '\x01', '\x02'}
+    dangerous = {"\0", "\n", "\r", "\t", ";", "'", '"', "\\", "\x01", "\x02"}
     for ch in dangerous:
         if ch in value:
             raise ValueError("Input contains invalid characters")
     # Check for SQL comment --
-    if '--' in value:
+    if "--" in value:
         raise ValueError("Input contains invalid sequence '--'")
     return value
+
 
 # ============================================================================
 # ENUMS - Detector Types and Modes
@@ -67,8 +71,8 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
 # contracts.py CeilingType includes all values from both files.
 # ============================================================================
 
-from fireai.core.contracts import DetectorType as _DetectorTypeFromContracts
 from fireai.core.contracts import CeilingType as _CeilingTypeFromContracts
+from fireai.core.contracts import DetectorType as _DetectorTypeFromContracts
 
 # Re-export for backward compatibility — existing code that does
 # `from fireai.core.nfpa72_models import DetectorType` still works.
@@ -76,7 +80,7 @@ DetectorType = _DetectorTypeFromContracts
 
 # Add missing members that exist in the old local enum but not in contracts
 # These are added as aliases to existing members
-if not hasattr(DetectorType, 'HEAT_FIXED_TEMP'):
+if not hasattr(DetectorType, "HEAT_FIXED_TEMP"):
     # HEAT_FIXED_TEMP is an alias for HEAT_FIXED (same NFPA 72 category)
     # We cannot add members to an Enum after creation, so we create a
     # compatibility wrapper that maps HEAT_FIXED_TEMP -> HEAT_FIXED
@@ -85,41 +89,63 @@ if not hasattr(DetectorType, 'HEAT_FIXED_TEMP'):
 # CeilingType — re-export from contracts
 CeilingType = _CeilingTypeFromContracts
 
+
 # CoverageGeometry and HeatDetectionMode are ONLY in this module
 # (they are not duplicated in contracts.py), so they stay here.
 class CoverageGeometry(Enum):
     """Coverage geometry types per NFPA 72"""
+
     CIRCULAR = "circular"
     SQUARE_GRID = "square_grid"
+
+
 class HeatDetectionMode(Enum):
     """Heat detector detection modes"""
+
     CIRCULAR = "circular"  # Euclidean (for smoke)
     SQUARE_GRID = "square_grid"  # Chebyshev (for heat)
+
 
 # ============================================================================
 # EXCEPTIONS - NFPA Compliance Errors
 # ============================================================================
 class NFPAComplianceError(Exception):
     """Base exception for NFPA compliance violations"""
+
     pass
+
+
 class CeilingHeightError(NFPAComplianceError):
     """Raised when ceiling height is outside NFPA 72 limits"""
+
     pass
+
+
 class CoverageError(NFPAComplianceError):
     """Raised when detector coverage is insufficient"""
+
     pass
+
+
 class SpacingError(NFPAComplianceError):
     """Raised when detector spacing violates NFPA 72"""
+
     pass
+
+
 class RidgeZoneError(NFPAComplianceError):
     """Raised when sloped ceiling lacks ridge zone detector"""
+
     pass
+
+
 # ============================================================================
 # DATACLASSES - Core Models
 # ============================================================================
 @dataclass
 class CeilingSpec:
     """Ceiling specification with height and slope"""
+
     height_at_low_point_m: float
     height_at_high_point_m: Optional[float] = None
     ceiling_type: CeilingType = CeilingType.FLAT
@@ -129,16 +155,17 @@ class CeilingSpec:
     original_height_m: Optional[float] = None
     beam_depth_m: float = 0.0
     beam_spacing_m: float = 0.0
+
     def __post_init__(self):
         # ===== STRICT VALIDATION = FAIL FAST =====
         errors = []
-        
+
         h_low = self.height_at_low_point_m
         if not isinstance(h_low, (int, float)):
             errors.append("height_at_low_point_m must be a number")
         elif h_low <= 0 or not math.isfinite(h_low):
             errors.append(f"height_at_low_point_m must be > 0 and finite, got {h_low}")
-        
+
         if self.height_at_high_point_m is not None:
             h_high = self.height_at_high_point_m
             if not isinstance(h_high, (int, float)):
@@ -147,13 +174,13 @@ class CeilingSpec:
                 errors.append(f"height_at_high_point_m must be > 0 and finite, got {h_high}")
             elif h_high < h_low:
                 errors.append(f"height_at_high_point_m ({h_high}) < low point ({h_low})")
-        
+
         if self.ceiling_type is None or not isinstance(self.ceiling_type, CeilingType):
             errors.append("ceiling_type must be CeilingType enum")
-        
+
         if errors:
             raise CeilingHeightError("CeilingSpec validation failed: " + "; ".join(errors))
-        
+
         # NFPA 72 - FAIL FAST: reject heights outside normative range
         # Only CeilingSpec.create_safe() is allowed to clamp
         if h_low < _NFPA_HEIGHT_MIN_M or h_low > _NFPA_HEIGHT_MAX_M:
@@ -162,7 +189,7 @@ class CeilingSpec:
                 f"[{_NFPA_HEIGHT_MIN_M}, {_NFPA_HEIGHT_MAX_M}] m. "
                 f"Use CeilingSpec.create_safe() for automatic clamping."
             )
-        
+
         if self.height_at_high_point_m and self.height_at_high_point_m > self.height_at_low_point_m:
             run = 3.0
             rise = self.height_at_high_point_m - self.height_at_low_point_m
@@ -185,6 +212,7 @@ class CeilingSpec:
         A negative or zero height raises ValueError (physically impossible).
         """
         import logging
+
         logger = logging.getLogger("fireai.nfpa72.models")
 
         MIN_HEIGHT = _NFPA_HEIGHT_MIN_M
@@ -207,7 +235,11 @@ class CeilingSpec:
                 f"— clamped to {MAX_HEIGHT}m. Review with licensed PE."
             )
 
-        kwargs = {"height_at_low_point_m": clamped, "original_height_m": height_at_low_point_m, "was_clamped": height_at_low_point_m != clamped}
+        kwargs = {
+            "height_at_low_point_m": clamped,
+            "original_height_m": height_at_low_point_m,
+            "was_clamped": height_at_low_point_m != clamped,
+        }
         if height_at_high_point_m is not None:
             kwargs["height_at_high_point_m"] = height_at_high_point_m
         if ceiling_type is not None:
@@ -219,14 +251,17 @@ class CeilingSpec:
             kwargs["beam_spacing_m"] = beam_spacing_m
 
         return cls(**kwargs)
+
     @property
     def height_m(self) -> float:
         """Get ceiling height (low point)"""
         return self.height_at_low_point_m
+
     @property
     def is_sloped(self) -> bool:
         """Check if ceiling is sloped (>1.5 degrees)"""
         return self.slope_degrees > 1.5
+
     @property
     def ridge_line(self) -> Optional[Tuple[float, float, float, float]]:
         """Get ridge line for gable/shed ceiling (x1, y1, x2, y2)"""
@@ -235,18 +270,22 @@ class CeilingSpec:
             return (0, 0, 10, 0)  # Placeholder
         return None
 
+
 @dataclass
 class HVACDuct:
     """HVAC Duct for smoke detection placement"""
+
     duct_id: str = ""
     centerline: list = field(default_factory=list)
     width_m: float = 0.3
     height_m: float = 0.3
     airflow_m3s: float = 0.0
 
+
 @dataclass
 class RoomSpec:
     """Room specification with polygon boundary - STRICT VALIDATION at creation"""
+
     room_id: str = ""
     name: str = ""
     width_m: float = 10.0
@@ -256,7 +295,7 @@ class RoomSpec:
     ceiling_spec: Optional[CeilingSpec] = None
     detector_type: Optional[DetectorType] = None
     occupancy_type: str = "office"
-    heat_detector_spec: Optional['HeatDetectorSpec'] = None
+    heat_detector_spec: Optional["HeatDetectorSpec"] = None
     hvac_duct_list: List[HVACDuct] = field(default_factory=list)
     geometry_unresolved: bool = False  # V111: When True, NFPA analysis MUST be skipped
 
@@ -269,7 +308,7 @@ class RoomSpec:
             self.room_id = sanitize_string(self.room_id, max_length=100)
         except ValueError as e:
             errors.append(str(e))
-        
+
         # 1.5. Validate room_id is not empty after sanitize
         if not self.room_id or not self.room_id.strip():
             errors.append("room_id is required and cannot be empty")
@@ -340,11 +379,32 @@ class RoomSpec:
         # 6. Validate occupancy_type
         # FIX: Remove dangerous types that require licensed FPE review
         valid_types = {
-            "office", "corridor", "atrium", "sleeping", "server_room",
-            "clean_room", "elevator", "stairwell", "standard", "hazardous", "industrial",
-            "business", "educational", "factory", "mercantile", "residential",
-            "storage", "utility", "institutional", "laboratory", "mechanical",
-            "electrical", "data_center", "bathroom", "living", "meeting",
+            "office",
+            "corridor",
+            "atrium",
+            "sleeping",
+            "server_room",
+            "clean_room",
+            "elevator",
+            "stairwell",
+            "standard",
+            "hazardous",
+            "industrial",
+            "business",
+            "educational",
+            "factory",
+            "mercantile",
+            "residential",
+            "storage",
+            "utility",
+            "institutional",
+            "laboratory",
+            "mechanical",
+            "electrical",
+            "data_center",
+            "bathroom",
+            "living",
+            "meeting",
         }
         # DANGEROUS types that require manual FPE review (removed for safety)
         # kitchen, assembly - require special detector types and NFPA 72-2022 §17.7.1.1 compliance
@@ -360,33 +420,26 @@ class RoomSpec:
 
         # ===== BUILD POLYGON FROM DIMENSIONS =====
         if self.polygon is None:
-            self.polygon = ShapelyPolygon([
-                (0, 0),
-                (self.width_m, 0),
-                (self.width_m, self.depth_m),
-                (0, self.depth_m)
-            ])
+            self.polygon = ShapelyPolygon([(0, 0), (self.width_m, 0), (self.width_m, self.depth_m), (0, self.depth_m)])
 
         # ===== BUILD CEILING SPEC =====
         if self.ceiling_spec is None:
             # Get height from ceiling_spec.height_at_low_point_m, fallback to 3.0m default
             ceiling_height = 3.0  # NFPA minimum default
-            self.ceiling_spec = CeilingSpec(
-                ceiling_height, ceiling_height, CeilingType.FLAT, 0.0
-            )
+            self.ceiling_spec = CeilingSpec(ceiling_height, ceiling_height, CeilingType.FLAT, 0.0)
 
         if self.detector_type is None:
             self.detector_type = DetectorType.SMOKE
 
     @classmethod
-    def create_validated(cls, **kwargs) -> 'RoomSpec':
+    def create_validated(cls, **kwargs) -> "RoomSpec":
         """Factory method - ONLY way to create RoomSpec safely"""
         return cls(**kwargs)
 
     @property
     def area_sqm(self) -> float:
         """Calculate room area from polygon if available, otherwise from dimensions.
-        
+
         CRITICAL FIX: Previously computed from width_m * depth_m only,
         ignoring the actual polygon geometry. For non-rectangular rooms,
         this would produce wrong area in safety-critical calculations.
@@ -394,7 +447,7 @@ class RoomSpec:
         if self.polygon is not None and self.polygon.area > 0:
             return self.polygon.area
         return self.width_m * self.depth_m
-    
+
     @property
     def polygon_coords(self) -> List[Tuple[float, float]]:
         """Get polygon coordinates as list of (x,y) tuples for V12 compatibility"""
@@ -407,28 +460,32 @@ class RoomSpec:
             (self.width_m, self.depth_m),
             (0.0, self.depth_m),
         ]
-    
+
     @property
-    def ceiling(self) -> Optional['CeilingSpec']:
+    def ceiling(self) -> Optional["CeilingSpec"]:
         """Get ceiling spec - maps to ceiling_spec for V12 compatibility"""
         return self.ceiling_spec
-    
+
     @property
-    def _hvac_ducts(self) -> List['HVACDuct']:
+    def _hvac_ducts(self) -> List["HVACDuct"]:
         """Get HVAC ducts - alias for V12 compatibility"""
         return self.hvac_duct_list
-    
+
     # V12 compatibility: exposed as hvac_ducts via forward ref in V12
     @property
-    def hvac_ducts(self) -> List['HVACDuct']:
+    def hvac_ducts(self) -> List["HVACDuct"]:
         """Get HVAC ducts - maps to hvac_duct_list for V12 compatibility"""
         return self.hvac_duct_list
+
+
 @dataclass
 class SmokeDetectorSpec:
     """Smoke detector specification"""
+
     ceiling_spec: CeilingSpec
     room_spec: RoomSpec
     detector_type: DetectorType = DetectorType.SMOKE
+
     # V20.2 FIX: HEIGHT_TO_COVERAGE REMOVED — it used old S/2 values which
     # contradicted the corrected R = 0.7 × S in RADIUS_MAP and
     # get_smoke_detector_radius(). Use those functions instead.
@@ -442,13 +499,17 @@ class SmokeDetectorSpec:
     def radius_m(self) -> float:
         """Get radius based on ceiling height per NFPA 72"""
         return get_smoke_detector_radius(self.ceiling_spec.height_m)
+
     @property
     def coverage_max_m(self) -> float:
         """Get maximum coverage area (circles can extend)"""
         return get_smoke_detector_coverage_max(self.ceiling_spec.height_m)
+
+
 @dataclass
 class HeatDetectorSpec:
     """Heat detector specification"""
+
     ceiling_spec: CeilingSpec
     room_spec: RoomSpec
     detector_type: DetectorType = DetectorType.HEAT
@@ -459,16 +520,20 @@ class HeatDetectorSpec:
     # The previous value of 30ft (9.1m) was for smoke detectors.
     FIXED_SPACING_FT = 20  # 20 feet = 6.1m
     FIXED_SPACING_M = 6.1
+
     @property
     def spacing_m(self) -> float:
         """Get spacing for heat detector"""
         return self.FIXED_SPACING_M
+
     # V20.2 FIX: Add radius_m property for heat detectors
     # R = 0.7 × S = 0.7 × 6.1m = 4.27m for circular coverage equivalent
     @property
     def radius_m(self) -> float:
         """Get equivalent circular coverage radius R = 0.7 × S per NFPA 72."""
         return round(0.7 * self.FIXED_SPACING_M, 2)  # 4.27m
+
+
 # ============================================================================
 # ⚠️ FIXED: DetectorPlacement - Reference Bug Resolved (2026-05-14)
 # ============================================================================
@@ -493,12 +558,14 @@ class DetectorPlacement:
     - Uses get_smoke_detector_radius_safe() for safe fallback
     - Resolves ReferenceError that occurred when coverage_radius_m was None
     """
+
     x: float
     y: float
     z: float
     detector_type: DetectorType
     ceiling_height_m: float = 3.0  # ✅ FIXED: Added explicit parameter
     coverage_radius_m: Optional[float] = None
+
     def __post_init__(self):
         """
         Initialize coverage radius with type-appropriate fallback.
@@ -513,21 +580,25 @@ class DetectorPlacement:
                 self.coverage_radius_m = 4.27
             else:
                 # Smoke and other types: use safe fallback
-                self.coverage_radius_m = get_smoke_detector_radius_safe(
-                    self.ceiling_height_m
-                )
+                self.coverage_radius_m = get_smoke_detector_radius_safe(self.ceiling_height_m)
+
     @property
     def position_3d(self) -> Tuple[float, float, float]:
         """Get 3D position"""
         return (self.x, self.y, self.z)
+
     @property
     def effective_coverage_area(self) -> float:
         """Calculate effective coverage area in square meters"""
         import math
-        return math.pi * (self.coverage_radius_m ** 2)
+
+        return math.pi * (self.coverage_radius_m**2)
+
+
 @dataclass
 class CoverageResult:
     """Coverage check result - V12 compatible"""
+
     is_covered: bool
     uncovered_areas: List[Tuple[float, float]] = field(default_factory=list)
     coverage_percentage: float = 0.0
@@ -536,9 +607,11 @@ class CoverageResult:
     proof_valid: bool = False  # V112: FAIL-SAFE — proof not valid until explicitly verified
     coverage_fraction: float = 0.0  # V112: FAIL-SAFE — no coverage until verified
     max_gap_m: float = 0.0
-    
+
     def __bool__(self):
         return self.is_covered
+
+
 @dataclass
 class NFPAComplianceResult:
     """Overall NFPA compliance check result
@@ -577,28 +650,30 @@ class NFPAComplianceResult:
 # FIRE ALARM PANEL - NFPA 72 Chapter 21
 # ============================================================================
 
+
 @dataclass
 class FireAlarmPanel:
     """
     Fire Alarm Control Panel per NFPA 72 Chapter 21.
-    
+
     ⚠️ CRITICAL LIMITS:
     - Maximum 250 devices per zone (NFPA 72 21.2.2)
     - Minimum operating voltage: 16V (85% of 24V)
     - Panel must be accessible for maintenance
-    
+
     Args:
         panel_id: Unique identifier
         max_devices: Maximum devices (default 250)
         voltage: Operating voltage (default 24V)
     """
+
     panel_id: str
     max_devices: int = 250
     voltage: float = 24.0
     min_voltage: float = 16.0  # 85% of 24V
     connected_devices: List[str] = field(default_factory=list)
     zones: List[int] = field(default_factory=list)
-    
+
     def add_device(self, device_id: str) -> None:
         """Add device to panel."""
         if len(self.connected_devices) >= self.max_devices:
@@ -608,7 +683,7 @@ class FireAlarmPanel:
                 f"NFPA 72 limit is 250 devices per panel."
             )
         self.connected_devices.append(device_id)
-    
+
     def check_voltage_drop(self, distance_m: float) -> float:
         """
         Calculate voltage drop at distance.
@@ -622,6 +697,7 @@ class FireAlarmPanel:
         inaccurate results for any real-world design.
         """
         import warnings
+
         warnings.warn(
             "FireAlarmPanel.check_voltage_drop() is deprecated — it uses a "
             "simplified 0.04V/100m formula that ignores current and wire gauge. "
@@ -633,13 +709,13 @@ class FireAlarmPanel:
         # Simplified: 0.04V per 100m (VERY rough approximation)
         v_drop = distance_m * 0.0004
         return v_drop
-    
+
     def verify_voltage(self, distance_m: float) -> bool:
         """Verify voltage at farthest device is above minimum."""
         v_drop = self.check_voltage_drop(distance_m)
         v_remaining = self.voltage - v_drop
         return v_remaining >= self.min_voltage
-    
+
     def is_accessible(self) -> bool:
         """Panel must be accessible for maintenance."""
         # In real implementation, check physical accessibility
@@ -648,6 +724,7 @@ class FireAlarmPanel:
 
 class PanelCapacityError(NFPAComplianceError):
     """Raised when panel exceeds device capacity"""
+
     pass
 
 
@@ -660,6 +737,8 @@ Always verify with a licensed fire protection engineer.
 NFPA 72 (2022 Edition) is the authoritative standard.
 Verify all detector placements with local AHJ requirements.
 """
+
+
 # ============================================================================
 # HELPER FUNCTIONS - Radius Calculations
 # ============================================================================
@@ -698,14 +777,14 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
     # and MUST raise CeilingHeightError in this strict function.
     # Use get_smoke_detector_radius_safe() for graceful handling of h<3.0m.
     RADIUS_MAP = {
-        (3.0, 3.7):   6.37,   # R = 0.7 × 9.10 (3.0 ≤ h < 3.7m)
-        (3.7, 4.6):   6.09,   # R = 0.7 × 8.70 (3.7 ≤ h < 4.6m)
-        (4.6, 5.5):   5.74,   # R = 0.7 × 8.20 (4.6 ≤ h < 5.5m)
-        (5.5, 6.1):   5.39,   # R = 0.7 × 7.70 (5.5 ≤ h < 6.1m)
-        (6.1, 7.6):   5.11,   # R = 0.7 × 7.30 (6.1 ≤ h < 7.6m)
-        (7.6, 9.1):   4.76,   # R = 0.7 × 6.80 (7.6 ≤ h < 9.1m)
-        (9.1, 10.7):  4.48,   # R = 0.7 × 6.40 (9.1 ≤ h < 10.7m)
-        (10.7, 12.2): 4.20,   # R = 0.7 × 6.00 (10.7 ≤ h < 12.2m)
+        (3.0, 3.7): 6.37,  # R = 0.7 × 9.10 (3.0 ≤ h < 3.7m)
+        (3.7, 4.6): 6.09,  # R = 0.7 × 8.70 (3.7 ≤ h < 4.6m)
+        (4.6, 5.5): 5.74,  # R = 0.7 × 8.20 (4.6 ≤ h < 5.5m)
+        (5.5, 6.1): 5.39,  # R = 0.7 × 7.70 (5.5 ≤ h < 6.1m)
+        (6.1, 7.6): 5.11,  # R = 0.7 × 7.30 (6.1 ≤ h < 7.6m)
+        (7.6, 9.1): 4.76,  # R = 0.7 × 6.80 (7.6 ≤ h < 9.1m)
+        (9.1, 10.7): 4.48,  # R = 0.7 × 6.40 (9.1 ≤ h < 10.7m)
+        (10.7, 12.2): 4.20,  # R = 0.7 × 6.00 (10.7 ≤ h < 12.2m)
         (12.2, 15.24): 3.64,  # R = 0.7 × 5.20 (12.2 ≤ h ≤ 15.24m) CONSERVATIVE EXTRAPOLATION
     }
     # V24 FIX: Removed special min_h==0.0 condition that silently accepted
@@ -719,10 +798,9 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
             if min_h <= ceiling_height_m < max_h:
                 return radius
     # Outside valid range (h < 3.0m or h > 15.24m)
-    raise CeilingHeightError(
-        f"Ceiling height {ceiling_height_m}m is outside NFPA 72 "
-        f"valid range of 3.0m to 15.24m"
-    )
+    raise CeilingHeightError(f"Ceiling height {ceiling_height_m}m is outside NFPA 72 valid range of 3.0m to 15.24m")
+
+
 def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
     """
     Calculate maximum coverage area (circles can extend to) per NFPA 72.
@@ -749,6 +827,8 @@ def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
             if min_h <= ceiling_height_m < max_h:
                 return max_cov
     return 10.1  # Default max
+
+
 def validate_ceiling_height(ceiling_height_m: float) -> None:
     """
     Validate ceiling height against NFPA 72 limits.
@@ -762,32 +842,29 @@ def validate_ceiling_height(ceiling_height_m: float) -> None:
     MAX_HEIGHT = _NFPA_HEIGHT_MAX_M
     if ceiling_height_m < MIN_HEIGHT:
         raise CeilingHeightError(
-            f"Ceiling height {ceiling_height_m}m is below NFPA 72 minimum "
-            f"of {MIN_HEIGHT}m (10 feet)"
+            f"Ceiling height {ceiling_height_m}m is below NFPA 72 minimum of {MIN_HEIGHT}m (10 feet)"
         )
     if ceiling_height_m > MAX_HEIGHT:
         raise CeilingHeightError(
-            f"Ceiling height {ceiling_height_m}m exceeds NFPA 72 maximum "
-            f"of {MAX_HEIGHT}m (50 feet)"
+            f"Ceiling height {ceiling_height_m}m exceeds NFPA 72 maximum of {MAX_HEIGHT}m (50 feet)"
         )
+
+
 # ============================================================================
 # ⭐ ELITE SAFE FUNCTIONS - Conservative Fallback (2026-05-13)
 # ============================================================================
 # These functions provide SAFE FALLBACK for heights outside NFPA 72 range.
 # Principle: More detectors (closer spacing) = safer for fire safety.
 # ============================================================================
-def get_smoke_detector_radius_safe(
-    ceiling_height_m: float,
-    _return_details: bool = False
-) -> float:
+def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: bool = False) -> float:
     """
     ⭐ ELITE SOLUTION: Get smoke detector radius with SAFE FALLBACK.
     This provides CONSERVATIVE values for heights outside NFPA 72 range.
     More detectors (closer spacing) = safer design.
-    
+
     ⚠️ CRITICAL: Negative/zero heights MUST be REJECTED with ValueError.
     Heights < 3.0m require PE REVIEW flag.
-    
+
     Args:
         ceiling_height_m: Actual ceiling height in meters
         _return_details: If True, returns (radius, details dict)
@@ -809,7 +886,7 @@ def get_smoke_detector_radius_safe(
             f"CEILING_HEIGHT_MUST_BE_POSITIVE: {ceiling_height_m}m is not valid. "
             f"Must be > 0. REJECT - requires PE REVIEW"
         )
-    
+
     actual_height = ceiling_height_m
     flag = None
     safe_height = ceiling_height_m
@@ -834,11 +911,13 @@ def get_smoke_detector_radius_safe(
         "effective_height": safe_height,
         "radius": radius,
         "flag": flag,
-        "conservative": flag is not None
+        "conservative": flag is not None,
     }
     if _return_details:
         return radius, details
     return radius
+
+
 def _get_radius_internal(h: float) -> float:
     """Internal radius lookup."""
     # V20.2 CRITICAL FIX: Same off-by-one bracket fix as RADIUS_MAP above.
@@ -852,14 +931,14 @@ def _get_radius_internal(h: float) -> float:
     # The (3.0, 3.7) bracket uses S=9.1m → R=6.37 (not 6.09 which was S=8.7).
     # Each bracket's spacing DECREASES as height INCREASES per NFPA 72.
     R = {
-        (3.0, 3.7):   6.37,   # R = 0.7 × 9.10 (3.0 ≤ h < 3.7m)
-        (3.7, 4.6):   6.09,   # R = 0.7 × 8.70 (3.7 ≤ h < 4.6m)
-        (4.6, 5.5):   5.74,   # R = 0.7 × 8.20 (4.6 ≤ h < 5.5m)
-        (5.5, 6.1):   5.39,   # R = 0.7 × 7.70 (5.5 ≤ h < 6.1m)
-        (6.1, 7.6):   5.11,   # R = 0.7 × 7.30 (6.1 ≤ h < 7.6m)
-        (7.6, 9.1):   4.76,   # R = 0.7 × 6.80 (7.6 ≤ h < 9.1m)
-        (9.1, 10.7):  4.48,   # R = 0.7 × 6.40 (9.1 ≤ h < 10.7m)
-        (10.7, 12.2): 4.20,   # R = 0.7 × 6.00 (10.7 ≤ h < 12.2m)
+        (3.0, 3.7): 6.37,  # R = 0.7 × 9.10 (3.0 ≤ h < 3.7m)
+        (3.7, 4.6): 6.09,  # R = 0.7 × 8.70 (3.7 ≤ h < 4.6m)
+        (4.6, 5.5): 5.74,  # R = 0.7 × 8.20 (4.6 ≤ h < 5.5m)
+        (5.5, 6.1): 5.39,  # R = 0.7 × 7.70 (5.5 ≤ h < 6.1m)
+        (6.1, 7.6): 5.11,  # R = 0.7 × 7.30 (6.1 ≤ h < 7.6m)
+        (7.6, 9.1): 4.76,  # R = 0.7 × 6.80 (7.6 ≤ h < 9.1m)
+        (9.1, 10.7): 4.48,  # R = 0.7 × 6.40 (9.1 ≤ h < 10.7m)
+        (10.7, 12.2): 4.20,  # R = 0.7 × 6.00 (10.7 ≤ h < 12.2m)
         (12.2, 15.24): 3.64,  # R = 0.7 × 5.20 (12.2 ≤ h ≤ 15.24m) CONSERVATIVE EXTRAPOLATION
     }
     for (min_h, max_h), r in R.items():
@@ -870,6 +949,8 @@ def _get_radius_internal(h: float) -> float:
             if min_h <= h < max_h:
                 return r
     raise CeilingHeightError(f"Height {h}m outside NFPA range")
+
+
 def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_details: bool = False):
     """⭐ ELITE SOLUTION: Get max coverage with SAFE FALLBACK."""
     actual = ceiling_height_m
@@ -886,15 +967,12 @@ def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_detail
     except Exception as e:
         max_cov = _get_max_internal(3.0)
         flag = "FALLBACK"
-    details = {
-        "input_height": actual,
-        "effective_height": safe_h,
-        "max_coverage": max_cov,
-        "flag": flag
-    }
+    details = {"input_height": actual, "effective_height": safe_h, "max_coverage": max_cov, "flag": flag}
     if _return_details:
         return max_cov, details
     return max_cov
+
+
 def _get_max_internal(h: float) -> float:
     """Internal max coverage lookup.
 
@@ -904,13 +982,7 @@ def _get_max_internal(h: float) -> float:
     Now uses < for upper bound of non-last ranges (consistent with RADIUS_MAP
     and _get_radius_internal), and <= only for the final bracket.
     """
-    M = {
-        (3.0, 4.3): 5.5,
-        (4.3, 6.1): 6.5,
-        (6.1, 7.6): 8.1,
-        (7.6, 9.1): 9.0,
-        (9.1, 15.24): 10.1
-    }
+    M = {(3.0, 4.3): 5.5, (4.3, 6.1): 6.5, (6.1, 7.6): 8.1, (7.6, 9.1): 9.0, (9.1, 15.24): 10.1}
     for (min_h, max_h), m in M.items():
         # Use < for upper bound in lower brackets to avoid overlap
         if max_h == 15.24:
@@ -922,6 +994,8 @@ def _get_max_internal(h: float) -> float:
     if h == 15.24:
         return 10.1
     raise CeilingHeightError(f"Height {h}m outside NFPA range")
+
+
 # Test exported symbols
 __all__ = [
     "DetectorType",
@@ -941,8 +1015,8 @@ __all__ = [
     "CoverageResult",
     "NFPAComplianceResult",
     "get_smoke_detector_radius",
-    "get_smoke_detector_radius_safe",          # ⭐ safe fallback — REQUIRED
+    "get_smoke_detector_radius_safe",  # ⭐ safe fallback — REQUIRED
     "get_smoke_detector_coverage_max",
-    "get_smoke_detector_coverage_max_safe",    # ⭐ safe fallback — REQUIRED
+    "get_smoke_detector_coverage_max_safe",  # ⭐ safe fallback — REQUIRED
     "validate_ceiling_height",
 ]

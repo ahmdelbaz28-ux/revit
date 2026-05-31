@@ -11,71 +11,71 @@ Exit codes:
 
 This tool is CI-ready: add to your pipeline as a static analysis gate.
 """
+
 from __future__ import annotations
+
 import ast
 import sys
-import os
-import math
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 # ── Canonical constants we track explicitly ───────────────────────────────────
 # Format: name → (canonical_value, canonical_module_pattern, nfpa_reference)
 # Values verified against actual project source code (V30).
 CANONICAL_CONSTANTS: Dict[str, Tuple[float, str, str]] = {
     # density_optimizer.py — NFPA 72 detector spacing
-    "DETECTOR_RADIUS":   (6.37,   "density_optimizer",  "NFPA 72 §17.7.4.2.3.1 — 0.7S Rule"),
-    "MAX_SPACING_M":     (9.1,    "density_optimizer",  "NFPA 72 §17.6.3.1.1"),
-    "WALL_MIN_M":        (0.10,   "density_optimizer",  "NFPA 72 §17.6.3.1.1"),
-    "VERIFY_STEP":       (0.20,   "density_optimizer",  "internal — proof resolution"),
-    "COARSE_STEP":       (1.00,   "density_optimizer",  "internal — coarse grid step"),
-    "PLACEMENT_MARGIN":  (0.1414, "density_optimizer",  "internal — δ-conservative"),
+    "DETECTOR_RADIUS": (6.37, "density_optimizer", "NFPA 72 §17.7.4.2.3.1 — 0.7S Rule"),
+    "MAX_SPACING_M": (9.1, "density_optimizer", "NFPA 72 §17.6.3.1.1"),
+    "WALL_MIN_M": (0.10, "density_optimizer", "NFPA 72 §17.6.3.1.1"),
+    "VERIFY_STEP": (0.20, "density_optimizer", "internal — proof resolution"),
+    "COARSE_STEP": (1.00, "density_optimizer", "internal — coarse grid step"),
+    "PLACEMENT_MARGIN": (0.1414, "density_optimizer", "internal — δ-conservative"),
     # digital_twin.py — duplicate of MAX_SPACING_M
-    "NFPA72_MAX_SPACING_M": (9.1, "digital_twin",      "NFPA 72 Table 17.6.3.1.1"),
+    "NFPA72_MAX_SPACING_M": (9.1, "digital_twin", "NFPA 72 Table 17.6.3.1.1"),
     # models_v21.py — molecular weight of dry air (CRC Handbook, 97th Ed.)
-    "_MW_AIR":           (28.96,  "models_v21",         "CRC Handbook — dry air MW"),
+    "_MW_AIR": (28.96, "models_v21", "CRC Handbook — dry air MW"),
     # semi_cfast_engine.py — aligned to 28.96 (CRC Handbook, same as _MW_AIR)
     "AIR_MOLAR_MASS_G_MOL": (28.96, "semi_cfast_engine", "CRC Handbook — dry air MW (aligned with _MW_AIR)"),
     # Gravity
-    "GRAVITY":           (9.81,   "",                   "SI standard (local approx)"),
-    "GRAVITY_M_S2":      (9.81,   "",                   "SI standard (local approx)"),
+    "GRAVITY": (9.81, "", "SI standard (local approx)"),
+    "GRAVITY_M_S2": (9.81, "", "SI standard (local approx)"),
     # Standard conditions
-    "STD_TEMP_C":        (20.0,   "",                   "NFPA standard conditions"),
-    "STD_TEMP_K":        (293.15, "",                   "NFPA standard conditions"),
+    "STD_TEMP_C": (20.0, "", "NFPA standard conditions"),
+    "STD_TEMP_K": (293.15, "", "NFPA standard conditions"),
     # Duct detector spacing
     "_DUCT_DETECTOR_MAX_SPACING_M": (10.0, "nfpa72_calculations", "NFPA 72 §17.7.5.4.2"),
-    "NFPA_DUCT_MAX_SPACING_M":     (3.05,  "duct_detector",       "NFPA 72 §17.7.5 — 10ft"),
+    "NFPA_DUCT_MAX_SPACING_M": (3.05, "duct_detector", "NFPA 72 §17.7.5 — 10ft"),
 }
 
 # Float literals that are suspicious raw numbers (should be a named constant)
 SUSPICIOUS_LITERALS: Dict[float, str] = {
-    6.37:   "DETECTOR_RADIUS",
-    9.1:    "MAX_SPACING_M",
-    9.14:   "MAX_SPACING_M (feet conversion variant)",
-    0.10:   "WALL_MIN_M",
+    6.37: "DETECTOR_RADIUS",
+    9.1: "MAX_SPACING_M",
+    9.14: "MAX_SPACING_M (feet conversion variant)",
+    0.10: "WALL_MIN_M",
     0.1414: "PLACEMENT_MARGIN",
-    28.96:  "mw_air / MW_AIR / _MW_AIR / AIR_MOLAR_MASS_G_MOL",
-    9.81:   "GRAVITY",
-    4.27:   "NFPA72_HEAT_RADIUS_M",
-    5.3:    "NFPA72_HEAT_RADIUS_25FT_M",
+    28.96: "mw_air / MW_AIR / _MW_AIR / AIR_MOLAR_MASS_G_MOL",
+    9.81: "GRAVITY",
+    4.27: "NFPA72_HEAT_RADIUS_M",
+    5.3: "NFPA72_HEAT_RADIUS_25FT_M",
 }
 
 # Cross-module consistency groups: names that MUST agree on the same value
 # Each group represents the SAME physical constant defined in multiple modules.
 CONSISTENCY_GROUPS: Dict[str, List[str]] = {
     "max_spacing": [
-        "MAX_SPACING_M",           # density_optimizer
-        "NFPA72_MAX_SPACING_M",    # digital_twin
+        "MAX_SPACING_M",  # density_optimizer
+        "NFPA72_MAX_SPACING_M",  # digital_twin
     ],
     "mw_air": [
-        "_MW_AIR",                 # models_v21 = 28.96
-        "AIR_MOLAR_MASS_G_MOL",    # semi_cfast_engine = 28.96 (aligned with _MW_AIR)
+        "_MW_AIR",  # models_v21 = 28.96
+        "AIR_MOLAR_MASS_G_MOL",  # semi_cfast_engine = 28.96 (aligned with _MW_AIR)
     ],
     "gravity": [
-        "GRAVITY",                 # twin/semi_cfast_engine, twin/fire_physics
-        "GRAVITY_M_S2",            # fireai/core/semi_cfast_engine
+        "GRAVITY",  # twin/semi_cfast_engine, twin/fire_physics
+        "GRAVITY_M_S2",  # fireai/core/semi_cfast_engine
     ],
 }
 
@@ -85,69 +85,80 @@ CONSISTENCY_GROUPS: Dict[str, List[str]] = {
 # Format: (dict_key, expected_value, canonical_source)
 DICT_CONSTANT_CHECKS: List[Tuple[str, float, str]] = [
     ("AIR_MOLAR_MASS_G_MOL", 28.96, "_MW_AIR in models_v21.py (CRC Handbook)"),
-    ("GRAVITY_M_S2",         9.81,  "SI standard"),
-    ("AMBIENT_TEMP_K",       293.15,"NFPA standard conditions"),
+    ("GRAVITY_M_S2", 9.81, "SI standard"),
+    ("AMBIENT_TEMP_K", 293.15, "NFPA standard conditions"),
 ]
 
 # Names that are typically try/except fallback patterns (True/False) — NOT real
 # constant inconsistencies. Filtered from multi-definition checks.
 TRY_EXCEPT_BOOLEAN_NAMES: set = {
-    "HAS_PULP", "HAS_SHAPELY", "HAS_FITZ", "HAS_ECDSA", "HAS_EZDXF",
-    "HAS_FLOOR_ORCHESTRATOR", "HAS_DXF_PARSER", "PULP_AVAILABLE",
-    "EZDXF_AVAILABLE", "IFC_AVAILABLE", "NX_AVAILABLE", "GEOM_AVAILABLE",
-    "CRYPTO_AVAILABLE", "HAS_SHAPELY_VORONOI", "SHAPELY_AVAILABLE",
+    "HAS_PULP",
+    "HAS_SHAPELY",
+    "HAS_FITZ",
+    "HAS_ECDSA",
+    "HAS_EZDXF",
+    "HAS_FLOOR_ORCHESTRATOR",
+    "HAS_DXF_PARSER",
+    "PULP_AVAILABLE",
+    "EZDXF_AVAILABLE",
+    "IFC_AVAILABLE",
+    "NX_AVAILABLE",
+    "GEOM_AVAILABLE",
+    "CRYPTO_AVAILABLE",
+    "HAS_SHAPELY_VORONOI",
+    "SHAPELY_AVAILABLE",
 }
 
-TOLERANCE = 1e-4   # float comparison tolerance
+TOLERANCE = 1e-4  # float comparison tolerance
 
 
 @dataclass
 class ConstantOccurrence:
-    file:    Path
-    line:    int
-    name:    str
-    value:   float
-    context: str   # surrounding line text
+    file: Path
+    line: int
+    name: str
+    value: float
+    context: str  # surrounding line text
 
 
 @dataclass
 class SuspiciousLiteral:
-    file:    Path
-    line:    int
-    value:   float
-    hint:    str
+    file: Path
+    line: int
+    value: float
+    hint: str
     context: str
 
 
 @dataclass
 class DictConstantOccurrence:
     """A constant defined inside a dict literal (e.g., PHYSICAL_CONSTANTS["KEY"] = 28.97)."""
-    file:    Path
-    line:    int
-    key:     str
-    value:   float
+
+    file: Path
+    line: int
+    key: str
+    value: float
     context: str
 
 
 @dataclass
 class ConsistencyReport:
-    consistent:   List[str]          = field(default_factory=list)
-    inconsistent: List[str]          = field(default_factory=list)
-    suspicious:   List[SuspiciousLiteral] = field(default_factory=list)
-    registry:     Dict[str, List[ConstantOccurrence]] = field(
-                      default_factory=lambda: defaultdict(list))
-    cross_module_issues: List[str]   = field(default_factory=list)
-    dict_constant_issues: List[str]  = field(default_factory=list)
+    consistent: List[str] = field(default_factory=list)
+    inconsistent: List[str] = field(default_factory=list)
+    suspicious: List[SuspiciousLiteral] = field(default_factory=list)
+    registry: Dict[str, List[ConstantOccurrence]] = field(default_factory=lambda: defaultdict(list))
+    cross_module_issues: List[str] = field(default_factory=list)
+    dict_constant_issues: List[str] = field(default_factory=list)
 
 
 class ConstantCollector(ast.NodeVisitor):
     """AST visitor that extracts named constant assignments, dict constants, and float literals."""
 
     def __init__(self, filepath: Path, source_lines: List[str]) -> None:
-        self.filepath      = filepath
-        self.source_lines  = source_lines
-        self.assignments:  List[ConstantOccurrence]  = []
-        self.literals:     List[SuspiciousLiteral]   = []
+        self.filepath = filepath
+        self.source_lines = source_lines
+        self.assignments: List[ConstantOccurrence] = []
+        self.literals: List[SuspiciousLiteral] = []
         self.dict_constants: List[DictConstantOccurrence] = []
 
     def visit_Assign(self, node: ast.Assign) -> None:
@@ -161,13 +172,13 @@ class ConstantCollector(ast.NodeVisitor):
         for target in node.targets:
             if isinstance(target, ast.Name):
                 name = target.id
-                ctx  = self._ctx(node.lineno)
-                occ  = ConstantOccurrence(
-                    file    = self.filepath,
-                    line    = node.lineno,
-                    name    = name,
-                    value   = val,
-                    context = ctx,
+                ctx = self._ctx(node.lineno)
+                occ = ConstantOccurrence(
+                    file=self.filepath,
+                    line=node.lineno,
+                    name=name,
+                    value=val,
+                    context=ctx,
                 )
                 self.assignments.append(occ)
         self.generic_visit(node)
@@ -184,13 +195,15 @@ class ConstantCollector(ast.NodeVisitor):
             return
         if isinstance(node.target, ast.Name):
             name = node.target.id
-            self.assignments.append(ConstantOccurrence(
-                file    = self.filepath,
-                line    = node.lineno,
-                name    = name,
-                value   = val,
-                context = self._ctx(node.lineno),
-            ))
+            self.assignments.append(
+                ConstantOccurrence(
+                    file=self.filepath,
+                    line=node.lineno,
+                    name=name,
+                    value=val,
+                    context=self._ctx(node.lineno),
+                )
+            )
 
     def visit_Constant(self, node: ast.Constant) -> None:
         """Catch raw float literals that match suspicious values."""
@@ -200,19 +213,21 @@ class ConstantCollector(ast.NodeVisitor):
         val = node.value
         for known_val, hint in SUSPICIOUS_LITERALS.items():
             if abs(val - known_val) < TOLERANCE:
-                self.literals.append(SuspiciousLiteral(
-                    file    = self.filepath,
-                    line    = node.lineno,
-                    value   = val,
-                    hint    = hint,
-                    context = self._ctx(node.lineno),
-                ))
+                self.literals.append(
+                    SuspiciousLiteral(
+                        file=self.filepath,
+                        line=node.lineno,
+                        value=val,
+                        hint=hint,
+                        context=self._ctx(node.lineno),
+                    )
+                )
                 break
         self.generic_visit(node)
 
     def _scan_dict_literal(self, node: ast.Assign) -> None:
         """Scan dict literal assignments for known constant keys with float values.
-        
+
         Catches patterns like:
             PHYSICAL_CONSTANTS = {
                 "AIR_MOLAR_MASS_G_MOL": 28.97,
@@ -228,13 +243,15 @@ class ConstantCollector(ast.NodeVisitor):
             # Check if this key matches any DICT_CONSTANT_CHECKS
             val = self._extract_float(val_node)
             if val is not None:
-                self.dict_constants.append(DictConstantOccurrence(
-                    file    = self.filepath,
-                    line    = key_node.lineno,
-                    key     = key_str,
-                    value   = val,
-                    context = self._ctx(key_node.lineno),
-                ))
+                self.dict_constants.append(
+                    DictConstantOccurrence(
+                        file=self.filepath,
+                        line=key_node.lineno,
+                        key=key_str,
+                        value=val,
+                        context=self._ctx(key_node.lineno),
+                    )
+                )
 
     def _scan_dict_literal_ann(self, node: ast.AnnAssign) -> None:
         """Scan annotated dict literal assignments (e.g., PHYSICAL_CONSTANTS: Dict = {...})."""
@@ -246,13 +263,15 @@ class ConstantCollector(ast.NodeVisitor):
             key_str = key_node.value
             val = self._extract_float(val_node)
             if val is not None:
-                self.dict_constants.append(DictConstantOccurrence(
-                    file    = self.filepath,
-                    line    = key_node.lineno,
-                    key     = key_str,
-                    value   = val,
-                    context = self._ctx(key_node.lineno),
-                ))
+                self.dict_constants.append(
+                    DictConstantOccurrence(
+                        file=self.filepath,
+                        line=key_node.lineno,
+                        key=key_str,
+                        value=val,
+                        context=self._ctx(key_node.lineno),
+                    )
+                )
 
     @staticmethod
     def _extract_float(node: ast.expr) -> Optional[float]:
@@ -277,12 +296,14 @@ class ConstantCollector(ast.NodeVisitor):
         return ""
 
 
-def _scan_file(filepath: Path) -> Tuple[List[ConstantOccurrence], List[SuspiciousLiteral], List[DictConstantOccurrence]]:
+def _scan_file(
+    filepath: Path,
+) -> Tuple[List[ConstantOccurrence], List[SuspiciousLiteral], List[DictConstantOccurrence]]:
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
-        tree   = ast.parse(source, filename=str(filepath))
-        lines  = source.splitlines()
-        col    = ConstantCollector(filepath, lines)
+        tree = ast.parse(source, filename=str(filepath))
+        lines = source.splitlines()
+        col = ConstantCollector(filepath, lines)
         col.visit(tree)
         return col.assignments, col.literals, col.dict_constants
     except SyntaxError as exc:
@@ -325,7 +346,7 @@ def _check_consistency(
     registry: Dict[str, List[ConstantOccurrence]],
 ) -> Tuple[List[str], List[str]]:
     """Check for multi-definition inconsistencies, filtering out try/except booleans."""
-    consistent:   List[str] = []
+    consistent: List[str] = []
     inconsistent: List[str] = []
 
     for name, occs in sorted(registry.items()):
@@ -359,16 +380,11 @@ def _check_cross_module_consistency(
         for name in names:
             if name in registry:
                 for occ in registry[name]:
-                    values[round(occ.value, 4)].append(
-                        f"{occ.file.name}:{occ.line} ({name}={occ.value})"
-                    )
+                    values[round(occ.value, 4)].append(f"{occ.file.name}:{occ.line} ({name}={occ.value})")
         if len(values) > 1:
-            details = " | ".join(
-                f"{v}: {locs}" for v, locs in sorted(values.items())
-            )
+            details = " | ".join(f"{v}: {locs}" for v, locs in sorted(values.items()))
             issues.append(
-                f"CROSS-MODULE INCONSISTENCY [{group_name}]: "
-                f"same physical constant has different values — {details}"
+                f"CROSS-MODULE INCONSISTENCY [{group_name}]: same physical constant has different values — {details}"
             )
     return issues
 
@@ -377,7 +393,7 @@ def _check_dict_constants(
     dict_constants: List[DictConstantOccurrence],
 ) -> List[str]:
     """Check dict-literal constants against their expected canonical values.
-    
+
     This catches constants defined inside PHYSICAL_CONSTANTS-style dicts
     that the AST visitor's visit_Assign would miss (since the dict key is
     a string, not a variable name).
@@ -395,8 +411,8 @@ def _check_dict_constants(
 
 
 def _filter_suspicious(
-    all_literals:     List[SuspiciousLiteral],
-    all_occurrences:  List[ConstantOccurrence],
+    all_literals: List[SuspiciousLiteral],
+    all_occurrences: List[ConstantOccurrence],
 ) -> List[SuspiciousLiteral]:
     """
     Remove false positives: a literal on the SAME line as its named constant
@@ -407,10 +423,7 @@ def _filter_suspicious(
         if occ.name in CANONICAL_CONSTANTS:
             definition_lines.add((str(occ.file), occ.line))
 
-    return [
-        lit for lit in all_literals
-        if (str(lit.file), lit.line) not in definition_lines
-    ]
+    return [lit for lit in all_literals if (str(lit.file), lit.line) not in definition_lines]
 
 
 def _canonical_mismatch_check(
@@ -499,15 +512,11 @@ def _print_report(report: ConsistencyReport, root: Path) -> int:
 
     # Consistent
     if report.consistent:
-        print(f"\n[PASS] Consistent constants ({len(report.consistent)}): "
-              f"{', '.join(report.consistent)}")
+        print(f"\n[PASS] Consistent constants ({len(report.consistent)}): {', '.join(report.consistent)}")
 
     print(f"\n{sep}")
     has_issues = bool(
-        canonical_issues
-        or report.inconsistent
-        or report.cross_module_issues
-        or report.dict_constant_issues
+        canonical_issues or report.inconsistent or report.cross_module_issues or report.dict_constant_issues
     )
     status = "FAIL" if has_issues else ("WARN" if report.suspicious else "PASS")
     print(f"Status: {status}")
@@ -523,9 +532,9 @@ def main(root: Optional[Path] = None) -> int:
     py_files = _gather_py_files(root)
     print(f"Found {len(py_files)} Python files.")
 
-    all_occs:          List[ConstantOccurrence]    = []
-    all_literals:      List[SuspiciousLiteral]     = []
-    all_dict_consts:   List[DictConstantOccurrence] = []
+    all_occs: List[ConstantOccurrence] = []
+    all_literals: List[SuspiciousLiteral] = []
+    all_dict_consts: List[DictConstantOccurrence] = []
 
     for f in py_files:
         occs, lits, dcs = _scan_file(f)
@@ -533,19 +542,19 @@ def main(root: Optional[Path] = None) -> int:
         all_literals.extend(lits)
         all_dict_consts.extend(dcs)
 
-    registry    = _build_registry(all_occs)
+    registry = _build_registry(all_occs)
     consistent, inconsistent = _check_consistency(registry)
-    suspicious  = _filter_suspicious(all_literals, all_occs)
+    suspicious = _filter_suspicious(all_literals, all_occs)
     cross_module = _check_cross_module_consistency(registry)
     dict_issues = _check_dict_constants(all_dict_consts)
 
     report = ConsistencyReport(
-        consistent           = consistent,
-        inconsistent         = inconsistent,
-        suspicious           = suspicious,
-        registry             = registry,
-        cross_module_issues  = cross_module,
-        dict_constant_issues = dict_issues,
+        consistent=consistent,
+        inconsistent=inconsistent,
+        suspicious=suspicious,
+        registry=registry,
+        cross_module_issues=cross_module,
+        dict_constant_issues=dict_issues,
     )
     return _print_report(report, root)
 

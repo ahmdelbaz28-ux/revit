@@ -38,11 +38,10 @@ NFPA 72 References:
 
 from __future__ import annotations
 
-import math
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional
 from enum import Enum
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -51,18 +50,21 @@ logger = logging.getLogger(__name__)
 # Detector Technology Types
 # ──────────────────────────────────────────────────────────────────
 
+
 class DetectorTechnology(Enum):
     """Detector technology types per NFPA 72 Chapter 17."""
-    POINT_SMOKE = "POINT_SMOKE"       # Spot-type photoelectric/ionization
-    POINT_HEAT = "POINT_HEAT"         # Spot-type heat detector
-    BEAM_SMOKE = "BEAM_SMOKE"         # Projected beam-type
-    ASD = "ASD"                       # Aspirating Smoke Detection
-    DUCT_SMOKE = "DUCT_SMOKE"         # Duct smoke detector
+
+    POINT_SMOKE = "POINT_SMOKE"  # Spot-type photoelectric/ionization
+    POINT_HEAT = "POINT_HEAT"  # Spot-type heat detector
+    BEAM_SMOKE = "BEAM_SMOKE"  # Projected beam-type
+    ASD = "ASD"  # Aspirating Smoke Detection
+    DUCT_SMOKE = "DUCT_SMOKE"  # Duct smoke detector
 
 
 # ──────────────────────────────────────────────────────────────────
 # Technology Decision
 # ──────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class TechnologyDecision:
@@ -79,6 +81,7 @@ class TechnologyDecision:
         warnings: Advisory warnings.
         fallback_technology: Technology to use if preferred is unavailable.
     """
+
     technology: DetectorTechnology
     ceiling_height_m: float
     slope_degrees: float = 0.0
@@ -107,28 +110,29 @@ _BEAM_MAX_CEILING_M = 25.0  # Engineering practice — beyond this, ASD preferre
 
 # Slope thresholds per NFPA 72 §17.6.3.4
 _SLOPE_RIDGE_ZONE_THRESHOLD_DEG = 7.125  # 1 in 8 pitch — ridge zone required
-_STEEP_SLOPE_THRESHOLD_DEG = 30.0        # Beyond this, spot detectors impractical
+_STEEP_SLOPE_THRESHOLD_DEG = 30.0  # Beyond this, spot detectors impractical
 
 # High ceiling WARNING threshold (still within NFPA table, but cost-inefficient)
 _HIGH_CEILING_ECONOMIC_THRESHOLD_M = 9.1  # Consider beam for cost efficiency
 
 # NFPA 72 Table 17.6.3.1.1 — Height-adjusted smoke spacing
 _NFPA72_SMOKE_SPACING_TABLE = [
-    (3.0,   9.10),   # 30ft listed spacing
-    (3.7,   8.70),
-    (4.6,   8.20),
-    (5.5,   7.70),
-    (6.1,   7.30),
-    (7.6,   6.80),
-    (9.1,   6.40),
-    (10.7,  6.00),
-    (12.2,  5.60),   # Lowest spacing in the table
+    (3.0, 9.10),  # 30ft listed spacing
+    (3.7, 8.70),
+    (4.6, 8.20),
+    (5.5, 7.70),
+    (6.1, 7.30),
+    (7.6, 6.80),
+    (9.1, 6.40),
+    (10.7, 6.00),
+    (12.2, 5.60),  # Lowest spacing in the table
 ]
 
 
 # ──────────────────────────────────────────────────────────────────
 # Technology Dispatcher
 # ──────────────────────────────────────────────────────────────────
+
 
 class EliteTechnologyDispatcher:
     """Automatic detector technology selection per NFPA 72-2022.
@@ -186,9 +190,7 @@ class EliteTechnologyDispatcher:
 
         # ─── Safety: reject invalid heights ─────────────────────────
         if ceiling_height_m <= 0:
-            raise ValueError(
-                f"Ceiling height must be positive, got {ceiling_height_m}m."
-            )
+            raise ValueError(f"Ceiling height must be positive, got {ceiling_height_m}m.")
 
         # V20.2 FIX: Handle heat detector category.
         # Previously, detector_category was accepted but IGNORED, causing
@@ -197,6 +199,7 @@ class EliteTechnologyDispatcher:
         # NFPA 72 Table 17.6.3.1.1 / Table 17.6.3.5.1.
         if detector_category == "heat":
             from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+
             heat_spec = calculate_coverage_radius_from_height(ceiling_height_m, "heat")
             return TechnologyDecision(
                 technology=DetectorTechnology.POINT_HEAT,
@@ -341,6 +344,7 @@ class EliteTechnologyDispatcher:
 # ──────────────────────────────────────────────────────────────────
 # Integration helper for FloorAnalyser
 # ──────────────────────────────────────────────────────────────────
+
 
 def dispatch_detector_technology(room_dict: dict) -> TechnologyDecision:
     """Convenience function for FloorAnalyser integration.

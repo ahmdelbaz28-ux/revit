@@ -26,18 +26,22 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
 
-from fireai.core.models_v21 import (
-    ATEXEquipmentSpec, ZoneType, TemperatureClass, _select_temp_class,
-    _select_temp_class_with_margin, HazardType,
-)
 from fireai.core.international_reg_selector import (
-    ATEXZone, HazardSystem, HazardClass,
+    ATEXZone,
+    HazardSystem,
 )
-
+from fireai.core.models_v21 import (
+    ATEXEquipmentSpec,
+    HazardType,
+    TemperatureClass,
+    ZoneType,
+    _select_temp_class,
+    _select_temp_class_with_margin,
+)
 
 # ── GAP-05: Zone/hazard_type cross-validation ────────────────────────────
 
-_GAS_ZONES  = {ZoneType.ZONE_0, ZoneType.ZONE_1, ZoneType.ZONE_2}
+_GAS_ZONES = {ZoneType.ZONE_0, ZoneType.ZONE_1, ZoneType.ZONE_2}
 _DUST_ZONES = {ZoneType.ZONE_20, ZoneType.ZONE_21, ZoneType.ZONE_22}
 
 
@@ -80,6 +84,7 @@ def _validate_zone_hazard_consistency(
             "IEC 60079-10-1:2015 §5.3."
         )
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,8 +92,10 @@ logger = logging.getLogger(__name__)
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class EquipmentProtectionLevel(str, Enum):
     """EPL per IEC 60079-0:2017 §5."""
+
     Ga = "Ga"
     Gb = "Gb"
     Gc = "Gc"
@@ -101,6 +108,7 @@ class EquipmentProtectionLevel(str, Enum):
 
 class ATEXCategory(str, Enum):
     """ATEX equipment categories (2014/34/EU Annex I)."""
+
     CAT_1G = "1G"
     CAT_2G = "2G"
     CAT_3G = "3G"
@@ -113,26 +121,27 @@ class ATEXCategory(str, Enum):
 
 class ProtectionType(str, Enum):
     """IEC 60079 protection concepts."""
-    d   = "d"
-    e   = "e"
-    ia  = "ia"
-    ib  = "ib"
-    ic  = "ic"
-    ma  = "ma"
-    mb  = "mb"
-    nA  = "nA"
-    nC  = "nC"
-    nR  = "nR"
-    o   = "o"
-    p   = "p"
-    q   = "q"
-    s   = "s"
-    tD  = "tD"
+
+    d = "d"
+    e = "e"
+    ia = "ia"
+    ib = "ib"
+    ic = "ic"
+    ma = "ma"
+    mb = "mb"
+    nA = "nA"
+    nC = "nC"
+    nR = "nR"
+    o = "o"
+    p = "p"
+    q = "q"
+    s = "s"
+    tD = "tD"
 
 
 class InstallationClass(str, Enum):
-    CLASS_I   = "CLASS_I"
-    CLASS_II  = "CLASS_II"
+    CLASS_I = "CLASS_I"
+    CLASS_II = "CLASS_II"
     CLASS_III = "CLASS_III"
 
 
@@ -141,18 +150,18 @@ class InstallationClass(str, Enum):
 # ---------------------------------------------------------------------------
 
 _ZONE_TO_EPL: Dict[ATEXZone, EquipmentProtectionLevel] = {
-    ATEXZone.ZONE_0:  EquipmentProtectionLevel.Ga,
-    ATEXZone.ZONE_1:  EquipmentProtectionLevel.Gb,
-    ATEXZone.ZONE_2:  EquipmentProtectionLevel.Gc,
+    ATEXZone.ZONE_0: EquipmentProtectionLevel.Ga,
+    ATEXZone.ZONE_1: EquipmentProtectionLevel.Gb,
+    ATEXZone.ZONE_2: EquipmentProtectionLevel.Gc,
     ATEXZone.ZONE_20: EquipmentProtectionLevel.Da,
     ATEXZone.ZONE_21: EquipmentProtectionLevel.Db,
     ATEXZone.ZONE_22: EquipmentProtectionLevel.Dc,
 }
 
 _ZONE_TO_CATEGORY: Dict[ATEXZone, ATEXCategory] = {
-    ATEXZone.ZONE_0:  ATEXCategory.CAT_1G,
-    ATEXZone.ZONE_1:  ATEXCategory.CAT_2G,
-    ATEXZone.ZONE_2:  ATEXCategory.CAT_3G,
+    ATEXZone.ZONE_0: ATEXCategory.CAT_1G,
+    ATEXZone.ZONE_1: ATEXCategory.CAT_2G,
+    ATEXZone.ZONE_2: ATEXCategory.CAT_3G,
     ATEXZone.ZONE_20: ATEXCategory.CAT_1D,
     ATEXZone.ZONE_21: ATEXCategory.CAT_2D,
     ATEXZone.ZONE_22: ATEXCategory.CAT_3D,
@@ -160,31 +169,57 @@ _ZONE_TO_CATEGORY: Dict[ATEXZone, ATEXCategory] = {
 
 _ZONE_PERMITTED_PROTECTIONS: Dict[ATEXZone, Set[ProtectionType]] = {
     ATEXZone.ZONE_0: {
-        ProtectionType.ia, ProtectionType.ma,
+        ProtectionType.ia,
+        ProtectionType.ma,
     },
     ATEXZone.ZONE_1: {
-        ProtectionType.d, ProtectionType.e, ProtectionType.ia,
-        ProtectionType.ib, ProtectionType.ma, ProtectionType.mb,
-        ProtectionType.o, ProtectionType.p, ProtectionType.q,
+        ProtectionType.d,
+        ProtectionType.e,
+        ProtectionType.ia,
+        ProtectionType.ib,
+        ProtectionType.ma,
+        ProtectionType.mb,
+        ProtectionType.o,
+        ProtectionType.p,
+        ProtectionType.q,
         ProtectionType.s,
     },
     ATEXZone.ZONE_2: {
-        ProtectionType.d, ProtectionType.e, ProtectionType.ia,
-        ProtectionType.ib, ProtectionType.ic, ProtectionType.ma,
-        ProtectionType.mb, ProtectionType.nA, ProtectionType.nC,
-        ProtectionType.nR, ProtectionType.o, ProtectionType.p,
-        ProtectionType.q, ProtectionType.s,
+        ProtectionType.d,
+        ProtectionType.e,
+        ProtectionType.ia,
+        ProtectionType.ib,
+        ProtectionType.ic,
+        ProtectionType.ma,
+        ProtectionType.mb,
+        ProtectionType.nA,
+        ProtectionType.nC,
+        ProtectionType.nR,
+        ProtectionType.o,
+        ProtectionType.p,
+        ProtectionType.q,
+        ProtectionType.s,
     },
     ATEXZone.ZONE_20: {ProtectionType.ia, ProtectionType.ma, ProtectionType.tD},
     ATEXZone.ZONE_21: {
-        ProtectionType.ia, ProtectionType.ib, ProtectionType.ma,
-        ProtectionType.mb, ProtectionType.d, ProtectionType.p,
+        ProtectionType.ia,
+        ProtectionType.ib,
+        ProtectionType.ma,
+        ProtectionType.mb,
+        ProtectionType.d,
+        ProtectionType.p,
         ProtectionType.tD,
     },
     ATEXZone.ZONE_22: {
-        ProtectionType.ia, ProtectionType.ib, ProtectionType.ic,
-        ProtectionType.ma, ProtectionType.mb, ProtectionType.d,
-        ProtectionType.p, ProtectionType.tD, ProtectionType.nA,
+        ProtectionType.ia,
+        ProtectionType.ib,
+        ProtectionType.ic,
+        ProtectionType.ma,
+        ProtectionType.mb,
+        ProtectionType.d,
+        ProtectionType.p,
+        ProtectionType.tD,
+        ProtectionType.nA,
     },
 }
 
@@ -211,9 +246,9 @@ _EPL_HIERARCHY.update(_EPL_MINING_HIERARCHY)
 
 # Fix #17: Fire detector IS level per zone
 _FIRE_DETECTOR_IS_LEVEL: Dict[ATEXZone, str] = {
-    ATEXZone.ZONE_0:  "ia",
-    ATEXZone.ZONE_1:  "ib",
-    ATEXZone.ZONE_2:  "ic",
+    ATEXZone.ZONE_0: "ia",
+    ATEXZone.ZONE_1: "ib",
+    ATEXZone.ZONE_2: "ic",
     ATEXZone.ZONE_20: "ia",
     ATEXZone.ZONE_21: "ib",
     ATEXZone.ZONE_22: "ic",
@@ -221,12 +256,12 @@ _FIRE_DETECTOR_IS_LEVEL: Dict[ATEXZone, str] = {
 
 # V21 ZoneType <-> ATEXZone mapping
 _V21_TO_ATEX_ZONE: Dict[ZoneType, ATEXZone] = {
-    ZoneType.ZONE_0:       ATEXZone.ZONE_0,
-    ZoneType.ZONE_1:       ATEXZone.ZONE_1,
-    ZoneType.ZONE_2:       ATEXZone.ZONE_2,
-    ZoneType.ZONE_20:      ATEXZone.ZONE_20,
-    ZoneType.ZONE_21:      ATEXZone.ZONE_21,
-    ZoneType.ZONE_22:      ATEXZone.ZONE_22,
+    ZoneType.ZONE_0: ATEXZone.ZONE_0,
+    ZoneType.ZONE_1: ATEXZone.ZONE_1,
+    ZoneType.ZONE_2: ATEXZone.ZONE_2,
+    ZoneType.ZONE_20: ATEXZone.ZONE_20,
+    ZoneType.ZONE_21: ATEXZone.ZONE_21,
+    ZoneType.ZONE_22: ATEXZone.ZONE_22,
     ZoneType.UNCLASSIFIED: ATEXZone.SAFE,
 }
 
@@ -235,32 +270,35 @@ _V21_TO_ATEX_ZONE: Dict[ZoneType, ATEXZone] = {
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class ATEXValidationResult:
     """Result of validating proposed equipment against zone requirements."""
-    equipment_id:        str
-    zone:                ATEXZone
-    proposed_epl:        EquipmentProtectionLevel
-    required_epl:        EquipmentProtectionLevel
+
+    equipment_id: str
+    zone: ATEXZone
+    proposed_epl: EquipmentProtectionLevel
+    required_epl: EquipmentProtectionLevel
     proposed_protection: ProtectionType
-    is_permitted:        bool
-    is_epl_sufficient:   bool
-    is_compliant:        bool
-    failure_reasons:     Tuple[str, ...]
-    recommendation:      str
+    is_permitted: bool
+    is_epl_sufficient: bool
+    is_compliant: bool
+    failure_reasons: Tuple[str, ...]
+    recommendation: str
 
 
 @dataclass(frozen=True)
 class ATEXArbitrationResult:
     """Complete ATEX arbitration result for a space."""
-    space_id:            str
-    equipment_spec:      ATEXEquipmentSpec
-    hazard_system:       HazardSystem
-    regulatory_note:     str
-    fire_detector_spec:  Optional[str]  = None
-    hac_warnings:        Tuple[str, ...] = ()  # V21.2 Round 4: propagated from HAC
-    warnings:            Tuple[str, ...] = ()
-    errors:              Tuple[str, ...] = ()
+
+    space_id: str
+    equipment_spec: ATEXEquipmentSpec
+    hazard_system: HazardSystem
+    regulatory_note: str
+    fire_detector_spec: Optional[str] = None
+    hac_warnings: Tuple[str, ...] = ()  # V21.2 Round 4: propagated from HAC
+    warnings: Tuple[str, ...] = ()
+    errors: Tuple[str, ...] = ()
 
     @property
     def is_valid(self) -> bool:
@@ -277,25 +315,41 @@ class ATEXArbitrationResult:
 # ---------------------------------------------------------------------------
 
 _NEC_TO_IEC_GAS_GROUP: Dict[str, str] = {
-    "A": "IIC", "B": "IIC", "C": "IIB", "D": "IIA",
+    "A": "IIC",
+    "B": "IIC",
+    "C": "IIB",
+    "D": "IIA",
     # V43 FIX: NEC Group G (combustible dusts — flour, grain, wood) maps to
     # IEC IIIB (non-conductive combustible dust), NOT IIIA (combustible flyings).
     # IIIA covers textile fibers/flyings which have different equipment requirements.
     # Per NFPA 499-2021 and IEC 60079-0:2017 §5.
-    "E": "IIIC", "F": "IIIB", "G": "IIIB",
+    "E": "IIIC",
+    "F": "IIIB",
+    "G": "IIIB",
 }
 
 _TEMP_CLASS_MAP: Dict[str, float] = {
-    "T1": 450.0, "T2": 300.0, "T2A": 280.0, "T2B": 260.0,
-    "T2C": 230.0, "T2D": 215.0, "T3": 200.0, "T3A": 180.0,
-    "T3B": 165.0, "T3C": 160.0, "T4": 135.0, "T4A": 120.0,
-    "T5": 100.0, "T6": 85.0,
+    "T1": 450.0,
+    "T2": 300.0,
+    "T2A": 280.0,
+    "T2B": 260.0,
+    "T2C": 230.0,
+    "T2D": 215.0,
+    "T3": 200.0,
+    "T3A": 180.0,
+    "T3B": 165.0,
+    "T3C": 160.0,
+    "T4": 135.0,
+    "T4A": 120.0,
+    "T5": 100.0,
+    "T6": 85.0,
 }
 
 
 # ---------------------------------------------------------------------------
 # ATEX Arbiter
 # ---------------------------------------------------------------------------
+
 
 class ATEXHazardousArbiter:
     """
@@ -310,14 +364,14 @@ class ATEXHazardousArbiter:
 
     def arbitrate_v21(
         self,
-        zone:           ZoneType,
-        hazard_type:    HazardType,
+        zone: ZoneType,
+        hazard_type: HazardType,
         autoignition_c: Optional[float] = None,
-        nec_group:      str = "",
-        hazard_system:  HazardSystem = HazardSystem.ATEX_ZONE,
-        hac_warnings:   List[str] = None,
-        hac_critical:   List[str] = None,
-        space_id:       str = "",
+        nec_group: str = "",
+        hazard_system: HazardSystem = HazardSystem.ATEX_ZONE,
+        hac_warnings: List[str] = None,
+        hac_critical: List[str] = None,
+        space_id: str = "",
     ) -> ATEXArbitrationResult:
         """
         V21 arbitrate using Pydantic ATEXEquipmentSpec.
@@ -326,7 +380,7 @@ class ATEXHazardousArbiter:
         hac_warnings = hac_warnings or []
         hac_critical = hac_critical or []
         warnings: List[str] = list(hac_warnings)
-        errors:   List[str] = []
+        errors: List[str] = []
 
         # GAP-05: Cross-validate zone and hazard_type
         _validate_zone_hazard_consistency(zone, hazard_type, errors, warnings)
@@ -341,8 +395,11 @@ class ATEXHazardousArbiter:
             return ATEXArbitrationResult(
                 space_id=space_id,
                 equipment_spec=ATEXEquipmentSpec(
-                    zone=zone, epl_required="Gc", atex_category="3G",
-                    temp_class=TemperatureClass.T4, protection_modes=["n"],
+                    zone=zone,
+                    epl_required="Gc",
+                    atex_category="3G",
+                    temp_class=TemperatureClass.T4,
+                    protection_modes=["n"],
                 ),
                 hazard_system=hazard_system,
                 regulatory_note="ERROR: Unknown zone",
@@ -409,18 +466,16 @@ class ATEXHazardousArbiter:
 
         # Fix #17: Fire detector IS level
         is_level = _FIRE_DETECTOR_IS_LEVEL.get(atex_zone, "ib")
-        fire_det_marking = (
-            f"{marking_prefix} {is_level} {iec_group} "
-            f"{temp_class.value} {epl_str}"
-        )
+        fire_det_marking = f"{marking_prefix} {is_level} {iec_group} {temp_class.value} {epl_str}"
 
         # Regulatory note
         notified_body = atex_category_legacy in (
-            ATEXCategory.CAT_1G, ATEXCategory.CAT_2G,
-            ATEXCategory.CAT_1D, ATEXCategory.CAT_2D,
+            ATEXCategory.CAT_1G,
+            ATEXCategory.CAT_2G,
+            ATEXCategory.CAT_1D,
+            ATEXCategory.CAT_2D,
         )
-        reg_note = self._build_regulatory_note(
-            atex_zone, atex_category_legacy, hazard_system, notified_body)
+        reg_note = self._build_regulatory_note(atex_zone, atex_category_legacy, hazard_system, notified_body)
 
         # Zone warnings
         if atex_zone in (ATEXZone.ZONE_0, ATEXZone.ZONE_20):
@@ -453,8 +508,11 @@ class ATEXHazardousArbiter:
             # Use minimal safe fallback spec for the zone
             try:
                 fallback_spec = ATEXEquipmentSpec(
-                    zone=zone, epl_required=epl_str, atex_category=cat_str,
-                    temp_class=temp_class, protection_modes=["n"],
+                    zone=zone,
+                    epl_required=epl_str,
+                    atex_category=cat_str,
+                    temp_class=temp_class,
+                    protection_modes=["n"],
                 )
             except Exception:
                 # V43 FIX: Ultimate fallback must NOT downgrade Zone 0 to Zone 2.
@@ -466,15 +524,21 @@ class ATEXHazardousArbiter:
                 # ignition source in the most hazardous environment.
                 try:
                     fallback_spec = ATEXEquipmentSpec(
-                        zone=zone, epl_required=epl_str, atex_category=cat_str,
-                        temp_class=temp_class, protection_modes=["ia"],
+                        zone=zone,
+                        epl_required=epl_str,
+                        atex_category=cat_str,
+                        temp_class=temp_class,
+                        protection_modes=["ia"],
                     )
                 except Exception:
                     # Absolute last resort: use Zone 0 / Ga / 1G / T4 / ia
                     # This is the MOST conservative spec possible
                     fallback_spec = ATEXEquipmentSpec(
-                        zone=ZoneType.ZONE_0, epl_required="Ga", atex_category="1G",
-                        temp_class=TemperatureClass.T4, protection_modes=["ia"],
+                        zone=ZoneType.ZONE_0,
+                        epl_required="Ga",
+                        atex_category="1G",
+                        temp_class=TemperatureClass.T4,
+                        protection_modes=["ia"],
                     )
             return ATEXArbitrationResult(
                 space_id=space_id,
@@ -488,7 +552,10 @@ class ATEXHazardousArbiter:
 
         logger.info(
             "ATEX Arbiter V21: zone=%s EPL=%s category=%s temp=%s",
-            zone.value, epl_str, cat_str, temp_class.value,
+            zone.value,
+            epl_str,
+            cat_str,
+            temp_class.value,
         )
 
         return ATEXArbitrationResult(
@@ -513,10 +580,9 @@ class ATEXHazardousArbiter:
         Legacy arbitrate — accepts HACResultLegacy from hac_classification_engine.
         Prefer arbitrate_v21() for new code.
         """
-        from fireai.core.hac_classification_engine import HACResultLegacy
 
         warnings: List[str] = list(hac_result.warnings)
-        errors:   List[str] = []
+        errors: List[str] = []
 
         zone = hac_result.classified_zone
         substance = hac_result.substance
@@ -528,8 +594,10 @@ class ATEXHazardousArbiter:
         atex_category = _ZONE_TO_CATEGORY.get(zone, ATEXCategory.CAT_2G)
         permitted = _ZONE_PERMITTED_PROTECTIONS.get(zone, set())
         notified_body = atex_category in (
-            ATEXCategory.CAT_1G, ATEXCategory.CAT_2G,
-            ATEXCategory.CAT_1D, ATEXCategory.CAT_2D,
+            ATEXCategory.CAT_1G,
+            ATEXCategory.CAT_2G,
+            ATEXCategory.CAT_1D,
+            ATEXCategory.CAT_2D,
         )
 
         nec_grp = substance.nec_group.upper() if substance.nec_group else ""
@@ -540,7 +608,12 @@ class ATEXHazardousArbiter:
         # at line 576. Moved v21_zone definition here, before the autoignition check
         # that uses it for _select_temp_class_with_margin.
         from fireai.core.models_v21 import ZoneType as V21ZoneType
-        v21_zone = V21ZoneType(zone.value.replace("SAFE", "UNCLASSIFIED")) if zone != ATEXZone.SAFE else V21ZoneType.UNCLASSIFIED
+
+        v21_zone = (
+            V21ZoneType(zone.value.replace("SAFE", "UNCLASSIFIED"))
+            if zone != ATEXZone.SAFE
+            else V21ZoneType.UNCLASSIFIED
+        )
 
         # Fix #15
         temp_class = substance.temperature_class
@@ -577,19 +650,13 @@ class ATEXHazardousArbiter:
         marking_prefix = "AEx" if hazard_system == HazardSystem.NEC_DIVISION else "Ex"
         recommended_protection = self._recommend_protection(zone)
 
-        full_marking = (
-            f"{marking_prefix} {recommended_protection.value} "
-            f"{iec_group} {temp_class} {required_epl.value}"
-        )
+        full_marking = f"{marking_prefix} {recommended_protection.value} {iec_group} {temp_class} {required_epl.value}"
 
         # Fix #17
         is_level = _FIRE_DETECTOR_IS_LEVEL.get(zone, "ib")
-        fire_det_marking = (
-            f"{marking_prefix} {is_level} {iec_group} {temp_class} {required_epl.value}"
-        )
+        fire_det_marking = f"{marking_prefix} {is_level} {iec_group} {temp_class} {required_epl.value}"
 
-        reg_note = self._build_regulatory_note(
-            zone, atex_category, hazard_system, notified_body)
+        reg_note = self._build_regulatory_note(zone, atex_category, hazard_system, notified_body)
 
         if zone in (ATEXZone.ZONE_0, ATEXZone.ZONE_20):
             warnings.append(
@@ -599,8 +666,7 @@ class ATEXHazardousArbiter:
             )
         if notified_body:
             warnings.append(
-                f"ATEX Category {atex_category.value}: "
-                "Notified Body certification mandatory. ATEX 2014/34/EU Art. 8."
+                f"ATEX Category {atex_category.value}: Notified Body certification mandatory. ATEX 2014/34/EU Art. 8."
             )
 
         try:
@@ -608,7 +674,9 @@ class ATEXHazardousArbiter:
                 zone=v21_zone,
                 epl_required=required_epl.value,
                 atex_category=atex_category.value,
-                temp_class=TemperatureClass(temp_class) if temp_class in [t.value for t in TemperatureClass] else TemperatureClass.T4,
+                temp_class=TemperatureClass(temp_class)
+                if temp_class in [t.value for t in TemperatureClass]
+                else TemperatureClass.T4,
                 protection_modes=sorted([p.value for p in permitted]),
                 hac_warnings=list(hac_result.warnings),
             )
@@ -638,8 +706,11 @@ class ATEXHazardousArbiter:
                 except Exception:
                     # Ultimate fallback: Zone 0 / Ga / 1G / T4 / ia (most conservative)
                     equipment_spec = ATEXEquipmentSpec(
-                        zone=V21ZoneType.ZONE_0, epl_required="Ga", atex_category="1G",
-                        temp_class=TemperatureClass.T4, protection_modes=["ia"],
+                        zone=V21ZoneType.ZONE_0,
+                        epl_required="Ga",
+                        atex_category="1G",
+                        temp_class=TemperatureClass.T4,
+                        protection_modes=["ia"],
                     )
 
         return ATEXArbitrationResult(
@@ -655,14 +726,14 @@ class ATEXHazardousArbiter:
 
     def validate_equipment(
         self,
-        equipment_id:        str,
-        zone:                ATEXZone,
-        proposed_epl:        EquipmentProtectionLevel,
+        equipment_id: str,
+        zone: ATEXZone,
+        proposed_epl: EquipmentProtectionLevel,
         proposed_protection: ProtectionType,
     ) -> ATEXValidationResult:
         """Validate proposed equipment against zone requirements."""
         required_epl = _ZONE_TO_EPL.get(zone, EquipmentProtectionLevel.Gb)
-        permitted    = _ZONE_PERMITTED_PROTECTIONS.get(zone, set())
+        permitted = _ZONE_PERMITTED_PROTECTIONS.get(zone, set())
 
         is_permitted = proposed_protection in permitted
         is_epl_sufficient = self._epl_sufficient(proposed_epl, required_epl)
@@ -684,7 +755,8 @@ class ATEXHazardousArbiter:
         recommendation = (
             f"Use EPL {required_epl.value} equipment with protection type "
             f"{self._recommend_protection(zone).value} for {zone.value}."
-            if not is_compliant else "Equipment is compliant."
+            if not is_compliant
+            else "Equipment is compliant."
         )
 
         return ATEXValidationResult(
@@ -726,9 +798,9 @@ class ATEXHazardousArbiter:
     @staticmethod
     def _recommend_protection(zone: ATEXZone) -> ProtectionType:
         best = {
-            ATEXZone.ZONE_0:  ProtectionType.ia,
-            ATEXZone.ZONE_1:  ProtectionType.d,
-            ATEXZone.ZONE_2:  ProtectionType.nA,
+            ATEXZone.ZONE_0: ProtectionType.ia,
+            ATEXZone.ZONE_1: ProtectionType.d,
+            ATEXZone.ZONE_2: ProtectionType.nA,
             ATEXZone.ZONE_20: ProtectionType.ia,
             ATEXZone.ZONE_21: ProtectionType.tD,
             ATEXZone.ZONE_22: ProtectionType.tD,
@@ -747,6 +819,7 @@ class ATEXHazardousArbiter:
         # autoignition = ignition source in explosive atmosphere.
         # Now raise ValueError — the engineer MUST be informed.
         import logging as _log
+
         _log.getLogger(__name__).critical(
             "ATEX-001: No safe temperature class exists for autoignition temperature "
             "%.1f°C. Even T6 (max 85°C) could ignite the atmosphere. "

@@ -44,11 +44,11 @@ Provenance:
   Returns ``DecisionProvenance`` via the ``.new()`` factory when
   ``src.v8_core`` is available; degrades gracefully to plain dict otherwise.
 """
+
 from __future__ import annotations
 
-import hashlib
-import math
 import logging
+import math
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
@@ -57,11 +57,11 @@ from typing import Any, Dict, List, Optional
 # ---------------------------------------------------------------------------
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -106,19 +106,19 @@ RTI_RATIO_LIMIT: float = 1.0
 
 # Standard sprinkler temperature ratings (°C) per NFPA 13 Table 6.2.5.1
 STANDARD_SPRINKLER_TEMPS_C: Dict[str, float] = {
-    "ordinary": 68.3,       # 155 °F
-    "intermediate": 93.3,   # 200 °F
-    "high": 140.6,          # 286 °F
-    "extra_high": 182.2,    # 360 °F
+    "ordinary": 68.3,  # 155 °F
+    "intermediate": 93.3,  # 200 °F
+    "high": 140.6,  # 286 °F
+    "extra_high": 182.2,  # 360 °F
 }
 
 # Standard heat detector temperature ratings (°C) per UL 521
 STANDARD_HD_TEMPS_C: Dict[str, float] = {
-    "135F": 57.2,    # 135 °F — most common for shunt-trip
-    "145F": 62.8,    # 145 °F
-    "160F": 71.1,    # 160 °F
-    "190F": 87.8,    # 190 °F
-    "200F": 93.3,    # 200 °F
+    "135F": 57.2,  # 135 °F — most common for shunt-trip
+    "145F": 62.8,  # 145 °F
+    "160F": 71.1,  # 160 °F
+    "190F": 87.8,  # 190 °F
+    "200F": 93.3,  # 200 °F
 }
 
 # Citations
@@ -131,6 +131,7 @@ _CITE_SFPE_RTI = "SFPE Handbook / UL 521 RTI"
 @dataclass(frozen=True)
 class ShuntTripResult:
     """Structured result for a single sprinkler head's shunt-trip audit."""
+
     sprinkler_id: str
     room_id: str
     has_dedicated_hd: bool
@@ -236,10 +237,14 @@ class ElevatorShuntTripAuditor:
             # This means a sprinkler with corrupt data passes audit → electrocution risk.
             # Per Life-Safety Rule 2: every code change must be committed + pushed.
             _spk_nan = []
-            if not math.isfinite(spk_x): _spk_nan.append("x")
-            if not math.isfinite(spk_y): _spk_nan.append("y")
-            if not math.isfinite(spk_temp): _spk_nan.append("temp_rating_C")
-            if not math.isfinite(spk_rti): _spk_nan.append("rti")
+            if not math.isfinite(spk_x):
+                _spk_nan.append("x")
+            if not math.isfinite(spk_y):
+                _spk_nan.append("y")
+            if not math.isfinite(spk_temp):
+                _spk_nan.append("temp_rating_C")
+            if not math.isfinite(spk_rti):
+                _spk_nan.append("rti")
             if _spk_nan:
                 desc = (
                     f"NaN/Inf in sprinkler '{spk_id}' fields: {', '.join(_spk_nan)}. "
@@ -248,13 +253,21 @@ class ElevatorShuntTripAuditor:
                 )
                 logger.critical(desc)
                 if Violation is not None:
-                    violations.append(Violation(severity="CRITICAL",
-                        citation=f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1}",
-                        description=desc))
+                    violations.append(
+                        Violation(
+                            severity="CRITICAL",
+                            citation=f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1}",
+                            description=desc,
+                        )
+                    )
                 else:
-                    violations.append({"severity": "CRITICAL",
-                        "citation": f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1}",
-                        "description": desc})
+                    violations.append(
+                        {
+                            "severity": "CRITICAL",
+                            "citation": f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1}",
+                            "description": desc,
+                        }
+                    )
                 continue  # Skip this sprinkler — cannot verify safety
             required_hd_temp = round(spk_temp - self.safety_gap_C, 1)
 
@@ -270,7 +283,7 @@ class ElevatorShuntTripAuditor:
             used_hd_ids = set()
             # Collect IDs of HDs already assigned to previous sprinklers
             for prev_result in detailed_results:
-                if hasattr(prev_result, 'hd_device_id') and prev_result.hd_device_id:
+                if hasattr(prev_result, "hd_device_id") and prev_result.hd_device_id:
                     used_hd_ids.add(prev_result.hd_device_id)
 
             for hd in heat_detector_locations:
@@ -297,8 +310,10 @@ class ElevatorShuntTripAuditor:
                 # A heat detector with corrupt thermal data would PASS the audit,
                 # potentially allowing sprinkler to burst before power is severed.
                 _hd_nan = []
-                if not math.isfinite(hd_temp): _hd_nan.append("temp_rating_C")
-                if not math.isfinite(hd_rti): _hd_nan.append("rti")
+                if not math.isfinite(hd_temp):
+                    _hd_nan.append("temp_rating_C")
+                if not math.isfinite(hd_rti):
+                    _hd_nan.append("rti")
                 if _hd_nan:
                     # Force BOTH violations when data is corrupt (fail-safe)
                     temp_violation = True
@@ -319,8 +334,7 @@ class ElevatorShuntTripAuditor:
                     parts = []
                     if temp_violation:
                         parts.append(
-                            f"Temperature rating ({hd_temp:.1f}°C) exceeds "
-                            f"max allowed ({required_hd_temp:.1f}°C)"
+                            f"Temperature rating ({hd_temp:.1f}°C) exceeds max allowed ({required_hd_temp:.1f}°C)"
                         )
                     if rti_violation:
                         parts.append(
@@ -335,56 +349,66 @@ class ElevatorShuntTripAuditor:
                         + f". Water shock on 480V windings is IMMINENT."
                     )
                     if Violation is not None:
-                        violations.append(Violation(
-                            severity="CRITICAL",
-                            citation=f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1} / {_CITE_SFPE_RTI}",
-                            description=desc,
-                        ))
+                        violations.append(
+                            Violation(
+                                severity="CRITICAL",
+                                citation=f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1} / {_CITE_SFPE_RTI}",
+                                description=desc,
+                            )
+                        )
                     else:
-                        violations.append({
-                            "severity": "CRITICAL",
-                            "citation": f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1} / {_CITE_SFPE_RTI}",
-                            "description": desc,
-                        })
+                        violations.append(
+                            {
+                                "severity": "CRITICAL",
+                                "citation": f"{_CITE_NFPA72_21_4_2} / {_CITE_ASME_A17_1} / {_CITE_SFPE_RTI}",
+                                "description": desc,
+                            }
+                        )
                     logger.critical(desc)
-                    detailed_results.append(ShuntTripResult(
-                        sprinkler_id=spk_id,
-                        room_id=room_id,
-                        has_dedicated_hd=True,
-                        hd_device_id=hd_id,
-                        hd_distance_m=round(best_dist, 4),
-                        hd_temp_rating_C=hd_temp,
-                        hd_rti=hd_rti,
-                        required_hd_temp_C=round(required_hd_temp, 1),
-                        sprinkler_temp_C=spk_temp,
-                        sprinkler_rti=spk_rti,
-                        rti_violation=rti_violation,
-                        temp_violation=temp_violation,
-                        compliant=False,
-                        violation_description=desc,
-                    ))
+                    detailed_results.append(
+                        ShuntTripResult(
+                            sprinkler_id=spk_id,
+                            room_id=room_id,
+                            has_dedicated_hd=True,
+                            hd_device_id=hd_id,
+                            hd_distance_m=round(best_dist, 4),
+                            hd_temp_rating_C=hd_temp,
+                            hd_rti=hd_rti,
+                            required_hd_temp_C=round(required_hd_temp, 1),
+                            sprinkler_temp_C=spk_temp,
+                            sprinkler_rti=spk_rti,
+                            rti_violation=rti_violation,
+                            temp_violation=temp_violation,
+                            compliant=False,
+                            violation_description=desc,
+                        )
+                    )
                 else:
                     # ALL CHECKS PASSED → inject shunt-trip logic
-                    injections.append({
-                        "input": hd_id,
-                        "action": "SHUNT_TRIP_POWER_DELAY_0s",
-                        "target": f"ELEVATOR_BREAKER_{room_id}",
-                    })
-                    detailed_results.append(ShuntTripResult(
-                        sprinkler_id=spk_id,
-                        room_id=room_id,
-                        has_dedicated_hd=True,
-                        hd_device_id=hd_id,
-                        hd_distance_m=round(best_dist, 4),
-                        hd_temp_rating_C=hd_temp,
-                        hd_rti=hd_rti,
-                        required_hd_temp_C=round(required_hd_temp, 1),
-                        sprinkler_temp_C=spk_temp,
-                        sprinkler_rti=spk_rti,
-                        rti_violation=False,
-                        temp_violation=False,
-                        compliant=True,
-                    ))
+                    injections.append(
+                        {
+                            "input": hd_id,
+                            "action": "SHUNT_TRIP_POWER_DELAY_0s",
+                            "target": f"ELEVATOR_BREAKER_{room_id}",
+                        }
+                    )
+                    detailed_results.append(
+                        ShuntTripResult(
+                            sprinkler_id=spk_id,
+                            room_id=room_id,
+                            has_dedicated_hd=True,
+                            hd_device_id=hd_id,
+                            hd_distance_m=round(best_dist, 4),
+                            hd_temp_rating_C=hd_temp,
+                            hd_rti=hd_rti,
+                            required_hd_temp_C=round(required_hd_temp, 1),
+                            sprinkler_temp_C=spk_temp,
+                            sprinkler_rti=spk_rti,
+                            rti_violation=False,
+                            temp_violation=False,
+                            compliant=True,
+                        )
+                    )
             else:
                 # FATAL OMISSION: No heat detector within range
                 desc = (
@@ -396,39 +420,42 @@ class ElevatorShuntTripAuditor:
                     f"electrocution."
                 )
                 if Violation is not None:
-                    violations.append(Violation(
-                        severity="CRITICAL",
-                        citation=_CITE_NFPA72_21_4_1,
-                        description=desc,
-                    ))
+                    violations.append(
+                        Violation(
+                            severity="CRITICAL",
+                            citation=_CITE_NFPA72_21_4_1,
+                            description=desc,
+                        )
+                    )
                 else:
-                    violations.append({
-                        "severity": "CRITICAL",
-                        "citation": _CITE_NFPA72_21_4_1,
-                        "description": desc,
-                    })
+                    violations.append(
+                        {
+                            "severity": "CRITICAL",
+                            "citation": _CITE_NFPA72_21_4_1,
+                            "description": desc,
+                        }
+                    )
                 logger.critical(desc)
-                detailed_results.append(ShuntTripResult(
-                    sprinkler_id=spk_id,
-                    room_id=room_id,
-                    has_dedicated_hd=False,
-                    hd_distance_m=round(best_dist, 4) if best_hd else None,
-                    hd_temp_rating_C=None,
-                    hd_rti=None,
-                    required_hd_temp_C=round(required_hd_temp, 1),
-                    sprinkler_temp_C=spk_temp,
-                    sprinkler_rti=spk_rti,
-                    rti_violation=False,
-                    temp_violation=False,
-                    compliant=False,
-                    violation_description=desc,
-                ))
+                detailed_results.append(
+                    ShuntTripResult(
+                        sprinkler_id=spk_id,
+                        room_id=room_id,
+                        has_dedicated_hd=False,
+                        hd_distance_m=round(best_dist, 4) if best_hd else None,
+                        hd_temp_rating_C=None,
+                        hd_rti=None,
+                        required_hd_temp_C=round(required_hd_temp, 1),
+                        sprinkler_temp_C=spk_temp,
+                        sprinkler_rti=spk_rti,
+                        rti_violation=False,
+                        temp_violation=False,
+                        compliant=False,
+                        violation_description=desc,
+                    )
+                )
 
         # Count sprinklers inside elevator spaces
-        sprinklers_in_shaft = sum(
-            1 for s in sprinkler_locations
-            if s.get("room_id", "") in elevator_spaces
-        )
+        sprinklers_in_shaft = sum(1 for s in sprinkler_locations if s.get("room_id", "") in elevator_spaces)
 
         safe = len(violations) == 0
 
@@ -502,7 +529,9 @@ class ElevatorShuntTripAuditor:
                     violations=violations if violations else None,
                 )
             except Exception as e:
-                logger.warning(f"V112: audit_hoistway_machine_room: failed to construct DecisionProvenance audit result: {e!r}")
+                logger.warning(
+                    f"V112: audit_hoistway_machine_room: failed to construct DecisionProvenance audit result: {e!r}"
+                )
                 pass
 
         # Fallback: plain dict

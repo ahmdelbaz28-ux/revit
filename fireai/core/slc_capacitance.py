@@ -43,22 +43,23 @@ Provenance:
   Returns ``DecisionProvenance`` via the ``.new()`` factory when
   ``src.v8_core`` is available; degrades gracefully to plain dict.
 """
+
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
 # ---------------------------------------------------------------------------
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -88,15 +89,15 @@ CABLE_CAPACITANCE_PF_PER_M: Dict[str, float] = {
 # Each addressable device on an SLC loop adds parasitic capacitance
 # — typically 15-30 pF per detector/module, up to 40-50 pF per isolator.
 # Source: Notifier NFS2-3030 p.17, System Sensor, Edwards datasheets.
-DEVICE_CAPACITANCE_PF: float = 25.0   # Conservative per-device parasitic (pF)
+DEVICE_CAPACITANCE_PF: float = 25.0  # Conservative per-device parasitic (pF)
 ISOLATOR_CAPACITANCE_PF: float = 40.0  # Isolator parasitic is higher (pF)
 
 # Manufacturer SLC protocol maximum total loop capacitance (µF)
 SLC_MAX_CAPACITANCE_UF: Dict[str, float] = {
-    "notifier": 0.50,    # Notifier FlashScan
-    "simplex": 0.75,     # Simplex IDNet
-    "siemens": 0.50,     # Siemens FDNet
-    "generic": 0.50,     # Conservative default
+    "notifier": 0.50,  # Notifier FlashScan
+    "simplex": 0.75,  # Simplex IDNet
+    "siemens": 0.50,  # Siemens FDNet
+    "generic": 0.50,  # Conservative default
 }
 
 # Default maximum capacitance
@@ -120,6 +121,7 @@ class SLCLoopSpec:
         manufacturer: FACP manufacturer key for capacitance limit.
         device_count: Number of addressable devices on the loop.
     """
+
     loop_id: str
     total_length_m: float
     wire_type: str = "FPLP_Shielded"
@@ -130,6 +132,7 @@ class SLCLoopSpec:
 @dataclass(frozen=True)
 class SLCCapacitanceResult:
     """Result for a single SLC loop's capacitance audit."""
+
     loop_id: str
     total_length_m: float
     wire_type: str
@@ -210,21 +213,28 @@ class SLCCapacitanceAuditor:
 
             # V20.2 FIX: Validate loop length is positive
             if total_length_m <= 0:
-                violations.append({
-                    "severity": "CRITICAL",
-                    "citation": f"{_CITE_NFPA72_12_2}",
-                    "description": (
-                        f"SLC loop '{loop_id}' has invalid length "
-                        f"{total_length_m}m. Length must be positive."
-                    ),
-                })
-                detailed_results.append(SLCCapacitanceResult(
-                    loop_id=loop_id, total_length_m=total_length_m,
-                    wire_type=wire_type, capacitance_pf=0.0,
-                    capacitance_uf=0.0, max_cap_uf=0.0,
-                    compliant=False, margin_uf=0.0,
-                    violation_description="Invalid loop length",
-                ))
+                violations.append(
+                    {
+                        "severity": "CRITICAL",
+                        "citation": f"{_CITE_NFPA72_12_2}",
+                        "description": (
+                            f"SLC loop '{loop_id}' has invalid length {total_length_m}m. Length must be positive."
+                        ),
+                    }
+                )
+                detailed_results.append(
+                    SLCCapacitanceResult(
+                        loop_id=loop_id,
+                        total_length_m=total_length_m,
+                        wire_type=wire_type,
+                        capacitance_pf=0.0,
+                        capacitance_uf=0.0,
+                        max_cap_uf=0.0,
+                        compliant=False,
+                        margin_uf=0.0,
+                        violation_description="Invalid loop length",
+                    )
+                )
                 continue
 
             # Get per-loop capacitance limit
@@ -269,17 +279,21 @@ class SLCCapacitanceAuditor:
                     f"Reduce loop length or switch to fiber optic trunk."
                 )
                 if Violation is not None:
-                    violations.append(Violation(
-                        severity="CRITICAL",
-                        citation=f"{_CITE_UL864} / {_CITE_NFPA72_12_2}",
-                        description=violation_desc,
-                    ))
+                    violations.append(
+                        Violation(
+                            severity="CRITICAL",
+                            citation=f"{_CITE_UL864} / {_CITE_NFPA72_12_2}",
+                            description=violation_desc,
+                        )
+                    )
                 else:
-                    violations.append({
-                        "severity": "CRITICAL",
-                        "citation": f"{_CITE_UL864} / {_CITE_NFPA72_12_2}",
-                        "description": violation_desc,
-                    })
+                    violations.append(
+                        {
+                            "severity": "CRITICAL",
+                            "citation": f"{_CITE_UL864} / {_CITE_NFPA72_12_2}",
+                            "description": violation_desc,
+                        }
+                    )
                 logger.critical(violation_desc)
 
             # Recommend fiber optic trunk if margin is thin
@@ -292,17 +306,19 @@ class SLCCapacitanceAuditor:
                 )
                 logger.warning(warn)
 
-            detailed_results.append(SLCCapacitanceResult(
-                loop_id=loop_id,
-                total_length_m=total_length_m,
-                wire_type=wire_type,
-                capacitance_pf=round(total_cap_pf, 1),
-                capacitance_uf=round(total_cap_uf, 6),
-                max_cap_uf=cap_limit_uf,
-                compliant=compliant,
-                margin_uf=margin_uf,
-                violation_description=violation_desc,
-            ))
+            detailed_results.append(
+                SLCCapacitanceResult(
+                    loop_id=loop_id,
+                    total_length_m=total_length_m,
+                    wire_type=wire_type,
+                    capacitance_pf=round(total_cap_pf, 1),
+                    capacitance_uf=round(total_cap_uf, 6),
+                    max_cap_uf=cap_limit_uf,
+                    compliant=compliant,
+                    margin_uf=margin_uf,
+                    violation_description=violation_desc,
+                )
+            )
 
         safe = len(violations) == 0
 
@@ -333,12 +349,8 @@ class SLCCapacitanceAuditor:
                     decision_type="slc_capacitance_audit",
                     value={
                         "loops_audited": len(loops),
-                        "loops_compliant": sum(
-                            1 for r in detailed_results if r.compliant
-                        ),
-                        "loops_failing": sum(
-                            1 for r in detailed_results if not r.compliant
-                        ),
+                        "loops_compliant": sum(1 for r in detailed_results if r.compliant),
+                        "loops_failing": sum(1 for r in detailed_results if not r.compliant),
                         "safe": safe,
                         "detailed_results": [
                             {
@@ -378,10 +390,7 @@ class SLCCapacitanceAuditor:
             "decision_type": "slc_capacitance_audit",
             "value": {
                 "safe": safe,
-                "detailed_results": [
-                    {"loop_id": r.loop_id, "compliant": r.compliant}
-                    for r in detailed_results
-                ],
+                "detailed_results": [{"loop_id": r.loop_id, "compliant": r.compliant} for r in detailed_results],
             },
             "safe": safe,
             "violations": violations,

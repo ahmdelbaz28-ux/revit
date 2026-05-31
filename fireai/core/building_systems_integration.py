@@ -28,12 +28,12 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
-
+from typing import List
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ELEVATOR RECALL — NFPA 72 §21.3
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class ElevatorRecallPhase(str, Enum):
     """Elevator recall phases per NFPA 72 §21.3.
@@ -48,9 +48,10 @@ class ElevatorRecallPhase(str, Enum):
     type checking). A str Enum provides all of these while maintaining
     backward compatibility with string comparisons.
     """
-    PHASE_I = 'PHASE_I'
-    PHASE_II = 'PHASE_II'
-    SHUNT_TRIP = 'SHUNT_TRIP'
+
+    PHASE_I = "PHASE_I"
+    PHASE_II = "PHASE_II"
+    SHUNT_TRIP = "SHUNT_TRIP"
 
 
 @dataclass(frozen=True)
@@ -67,16 +68,17 @@ class ElevatorRecallResult:
     Fail-safe: On loss of power or communication, elevator
     must recall to designated floor and open doors.
     """
-    elevator_id:         str
-    recall_required:     bool
-    phase_i_activated:   bool
-    phase_ii_available:  bool
+
+    elevator_id: str
+    recall_required: bool
+    phase_i_activated: bool
+    phase_ii_available: bool
     shunt_trip_required: bool
-    designated_floor:    str
-    fire_floor:          str
-    is_compliant:        bool
-    violations:          tuple
-    nfpa_section:        str
+    designated_floor: str
+    fire_floor: str
+    is_compliant: bool
+    violations: tuple
+    nfpa_section: str
 
 
 def evaluate_elevator_recall(
@@ -110,15 +112,13 @@ def evaluate_elevator_recall(
     # NFPA 72 §21.3.2: Lobby detector required
     if not has_lobby_detector:
         violations.append(
-            f"Elevator '{elevator_id}': No lobby detector — "
-            f"Phase I recall cannot activate per NFPA 72 §21.3.2"
+            f"Elevator '{elevator_id}': No lobby detector — Phase I recall cannot activate per NFPA 72 §21.3.2"
         )
 
     # NFPA 72 §21.3.3: Hoistway detector required
     if not has_hoistway_detector:
         violations.append(
-            f"Elevator '{elevator_id}': No hoistway detector — "
-            f"separate recall alert not available per NFPA 72 §21.3.3"
+            f"Elevator '{elevator_id}': No hoistway detector — separate recall alert not available per NFPA 72 §21.3.3"
         )
 
     # NFPA 72 §21.3.4: Shunt trip required when shaft sprinkler present
@@ -138,10 +138,7 @@ def evaluate_elevator_recall(
 
     # NFPA 72 §21.3.5: Phase II required
     if not has_phase_ii:
-        violations.append(
-            f"Elevator '{elevator_id}': No Phase II firefighter service "
-            f"per NFPA 72 §21.3.5"
-        )
+        violations.append(f"Elevator '{elevator_id}': No Phase II firefighter service per NFPA 72 §21.3.5")
 
     is_compliant = len(violations) == 0
 
@@ -163,6 +160,7 @@ def evaluate_elevator_recall(
 # HVAC SHUTDOWN — NFPA 72 §21.4
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class HVACShutdownResult:
     """Result from HVAC shutdown assessment.
@@ -173,13 +171,14 @@ class HVACShutdownResult:
       - Manual shutdown capability at FACP
       - Duct detectors supervisory (not alarm) signal
     """
-    unit_id:              str
-    cfm:                  float
-    has_duct_detector:    bool
-    shutdown_required:    bool
-    is_compliant:         bool
-    violations:           tuple
-    nfpa_section:         str
+
+    unit_id: str
+    cfm: float
+    has_duct_detector: bool
+    shutdown_required: bool
+    is_compliant: bool
+    violations: tuple
+    nfpa_section: str
 
 
 def evaluate_hvac_shutdown(
@@ -216,15 +215,11 @@ def evaluate_hvac_shutdown(
     shutdown_required = is_fire_floor or is_building_wide
 
     if detector_required and not has_duct_detector:
-        violations.append(
-            f"AHU '{unit_id}': {cfm:.0f} CFM > 2000 CFM but no duct "
-            f"smoke detector — NFPA 72 §17.7.5.6.1"
-        )
+        violations.append(f"AHU '{unit_id}': {cfm:.0f} CFM > 2000 CFM but no duct smoke detector — NFPA 72 §17.7.5.6.1")
 
     if shutdown_required and not has_duct_detector:
         violations.append(
-            f"AHU '{unit_id}': Shutdown required but no duct detector "
-            f"to trigger automatic shutdown — NFPA 72 §21.4"
+            f"AHU '{unit_id}': Shutdown required but no duct detector to trigger automatic shutdown — NFPA 72 §21.4"
         )
 
     is_compliant = len(violations) == 0
@@ -244,6 +239,7 @@ def evaluate_hvac_shutdown(
 # SMOKE CONTROL — NFPA 92 / NFPA 72 §21.5
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class SmokeControlResult:
     """Result from smoke control assessment.
@@ -254,17 +250,18 @@ class SmokeControlResult:
       - Must maintain tenable conditions in egress paths
       - Must be tested and certified per NFPA 92
     """
-    zone_id:              str
-    method:               str   # "pressurization" or "exhaust"
-    design_pressure_pa:   float
-    is_compliant:         bool
-    violations:           tuple
-    nfpa_section:         str
+
+    zone_id: str
+    method: str  # "pressurization" or "exhaust"
+    design_pressure_pa: float
+    is_compliant: bool
+    violations: tuple
+    nfpa_section: str
 
 
 # V106: Constants for NFPA 92 compliance — replaces magic numbers
-MIN_STAIRWELL_PRESSURIZATION_PA = 25.0   # NFPA 92 §6.3: minimum 25 Pa (0.10 in. w.g.)
-MAX_PRESSURE_DIFFERENTIAL_PA = 133.0     # NFPA 92 §6.3.3: max force to open door (~0.5 in. w.g.)
+MIN_STAIRWELL_PRESSURIZATION_PA = 25.0  # NFPA 92 §6.3: minimum 25 Pa (0.10 in. w.g.)
+MAX_PRESSURE_DIFFERENTIAL_PA = 133.0  # NFPA 92 §6.3.3: max force to open door (~0.5 in. w.g.)
 VALID_SMOKE_CONTROL_METHODS = ("pressurization", "exhaust")
 
 
@@ -350,15 +347,13 @@ def evaluate_smoke_control(
     # NFPA 72 §21.5: Fire alarm interlock
     if not has_fire_alarm_interlock:
         violations.append(
-            f"Zone '{zone_id}': No fire alarm interlock — smoke control "
-            f"cannot activate automatically per NFPA 72 §21.5"
+            f"Zone '{zone_id}': No fire alarm interlock — smoke control cannot activate automatically per NFPA 72 §21.5"
         )
 
     # NFPA 92: Stairwell pressurization required for high-rise
     if not has_stairwell_pressurization:
         violations.append(
-            f"Zone '{zone_id}': No stairwell pressurization — "
-            f"egress path may become untenable per NFPA 92"
+            f"Zone '{zone_id}': No stairwell pressurization — egress path may become untenable per NFPA 92"
         )
 
     is_compliant = len(violations) == 0
@@ -377,6 +372,7 @@ def evaluate_smoke_control(
 # FIRE PUMP MONITORING — NFPA 20 / NFPA 72 §21.8
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class FirePumpResult:
     """Result from fire pump monitoring assessment.
@@ -390,13 +386,14 @@ class FirePumpResult:
 
     All signals must be supervisory type at the FACP.
     """
-    pump_id:              str
-    has_running_signal:   bool
-    has_power_monitor:    bool
-    has_phase_reversal:   bool
-    is_compliant:         bool
-    violations:           tuple
-    nfpa_section:         str
+
+    pump_id: str
+    has_running_signal: bool
+    has_power_monitor: bool
+    has_phase_reversal: bool
+    is_compliant: bool
+    violations: tuple
+    nfpa_section: str
 
 
 def evaluate_fire_pump(
@@ -428,22 +425,13 @@ def evaluate_fire_pump(
     violations = []
 
     if not has_running_signal:
-        violations.append(
-            f"Pump '{pump_id}': No running signal — pump status "
-            f"unknown at FACP per NFPA 72 §21.8"
-        )
+        violations.append(f"Pump '{pump_id}': No running signal — pump status unknown at FACP per NFPA 72 §21.8")
 
     if not has_power_monitor:
-        violations.append(
-            f"Pump '{pump_id}': No power monitoring — power failure "
-            f"undetected per NFPA 20 §10.4"
-        )
+        violations.append(f"Pump '{pump_id}': No power monitoring — power failure undetected per NFPA 20 §10.4")
 
     if not has_phase_reversal:
-        violations.append(
-            f"Pump '{pump_id}': No phase reversal monitoring — "
-            f"motor may run backwards per NFPA 20 §10.4"
-        )
+        violations.append(f"Pump '{pump_id}': No phase reversal monitoring — motor may run backwards per NFPA 20 §10.4")
 
     is_compliant = len(violations) == 0
 
@@ -462,6 +450,7 @@ def evaluate_fire_pump(
 # BUILDING SYSTEMS COMPOSITE ASSESSMENT
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class BuildingSystemsAssessment:
     """Composite assessment of all building fire safety integrations.
@@ -469,13 +458,14 @@ class BuildingSystemsAssessment:
     This aggregates all building system assessments into a single
     result that can be used by the release gate system.
     """
-    elevator_results:   List[ElevatorRecallResult]   = field(default_factory=list)
-    hvac_results:       List[HVACShutdownResult]      = field(default_factory=list)
-    smoke_control_results: List[SmokeControlResult]   = field(default_factory=list)
-    fire_pump_results:  List[FirePumpResult]          = field(default_factory=list)
-    is_compliant:       bool = False  # V96 FIX: Fail-safe default — unevaluated must NOT claim compliance
-    violations:         List[str] = field(default_factory=list)
-    nfpa_references:    List[str] = field(default_factory=list)
+
+    elevator_results: List[ElevatorRecallResult] = field(default_factory=list)
+    hvac_results: List[HVACShutdownResult] = field(default_factory=list)
+    smoke_control_results: List[SmokeControlResult] = field(default_factory=list)
+    fire_pump_results: List[FirePumpResult] = field(default_factory=list)
+    is_compliant: bool = False  # V96 FIX: Fail-safe default — unevaluated must NOT claim compliance
+    violations: List[str] = field(default_factory=list)
+    nfpa_references: List[str] = field(default_factory=list)
 
     def evaluate(self) -> None:
         """Aggregate all sub-assessments.

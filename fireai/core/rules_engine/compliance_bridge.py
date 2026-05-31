@@ -26,11 +26,9 @@ from typing import Any, Dict, List, Optional
 
 from fireai.core.rules_engine.engine import (
     Fact,
-    Rule,
-    RulePriority,
-    RuleResult,
-    RulesEngine,
     RuleAuditEntry,
+    RulePriority,
+    RulesEngine,
 )
 from fireai.core.rules_engine.nfpa72_rules import NFPA72RuleSet
 from fireai.core.rules_engine.truth_maintenance import TruthMaintenanceSystem
@@ -41,6 +39,7 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 # DATA CONVERSION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def room_to_facts(
     room_id: str,
@@ -233,6 +232,7 @@ def fault_isolation_result_to_fact(
 # RESULT CONVERSION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class ComplianceReport:
     """Structured compliance report from the rules engine.
@@ -240,6 +240,7 @@ class ComplianceReport:
     Compatible with the existing ExpertResult format but enriched
     with rule evaluation details and truth maintenance data.
     """
+
     session_id: str
     is_safe: bool
     critical_issues: List[Dict[str, Any]] = field(default_factory=list)
@@ -248,9 +249,7 @@ class ComplianceReport:
     derived_facts: List[Dict[str, Any]] = field(default_factory=list)
     audit_summary: Dict[str, Any] = field(default_factory=dict)
     nfpa_references: List[str] = field(default_factory=list)
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 def results_to_report(
@@ -289,34 +288,33 @@ def results_to_report(
     derived = []
     for fact in engine.get_facts():
         if fact.source == "derived":
-            derived.append({
-                "fact_type": fact.fact_type,
-                "fact_id": fact.fact_id,
-                "properties": fact.properties,
-                "nfpa_reference": fact.nfpa_reference,
-            })
+            derived.append(
+                {
+                    "fact_type": fact.fact_type,
+                    "fact_id": fact.fact_id,
+                    "properties": fact.properties,
+                    "nfpa_reference": fact.nfpa_reference,
+                }
+            )
 
     # Collect NFPA references
-    nfpa_refs = list({
-        r.nfpa_reference
-        for r in engine.get_results()
-        if r.nfpa_reference
-    })
+    nfpa_refs = list({r.nfpa_reference for r in engine.get_results() if r.nfpa_reference})
 
     # FIX: If no facts were asserted, we cannot determine safety.
     # Conservative default: is_safe=False when no analysis was performed.
     no_facts_asserted = len(engine.get_facts()) == 0
     if no_facts_asserted:
-        critical_issues.append({
-            "rule_id": "BRIDGE-001",
-            "message": "No facts analyzed — compliance cannot be determined",
-            "severity": "CRITICAL_SAFETY",
-        })
+        critical_issues.append(
+            {
+                "rule_id": "BRIDGE-001",
+                "message": "No facts analyzed — compliance cannot be determined",
+                "severity": "CRITICAL_SAFETY",
+            }
+        )
 
     return ComplianceReport(
         session_id=engine.session_id,
-        is_safe=(len(critical_issues) == 0 and len(violations) == 0
-                 and not no_facts_asserted),
+        is_safe=(len(critical_issues) == 0 and len(violations) == 0 and not no_facts_asserted),
         critical_issues=critical_issues,
         violations=violations,
         compliance_checks=compliance_checks,
@@ -329,6 +327,7 @@ def results_to_report(
 # ═══════════════════════════════════════════════════════════════════════════════
 # HIGH-LEVEL API
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class NFPA72ComplianceChecker:
     """High-level API for NFPA 72 compliance checking using the rules engine.
@@ -390,10 +389,7 @@ class NFPA72ComplianceChecker:
             occupancy_type=occupancy_type,
         )
         fid = self.engine.assert_fact(facts[0])
-        logger.info(
-            f"Room added: {room_id} h={ceiling_height_m}m "
-            f"type={detector_type}"
-        )
+        logger.info(f"Room added: {room_id} h={ceiling_height_m}m type={detector_type}")
         return fid
 
     def add_detector(
@@ -419,10 +415,7 @@ class NFPA72ComplianceChecker:
             wall_distance_max_m=wall_distance_max_m,
         )
         fid = self.engine.assert_fact(fact)
-        logger.info(
-            f"Detector added: {detector_id} in {room_id} "
-            f"at ({x:.1f}, {y:.1f})"
-        )
+        logger.info(f"Detector added: {detector_id} in {room_id} at ({x:.1f}, {y:.1f})")
         return fid
 
     def add_hvac(
@@ -500,10 +493,7 @@ class NFPA72ComplianceChecker:
             is_compliant=is_compliant,
         )
         fid = self.engine.assert_fact(fact)
-        logger.info(
-            f"Voltage drop result added: drop={voltage_drop_pct:.2f}%, "
-            f"compliant={is_compliant}"
-        )
+        logger.info(f"Voltage drop result added: drop={voltage_drop_pct:.2f}%, compliant={is_compliant}")
         return fid
 
     def add_fault_isolation_result(
@@ -528,8 +518,7 @@ class NFPA72ComplianceChecker:
         )
         fid = self.engine.assert_fact(fact)
         logger.info(
-            f"Fault isolation result added: devices={device_count}, "
-            f"isolators={isolator_count}, compliant={compliant}"
+            f"Fault isolation result added: devices={device_count}, isolators={isolator_count}, compliant={compliant}"
         )
         return fid
 
@@ -554,11 +543,13 @@ class NFPA72ComplianceChecker:
             return ComplianceReport(
                 session_id=self.engine.session_id,
                 is_safe=False,  # Conservative: assume unsafe
-                critical_issues=[{
-                    "rule_id": "BRIDGE-EVAL-ERROR",
-                    "message": f"Compliance evaluation failed: {e}",
-                    "severity": "CRITICAL_SAFETY",
-                }],
+                critical_issues=[
+                    {
+                        "rule_id": "BRIDGE-EVAL-ERROR",
+                        "message": f"Compliance evaluation failed: {e}",
+                        "severity": "CRITICAL_SAFETY",
+                    }
+                ],
             )
 
         # Log summary
@@ -602,9 +593,7 @@ class NFPA72ComplianceChecker:
             producing_rule = "unknown"
             for audit in self.engine.get_audit_log():
                 if audit.fired and audit.result:
-                    if derived_id in [
-                        f.fact_id for f in audit.result.asserted_facts
-                    ]:
+                    if derived_id in [f.fact_id for f in audit.result.asserted_facts]:
                         producing_rule = audit.rule_id
                         break
             self.tms.record_dependency(

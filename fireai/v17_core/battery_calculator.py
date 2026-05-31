@@ -44,17 +44,16 @@ Usage:
 
 from __future__ import annotations
 
-import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 # Import the correct provenance shim (not the consultant's fireai.v8_core path)
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -65,16 +64,11 @@ except ImportError:
 
 # Import the physics-correct implementation from fireai.core
 from fireai.core.battery_aging_derating import (
-    size_battery,
-    BatterySpec,
-    LoadProfile,
-    BatteryAuditor,
-    BatterySizingResult,
-    get_temperature_derating_factor,
-    get_aging_derating_factor,
-    TEMPERATURE_DERATING,
     AGING_DERATING_EOL,
     DEFAULT_SERVICE_LIFE_YEARS,
+    BatterySizingResult,
+    BatterySpec,
+    size_battery,
 )
 
 
@@ -197,11 +191,13 @@ class StrictBatterySizer:
         if DecisionProvenance is not None:
             violations = []
             for v in result.violations:
-                violations.append(Violation(
-                    severity=v.get("severity", "WARNING"),
-                    citation="NFPA 72-2022 §10.6.7",
-                    description=v.get("message", str(v)),
-                ))
+                violations.append(
+                    Violation(
+                        severity=v.get("severity", "WARNING"),
+                        citation="NFPA 72-2022 §10.6.7",
+                        description=v.get("message", str(v)),
+                    )
+                )
 
             rules = [
                 RuleApplied(
@@ -276,7 +272,7 @@ class StrictBatterySizer:
                 },
                 confidence=conf,
                 selected_because=(
-                    f"Includes mandatory {AGING_DERATING_EOL*100:.0f}% EOL safety gap "
+                    f"Includes mandatory {AGING_DERATING_EOL * 100:.0f}% EOL safety gap "
                     f"against impedance degradation, IEEE 485 temperature derating, "
                     f"and Peukert discharge rate correction."
                 ),

@@ -39,17 +39,16 @@ Usage:
 
 from __future__ import annotations
 
-import math
 from typing import Any, Dict, List, Optional
 
 # Import the correct provenance shim (not the consultant's fireai.v8_core path)
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -60,16 +59,16 @@ except ImportError:
 
 # Import the physics-correct implementation from fireai.core
 from fireai.core.acoustic_calculator import (
-    AcousticSPLCalculator as _CoreAcousticSPLCalculator,
-    Speaker,
-    CheckPoint,
-    Barrier,
-    RoomAcousticResult,
-    BARRIER_ATTENUATION_DB,
     AMBIENT_NOISE_LEVELS,
     AUDIBLE_REQUIREMENTS,
-    MAX_SOUND_LEVEL_DBA,
     DEFAULT_REF_DISTANCE_M,
+    Barrier,
+    CheckPoint,
+    RoomAcousticResult,
+    Speaker,
+)
+from fireai.core.acoustic_calculator import (
+    AcousticSPLCalculator as _CoreAcousticSPLCalculator,
 )
 
 
@@ -131,14 +130,16 @@ class AcousticSPLCalculator:
             # Consultant used "rating_db_3m", our core uses "rating_dba"
             rating = spkr.get("rating_db_3m", spkr.get("rating_dba", 95.0))
             ref_dist = spkr.get("ref_distance_m", DEFAULT_REF_DISTANCE_M)
-            result.append(Speaker(
-                x=float(spkr.get("x", 0)),
-                y=float(spkr.get("y", 0)),
-                z=float(spkr.get("z", 2.8)),  # Default ceiling mount height
-                rating_dba=float(rating),
-                ref_distance_m=float(ref_dist),
-                speaker_id=spkr.get("speaker_id", spkr.get("id", "")),
-            ))
+            result.append(
+                Speaker(
+                    x=float(spkr.get("x", 0)),
+                    y=float(spkr.get("y", 0)),
+                    z=float(spkr.get("z", 2.8)),  # Default ceiling mount height
+                    rating_dba=float(rating),
+                    ref_distance_m=float(ref_dist),
+                    speaker_id=spkr.get("speaker_id", spkr.get("id", "")),
+                )
+            )
         return result
 
     def _convert_check_points(self, check_points: List[dict]) -> List[CheckPoint]:
@@ -149,12 +150,14 @@ class AcousticSPLCalculator:
         """
         result = []
         for pt in check_points:
-            result.append(CheckPoint(
-                x=float(pt.get("x", 0)),
-                y=float(pt.get("y", 0)),
-                z=float(pt.get("z", 1.5)),  # Default: typical ear height
-                label=pt.get("label", ""),
-            ))
+            result.append(
+                CheckPoint(
+                    x=float(pt.get("x", 0)),
+                    y=float(pt.get("y", 0)),
+                    z=float(pt.get("z", 1.5)),  # Default: typical ear height
+                    label=pt.get("label", ""),
+                )
+            )
         return result
 
     def _convert_barriers(
@@ -169,10 +172,12 @@ class AcousticSPLCalculator:
         barriers = []
         for spkr in speakers:
             if spkr.get("behind_closed_door", False):
-                barriers.append(Barrier(
-                    barrier_type="standard_door",
-                    label=f"Closed door for speaker {spkr.get('id', 'unknown')}",
-                ))
+                barriers.append(
+                    Barrier(
+                        barrier_type="standard_door",
+                        label=f"Closed door for speaker {spkr.get('id', 'unknown')}",
+                    )
+                )
         return barriers
 
     def calculate_room_spl(
@@ -223,11 +228,13 @@ class AcousticSPLCalculator:
         barrier_objs = self._convert_barriers(speakers)
         if barriers:
             for b in barriers:
-                barrier_objs.append(Barrier(
-                    barrier_type=b.get("barrier_type", "standard_door"),
-                    attenuation_dba=b.get("attenuation_dba"),
-                    label=b.get("label", ""),
-                ))
+                barrier_objs.append(
+                    Barrier(
+                        barrier_type=b.get("barrier_type", "standard_door"),
+                        attenuation_dba=b.get("attenuation_dba"),
+                        label=b.get("label", ""),
+                    )
+                )
 
         # Use the core physics-correct calculator
         core_calc = _CoreAcousticSPLCalculator(
@@ -259,12 +266,14 @@ class AcousticSPLCalculator:
             violations = []
             for v in result.violations:
                 severity = "WARNING" if v.get("code") == "ACOUSTIC-EXCESSIVE" else "CRITICAL"
-                violations.append(Violation(
-                    severity=severity,
-                    citation="NFPA 72-2022 §18.4.3.1",
-                    description=v.get("message", str(v)),
-                    location=v.get("point"),
-                ))
+                violations.append(
+                    Violation(
+                        severity=severity,
+                        citation="NFPA 72-2022 §18.4.3.1",
+                        description=v.get("message", str(v)),
+                        location=v.get("point"),
+                    )
+                )
 
             if mode not in AUDIBLE_REQUIREMENTS:
                 mode = "public"
@@ -317,8 +326,7 @@ class AcousticSPLCalculator:
                 },
                 confidence=conf,
                 selected_because=(
-                    f"Logarithmic sum across {len(speakers)} speaker arrays "
-                    f"projected over room space with 3D physics"
+                    f"Logarithmic sum across {len(speakers)} speaker arrays projected over room space with 3D physics"
                 ),
                 violations=violations,
             )

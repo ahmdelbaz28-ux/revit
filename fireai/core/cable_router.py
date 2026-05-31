@@ -39,7 +39,7 @@ from __future__ import annotations
 import hashlib
 import heapq
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 # V63 FIX: Use math.floor instead of int() for grid coordinate
@@ -50,30 +50,21 @@ _floor = math.floor
 
 # ─── Internal imports ───────────────────────────────────────────────────────
 
+from fireai.core.cable_routing_engine import WireGauge
+from fireai.core.constraint_engine import (
+    BEND_PENALTY_M,
+    ConstraintEngine,
+    RoutingConstraintSet,
+)
+from fireai.core.contracts_validation import ContractViolation
 from fireai.core.ifc_parser import (
     BuildingModel,
-    BoundingBox3D,
-    SpaceInfo,
     CellState,
-    IfcElementType,
-    build_abstract_model,
     get_cell_state,
-    world_to_grid,
     grid_to_world,
+    world_to_grid,
 )
-from fireai.core.constraint_engine import (
-    ConstraintEngine,
-    ConstraintResult,
-    RoutingConstraintSet,
-    ConstraintSource,
-    BEND_PENALTY_M,
-    ELEVATION_PENALTY_M,
-    ELECTRICAL_PROXIMITY_PENALTY_M,
-)
-from fireai.core.cable_routing_engine import WireGauge
 from fireai.core.nfpa72_engine import temperature_corrected_resistance
-from fireai.core.contracts_validation import ContractViolation
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 6-DIRECTIONAL MOVEMENT — Real conduits don't go diagonal
@@ -81,18 +72,19 @@ from fireai.core.contracts_validation import ContractViolation
 
 # (dx, dy, dz) — one cell at a time in exactly one axis
 DIRECTIONS_6 = [
-    (+1, 0, 0),   # +X
-    (-1, 0, 0),   # -X
-    (0, +1, 0),   # +Y
-    (0, -1, 0),   # -Y
-    (0, 0, +1),   # +Z (up)
-    (0, 0, -1),   # -Z (down)
+    (+1, 0, 0),  # +X
+    (-1, 0, 0),  # -X
+    (0, +1, 0),  # +Y
+    (0, -1, 0),  # -Y
+    (0, 0, +1),  # +Z (up)
+    (0, 0, -1),  # -Z (down)
 ]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FROZEN RESULT DATACLASSES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass(frozen=True)
 class RouteWaypoint:
@@ -105,6 +97,7 @@ class RouteWaypoint:
         direction_change: Direction tuple at this waypoint, or None.
         code_reference: NEC/NFPA reference for why this waypoint exists.
     """
+
     x: float
     y: float
     z: float
@@ -140,6 +133,7 @@ class CableRoute:
         computation_hash: SHA-256 hash for deterministic verification.
         decision_log: List of (description, code_reference) tuples.
     """
+
     route_id: str
     start: Tuple[float, float, float]
     end: Tuple[float, float, float]
@@ -163,10 +157,7 @@ class CableRoute:
             # route_id/start/end/length/bends — two routes with different
             # paths but same endpoints would produce the SAME hash.
             # Also use float.hex() for IEEE-754 bit-exact formatting.
-            wp_coords = "|".join(
-                f"({wp.x:.6f},{wp.y:.6f},{wp.z:.6f},{int(wp.is_bend)})"
-                for wp in self.waypoints
-            )
+            wp_coords = "|".join(f"({wp.x:.6f},{wp.y:.6f},{wp.z:.6f},{int(wp.is_bend)})" for wp in self.waypoints)
             raw = (
                 f"{self.route_id}|{self.start}|{self.end}|"
                 f"{self.total_length_m:.6f}|{self.straight_length_m:.6f}|"
@@ -180,7 +171,8 @@ class CableRoute:
             # at ~4 billion hashes (birthday attack). 128 bits = collision
             # at ~2^64 hashes — practically impossible for audit trails.
             object.__setattr__(
-                self, "computation_hash",
+                self,
+                "computation_hash",
                 hashlib.sha256(raw.encode()).hexdigest()[:32],
             )
 
@@ -198,6 +190,7 @@ class RoutingSchedule:
         compliance_summary: Overall compliance status.
         computation_hash: SHA-256 for verification.
     """
+
     project_name: str
     routes: Tuple[CableRoute, ...]
     total_cable_length_m: float
@@ -218,7 +211,8 @@ class RoutingSchedule:
             )
             # V97 FIX: Extended from 16 to 32 hex chars per NIST SP 800-107
             object.__setattr__(
-                self, "computation_hash",
+                self,
+                "computation_hash",
                 hashlib.sha256(raw.encode()).hexdigest()[:32],
             )
 
@@ -227,20 +221,22 @@ class RoutingSchedule:
 # A* PATHFINDING NODE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class _AStarNode:
     """Node in the A* search space.
 
     Uses __lt__ for heapq priority queue ordering.
     Tie-breaking by (f, h, counter) ensures deterministic ordering.
     """
-    __slots__ = ('cell', 'g', 'h', 'f', 'parent', 'direction', 'counter')
+
+    __slots__ = ("cell", "g", "h", "f", "parent", "direction", "counter")
 
     def __init__(
         self,
         cell: Tuple[int, int, int],
         g: float,
         h: float,
-        parent: Optional['_AStarNode'],
+        parent: Optional["_AStarNode"],
         direction: Tuple[int, int, int],
         counter: int,
     ):
@@ -252,7 +248,7 @@ class _AStarNode:
         self.direction = direction
         self.counter = counter
 
-    def __lt__(self, other: '_AStarNode') -> bool:
+    def __lt__(self, other: "_AStarNode") -> bool:
         """Priority queue ordering: lower f wins, then lower h, then earlier counter."""
         if self.f != other.f:
             return self.f < other.f
@@ -264,6 +260,7 @@ class _AStarNode:
 # ═══════════════════════════════════════════════════════════════════════════════
 # DETERMINISTIC CABLE ROUTER
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class CableRouter:
     """Deterministic cable router using Orthogonal A* pathfinding.
@@ -313,8 +310,7 @@ class CableRouter:
         """
         if model.grid_size == (0, 0, 0):
             raise ValueError(
-                "BuildingModel has no occupancy grid. "
-                "Use build_abstract_model() or parse_ifc_file() first."
+                "BuildingModel has no occupancy grid. Use build_abstract_model() or parse_ifc_file() first."
             )
 
         self._model = model
@@ -354,15 +350,29 @@ class CableRouter:
 
         # IFC class keywords that indicate electrical systems
         _ELECTRICAL_IFC_KEYWORDS = {
-            'cablecarrier', 'cablesegment', 'electric', 'power',
-            'distributionboard', 'switchboard', 'panelboard',
-            'transformer', 'generator', 'motor',
+            "cablecarrier",
+            "cablesegment",
+            "electric",
+            "power",
+            "distributionboard",
+            "switchboard",
+            "panelboard",
+            "transformer",
+            "generator",
+            "motor",
         }
 
         # Element ID keywords that indicate electrical systems
         _ELECTRICAL_ID_KEYWORDS = {
-            'electrical', 'elec', 'power', 'panel', 'mdb',
-            'sdb', 'db-', 'swgr', 'xfmr',
+            "electrical",
+            "elec",
+            "power",
+            "panel",
+            "mdb",
+            "sdb",
+            "db-",
+            "swgr",
+            "xfmr",
         }
 
         for elem in self._model.elements:
@@ -472,8 +482,7 @@ class CableRouter:
             for i, coord in enumerate(point):
                 if not isinstance(coord, (int, float)) or not math.isfinite(coord):
                     raise ContractViolation(
-                        f"{label}[{i}] = {coord!r} is not finite — "
-                        f"QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
+                        f"{label}[{i}] = {coord!r} is not finite — QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
                         field=f"{label}[{i}]",
                         value=coord,
                     )
@@ -485,15 +494,13 @@ class CableRouter:
         for label, value in [("ps_voltage", ps_voltage), ("alarm_current_a", alarm_current_a)]:
             if not isinstance(value, (int, float)) or not math.isfinite(value):
                 raise ContractViolation(
-                    f"{label} = {value!r} is not finite — "
-                    f"QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
+                    f"{label} = {value!r} is not finite — QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
                     field=label,
                     value=value,
                 )
         if ps_voltage < 0:
             raise ContractViolation(
-                f"ps_voltage = {ps_voltage!r} is negative — "
-                f"QOMN-FIRE Layer 0 rejects negative voltage.",
+                f"ps_voltage = {ps_voltage!r} is negative — QOMN-FIRE Layer 0 rejects negative voltage.",
                 field="ps_voltage",
                 value=ps_voltage,
             )
@@ -508,9 +515,7 @@ class CableRouter:
         for label, cell in [("start", start_grid), ("end", end_grid)]:
             ix, iy, iz = cell
             if ix < 0 or ix >= nx or iy < 0 or iy >= ny or iz < 0 or iz >= nz:
-                raise ValueError(
-                    f"{label} point {cell} is outside grid bounds {self._model.grid_size}"
-                )
+                raise ValueError(f"{label} point {cell} is outside grid bounds {self._model.grid_size}")
 
         # Check start/end cells are not blocked
         start_state = get_cell_state(self._model, *start)
@@ -518,14 +523,10 @@ class CableRouter:
 
         if start_state == CellState.BLOCKED:
             raise ValueError(
-                f"Start point {start} maps to BLOCKED cell — "
-                f"cable cannot originate inside a wall/obstacle"
+                f"Start point {start} maps to BLOCKED cell — cable cannot originate inside a wall/obstacle"
             )
         if end_state == CellState.BLOCKED:
-            raise ValueError(
-                f"End point {end} maps to BLOCKED cell — "
-                f"cable cannot terminate inside a wall/obstacle"
-            )
+            raise ValueError(f"End point {end} maps to BLOCKED cell — cable cannot terminate inside a wall/obstacle")
 
         # ── A* Pathfinding ───────────────────────────────────────────────
         path, decision_log = self._astar(start_grid, end_grid)
@@ -552,9 +553,7 @@ class CableRouter:
         waypoints = self._build_waypoints(path)
 
         # ── Calculate Route Metrics ──────────────────────────────────────
-        total_length, straight_length, num_bends, num_elev = (
-            self._calculate_metrics(waypoints)
-        )
+        total_length, straight_length, num_bends, num_elev = self._calculate_metrics(waypoints)
 
         # ── Voltage Drop ─────────────────────────────────────────────────
         # V61 FIX: Use physical_length (not penalty-inflated) for voltage
@@ -597,16 +596,17 @@ class CableRouter:
             )
 
         is_compliant = (
-            constraint_results.all_satisfied if constraint_results else False  # V112: FAIL-SAFE — no constraints = NOT compliant
+            constraint_results.all_satisfied
+            if constraint_results
+            else False  # V112: FAIL-SAFE — no constraints = NOT compliant
         )
 
         # Add bend decision log entries
         for wp in waypoints:
             if wp.is_bend:
-                decision_log.append((
-                    f"Bend at ({wp.x:.2f}, {wp.y:.2f}, {wp.z:.2f})",
-                    "NEC Chapter 9 — max 4 quarter bends per run"
-                ))
+                decision_log.append(
+                    (f"Bend at ({wp.x:.2f}, {wp.y:.2f}, {wp.z:.2f})", "NEC Chapter 9 — max 4 quarter bends per run")
+                )
 
         # V61 FIX: total_length_m is the PHYSICAL cable length (not
         # penalty-inflated). The penalty-inflated length is for A* cost
@@ -650,10 +650,7 @@ class CableRouter:
             (path, decision_log) tuple. Path is None if no route found.
         """
         decision_log: List[Tuple[str, str]] = []
-        decision_log.append((
-            f"A* search: {start} → {goal}",
-            "Orthogonal 6-dir, Manhattan heuristic"
-        ))
+        decision_log.append((f"A* search: {start} → {goal}", "Orthogonal 6-dir, Manhattan heuristic"))
 
         # Early exit: start == goal
         if start == goal:
@@ -668,9 +665,7 @@ class CableRouter:
         g_costs: Dict[Tuple[int, int, int], float] = {}
 
         # Start node
-        h = self._constraint_engine.manhattan_heuristic(
-            start, goal, self._model.grid_resolution
-        )
+        h = self._constraint_engine.manhattan_heuristic(start, goal, self._model.grid_resolution)
         start_node = _AStarNode(
             cell=start,
             g=0.0,
@@ -696,10 +691,7 @@ class CableRouter:
             # Goal check
             if current.cell == goal:
                 path = self._reconstruct_path(current)
-                decision_log.append((
-                    f"Path found: {len(path)} cells, {iterations} iterations",
-                    "A* optimal path"
-                ))
+                decision_log.append((f"Path found: {len(path)} cells, {iterations} iterations", "A* optimal path"))
                 return path, decision_log
 
             # Skip if already processed with better cost
@@ -714,9 +706,14 @@ class CableRouter:
 
                 # Bounds check
                 nx, ny, nz = self._model.grid_size
-                if (nx_cell[0] < 0 or nx_cell[0] >= nx
-                        or nx_cell[1] < 0 or nx_cell[1] >= ny
-                        or nx_cell[2] < 0 or nx_cell[2] >= nz):
+                if (
+                    nx_cell[0] < 0
+                    or nx_cell[0] >= nx
+                    or nx_cell[1] < 0
+                    or nx_cell[1] >= ny
+                    or nx_cell[2] < 0
+                    or nx_cell[2] >= nz
+                ):
                     continue
 
                 # Obstacle check
@@ -731,7 +728,8 @@ class CableRouter:
                 # Calculate movement cost
                 is_near_electrical = nx_cell in self._electrical_cells
                 move_cost = self._constraint_engine.compute_move_cost(
-                    current.cell, nx_cell,
+                    current.cell,
+                    nx_cell,
                     is_near_electrical=is_near_electrical,
                     grid_resolution=self._model.grid_resolution,
                 )
@@ -753,9 +751,7 @@ class CableRouter:
                 g_costs[nx_cell] = new_g
 
                 # Heuristic
-                h = self._constraint_engine.manhattan_heuristic(
-                    nx_cell, goal, self._model.grid_resolution
-                )
+                h = self._constraint_engine.manhattan_heuristic(nx_cell, goal, self._model.grid_resolution)
 
                 neighbor = _AStarNode(
                     cell=nx_cell,
@@ -769,10 +765,7 @@ class CableRouter:
                 heapq.heappush(open_set, neighbor)
 
         # No path found
-        decision_log.append((
-            f"No path found after {iterations} iterations",
-            "A* exhausted search space"
-        ))
+        decision_log.append((f"No path found after {iterations} iterations", "A* exhausted search space"))
         return None, decision_log
 
     def _get_grid_cell(self, cell: Tuple[int, int, int]) -> CellState:
@@ -858,17 +851,19 @@ class CableRouter:
                 if is_bend:
                     code_ref = "Bend added per NEC Chapter 9"
 
-                waypoints.append(RouteWaypoint(
-                    x=round(world[0], 4),
-                    y=round(world[1], 4),
-                    z=round(world[2], 4),
-                    grid_ix=cell[0],
-                    grid_iy=cell[1],
-                    grid_iz=cell[2],
-                    is_bend=is_bend,
-                    direction_change=curr_dir if is_bend else None,
-                    code_reference=code_ref,
-                ))
+                waypoints.append(
+                    RouteWaypoint(
+                        x=round(world[0], 4),
+                        y=round(world[1], 4),
+                        z=round(world[2], 4),
+                        grid_ix=cell[0],
+                        grid_iy=cell[1],
+                        grid_iz=cell[2],
+                        is_bend=is_bend,
+                        direction_change=curr_dir if is_bend else None,
+                        code_reference=code_ref,
+                    )
+                )
 
             if curr_dir is not None:
                 prev_dir = curr_dir
@@ -981,11 +976,11 @@ class CableRouter:
         any_violation = False
 
         for i, conn in enumerate(connections):
-            start = conn['start']
-            end = conn['end']
-            current_a = conn.get('alarm_current_a', 0.0)
-            rid = conn.get('route_id', f'R-{i + 1:03d}')
-            conn_ambient = conn.get('ambient_temp_c', ambient_temp_c)
+            start = conn["start"]
+            end = conn["end"]
+            current_a = conn.get("alarm_current_a", 0.0)
+            rid = conn.get("route_id", f"R-{i + 1:03d}")
+            conn_ambient = conn.get("ambient_temp_c", ambient_temp_c)
 
             route = self.route(
                 start=start,

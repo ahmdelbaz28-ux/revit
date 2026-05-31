@@ -29,9 +29,9 @@ calculator to an engineering tool with mathematical proof.
 import hashlib
 import json
 import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 from .density_optimizer import DETECTOR_RADIUS
 
@@ -214,7 +214,7 @@ class ProofCertificateGenerator:
         delta = self.delta
         R = self.R
         R_eff = self.R_eff
-        R2_eff = R_eff ** 2 + 1e-9
+        R2_eff = R_eff**2 + 1e-9
         delta_margin = self.delta_margin
 
         # Build verification grid
@@ -266,7 +266,7 @@ class ProofCertificateGenerator:
             # uncertainty, not just the inscribed circle within it.
             # Old (WRONG): uncovered_area_upper = n_uncovered * math.pi * (delta / 2) ** 2
             # New (CONSERVATIVE): uncovered_area_upper = n_uncovered * delta ** 2
-            uncovered_area_upper = n_uncovered * delta ** 2
+            uncovered_area_upper = n_uncovered * delta**2
             coverage_lower_bound = max(0.0, 100.0 * (1 - uncovered_area_upper / room_area))
 
         # Build certificate
@@ -299,16 +299,10 @@ class ProofCertificateGenerator:
 
         # Add warnings
         if n_uncovered > 0:
-            cert.warnings.append(
-                f"{n_uncovered} grid points uncovered — coverage not proven"
-            )
+            cert.warnings.append(f"{n_uncovered} grid points uncovered — coverage not proven")
         if coverage_lower_bound < 99.9:
-            cert.warnings.append(
-                f"Coverage lower bound {coverage_lower_bound:.1f}% < 99.9%"
-            )
+            cert.warnings.append(f"Coverage lower bound {coverage_lower_bound:.1f}% < 99.9%")
         if ceiling_height > 9.1:
-            cert.warnings.append(
-                f"Ceiling height {ceiling_height}m > 9.1m — consider beam detectors per NFPA 72 §17.7"
-            )
+            cert.warnings.append(f"Ceiling height {ceiling_height}m > 9.1m — consider beam detectors per NFPA 72 §17.7")
 
         return cert

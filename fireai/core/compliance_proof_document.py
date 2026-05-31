@@ -35,29 +35,38 @@ NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 
 from __future__ import annotations
 
-import math
 import datetime
+import math
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional
 
-from fireai.core.spatial_engine.density_optimizer import (
-    DensityOptimizer, Room, DetectorLayout,
-    DETECTOR_RADIUS, MAX_SPACING_M, WALL_MIN_M,
-    VERIFY_STEP, COARSE_STEP, PLACEMENT_MARGIN,
-    COVERAGE_SAFETY_FACTOR, DENSITY_CAP_FACTOR,
-)
 from fireai.core.spatial_engine.consensus_engine import (
-    ConsensusResult, ConfidenceLevel,
+    ConfidenceLevel,
+    ConsensusResult,
 )
-
+from fireai.core.spatial_engine.density_optimizer import (
+    COARSE_STEP,
+    COVERAGE_SAFETY_FACTOR,
+    DENSITY_CAP_FACTOR,
+    DETECTOR_RADIUS,
+    MAX_SPACING_M,
+    PLACEMENT_MARGIN,
+    VERIFY_STEP,
+    WALL_MIN_M,
+    DensityOptimizer,
+    DetectorLayout,
+    Room,
+)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Data Classes
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class RoomVerificationRecord:
     """Complete verification record for a single room."""
+
     room: Room
     layout: DetectorLayout
     consensus: Optional[ConsensusResult] = None
@@ -67,6 +76,7 @@ class RoomVerificationRecord:
 # ═══════════════════════════════════════════════════════════════════════════════
 # Compliance Proof Document
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def _safe_fmt(value: float, fmt: str = ".1f") -> str:
     """V57 FIX (Finding 15): Format a float for AHJ document, replacing
@@ -111,7 +121,9 @@ class ComplianceProofDocument:
         self.nfpa_edition = nfpa_edition
         self.jurisdiction = jurisdiction
         self.records: List[RoomVerificationRecord] = []
-        self.generation_date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")  # V54 FIX (AUDIT-012): timezone-aware UTC
+        self.generation_date = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%Y-%m-%d %H:%M UTC"
+        )  # V54 FIX (AUDIT-012): timezone-aware UTC
 
     def add_room_result(
         self,
@@ -121,12 +133,14 @@ class ComplianceProofDocument:
         notes: Optional[List[str]] = None,
     ) -> None:
         """Add a room's verification result to the document."""
-        self.records.append(RoomVerificationRecord(
-            room=room,
-            layout=layout,
-            consensus=consensus,
-            notes=notes or [],
-        ))
+        self.records.append(
+            RoomVerificationRecord(
+                room=room,
+                layout=layout,
+                consensus=consensus,
+                notes=notes or [],
+            )
+        )
 
     def generate(self) -> str:
         """Generate the complete compliance proof document as Markdown.
@@ -172,8 +186,7 @@ class ComplianceProofDocument:
             "30 ft (9.1 m) nominal spacing on smooth ceilings",
             "- **NFPA 72 §17.7.4.2.3.1**: Coverage radius R = 0.7 × S where S is the "
             "nominal spacing (0.7 × 9.1m = 6.37m)",
-            "- **NFPA 72 §17.6.3.1.1**: Minimum distance from wall = 4 inches (0.10m) "
-            "to avoid dead air space",
+            "- **NFPA 72 §17.6.3.1.1**: Minimum distance from wall = 4 inches (0.10m) to avoid dead air space",
             "",
             "### 1.2 Design Parameters",
             "",
@@ -236,9 +249,9 @@ class ComplianceProofDocument:
             room = rec.room
             layout = rec.layout
             cons_str = (
-                f"{rec.consensus.n_pass}/{rec.consensus.n_total} "
-                f"{rec.consensus.confidence.value}"
-                if rec.consensus else "N/A"
+                f"{rec.consensus.n_pass}/{rec.consensus.n_total} {rec.consensus.confidence.value}"
+                if rec.consensus
+                else "N/A"
             )
             proof_str = "✓" if layout.proof_valid else "✗"
             nfpa_str = "✓" if layout.nfpa_valid else "✗"
@@ -257,18 +270,17 @@ class ComplianceProofDocument:
         total_detectors = sum(r.layout.count for r in self.records)
         all_proof = all(r.layout.proof_valid for r in self.records)
         all_nfpa = all(r.layout.nfpa_valid for r in self.records)
-        all_verified = all(
-            r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED
-            for r in self.records
-        )
+        all_verified = all(r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED for r in self.records)
 
-        lines.extend([
-            "",
-            f"**Total Detectors:** {total_detectors}",
-            f"**All Rooms Proof Valid:** {'Yes ✓' if all_proof else 'No ✗ — requires review'}",
-            f"**All Rooms NFPA Compliant:** {'Yes ✓' if all_nfpa else 'No ✗ — requires review'}",
-            f"**All Rooms Consensus VERIFIED:** {'Yes ✓' if all_verified else 'No — some rooms require investigation'}",
-        ])
+        lines.extend(
+            [
+                "",
+                f"**Total Detectors:** {total_detectors}",
+                f"**All Rooms Proof Valid:** {'Yes ✓' if all_proof else 'No ✗ — requires review'}",
+                f"**All Rooms NFPA Compliant:** {'Yes ✓' if all_nfpa else 'No ✗ — requires review'}",
+                f"**All Rooms Consensus VERIFIED:** {'Yes ✓' if all_verified else 'No — some rooms require investigation'}",
+            ]
+        )
         return "\n".join(lines)
 
     def _detailed_room_results(self) -> str:
@@ -282,38 +294,44 @@ class ComplianceProofDocument:
             # V57 FIX (Finding 15): NaN values produce 'nan%' in AHJ submission.
             # Use _safe_fmt to replace non-finite values with '[INVALID DATA]'.
             area = room.width * room.length
-            lines.extend([
-                f"### 3.{i} Room: {room.name}",
-                "",
-                f"**Dimensions:** {_safe_fmt(room.width)} m × {_safe_fmt(room.length)} m "
-                f"(Area: {_safe_fmt(area)} m²)",
-                f"**Ceiling Height:** {_safe_fmt(room.ceiling_height)} m",
-                f"**Coverage Radius Used:** {_safe_fmt(layout.coverage_radius, '.2f')} m "
-                f"({self._radius_source(room.ceiling_height)})",
-                f"**Placement Method:** {layout.method}",
-                f"**Detector Count:** {layout.count}",
-                f"**Theoretical Lower Bound:** {layout.theoretical_lower_bound}",
-                f"**Efficiency Ratio:** {_safe_fmt(layout.efficiency_ratio, '.2f')}",
-                f"**Coverage:** {_safe_fmt(layout.coverage_pct, '.2f')}%",
-                f"**Proof Valid:** {'Yes' if layout.proof_valid else 'No — REQUIRES REVIEW'}",
-                f"**NFPA 72 Compliant:** {'Yes' if layout.nfpa_valid else 'No — REQUIRES REVIEW'}",
-                f"**Wall Violations:** {layout.wall_violations}",
-                f"**Fallback Used:** {'Yes — requires manual design review' if layout.fallback_used else 'No'}",
-                "",
-            ])
+            lines.extend(
+                [
+                    f"### 3.{i} Room: {room.name}",
+                    "",
+                    f"**Dimensions:** {_safe_fmt(room.width)} m × {_safe_fmt(room.length)} m "
+                    f"(Area: {_safe_fmt(area)} m²)",
+                    f"**Ceiling Height:** {_safe_fmt(room.ceiling_height)} m",
+                    f"**Coverage Radius Used:** {_safe_fmt(layout.coverage_radius, '.2f')} m "
+                    f"({self._radius_source(room.ceiling_height)})",
+                    f"**Placement Method:** {layout.method}",
+                    f"**Detector Count:** {layout.count}",
+                    f"**Theoretical Lower Bound:** {layout.theoretical_lower_bound}",
+                    f"**Efficiency Ratio:** {_safe_fmt(layout.efficiency_ratio, '.2f')}",
+                    f"**Coverage:** {_safe_fmt(layout.coverage_pct, '.2f')}%",
+                    f"**Proof Valid:** {'Yes' if layout.proof_valid else 'No — REQUIRES REVIEW'}",
+                    f"**NFPA 72 Compliant:** {'Yes' if layout.nfpa_valid else 'No — REQUIRES REVIEW'}",
+                    f"**Wall Violations:** {layout.wall_violations}",
+                    f"**Fallback Used:** {'Yes — requires manual design review' if layout.fallback_used else 'No'}",
+                    "",
+                ]
+            )
 
             # Detector positions table
             if layout.detectors:
-                lines.extend([
-                    "**Detector Positions:**",
-                    "",
-                    "| # | X (m) | Y (m) | Wall Dist Min (m) |",
-                    "|---|-------|-------|-------------------|",
-                ])
+                lines.extend(
+                    [
+                        "**Detector Positions:**",
+                        "",
+                        "| # | X (m) | Y (m) | Wall Dist Min (m) |",
+                        "|---|-------|-------|-------------------|",
+                    ]
+                )
                 for j, (x, y) in enumerate(layout.detectors, 1):
                     wall_dist = min(
-                        x, room.width - x,
-                        y, room.length - y,
+                        x,
+                        room.width - x,
+                        y,
+                        room.length - y,
                     )
                     # V57 FIX (Finding 15): NaN detector positions or wall distances
                     # produce 'nan' in AHJ table. Replace with '[INVALID DATA]'.
@@ -324,14 +342,14 @@ class ComplianceProofDocument:
 
             # Consensus result
             if rec.consensus:
-                lines.extend([
-                    f"**Consensus:** {rec.consensus.consensus_str}",
-                    f"**is_safe:** {rec.consensus.is_safe}",
-                ])
+                lines.extend(
+                    [
+                        f"**Consensus:** {rec.consensus.consensus_str}",
+                        f"**is_safe:** {rec.consensus.is_safe}",
+                    ]
+                )
                 for v in rec.consensus.engines:
-                    lines.append(
-                        f"- {v.engine.value}: {'PASS' if v.passed else 'FAIL'} — {v.details}"
-                    )
+                    lines.append(f"- {v.engine.value}: {'PASS' if v.passed else 'FAIL'} — {v.details}")
                 lines.append("")
 
             # Notes
@@ -348,18 +366,9 @@ class ComplianceProofDocument:
         if not self.records:
             return "## 4. Consensus Summary\n\nNo rooms verified."
 
-        verified = sum(
-            1 for r in self.records
-            if r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED
-        )
-        warning = sum(
-            1 for r in self.records
-            if r.consensus and r.consensus.confidence == ConfidenceLevel.WARNING
-        )
-        fail = sum(
-            1 for r in self.records
-            if r.consensus and r.consensus.confidence == ConfidenceLevel.FAIL
-        )
+        verified = sum(1 for r in self.records if r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED)
+        warning = sum(1 for r in self.records if r.consensus and r.consensus.confidence == ConfidenceLevel.WARNING)
+        fail = sum(1 for r in self.records if r.consensus and r.consensus.confidence == ConfidenceLevel.FAIL)
         no_consensus = sum(1 for r in self.records if not r.consensus)
         total = len(self.records)
 
@@ -368,38 +377,39 @@ class ComplianceProofDocument:
             "",
             f"| Status | Count | Percentage |",
             f"|--------|-------|------------|",
-            f"| VERIFIED (3/3) | {verified} | {100*verified/total:.0f}% |",
-            f"| WARNING (2/3) | {warning} | {100*warning/total:.0f}% |",
-            f"| FAIL (≤1/3) | {fail} | {100*fail/total:.0f}% |",
-            f"| Not Verified | {no_consensus} | {100*no_consensus/total:.0f}% |",
+            f"| VERIFIED (3/3) | {verified} | {100 * verified / total:.0f}% |",
+            f"| WARNING (2/3) | {warning} | {100 * warning / total:.0f}% |",
+            f"| FAIL (≤1/3) | {fail} | {100 * fail / total:.0f}% |",
+            f"| Not Verified | {no_consensus} | {100 * no_consensus / total:.0f}% |",
             "",
         ]
 
         if fail > 0:
-            lines.extend([
-                "**⚠ ATTENTION:** The following rooms have FAIL status and MUST NOT be "
-                "deployed without resolution:",
-                "",
-            ])
+            lines.extend(
+                [
+                    "**⚠ ATTENTION:** The following rooms have FAIL status and MUST NOT be "
+                    "deployed without resolution:",
+                    "",
+                ]
+            )
             for r in self.records:
                 if r.consensus and r.consensus.confidence == ConfidenceLevel.FAIL:
                     lines.append(
-                        f"- **{r.room.name}** ({r.room.width:.0f}×{r.room.length:.0f}m): "
-                        f"{r.consensus.recommendation}"
+                        f"- **{r.room.name}** ({r.room.width:.0f}×{r.room.length:.0f}m): {r.consensus.recommendation}"
                     )
             lines.append("")
 
         if warning > 0:
-            lines.extend([
-                "**⚠ WARNING:** The following rooms have discrepancies between engines "
-                "and require investigation:",
-                "",
-            ])
+            lines.extend(
+                [
+                    "**⚠ WARNING:** The following rooms have discrepancies between engines and require investigation:",
+                    "",
+                ]
+            )
             for r in self.records:
                 if r.consensus and r.consensus.confidence == ConfidenceLevel.WARNING:
                     lines.append(
-                        f"- **{r.room.name}** ({r.room.width:.0f}×{r.room.length:.0f}m): "
-                        f"{r.consensus.recommendation}"
+                        f"- **{r.room.name}** ({r.room.width:.0f}×{r.room.length:.0f}m): {r.consensus.recommendation}"
                     )
             lines.append("")
 
@@ -464,6 +474,7 @@ class ComplianceProofDocument:
 # CLI Interface
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def _cli_main():
     """Command-line interface for generating compliance proof documents."""
     import argparse
@@ -473,23 +484,28 @@ def _cli_main():
         description="Generate NFPA 72 compliance proof document from FireAI results",
     )
     parser.add_argument(
-        "--project", default="FireAI V30 Project",
+        "--project",
+        default="FireAI V30 Project",
         help="Project name (default: 'FireAI V30 Project')",
     )
     parser.add_argument(
-        "--designer", default="",
+        "--designer",
+        default="",
         help="Designer name and PE number",
     )
     parser.add_argument(
-        "--edition", default="2022",
+        "--edition",
+        default="2022",
         help="NFPA 72 edition (default: 2022)",
     )
     parser.add_argument(
-        "--demo", action="store_true",
+        "--demo",
+        action="store_true",
         help="Generate a demo document with sample rooms",
     )
     parser.add_argument(
-        "--output", default="-",
+        "--output",
+        default="-",
         help="Output file path (default: stdout)",
     )
 
@@ -515,10 +531,12 @@ def _cli_main():
 
         for room in demo_rooms:
             from fireai.core.nfpa72_models import get_smoke_detector_radius_safe
+
             R = get_smoke_detector_radius_safe(room.ceiling_height)
             layout = opt.optimize(room, coverage_radius=R)
             consensus = consensus_engine.verify(
-                width=room.width, length=room.length,
+                width=room.width,
+                length=room.length,
                 detectors=layout.detectors,
                 grid_proof_valid=layout.proof_valid,
                 grid_coverage_pct=layout.coverage_pct,

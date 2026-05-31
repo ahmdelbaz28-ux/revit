@@ -32,20 +32,22 @@ NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 try:
-    from shapely.geometry import Polygon, Point, MultiPolygon
+    from shapely.geometry import MultiPolygon, Point, Polygon
     from shapely.ops import unary_union
+
     HAS_SHAPELY = True
 except ImportError:
     HAS_SHAPELY = False
 
 # V30 B3: Shapely 2.x fast union path
 try:
-    from shapely import union_all          # Shapely 2.x fast path
+    from shapely import union_all  # Shapely 2.x fast path
+
     _HAS_UNION_ALL = True
 except ImportError:
     _HAS_UNION_ALL = False
@@ -54,6 +56,7 @@ except ImportError:
 @dataclass
 class ExactCoverageResult:
     """Result from exact polygon coverage verification."""
+
     is_covered: bool = False
     coverage_ratio: float = 0.0
     uncovered_area_sqm: float = 0.0
@@ -121,9 +124,7 @@ class ExactCoverageEngine:
                 For smoke at h≤3.0m: R = 0.7 × 9.1 = 6.37m.
         """
         if coverage_radius_m <= 0:
-            raise ValueError(
-                f"Coverage radius must be positive, got {coverage_radius_m}"
-            )
+            raise ValueError(f"Coverage radius must be positive, got {coverage_radius_m}")
         # 2% safety factor — matches density_optimizer.COVERAGE_SAFETY_FACTOR
         self.effective_radius = coverage_radius_m * 0.98
         self.nominal_radius = coverage_radius_m
@@ -135,7 +136,7 @@ class ExactCoverageEngine:
         room_boundary_coords: List[Tuple[float, float]],
         sensor_locations: List[Tuple[float, float]],
         obstacles: Optional[List[List[Tuple[float, float]]]] = None,
-        analytical_passed: bool = False,    # V30 B3: skip flag
+        analytical_passed: bool = False,  # V30 B3: skip flag
     ) -> ExactCoverageResult:
         """Verify coverage using exact polygon difference.
 
@@ -206,13 +207,12 @@ class ExactCoverageEngine:
                 )
 
         # Reject MultiPolygon rooms (should be handled as separate rooms)
-        if room_poly.geom_type == 'MultiPolygon':
+        if room_poly.geom_type == "MultiPolygon":
             return ExactCoverageResult(
                 is_covered=False,
                 room_shape_valid=False,
                 warnings=[
-                    "Room is a MultiPolygon (disconnected parts). "
-                    "Each part must be analyzed as a separate room."
+                    "Room is a MultiPolygon (disconnected parts). Each part must be analyzed as a separate room."
                 ],
                 details="MULTIPOLYGON_REJECTED",
             )
@@ -242,14 +242,15 @@ class ExactCoverageEngine:
         sensor_areas = []
         for loc in sensor_locations:
             try:
-                sensor_circle = Point(loc).buffer(self.effective_radius,
-                                                  quad_segs=self._CIRCLE_SEGS)
+                sensor_circle = Point(loc).buffer(self.effective_radius, quad_segs=self._CIRCLE_SEGS)
                 # Only keep the portion inside the room
                 clipped = sensor_circle.intersection(room_poly)
                 if not clipped.is_empty:
                     sensor_areas.append(clipped)
             except Exception as e:
-                logger.warning(f"V112: verify_with_obstacles: failed to build sensor coverage circle at loc={loc!r}: {e!r}")
+                logger.warning(
+                    f"V112: verify_with_obstacles: failed to build sensor coverage circle at loc={loc!r}: {e!r}"
+                )
                 continue
 
         if not sensor_areas:
@@ -373,7 +374,7 @@ class ExactCoverageEngine:
         chunk_size = max(8, int(math.sqrt(n)))
         chunk_results = []
         for start in range(0, n, chunk_size):
-            chunk = geoms[start:start + chunk_size]
+            chunk = geoms[start : start + chunk_size]
             if _HAS_UNION_ALL:
                 chunk_results.append(union_all(chunk))
             else:

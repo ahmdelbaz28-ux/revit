@@ -22,26 +22,22 @@ What this file does:
 
 from __future__ import annotations
 
-import base64
-import datetime
 import hashlib
 import hmac
 import json
 import os
-import struct
 import threading
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
-
 
 # ---------------------------------------------------------------------------
 # Honest naming constants
 # ---------------------------------------------------------------------------
 
 AUDIT_SYSTEM_NAME = "FireAI SHA-256 Hash Chain Audit Trail"
-AUDIT_VERSION     = "1.0.0"
+AUDIT_VERSION = "1.0.0"
 NOT_A_BLOCKCHAIN_NOTE = (
     "This is a SHA-256 hash chain audit trail, NOT a distributed blockchain. "
     "It provides tamper-evidence within a single system instance. "
@@ -53,6 +49,7 @@ NOT_A_BLOCKCHAIN_NOTE = (
 # ---------------------------------------------------------------------------
 # Hash chain primitives
 # ---------------------------------------------------------------------------
+
 
 def _sha256(data: str | bytes) -> str:
     """SHA-256 digest as hex string."""
@@ -81,6 +78,7 @@ def _chain_hash(prev_hash: str, entry_json: str) -> str:
 # Audit Entry
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AuditEntry:
     """
@@ -89,28 +87,33 @@ class AuditEntry:
     chain_hash links this entry to all previous entries.
     hmac_sig allows independent verification without the chain.
     """
-    entry_id:    str
-    event_type:  str
-    data:        Dict[str, Any]
-    timestamp:   float
-    seq_num:     int
-    prev_hash:   str          # hash of previous entry
-    chain_hash:  str          # SHA-256(prev_hash + this_entry_json)
-    hmac_sig:    str          # HMAC-SHA256 for independent verification
-    actor:       str = "system"  # WHO made this change — critical for audit trail integrity
+
+    entry_id: str
+    event_type: str
+    data: Dict[str, Any]
+    timestamp: float
+    seq_num: int
+    prev_hash: str  # hash of previous entry
+    chain_hash: str  # SHA-256(prev_hash + this_entry_json)
+    hmac_sig: str  # HMAC-SHA256 for independent verification
+    actor: str = "system"  # WHO made this change — critical for audit trail integrity
 
     def to_json(self) -> str:
-        return json.dumps({
-            "entry_id":   self.entry_id,
-            "event_type": self.event_type,
-            "data":       self.data,
-            "timestamp":  self.timestamp,
-            "seq_num":    self.seq_num,
-            "prev_hash":  self.prev_hash,
-            "chain_hash": self.chain_hash,
-            "hmac_sig":   self.hmac_sig,
-            "actor":      self.actor,
-        }, sort_keys=True, default=str)
+        return json.dumps(
+            {
+                "entry_id": self.entry_id,
+                "event_type": self.event_type,
+                "data": self.data,
+                "timestamp": self.timestamp,
+                "seq_num": self.seq_num,
+                "prev_hash": self.prev_hash,
+                "chain_hash": self.chain_hash,
+                "hmac_sig": self.hmac_sig,
+                "actor": self.actor,
+            },
+            sort_keys=True,
+            default=str,
+        )
 
     @classmethod
     def from_json(cls, json_str: str) -> "AuditEntry":
@@ -121,6 +124,7 @@ class AuditEntry:
 # ---------------------------------------------------------------------------
 # Real HashChainAuditStore — wired into pipeline
 # ---------------------------------------------------------------------------
+
 
 class HashChainAuditStore:
     """
@@ -136,32 +140,32 @@ class HashChainAuditStore:
     Integrates with existing audit_store.py via log() method signature.
     """
 
-    GENESIS_HASH = "0" * 64   # Chain starts with all-zeros prev_hash
+    GENESIS_HASH = "0" * 64  # Chain starts with all-zeros prev_hash
 
     def __init__(
         self,
-        db_path:    str         = ":memory:",
-        hmac_key:   bytes       = None,
-        secret_key: str         = None,
+        db_path: str = ":memory:",
+        hmac_key: bytes = None,
+        secret_key: str = None,
     ) -> None:
         # Derive HMAC key from secret or generate one
         if hmac_key is not None:
             self._hmac_key = hmac_key
         elif secret_key is not None:
-            self._hmac_key = hashlib.sha256(
-                secret_key.encode()).digest()
+            self._hmac_key = hashlib.sha256(secret_key.encode()).digest()
         else:
             # Generate ephemeral key (warning: survives only this session)
             self._hmac_key = os.urandom(32)
 
-        self._entries:  List[AuditEntry] = []
+        self._entries: List[AuditEntry] = []
         self._prev_hash = self.GENESIS_HASH
-        self._seq:      int = 0
-        self._lock      = threading.RLock()
-        self._verified  = True   # False after tamper detected
+        self._seq: int = 0
+        self._lock = threading.RLock()
+        self._verified = True  # False after tamper detected
 
         # SQLite backend (same as audit_store.py)
         import sqlite3
+
         self._db = sqlite3.connect(
             db_path if db_path != ":memory:" else ":memory:",
             check_same_thread=False,
@@ -191,8 +195,8 @@ class HashChainAuditStore:
     def log(
         self,
         event_type: str,
-        data:       Dict[str, Any],
-        actor:      str = "system",
+        data: Dict[str, Any],
+        actor: str = "system",
     ) -> AuditEntry:
         """
         Append tamper-evident entry to the hash chain.
@@ -201,21 +205,21 @@ class HashChainAuditStore:
         the actual AuditStore was not connected. Now wired directly.
         """
         with self._lock:
-            entry_id  = str(uuid.uuid4())
+            entry_id = str(uuid.uuid4())
             timestamp = time.time()
-            seq_num   = self._seq
+            seq_num = self._seq
 
             # Build entry dict (without chain_hash — computed from this)
             # NOTE: "actor" IS included in chain hash for full audit integrity.
             # AuditEntry now stores actor so verify_chain() can reconstruct.
             entry_core = {
-                "entry_id":   entry_id,
+                "entry_id": entry_id,
                 "event_type": event_type,
-                "data":       data,
-                "timestamp":  timestamp,
-                "seq_num":    seq_num,
-                "prev_hash":  self._prev_hash,
-                "actor":      actor,
+                "data": data,
+                "timestamp": timestamp,
+                "seq_num": seq_num,
+                "prev_hash": self._prev_hash,
+                "actor": actor,
             }
             entry_json = json.dumps(entry_core, sort_keys=True, default=str)
 
@@ -223,8 +227,7 @@ class HashChainAuditStore:
             chain_hash = _chain_hash(self._prev_hash, entry_json)
 
             # HMAC for independent verification
-            hmac_sig = _hmac_sha256(self._hmac_key,
-                                     chain_hash + entry_json)
+            hmac_sig = _hmac_sha256(self._hmac_key, chain_hash + entry_json)
 
             entry = AuditEntry(
                 entry_id=entry_id,
@@ -248,9 +251,16 @@ class HashChainAuditStore:
                 "(seq_num, entry_id, event_type, data_json, timestamp, "
                 "prev_hash, chain_hash, hmac_sig) "
                 "VALUES (?,?,?,?,?,?,?,?)",
-                (seq_num, entry_id, event_type,
-                 json.dumps(data, default=str),
-                 timestamp, entry.prev_hash, chain_hash, hmac_sig),
+                (
+                    seq_num,
+                    entry_id,
+                    event_type,
+                    json.dumps(data, default=str),
+                    timestamp,
+                    entry.prev_hash,
+                    chain_hash,
+                    hmac_sig,
+                ),
             )
             self._db.commit()
 
@@ -292,15 +302,15 @@ class HashChainAuditStore:
 
             # 2. Recompute chain hash (must include actor for full integrity)
             entry_core = {
-                "entry_id":   entry.entry_id,
+                "entry_id": entry.entry_id,
                 "event_type": entry.event_type,
-                "data":       entry.data,
-                "timestamp":  entry.timestamp,
-                "seq_num":    entry.seq_num,
-                "prev_hash":  entry.prev_hash,
-                "actor":      entry.actor,
+                "data": entry.data,
+                "timestamp": entry.timestamp,
+                "seq_num": entry.seq_num,
+                "prev_hash": entry.prev_hash,
+                "actor": entry.actor,
             }
-            entry_json  = json.dumps(entry_core, sort_keys=True, default=str)
+            entry_json = json.dumps(entry_core, sort_keys=True, default=str)
             expected_ch = _chain_hash(entry.prev_hash, entry_json)
 
             if entry.chain_hash != expected_ch:
@@ -317,9 +327,7 @@ class HashChainAuditStore:
             )
             if not hmac.compare_digest(entry.hmac_sig, expected_hmac):
                 violations.append(
-                    f"HMAC FAILURE at seq={entry.seq_num}: "
-                    f"Independent verification failed. "
-                    f"Entry signature invalid."
+                    f"HMAC FAILURE at seq={entry.seq_num}: Independent verification failed. Entry signature invalid."
                 )
 
             prev_hash = entry.chain_hash
@@ -353,7 +361,7 @@ class HashChainAuditStore:
 
         # Build Merkle tree over chain_hashes
         leaf_hashes = [e.chain_hash for e in entries]
-        levels      = self._build_merkle_levels(leaf_hashes)
+        levels = self._build_merkle_levels(leaf_hashes)
         merkle_root = levels[-1][0] if levels else "0" * 64
 
         # Build proof path
@@ -363,15 +371,17 @@ class HashChainAuditStore:
             padded = level + [level[-1]] if len(level) % 2 else level
             if idx % 2 == 0:
                 sibling_idx = idx + 1
-                direction   = "right"
+                direction = "right"
             else:
                 sibling_idx = idx - 1
-                direction   = "left"
+                direction = "left"
             if sibling_idx < len(padded):
-                proof_path.append({
-                    "hash":      padded[sibling_idx],
-                    "direction": direction,
-                })
+                proof_path.append(
+                    {
+                        "hash": padded[sibling_idx],
+                        "direction": direction,
+                    }
+                )
             idx //= 2
 
         # Verify proof locally before returning
@@ -383,18 +393,18 @@ class HashChainAuditStore:
                 combined = step["hash"] + computed
             computed = _sha256(combined)
 
-        proof_valid = (computed == merkle_root)
+        proof_valid = computed == merkle_root
 
         return {
-            "entry_id":     entry_id,
-            "leaf_hash":    entries[target_idx].chain_hash,
-            "merkle_root":  merkle_root,
-            "proof_path":   proof_path,
-            "proof_valid":  proof_valid,   # FIX: now actually verified
+            "entry_id": entry_id,
+            "leaf_hash": entries[target_idx].chain_hash,
+            "merkle_root": merkle_root,
+            "proof_path": proof_path,
+            "proof_valid": proof_valid,  # FIX: now actually verified
             "total_entries": len(entries),
-            "audit_system":  AUDIT_SYSTEM_NAME,
+            "audit_system": AUDIT_SYSTEM_NAME,
             "audit_version": AUDIT_VERSION,
-            "note":          NOT_A_BLOCKCHAIN_NOTE,
+            "note": NOT_A_BLOCKCHAIN_NOTE,
         }
 
     @staticmethod
@@ -406,10 +416,7 @@ class HashChainAuditStore:
             current = levels[-1]
             if len(current) % 2:
                 current = current + [current[-1]]
-            levels.append([
-                _sha256(current[i] + current[i + 1])
-                for i in range(0, len(current), 2)
-            ])
+            levels.append([_sha256(current[i] + current[i + 1]) for i in range(0, len(current), 2)])
         return levels
 
     # ------------------------------------------------------------------
@@ -425,25 +432,25 @@ class HashChainAuditStore:
         is_valid, violations = self.verify_chain()
         with self._lock:
             n_entries = len(self._entries)
-            first_ts  = self._entries[0].timestamp if self._entries else None
-            last_ts   = self._entries[-1].timestamp if self._entries else None
+            first_ts = self._entries[0].timestamp if self._entries else None
+            last_ts = self._entries[-1].timestamp if self._entries else None
 
-        leaves     = [e.chain_hash for e in self._entries] if self._entries else []
-        levels     = self._build_merkle_levels(leaves)
+        leaves = [e.chain_hash for e in self._entries] if self._entries else []
+        levels = self._build_merkle_levels(leaves)
         merkle_root = levels[-1][0] if levels else "0" * 64
 
         return {
-            "audit_system":     AUDIT_SYSTEM_NAME,
-            "audit_version":    AUDIT_VERSION,
-            "is_valid":         is_valid,
-            "total_entries":    n_entries,
+            "audit_system": AUDIT_SYSTEM_NAME,
+            "audit_version": AUDIT_VERSION,
+            "is_valid": is_valid,
+            "total_entries": n_entries,
             "chain_violations": violations,
-            "merkle_root":      merkle_root,
-            "first_entry_ts":   first_ts,
-            "last_entry_ts":    last_ts,
-            "generated_at":     time.time(),
+            "merkle_root": merkle_root,
+            "first_entry_ts": first_ts,
+            "last_entry_ts": last_ts,
+            "generated_at": time.time(),
             "honest_disclosure": NOT_A_BLOCKCHAIN_NOTE,
-            "nfpa_reference":   "NFPA 72-2022 Section 10.6 (Records)",
+            "nfpa_reference": "NFPA 72-2022 Section 10.6 (Records)",
             "verification_instructions": (
                 "To verify independently: "
                 "1. Obtain the HMAC key from the project owner. "

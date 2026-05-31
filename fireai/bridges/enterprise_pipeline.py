@@ -60,6 +60,7 @@ class V17SystemResult:
         violations: All violations from all modules.
         summary: Human-readable summary.
     """
+
     acoustic_compliant: bool
     battery_compliant: bool
     tenability_compliant: bool
@@ -259,11 +260,13 @@ class EnterpriseOrchestrator:
                     acoustic_compliant = acoustic_result.get("compliant", False)
             except Exception as e:
                 logger.error(f"Acoustic check failed: {e}")
-                all_violations.append({
-                    "module": "acoustic",
-                    "severity": "ERROR",
-                    "description": f"Acoustic check crashed: {e}",
-                })
+                all_violations.append(
+                    {
+                        "module": "acoustic",
+                        "severity": "ERROR",
+                        "description": f"Acoustic check crashed: {e}",
+                    }
+                )
 
         # --- Battery Check ---
         if battery_params:
@@ -278,11 +281,13 @@ class EnterpriseOrchestrator:
                     battery_compliant = battery_result.get("is_adequate", False)
             except Exception as e:
                 logger.error(f"Battery check failed: {e}")
-                all_violations.append({
-                    "module": "battery",
-                    "severity": "ERROR",
-                    "description": f"Battery check crashed: {e}",
-                })
+                all_violations.append(
+                    {
+                        "module": "battery",
+                        "severity": "ERROR",
+                        "description": f"Battery check crashed: {e}",
+                    }
+                )
 
         # --- Tenability Check ---
         if tenability_params:
@@ -297,11 +302,13 @@ class EnterpriseOrchestrator:
                     tenability_compliant = tenability_result.get("is_safe", False)
             except Exception as e:
                 logger.error(f"Tenability check failed: {e}")
-                all_violations.append({
-                    "module": "tenability",
-                    "severity": "ERROR",
-                    "description": f"Tenability check crashed: {e}",
-                })
+                all_violations.append(
+                    {
+                        "module": "tenability",
+                        "severity": "ERROR",
+                        "description": f"Tenability check crashed: {e}",
+                    }
+                )
 
         # --- Release Gate Evaluation ---
         release_result = None

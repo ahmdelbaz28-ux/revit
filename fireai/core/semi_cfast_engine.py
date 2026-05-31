@@ -56,44 +56,34 @@ PHYSICAL_CONSTANTS: Dict[str, float] = {
     # Ambient air density at 20 °C, 1 atm
     # Ref: SFPE Handbook, Table 1-2
     "AMBIENT_AIR_DENSITY_KG_M3": 1.2,
-
     # Specific heat of air at constant pressure
     # Ref: SFPE Handbook, Chapter 1
     "AIR_SPECIFIC_HEAT_KJ_KG_K": 1.005,
-
     # Ambient (reference) temperature in Kelvin
     # Ref: Standard engineering reference condition
     "AMBIENT_TEMP_K": 293.15,  # 20 °C
-
     # Gravitational acceleration
     # Ref: Standard engineering constant
     "GRAVITY_M_S2": 9.81,
-
     # CO yield factor for generic well-ventilated flaming combustion (kg_CO / kg_fuel)
     # Conservative value per SFPE Handbook, Chapter 26 (Table 26.4)
     # Range: 0.001–0.050 depending on fuel; 0.020 is a conservative generic value
     "CO_YIELD_FACTOR": 0.020,
-
     # CO molecular weight (g/mol)
     "CO_MOLAR_MASS_G_MOL": 28.01,
-
     # Air molecular weight (g/mol)
     # Source: CRC Handbook of Chemistry and Physics, 97th Edition (aligned with _MW_AIR in models_v21.py)
     "AIR_MOLAR_MASS_G_MOL": 28.96,
-
     # Effective heat of combustion for generic fuel (MJ/kg)
     # Ref: SFPE Handbook, Table 3-4; conservative average for common fuels
     "EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG": 20.0,
-
     # Soot yield factor for generic flaming combustion (kg_soot / kg_fuel)
     # Ref: SFPE Handbook, Chapter 26; conservative value
     "SOOT_YIELD_FACTOR": 0.050,
-
     # Specific extinction coefficient for smoke (m²/kg_soot)
     # Ref: SFPE Handbook, Chapter 26; typical range 5000–12000
     # Conservative: use 8700 per Mulholland & Croce
     "SPECIFIC_EXTINCTION_COEFFICIENT_M2_KG": 8700.0,
-
     # Convective fraction of HRR (fraction of total HRR carried by plume)
     # Ref: SFPE Handbook, Chapter 13; typically 0.6–0.7
     # Conservative (higher plume enthalpy): 0.7
@@ -123,15 +113,15 @@ FIRE_GROWTH_RATES: Dict[str, float] = {
 # Ref: SFPE Handbook, Chapter 61; PD 7974-6
 # Speeds in m/s for able-bodied adults; reduced for elderly, children, mobility-impaired
 OCCUPANCY_TRAVEL_SPEEDS: Dict[str, float] = {
-    "office": 1.19,           # SFPE default adult walking speed on level
-    "residential": 1.05,      # Slightly reduced (mixed demographics)
-    "assembly": 1.05,         # Dense crowd, reduced speed per SFPE Ch. 61
-    "healthcare": 0.75,       # Patients with reduced mobility
-    "education": 1.05,        # Schools (children, slower than adults)
-    "retail": 1.05,           # Shopping (mixed, distracted)
-    "industrial": 1.19,       # Able-bodied workers
-    "elderly_care": 0.50,     # Significantly reduced mobility
-    "childcare": 0.60,        # Very young children
+    "office": 1.19,  # SFPE default adult walking speed on level
+    "residential": 1.05,  # Slightly reduced (mixed demographics)
+    "assembly": 1.05,  # Dense crowd, reduced speed per SFPE Ch. 61
+    "healthcare": 0.75,  # Patients with reduced mobility
+    "education": 1.05,  # Schools (children, slower than adults)
+    "retail": 1.05,  # Shopping (mixed, distracted)
+    "industrial": 1.19,  # Able-bodied workers
+    "elderly_care": 0.50,  # Significantly reduced mobility
+    "childcare": 0.60,  # Very young children
 }
 
 
@@ -158,6 +148,7 @@ class FireScenario:
             Affects ceiling jet temperature and smoke layer formation.
             Ref: SFPE Handbook, Chapter 13 (Alpert ceiling jet).
     """
+
     fire_load_MJ: float
     fire_growth_rate: str
     room_area_m2: float
@@ -176,37 +167,22 @@ class FireScenario:
         }
         for fname, fval in _nan_fields.items():
             if not math.isfinite(fval):
-                raise ValueError(
-                    f"{fname} must be finite (not NaN/Inf), got {fval}"
-                )
+                raise ValueError(f"{fname} must be finite (not NaN/Inf), got {fval}")
         if self.fire_load_MJ <= 0:
-            raise ValueError(
-                f"fire_load_MJ must be positive, got {self.fire_load_MJ}"
-            )
+            raise ValueError(f"fire_load_MJ must be positive, got {self.fire_load_MJ}")
         if self.fire_growth_rate not in FIRE_GROWTH_RATES:
             raise ValueError(
-                f"fire_growth_rate must be one of {list(FIRE_GROWTH_RATES)}, "
-                f"got '{self.fire_growth_rate}'"
+                f"fire_growth_rate must be one of {list(FIRE_GROWTH_RATES)}, got '{self.fire_growth_rate}'"
             )
         if self.room_area_m2 <= 0:
-            raise ValueError(
-                f"room_area_m2 must be positive, got {self.room_area_m2}"
-            )
+            raise ValueError(f"room_area_m2 must be positive, got {self.room_area_m2}")
         if self.room_height_m <= 0:
-            raise ValueError(
-                f"room_height_m must be positive, got {self.room_height_m}"
-            )
+            raise ValueError(f"room_height_m must be positive, got {self.room_height_m}")
         if self.ventilation_opening_m2 < 0:
-            raise ValueError(
-                f"ventilation_opening_m2 must be non-negative, "
-                f"got {self.ventilation_opening_m2}"
-            )
+            raise ValueError(f"ventilation_opening_m2 must be non-negative, got {self.ventilation_opening_m2}")
         valid_ceilings = {"FLAT", "SLOPED", "BEAM"}
         if self.ceiling_type.upper() not in valid_ceilings:
-            raise ValueError(
-                f"ceiling_type must be one of {valid_ceilings}, "
-                f"got '{self.ceiling_type}'"
-            )
+            raise ValueError(f"ceiling_type must be one of {valid_ceilings}, got '{self.ceiling_type}'")
         self.ceiling_type = self.ceiling_type.upper()
 
 
@@ -233,6 +209,7 @@ class TenabilityCriteria:
             Ref: SFPE Handbook, Chapter 67; ISO 13571. Below 15% causes
             impaired judgment and loss of motor control.
     """
+
     max_temp_c: float = 60.0
     min_vis_m: float = 10.0
     max_co_ppm: float = 500.0
@@ -250,9 +227,7 @@ class TenabilityCriteria:
         }
         for fname, fval in _nan_fields.items():
             if not math.isfinite(fval):
-                raise ValueError(
-                    f"{fname} must be finite (not NaN/Inf), got {fval}"
-                )
+                raise ValueError(f"{fname} must be finite (not NaN/Inf), got {fval}")
         if self.max_temp_c <= 0:
             raise ValueError(f"max_temp_c must be positive, got {self.max_temp_c}")
         if self.min_vis_m <= 0:
@@ -262,9 +237,7 @@ class TenabilityCriteria:
         if self.max_hcl_ppm < 0:
             raise ValueError(f"max_hcl_ppm must be non-negative, got {self.max_hcl_ppm}")
         if not (0 < self.max_o2_pct <= 21):
-            raise ValueError(
-                f"max_o2_pct must be in (0, 21], got {self.max_o2_pct}"
-            )
+            raise ValueError(f"max_o2_pct must be in (0, 21], got {self.max_o2_pct}")
 
 
 @dataclass
@@ -283,6 +256,7 @@ class ASETResult:
         details: Dictionary with full time-history and intermediate results
             for audit trail and debugging.
     """
+
     aset_seconds: float
     limiting_criterion: str
     layer_height_at_aset_m: float
@@ -295,6 +269,7 @@ class ASETResult:
 # ---------------------------------------------------------------------------
 # Core calculation functions
 # ---------------------------------------------------------------------------
+
 
 def calculate_fire_hrr(growth_rate: str, time_seconds: float) -> float:
     """Calculate Heat Release Rate (HRR) using the NFPA t² fire growth model.
@@ -322,17 +297,12 @@ def calculate_fire_hrr(growth_rate: str, time_seconds: float) -> float:
         ValueError: If growth_rate is invalid or time_seconds is negative.
     """
     if time_seconds < 0:
-        raise ValueError(
-            f"time_seconds must be non-negative, got {time_seconds}"
-        )
+        raise ValueError(f"time_seconds must be non-negative, got {time_seconds}")
     if growth_rate not in FIRE_GROWTH_RATES:
-        raise ValueError(
-            f"growth_rate must be one of {list(FIRE_GROWTH_RATES)}, "
-            f"got '{growth_rate}'"
-        )
+        raise ValueError(f"growth_rate must be one of {list(FIRE_GROWTH_RATES)}, got '{growth_rate}'")
 
     alpha = FIRE_GROWTH_RATES[growth_rate]
-    hrr = alpha * time_seconds ** 2
+    hrr = alpha * time_seconds**2
     return hrr
 
 
@@ -396,11 +366,11 @@ def calculate_smoke_layer_height(
         raise ValueError(f"time_seconds must be non-negative, got {time_seconds}")
 
     # Physical constants
-    rho_0 = PHYSICAL_CONSTANTS["AMBIENT_AIR_DENSITY_KG_M3"]       # 1.2 kg/m³
-    c_p = PHYSICAL_CONSTANTS["AIR_SPECIFIC_HEAT_KJ_KG_K"]         # 1.005 kJ/(kg·K)
-    T_0 = PHYSICAL_CONSTANTS["AMBIENT_TEMP_K"]                    # 293.15 K
-    g = PHYSICAL_CONSTANTS["GRAVITY_M_S2"]                        # 9.81 m/s²
-    chi_c = PHYSICAL_CONSTANTS["CONVECTIVE_HRR_FRACTION"]         # 0.7
+    rho_0 = PHYSICAL_CONSTANTS["AMBIENT_AIR_DENSITY_KG_M3"]  # 1.2 kg/m³
+    c_p = PHYSICAL_CONSTANTS["AIR_SPECIFIC_HEAT_KJ_KG_K"]  # 1.005 kJ/(kg·K)
+    T_0 = PHYSICAL_CONSTANTS["AMBIENT_TEMP_K"]  # 293.15 K
+    g = PHYSICAL_CONSTANTS["GRAVITY_M_S2"]  # 9.81 m/s²
+    chi_c = PHYSICAL_CONSTANTS["CONVECTIVE_HRR_FRACTION"]  # 0.7
 
     H = room_height_m
     A = room_area_m2
@@ -430,7 +400,7 @@ def calculate_smoke_layer_height(
     # defines Q* = Q_c / (rho_0 * c_p * T_0 * sqrt(g) * H^(5/2) * A).
     # H^5 overestimates the denominator by ~15x at H=3m, making ASET ~2.5x too long.
 
-    denominator = rho_0 * c_p * T_0 * math.sqrt(g) * (H ** 2.5) * A
+    denominator = rho_0 * c_p * T_0 * math.sqrt(g) * (H**2.5) * A
     if denominator < 1e-30:
         return 0.0
 
@@ -570,10 +540,7 @@ def calculate_visibility(smoke_optical_density_per_m: float) -> float:
         ValueError: If optical density is negative.
     """
     if smoke_optical_density_per_m < 0:
-        raise ValueError(
-            f"smoke_optical_density_per_m must be non-negative, "
-            f"got {smoke_optical_density_per_m}"
-        )
+        raise ValueError(f"smoke_optical_density_per_m must be non-negative, got {smoke_optical_density_per_m}")
 
     if smoke_optical_density_per_m < 1e-10:
         return float("inf")  # Clear air, essentially infinite visibility
@@ -610,12 +577,12 @@ def _compute_optical_density(
         Optical density per metre (1/m) in the upper smoke layer.
     """
     Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg
-    y_soot = PHYSICAL_CONSTANTS["SOOT_YIELD_FACTOR"]                       # 0.050
-    alpha_ext = PHYSICAL_CONSTANTS["SPECIFIC_EXTINCTION_COEFFICIENT_M2_KG"] # 8700
+    y_soot = PHYSICAL_CONSTANTS["SOOT_YIELD_FACTOR"]  # 0.050
+    alpha_ext = PHYSICAL_CONSTANTS["SPECIFIC_EXTINCTION_COEFFICIENT_M2_KG"]  # 8700
 
     # V58 HIGH: NaN fire_hrr_kw bypasses max() → NaN → OD corrupted
     if not math.isfinite(fire_hrr_kw):
-        return float('inf')  # Fail-safe: worst-case optical density
+        return float("inf")  # Fail-safe: worst-case optical density
 
     Q = max(fire_hrr_kw, 0.0)
 
@@ -657,11 +624,11 @@ def _compute_optical_density(
     # Using Thomas correlation: t_fill ≈ V / (0.21 * Q^(1/3) * h^(5/3))
     # Simplified for engineering estimate:
     if fire_hrr_kw > 0:
-        t_fill = (room_volume / (0.21 * (fire_hrr_kw ** (1.0/3.0)) * (room_height_m ** (5.0/3.0)) + 1e-9))
+        t_fill = room_volume / (0.21 * (fire_hrr_kw ** (1.0 / 3.0)) * (room_height_m ** (5.0 / 3.0)) + 1e-9)
         t_fill = max(t_fill, 60.0)  # Minimum 60s filling time
-        layer_fraction = 1.0/3.0 + 2.0/3.0 * (1.0 - math.exp(-time_seconds / t_fill))
+        layer_fraction = 1.0 / 3.0 + 2.0 / 3.0 * (1.0 - math.exp(-time_seconds / t_fill))
     else:
-        layer_fraction = 1.0/3.0  # No fire — initial state
+        layer_fraction = 1.0 / 3.0  # No fire — initial state
     upper_layer_volume = room_volume * layer_fraction
 
     if upper_layer_volume < 1e-6:
@@ -727,7 +694,7 @@ def estimate_co_concentration(
 
     # V58 HIGH: NaN fire_hrr_kw → max(NaN, 0.0) = NaN → CO = 0.0 (non-conservative)
     if not math.isfinite(fire_hrr_kw):
-        return float('inf')  # Fail-safe: worst-case CO
+        return float("inf")  # Fail-safe: worst-case CO
 
     Q = max(fire_hrr_kw, 0.0)
 
@@ -736,9 +703,9 @@ def estimate_co_concentration(
 
     # Physical constants
     Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg
-    y_CO = PHYSICAL_CONSTANTS["CO_YIELD_FACTOR"]                          # 0.020
-    M_CO = PHYSICAL_CONSTANTS["CO_MOLAR_MASS_G_MOL"]                     # 28.01
-    M_air = PHYSICAL_CONSTANTS["AIR_MOLAR_MASS_G_MOL"]                   # 28.96
+    y_CO = PHYSICAL_CONSTANTS["CO_YIELD_FACTOR"]  # 0.020
+    M_CO = PHYSICAL_CONSTANTS["CO_MOLAR_MASS_G_MOL"]  # 28.01
+    M_air = PHYSICAL_CONSTANTS["AIR_MOLAR_MASS_G_MOL"]  # 28.96
 
     # Mass loss rate from HRR
     m_dot_fuel = Q / (Delta_H_c * 1000.0)  # kg/s
@@ -862,15 +829,14 @@ def calculate_aset(
         # Check if fire has consumed available fuel load
         # Total energy released = alpha * t³ / 3 (integral of alpha*t² dt)
         alpha = FIRE_GROWTH_RATES[scenario.fire_growth_rate]
-        total_energy_MJ = alpha * (t ** 3) / 3.0 / 1000.0  # kJ to MJ
+        total_energy_MJ = alpha * (t**3) / 3.0 / 1000.0  # kJ to MJ
 
         if total_energy_MJ >= scenario.fire_load_MJ:
             # Fire has burned through available fuel; steady-state or decay
             # For conservative estimate, maintain peak HRR
             # (In reality, fire would decay, but conservative assumption)
             hrr = calculate_fire_hrr(
-                scenario.fire_growth_rate,
-                (3.0 * scenario.fire_load_MJ * 1000.0 / alpha) ** (1.0 / 3.0)
+                scenario.fire_growth_rate, (3.0 * scenario.fire_load_MJ * 1000.0 / alpha) ** (1.0 / 3.0)
             )
 
         # Smoke layer interface height
@@ -912,67 +878,51 @@ def calculate_aset(
         # Store time-history point (every 10 steps to limit memory)
         step_index = int(t / time_step_s)
         if step_index % 10 == 0 or t >= max_time_s - time_step_s:
-            time_history.append({
-                "time_s": round(t, 2),
-                "hrr_kW": round(hrr, 2),
-                "layer_height_m": round(layer_height, 4),
-                "layer_temp_c": round(layer_temp, 2),
-                "visibility_m": round(visibility, 4) if visibility != float("inf") else float("inf"),
-                "co_ppm": round(co_ppm, 2),
-                "o2_pct": round(o2_pct, 2),
-                "optical_density_per_m": round(od, 6),
-            })
+            time_history.append(
+                {
+                    "time_s": round(t, 2),
+                    "hrr_kW": round(hrr, 2),
+                    "layer_height_m": round(layer_height, 4),
+                    "layer_temp_c": round(layer_temp, 2),
+                    "visibility_m": round(visibility, 4) if visibility != float("inf") else float("inf"),
+                    "co_ppm": round(co_ppm, 2),
+                    "o2_pct": round(o2_pct, 2),
+                    "optical_density_per_m": round(od, 6),
+                }
+            )
 
         # ---- Check tenability criteria ----
         violated = False
 
         # 1. Temperature
         if layer_temp > criteria.max_temp_c:
-            limiting_criterion = (
-                f"Temperature exceeded {criteria.max_temp_c} °C "
-                f"(reached {layer_temp:.1f} °C)"
-            )
+            limiting_criterion = f"Temperature exceeded {criteria.max_temp_c} °C (reached {layer_temp:.1f} °C)"
             violated = True
 
         # 2. Visibility
         if not violated and visibility < criteria.min_vis_m:
-            limiting_criterion = (
-                f"Visibility below {criteria.min_vis_m} m "
-                f"(reached {visibility:.2f} m)"
-            )
+            limiting_criterion = f"Visibility below {criteria.min_vis_m} m (reached {visibility:.2f} m)"
             violated = True
 
         # 3. CO
         if not violated and co_ppm > criteria.max_co_ppm:
-            limiting_criterion = (
-                f"CO concentration exceeded {criteria.max_co_ppm} ppm "
-                f"(reached {co_ppm:.1f} ppm)"
-            )
+            limiting_criterion = f"CO concentration exceeded {criteria.max_co_ppm} ppm (reached {co_ppm:.1f} ppm)"
             violated = True
 
         # 4. O₂
         if not violated and o2_pct < criteria.max_o2_pct:
-            limiting_criterion = (
-                f"O₂ concentration below {criteria.max_o2_pct}% "
-                f"(reached {o2_pct:.1f}%)"
-            )
+            limiting_criterion = f"O₂ concentration below {criteria.max_o2_pct}% (reached {o2_pct:.1f}%)"
             violated = True
 
         # 5. HCl (only if criterion is set > 0)
         if not violated and criteria.max_hcl_ppm > 0 and hcl_ppm > criteria.max_hcl_ppm:
-            limiting_criterion = (
-                f"HCl concentration exceeded {criteria.max_hcl_ppm} ppm "
-                f"(reached {hcl_ppm:.1f} ppm)"
-            )
+            limiting_criterion = f"HCl concentration exceeded {criteria.max_hcl_ppm} ppm (reached {hcl_ppm:.1f} ppm)"
             violated = True
 
         # 6. Smoke layer interface reaching typical occupant height (1.8 m)
         #    This is an additional conservative check per BS 7974-2
         if not violated and layer_height < 1.8:
-            limiting_criterion = (
-                f"Smoke layer descended below 1.8 m (occupant height) "
-                f"(reached {layer_height:.2f} m)"
-            )
+            limiting_criterion = f"Smoke layer descended below 1.8 m (occupant height) (reached {layer_height:.2f} m)"
             violated = True
 
         if violated:
@@ -1034,11 +984,7 @@ def calculate_aset(
         limiting_criterion=limiting_criterion,
         layer_height_at_aset_m=round(layer_height_at_aset, 4),
         layer_temp_at_aset_c=round(layer_temp_at_aset, 2),
-        visibility_at_aset_m=(
-            round(visibility_at_aset, 4)
-            if visibility_at_aset != float("inf")
-            else float("inf")
-        ),
+        visibility_at_aset_m=(round(visibility_at_aset, 4) if visibility_at_aset != float("inf") else float("inf")),
         co_concentration_ppm=round(co_at_aset, 2),
         details=details,
     )
@@ -1188,10 +1134,7 @@ def calculate_rset(
     if travel_distance_m < 0:
         raise ValueError(f"travel_distance_m must be non-negative, got {travel_distance_m}")
     if occupancy_type not in OCCUPANCY_TRAVEL_SPEEDS:
-        raise ValueError(
-            f"occupancy_type must be one of {list(OCCUPANCY_TRAVEL_SPEEDS)}, "
-            f"got '{occupancy_type}'"
-        )
+        raise ValueError(f"occupancy_type must be one of {list(OCCUPANCY_TRAVEL_SPEEDS)}, got '{occupancy_type}'")
     if pre_movement_s < 0:
         raise ValueError(f"pre_movement_s must be non-negative, got {pre_movement_s}")
     if mobility_factor <= 0:
@@ -1310,8 +1253,7 @@ def verify_aset_rset(
         raise ValueError(f"rset_seconds must be non-negative, got {rset_seconds}")
     if safety_factor <= 1.0:
         raise ValueError(
-            f"safety_factor must be > 1.0, got {safety_factor}. "
-            f"Life-safety requires a margin of safety beyond RSET."
+            f"safety_factor must be > 1.0, got {safety_factor}. Life-safety requires a margin of safety beyond RSET."
         )
 
     required_aset = rset_seconds * safety_factor

@@ -29,43 +29,46 @@ Usage
 
 from __future__ import annotations
 
-import time
 import json
 import os
-from dataclasses import dataclass, asdict
+import time
+from dataclasses import asdict, dataclass
 from typing import List, Optional
 
-from fireai.core.spatial_engine.density_optimizer import (
-    DensityOptimizer, Room, DETECTOR_RADIUS,
-)
 import fireai.core.spatial_engine.density_optimizer as _dm
+from fireai.core.spatial_engine.density_optimizer import (
+    DETECTOR_RADIUS,
+    DensityOptimizer,
+    Room,
+)
 
 
 @dataclass
 class ParamConfig:
     """Result of one verify_step configuration across benchmark rooms."""
-    verify_step:   float
+
+    verify_step: float
     total_time_ms: int
-    avg_count:     float
-    all_valid:     bool
-    pareto_score:  float   # time_ms * avg_count / 10  (lower = better)
-    per_room:      List[dict]   # breakdown per benchmark room
+    avg_count: float
+    all_valid: bool
+    pareto_score: float  # time_ms * avg_count / 10  (lower = better)
+    per_room: List[dict]  # breakdown per benchmark room
 
 
 @dataclass
 class ParameterOptimizationResult:
     """Complete grid search result with best config identified."""
-    best_config:    ParamConfig
-    all_configs:    List[ParamConfig]
+
+    best_config: ParamConfig
+    all_configs: List[ParamConfig]
     recommendation: str
-    saved_to:       Optional[str] = None
+    saved_to: Optional[str] = None
 
     def table(self) -> str:
         """Format results as a human-readable table."""
         lines = [
             "  verify_step Grid Search (fireai DensityOptimizer)",
-            f"  {'step':>6} {'time_ms':>8} {'avg_count':>10} "
-            f"{'all_valid':>9} {'pareto':>8}",
+            f"  {'step':>6} {'time_ms':>8} {'avg_count':>10} {'all_valid':>9} {'pareto':>8}",
             "  " + "-" * 50,
         ]
         for c in sorted(self.all_configs, key=lambda x: x.pareto_score):
@@ -102,8 +105,8 @@ class ParameterOptimizer:
 
     def optimise(
         self,
-        rooms:  List[Room],
-        steps:  Optional[List[float]] = None,
+        rooms: List[Room],
+        steps: Optional[List[float]] = None,
     ) -> ParameterOptimizationResult:
         """
         Run grid search over verify_step values.
@@ -116,36 +119,40 @@ class ParameterOptimizer:
             ParameterOptimizationResult with best config and all configs.
         """
         steps = steps or [0.10, 0.15, 0.20, 0.25, 0.30, 0.40]
-        old_step   = _dm.VERIFY_STEP
+        old_step = _dm.VERIFY_STEP
         configs: List[ParamConfig] = []
 
         for step in steps:
             _dm.VERIFY_STEP = step
-            t_total   = 0
+            t_total = 0
             count_sum = 0
             all_valid = True
-            per_room  = []
+            per_room = []
 
             for room in rooms:
                 opt = DensityOptimizer()
-                t0  = time.time()
+                t0 = time.time()
                 try:
                     lay = opt.optimize(
                         room,
                         coverage_radius=self.coverage_radius,
                     )
                     ms = int((time.time() - t0) * 1000)
-                    t_total   += ms
+                    t_total += ms
                     count_sum += lay.count
                     if not lay.proof_valid or lay.wall_violations > 0:
                         all_valid = False
-                    per_room.append(dict(
-                        room=room.name, count=lay.count,
-                        coverage=lay.coverage_pct,
-                        proof_valid=lay.proof_valid,
-                        wall_violations=lay.wall_violations,
-                        method=lay.method, ms=ms,
-                    ))
+                    per_room.append(
+                        dict(
+                            room=room.name,
+                            count=lay.count,
+                            coverage=lay.coverage_pct,
+                            proof_valid=lay.proof_valid,
+                            wall_violations=lay.wall_violations,
+                            method=lay.method,
+                            ms=ms,
+                        )
+                    )
                 except Exception as exc:
                     all_valid = False
                     per_room.append(dict(room=room.name, error=str(exc)))
@@ -153,23 +160,23 @@ class ParameterOptimizer:
             _dm.VERIFY_STEP = old_step
 
             avg_count = count_sum / len(rooms) if rooms else 0
-            pareto    = (t_total * avg_count / 10.0
-                         if all_valid else float("inf"))
-            configs.append(ParamConfig(
-                verify_step   = step,
-                total_time_ms = t_total,
-                avg_count     = round(avg_count, 2),
-                all_valid     = all_valid,
-                pareto_score  = round(pareto, 3),
-                per_room      = per_room,
-            ))
+            pareto = t_total * avg_count / 10.0 if all_valid else float("inf")
+            configs.append(
+                ParamConfig(
+                    verify_step=step,
+                    total_time_ms=t_total,
+                    avg_count=round(avg_count, 2),
+                    all_valid=all_valid,
+                    pareto_score=round(pareto, 3),
+                    per_room=per_room,
+                )
+            )
 
-        _dm.VERIFY_STEP = old_step   # safety restore
+        _dm.VERIFY_STEP = old_step  # safety restore
 
         valid = [c for c in configs if c.all_valid]
-        best  = (min(valid, key=lambda c: c.pareto_score)
-                 if valid else configs[0])
-        rec   = (
+        best = min(valid, key=lambda c: c.pareto_score) if valid else configs[0]
+        rec = (
             f"verify_step={best.verify_step:.2f} -> "
             f"pareto={best.pareto_score:.1f} "
             f"({best.total_time_ms}ms, avg {best.avg_count:.0f} dets/room). "
@@ -177,24 +184,22 @@ class ParameterOptimizer:
             f"in your startup config."
         )
         return ParameterOptimizationResult(
-            best_config    = best,
-            all_configs    = configs,
-            recommendation = rec,
+            best_config=best,
+            all_configs=configs,
+            recommendation=rec,
         )
 
     def save(
         self,
         result: ParameterOptimizationResult,
-        path:   str,
+        path: str,
     ) -> None:
         """Write full grid search results to JSON for manual review."""
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         payload = {
             "recommendation": result.recommendation,
             "best": asdict(result.best_config),
-            "all_configs": [asdict(c) for c in
-                            sorted(result.all_configs,
-                                   key=lambda x: x.pareto_score)],
+            "all_configs": [asdict(c) for c in sorted(result.all_configs, key=lambda x: x.pareto_score)],
         }
         with open(path, "w") as f:
             json.dump(payload, f, indent=2)

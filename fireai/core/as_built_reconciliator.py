@@ -51,11 +51,10 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from fireai.core.blockchain_readiness_gate import BlockchainReadinessGate
-
 
 # ============================================================================
 # Constants — Device-type-specific 3D position tolerances (metres)
@@ -66,16 +65,13 @@ DEVICE_TOLERANCES: Dict[str, float] = {
     # NFPA 72-2022 §17.6 — smoke detector spacing is sensitive to
     # ceiling position; drift beyond 0.3 m may place the detector
     # outside its rated coverage area.
-
     "HEAT": 0.3,
     # NFPA 72-2022 §17.7 — heat detector spacing; same spatial
     # sensitivity rationale as smoke detectors.
-
     "MANUAL_PULL_STATION": 0.15,
     # ADA §309 — reach-range compliance requires precise mounting
     # height (48 in / 1.22 m max AFF). Tighter tolerance because
     # accessibility is a legal mandate, not just engineering guidance.
-
     "DUCT_SMOKE": 0.5,
     # NFPA 72-2022 §17.8 — duct smoke detector location; wider
     # tolerance reflects field variability in duct routing after
@@ -101,6 +97,7 @@ REQUIRED_DEVICE_KEYS: Tuple[str, ...] = ("id", "x", "y", "z", "device_type")
 # Helper Functions
 # ============================================================================
 
+
 def _get_tolerance(device_type: str) -> float:
     """Return the position tolerance for *device_type*.
 
@@ -117,8 +114,12 @@ def _get_tolerance(device_type: str) -> float:
 
 
 def _euclidean_distance_3d(
-    x1: float, y1: float, z1: float,
-    x2: float, y2: float, z2: float,
+    x1: float,
+    y1: float,
+    z1: float,
+    x2: float,
+    y2: float,
+    z2: float,
 ) -> float:
     """Compute the 3D Euclidean distance between two points.
 
@@ -134,11 +135,7 @@ def _euclidean_distance_3d(
     Returns:
         Euclidean distance in metres.
     """
-    return math.sqrt(
-        (x2 - x1) ** 2
-        + (y2 - y1) ** 2
-        + (z2 - z1) ** 2
-    )
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
 
 
 def _serialize_device(device: Dict) -> str:
@@ -169,15 +166,13 @@ def _validate_device_dict(device: Dict, source: str) -> None:
     """
     missing = [k for k in REQUIRED_DEVICE_KEYS if k not in device]
     if missing:
-        raise ValueError(
-            f"Device from {source} missing required keys: {missing}. "
-            f"Device: {device}"
-        )
+        raise ValueError(f"Device from {source} missing required keys: {missing}. Device: {device}")
 
 
 # ============================================================================
 # ReconciliationResult
 # ============================================================================
+
 
 @dataclass
 class ReconciliationResult:
@@ -218,6 +213,7 @@ class ReconciliationResult:
 # AsBuiltReconciliator
 # ============================================================================
 
+
 class AsBuiltReconciliator:
     """3D As-Built Reconciliator — compares design vs. field-verified data.
 
@@ -256,16 +252,11 @@ class AsBuiltReconciliator:
     ) -> None:
         # --- Validate design manifest structure ---
         if "devices" not in design_manifest:
-            raise ValueError(
-                "design_manifest must contain a 'devices' key with a list "
-                "of device dicts."
-            )
+            raise ValueError("design_manifest must contain a 'devices' key with a list of device dicts.")
 
         design_devices = design_manifest["devices"]
         if not isinstance(design_devices, list):
-            raise ValueError(
-                "design_manifest['devices'] must be a list of device dicts."
-            )
+            raise ValueError("design_manifest['devices'] must be a list of device dicts.")
 
         # Validate each device dict
         for dev in design_devices:
@@ -291,9 +282,7 @@ class AsBuiltReconciliator:
         for dev in design_devices:
             device_id = str(dev[DEVICE_ID_KEY])
             if device_id in self._design_by_id:
-                raise ValueError(
-                    f"Duplicate device ID in design_manifest: {device_id!r}"
-                )
+                raise ValueError(f"Duplicate device ID in design_manifest: {device_id!r}")
             self._design_by_id[device_id] = dev
 
     # ------------------------------------------------------------------ #
@@ -363,8 +352,12 @@ class AsBuiltReconciliator:
             # Device exists in design — compute 3D drift
             design_dev = self._design_by_id[device_id]
             drift = _euclidean_distance_3d(
-                float(design_dev["x"]), float(design_dev["y"]), float(design_dev["z"]),
-                float(ab_dev["x"]),    float(ab_dev["y"]),    float(ab_dev["z"]),
+                float(design_dev["x"]),
+                float(design_dev["y"]),
+                float(design_dev["z"]),
+                float(ab_dev["x"]),
+                float(ab_dev["y"]),
+                float(ab_dev["z"]),
             )
             tolerance = _get_tolerance(str(ab_dev.get("device_type", "")))
 
@@ -393,11 +386,7 @@ class AsBuiltReconciliator:
                 missing_devices.append((device_id, msg))
 
         # --- Determine overall status ---
-        has_deviations = (
-            len(rogue_devices) > 0
-            or len(missing_devices) > 0
-            or len(drifted_devices) > 0
-        )
+        has_deviations = len(rogue_devices) > 0 or len(missing_devices) > 0 or len(drifted_devices) > 0
         status = "DEVIATION_DETECTED" if has_deviations else "VERIFIED"
 
         # --- Build summary ---
@@ -464,14 +453,9 @@ class AsBuiltReconciliator:
             lines.append(f"  Drifted (beyond tolerance): {drifted_count}")
 
         if status == "VERIFIED":
-            lines.append(
-                "  All as-built devices match design within tolerance."
-            )
+            lines.append("  All as-built devices match design within tolerance.")
         else:
-            lines.append(
-                "  REVIEW REQUIRED — deviations detected between design "
-                "and as-built."
-            )
+            lines.append("  REVIEW REQUIRED — deviations detected between design and as-built.")
         return "\n".join(lines)
 
 

@@ -39,7 +39,7 @@ import logging
 import math
 import threading
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -50,27 +50,28 @@ logger = logging.getLogger(__name__)
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class VentilationLevel(str, Enum):
-    HIGH   = "HIGH"
+    HIGH = "HIGH"
     MEDIUM = "MEDIUM"
-    LOW    = "LOW"
-    POOR   = "POOR"
+    LOW = "LOW"
+    POOR = "POOR"
 
 
 class HazardType(str, Enum):
-    GAS    = "GAS"
-    DUST   = "DUST"
+    GAS = "GAS"
+    DUST = "DUST"
     HYBRID = "HYBRID"
-    FIBER  = "FIBER"
+    FIBER = "FIBER"
 
 
 class ZoneType(str, Enum):
-    ZONE_0       = "ZONE_0"
-    ZONE_1       = "ZONE_1"
-    ZONE_2       = "ZONE_2"
-    ZONE_20      = "ZONE_20"
-    ZONE_21      = "ZONE_21"
-    ZONE_22      = "ZONE_22"
+    ZONE_0 = "ZONE_0"
+    ZONE_1 = "ZONE_1"
+    ZONE_2 = "ZONE_2"
+    ZONE_20 = "ZONE_20"
+    ZONE_21 = "ZONE_21"
+    ZONE_22 = "ZONE_22"
     UNCLASSIFIED = "UNCLASSIFIED"
 
 
@@ -96,29 +97,38 @@ class TemperatureClass(str, Enum):
     Includes extended subdivisions (T2A-T2D, T3A-T3C, T4A)
     for more granular equipment selection.
     """
-    T1  = "T1"   # max surface 450°C
-    T2  = "T2"   # max surface 300°C
+
+    T1 = "T1"  # max surface 450°C
+    T2 = "T2"  # max surface 300°C
     T2A = "T2A"  # max surface 280°C
     T2B = "T2B"  # max surface 260°C
     T2C = "T2C"  # max surface 230°C
     T2D = "T2D"  # max surface 215°C
-    T3  = "T3"   # max surface 200°C
+    T3 = "T3"  # max surface 200°C
     T3A = "T3A"  # max surface 180°C
     T3B = "T3B"  # max surface 165°C
     T3C = "T3C"  # max surface 160°C
-    T4  = "T4"   # max surface 135°C
+    T4 = "T4"  # max surface 135°C
     T4A = "T4A"  # max surface 120°C
-    T5  = "T5"   # max surface 100°C
-    T6  = "T6"   # max surface 85°C
+    T5 = "T5"  # max surface 100°C
+    T6 = "T6"  # max surface 85°C
 
 
 # Max surface temperature per class (IEC 60079-0:2017 §7.3)
 # Extended with subdivisions T2A-T2D, T3A-T3C, T4A
 _T_CLASS_MAX: Dict[str, float] = {
     "T1": 450.0,
-    "T2": 300.0, "T2A": 280.0, "T2B": 260.0, "T2C": 230.0, "T2D": 215.0,
-    "T3": 200.0, "T3A": 180.0, "T3B": 165.0, "T3C": 160.0,
-    "T4": 135.0, "T4A": 120.0,
+    "T2": 300.0,
+    "T2A": 280.0,
+    "T2B": 260.0,
+    "T2C": 230.0,
+    "T2D": 215.0,
+    "T3": 200.0,
+    "T3A": 180.0,
+    "T3B": 165.0,
+    "T3C": 160.0,
+    "T4": 135.0,
+    "T4A": 120.0,
     "T5": 100.0,
     "T6": 85.0,
 }
@@ -126,18 +136,19 @@ _T_CLASS_MAX: Dict[str, float] = {
 
 class WavelengthBand(str, Enum):
     """Spectral bands for flame detector transparency analysis."""
-    UV  = "UV"    # 185-260 nm
-    VIS = "VIS"   # 380-780 nm
-    IR1 = "IR1"   # 1-3 um (near-IR)
-    IR3 = "IR3"   # 3-5 um (mid-IR CO2 band)
+
+    UV = "UV"  # 185-260 nm
+    VIS = "VIS"  # 380-780 nm
+    IR1 = "IR1"  # 1-3 um (near-IR)
+    IR3 = "IR3"  # 3-5 um (mid-IR CO2 band)
 
 
 class RegulatoryFramework(str, Enum):
-    ATEX_EU    = "ATEX_EU"
-    IECEX      = "IECEx"
-    NEC_US     = "NEC_US"
+    ATEX_EU = "ATEX_EU"
+    IECEX = "IECEx"
+    NEC_US = "NEC_US"
     CEC_CANADA = "CEC_CANADA"
-    EFTA       = "EFTA"
+    EFTA = "EFTA"
 
 
 class PasquillStability(str, Enum):
@@ -146,6 +157,7 @@ class PasquillStability(str, Enum):
     F = moderately stable (worst case for dispersion = widest plume)
     Used by EnvironmentalContext for worst-case default.
     """
+
     A = "A"
     B = "B"
     C = "C"
@@ -160,18 +172,19 @@ class ThermalMarginRule(str, Enum):
     STANDARD_5PCT: 5% margin with minimum 5K (Zone 1/21)
     BASIC: just strictly below (Zone 2/22)
     """
-    STRICT_5PCT   = "STRICT_5PCT"
+
+    STRICT_5PCT = "STRICT_5PCT"
     STANDARD_5PCT = "STANDARD_5PCT"
-    BASIC         = "BASIC"
+    BASIC = "BASIC"
 
 
 class RegionProfile(str, Enum):
     """Environmental region presets for HAC calculations.
-    
+
     Each region triggers ADVISORY warnings when engineer inputs deviate
     from typical regional conditions. The system NEVER silently overwrites
     engineer inputs — it only generates advisory warnings.
-    
+
     STANDARD_IEC: Default IEC conditions (40C ambient, 0.85 fouling)
     MENA_SUMMER_OUTDOOR: Middle East/North Africa outdoor summer conditions.
         GCC desert environments regularly exceed 50C in summer months.
@@ -184,10 +197,11 @@ class RegionProfile(str, Enum):
         No advisories under normal conditions.
     USA_NFPA: USA NFPA conditions (25-35C ambient, clean environment).
         No advisories under normal conditions.
-    
+
     FM Global DS 5-48 acknowledges that fouling factors must reflect
     actual service conditions.
     """
+
     STANDARD_IEC = "STANDARD_IEC"
     MENA_SUMMER_OUTDOOR = "MENA_SUMMER_OUTDOOR"
     GULF_HCIS = "GULF_HCIS"
@@ -202,7 +216,7 @@ class Jurisdiction(str, Enum):
     Only jurisdictions with documented, verifiable additional requirements
     are included. Empty stubs are FORBIDDEN — they mislead engineers into
     thinking a jurisdiction is covered when it is not.
-    
+
     GLOBAL_IEC: Base IEC 60079 / NFPA 72 requirements.
         Zone 2 allows single detector (1oo1).
     SAUDI_HCIS: Saudi High Commission for Industrial Safety.
@@ -216,6 +230,7 @@ class Jurisdiction(str, Enum):
         NFPA 72 §17.8.3.4 provides redundancy guidance but does not
         mandate 1oo2 for Zone 2.
     """
+
     GLOBAL_IEC = "GLOBAL_IEC"
     SAUDI_HCIS = "SAUDI_HCIS"
     EGYPTIAN_FIRE_CODE = "EGYPTIAN_FIRE_CODE"
@@ -230,81 +245,81 @@ class FoulingCategory(str, Enum):
       MODERATE: 0.70-0.85 (typical industrial)
       HEAVY:    0.55-0.70 (heavy industrial / dusty)
       SEVERE:   0.00-0.55 (desert outdoor / chemical plant)
-    
+
     Reference: FM Global DS 5-48 §3.2.1
     """
-    CLEAN   = "CLEAN"
+
+    CLEAN = "CLEAN"
     MODERATE = "MODERATE"
-    HEAVY   = "HEAVY"
-    SEVERE  = "SEVERE"
+    HEAVY = "HEAVY"
+    SEVERE = "SEVERE"
 
 
 class ElevationTier(str, Enum):
     """Detector/gas elevation classification for Z-Axis audit.
     Based on vapor density ratio (MW_gas / MW_air) using ±3% band.
-    
+
     Air MW ≈ 28.96 g/mol. Classification uses density ratio thresholds:
       - Ratio < 0.97 (MW < 28.0912): gas is lighter than air → rises to ceiling
       - 0.97 ≤ Ratio ≤ 1.03 (28.0912 ≤ MW ≤ 29.8288): near air density → breathing zone
       - Ratio > 1.03 (MW > 29.8288): gas is heavier than air → pools at floor
-    
+
     The ±3% band accounts for typical temperature/pressure variations
     and turbulent mixing effects that make strict MW=28.96 boundaries
     impractical for engineering classification.
-    
+
     Reference: IEC 60079-10-1:2015 §B.4, NFPA 497 §4.5,
                Lees' Loss Prevention §15.2 (buoyancy of gases)
     """
-    LOW = "LOW"                              # Floor level (heavy gases, MW > 29.8288)
-    BREATHING_ZONE = "BREATHING_ZONE"        # 1-2m height (28.0912 ≤ MW ≤ 29.8288)
-    HIGH = "HIGH"                            # Ceiling level (light gases, MW < 28.0912)
+
+    LOW = "LOW"  # Floor level (heavy gases, MW > 29.8288)
+    BREATHING_ZONE = "BREATHING_ZONE"  # 1-2m height (28.0912 ≤ MW ≤ 29.8288)
+    HIGH = "HIGH"  # Ceiling level (light gases, MW < 28.0912)
 
 
 # ---------------------------------------------------------------------------
 # Pydantic Models
 # ---------------------------------------------------------------------------
 
+
 class SubstanceProperties(BaseModel):
     """
     Physical properties of the hazardous substance.
     ALL validators run at construction — no invalid object can exist.
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
-    name:              str
-    hazard_type:       HazardType
-    lfl_vol_pct:       Optional[float] = Field(None, gt=0.0, le=100.0,
-                           description="Lower Flammable Limit (vol%). Must be >0.")
-    ufl_vol_pct:       Optional[float] = Field(None, gt=0.0, le=100.0)
-    flash_point_c:     Optional[float] = Field(None, ge=-200.0, le=500.0)
-    autoignition_c:    Optional[float] = Field(None, ge=50.0, le=1000.0)
-    mec_g_m3:          Optional[float] = Field(None, gt=0.0,
-                           description="Minimum Explosible Concentration (dust)")
-    kst_bar_m_s:       Optional[float] = Field(None, ge=0.0,
-                           description="Dust explosion constant")
-    mie_mj:            Optional[float] = Field(None, gt=0.0,
-                           description="Minimum Ignition Energy (mJ)")
-    density_kg_m3:     Optional[float] = Field(None, gt=0.0)
-    molecular_weight:  Optional[float] = Field(None, gt=0.0)
+    name: str
+    hazard_type: HazardType
+    lfl_vol_pct: Optional[float] = Field(
+        None, gt=0.0, le=100.0, description="Lower Flammable Limit (vol%). Must be >0."
+    )
+    ufl_vol_pct: Optional[float] = Field(None, gt=0.0, le=100.0)
+    flash_point_c: Optional[float] = Field(None, ge=-200.0, le=500.0)
+    autoignition_c: Optional[float] = Field(None, ge=50.0, le=1000.0)
+    mec_g_m3: Optional[float] = Field(None, gt=0.0, description="Minimum Explosible Concentration (dust)")
+    kst_bar_m_s: Optional[float] = Field(None, ge=0.0, description="Dust explosion constant")
+    mie_mj: Optional[float] = Field(None, gt=0.0, description="Minimum Ignition Energy (mJ)")
+    density_kg_m3: Optional[float] = Field(None, gt=0.0)
+    molecular_weight: Optional[float] = Field(None, gt=0.0)
 
     @model_validator(mode="after")
     def physics_consistency(self) -> "SubstanceProperties":
         # flash_point must be below autoignition
-        if (self.flash_point_c is not None
-                and self.autoignition_c is not None
-                and self.flash_point_c >= self.autoignition_c):
+        if (
+            self.flash_point_c is not None
+            and self.autoignition_c is not None
+            and self.flash_point_c >= self.autoignition_c
+        ):
             raise ValueError(
                 f"flash_point_c ({self.flash_point_c}C) must be strictly "
                 f"< autoignition_c ({self.autoignition_c}C). "
                 f"[NFPA 497 §4.2]"
             )
         # LFL < UFL
-        if (self.lfl_vol_pct is not None and self.ufl_vol_pct is not None
-                and self.lfl_vol_pct >= self.ufl_vol_pct):
-            raise ValueError(
-                f"lfl_vol_pct ({self.lfl_vol_pct}) must be < "
-                f"ufl_vol_pct ({self.ufl_vol_pct})."
-            )
+        if self.lfl_vol_pct is not None and self.ufl_vol_pct is not None and self.lfl_vol_pct >= self.ufl_vol_pct:
+            raise ValueError(f"lfl_vol_pct ({self.lfl_vol_pct}) must be < ufl_vol_pct ({self.ufl_vol_pct}).")
         # GAS needs LFL
         if self.hazard_type == HazardType.GAS and self.lfl_vol_pct is None:
             raise ValueError("GAS hazard requires lfl_vol_pct.")
@@ -314,10 +329,7 @@ class SubstanceProperties(BaseModel):
         # HYBRID needs both
         if self.hazard_type == HazardType.HYBRID:
             if self.lfl_vol_pct is None or self.mec_g_m3 is None:
-                raise ValueError(
-                    "HYBRID hazard requires both lfl_vol_pct and mec_g_m3. "
-                    "[IEC 60079-10-1 §5.7]"
-                )
+                raise ValueError("HYBRID hazard requires both lfl_vol_pct and mec_g_m3. [IEC 60079-10-1 §5.7]")
         # FIX #5 (HIGH): FIBER hazard type requires flammability data.
         # Without lfl_vol_pct or mec_g_m3, a FIBER substance passes validation
         # with zero flammability properties — a silent pass on an unvalidated
@@ -337,21 +349,22 @@ class SubstanceProperties(BaseModel):
 
 class ZoneExtent(BaseModel):
     """Zone boundary distances (metres). All must be non-negative."""
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     horizontal_m: float = Field(ge=0.0)
-    vertical_m:   float = Field(ge=0.0)
-    volume_m3:    float = Field(ge=0.0)
-    is_outdoor:   bool  = False  # True = full sphere, False = hemisphere
+    vertical_m: float = Field(ge=0.0)
+    volume_m3: float = Field(ge=0.0)
+    is_outdoor: bool = False  # True = full sphere, False = hemisphere
 
     @model_validator(mode="after")
     def extent_geometry(self) -> "ZoneExtent":
         # Volume must be consistent with the appropriate volume model
         r = max(self.horizontal_m, self.vertical_m)
         if self.is_outdoor:
-            max_vol = (4.0 / 3.0) * math.pi * r ** 3   # Full sphere
+            max_vol = (4.0 / 3.0) * math.pi * r**3  # Full sphere
         else:
-            max_vol = (2.0 / 3.0) * math.pi * r ** 3   # Hemisphere
+            max_vol = (2.0 / 3.0) * math.pi * r**3  # Hemisphere
         if self.volume_m3 > max_vol * 1.05:  # 5% tolerance for rounding
             shape = "sphere" if self.is_outdoor else "hemisphere"
             raise ValueError(
@@ -364,21 +377,21 @@ class ZoneExtent(BaseModel):
 
 class HACResult(BaseModel):
     """Result of HACClassificationEngine. Immutable after construction."""
+
     model_config = ConfigDict(frozen=True, strict=True)
 
-    zone:             ZoneType
-    extent:           ZoneExtent
-    ventilation:      VentilationLevel
-    hazard_type:      HazardType
-    warnings:         List[str] = Field(default_factory=list)
+    zone: ZoneType
+    extent: ZoneExtent
+    ventilation: VentilationLevel
+    hazard_type: HazardType
+    warnings: List[str] = Field(default_factory=list)
     # POOR ventilation + Zone 0/20 is the most dangerous combination
     # The model enforces a warning cannot be silently dropped
-    critical_flags:   List[str] = Field(default_factory=list)
+    critical_flags: List[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def check_critical_combination(self) -> "HACResult":
-        if (self.ventilation == VentilationLevel.POOR
-                and self.zone in (ZoneType.ZONE_0, ZoneType.ZONE_20)):
+        if self.ventilation == VentilationLevel.POOR and self.zone in (ZoneType.ZONE_0, ZoneType.ZONE_20):
             flag = (
                 "CRITICAL: Zone 0/20 with POOR ventilation — "
                 "most dangerous possible classification. "
@@ -387,10 +400,7 @@ class HACResult(BaseModel):
             )
             # Cannot be silently ignored — it's in critical_flags
             if flag not in self.critical_flags:
-                raise ValueError(
-                    f"{flag}\nSet critical_flags=['{flag}'] explicitly "
-                    f"to acknowledge this condition."
-                )
+                raise ValueError(f"{flag}\nSet critical_flags=['{flag}'] explicitly to acknowledge this condition.")
         return self
 
 
@@ -414,9 +424,20 @@ def _select_temp_class(autoignition_c: float) -> TemperatureClass:
     """
     # Ordered from hottest to coolest surface temperature (extended classes)
     for t_class in [
-        "T1", "T2", "T2A", "T2B", "T2C", "T2D",
-        "T3", "T3A", "T3B", "T3C",
-        "T4", "T4A", "T5", "T6",
+        "T1",
+        "T2",
+        "T2A",
+        "T2B",
+        "T2C",
+        "T2D",
+        "T3",
+        "T3A",
+        "T3B",
+        "T3C",
+        "T4",
+        "T4A",
+        "T5",
+        "T6",
     ]:
         if _T_CLASS_MAX[t_class] < autoignition_c:
             return TemperatureClass(t_class)
@@ -432,16 +453,17 @@ class ATEXEquipmentSpec(BaseModel):
     ATEX equipment requirements derived from zone classification.
     EPL hierarchy enforced — cannot construct an inconsistent spec.
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
-    zone:              ZoneType
-    epl_required:      str        # "Ga"/"Gb"/"Gc"/"Da"/"Db"/"Dc"/"Ma"/"Mb"
-    atex_category:     str        # "1G","2G","3G","1D","2D","3D","M1","M2"
-    temp_class:        TemperatureClass
-    protection_modes:  List[str]  # e.g. ["ia","d","e"]
-    autoignition_c:    Optional[float] = None  # V54 FIX (V48 #6): for thermal margin validation
-    hac_warnings:      List[str] = Field(default_factory=list)
-    hac_critical:      List[str] = Field(default_factory=list)
+    zone: ZoneType
+    epl_required: str  # "Ga"/"Gb"/"Gc"/"Da"/"Db"/"Dc"/"Ma"/"Mb"
+    atex_category: str  # "1G","2G","3G","1D","2D","3D","M1","M2"
+    temp_class: TemperatureClass
+    protection_modes: List[str]  # e.g. ["ia","d","e"]
+    autoignition_c: Optional[float] = None  # V54 FIX (V48 #6): for thermal margin validation
+    hac_warnings: List[str] = Field(default_factory=list)
+    hac_critical: List[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def epl_category_consistency(self) -> "ATEXEquipmentSpec":
@@ -451,7 +473,7 @@ class ATEXEquipmentSpec(BaseModel):
         Correct dust hierarchy: Da > Db > Dc
         """
         # V54 FIX (V48 #4): Validate atex_category against ATEX 2014/34/EU Annex I.
-        _VALID_ATEX_CATEGORIES = {"1G","2G","3G","1D","2D","3D","M1","M2"}
+        _VALID_ATEX_CATEGORIES = {"1G", "2G", "3G", "1D", "2D", "3D", "M1", "M2"}
         if self.atex_category not in _VALID_ATEX_CATEGORIES:
             raise ValueError(
                 f"atex_category '{self.atex_category}' is not a valid ATEX equipment category. "
@@ -460,9 +482,9 @@ class ATEXEquipmentSpec(BaseModel):
             )
 
         valid = {
-            ZoneType.ZONE_0:  ("Ga", "1G"),
-            ZoneType.ZONE_1:  ("Gb", "2G"),
-            ZoneType.ZONE_2:  ("Gc", "3G"),
+            ZoneType.ZONE_0: ("Ga", "1G"),
+            ZoneType.ZONE_1: ("Gb", "2G"),
+            ZoneType.ZONE_2: ("Gc", "3G"),
             ZoneType.ZONE_20: ("Da", "1D"),
             ZoneType.ZONE_21: ("Db", "2D"),
             ZoneType.ZONE_22: ("Dc", "3D"),
@@ -471,7 +493,7 @@ class ATEXEquipmentSpec(BaseModel):
             expected_epl, expected_cat = valid[self.zone]
             # EPL hierarchy: Ga satisfies Gb/Gc, Da satisfies Db/Dc
             # Gas hierarchy index: Ga=0, Gb=1, Gc=2
-            gas_order  = ["Ga", "Gb", "Gc"]
+            gas_order = ["Ga", "Gb", "Gc"]
             dust_order = ["Da", "Db", "Dc"]
             mine_order = ["Ma", "Mb"]
 
@@ -507,12 +529,29 @@ class ATEXEquipmentSpec(BaseModel):
             # Allowing Gb equipment in Zone 0 is a LIFE SAFETY failure:
             # flameproof enclosure could contain an explosion but NOT prevent ignition
             # in a Zone 0 continuous-hazard atmosphere.
-            ZoneType.ZONE_0:  {"ia", "s", "ma"},
-            ZoneType.ZONE_1:  {"ia", "ib", "d", "e", "px", "py", "s",
-                               "ma", "mb", "o", "p", "q"},
-            ZoneType.ZONE_2:  {"ia", "ib", "ic", "d", "e", "px", "py", "pz",
-                               "n", "s", "ec", "ma", "mb", "o", "p", "q",
-                               "nA", "nC", "nR"},
+            ZoneType.ZONE_0: {"ia", "s", "ma"},
+            ZoneType.ZONE_1: {"ia", "ib", "d", "e", "px", "py", "s", "ma", "mb", "o", "p", "q"},
+            ZoneType.ZONE_2: {
+                "ia",
+                "ib",
+                "ic",
+                "d",
+                "e",
+                "px",
+                "py",
+                "pz",
+                "n",
+                "s",
+                "ec",
+                "ma",
+                "mb",
+                "o",
+                "p",
+                "q",
+                "nA",
+                "nC",
+                "nR",
+            },
             # Zone 20 (EPL Da) — dust equivalent of Zone 0.
             # "tb" is EPL Db (Zone 21 only). Removed from Zone 20 allowed list.
             ZoneType.ZONE_20: {"ia", "ma", "ta", "s", "tD"},
@@ -520,16 +559,12 @@ class ATEXEquipmentSpec(BaseModel):
             # Zone 21 requires EPL Db minimum. Per IEC 60079-31:2022 §6,
             # "tc" (protection by enclosure) is rated EPL Dc for Zone 22.
             ZoneType.ZONE_21: {"ia", "ib", "ma", "mb", "tb"},
-            ZoneType.ZONE_22: {"ia", "ib", "ic", "ma", "mb", "mc",
-                               "ta", "tb", "tc"},
+            ZoneType.ZONE_22: {"ia", "ib", "ic", "ma", "mb", "mc", "ta", "tb", "tc"},
         }
         if self.zone in zone_allowed:
             for mode in self.protection_modes:
                 if mode not in zone_allowed[self.zone]:
-                    raise ValueError(
-                        f"Protection mode '{mode}' not permitted for "
-                        f"{self.zone.value}. [IEC 60079-14]"
-                    )
+                    raise ValueError(f"Protection mode '{mode}' not permitted for {self.zone.value}. [IEC 60079-14]")
         return self
 
     @model_validator(mode="after")
@@ -544,8 +579,7 @@ class ATEXEquipmentSpec(BaseModel):
             t_max = _T_CLASS_MAX.get(self.temp_class.value, 0)
             if t_max > 0:
                 # Zone 0/1/20/21: 5% thermal margin per IEC 60079-14 §5.3
-                if self.zone in (ZoneType.ZONE_0, ZoneType.ZONE_1,
-                                 ZoneType.ZONE_20, ZoneType.ZONE_21):
+                if self.zone in (ZoneType.ZONE_0, ZoneType.ZONE_1, ZoneType.ZONE_20, ZoneType.ZONE_21):
                     max_allowed = self.autoignition_c * 0.95
                     if t_max > max_allowed:
                         hac_critical_entry = (
@@ -555,8 +589,7 @@ class ATEXEquipmentSpec(BaseModel):
                             f"for {self.zone.value}. [IEC 60079-14 §5.3]"
                         )
                         # Cannot raise ValueError because frozen model; append to hac_critical
-                        object.__setattr__(self, 'hac_critical',
-                                          list(self.hac_critical) + [hac_critical_entry])
+                        object.__setattr__(self, "hac_critical", list(self.hac_critical) + [hac_critical_entry])
                 # Zone 2/22: strict below
                 elif self.zone in (ZoneType.ZONE_2, ZoneType.ZONE_22):
                     if t_max >= self.autoignition_c:
@@ -566,8 +599,7 @@ class ATEXEquipmentSpec(BaseModel):
                             f"({self.autoignition_c}°C) for {self.zone.value}. "
                             f"[IEC 60079-14 §5.3]"
                         )
-                        object.__setattr__(self, 'hac_critical',
-                                          list(self.hac_critical) + [hac_critical_entry])
+                        object.__setattr__(self, "hac_critical", list(self.hac_critical) + [hac_critical_entry])
         return self
 
 
@@ -578,13 +610,14 @@ class Obstruction(BaseModel):
     Polycarbonate: UV=0.0, VIS=0.9, IR=0.7.
     Steel: all 0.0.
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
-    obstruction_id:        str
-    vertices:              List[List[float]]  # list of [x,y,z]
+    obstruction_id: str
+    vertices: List[List[float]]  # list of [x,y,z]
     spectral_transparency: Dict[WavelengthBand, float] = Field(
         default_factory=lambda: {
-            WavelengthBand.UV:  0.0,
+            WavelengthBand.UV: 0.0,
             WavelengthBand.VIS: 0.0,
             WavelengthBand.IR1: 0.0,
             WavelengthBand.IR3: 0.0,
@@ -595,9 +628,7 @@ class Obstruction(BaseModel):
     def transparency_range(self) -> "Obstruction":
         for band, val in self.spectral_transparency.items():
             if not 0.0 <= val <= 1.0:
-                raise ValueError(
-                    f"spectral_transparency[{band}]={val} must be in [0.0, 1.0]."
-                )
+                raise ValueError(f"spectral_transparency[{band}]={val} must be in [0.0, 1.0].")
         return self
 
     def is_transparent_for(self, band: WavelengthBand) -> bool:
@@ -626,15 +657,15 @@ class FlameDetectorSpec(BaseModel):
     """
     Flame detector physical specification for ray-trace engine.
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
-    detector_id:        str
-    position:           List[float] = Field(min_length=3, max_length=3)
+    detector_id: str
+    position: List[float] = Field(min_length=3, max_length=3)
     orientation_vector: List[float] = Field(min_length=3, max_length=3)
-    rated_range_m:      float       = Field(gt=0.0, le=200.0)
-    aoc_deg:            float       = Field(gt=0.0, le=180.0,
-                            description="Angle of Coverage (degrees)")
-    spectral_bands:     List[WavelengthBand] = Field(min_length=1)
+    rated_range_m: float = Field(gt=0.0, le=200.0)
+    aoc_deg: float = Field(gt=0.0, le=180.0, description="Angle of Coverage (degrees)")
+    spectral_bands: List[WavelengthBand] = Field(min_length=1)
 
     @model_validator(mode="after")
     def orientation_not_zero(self) -> "FlameDetectorSpec":
@@ -665,6 +696,7 @@ class FlameDetectorSpec(BaseModel):
 
 class RayTracePoint(BaseModel):
     """A target point in the ray-trace grid."""
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     x: float
@@ -677,17 +709,19 @@ class RayTracePoint(BaseModel):
 
 class RegSelectorResult(BaseModel):
     """Result of regulatory framework resolution."""
+
     model_config = ConfigDict(frozen=True, strict=True)
 
-    country_code:  str
-    framework:     RegulatoryFramework
-    zone_system:   str   # "ZONE" or "DIVISION"
-    warnings:      List[str]
+    country_code: str
+    framework: RegulatoryFramework
+    zone_system: str  # "ZONE" or "DIVISION"
+    warnings: List[str]
 
 
 # ===========================================================================
 # V21.2: Environmental Context (Dynamic Physics Inputs)
 # ===========================================================================
+
 
 class EnvironmentalContext(BaseModel):
     """
@@ -700,10 +734,13 @@ class EnvironmentalContext(BaseModel):
 
     Standards: IEC 60079-10-1:2015 Annex B, NFPA 497 §4.3
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     ambient_temp_c: float = Field(
-        default=40.0, ge=-40.0, le=85.0,
+        default=40.0,
+        ge=-40.0,
+        le=85.0,
         description=(
             "Ambient temperature for LFL thermal correction (Burgess-Wheeler). "
             "Default 40C = typical indoor industrial environment. "
@@ -711,7 +748,9 @@ class EnvironmentalContext(BaseModel):
         ),
     )
     wind_speed_m_s: float = Field(
-        default=0.5, gt=0.0, le=50.0,
+        default=0.5,
+        gt=0.0,
+        le=50.0,
         description=(
             "Wind speed (m/s). Default 0.5 simulates stagnant indoor air. "
             "This produces the widest zone extent (conservative)."
@@ -730,7 +769,9 @@ class EnvironmentalContext(BaseModel):
         description="Indoor = hemisphere (2/3*pi*r^3). Outdoor = full sphere.",
     )
     lens_fouling_factor: float = Field(
-        default=0.85, gt=0.0, le=1.0,
+        default=0.85,
+        gt=0.0,
+        le=1.0,
         description=(
             "Optical path attenuation from lens fouling over service life. "
             "1.0 = pristine lens (laboratory), 0.85 = typical industrial, "
@@ -769,8 +810,7 @@ class EnvironmentalContext(BaseModel):
     @model_validator(mode="after")
     def cross_validate_environment(self) -> "EnvironmentalContext":
         # Physically impossible: high instability with near-zero wind
-        if (self.wind_speed_m_s < 2.0
-                and self.stability_class in (PasquillStability.A, PasquillStability.B)):
+        if self.wind_speed_m_s < 2.0 and self.stability_class in (PasquillStability.A, PasquillStability.B):
             raise ValueError(
                 "Physics Violation: Highly unstable conditions (A/B) cannot exist "
                 "with wind speed < 2.0 m/s in standard dispersion models. "
@@ -783,23 +823,23 @@ class EnvironmentalContext(BaseModel):
     def advisories(self) -> List[str]:
         """
         Generate advisory warnings based on region vs actual values.
-        
+
         The system NEVER silently overwrites engineer inputs. Instead,
         it generates advisory warnings when the selected region suggests
         conditions may differ from what the engineer specified. This
         preserves engineering judgment while flagging potential issues.
-        
+
         Advisory Rules:
           - MENA/GULF regions with ambient_temp_c < 50C → temp advisory
           - MENA/GULF regions with fouling_category=CLEAN → fouling advisory
           - EGYPT region with ambient_temp_c < 45C → temp advisory
           - EUROPE/USA/STANDARD_IEC → no regional advisories
-        
+
         Returns:
             List of advisory warning strings
         """
         warnings: List[str] = []
-        
+
         # MENA / GCC regions: peak summer temperatures 50-55C
         if self.region in (RegionProfile.MENA_SUMMER_OUTDOOR, RegionProfile.GULF_HCIS):
             if self.ambient_temp_c < 50.0:
@@ -817,7 +857,7 @@ class EnvironmentalContext(BaseModel):
                     f"detectors. CLEAN assumption may be optimistic. "
                     f"[FM Global DS 5-48 §3.2.1]"
                 )
-        
+
         # EGYPT region: peak summer ~45C
         # Egypt has moderate dust but not severe sandstorms like the Gulf.
         # Fouling advisory is only triggered for severe desert regions
@@ -829,7 +869,7 @@ class EnvironmentalContext(BaseModel):
                     f"({self.ambient_temp_c:.1f}C) is below typical Egyptian "
                     f"summer peak of 45.0C. Verify outdoor temperature assumption."
                 )
-        
+
         return warnings
 
 
@@ -839,12 +879,12 @@ class EnvironmentalContext(BaseModel):
 
 MIN_REDUNDANCY_BY_ZONE: Dict[ZoneType, int] = {
     # High-risk zones require voting architecture (1oo2 minimum)
-    ZoneType.ZONE_0:  3,   # 2oo3 voting — continuous presence
-    ZoneType.ZONE_1:  2,   # 1oo2 minimum — NFPA 72 §17.8.3.4
-    ZoneType.ZONE_2:  1,   # Single detector acceptable
-    ZoneType.ZONE_20: 3,   # 2oo3 voting — continuous dust
-    ZoneType.ZONE_21: 2,   # 1oo2 minimum
-    ZoneType.ZONE_22: 1,   # Single acceptable
+    ZoneType.ZONE_0: 3,  # 2oo3 voting — continuous presence
+    ZoneType.ZONE_1: 2,  # 1oo2 minimum — NFPA 72 §17.8.3.4
+    ZoneType.ZONE_2: 1,  # Single detector acceptable
+    ZoneType.ZONE_20: 3,  # 2oo3 voting — continuous dust
+    ZoneType.ZONE_21: 2,  # 1oo2 minimum
+    ZoneType.ZONE_22: 1,  # Single acceptable
     ZoneType.UNCLASSIFIED: 0,  # No detector required
 }
 
@@ -870,39 +910,39 @@ _MW_AIR: float = 28.96
 # Reference: IEC 60079-10-1:2015 §B.4 (vertical extent buoyancy factor),
 #            NFPA 497-2021 §4.5 (vapor density classification),
 #            Lees' Loss Prevention §15.2 (buoyancy of gases)
-_VD_RATIO_HIGH: float = 0.97   # Below this ratio → gas is lighter, rises
-_VD_RATIO_LOW: float = 1.03    # Above this ratio → gas is heavier, sinks
-_MW_HIGH_THRESHOLD: float = _MW_AIR * _VD_RATIO_HIGH   # 28.0912
-_MW_LOW_THRESHOLD: float = _MW_AIR * _VD_RATIO_LOW     # 29.8288
+_VD_RATIO_HIGH: float = 0.97  # Below this ratio → gas is lighter, rises
+_VD_RATIO_LOW: float = 1.03  # Above this ratio → gas is heavier, sinks
+_MW_HIGH_THRESHOLD: float = _MW_AIR * _VD_RATIO_HIGH  # 28.0912
+_MW_LOW_THRESHOLD: float = _MW_AIR * _VD_RATIO_LOW  # 29.8288
 
 
 def vapor_density_tier(molecular_weight: float) -> ElevationTier:
     """
     Classify gas buoyancy behavior by molecular weight using density ratios.
-    
+
     This function uses precise density ratios (MW_gas / MW_air) rather
     than fixed MW thresholds, providing a physically rigorous classification
     of where a gas is expected to accumulate relative to air.
-    
+
     At the same temperature and pressure (ideal gas law: ρ = PM/RT),
     density is proportional to molecular weight. The ratio MW_gas/MW_air
     directly gives the vapor density relative to air:
       - Ratio < 0.97 → gas is noticeably lighter → rises to ceiling (HIGH)
       - 0.97 ≤ Ratio ≤ 1.03 → gas is near air density → breathing zone
       - Ratio > 1.03 → gas is noticeably heavier → pools at floor (LOW)
-    
+
     The ±3% band accounts for typical temperature/pressure variations
     and turbulent mixing effects that make strict equality impractical.
-    
+
     Args:
         molecular_weight: Molecular weight of the gas (g/mol). Must be > 0.
-        
+
     Returns:
         ElevationTier indicating where the gas is expected to accumulate
-        
+
     Raises:
         ValueError: If molecular_weight is not greater than 0
-        
+
     Reference: IEC 60079-10-1:2015 §B.4, NFPA 497 §4.5
     """
     # V57 FIX (Finding 13): NaN molecular_weight silently returns LOW — NaN <= 0
@@ -921,7 +961,7 @@ def vapor_density_tier(molecular_weight: float) -> ElevationTier:
             f"molecular_weight must be greater than 0, got {molecular_weight}. "
             f"Molecular weight is a physical property that cannot be zero or negative."
         )
-    
+
     if molecular_weight < _MW_HIGH_THRESHOLD:
         return ElevationTier.HIGH
     elif molecular_weight <= _MW_LOW_THRESHOLD:
@@ -933,6 +973,7 @@ def vapor_density_tier(molecular_weight: float) -> ElevationTier:
 # ===========================================================================
 # V21.2: Room Purge Time (IEC 60079-10-1 Annex B Ventilation Dilution)
 # ===========================================================================
+
 
 def room_purge_time(
     room_volume_m3: float,
@@ -969,7 +1010,7 @@ def room_purge_time(
                Lees' Loss Prevention §15.3 (exponential dilution)
     """
     if ach <= 0.0 or target_fraction <= 0.0 or target_fraction >= 1.0:
-        return float('inf')  # Cannot purge without ventilation
+        return float("inf")  # Cannot purge without ventilation
 
     # t = -3600/ACH * ln(target_fraction)
     # ln(0.01) ≈ -4.605, ln(0.001) ≈ -6.908
@@ -1008,6 +1049,7 @@ def room_concentration_at_time(
 # ===========================================================================
 # V21.2: Burgess-Wheeler LFL Thermal Correction
 # ===========================================================================
+
 
 def burgess_wheeler_lfl(
     lfl_25c: float,
@@ -1088,6 +1130,7 @@ def burgess_wheeler_lfl(
 # V21.2: IEC 60079-14 Thermal Margin (Safe Temperature Selection)
 # ===========================================================================
 
+
 def _select_temp_class_with_margin(
     autoignition_c: float,
     zone: ZoneType,
@@ -1138,9 +1181,20 @@ def _select_temp_class_with_margin(
     # _select_temp_class (basic, no margin) uses < for strictly below.
     # If a future reviewer changes either function, both must change together.
     for t_class in [
-        "T1", "T2", "T2A", "T2B", "T2C", "T2D",
-        "T3", "T3A", "T3B", "T3C",
-        "T4", "T4A", "T5", "T6",
+        "T1",
+        "T2",
+        "T2A",
+        "T2B",
+        "T2C",
+        "T2D",
+        "T3",
+        "T3A",
+        "T3B",
+        "T3C",
+        "T4",
+        "T4A",
+        "T5",
+        "T6",
     ]:
         if _T_CLASS_MAX[t_class] <= t_safe:
             return TemperatureClass(t_class)
@@ -1166,24 +1220,19 @@ _DEFAULT_MEDIUM_ALPHA: Dict[str, Dict[str, float]] = {
     # UV 2.0 m⁻¹, VIS 3.0 m⁻¹  (Mie scattering peak in visible)
     # IR1 (1–2.7 µm) 1.5 m⁻¹, IR3 (3.7–5 µm) 0.8 m⁻¹
     "SMOKE": {"UV": 2.0, "VIS": 3.0, "IR1": 1.5, "IR3": 0.8},
-
     # STEAM: water vapour, strong IR1 and IR3 absorption bands
     # HITRAN database: H₂O strong bands at 1.4 µm and 2.7 µm
     "STEAM": {"UV": 0.5, "VIS": 1.5, "IR1": 2.0, "IR3": 3.0},
-
     # DUST_SUSPENSION: combustible dust cloud, d_p ≈ 10–100 µm
     # Larger particles → geometric scattering → flat spectrum
     "DUST_SUSPENSION": {"UV": 3.0, "VIS": 4.0, "IR1": 2.5, "IR3": 1.5},
-
     # GAS_CLOUD: hydrocarbon vapour at low concentration (<LEL)
     # UV opaque to most organics; VIS transparent; IR1/IR3 C-H bonds
     "GAS_CLOUD": {"UV": 0.1, "VIS": 0.0, "IR1": 0.1, "IR3": 0.5},
-
     # MIST: fine liquid droplets (oil mist, water spray)
     # Similar to steam but coarser droplets → stronger UV/VIS scattering
     # [Consultant Phase 5 addition — common in industrial environments]
     "MIST": {"UV": 1.0, "VIS": 2.0, "IR1": 2.5, "IR3": 2.0},
-
     # CLEAR: no medium present (ambient air without contaminants)
     # All bands transparent — used as fallback for clean environments
     "CLEAR": {"UV": 0.0, "VIS": 0.0, "IR1": 0.0, "IR3": 0.0},
@@ -1200,13 +1249,14 @@ class SpectralSignature(BaseModel):
 
     Reference: IEC 60079-29-4, NIST Chemistry WebBook
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
-    cas_number:     str
+    cas_number: str
     substance_name: str
     # Absorption coefficient per band (m^-1) for Beer-Lambert: T = exp(-alpha * d)
     # Higher = more absorption at that wavelength
-    alpha_uv:  float = Field(0.0, ge=0.0, description="UV band absorption coeff (m^-1)")
+    alpha_uv: float = Field(0.0, ge=0.0, description="UV band absorption coeff (m^-1)")
     alpha_vis: float = Field(0.0, ge=0.0, description="VIS band absorption coeff (m^-1)")
     alpha_ir1: float = Field(0.0, ge=0.0, description="IR1 (1-3um) absorption coeff (m^-1)")
     alpha_ir3: float = Field(0.0, ge=0.0, description="IR3 (3-5um CO2) absorption coeff (m^-1)")
@@ -1214,7 +1264,7 @@ class SpectralSignature(BaseModel):
     def alpha_for(self, band: WavelengthBand) -> float:
         """Get absorption coefficient for a specific band."""
         return {
-            WavelengthBand.UV:  self.alpha_uv,
+            WavelengthBand.UV: self.alpha_uv,
             WavelengthBand.VIS: self.alpha_vis,
             WavelengthBand.IR1: self.alpha_ir1,
             WavelengthBand.IR3: self.alpha_ir3,
@@ -1266,291 +1316,468 @@ class SpectralSignatureRegistry:
             # NOTE: The old value 0.8 was conservative (more detectors) but
             # produced over-design in LNG facilities.
             "74-82-8": SpectralSignature(
-                cas_number="74-82-8", substance_name="Methane",
-                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=0.05, alpha_ir3=0.4,
+                cas_number="74-82-8",
+                substance_name="Methane",
+                alpha_uv=0.1,
+                alpha_vis=0.0,
+                alpha_ir1=0.05,
+                alpha_ir3=0.4,
             ),
             # Propane (C3H8)
             "74-98-6": SpectralSignature(
-                cas_number="74-98-6", substance_name="Propane",
-                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=0.1, alpha_ir3=1.2,
+                cas_number="74-98-6",
+                substance_name="Propane",
+                alpha_uv=0.1,
+                alpha_vis=0.0,
+                alpha_ir1=0.1,
+                alpha_ir3=1.2,
             ),
             # Hydrogen (H2) - no IR absorption, UV only
             "1333-74-0": SpectralSignature(
-                cas_number="1333-74-0", substance_name="Hydrogen",
-                alpha_uv=0.5, alpha_vis=0.0, alpha_ir1=0.0, alpha_ir3=0.0,
+                cas_number="1333-74-0",
+                substance_name="Hydrogen",
+                alpha_uv=0.5,
+                alpha_vis=0.0,
+                alpha_ir1=0.0,
+                alpha_ir3=0.0,
             ),
             # Carbon Monoxide (CO)
             "630-08-0": SpectralSignature(
-                cas_number="630-08-0", substance_name="Carbon Monoxide",
-                alpha_uv=0.2, alpha_vis=0.0, alpha_ir1=0.3, alpha_ir3=0.1,
+                cas_number="630-08-0",
+                substance_name="Carbon Monoxide",
+                alpha_uv=0.2,
+                alpha_vis=0.0,
+                alpha_ir1=0.3,
+                alpha_ir3=0.1,
             ),
             # ── GAP-04: Extended substances (12 new entries) ──
             # Absorption coefficients (m⁻¹ at 1 atm, 25 °C, 1% v/v concentration)
             # Sources: NIST WebBook, Ingle & Crouch "Spectrochemical Analysis",
             #          Hollas "Modern Spectroscopy" 4th ed.
-
             # Ethylene C₂H₄ — CAS 74-85-1
             # Strong UV absorption (π→π* at 165 nm); C-H stretch at 3.3 µm (IR1)
             "74-85-1": SpectralSignature(
-                cas_number="74-85-1", substance_name="Ethylene",
-                alpha_uv=3.2, alpha_vis=0.0, alpha_ir1=1.8, alpha_ir3=0.6,
+                cas_number="74-85-1",
+                substance_name="Ethylene",
+                alpha_uv=3.2,
+                alpha_vis=0.0,
+                alpha_ir1=1.8,
+                alpha_ir3=0.6,
             ),
             # Acetylene C₂H₂ — CAS 74-86-2
             # Strong UV (triple bond), strong C≡C and C-H stretches in IR
             "74-86-2": SpectralSignature(
-                cas_number="74-86-2", substance_name="Acetylene",
-                alpha_uv=4.1, alpha_vis=0.0, alpha_ir1=2.2, alpha_ir3=1.2,
+                cas_number="74-86-2",
+                substance_name="Acetylene",
+                alpha_uv=4.1,
+                alpha_vis=0.0,
+                alpha_ir1=2.2,
+                alpha_ir3=1.2,
             ),
             # Ethanol C₂H₅OH — CAS 64-17-5
             # O-H stretch at 2.9 µm (IR1), C-O stretch, moderate UV
             "64-17-5": SpectralSignature(
-                cas_number="64-17-5", substance_name="Ethanol",
-                alpha_uv=1.5, alpha_vis=0.0, alpha_ir1=2.8, alpha_ir3=0.9,
+                cas_number="64-17-5",
+                substance_name="Ethanol",
+                alpha_uv=1.5,
+                alpha_vis=0.0,
+                alpha_ir1=2.8,
+                alpha_ir3=0.9,
             ),
             # n-Hexane C₆H₁₄ — CAS 110-54-3
             "110-54-3": SpectralSignature(
-                cas_number="110-54-3", substance_name="n-Hexane",
-                alpha_uv=0.3, alpha_vis=0.0, alpha_ir1=2.5, alpha_ir3=1.0,
+                cas_number="110-54-3",
+                substance_name="n-Hexane",
+                alpha_uv=0.3,
+                alpha_vis=0.0,
+                alpha_ir1=2.5,
+                alpha_ir3=1.0,
             ),
             # Benzene C₆H₆ — CAS 71-43-2
             # Very strong UV (aromatic π-system at 254 nm)
             "71-43-2": SpectralSignature(
-                cas_number="71-43-2", substance_name="Benzene",
-                alpha_uv=8.5, alpha_vis=0.2, alpha_ir1=1.6, alpha_ir3=0.5,
+                cas_number="71-43-2",
+                substance_name="Benzene",
+                alpha_uv=8.5,
+                alpha_vis=0.2,
+                alpha_ir1=1.6,
+                alpha_ir3=0.5,
             ),
             # Toluene C₇H₈ — CAS 108-88-3
             "108-88-3": SpectralSignature(
-                cas_number="108-88-3", substance_name="Toluene",
-                alpha_uv=7.2, alpha_vis=0.1, alpha_ir1=2.3, alpha_ir3=0.7,
+                cas_number="108-88-3",
+                substance_name="Toluene",
+                alpha_uv=7.2,
+                alpha_vis=0.1,
+                alpha_ir1=2.3,
+                alpha_ir3=0.7,
             ),
             # o-Xylene C₈H₁₀ — CAS 95-47-6
             "95-47-6": SpectralSignature(
-                cas_number="95-47-6", substance_name="o-Xylene",
-                alpha_uv=6.8, alpha_vis=0.1, alpha_ir1=2.7, alpha_ir3=0.8,
+                cas_number="95-47-6",
+                substance_name="o-Xylene",
+                alpha_uv=6.8,
+                alpha_vis=0.1,
+                alpha_ir1=2.7,
+                alpha_ir3=0.8,
             ),
             # Ammonia NH₃ — CAS 7664-41-7
             # Strong IR1 (N-H stretch at 2.95 µm, 3.3 µm); UV at 200 nm
             "7664-41-7": SpectralSignature(
-                cas_number="7664-41-7", substance_name="Ammonia",
-                alpha_uv=2.0, alpha_vis=0.0, alpha_ir1=3.5, alpha_ir3=1.8,
+                cas_number="7664-41-7",
+                substance_name="Ammonia",
+                alpha_uv=2.0,
+                alpha_vis=0.0,
+                alpha_ir1=3.5,
+                alpha_ir3=1.8,
             ),
             # Hydrogen sulfide H₂S — CAS 7783-06-4
             # S-H stretch at 3.9 µm (IR3); UV at 195 nm
             "7783-06-4": SpectralSignature(
-                cas_number="7783-06-4", substance_name="Hydrogen Sulfide",
-                alpha_uv=1.8, alpha_vis=0.0, alpha_ir1=0.8, alpha_ir3=2.4,
+                cas_number="7783-06-4",
+                substance_name="Hydrogen Sulfide",
+                alpha_uv=1.8,
+                alpha_vis=0.0,
+                alpha_ir1=0.8,
+                alpha_ir3=2.4,
             ),
             # Acetone (CH₃)₂CO — CAS 67-64-1
             "67-64-1": SpectralSignature(
-                cas_number="67-64-1", substance_name="Acetone",
-                alpha_uv=3.5, alpha_vis=0.0, alpha_ir1=0.9, alpha_ir3=0.4,
+                cas_number="67-64-1",
+                substance_name="Acetone",
+                alpha_uv=3.5,
+                alpha_vis=0.0,
+                alpha_ir1=0.9,
+                alpha_ir3=0.4,
             ),
             # Methanol CH₃OH — CAS 67-56-1
             "67-56-1": SpectralSignature(
-                cas_number="67-56-1", substance_name="Methanol",
-                alpha_uv=0.8, alpha_vis=0.0, alpha_ir1=2.6, alpha_ir3=0.9,
+                cas_number="67-56-1",
+                substance_name="Methanol",
+                alpha_uv=0.8,
+                alpha_vis=0.0,
+                alpha_ir1=2.6,
+                alpha_ir3=0.9,
             ),
             # Isopropanol (CH₃)₂CHOH — CAS 67-63-0
             "67-63-0": SpectralSignature(
-                cas_number="67-63-0", substance_name="Isopropanol",
-                alpha_uv=1.2, alpha_vis=0.0, alpha_ir1=2.7, alpha_ir3=1.0,
+                cas_number="67-63-0",
+                substance_name="Isopropanol",
+                alpha_uv=1.2,
+                alpha_vis=0.0,
+                alpha_ir1=2.7,
+                alpha_ir3=1.0,
             ),
             # ── Extended registry: common industrial substances ────────────
             "75-28-5": SpectralSignature(
-                cas_number="75-28-5", substance_name="Isobutane",
+                cas_number="75-28-5",
+                substance_name="Isobutane",
                 # Natural refrigerant R600a; LFL=1.8%, MW=58
-                alpha_uv=0.08, alpha_vis=0.0, alpha_ir1=0.8, alpha_ir3=4.2,
+                alpha_uv=0.08,
+                alpha_vis=0.0,
+                alpha_ir1=0.8,
+                alpha_ir3=4.2,
             ),
             "75-04-7": SpectralSignature(
-                cas_number="75-04-7", substance_name="Ethylamine",
+                cas_number="75-04-7",
+                substance_name="Ethylamine",
                 # Chemical industry; LFL=3.5%, MW=45
                 # Amine N-H bands in IR
-                alpha_uv=0.18, alpha_vis=0.0, alpha_ir1=0.5, alpha_ir3=2.5,
+                alpha_uv=0.18,
+                alpha_vis=0.0,
+                alpha_ir1=0.5,
+                alpha_ir3=2.5,
             ),
             "74-84-0": SpectralSignature(
-                cas_number="74-84-0", substance_name="Ethane",
+                cas_number="74-84-0",
+                substance_name="Ethane",
                 # LNG component; LFL=3.0%, MW=30
-                alpha_uv=0.06, alpha_vis=0.0, alpha_ir1=0.4, alpha_ir3=2.8,
+                alpha_uv=0.06,
+                alpha_vis=0.0,
+                alpha_ir1=0.4,
+                alpha_ir3=2.8,
             ),
             "106-97-8": SpectralSignature(
-                cas_number="106-97-8", substance_name="Butane",
+                cas_number="106-97-8",
+                substance_name="Butane",
                 # LPG component; LFL=1.8%, MW=58
-                alpha_uv=0.09, alpha_vis=0.0, alpha_ir1=0.9, alpha_ir3=4.5,
+                alpha_uv=0.09,
+                alpha_vis=0.0,
+                alpha_ir1=0.9,
+                alpha_ir3=4.5,
             ),
             # ── Additional industrial substances (3 new entries) ────────────
             # Acetaldehyde CH₃CHO — CAS 75-07-0
             # Chemical/petrochemical; LFL=4.0%, MW=44
             # n→π* transition ~290 nm; C=O stretch at 5.8 µm; C-H at 3.4 µm
             "75-07-0": SpectralSignature(
-                cas_number="75-07-0", substance_name="Acetaldehyde",
-                alpha_uv=2.0, alpha_vis=0.0, alpha_ir1=2.4, alpha_ir3=0.8,
+                cas_number="75-07-0",
+                substance_name="Acetaldehyde",
+                alpha_uv=2.0,
+                alpha_vis=0.0,
+                alpha_ir1=2.4,
+                alpha_ir3=0.8,
             ),
             # 1,3-Butadiene C₄H₆ — CAS 106-99-0
             # Synthetic rubber manufacturing; LFL=2.0%, MW=54
             # Strong conjugated diene π→π* at 217 nm; C-H stretch at 3.3 µm
             "106-99-0": SpectralSignature(
-                cas_number="106-99-0", substance_name="1,3-Butadiene",
-                alpha_uv=5.5, alpha_vis=0.0, alpha_ir1=2.0, alpha_ir3=1.2,
+                cas_number="106-99-0",
+                substance_name="1,3-Butadiene",
+                alpha_uv=5.5,
+                alpha_vis=0.0,
+                alpha_ir1=2.0,
+                alpha_ir3=1.2,
             ),
             # Xylene (mixed isomers) C₈H₁₀ — CAS 1330-20-7
             # Solvent/petrochemical; LFL=1.1%, MW=106
             # Aromatic π-system (similar to o-Xylene 95-47-6); C-H aromatic stretches
             "1330-20-7": SpectralSignature(
-                cas_number="1330-20-7", substance_name="Xylene (mixed)",
-                alpha_uv=6.5, alpha_vis=0.1, alpha_ir1=2.5, alpha_ir3=0.7,
+                cas_number="1330-20-7",
+                substance_name="Xylene (mixed)",
+                alpha_uv=6.5,
+                alpha_vis=0.1,
+                alpha_ir1=2.5,
+                alpha_ir3=0.7,
             ),
             # ── GAP-3: 27 additional substances (23 → 50 total) ────────────
             # Sources: NIST WebBook, Ingle & Crouch "Spectrochemical Analysis",
             #          Hollas "Modern Spectroscopy" 4th ed.,
             #          API RP 505, SFPE Handbook 5th ed.
             # All alpha values in m⁻¹ at 1 atm, 25 °C, 1% v/v (representative).
-
             # ── Petrochemical / aliphatic ─────────────────────────────────
-
             # Propylene (Propene) C₃H₆  CAS 115-07-1
             # C=C stretch at 1.65 µm (IR1); strong C-H IR; UV from π-bond
             "115-07-1": SpectralSignature(
-                cas_number="115-07-1", substance_name="Propylene",
-                alpha_uv=2.8, alpha_vis=0.0, alpha_ir1=2.4, alpha_ir3=0.9,
+                cas_number="115-07-1",
+                substance_name="Propylene",
+                alpha_uv=2.8,
+                alpha_vis=0.0,
+                alpha_ir1=2.4,
+                alpha_ir3=0.9,
             ),
             # 1-Butene C₄H₈  CAS 106-98-9
             # Similar to propylene; C-H overtones in IR1; UV from olefin
             "106-98-9": SpectralSignature(
-                cas_number="106-98-9", substance_name="1-Butene",
-                alpha_uv=2.5, alpha_vis=0.0, alpha_ir1=2.6, alpha_ir3=1.1,
+                cas_number="106-98-9",
+                substance_name="1-Butene",
+                alpha_uv=2.5,
+                alpha_vis=0.0,
+                alpha_ir1=2.6,
+                alpha_ir3=1.1,
             ),
             # n-Pentane C₅H₁₂  CAS 109-66-0
             # UV transparent (no chromophore); strong C-H IR
             "109-66-0": SpectralSignature(
-                cas_number="109-66-0", substance_name="n-Pentane",
-                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=2.9, alpha_ir3=1.2,
+                cas_number="109-66-0",
+                substance_name="n-Pentane",
+                alpha_uv=0.1,
+                alpha_vis=0.0,
+                alpha_ir1=2.9,
+                alpha_ir3=1.2,
             ),
             # n-Heptane C₇H₁₆  CAS 142-82-5
             # UV transparent; C-H overtones at 1.7 µm and 2.3 µm
             "142-82-5": SpectralSignature(
-                cas_number="142-82-5", substance_name="n-Heptane",
-                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=3.1, alpha_ir3=1.3,
+                cas_number="142-82-5",
+                substance_name="n-Heptane",
+                alpha_uv=0.1,
+                alpha_vis=0.0,
+                alpha_ir1=3.1,
+                alpha_ir3=1.3,
             ),
             # n-Octane C₈H₁₈  CAS 111-65-9
             # Gasoline reference fuel; higher C-H content
             "111-65-9": SpectralSignature(
-                cas_number="111-65-9", substance_name="n-Octane",
-                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=3.3, alpha_ir3=1.4,
+                cas_number="111-65-9",
+                substance_name="n-Octane",
+                alpha_uv=0.1,
+                alpha_vis=0.0,
+                alpha_ir1=3.3,
+                alpha_ir3=1.4,
             ),
             # n-Nonane C₉H₂₀  CAS 111-84-2
             # Diesel fraction; strong C-H IR absorption
             "111-84-2": SpectralSignature(
-                cas_number="111-84-2", substance_name="n-Nonane",
-                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=3.5, alpha_ir3=1.5,
+                cas_number="111-84-2",
+                substance_name="n-Nonane",
+                alpha_uv=0.1,
+                alpha_vis=0.0,
+                alpha_ir1=3.5,
+                alpha_ir3=1.5,
             ),
             # n-Decane C₁₀H₂₂  CAS 124-18-5
             # Jet fuel / kerosene fraction
             "124-18-5": SpectralSignature(
-                cas_number="124-18-5", substance_name="n-Decane",
-                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=3.7, alpha_ir3=1.6,
+                cas_number="124-18-5",
+                substance_name="n-Decane",
+                alpha_uv=0.1,
+                alpha_vis=0.0,
+                alpha_ir1=3.7,
+                alpha_ir3=1.6,
             ),
             # Cyclohexane C₆H₁₂  CAS 110-82-7
             # Ring C-H stretches; UV transparent
             "110-82-7": SpectralSignature(
-                cas_number="110-82-7", substance_name="Cyclohexane",
-                alpha_uv=0.2, alpha_vis=0.0, alpha_ir1=3.0, alpha_ir3=1.2,
+                cas_number="110-82-7",
+                substance_name="Cyclohexane",
+                alpha_uv=0.2,
+                alpha_vis=0.0,
+                alpha_ir1=3.0,
+                alpha_ir3=1.2,
             ),
             # Naphtha (light) CAS 64742-89-8
             # IR similar to hexane/heptane blend; flame detector test mixture
             "64742-89-8": SpectralSignature(
-                cas_number="64742-89-8", substance_name="Naphtha (light)",
-                alpha_uv=0.2, alpha_vis=0.0, alpha_ir1=3.2, alpha_ir3=1.3,
+                cas_number="64742-89-8",
+                substance_name="Naphtha (light)",
+                alpha_uv=0.2,
+                alpha_vis=0.0,
+                alpha_ir1=3.2,
+                alpha_ir3=1.3,
             ),
             # Kerosene / Jet-A CAS 8008-20-6
             # C-H stretch bands; slight UV from aromatic trace content
             "8008-20-6": SpectralSignature(
-                cas_number="8008-20-6", substance_name="Kerosene/Jet-A",
-                alpha_uv=0.8, alpha_vis=0.0, alpha_ir1=3.4, alpha_ir3=1.4,
+                cas_number="8008-20-6",
+                substance_name="Kerosene/Jet-A",
+                alpha_uv=0.8,
+                alpha_vis=0.0,
+                alpha_ir1=3.4,
+                alpha_ir3=1.4,
             ),
             # Diesel Fuel CAS 68334-30-5
             # Higher aromatic fraction → stronger UV
             "68334-30-5": SpectralSignature(
-                cas_number="68334-30-5", substance_name="Diesel Fuel",
-                alpha_uv=1.5, alpha_vis=0.0, alpha_ir1=3.6, alpha_ir3=1.5,
+                cas_number="68334-30-5",
+                substance_name="Diesel Fuel",
+                alpha_uv=1.5,
+                alpha_vis=0.0,
+                alpha_ir1=3.6,
+                alpha_ir3=1.5,
             ),
             # Crude Oil Vapor CAS 8002-05-9
             # Mixed hydrocarbons; UV from BTEX aromatics
             "8002-05-9": SpectralSignature(
-                cas_number="8002-05-9", substance_name="Crude Oil Vapor",
-                alpha_uv=2.2, alpha_vis=0.0, alpha_ir1=3.8, alpha_ir3=1.6,
+                cas_number="8002-05-9",
+                substance_name="Crude Oil Vapor",
+                alpha_uv=2.2,
+                alpha_vis=0.0,
+                alpha_ir1=3.8,
+                alpha_ir3=1.6,
             ),
-
             # ── Chemical / process ────────────────────────────────────────
-
             # Formaldehyde CH₂O  CAS 50-00-0
             # n→π* at 280–360 nm (UV/VIS); C=O stretch at 5.7 µm
             "50-00-0": SpectralSignature(
-                cas_number="50-00-0", substance_name="Formaldehyde",
-                alpha_uv=4.5, alpha_vis=0.8, alpha_ir1=0.6, alpha_ir3=0.3,
+                cas_number="50-00-0",
+                substance_name="Formaldehyde",
+                alpha_uv=4.5,
+                alpha_vis=0.8,
+                alpha_ir1=0.6,
+                alpha_ir3=0.3,
             ),
             # Methyl Ethyl Ketone (MEK) C₄H₈O  CAS 78-93-3
             # C=O stretch at 5.8 µm; n→π* at 280 nm
             "78-93-3": SpectralSignature(
-                cas_number="78-93-3", substance_name="Methyl Ethyl Ketone",
-                alpha_uv=3.2, alpha_vis=0.2, alpha_ir1=1.0, alpha_ir3=0.5,
+                cas_number="78-93-3",
+                substance_name="Methyl Ethyl Ketone",
+                alpha_uv=3.2,
+                alpha_vis=0.2,
+                alpha_ir1=1.0,
+                alpha_ir3=0.5,
             ),
             # Styrene C₈H₈  CAS 100-42-5
             # Aromatic + vinyl: very strong UV (250 nm); C-H IR
             "100-42-5": SpectralSignature(
-                cas_number="100-42-5", substance_name="Styrene",
-                alpha_uv=9.0, alpha_vis=0.3, alpha_ir1=2.0, alpha_ir3=0.7,
+                cas_number="100-42-5",
+                substance_name="Styrene",
+                alpha_uv=9.0,
+                alpha_vis=0.3,
+                alpha_ir1=2.0,
+                alpha_ir3=0.7,
             ),
             # Vinyl Chloride C₂H₃Cl  CAS 75-01-4
             # C=C stretch; C-Cl bond absorbs IR3; UV chromophore
             "75-01-4": SpectralSignature(
-                cas_number="75-01-4", substance_name="Vinyl Chloride",
-                alpha_uv=3.8, alpha_vis=0.0, alpha_ir1=1.5, alpha_ir3=2.0,
+                cas_number="75-01-4",
+                substance_name="Vinyl Chloride",
+                alpha_uv=3.8,
+                alpha_vis=0.0,
+                alpha_ir1=1.5,
+                alpha_ir3=2.0,
             ),
             # Ethylene Oxide C₂H₄O  CAS 75-21-8
             # Ring strain → UV active; C-O-C stretch in IR
             "75-21-8": SpectralSignature(
-                cas_number="75-21-8", substance_name="Ethylene Oxide",
-                alpha_uv=2.0, alpha_vis=0.0, alpha_ir1=1.8, alpha_ir3=0.8,
+                cas_number="75-21-8",
+                substance_name="Ethylene Oxide",
+                alpha_uv=2.0,
+                alpha_vis=0.0,
+                alpha_ir1=1.8,
+                alpha_ir3=0.8,
             ),
             # Propylene Oxide C₃H₆O  CAS 75-56-9
             # Similar to EO but larger C-H contribution
             "75-56-9": SpectralSignature(
-                cas_number="75-56-9", substance_name="Propylene Oxide",
-                alpha_uv=1.8, alpha_vis=0.0, alpha_ir1=2.1, alpha_ir3=0.9,
+                cas_number="75-56-9",
+                substance_name="Propylene Oxide",
+                alpha_uv=1.8,
+                alpha_vis=0.0,
+                alpha_ir1=2.1,
+                alpha_ir3=0.9,
             ),
             # Chlorine Cl₂  CAS 7782-50-5
             # Strong UV (330 nm); VIS faintly yellow; IR weak
             "7782-50-5": SpectralSignature(
-                cas_number="7782-50-5", substance_name="Chlorine",
-                alpha_uv=5.5, alpha_vis=1.2, alpha_ir1=0.2, alpha_ir3=0.1,
+                cas_number="7782-50-5",
+                substance_name="Chlorine",
+                alpha_uv=5.5,
+                alpha_vis=1.2,
+                alpha_ir1=0.2,
+                alpha_ir3=0.1,
             ),
             # Sulfur Dioxide SO₂  CAS 7446-09-5
             # UV absorption at 280–320 nm; S=O stretch at 8.7 µm
             "7446-09-5": SpectralSignature(
-                cas_number="7446-09-5", substance_name="Sulfur Dioxide",
-                alpha_uv=3.0, alpha_vis=0.0, alpha_ir1=0.4, alpha_ir3=0.2,
+                cas_number="7446-09-5",
+                substance_name="Sulfur Dioxide",
+                alpha_uv=3.0,
+                alpha_vis=0.0,
+                alpha_ir1=0.4,
+                alpha_ir3=0.2,
             ),
             # Nitric Oxide NO  CAS 10102-43-9
             # UV at 215 nm; N=O stretch at 5.3 µm
             "10102-43-9": SpectralSignature(
-                cas_number="10102-43-9", substance_name="Nitric Oxide",
-                alpha_uv=2.5, alpha_vis=0.0, alpha_ir1=0.3, alpha_ir3=0.4,
+                cas_number="10102-43-9",
+                substance_name="Nitric Oxide",
+                alpha_uv=2.5,
+                alpha_vis=0.0,
+                alpha_ir1=0.3,
+                alpha_ir3=0.4,
             ),
             # Phosphine PH₃  CAS 7803-51-2
             # P-H stretch at 4.1 µm (IR3 overlap); UV at 185 nm
             "7803-51-2": SpectralSignature(
-                cas_number="7803-51-2", substance_name="Phosphine",
-                alpha_uv=1.5, alpha_vis=0.0, alpha_ir1=0.5, alpha_ir3=1.8,
+                cas_number="7803-51-2",
+                substance_name="Phosphine",
+                alpha_uv=1.5,
+                alpha_vis=0.0,
+                alpha_ir1=0.5,
+                alpha_ir3=1.8,
             ),
             # Silane SiH₄  CAS 7803-62-5
             # Si-H stretch at 4.5 µm (IR3); UV at 195 nm
             "7803-62-5": SpectralSignature(
-                cas_number="7803-62-5", substance_name="Silane",
-                alpha_uv=1.2, alpha_vis=0.0, alpha_ir1=0.3, alpha_ir3=2.2,
+                cas_number="7803-62-5",
+                substance_name="Silane",
+                alpha_uv=1.2,
+                alpha_vis=0.0,
+                alpha_ir1=0.3,
+                alpha_ir3=2.2,
             ),
-
             # ── Gas mixtures / blends ─────────────────────────────────────
-
             # Natural Gas (blend ~90% CH₄, 8% C₂H₆, 2% C₃H₈)  CAS 8006-14-2
             # IR1 dominated by CH₄; pipeline gas, utility
             # V53 FIX: alpha_ir1 was 4.0 — same class of error as V51 LNG fix.
@@ -1560,8 +1787,12 @@ class SpectralSignatureRegistry:
             # flame detector selection — IR1 detectors wrongly deemed unable to see
             # through natural gas clouds. IEC 60079-29-4, FM Global DS 5-48.
             "8006-14-2": SpectralSignature(
-                cas_number="8006-14-2", substance_name="Natural Gas (blend)",
-                alpha_uv=0.3, alpha_vis=0.0, alpha_ir1=0.08, alpha_ir3=0.5,
+                cas_number="8006-14-2",
+                substance_name="Natural Gas (blend)",
+                alpha_uv=0.3,
+                alpha_vis=0.0,
+                alpha_ir1=0.08,
+                alpha_ir3=0.5,
             ),
             # LPG (blend ~60% propane / 40% butane)  CAS 68476-85-7
             # Weighted alpha between propane and butane
@@ -1572,8 +1803,12 @@ class SpectralSignatureRegistry:
             # detectors could see through LPG clouds when they actually cannot.
             # alpha_ir1 also corrected: 0.6×propane_ir1(0.1) + 0.4×butane_ir1(0.9) = 0.42
             "68476-85-7": SpectralSignature(
-                cas_number="68476-85-7", substance_name="LPG (Propane/Butane blend)",
-                alpha_uv=0.5, alpha_vis=0.0, alpha_ir1=0.42, alpha_ir3=2.52,
+                cas_number="68476-85-7",
+                substance_name="LPG (Propane/Butane blend)",
+                alpha_uv=0.5,
+                alpha_vis=0.0,
+                alpha_ir1=0.42,
+                alpha_ir3=2.52,
             ),
             # LNG Vapor (primarily methane at cryogenic release)  CAS 74-82-8-LNG
             # V51 FIX: alpha_ir1 was 4.5, which is 90× the methane value (0.05).
@@ -1594,20 +1829,32 @@ class SpectralSignatureRegistry:
             # For LNG, IR1 band (C-H stretch at 1.65/2.3 µm) is the dominant
             # detection mechanism — alpha_ir1 MUST exceed alpha_uv per IEC 60079-29-4.
             "74-82-8-LNG": SpectralSignature(
-                cas_number="74-82-8-LNG", substance_name="LNG Vapor (methane-rich)",
-                alpha_uv=0.03, alpha_vis=0.0, alpha_ir1=0.07, alpha_ir3=0.4,
+                cas_number="74-82-8-LNG",
+                substance_name="LNG Vapor (methane-rich)",
+                alpha_uv=0.03,
+                alpha_vis=0.0,
+                alpha_ir1=0.07,
+                alpha_ir3=0.4,
             ),
             # Refinery Gas (H₂ + CH₄ + C₂–C₄; representative)  CAS 68919-39-1
             # Wide IR due to mixed composition; H₂ transparent → lower avg
             "68919-39-1": SpectralSignature(
-                cas_number="68919-39-1", substance_name="Refinery Gas",
-                alpha_uv=0.4, alpha_vis=0.0, alpha_ir1=3.2, alpha_ir3=0.8,
+                cas_number="68919-39-1",
+                substance_name="Refinery Gas",
+                alpha_uv=0.4,
+                alpha_vis=0.0,
+                alpha_ir1=3.2,
+                alpha_ir3=0.8,
             ),
             # Syngas (CO + H₂ blend, ~50/50)  CAS SYNGAS-5050
             # CO IR3 contribution (4.67 µm near-IR3 edge) + H₂ transparent
             "SYNGAS-5050": SpectralSignature(
-                cas_number="SYNGAS-5050", substance_name="Syngas (CO+H2 blend)",
-                alpha_uv=0.8, alpha_vis=0.0, alpha_ir1=0.6, alpha_ir3=1.2,
+                cas_number="SYNGAS-5050",
+                substance_name="Syngas (CO+H2 blend)",
+                alpha_uv=0.8,
+                alpha_vis=0.0,
+                alpha_ir1=0.6,
+                alpha_ir3=1.2,
             ),
         }
 
@@ -1636,6 +1883,7 @@ class SpectralSignatureRegistry:
 # V21.2: Volumetric Medium (Gaseous/Smoke Obstruction)
 # ===========================================================================
 
+
 class VolumetricMedium(BaseModel):
     """
     A gaseous or particulate medium in the optical path that absorbs
@@ -1654,20 +1902,18 @@ class VolumetricMedium(BaseModel):
                Drysdale "An Introduction to Fire Dynamics" Table 4.1,
                ISO 13943:2017 §3.88
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
-    medium_id:       str
-    medium_type:     str = Field(
-        description="SMOKE, STEAM, GAS_CLOUD, DUST_SUSPENSION"
-    )
-    bbox_min:        List[float] = Field(min_length=3, max_length=3)
-    bbox_max:        List[float] = Field(min_length=3, max_length=3)
-    cas_number:      Optional[str] = Field(
-        None,
-        description="CAS number for spectral lookup in SpectralSignatureRegistry"
-    )
+    medium_id: str
+    medium_type: str = Field(description="SMOKE, STEAM, GAS_CLOUD, DUST_SUSPENSION")
+    bbox_min: List[float] = Field(min_length=3, max_length=3)
+    bbox_max: List[float] = Field(min_length=3, max_length=3)
+    cas_number: Optional[str] = Field(None, description="CAS number for spectral lookup in SpectralSignatureRegistry")
     concentration_factor: float = Field(
-        default=1.0, gt=0.0, le=10.0,
+        default=1.0,
+        gt=0.0,
+        le=10.0,
         description=(
             "Concentration multiplier for absorption coefficient. "
             "1.0 = reference concentration. Higher = denser medium."
@@ -1675,17 +1921,14 @@ class VolumetricMedium(BaseModel):
     )
     # Direct absorption coefficients (override CAS lookup if provided)
     alpha_override: Optional[Dict[WavelengthBand, float]] = Field(
-        None,
-        description="Override absorption coefficients per band (m^-1)"
+        None, description="Override absorption coefficients per band (m^-1)"
     )
 
     @model_validator(mode="after")
     def bbox_valid(self) -> "VolumetricMedium":
         for i in range(3):
             if self.bbox_min[i] > self.bbox_max[i]:
-                raise ValueError(
-                    f"bbox_min[{i}]={self.bbox_min[i]} > bbox_max[{i}]={self.bbox_max[i]}"
-                )
+                raise ValueError(f"bbox_min[{i}]={self.bbox_min[i]} > bbox_max[{i}]={self.bbox_max[i]}")
         return self
 
     @model_validator(mode="after")
@@ -1744,14 +1987,14 @@ class VolumetricMedium(BaseModel):
                 "number provided — approximate values must not be the sole "
                 "basis for safety-critical coverage decisions without FPE "
                 "sign-off. [IEC 60079-10-1 §7, ISO 13943:2017 §3.88]",
-                self.medium_id, band_key, raw * self.concentration_factor,
+                self.medium_id,
+                band_key,
+                raw * self.concentration_factor,
             )
 
         return float(raw) * self.concentration_factor
 
-    def get_alpha_with_registry(
-        self, band: WavelengthBand, registry: SpectralSignatureRegistry
-    ) -> float:
+    def get_alpha_with_registry(self, band: WavelengthBand, registry: SpectralSignatureRegistry) -> float:
         """
         Get absorption coefficient using registry lookup.
 
@@ -1787,7 +2030,9 @@ class VolumetricMedium(BaseModel):
                 "registry. Approximate values must not be the sole basis "
                 "for safety-critical coverage decisions without FPE sign-off. "
                 "[IEC 60079-10-1 §7, ISO 13943:2017 §3.88]",
-                self.medium_id, band_key, raw * self.concentration_factor,
+                self.medium_id,
+                band_key,
+                raw * self.concentration_factor,
                 self.cas_number or "(none)",
             )
 
@@ -1797,6 +2042,7 @@ class VolumetricMedium(BaseModel):
 # ===========================================================================
 # V21.2: Beer-Lambert Volumetric Transmittance
 # ===========================================================================
+
 
 def beer_lambert_transmittance(
     alpha_per_m: float,
@@ -1838,10 +2084,10 @@ def beer_lambert_transmittance(
 
 def volumetric_path_transmittance(
     ray_start: Tuple[float, float, float],
-    ray_end:   Tuple[float, float, float],
-    media:     List[VolumetricMedium],
-    band:      WavelengthBand,
-    registry:  Optional[SpectralSignatureRegistry] = None,
+    ray_end: Tuple[float, float, float],
+    media: List[VolumetricMedium],
+    band: WavelengthBand,
+    registry: Optional[SpectralSignatureRegistry] = None,
 ) -> float:
     """
     Calculate total spectral transmittance along a ray path through
@@ -1890,7 +2136,7 @@ def volumetric_path_transmittance(
 
 def _ray_aabb_path_length(
     origin: Tuple[float, ...],
-    end:    Tuple[float, ...],
+    end: Tuple[float, ...],
     bbox_min: List[float],
     bbox_max: List[float],
 ) -> float:
@@ -1920,6 +2166,6 @@ def _ray_aabb_path_length(
         return 0.0
 
     # Total ray length
-    ray_length = math.sqrt(d[0]**2 + d[1]**2 + d[2]**2)
+    ray_length = math.sqrt(d[0] ** 2 + d[1] ** 2 + d[2] ** 2)
     # Path through box = (tmax - tmin) * ray_length
     return (tmax - tmin) * ray_length

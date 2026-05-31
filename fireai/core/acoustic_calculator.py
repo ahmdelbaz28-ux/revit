@@ -44,8 +44,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Any, Dict, List, Optional
 
 # ============================================================================
 # NFPA 72 Audible Requirements
@@ -54,8 +53,8 @@ from typing import Any, Dict, List, Optional, Tuple
 # Minimum sound levels per NFPA 72 §18.4
 AUDIBLE_REQUIREMENTS = {
     # mode: (min_above_ambient_dB, absolute_min_dBA, nfpa_section)
-    "public":   (15,  0, "§18.4.3"),  # 15 dB above average ambient OR 5 dB above max ambient
-    "private":  (10, 45, "§18.4.4"),  # 10 dB above ambient, min 45 dBA
+    "public": (15, 0, "§18.4.3"),  # 15 dB above average ambient OR 5 dB above max ambient
+    "private": (10, 45, "§18.4.4"),  # 10 dB above ambient, min 45 dBA
     "sleeping": (15, 75, "§18.4.2"),  # 75 dBA at pillow level, OR 15 dB above ambient
 }
 
@@ -64,20 +63,20 @@ MAX_SOUND_LEVEL_DBA = 110.0  # NFPA 72 §18.4.1.2
 # Default ambient noise levels by space type (dBA)
 # Based on ASHRAE Handbook and acoustic engineering data
 AMBIENT_NOISE_LEVELS = {
-    "office_quiet":     40,
-    "office_normal":    50,
-    "office_loud":      60,
-    "corridor":         50,
-    "mechanical_room":  85,
-    "warehouse":        70,
-    "assembly_quiet":   45,
-    "assembly_loud":    80,
-    "educational":      50,
-    "healthcare":       50,
-    "industrial":       85,
-    "kitchen":          75,
-    "sleeping_area":    40,
-    "stairwell":        55,
+    "office_quiet": 40,
+    "office_normal": 50,
+    "office_loud": 60,
+    "corridor": 50,
+    "mechanical_room": 85,
+    "warehouse": 70,
+    "assembly_quiet": 45,
+    "assembly_loud": 80,
+    "educational": 50,
+    "healthcare": 50,
+    "industrial": 85,
+    "kitchen": 75,
+    "sleeping_area": 40,
+    "stairwell": 55,
 }
 
 # Typical speaker specifications
@@ -89,34 +88,38 @@ DEFAULT_REF_DISTANCE_M = 3.0
 # Data Structures
 # ============================================================================
 
+
 @dataclass
 class SPLResult:
     """Sound Pressure Level calculation result."""
-    effective_dba: float              # SPL at target distance
-    source_dba: float                 # Source SPL at reference distance
-    target_distance_m: float          # Distance from source
-    ref_distance_m: float             # Reference distance for source spec
-    direct_attenuation_dB: float      # Attenuation from inverse square law
-    room_gain_dB: float               # Reverberant field contribution
+
+    effective_dba: float  # SPL at target distance
+    source_dba: float  # Source SPL at reference distance
+    target_distance_m: float  # Distance from source
+    ref_distance_m: float  # Reference distance for source spec
+    direct_attenuation_dB: float  # Attenuation from inverse square law
+    room_gain_dB: float  # Reverberant field contribution
     method: str = "inverse_square_law"
 
 
 @dataclass
 class AudibilityResult:
     """Audibility compliance check result."""
+
     compliant: bool
-    effective_dba: float              # SPL at listener position
-    required_dba: float               # Required minimum per NFPA 72
-    margin_dba: float                 # effective_dba - required_dba
-    mode: str                         # "public", "private", "sleeping"
-    nfpa_section: str                 # Applicable NFPA 72 section
-    ambient_dba: float                # Ambient noise level used
+    effective_dba: float  # SPL at listener position
+    required_dba: float  # Required minimum per NFPA 72
+    margin_dba: float  # effective_dba - required_dba
+    mode: str  # "public", "private", "sleeping"
+    nfpa_section: str  # Applicable NFPA 72 section
+    ambient_dba: float  # Ambient noise level used
     violations: List[str] = field(default_factory=list)
 
 
 @dataclass
 class SpeakerPlacementResult:
     """Result of speaker placement calculation for a room."""
+
     room_area_m2: float
     room_height_m: float
     ambient_dba: float
@@ -131,6 +134,7 @@ class SpeakerPlacementResult:
 # ============================================================================
 # Core Acoustic Calculations
 # ============================================================================
+
 
 def calculate_spl_at_distance(
     source_dba: float,
@@ -196,12 +200,10 @@ def calculate_spl_at_distance(
         # L_rev = source_dba - 10*log10(room_absorption_m2 / ref_distance_m²) + 6
         # This is approximate but conservative for fire alarm design.
         reverberant_spl = source_dba + 10.0 * math.log10(4.0 / room_absorption_m2)
-        reverberant_spl += 10.0 * math.log10(ref_distance_m ** 2)
+        reverberant_spl += 10.0 * math.log10(ref_distance_m**2)
 
         # Total SPL = energy sum of direct + reverberant
-        total_spl = 10.0 * math.log10(
-            10.0 ** (direct_spl / 10.0) + 10.0 ** (reverberant_spl / 10.0)
-        )
+        total_spl = 10.0 * math.log10(10.0 ** (direct_spl / 10.0) + 10.0 ** (reverberant_spl / 10.0))
         room_gain_dB = total_spl - direct_spl
     else:
         total_spl = direct_spl
@@ -263,8 +265,7 @@ def check_audibility_compliance(
     violations = []
     if effective_dba > MAX_SOUND_LEVEL_DBA:
         violations.append(
-            f"Sound level {effective_dba:.1f} dBA exceeds maximum "
-            f"{MAX_SOUND_LEVEL_DBA} dBA per NFPA 72 §18.4.1.2"
+            f"Sound level {effective_dba:.1f} dBA exceeds maximum {MAX_SOUND_LEVEL_DBA} dBA per NFPA 72 §18.4.1.2"
         )
 
     # Check minimum level
@@ -325,9 +326,7 @@ def calculate_min_speakers_for_room(
     # Estimate room absorption if not provided
     # Typical office: α ≈ 0.2-0.3, so A ≈ 0.25 × surface_area
     if room_absorption_m2 is None:
-        surface_area = 2 * (room_length_m * room_width_m +
-                           room_length_m * room_height_m +
-                           room_width_m * room_height_m)
+        surface_area = 2 * (room_length_m * room_width_m + room_length_m * room_height_m + room_width_m * room_height_m)
         room_absorption_m2 = 0.25 * surface_area  # Moderate absorption
 
     # Find maximum spacing that ensures compliance at the worst point
@@ -346,7 +345,7 @@ def calculate_min_speakers_for_room(
 
         # Worst-case distance from a speaker
         half_diag = math.sqrt((spacing / 2) ** 2 + (spacing / 2) ** 2)
-        worst_distance = math.sqrt(half_diag ** 2 + room_height_m ** 2)
+        worst_distance = math.sqrt(half_diag**2 + room_height_m**2)
 
         # Check compliance at worst distance
         result = check_audibility_compliance(
@@ -370,9 +369,7 @@ def calculate_min_speakers_for_room(
     # Final verification
     final_result = check_audibility_compliance(
         source_dba=source_dba,
-        target_distance_m=math.sqrt(
-            (best_spacing / 2) ** 2 + (best_spacing / 2) ** 2 + room_height_m ** 2
-        ),
+        target_distance_m=math.sqrt((best_spacing / 2) ** 2 + (best_spacing / 2) ** 2 + room_height_m**2),
         ambient_dba=ambient_dba,
         mode=mode,
         ref_distance_m=ref_distance_m,
@@ -408,6 +405,7 @@ def _frange(start: float, stop: float, step: float):
 # ============================================================================
 # Backward-Compatible Speaker Coverage — Replaces SPEAKER_COVERAGE=30.0
 # ============================================================================
+
 
 def get_speaker_coverage_radius(
     source_dba: float = 95.0,
@@ -458,7 +456,7 @@ def get_speaker_coverage_radius(
     for _ in range(50):  # ~50 iterations gives ~0.001m precision
         mid = (lo + hi) / 2.0
         # Worst case: listener at the farthest horizontal distance + height
-        worst_dist = math.sqrt(mid ** 2 + room_height_m ** 2)
+        worst_dist = math.sqrt(mid**2 + room_height_m**2)
 
         result = check_audibility_compliance(
             source_dba=source_dba,
@@ -486,12 +484,12 @@ def get_speaker_coverage_radius(
 # These represent the additional attenuation when sound passes through or around
 # a barrier between source and listener.
 BARRIER_ATTENUATION_DB = {
-    "open_doorway": 3.0,       # Open doorway — minimal diffraction
-    "standard_door": 15.0,     # Closed standard interior door (STC 25-30)
-    "fire_door": 25.0,         # Fire-rated door (STC 40+)
-    "glass_partition": 22.0,   # Single glazing (STC 26-32)
-    "drywall_partition": 30.0, # Standard drywall partition (STC 33-40)
-    "concrete_wall": 45.0,     # Concrete or masonry wall (STC 50+)
+    "open_doorway": 3.0,  # Open doorway — minimal diffraction
+    "standard_door": 15.0,  # Closed standard interior door (STC 25-30)
+    "fire_door": 25.0,  # Fire-rated door (STC 40+)
+    "glass_partition": 22.0,  # Single glazing (STC 26-32)
+    "drywall_partition": 30.0,  # Standard drywall partition (STC 33-40)
+    "concrete_wall": 45.0,  # Concrete or masonry wall (STC 50+)
 }
 
 
@@ -505,6 +503,7 @@ class CheckPoint:
         z: Z coordinate in metres (height above floor).
         label: Optional label for identification.
     """
+
     x: float
     y: float
     z: float = 1.5  # Default: typical ear height for standing adult
@@ -523,6 +522,7 @@ class Speaker:
         ref_distance_m: Reference distance for the speaker spec (default 3m).
         speaker_id: Optional identifier.
     """
+
     x: float
     y: float
     z: float = 2.8  # Default: typical ceiling-mounted height
@@ -541,6 +541,7 @@ class Barrier:
         attenuation_dba: Custom attenuation in dBA (overrides barrier_type).
         label: Optional label for identification.
     """
+
     barrier_type: str = "standard_door"
     attenuation_dba: Optional[float] = None
     label: str = ""
@@ -567,6 +568,7 @@ class RoomAcousticResult:
         violations: List of violation dicts for non-compliant points.
         point_results: Detailed results for each check point.
     """
+
     room_id: str
     compliant: bool
     worst_point_spl: float
@@ -702,11 +704,7 @@ class AcousticSPLCalculator:
                 # 3D distance (not 2D like consultant's code)
                 dist_m = max(
                     0.5,  # Minimum distance to avoid singularity
-                    math.sqrt(
-                        (point.x - spkr.x) ** 2 +
-                        (point.y - spkr.y) ** 2 +
-                        (point.z - spkr.z) ** 2
-                    ),
+                    math.sqrt((point.x - spkr.x) ** 2 + (point.y - spkr.y) ** 2 + (point.z - spkr.z) ** 2),
                 )
 
                 # Inverse square law with correct reference distance
@@ -723,9 +721,7 @@ class AcousticSPLCalculator:
                     sum_power += math.pow(10, effective_dba / 10.0)
 
             # Total SPL at this point from all speakers
-            total_pt_spl = (
-                10.0 * math.log10(sum_power) if sum_power > 0 else 0.0
-            )
+            total_pt_spl = 10.0 * math.log10(sum_power) if sum_power > 0 else 0.0
 
             # Add reverberant field contribution if room absorption provided
             if room_absorption_m2 is not None and room_absorption_m2 > 0 and speakers:
@@ -734,11 +730,10 @@ class AcousticSPLCalculator:
                 avg_rating = sum(s.rating_dba for s in speakers) / len(speakers)
                 avg_ref = sum(s.ref_distance_m for s in speakers) / len(speakers)
                 reverberant_spl = avg_rating + 10.0 * math.log10(4.0 / room_absorption_m2)
-                reverberant_spl += 10.0 * math.log10(avg_ref ** 2)
+                reverberant_spl += 10.0 * math.log10(avg_ref**2)
 
                 total_pt_spl = 10.0 * math.log10(
-                    math.pow(10, total_pt_spl / 10.0) +
-                    math.pow(10, reverberant_spl / 10.0)
+                    math.pow(10, total_pt_spl / 10.0) + math.pow(10, reverberant_spl / 10.0)
                 )
 
             # Track worst point
@@ -765,27 +760,31 @@ class AcousticSPLCalculator:
                     f"({min_above_ambient} dB above ambient {ambient_dba:.0f} dBA "
                     f"per NFPA 72 {nfpa_section}). Deficit: {abs(margin):.1f} dB."
                 )
-                violations.append({
-                    "code": "ACOUSTIC-INSUFFICIENT",
-                    "message": msg,
-                    "severity": "CRITICAL",
-                    "point": pt_result["point"],
-                    "deficit_dba": round(abs(margin), 1),
-                })
+                violations.append(
+                    {
+                        "code": "ACOUSTIC-INSUFFICIENT",
+                        "message": msg,
+                        "severity": "CRITICAL",
+                        "point": pt_result["point"],
+                        "deficit_dba": round(abs(margin), 1),
+                    }
+                )
 
             # Check maximum level
             # V20.2 FIX: NFPA 72 §18.4.1.2 "shall not exceed" = mandatory,
             # so severity is CRITICAL not WARNING.
             if total_pt_spl > MAX_SOUND_LEVEL_DBA:
-                violations.append({
-                    "code": "ACOUSTIC-EXCESSIVE",
-                    "message": (
-                        f"Room '{room_id}' SPL {total_pt_spl:.1f} dBA exceeds "
-                        f"maximum {MAX_SOUND_LEVEL_DBA} dBA per NFPA 72 §18.4.1.2"
-                    ),
-                    "severity": "CRITICAL",
-                    "point": pt_result["point"],
-                })
+                violations.append(
+                    {
+                        "code": "ACOUSTIC-EXCESSIVE",
+                        "message": (
+                            f"Room '{room_id}' SPL {total_pt_spl:.1f} dBA exceeds "
+                            f"maximum {MAX_SOUND_LEVEL_DBA} dBA per NFPA 72 §18.4.1.2"
+                        ),
+                        "severity": "CRITICAL",
+                        "point": pt_result["point"],
+                    }
+                )
 
         compliant = len(violations) == 0
         margin_dba = worst_spl - required_dba

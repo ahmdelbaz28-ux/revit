@@ -20,8 +20,8 @@ import functools
 import logging
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Callable, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +30,15 @@ logger = logging.getLogger(__name__)
 # API version
 # ---------------------------------------------------------------------------
 
-API_VERSION       = "29.0.0"
+API_VERSION = "29.0.0"
 API_VERSION_TUPLE = (29, 0, 0)
-MIN_PLUGIN_VERSION = "28.0.0"   # Oldest plugin version supported
+MIN_PLUGIN_VERSION = "28.0.0"  # Oldest plugin version supported
 
 
 # ---------------------------------------------------------------------------
 # Stable plugin-facing dataclasses
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class PluginRoom:
@@ -46,63 +47,68 @@ class PluginRoom:
     Fields will not be removed in MINOR versions.
     New optional fields may be added without breaking existing plugins.
     """
-    room_id:        str
-    width_m:        float
-    length_m:       float
+
+    room_id: str
+    width_m: float
+    length_m: float
     ceiling_height_m: float
-    area_m2:        float
-    polygon:        Tuple[Tuple[float,float], ...]   # (x,y) vertices
-    floor_id:       str = ""
-    name:           str = ""
-    detector_type:  str = "smoke"
+    area_m2: float
+    polygon: Tuple[Tuple[float, float], ...]  # (x,y) vertices
+    floor_id: str = ""
+    name: str = ""
+    detector_type: str = "smoke"
 
 
 @dataclass(frozen=True)
 class PluginDetectorLayout:
     """Stable detector layout for plugin API."""
-    room_id:       str
-    detectors:     Tuple[Tuple[float,float], ...]   # (x,y) positions
-    count:         int
-    coverage_pct:  float
-    proof_valid:   bool
-    method:        str
+
+    room_id: str
+    detectors: Tuple[Tuple[float, float], ...]  # (x,y) positions
+    count: int
+    coverage_pct: float
+    proof_valid: bool
+    method: str
     # V114 FIX: Fail-safe default — no compliance until proven
     nfpa_compliant: bool = False
-    warnings:      Tuple[str, ...] = ()
+    warnings: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class PluginBuildingResult:
     """Stable building analysis result for plugin API."""
-    building_id:      str
-    total_detectors:  int
-    total_rooms:      int
-    compliant_rooms:  int
-    non_compliant:    Tuple[str, ...]
-    safe_to_submit:   bool
-    api_version:      str = API_VERSION
+
+    building_id: str
+    total_detectors: int
+    total_rooms: int
+    compliant_rooms: int
+    non_compliant: Tuple[str, ...]
+    safe_to_submit: bool
+    api_version: str = API_VERSION
 
 
 @dataclass(frozen=True)
 class PluginCableRoute:
     """Stable cable route for plugin API."""
-    route_id:      str
-    from_device:   str
-    to_device:     str
-    waypoints:     Tuple[Tuple[float,float], ...]
-    length_m:      float
-    cable_type:    str
-    circuit_class: str   # "A" or "B"
+
+    route_id: str
+    from_device: str
+    to_device: str
+    waypoints: Tuple[Tuple[float, float], ...]
+    length_m: float
+    cable_type: str
+    circuit_class: str  # "A" or "B"
 
 
 # ---------------------------------------------------------------------------
 # Deprecation decorator
 # ---------------------------------------------------------------------------
 
+
 def deprecated(
     replacement: str,
-    since:       str = API_VERSION,
-    removed_in:  str = "",
+    since: str = API_VERSION,
+    removed_in: str = "",
 ) -> Callable:
     """
     Mark a public API function as deprecated.
@@ -114,24 +120,24 @@ def deprecated(
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
             if fn.__name__ not in _warned:
-                msg = (
-                    f"FireAI API: {fn.__name__}() is deprecated since v{since}. "
-                    f"Use {replacement} instead."
-                )
+                msg = f"FireAI API: {fn.__name__}() is deprecated since v{since}. Use {replacement} instead."
                 if removed_in:
                     msg += f" Will be removed in v{removed_in}."
                 warnings.warn(msg, DeprecationWarning, stacklevel=2)
                 _warned.add(fn.__name__)
             return fn(*args, **kwargs)
+
         wrapper._deprecated = True
         wrapper._replacement = replacement
         return wrapper
+
     return decorator
 
 
 # ---------------------------------------------------------------------------
 # Stable API class
 # ---------------------------------------------------------------------------
+
 
 class FireAIPluginAPI:
     """
@@ -200,8 +206,7 @@ class FireAIPluginAPI:
             )
             return PluginDetectorLayout(
                 room_id=room.room_id,
-                detectors=tuple((x, y) for x, y in
-                                getattr(result, "detectors", [])),
+                detectors=tuple((x, y) for x, y in getattr(result, "detectors", [])),
                 count=getattr(result, "count", 0),
                 coverage_pct=getattr(result, "coverage_pct", 0.0),
                 proof_valid=getattr(result, "proof_valid", False),
@@ -227,7 +232,7 @@ class FireAIPluginAPI:
         rooms: List[PluginRoom],
         *,
         coverage_radius: Optional[float] = None,
-        n_workers:       int = 0,
+        n_workers: int = 0,
     ) -> List[PluginDetectorLayout]:
         """
         Analyse multiple rooms. Parallelised internally when n_workers > 1.
@@ -249,8 +254,7 @@ class FireAIPluginAPI:
             A WARNING is logged and execution falls back to sequential.
         """
         if n_workers <= 1 or len(rooms) <= 1:
-            return [self.analyse_room(room, coverage_radius=coverage_radius)
-                    for room in rooms]
+            return [self.analyse_room(room, coverage_radius=coverage_radius) for room in rooms]
 
         # Engine path: DensityOptimizer.optimize() has mutable instance state
         # that is temporarily overridden per call — NOT thread-safe.
@@ -262,8 +266,7 @@ class FireAIPluginAPI:
                 "See building_engine.py V0.3 Safety Guard.",
                 n_workers,
             )
-            return [self.analyse_room(room, coverage_radius=coverage_radius)
-                    for room in rooms]
+            return [self.analyse_room(room, coverage_radius=coverage_radius) for room in rooms]
 
         # Fallback path: pure Python, no shared mutable state — thread-safe.
         # ProcessPoolExecutor is FORBIDDEN per V0.3 Safety Guard (CBC deadlock).
@@ -272,17 +275,12 @@ class FireAIPluginAPI:
         max_workers = max(1, min(n_workers, len(rooms)))
         indexed_results: List[Optional[PluginDetectorLayout]] = [None] * len(rooms)
 
-        def _analyse_indexed(
-            idx: int, room: PluginRoom
-        ) -> Tuple[int, PluginDetectorLayout]:
+        def _analyse_indexed(idx: int, room: PluginRoom) -> Tuple[int, PluginDetectorLayout]:
             result = self.analyse_room(room, coverage_radius=coverage_radius)
             return (idx, result)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {
-                executor.submit(_analyse_indexed, i, room): i
-                for i, room in enumerate(rooms)
-            }
+            futures = {executor.submit(_analyse_indexed, i, room): i for i, room in enumerate(rooms)}
             for future in as_completed(futures):
                 idx, result = future.result()
                 indexed_results[idx] = result
@@ -293,14 +291,14 @@ class FireAIPluginAPI:
     def analyse_building(
         self,
         building_id: str,
-        rooms:       List[PluginRoom],
+        rooms: List[PluginRoom],
         *,
         generate_pdf: bool = False,
     ) -> PluginBuildingResult:
         """Analyse full building. Stable API."""
         layouts = self.analyse_rooms_batch(rooms)
         compliant = sum(1 for l in layouts if l.nfpa_compliant)
-        non_comp  = tuple(l.room_id for l in layouts if not l.nfpa_compliant)
+        non_comp = tuple(l.room_id for l in layouts if not l.nfpa_compliant)
         total_det = sum(l.count for l in layouts)
 
         return PluginBuildingResult(
@@ -318,9 +316,7 @@ class FireAIPluginAPI:
     # ------------------------------------------------------------------
 
     @deprecated("analyse_room()", since="29.0.0")
-    def compute_detector_layout(
-        self, room: PluginRoom
-    ) -> PluginDetectorLayout:
+    def compute_detector_layout(self, room: PluginRoom) -> PluginDetectorLayout:
         """Deprecated: use analyse_room()."""
         return self.analyse_room(room)
 
@@ -337,10 +333,10 @@ class FireAIPluginAPI:
         Conservative fallback: place detectors on a grid when no engine available.
         Always places MORE detectors than needed (safety rule).
         """
-        R   = coverage_radius or 6.37
-        spacing = R * 1.2   # Conservative: 20% margin
-        w   = room.width_m
-        l   = room.length_m
+        R = coverage_radius or 6.37
+        spacing = R * 1.2  # Conservative: 20% margin
+        w = room.width_m
+        l = room.length_m
         dets = []
         x = spacing / 2.0
         while x < w:
@@ -354,18 +350,18 @@ class FireAIPluginAPI:
             room_id=room.room_id,
             detectors=tuple(dets),
             count=len(dets),
-            coverage_pct=0.0,    # V44 FIX: Unknown coverage — was 95.0 (fabricated). Actual coverage depends on room geometry and detector type.
-            proof_valid=False,   # Not mathematically proven
+            coverage_pct=0.0,  # V44 FIX: Unknown coverage — was 95.0 (fabricated). Actual coverage depends on room geometry and detector type.
+            proof_valid=False,  # Not mathematically proven
             method="fallback_grid",
             nfpa_compliant=False,  # V44 FIX: Cannot claim compliance without proof — was True (FALSE COMPLIANCE CLAIM). Per NFPA 72, compliance requires mathematical verification.
-            warnings=("Fallback mode: no engine available. "
-                      "Verify coverage before submission.",),
+            warnings=("Fallback mode: no engine available. Verify coverage before submission.",),
         )
 
 
 # ---------------------------------------------------------------------------
 # API version check helper for plugins
 # ---------------------------------------------------------------------------
+
 
 def check_api_compatibility(plugin_requires: str) -> None:
     """

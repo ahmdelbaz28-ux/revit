@@ -26,16 +26,18 @@ Safety:
   - Only the COUNT is stored (mip_proven_optimal_count)
   - Actual detector placement always comes from DensityOptimizer V7.3
 """
+
 from __future__ import annotations
-import math
+
 import time
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from .density_optimizer import DETECTOR_RADIUS
 
 try:
     import pulp
+
     PULP_AVAILABLE = True
 except ImportError:
     PULP_AVAILABLE = False
@@ -55,6 +57,7 @@ class MIPResult:
         fallback_reason:     Reason for fallback, or None if successful.
         candidate_step:      Grid spacing used for candidate positions (meters).
     """
+
     success: bool
     detector_positions: List[Tuple[float, float]] = field(default_factory=list)
     theoretical_minimum: Optional[int] = None
@@ -132,22 +135,16 @@ def solve_set_covering_mip(
         )
 
     # --- Coverage map: for each target, which candidates cover it ---
-    R2 = coverage_radius ** 2
+    R2 = coverage_radius**2
     coverage: List[List[int]] = []  # coverage[i] = list of candidate indices
     for tx, ty in targets:
-        covers = [
-            j for j, (cx, cy) in enumerate(candidates)
-            if (tx - cx) ** 2 + (ty - cy) ** 2 <= R2
-        ]
+        covers = [j for j, (cx, cy) in enumerate(candidates) if (tx - cx) ** 2 + (ty - cy) ** 2 <= R2]
         coverage.append(covers)
 
     # --- Formulate ILP ---
     prob = pulp.LpProblem("FireDetectorSetCovering", pulp.LpMinimize)
 
-    x = [
-        pulp.LpVariable(f"x_{j}", cat="Binary")
-        for j in range(len(candidates))
-    ]
+    x = [pulp.LpVariable(f"x_{j}", cat="Binary") for j in range(len(candidates))]
 
     # Objective: minimize total detectors
     prob += pulp.lpSum(x)
@@ -196,9 +193,7 @@ def solve_set_covering_mip(
 
     # --- Extract solution ---
     selected = [
-        candidates[j]
-        for j in range(len(candidates))
-        if pulp.value(x[j]) is not None and pulp.value(x[j]) > 0.5
+        candidates[j] for j in range(len(candidates)) if pulp.value(x[j]) is not None and pulp.value(x[j]) > 0.5
     ]
     theoretical_minimum = len(selected)
 

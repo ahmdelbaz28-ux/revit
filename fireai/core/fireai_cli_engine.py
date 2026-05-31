@@ -33,39 +33,42 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from fireai.core.models_v21 import (
-    SubstanceProperties,
-    HACResult,
-    ATEXEquipmentSpec,
-    FlameDetectorSpec,
-    Obstruction,
-    RayTracePoint,
-    VolumetricMedium,
-    EnvironmentalContext,
-    SpectralSignatureRegistry,
-    ZoneType,
-    HazardType,
-    VentilationLevel,
-    WavelengthBand,
+from fireai.core.atex_hazardous_arbiter import ATEXHazardousArbiter
+from fireai.core.flame_detector_aoc_raytrace import (
+    CoverageResult,
+    FlameDetectorAOCRayTrace,
+    SingleDetectorResult,
 )
+from fireai.core.hac_classification_engine import HACClassificationEngine
 from fireai.core.international_reg_selector import (
     InternationalRegSelector,
     UnknownCountryError,
+)
+from fireai.core.international_reg_selector import (
     resolve as resolve_regulatory,
 )
-from fireai.core.hac_classification_engine import HACClassificationEngine
-from fireai.core.flame_detector_aoc_raytrace import (
-    FlameDetectorAOCRayTrace,
-    CoverageResult,
-    SingleDetectorResult,
+from fireai.core.models_v21 import (
+    ATEXEquipmentSpec,
+    EnvironmentalContext,
+    FlameDetectorSpec,
+    HACResult,
+    HazardType,
+    Obstruction,
+    RayTracePoint,
+    SpectralSignatureRegistry,
+    SubstanceProperties,
+    VentilationLevel,
+    VolumetricMedium,
+    ZoneType,
 )
-from fireai.core.atex_hazardous_arbiter import ATEXHazardousArbiter
+from fireai.core.safety_audit_engine import (
+    AuditResult as AuditReport,
+)
 from fireai.core.safety_audit_engine import (
     SafetyAuditEngine,
-    AuditResult as AuditReport,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,87 +78,95 @@ logger = logging.getLogger(__name__)
 # Pipeline result models
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class Layer1Result:
     """Layer 1: Regulatory framework resolution."""
-    country_code:      str
-    framework:         str
-    zone_system:       str
-    warnings:          Tuple[str, ...]
-    success:           bool
+
+    country_code: str
+    framework: str
+    zone_system: str
+    warnings: Tuple[str, ...]
+    success: bool
 
 
 @dataclass(frozen=True)
 class Layer2Result:
     """Layer 2: Hazardous area classification with environmental correction."""
-    zone:              ZoneType
-    horizontal_m:      float
-    vertical_m:        float
-    volume_m3:         float
-    ventilation:       VentilationLevel
-    hazard_type:       HazardType
-    lfl_corrected:     Optional[float]
+
+    zone: ZoneType
+    horizontal_m: float
+    vertical_m: float
+    volume_m3: float
+    ventilation: VentilationLevel
+    hazard_type: HazardType
+    lfl_corrected: Optional[float]
     lfl_correction_pct: Optional[float]
-    warnings:          Tuple[str, ...]
-    critical_flags:    Tuple[str, ...]
-    success:           bool
+    warnings: Tuple[str, ...]
+    critical_flags: Tuple[str, ...]
+    success: bool
 
 
 @dataclass(frozen=True)
 class Layer3Result:
     """Layer 3: ATEX equipment specification."""
-    epl:               str
-    atex_category:     str
-    temp_class:        str
-    protection_modes:  Tuple[str, ...]
+
+    epl: str
+    atex_category: str
+    temp_class: str
+    protection_modes: Tuple[str, ...]
     fire_detector_marking: Optional[str]
-    warnings:          Tuple[str, ...]
-    errors:            Tuple[str, ...]
-    success:           bool
+    warnings: Tuple[str, ...]
+    errors: Tuple[str, ...]
+    success: bool
 
 
 @dataclass(frozen=True)
 class Layer5Result:
     """Layer 5: Optical coverage analysis with volumetric media."""
-    total_points:      int
-    covered_points:    int
-    coverage_pct:      float
-    per_detector:      Dict[str, SingleDetectorResult]
-    warnings:          Tuple[str, ...]
-    success:           bool
+
+    total_points: int
+    covered_points: int
+    coverage_pct: float
+    per_detector: Dict[str, SingleDetectorResult]
+    warnings: Tuple[str, ...]
+    success: bool
 
 
 @dataclass(frozen=True)
 class Layer6Result:
     """Layer 6: Post-calculation safety audit."""
-    audit_status:      str                      # "PASS" or "FAIL"
-    total_checks:      int
-    passed_checks:     int
-    critical_violations: Tuple[str, ...]       # CRITICAL violation messages
-    warning_violations:  Tuple[str, ...]       # WARNING violation messages
-    info_violations:     Tuple[str, ...]       # INFO violation messages
-    all_violations:    Tuple[str, ...]         # All violation messages
-    success:           bool
+
+    audit_status: str  # "PASS" or "FAIL"
+    total_checks: int
+    passed_checks: int
+    critical_violations: Tuple[str, ...]  # CRITICAL violation messages
+    warning_violations: Tuple[str, ...]  # WARNING violation messages
+    info_violations: Tuple[str, ...]  # INFO violation messages
+    all_violations: Tuple[str, ...]  # All violation messages
+    success: bool
 
 
 @dataclass(frozen=True)
 class PipelineResult:
     """Complete 5-layer + audit pipeline result."""
-    layer1:            Optional[Layer1Result] = None
-    layer2:            Optional[Layer2Result] = None
-    layer3:            Optional[Layer3Result] = None
-    layer5:            Optional[Layer5Result] = None
-    layer6:            Optional[Layer6Result] = None
-    env_context:       Optional[EnvironmentalContext] = None
-    elapsed_seconds:   float = 0.0
+
+    layer1: Optional[Layer1Result] = None
+    layer2: Optional[Layer2Result] = None
+    layer3: Optional[Layer3Result] = None
+    layer5: Optional[Layer5Result] = None
+    layer6: Optional[Layer6Result] = None
+    env_context: Optional[EnvironmentalContext] = None
+    elapsed_seconds: float = 0.0
     pipeline_warnings: Tuple[str, ...] = ()
-    pipeline_errors:   Tuple[str, ...] = ()
-    success:           bool = False
+    pipeline_errors: Tuple[str, ...] = ()
+    success: bool = False
 
 
 # ---------------------------------------------------------------------------
 # CLI Engine
 # ---------------------------------------------------------------------------
+
 
 class CLIFireAIEngine:
     """
@@ -249,7 +260,7 @@ class CLIFireAIEngine:
         substance: SubstanceProperties,
         ventilation: VentilationLevel,
         is_indoor: bool = True,
-        release_grade = None,
+        release_grade=None,
         release_rate_kg_s: float = 0.0,
         room_volume_m3: float = 1000.0,
     ) -> Layer2Result:
@@ -286,9 +297,7 @@ class CLIFireAIEngine:
                             new_val = parts[1].split("%")[0].strip()
                             lfl_corrected = float(new_val)
                             if substance.lfl_vol_pct and lfl_corrected:
-                                lfl_correction_pct = round(
-                                    (1.0 - lfl_corrected / substance.lfl_vol_pct) * 100.0, 2
-                                )
+                                lfl_correction_pct = round((1.0 - lfl_corrected / substance.lfl_vol_pct) * 100.0, 2)
                     except (ValueError, IndexError):
                         pass
                     break
@@ -310,9 +319,13 @@ class CLIFireAIEngine:
             logger.error("Layer 2 FAILED: %s", exc)
             return Layer2Result(
                 zone=ZoneType.UNCLASSIFIED,
-                horizontal_m=0.0, vertical_m=0.0, volume_m3=0.0,
-                ventilation=ventilation, hazard_type=substance.hazard_type,
-                lfl_corrected=None, lfl_correction_pct=None,
+                horizontal_m=0.0,
+                vertical_m=0.0,
+                volume_m3=0.0,
+                ventilation=ventilation,
+                hazard_type=substance.hazard_type,
+                lfl_corrected=None,
+                lfl_correction_pct=None,
                 warnings=(str(exc),),
                 critical_flags=(),
                 success=False,
@@ -361,10 +374,13 @@ class CLIFireAIEngine:
         except Exception as exc:
             logger.error("Layer 3 FAILED: %s", exc)
             return Layer3Result(
-                epl="Gc", atex_category="3G", temp_class="T4",
+                epl="Gc",
+                atex_category="3G",
+                temp_class="T4",
                 protection_modes=("n",),
                 fire_detector_marking=None,
-                warnings=(), errors=(str(exc),),
+                warnings=(),
+                errors=(str(exc),),
                 success=False,
             )
 
@@ -463,15 +479,9 @@ class CLIFireAIEngine:
                 audit_status=report.status,
                 total_checks=report.total_checks,
                 passed_checks=report.passed_checks,
-                critical_violations=tuple(
-                    v.message for v in report.violations if v.severity == "CRITICAL"
-                ),
-                warning_violations=tuple(
-                    v.message for v in report.violations if v.severity == "WARNING"
-                ),
-                info_violations=tuple(
-                    v.message for v in report.violations if v.severity == "INFO"
-                ),
+                critical_violations=tuple(v.message for v in report.violations if v.severity == "CRITICAL"),
+                warning_violations=tuple(v.message for v in report.violations if v.severity == "WARNING"),
+                info_violations=tuple(v.message for v in report.violations if v.severity == "INFO"),
                 all_violations=tuple(v.message for v in report.violations),
                 success=report.is_pass,
             )
@@ -479,9 +489,11 @@ class CLIFireAIEngine:
             logger.error("Layer 6 FAILED: %s", exc)
             return Layer6Result(
                 audit_status="FAIL",
-                total_checks=0, passed_checks=0,
+                total_checks=0,
+                passed_checks=0,
                 critical_violations=(str(exc),),
-                warning_violations=(), info_violations=(),
+                warning_violations=(),
+                info_violations=(),
                 all_violations=(str(exc),),
                 success=False,
             )
@@ -529,7 +541,8 @@ class CLIFireAIEngine:
         # ── Layer 2: HAC Classification ──
         logger.info(
             "Layer 2: Classifying hazardous area (%s, %s, T_ambient=%.1fC)",
-            substance.name, substance.hazard_type.value,
+            substance.name,
+            substance.hazard_type.value,
             self._env_context.ambient_temp_c,
         )
         l2 = self.run_layer2(substance, ventilation, is_indoor)
@@ -537,7 +550,8 @@ class CLIFireAIEngine:
             elapsed = time.monotonic() - start_time
             pipeline_errors.append("Layer 2 failed")
             return PipelineResult(
-                layer1=l1, layer2=l2,
+                layer1=l1,
+                layer2=l2,
                 env_context=self._env_context,
                 elapsed_seconds=round(elapsed, 3),
                 pipeline_warnings=tuple(pipeline_warnings),
@@ -565,8 +579,10 @@ class CLIFireAIEngine:
         # ── Layer 5: Optical Coverage ──
         logger.info(
             "Layer 5: Optical coverage (%d detectors, %d target points, %d obstructions, %d media)",
-            len(detectors), len(target_grid),
-            len(obstructions), len(volumetric_media or []),
+            len(detectors),
+            len(target_grid),
+            len(obstructions),
+            len(volumetric_media or []),
         )
         l5 = self.run_layer5(
             detectors=detectors,
@@ -581,7 +597,9 @@ class CLIFireAIEngine:
         # ── Layer 6: Safety Audit ──
         logger.info(
             "Layer 6: Safety audit (zone=%s, redundancy=%d, jurisdiction=%s)",
-            l2.zone.value, 0, self._env_context.jurisdiction.value,
+            l2.zone.value,
+            0,
+            self._env_context.jurisdiction.value,
         )
         detector_zs = [d.position[2] for d in detectors if len(d.position) > 2] if detectors else None
         l6 = self.run_layer6(
@@ -600,7 +618,9 @@ class CLIFireAIEngine:
         logger.info(
             "Pipeline complete: %s (%.3fs). Zone=%s, Coverage=%.1f%%, Audit=%s",
             "PASS" if overall_success else "FAIL",
-            elapsed, l2.zone.value, l5.coverage_pct,
+            elapsed,
+            l2.zone.value,
+            l5.coverage_pct,
             l6.audit_status,
         )
 

@@ -84,49 +84,35 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
 # Delegation imports — ALL physics lives in domain modules, NOT here.
 # ---------------------------------------------------------------------------
-
 # Audible notification (NFPA 72 §18.4) — acoustic_calculator
 from fireai.core.acoustic_calculator import (
+    AUDIBLE_REQUIREMENTS,
     AcousticSPLCalculator,
-    AudibilityResult,
     Barrier,
     CheckPoint,
     RoomAcousticResult,
     Speaker,
-    AUDIBLE_REQUIREMENTS,
-    MAX_SOUND_LEVEL_DBA,
-    calculate_spl_at_distance,
-    check_audibility_compliance,
-    get_speaker_coverage_radius,
 )
 
 # UGLD free-field physics (ISA-TR84.00.07) — ugld_acoustics
 from fireai.core.ugld_acoustics import (
     AcousticPropagation,
-    UGLDFrequencyBand,
-    UGLDTriggerResult,
     UltrasonicSensor,
     atmospheric_attenuation_db_per_m,
-    check_ugld_trigger,
     max_detection_range_m,
-    speed_of_sound,
 )
 
 # UGLD ray tracing with Maekawa diffraction (ISA-TR84.00.07) — ugld_raytrace
 from fireai.core.ugld_raytrace import (
     AcousticObstacle,
     AcousticRayResult,
-    ObstacleHit,
-    compute_path_difference,
-    maekawa_insertion_loss,
     trace_acoustic_ray,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -152,10 +138,10 @@ UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M: float = 1.5
 UGLD_MIN_SNR_DB: float = 6.0
 
 # NFPA 72-2022 audible notification thresholds
-NFPA72_PUBLIC_MODE_ABOVE_AMBIENT_DB: float = 15.0   # §18.4.3
-NFPA72_PRIVATE_MODE_ABOVE_AMBIENT_DB: float = 10.0   # §18.4.4
-NFPA72_SLEEPING_ABSOLUTE_MIN_DBA: float = 75.0       # §18.4.2
-NFPA72_MAX_DBA: float = 110.0                         # §18.4.1.2
+NFPA72_PUBLIC_MODE_ABOVE_AMBIENT_DB: float = 15.0  # §18.4.3
+NFPA72_PRIVATE_MODE_ABOVE_AMBIENT_DB: float = 10.0  # §18.4.4
+NFPA72_SLEEPING_ABSOLUTE_MIN_DBA: float = 75.0  # §18.4.2
+NFPA72_MAX_DBA: float = 110.0  # §18.4.1.2
 
 #: Typical ceiling absorption coefficient for industrial spaces at
 #: ultrasonic frequencies.  Concrete/steel deck ≈ 0.03-0.05.
@@ -166,6 +152,7 @@ DEFAULT_CEILING_ABSORPTION_COEFF: float = 0.04
 # ============================================================================
 # Result Dataclasses
 # ============================================================================
+
 
 @dataclass
 class AcousticCoverageResult:
@@ -302,6 +289,7 @@ class UGLDCoverageResult:
 # Image-Source Ceiling Reflection (UGLD)
 # ============================================================================
 
+
 def _image_source_reflection_spl(
     leak_point: Tuple[float, float, float],
     sensor_point: Tuple[float, float, float],
@@ -397,9 +385,7 @@ def _combine_spl_db(spl_a: float, spl_b: float) -> float:
     """
     if spl_a <= 0.0 and spl_b <= 0.0:
         return 0.0
-    return 10.0 * math.log10(
-        math.pow(10, spl_a / 10.0) + math.pow(10, spl_b / 10.0)
-    )
+    return 10.0 * math.log10(math.pow(10, spl_a / 10.0) + math.pow(10, spl_b / 10.0))
 
 
 def _evaluate_ugld_trigger(
@@ -438,6 +424,7 @@ def _evaluate_ugld_trigger(
 # ============================================================================
 # AcousticsEngine — Unified Integration Layer
 # ============================================================================
+
 
 class AcousticsEngine:
     """Unified acoustics integration engine combining NFPA 72 audible
@@ -590,8 +577,7 @@ class AcousticsEngine:
         # ── Input validation ──────────────────────────────────────────
         if not speakers:
             raise ValueError(
-                "check_coverage requires at least one Speaker. "
-                "An empty speaker list produces undefined SPL."
+                "check_coverage requires at least one Speaker. An empty speaker list produces undefined SPL."
             )
         if not check_points:
             raise ValueError(
@@ -609,7 +595,10 @@ class AcousticsEngine:
 
         logger.info(
             "check_coverage: room=%s mode=%s speakers=%d points=%d",
-            room_id, mode, len(speakers), len(check_points),
+            room_id,
+            mode,
+            len(speakers),
+            len(check_points),
         )
 
         # ── Delegate to AcousticSPLCalculator ────────────────────────
@@ -624,9 +613,7 @@ class AcousticsEngine:
         )
 
         # ── Aggregate NFPA 72 compliance ─────────────────────────────
-        _min_above_ambient, _absolute_min, nfpa_section = (
-            AUDIBLE_REQUIREMENTS[mode]
-        )
+        _min_above_ambient, _absolute_min, nfpa_section = AUDIBLE_REQUIREMENTS[mode]
 
         violations: List[str] = []
         for v in room_result.violations:
@@ -637,10 +624,7 @@ class AcousticsEngine:
                 violations.append(str(v))
 
         # Additional validation: sleeping-area absolute minimum
-        if (
-            mode == "sleeping"
-            and room_result.worst_point_spl < NFPA72_SLEEPING_ABSOLUTE_MIN_DBA
-        ):
+        if mode == "sleeping" and room_result.worst_point_spl < NFPA72_SLEEPING_ABSOLUTE_MIN_DBA:
             violations.append(
                 f"Sleeping area SPL {room_result.worst_point_spl:.1f} dBA "
                 f"is below the absolute minimum "
@@ -680,12 +664,14 @@ class AcousticsEngine:
         if compliant:
             logger.info(
                 "check_coverage PASS: room=%s margin=%.1f dB",
-                room_id, result.margin_dba,
+                room_id,
+                result.margin_dba,
             )
         else:
             logger.warning(
                 "check_coverage FAIL: room=%s violations=%d",
-                room_id, len(violations),
+                room_id,
+                len(violations),
             )
 
         return result
@@ -780,9 +766,10 @@ class AcousticsEngine:
         obstacles = obstacles or []
 
         logger.info(
-            "ugld_raytrace: leak=%s sensor=%s obstacles=%d "
-            "ceiling_refl=%s",
-            leak_point, sensor_point, len(obstacles),
+            "ugld_raytrace: leak=%s sensor=%s obstacles=%d ceiling_refl=%s",
+            leak_point,
+            sensor_point,
+            len(obstacles),
             include_ceiling_reflection,
         )
 
@@ -806,18 +793,14 @@ class AcousticsEngine:
                 temp_c=temp_c,
                 relative_humidity_pct=relative_humidity_pct,
             )
-            extra_absorption = (
-                UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M - computed_alpha
-            )
+            extra_absorption = UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M - computed_alpha
             if extra_absorption > 0:
-                additional_loss = (
-                    extra_absorption * direct_result.distance_meters
-                )
+                additional_loss = extra_absorption * direct_result.distance_meters
                 adjusted_spl = direct_result.final_spl_db - additional_loss
                 logger.debug(
-                    "Conservative absorption override: +%.3f dB/m -> "
-                    "additional loss %.1f dB over %.1f m",
-                    extra_absorption, additional_loss,
+                    "Conservative absorption override: +%.3f dB/m -> additional loss %.1f dB over %.1f m",
+                    extra_absorption,
+                    additional_loss,
                     direct_result.distance_meters,
                 )
             else:
@@ -845,9 +828,10 @@ class AcousticsEngine:
             combined_spl = _combine_spl_db(adjusted_spl, reflected_spl)
             ceiling_reflections_used = True
             logger.debug(
-                "Ceiling reflection: direct=%.1f dB, reflected=%.1f dB, "
-                "combined=%.1f dB",
-                adjusted_spl, reflected_spl, combined_spl,
+                "Ceiling reflection: direct=%.1f dB, reflected=%.1f dB, combined=%.1f dB",
+                adjusted_spl,
+                reflected_spl,
+                combined_spl,
             )
 
         # ── 4. Re-evaluate trigger status with combined SPL ───────────
@@ -857,7 +841,8 @@ class AcousticsEngine:
         # re-evaluate.
         if ceiling_reflections_used or use_conservative_absorption:
             detected, _deficit = _evaluate_ugld_trigger(
-                combined_spl, sensor,
+                combined_spl,
+                sensor,
             )
         else:
             detected = direct_result.trigger_result.triggered
@@ -885,13 +870,15 @@ class AcousticsEngine:
         coverage_gaps: List[UGLDCoverageGap] = []
         if not detected:
             _det, deficit = _evaluate_ugld_trigger(combined_spl, sensor)
-            coverage_gaps.append(UGLDCoverageGap(
-                leak_point=leak_point,
-                nearest_sensor_id=sensor.sensor_id,
-                nearest_sensor_distance_m=direct_result.distance_meters,
-                spl_at_nearest_sensor_db=round(combined_spl, 1),
-                deficit_db=round(deficit, 1),
-            ))
+            coverage_gaps.append(
+                UGLDCoverageGap(
+                    leak_point=leak_point,
+                    nearest_sensor_id=sensor.sensor_id,
+                    nearest_sensor_distance_m=direct_result.distance_meters,
+                    spl_at_nearest_sensor_db=round(combined_spl, 1),
+                    deficit_db=round(deficit, 1),
+                )
+            )
 
         result = UGLDCoverageResult(
             fully_covered=detected,
@@ -907,15 +894,16 @@ class AcousticsEngine:
 
         if detected:
             logger.info(
-                "ugld_raytrace DETECTED: sensor=%s spl=%.1f dB "
-                "snr=%.1f dB",
-                sensor.sensor_id, combined_spl,
+                "ugld_raytrace DETECTED: sensor=%s spl=%.1f dB snr=%.1f dB",
+                sensor.sensor_id,
+                combined_spl,
                 combined_spl - sensor.background_noise_db,
             )
         else:
             logger.warning(
                 "ugld_raytrace NOT DETECTED: sensor=%s spl=%.1f dB",
-                sensor.sensor_id, combined_spl,
+                sensor.sensor_id,
+                combined_spl,
             )
 
         return result
@@ -930,10 +918,12 @@ class AcousticsEngine:
         sensor_points: List[Tuple[float, float, float]],
         sensors: List[UltrasonicSensor],
         obstacles: Optional[List[AcousticObstacle]] = None,
-        area_bounds: Optional[Tuple[
-            Tuple[float, float, float],
-            Tuple[float, float, float],
-        ]] = None,
+        area_bounds: Optional[
+            Tuple[
+                Tuple[float, float, float],
+                Tuple[float, float, float],
+            ]
+        ] = None,
         leak_spl_at_1m: float = 100.0,
         center_frequency_hz: float = UGLD_CENTER_FREQUENCY_HZ,
         temp_c: float = 40.0,
@@ -1009,8 +999,7 @@ class AcousticsEngine:
             )
         if not sensors:
             raise ValueError(
-                "ugld_multi_sensor_coverage requires at least one sensor. "
-                "Without sensors, no detection is possible."
+                "ugld_multi_sensor_coverage requires at least one sensor. Without sensors, no detection is possible."
             )
         if len(sensor_points) != len(sensors):
             raise ValueError(
@@ -1032,7 +1021,9 @@ class AcousticsEngine:
         obstacles = obstacles or []
         logger.info(
             "ugld_multi_sensor_coverage: leaks=%d sensors=%d obstacles=%d",
-            len(leak_points), len(sensors), len(obstacles),
+            len(leak_points),
+            len(sensors),
+            len(obstacles),
         )
 
         # ── Per-sensor/leak ray tracing ──────────────────────────────
@@ -1075,10 +1066,7 @@ class AcousticsEngine:
                         temp_c=temp_c,
                         relative_humidity_pct=relative_humidity_pct,
                     )
-                    extra = (
-                        UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M
-                        - computed_alpha
-                    )
+                    extra = UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M - computed_alpha
                     if extra > 0:
                         effective_spl -= extra * ray_result.distance_meters
 
@@ -1095,13 +1083,15 @@ class AcousticsEngine:
                         ceiling_absorption_coeff=ceiling_absorption_coeff,
                     )
                     effective_spl = _combine_spl_db(
-                        effective_spl, reflected_spl,
+                        effective_spl,
+                        reflected_spl,
                     )
                     ceiling_reflections_used = True
 
                 # ── Evaluate detection ────────────────────────────────
                 detected, _deficit = _evaluate_ugld_trigger(
-                    effective_spl, sensor,
+                    effective_spl,
+                    sensor,
                 )
 
                 # Compute free-field max detection range (for zone info)
@@ -1119,9 +1109,7 @@ class AcousticsEngine:
                     detection_range_m=det_range,
                     final_spl_db=round(effective_spl, 1),
                     has_los=ray_result.has_los,
-                    total_insertion_loss_db=(
-                        ray_result.total_insertion_loss_db
-                    ),
+                    total_insertion_loss_db=(ray_result.total_insertion_loss_db),
                     obstacle_count=ray_result.obstacle_intersections,
                 )
                 detection_zones.append(zone)
@@ -1136,15 +1124,16 @@ class AcousticsEngine:
                     detected_by_any = True
 
             leak_best[leak_idx] = (
-                best_spl, best_sensor_id, best_distance, detected_by_any,
+                best_spl,
+                best_sensor_id,
+                best_distance,
+                detected_by_any,
             )
 
         # ── Coverage gap analysis ─────────────────────────────────────
         coverage_gaps: List[UGLDCoverageGap] = []
         for leak_idx, leak_pt in enumerate(leak_points):
-            best_spl, best_sensor_id, best_distance, detected = (
-                leak_best[leak_idx]
-            )
+            best_spl, best_sensor_id, best_distance, detected = leak_best[leak_idx]
             if not detected:
                 # Find the actual sensor for threshold reference
                 sensor_threshold = sensors[0].trigger_threshold_db
@@ -1153,13 +1142,15 @@ class AcousticsEngine:
                         sensor_threshold = s.trigger_threshold_db
                         break
                 deficit = max(0.0, sensor_threshold - best_spl)
-                coverage_gaps.append(UGLDCoverageGap(
-                    leak_point=leak_pt,
-                    nearest_sensor_id=best_sensor_id,
-                    nearest_sensor_distance_m=round(best_distance, 2),
-                    spl_at_nearest_sensor_db=round(best_spl, 1),
-                    deficit_db=round(deficit, 1),
-                ))
+                coverage_gaps.append(
+                    UGLDCoverageGap(
+                        leak_point=leak_pt,
+                        nearest_sensor_id=best_sensor_id,
+                        nearest_sensor_distance_m=round(best_distance, 2),
+                        spl_at_nearest_sensor_db=round(best_spl, 1),
+                        deficit_db=round(deficit, 1),
+                    )
+                )
 
         # ── Area estimation ───────────────────────────────────────────
         total_area = 0.0
@@ -1195,9 +1186,11 @@ class AcousticsEngine:
         )
 
         logger.info(
-            "ugld_multi_sensor_coverage: covered=%s gaps=%d "
-            "area=%.1f/%.1f m²",
-            fully_covered, len(coverage_gaps), combined_area, total_area,
+            "ugld_multi_sensor_coverage: covered=%s gaps=%d area=%.1f/%.1f m²",
+            fully_covered,
+            len(coverage_gaps),
+            combined_area,
+            total_area,
         )
 
         return result

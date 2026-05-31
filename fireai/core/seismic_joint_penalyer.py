@@ -28,9 +28,9 @@ Code references:
   - ASCE 7-22 §13.6.6       — Architectural, mechanical, electrical
     components & systems in seismic design category C and above
 """
+
 from __future__ import annotations
 
-import hashlib
 import logging
 import math
 from dataclasses import dataclass
@@ -41,11 +41,11 @@ from typing import Any, Dict, List, Optional, Tuple
 # ---------------------------------------------------------------------------
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -83,6 +83,7 @@ _CITE_ASCE_7 = "ASCE 7-22 §13.6.6"
 @dataclass(frozen=True)
 class StructuralJoint:
     """Represents a seismic or expansion joint as a line segment."""
+
     joint_id: str
     start: Tuple[float, float]
     end: Tuple[float, float]
@@ -93,17 +94,19 @@ class StructuralJoint:
 @dataclass(frozen=True)
 class JointCrossing:
     """Records a single path crossing of a structural joint."""
+
     joint_id: str
     crossing_point: Tuple[float, float]
     path_segment_index: int
     approach_angle_deg: float  # Angle between path segment and joint normal
-    is_orthogonal: bool        # True if within ORTHOGONAL_TOLERANCE_DEG of 90°
+    is_orthogonal: bool  # True if within ORTHOGONAL_TOLERANCE_DEG of 90°
     requires_flexible: bool = True
 
 
 @dataclass(frozen=True)
 class FlexibleJunctionTie:
     """Represents a required flexible conduit transition at a joint crossing."""
+
     joint_id: str
     location: Tuple[float, float]
     conduit_type: str = "LFMC"
@@ -238,16 +241,20 @@ class SeismicJointPenalyer:
 
             for joint in seismic_joints:
                 intersection = _segments_intersect(
-                    p1, p2, joint.start, joint.end,
+                    p1,
+                    p2,
+                    joint.start,
+                    joint.end,
                 )
                 if intersection is not None:
                     # Compute approach angle
                     approach_angle = _compute_approach_angle(
-                        p1, p2, joint.start, joint.end,
+                        p1,
+                        p2,
+                        joint.start,
+                        joint.end,
                     )
-                    is_orthogonal = (
-                        abs(90.0 - approach_angle) <= self.orthogonal_tolerance_deg
-                    )
+                    is_orthogonal = abs(90.0 - approach_angle) <= self.orthogonal_tolerance_deg
 
                     crossing = JointCrossing(
                         joint_id=joint.joint_id,
@@ -264,12 +271,14 @@ class SeismicJointPenalyer:
                         self.flexible_transition_length_m,
                         (joint.expected_displacement_mm / 1000.0) * 2.0,
                     )
-                    flexible_junctions.append(FlexibleJunctionTie(
-                        joint_id=joint.joint_id,
-                        location=intersection,
-                        conduit_type="LFMC",
-                        length_m=round(flex_length, 3),
-                    ))
+                    flexible_junctions.append(
+                        FlexibleJunctionTie(
+                            joint_id=joint.joint_id,
+                            location=intersection,
+                            conduit_type="LFMC",
+                            length_m=round(flex_length, 3),
+                        )
+                    )
 
                     # Flag violation ONLY for non-orthogonal crossings
                     if not is_orthogonal:
@@ -285,17 +294,21 @@ class SeismicJointPenalyer:
                             f"at right angle."
                         )
                         if Violation is not None:
-                            violations.append(Violation(
-                                severity="MAJOR",
-                                citation=f"{_CITE_NEC_300_4D} / Orthogonal Crossing",
-                                description=desc,
-                            ))
+                            violations.append(
+                                Violation(
+                                    severity="MAJOR",
+                                    citation=f"{_CITE_NEC_300_4D} / Orthogonal Crossing",
+                                    description=desc,
+                                )
+                            )
                         else:
-                            violations.append({
-                                "severity": "MAJOR",
-                                "citation": f"{_CITE_NEC_300_4D} / Orthogonal Crossing",
-                                "description": desc,
-                            })
+                            violations.append(
+                                {
+                                    "severity": "MAJOR",
+                                    "citation": f"{_CITE_NEC_300_4D} / Orthogonal Crossing",
+                                    "description": desc,
+                                }
+                            )
                         logger.warning(desc)
 
         safe = len(violations) == 0
@@ -315,13 +328,15 @@ class SeismicJointPenalyer:
                 t = i / steps
                 gx = round((x1 + t * (x2 - x1)) * 4) / 4
                 gy = round((y1 + t * (y2 - y1)) * 4) / 4
-                penalty_cells.append({
-                    "x": gx,
-                    "y": gy,
-                    "cost_penalty": self.crossing_cost_penalty,
-                    "joint_id": joint.joint_id,
-                    "force_orthogonal": True,
-                })
+                penalty_cells.append(
+                    {
+                        "x": gx,
+                        "y": gy,
+                        "cost_penalty": self.crossing_cost_penalty,
+                        "joint_id": joint.joint_id,
+                        "force_orthogonal": True,
+                    }
+                )
 
         # Build provenance result
         if DecisionProvenance is not None:
@@ -356,12 +371,8 @@ class SeismicJointPenalyer:
                     decision_type="seismic_joint_routing",
                     value={
                         "crossings_detected": len(crossings),
-                        "orthogonal_crossings": sum(
-                            1 for c in crossings if c.is_orthogonal
-                        ),
-                        "non_orthogonal_crossings": sum(
-                            1 for c in crossings if not c.is_orthogonal
-                        ),
+                        "orthogonal_crossings": sum(1 for c in crossings if c.is_orthogonal),
+                        "non_orthogonal_crossings": sum(1 for c in crossings if not c.is_orthogonal),
                         "flexible_junctions": [
                             {
                                 "joint_id": fj.joint_id,

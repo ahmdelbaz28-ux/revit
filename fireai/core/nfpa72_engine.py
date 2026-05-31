@@ -40,9 +40,8 @@ by 21.6% at 75°C operating temperature, which is DANGEROUS for Egypt
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WIRE RESISTANCE TABLE — NEC Chapter 9, Table 8 (Copper, stranded)
@@ -55,12 +54,12 @@ AWG_RESISTANCE_OHM_PER_KM = {
     "14": 8.450,
     "12": 5.310,
     "10": 3.340,
-    "8":  2.100,
-    "6":  1.320,
-    "4":  0.830,
-    "3":  0.660,
-    "2":  0.520,
-    "1":  0.410,
+    "8": 2.100,
+    "6": 1.320,
+    "4": 0.830,
+    "3": 0.660,
+    "2": 0.520,
+    "1": 0.410,
     "1/0": 0.327,
     "2/0": 0.260,
     "3/0": 0.205,
@@ -119,17 +118,17 @@ _TABLE8_REFERENCE_TEMP_C = 20.0
 # We provide all three columns for completeness.
 AMPACITY_TABLE_NEC_310_16 = {
     # AWG: (60 degC column, 75 degC column, 90 degC column) in Amperes
-    "18": (0,   0,    14),   # AWG 18 not in 60/75 columns
-    "16": (0,   0,    18),   # AWG 16 not in 60/75 columns
-    "14": (20,  25,   30),
-    "12": (25,  30,   35),
-    "10": (35,  40,   45),
-    "8":  (50,  60,   70),
-    "6":  (65,  75,   85),
-    "4":  (85,  95,  110),
-    "3":  (95, 110,  125),
-    "2":  (115, 130, 145),
-    "1":  (130, 150, 165),
+    "18": (0, 0, 14),  # AWG 18 not in 60/75 columns
+    "16": (0, 0, 18),  # AWG 16 not in 60/75 columns
+    "14": (20, 25, 30),
+    "12": (25, 30, 35),
+    "10": (35, 40, 45),
+    "8": (50, 60, 70),
+    "6": (65, 75, 85),
+    "4": (85, 95, 110),
+    "3": (95, 110, 125),
+    "2": (115, 130, 145),
+    "1": (130, 150, 165),
     "1/0": (150, 170, 190),
     "2/0": (175, 195, 215),
     "3/0": (200, 225, 245),
@@ -161,19 +160,19 @@ AMBIENT_TEMP_CORRECTION_FACTORS = {
     # by up to 19% for 60°C-rated wire at 50°C ambient (Egyptian summer).
     # Key semantics: each key represents the UPPER bound of the NEC range.
     # E.g., key 25 = NEC range 21-25°C; key 40 = NEC range 36-40°C.
-    21: (1.05, 1.05, 1.04),   # NEC range 1-21°C
-    25: (1.05, 1.05, 1.04),   # NEC range 21-25°C
-    30: (1.00, 1.00, 1.00),   # NEC range 26-30°C — NEC 310.16 baseline
-    35: (0.91, 0.94, 0.96),   # NEC range 31-35°C
-    40: (0.82, 0.88, 0.91),   # NEC range 36-40°C — Common in Egyptian buildings
-    45: (0.71, 0.82, 0.87),   # NEC range 41-45°C
-    50: (0.58, 0.75, 0.82),   # NEC range 46-50°C — Egyptian summer peak
-    55: (0.41, 0.67, 0.76),   # NEC range 51-55°C
-    60: (0.29, 0.58, 0.71),   # NEC range 56-60°C
-    65: (0.00, 0.47, 0.65),   # NEC range 61-65°C — 60C rated not permitted above 60°C
-    70: (0.00, 0.33, 0.58),   # NEC range 66-70°C
-    75: (0.00, 0.15, 0.50),   # NEC range 71-75°C
-    80: (0.00, 0.00, 0.41),   # NEC range 76-80°C
+    21: (1.05, 1.05, 1.04),  # NEC range 1-21°C
+    25: (1.05, 1.05, 1.04),  # NEC range 21-25°C
+    30: (1.00, 1.00, 1.00),  # NEC range 26-30°C — NEC 310.16 baseline
+    35: (0.91, 0.94, 0.96),  # NEC range 31-35°C
+    40: (0.82, 0.88, 0.91),  # NEC range 36-40°C — Common in Egyptian buildings
+    45: (0.71, 0.82, 0.87),  # NEC range 41-45°C
+    50: (0.58, 0.75, 0.82),  # NEC range 46-50°C — Egyptian summer peak
+    55: (0.41, 0.67, 0.76),  # NEC range 51-55°C
+    60: (0.29, 0.58, 0.71),  # NEC range 56-60°C
+    65: (0.00, 0.47, 0.65),  # NEC range 61-65°C — 60C rated not permitted above 60°C
+    70: (0.00, 0.33, 0.58),  # NEC range 66-70°C
+    75: (0.00, 0.15, 0.50),  # NEC range 71-75°C
+    80: (0.00, 0.00, 0.41),  # NEC range 76-80°C
 }
 
 
@@ -190,22 +189,22 @@ AMBIENT_TEMP_CORRECTION_FACTORS = {
 # NEC 760.154.
 CONDUCTOR_COUNT_DERATING = {
     # NEC 310.15(B)(3)(a) adjustment table
-    1:  1.00,   # No derating needed
-    2:  1.00,   # No derating needed
-    3:  1.00,   # Baseline - no derating (NEC 310.16 assumes <=3)
-    4:  0.80,   # 4-6 conductors: 80%
-    5:  0.80,
-    6:  0.80,
-    7:  0.70,   # 7-9 conductors: 70%
-    8:  0.70,
-    9:  0.70,
-    10: 0.50,   # 10-20 conductors: 50%
+    1: 1.00,  # No derating needed
+    2: 1.00,  # No derating needed
+    3: 1.00,  # Baseline - no derating (NEC 310.16 assumes <=3)
+    4: 0.80,  # 4-6 conductors: 80%
+    5: 0.80,
+    6: 0.80,
+    7: 0.70,  # 7-9 conductors: 70%
+    8: 0.70,
+    9: 0.70,
+    10: 0.50,  # 10-20 conductors: 50%
     20: 0.50,
-    21: 0.45,   # 21-30 conductors: 45%
+    21: 0.45,  # 21-30 conductors: 45%
     30: 0.45,
-    31: 0.40,   # 31-40 conductors: 40%
+    31: 0.40,  # 31-40 conductors: 40%
     40: 0.40,
-    41: 0.35,   # Over 40 conductors: 35%
+    41: 0.35,  # Over 40 conductors: 35%
 }
 
 
@@ -215,24 +214,24 @@ CONDUCTOR_COUNT_DERATING = {
 
 _SMOKE_SPACING_TABLE = [
     # (max_ceiling_height_m, listed_spacing_m)
-    (3.0,  9.10),   # 30 ft → 9.1 m
-    (3.9,  8.20),   # 27 ft → 8.2 m
-    (4.9,  7.30),   # 24 ft → 7.3 m
-    (6.1,  6.40),   # 21 ft → 6.4 m
-    (7.6,  5.50),   # 18 ft → 5.5 m
-    (9.1,  4.60),   # 15 ft → 4.6 m
-    (10.7, 3.70),   # 12 ft → 3.7 m
-    (12.2, 3.00),   # 10 ft → 3.0 m
+    (3.0, 9.10),  # 30 ft → 9.1 m
+    (3.9, 8.20),  # 27 ft → 8.2 m
+    (4.9, 7.30),  # 24 ft → 7.3 m
+    (6.1, 6.40),  # 21 ft → 6.4 m
+    (7.6, 5.50),  # 18 ft → 5.5 m
+    (9.1, 4.60),  # 15 ft → 4.6 m
+    (10.7, 3.70),  # 12 ft → 3.7 m
+    (12.2, 3.00),  # 10 ft → 3.0 m
 ]
 
 _HEAT_SPACING_TABLE = [
     # (max_ceiling_height_m, listed_spacing_m)
-    (3.0,  6.10),   # 20 ft → 6.1 m
-    (3.9,  5.50),   # 18 ft → 5.5 m
-    (4.9,  4.90),   # 16 ft → 4.9 m
-    (6.1,  4.30),   # 14 ft → 4.3 m
-    (7.6,  3.70),   # 12 ft → 3.7 m
-    (9.1,  3.00),   # 10 ft → 3.0 m
+    (3.0, 6.10),  # 20 ft → 6.1 m
+    (3.9, 5.50),  # 18 ft → 5.5 m
+    (4.9, 4.90),  # 16 ft → 4.9 m
+    (6.1, 4.30),  # 14 ft → 4.3 m
+    (7.6, 3.70),  # 12 ft → 3.7 m
+    (9.1, 3.00),  # 10 ft → 3.0 m
 ]
 
 
@@ -240,14 +239,16 @@ _HEAT_SPACING_TABLE = [
 # DATA CLASSES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class SpacingResult:
     """Result from NFPA 72 detector spacing calculation."""
-    max_spacing_m:     float
+
+    max_spacing_m: float
     coverage_radius_m: float
-    nfpa_section:      str
-    formula:           str
-    table_row_used:    str
+    nfpa_section: str
+    formula: str
+    table_row_used: str
 
 
 @dataclass(frozen=True)
@@ -262,10 +263,11 @@ class BatteryResult:
     Formula:
       Ah_required = (I_standby × 24h + I_alarm × 5min/60) × 1.20
     """
-    required_ah:  float
+
+    required_ah: float
     installed_ah: float
-    is_adequate:  bool
-    formula:      str
+    is_adequate: bool
+    formula: str
     nfpa_section: str
 
 
@@ -281,11 +283,12 @@ class VoltageDropResult:
 
     V59: Resistance is now temperature-corrected per NEC practice.
     """
-    voltage_drop_v:   float
+
+    voltage_drop_v: float
     voltage_drop_pct: float
-    max_length_m:     float
-    is_compliant:     bool
-    formula:          str
+    max_length_m: float
+    is_compliant: bool
+    formula: str
 
 
 @dataclass(frozen=True)
@@ -303,20 +306,22 @@ class AmpacityResult:
     This is CRITICAL for Egypt: at 40-50 degC ambient, a wire rated for
     25A at 30 degC may only carry 18-22A after temperature correction.
     """
-    awg_gauge:             str
-    base_ampacity_a:       float
-    ambient_derating:      float
-    conductor_derating:    float
-    adjusted_ampacity_a:   float
-    actual_current_a:      float
-    is_compliant:          bool
-    formula:               str
-    nec_section:           str = "NEC 310.16"
+
+    awg_gauge: str
+    base_ampacity_a: float
+    ambient_derating: float
+    conductor_derating: float
+    adjusted_ampacity_a: float
+    actual_current_a: float
+    is_compliant: bool
+    formula: str
+    nec_section: str = "NEC 310.16"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SPACING CALCULATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def get_detector_spacing(
     ceiling_height_m: float,
@@ -339,9 +344,7 @@ def get_detector_spacing(
     # but no downstream code checks that field. A NaN/negative ceiling height
     # means the input is broken — fail loudly per Rule 5 (hard failure).
     if not math.isfinite(ceiling_height_m) or ceiling_height_m <= 0:
-        raise ValueError(
-            f"ceiling_height_m must be positive finite, got {ceiling_height_m}"
-        )
+        raise ValueError(f"ceiling_height_m must be positive finite, got {ceiling_height_m}")
 
     det_type = detector_type.lower()
     table = _SMOKE_SPACING_TABLE if det_type == "smoke" else _HEAT_SPACING_TABLE
@@ -398,13 +401,13 @@ def estimate_detector_count(
     if not math.isfinite(room_area_m2) or room_area_m2 <= 0:
         return {
             "min_detector_count": 0,
-            "area_per_detector_m2": float('nan'),
+            "area_per_detector_m2": float("nan"),
             "spacing_m": spacing_result.max_spacing_m,
             "coverage_radius_m": radius_m,
             "error": f"Invalid room_area_m2: {room_area_m2}",
         }
 
-    coverage_area_per_detector = math.pi * radius_m ** 2
+    coverage_area_per_detector = math.pi * radius_m**2
     min_count = max(1, math.ceil(room_area_m2 / coverage_area_per_detector))
 
     return {
@@ -420,10 +423,38 @@ def estimate_detector_count(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Standard battery sizes (Ah) — common lead-acid/SLA batteries
-_STANDARD_BATTERY_SIZES = [1.2, 2.0, 3.0, 4.0, 5.0, 7.0, 7.2, 8.0, 10.0,
-                           12.0, 15.0, 18.0, 20.0, 25.0, 26.0, 28.0, 31.0,
-                           33.0, 40.0, 50.0, 55.0, 60.0, 70.0, 75.0, 80.0,
-                           100.0, 120.0, 150.0, 180.0, 200.0]
+_STANDARD_BATTERY_SIZES = [
+    1.2,
+    2.0,
+    3.0,
+    4.0,
+    5.0,
+    7.0,
+    7.2,
+    8.0,
+    10.0,
+    12.0,
+    15.0,
+    18.0,
+    20.0,
+    25.0,
+    26.0,
+    28.0,
+    31.0,
+    33.0,
+    40.0,
+    50.0,
+    55.0,
+    60.0,
+    70.0,
+    75.0,
+    80.0,
+    100.0,
+    120.0,
+    150.0,
+    180.0,
+    200.0,
+]
 
 # NFPA 72 battery derating — Peukert-like derating for lead-acid
 # At higher discharge rates, effective capacity decreases
@@ -466,32 +497,20 @@ def calculate_battery(
     """
     # Input validation — safety first
     if not math.isfinite(standby_current_a) or standby_current_a < 0:
-        raise ValueError(
-            f"standby_current_a must be non-negative finite, got {standby_current_a}"
-        )
+        raise ValueError(f"standby_current_a must be non-negative finite, got {standby_current_a}")
     if not math.isfinite(alarm_current_a) or alarm_current_a < 0:
-        raise ValueError(
-            f"alarm_current_a must be non-negative finite, got {alarm_current_a}"
-        )
+        raise ValueError(f"alarm_current_a must be non-negative finite, got {alarm_current_a}")
     if standby_current_a == 0 and alarm_current_a == 0:
-        raise ValueError(
-            "Both standby and alarm current cannot be zero — no load specified"
-        )
+        raise ValueError("Both standby and alarm current cannot be zero — no load specified")
     # V69-6 FIX: Validate safety_margin, standby_hours, alarm_minutes
     # A negative safety_margin reduces required capacity — life safety hazard.
     # standby_hours ≤ 0 or alarm_minutes ≤ 0 violates NFPA 72 §10.6.7.
     if not math.isfinite(safety_margin) or safety_margin < 0:
-        raise ValueError(
-            f"safety_margin must be non-negative finite, got {safety_margin}"
-        )
+        raise ValueError(f"safety_margin must be non-negative finite, got {safety_margin}")
     if not math.isfinite(standby_hours) or standby_hours <= 0:
-        raise ValueError(
-            f"standby_hours must be positive finite, got {standby_hours}"
-        )
+        raise ValueError(f"standby_hours must be positive finite, got {standby_hours}")
     if not math.isfinite(alarm_minutes) or alarm_minutes <= 0:
-        raise ValueError(
-            f"alarm_minutes must be positive finite, got {alarm_minutes}"
-        )
+        raise ValueError(f"alarm_minutes must be positive finite, got {alarm_minutes}")
 
     # Step 1: Calculate raw Ah requirement
     # Standby: 24 hours at standby current
@@ -522,9 +541,9 @@ def calculate_battery(
 
     formula = (
         f"Ah = (I_sb×{standby_hours}h + I_al×{alarm_minutes}min/60) "
-        f"/ { _BATTERY_DERATING_FACTOR} × (1+{safety_margin}) = "
+        f"/ {_BATTERY_DERATING_FACTOR} × (1+{safety_margin}) = "
         f"({standby_current_a:.4f}×{standby_hours} + {alarm_current_a:.4f}×{alarm_hours:.4f}) "
-        f"/ {_BATTERY_DERATING_FACTOR} × {1+safety_margin} = {ah_required:.2f} Ah"
+        f"/ {_BATTERY_DERATING_FACTOR} × {1 + safety_margin} = {ah_required:.2f} Ah"
     )
 
     return BatteryResult(
@@ -579,13 +598,9 @@ def temperature_corrected_resistance(
         ValueError: If inputs are invalid.
     """
     if not math.isfinite(r_at_20c) or r_at_20c < 0:
-        raise ValueError(
-            f"r_at_20c must be non-negative finite, got {r_at_20c}"
-        )
+        raise ValueError(f"r_at_20c must be non-negative finite, got {r_at_20c}")
     if not math.isfinite(operating_temp_c) or operating_temp_c < -50:
-        raise ValueError(
-            f"operating_temp_c must be finite and >= -50, got {operating_temp_c}"
-        )
+        raise ValueError(f"operating_temp_c must be finite and >= -50, got {operating_temp_c}")
 
     corrected = r_at_20c * (1.0 + COPPER_TEMP_COEFFICIENT * (operating_temp_c - _TABLE8_REFERENCE_TEMP_C))
     return max(corrected, 0.0)  # Safety: never negative
@@ -639,37 +654,23 @@ def calculate_voltage_drop(
     """
     # Input validation
     if not math.isfinite(alarm_current_a) or alarm_current_a < 0:
-        raise ValueError(
-            f"alarm_current_a must be non-negative finite, got {alarm_current_a}"
-        )
+        raise ValueError(f"alarm_current_a must be non-negative finite, got {alarm_current_a}")
     if not math.isfinite(circuit_length_m) or circuit_length_m < 0:
-        raise ValueError(
-            f"circuit_length_m must be non-negative finite, got {circuit_length_m}"
-        )
+        raise ValueError(f"circuit_length_m must be non-negative finite, got {circuit_length_m}")
     if not math.isfinite(ambient_temperature_c) or ambient_temperature_c < -50:
-        raise ValueError(
-            f"ambient_temperature_c must be finite and >= -50, "
-            f"got {ambient_temperature_c}"
-        )
+        raise ValueError(f"ambient_temperature_c must be finite and >= -50, got {ambient_temperature_c}")
     # V66 FIX: Validate ps_voltage — negative ps_voltage produces negative
     # drop_pct which always passes compliance check (NaN <= max == False is safe,
     # but negative ps_voltage <= 10.0 == True is dangerous).
     if not math.isfinite(ps_voltage) or ps_voltage <= 0:
-        raise ValueError(
-            f"ps_voltage must be positive finite, got {ps_voltage}"
-        )
+        raise ValueError(f"ps_voltage must be positive finite, got {ps_voltage}")
     if not math.isfinite(max_drop_pct) or max_drop_pct <= 0 or max_drop_pct > 100:
-        raise ValueError(
-            f"max_drop_pct must be in (0, 100], got {max_drop_pct}"
-        )
+        raise ValueError(f"max_drop_pct must be in (0, 100], got {max_drop_pct}")
 
     # Get wire resistance at 20 degC (NEC Chapter 9, Table 8)
     gauge = str(awg_gauge).strip()
     if gauge not in AWG_RESISTANCE_OHM_PER_KM:
-        raise ValueError(
-            f"Unsupported AWG gauge '{gauge}'. "
-            f"Supported: {sorted(AWG_RESISTANCE_OHM_PER_KM.keys())}"
-        )
+        raise ValueError(f"Unsupported AWG gauge '{gauge}'. Supported: {sorted(AWG_RESISTANCE_OHM_PER_KM.keys())}")
 
     r_at_20c = AWG_RESISTANCE_OHM_PER_KM[gauge]
 
@@ -730,6 +731,7 @@ def calculate_voltage_drop(
 # AMPACITY VERIFICATION — NEC 310.16
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def get_ambient_derating_factor(
     ambient_temp_c: float,
     conductor_temp_rating_c: float = 90,
@@ -756,14 +758,9 @@ def get_ambient_derating_factor(
         ValueError: If inputs are invalid.
     """
     if not math.isfinite(ambient_temp_c):
-        raise ValueError(
-            f"ambient_temp_c must be finite, got {ambient_temp_c}"
-        )
+        raise ValueError(f"ambient_temp_c must be finite, got {ambient_temp_c}")
     if conductor_temp_rating_c not in (60, 75, 90):
-        raise ValueError(
-            f"conductor_temp_rating_c must be 60, 75, or 90, "
-            f"got {conductor_temp_rating_c}"
-        )
+        raise ValueError(f"conductor_temp_rating_c must be 60, 75, or 90, got {conductor_temp_rating_c}")
 
     # V65 FIX: Removed early return for temps ≤ 30°C. Previously, this
     # returned 1.0 for ALL conductor ratings at ≤30°C, but the actual NEC
@@ -823,10 +820,7 @@ def get_conductor_count_derating(
         ValueError: If num_current_carrying < 1.
     """
     if not isinstance(num_current_carrying, int) or num_current_carrying < 1:
-        raise ValueError(
-            f"num_current_carrying must be a positive integer, "
-            f"got {num_current_carrying}"
-        )
+        raise ValueError(f"num_current_carrying must be a positive integer, got {num_current_carrying}")
 
     if num_current_carrying <= 3:
         return 1.00
@@ -889,16 +883,11 @@ def check_ampacity(
     """
     # Input validation
     if not math.isfinite(alarm_current_a) or alarm_current_a < 0:
-        raise ValueError(
-            f"alarm_current_a must be non-negative finite, got {alarm_current_a}"
-        )
+        raise ValueError(f"alarm_current_a must be non-negative finite, got {alarm_current_a}")
 
     gauge = str(awg_gauge).strip()
     if gauge not in AMPACITY_TABLE_NEC_310_16:
-        raise ValueError(
-            f"Unsupported AWG gauge '{gauge}'. "
-            f"Supported: {sorted(AMPACITY_TABLE_NEC_310_16.keys())}"
-        )
+        raise ValueError(f"Unsupported AWG gauge '{gauge}'. Supported: {sorted(AMPACITY_TABLE_NEC_310_16.keys())}")
 
     # Get base ampacity from NEC 310.16
     amp_60, amp_75, amp_90 = AMPACITY_TABLE_NEC_310_16[gauge]
@@ -936,9 +925,7 @@ def check_ampacity(
         )
 
     # Apply NEC 310.15(B)(2)(A) ambient temperature derating
-    ambient_derating = get_ambient_derating_factor(
-        ambient_temp_c, conductor_temp_rating_c
-    )
+    ambient_derating = get_ambient_derating_factor(ambient_temp_c, conductor_temp_rating_c)
 
     # Apply NEC 310.15(B)(3)(a) conductor count derating
     conductor_derating = get_conductor_count_derating(num_current_carrying)
@@ -1007,11 +994,13 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
         # not that the circuit is genuinely compliant.
         return {
             "compliant": False,
-            "violations": [{
-                "type": "no_devices_to_verify",
-                "nfpa_section": "NFPA 72 §12.3",
-                "message": "No devices to verify — cannot confirm fault isolation compliance",
-            }],
+            "violations": [
+                {
+                    "type": "no_devices_to_verify",
+                    "nfpa_section": "NFPA 72 §12.3",
+                    "message": "No devices to verify — cannot confirm fault isolation compliance",
+                }
+            ],
             "device_count": 0,
             "isolator_count": 0,
             "nfpa_section": "NFPA 72 §12.3",
@@ -1033,32 +1022,36 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
         if current_circuit != circuit:
             # V69-3 FIX: Check multi-zone segment before resetting
             if len(segment_zone_ids) > 1:
-                violations.append({
-                    "type": "multi_zone_segment",
-                    "device_id": dev_id,
-                    "zones": sorted(segment_zone_ids),
-                    "nfpa_section": "NFPA 72 §12.3",
-                    "message": (
-                        f"Segment contains devices from {len(segment_zone_ids)} "
-                        f"zones ({', '.join(sorted(segment_zone_ids))}) — "
-                        f"single fault could disable multiple zones "
-                        f"per NFPA 72 §12.3"
-                    ),
-                })
+                violations.append(
+                    {
+                        "type": "multi_zone_segment",
+                        "device_id": dev_id,
+                        "zones": sorted(segment_zone_ids),
+                        "nfpa_section": "NFPA 72 §12.3",
+                        "message": (
+                            f"Segment contains devices from {len(segment_zone_ids)} "
+                            f"zones ({', '.join(sorted(segment_zone_ids))}) — "
+                            f"single fault could disable multiple zones "
+                            f"per NFPA 72 §12.3"
+                        ),
+                    }
+                )
             # Check previous segment for device count
             if current_segment_devices > _MAX_DEVICES_BETWEEN_ISOLATORS:
-                violations.append({
-                    "type": "too_many_devices_between_isolators",
-                    "device_id": dev_id,
-                    "device_count": current_segment_devices,
-                    "max_allowed": _MAX_DEVICES_BETWEEN_ISOLATORS,
-                    "nfpa_section": "NFPA 72 §12.3.1",
-                    "message": (
-                        f"Segment has {current_segment_devices} devices "
-                        f"(max {_MAX_DEVICES_BETWEEN_ISOLATORS} per "
-                        f"NFPA 72 §12.3.1)"
-                    ),
-                })
+                violations.append(
+                    {
+                        "type": "too_many_devices_between_isolators",
+                        "device_id": dev_id,
+                        "device_count": current_segment_devices,
+                        "max_allowed": _MAX_DEVICES_BETWEEN_ISOLATORS,
+                        "nfpa_section": "NFPA 72 §12.3.1",
+                        "message": (
+                            f"Segment has {current_segment_devices} devices "
+                            f"(max {_MAX_DEVICES_BETWEEN_ISOLATORS} per "
+                            f"NFPA 72 §12.3.1)"
+                        ),
+                    }
+                )
             current_segment_devices = 0
             segment_zone_ids = set()
             current_circuit = circuit
@@ -1066,33 +1059,37 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
         if "isolator" in dev_type:
             # V69-3 FIX: Check multi-zone segment before resetting at isolator
             if len(segment_zone_ids) > 1:
-                violations.append({
-                    "type": "multi_zone_segment",
-                    "device_id": dev_id,
-                    "zones": sorted(segment_zone_ids),
-                    "nfpa_section": "NFPA 72 §12.3",
-                    "message": (
-                        f"Segment before isolator '{dev_id}' contains devices "
-                        f"from {len(segment_zone_ids)} zones "
-                        f"({', '.join(sorted(segment_zone_ids))}) — "
-                        f"single fault could disable multiple zones "
-                        f"per NFPA 72 §12.3"
-                    ),
-                })
+                violations.append(
+                    {
+                        "type": "multi_zone_segment",
+                        "device_id": dev_id,
+                        "zones": sorted(segment_zone_ids),
+                        "nfpa_section": "NFPA 72 §12.3",
+                        "message": (
+                            f"Segment before isolator '{dev_id}' contains devices "
+                            f"from {len(segment_zone_ids)} zones "
+                            f"({', '.join(sorted(segment_zone_ids))}) — "
+                            f"single fault could disable multiple zones "
+                            f"per NFPA 72 §12.3"
+                        ),
+                    }
+                )
             # Check segment ending at this isolator
             if current_segment_devices > _MAX_DEVICES_BETWEEN_ISOLATORS:
-                violations.append({
-                    "type": "too_many_devices_between_isolators",
-                    "device_id": dev_id,
-                    "device_count": current_segment_devices,
-                    "max_allowed": _MAX_DEVICES_BETWEEN_ISOLATORS,
-                    "nfpa_section": "NFPA 72 §12.3.1",
-                    "message": (
-                        f"Segment before isolator '{dev_id}' has "
-                        f"{current_segment_devices} devices "
-                        f"(max {_MAX_DEVICES_BETWEEN_ISOLATORS})"
-                    ),
-                })
+                violations.append(
+                    {
+                        "type": "too_many_devices_between_isolators",
+                        "device_id": dev_id,
+                        "device_count": current_segment_devices,
+                        "max_allowed": _MAX_DEVICES_BETWEEN_ISOLATORS,
+                        "nfpa_section": "NFPA 72 §12.3.1",
+                        "message": (
+                            f"Segment before isolator '{dev_id}' has "
+                            f"{current_segment_devices} devices "
+                            f"(max {_MAX_DEVICES_BETWEEN_ISOLATORS})"
+                        ),
+                    }
+                )
             isolator_count += 1
             current_segment_devices = 0
             segment_zone_ids = set()
@@ -1104,31 +1101,35 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
 
     # V69-3 FIX: Check multi-zone in last segment too
     if len(segment_zone_ids) > 1:
-        violations.append({
-            "type": "multi_zone_segment",
-            "zones": sorted(segment_zone_ids),
-            "nfpa_section": "NFPA 72 §12.3",
-            "message": (
-                f"End-of-circuit segment contains devices from "
-                f"{len(segment_zone_ids)} zones "
-                f"({', '.join(sorted(segment_zone_ids))}) — "
-                f"single fault could disable multiple zones "
-                f"per NFPA 72 §12.3"
-            ),
-        })
+        violations.append(
+            {
+                "type": "multi_zone_segment",
+                "zones": sorted(segment_zone_ids),
+                "nfpa_section": "NFPA 72 §12.3",
+                "message": (
+                    f"End-of-circuit segment contains devices from "
+                    f"{len(segment_zone_ids)} zones "
+                    f"({', '.join(sorted(segment_zone_ids))}) — "
+                    f"single fault could disable multiple zones "
+                    f"per NFPA 72 §12.3"
+                ),
+            }
+        )
 
     # Check last segment (after last isolator)
     if current_segment_devices > _MAX_DEVICES_BETWEEN_ISOLATORS:
-        violations.append({
-            "type": "too_many_devices_end_of_circuit",
-            "device_count": current_segment_devices,
-            "max_allowed": _MAX_DEVICES_BETWEEN_ISOLATORS,
-            "nfpa_section": "NFPA 72 §12.3.1",
-            "message": (
-                f"End-of-circuit segment has {current_segment_devices} "
-                f"devices (max {_MAX_DEVICES_BETWEEN_ISOLATORS})"
-            ),
-        })
+        violations.append(
+            {
+                "type": "too_many_devices_end_of_circuit",
+                "device_count": current_segment_devices,
+                "max_allowed": _MAX_DEVICES_BETWEEN_ISOLATORS,
+                "nfpa_section": "NFPA 72 §12.3.1",
+                "message": (
+                    f"End-of-circuit segment has {current_segment_devices} "
+                    f"devices (max {_MAX_DEVICES_BETWEEN_ISOLATORS})"
+                ),
+            }
+        )
 
     compliant = len(violations) == 0
 

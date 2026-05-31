@@ -32,32 +32,33 @@ Usage:
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
-
 
 # ============================================================================
 # Data Structures
 # ============================================================================
 
+
 @dataclass
 class IsolatorPlacement:
     """Record of a single fault isolator injection."""
-    position_index: int            # Where in the loop sequence it was inserted
+
+    position_index: int  # Where in the loop sequence it was inserted
     position_xy: Tuple[float, float]  # Physical position (same as next device)
-    reason: str                    # Why it was inserted
-    nfpa_citation: str             # Code reference
+    reason: str  # Why it was inserted
+    nfpa_citation: str  # Code reference
     zone_id_before: Optional[str]  # Zone before isolator
-    zone_id_after: Optional[str]   # Zone after isolator
+    zone_id_after: Optional[str]  # Zone after isolator
 
 
 @dataclass
 class IsolatorInjectionResult:
     """Complete result of fault isolator injection."""
+
     original_device_count: int
     injected_isolator_count: int
-    total_device_count: int          # original + isolators
+    total_device_count: int  # original + isolators
     secure_loop: List[Dict[str, Any]]  # Devices + isolators in order
     isolator_placements: List[IsolatorPlacement]
     violations: List[str] = field(default_factory=list)
@@ -84,6 +85,7 @@ NFPA_CITATION_ZONE_LIMIT = "NFPA 72-2022 §12.3.2"
 # ============================================================================
 # Core Injection Algorithm
 # ============================================================================
+
 
 def inject_fault_isolators(
     loop_devices: List[Dict[str, Any]],
@@ -191,17 +193,13 @@ def inject_fault_isolators(
         # Rule 2: Zone boundary crossed
         elif device_zone is not None and current_zone is not None and device_zone != current_zone:
             need_isolator = True
-            reason = (
-                f"Zone boundary: {current_zone} -> {device_zone} "
-                f"per {NFPA_CITATION_ZONE_LIMIT}"
-            )
+            reason = f"Zone boundary: {current_zone} -> {device_zone} per {NFPA_CITATION_ZONE_LIMIT}"
 
         # Rule 3: Max devices between isolators exceeded
         elif devices_since_last_isolator >= max_devices_between_isolators:
             need_isolator = True
             reason = (
-                f"Max devices between isolators ({max_devices_between_isolators}) "
-                f"exceeded per engineering practice"
+                f"Max devices between isolators ({max_devices_between_isolators}) exceeded per engineering practice"
             )
 
         # Insert isolator if needed
@@ -215,14 +213,16 @@ def inject_fault_isolators(
                 zone_after=device_zone,
             )
             secure_loop.append(iso_device)
-            placements.append(IsolatorPlacement(
-                position_index=len(secure_loop) - 1,
-                position_xy=device_pos,
-                reason=reason,
-                nfpa_citation=NFPA_CITATION_ISOLATION,
-                zone_id_before=current_zone,
-                zone_id_after=device_zone,
-            ))
+            placements.append(
+                IsolatorPlacement(
+                    position_index=len(secure_loop) - 1,
+                    position_xy=device_pos,
+                    reason=reason,
+                    nfpa_citation=NFPA_CITATION_ISOLATION,
+                    zone_id_before=current_zone,
+                    zone_id_after=device_zone,
+                )
+            )
             devices_since_last_isolator = 0
 
         # Add the actual device
@@ -242,14 +242,16 @@ def inject_fault_isolators(
             zone_after=None,
         )
         secure_loop.append(iso_device)
-        placements.append(IsolatorPlacement(
-            position_index=len(secure_loop) - 1,
-            position_xy=last_pos,
-            reason="Class A loop return point isolator",
-            nfpa_citation="NFPA 72-2022 §21.4",
-            zone_id_before=current_zone,
-            zone_id_after=None,
-        ))
+        placements.append(
+            IsolatorPlacement(
+                position_index=len(secure_loop) - 1,
+                position_xy=last_pos,
+                reason="Class A loop return point isolator",
+                nfpa_citation="NFPA 72-2022 §21.4",
+                zone_id_before=current_zone,
+                zone_id_after=None,
+            )
+        )
 
     # Validate: check if any segment exceeds device limit
     count_since_isolator = 0

@@ -37,10 +37,9 @@ NFPA 72 References:
 
 from __future__ import annotations
 
-import math
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +47,7 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────
 # Advisory Result
 # ──────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class SensorAdvisory:
@@ -68,6 +68,7 @@ class SensorAdvisory:
         beam_detector_recommended: True if beam detectors should be considered.
         performance_based_design: True if PE performance-based design required.
     """
+
     room_id: str
     ceiling_height_m: float
     slope_degrees: float = 0.0
@@ -87,12 +88,12 @@ class SensorAdvisory:
 # the maximum height in Table 17.6.3.1.1 (12.2m for smoke).
 # Beyond this, beam detectors are the standard recommendation.
 _POINT_DETECTOR_MAX_HEIGHT_SMOKE = 12.2  # meters (NFPA 72 Table 17.6.3.1.1)
-_POINT_DETECTOR_MAX_HEIGHT_HEAT = 12.2   # meters
+_POINT_DETECTOR_MAX_HEIGHT_HEAT = 12.2  # meters
 
 # NFPA 72 §17.6.3.4: Sloped ceiling with pitch > 1 in 8 (7.125°)
 # requires special treatment (ridge zone detectors). Beyond ~30°,
 # the ceiling is effectively a wall and spot detection is impractical.
-_STEEP_SLOPE_THRESHOLD_DEG = 30.0   # beyond this, spot detectors impractical
+_STEEP_SLOPE_THRESHOLD_DEG = 30.0  # beyond this, spot detectors impractical
 _SLOPED_CEILING_THRESHOLD_DEG = 7.125  # 1 in 8 pitch per NFPA 72 §17.6.3.4
 
 # High ceiling warning thresholds (still within NFPA table, but PE review advised)
@@ -152,16 +153,8 @@ class SensorPhysicsAdvisor:
         perf_based = False
 
         # ─── Check 1: Height beyond NFPA table ───────────────────
-        max_h = (
-            _POINT_DETECTOR_MAX_HEIGHT_SMOKE
-            if detector_type == "smoke"
-            else _POINT_DETECTOR_MAX_HEIGHT_HEAT
-        )
-        warn_h = (
-            _HIGH_CEILING_WARNING_SMOKE
-            if detector_type == "smoke"
-            else _HIGH_CEILING_WARNING_HEAT
-        )
+        max_h = _POINT_DETECTOR_MAX_HEIGHT_SMOKE if detector_type == "smoke" else _POINT_DETECTOR_MAX_HEIGHT_HEAT
+        warn_h = _HIGH_CEILING_WARNING_SMOKE if detector_type == "smoke" else _HIGH_CEILING_WARNING_HEAT
 
         if ceiling_height_m > max_h:
             severity = "CRITICAL"

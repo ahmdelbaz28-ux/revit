@@ -22,16 +22,14 @@ from __future__ import annotations
 
 import json
 import math
-import os
-import time
 import uuid
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
-
+from dataclasses import dataclass
+from typing import Any, Dict, List, Tuple
 
 # ---------------------------------------------------------------------------
 # BIM Room Data (Revit-agnostic)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class BIMRoom:
@@ -39,15 +37,16 @@ class BIMRoom:
     Room data extracted from BIM source.
     Compatible with Revit Room, IFC IfcSpace, gbXML Space.
     """
-    room_id:          str
-    name:             str
-    level_id:         str
-    area_m2:          float
+
+    room_id: str
+    name: str
+    level_id: str
+    area_m2: float
     ceiling_height_m: float
-    polygon:          List[Tuple[float, float]]   # (x, y) in metres
-    occupancy_type:   str = "office"
-    is_sprinklered:   bool = False
-    source:           str = "unknown"   # "revit" | "ifc" | "json" | "dxf"
+    polygon: List[Tuple[float, float]]  # (x, y) in metres
+    occupancy_type: str = "office"
+    is_sprinklered: bool = False
+    source: str = "unknown"  # "revit" | "ifc" | "json" | "dxf"
 
     @property
     def bounding_box(self) -> Tuple[float, float, float, float]:
@@ -69,22 +68,23 @@ class BIMRoom:
     def to_fireai_room_dict(self) -> Dict[str, Any]:
         """Convert to FireAI FloorAnalyser room_dict format."""
         return {
-            "room_id":         self.room_id,
-            "name":            self.name,
-            "width":           self.width,
-            "length":          self.length,
-            "ceiling_height":  self.ceiling_height_m,
-            "area_m2":         self.area_m2,
-            "polygon_coords":  self.polygon,
-            "detector_type":   "smoke",
-            "occupancy_type":  self.occupancy_type,
-            "source":          self.source,
+            "room_id": self.room_id,
+            "name": self.name,
+            "width": self.width,
+            "length": self.length,
+            "ceiling_height": self.ceiling_height_m,
+            "area_m2": self.area_m2,
+            "polygon_coords": self.polygon,
+            "detector_type": "smoke",
+            "occupancy_type": self.occupancy_type,
+            "source": self.source,
         }
 
 
 # ---------------------------------------------------------------------------
 # Revit-optional adapter
 # ---------------------------------------------------------------------------
+
 
 class RevitAPIBridge:
     """
@@ -98,8 +98,8 @@ class RevitAPIBridge:
     """
 
     def __init__(self) -> None:
-        self._mode     = self._detect_mode()
-        self._ifc_doc  = None
+        self._mode = self._detect_mode()
+        self._ifc_doc = None
         self._revit_doc = None
 
     def _detect_mode(self) -> str:
@@ -107,6 +107,7 @@ class RevitAPIBridge:
         # Try Revit API (only works inside Revit process)
         try:
             import Autodesk.Revit.DB as DB  # noqa: F401
+
             return "revit_api"
         except (ImportError, ModuleNotFoundError):
             pass
@@ -114,6 +115,7 @@ class RevitAPIBridge:
         # Try pyrevit
         try:
             import revit  # noqa: F401
+
             return "pyrevit"
         except (ImportError, ModuleNotFoundError):
             pass
@@ -121,6 +123,7 @@ class RevitAPIBridge:
         # Try ifcopenshell (works everywhere)
         try:
             import ifcopenshell  # noqa: F401
+
             return "ifcopenshell"
         except (ImportError, ModuleNotFoundError):
             pass
@@ -164,64 +167,60 @@ class RevitAPIBridge:
         try:
             import Autodesk.Revit.DB as DB
             import Autodesk.Revit.UI as UI
-            from System.Collections.Generic import List as DotNetList
 
             # Get active document
-            uiapp = UI.UIApplication(None)   # Current Revit process
-            doc   = uiapp.ActiveUIDocument.Document
+            uiapp = UI.UIApplication(None)  # Current Revit process
+            doc = uiapp.ActiveUIDocument.Document
 
             collector = DB.FilteredElementCollector(doc)
-            rooms     = collector.OfCategory(
-                DB.BuiltInCategory.OST_Rooms
-            ).WhereElementIsNotElementType().ToElements()
+            rooms = collector.OfCategory(DB.BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements()
 
             result: List[BIMRoom] = []
             for room in rooms:
                 if room.Area <= 0:
                     continue
-                loc   = room.Location
+                loc = room.Location
                 level = doc.GetElement(room.LevelId)
-                h_param = room.get_Parameter(
-                    DB.BuiltInParameter.ROOM_UPPER_OFFSET)
-                h_m  = (h_param.AsDouble() * 0.3048
-                        if h_param else 3.0)   # ft -> m
+                h_param = room.get_Parameter(DB.BuiltInParameter.ROOM_UPPER_OFFSET)
+                h_m = h_param.AsDouble() * 0.3048 if h_param else 3.0  # ft -> m
 
                 # Extract polygon from room boundary
-                options  = DB.SpatialElementBoundaryOptions()
+                options = DB.SpatialElementBoundaryOptions()
                 segments = room.GetBoundarySegments(options)
-                polygon  = []
+                polygon = []
                 if segments:
                     for seg in segments[0]:
-                        curve  = seg.GetCurve()
-                        start  = curve.GetEndPoint(0)
+                        curve = seg.GetCurve()
+                        start = curve.GetEndPoint(0)
                         polygon.append((start.X * 0.3048, start.Y * 0.3048))
 
-                result.append(BIMRoom(
-                    room_id=str(room.Id),
-                    name=room.Name,
-                    level_id=str(level.Id) if level else "L-00",
-                    area_m2=room.Area * 0.0929,   # ft2 -> m2
-                    ceiling_height_m=h_m,
-                    polygon=polygon,
-                    source="revit_api",
-                ))
+                result.append(
+                    BIMRoom(
+                        room_id=str(room.Id),
+                        name=room.Name,
+                        level_id=str(level.Id) if level else "L-00",
+                        area_m2=room.Area * 0.0929,  # ft2 -> m2
+                        ceiling_height_m=h_m,
+                        polygon=polygon,
+                        source="revit_api",
+                    )
+                )
             return result
 
         except Exception as exc:
             raise RuntimeError(
-                f"Revit live extraction failed: {exc}. "
-                "Ensure running inside Revit process with API access."
+                f"Revit live extraction failed: {exc}. Ensure running inside Revit process with API access."
             )
 
     def _extract_ifc(self, filepath: str) -> List[BIMRoom]:
         """Extract rooms from IFC file via ifcopenshell."""
         try:
             import ifcopenshell
-            import ifcopenshell.util.placement
             import ifcopenshell.util.element
+            import ifcopenshell.util.placement
 
             ifc_file = ifcopenshell.open(filepath)
-            spaces   = ifc_file.by_type("IfcSpace")
+            spaces = ifc_file.by_type("IfcSpace")
             result: List[BIMRoom] = []
 
             for space in spaces:
@@ -244,9 +243,12 @@ class RevitAPIBridge:
 
                 # Simplified: use bounding box as polygon
                 # Full implementation needs ifcopenshell.geom
-                poly = [(0, 0), (math.sqrt(area_m2), 0),
-                        (math.sqrt(area_m2), math.sqrt(area_m2)),
-                        (0, math.sqrt(area_m2))]
+                poly = [
+                    (0, 0),
+                    (math.sqrt(area_m2), 0),
+                    (math.sqrt(area_m2), math.sqrt(area_m2)),
+                    (0, math.sqrt(area_m2)),
+                ]
 
                 level_id = "L-00"
                 if space.Decomposes:
@@ -254,22 +256,21 @@ class RevitAPIBridge:
                         if hasattr(rel, "RelatingObject"):
                             level_id = str(rel.RelatingObject.id())
 
-                result.append(BIMRoom(
-                    room_id=str(space.id()),
-                    name=name,
-                    level_id=level_id,
-                    area_m2=area_m2 or 20.0,
-                    ceiling_height_m=h_m,
-                    polygon=poly,
-                    source="ifc",
-                ))
+                result.append(
+                    BIMRoom(
+                        room_id=str(space.id()),
+                        name=name,
+                        level_id=level_id,
+                        area_m2=area_m2 or 20.0,
+                        ceiling_height_m=h_m,
+                        polygon=poly,
+                        source="ifc",
+                    )
+                )
             return result
 
         except ImportError:
-            raise ImportError(
-                "ifcopenshell not installed. "
-                "Install: pip install ifcopenshell"
-            )
+            raise ImportError("ifcopenshell not installed. Install: pip install ifcopenshell")
 
     def _extract_json(self, filepath: str) -> List[BIMRoom]:
         """
@@ -287,43 +288,46 @@ class RevitAPIBridge:
         for rd in rooms_data:
             polygon = rd.get("polygon_coords") or rd.get("polygon") or []
             if not polygon:
-                w = float(rd.get("width",  rd.get("room_width",  10.0)))
-                l = float(rd.get("length", rd.get("room_length",  8.0)))
-                polygon = [(0,0),(w,0),(w,l),(0,l)]
+                w = float(rd.get("width", rd.get("room_width", 10.0)))
+                l = float(rd.get("length", rd.get("room_length", 8.0)))
+                polygon = [(0, 0), (w, 0), (w, l), (0, l)]
 
-            result.append(BIMRoom(
-                room_id=str(rd.get("room_id", str(uuid.uuid4()))),
-                name=str(rd.get("name", rd.get("room_id", "Room"))),
-                level_id=str(rd.get("level_id", rd.get("floor_id", "L-01"))),
-                area_m2=float(rd.get("area_m2",
-                              rd.get("width", 10.0) * rd.get("length", 8.0))),
-                ceiling_height_m=float(rd.get("ceiling_height",
-                                       rd.get("ceiling_height_m", 3.0))),
-                polygon=[(float(p[0]), float(p[1])) for p in polygon],
-                occupancy_type=str(rd.get("occupancy_type", "office")),
-                source="json",
-            ))
+            result.append(
+                BIMRoom(
+                    room_id=str(rd.get("room_id", str(uuid.uuid4()))),
+                    name=str(rd.get("name", rd.get("room_id", "Room"))),
+                    level_id=str(rd.get("level_id", rd.get("floor_id", "L-01"))),
+                    area_m2=float(rd.get("area_m2", rd.get("width", 10.0) * rd.get("length", 8.0))),
+                    ceiling_height_m=float(rd.get("ceiling_height", rd.get("ceiling_height_m", 3.0))),
+                    polygon=[(float(p[0]), float(p[1])) for p in polygon],
+                    occupancy_type=str(rd.get("occupancy_type", "office")),
+                    source="json",
+                )
+            )
         return result
 
     def _extract_dxf(self, filepath: str) -> List[BIMRoom]:
         """Extract rooms from DXF using existing streaming parser."""
         try:
             from fireai.core.streaming_dwg_parser import StreamingDXFParser
+
             parser = StreamingDXFParser(
                 scale_factor=0.001,  # mm -> m
                 min_area_m2=1.0,
             )
             rooms: List[BIMRoom] = []
             for i, streamed in enumerate(parser.stream_file(filepath)):
-                rooms.append(BIMRoom(
-                    room_id=streamed.room_id,
-                    name=f"Room-{i+1:04d}",
-                    level_id=streamed.floor_id,
-                    area_m2=streamed.area_m2,
-                    ceiling_height_m=3.0,   # DXF has no height info
-                    polygon=streamed.polygon,
-                    source="dxf",
-                ))
+                rooms.append(
+                    BIMRoom(
+                        room_id=streamed.room_id,
+                        name=f"Room-{i + 1:04d}",
+                        level_id=streamed.floor_id,
+                        area_m2=streamed.area_m2,
+                        ceiling_height_m=3.0,  # DXF has no height info
+                        polygon=streamed.polygon,
+                        source="dxf",
+                    )
+                )
             return rooms
         except ImportError:
             raise ImportError(
@@ -368,6 +372,7 @@ def generate_dynamo_script(output_path: str = "fireai_room_export.dyn") -> str:
 # BIM Sync Orchestrator
 # ---------------------------------------------------------------------------
 
+
 class BIMSyncOrchestrator:
     """
     SURGICAL FIX: Ties everything together.
@@ -384,8 +389,8 @@ class BIMSyncOrchestrator:
 
     def sync_from_source(
         self,
-        source:    str,
-        analyser:  Any = None,   # FloorAnalyser
+        source: str,
+        analyser: Any = None,  # FloorAnalyser
     ) -> Dict[str, Any]:
         """
         Extract rooms -> analyse -> return results.
@@ -404,29 +409,29 @@ class BIMSyncOrchestrator:
         if analyser is None:
             try:
                 from fireai.core.floor_analyser import FloorAnalyser
+
                 analyser = FloorAnalyser()
             except ImportError:
                 return {
-                    "status":     "error",
-                    "error":      "FloorAnalyser not available",
-                    "rooms":      room_dicts,
-                    "source":     source,
+                    "status": "error",
+                    "error": "FloorAnalyser not available",
+                    "rooms": room_dicts,
+                    "source": source,
                     "bridge_mode": self._bridge.mode,
                 }
 
         report = analyser.analyse(room_dicts)
 
         return {
-            "status":          "success",
-            "source":          source,
-            "bridge_mode":     self._bridge.mode,
+            "status": "success",
+            "source": source,
+            "bridge_mode": self._bridge.mode,
             "rooms_extracted": len(bim_rooms),
-            "report":          report,
-            "note":            (
+            "report": report,
+            "note": (
                 "Live Revit sync active — results reflect current model."
                 if self._bridge.is_live
-                else f"File-based sync from {source}. "
-                     "For live sync, run inside Revit with API access."
+                else f"File-based sync from {source}. For live sync, run inside Revit with API access."
             ),
         }
 
@@ -435,13 +440,9 @@ class BIMSyncOrchestrator:
         mode = self._bridge.mode
         guides = {
             "revit_api": (
-                "Revit API detected. Live sync available.\n"
-                "Run fireai from within Revit using pyRevit or Dynamo."
+                "Revit API detected. Live sync available.\nRun fireai from within Revit using pyRevit or Dynamo."
             ),
-            "pyrevit": (
-                "pyRevit detected. Live sync available.\n"
-                "Use the FireAI pyRevit extension."
-            ),
+            "pyrevit": ("pyRevit detected. Live sync available.\nUse the FireAI pyRevit extension."),
             "ifcopenshell": (
                 "ifcopenshell available. IFC file sync available.\n"
                 "Export IFC from Revit: File -> Export -> IFC -> IFC 2x3\n"

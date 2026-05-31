@@ -39,16 +39,16 @@ import logging
 import math
 import time
 import traceback
-import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 # V61: Late import for cable routing (optional, may not be available)
 try:
-    from fireai.core.cable_router import CableRouter, CableRoute
+    from fireai.core.cable_router import CableRoute, CableRouter
     from fireai.core.cable_routing_engine import WireGauge
+
     _CABLE_ROUTER_AVAILABLE = True
 except ImportError:
     _CABLE_ROUTER_AVAILABLE = False
@@ -56,6 +56,7 @@ except ImportError:
 
 try:
     from fireai.core.constraint_engine import ConstraintEngine
+
     _CONSTRAINT_ENGINE_AVAILABLE = True
 except ImportError:
     _CONSTRAINT_ENGINE_AVAILABLE = False
@@ -63,26 +64,22 @@ except ImportError:
 from fireai.core.contracts_validation import ContractViolation, validate_room_input
 from fireai.core.nfpa72_engine import (
     BatteryResult,
-    VoltageDropResult,
     calculate_battery,
     calculate_voltage_drop,
     estimate_detector_count,
     get_detector_spacing,
     verify_fault_isolator_placement,
 )
-from fireai.core.safety_assurance import (
-    EngineeringEvidencePackage,
-    SafetyTier,
-    apply_fail_safe,
-    classify_safety_tier,
-)
-from fireai.core.release_gates import verify_and_evaluate, describe_blockers
+from fireai.core.release_gates import verify_and_evaluate
 
 # Rules Engine integration (declarative NFPA 72 compliance)
 from fireai.core.rules_engine.compliance_bridge import (
     NFPA72ComplianceChecker,
-    ComplianceReport,
-    results_to_report,
+)
+from fireai.core.safety_assurance import (
+    EngineeringEvidencePackage,
+    SafetyTier,
+    classify_safety_tier,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,15 +87,17 @@ logger = logging.getLogger(__name__)
 
 # ─── Stage Results ────────────────────────────────────────────────────────────
 
+
 @dataclass
 class StageResult:
     """Result from a single pipeline stage."""
-    stage_name:    str
-    success:       bool
-    duration_ms:   float
-    data:          Dict[str, Any] = field(default_factory=dict)
-    errors:        List[str]      = field(default_factory=list)
-    warnings:      List[str]      = field(default_factory=list)
+
+    stage_name: str
+    success: bool
+    duration_ms: float
+    data: Dict[str, Any] = field(default_factory=dict)
+    errors: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -109,63 +108,64 @@ class PipelineResult:
     All fields have safe defaults — never raises on access.
     Caller checks result.success and result.release_status before using values.
     """
-    run_id:         str
-    room_id:        str
-    success:        bool
-    release_status: str          # "green" | "blocked"
-    safety_tier:    str          # SafetyTier value
-    coverage_pct:   float        # 0.0 – 100.0
+
+    run_id: str
+    room_id: str
+    success: bool
+    release_status: str  # "green" | "blocked"
+    safety_tier: str  # SafetyTier value
+    coverage_pct: float  # 0.0 – 100.0
     detector_count: int
     detector_radius_m: float
-    max_spacing_m:  float
+    max_spacing_m: float
     detector_positions: List[Tuple[float, float]]
-    wall_violations:    int
-    battery:        Optional[Dict]
-    voltage_drop:   Optional[Dict]
+    wall_violations: int
+    battery: Optional[Dict]
+    voltage_drop: Optional[Dict]
     fault_isolation: Optional[Dict]
-    stages:         List[StageResult]
-    release_gates:  Dict[str, Any]
-    evidence_hash:  str
-    total_ms:       float
-    errors:         List[str]
-    warnings:       List[str]
+    stages: List[StageResult]
+    release_gates: Dict[str, Any]
+    evidence_hash: str
+    total_ms: float
+    errors: List[str]
+    warnings: List[str]
     nfpa_references: List[str]
-    timestamp:      str
-    cable_routing:   Optional[Dict] = None  # V61: Cable routing schedule summary
-    qomn_audit:      Optional[Dict] = None  # QOMN Layer 4 audit log (tamper-evident)
+    timestamp: str
+    cable_routing: Optional[Dict] = None  # V61: Cable routing schedule summary
+    qomn_audit: Optional[Dict] = None  # QOMN Layer 4 audit log (tamper-evident)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "run_id":            self.run_id,
-            "room_id":           self.room_id,
-            "success":           self.success,
-            "release_status":    self.release_status,
-            "safety_tier":       self.safety_tier,
-            "coverage_pct":      self.coverage_pct,
-            "detector_count":    self.detector_count,
+            "run_id": self.run_id,
+            "room_id": self.room_id,
+            "success": self.success,
+            "release_status": self.release_status,
+            "safety_tier": self.safety_tier,
+            "coverage_pct": self.coverage_pct,
+            "detector_count": self.detector_count,
             "detector_radius_m": self.detector_radius_m,
-            "max_spacing_m":     self.max_spacing_m,
+            "max_spacing_m": self.max_spacing_m,
             "detector_positions": self.detector_positions,
-            "wall_violations":   self.wall_violations,
-            "battery":           self.battery,
-            "voltage_drop":      self.voltage_drop,
-            "fault_isolation":   self.fault_isolation,
-            "cable_routing":     self.cable_routing,
-            "qomn_audit":        self.qomn_audit,
-            "release_gates":     self.release_gates,
-            "evidence_hash":     self.evidence_hash,
-            "total_ms":          self.total_ms,
-            "errors":            self.errors,
-            "warnings":          self.warnings,
-            "nfpa_references":   self.nfpa_references,
-            "timestamp":         self.timestamp,
+            "wall_violations": self.wall_violations,
+            "battery": self.battery,
+            "voltage_drop": self.voltage_drop,
+            "fault_isolation": self.fault_isolation,
+            "cable_routing": self.cable_routing,
+            "qomn_audit": self.qomn_audit,
+            "release_gates": self.release_gates,
+            "evidence_hash": self.evidence_hash,
+            "total_ms": self.total_ms,
+            "errors": self.errors,
+            "warnings": self.warnings,
+            "nfpa_references": self.nfpa_references,
+            "timestamp": self.timestamp,
             "stages": [
                 {
-                    "stage":      s.stage_name,
-                    "success":    s.success,
+                    "stage": s.stage_name,
+                    "success": s.success,
                     "duration_ms": s.duration_ms,
-                    "errors":     s.errors,
-                    "warnings":   s.warnings,
+                    "errors": s.errors,
+                    "warnings": s.warnings,
                     **s.data,
                 }
                 for s in self.stages
@@ -178,6 +178,7 @@ class PipelineResult:
 
 # ─── Stage Helpers ────────────────────────────────────────────────────────────
 
+
 def _run_stage(name: str, fn, *args, **kwargs) -> StageResult:
     """Execute a pipeline stage, catching all exceptions."""
     t0 = time.perf_counter()
@@ -185,45 +186,46 @@ def _run_stage(name: str, fn, *args, **kwargs) -> StageResult:
         result_data = fn(*args, **kwargs)
         ms = (time.perf_counter() - t0) * 1000.0
         return StageResult(
-            stage_name  = name,
-            success     = True,
-            duration_ms = round(ms, 2),
-            data        = result_data if isinstance(result_data, dict) else {"result": result_data},
+            stage_name=name,
+            success=True,
+            duration_ms=round(ms, 2),
+            data=result_data if isinstance(result_data, dict) else {"result": result_data},
         )
     except ContractViolation as exc:
         ms = (time.perf_counter() - t0) * 1000.0
         logger.error("Stage %s CONTRACT VIOLATION: %s", name, exc)
         return StageResult(
-            stage_name  = name,
-            success     = False,
-            duration_ms = round(ms, 2),
-            errors      = [f"CONTRACT_VIOLATION: {exc}"],
+            stage_name=name,
+            success=False,
+            duration_ms=round(ms, 2),
+            errors=[f"CONTRACT_VIOLATION: {exc}"],
         )
     except Exception as exc:
         ms = (time.perf_counter() - t0) * 1000.0
         logger.error("Stage %s FAILED: %s\n%s", name, exc, traceback.format_exc())
         return StageResult(
-            stage_name  = name,
-            success     = False,
-            duration_ms = round(ms, 2),
-            errors      = [f"{type(exc).__name__}: {exc}"],
+            stage_name=name,
+            success=False,
+            duration_ms=round(ms, 2),
+            errors=[f"{type(exc).__name__}: {exc}"],
         )
 
 
 # ─── Stage Implementations ───────────────────────────────────────────────────
 
+
 def _stage0_contract(payload: Dict) -> Dict:
     """Validate input payload. Raises ContractViolation on failure."""
     validated = validate_room_input(payload)
     return {
-        "validated_room_id":    validated["room_id"],
-        "computed_area_m2":     validated["area_m2"],
-        "detector_type":        validated["detector_type"],
-        "ceiling_height_m":     validated["ceiling_height_m"],
-        "occupancy_type":       validated["occupancy_type"],
-        "ceiling_type":         validated["ceiling_type"],
-        "contract_warnings":    validated.get("_contract_warnings", []),
-        "validated_payload":    validated,
+        "validated_room_id": validated["room_id"],
+        "computed_area_m2": validated["area_m2"],
+        "detector_type": validated["detector_type"],
+        "ceiling_height_m": validated["ceiling_height_m"],
+        "occupancy_type": validated["occupancy_type"],
+        "ceiling_type": validated["ceiling_type"],
+        "contract_warnings": validated.get("_contract_warnings", []),
+        "validated_payload": validated,
     }
 
 
@@ -232,10 +234,10 @@ def _stage05_qomn_physics_guard(
     area_m2: float,
     detector_type: str,
     standby_current_a: Optional[float] = None,
-    alarm_current_a:   Optional[float] = None,
-    circuit_length_m:  Optional[float] = None,
-    awg_gauge:         str = "14",
-    supply_voltage_v:  float = 24.0,
+    alarm_current_a: Optional[float] = None,
+    circuit_length_m: Optional[float] = None,
+    awg_gauge: str = "14",
+    supply_voltage_v: float = 24.0,
 ) -> Dict:
     """Stage 0.5 — QOMN-FIRE deterministic physics guard + Layer 1/2/3/4 pipeline.
 
@@ -254,7 +256,7 @@ def _stage05_qomn_physics_guard(
         cross_check_passed, physics_guard_passed.
     """
     try:
-        from fireai.core.qomn_kernel import QOMNKernel, PhysicsGuardError
+        from fireai.core.qomn_kernel import PhysicsGuardError, QOMNKernel
 
         kernel = QOMNKernel()
 
@@ -265,6 +267,7 @@ def _stage05_qomn_physics_guard(
         # Guard: ceiling height
         try:
             from fireai.core.qomn_kernel import guard_ceiling_height_m
+
             guard_ceiling_height_m(ceiling_height_m)
         except PhysicsGuardError as e:
             physics_guard_passed = False
@@ -273,6 +276,7 @@ def _stage05_qomn_physics_guard(
         # Guard: area
         try:
             from fireai.core.qomn_kernel import guard_area_m2
+
             guard_area_m2(area_m2)
         except PhysicsGuardError as e:
             physics_guard_passed = False
@@ -280,8 +284,8 @@ def _stage05_qomn_physics_guard(
 
         # QOMN spacing computation (L0→L1→L2→L3→L4)
         qomn_spacing = kernel.smoke_detector_spacing(ceiling_height_m)
-        qomn_radius  = qomn_spacing["coverage_radius_m"]
-        qomn_s       = qomn_spacing["listed_spacing_m"]
+        qomn_radius = qomn_spacing["coverage_radius_m"]
+        qomn_s = qomn_spacing["listed_spacing_m"]
 
         # Optional: battery via QOMN
         qomn_battery = None
@@ -295,28 +299,26 @@ def _stage05_qomn_physics_guard(
         qomn_voltage = None
         if circuit_length_m is not None and alarm_current_a is not None:
             try:
-                qomn_voltage = kernel.voltage_drop(
-                    alarm_current_a, circuit_length_m, awg_gauge, supply_voltage_v
-                )
+                qomn_voltage = kernel.voltage_drop(alarm_current_a, circuit_length_m, awg_gauge, supply_voltage_v)
             except Exception as ve:
                 guard_errors.append(f"QOMN voltage guard: {ve}")
 
         # Export audit log
         audit_export = kernel.get_audit_log()
-        chain_valid  = kernel.verify_audit_integrity()
+        chain_valid = kernel.verify_audit_integrity()
 
         return {
-            "physics_guard_passed":  physics_guard_passed,
-            "guard_errors":          guard_errors,
-            "qomn_spacing_m":        qomn_s,
-            "qomn_radius_m":         qomn_radius,
-            "qomn_nfpa_section":     qomn_spacing.get("nfpa_section", "NFPA 72-2022"),
+            "physics_guard_passed": physics_guard_passed,
+            "guard_errors": guard_errors,
+            "qomn_spacing_m": qomn_s,
+            "qomn_radius_m": qomn_radius,
+            "qomn_nfpa_section": qomn_spacing.get("nfpa_section", "NFPA 72-2022"),
             "qomn_computation_hash": qomn_spacing.get("computation_hash", ""),
-            "qomn_battery":          qomn_battery,
-            "qomn_voltage":          qomn_voltage,
-            "audit_entries":         audit_export.get("total_entries", 0),
-            "chain_valid":           chain_valid,
-            "audit_log":             audit_export,
+            "qomn_battery": qomn_battery,
+            "qomn_voltage": qomn_voltage,
+            "audit_entries": audit_export.get("total_entries", 0),
+            "chain_valid": chain_valid,
+            "audit_log": audit_export,
         }
 
     except ImportError:
@@ -325,23 +327,23 @@ def _stage05_qomn_physics_guard(
         # A missing physics check is a FAIL-SAFE condition per agent.md Rule 5.
         return {
             "physics_guard_passed": False,
-            "guard_errors":         ["QOMN kernel not available — physics guard CANNOT be performed"],
-            "qomn_spacing_m":       None,
-            "qomn_radius_m":        None,
-            "audit_entries":        0,
-            "chain_valid":          False,
-            "audit_log":            None,
-            "note":                 "QOMN kernel not available — physics guard FAILED (fail-safe)",
+            "guard_errors": ["QOMN kernel not available — physics guard CANNOT be performed"],
+            "qomn_spacing_m": None,
+            "qomn_radius_m": None,
+            "audit_entries": 0,
+            "chain_valid": False,
+            "audit_log": None,
+            "note": "QOMN kernel not available — physics guard FAILED (fail-safe)",
         }
     except Exception as exc:
         return {
             "physics_guard_passed": False,
-            "guard_errors":         [str(exc)],
-            "qomn_spacing_m":       None,
-            "qomn_radius_m":        None,
-            "audit_entries":        0,
-            "chain_valid":          False,
-            "audit_log":            None,
+            "guard_errors": [str(exc)],
+            "qomn_spacing_m": None,
+            "qomn_radius_m": None,
+            "audit_entries": 0,
+            "chain_valid": False,
+            "audit_log": None,
         }
 
 
@@ -354,13 +356,13 @@ def _stage1_nfpa_spacing(
     spacing = get_detector_spacing(ceiling_height_m, detector_type)
     estimate = estimate_detector_count(room_area_m2, ceiling_height_m, detector_type)
     return {
-        "max_spacing_m":         spacing.max_spacing_m,
-        "coverage_radius_m":     spacing.coverage_radius_m,
-        "nfpa_section":          spacing.nfpa_section,
-        "formula":               spacing.formula,
-        "table_row_used":        spacing.table_row_used,
-        "estimated_min_count":   estimate["min_detector_count"],
-        "area_per_detector_m2":  estimate["area_per_detector_m2"],
+        "max_spacing_m": spacing.max_spacing_m,
+        "coverage_radius_m": spacing.coverage_radius_m,
+        "nfpa_section": spacing.nfpa_section,
+        "formula": spacing.formula,
+        "table_row_used": spacing.table_row_used,
+        "estimated_min_count": estimate["min_detector_count"],
+        "area_per_detector_m2": estimate["area_per_detector_m2"],
     }
 
 
@@ -375,8 +377,8 @@ def _stage2_placement(
     Falls back to geometric estimate if optimizer is not available.
     This is the bridge that fixes W-01: import failure → 0% coverage.
     """
-    polygon  = validated_payload["room_polygon"]
-    area_m2  = validated_payload["area_m2"]
+    polygon = validated_payload["room_polygon"]
+    area_m2 = validated_payload["area_m2"]
 
     # Try the real optimizer first
     try:
@@ -385,32 +387,34 @@ def _stage2_placement(
 
         class _RoomSpec:
             """Minimal room spec compatible with DensityOptimizer."""
+
             def __init__(self, payload, radius):
-                self.room_id   = payload["room_id"]
-                self.polygon   = polygon
-                self.area_m2   = area_m2
+                self.room_id = payload["room_id"]
+                self.polygon = polygon
+                self.area_m2 = area_m2
                 self.ceiling_height_m = payload["ceiling_height_m"]
-                self.coverage_radius  = radius
+                self.coverage_radius = radius
 
         optimizer = DensityOptimizer()
-        layout    = optimizer.optimize(_RoomSpec(validated_payload, coverage_radius_m))
+        layout = optimizer.optimize(_RoomSpec(validated_payload, coverage_radius_m))
 
         if layout is None:
             raise RuntimeError("DensityOptimizer returned None")
 
         return {
-            "method":            "DensityOptimizer",
+            "method": "DensityOptimizer",
             "detector_positions": list(layout.detector_positions),
-            "detector_count":    len(layout.detector_positions),
-            "coverage_pct":      float(layout.coverage_pct),
-            "proof_valid":       bool(getattr(layout, "proof_valid", False)),
-            "fallback_used":     False,
+            "detector_count": len(layout.detector_positions),
+            "coverage_pct": float(layout.coverage_pct),
+            "proof_valid": bool(getattr(layout, "proof_valid", False)),
+            "fallback_used": False,
         }
 
     except ImportError as exc:
         logger.warning(
             "DensityOptimizer import failed (%s) — using geometric fallback. "
-            "Fix the import path to restore full optimization.", exc
+            "Fix the import path to restore full optimization.",
+            exc,
         )
     except Exception as exc:
         logger.warning("DensityOptimizer failed (%s) — using geometric fallback.", exc)
@@ -421,13 +425,13 @@ def _stage2_placement(
     positions = _hex_grid_placement(polygon, coverage_radius_m)
 
     return {
-        "method":             "geometric_hex_fallback",
-        "detector_positions":  positions,
-        "detector_count":      len(positions),
-        "coverage_pct":        _estimate_coverage(positions, polygon, coverage_radius_m),
-        "proof_valid":         False,
-        "fallback_used":       True,
-        "fallback_reason":     "DensityOptimizer unavailable",
+        "method": "geometric_hex_fallback",
+        "detector_positions": positions,
+        "detector_count": len(positions),
+        "coverage_pct": _estimate_coverage(positions, polygon, coverage_radius_m),
+        "proof_valid": False,
+        "fallback_used": True,
+        "fallback_reason": "DensityOptimizer unavailable",
     }
 
 
@@ -457,9 +461,9 @@ def _hex_grid_placement(
     # NFPA 72 §17.7.4.2.3.1: R = 0.7 × S. Full coverage requires adjacent
     # detector centers ≤ 2R apart. Hex packing factor: 2R × sin(60°).
     # Using 0.85×2R for slight conservative overlap at boundaries.
-    S   = radius_m * 2.0 * 0.866 * 0.85   # ~1.47×R — proper hex packing
-    row_h = S * (3 ** 0.5) / 2.0          # Vertical distance between hex rows
-    wall  = 0.1                     # NFPA 72 §17.7.4.2.3.1 wall min
+    S = radius_m * 2.0 * 0.866 * 0.85  # ~1.47×R — proper hex packing
+    row_h = S * (3**0.5) / 2.0  # Vertical distance between hex rows
+    wall = 0.1  # NFPA 72 §17.7.4.2.3.1 wall min
 
     positions: List[Tuple[float, float]] = []
     row = 0
@@ -597,15 +601,16 @@ def _stage3_verify_coverage(
     # Try ExactCoverageEngine first (Shapely-based, rigorous)
     try:
         from fireai.core.spatial_engine.exact_coverage import ExactCoverageEngine
+
         engine = ExactCoverageEngine()
         result = engine.verify(polygon, detector_positions, coverage_radius_m, room_id)
         return {
-            "engine":         "ExactCoverageEngine",
-            "coverage_pct":    result.coverage_pct,
-            "room_area_m2":    result.room_area_m2,
+            "engine": "ExactCoverageEngine",
+            "coverage_pct": result.coverage_pct,
+            "room_area_m2": result.room_area_m2,
             "covered_area_m2": result.covered_area_m2,
-            "is_compliant":    result.is_compliant,
-            "method_used":     result.method_used,
+            "is_compliant": result.is_compliant,
+            "method_used": result.method_used,
         }
     except ImportError:
         logger.warning("ExactCoverageEngine unavailable — using grid estimate")
@@ -615,12 +620,12 @@ def _stage3_verify_coverage(
     # Fallback: grid estimate (always returns a number, never 0% if detectors exist)
     pct = _estimate_coverage(detector_positions, polygon, coverage_radius_m)
     return {
-        "engine":          "grid_estimate_fallback",
-        "coverage_pct":     pct,
-        "room_area_m2":     None,
-        "covered_area_m2":  None,
-        "is_compliant":     pct >= 99.0,
-        "method_used":      "grid_sampling_adaptive",
+        "engine": "grid_estimate_fallback",
+        "coverage_pct": pct,
+        "room_area_m2": None,
+        "covered_area_m2": None,
+        "is_compliant": pct >= 99.0,
+        "method_used": "grid_sampling_adaptive",
     }
 
 
@@ -655,7 +660,7 @@ def _stage35_rules_compliance(
         room_id = validated_payload.get("room_id", "UNKNOWN")
         ceiling_h = validated_payload.get("ceiling_height_m", 3.0)
         det_type = validated_payload.get("detector_type", "smoke")
-        room_area = validated_payload.get("area_m2", None)
+        room_area = validated_payload.get("area_m2")
         is_corridor = validated_payload.get("ceiling_type", "") == "corridor"
 
         checker.add_room(
@@ -671,7 +676,7 @@ def _stage35_rules_compliance(
         wall_max = spacing_m / 2.0
         for i, (x, y) in enumerate(detector_positions):
             checker.add_detector(
-                detector_id=f"{room_id}-D{i+1}",
+                detector_id=f"{room_id}-D{i + 1}",
                 room_id=room_id,
                 detector_type=det_type,
                 x=x,
@@ -706,28 +711,23 @@ def _stage35_rules_compliance(
         report = checker.evaluate()
 
         return {
-            "engine":             "NFPA72ComplianceChecker",
-            "is_safe":            report.is_safe,
-            "critical_issues":    len(report.critical_issues),
-            "violations":         len(report.violations),
-            "compliance_checks":  len(report.compliance_checks),
-            "nfpa_references":    report.nfpa_references,
-            "audit_rules_fired":  report.audit_summary.get("rules_fired", 0),
-            "audit_total_facts":  report.audit_summary.get("total_facts", 0),
-            "critical_details":   [
-                {"rule_id": c["rule_id"], "message": c["message"]}
-                for c in report.critical_issues
-            ],
-            "violation_details":  [
-                {"rule_id": v["rule_id"], "message": v["message"]}
-                for v in report.violations
-            ],
+            "engine": "NFPA72ComplianceChecker",
+            "is_safe": report.is_safe,
+            "critical_issues": len(report.critical_issues),
+            "violations": len(report.violations),
+            "compliance_checks": len(report.compliance_checks),
+            "nfpa_references": report.nfpa_references,
+            "audit_rules_fired": report.audit_summary.get("rules_fired", 0),
+            "audit_total_facts": report.audit_summary.get("total_facts", 0),
+            "critical_details": [{"rule_id": c["rule_id"], "message": c["message"]} for c in report.critical_issues],
+            "violation_details": [{"rule_id": v["rule_id"], "message": v["message"]} for v in report.violations],
         }
     except Exception as exc:
         logger.warning(
             "Rules Engine compliance check failed (%s) — continuing "
             "without declarative rules. This is non-blocking but should "
-            "be investigated.", exc
+            "be investigated.",
+            exc,
         )
         # SAFETY FIX (CRITICAL-10): Replace sentinel -1 values with 0.
         # Sentinel -1 values would cause TypeError if any downstream code
@@ -735,11 +735,11 @@ def _stage35_rules_compliance(
         # the safe conservative default — it means "we couldn't evaluate,
         # so assume unsafe."
         return {
-            "engine":             "NFPA72ComplianceChecker",
-            "is_safe":            False,  # Conservative: assume unsafe
-            "critical_issues":    0,
-            "violations":         0,
-            "error":              str(exc),
+            "engine": "NFPA72ComplianceChecker",
+            "is_safe": False,  # Conservative: assume unsafe
+            "critical_issues": 0,
+            "violations": 0,
+            "error": str(exc),
         }
 
 
@@ -751,14 +751,14 @@ def _stage4_safety_classify(
 ) -> Dict:
     """Classify safety tier."""
     tier = classify_safety_tier(
-        coverage_pct   = coverage_pct,
-        proof_valid    = proof_valid,
-        fallback_used  = fallback_used,
-        wall_violations = wall_violations,
+        coverage_pct=coverage_pct,
+        proof_valid=proof_valid,
+        fallback_used=fallback_used,
+        wall_violations=wall_violations,
     )
     return {
-        "safety_tier":         tier.value,
-        "can_submit":          tier in (SafetyTier.PROOF_VERIFIED, SafetyTier.PROOF_VALID),
+        "safety_tier": tier.value,
+        "can_submit": tier in (SafetyTier.PROOF_VERIFIED, SafetyTier.PROOF_VALID),
         "requires_fpe_review": tier in (SafetyTier.PROOF_VALID, SafetyTier.FALLBACK_USED),
     }
 
@@ -776,34 +776,34 @@ def _stage5_release_gates(
     """Evaluate all 8 release gates."""
     nfpa_gate_result = {
         "is_compliant": nfpa_result.get("is_compliant", False),
-        "violations":   nfpa_result.get("violations", None),  # None = unknown (blocked)
+        "violations": nfpa_result.get("violations"),  # None = unknown (blocked)
         "coverage_pct": coverage_pct,
         "wall_violations": wall_violations,
-        "safety_tier":  safety_tier,
+        "safety_tier": safety_tier,
     }
 
     # Build battery result dict if we have it
     battery_dict = None
     if battery_result is not None:
         battery_dict = {
-            "required_ah":  battery_result.required_ah,
+            "required_ah": battery_result.required_ah,
             "installed_ah": battery_result.installed_ah,
-            "is_adequate":  battery_result.is_adequate,
+            "is_adequate": battery_result.is_adequate,
         }
 
     # Simple drift check: no IFC sync in this flow = no drift data
     drift_records: List[Dict] = []
 
     gate_result = verify_and_evaluate(
-        input_payload      = validated_payload,
-        nfpa_results       = nfpa_gate_result,
-        evidence_envelope  = None,     # Built in stage 6
-        drift_records      = drift_records,
-        loop_data          = loop_data,
-        aset_rset_result   = None,     # Not computed in basic pipeline
-        battery_result     = battery_dict,
-        stale_detector_ids = [],       # Fresh run — no stale detectors
-        evidence_secret_key = None,    # No HMAC key in basic pipeline
+        input_payload=validated_payload,
+        nfpa_results=nfpa_gate_result,
+        evidence_envelope=None,  # Built in stage 6
+        drift_records=drift_records,
+        loop_data=loop_data,
+        aset_rset_result=None,  # Not computed in basic pipeline
+        battery_result=battery_dict,
+        stale_detector_ids=[],  # Fresh run — no stale detectors
+        evidence_secret_key=None,  # No HMAC key in basic pipeline
     )
 
     return gate_result
@@ -830,23 +830,23 @@ def _stage6_evidence(
         nfpa_refs.append("NFPA 72-2022 §17.7.4.2.3.1 (wall violation)")
 
     pkg = EngineeringEvidencePackage(
-        package_id         = run_id,
-        room_id            = validated_payload["room_id"],
-        room_polygon       = validated_payload["room_polygon"],
-        room_area_m2       = validated_payload["area_m2"],
-        ceiling_height_m   = validated_payload["ceiling_height_m"],
-        ceiling_type       = validated_payload["ceiling_type"],
-        occupancy_type     = validated_payload["occupancy_type"],
-        detector_positions = detector_positions,
-        detector_type      = validated_payload["detector_type"],
-        spacing_m          = spacing_result.get("max_spacing_m", 0),
-        coverage_radius_m  = spacing_result.get("coverage_radius_m", 0),
-        coverage_pct       = coverage_pct,
-        wall_violations    = wall_violations,
-        nfpa_references    = nfpa_refs,
-        compliance_status  = compliance_status,
-        proof_valid        = proof_valid,
-        safety_tier        = safety_tier,
+        package_id=run_id,
+        room_id=validated_payload["room_id"],
+        room_polygon=validated_payload["room_polygon"],
+        room_area_m2=validated_payload["area_m2"],
+        ceiling_height_m=validated_payload["ceiling_height_m"],
+        ceiling_type=validated_payload["ceiling_type"],
+        occupancy_type=validated_payload["occupancy_type"],
+        detector_positions=detector_positions,
+        detector_type=validated_payload["detector_type"],
+        spacing_m=spacing_result.get("max_spacing_m", 0),
+        coverage_radius_m=spacing_result.get("coverage_radius_m", 0),
+        coverage_pct=coverage_pct,
+        wall_violations=wall_violations,
+        nfpa_references=nfpa_refs,
+        compliance_status=compliance_status,
+        proof_valid=proof_valid,
+        safety_tier=safety_tier,
     )
 
     integrity_hash = pkg.compute_integrity_hash()
@@ -859,17 +859,18 @@ def _stage6_evidence(
 
 # ─── Main Pipeline ────────────────────────────────────────────────────────────
 
+
 def analyze_room(
     payload: Dict[str, Any],
     *,
     standby_current_a: Optional[float] = None,
-    alarm_current_a:   Optional[float] = None,
-    circuit_length_m:  Optional[float] = None,
-    awg_gauge:         str = "14",
-    loop_data:         Optional[Dict] = None,
+    alarm_current_a: Optional[float] = None,
+    circuit_length_m: Optional[float] = None,
+    awg_gauge: str = "14",
+    loop_data: Optional[Dict] = None,
     ambient_temperature_c: float = 20.0,
     cable_connections: Optional[List[Dict[str, Any]]] = None,
-    building_model:    Optional[Any] = None,
+    building_model: Optional[Any] = None,
 ) -> PipelineResult:
     """
     Run the complete FireAI analysis pipeline for one room.
@@ -897,12 +898,12 @@ def analyze_room(
     _content_hash = hashlib.sha256(_input_canonical.encode()).hexdigest()
     # Format as UUID-like string for backward compatibility with tests
     # and consumers expecting UUID format: 8-4-4-4-12
-    run_id  = (
+    run_id = (
         f"{_content_hash[:8]}-{_content_hash[8:12]}-{_content_hash[12:16]}-"
         f"{_content_hash[16:20]}-{_content_hash[20:32]}"
     )
     stages: List[StageResult] = []
-    errors: List[str]  = []
+    errors: List[str] = []
     warnings: List[str] = []
 
     # ── Stage 0: Contract Validation ─────────────────────────────────────────
@@ -912,12 +913,12 @@ def analyze_room(
         errors.extend(s0.errors)
         return _failed_result(run_id, payload, stages, errors, warnings, t_total)
 
-    validated   = s0.data["validated_payload"]
-    room_id     = s0.data["validated_room_id"]
-    ceiling_h   = s0.data["ceiling_height_m"]
-    det_type    = s0.data["detector_type"]
-    area_m2     = s0.data["computed_area_m2"]
-    polygon     = validated["room_polygon"]
+    validated = s0.data["validated_payload"]
+    room_id = s0.data["validated_room_id"]
+    ceiling_h = s0.data["ceiling_height_m"]
+    det_type = s0.data["detector_type"]
+    area_m2 = s0.data["computed_area_m2"]
+    polygon = validated["room_polygon"]
     warnings.extend(s0.data.get("contract_warnings", []))
 
     # ── Stage 0.5: QOMN Physics Guard ──────────────────────────────────────────
@@ -926,8 +927,13 @@ def analyze_room(
     s05 = _run_stage(
         "S0.5_qomn_physics_guard",
         _stage05_qomn_physics_guard,
-        ceiling_h, area_m2, det_type,
-        standby_current_a, alarm_current_a, circuit_length_m, awg_gauge,
+        ceiling_h,
+        area_m2,
+        det_type,
+        standby_current_a,
+        alarm_current_a,
+        circuit_length_m,
+        awg_gauge,
     )
     stages.append(s05)
     qomn_audit = s05.data.get("audit_log") if s05.success else None
@@ -945,7 +951,7 @@ def analyze_room(
         errors.extend(s1.errors)
         return _failed_result(run_id, payload, stages, errors, warnings, t_total, room_id=room_id)
 
-    radius_m  = s1.data["coverage_radius_m"]
+    radius_m = s1.data["coverage_radius_m"]
     spacing_m = s1.data["max_spacing_m"]
 
     # ── Stage 2: Detector Placement ───────────────────────────────────────────
@@ -954,24 +960,28 @@ def analyze_room(
     if not s2.success:
         errors.extend(s2.errors)
         # Placement failure is not terminal — use estimate
-        positions    = []
+        positions = []
         coverage_pct = 0.0
-        proof_valid  = False
-        fallback     = True
+        proof_valid = False
+        fallback = True
         warnings.append("Placement failed — coverage cannot be verified")
     else:
-        positions    = s2.data["detector_positions"]
+        positions = s2.data["detector_positions"]
         coverage_pct = s2.data["coverage_pct"]
-        proof_valid  = s2.data["proof_valid"]
-        fallback     = s2.data["fallback_used"]
+        proof_valid = s2.data["proof_valid"]
+        fallback = s2.data["fallback_used"]
         if s2.data.get("fallback_reason"):
             warnings.append(f"Placement fallback: {s2.data['fallback_reason']}")
 
     # ── Stage 3: Coverage Verification ───────────────────────────────────────
     if positions:
         s3 = _run_stage(
-            "S3_coverage", _stage3_verify_coverage,
-            positions, polygon, radius_m, room_id,
+            "S3_coverage",
+            _stage3_verify_coverage,
+            positions,
+            polygon,
+            radius_m,
+            room_id,
         )
         stages.append(s3)
         if s3.success:
@@ -981,18 +991,26 @@ def analyze_room(
             errors.extend(s3.errors)
             warnings.append("Coverage verification failed — using optimizer estimate")
     else:
-        stages.append(StageResult(
-            stage_name="S3_coverage", success=False,
-            duration_ms=0, errors=["No detector positions to verify"],
-        ))
+        stages.append(
+            StageResult(
+                stage_name="S3_coverage",
+                success=False,
+                duration_ms=0,
+                errors=["No detector positions to verify"],
+            )
+        )
 
     # ── Wall Violations ───────────────────────────────────────────────────────
     wall_violations = _count_wall_violations(positions, polygon)
 
     # ── Stage 4: Safety Classification ───────────────────────────────────────
     s4 = _run_stage(
-        "S4_safety", _stage4_safety_classify,
-        coverage_pct, proof_valid, fallback, wall_violations,
+        "S4_safety",
+        _stage4_safety_classify,
+        coverage_pct,
+        proof_valid,
+        fallback,
+        wall_violations,
     )
     stages.append(s4)
     safety_tier = s4.data.get("safety_tier", SafetyTier.REJECTED.value) if s4.success else SafetyTier.REJECTED.value
@@ -1002,17 +1020,19 @@ def analyze_room(
     battery_dict: Optional[Dict] = None
     if standby_current_a is not None and alarm_current_a is not None:
         sb = _run_stage(
-            "S_battery", calculate_battery,
-            standby_current_a, alarm_current_a,
+            "S_battery",
+            calculate_battery,
+            standby_current_a,
+            alarm_current_a,
         )
         stages.append(sb)
         if sb.success and "result" in sb.data:
             battery_result = sb.data["result"]
-            battery_dict   = {
-                "required_ah":  battery_result.required_ah,
+            battery_dict = {
+                "required_ah": battery_result.required_ah,
                 "installed_ah": battery_result.installed_ah,
-                "is_adequate":  battery_result.is_adequate,
-                "formula":      battery_result.formula,
+                "is_adequate": battery_result.is_adequate,
+                "formula": battery_result.formula,
                 "nfpa_section": battery_result.nfpa_section,
             }
 
@@ -1020,19 +1040,22 @@ def analyze_room(
     voltage_dict: Optional[Dict] = None
     if circuit_length_m is not None and alarm_current_a is not None:
         sv = _run_stage(
-            "S_voltage_drop", calculate_voltage_drop,
-            alarm_current_a, circuit_length_m, awg_gauge,
+            "S_voltage_drop",
+            calculate_voltage_drop,
+            alarm_current_a,
+            circuit_length_m,
+            awg_gauge,
             ambient_temperature_c=ambient_temperature_c,
         )
         stages.append(sv)
         if sv.success and "result" in sv.data:
             vd = sv.data["result"]
             voltage_dict = {
-                "voltage_drop_v":   vd.voltage_drop_v,
+                "voltage_drop_v": vd.voltage_drop_v,
                 "voltage_drop_pct": vd.voltage_drop_pct,
-                "max_length_m":     vd.max_length_m,
-                "is_compliant":     vd.is_compliant,
-                "formula":          vd.formula,
+                "max_length_m": vd.max_length_m,
+                "is_compliant": vd.is_compliant,
+                "formula": vd.formula,
             }
             if not vd.is_compliant:
                 warnings.append(
@@ -1045,15 +1068,15 @@ def analyze_room(
     if loop_data is not None:
         devices = loop_data.get("devices", [])
         sf = _run_stage(
-            "S_fault_isolation", verify_fault_isolator_placement, devices,
+            "S_fault_isolation",
+            verify_fault_isolator_placement,
+            devices,
         )
         stages.append(sf)
         if sf.success:
             fault_isolation_dict = sf.data
             if not sf.data.get("compliant", False):
-                warnings.append(
-                    f"SLC fault isolation violations: {sf.data.get('violations', [])}"
-                )
+                warnings.append(f"SLC fault isolation violations: {sf.data.get('violations', [])}")
 
     # ── Optional: Cable Routing (V61) ──────────────────────────────────────
     cable_routing_dict: Optional[Dict] = None
@@ -1078,7 +1101,9 @@ def analyze_room(
             # conductor_operating_temp_c=75.0 per NEC practice for
             # THHN/THWN operating temperature.
             scr = _run_stage(
-                "S_cable_routing", router.route_all, cable_connections,
+                "S_cable_routing",
+                router.route_all,
+                cable_connections,
                 wire_gauge=WireGauge.AWG_14 if WireGauge is not None else None,
                 ps_voltage=24.0,
                 ambient_temp_c=max(ambient_temperature_c, 40.0),  # Min 40°C for Egypt
@@ -1090,16 +1115,14 @@ def analyze_room(
                 schedule = scr.data["result"]
                 cable_routing_dict = {
                     "total_cable_length_m": schedule.total_cable_length_m,
-                    "total_bends":         schedule.total_bends,
+                    "total_bends": schedule.total_bends,
                     "max_circuit_length_m": schedule.max_circuit_length_m,
-                    "compliance_summary":  schedule.compliance_summary,
-                    "num_routes":          len(schedule.routes),
-                    "computation_hash":    schedule.computation_hash,
+                    "compliance_summary": schedule.compliance_summary,
+                    "num_routes": len(schedule.routes),
+                    "computation_hash": schedule.computation_hash,
                 }
                 if schedule.compliance_summary != "ALL COMPLIANT":
-                    warnings.append(
-                        f"Cable routing violations: {schedule.compliance_summary}"
-                    )
+                    warnings.append(f"Cable routing violations: {schedule.compliance_summary}")
         except Exception as e:
             warnings.append(f"Cable routing stage failed: {e}")
             logger.warning("Cable routing stage failed: %s", e)
@@ -1109,9 +1132,15 @@ def analyze_room(
     # voltage drop, and fault isolation results are fed as facts
     # into the Rules Engine for integrated compliance checking.
     s35 = _run_stage(
-        "S35_rules_compliance", _stage35_rules_compliance,
-        validated, positions, radius_m, spacing_m,
-        battery_dict, voltage_dict, fault_isolation_dict,
+        "S35_rules_compliance",
+        _stage35_rules_compliance,
+        validated,
+        positions,
+        radius_m,
+        spacing_m,
+        battery_dict,
+        voltage_dict,
+        fault_isolation_dict,
     )
     stages.append(s35)
     rules_compliance_data = s35.data if s35.success else {}
@@ -1129,42 +1158,60 @@ def analyze_room(
     # ── Stage 5: Release Gates ────────────────────────────────────────────────
     nfpa_result = {
         "is_compliant": coverage_pct >= 99.0 and wall_violations == 0,
-        "violations":   (
-            [f"Coverage {coverage_pct:.2f}% < 99%"] if coverage_pct < 99.0 else []
-        ) + (
-            [f"{wall_violations} wall distance violation(s)"] if wall_violations > 0 else []
-        ),
+        "violations": ([f"Coverage {coverage_pct:.2f}% < 99%"] if coverage_pct < 99.0 else [])
+        + ([f"{wall_violations} wall distance violation(s)"] if wall_violations > 0 else []),
     }
 
     s5 = _run_stage(
-        "S5_release_gates", _stage5_release_gates,
-        validated, nfpa_result, coverage_pct, proof_valid,
-        safety_tier, wall_violations, battery_result, loop_data,
+        "S5_release_gates",
+        _stage5_release_gates,
+        validated,
+        nfpa_result,
+        coverage_pct,
+        proof_valid,
+        safety_tier,
+        wall_violations,
+        battery_result,
+        loop_data,
     )
     stages.append(s5)
-    gate_result = s5.data if s5.success else {
-        "release_status": "blocked",
-        "blockers": ["release_gate_evaluation_failed"],
-        "checks": {},
-        "gate_details": {},
-    }
+    gate_result = (
+        s5.data
+        if s5.success
+        else {
+            "release_status": "blocked",
+            "blockers": ["release_gate_evaluation_failed"],
+            "checks": {},
+            "gate_details": {},
+        }
+    )
     release_status = gate_result.get("release_status", "blocked")
 
     # ── Stage 6: Evidence Package ─────────────────────────────────────────────
     compliance_status = "APPROVED" if release_status == "green" else "REJECTED"
     s6 = _run_stage(
-        "S6_evidence", _stage6_evidence,
-        run_id, validated, positions, coverage_pct, proof_valid,
-        safety_tier, s1.data, wall_violations, compliance_status,
+        "S6_evidence",
+        _stage6_evidence,
+        run_id,
+        validated,
+        positions,
+        coverage_pct,
+        proof_valid,
+        safety_tier,
+        s1.data,
+        wall_violations,
+        compliance_status,
     )
     stages.append(s6)
     evidence_hash = s6.data.get("evidence_hash", "") if s6.success else ""
-    nfpa_refs     = s6.data.get("nfpa_references", []) if s6.success else []
+    nfpa_refs = s6.data.get("nfpa_references", []) if s6.success else []
 
     # ── Stage 7: Cable Routing (optional — does not block completion) ─────────
     s7 = _run_stage(
-        "S7_cable_routing", _stage7_cable_routing,
-        validated, positions,
+        "S7_cable_routing",
+        _stage7_cable_routing,
+        validated,
+        positions,
     )
     stages.append(s7)
     cable_routing_data = s7.data if s7.success else {}
@@ -1173,37 +1220,37 @@ def analyze_room(
 
     # Determine overall success
     critical_failures = any(
-        not s.success for s in stages[:4]  # Stages 0-3 are critical
+        not s.success
+        for s in stages[:4]  # Stages 0-3 are critical
     )
     overall_success = not critical_failures and math.isfinite(coverage_pct) and coverage_pct > 0.0
 
     return PipelineResult(
-        run_id              = run_id,
-        room_id             = room_id,
-        success             = overall_success,
-        release_status      = release_status,
-        safety_tier         = safety_tier,
-        coverage_pct        = round(coverage_pct, 4),
-        detector_count      = len(positions),
-        detector_radius_m   = radius_m,
-        max_spacing_m       = spacing_m,
-        detector_positions  = positions,
-        wall_violations     = wall_violations,
-        battery             = battery_dict,
-        voltage_drop        = voltage_dict,
-        fault_isolation     = fault_isolation_dict,
-        cable_routing       = cable_routing_dict,
-        qomn_audit          = qomn_audit,
-        stages              = stages,
-        release_gates       = gate_result,
-        evidence_hash       = evidence_hash,
-        total_ms            = round(total_ms, 2),
-        errors              = errors,
-        warnings            = warnings,
-        nfpa_references     = nfpa_refs,
-        timestamp           = datetime.now(timezone.utc).isoformat(),
+        run_id=run_id,
+        room_id=room_id,
+        success=overall_success,
+        release_status=release_status,
+        safety_tier=safety_tier,
+        coverage_pct=round(coverage_pct, 4),
+        detector_count=len(positions),
+        detector_radius_m=radius_m,
+        max_spacing_m=spacing_m,
+        detector_positions=positions,
+        wall_violations=wall_violations,
+        battery=battery_dict,
+        voltage_drop=voltage_dict,
+        fault_isolation=fault_isolation_dict,
+        cable_routing=cable_routing_dict,
+        qomn_audit=qomn_audit,
+        stages=stages,
+        release_gates=gate_result,
+        evidence_hash=evidence_hash,
+        total_ms=round(total_ms, 2),
+        errors=errors,
+        warnings=warnings,
+        nfpa_references=nfpa_refs,
+        timestamp=datetime.now(timezone.utc).isoformat(),
     )
-
 
 
 def _stage7_cable_routing(
@@ -1261,7 +1308,7 @@ def _stage7_cable_routing(
     grid_res_m = 0.1
     nx = max(2, int((bbox_x[1] - bbox_x[0]) / grid_res_m) + 4)
     ny = max(2, int((bbox_y[1] - bbox_y[0]) / grid_res_m) + 4)
-    nz = max(2, int(3.0 / grid_res_m) + 2)   # default 3m ceiling
+    nz = max(2, int(3.0 / grid_res_m) + 2)  # default 3m ceiling
 
     try:
         # Build model from polygon walls
@@ -1276,6 +1323,7 @@ def _stage7_cable_routing(
                 # doesn't exist in the signature, causing TypeError every run.
                 # We pass polygon walls as BoundingBox3D obstacles for cable routing.
                 from fireai.core.ifc_parser import BoundingBox3D, IfcElementType
+
                 walls_as_obstacles = []
                 for i in range(len(polygon)):
                     x1, y1 = polygon[i]
@@ -1300,7 +1348,9 @@ def _stage7_cable_routing(
                 logger.critical(
                     "V67 SAFETY: build_abstract_model() failed — "
                     "cable routing CANNOT proceed without wall geometry. "
-                    "Error: %s", bme, exc_info=True
+                    "Error: %s",
+                    bme,
+                    exc_info=True,
                 )
                 building_model = None
 
@@ -1312,7 +1362,7 @@ def _stage7_cable_routing(
             return {
                 "status": "failed",
                 "error": "Building model construction failed — cable routing requires wall geometry for safety. "
-                         "Cannot route cables without obstacle avoidance (would violate NEC 760.24).",
+                "Cannot route cables without obstacle avoidance (would violate NEC 760.24).",
                 "routes": [],
                 "safety_block": True,
             }
@@ -1325,8 +1375,8 @@ def _stage7_cable_routing(
         # Build connections list per route_all() real API (verified cable_router.py:930):
         # connections: List[Dict] with keys: start, end, route_id, alarm_current_a
         # FACP at one corner; detectors at ceiling height
-        FACP_HEIGHT_M  = room_z_m + 1.5   # panel at 1.5m above floor
-        DET_HEIGHT_M   = room_z_m + 2.7   # detector 300mm below 3m ceiling
+        FACP_HEIGHT_M = room_z_m + 1.5  # panel at 1.5m above floor
+        DET_HEIGHT_M = room_z_m + 2.7  # detector 300mm below 3m ceiling
 
         facp_xyz = (bbox_x[0] + 0.5, bbox_y[0] + 0.5, FACP_HEIGHT_M)
         det_xyzs = [(x, y, DET_HEIGHT_M) for (x, y) in positions]
@@ -1344,8 +1394,8 @@ def _stage7_cable_routing(
         # Wall obstacles extend WALL_THICKNESS_M from each polygon edge.
         # We apply MIN_CLEARANCE = WALL_THICKNESS_M * 3 from any polygon edge
         # to ensure all points land safely in the open routing zone.
-        WALL_THICKNESS_M = 0.2          # standard wall thickness (Project Spec default)
-        MIN_CLEARANCE_M  = WALL_THICKNESS_M * 3.0  # 0.6m safe zone from walls
+        WALL_THICKNESS_M = 0.2  # standard wall thickness (Project Spec default)
+        MIN_CLEARANCE_M = WALL_THICKNESS_M * 3.0  # 0.6m safe zone from walls
 
         def _dist_to_nearest_wall_edge(px, py):
             """Minimum distance from (px,py) to any polygon edge."""
@@ -1360,10 +1410,9 @@ def _stage7_cable_routing(
                 # Distance from point to segment
                 abx, aby = bx - ax, by - ay
                 apx, apy = px - ax, py - ay
-                t = max(0.0, min(1.0,
-                    (apx * abx + apy * aby) / (abx**2 + aby**2 + 1e-12)))
+                t = max(0.0, min(1.0, (apx * abx + apy * aby) / (abx**2 + aby**2 + 1e-12)))
                 cx2, cy2 = ax + t * abx, ay + t * aby
-                d = ((px - cx2)**2 + (py - cy2)**2) ** 0.5
+                d = ((px - cx2) ** 2 + (py - cy2) ** 2) ** 0.5
                 min_d = min(min_d, d)
             return min_d
 
@@ -1390,9 +1439,9 @@ def _stage7_cable_routing(
         connections = [
             {
                 "start": all_points[i],
-                "end":   all_points[i + 1],
-                "route_id": f"FACP-to-SD-{i+1:02d}",
-                "alarm_current_a": 0.04,   # 40mA per NFPA 72 §18.3 sounder
+                "end": all_points[i + 1],
+                "route_id": f"FACP-to-SD-{i + 1:02d}",
+                "alarm_current_a": 0.04,  # 40mA per NFPA 72 §18.3 sounder
             }
             for i in range(len(all_points) - 1)
         ]
@@ -1407,6 +1456,7 @@ def _stage7_cable_routing(
         # Now, if the dependency is missing, the error message clearly states
         # "DEPENDENCY MISSING" rather than the misleading "routing failed".
         from fireai.core.cable_routing_engine import WireGauge
+
         schedule = router.route_all(
             connections=connections,
             wire_gauge=WireGauge.AWG_14,
@@ -1444,8 +1494,7 @@ def _stage7_cable_routing(
         # Previously, ImportError was caught by the generic handler and reported
         # as "routing failed", which is misleading and wastes engineering time.
         logger.critical(
-            "V113 DEPENDENCY MISSING: Cable routing engine not available. "
-            "Install required dependency: %s", e
+            "V113 DEPENDENCY MISSING: Cable routing engine not available. Install required dependency: %s", e
         )
         return {
             "status": "dependency_missing",
@@ -1461,8 +1510,7 @@ def _stage7_cable_routing(
         # for safety_block would not see it, potentially allowing the pipeline
         # to proceed with a failed-but-not-safety-blocked cable routing result.
         logger.critical(
-            "V67 SAFETY: Stage 7 cable routing failed — marking as safety_block. "
-            "Error: %s", e, exc_info=True
+            "V67 SAFETY: Stage 7 cable routing failed — marking as safety_block. Error: %s", e, exc_info=True
         )
         return {
             "status": "failed",
@@ -1512,36 +1560,35 @@ def _failed_result(
     room_id: str = "",
 ) -> PipelineResult:
     """Build a failure result when a critical stage fails."""
-    room_id = room_id or str(
-        payload.get("room_id", "UNKNOWN") if isinstance(payload, dict) else "UNKNOWN"
-    )
+    room_id = room_id or str(payload.get("room_id", "UNKNOWN") if isinstance(payload, dict) else "UNKNOWN")
     return PipelineResult(
-        run_id             = run_id,
-        room_id            = room_id,
-        success            = False,
-        release_status     = "blocked",
-        safety_tier        = SafetyTier.REJECTED.value,
-        coverage_pct       = 0.0,
-        detector_count     = 0,
-        detector_radius_m  = 0.0,
-        max_spacing_m      = 0.0,
-        detector_positions = [],
-        wall_violations    = 0,
-        battery            = None,
-        voltage_drop       = None,
-        fault_isolation    = None,
-        stages             = stages,
-        release_gates      = {"release_status": "blocked", "blockers": ["critical_stage_failure"]},
-        evidence_hash      = "",
-        total_ms           = round((time.perf_counter() - t_total) * 1000.0, 2),
-        errors             = errors,
-        warnings           = warnings,
-        nfpa_references    = [],
-        timestamp          = datetime.now(timezone.utc).isoformat(),
+        run_id=run_id,
+        room_id=room_id,
+        success=False,
+        release_status="blocked",
+        safety_tier=SafetyTier.REJECTED.value,
+        coverage_pct=0.0,
+        detector_count=0,
+        detector_radius_m=0.0,
+        max_spacing_m=0.0,
+        detector_positions=[],
+        wall_violations=0,
+        battery=None,
+        voltage_drop=None,
+        fault_isolation=None,
+        stages=stages,
+        release_gates={"release_status": "blocked", "blockers": ["critical_stage_failure"]},
+        evidence_hash="",
+        total_ms=round((time.perf_counter() - t_total) * 1000.0, 2),
+        errors=errors,
+        warnings=warnings,
+        nfpa_references=[],
+        timestamp=datetime.now(timezone.utc).isoformat(),
     )
 
 
 # ─── Batch Pipeline ───────────────────────────────────────────────────────────
+
 
 def analyze_building(
     rooms: List[Dict[str, Any]],
@@ -1576,31 +1623,28 @@ def analyze_building(
         return idx, analyze_room(room, **kwargs)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {
-            executor.submit(_process, i, r): i
-            for i, r in enumerate(rooms)
-        }
+        futures = {executor.submit(_process, i, r): i for i, r in enumerate(rooms)}
         for future in as_completed(futures):
             idx, result = future.result()
             results[idx] = result
 
     total_ms = (time.perf_counter() - t0) * 1000.0
 
-    passed  = sum(1 for r in results if r and r.release_status == "green")
+    passed = sum(1 for r in results if r and r.release_status == "green")
     blocked = sum(1 for r in results if r and r.release_status == "blocked")
     errored = sum(1 for r in results if r and not r.success)
 
     return {
         "total_rooms": len(rooms),
-        "results":     [r.to_dict() for r in results if r],
+        "results": [r.to_dict() for r in results if r],
         "summary": {
-            "passed":  passed,
+            "passed": passed,
             "blocked": blocked,
-            "errors":  errored,
-            "total":   len(rooms),
+            "errors": errored,
+            "total": len(rooms),
             "pass_rate_pct": round(100.0 * passed / len(rooms), 2) if rooms else 0,
         },
-        "total_ms":      round(total_ms, 2),
+        "total_ms": round(total_ms, 2),
         "total_detectors": sum(r.detector_count for r in results if r),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

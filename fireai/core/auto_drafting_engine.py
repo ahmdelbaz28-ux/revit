@@ -45,12 +45,13 @@ from __future__ import annotations
 
 import heapq
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
     import ezdxf
     from ezdxf.enums import TextEntityAlignment
+
     HAS_EZDXF = True
 except ImportError:
     HAS_EZDXF = False
@@ -165,6 +166,7 @@ CAD_LAYERS: Dict[str, Dict[str, Any]] = {
 # ============================================================================
 # A* Wall-Aware Router
 # ============================================================================
+
 
 class _AStarRouter:
     """A* pathfinding router that NEVER routes through walls.
@@ -321,8 +323,7 @@ class _AStarRouter:
                     neighbor = (current[0] + dx, current[1] + dy)
 
                     # Bounds check
-                    if not (0 <= neighbor[0] < self._grid_width and
-                            0 <= neighbor[1] < self._grid_height):
+                    if not (0 <= neighbor[0] < self._grid_width and 0 <= neighbor[1] < self._grid_height):
                         continue
 
                     # Wall check — NEVER route through walls
@@ -357,9 +358,11 @@ class _AStarRouter:
                     if abs(dx) != radius and abs(dy) != radius:
                         continue
                     candidate = (cell[0] + dx, cell[1] + dy)
-                    if (0 <= candidate[0] < self._grid_width and
-                            0 <= candidate[1] < self._grid_height and
-                            candidate not in self._wall_cells):
+                    if (
+                        0 <= candidate[0] < self._grid_width
+                        and 0 <= candidate[1] < self._grid_height
+                        and candidate not in self._wall_cells
+                    ):
                         return candidate
         return None
 
@@ -378,6 +381,7 @@ class _AStarRouter:
 # Data Structures
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class WallSegment:
     """A wall segment in the building model.
@@ -388,6 +392,7 @@ class WallSegment:
         fire_rating: Fire rating in minutes (0 = non-rated, 60, 90, 120).
         wall_type: Description (e.g., "concrete", "gypsum").
     """
+
     start: Tuple[float, float]
     end: Tuple[float, float]
     fire_rating: int = 0
@@ -406,6 +411,7 @@ class DraftingDevice:
         zone_id: Fire zone identifier.
         address: Device address on the SLC loop.
     """
+
     device_id: str
     device_type: str
     position: Tuple[float, float]
@@ -427,6 +433,7 @@ class FirestoppingCallout:
         cable_type: Type of cable penetrating (FPL, FPLR, FPLP, CI).
         nfpa_reference: IBC §714 reference.
     """
+
     position: Tuple[float, float]
     wall_fire_rating: int
     cable_type: str = "FPL"
@@ -450,6 +457,7 @@ class PlenumZone:
         collision_zones: List of (x, y, width, height) obstacles within plenum.
         requires_fplp: Whether FPLP cable is required (always True for plenum).
     """
+
     zone_id: str
     floor_id: str = ""
     bounds: Tuple[float, float, float, float] = (0, 0, 100, 100)
@@ -476,6 +484,7 @@ class SurvivabilityRouteConstraint:
                              (CI cable cannot simply run in plenum without
                              rated enclosure at Level 3).
     """
+
     route_id: str
     required_level: str = "LEVEL_1"
     cable_type: str = "FPL"
@@ -497,6 +506,7 @@ class DraftingResult:
         warnings: Non-blocking issues.
         errors: Blocking issues.
     """
+
     output_path: str
     device_count: int
     cable_routes: int
@@ -509,6 +519,7 @@ class DraftingResult:
 # ============================================================================
 # Auto-Drafting Engine
 # ============================================================================
+
 
 class AutoDraftingEngine:
     """Generates complete fire alarm shop drawings in DXF format.
@@ -545,12 +556,14 @@ class AutoDraftingEngine:
         result = []
         for w in walls:
             if isinstance(w, WallSegment):
-                result.append({
-                    "start": w.start,
-                    "end": w.end,
-                    "fire_rating": w.fire_rating,
-                    "wall_type": w.wall_type,
-                })
+                result.append(
+                    {
+                        "start": w.start,
+                        "end": w.end,
+                        "fire_rating": w.fire_rating,
+                        "wall_type": w.wall_type,
+                    }
+                )
             elif isinstance(w, dict):
                 result.append(w)
             else:
@@ -564,14 +577,16 @@ class AutoDraftingEngine:
             if isinstance(d, DraftingDevice):
                 result.append(d)
             elif isinstance(d, dict):
-                result.append(DraftingDevice(
-                    device_id=d.get("device_id", d.get("id", "")),
-                    device_type=d.get("device_type", "SMOKE"),
-                    position=d.get("position", (0.0, 0.0)),
-                    floor_id=d.get("floor_id", ""),
-                    zone_id=d.get("zone_id", ""),
-                    address=d.get("address", ""),
-                ))
+                result.append(
+                    DraftingDevice(
+                        device_id=d.get("device_id", d.get("id", "")),
+                        device_type=d.get("device_type", "SMOKE"),
+                        position=d.get("position", (0.0, 0.0)),
+                        floor_id=d.get("floor_id", ""),
+                        zone_id=d.get("zone_id", ""),
+                        address=d.get("address", ""),
+                    )
+                )
             else:
                 raise ValueError(f"Invalid device type: {type(d)}")
         return result
@@ -716,10 +731,12 @@ class AutoDraftingEngine:
                                 break
 
                     world_pos = router._grid_to_world(*cell)
-                    callouts.append(FirestoppingCallout(
-                        position=world_pos,
-                        wall_fire_rating=fire_rating,
-                    ))
+                    callouts.append(
+                        FirestoppingCallout(
+                            position=world_pos,
+                            wall_fire_rating=fire_rating,
+                        )
+                    )
                     break  # One callout per segment
 
         return callouts
@@ -770,20 +787,22 @@ class AutoDraftingEngine:
                 # Check collision zones within this plenum
                 for obs in zone.collision_zones:
                     ox, oy, ow, oh = obs
-                    if (ox <= px <= ox + ow and oy <= py <= oy + oh):
-                        collisions.append({
-                            "point": (px, py),
-                            "zone_id": zone.zone_id,
-                            "obstacle": obs,
-                            "requires_fplp": zone.requires_fplp,
-                            "warning": (
-                                f"Cable at ({px:.1f}, {py:.1f}) passes through "
-                                f"plenum obstacle in zone '{zone.zone_id}'. "
-                                f"Verify cable routing in plenum space above "
-                                f"ceiling (clear height: {zone.plenum_height_m:.2f}m). "
-                                f"FPLP cable required per NEC Art. 760."
-                            ),
-                        })
+                    if ox <= px <= ox + ow and oy <= py <= oy + oh:
+                        collisions.append(
+                            {
+                                "point": (px, py),
+                                "zone_id": zone.zone_id,
+                                "obstacle": obs,
+                                "requires_fplp": zone.requires_fplp,
+                                "warning": (
+                                    f"Cable at ({px:.1f}, {py:.1f}) passes through "
+                                    f"plenum obstacle in zone '{zone.zone_id}'. "
+                                    f"Verify cable routing in plenum space above "
+                                    f"ceiling (clear height: {zone.plenum_height_m:.2f}m). "
+                                    f"FPLP cable required per NEC Art. 760."
+                                ),
+                            }
+                        )
 
         return collisions
 
@@ -823,10 +842,7 @@ class AutoDraftingEngine:
         if constraint.must_avoid_plenum and plenum_zones:
             for zone in plenum_zones:
                 z_min_x, z_min_y, z_max_x, z_max_y = zone.bounds
-                in_plenum = any(
-                    z_min_x <= px <= z_max_x and z_min_y <= py <= z_max_y
-                    for px, py in path
-                )
+                in_plenum = any(z_min_x <= px <= z_max_x and z_min_y <= py <= z_max_y for px, py in path)
                 if in_plenum and not constraint.in_rated_enclosure:
                     warnings.append(
                         f"Route '{constraint.route_id}': Path passes through plenum "
@@ -884,8 +900,7 @@ class AutoDraftingEngine:
                 firestopping_callouts=(),
                 class_a_routes=0,
                 warnings=(),
-                errors=("ezdxf >= 1.1.0 is required for DXF generation. "
-                        "Install with: pip install ezdxf>=1.1.0",),
+                errors=("ezdxf >= 1.1.0 is required for DXF generation. Install with: pip install ezdxf>=1.1.0",),
             )
 
         warnings: List[str] = []
@@ -906,9 +921,7 @@ class AutoDraftingEngine:
 
             # Place device symbols
             for device in self._devices:
-                block_name = DEVICE_TYPE_TO_BLOCK.get(
-                    device.device_type.upper(), "FA_SMOKE"
-                )
+                block_name = DEVICE_TYPE_TO_BLOCK.get(device.device_type.upper(), "FA_SMOKE")
                 try:
                     msp.add_blockref(
                         block_name,
@@ -916,10 +929,7 @@ class AutoDraftingEngine:
                         dxfattribs={"layer": "FA-DEVICES"},
                     )
                 except Exception:
-                    warnings.append(
-                        f"Could not place device '{device.device_id}' "
-                        f"(block '{block_name}')"
-                    )
+                    warnings.append(f"Could not place device '{device.device_id}' (block '{block_name}')")
 
                 # Add label
                 label_text = f"{device.device_id}"
@@ -979,7 +989,8 @@ class AutoDraftingEngine:
                 start = wall.get("start", (0, 0))
                 end = wall.get("end", (0, 0))
                 msp.add_line(
-                    start, end,
+                    start,
+                    end,
                     dxfattribs={"layer": "WALLS"},
                 )
 
@@ -1035,7 +1046,7 @@ class AutoDraftingEngine:
                 w = definition.get("width", size)
                 h = definition.get("height", size)
                 block.add_lwpolyline(
-                    [(-w/2, -h/2), (w/2, -h/2), (w/2, h/2), (-w/2, h/2)],
+                    [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2)],
                     close=True,
                     dxfattribs={"color": color},
                 )
@@ -1049,7 +1060,7 @@ class AutoDraftingEngine:
             elif shape == "triangle":
                 s = size
                 block.add_lwpolyline(
-                    [(0, s), (-s, -s/2), (s, -s/2)],
+                    [(0, s), (-s, -s / 2), (s, -s / 2)],
                     close=True,
                     dxfattribs={"color": color},
                 )

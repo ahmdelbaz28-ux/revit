@@ -17,9 +17,8 @@ Safety:
   - Using text blocks instead of TABLE entities means the schedule data
     is invisible to digital workflows, leading to manual transcription errors.
 """
-from __future__ import annotations
 
-import ezdxf
+from __future__ import annotations
 
 try:
     from ezdxf.addons import TablePainter as Table
@@ -98,16 +97,16 @@ class TrueAECDraftingTable:
         r_cursor = 2
         for entity in device_array:
             if isinstance(entity, dict):
-                d_id = entity.get('device_id', 'Unk')
-                d_type = entity.get('device_type', 'Undefined')
-                c_gr = entity.get('circuit_id', 'SLC-01')
-                zn = entity.get('zone_id', 'ZnX')
+                d_id = entity.get("device_id", "Unk")
+                d_type = entity.get("device_type", "Undefined")
+                c_gr = entity.get("circuit_id", "SLC-01")
+                zn = entity.get("zone_id", "ZnX")
                 pos = f"({round(entity.get('x', 0), 1)}, {round(entity.get('y', 0), 1)})"
             else:
-                d_id = getattr(entity, 'device_id', 'Unk')
-                d_type = getattr(entity, 'device_type', 'Undefined')
-                c_gr = getattr(entity, 'circuit_id', 'SLC-01')
-                zn = getattr(entity, 'zone_id', 'ZnX')
+                d_id = getattr(entity, "device_id", "Unk")
+                d_type = getattr(entity, "device_type", "Undefined")
+                c_gr = getattr(entity, "circuit_id", "SLC-01")
+                zn = getattr(entity, "zone_id", "ZnX")
                 try:
                     pos = f"({round(entity.x, 1)}, {round(entity.y, 1)})"
                 except Exception:

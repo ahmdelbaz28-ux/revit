@@ -38,7 +38,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -46,57 +46,60 @@ logger = logging.getLogger(__name__)
 @dataclass
 class IfcPipelineConfig:
     """Configuration for one IfcFirePipeline run."""
-    ifc_input_path:      str
-    ifc_output_path:     str
-    country_code:        str       = "SA"       # ISO 3166-1 alpha-2
-    substance_cas:       str       = "74-98-6"  # propane default
-    ventilation:         str       = "MEDIUM"
-    release_grade:       str       = "PRIMARY"
-    release_rate_kg_s:   float     = 0.001
-    is_indoor:           bool      = True
-    detector_grid_res_m: float     = 1.0
-    flame_range_m:       float     = 15.0
-    flame_aoc_deg:       float     = 90.0
-    ugld_range_m:        float     = 10.0
-    leak_spl_at_1m:      float     = 100.0
-    ambient_temp_c:      float     = 40.0
-    wind_speed_m_s:      float     = 0.5
-    project_name:        str       = "FireAI V24 Export"
+
+    ifc_input_path: str
+    ifc_output_path: str
+    country_code: str = "SA"  # ISO 3166-1 alpha-2
+    substance_cas: str = "74-98-6"  # propane default
+    ventilation: str = "MEDIUM"
+    release_grade: str = "PRIMARY"
+    release_rate_kg_s: float = 0.001
+    is_indoor: bool = True
+    detector_grid_res_m: float = 1.0
+    flame_range_m: float = 15.0
+    flame_aoc_deg: float = 90.0
+    ugld_range_m: float = 10.0
+    leak_spl_at_1m: float = 100.0
+    ambient_temp_c: float = 40.0
+    wind_speed_m_s: float = 0.5
+    project_name: str = "FireAI V24 Export"
 
 
 @dataclass
 class SpaceAnalysisResult:
     """Result of full pipeline analysis for one space."""
-    space_guid:          str
-    space_name:          str
-    storey_name:         str
-    layer1_framework:    str
-    layer2_zone:         str
-    layer2_extent_h:     float
-    layer2_extent_v:     float
-    layer3_epl:          str
-    layer3_tclass:       str
-    layer3_protections:  List[str]
+
+    space_guid: str
+    space_name: str
+    storey_name: str
+    layer1_framework: str
+    layer2_zone: str
+    layer2_extent_h: float
+    layer2_extent_v: float
+    layer3_epl: str
+    layer3_tclass: str
+    layer3_protections: List[str]
     layer5_coverage_pct: float
     layer7_redundant_pct: float
     layer7_blind_spot_pct: float
     detector_placements: List[Dict[str, Any]]
-    warnings:            List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
 
 
 @dataclass
 class PipelineReport:
     """Aggregate report for the full building."""
-    ifc_input:              str
-    ifc_output:             str
-    heatmap_path:           str
-    run_time_s:             float
-    spaces_analysed:        int
-    total_detectors:        int
-    global_coverage_pct:    float
-    global_blind_spot_pct:  float
-    space_results:          List[SpaceAnalysisResult]
-    pipeline_warnings:      List[str]
+
+    ifc_input: str
+    ifc_output: str
+    heatmap_path: str
+    run_time_s: float
+    spaces_analysed: int
+    total_detectors: int
+    global_coverage_pct: float
+    global_blind_spot_pct: float
+    space_results: List[SpaceAnalysisResult]
+    pipeline_warnings: List[str]
 
 
 class IfcFirePipeline:
@@ -151,16 +154,18 @@ class IfcFirePipeline:
         for space in spaces_data:
             try:
                 result, devices, next_loop, next_addr = self._analyse_space(
-                    space, raytrace_obstructions, framework,
-                    slc_loop, slc_address,
+                    space,
+                    raytrace_obstructions,
+                    framework,
+                    slc_loop,
+                    slc_address,
                 )
                 all_results.append(result)
                 all_devices.extend(devices)
                 slc_loop, slc_address = next_loop, next_addr
             except Exception as exc:
                 self._warnings.append(
-                    f"Space {space.get('name','?')} ({space.get('guid','?')}): "
-                    f"analysis failed — {exc}"
+                    f"Space {space.get('name', '?')} ({space.get('guid', '?')}): analysis failed — {exc}"
                 )
                 logger.error(f"Space analysis failed: {exc}", exc_info=True)
 
@@ -171,12 +176,11 @@ class IfcFirePipeline:
         heatmap_path = self.cfg.ifc_output_path.replace(".ifc", "_heatmap.json")
         try:
             from fireai.core.hybrid_survivability import HybridSurvivabilityEngine
+
             # Export heatmap for the last computed hybrid map
             if all_hybrid_maps:
                 h_engine = HybridSurvivabilityEngine()
-                h_engine.export_heatmap_json(
-                    all_hybrid_maps[-1], heatmap_path
-                )
+                h_engine.export_heatmap_json(all_hybrid_maps[-1], heatmap_path)
         except Exception as exc:
             self._warnings.append(f"Heatmap export failed: {exc}")
 
@@ -209,6 +213,7 @@ class IfcFirePipeline:
             from fireai.core.international_reg_selector import (
                 InternationalRegSelector,
             )
+
             selector = InternationalRegSelector()
             res = selector.resolve_v21(self.cfg.country_code)
             return res.framework.value, list(res.warnings)
@@ -240,47 +245,47 @@ class IfcFirePipeline:
 
         # ── L5: Flame detector optical coverage ───────────────────
         flame_det_specs = self._place_flame_detectors(space)
-        l5_coverage, optical_result = self._run_l5(
-            flame_det_specs, grid_pts, obstructions, warnings
-        )
+        l5_coverage, optical_result = self._run_l5(flame_det_specs, grid_pts, obstructions, warnings)
 
         # ── V23 + L7: Acoustic + Hybrid Survivability ─────────────
         ugld_sensors, sensor_positions = self._place_ugld_sensors(space)
-        l7_result, hybrid_map = self._run_l7(
-            optical_result, grid_pts, ugld_sensors, sensor_positions, warnings
-        )
+        l7_result, hybrid_map = self._run_l7(optical_result, grid_pts, ugld_sensors, sensor_positions, warnings)
 
         # ── Build device placement list ───────────────────────────
-        zone_id = f"{space.get('storey_name','?')}_{l2.get('zone','UNKNOWN')}"
+        zone_id = f"{space.get('storey_name', '?')}_{l2.get('zone', 'UNKNOWN')}"
         devices: List[Dict[str, Any]] = []
 
         for fds in flame_det_specs:
-            devices.append({
-                "device_id": fds["id"],
-                "type": "FLAME",
-                "x": fds["position"][0],
-                "y": fds["position"][1],
-                "z": fds["position"][2],
-                "loop_id": slc_loop,
-                "address": slc_address,
-                "checksum": f"V24_{fds['id']}_{zone_id}",
-            })
+            devices.append(
+                {
+                    "device_id": fds["id"],
+                    "type": "FLAME",
+                    "x": fds["position"][0],
+                    "y": fds["position"][1],
+                    "z": fds["position"][2],
+                    "loop_id": slc_loop,
+                    "address": slc_address,
+                    "checksum": f"V24_{fds['id']}_{zone_id}",
+                }
+            )
             slc_address += 1
             if slc_address > 99:
                 slc_loop += 1
                 slc_address = 1
 
         for us in ugld_sensors:
-            devices.append({
-                "device_id": us["id"],
-                "type": "UGLD",
-                "x": us["position"][0],
-                "y": us["position"][1],
-                "z": us["position"][2],
-                "loop_id": slc_loop,
-                "address": slc_address,
-                "checksum": f"V24_{us['id']}_{zone_id}",
-            })
+            devices.append(
+                {
+                    "device_id": us["id"],
+                    "type": "UGLD",
+                    "x": us["position"][0],
+                    "y": us["position"][1],
+                    "z": us["position"][2],
+                    "loop_id": slc_loop,
+                    "address": slc_address,
+                    "checksum": f"V24_{us['id']}_{zone_id}",
+                }
+            )
             slc_address += 1
             if slc_address > 99:
                 slc_loop += 1
@@ -312,12 +317,14 @@ class IfcFirePipeline:
         L2 using the REAL HACClassificationEngine.classify_v21() API.
         """
         try:
-            from fireai.core.models_v21 import (
-                SubstanceProperties, EnvironmentalContext,
-                VentilationLevel, HazardType, PasquillStability,
-            )
             from fireai.core.hac_classification_engine import (
-                HACClassificationEngine, ReleaseGrade,
+                HACClassificationEngine,
+                ReleaseGrade,
+            )
+            from fireai.core.models_v21 import (
+                EnvironmentalContext,
+                PasquillStability,
+                VentilationLevel,
             )
 
             substance = self._get_substance()
@@ -360,8 +367,8 @@ class IfcFirePipeline:
         Parameters: zone, hazard_type, autoignition_c, ...
         """
         try:
-            from fireai.core.models_v21 import ZoneType, HazardType
             from fireai.core.atex_hazardous_arbiter import ATEXHazardousArbiter
+            from fireai.core.models_v21 import HazardType, ZoneType
 
             hac_result = l2.get("hac")
             substance = self._get_substance()
@@ -392,8 +399,11 @@ class IfcFirePipeline:
     # ── L5: Flame Detector Coverage ───────────────────────────────
 
     def _run_l5(
-        self, det_specs: List[Dict], grid_pts: List[Any],
-        obstructions: List[Any], warnings: List[str],
+        self,
+        det_specs: List[Dict],
+        grid_pts: List[Any],
+        obstructions: List[Any],
+        warnings: List[str],
     ) -> Tuple[float, Any]:
         """
         L5 using the REAL FlameDetectorAOCRayTrace.analyse_multi_v21() API.
@@ -404,7 +414,8 @@ class IfcFirePipeline:
                 FlameDetectorAOCRayTrace,
             )
             from fireai.core.models_v21 import (
-                FlameDetectorSpec, WavelengthBand,
+                FlameDetectorSpec,
+                WavelengthBand,
             )
 
             engine = FlameDetectorAOCRayTrace(
@@ -440,8 +451,11 @@ class IfcFirePipeline:
     # ── V23 + L7: Acoustic + Hybrid ──────────────────────────────
 
     def _run_l7(
-        self, optical_result: Any, grid_pts: List[Any],
-        ugld_sensors: List[Dict], sensor_positions: Dict[str, Tuple],
+        self,
+        optical_result: Any,
+        grid_pts: List[Any],
+        ugld_sensors: List[Dict],
+        sensor_positions: Dict[str, Tuple],
         warnings: List[str],
     ) -> Tuple[Dict, Any]:
         """
@@ -449,8 +463,8 @@ class IfcFirePipeline:
         Parameters: optical_result, grid, ugld_sensors, sensor_positions, ...
         """
         try:
-            from fireai.core.ugld_acoustics import UltrasonicSensor
             from fireai.core.hybrid_survivability import HybridSurvivabilityEngine
+            from fireai.core.ugld_acoustics import UltrasonicSensor
 
             # Build REAL UltrasonicSensor objects (no position field!)
             sensors = [
@@ -538,22 +552,26 @@ class IfcFirePipeline:
         while x <= x1:
             y = y0 + spacing / 2
             while y <= y1:
-                dets.append({
-                    "id": f"FD_{space['guid'][:6]}_{det_n:03d}",
-                    "position": [round(x, 3), round(y, 3), round(z_ceil, 3)],
-                    "type": "FLAME",
-                })
+                dets.append(
+                    {
+                        "id": f"FD_{space['guid'][:6]}_{det_n:03d}",
+                        "position": [round(x, 3), round(y, 3), round(z_ceil, 3)],
+                        "type": "FLAME",
+                    }
+                )
                 det_n += 1
                 y += spacing
             x += spacing
 
         if not dets:
             cx, cy = space.get("center", (0, 0, 0))[:2]
-            dets.append({
-                "id": f"FD_{space['guid'][:6]}_001",
-                "position": [round(cx, 3), round(cy, 3), round(z_ceil, 3)],
-                "type": "FLAME",
-            })
+            dets.append(
+                {
+                    "id": f"FD_{space['guid'][:6]}_001",
+                    "position": [round(cx, 3), round(cy, 3), round(z_ceil, 3)],
+                    "type": "FLAME",
+                }
+            )
         return dets
 
     def _place_ugld_sensors(self, space: Dict) -> Tuple[List[Dict], Dict[str, Tuple]]:
@@ -610,29 +628,32 @@ class IfcFirePipeline:
 
         for od in obstructions_data:
             try:
-                result.append(Obstruction(
-                    obstruction_id=od["guid"],
-                    vertices=od["aabb_vertices"],
-                    spectral_transparency={
-                        WavelengthBand.UV: 0.0,
-                        WavelengthBand.VIS: 0.0,
-                        WavelengthBand.IR1: 0.0,
-                        WavelengthBand.IR3: 0.0,
-                    },
-                ))
+                result.append(
+                    Obstruction(
+                        obstruction_id=od["guid"],
+                        vertices=od["aabb_vertices"],
+                        spectral_transparency={
+                            WavelengthBand.UV: 0.0,
+                            WavelengthBand.VIS: 0.0,
+                            WavelengthBand.IR1: 0.0,
+                            WavelengthBand.IR3: 0.0,
+                        },
+                    )
+                )
             except Exception as e:
-                logger.debug(f"Could not convert obstruction {od.get('guid','?')}: {e}")
+                logger.debug(f"Could not convert obstruction {od.get('guid', '?')}: {e}")
         return result
 
     # ── Substance lookup ─────────────────────────────────────────
 
     def _get_substance(self) -> Any:
         """Return SubstanceProperties for the configured CAS number."""
-        from fireai.core.models_v21 import SubstanceProperties, HazardType
+        from fireai.core.models_v21 import HazardType, SubstanceProperties
 
         # Try spectral registry for the CAS number
         try:
             from fireai.core.models_v21 import SpectralSignatureRegistry
+
             registry = SpectralSignatureRegistry()
             sig = registry.get(self.cfg.substance_cas)
             if sig:

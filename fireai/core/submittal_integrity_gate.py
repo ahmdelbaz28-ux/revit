@@ -51,18 +51,18 @@ import hashlib
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # ---------------------------------------------------------------------------
 # Provenance imports — same pattern as other fireai.core modules
 # ---------------------------------------------------------------------------
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
@@ -86,6 +86,7 @@ _SHA256_CHUNK_SIZE = 8192  # 8 KB read buffer — matches parser_safe.py
 # ============================================================================
 # Data classes
 # ============================================================================
+
 
 @dataclass(frozen=True)
 class HashRecord:
@@ -128,6 +129,7 @@ class IntegrityCheckResult:
 # ============================================================================
 # SubmittalIntegrityGate
 # ============================================================================
+
 
 class SubmittalIntegrityGate:
     """Post-draft SHA-256 hash verification gate for the DXF compilation

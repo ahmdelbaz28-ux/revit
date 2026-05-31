@@ -6,6 +6,7 @@ Usage:
     fireai analyse <input.json>
     fireai report --format pdf <input.json> [--output <out.pdf>]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -21,6 +22,7 @@ _VERSION = "1.0.0"
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _load_json(path: str) -> Dict[str, Any]:
     p = Path(path)
@@ -51,6 +53,7 @@ def _print_json(obj: Any) -> None:
 # Sub-commands
 # ---------------------------------------------------------------------------
 
+
 def cmd_version(_args: argparse.Namespace) -> int:
     print(f"fireai {_VERSION}")
     return 0
@@ -69,10 +72,10 @@ def cmd_analyse(args: argparse.Namespace) -> int:
 
 def _analyse_room(data: Dict[str, Any]) -> int:
     try:
-        from fireai.core.spatial_engine.density_optimizer import Room, DensityOptimizer
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
         from fireai.core.geometry_utils import is_rectangular
-        from fireai.core.polygon_optimizer import PolygonRoom, PolygonDensityOptimizer
+        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.polygon_optimizer import PolygonDensityOptimizer, PolygonRoom
+        from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room
 
         polygon = data.get("polygon_coords")
         # V114 FIX: Validate ceiling_height for NaN/Inf — float() accepts NaN silently
@@ -95,19 +98,19 @@ def _analyse_room(data: Dict[str, Any]) -> int:
             )
             summary = PolygonDensityOptimizer().optimize_polygon(poly_room)
             result = {
-                "room_id":       summary.room_id,
-                "method":        summary.method,
+                "room_id": summary.room_id,
+                "method": summary.method,
                 "detector_count": summary.count,
-                "coverage_pct":  summary.coverage_pct,
-                "proof_valid":   summary.proof_valid,
+                "coverage_pct": summary.coverage_pct,
+                "proof_valid": summary.proof_valid,
                 "wall_violations": summary.wall_violations,
-                "detectors":     summary.detectors,
-                "duct_devices":  summary.duct_devices,
+                "detectors": summary.detectors,
+                "duct_devices": summary.duct_devices,
                 "duct_warnings": summary.duct_warnings,
             }
         else:
             # V114 FIX: Validate width/length for NaN/Inf
-            width  = float(data.get("width",  data.get("length", 10.0)))
+            width = float(data.get("width", data.get("length", 10.0)))
             length = float(data.get("length", 10.0))
             if not math.isfinite(width) or not math.isfinite(length):
                 raise ValueError(
@@ -125,13 +128,13 @@ def _analyse_room(data: Dict[str, Any]) -> int:
             radius = spec.radius
             layout = DensityOptimizer().optimize(room, coverage_radius=radius)
             result = {
-                "room_id":        data.get("room_id", "room-cli"),
-                "method":         layout.method,
+                "room_id": data.get("room_id", "room-cli"),
+                "method": layout.method,
                 "detector_count": layout.count,
-                "coverage_pct":   layout.coverage_pct,
-                "proof_valid":    layout.proof_valid,
+                "coverage_pct": layout.coverage_pct,
+                "proof_valid": layout.proof_valid,
                 "wall_violations": layout.wall_violations,
-                "detectors":      layout.detectors,
+                "detectors": layout.detectors,
             }
 
         _print_json(result)
@@ -150,22 +153,23 @@ def _analyse_floor(data: Dict[str, Any]) -> int:
         rooms = data.get("rooms", data.get("room_summaries", [data]))
         opt = DensityOptimizer()
         report = FloorAnalyser(floor_id="floor-cli", optimizer=opt).analyse(rooms)
-        _print_json({
-            "floor_id":        getattr(report, "floor_id", "floor-cli"),
-            "total_rooms":     len(getattr(report, "room_summaries", [])),
-            "total_detectors": getattr(report, "total_detectors", "N/A"),
-            "fully_compliant": getattr(report, "fully_compliant", "N/A"),
-            "room_summaries": [
-                {
-                    "room_id":       getattr(rs, "room_id", "-"),
-                    "detector_count": getattr(rs, "detector_count",
-                                      getattr(rs, "count", "-")),
-                    "coverage_pct":  getattr(rs, "coverage_pct", "-"),
-                    "nfpa_valid":    getattr(rs, "nfpa_valid", "-"),
-                }
-                for rs in getattr(report, "room_summaries", [])
-            ],
-        })
+        _print_json(
+            {
+                "floor_id": getattr(report, "floor_id", "floor-cli"),
+                "total_rooms": len(getattr(report, "room_summaries", [])),
+                "total_detectors": getattr(report, "total_detectors", "N/A"),
+                "fully_compliant": getattr(report, "fully_compliant", "N/A"),
+                "room_summaries": [
+                    {
+                        "room_id": getattr(rs, "room_id", "-"),
+                        "detector_count": getattr(rs, "detector_count", getattr(rs, "count", "-")),
+                        "coverage_pct": getattr(rs, "coverage_pct", "-"),
+                        "nfpa_valid": getattr(rs, "nfpa_valid", "-"),
+                    }
+                    for rs in getattr(report, "room_summaries", [])
+                ],
+            }
+        )
         return 0
 
     except Exception as exc:
@@ -191,15 +195,17 @@ def _analyse_building(data: Dict[str, Any]) -> int:
             floors = {"F1": [data]}
 
         report = engine.analyse(floors=floors)
-        _print_json({
-            "building_id":       report.building_id,
-            "total_detectors":   report.total_detectors,
-            "total_duct_devices": report.total_duct_devices,
-            "fully_compliant":   report.fully_compliant,
-            "safe_to_submit":    report.safe_to_submit,
-            "non_compliant_floors": report.non_compliant_floors,
-            "building_warnings": report.building_warnings,
-        })
+        _print_json(
+            {
+                "building_id": report.building_id,
+                "total_detectors": report.total_detectors,
+                "total_duct_devices": report.total_duct_devices,
+                "fully_compliant": report.fully_compliant,
+                "safe_to_submit": report.safe_to_submit,
+                "non_compliant_floors": report.non_compliant_floors,
+                "building_warnings": report.building_warnings,
+            }
+        )
         return 0
 
     except Exception as exc:
@@ -210,8 +216,7 @@ def _analyse_building(data: Dict[str, Any]) -> int:
 def cmd_report(args: argparse.Namespace) -> int:
     fmt = args.format.lower()
     if fmt != "pdf":
-        print(f"[fireai] Unsupported format: {fmt}. Only 'pdf' is supported.",
-              file=sys.stderr)
+        print(f"[fireai] Unsupported format: {fmt}. Only 'pdf' is supported.", file=sys.stderr)
         return 1
 
     data = _load_json(args.input)
@@ -225,8 +230,8 @@ def cmd_report(args: argparse.Namespace) -> int:
 
     try:
         from fireai.core.building_engine import BuildingEngine
-        from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
         from fireai.core.pdf_report import generate_building_report
+        from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 
         opt = DensityOptimizer()
         building_id = data.get("building_id", "report-cli")
@@ -254,13 +259,15 @@ def cmd_report(args: argparse.Namespace) -> int:
 # Argument parser
 # ---------------------------------------------------------------------------
 
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="fireai",
         description="FireAI – NFPA 72-2022 Automated Fire Detector Placement Engine",
     )
     parser.add_argument(
-        "--version", action="version",
+        "--version",
+        action="version",
         version=f"%(prog)s {_VERSION}",
     )
 
@@ -287,7 +294,9 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Generate a formatted report from a building JSON file",
     )
     p_report.add_argument(
-        "--format", default="pdf", choices=["pdf"],
+        "--format",
+        default="pdf",
+        choices=["pdf"],
         help="Output format (default: pdf)",
     )
     p_report.add_argument(
@@ -296,7 +305,9 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Path to building JSON input file",
     )
     p_report.add_argument(
-        "--output", "-o", default=None,
+        "--output",
+        "-o",
+        default=None,
         metavar="OUTPUT",
         help="Output file path (default: <input_stem>_report.pdf)",
     )
@@ -307,6 +318,7 @@ def _build_parser() -> argparse.ArgumentParser:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main(argv: list[str] | None = None) -> None:
     parser = _build_parser()

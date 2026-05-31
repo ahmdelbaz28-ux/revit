@@ -63,6 +63,7 @@ def _float_round_default(obj: Any) -> Any:
         if obj == 0.0:
             return 0.0
         from decimal import Decimal
+
         rounded = float(Decimal(obj).normalize())
         # If normalization didn't help (e.g. 0.3), use explicit rounding
         if repr(rounded) != repr(obj):
@@ -95,6 +96,7 @@ def _sha256_payload(payload: Any) -> str:
 
 class EvidenceChainError(Exception):
     """Raised when evidence chain verification fails."""
+
     pass
 
 
@@ -136,10 +138,20 @@ class EvidenceChain:
     # These are commonly used in examples/tutorials and provide ZERO security.
     # Using any of these allows anyone who reads the source code to forge
     # evidence envelopes — completely defeating the audit trail integrity.
-    _WEAK_SECRET_KEYS = frozenset({
-        "project-key", "secret", "password", "key", "test",
-        "fireai", "default", "changeme", "123456", "abc123",
-    })
+    _WEAK_SECRET_KEYS = frozenset(
+        {
+            "project-key",
+            "secret",
+            "password",
+            "key",
+            "test",
+            "fireai",
+            "default",
+            "changeme",
+            "123456",
+            "abc123",
+        }
+    )
 
     def __init__(self, secret_key: str, signer_id: str, namespace: str = "fireai"):
         if not secret_key:
@@ -168,6 +180,7 @@ class EvidenceChain:
         # Shorter keys are vulnerable to brute force.
         if len(secret_key) < 32:
             import logging
+
             logging.getLogger(__name__).warning(
                 f"SECURITY: secret_key is only {len(secret_key)} chars — "
                 f"recommend >= 32 chars for HMAC-SHA256. Short keys are "
@@ -205,9 +218,7 @@ class EvidenceChain:
             "signer_id": self._signer_id,
             "snapshot_hash": _sha256_payload(snapshot_payload),
             "analysis_hash": _sha256_payload(analysis_payload),
-            "previous_envelope_hash": (
-                previous_envelope["envelope_hash"] if previous_envelope else None
-            ),
+            "previous_envelope_hash": (previous_envelope["envelope_hash"] if previous_envelope else None),
         }
         envelope_hash = _sha256_payload(body)
         envelope = dict(body)
@@ -268,9 +279,7 @@ class EvidenceChain:
             )
 
         # 3. Previous envelope chain
-        expected_previous_hash = (
-            previous_envelope["envelope_hash"] if previous_envelope else None
-        )
+        expected_previous_hash = previous_envelope["envelope_hash"] if previous_envelope else None
         if expected["previous_envelope_hash"] != expected_previous_hash:
             raise EvidenceChainError(
                 f"Chain link broken: previous_envelope_hash is "
@@ -289,9 +298,7 @@ class EvidenceChain:
 
         # 5. HMAC signature
         if not hmac.compare_digest(signature, self._sign(envelope_hash)):
-            raise EvidenceChainError(
-                f"HMAC signature invalid — envelope may have been forged"
-            )
+            raise EvidenceChainError(f"HMAC signature invalid — envelope may have been forged")
 
         return True
 
@@ -359,8 +366,7 @@ class EvidenceChain:
             ts = envelope.get("created_at", "")
             if prev_timestamp and ts < prev_timestamp:
                 errors.append(
-                    f"Envelope[{i}]: Timestamp regression — "
-                    f"{ts} < {prev_timestamp} — envelopes may be reordered"
+                    f"Envelope[{i}]: Timestamp regression — {ts} < {prev_timestamp} — envelopes may be reordered"
                 )
                 if first_break is None:
                     first_break = i

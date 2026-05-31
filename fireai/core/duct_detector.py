@@ -36,12 +36,12 @@ Point = Tuple[float, float]
 # NFPA 90A §6.4.2.2 / IMC §606.4 — maximum spacing between duct detectors
 # NOTE: NFPA 72 §17.7.5 does NOT specify inter-detector spacing.
 # The 3.05m (10 ft) value comes from NFPA 90A and IMC.
-NFPA_DUCT_MAX_SPACING_M: float = 3.05   # 10 ft converted to metres
-NFPA_DUCT_SPACING_REF:   str   = "NFPA 90A-2024 §6.4.2.2"  # spacing source
+NFPA_DUCT_MAX_SPACING_M: float = 3.05  # 10 ft converted to metres
+NFPA_DUCT_SPACING_REF: str = "NFPA 90A-2024 §6.4.2.2"  # spacing source
 
 # Minimum dimensions for duct detector requirement
-NFPA_DUCT_MIN_WIDTH_M: float  = 0.20    # ducts narrower than this are exempt
-NFPA_DUCT_MIN_LENGTH_M: float = 1.00    # ducts shorter than this are exempt
+NFPA_DUCT_MIN_WIDTH_M: float = 0.20  # ducts narrower than this are exempt
+NFPA_DUCT_MIN_LENGTH_M: float = 1.00  # ducts shorter than this are exempt
 
 # CFM threshold — NFPA 72 §17.7.5.1
 NFPA_DUCT_CFM_THRESHOLD: float = 2000.0
@@ -75,14 +75,15 @@ class DuctSpec:
         duct_type:    Type of duct: "supply", "return", or "exhaust".
                       Only supply and return require detectors per §17.7.5.1.
     """
+
     duct_id: str
     length_m: float
     width_m: float
     start_point: Point = (0.0, 0.0)
-    end_point:   Point = (1.0, 0.0)
+    end_point: Point = (1.0, 0.0)
     airflow_cfm: Optional[float] = None
-    duct_type:   str = "supply"
-    height_m:    float = 0.0   # cross-section height (0 = round duct; width_m = diameter)
+    duct_type: str = "supply"
+    height_m: float = 0.0  # cross-section height (0 = round duct; width_m = diameter)
 
     def __post_init__(self):
         # V25 FIX: Validate duct_type against NFPA 72 §17.7.5.1 recognized types.
@@ -104,23 +105,26 @@ class DuctSpec:
         # duct.duct_type.lower() against ("supply", "return", "mixed") would
         # fail because spaces are preserved, bypassing the CFM override.
         # This caused a false exemption for high-CFM ducts with padded type.
-        import dataclasses
-        object.__setattr__(self, 'duct_type', normalized)
+        object.__setattr__(self, "duct_type", normalized)
 
         # V50 FIX: Validate numeric inputs — reject NaN, Inf, negative values.
         # NaN airflow_cfm silently bypasses CFM override (NaN > 2000 = False).
         # Negative dimensions produce nonsensical results. Life-critical code
         # must reject garbage inputs rather than silently producing garbage output.
         import math
-        for name in ('length_m', 'width_m', 'height_m'):
+
+        for name in ("length_m", "width_m", "height_m"):
             val = getattr(self, name)
             if not isinstance(val, (int, float)) or not math.isfinite(val) or val < 0:
                 raise ValueError(
-                    f"DuctSpec.{name}={val} is invalid. Must be a non-negative finite number. "
-                    f"[NFPA 72 §17.7.5.1]"
+                    f"DuctSpec.{name}={val} is invalid. Must be a non-negative finite number. [NFPA 72 §17.7.5.1]"
                 )
         if self.airflow_cfm is not None:
-            if not isinstance(self.airflow_cfm, (int, float)) or not math.isfinite(self.airflow_cfm) or self.airflow_cfm < 0:
+            if (
+                not isinstance(self.airflow_cfm, (int, float))
+                or not math.isfinite(self.airflow_cfm)
+                or self.airflow_cfm < 0
+            ):
                 raise ValueError(
                     f"DuctSpec.airflow_cfm={self.airflow_cfm} is invalid. "
                     f"Must be a non-negative finite number or None. "
@@ -136,13 +140,14 @@ class DuctDetectorPosition:
     nfpa_ref cites the requirement for duct detectors (NFPA 72 §17.7.5).
     spacing_ref cites the maximum inter-detector spacing (NFPA 90A §6.4.2.2).
     """
+
     duct_id: str
-    index: int                          # detector index within duct (1-based)
+    index: int  # detector index within duct (1-based)
     x: float
     y: float
     distance_from_start_m: float
-    nfpa_ref: str = "NFPA 72-2022 §17.7.5"       # detector requirement
-    spacing_ref: str = "NFPA 90A-2024 §6.4.2.2"   # max spacing source
+    nfpa_ref: str = "NFPA 72-2022 §17.7.5"  # detector requirement
+    spacing_ref: str = "NFPA 90A-2024 §6.4.2.2"  # max spacing source
 
 
 @dataclass(frozen=True)
@@ -153,6 +158,7 @@ class DuctAnalysisResult:
     nfpa_ref cites the requirement for duct detectors (NFPA 72 §17.7.5).
     spacing_ref cites the maximum inter-detector spacing (NFPA 90A §6.4.2.2).
     """
+
     duct_id: str
     duct_length_m: float
     duct_width_m: float
@@ -162,7 +168,7 @@ class DuctAnalysisResult:
     exempt: bool = False
     exemption_reason: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
-    velocity_fpm: float = 0.0        # computed air velocity in FPM
+    velocity_fpm: float = 0.0  # computed air velocity in FPM
     velocity_blindness: bool = False  # True if velocity exceeds UL 268A limit
     # V51 FIX: When velocity_blindness=True, placed detectors are non-functional.
     # A compliance report showing detectors placed would be a false PASS.
@@ -171,13 +177,14 @@ class DuctAnalysisResult:
     # V20.2 FIX: HVAC shutdown flag per NFPA 72 §21.7.1
     hvac_shutdown_required: bool = False
     hvac_shutdown_ref: str = ""
-    nfpa_ref: str = "NFPA 72-2022 §17.7.5"       # detector requirement
-    spacing_ref: str = "NFPA 90A-2024 §6.4.2.2"   # max spacing source
+    nfpa_ref: str = "NFPA 72-2022 §17.7.5"  # detector requirement
+    spacing_ref: str = "NFPA 90A-2024 §6.4.2.2"  # max spacing source
 
 
 # ============================================================================
 # Core analysis function
 # ============================================================================
+
 
 def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
     """
@@ -211,9 +218,7 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
     # When CFM is KNOWN and >2000 for supply/return/mixed ducts, detectors
     # are REQUIRED regardless of dimensions. This overrides ALL exemptions.
     cfm_override = (
-        duct.airflow_cfm is not None
-        and duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD
-        and _is_supply_return_mixed
+        duct.airflow_cfm is not None and duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD and _is_supply_return_mixed
     )
 
     # ── CFM unknown block (V68 FIX — life-safety conservative) ────────────
@@ -221,10 +226,7 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
     # are BLOCKED because the AHU could be >2000 CFM. Per NFPA 72 §17.7.5.1,
     # the conservative position is to REQUIRE detectors unless CFM is KNOWN
     # to be ≤2000. Exhaust ducts are always exempt regardless.
-    cfm_unknown_blocks_exemption = (
-        duct.airflow_cfm is None
-        and _is_supply_return_mixed
-    )
+    cfm_unknown_blocks_exemption = duct.airflow_cfm is None and _is_supply_return_mixed
 
     if not cfm_override and not cfm_unknown_blocks_exemption:
         # ── Exemption: zero-dimension ducts ──────────────────────────────
@@ -255,8 +257,7 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
                 spacing_used_m=0.0,
                 exempt=True,
                 exemption_reason=(
-                    f"Duct width {duct.width_m:.2f}m < minimum "
-                    f"{NFPA_DUCT_MIN_WIDTH_M}m (NFPA 72 §17.7.5 — exempt)."
+                    f"Duct width {duct.width_m:.2f}m < minimum {NFPA_DUCT_MIN_WIDTH_M}m (NFPA 72 §17.7.5 — exempt)."
                 ),
             )
 
@@ -271,8 +272,7 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
                 spacing_used_m=0.0,
                 exempt=True,
                 exemption_reason=(
-                    f"Duct length {duct.length_m:.2f}m < minimum "
-                    f"{NFPA_DUCT_MIN_LENGTH_M}m (NFPA 72 §17.7.5 — exempt)."
+                    f"Duct length {duct.length_m:.2f}m < minimum {NFPA_DUCT_MIN_LENGTH_M}m (NFPA 72 §17.7.5 — exempt)."
                 ),
             )
 
@@ -371,13 +371,15 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
         else:
             px, py = sx, sy
 
-        positions.append(DuctDetectorPosition(
-            duct_id=duct.duct_id,
-            index=i + 1,
-            x=round(px, 4),
-            y=round(py, 4),
-            distance_from_start_m=round(dist, 4),
-        ))
+        positions.append(
+            DuctDetectorPosition(
+                duct_id=duct.duct_id,
+                index=i + 1,
+                x=round(px, 4),
+                y=round(py, 4),
+                distance_from_start_m=round(dist, 4),
+            )
+        )
 
     return DuctAnalysisResult(
         duct_id=duct.duct_id,
@@ -399,11 +401,7 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
             duct.duct_type.lower() in ("supply", "return", "mixed")
             and (duct.airflow_cfm is None or duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD)
         ),
-        hvac_shutdown_ref=(
-            "NFPA 72-2022 §21.7.1"
-            if duct.duct_type.lower() in ("supply", "return", "mixed")
-            else ""
-        ),
+        hvac_shutdown_ref=("NFPA 72-2022 §21.7.1" if duct.duct_type.lower() in ("supply", "return", "mixed") else ""),
     )
 
 

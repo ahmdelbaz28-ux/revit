@@ -42,10 +42,9 @@ Usage:
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Any, Dict, List, Tuple
 
 # ============================================================================
 # Constants — NFPA 72 / NFPA 90A
@@ -70,8 +69,10 @@ MEP_UNIT_COSTS: Dict[str, float] = {
 # Enums
 # ============================================================================
 
+
 class ModuleType(str, Enum):
     """Types of MEP interface modules per NFPA 72 Chapter 21."""
+
     ELEVATOR_RECALL = "ELEVATOR_RECALL"
     HVAC_SHUTDOWN = "HVAC_SHUTDOWN"
     SUPPRESSION_MONITOR = "SUPPRESSION_MONITOR"
@@ -81,8 +82,9 @@ class ModuleType(str, Enum):
 
 class MEPElementType(str, Enum):
     """Types of MEP elements found in building models."""
-    AHU = "AHU"                    # Air Handling Unit
-    FCU = "FCU"                    # Fan Coil Unit
+
+    AHU = "AHU"  # Air Handling Unit
+    FCU = "FCU"  # Fan Coil Unit
     ELEVATOR = "ELEVATOR"
     SPRINKLER_SYSTEM = "SPRINKLER_SYSTEM"
     SMOKE_DAMPER = "SMOKE_DAMPER"
@@ -93,19 +95,22 @@ class MEPElementType(str, Enum):
 
 class AddressType(str, Enum):
     """Addressing mode for MEP interface modules."""
+
     ANALOG = "ANALOG"
     ADDRESSABLE = "ADDRESSABLE"
 
 
 class ElevatorPhase(str, Enum):
     """Elevator recall phases per NFPA 72 §21.3 / ASME A17.1."""
-    PHASE_I = "PHASE_I"     # Automatic recall to designated/alternate floor
-    PHASE_II = "PHASE_II"   # Firefighter's service — manual control
+
+    PHASE_I = "PHASE_I"  # Automatic recall to designated/alternate floor
+    PHASE_II = "PHASE_II"  # Firefighter's service — manual control
 
 
 # ============================================================================
 # Data Structures — Frozen (Immutable)
 # ============================================================================
+
 
 @dataclass(frozen=True)
 class MEPElement:
@@ -125,6 +130,7 @@ class MEPElement:
         is_fire_rated: For EGRESS_DOOR — whether door is fire-rated.
         nfpa_reference: Applicable NFPA code reference.
     """
+
     element_id: str
     element_type: MEPElementType
     location: Tuple[float, float] = (0.0, 0.0)
@@ -155,6 +161,7 @@ class ElevatorRecallSpec:
         phase_i_nfpa_ref: NFPA reference for Phase I.
         phase_ii_nfpa_ref: NFPA reference for Phase II.
     """
+
     elevator_bank: str
     designated_floor: str = "LOBBY_GROUND"
     alternate_floor: str = "LOBBY_ALTERNATE"
@@ -175,6 +182,7 @@ class HVACShutdownSpec:
         shutdown_nfpa_ref: NFPA reference for shutdown requirement.
         duct_detector_nfpa_ref: NFPA reference for duct detection.
     """
+
     ahu_id: str
     capacity_cfm: float
     requires_shutdown: bool = False
@@ -200,6 +208,7 @@ class MEPInterfaceModule:
         floor_id: Floor assignment.
         description: Human-readable description.
     """
+
     module_id: str
     module_type: ModuleType
     target_element_id: str
@@ -241,6 +250,7 @@ class MEPSyncResult:
         total_elevator_banks: Count of elevator banks processed.
         total_ahu_shutdowns: Count of AHUs requiring shutdown.
     """
+
     interface_modules: Tuple[MEPInterfaceModule, ...]
     elevator_specs: Tuple[ElevatorRecallSpec, ...]
     hvac_specs: Tuple[HVACShutdownSpec, ...]
@@ -254,6 +264,7 @@ class MEPSyncResult:
 # ============================================================================
 # Validation
 # ============================================================================
+
 
 def validate_mep_elements(elements: List[MEPElement]) -> List[str]:
     """Validate MEP elements before synchronisation.
@@ -277,23 +288,15 @@ def validate_mep_elements(elements: List[MEPElement]) -> List[str]:
         # 1. NaN / Inf check on location
         x, y = elem.location
         if not (math.isfinite(x) and math.isfinite(y)):
-            errors.append(
-                f"Element '{elem.element_id}': location ({x}, {y}) "
-                f"contains NaN or Inf"
-            )
+            errors.append(f"Element '{elem.element_id}': location ({x}, {y}) contains NaN or Inf")
 
         # 1b. NaN / Inf check on capacity
         if not math.isfinite(elem.capacity_cfm):
-            errors.append(
-                f"Element '{elem.element_id}': capacity_cfm={elem.capacity_cfm} "
-                f"is NaN or Inf"
-            )
+            errors.append(f"Element '{elem.element_id}': capacity_cfm={elem.capacity_cfm} is NaN or Inf")
 
         # 2. Duplicate ID check
         if elem.element_id in seen_ids:
-            errors.append(
-                f"Duplicate element_id: '{elem.element_id}'"
-            )
+            errors.append(f"Duplicate element_id: '{elem.element_id}'")
         seen_ids.add(elem.element_id)
 
         # 3. AHU capacity check
@@ -324,6 +327,7 @@ def validate_mep_elements(elements: List[MEPElement]) -> List[str]:
 # BOQ Integration
 # ============================================================================
 
+
 def extend_boq_with_mep_modules(
     mep_result: MEPSyncResult,
 ) -> List[Dict[str, Any]]:
@@ -353,31 +357,33 @@ def extend_boq_with_mep_modules(
     for mtype, count in sorted(type_counts.items()):
         cost_key = mtype.lower()
         unit_cost = MEP_UNIT_COSTS.get(cost_key, 100.0)
-        items.append({
-            "item_type": f"mep_{mtype.lower()}",
-            "description": f"MEP Interface Module — {mtype.replace('_', ' ').title()}",
-            "quantity": count,
-            "unit": "ea",
-            "unit_cost_usd": unit_cost,
-            "total_cost_usd": round(count * unit_cost, 2),
-            "nfpa_reference": type_refs.get(mtype, "NFPA 72 Chapter 21"),
-        })
+        items.append(
+            {
+                "item_type": f"mep_{mtype.lower()}",
+                "description": f"MEP Interface Module — {mtype.replace('_', ' ').title()}",
+                "quantity": count,
+                "unit": "ea",
+                "unit_cost_usd": unit_cost,
+                "total_cost_usd": round(count * unit_cost, 2),
+                "nfpa_reference": type_refs.get(mtype, "NFPA 72 Chapter 21"),
+            }
+        )
 
     # Add duct smoke detectors for HVAC shutdown
-    duct_count = sum(
-        1 for spec in mep_result.hvac_specs if spec.requires_duct_detector
-    )
+    duct_count = sum(1 for spec in mep_result.hvac_specs if spec.requires_duct_detector)
     if duct_count > 0:
         unit_cost = MEP_UNIT_COSTS["duct_smoke_detector"]
-        items.append({
-            "item_type": "mep_duct_smoke_detector",
-            "description": "Duct Smoke Detector for AHU Shutdown",
-            "quantity": duct_count,
-            "unit": "ea",
-            "unit_cost_usd": unit_cost,
-            "total_cost_usd": round(duct_count * unit_cost, 2),
-            "nfpa_reference": "NFPA 90A-2024 §5.3",
-        })
+        items.append(
+            {
+                "item_type": "mep_duct_smoke_detector",
+                "description": "Duct Smoke Detector for AHU Shutdown",
+                "quantity": duct_count,
+                "unit": "ea",
+                "unit_cost_usd": unit_cost,
+                "total_cost_usd": round(duct_count * unit_cost, 2),
+                "nfpa_reference": "NFPA 90A-2024 §5.3",
+            }
+        )
 
     return items
 
@@ -385,6 +391,7 @@ def extend_boq_with_mep_modules(
 # ============================================================================
 # Core Synchroniser
 # ============================================================================
+
 
 class MEPSyncInjector:
     """Synchronises fire alarm interfaces with MEP subsystems.
@@ -467,9 +474,7 @@ class MEPSyncInjector:
             errors=(),
             total_modules=len(modules),
             total_elevator_banks=len(elevator_specs),
-            total_ahu_shutdowns=sum(
-                1 for s in hvac_specs if s.requires_shutdown
-            ),
+            total_ahu_shutdowns=sum(1 for s in hvac_specs if s.requires_shutdown),
         )
 
     # --- Private processors ---
@@ -515,8 +520,7 @@ class MEPSyncInjector:
         # Warning if no elevator bank specified
         if not elem.elevator_bank:
             warnings.append(
-                f"Elevator '{elem.element_id}': no elevator_bank specified. "
-                f"Using element_id as bank identifier."
+                f"Elevator '{elem.element_id}': no elevator_bank specified. Using element_id as bank identifier."
             )
 
         return [recall_module], spec

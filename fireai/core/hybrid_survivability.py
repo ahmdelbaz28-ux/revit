@@ -74,6 +74,7 @@ logger = logging.getLogger(__name__)
 # Enums and Models
 # ===========================================================================
 
+
 class SurvivabilityClass(str, Enum):
     """
     Per-point hybrid survivability classification.
@@ -105,10 +106,11 @@ class SurvivabilityClass(str, Enum):
         In a SIL-rated system, any BLIND_SPOT in the hazardous zone
         is a violation that prevents submission.
     """
+
     REDUNDANT_HYBRID = "REDUNDANT_HYBRID"
-    OPTICAL_ONLY     = "OPTICAL_ONLY"
-    ACOUSTIC_ONLY    = "ACOUSTIC_ONLY"
-    BLIND_SPOT       = "BLIND_SPOT"
+    OPTICAL_ONLY = "OPTICAL_ONLY"
+    ACOUSTIC_ONLY = "ACOUSTIC_ONLY"
+    BLIND_SPOT = "BLIND_SPOT"
 
     @property
     def is_covered(self) -> bool:
@@ -129,9 +131,9 @@ class SurvivabilityClass(str, Enum):
         """Lower = safer. Used for heatmap color mapping in Revit export."""
         return {
             SurvivabilityClass.REDUNDANT_HYBRID: 0,
-            SurvivabilityClass.OPTICAL_ONLY:     1,
-            SurvivabilityClass.ACOUSTIC_ONLY:    2,
-            SurvivabilityClass.BLIND_SPOT:       3,
+            SurvivabilityClass.OPTICAL_ONLY: 1,
+            SurvivabilityClass.ACOUSTIC_ONLY: 2,
+            SurvivabilityClass.BLIND_SPOT: 3,
         }[self]
 
 
@@ -143,6 +145,7 @@ class AcousticCoverageDetail(BaseModel):
     trace_acoustic_ray for a specific (grid_point, sensor) pair. It does
     NOT belong on input models (UltrasonicSensor, AcousticObstacle).
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     sensor_id: str = Field(description="UGLD sensor that produced this result.")
@@ -170,6 +173,7 @@ class HybridPointResult(BaseModel):
     The atomic unit of the hybrid map. Each grid point gets one of these,
     combining optical and acoustic data into a single classification.
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     point_index: int = Field(description="Index into the shared grid.")
@@ -198,6 +202,7 @@ class HybridSurvivabilityMap(BaseModel):
 
     This is an OUTPUT model — warnings are appropriate here (not on input).
     """
+
     model_config = ConfigDict(frozen=True, strict=True)
 
     total_points: int = Field(ge=0, description="Total grid points analyzed.")
@@ -208,33 +213,43 @@ class HybridSurvivabilityMap(BaseModel):
 
     # Aggregate counts
     redundant_hybrid_count: int = Field(
-        default=0, ge=0,
+        default=0,
+        ge=0,
         description="Points with both optical and acoustic coverage.",
     )
     optical_only_count: int = Field(
-        default=0, ge=0,
+        default=0,
+        ge=0,
         description="Points with optical coverage only.",
     )
     acoustic_only_count: int = Field(
-        default=0, ge=0,
+        default=0,
+        ge=0,
         description="Points with acoustic coverage only.",
     )
     blind_spot_count: int = Field(
-        default=0, ge=0,
+        default=0,
+        ge=0,
         description="Points with neither optical nor acoustic coverage.",
     )
 
     # Coverage fractions
     hybrid_coverage_fraction: float = Field(
-        default=0.0, ge=0.0, le=1.0,
+        default=0.0,
+        ge=0.0,
+        le=1.0,
         description="Fraction of points with REDUNDANT_HYBRID classification.",
     )
     any_coverage_fraction: float = Field(
-        default=0.0, ge=0.0, le=1.0,
+        default=0.0,
+        ge=0.0,
+        le=1.0,
         description="Fraction of points with at least one modality.",
     )
     blind_spot_fraction: float = Field(
-        default=0.0, ge=0.0, le=1.0,
+        default=0.0,
+        ge=0.0,
+        le=1.0,
         description="Fraction of points that are BLIND_SPOT.",
     )
 
@@ -298,10 +313,7 @@ class HybridSurvivabilityMap(BaseModel):
         mandate hybrid (optical + acoustic) redundancy, this represents
         the highest assurance level achievable with dual-modality detection.
         """
-        return (
-            self.redundant_hybrid_count == self.total_points
-            and self.total_points > 0
-        )
+        return self.redundant_hybrid_count == self.total_points and self.total_points > 0
 
     @property
     def has_blind_spots(self) -> bool:
@@ -312,6 +324,7 @@ class HybridSurvivabilityMap(BaseModel):
 # ===========================================================================
 # Layer 7 Engine
 # ===========================================================================
+
 
 class HybridSurvivabilityEngine:
     """
@@ -407,23 +420,16 @@ class HybridSurvivabilityEngine:
 
         for sensor in ugld_sensors:
             if sensor.sensor_id not in sensor_positions:
-                raise ValueError(
-                    f"UGLD sensor '{sensor.sensor_id}' has no position "
-                    "in sensor_positions mapping."
-                )
+                raise ValueError(f"UGLD sensor '{sensor.sensor_id}' has no position in sensor_positions mapping.")
 
         obstacles = acoustic_obstacles or []
         warnings: List[str] = []
 
         if not ugld_sensors:
             warnings.append(
-                "No UGLD sensors provided — all points classified as "
-                "OPTICAL_ONLY or BLIND_SPOT (no acoustic analysis)."
+                "No UGLD sensors provided — all points classified as OPTICAL_ONLY or BLIND_SPOT (no acoustic analysis)."
             )
-            logger.warning(
-                "HybridSurvivabilityEngine: no UGLD sensors — "
-                "falling back to optical-only classification."
-            )
+            logger.warning("HybridSurvivabilityEngine: no UGLD sensors — falling back to optical-only classification.")
 
         # ── Step 1: Optical coverage lookup ───────────────────────────
         # redundancy_map: Dict[int, int] → point_index → detector_count
@@ -460,13 +466,9 @@ class HybridSurvivabilityEngine:
                         sensor_id=sensor.sensor_id,
                         triggered=ray_result.trigger_result.triggered,
                         snr_db=ray_result.trigger_result.snr_db,
-                        margin_to_threshold_db=(
-                            ray_result.trigger_result.margin_to_threshold_db
-                        ),
+                        margin_to_threshold_db=(ray_result.trigger_result.margin_to_threshold_db),
                         has_los=ray_result.has_los,
-                        total_insertion_loss_db=(
-                            ray_result.total_insertion_loss_db
-                        ),
+                        total_insertion_loss_db=(ray_result.total_insertion_loss_db),
                         distance_meters=ray_result.distance_meters,
                     )
 
@@ -477,9 +479,9 @@ class HybridSurvivabilityEngine:
         point_results: Dict[int, HybridPointResult] = {}
         counts = {
             SurvivabilityClass.REDUNDANT_HYBRID: 0,
-            SurvivabilityClass.OPTICAL_ONLY:     0,
-            SurvivabilityClass.ACOUSTIC_ONLY:    0,
-            SurvivabilityClass.BLIND_SPOT:       0,
+            SurvivabilityClass.OPTICAL_ONLY: 0,
+            SurvivabilityClass.ACOUSTIC_ONLY: 0,
+            SurvivabilityClass.BLIND_SPOT: 0,
         }
 
         for pt_idx, pt in enumerate(grid):
@@ -509,9 +511,7 @@ class HybridSurvivabilityEngine:
                 z=pt.z,
                 survivability_class=cls,
                 optical_detector_count=opt_count,
-                best_acoustic_detail=(
-                    ac_detail if ac_detail and ac_detail.triggered else None
-                ),
+                best_acoustic_detail=(ac_detail if ac_detail and ac_detail.triggered else None),
             )
 
         # ── Step 4: Compute aggregate statistics ──────────────────────
@@ -545,16 +545,9 @@ class HybridSurvivabilityEngine:
             optical_only_count=oo_count,
             acoustic_only_count=ao_count,
             blind_spot_count=bs_count,
-            hybrid_coverage_fraction=(
-                round(rh_count / total, 4) if total else 0.0
-            ),
-            any_coverage_fraction=(
-                round((rh_count + oo_count + ao_count) / total, 4)
-                if total else 0.0
-            ),
-            blind_spot_fraction=(
-                round(bs_count / total, 4) if total else 0.0
-            ),
+            hybrid_coverage_fraction=(round(rh_count / total, 4) if total else 0.0),
+            any_coverage_fraction=(round((rh_count + oo_count + ao_count) / total, 4) if total else 0.0),
+            blind_spot_fraction=(round(bs_count / total, 4) if total else 0.0),
             warnings=warnings,
         )
 
@@ -592,17 +585,17 @@ class HybridSurvivabilityEngine:
         """
         COLOR_MAP = {
             SurvivabilityClass.REDUNDANT_HYBRID: "#00AA44",
-            SurvivabilityClass.OPTICAL_ONLY:     "#FFD700",
-            SurvivabilityClass.ACOUSTIC_ONLY:    "#FF8C00",
-            SurvivabilityClass.BLIND_SPOT:       "#CC0000",
+            SurvivabilityClass.OPTICAL_ONLY: "#FFD700",
+            SurvivabilityClass.ACOUSTIC_ONLY: "#FF8C00",
+            SurvivabilityClass.BLIND_SPOT: "#CC0000",
         }
 
         total_pts = hybrid_map.total_points
         cls_counts: Dict[str, int] = {
             "REDUNDANT_HYBRID": 0,
-            "OPTICAL_ONLY":     0,
-            "ACOUSTIC_ONLY":    0,
-            "BLIND_SPOT":       0,
+            "OPTICAL_ONLY": 0,
+            "ACOUSTIC_ONLY": 0,
+            "BLIND_SPOT": 0,
         }
 
         points_out: List[Dict] = []
@@ -615,37 +608,37 @@ class HybridSurvivabilityEngine:
             if pr.best_acoustic_detail is not None:
                 acoustic_snr = pr.best_acoustic_detail.snr_db
 
-            points_out.append({
-                "x":               pr.x,
-                "y":               pr.y,
-                "z":               pr.z,
-                "class":           cls_str,
-                "optical_count":   pr.optical_detector_count,
-                "acoustic_snr_db": acoustic_snr,
-                "color":           COLOR_MAP.get(
-                    pr.survivability_class, "#888888"
-                ),
-            })
+            points_out.append(
+                {
+                    "x": pr.x,
+                    "y": pr.y,
+                    "z": pr.z,
+                    "class": cls_str,
+                    "optical_count": pr.optical_detector_count,
+                    "acoustic_snr_db": acoustic_snr,
+                    "color": COLOR_MAP.get(pr.survivability_class, "#888888"),
+                }
+            )
 
         def _pct(n: int) -> float:
             return round(100 * n / total_pts, 2) if total_pts else 0.0
 
         payload = {
             "meta": {
-                "generated":     datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "version":       "FireAI_V24",
-                "total_points":  total_pts,
-                "standards":     [
+                "generated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "version": "FireAI_V24",
+                "total_points": total_pts,
+                "standards": [
                     "NFPA 72-2022 §17.8.3.4",
                     "ISA-TR 84.00.07",
                 ],
             },
             "statistics": {
-                "total_points":           total_pts,
-                "redundant_hybrid_pct":   _pct(cls_counts["REDUNDANT_HYBRID"]),
-                "optical_only_pct":       _pct(cls_counts["OPTICAL_ONLY"]),
-                "acoustic_only_pct":      _pct(cls_counts["ACOUSTIC_ONLY"]),
-                "blind_spot_pct":         _pct(cls_counts["BLIND_SPOT"]),
+                "total_points": total_pts,
+                "redundant_hybrid_pct": _pct(cls_counts["REDUNDANT_HYBRID"]),
+                "optical_only_pct": _pct(cls_counts["OPTICAL_ONLY"]),
+                "acoustic_only_pct": _pct(cls_counts["ACOUSTIC_ONLY"]),
+                "blind_spot_pct": _pct(cls_counts["BLIND_SPOT"]),
             },
             "class_legend": {
                 "REDUNDANT_HYBRID": {
@@ -672,8 +665,6 @@ class HybridSurvivabilityEngine:
             json.dump(payload, f, ensure_ascii=False, indent=2)
 
         logger.info(
-            f"Heatmap JSON exported: {output_path} "
-            f"({total_pts} points, "
-            f"{cls_counts['BLIND_SPOT']} blind spots)"
+            f"Heatmap JSON exported: {output_path} ({total_pts} points, {cls_counts['BLIND_SPOT']} blind spots)"
         )
         return output_path

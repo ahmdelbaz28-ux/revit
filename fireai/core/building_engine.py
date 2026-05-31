@@ -61,6 +61,7 @@ from typing import Dict, List, Optional
 #   - NEVER use concurrent.futures.ProcessPoolExecutor with CBC
 try:
     from concurrent.futures import ProcessPoolExecutor  # noqa: F401
+
     _PROCESSPOOL_AVAILABLE = True
 except ImportError:
     _PROCESSPOOL_AVAILABLE = False
@@ -73,16 +74,16 @@ _PPE_USED_MSG = (
     "Use subprocess isolation instead. See V0.3 Safety Guard in docstring."
 )
 
-import sys
 import os
+import sys
 
 # Import FloorAnalyser and its dependencies
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from fireai.core.floor_analyser import FloorAnalyser, FloorReport
-from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
-from fireai.core.project_learner import ProjectLearner, BuildingProjectProfile
-from fireai.core.fire_zone_engine import FireZoneEngine, ZoneConstraints, ZoneReport
 from fireai.core.delta_cache import DeltaCache
+from fireai.core.fire_zone_engine import FireZoneEngine, ZoneConstraints, ZoneReport
+from fireai.core.floor_analyser import FloorAnalyser, FloorReport
+from fireai.core.project_learner import BuildingProjectProfile, ProjectLearner
+from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,7 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────
 # Building report
 # ──────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class BuildingReport:
@@ -120,29 +122,31 @@ class BuildingReport:
         building_warnings: Building-level advisory messages.
         analysis_time_s: Total wall-clock analysis time in seconds.
     """
-    building_id:                      str
-    floor_reports:                    List[FloorReport]    = field(default_factory=list)
-    total_detectors:                  int                  = 0
-    total_theoretical_lower_bound:    int                  = 0
-    total_duct_devices:               int                  = 0
-    total_floors:                     int                  = 0
-    fully_compliant:                  bool                 = False
-    safe_to_submit:                   bool                 = False
-    non_compliant_floors:             List[str]            = field(default_factory=list)
-    unsafe_floors:                    List[str]            = field(default_factory=list)
-    building_warnings:                List[str]            = field(default_factory=list)
-    analysis_time_s:                  float                = 0.0
+
+    building_id: str
+    floor_reports: List[FloorReport] = field(default_factory=list)
+    total_detectors: int = 0
+    total_theoretical_lower_bound: int = 0
+    total_duct_devices: int = 0
+    total_floors: int = 0
+    fully_compliant: bool = False
+    safe_to_submit: bool = False
+    non_compliant_floors: List[str] = field(default_factory=list)
+    unsafe_floors: List[str] = field(default_factory=list)
+    building_warnings: List[str] = field(default_factory=list)
+    analysis_time_s: float = 0.0
     # V5.0: Project learning profile (populated after all floors analysed)
-    project_profile:                  Optional[BuildingProjectProfile] = None
+    project_profile: Optional[BuildingProjectProfile] = None
     # V0.2: Fire zone assignments per floor (Consultant #6 Criticism #2)
-    zone_reports:                     Dict[str, ZoneReport]  = field(default_factory=dict)
+    zone_reports: Dict[str, ZoneReport] = field(default_factory=dict)
     # V0.2: DeltaCache statistics (Consultant #6 Criticism #3)
-    cache_stats:                      Optional[Dict] = None
+    cache_stats: Optional[Dict] = None
 
 
 # ──────────────────────────────────────────────────────────────────
 # Building Engine
 # ──────────────────────────────────────────────────────────────────
+
 
 class BuildingEngine:
     """
@@ -202,14 +206,14 @@ class BuildingEngine:
     def __init__(
         self,
         building_id: str,
-        optimizer:   DensityOptimizer,
+        optimizer: DensityOptimizer,
         audit_trail: Optional[object] = None,
         audit_store: Optional[object] = None,
         zone_constraints: Optional[ZoneConstraints] = None,
         delta_cache_path: Optional[str] = None,
     ) -> None:
         self.building_id = building_id
-        self.opt         = optimizer   # V7.3 as-is, shared read-only
+        self.opt = optimizer  # V7.3 as-is, shared read-only
         self.audit_trail = audit_trail
         self.audit_store = audit_store
         # V0.2: Fire zone engine (Consultant #6 Criticism #2 — concept accepted)
@@ -256,7 +260,7 @@ class BuildingEngine:
         report = BuildingReport(building_id=self.building_id)
 
         # Log building analysis start to AuditStore
-        if self.audit_store and hasattr(self.audit_store, 'add_event'):
+        if self.audit_store and hasattr(self.audit_store, "add_event"):
             self.audit_store.add_event(
                 event_type="BUILDING_ANALYSIS_START",
                 room_id="__BUILDING__",
@@ -300,8 +304,10 @@ class BuildingEngine:
 
             logger.info(
                 "BuildingEngine: building=%s floor=%s rooms=%d detectors=%d compliant=%s",
-                self.building_id, floor_id,
-                len(floor_report.room_summaries), floor_report.total_detectors,
+                self.building_id,
+                floor_id,
+                len(floor_report.room_summaries),
+                floor_report.total_detectors,
                 floor_report.fully_compliant,
             )
 
@@ -312,16 +318,12 @@ class BuildingEngine:
         report.analysis_time_s = round(time.time() - t0, 3)
 
         if report.unsafe_floors:
-            report.building_warnings.append(
-                f"UNSAFE floors (do NOT submit): {report.unsafe_floors}"
-            )
+            report.building_warnings.append(f"UNSAFE floors (do NOT submit): {report.unsafe_floors}")
         if report.non_compliant_floors:
-            report.building_warnings.append(
-                f"Non-compliant floors: {report.non_compliant_floors}"
-            )
+            report.building_warnings.append(f"Non-compliant floors: {report.non_compliant_floors}")
 
         # Log building analysis complete to AuditStore
-        if self.audit_store and hasattr(self.audit_store, 'add_event'):
+        if self.audit_store and hasattr(self.audit_store, "add_event"):
             self.audit_store.add_event(
                 event_type="BUILDING_ANALYSIS_COMPLETE",
                 room_id="__BUILDING__",
@@ -346,12 +348,14 @@ class BuildingEngine:
             for s in floor_report.room_summaries:
                 if s.refused or s.detector_count == 0:
                     continue
-                zone_rooms.append({
-                    "id": s.room_id,
-                    "area": s.width * s.length if s.width and s.length else 0.0,
-                    "detectors": s.detector_count,
-                    "occupancy": getattr(s, 'detector_type', 'office'),
-                })
+                zone_rooms.append(
+                    {
+                        "id": s.room_id,
+                        "area": s.width * s.length if s.width and s.length else 0.0,
+                        "detectors": s.detector_count,
+                        "occupancy": getattr(s, "detector_type", "office"),
+                    }
+                )
             if zone_rooms:
                 zone_report = self.zone_engine.cluster_floor(
                     floor_id=floor_report.floor_id,
@@ -360,9 +364,7 @@ class BuildingEngine:
                 report.zone_reports[floor_report.floor_id] = zone_report
                 # Add zone info to building warnings for visibility
                 if zone_report.warnings:
-                    report.building_warnings.extend(
-                        f"[{floor_report.floor_id}] {w}" for w in zone_report.warnings
-                    )
+                    report.building_warnings.extend(f"[{floor_report.floor_id}] {w}" for w in zone_report.warnings)
 
         # V5.0: Build project profile from all room summaries
         learner = ProjectLearner(building_id=self.building_id)
@@ -370,16 +372,13 @@ class BuildingEngine:
             for s in floor_report.room_summaries:
                 if s.refused or s.detector_count == 0:
                     continue
-                eff = (
-                    s.detector_count / s.theoretical_lower_bound
-                    if s.theoretical_lower_bound > 0 else 1.0
-                )
+                eff = s.detector_count / s.theoretical_lower_bound if s.theoretical_lower_bound > 0 else 1.0
                 learner.record(
-                    name       = s.name,
-                    width      = s.width,
-                    length     = s.length,
-                    strategy   = s.method,
-                    efficiency = eff,
+                    name=s.name,
+                    width=s.width,
+                    length=s.length,
+                    strategy=s.method,
+                    efficiency=eff,
                 )
         report.project_profile = learner.profile()
 
@@ -395,14 +394,19 @@ class BuildingEngine:
             # and could mislead engineers into thinking zone creation is problematic.
             logger.info(
                 "Fire zones created: %d across %d floors",
-                total_zones, len(report.zone_reports),
+                total_zones,
+                len(report.zone_reports),
             )
 
         logger.info(
             "BuildingEngine: building=%s floors=%d detectors=%d zones=%d compliant=%s safe=%s t=%.2fs",
-            self.building_id, report.total_floors, report.total_detectors,
+            self.building_id,
+            report.total_floors,
+            report.total_detectors,
             total_zones,
-            report.fully_compliant, report.safe_to_submit, report.analysis_time_s,
+            report.fully_compliant,
+            report.safe_to_submit,
+            report.analysis_time_s,
         )
         return report
 
@@ -413,15 +417,40 @@ if __name__ == "__main__":
 
     floors = {
         "GF": [
-            {"room_id": "lobby_12x8", "name": "lobby", "polygon_coords": [(0,0),(12,0),(12,8),(0,8)], "ceiling_height": 3.0},
-            {"room_id": "parking_30x20", "name": "parking", "polygon_coords": [(0,0),(30,0),(30,20),(0,20)], "ceiling_height": 3.0},
+            {
+                "room_id": "lobby_12x8",
+                "name": "lobby",
+                "polygon_coords": [(0, 0), (12, 0), (12, 8), (0, 8)],
+                "ceiling_height": 3.0,
+            },
+            {
+                "room_id": "parking_30x20",
+                "name": "parking",
+                "polygon_coords": [(0, 0), (30, 0), (30, 20), (0, 20)],
+                "ceiling_height": 3.0,
+            },
         ],
         "L1": [
-            {"room_id": "office_10x8", "name": "office", "polygon_coords": [(0,0),(10,0),(10,8),(0,8)], "ceiling_height": 3.0},
-            {"room_id": "meeting_6x5", "name": "meeting", "polygon_coords": [(0,0),(6,0),(6,5),(0,5)], "ceiling_height": 3.0},
+            {
+                "room_id": "office_10x8",
+                "name": "office",
+                "polygon_coords": [(0, 0), (10, 0), (10, 8), (0, 8)],
+                "ceiling_height": 3.0,
+            },
+            {
+                "room_id": "meeting_6x5",
+                "name": "meeting",
+                "polygon_coords": [(0, 0), (6, 0), (6, 5), (0, 5)],
+                "ceiling_height": 3.0,
+            },
         ],
         "L2": [
-            {"room_id": "warehouse_50x40", "name": "warehouse", "polygon_coords": [(0,0),(50,0),(50,40),(0,40)], "ceiling_height": 3.0},
+            {
+                "room_id": "warehouse_50x40",
+                "name": "warehouse",
+                "polygon_coords": [(0, 0), (50, 0), (50, 40), (0, 40)],
+                "ceiling_height": 3.0,
+            },
         ],
     }
 
@@ -447,7 +476,11 @@ if __name__ == "__main__":
             print(f"    Zone {z.zone_id}: rooms={z.rooms} area={z.total_area_sqm:.0f}sqm det={z.total_detectors}")
 
     for fr in report.floor_reports:
-        print(f"\n  Floor: {fr.floor_id} | Detectors: {fr.total_detectors} | Compliant: {fr.fully_compliant} | Safe: {fr.safe_to_submit}")
+        print(
+            f"\n  Floor: {fr.floor_id} | Detectors: {fr.total_detectors} | Compliant: {fr.fully_compliant} | Safe: {fr.safe_to_submit}"
+        )
         for s in fr.room_summaries:
             status = "PASS" if s.compliant else "FAIL"
-            print(f"    {s.name:<20} dets={s.detector_count:<3} LB={s.theoretical_lower_bound:<3} eff={s.efficiency_ratio:.2f} cov={s.coverage_pct:.2f}% {status}")
+            print(
+                f"    {s.name:<20} dets={s.detector_count:<3} LB={s.theoretical_lower_bound:<3} eff={s.efficiency_ratio:.2f} cov={s.coverage_pct:.2f}% {status}"
+            )

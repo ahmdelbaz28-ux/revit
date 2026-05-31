@@ -12,10 +12,9 @@ useful even in monolithic mode for type safety and documentation.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from typing import List, Optional, Dict, Any
+from dataclasses import asdict, dataclass, field
 from enum import Enum
-
+from typing import Any, Dict, List, Optional
 
 # ============================================================================
 # CONTRACT v1 — Shared Data Models
@@ -31,6 +30,7 @@ class CeilingType(str, Enum):
     CeilingType re-exports from here for backward compatibility.
     Includes all ceiling types from both original files.
     """
+
     FLAT = "FLAT"
     SLOPED = "SLOPED"
     BEAMED = "BEAMED"
@@ -47,6 +47,7 @@ class CeilingType(str, Enum):
 
 class ConfidenceLevel(str, Enum):
     """Confidence levels for analysis results."""
+
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
@@ -59,6 +60,7 @@ class DetectorType(str, Enum):
     CONSOLIDATED: Includes all types from both contracts.py and
     nfpa72_models.py to prevent enum drift between modules.
     """
+
     SMOKE = "SMOKE"
     SMOKE_PHOTOELECTRIC = "SMOKE_PHOTOELECTRIC"
     SMOKE_IONIZATION = "SMOKE_IONIZATION"
@@ -78,6 +80,7 @@ class DetectorType(str, Enum):
 # ParsedDrawing → Parser Service Output
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class ParsedDrawingContract:
     """Contract: Parser → Analyzer
@@ -85,6 +88,7 @@ class ParsedDrawingContract:
     The parser service produces this from DXF/DWG/PDF/IFC files.
     The analyzer service consumes this as input.
     """
+
     contract_version: str = CONTRACT_VERSION
     source_file: str = ""
     source_sha256: str = ""
@@ -102,9 +106,11 @@ class ParsedDrawingContract:
 # RoomSpecification → Analyzer Service Input
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class CeilingSpecContract:
     """Ceiling specification per NFPA 72."""
+
     height_at_low_point_m: float
     height_at_high_point_m: float
     ceiling_type: CeilingType = CeilingType.FLAT
@@ -117,6 +123,7 @@ class RoomSpecificationContract:
     The analyzer service receives this specification
     and produces a DetectorPlacementContract.
     """
+
     contract_version: str = CONTRACT_VERSION
     room_id: str = ""
     width_m: float = 0.0
@@ -137,6 +144,7 @@ class RoomSpecificationContract:
 # DetectorPlacement → Analyzer Service Output
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class DetectorPlacementContract:
     """Contract: Analyzer → Compliance
@@ -144,6 +152,7 @@ class DetectorPlacementContract:
     The analyzer produces detector positions.
     The compliance service verifies they meet NFPA 72.
     """
+
     contract_version: str = CONTRACT_VERSION
     room_id: str = ""
     detector_positions: List[tuple] = field(default_factory=list)
@@ -164,6 +173,7 @@ class DetectorPlacementContract:
 # ComplianceReport → Compliance Service Output
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class ComplianceReportContract:
     """Contract: Compliance → Reporting
@@ -171,6 +181,7 @@ class ComplianceReportContract:
     The compliance service verifies detector placements
     and produces a compliance report.
     """
+
     contract_version: str = CONTRACT_VERSION
     room_id: str = ""
     nfpa_version: str = "NFPA 72-2022"
@@ -191,6 +202,7 @@ class ComplianceReportContract:
 # AuditEvent → All Services → Audit Service
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class AuditEventContract:
     """Contract: Any Service → Audit
@@ -198,6 +210,7 @@ class AuditEventContract:
     Every significant action across all services
     must emit an audit event.
     """
+
     contract_version: str = CONTRACT_VERSION
     event_type: str = ""
     source_service: str = ""
@@ -216,6 +229,7 @@ class AuditEventContract:
 # Feature Flags — Config Service
 # ============================================================================
 
+
 class PathwaySurvivabilityLevel(str, Enum):
     """NFPA 72-2022 §12.4 — Pathway Survivability Levels.
 
@@ -232,6 +246,7 @@ class PathwaySurvivabilityLevel(str, Enum):
              rated enclosure.  Highest protection level.
              Required for: staged evacuation in non-sprinklered buildings.
     """
+
     LEVEL_1 = "LEVEL_1"
     LEVEL_2 = "LEVEL_2"
     LEVEL_3 = "LEVEL_3"
@@ -245,6 +260,7 @@ class CableType(str, Enum):
     FPLP: Fire Power Limited Plenum — plenum/return-air spaces.
     CI:   Circuit Integrity — 2-hour fire-resistance rated (NFPA 72 §12.4.2).
     """
+
     FPL = "FPL"
     FPLR = "FPLR"
     FPLP = "FPLP"
@@ -257,16 +273,17 @@ class OccupancyCategory(str, Enum):
     Derived from NFPA 101 Life Safety Code and IBC occupancy groups.
     Determines which PathwaySurvivabilityLevel is required.
     """
-    ASSEMBLY = "ASSEMBLY"          # IBC Group A — theatres, churches
-    EDUCATIONAL = "EDUCATIONAL"    # IBC Group E — schools
-    HEALTH_CARE = "HEALTH_CARE"   # IBC Group I-2 — hospitals
-    RESIDENTIAL = "RESIDENTIAL"   # IBC Group R — hotels, apartments
-    BUSINESS = "BUSINESS"         # IBC Group B — offices
-    MERCANTILE = "MERCANTILE"     # IBC Group M — retail
-    INDUSTRIAL = "INDUSTRIAL"     # IBC Group F — factories
-    STORAGE = "STORAGE"           # IBC Group S — warehouses
-    HIGH_RISE = "HIGH_RISE"       # Any building >23 m (75 ft) in height
-    DETENTION = "DETENTION"       # IBC Group I-3 — prisons
+
+    ASSEMBLY = "ASSEMBLY"  # IBC Group A — theatres, churches
+    EDUCATIONAL = "EDUCATIONAL"  # IBC Group E — schools
+    HEALTH_CARE = "HEALTH_CARE"  # IBC Group I-2 — hospitals
+    RESIDENTIAL = "RESIDENTIAL"  # IBC Group R — hotels, apartments
+    BUSINESS = "BUSINESS"  # IBC Group B — offices
+    MERCANTILE = "MERCANTILE"  # IBC Group M — retail
+    INDUSTRIAL = "INDUSTRIAL"  # IBC Group F — factories
+    STORAGE = "STORAGE"  # IBC Group S — warehouses
+    HIGH_RISE = "HIGH_RISE"  # Any building >23 m (75 ft) in height
+    DETENTION = "DETENTION"  # IBC Group I-3 — prisons
 
 
 class FeatureFlag(str, Enum):
@@ -274,6 +291,7 @@ class FeatureFlag(str, Enum):
 
     Read from config service (or environment variables in monolithic mode).
     """
+
     # Safety features (some currently DISABLED_BY_V8)
     SMOKE_SIMULATION = "SMOKE_SIMULATION"
     DIGITAL_TWIN_SYNC = "DIGITAL_TWIN_SYNC"
@@ -292,9 +310,9 @@ class FeatureFlag(str, Enum):
 
 # Default feature flag states
 DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
-    FeatureFlag.SMOKE_SIMULATION: False,      # Disabled by V8
+    FeatureFlag.SMOKE_SIMULATION: False,  # Disabled by V8
     FeatureFlag.DIGITAL_TWIN_SYNC: True,
-    FeatureFlag.SELF_LEARNING: False,          # Disabled by V8
+    FeatureFlag.SELF_LEARNING: False,  # Disabled by V8
     FeatureFlag.RESILIENCE_CHECK: True,
     FeatureFlag.PROOF_CERTIFICATE: True,
     FeatureFlag.VORONOI_VERIFICATION: True,
@@ -371,6 +389,7 @@ equivalent to forging a safety certificate.
 
 class ContractViolation(ValueError):
     """Raised when an input payload violates a strict contract rule."""
+
     pass
 
 
@@ -416,9 +435,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     # 4. Validate polygon is a list of at least 3 points
     polygon = payload.get("polygon")
     if not isinstance(polygon, (list, tuple)) or len(polygon) < 3:
-        raise ContractViolation(
-            f"polygon must be a list of at least 3 points, got {type(polygon).__name__}"
-        )
+        raise ContractViolation(f"polygon must be a list of at least 3 points, got {type(polygon).__name__}")
 
     # 4a. Validate polygon points are numeric — prevents downstream crashes
     #     A polygon like [{"x": "abc"}] passes the len check but crashes
@@ -427,36 +444,26 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     for i, pt in enumerate(polygon):
         if isinstance(pt, (list, tuple)):
             if len(pt) < 2:
-                raise ContractViolation(
-                    f"polygon point {i} must have at least 2 coordinates, got {len(pt)}"
-                )
+                raise ContractViolation(f"polygon point {i} must have at least 2 coordinates, got {len(pt)}")
             try:
                 x_val = float(pt[0])
                 y_val = float(pt[1])
             except (TypeError, ValueError):
-                raise ContractViolation(
-                    f"polygon point {i} coordinates must be numeric, got {pt!r}"
-                )
+                raise ContractViolation(f"polygon point {i} coordinates must be numeric, got {pt!r}")
             coords.append((x_val, y_val))
         elif isinstance(pt, dict):
             x_val = pt.get("x", pt.get("X"))
             y_val = pt.get("y", pt.get("Y"))
             if x_val is None or y_val is None:
-                raise ContractViolation(
-                    f"polygon point {i} dict must have 'x' and 'y' keys, got {list(pt.keys())}"
-                )
+                raise ContractViolation(f"polygon point {i} dict must have 'x' and 'y' keys, got {list(pt.keys())}")
             try:
                 x_val = float(x_val)
                 y_val = float(y_val)
             except (TypeError, ValueError):
-                raise ContractViolation(
-                    f"polygon point {i} coordinates must be numeric, got x={x_val!r} y={y_val!r}"
-                )
+                raise ContractViolation(f"polygon point {i} coordinates must be numeric, got x={x_val!r} y={y_val!r}")
             coords.append((x_val, y_val))
         else:
-            raise ContractViolation(
-                f"polygon point {i} must be a tuple/list or dict, got {type(pt).__name__}"
-            )
+            raise ContractViolation(f"polygon point {i} must be a tuple/list or dict, got {type(pt).__name__}")
 
     # 4b. Polygon self-intersection check — prevents wrong area calculations.
     #     A self-intersecting polygon (e.g. figure-8) has ambiguous area
@@ -465,6 +472,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     #     on wrong room geometry.
     try:
         from shapely.geometry import Polygon as ShapelyPolygon
+
         if len(coords) >= 3:
             shapely_poly = ShapelyPolygon(coords)
             if not shapely_poly.is_valid:
@@ -479,6 +487,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
         # Must warn, not silently pass. Self-intersecting polygons produce wrong
         # detector counts — a life-safety catastrophe.
         import logging as _logging
+
         _logging.getLogger(__name__).critical(
             "Shapely not available — polygon self-intersection validation SKIPPED. "
             "Self-intersecting polygons produce wrong area calculations and incorrect "
@@ -493,6 +502,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
         # In a life-safety system, NaN entering the system means ALL downstream
         # safety checks are compromised. Block at the contract boundary.
         import math as _m
+
         if not _m.isfinite(h):
             raise ContractViolation(
                 f"ceiling_height_m must be finite, got {h}. "
@@ -500,13 +510,9 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
                 f"[NFPA 72 §17.6.3]"
             )
         if h <= 0 or h > 30:
-            raise ContractViolation(
-                f"ceiling_height_m must be > 0 and <= 30, got {h}"
-            )
+            raise ContractViolation(f"ceiling_height_m must be > 0 and <= 30, got {h}")
     except (TypeError, ValueError):
-        raise ContractViolation(
-            f"ceiling_height_m must be a number, got {ceiling_height!r}"
-        )
+        raise ContractViolation(f"ceiling_height_m must be a number, got {ceiling_height!r}")
 
     return payload
 
@@ -562,8 +568,7 @@ def validate_loop_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     device_count = payload.get("device_count") or len(payload.get("devices", []))
     if device_count and device_count > 250:
         raise ContractViolation(
-            f"Loop has {device_count} devices — exceeds NFPA 72 §21.2.2 "
-            f"limit of 250 devices per SLC loop"
+            f"Loop has {device_count} devices — exceeds NFPA 72 §21.2.2 limit of 250 devices per SLC loop"
         )
 
     # 4. Total length must be positive if provided
@@ -572,13 +577,9 @@ def validate_loop_input(payload: Dict[str, Any]) -> Dict[str, Any]:
         try:
             l = float(total_length)
             if l < 0:
-                raise ContractViolation(
-                    f"total_length_m must be >= 0, got {l}"
-                )
+                raise ContractViolation(f"total_length_m must be >= 0, got {l}")
         except (TypeError, ValueError):
-            raise ContractViolation(
-                f"total_length_m must be a number, got {total_length!r}"
-            )
+            raise ContractViolation(f"total_length_m must be a number, got {total_length!r}")
 
     # 5. Panel voltage validation
     panel_voltage = payload.get("panel_voltage_v", 24.0)
@@ -586,19 +587,16 @@ def validate_loop_input(payload: Dict[str, Any]) -> Dict[str, Any]:
         v = float(panel_voltage)
         # V54 FIX: NaN/Inf panel voltage bypasses all voltage drop checks.
         import math as _m2
+
         if not _m2.isfinite(v):
             raise ContractViolation(
                 f"panel_voltage_v must be finite, got {v}. "
                 f"NaN/Inf bypass all voltage drop safety checks. [NFPA 72 §10.14]"
             )
         if v <= 0 or v > 48:
-            raise ContractViolation(
-                f"panel_voltage_v must be > 0 and <= 48, got {v}"
-            )
+            raise ContractViolation(f"panel_voltage_v must be > 0 and <= 48, got {v}")
     except (TypeError, ValueError):
-        raise ContractViolation(
-            f"panel_voltage_v must be a number, got {panel_voltage!r}"
-        )
+        raise ContractViolation(f"panel_voltage_v must be a number, got {panel_voltage!r}")
 
     return payload
 

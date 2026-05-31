@@ -33,13 +33,14 @@ V13 Fix:
   - The function-based solve_set_covering_mip is what BuildingEngine and
     FloorAnalyser actually use — consistency is safety.
 """
+
 from __future__ import annotations
 
-import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Any
-import time
 import logging
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Dict, List
 
 from .spatial_engine.density_optimizer import DETECTOR_RADIUS
 
@@ -82,7 +83,9 @@ class SafeBuildingEngine:
         self.coverage_radius = coverage_radius
         self.candidate_step = candidate_step
         self.time_limit_s = time_limit_s
-        self.global_c_level_lock = threading.RLock()  # Hard barrier avoiding C++ Memory Corruption on solver library instance loading.
+        self.global_c_level_lock = (
+            threading.RLock()
+        )  # Hard barrier avoiding C++ Memory Corruption on solver library instance loading.
 
     def _solve_mip_safe(self, room_spec: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -120,11 +123,11 @@ class SafeBuildingEngine:
             with self.global_c_level_lock:
                 from fireai.core.spatial_engine.mip_solver import solve_set_covering_mip
 
-                width = room_spec.get('width_m', 10.0)
-                length = room_spec.get('length_m', width)  # Default to square if not specified
-                radius = room_spec.get('coverage_radius', self.coverage_radius)
-                step = room_spec.get('candidate_step', self.candidate_step)
-                time_limit = room_spec.get('time_limit_s', self.time_limit_s)
+                width = room_spec.get("width_m", 10.0)
+                length = room_spec.get("length_m", width)  # Default to square if not specified
+                radius = room_spec.get("coverage_radius", self.coverage_radius)
+                step = room_spec.get("candidate_step", self.candidate_step)
+                time_limit = room_spec.get("time_limit_s", self.time_limit_s)
 
                 result = solve_set_covering_mip(
                     room_width=width,
@@ -186,13 +189,13 @@ class SafeBuildingEngine:
             for rm in f_data.get("rooms", []):
                 # V15 FIX: Don't mutate the caller's room dicts — create a copy
                 rm_copy = dict(rm)
-                rm_copy['virtual_floor'] = floor_lbl
+                rm_copy["virtual_floor"] = floor_lbl
                 rooms_flatted.append(rm_copy)
 
         logger.info(f"Commencing protected multi-thread evaluation over {len(rooms_flatted)} discrete areas.")
 
         with ThreadPoolExecutor(max_workers=self.max_threads) as tpool:
-            work_q = {tpool.submit(self._solve_mip_safe, rm_args): rm_args['room_id'] for rm_args in rooms_flatted}
+            work_q = {tpool.submit(self._solve_mip_safe, rm_args): rm_args["room_id"] for rm_args in rooms_flatted}
             for w in as_completed(work_q):
                 room_trace = work_q[w]
                 try:

@@ -39,37 +39,39 @@ NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 D3 DELIVERABLE: Closes the single-engine vulnerability for complex rooms.
 """
 
+import enum
 import logging
 import math
-import enum
-from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 from .consensus_engine import (
-    ConsensusEngine, ConsensusResult, ConfidenceLevel,
-    EngineName as V1EngineName, EngineVerdict,
+    ConfidenceLevel,
+    ConsensusEngine,
+    ConsensusResult,
+    EngineVerdict,
 )
-from .exact_coverage import ExactCoverageEngine, ExactCoverageResult, HAS_SHAPELY
-from .analytical_verifier import AnalyticalVerifier
+from .exact_coverage import HAS_SHAPELY, ExactCoverageEngine
 from .voronoi_verifier import VoronoiVerifier
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Extended Engine Names
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class EngineNameV2(enum.Enum):
     """Verification engine identifiers for v2 (non-rectangular rooms)."""
-    EXACT_COVERAGE = "exact_coverage"   # Shapely polygon difference
-    GRID_POLYGON = "grid_polygon"       # Grid proof restricted to polygon
-    VORONOI_POLYGON = "voronoi_polygon" # Voronoi within polygon boundary
+
+    EXACT_COVERAGE = "exact_coverage"  # Shapely polygon difference
+    GRID_POLYGON = "grid_polygon"  # Grid proof restricted to polygon
+    VORONOI_POLYGON = "voronoi_polygon"  # Voronoi within polygon boundary
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Helper: Rectangle Detection
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def is_rectangular_polygon(coords: List[Tuple[float, float]], tolerance: float = 0.01) -> bool:
     """Check if a polygon is effectively a rectangle.
@@ -142,6 +144,7 @@ def polygon_width_length(coords: List[Tuple[float, float]]) -> Tuple[float, floa
 # Grid-Polygon Verification
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def grid_polygon_verify(
     room_coords: List[Tuple[float, float]],
     detectors: List[Tuple[float, float]],
@@ -167,7 +170,7 @@ def grid_polygon_verify(
         return False, 0.0
 
     try:
-        from shapely.geometry import Polygon, Point
+        from shapely.geometry import Point, Polygon
     except ImportError:
         return False, 0.0
 
@@ -185,7 +188,7 @@ def grid_polygon_verify(
     min_x, min_y, max_x, max_y = polygon_bounds(room_coords)
     R = coverage_radius
     R_eff = R - step * math.sqrt(2) / 2  # δ-conservative
-    R2_eff = R_eff ** 2 + 1e-9
+    R2_eff = R_eff**2 + 1e-9
 
     total_points = 0
     covered_points = 0
@@ -204,7 +207,9 @@ def grid_polygon_verify(
                             covered_points += 1
                             break
             except Exception as e:
-                logger.warning(f"V112: grid_polygon_verify: failed to check grid point ({x:.2f}, {y:.2f}) containment: {e!r}")
+                logger.warning(
+                    f"V112: grid_polygon_verify: failed to check grid point ({x:.2f}, {y:.2f}) containment: {e!r}"
+                )
                 pass
             y += step
         x += step
@@ -221,6 +226,7 @@ def grid_polygon_verify(
 # ═══════════════════════════════════════════════════════════════════════════════
 # ConsensusEngineV2
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class ConsensusEngineV2:
     """Extended consensus engine supporting non-rectangular rooms.
@@ -314,28 +320,34 @@ class ConsensusEngineV2:
                     sensor_locations=detectors,
                     obstacles=obstacles,
                 )
-                verdicts.append(EngineVerdict(
-                    engine=EngineNameV2.EXACT_COVERAGE,
-                    passed=exact_result.is_covered,
-                    details=(
-                        f"Coverage ratio: {exact_result.coverage_ratio:.4f}, "
-                        f"Uncovered: {exact_result.uncovered_area_sqm:.3f} sqm, "
-                        f"R_eff: {exact_result.effective_radius_m:.2f}m"
-                    ),
-                    raw_result=exact_result,
-                ))
+                verdicts.append(
+                    EngineVerdict(
+                        engine=EngineNameV2.EXACT_COVERAGE,
+                        passed=exact_result.is_covered,
+                        details=(
+                            f"Coverage ratio: {exact_result.coverage_ratio:.4f}, "
+                            f"Uncovered: {exact_result.uncovered_area_sqm:.3f} sqm, "
+                            f"R_eff: {exact_result.effective_radius_m:.2f}m"
+                        ),
+                        raw_result=exact_result,
+                    )
+                )
             except Exception as e:
-                verdicts.append(EngineVerdict(
+                verdicts.append(
+                    EngineVerdict(
+                        engine=EngineNameV2.EXACT_COVERAGE,
+                        passed=False,
+                        details=f"ERROR: {e}",
+                    )
+                )
+        else:
+            verdicts.append(
+                EngineVerdict(
                     engine=EngineNameV2.EXACT_COVERAGE,
                     passed=False,
-                    details=f"ERROR: {e}",
-                ))
-        else:
-            verdicts.append(EngineVerdict(
-                engine=EngineNameV2.EXACT_COVERAGE,
-                passed=False,
-                details="Shapely not available — cannot run exact coverage",
-            ))
+                    details="Shapely not available — cannot run exact coverage",
+                )
+            )
 
         # Engine B: Grid-Polygon
         try:
@@ -344,17 +356,21 @@ class ConsensusEngineV2:
                 detectors=detectors,
                 coverage_radius=self.R,
             )
-            verdicts.append(EngineVerdict(
-                engine=EngineNameV2.GRID_POLYGON,
-                passed=grid_valid,
-                details=f"Grid-polygon: valid={grid_valid}, coverage={grid_pct:.1f}%",
-            ))
+            verdicts.append(
+                EngineVerdict(
+                    engine=EngineNameV2.GRID_POLYGON,
+                    passed=grid_valid,
+                    details=f"Grid-polygon: valid={grid_valid}, coverage={grid_pct:.1f}%",
+                )
+            )
         except Exception as e:
-            verdicts.append(EngineVerdict(
-                engine=EngineNameV2.GRID_POLYGON,
-                passed=False,
-                details=f"ERROR: {e}",
-            ))
+            verdicts.append(
+                EngineVerdict(
+                    engine=EngineNameV2.GRID_POLYGON,
+                    passed=False,
+                    details=f"ERROR: {e}",
+                )
+            )
 
         # Engine C: Voronoi-Polygon
         # Use the bounding rectangle for Voronoi, then check that the
@@ -375,9 +391,7 @@ class ConsensusEngineV2:
             if voro_result.is_covered:
                 # Voronoi says covered in bounding rect → covered in polygon
                 voro_passed = True
-                voro_detail = (
-                    f"Voronoi-polygon: max gap {voro_result.max_gap_m:.2f}m, COVERED"
-                )
+                voro_detail = f"Voronoi-polygon: max gap {voro_result.max_gap_m:.2f}m, COVERED"
             elif voro_result.max_gap_location is not None:
                 # Check if the max gap point is inside the actual polygon
                 gap_x, gap_y = voro_result.max_gap_location
@@ -385,7 +399,9 @@ class ConsensusEngineV2:
                 abs_x, abs_y = gap_x + min_x, gap_y + min_y
 
                 if HAS_SHAPELY:
-                    from shapely.geometry import Polygon as ShapelyPolygon, Point
+                    from shapely.geometry import Point
+                    from shapely.geometry import Polygon as ShapelyPolygon
+
                     try:
                         room_poly = ShapelyPolygon(room_coords)
                         if room_poly.contains(Point(abs_x, abs_y)):
@@ -412,18 +428,22 @@ class ConsensusEngineV2:
                 voro_passed = voro_result.is_covered
                 voro_detail = voro_result.details
 
-            verdicts.append(EngineVerdict(
-                engine=EngineNameV2.VORONOI_POLYGON,
-                passed=voro_passed,
-                details=voro_detail,
-                raw_result=voro_result,
-            ))
+            verdicts.append(
+                EngineVerdict(
+                    engine=EngineNameV2.VORONOI_POLYGON,
+                    passed=voro_passed,
+                    details=voro_detail,
+                    raw_result=voro_result,
+                )
+            )
         except Exception as e:
-            verdicts.append(EngineVerdict(
-                engine=EngineNameV2.VORONOI_POLYGON,
-                passed=False,
-                details=f"ERROR: {e}",
-            ))
+            verdicts.append(
+                EngineVerdict(
+                    engine=EngineNameV2.VORONOI_POLYGON,
+                    passed=False,
+                    details=f"ERROR: {e}",
+                )
+            )
 
         # ── Compute consensus (same logic as v1) ───────────────────────────
         return self._compute_consensus(verdicts)
@@ -523,7 +543,7 @@ class ConsensusEngineV2:
             confidence = ConfidenceLevel.WARNING if n_pass == 1 else ConfidenceLevel.FAIL
 
         # Safety: is_safe ONLY if VERIFIED (all engines agree)
-        is_safe = (confidence == ConfidenceLevel.VERIFIED)
+        is_safe = confidence == ConfidenceLevel.VERIFIED
 
         # Recommendation
         failing_engines = [v.engine.value for v in verdicts if not v.passed]

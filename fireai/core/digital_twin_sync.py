@@ -96,13 +96,12 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 
 from .digital_twin import (
-    DigitalTwin,
     DetectorState,
     DetectorStatus,
+    DigitalTwin,
     DriftRecord,
     DriftType,
     TwinDriftAnalyzer,
-    LEGAL_STATUS_TRANSITIONS,
 )
 from .event_bus import EventBus, Events
 
@@ -128,6 +127,7 @@ __all__ = [
 # Data Classes
 # ═══════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class SyncResult:
     """Result of a sync operation (design-to-twin or as-built-to-twin).
@@ -144,6 +144,7 @@ class SyncResult:
         building_id: Building identifier from the twin.
         correlation_id: Correlation ID linking all events from this sync.
     """
+
     operation: str
     synced_count: int
     skipped_count: int
@@ -208,6 +209,7 @@ class DriftReport:
         timestamp: ISO 8601 UTC timestamp.
         correlation_id: Links drift events together.
     """
+
     building_id: str
     drift_records: List[DriftRecord] = field(default_factory=list)
     total_drifts: int = 0
@@ -233,33 +235,15 @@ class DriftReport:
     def _recompute_counts(self) -> None:
         """Recompute aggregate counts from drift_records."""
         self.total_drifts = len(self.drift_records)
-        self.critical_count = sum(
-            1 for d in self.drift_records if d.severity == "critical"
-        )
-        self.high_count = sum(
-            1 for d in self.drift_records if d.severity == "high"
-        )
-        self.medium_count = sum(
-            1 for d in self.drift_records if d.severity == "medium"
-        )
-        self.low_count = sum(
-            1 for d in self.drift_records if d.severity == "low"
-        )
-        self.position_drift_count = sum(
-            1 for d in self.drift_records if d.drift_type == DriftType.POSITION_DRIFT
-        )
-        self.status_drift_count = sum(
-            1 for d in self.drift_records if d.drift_type == DriftType.STATUS_DRIFT
-        )
-        self.missing_detector_count = sum(
-            1 for d in self.drift_records if d.drift_type == DriftType.MISSING_DETECTOR
-        )
-        self.extra_detector_count = sum(
-            1 for d in self.drift_records if d.drift_type == DriftType.EXTRA_DETECTOR
-        )
-        self.type_mismatch_count = sum(
-            1 for d in self.drift_records if d.drift_type == DriftType.TYPE_MISMATCH
-        )
+        self.critical_count = sum(1 for d in self.drift_records if d.severity == "critical")
+        self.high_count = sum(1 for d in self.drift_records if d.severity == "high")
+        self.medium_count = sum(1 for d in self.drift_records if d.severity == "medium")
+        self.low_count = sum(1 for d in self.drift_records if d.severity == "low")
+        self.position_drift_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.POSITION_DRIFT)
+        self.status_drift_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.STATUS_DRIFT)
+        self.missing_detector_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.MISSING_DETECTOR)
+        self.extra_detector_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.EXTRA_DETECTOR)
+        self.type_mismatch_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.TYPE_MISMATCH)
 
     @property
     def has_critical_drift(self) -> bool:
@@ -320,6 +304,7 @@ class CoverageValidationResult:
         timestamp: ISO 8601 UTC timestamp.
         correlation_id: Links validation events together.
     """
+
     building_id: str
     is_valid: bool
     total_rooms: int
@@ -381,6 +366,7 @@ class SyncReport:
         timestamp: ISO 8601 UTC timestamp.
         correlation_id: Links all sub-reports together.
     """
+
     building_id: str
     design_sync: Optional[SyncResult] = None
     as_built_sync: Optional[SyncResult] = None
@@ -440,10 +426,7 @@ class SyncReport:
             "design_sync": self.design_sync.to_dict() if self.design_sync else None,
             "as_built_sync": self.as_built_sync.to_dict() if self.as_built_sync else None,
             "drift_report": self.drift_report.to_dict() if self.drift_report else None,
-            "coverage_validation": (
-                self.coverage_validation.to_dict()
-                if self.coverage_validation else None
-            ),
+            "coverage_validation": (self.coverage_validation.to_dict() if self.coverage_validation else None),
             "health_score": self.health_score,
             "overall_status": self.overall_status,
             "timestamp": self.timestamp,
@@ -454,6 +437,7 @@ class SyncReport:
 # ═══════════════════════════════════════════════════════════════════════
 # DigitalTwinSync — Main Synchronization Class
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class DigitalTwinSync:
     """Synchronizes the design model and as-built data with the digital twin.
@@ -509,10 +493,17 @@ class DigitalTwinSync:
     """
 
     # Valid detector types per NFPA 72-2022
-    VALID_DETECTOR_TYPES: frozenset = frozenset({
-        "smoke", "heat", "flame", "gas", "duct_smoke",
-        "multi_sensor", "manual_pull_station",
-    })
+    VALID_DETECTOR_TYPES: frozenset = frozenset(
+        {
+            "smoke",
+            "heat",
+            "flame",
+            "gas",
+            "duct_smoke",
+            "multi_sensor",
+            "manual_pull_station",
+        }
+    )
 
     def __init__(
         self,
@@ -531,9 +522,7 @@ class DigitalTwinSync:
             TypeError: If twin is not a DigitalTwin instance.
         """
         if not isinstance(twin, DigitalTwin):
-            raise TypeError(
-                f"twin must be a DigitalTwin instance, got {type(twin).__name__}"
-            )
+            raise TypeError(f"twin must be a DigitalTwin instance, got {type(twin).__name__}")
         self._twin = twin
         self._bus = EventBus.instance()
         self._audit_store = audit_store
@@ -585,13 +574,10 @@ class DigitalTwinSync:
         """
         # ── Input validation ──
         if not isinstance(design_detectors, list):
-            raise TypeError(
-                f"design_detectors must be a list, got {type(design_detectors).__name__}"
-            )
+            raise TypeError(f"design_detectors must be a list, got {type(design_detectors).__name__}")
         if detector_type not in self.VALID_DETECTOR_TYPES:
             raise ValueError(
-                f"Invalid detector_type '{detector_type}'. "
-                f"Must be one of: {sorted(self.VALID_DETECTOR_TYPES)}"
+                f"Invalid detector_type '{detector_type}'. Must be one of: {sorted(self.VALID_DETECTOR_TYPES)}"
             )
 
         correlation_id = str(uuid.uuid4())
@@ -602,10 +588,12 @@ class DigitalTwinSync:
 
         for idx, det_data in enumerate(design_detectors):
             if not isinstance(det_data, dict):
-                errors.append((
-                    f"index_{idx}",
-                    f"Expected dict, got {type(det_data).__name__}",
-                ))
+                errors.append(
+                    (
+                        f"index_{idx}",
+                        f"Expected dict, got {type(det_data).__name__}",
+                    )
+                )
                 continue
 
             # ── Per-detector validation ──
@@ -613,17 +601,21 @@ class DigitalTwinSync:
             room_id = det_data.get("room_id")
 
             if not det_id:
-                errors.append((
-                    f"index_{idx}",
-                    "Missing required key 'detector_id'",
-                ))
+                errors.append(
+                    (
+                        f"index_{idx}",
+                        "Missing required key 'detector_id'",
+                    )
+                )
                 continue
 
             if not room_id:
-                errors.append((
-                    det_id,
-                    "Missing required key 'room_id'",
-                ))
+                errors.append(
+                    (
+                        det_id,
+                        "Missing required key 'room_id'",
+                    )
+                )
                 continue
 
             # Position defaults
@@ -636,10 +628,12 @@ class DigitalTwinSync:
 
             # Validate detector_type
             if det_type not in self.VALID_DETECTOR_TYPES:
-                errors.append((
-                    det_id,
-                    f"Invalid detector_type '{det_type}'",
-                ))
+                errors.append(
+                    (
+                        det_id,
+                        f"Invalid detector_type '{det_type}'",
+                    )
+                )
                 continue
 
             if coverage_radius is not None:
@@ -648,10 +642,12 @@ class DigitalTwinSync:
                     if coverage_radius < 0:
                         raise ValueError("negative")
                 except (ValueError, TypeError):
-                    errors.append((
-                        det_id,
-                        f"Invalid coverage_radius: {det_data.get('coverage_radius')}",
-                    ))
+                    errors.append(
+                        (
+                            det_id,
+                            f"Invalid coverage_radius: {det_data.get('coverage_radius')}",
+                        )
+                    )
                     continue
 
             # ── Check if already registered ──
@@ -661,10 +657,12 @@ class DigitalTwinSync:
                     try:
                         self._twin.remove_detector(det_id, reason="design_sync_overwrite")
                     except Exception as exc:
-                        errors.append((
-                            det_id,
-                            f"Failed to remove existing detector for overwrite: {exc}",
-                        ))
+                        errors.append(
+                            (
+                                det_id,
+                                f"Failed to remove existing detector for overwrite: {exc}",
+                            )
+                        )
                         continue
                 else:
                     skipped += 1
@@ -692,7 +690,9 @@ class DigitalTwinSync:
             except Exception as exc:
                 errors.append((det_id, f"Registration failed: {exc}"))
                 logger.error(
-                    "Failed to register detector %s: %s", det_id, exc,
+                    "Failed to register detector %s: %s",
+                    det_id,
+                    exc,
                 )
 
         # ── Build result ──
@@ -737,10 +737,12 @@ class DigitalTwinSync:
         )
 
         logger.info(
-            "Design sync complete: %d synced, %d skipped, %d errors "
-            "(building=%s, correlation=%s)",
-            synced, skipped, len(errors),
-            self._twin.building_id, correlation_id[:8],
+            "Design sync complete: %d synced, %d skipped, %d errors (building=%s, correlation=%s)",
+            synced,
+            skipped,
+            len(errors),
+            self._twin.building_id,
+            correlation_id[:8],
         )
 
         return result
@@ -781,10 +783,7 @@ class DigitalTwinSync:
         """
         # ── Input validation ──
         if not isinstance(as_built_detectors, list):
-            raise TypeError(
-                f"as_built_detectors must be a list, "
-                f"got {type(as_built_detectors).__name__}"
-            )
+            raise TypeError(f"as_built_detectors must be a list, got {type(as_built_detectors).__name__}")
 
         correlation_id = str(uuid.uuid4())
         synced = 0
@@ -794,18 +793,22 @@ class DigitalTwinSync:
 
         for idx, det_data in enumerate(as_built_detectors):
             if not isinstance(det_data, dict):
-                errors.append((
-                    f"index_{idx}",
-                    f"Expected dict, got {type(det_data).__name__}",
-                ))
+                errors.append(
+                    (
+                        f"index_{idx}",
+                        f"Expected dict, got {type(det_data).__name__}",
+                    )
+                )
                 continue
 
             det_id = det_data.get("detector_id")
             if not det_id:
-                errors.append((
-                    f"index_{idx}",
-                    "Missing required key 'detector_id'",
-                ))
+                errors.append(
+                    (
+                        f"index_{idx}",
+                        "Missing required key 'detector_id'",
+                    )
+                )
                 continue
 
             verified_by = det_data.get("verified_by", "")
@@ -827,11 +830,12 @@ class DigitalTwinSync:
                     continue
 
                 if existing.status == DetectorStatus.DECOMMISSIONED:
-                    errors.append((
-                        det_id,
-                        "Cannot transition DECOMMISSIONED detector to OK "
-                        "(terminal state per NFPA 72 §14.3.4)",
-                    ))
+                    errors.append(
+                        (
+                            det_id,
+                            "Cannot transition DECOMMISSIONED detector to OK (terminal state per NFPA 72 §14.3.4)",
+                        )
+                    )
                     continue
 
                 # Attempt PLANNED → OK, FAULT → OK, or OFFLINE → OK
@@ -843,11 +847,12 @@ class DigitalTwinSync:
                     )
                     synced += 1
                 except ValueError as exc:
-                    errors.append((
-                        det_id,
-                        f"Illegal status transition "
-                        f"{existing.status.value} → ok: {exc}",
-                    ))
+                    errors.append(
+                        (
+                            det_id,
+                            f"Illegal status transition {existing.status.value} → ok: {exc}",
+                        )
+                    )
                     continue
                 except KeyError as exc:
                     # Should not happen since we checked existence, but
@@ -941,10 +946,13 @@ class DigitalTwinSync:
         )
 
         logger.info(
-            "As-built sync complete: %d synced, %d skipped, %d errors, "
-            "%d extra (building=%s, correlation=%s)",
-            synced, skipped, len(errors), len(warnings),
-            self._twin.building_id, correlation_id[:8],
+            "As-built sync complete: %d synced, %d skipped, %d errors, %d extra (building=%s, correlation=%s)",
+            synced,
+            skipped,
+            len(errors),
+            len(warnings),
+            self._twin.building_id,
+            correlation_id[:8],
         )
 
         return result
@@ -1041,10 +1049,12 @@ class DigitalTwinSync:
 
         if all_drifts:
             logger.warning(
-                "Drift detection: %d drifts (%d critical, %d high) "
-                "(building=%s, correlation=%s)",
-                report.total_drifts, report.critical_count, report.high_count,
-                self._twin.building_id, correlation_id[:8],
+                "Drift detection: %d drifts (%d critical, %d high) (building=%s, correlation=%s)",
+                report.total_drifts,
+                report.critical_count,
+                report.high_count,
+                self._twin.building_id,
+                correlation_id[:8],
             )
         else:
             logger.info(
@@ -1106,10 +1116,7 @@ class DigitalTwinSync:
         rooms_without_coverage = all_room_ids - rooms_with_ok
 
         total_rooms = len(all_room_ids)
-        coverage_pct = (
-            round(len(rooms_with_ok) / total_rooms * 100, 2)
-            if total_rooms > 0 else 0.0
-        )
+        coverage_pct = round(len(rooms_with_ok) / total_rooms * 100, 2) if total_rooms > 0 else 0.0
 
         # Critical gaps: rooms without ANY OK detector
         critical_gaps = sorted(rooms_without_coverage)
@@ -1164,17 +1171,18 @@ class DigitalTwinSync:
 
         if is_valid:
             logger.info(
-                "Coverage validation PASSED: %d/%d rooms covered (%.1f%%) "
-                "(building=%s)",
-                len(rooms_with_ok), total_rooms, coverage_pct,
+                "Coverage validation PASSED: %d/%d rooms covered (%.1f%%) (building=%s)",
+                len(rooms_with_ok),
+                total_rooms,
+                coverage_pct,
                 self._twin.building_id,
             )
         else:
             logger.warning(
-                "Coverage validation FAILED: %d room(s) without OK detector "
-                "(%d planned-only, %d empty) (building=%s)",
+                "Coverage validation FAILED: %d room(s) without OK detector (%d planned-only, %d empty) (building=%s)",
                 len(rooms_without_coverage),
-                len(rooms_planned_only), len(rooms_empty),
+                len(rooms_planned_only),
+                len(rooms_empty),
                 self._twin.building_id,
             )
 
@@ -1261,10 +1269,11 @@ class DigitalTwinSync:
         )
 
         logger.info(
-            "Sync report generated: status=%s, health=%.3f, "
-            "drifts=%d, coverage=%.1f%% (building=%s)",
-            report.overall_status, report.health_score,
-            drift_report.total_drifts, coverage_result.coverage_pct,
+            "Sync report generated: status=%s, health=%.3f, drifts=%d, coverage=%.1f%% (building=%s)",
+            report.overall_status,
+            report.health_score,
+            drift_report.total_drifts,
+            coverage_result.coverage_pct,
             self._twin.building_id,
         )
 
@@ -1306,46 +1315,52 @@ class DigitalTwinSync:
         for det_id, det_data in design_by_id.items():
             if det_id not in twin_by_id:
                 room_id = det_data.get("room_id", "UNKNOWN")
-                drifts.append(DriftRecord(
-                    drift_id=str(uuid.uuid4()),
-                    drift_type=DriftType.MISSING_DETECTOR,
-                    detector_id=det_id,
-                    room_id=room_id,
-                    expected="detector registered in twin",
-                    actual="detector not found in twin",
-                    severity="high",
-                    timestamp=now,
-                ))
+                drifts.append(
+                    DriftRecord(
+                        drift_id=str(uuid.uuid4()),
+                        drift_type=DriftType.MISSING_DETECTOR,
+                        detector_id=det_id,
+                        room_id=room_id,
+                        expected="detector registered in twin",
+                        actual="detector not found in twin",
+                        severity="high",
+                        timestamp=now,
+                    )
+                )
 
         # ── Extra detectors: in twin but NOT in design ──
         for det_id, det_state in twin_by_id.items():
             if det_id not in design_by_id:
-                drifts.append(DriftRecord(
-                    drift_id=str(uuid.uuid4()),
-                    drift_type=DriftType.EXTRA_DETECTOR,
-                    detector_id=det_id,
-                    room_id=det_state.room_id,
-                    expected="detector in design model",
-                    actual="detector exists in twin but not in design",
-                    severity="medium",
-                    timestamp=now,
-                ))
+                drifts.append(
+                    DriftRecord(
+                        drift_id=str(uuid.uuid4()),
+                        drift_type=DriftType.EXTRA_DETECTOR,
+                        detector_id=det_id,
+                        room_id=det_state.room_id,
+                        expected="detector in design model",
+                        actual="detector exists in twin but not in design",
+                        severity="medium",
+                        timestamp=now,
+                    )
+                )
 
         # ── Type mismatch: detector exists in both but type differs ──
         for det_id in set(design_by_id.keys()) & set(twin_by_id.keys()):
             design_type = design_by_id[det_id].get("detector_type", "smoke")
             twin_type = twin_by_id[det_id].detector_type
             if design_type != twin_type:
-                drifts.append(DriftRecord(
-                    drift_id=str(uuid.uuid4()),
-                    drift_type=DriftType.TYPE_MISMATCH,
-                    detector_id=det_id,
-                    room_id=twin_by_id[det_id].room_id,
-                    expected=f"type={design_type}",
-                    actual=f"type={twin_type}",
-                    severity="high",
-                    timestamp=now,
-                ))
+                drifts.append(
+                    DriftRecord(
+                        drift_id=str(uuid.uuid4()),
+                        drift_type=DriftType.TYPE_MISMATCH,
+                        detector_id=det_id,
+                        room_id=twin_by_id[det_id].room_id,
+                        expected=f"type={design_type}",
+                        actual=f"type={twin_type}",
+                        severity="high",
+                        timestamp=now,
+                    )
+                )
 
         return drifts
 
@@ -1388,9 +1403,7 @@ class DigitalTwinSync:
 
         # Compute drift from design position
         drift_m = (
-            (new_x - detector.design_x) ** 2
-            + (new_y - detector.design_y) ** 2
-            + (new_z - detector.design_z) ** 2
+            (new_x - detector.design_x) ** 2 + (new_y - detector.design_y) ** 2 + (new_z - detector.design_z) ** 2
         ) ** 0.5
 
         if drift_m >= TwinDriftAnalyzer.POSITION_TOLERANCE_M:
@@ -1428,5 +1441,7 @@ class DigitalTwinSync:
         except Exception:
             # NEVER crash due to audit store failure
             logger.debug(
-                "AuditStore logging failed for %s", event_type, exc_info=True,
+                "AuditStore logging failed for %s",
+                event_type,
+                exc_info=True,
             )

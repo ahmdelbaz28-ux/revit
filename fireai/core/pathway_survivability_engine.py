@@ -35,12 +35,12 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import List
 
 from fireai.core.contracts import (
-    PathwaySurvivabilityLevel,
     CableType,
     OccupancyCategory,
+    PathwaySurvivabilityLevel,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,7 @@ __all__ = [
 # ============================================================================
 # Data Structures
 # ============================================================================
+
 
 @dataclass(frozen=True)
 class BuildingSpec:
@@ -73,12 +74,13 @@ class BuildingSpec:
         has_detention:   Detention/correctional occupancy.
         zone_count:      Number of alarm zones.
     """
+
     occupancy: OccupancyCategory = OccupancyCategory.BUSINESS
     height_m: float = 12.0
     num_floors: int = 3
     is_sprinklered: bool = False
     has_voice_evac: bool = False
-    evacuation_type: str = "full"      # "full", "partial", "staged"
+    evacuation_type: str = "full"  # "full", "partial", "staged"
     has_central_station: bool = False
     is_high_rise: bool = False
     has_detention: bool = False
@@ -118,6 +120,7 @@ class CableRequirement:
         nfpa_reference:  Applicable NFPA 72 section.
         notes:           Additional engineering notes.
     """
+
     route_type: str = "general"
     required_level: PathwaySurvivabilityLevel = PathwaySurvivabilityLevel.LEVEL_1
     cable_type: CableType = CableType.FPL
@@ -140,6 +143,7 @@ class SurvivabilityResult:
         nfpa_version:     NFPA edition applied.
         classification_rationale: Step-by-step reasoning for audit trail.
     """
+
     building_level: PathwaySurvivabilityLevel = PathwaySurvivabilityLevel.LEVEL_1
     cable_requirements: List[CableRequirement] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
@@ -153,6 +157,7 @@ class SurvivabilityResult:
 # ============================================================================
 # Engine
 # ============================================================================
+
 
 class PathwaySurvivabilityEngine:
     """NFPA 72-2022 §12.4 Pathway Survivability Classification Engine.
@@ -214,8 +219,7 @@ class PathwaySurvivabilityEngine:
         if spec.evacuation_type == "staged" and not spec.is_sprinklered:
             required_level = PathwaySurvivabilityLevel.LEVEL_3
             rationale.append(
-                "§12.3.5: Staged evacuation + non-sprinklered → Level 3. "
-                "CI cable in 2-hour rated enclosure required."
+                "§12.3.5: Staged evacuation + non-sprinklered → Level 3. CI cable in 2-hour rated enclosure required."
             )
         # V20.2 FIX: Staged + sprinklered → Level 2 minimum
         # NFPA 72 §12.3.4: Staged evacuation requires at least Level 2
@@ -234,8 +238,7 @@ class PathwaySurvivabilityEngine:
             if required_level < PathwaySurvivabilityLevel.LEVEL_2:
                 required_level = PathwaySurvivabilityLevel.LEVEL_2
             rationale.append(
-                "§12.3.4: Partial evacuation → Level 2 minimum. "
-                "CI cable or 2-hour rated enclosure required."
+                "§12.3.4: Partial evacuation → Level 2 minimum. CI cable or 2-hour rated enclosure required."
             )
 
         # Rule: High-rise → Level 2 minimum
@@ -244,8 +247,7 @@ class PathwaySurvivabilityEngine:
             if required_level < PathwaySurvivabilityLevel.LEVEL_2:
                 required_level = PathwaySurvivabilityLevel.LEVEL_2
             rationale.append(
-                "§12.3.4: High-rise (>23 m) → Level 2 minimum. "
-                "Unprotected riser cables are a single point of failure."
+                "§12.3.4: High-rise (>23 m) → Level 2 minimum. Unprotected riser cables are a single point of failure."
             )
 
         # Rule: Voice evacuation → Level 2 minimum
@@ -254,8 +256,7 @@ class PathwaySurvivabilityEngine:
             if required_level < PathwaySurvivabilityLevel.LEVEL_2:
                 required_level = PathwaySurvivabilityLevel.LEVEL_2
             rationale.append(
-                "§12.3.4: Voice evacuation → Level 2 minimum. "
-                "Voice circuits must survive to instruct occupants."
+                "§12.3.4: Voice evacuation → Level 2 minimum. Voice circuits must survive to instruct occupants."
             )
 
         # Rule: Detention/correctional → Level 2 minimum
@@ -265,8 +266,7 @@ class PathwaySurvivabilityEngine:
             if required_level < PathwaySurvivabilityLevel.LEVEL_2:
                 required_level = PathwaySurvivabilityLevel.LEVEL_2
             rationale.append(
-                "NFPA 101 §14/15: Detention occupancy → Level 2. "
-                "Occupants cannot self-evacuate; alarm must survive."
+                "NFPA 101 §14/15: Detention occupancy → Level 2. Occupants cannot self-evacuate; alarm must survive."
             )
 
         # Rule: Health care → Level 2 minimum
@@ -275,16 +275,12 @@ class PathwaySurvivabilityEngine:
             if required_level < PathwaySurvivabilityLevel.LEVEL_2:
                 required_level = PathwaySurvivabilityLevel.LEVEL_2
             rationale.append(
-                "NFPA 101 §18/19: Health care → Level 2. "
-                "Defend-in-place strategy; patients cannot self-evacuate."
+                "NFPA 101 §18/19: Health care → Level 2. Defend-in-place strategy; patients cannot self-evacuate."
             )
 
         # Rule: Fully sprinklered + full evacuation → Level 1 permitted
         # V20.2 FIX: NFPA 72 §12.3.3 — Level 1 ONLY if fully sprinklered
-        if (spec.is_sprinklered
-                and spec.evacuation_type == "full"
-                and not spec.is_high_rise
-                and not spec.has_voice_evac):
+        if spec.is_sprinklered and spec.evacuation_type == "full" and not spec.is_high_rise and not spec.has_voice_evac:
             if required_level > PathwaySurvivabilityLevel.LEVEL_1:
                 # Higher level already determined — keep it
                 pass
@@ -299,18 +295,13 @@ class PathwaySurvivabilityEngine:
         # NFPA 72 §12.3.3: Central station monitoring requires at
         # least Level 1 (which is always satisfied).
         if spec.has_central_station:
-            rationale.append(
-                "§12.3.3: Central station monitoring → Level 1 minimum "
-                "(already satisfied by all levels)."
-            )
+            rationale.append("§12.3.3: Central station monitoring → Level 1 minimum (already satisfied by all levels).")
 
         result.building_level = required_level
 
         # ── Step 2: Generate cable requirements per route type ───────────
 
-        result.cable_requirements = self._generate_cable_requirements(
-            spec, required_level
-        )
+        result.cable_requirements = self._generate_cable_requirements(spec, required_level)
 
         # ── Step 3: Warnings ────────────────────────────────────────────
 
@@ -322,15 +313,11 @@ class PathwaySurvivabilityEngine:
                 "fully sprinklered buildings. Minimum Level 2 required."
             )
             required_level = PathwaySurvivabilityLevel.LEVEL_2
-            result.warnings.append(
-                "Corrected: Non-sprinklered building escalated to Level 2 "
-                "per NFPA 72 §12.3.3."
-            )
+            result.warnings.append("Corrected: Non-sprinklered building escalated to Level 2 per NFPA 72 §12.3.3.")
 
         if spec.is_high_rise and not spec.has_voice_evac:
             result.warnings.append(
-                "High-rise without voice evacuation — consider adding "
-                "voice per NFPA 72 §24.4 for improved life safety."
+                "High-rise without voice evacuation — consider adding voice per NFPA 72 §24.4 for improved life safety."
             )
 
         if spec.num_floors > 10 and not spec.is_high_rise:
@@ -344,9 +331,10 @@ class PathwaySurvivabilityEngine:
         result.compliant = len(result.errors) == 0
 
         logger.info(
-            "PathwaySurvivability: occupancy=%s height=%.1fm sprinklered=%s "
-            "level=%s",
-            spec.occupancy.value, spec.height_m, spec.is_sprinklered,
+            "PathwaySurvivability: occupancy=%s height=%.1fm sprinklered=%s level=%s",
+            spec.occupancy.value,
+            spec.height_m,
+            spec.is_sprinklered,
             required_level.value,
         )
 
@@ -367,72 +355,83 @@ class PathwaySurvivabilityEngine:
         # ── Riser cables (vertical shafts between floors) ────────────────
 
         if level == PathwaySurvivabilityLevel.LEVEL_3:
-            requirements.append(CableRequirement(
-                route_type="riser",
-                required_level=level,
-                cable_type=CableType.CI,
-                in_rated_enclosure=True,
-                enclosure_rating_hr=2.0,
-                nfpa_reference="NFPA 72-2022 §12.4.2(3)",
-                notes="CI cable in 2-hour rated enclosure (highest protection).",
-            ))
+            requirements.append(
+                CableRequirement(
+                    route_type="riser",
+                    required_level=level,
+                    cable_type=CableType.CI,
+                    in_rated_enclosure=True,
+                    enclosure_rating_hr=2.0,
+                    nfpa_reference="NFPA 72-2022 §12.4.2(3)",
+                    notes="CI cable in 2-hour rated enclosure (highest protection).",
+                )
+            )
         elif level == PathwaySurvivabilityLevel.LEVEL_2:
             # Level 2: CI cable OR ordinary cable in 2-hour enclosure.
             # Engineering choice: CI cable is simpler and more reliable.
-            requirements.append(CableRequirement(
-                route_type="riser",
-                required_level=level,
-                cable_type=CableType.CI,
-                in_rated_enclosure=False,
-                enclosure_rating_hr=0.0,
-                nfpa_reference="NFPA 72-2022 §12.4.2(2)",
-                notes="CI cable satisfies Level 2 without rated enclosure. "
-                      "Alternative: FPLR in 2-hour rated shaft.",
-            ))
+            requirements.append(
+                CableRequirement(
+                    route_type="riser",
+                    required_level=level,
+                    cable_type=CableType.CI,
+                    in_rated_enclosure=False,
+                    enclosure_rating_hr=0.0,
+                    nfpa_reference="NFPA 72-2022 §12.4.2(2)",
+                    notes="CI cable satisfies Level 2 without rated enclosure. "
+                    "Alternative: FPLR in 2-hour rated shaft.",
+                )
+            )
         else:
-            requirements.append(CableRequirement(
-                route_type="riser",
-                required_level=level,
-                cable_type=CableType.FPLR,
-                in_rated_enclosure=False,
-                enclosure_rating_hr=0.0,
-                nfpa_reference="NFPA 72-2022 §12.4.2(1)",
-                notes="Riser-rated cable (FPLR) sufficient for Level 1.",
-            ))
+            requirements.append(
+                CableRequirement(
+                    route_type="riser",
+                    required_level=level,
+                    cable_type=CableType.FPLR,
+                    in_rated_enclosure=False,
+                    enclosure_rating_hr=0.0,
+                    nfpa_reference="NFPA 72-2022 §12.4.2(1)",
+                    notes="Riser-rated cable (FPLR) sufficient for Level 1.",
+                )
+            )
 
         # ── Horizontal cables (on-floor distribution) ────────────────────
 
         if level == PathwaySurvivabilityLevel.LEVEL_3:
-            requirements.append(CableRequirement(
-                route_type="horizontal",
-                required_level=level,
-                cable_type=CableType.CI,
-                in_rated_enclosure=True,
-                enclosure_rating_hr=2.0,
-                nfpa_reference="NFPA 72-2022 §12.4.2(3)",
-                notes="CI cable in 2-hour rated enclosure on every floor.",
-            ))
+            requirements.append(
+                CableRequirement(
+                    route_type="horizontal",
+                    required_level=level,
+                    cable_type=CableType.CI,
+                    in_rated_enclosure=True,
+                    enclosure_rating_hr=2.0,
+                    nfpa_reference="NFPA 72-2022 §12.4.2(3)",
+                    notes="CI cable in 2-hour rated enclosure on every floor.",
+                )
+            )
         elif level == PathwaySurvivabilityLevel.LEVEL_2:
-            requirements.append(CableRequirement(
-                route_type="horizontal",
-                required_level=level,
-                cable_type=CableType.CI,
-                in_rated_enclosure=False,
-                enclosure_rating_hr=0.0,
-                nfpa_reference="NFPA 72-2022 §12.4.2(2)",
-                notes="CI cable for horizontal distribution. "
-                      "Alternative: FPL in 2-hour rated conduit.",
-            ))
+            requirements.append(
+                CableRequirement(
+                    route_type="horizontal",
+                    required_level=level,
+                    cable_type=CableType.CI,
+                    in_rated_enclosure=False,
+                    enclosure_rating_hr=0.0,
+                    nfpa_reference="NFPA 72-2022 §12.4.2(2)",
+                    notes="CI cable for horizontal distribution. Alternative: FPL in 2-hour rated conduit.",
+                )
+            )
         else:
-            requirements.append(CableRequirement(
-                route_type="horizontal",
-                required_level=level,
-                cable_type=CableType.FPL,
-                in_rated_enclosure=False,
-                enclosure_rating_hr=0.0,
-                nfpa_reference="NFPA 72-2022 §12.4.2(1)",
-                notes="General-purpose fire alarm cable (FPL) sufficient.",
-            ))
+            requirements.append(
+                CableRequirement(
+                    route_type="horizontal",
+                    required_level=level,
+                    cable_type=CableType.FPL,
+                    in_rated_enclosure=False,
+                    enclosure_rating_hr=0.0,
+                    nfpa_reference="NFPA 72-2022 §12.4.2(1)",
+                    notes="General-purpose fire alarm cable (FPL) sufficient.",
+                )
+            )
 
         # ── Plenum cables (return air spaces) ────────────────────────────
         # Plenum spaces ALWAYS require FPLP regardless of survivability
@@ -454,52 +453,59 @@ class PathwaySurvivabilityEngine:
                 plenum_enclosure = True
                 plenum_rating = 2.0
                 plenum_notes = (
-                    "CI cable in 2-hour rated enclosure in plenum spaces. "
-                    "Level 3 requires maximum protection."
+                    "CI cable in 2-hour rated enclosure in plenum spaces. Level 3 requires maximum protection."
                 )
 
-        requirements.append(CableRequirement(
-            route_type="plenum",
-            required_level=level,
-            cable_type=plenum_cable,
-            in_rated_enclosure=plenum_enclosure,
-            enclosure_rating_hr=plenum_rating,
-            nfpa_reference="NEC Art. 760 / NFPA 72 §12.4.2",
-            notes=plenum_notes,
-        ))
+        requirements.append(
+            CableRequirement(
+                route_type="plenum",
+                required_level=level,
+                cable_type=plenum_cable,
+                in_rated_enclosure=plenum_enclosure,
+                enclosure_rating_hr=plenum_rating,
+                nfpa_reference="NEC Art. 760 / NFPA 72 §12.4.2",
+                notes=plenum_notes,
+            )
+        )
 
         # ── General cables (non-plenum, non-riser) ──────────────────────
 
         if level == PathwaySurvivabilityLevel.LEVEL_3:
-            requirements.append(CableRequirement(
-                route_type="general",
-                required_level=level,
-                cable_type=CableType.CI,
-                in_rated_enclosure=True,
-                enclosure_rating_hr=2.0,
-                nfpa_reference="NFPA 72-2022 §12.4.2(3)",
-                notes="CI cable in 2-hour rated enclosure throughout.",
-            ))
+            requirements.append(
+                CableRequirement(
+                    route_type="general",
+                    required_level=level,
+                    cable_type=CableType.CI,
+                    in_rated_enclosure=True,
+                    enclosure_rating_hr=2.0,
+                    nfpa_reference="NFPA 72-2022 §12.4.2(3)",
+                    notes="CI cable in 2-hour rated enclosure throughout.",
+                )
+            )
         elif level == PathwaySurvivabilityLevel.LEVEL_2:
-            requirements.append(CableRequirement(
-                route_type="general",
-                required_level=level,
-                cable_type=CableType.CI,
-                in_rated_enclosure=False,
-                enclosure_rating_hr=0.0,
-                nfpa_reference="NFPA 72-2022 §12.4.2(2)",
-                notes="CI cable for general fire alarm circuits.",
-            ))
+            requirements.append(
+                CableRequirement(
+                    route_type="general",
+                    required_level=level,
+                    cable_type=CableType.CI,
+                    in_rated_enclosure=False,
+                    enclosure_rating_hr=0.0,
+                    nfpa_reference="NFPA 72-2022 §12.4.2(2)",
+                    notes="CI cable for general fire alarm circuits.",
+                )
+            )
         else:
-            requirements.append(CableRequirement(
-                route_type="general",
-                required_level=level,
-                cable_type=CableType.FPL,
-                in_rated_enclosure=False,
-                enclosure_rating_hr=0.0,
-                nfpa_reference="NFPA 72-2022 §12.4.2(1)",
-                notes="FPL cable sufficient for Level 1.",
-            ))
+            requirements.append(
+                CableRequirement(
+                    route_type="general",
+                    required_level=level,
+                    cable_type=CableType.FPL,
+                    in_rated_enclosure=False,
+                    enclosure_rating_hr=0.0,
+                    nfpa_reference="NFPA 72-2022 §12.4.2(1)",
+                    notes="FPL cable sufficient for Level 1.",
+                )
+            )
 
         return requirements
 

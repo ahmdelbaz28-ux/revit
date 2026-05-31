@@ -57,18 +57,23 @@ import json
 import logging
 import time
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
-from .spatial_engine.density_optimizer import (
-    DensityOptimizer, Room, DetectorLayout,
-    DETECTOR_RADIUS, MAX_SPACING_M, WALL_MIN_M, VERIFY_STEP,
-)
-from .spatial_engine.consensus_engine import ConsensusEngine, ConsensusResult, ConfidenceLevel
-from .spatial_engine.proof_certificate import ProofCertificateGenerator, ProofCertificate
-from .event_bus import EventBus, Events
 from .digital_twin import DigitalTwin
+from .event_bus import EventBus, Events
+from .spatial_engine.consensus_engine import ConfidenceLevel, ConsensusEngine, ConsensusResult
+from .spatial_engine.density_optimizer import (
+    DETECTOR_RADIUS,
+    MAX_SPACING_M,
+    VERIFY_STEP,
+    WALL_MIN_M,
+    DensityOptimizer,
+    DetectorLayout,
+    Room,
+)
+from .spatial_engine.proof_certificate import ProofCertificate, ProofCertificateGenerator
 
 logger = logging.getLogger("fireai.pipeline")
 
@@ -76,6 +81,7 @@ logger = logging.getLogger("fireai.pipeline")
 # ═══════════════════════════════════════════════════════════════════════════════
 # PipelineStage Enum
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class PipelineStage(enum.Enum):
     """Stages of the fire safety analysis pipeline.
@@ -85,18 +91,20 @@ class PipelineStage(enum.Enum):
     If a stage fails, the pipeline stops and stage_reached reflects
     the last SUCCESSFULLY completed stage.
     """
-    OPTIMIZATION = "optimization"    # DensityOptimizer placement
-    VERIFICATION = "verification"    # Triple consensus verification
+
+    OPTIMIZATION = "optimization"  # DensityOptimizer placement
+    VERIFICATION = "verification"  # Triple consensus verification
     CERTIFICATION = "certification"  # Proof certificate generation
-    SIGNING = "signing"             # SHA-256 hash sealing
-    STORAGE = "storage"             # Audit trail persistence
-    TWIN_SYNC = "twin_sync"         # Digital twin snapshot (Bridge 2)
-    COMPLETE = "complete"           # All stages done
+    SIGNING = "signing"  # SHA-256 hash sealing
+    STORAGE = "storage"  # Audit trail persistence
+    TWIN_SYNC = "twin_sync"  # Digital twin snapshot (Bridge 2)
+    COMPLETE = "complete"  # All stages done
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PipelineResult Dataclass
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class PipelineResult:
@@ -117,6 +125,7 @@ class PipelineResult:
         timing: Dictionary mapping stage name → elapsed seconds.
         metadata: Additional metadata about the pipeline execution.
     """
+
     room_id: str
     stage_reached: PipelineStage
     success: bool
@@ -170,10 +179,7 @@ class PipelineResult:
                 consensus_dict = asdict(self.consensus)
                 # Convert enum values for JSON serialization
                 consensus_dict["confidence"] = self.consensus.confidence.value
-                consensus_dict["engines"] = [
-                    {**asdict(v), "engine": v.engine.value}
-                    for v in self.consensus.engines
-                ]
+                consensus_dict["engines"] = [{**asdict(v), "engine": v.engine.value} for v in self.consensus.engines]
                 result["consensus"] = consensus_dict
             except Exception as exc:
                 logger.warning("Failed to serialize consensus: %s: %s", type(exc).__name__, exc)
@@ -206,6 +212,7 @@ class PipelineResult:
 # ═══════════════════════════════════════════════════════════════════════════════
 # AnalysisPipeline Class
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class AnalysisPipeline:
     """Complete analysis pipeline: Optimize → Verify → Certify → Sign → Store.
@@ -296,6 +303,7 @@ class AnalysisPipeline:
         self._audit_available = False
         try:
             from .audit_store import AuditStore
+
             self._audit_store = AuditStore()  # Store INSTANCE (FIX-11)
             self._audit_available = True
         except ImportError:
@@ -369,10 +377,7 @@ class AnalysisPipeline:
             },
         )
 
-        logger.info(
-            f"Pipeline START: room={room_id} "
-            f"({room.width:.1f}m × {room.length:.1f}m, h={ceiling_height:.1f}m)"
-        )
+        logger.info(f"Pipeline START: room={room_id} ({room.width:.1f}m × {room.length:.1f}m, h={ceiling_height:.1f}m)")
 
         # ── Event: Pipeline Start ──────────────────────────────────────
         self._bus.publish(
@@ -409,10 +414,7 @@ class AnalysisPipeline:
             if layout.warnings:
                 result.warnings.extend(layout.warnings)
             if layout.fallback_used:
-                result.warnings.append(
-                    f"Room {room_id}: Fallback placement used — "
-                    "result may not be optimal"
-                )
+                result.warnings.append(f"Room {room_id}: Fallback placement used — result may not be optimal")
             if layout.violations:
                 result.warnings.extend(layout.violations)
 
@@ -456,10 +458,7 @@ class AnalysisPipeline:
                 result.stage_reached = PipelineStage.VERIFICATION
                 result.timing["verification"] = round(time.monotonic() - t0, 4)
 
-                logger.info(
-                    f"  VERIFICATION: {consensus.consensus_str}, "
-                    f"is_safe={consensus.is_safe}"
-                )
+                logger.info(f"  VERIFICATION: {consensus.consensus_str}, is_safe={consensus.is_safe}")
 
                 # Warnings for consensus discrepancies
                 if consensus.confidence == ConfidenceLevel.WARNING:
@@ -549,10 +548,7 @@ class AnalysisPipeline:
                 result.timing["verification"] = elapsed
                 error_msg = f"VERIFICATION FAILED: {type(exc).__name__}: {exc}"
                 result.errors.append(error_msg)
-                result.warnings.append(
-                    f"Room {room_id}: Verification stage failed — "
-                    "proceeding without consensus"
-                )
+                result.warnings.append(f"Room {room_id}: Verification stage failed — proceeding without consensus")
                 logger.warning(f"  VERIFICATION FAILED for {room_id}: {exc}")
                 # Continue pipeline — verification failure is not fatal
         else:
@@ -620,9 +616,7 @@ class AnalysisPipeline:
                 # Determine NFPA compliance flags for certificate
                 nfpa_compliant = layout.nfpa_valid
                 wall_coverage_complete = layout.wall_violations == 0
-                spacing_compliant = layout.nfpa_valid and not any(
-                    "spacing" in v.lower() for v in layout.violations
-                )
+                spacing_compliant = layout.nfpa_valid and not any("spacing" in v.lower() for v in layout.violations)
 
                 # If consensus ran, use its verdict
                 if result.consensus is not None:
@@ -675,8 +669,7 @@ class AnalysisPipeline:
                 error_msg = f"CERTIFICATION FAILED: {type(exc).__name__}: {exc}"
                 result.errors.append(error_msg)
                 result.warnings.append(
-                    f"Room {room_id}: Certificate generation failed — "
-                    "proceeding without proof certificate"
+                    f"Room {room_id}: Certificate generation failed — proceeding without proof certificate"
                 )
                 logger.warning(f"  CERTIFICATION FAILED for {room_id}: {exc}")
                 # Continue pipeline — certificate failure is not fatal
@@ -692,8 +685,7 @@ class AnalysisPipeline:
             if result.certificate is not None:
                 result.certificate.seal()
                 logger.info(
-                    f"  SIGNING: hash={result.certificate.proof_hash[:16]}..., "
-                    f"timestamp={result.certificate.timestamp}"
+                    f"  SIGNING: hash={result.certificate.proof_hash[:16]}..., timestamp={result.certificate.timestamp}"
                 )
             else:
                 # No certificate to sign — create a pipeline-level hash
@@ -709,16 +701,11 @@ class AnalysisPipeline:
                 if result.consensus is not None:
                     hash_payload["consensus_confidence"] = result.consensus.confidence.value
                     hash_payload["consensus_safe"] = result.consensus.is_safe
-                pipeline_hash = hashlib.sha256(
-                    json.dumps(hash_payload, sort_keys=True).encode()
-                ).hexdigest()
+                pipeline_hash = hashlib.sha256(json.dumps(hash_payload, sort_keys=True).encode()).hexdigest()
                 result.metadata["pipeline_hash"] = pipeline_hash
                 result.metadata["pipeline_timestamp"] = datetime.now(timezone.utc).isoformat()
                 # V60 FIX (P1-5): Log full hash (not truncated) for verification
-                logger.info(
-                    f"  SIGNING: pipeline_hash={pipeline_hash} "
-                    "(no certificate — hash from layout)"
-                )
+                logger.info(f"  SIGNING: pipeline_hash={pipeline_hash} (no certificate — hash from layout)")
 
             result.stage_reached = PipelineStage.SIGNING
             result.timing["signing"] = round(time.monotonic() - t0, 4)
@@ -728,9 +715,7 @@ class AnalysisPipeline:
             result.timing["signing"] = elapsed
             error_msg = f"SIGNING FAILED: {type(exc).__name__}: {exc}"
             result.errors.append(error_msg)
-            result.warnings.append(
-                f"Room {room_id}: Signing failed — certificate may not be tamper-evident"
-            )
+            result.warnings.append(f"Room {room_id}: Signing failed — certificate may not be tamper-evident")
             logger.warning(f"  SIGNING FAILED for {room_id}: {exc}")
             # Continue — signing failure is not fatal
 
@@ -796,10 +781,7 @@ class AnalysisPipeline:
             result.timing["storage"] = elapsed
             error_msg = f"STORAGE FAILED: {type(exc).__name__}: {exc}"
             result.errors.append(error_msg)
-            result.warnings.append(
-                f"Room {room_id}: Audit storage failed — "
-                "result not persisted to audit trail"
-            )
+            result.warnings.append(f"Room {room_id}: Audit storage failed — result not persisted to audit trail")
             logger.warning(f"  STORAGE FAILED for {room_id}: {exc}")
             # Continue — storage failure is not fatal for the result
 
@@ -827,17 +809,13 @@ class AnalysisPipeline:
                     "ceiling_height_m": ceiling_height,
                     "detector_type": layout.detector_type_simple or "smoke",
                     "detectors": [
-                        {"x": x, "y": y, "z": ceiling_height,
-                         "radius": layout.coverage_radius or self.coverage_radius}
+                        {"x": x, "y": y, "z": ceiling_height, "radius": layout.coverage_radius or self.coverage_radius}
                         for x, y in layout.detectors
                     ],
                     "coverage_pct": layout.coverage_pct,
                     "nfpa_valid": layout.nfpa_valid,
                     "method": layout.method,
-                    "proof_certificates": (
-                        [result.certificate.proof_hash]
-                        if result.certificate else []
-                    ),
+                    "proof_certificates": ([result.certificate.proof_hash] if result.certificate else []),
                 }
 
                 # Load into twin — creates PLANNED detectors
@@ -860,27 +838,18 @@ class AnalysisPipeline:
                         "room_id": room_id,
                         "detector_count": len(layout.detectors),
                         "checksum": checksum,
-                        "certificate_hash": (
-                            result.certificate.proof_hash
-                            if result.certificate else None
-                        ),
+                        "certificate_hash": (result.certificate.proof_hash if result.certificate else None),
                     },
                     source="AnalysisPipeline",
                     correlation_id=correlation_id,
                 )
 
-                logger.info(
-                    f"  TWIN_SYNC: {len(layout.detectors)} detectors "
-                    f"snapshot, checksum={checksum[:16]}..."
-                )
+                logger.info(f"  TWIN_SYNC: {len(layout.detectors)} detectors snapshot, checksum={checksum[:16]}...")
 
             except Exception as exc:
                 elapsed = round(time.monotonic() - t0, 4)
                 result.timing["twin_sync"] = elapsed
-                result.warnings.append(
-                    f"Room {room_id}: Twin sync failed — "
-                    f"no live digital copy for this room: {exc}"
-                )
+                result.warnings.append(f"Room {room_id}: Twin sync failed — no live digital copy for this room: {exc}")
                 logger.warning(f"  TWIN_SYNC FAILED for {room_id}: {exc}")
                 # Continue — twin failure is NOT a safety failure
         else:
@@ -911,12 +880,8 @@ class AnalysisPipeline:
                 "detector_count": layout.count,
                 "coverage_pct": layout.coverage_pct,
                 "nfpa_valid": layout.nfpa_valid,
-                "consensus_safe": (
-                    result.consensus.is_safe if result.consensus else None
-                ),
-                "certificate_hash": (
-                    result.certificate.proof_hash if result.certificate else None
-                ),
+                "consensus_safe": (result.consensus.is_safe if result.consensus else None),
+                "certificate_hash": (result.certificate.proof_hash if result.certificate else None),
                 "total_time_s": result.timing.get("total", 0.0),
                 "errors": result.errors,
                 "warnings_count": len(result.warnings),
@@ -959,9 +924,7 @@ class AnalysisPipeline:
         results: List[PipelineResult] = []
         n_rooms = len(rooms)
 
-        logger.info(
-            f"Building analysis START: {n_rooms} rooms"
-        )
+        logger.info(f"Building analysis START: {n_rooms} rooms")
 
         # ── Event: Building Analysis Start ────────────────────────────
         self._bus.publish(
@@ -983,55 +946,52 @@ class AnalysisPipeline:
 
             except MemoryError:
                 # CRITICAL: Memory errors propagate — cannot safely continue
-                logger.critical(
-                    f"CRITICAL: MemoryError in room {room_id}. "
-                    "Aborting building analysis."
-                )
+                logger.critical(f"CRITICAL: MemoryError in room {room_id}. Aborting building analysis.")
                 # Still record the failure
-                results.append(PipelineResult(
-                    room_id=room_id,
-                    stage_reached=PipelineStage.OPTIMIZATION,
-                    success=False,
-                    errors=["CRITICAL: MemoryError — building analysis aborted"],
-                    metadata={"room_name": room.name, "aborted": True},
-                ))
+                results.append(
+                    PipelineResult(
+                        room_id=room_id,
+                        stage_reached=PipelineStage.OPTIMIZATION,
+                        success=False,
+                        errors=["CRITICAL: MemoryError — building analysis aborted"],
+                        metadata={"room_name": room.name, "aborted": True},
+                    )
+                )
                 raise
 
             except SystemError as exc:
                 # CRITICAL: System errors propagate — corrupted state
-                logger.critical(
-                    f"CRITICAL: SystemError in room {room_id}: {exc}. "
-                    "Aborting building analysis."
+                logger.critical(f"CRITICAL: SystemError in room {room_id}: {exc}. Aborting building analysis.")
+                results.append(
+                    PipelineResult(
+                        room_id=room_id,
+                        stage_reached=PipelineStage.OPTIMIZATION,
+                        success=False,
+                        errors=[f"CRITICAL: SystemError — {exc}"],
+                        metadata={"room_name": room.name, "aborted": True},
+                    )
                 )
-                results.append(PipelineResult(
-                    room_id=room_id,
-                    stage_reached=PipelineStage.OPTIMIZATION,
-                    success=False,
-                    errors=[f"CRITICAL: SystemError — {exc}"],
-                    metadata={"room_name": room.name, "aborted": True},
-                ))
                 raise
 
             except Exception as exc:
                 # Non-critical: Record failure and continue with other rooms
                 logger.error(
-                    f"Room {room_id} failed with {type(exc).__name__}: {exc}. "
-                    "Continuing with remaining rooms."
+                    f"Room {room_id} failed with {type(exc).__name__}: {exc}. Continuing with remaining rooms."
                 )
-                results.append(PipelineResult(
-                    room_id=room_id,
-                    stage_reached=PipelineStage.OPTIMIZATION,
-                    success=False,
-                    errors=[f"Unexpected error: {type(exc).__name__}: {exc}"],
-                    metadata={"room_name": room.name},
-                ))
+                results.append(
+                    PipelineResult(
+                        room_id=room_id,
+                        stage_reached=PipelineStage.OPTIMIZATION,
+                        success=False,
+                        errors=[f"Unexpected error: {type(exc).__name__}: {exc}"],
+                        metadata={"room_name": room.name},
+                    )
+                )
 
         # Compute building-level summary
         n_success = sum(1 for r in results if r.success)
         n_failed = sum(1 for r in results if not r.success)
-        n_total_detectors = sum(
-            r.layout.count for r in results if r.layout is not None
-        )
+        n_total_detectors = sum(r.layout.count for r in results if r.layout is not None)
         total_time = sum(r.timing.get("total", 0.0) for r in results)
 
         logger.info(

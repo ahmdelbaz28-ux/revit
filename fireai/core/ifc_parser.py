@@ -34,9 +34,9 @@ from __future__ import annotations
 import hashlib
 import logging
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 log = logging.getLogger(__name__)
 
@@ -51,6 +51,7 @@ def _get_ifcopenshell():
     if _ifcopenshell is None:
         try:
             import ifcopenshell as _ifs
+
             _ifcopenshell = _ifs
         except ImportError:
             _ifcopenshell = False
@@ -59,8 +60,10 @@ def _get_ifcopenshell():
 
 # ─── Enums ──────────────────────────────────────────────────────────────────
 
+
 class IfcElementType(Enum):
     """IFC element types relevant to cable routing."""
+
     WALL = "IfcWall"
     SLAB = "IfcSlab"
     BEAM = "IfcBeam"
@@ -74,14 +77,16 @@ class IfcElementType(Enum):
 
 class CellState(Enum):
     """State of a grid cell for the routing engine."""
-    FREE = 0           # Navigable — cable can pass
-    BLOCKED = 1        # Solid obstacle — cable cannot pass
-    DOOR_OPENING = 2   # Door opening — cable can pass horizontally
-    SHAFT = 3          # Vertical shaft — cable can pass vertically
-    ELECTRICAL = 4     # Electrical zone — 300mm separation required per project spec
+
+    FREE = 0  # Navigable — cable can pass
+    BLOCKED = 1  # Solid obstacle — cable cannot pass
+    DOOR_OPENING = 2  # Door opening — cable can pass horizontally
+    SHAFT = 3  # Vertical shaft — cable can pass vertically
+    ELECTRICAL = 4  # Electrical zone — 300mm separation required per project spec
 
 
 # ─── Frozen Dataclasses ─────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class BoundingBox3D:
@@ -99,6 +104,7 @@ class BoundingBox3D:
         fire_rating_hours: Fire rating in hours (0.0 if not rated).
         ifc_class: Original IFC class name (e.g. 'IfcWallStandardCase').
     """
+
     element_id: str
     element_type: IfcElementType = IfcElementType.UNKNOWN
     min_x: float = 0.0
@@ -137,15 +143,18 @@ class BoundingBox3D:
 
     def contains_point(self, x: float, y: float, z: float) -> bool:
         """Check if a 3D point is inside this bounding box."""
-        return (self.min_x <= x <= self.max_x
-                and self.min_y <= y <= self.max_y
-                and self.min_z <= z <= self.max_z)
+        return self.min_x <= x <= self.max_x and self.min_y <= y <= self.max_y and self.min_z <= z <= self.max_z
 
     def overlaps(self, other: BoundingBox3D) -> bool:
         """Check if this bounding box overlaps another (AABB intersection)."""
-        return (self.min_x <= other.max_x and self.max_x >= other.min_x
-                and self.min_y <= other.max_y and self.max_y >= other.min_y
-                and self.min_z <= other.max_z and self.max_z >= other.min_z)
+        return (
+            self.min_x <= other.max_x
+            and self.max_x >= other.min_x
+            and self.min_y <= other.max_y
+            and self.max_y >= other.min_y
+            and self.min_z <= other.max_z
+            and self.max_z >= other.min_z
+        )
 
 
 @dataclass(frozen=True)
@@ -161,6 +170,7 @@ class SpaceInfo:
         ceiling_elevation: Ceiling elevation in meters.
         is_fire_zone: Whether this space is a fire zone.
     """
+
     space_id: str
     space_name: str = ""
     space_number: str = ""
@@ -189,6 +199,7 @@ class BuildingModel:
         grid_data: Flat 3D occupancy grid (CellState values).
         computation_hash: SHA-256 hash for deterministic verification.
     """
+
     building_name: str = ""
     elements: Tuple[BoundingBox3D, ...] = ()
     spaces: Tuple[SpaceInfo, ...] = ()
@@ -296,15 +307,15 @@ def _extract_fire_rating(
 
     try:
         for rel in element.IsDefinedBy:
-            if hasattr(rel, 'RelatingPropertyDefinition'):
+            if hasattr(rel, "RelatingPropertyDefinition"):
                 pset = rel.RelatingPropertyDefinition
-                if hasattr(pset, 'HasProperties'):
+                if hasattr(pset, "HasProperties"):
                     for prop in pset.HasProperties:
-                        name = getattr(prop, 'Name', '').lower()
-                        if 'fire' in name and 'rating' in name:
-                            val = getattr(prop, 'NominalValue', None)
+                        name = getattr(prop, "Name", "").lower()
+                        if "fire" in name and "rating" in name:
+                            val = getattr(prop, "NominalValue", None)
                             if val is not None:
-                                val_str = str(getattr(val, 'wrappedValue', val))
+                                val_str = str(getattr(val, "wrappedValue", val))
                                 try:
                                     rating_hours = float(val_str)
                                     is_rated = True
@@ -316,12 +327,11 @@ def _extract_fire_rating(
         # Non-blocking elements default to not-rated (False, 0.0h).
         is_rated, rating_hours = _BLOCKING_DEFAULT if is_blocking else _NON_BLOCKING_DEFAULT
         log.warning(
-            "V96: _extract_fire_rating() failed for element %s (type=%s) — "
-            "defaulting to %s (fail-safe). Error: %s",
-            getattr(element, 'GlobalId', '?'),
-            element_type.value if element_type else 'UNKNOWN',
+            "V96: _extract_fire_rating() failed for element %s (type=%s) — defaulting to %s (fail-safe). Error: %s",
+            getattr(element, "GlobalId", "?"),
+            element_type.value if element_type else "UNKNOWN",
             f"fire-rated {rating_hours}h" if is_rated else "not-rated",
-            exc
+            exc,
         )
     return is_rated, rating_hours
 
@@ -358,16 +368,15 @@ def _compute_world_placement(element) -> Optional[Tuple[float, float, float]]:
             placement_id = id(current)
             if placement_id in visited:
                 log.warning(
-                    "Circular PlacementRelTo chain detected for element %s — "
-                    "stopping traversal.",
-                    getattr(element, 'GlobalId', '?'),
+                    "Circular PlacementRelTo chain detected for element %s — stopping traversal.",
+                    getattr(element, "GlobalId", "?"),
                 )
                 break
             visited.add(placement_id)
 
-            if hasattr(current, 'RelativePlacement') and current.RelativePlacement is not None:
+            if hasattr(current, "RelativePlacement") and current.RelativePlacement is not None:
                 loc = current.RelativePlacement
-                if hasattr(loc, 'Location') and loc.Location is not None:
+                if hasattr(loc, "Location") and loc.Location is not None:
                     coords = loc.Location.Coordinates
                     ox = float(coords[0]) if len(coords) > 0 else 0.0
                     oy = float(coords[1]) if len(coords) > 1 else 0.0
@@ -379,7 +388,7 @@ def _compute_world_placement(element) -> Optional[Tuple[float, float, float]]:
                 offsets.append((0.0, 0.0, 0.0))
 
             # Walk to parent placement
-            if hasattr(current, 'PlacementRelTo') and current.PlacementRelTo is not None:
+            if hasattr(current, "PlacementRelTo") and current.PlacementRelTo is not None:
                 current = current.PlacementRelTo
             else:
                 break
@@ -401,7 +410,8 @@ def _compute_world_placement(element) -> Optional[Tuple[float, float, float]]:
             "V93 SAFETY: World placement computation failed for %s — "
             "DROPPING element (returning None). Elements with unknown "
             "position are MORE DANGEROUS than missing elements. Error: %s",
-            getattr(element, 'GlobalId', '?'), exc
+            getattr(element, "GlobalId", "?"),
+            exc,
         )
         return None
 
@@ -420,16 +430,16 @@ def _extract_extrusion_direction(item) -> Optional[Tuple[float, float, float]]:
         (dx, dy, dz) direction vector (not necessarily normalized), or None.
     """
     try:
-        if hasattr(item, 'ExtrudedDirection') and item.ExtrudedDirection is not None:
+        if hasattr(item, "ExtrudedDirection") and item.ExtrudedDirection is not None:
             direction = item.ExtrudedDirection
-            if hasattr(direction, 'DirectionRatios'):
+            if hasattr(direction, "DirectionRatios"):
                 ratios = list(direction.DirectionRatios)
                 dx = float(ratios[0]) if len(ratios) > 0 else 0.0
                 dy = float(ratios[1]) if len(ratios) > 1 else 0.0
                 dz = float(ratios[2]) if len(ratios) > 2 else 0.0
                 # Validate
                 if math.isfinite(dx) and math.isfinite(dy) and math.isfinite(dz):
-                    mag = math.sqrt(dx*dx + dy*dy + dz*dz)
+                    mag = math.sqrt(dx * dx + dy * dy + dz * dz)
                     if mag > 1e-12:
                         return (dx, dy, dz)
             # DirectionRatios not available
@@ -451,7 +461,7 @@ def _is_z_axis_direction(dx: float, dy: float, dz: float, tolerance: float = 1e-
         True if the direction is along the Z-axis.
     """
     # Normalize
-    mag = math.sqrt(dx*dx + dy*dy + dz*dz)
+    mag = math.sqrt(dx * dx + dy * dy + dz * dz)
     if mag < 1e-12:
         return True  # Degenerate, treat as Z
     nx, ny, nz = dx / mag, dy / mag, dz / mag
@@ -484,7 +494,7 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
             "V93 SAFETY: World placement computation returned None for %s — "
             "DROPPING element. Elements with unknown position are MORE "
             "DANGEROUS than missing elements.",
-            getattr(element, 'GlobalId', '?')
+            getattr(element, "GlobalId", "?"),
         )
         return None
     cx, cy, cz = world_pos
@@ -501,10 +511,10 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
         if element.Representation is not None:
             for rep in element.Representation.Representations:
                 for item in rep.Items:
-                    if item.is_a('IfcExtrudedAreaSolid'):
+                    if item.is_a("IfcExtrudedAreaSolid"):
                         # Get position
                         pos = item.Position
-                        if pos and hasattr(pos, 'Location'):
+                        if pos and hasattr(pos, "Location"):
                             px = float(pos.Location.Coordinates[0])
                             py = float(pos.Location.Coordinates[1])
                             pz = float(pos.Location.Coordinates[2]) if len(pos.Location.Coordinates) > 2 else 0.0
@@ -512,7 +522,7 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                             px, py, pz = 0.0, 0.0, 0.0
 
                         # Get extrusion dimensions
-                        depth = float(item.Depth) if hasattr(item, 'Depth') else 0.0
+                        depth = float(item.Depth) if hasattr(item, "Depth") else 0.0
 
                         # V106 CRITICAL FIX: Validate all dimension values for NaN/Inf.
                         # Previously, only position coordinates (cx, cy, cz, px, py, pz)
@@ -526,7 +536,9 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                             log.critical(
                                 "V106 SAFETY: Non-finite Depth (%s) in IFC element %s — "
                                 "DROPPING. NaN/Inf dimensions produce invisible bounding "
-                                "boxes that bypass the occupancy grid.", depth, element_id
+                                "boxes that bypass the occupancy grid.",
+                                depth,
+                                element_id,
                             )
                             return None
 
@@ -548,7 +560,10 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                                 log.info(
                                     "Non-Z extrusion direction (%.4f, %.4f, %.4f) "
                                     "for element %s — computing rotated bounding box.",
-                                    dx, dy, dz, element_id,
+                                    dx,
+                                    dy,
+                                    dz,
+                                    element_id,
                                 )
                         else:
                             # Could not extract direction — default to Z with warning
@@ -562,21 +577,30 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
 
                         # Get profile bounds
                         profile = item.SweptArea
-                        if hasattr(profile, 'Position') and profile.Position is not None:
-                            prof_x = float(profile.Position.Location.Coordinates[0]) if hasattr(profile.Position.Location, 'Coordinates') else 0.0
-                            prof_y = float(profile.Position.Location.Coordinates[1]) if len(profile.Position.Location.Coordinates) > 1 else 0.0
+                        if hasattr(profile, "Position") and profile.Position is not None:
+                            prof_x = (
+                                float(profile.Position.Location.Coordinates[0])
+                                if hasattr(profile.Position.Location, "Coordinates")
+                                else 0.0
+                            )
+                            prof_y = (
+                                float(profile.Position.Location.Coordinates[1])
+                                if len(profile.Position.Location.Coordinates) > 1
+                                else 0.0
+                            )
                             # V106 FIX: Validate profile position
                             for _pval in [prof_x, prof_y]:
                                 if not math.isfinite(_pval):
                                     log.critical(
-                                        "V106 SAFETY: Non-finite profile position (%s) in "
-                                        "element %s — DROPPING.", _pval, element_id
+                                        "V106 SAFETY: Non-finite profile position (%s) in element %s — DROPPING.",
+                                        _pval,
+                                        element_id,
                                     )
                                     return None
                         else:
                             prof_x, prof_y = 0.0, 0.0
 
-                        if hasattr(profile, 'XDim') and hasattr(profile, 'YDim'):
+                        if hasattr(profile, "XDim") and hasattr(profile, "YDim"):
                             xdim = float(profile.XDim)
                             ydim = float(profile.YDim)
                             # V106 CRITICAL FIX: Validate dimensions
@@ -585,7 +609,9 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                                     "V106 SAFETY: Non-finite profile dimensions "
                                     "(XDim=%s, YDim=%s) in element %s — DROPPING. "
                                     "NaN dimensions produce phantom bounding boxes.",
-                                    xdim, ydim, element_id
+                                    xdim,
+                                    ydim,
+                                    element_id,
                                 )
                                 return None
                             if is_z_extrusion:
@@ -620,7 +646,7 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                                 ]
                                 # Build 3D corners: 4 base + 4 extruded
                                 all_corners = []
-                                for (lx, ly) in corners_2d:
+                                for lx, ly in corners_2d:
                                     # Base corner
                                     bx = base_x + lx
                                     by = base_y + ly
@@ -637,14 +663,15 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                                 max_x = max(c[0] for c in all_corners)
                                 max_y = max(c[1] for c in all_corners)
                                 max_z = max(c[2] for c in all_corners)
-                        elif hasattr(profile, 'Radius'):
+                        elif hasattr(profile, "Radius"):
                             radius = float(profile.Radius)
                             # V106 CRITICAL FIX: Validate radius
                             if not math.isfinite(radius):
                                 log.critical(
                                     "V106 SAFETY: Non-finite Radius (%s) in element %s — "
                                     "DROPPING. NaN radius produces phantom bounding box.",
-                                    radius, element_id
+                                    radius,
+                                    element_id,
                                 )
                                 return None
                             if is_z_extrusion:
@@ -725,7 +752,8 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
             "V93 SAFETY: Representation geometry extraction failed for %s — "
             "DROPPING element (returning None). A zero-volume bounding box "
             "is more dangerous than a missing element. Error: %s",
-            element_id, exc
+            element_id,
+            exc,
         )
         return None
 
@@ -751,8 +779,14 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
             "(type=%s, bbox=(%s,%s,%s)-(%s,%s,%s)). This element will be "
             "DROPPED — a zero-volume blocking element is invisible to the "
             "cable router, creating a false sense of safety.",
-            element_id, element_type.value,
-            min_x, min_y, min_z, max_x, max_y, max_z,
+            element_id,
+            element_type.value,
+            min_x,
+            min_y,
+            min_z,
+            max_x,
+            max_y,
+            max_z,
         )
         return None
     if volume == 0.0 and element_type == IfcElementType.SPACE:
@@ -760,7 +794,12 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
             "V106: Zero-volume SPACE element %s (bbox=(%s,%s,%s)-(%s,%s,%s)). "
             "DROPPING — phantom spaces produce unrouteable cable targets.",
             element_id,
-            min_x, min_y, min_z, max_x, max_y, max_z,
+            min_x,
+            min_y,
+            min_z,
+            max_x,
+            max_y,
+            max_z,
         )
         return None
 
@@ -803,12 +842,10 @@ def parse_ifc_file(file_path: str) -> BuildingModel:
     """
     ifs = _get_ifcopenshell()
     if ifs is None:
-        raise ImportError(
-            "IfcOpenShell is required for IFC file parsing. "
-            "Install with: pip install ifcopenshell"
-        )
+        raise ImportError("IfcOpenShell is required for IFC file parsing. Install with: pip install ifcopenshell")
 
     import os
+
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"IFC file not found: {file_path}")
 
@@ -837,16 +874,12 @@ def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
     """
     ifs = _get_ifcopenshell()
     if ifs is None:
-        raise ImportError(
-            "IfcOpenShell is required for IFC parsing. "
-            "Install with: pip install ifcopenshell"
-        )
+        raise ImportError("IfcOpenShell is required for IFC parsing. Install with: pip install ifcopenshell")
 
     try:
         import tempfile
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.ifc', delete=False
-        ) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ifc", delete=False) as f:
             f.write(ifc_content)
             temp_path = f.name
 
@@ -855,6 +888,7 @@ def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
             return _extract_building_model(model)
         finally:
             import os
+
             os.unlink(temp_path)
     except Exception as exc:
         raise ValueError(f"Cannot parse IFC content: {exc}") from exc
@@ -876,7 +910,7 @@ def _extract_building_model(ifc_model) -> BuildingModel:
     # Get building name
     building_name = ""
     try:
-        for building in ifc_model.by_type('IfcBuilding'):
+        for building in ifc_model.by_type("IfcBuilding"):
             building_name = building.Name or ""
             break
     except Exception as exc:
@@ -891,13 +925,25 @@ def _extract_building_model(ifc_model) -> BuildingModel:
     # and structural entities (IfcStair, IfcRamp, IfcMember, IfcBuildingElementProxy)
     target_types = [
         # Structural / Architectural
-        'IfcWall', 'IfcWallStandardCase', 'IfcSlab', 'IfcBeam',
-        'IfcSpace', 'IfcDoor', 'IfcWindow', 'IfcColumn', 'IfcCurtainWall',
+        "IfcWall",
+        "IfcWallStandardCase",
+        "IfcSlab",
+        "IfcBeam",
+        "IfcSpace",
+        "IfcDoor",
+        "IfcWindow",
+        "IfcColumn",
+        "IfcCurtainWall",
         # V106: Structural elements affecting cable routing
-        'IfcStair', 'IfcRamp', 'IfcMember', 'IfcBuildingElementProxy',
+        "IfcStair",
+        "IfcRamp",
+        "IfcMember",
+        "IfcBuildingElementProxy",
         # V106: Fire safety elements — critical for a fire protection system
-        'IfcAlarm', 'IfcSensor', 'IfcProtectiveDevice',
-        'IfcElectricDistributionBoard',
+        "IfcAlarm",
+        "IfcSensor",
+        "IfcProtectiveDevice",
+        "IfcElectricDistributionBoard",
     ]
 
     for ifc_type in target_types:
@@ -907,14 +953,16 @@ def _extract_building_model(ifc_model) -> BuildingModel:
                 if bbox is not None:
                     elements.append(bbox)
                     if bbox.element_type == IfcElementType.SPACE:
-                        spaces.append(SpaceInfo(
-                            space_id=bbox.element_id,
-                            space_name=getattr(element, 'Name', '') or '',
-                            space_number=getattr(element, 'LongName', '') or getattr(element, 'Name', '') or '',
-                            bounding_box=bbox,
-                            floor_elevation=bbox.min_z,
-                            ceiling_elevation=bbox.max_z,
-                        ))
+                        spaces.append(
+                            SpaceInfo(
+                                space_id=bbox.element_id,
+                                space_name=getattr(element, "Name", "") or "",
+                                space_number=getattr(element, "LongName", "") or getattr(element, "Name", "") or "",
+                                bounding_box=bbox,
+                                floor_elevation=bbox.min_z,
+                                ceiling_elevation=bbox.max_z,
+                            )
+                        )
                 else:
                     # V93: Count dropped elements for safety audit
                     dropped_count += 1
@@ -926,7 +974,9 @@ def _extract_building_model(ifc_model) -> BuildingModel:
                 "V67 SAFETY: Extraction of %s elements failed — "
                 "these elements will be INVISIBLE to cable router. "
                 "Error: %s",
-                ifc_type, exc, exc_info=True
+                ifc_type,
+                exc,
+                exc_info=True,
             )
             continue
 
@@ -940,13 +990,11 @@ def _extract_building_model(ifc_model) -> BuildingModel:
             "occupancy grid. If any are fire-rated walls/partitions, "
             "cables may be incorrectly routed through them. Manual "
             "verification of the cable routing result is REQUIRED.",
-            dropped_count
+            dropped_count,
         )
 
     # Build occupancy grid
-    grid_origin, grid_size, grid_data = _build_occupancy_grid(
-        elements, resolution=0.1
-    )
+    grid_origin, grid_size, grid_data = _build_occupancy_grid(elements, resolution=0.1)
 
     return BuildingModel(
         building_name=building_name,
@@ -1080,9 +1128,7 @@ def build_abstract_model(
     Returns:
         BuildingModel with occupancy grid.
     """
-    grid_origin, grid_size, grid_data = _build_occupancy_grid(
-        obstacles, resolution=resolution
-    )
+    grid_origin, grid_size, grid_data = _build_occupancy_grid(obstacles, resolution=resolution)
 
     return BuildingModel(
         building_name=building_name,
@@ -1097,7 +1143,9 @@ def build_abstract_model(
 
 def get_cell_state(
     model: BuildingModel,
-    x: float, y: float, z: float,
+    x: float,
+    y: float,
+    z: float,
 ) -> CellState:
     """Query the occupancy grid at a world coordinate.
 
@@ -1134,7 +1182,9 @@ def get_cell_state(
 
 def world_to_grid(
     model: BuildingModel,
-    x: float, y: float, z: float,
+    x: float,
+    y: float,
+    z: float,
 ) -> Tuple[int, int, int]:
     """Convert world coordinates (meters) to grid indices.
 
@@ -1162,7 +1212,9 @@ def world_to_grid(
 
 def grid_to_world(
     model: BuildingModel,
-    ix: int, iy: int, iz: int,
+    ix: int,
+    iy: int,
+    iz: int,
 ) -> Tuple[float, float, float]:
     """Convert grid indices to world coordinates (cell center).
 

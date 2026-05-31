@@ -8,15 +8,15 @@ engine, replacing any previous naive grid algorithm.
 """
 
 from __future__ import annotations
-import math
-from dataclasses import dataclass, field
-from typing import List, Optional
 
-from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout
+from dataclasses import dataclass
+from typing import List
+
 from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
-
+from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, DetectorLayout, Room
 
 # ── Expert-system facade ────────────────────────────────────────────────────────
+
 
 class FireExpertSystem:
     """
@@ -34,11 +34,7 @@ class FireExpertSystem:
 
     # ── public API ──────────────────────────────────────────────────────────────
 
-    def analyse_room(self,
-                     name: str,
-                     width: float,
-                     length: float,
-                     ceiling_height: float = 3.0) -> AnalysisResult:
+    def analyse_room(self, name: str, width: float, length: float, ceiling_height: float = 3.0) -> AnalysisResult:
         """
         Perform full NFPA-72 analysis for a rectangular room.
 
@@ -61,8 +57,7 @@ class FireExpertSystem:
         unprotected. Per NFPA 72 §17.6.3.1.1, coverage radius MUST be
         height-adjusted.
         """
-        room   = Room(name=name, width=width, length=length,
-                      ceiling_height=ceiling_height)
+        room = Room(name=name, width=width, length=length, ceiling_height=ceiling_height)
         # V20.2 FIX: Use height-adjusted coverage radius from NFPA 72 Table 17.6.3.1.1
         # instead of the static default DETECTOR_RADIUS=6.40m from DensityOptimizer.
         # At h=10m: old R=6.40m → only R=4.48m is correct → 43% overestimate.
@@ -78,21 +73,32 @@ class FireExpertSystem:
 
 # ── Result wrapper ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class AnalysisResult:
     layout: DetectorLayout
     theoretical_lower_bound: int
 
     @property
-    def name(self):           return self.layout.room.name
+    def name(self):
+        return self.layout.room.name
+
     @property
-    def count(self):          return self.layout.count
+    def count(self):
+        return self.layout.count
+
     @property
-    def coverage(self):       return self.layout.coverage_pct
+    def coverage(self):
+        return self.layout.coverage_pct
+
     @property
-    def proof_valid(self):    return self.layout.proof_valid
+    def proof_valid(self):
+        return self.layout.proof_valid
+
     @property
-    def wall_violations(self):return self.layout.wall_violations
+    def wall_violations(self):
+        return self.layout.wall_violations
+
     @property
     def passed(self):
         return self.proof_valid and self.wall_violations == 0

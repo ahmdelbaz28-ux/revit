@@ -40,39 +40,40 @@ The profile is always recomputed from raw records (no stale cache).
 
 from __future__ import annotations
 
-import math
+import datetime
 import json
 import os
-import datetime
-from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Tuple, Optional, Any
 from collections import Counter
-
+from dataclasses import asdict, dataclass
+from typing import Dict, List, Optional, Tuple
 
 # ── data classes ─────────────────────────────────────────────
+
 
 @dataclass
 class RoomRecord:
     """One analysed room fed into the learner."""
-    name:       str
-    width:      float
-    length:     float
-    strategy:   str     # e.g. "hexG_x", "rect_4x3"
-    efficiency: float   # actual_count / theoretical_lower_bound
+
+    name: str
+    width: float
+    length: float
+    strategy: str  # e.g. "hexG_x", "rect_4x3"
+    efficiency: float  # actual_count / theoretical_lower_bound
 
 
 @dataclass
 class RoomCluster:
     """A cluster of similar rooms in (width, length) space."""
-    cluster_id:        int
-    centroid_w:        float
-    centroid_l:        float
-    member_names:      List[str]
+
+    cluster_id: int
+    centroid_w: float
+    centroid_l: float
+    member_names: List[str]
     dominant_strategy: str
-    avg_efficiency:    float
-    aspect_min:        float
-    aspect_max:        float
-    hint_strategy:     str     # recommended strategy for new rooms near this cluster
+    avg_efficiency: float
+    aspect_min: float
+    aspect_max: float
+    hint_strategy: str  # recommended strategy for new rooms near this cluster
 
 
 @dataclass
@@ -81,17 +82,19 @@ class BuildingProjectProfile:
     Attached as BuildingReport.project_profile after BuildingEngine finishes.
     Purely statistical -- no design decisions are made from this data.
     """
-    building_id:       str
-    total_rooms:       int
-    n_clusters:        int
-    clusters:          List[RoomCluster]
+
+    building_id: str
+    total_rooms: int
+    n_clusters: int
+    clusters: List[RoomCluster]
     global_dominant_strategy: str
-    strategy_distribution:    Dict[str, float]   # strategy -> win %
-    avg_efficiency:    float
-    generated_at:      str   # ISO UTC
+    strategy_distribution: Dict[str, float]  # strategy -> win %
+    avg_efficiency: float
+    generated_at: str  # ISO UTC
 
 
 # ── ProjectLearner ────────────────────────────────────────────
+
 
 class ProjectLearner:
     """
@@ -104,10 +107,10 @@ class ProjectLearner:
 
     def __init__(
         self,
-        building_id:  str = "default",
+        building_id: str = "default",
         persist_path: Optional[str] = None,
     ):
-        self.building_id  = building_id
+        self.building_id = building_id
         self.persist_path = persist_path
         self._records: List[RoomRecord] = []
 
@@ -118,17 +121,22 @@ class ProjectLearner:
 
     def record(
         self,
-        name:       str,
-        width:      float,
-        length:     float,
-        strategy:   str,
+        name: str,
+        width: float,
+        length: float,
+        strategy: str,
         efficiency: float,
     ) -> None:
         """Feed one analysed room into the learner."""
-        self._records.append(RoomRecord(
-            name=name, width=width, length=length,
-            strategy=strategy, efficiency=round(efficiency, 4),
-        ))
+        self._records.append(
+            RoomRecord(
+                name=name,
+                width=width,
+                length=length,
+                strategy=strategy,
+                efficiency=round(efficiency, 4),
+            )
+        )
         if self.persist_path:
             self._save()
 
@@ -150,8 +158,7 @@ class ProjectLearner:
         p = self._build_profile()
         best = min(
             p.clusters,
-            key=lambda c: (width  - c.centroid_w) ** 2
-                        + (length - c.centroid_l) ** 2,
+            key=lambda c: (width - c.centroid_w) ** 2 + (length - c.centroid_l) ** 2,
         )
         return best.hint_strategy
 
@@ -159,8 +166,7 @@ class ProjectLearner:
         """Return a human-readable summary of the profile."""
         n = len(self._records)
         if n < 3:
-            return (f"ProjectLearner '{self.building_id}': "
-                    f"{n} room(s) recorded (need >=3 to profile)")
+            return f"ProjectLearner '{self.building_id}': {n} room(s) recorded (need >=3 to profile)"
         p = self._build_profile()
         lines = [
             f"ProjectLearner '{self.building_id}': "
@@ -185,15 +191,18 @@ class ProjectLearner:
         records = self._records
         if not records:
             return BuildingProjectProfile(
-                building_id=self.building_id, total_rooms=0,
-                n_clusters=0, clusters=[],
+                building_id=self.building_id,
+                total_rooms=0,
+                n_clusters=0,
+                clusters=[],
                 global_dominant_strategy="unknown",
-                strategy_distribution={}, avg_efficiency=0.0,
+                strategy_distribution={},
+                avg_efficiency=0.0,
                 generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
             )
 
         pts = [(r.width, r.length) for r in records]
-        k   = self._elbow_k(pts, max_k=min(5, len(records)))
+        k = self._elbow_k(pts, max_k=min(5, len(records)))
         labels, centroids = self._kmeans(pts, k)
 
         clusters: List[RoomCluster] = []
@@ -201,57 +210,56 @@ class ProjectLearner:
             idxs = [i for i, lbl in enumerate(labels) if lbl == cid]
             if not idxs:
                 continue
-            members    = [records[i].name       for i in idxs]
-            strategies = [records[i].strategy   for i in idxs]
-            effs       = [records[i].efficiency for i in idxs]
-            aspects    = [
-                max(records[i].width, records[i].length) /
-                max(min(records[i].width, records[i].length), 0.01)
+            members = [records[i].name for i in idxs]
+            strategies = [records[i].strategy for i in idxs]
+            effs = [records[i].efficiency for i in idxs]
+            aspects = [
+                max(records[i].width, records[i].length) / max(min(records[i].width, records[i].length), 0.01)
                 for i in idxs
             ]
             dom = Counter(strategies).most_common(1)[0][0]
-            clusters.append(RoomCluster(
-                cluster_id        = cid,
-                centroid_w        = round(centroids[cid][0], 2),
-                centroid_l        = round(centroids[cid][1], 2),
-                member_names      = members,
-                dominant_strategy = dom,
-                avg_efficiency    = round(sum(effs) / len(effs), 4),
-                aspect_min        = round(min(aspects), 3),
-                aspect_max        = round(max(aspects), 3),
-                hint_strategy     = dom,
-            ))
+            clusters.append(
+                RoomCluster(
+                    cluster_id=cid,
+                    centroid_w=round(centroids[cid][0], 2),
+                    centroid_l=round(centroids[cid][1], 2),
+                    member_names=members,
+                    dominant_strategy=dom,
+                    avg_efficiency=round(sum(effs) / len(effs), 4),
+                    aspect_min=round(min(aspects), 3),
+                    aspect_max=round(max(aspects), 3),
+                    hint_strategy=dom,
+                )
+            )
 
         all_strategies = [r.strategy for r in records]
         strategy_counts = Counter(all_strategies)
         total = len(records)
-        strategy_dist = {
-            s: round(100.0 * c / total, 1)
-            for s, c in strategy_counts.most_common()
-        }
+        strategy_dist = {s: round(100.0 * c / total, 1) for s, c in strategy_counts.most_common()}
         global_dom = strategy_counts.most_common(1)[0][0]
-        avg_eff    = sum(r.efficiency for r in records) / total
+        avg_eff = sum(r.efficiency for r in records) / total
 
         return BuildingProjectProfile(
-            building_id              = self.building_id,
-            total_rooms              = total,
-            n_clusters               = len(clusters),
-            clusters                 = clusters,
-            global_dominant_strategy = global_dom,
-            strategy_distribution    = strategy_dist,
-            avg_efficiency           = round(avg_eff, 4),
-            generated_at             = datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            building_id=self.building_id,
+            total_rooms=total,
+            n_clusters=len(clusters),
+            clusters=clusters,
+            global_dominant_strategy=global_dom,
+            strategy_distribution=strategy_dist,
+            avg_efficiency=round(avg_eff, 4),
+            generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         )
 
     # ── k-means++ ─────────────────────────────────────────────
 
     def _kmeans(
         self,
-        pts:      List[Tuple[float, float]],
-        k:        int,
+        pts: List[Tuple[float, float]],
+        k: int,
         max_iter: int = 150,
     ) -> Tuple[List[int], List[Tuple[float, float]]]:
         import random
+
         random.seed(42)
         n = len(pts)
         if n <= k:
@@ -260,13 +268,10 @@ class ProjectLearner:
         # k-means++ initialisation
         centroids = [pts[random.randint(0, n - 1)]]
         while len(centroids) < k:
-            d2 = [
-                min((p[0]-c[0])**2 + (p[1]-c[1])**2 for c in centroids)
-                for p in pts
-            ]
+            d2 = [min((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2 for c in centroids) for p in pts]
             total = sum(d2) + 1e-9
-            r     = random.random() * total
-            cum   = 0.0
+            r = random.random() * total
+            cum = 0.0
             chosen = pts[-1]
             for p, d in zip(pts, d2):
                 cum += d
@@ -278,11 +283,7 @@ class ProjectLearner:
         labels = [0] * n
         for _ in range(max_iter):
             new_labels = [
-                min(range(k),
-                    key=lambda c: (
-                        (pts[i][0] - centroids[c][0])**2 +
-                        (pts[i][1] - centroids[c][1])**2
-                    ))
+                min(range(k), key=lambda c: (pts[i][0] - centroids[c][0]) ** 2 + (pts[i][1] - centroids[c][1]) ** 2)
                 for i in range(n)
             ]
             if new_labels == labels:
@@ -299,7 +300,7 @@ class ProjectLearner:
 
     def _elbow_k(
         self,
-        pts:   List[Tuple[float, float]],
+        pts: List[Tuple[float, float]],
         max_k: int,
     ) -> int:
         """Choose k via elbow method (max second derivative of inertia)."""
@@ -309,18 +310,13 @@ class ProjectLearner:
         for k in range(1, max_k + 1):
             labels, centroids = self._kmeans(pts, k)
             inertia = sum(
-                min(
-                    (p[0] - centroids[c][0])**2 +
-                    (p[1] - centroids[c][1])**2
-                    for c in range(k)
-                )
-                for p in pts
+                min((p[0] - centroids[c][0]) ** 2 + (p[1] - centroids[c][1]) ** 2 for c in range(k)) for p in pts
             )
             inertias.append(inertia)
 
         best_k, best_dd = 1, 0.0
         for i in range(1, len(inertias) - 1):
-            dd = abs(inertias[i-1] - 2*inertias[i] + inertias[i+1])
+            dd = abs(inertias[i - 1] - 2 * inertias[i] + inertias[i + 1])
             if dd > best_dd:
                 best_dd, best_k = dd, i + 1
         return max(1, best_k)
@@ -337,7 +333,7 @@ class ProjectLearner:
                     data = {}
         data[f"project_{self.building_id}"] = {
             "building_id": self.building_id,
-            "records":     [asdict(r) for r in self._records],
+            "records": [asdict(r) for r in self._records],
         }
         with open(self.persist_path, "w") as f:
             json.dump(data, f, indent=2)

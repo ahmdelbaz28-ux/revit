@@ -30,11 +30,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Tuple
 
 try:
     import ezdxf
     from ezdxf.enums import TextEntityAlignment
+
     HAS_EZDXF = True
 except ImportError:
     HAS_EZDXF = False
@@ -56,6 +57,7 @@ __all__ = [
 # Data Structures
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class RiserPanel:
     """A fire alarm control panel or booster in the riser diagram.
@@ -67,6 +69,7 @@ class RiserPanel:
         loop_count: Number of SLC loops on this panel.
         nac_count:  Number of NAC circuits on this panel.
     """
+
     panel_id: str
     panel_type: str = "FACP"
     floor_id: str = "GF"
@@ -88,6 +91,7 @@ class RiserLoop:
         cable_length_m:    Estimated cable length.
         class_type:        "A" or "B" (Class A or Class B wiring).
     """
+
     loop_id: str
     panel_id: str
     device_count: int = 0
@@ -110,6 +114,7 @@ class RiserNACCircuit:
         floor_id:       Floor served.
         cable_type:     Cable type for NAC wiring.
     """
+
     nac_id: str
     panel_id: str
     device_types: Tuple[str, ...] = ("horn_strobe_15cd",)
@@ -128,6 +133,7 @@ class RiserNetworkLink:
         link_type:  "NETWORK" (panel-to-panel) or "RISER" (vertical cable).
         cable_type: Cable type for the network link.
     """
+
     from_panel: str
     to_panel: str
     link_type: str = "NETWORK"
@@ -147,6 +153,7 @@ class RiserDiagramSpec:
         survivability_level: Pathway survivability level (from engine).
         nfpa_version:    NFPA edition applied.
     """
+
     project_name: str = "FIRE ALARM SYSTEM"
     panels: List[RiserPanel] = field(default_factory=list)
     loops: List[RiserLoop] = field(default_factory=list)
@@ -168,6 +175,7 @@ class RiserDiagramResult:
         warnings:    Non-fatal advisories.
         errors:      Fatal issues.
     """
+
     output_path: str = ""
     panel_count: int = 0
     loop_count: int = 0
@@ -179,6 +187,7 @@ class RiserDiagramResult:
 # ============================================================================
 # Riser Diagram Generator
 # ============================================================================
+
 
 class RiserDiagramGenerator:
     """Generate NFPA 72 §7.4.5 compliant fire alarm riser diagrams.
@@ -204,15 +213,15 @@ class RiserDiagramGenerator:
     """
 
     # Layout constants (in drawing units = metres)
-    FLOOR_SPACING = 5.0       # vertical distance between floors
-    PANEL_WIDTH = 2.0         # panel box width
-    PANEL_HEIGHT = 1.5        # panel box height
-    LOOP_BRANCH_LEN = 8.0     # horizontal length of loop branch
-    NAC_BRANCH_LEN = 6.0      # horizontal length of NAC branch
-    BRANCH_SPACING = 1.0      # vertical spacing between branches
-    TEXT_HEIGHT = 0.3          # text annotation height
-    MARGIN_LEFT = 5.0         # left margin for panel placement
-    MARGIN_BOTTOM = 5.0       # bottom margin
+    FLOOR_SPACING = 5.0  # vertical distance between floors
+    PANEL_WIDTH = 2.0  # panel box width
+    PANEL_HEIGHT = 1.5  # panel box height
+    LOOP_BRANCH_LEN = 8.0  # horizontal length of loop branch
+    NAC_BRANCH_LEN = 6.0  # horizontal length of NAC branch
+    BRANCH_SPACING = 1.0  # vertical spacing between branches
+    TEXT_HEIGHT = 0.3  # text annotation height
+    MARGIN_LEFT = 5.0  # left margin for panel placement
+    MARGIN_BOTTOM = 5.0  # bottom margin
 
     def generate(
         self,
@@ -232,8 +241,7 @@ class RiserDiagramGenerator:
 
         if not HAS_EZDXF:
             result.errors.append(
-                "ezdxf >= 1.1.0 is required for riser diagram generation. "
-                "Install with: pip install ezdxf>=1.1.0"
+                "ezdxf >= 1.1.0 is required for riser diagram generation. Install with: pip install ezdxf>=1.1.0"
             )
             return result
 
@@ -305,7 +313,10 @@ class RiserDiagramGenerator:
 
             logger.info(
                 "RiserDiagram: %d panels, %d loops, %d NAC → %s",
-                result.panel_count, result.loop_count, result.nac_count, output_path,
+                result.panel_count,
+                result.loop_count,
+                result.nac_count,
+                output_path,
             )
 
         except Exception as exc:
@@ -321,13 +332,13 @@ class RiserDiagramGenerator:
         """Create CAD layers for the riser diagram."""
         layers = doc.layers
         layer_defs = {
-            "RD-PANELS":   (3, "Continuous"),   # Green — panels
-            "RD-LOOPS":    (5, "Continuous"),   # Blue — SLC loops
-            "RD-NAC":      (4, "Continuous"),   # Cyan — NAC circuits
-            "RD-NETWORK":  (1, "DASHED"),       # Red dashed — network links
+            "RD-PANELS": (3, "Continuous"),  # Green — panels
+            "RD-LOOPS": (5, "Continuous"),  # Blue — SLC loops
+            "RD-NAC": (4, "Continuous"),  # Cyan — NAC circuits
+            "RD-NETWORK": (1, "DASHED"),  # Red dashed — network links
             "RD-ISOLATORS": (2, "Continuous"),  # Yellow — fault isolators
-            "RD-LABELS":   (7, "Continuous"),   # White — text annotations
-            "RD-TITLE":    (7, "Continuous"),   # White — title block
+            "RD-LABELS": (7, "Continuous"),  # White — text annotations
+            "RD-TITLE": (7, "Continuous"),  # White — title block
         }
         for name, (color, lt) in layer_defs.items():
             try:
@@ -357,10 +368,10 @@ class RiserDiagramGenerator:
 
         # Panel rectangle
         pts = [
-            (px - w/2, py - h/2, 0),
-            (px + w/2, py - h/2, 0),
-            (px + w/2, py + h/2, 0),
-            (px - w/2, py + h/2, 0),
+            (px - w / 2, py - h / 2, 0),
+            (px + w / 2, py - h / 2, 0),
+            (px + w / 2, py + h / 2, 0),
+            (px - w / 2, py + h / 2, 0),
         ]
         msp.add_lwpolyline(pts, dxfattribs={"layer": "RD-PANELS", "closed": True})
 
@@ -370,7 +381,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT,
-                "insert": (px - w/2 + 0.1, py + h/2 - 0.4),
+                "insert": (px - w / 2 + 0.1, py + h / 2 - 0.4),
             },
         )
 
@@ -380,7 +391,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.8,
-                "insert": (px - w/2 + 0.1, py + h/2 - 0.8),
+                "insert": (px - w / 2 + 0.1, py + h / 2 - 0.8),
             },
         )
 
@@ -390,7 +401,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.7,
-                "insert": (px - w/2 + 0.1, py - h/2 + 0.1),
+                "insert": (px - w / 2 + 0.1, py - h / 2 + 0.1),
             },
         )
 
@@ -401,7 +412,7 @@ class RiserDiagramGenerator:
                 dxfattribs={
                     "layer": "RD-LABELS",
                     "height": self.TEXT_HEIGHT * 0.6,
-                    "insert": (px - w/2 + 0.1, py - h/2 + 0.4),
+                    "insert": (px - w / 2 + 0.1, py - h / 2 + 0.4),
                 },
             )
 
@@ -411,7 +422,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.6,
-                "insert": (px - w/2 + 0.1, py - 0.1),
+                "insert": (px - w / 2 + 0.1, py - 0.1),
             },
         )
 
@@ -426,15 +437,15 @@ class RiserDiagramGenerator:
         """Draw an SLC loop branch from a panel."""
         # Vertical line from panel to branch level
         msp.add_line(
-            (panel_x + self.PANEL_WIDTH/2, panel_y, 0),
-            (panel_x + self.PANEL_WIDTH/2, branch_y, 0),
+            (panel_x + self.PANEL_WIDTH / 2, panel_y, 0),
+            (panel_x + self.PANEL_WIDTH / 2, branch_y, 0),
             dxfattribs={"layer": "RD-LOOPS"},
         )
 
         # Horizontal branch
-        end_x = panel_x + self.PANEL_WIDTH/2 + self.LOOP_BRANCH_LEN
+        end_x = panel_x + self.PANEL_WIDTH / 2 + self.LOOP_BRANCH_LEN
         msp.add_line(
-            (panel_x + self.PANEL_WIDTH/2, branch_y, 0),
+            (panel_x + self.PANEL_WIDTH / 2, branch_y, 0),
             (end_x, branch_y, 0),
             dxfattribs={"layer": "RD-LOOPS"},
         )
@@ -445,7 +456,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.8,
-                "insert": (panel_x + self.PANEL_WIDTH/2 + 0.2, branch_y + 0.2),
+                "insert": (panel_x + self.PANEL_WIDTH / 2 + 0.2, branch_y + 0.2),
             },
         )
 
@@ -455,7 +466,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.6,
-                "insert": (panel_x + self.PANEL_WIDTH/2 + 0.2, branch_y - 0.3),
+                "insert": (panel_x + self.PANEL_WIDTH / 2 + 0.2, branch_y - 0.3),
             },
         )
 
@@ -465,14 +476,14 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.6,
-                "insert": (panel_x + self.PANEL_WIDTH/2 + 0.2, branch_y - 0.7),
+                "insert": (panel_x + self.PANEL_WIDTH / 2 + 0.2, branch_y - 0.7),
             },
         )
 
         # Draw fault isolator symbols along the branch
         if loop.isolator_count > 0:
             for i in range(min(loop.isolator_count, 5)):  # max 5 symbols
-                ix = panel_x + self.PANEL_WIDTH/2 + (i + 1) * self.LOOP_BRANCH_LEN / (loop.isolator_count + 1)
+                ix = panel_x + self.PANEL_WIDTH / 2 + (i + 1) * self.LOOP_BRANCH_LEN / (loop.isolator_count + 1)
                 msp.add_text(
                     "FI",
                     dxfattribs={
@@ -495,7 +506,7 @@ class RiserDiagramGenerator:
                 dxfattribs={
                     "layer": "RD-LABELS",
                     "height": self.TEXT_HEIGHT * 0.5,
-                    "insert": (panel_x + self.PANEL_WIDTH/2 + 0.2, branch_y - 1.2),
+                    "insert": (panel_x + self.PANEL_WIDTH / 2 + 0.2, branch_y - 1.2),
                 },
             )
 
@@ -510,15 +521,15 @@ class RiserDiagramGenerator:
         """Draw a NAC circuit branch from a panel."""
         # Vertical line from panel to NAC level
         msp.add_line(
-            (panel_x + self.PANEL_WIDTH/2, panel_y, 0),
-            (panel_x + self.PANEL_WIDTH/2, nac_y, 0),
+            (panel_x + self.PANEL_WIDTH / 2, panel_y, 0),
+            (panel_x + self.PANEL_WIDTH / 2, nac_y, 0),
             dxfattribs={"layer": "RD-NAC"},
         )
 
         # Horizontal branch
-        end_x = panel_x + self.PANEL_WIDTH/2 + self.NAC_BRANCH_LEN
+        end_x = panel_x + self.PANEL_WIDTH / 2 + self.NAC_BRANCH_LEN
         msp.add_line(
-            (panel_x + self.PANEL_WIDTH/2, nac_y, 0),
+            (panel_x + self.PANEL_WIDTH / 2, nac_y, 0),
             (end_x, nac_y, 0),
             dxfattribs={"layer": "RD-NAC"},
         )
@@ -529,7 +540,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.8,
-                "insert": (panel_x + self.PANEL_WIDTH/2 + 0.2, nac_y + 0.2),
+                "insert": (panel_x + self.PANEL_WIDTH / 2 + 0.2, nac_y + 0.2),
             },
         )
 
@@ -540,7 +551,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.6,
-                "insert": (panel_x + self.PANEL_WIDTH/2 + 0.2, nac_y - 0.3),
+                "insert": (panel_x + self.PANEL_WIDTH / 2 + 0.2, nac_y - 0.3),
             },
         )
 
@@ -550,7 +561,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.5,
-                "insert": (panel_x + self.PANEL_WIDTH/2 + 0.2, nac_y - 0.7),
+                "insert": (panel_x + self.PANEL_WIDTH / 2 + 0.2, nac_y - 0.7),
             },
         )
 
@@ -564,8 +575,8 @@ class RiserDiagramGenerator:
         """Draw a network connection between two panels."""
         # Draw vertical dashed line between panels
         msp.add_line(
-            (pos_a[0] - self.PANEL_WIDTH/2, pos_a[1], 0),
-            (pos_b[0] - self.PANEL_WIDTH/2, pos_b[1], 0),
+            (pos_a[0] - self.PANEL_WIDTH / 2, pos_a[1], 0),
+            (pos_b[0] - self.PANEL_WIDTH / 2, pos_b[1], 0),
             dxfattribs={"layer": "RD-NETWORK"},
         )
 
@@ -576,7 +587,7 @@ class RiserDiagramGenerator:
             dxfattribs={
                 "layer": "RD-LABELS",
                 "height": self.TEXT_HEIGHT * 0.6,
-                "insert": (pos_a[0] - self.PANEL_WIDTH/2 - 2.0, mid_y),
+                "insert": (pos_a[0] - self.PANEL_WIDTH / 2 - 2.0, mid_y),
             },
         )
 

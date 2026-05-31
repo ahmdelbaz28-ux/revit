@@ -6,21 +6,24 @@ CRITICAL SAFETY:
   3. Fail-Fast: RuntimeError STOPS everything.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
-import time
 import logging
+import time
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple
 
 from .audit_trail import AuditTrail
-from .nfpa72_models import RoomSpec, NFPAComplianceError, DetectorType
 from .nfpa72_coverage import verify_full_coverage
-from .spatial_engine.density_optimizer import DensityOptimizer, Room, MAX_SPACING_M, DETECTOR_RADIUS
+from .nfpa72_models import NFPAComplianceError, RoomSpec
+from .spatial_engine.density_optimizer import DETECTOR_RADIUS, MAX_SPACING_M, DensityOptimizer, Room
+
 
 # CRITICAL FIX: InvalidInputError was caught but never imported or defined.
 # Define it locally to prevent NameError at runtime.
 class InvalidInputError(ValueError):
     """Raised when room input is invalid."""
+
     pass
+
 
 logger = logging.getLogger("fireai.orchestrator")
 
@@ -69,7 +72,7 @@ class FloorResult:
         self.rooms_errored = sum(1 for r in self.room_results if r.status == "ERROR")
         self.total_detectors = sum(r.detector_count for r in self.room_results)
         self.total_time_s = sum(r.solve_time_s for r in self.room_results)
-        
+
         # V50 FIX: Guard against empty room list producing false APPROVED.
         # If no rooms were processed (e.g., empty DXF, parser failure), the
         # building should NOT be marked as APPROVED — no rooms were actually
@@ -85,7 +88,7 @@ class FloorResult:
             self.status = "REJECTED"
         else:
             self.status = "REQUIRES_MANUAL_REVIEW"
-        
+
         # V50 FIX: Validate room count integrity — if passed+failed+errored
         # doesn't equal total, some rooms have unrecognized status strings.
         # This guards against future code changes that introduce new statuses
@@ -93,23 +96,24 @@ class FloorResult:
         counted = self.rooms_passed + self.rooms_failed + self.rooms_errored
         if counted != self.total_rooms and self.total_rooms > 0:
             import logging
+
             logging.getLogger(__name__).error(
                 f"Room count mismatch: {counted} counted vs {self.total_rooms} total. "
                 f"Some rooms have unrecognized status — downgrading to ERROR."
             )
             self.status = "ERROR"
-    
+
     def save_audit(self, output_dir: str = "audit"):
         """Save audit trail to JSON file for liability protection"""
         import json
-        from pathlib import Path
         from datetime import datetime, timezone
-        
+        from pathlib import Path
+
         Path(output_dir).mkdir(exist_ok=True)
-        
+
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")  # V54 FIX (AUDIT-012): UTC
         filename = f"{output_dir}/audit_{self.project_name}_{timestamp}.json"
-        
+
         audit_data = {
             "timestamp": datetime.now(timezone.utc).isoformat(),  # V54 FIX (AUDIT-012): UTC
             "project_name": self.project_name,
@@ -130,7 +134,7 @@ class FloorResult:
             "safety": {
                 "method": "Exact Shapely area-based coverage verification",
                 "threshold": "99.9% area coverage required (NFPA 72)",
-                "note": "No arbitrary spare detector margin — coverage is mathematically verified"
+                "note": "No arbitrary spare detector margin — coverage is mathematically verified",
             },
             "details": [
                 {
@@ -146,10 +150,10 @@ class FloorResult:
             ],
             "disclaimer": self.disclaimer,
         }
-        
+
         with open(filename, "w") as f:
             json.dump(audit_data, f, indent=2)
-        
+
         logger.info(f"Audit saved: {filename}")
         return filename
 
@@ -166,8 +170,7 @@ class FloorOrchestrator:
         self.grid_res = grid_res
         self.audit_trail = audit_trail
 
-    def process(self, room_specs: List[RoomSpec],
-                project_name: str = "", source_dxf: str = "") -> FloorResult:
+    def process(self, room_specs: List[RoomSpec], project_name: str = "", source_dxf: str = "") -> FloorResult:
         logger.info(f"Processing: {project_name} ({len(room_specs)} rooms)")
 
         result = FloorResult(
@@ -180,7 +183,7 @@ class FloorOrchestrator:
             room_res = self._process_one_room(spec)
             result.room_results.append(room_res)
             logger.info(f"  {spec.name}: {room_res.status}")
-            
+
             # Log each room to audit trail if available
             if self.audit_trail:
                 self.audit_trail.log_placement(
@@ -188,14 +191,14 @@ class FloorOrchestrator:
                     detector_count=room_res.detector_count,
                     detector_type=spec.detector_type.value if spec.detector_type else "UNKNOWN",
                     coverage_pct=room_res.coverage_pct,
-                    positions=room_res.detector_positions
+                    positions=room_res.detector_positions,
                 )
 
         result.compute()
-        
+
         # CRITICAL: Always save audit trail for liability protection
         result.save_audit()
-        
+
         return result
 
     def _process_one_room(self, spec: RoomSpec) -> RoomResult:
@@ -205,8 +208,9 @@ class FloorOrchestrator:
         # V111 CRITICAL: Skip rooms with unresolved geometry.
         # Running NFPA analysis on fabricated geometry produces FALSE compliance
         # results — a building could be signed off as "protected" when it is NOT.
-        if getattr(spec, 'geometry_unresolved', False):
+        if getattr(spec, "geometry_unresolved", False):
             import logging
+
             logging.getLogger(__name__).critical(
                 "Room '%s' has unresolved geometry — SKIPPING NFPA analysis. "
                 "Compliance results would be INVALID. "
@@ -214,15 +218,17 @@ class FloorOrchestrator:
                 spec.name,
             )
             result.status = "REQUIRES_MANUAL_REVIEW"
-            result.violations = [{
-                "rule": "IFC_GEOMETRY_UNRESOLVED",
-                "severity": "CRITICAL",
-                "message": (
-                    f"Room '{spec.name}' has no valid geometry — "
-                    "NFPA analysis cannot proceed. "
-                    "Resolve IFC geometry extraction before analysis."
-                ),
-            }]
+            result.violations = [
+                {
+                    "rule": "IFC_GEOMETRY_UNRESOLVED",
+                    "severity": "CRITICAL",
+                    "message": (
+                        f"Room '{spec.name}' has no valid geometry — "
+                        "NFPA analysis cannot proceed. "
+                        "Resolve IFC geometry extraction before analysis."
+                    ),
+                }
+            ]
             return result
 
         try:
@@ -230,16 +236,8 @@ class FloorOrchestrator:
             # Use DensityOptimizer V6 with hexagonal placement strategies
             # CRITICAL FIX: RoomSpec has depth_m not length_m,
             # and ceiling_spec not ceiling_height_m.
-            ceiling_h = (
-                spec.ceiling_spec.height_at_low_point_m
-                if spec.ceiling_spec else 3.0
-            )
-            room_data = Room(
-                name=spec.name,
-                width=spec.width_m,
-                length=spec.depth_m,
-                ceiling_height=ceiling_h
-            )
+            ceiling_h = spec.ceiling_spec.height_at_low_point_m if spec.ceiling_spec else 3.0
+            room_data = Room(name=spec.name, width=spec.width_m, length=spec.depth_m, ceiling_height=ceiling_h)
             # CRITICAL FIX: Use height-adjusted coverage radius per NFPA 72
             # Table 17.6.3.1.1. Previously, DensityOptimizer always used R=6.37m
             # (S=9.1m at h≤3.0m) regardless of ceiling height, which overestimates
@@ -250,7 +248,9 @@ class FloorOrchestrator:
                 from .nfpa72_calculations import calculate_coverage_radius_from_height
             except ImportError:
                 from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
-            det_type = spec.detector_type.value if hasattr(spec.detector_type, 'value') else str(spec.detector_type or 'SMOKE')
+            det_type = (
+                spec.detector_type.value if hasattr(spec.detector_type, "value") else str(spec.detector_type or "SMOKE")
+            )
             try:
                 cov_spec = calculate_coverage_radius_from_height(ceiling_h, det_type)
                 height_radius = cov_spec.radius
@@ -262,12 +262,15 @@ class FloorOrchestrator:
                 # which could be wrong for the ceiling height (e.g., using 9.1m spacing
                 # for a 15m ceiling that requires 5.2m spacing per NFPA 72 Table 17.6.3.1.1).
                 import logging
+
                 logging.getLogger(__name__).warning(
                     "V60: calculate_coverage_radius_from_height failed for ceiling_h=%.1f, "
                     "det_type=%s. Falling back to MAX_SPACING_M/DETECTOR_RADIUS which may "
                     "not be correct for this ceiling height. Error: %s "
                     "[NFPA 72 §17.6.3.1.1]",
-                    ceiling_h, det_type, e
+                    ceiling_h,
+                    det_type,
+                    e,
                 )
                 height_radius = None
                 height_spacing = None
@@ -286,7 +289,8 @@ class FloorOrchestrator:
             # Previous code hardcoded "circular" for ALL detector types, causing
             # heat detector coverage to be verified with wrong geometry.
             from fireai.core.nfpa72_models import DetectorType as _DT
-            is_heat = (spec.detector_type == _DT.HEAT if hasattr(spec, 'detector_type') else False)
+
+            is_heat = spec.detector_type == _DT.HEAT if hasattr(spec, "detector_type") else False
             coverage_geom = "square_grid" if is_heat else "circular"
 
             # Verify coverage
@@ -297,7 +301,7 @@ class FloorOrchestrator:
                 detector_radius=optimizer.R,
                 listed_spacing_m=optimizer.max_spacing,
                 grid_resolution_m=self.grid_res,
-                detector_type=spec.detector_type if hasattr(spec, 'detector_type') else _DT.SMOKE,
+                detector_type=spec.detector_type if hasattr(spec, "detector_type") else _DT.SMOKE,
             )
 
             # [3] Build result from layout + coverage
@@ -311,9 +315,7 @@ class FloorOrchestrator:
             result.worst_case_distance_m = coverage["worst_case_distance_m"]
 
             if result.status == "FAIL":
-                result.errors.append(
-                    f"Coverage failed: {coverage['coverage_percentage']}%"
-                )
+                result.errors.append(f"Coverage failed: {coverage['coverage_percentage']}%")
 
                 # V13 Fix: Adaptive Re-solve — if DensityOptimizer coverage fails,
                 # try the ConstraintSolver with area-based greedy placement.
@@ -321,10 +323,8 @@ class FloorOrchestrator:
                 # (which uses OptimalMIPEngine) and provides the same safety net here.
                 try:
                     from .spatial_engine.constraint_solver import ConstraintSolver
-                    area_solver = ConstraintSolver(
-                        room_polygon=spec.polygon,
-                        device_radius=optimizer.R
-                    )
+
+                    area_solver = ConstraintSolver(room_polygon=spec.polygon, device_radius=optimizer.R)
                     adaptive_result = area_solver.find_optimal_placement(max_devices=50)
                     if adaptive_result.coverage_percent >= 99.9:
                         result.status = "PASS"
@@ -348,9 +348,7 @@ class FloorOrchestrator:
                             f"(need 99.9%). Manual design required."
                         )
                 except Exception as adapt_err:
-                    result.errors.append(
-                        f"Adaptive re-solve error: {adapt_err}. Manual design required."
-                    )
+                    result.errors.append(f"Adaptive re-solve error: {adapt_err}. Manual design required.")
 
         except (NFPAComplianceError, InvalidInputError, ValueError) as e:
             # Logic errors → convert to ERROR result
@@ -359,9 +357,7 @@ class FloorOrchestrator:
 
         except Exception as e:
             # CRITICAL: RuntimeError → STOP EVERYTHING
-            logger.critical(
-                f"SYSTEM ERROR in {spec.room_id}: {type(e).__name__}: {e}"
-            )
+            logger.critical(f"SYSTEM ERROR in {spec.room_id}: {type(e).__name__}: {e}")
             raise  # FAIL FAST — do not continue with corrupted environment
 
         finally:

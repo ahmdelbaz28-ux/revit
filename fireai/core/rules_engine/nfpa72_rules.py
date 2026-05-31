@@ -28,25 +28,24 @@ Reference: NFPA 72-2022 (National Fire Alarm and Signaling Code)
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from fireai.core.rules_engine.engine import (
-    Fact,
-    Rule,
-    RulePriority,
-    RuleResult,
-    RulesEngine,
-)
 # SAFETY FIX (HIGH-11): Import spacing table from nfpa72_engine instead of
 # duplicating it. Two separate implementations could silently diverge —
 # a safety-critical discrepancy where one file's spacing values don't
 # match the other's. Now there is ONE source of truth.
 from fireai.core.nfpa72_engine import get_detector_spacing as _get_spacing_from_engine
-
+from fireai.core.rules_engine.engine import (
+    Fact,
+    Rule,
+    RulePriority,
+    RuleResult,
+)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # RULE HELPER FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def _spacing_for_ceiling_height(
     ceiling_height_m: float,
@@ -86,7 +85,7 @@ def _min_detectors_for_room(
     """
     if coverage_radius_m <= 0:
         return 1
-    coverage_area = math.pi * coverage_radius_m ** 2
+    coverage_area = math.pi * coverage_radius_m**2
     return max(1, math.ceil(room_area_m2 / coverage_area))
 
 
@@ -104,10 +103,7 @@ RULE_CEILING_HEIGHT_SPACING = Rule(
         "Higher ceilings delay smoke/heat arrival, requiring tighter spacing."
     ),
     fact_type="room",
-    condition=lambda f: (
-        "ceiling_height_m" in f.properties
-        and "detector_type" in f.properties
-    ),
+    condition=lambda f: "ceiling_height_m" in f.properties and "detector_type" in f.properties,
     action=lambda facts, engine: [
         RuleResult(
             rule_id="NFPA72-001",
@@ -187,9 +183,7 @@ RULE_COVERAGE_RADIUS = Rule(
                     properties={
                         "room_id": facts[0].properties.get("room_id", ""),
                         "detector_type": facts[0].properties.get("detector_type", ""),
-                        "R_m": _coverage_radius(
-                            facts[0].properties["listed_spacing_m"]
-                        ),
+                        "R_m": _coverage_radius(facts[0].properties["listed_spacing_m"]),
                         "S_m": facts[0].properties["listed_spacing_m"],
                     },
                     source="derived",
@@ -219,10 +213,7 @@ RULE_CEILING_HEIGHT_EXCEEDS_TABLE = Rule(
         "flags this for mandatory professional review."
     ),
     fact_type="room",
-    condition=lambda f: (
-        "ceiling_height_m" in f.properties
-        and f.properties["ceiling_height_m"] > 12.2
-    ),
+    condition=lambda f: "ceiling_height_m" in f.properties and f.properties["ceiling_height_m"] > 12.2,
     action=lambda facts, engine: [
         RuleResult(
             rule_id="NFPA72-003",
@@ -270,10 +261,7 @@ RULE_DEAD_AIR_SPACE = Rule(
         "smoke from reaching the detector."
     ),
     fact_type="detector",
-    condition=lambda f: (
-        "distance_to_wall_m" in f.properties
-        and f.properties["distance_to_wall_m"] < 0.1
-    ),
+    condition=lambda f: "distance_to_wall_m" in f.properties and f.properties["distance_to_wall_m"] < 0.1,
     action=lambda facts, engine: [
         RuleResult(
             rule_id="NFPA72-004",
@@ -347,9 +335,7 @@ RULE_DUCT_DETECTOR_REQUIRED = Rule(
     ),
     fact_type="hvac_unit",
     condition=lambda f: (
-        "cfm" in f.properties
-        and f.properties["cfm"] > 2000
-        and not f.properties.get("has_duct_detector", False)
+        "cfm" in f.properties and f.properties["cfm"] > 2000 and not f.properties.get("has_duct_detector", False)
     ),
     action=lambda facts, engine: [
         RuleResult(
@@ -362,11 +348,7 @@ RULE_DUCT_DETECTOR_REQUIRED = Rule(
                 f"has {facts[0].properties['cfm']} CFM (> 2000 CFM threshold) "
                 f"but no duct smoke detector. NFPA 72 §17.7.5.1 requires "
                 f"smoke detection on air handlers > 2000 CFM."
-                + (
-                    " Supply AND return detectors required (> 15000 CFM)."
-                    if facts[0].properties["cfm"] > 15000
-                    else ""
-                )
+                + (" Supply AND return detectors required (> 15000 CFM)." if facts[0].properties["cfm"] > 15000 else "")
             ),
             asserted_facts=[
                 Fact(
@@ -441,10 +423,7 @@ RULE_CORRIDOR_SPACING = Rule(
         "shall be within half the listed spacing of the corridor end."
     ),
     fact_type="room",
-    condition=lambda f: (
-        "is_corridor" in f.properties
-        and f.properties["is_corridor"] is True
-    ),
+    condition=lambda f: "is_corridor" in f.properties and f.properties["is_corridor"] is True,
     action=lambda facts, engine: [
         RuleResult(
             rule_id="NFPA72-008",
@@ -478,6 +457,7 @@ RULE_CORRIDOR_SPACING = Rule(
 # NFPA 72 RULES — MINIMUM DETECTOR COUNT
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def _action_min_detector_count(facts, engine):
     """Action for NFPA72-009: derives minimum detector count.
 
@@ -504,12 +484,7 @@ def _action_min_detector_count(facts, engine):
             rule_name="Minimum Detector Count for Room Coverage",
             nfpa_reference="NFPA 72 §17.6.3.1, §17.7.4.2.3.1",
             severity=RulePriority.COMPLIANCE_CHECK,
-            message=(
-                f"Room '{room_id}': "
-                f"R={r_m:.2f}m, "
-                f"area={room_area_m2:.1f}m2, "
-                f"minimum_detectors={min_dets}"
-            ),
+            message=(f"Room '{room_id}': R={r_m:.2f}m, area={room_area_m2:.1f}m2, minimum_detectors={min_dets}"),
             asserted_facts=[
                 Fact(
                     fact_type="detector_requirement",
@@ -553,9 +528,8 @@ RULE_MINIMUM_DETECTOR_COUNT = Rule(
 # JOIN RULE — DETECTOR IN ROOM (cross-fact-type)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _manhattan_exceeds_spacing(
-    x1: float, y1: float, x2: float, y2: float, spacing_m: float
-) -> bool:
+
+def _manhattan_exceeds_spacing(x1: float, y1: float, x2: float, y2: float, spacing_m: float) -> bool:
     """Quick Manhattan distance pre-filter for detector spacing joins.
 
     PERFORMANCE (CRITICAL-6): If the Manhattan distance |dx|+|dy| exceeds
@@ -580,10 +554,7 @@ RULE_DETECTOR_SPACING_VIOLATION = Rule(
         "detector pairs to check inter-detector distance."
     ),
     fact_type="detector",
-    condition=lambda f: (
-        "x" in f.properties and "y" in f.properties
-        and "listed_spacing_m" in f.properties
-    ),
+    condition=lambda f: "x" in f.properties and "y" in f.properties and "listed_spacing_m" in f.properties,
     join_conditions=[
         (
             "detector",
@@ -598,17 +569,22 @@ RULE_DETECTOR_SPACING_VIOLATION = Rule(
             lambda d1, d2: (
                 d1.properties.get("room_id") == d2.properties.get("room_id")
                 and d1.fact_id != d2.fact_id
-                and "x" in d1.properties and "y" in d1.properties
-                and "x" in d2.properties and "y" in d2.properties
+                and "x" in d1.properties
+                and "y" in d1.properties
+                and "x" in d2.properties
+                and "y" in d2.properties
                 and _manhattan_exceeds_spacing(
-                    d1.properties["x"], d1.properties["y"],
-                    d2.properties["x"], d2.properties["y"],
+                    d1.properties["x"],
+                    d1.properties["y"],
+                    d2.properties["x"],
+                    d2.properties["y"],
                     d1.properties.get("listed_spacing_m", float("inf")),
                 )
                 and math.hypot(
                     d1.properties["x"] - d2.properties["x"],
                     d1.properties["y"] - d2.properties["y"],
-                ) > d1.properties.get("listed_spacing_m", float("inf"))
+                )
+                > d1.properties.get("listed_spacing_m", float("inf"))
             ),
         )
     ],
@@ -652,10 +628,7 @@ RULE_BATTERY_INADEQUATE = Rule(
         "function during an extended power outage."
     ),
     fact_type="battery_result",
-    condition=lambda f: (
-        "is_adequate" in f.properties
-        and f.properties["is_adequate"] is False
-    ),
+    condition=lambda f: "is_adequate" in f.properties and f.properties["is_adequate"] is False,
     action=lambda facts, engine: [
         RuleResult(
             rule_id="NFPA72-011",
@@ -693,10 +666,7 @@ RULE_VOLTAGE_DROP_EXCEEDED = Rule(
         "path is critical — missing it reports 50% of actual drop."
     ),
     fact_type="voltage_drop_result",
-    condition=lambda f: (
-        "is_compliant" in f.properties
-        and f.properties["is_compliant"] is False
-    ),
+    condition=lambda f: "is_compliant" in f.properties and f.properties["is_compliant"] is False,
     action=lambda facts, engine: [
         RuleResult(
             rule_id="NFPA72-012",
@@ -735,10 +705,7 @@ RULE_FAULT_ISOLATION_VIOLATION = Rule(
         "entire SLC, preventing alarm notification."
     ),
     fact_type="fault_isolation_result",
-    condition=lambda f: (
-        "compliant" in f.properties
-        and f.properties["compliant"] is False
-    ),
+    condition=lambda f: "compliant" in f.properties and f.properties["compliant"] is False,
     action=lambda facts, engine: [
         RuleResult(
             rule_id="NFPA72-013",
@@ -763,6 +730,7 @@ RULE_FAULT_ISOLATION_VIOLATION = Rule(
 # ═══════════════════════════════════════════════════════════════════════════════
 # NFPA72RuleSet — Complete Rule Set
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class NFPA72RuleSet:
     """Complete NFPA 72 rule set for the rules engine.
@@ -804,18 +772,12 @@ class NFPA72RuleSet:
     @classmethod
     def critical_safety_rules(cls) -> List[Rule]:
         """Get only CRITICAL_SAFETY priority rules."""
-        return [
-            r for r in cls._ALL_RULES
-            if r.priority == RulePriority.CRITICAL_SAFETY
-        ]
+        return [r for r in cls._ALL_RULES if r.priority == RulePriority.CRITICAL_SAFETY]
 
     @classmethod
     def rules_by_nfpa_section(cls, section: str) -> List[Rule]:
         """Get rules that reference a specific NFPA section."""
-        return [
-            r for r in cls._ALL_RULES
-            if r.nfpa_reference and section in r.nfpa_reference
-        ]
+        return [r for r in cls._ALL_RULES if r.nfpa_reference and section in r.nfpa_reference]
 
     @classmethod
     def summary(cls) -> List[Dict[str, Any]]:

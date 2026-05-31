@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Tuple, Sequence
+from typing import List, Sequence, Tuple
 
 Point = Tuple[float, float]
 Polygon = List[Point]
@@ -25,6 +25,7 @@ Polygon = List[Point]
 # ─────────────────────────────────────────────
 # Core Primitives
 # ─────────────────────────────────────────────
+
 
 def _ensure_closed(poly: Polygon) -> Polygon:
     """Return polygon with first vertex appended as last (if not already closed)."""
@@ -106,6 +107,7 @@ def polygon_perimeter(poly: Polygon) -> float:
 # Point-in-Polygon  (Ray Casting + Edge Cases)
 # ─────────────────────────────────────────────
 
+
 def point_in_polygon(
     point: Point,
     poly: Polygon,
@@ -130,8 +132,7 @@ def point_in_polygon(
 
     # -- Fast bounding-box rejection --
     min_x, min_y, max_x, max_y = polygon_bounds(poly[:-1])
-    if not (min_x - tolerance <= px <= max_x + tolerance and
-            min_y - tolerance <= py <= max_y + tolerance):
+    if not (min_x - tolerance <= px <= max_x + tolerance and min_y - tolerance <= py <= max_y + tolerance):
         return False
 
     # -- Boundary check --
@@ -176,8 +177,7 @@ def _point_on_segment(
         return False
 
     # Dot product — within segment bounds
-    if not (min(ax, bx) - tol <= px <= max(ax, bx) + tol and
-            min(ay, by) - tol <= py <= max(ay, by) + tol):
+    if not (min(ax, bx) - tol <= px <= max(ax, bx) + tol and min(ay, by) - tol <= py <= max(ay, by) + tol):
         return False
 
     return True
@@ -194,15 +194,13 @@ def points_in_polygon(
     """
     closed = _ensure_closed(poly)
     bounds = polygon_bounds(closed[:-1])
-    return [
-        point_in_polygon(p, closed, include_boundary)
-        for p in points
-    ]
+    return [point_in_polygon(p, closed, include_boundary) for p in points]
 
 
 # ─────────────────────────────────────────────
 # Polygon Validation
 # ─────────────────────────────────────────────
+
 
 @dataclass
 class ValidationResult:
@@ -255,11 +253,8 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
         for j in range(i + 2, n):
             if j == (i + n - 1) % n:
                 continue
-            if _segments_intersect(poly[i], poly[(i + 1) % n],
-                                   poly[j], poly[(j + 1) % n]):
-                errors.append(
-                    f"Self-intersection between edge {i}->{(i+1)%n} and edge {j}->{(j+1)%n}."
-                )
+            if _segments_intersect(poly[i], poly[(i + 1) % n], poly[j], poly[(j + 1) % n]):
+                errors.append(f"Self-intersection between edge {i}->{(i + 1) % n} and edge {j}->{(j + 1) % n}.")
 
     area = polygon_area(poly)
     if area < min_area:
@@ -275,11 +270,14 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
     # Falls back to the existing _segments_intersect check if Shapely unavailable.
     try:
         from shapely.geometry import Polygon as ShapelyPolygon
+
         shapely_poly = ShapelyPolygon(poly)
         if not shapely_poly.is_valid:
             # Shapely's is_valid catches self-intersection, ring orientation,
             # and other geometric issues that the O(n²) check may miss.
-            explanation = shapely_poly.explain_validity if hasattr(shapely_poly, 'explain_validity') else "unknown reason"
+            explanation = (
+                shapely_poly.explain_validity if hasattr(shapely_poly, "explain_validity") else "unknown reason"
+            )
             errors.append(
                 f"Polygon is invalid per Shapely: {explanation}. "
                 f"Self-intersecting polygons produce wrong area calculations, "
@@ -290,6 +288,7 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
         # The O(n²) segment intersection check above does NOT catch all
         # self-intersection cases. Must warn, not silently pass.
         import logging as _logging
+
         _logging.getLogger(__name__).warning(
             "Shapely not available — polygon is_valid check SKIPPED. "
             "The segment intersection check above may miss some self-intersection "
@@ -301,6 +300,7 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
 
 def _segments_intersect(p1: Point, p2: Point, p3: Point, p4: Point) -> bool:
     """True if segment p1-p2 properly intersects p3-p4."""
+
     def cross2d(o, a, b):
         return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
@@ -310,18 +310,21 @@ def _segments_intersect(p1: Point, p2: Point, p3: Point, p4: Point) -> bool:
     d4 = cross2d(p1, p2, p4)
 
     # Proper intersection: segments straddle each other
-    if ((d1 > 0 > d2) or (d2 > 0 > d1)) and \
-       ((d3 > 0 > d4) or (d4 > 0 > d3)):
+    if ((d1 > 0 > d2) or (d2 > 0 > d1)) and ((d3 > 0 > d4) or (d4 > 0 > d3)):
         return True
 
     # Collinear overlap check
     if abs(d1) < 1e-10 and abs(d2) < 1e-10 and abs(d3) < 1e-10 and abs(d4) < 1e-10:
-        for (a, b, c) in [
-            (p1, p2, p3), (p1, p2, p4),
-            (p3, p4, p1), (p3, p4, p2),
+        for a, b, c in [
+            (p1, p2, p3),
+            (p1, p2, p4),
+            (p3, p4, p1),
+            (p3, p4, p2),
         ]:
-            if (min(a[0], b[0]) - 1e-9 <= c[0] <= max(a[0], b[0]) + 1e-9 and
-                min(a[1], b[1]) - 1e-9 <= c[1] <= max(a[1], b[1]) + 1e-9):
+            if (
+                min(a[0], b[0]) - 1e-9 <= c[0] <= max(a[0], b[0]) + 1e-9
+                and min(a[1], b[1]) - 1e-9 <= c[1] <= max(a[1], b[1]) + 1e-9
+            ):
                 return True
 
     # Endpoint-on-endpoint (tangent intersection)
@@ -341,6 +344,7 @@ def _segments_intersect(p1: Point, p2: Point, p3: Point, p4: Point) -> bool:
 # Polygon Winding & Orientation
 # ─────────────────────────────────────────────
 
+
 def is_clockwise(poly: Polygon) -> bool:
     """True if polygon vertices are in clockwise order."""
     return shoelace_area(poly) < 0
@@ -356,6 +360,7 @@ def ensure_ccw(poly: Polygon) -> Polygon:
 # ─────────────────────────────────────────────
 # Polygon Constructors
 # ─────────────────────────────────────────────
+
 
 def rect_polygon(width: float, height: float, origin: Point = (0, 0)) -> Polygon:
     """
@@ -424,6 +429,7 @@ def l_shape_polygon(width: float, height: float, cut_w: float, cut_h: float) -> 
 # Grid Generation Inside Polygon
 # ─────────────────────────────────────────────
 
+
 def grid_points_in_polygon(
     poly: Polygon,
     step: float = 0.5,
@@ -482,6 +488,7 @@ def grid_points_in_polygon(
 # ─────────────────────────────────────────────
 # Shape Classification
 # ─────────────────────────────────────────────
+
 
 def is_rectangular(poly: Polygon, tolerance: float = 0.05) -> bool:
     """
@@ -571,6 +578,7 @@ def bounding_rect_dimensions(poly: Polygon) -> Tuple[float, float, float, float]
 # Convex Hull  (Andrew's Monotone Chain)
 # ─────────────────────────────────────────────
 
+
 def convex_hull_2d(points: Sequence[Point]) -> Polygon:
     """
     Compute the convex hull of a set of 2D points.
@@ -616,10 +624,7 @@ def convex_hull_2d(points: Sequence[Point]) -> Polygon:
     hull = lower[:-1] + upper[:-1]
 
     if len(hull) < 3:
-        raise ValueError(
-            f"Cannot compute convex hull: only {len(hull)} unique hull vertices "
-            f"(points may be collinear)"
-        )
+        raise ValueError(f"Cannot compute convex hull: only {len(hull)} unique hull vertices (points may be collinear)")
 
     return hull
 
@@ -628,9 +633,11 @@ def convex_hull_2d(points: Sequence[Point]) -> Polygon:
 # Room Geometry Sanitization (V11 - Consultant #5 Criticism #4)
 # ─────────────────────────────────────────────
 
+
 @dataclass
 class SanitizeResult:
     """Result from room geometry sanitization."""
+
     coords: List[Point]
     was_modified: bool = False
     modifications: List[str] = field(default_factory=list)
@@ -708,13 +715,12 @@ def sanitize_room_geometry(coords: List[Point], min_area: float = 1.0) -> Saniti
                 )
 
         # 2. Reject MultiPolygon (disconnected rooms must be analyzed separately)
-        if poly.geom_type == 'MultiPolygon':
+        if poly.geom_type == "MultiPolygon":
             return SanitizeResult(
                 coords=coords,
                 rejected=True,
                 rejection_reason=(
-                    "Room is a MultiPolygon (disconnected parts). "
-                    "Each part must be analyzed as a separate room."
+                    "Room is a MultiPolygon (disconnected parts). Each part must be analyzed as a separate room."
                 ),
             )
 
@@ -739,8 +745,7 @@ def sanitize_room_geometry(coords: List[Point], min_area: float = 1.0) -> Saniti
         if simplified_n < original_n:
             removed = original_n - simplified_n
             modifications.append(
-                f"Simplified {removed} near-duplicate vertex/vertices "
-                f"({original_n} -> {simplified_n})"
+                f"Simplified {removed} near-duplicate vertex/vertices ({original_n} -> {simplified_n})"
             )
             was_modified = True
             poly = simplified
@@ -771,8 +776,7 @@ def sanitize_room_geometry(coords: List[Point], min_area: float = 1.0) -> Saniti
         i = 0
         while i < len(clean):
             next_i = (i + 1) % len(clean)
-            if math.hypot(clean[next_i][0] - clean[i][0],
-                         clean[next_i][1] - clean[i][1]) < 1e-9:
+            if math.hypot(clean[next_i][0] - clean[i][0], clean[next_i][1] - clean[i][1]) < 1e-9:
                 clean.pop(next_i if next_i < len(clean) else i)
                 modifications.append(f"Removed duplicate vertex at index {i}")
                 was_modified = True

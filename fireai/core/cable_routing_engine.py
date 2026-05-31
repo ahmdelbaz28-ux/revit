@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -52,11 +52,11 @@ logger = logging.getLogger(__name__)
 # 1. NEC 760 WIRE GAUGE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class _WireGaugeInstance:
     """A single wire gauge instance with NEC Table 8 properties."""
 
-    __slots__ = ('awg_value', 'resistance_ohm_per_km', 'resistance_ohm_per_m',
-                 'diameter_mm', 'ampacity_a')
+    __slots__ = ("awg_value", "resistance_ohm_per_km", "resistance_ohm_per_m", "diameter_mm", "ampacity_a")
 
     def __init__(
         self,
@@ -115,8 +115,8 @@ class WireGauge(metaclass=_WireGaugeMeta):
 
     AWG_18: _WireGaugeInstance = _WireGaugeInstance("18", 21.40, 1.024, 1.0)
     AWG_16: _WireGaugeInstance = _WireGaugeInstance("16", 13.40, 1.291, 2.0)
-    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14",  8.450, 1.628, 2.0)
-    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12",  5.310, 2.053, 3.0)
+    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14", 8.450, 1.628, 2.0)
+    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12", 5.310, 2.053, 3.0)
 
     _ALL_GAUGES: Tuple[_WireGaugeInstance, ...] = (AWG_18, AWG_16, AWG_14, AWG_12)
 
@@ -134,10 +134,7 @@ class WireGauge(metaclass=_WireGaugeMeta):
         """Look up wire resistance in Ω/m by AWG label."""
         awg_clean = str(awg).strip()
         if awg_clean not in cls.VALID_GAUGES:
-            raise ValueError(
-                f"Unknown AWG gauge: {awg!r}. "
-                f"Supported fire alarm gauges: {cls.VALID_GAUGES}."
-            )
+            raise ValueError(f"Unknown AWG gauge: {awg!r}. Supported fire alarm gauges: {cls.VALID_GAUGES}.")
         return cls.RESISTANCE_PER_M[awg_clean]
 
 
@@ -145,8 +142,10 @@ class WireGauge(metaclass=_WireGaugeMeta):
 # 2. OBSTACLE TYPE ENUM
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class ObstacleType(Enum):
     """Classification of routing obstacles."""
+
     WALL = "WALL"
     COLUMN = "COLUMN"
     BEAM = "BEAM"
@@ -160,6 +159,7 @@ class ObstacleType(Enum):
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. ROUTING OBSTACLE 3D
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass(frozen=True)
 class RoutingObstacle3D:
@@ -178,6 +178,7 @@ class RoutingObstacle3D:
         is_rated: Whether the obstacle is a fire-rated assembly.
         fire_rating_hours: Fire resistance rating in hours.
     """
+
     obstacle_id: str
     obstacle_type: ObstacleType
     x1: float = 0.0
@@ -192,9 +193,7 @@ class RoutingObstacle3D:
 
     def contains_point(self, x: float, y: float, z: float) -> bool:
         """Check if a point is inside or on the boundary of this obstacle."""
-        return (self.x1 <= x <= self.x2 and
-                self.y1 <= y <= self.y2 and
-                self.z1 <= z <= self.z2)
+        return self.x1 <= x <= self.x2 and self.y1 <= y <= self.y2 and self.z1 <= z <= self.z2
 
     def intersects_line_segment(
         self,
@@ -239,6 +238,7 @@ class RoutingObstacle3D:
 # 4. VOLTAGE DROP SEGMENT
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class VoltageDropSegment:
     """Per-segment voltage drop result for NFPA 72 §10.6.4 verification.
@@ -256,6 +256,7 @@ class VoltageDropSegment:
         is_compliant: Whether cumulative drop is within limits.
         nfpa_section: Standard citation.
     """
+
     segment_index: int
     from_point: Tuple[float, float, float]
     to_point: Tuple[float, float, float]
@@ -272,6 +273,7 @@ class VoltageDropSegment:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. ROUTE RESULT
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass(frozen=True)
 class RouteResult:
@@ -291,6 +293,7 @@ class RouteResult:
         selected_gauge_is_minimum: Whether the auto-selected gauge is the minimum.
         total_return_length_m: Return path length for Class A circuits.
     """
+
     circuit_id: str = ""
     is_compliant: bool = False  # V112: FAIL-SAFE — new circuit starts as NOT compliant until verified
     total_voltage_drop_v: float = 0.0
@@ -307,6 +310,7 @@ class RouteResult:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 6. CABLE ROUTING ENGINE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class CableRoutingEngine:
     """
@@ -340,13 +344,9 @@ class CableRoutingEngine:
             ValueError: If parameters are invalid.
         """
         if not math.isfinite(ps_voltage) or ps_voltage <= 0:
-            raise ValueError(
-                f"ps_voltage={ps_voltage} must be finite and positive"
-            )
+            raise ValueError(f"ps_voltage={ps_voltage} must be finite and positive")
         if not math.isfinite(max_voltage_drop_pct) or max_voltage_drop_pct <= 0:
-            raise ValueError(
-                f"max_voltage_drop_pct={max_voltage_drop_pct} must be finite and positive"
-            )
+            raise ValueError(f"max_voltage_drop_pct={max_voltage_drop_pct} must be finite and positive")
 
         self._ps_voltage = ps_voltage
         self._max_drop_pct = max_voltage_drop_pct
@@ -354,7 +354,8 @@ class CableRoutingEngine:
 
         logger.info(
             "CableRoutingEngine initialized: %d obstacles, ps_voltage=%.0fV",
-            len(self._obstacles), ps_voltage,
+            len(self._obstacles),
+            ps_voltage,
         )
 
     # ── Obstacle Management ────────────────────────────────────────────────
@@ -362,9 +363,7 @@ class CableRoutingEngine:
     def add_obstacle(self, obstacle: RoutingObstacle3D) -> None:
         """Add a routing obstacle to the engine."""
         if not isinstance(obstacle, RoutingObstacle3D):
-            raise TypeError(
-                f"Expected RoutingObstacle3D, got {type(obstacle).__name__}"
-            )
+            raise TypeError(f"Expected RoutingObstacle3D, got {type(obstacle).__name__}")
         self._obstacles.append(obstacle)
 
     def clear_obstacles(self) -> None:
@@ -408,10 +407,7 @@ class CableRoutingEngine:
         for name, pt in [("p1", p1), ("p2", p2)]:
             for i, coord in enumerate(pt):
                 if not math.isfinite(coord):
-                    raise ValueError(
-                        f"{name}[{i}]={coord} is not finite — "
-                        f"3D distance requires finite coordinates"
-                    )
+                    raise ValueError(f"{name}[{i}]={coord} is not finite — 3D distance requires finite coordinates")
         dx = p2[0] - p1[0]
         dy = p2[1] - p1[1]
         dz = p2[2] - p1[2]
@@ -443,33 +439,24 @@ class CableRoutingEngine:
 
         # Validate circuit data
         if not math.isfinite(circuit.cable_length_m) or circuit.cable_length_m < 0:
-            raise ValueError(
-                f"cable_length_m={circuit.cable_length_m} must be non-negative finite"
-            )
+            raise ValueError(f"cable_length_m={circuit.cable_length_m} must be non-negative finite")
 
         # Check for NaN device coordinates
         for dev in circuit.devices:
-            for attr_name in ('position_x', 'position_y', 'position_z'):
+            for attr_name in ("position_x", "position_y", "position_z"):
                 val = getattr(dev, attr_name, 0.0)
                 if not math.isfinite(val):
-                    raise ValueError(
-                        f"Device '{dev.device_id}' has non-finite "
-                        f"{attr_name}={val}"
-                    )
+                    raise ValueError(f"Device '{dev.device_id}' has non-finite {attr_name}={val}")
             # Check for negative current
-            if hasattr(dev, 'current_a') and math.isfinite(dev.current_a) and dev.current_a < 0:
-                raise ValueError(
-                    f"Device '{dev.device_id}' has invalid current "
-                    f"current_a={dev.current_a}"
-                )
+            if hasattr(dev, "current_a") and math.isfinite(dev.current_a) and dev.current_a < 0:
+                raise ValueError(f"Device '{dev.device_id}' has invalid current current_a={dev.current_a}")
 
         # Class A must have return path
         from fireai.core.circuit_topology import CircuitClass
+
         if circuit.circuit_class == CircuitClass.CLASS_A:
-            if not hasattr(circuit, 'return_length_m') or circuit.return_length_m <= 0:
-                raise ValueError(
-                    "Class A circuit requires return_length_m > 0 per NFPA 72 §12.2.2"
-                )
+            if not hasattr(circuit, "return_length_m") or circuit.return_length_m <= 0:
+                raise ValueError("Class A circuit requires return_length_m > 0 per NFPA 72 §12.2.2")
 
         # Auto gauge selection or use specified gauge
         auto_selected = wire_gauge is None
@@ -489,7 +476,7 @@ class CableRoutingEngine:
                         violations=(),
                         wire_gauge=gauge,
                         selected_gauge_is_minimum=(gauge == WireGauge._ALL_GAUGES[0]),
-                        total_return_length_m=getattr(circuit, 'return_length_m', 0.0),
+                        total_return_length_m=getattr(circuit, "return_length_m", 0.0),
                     )
             # No compliant gauge found — use the smallest and report violation
             gauge = WireGauge._ALL_GAUGES[0]
@@ -505,7 +492,7 @@ class CableRoutingEngine:
                 violations=tuple(result.violations),
                 wire_gauge=gauge,
                 selected_gauge_is_minimum=True,
-                total_return_length_m=getattr(circuit, 'return_length_m', 0.0),
+                total_return_length_m=getattr(circuit, "return_length_m", 0.0),
             )
         else:
             result = self._compute_route(circuit, wire_gauge, voltage)
@@ -520,7 +507,7 @@ class CableRoutingEngine:
                 violations=tuple(result.violations),
                 wire_gauge=wire_gauge,
                 selected_gauge_is_minimum=False,
-                total_return_length_m=getattr(circuit, 'return_length_m', 0.0),
+                total_return_length_m=getattr(circuit, "return_length_m", 0.0),
             )
 
     # ── Internal Route Computation ─────────────────────────────────────────
@@ -542,7 +529,7 @@ class CableRoutingEngine:
         awg = wire_gauge.awg_value
         resistance_per_m = wire_gauge.resistance_ohm_per_m
 
-        panel_pos = getattr(circuit, 'panel_position', (0.0, 0.0, 0.0))
+        panel_pos = getattr(circuit, "panel_position", (0.0, 0.0, 0.0))
         devices = circuit.devices
 
         segments: List[VoltageDropSegment] = []
@@ -551,9 +538,7 @@ class CableRoutingEngine:
         cumulative_drop = 0.0
 
         # Total current for all devices on the circuit
-        total_current = sum(
-            getattr(d, 'current_a', 0.0) for d in devices
-        )
+        total_current = sum(getattr(d, "current_a", 0.0) for d in devices)
 
         # For voltage drop: each segment carries the total current of all
         # downstream devices. We compute per-segment drop.
@@ -566,18 +551,16 @@ class CableRoutingEngine:
 
         for i, dev in enumerate(devices):
             dev_pos = (
-                getattr(dev, 'position_x', 0.0),
-                getattr(dev, 'position_y', 0.0),
-                getattr(dev, 'position_z', 0.0),
+                getattr(dev, "position_x", 0.0),
+                getattr(dev, "position_y", 0.0),
+                getattr(dev, "position_z", 0.0),
             )
 
             # Distance from previous point to this device
             seg_length = self.calculate_3d_distance(prev_point, dev_pos)
 
             # Current carried by this segment = sum of all devices from i onwards
-            downstream_current = sum(
-                getattr(d, 'current_a', 0.0) for d in devices[i:]
-            )
+            downstream_current = sum(getattr(d, "current_a", 0.0) for d in devices[i:])
 
             # Voltage drop: V_drop = 2 × I × R_per_m × L
             seg_drop = 2.0 * downstream_current * resistance_per_m * seg_length
@@ -585,25 +568,27 @@ class CableRoutingEngine:
 
             seg_pct = (cumulative_drop / voltage) * 100.0 if voltage > 0 else 0.0
 
-            segments.append(VoltageDropSegment(
-                segment_index=i,
-                from_point=prev_point,
-                to_point=dev_pos,
-                length_m=seg_length,
-                current_a=downstream_current,
-                awg=awg,
-                resistance_per_m_ohm=resistance_per_m,
-                voltage_drop_v=seg_drop,
-                cumulative_drop_v=cumulative_drop,
-                is_compliant=seg_pct <= self._max_drop_pct,
-                nfpa_section="NFPA 72 §10.6.4",
-            ))
+            segments.append(
+                VoltageDropSegment(
+                    segment_index=i,
+                    from_point=prev_point,
+                    to_point=dev_pos,
+                    length_m=seg_length,
+                    current_a=downstream_current,
+                    awg=awg,
+                    resistance_per_m_ohm=resistance_per_m,
+                    voltage_drop_v=seg_drop,
+                    cumulative_drop_v=cumulative_drop,
+                    is_compliant=seg_pct <= self._max_drop_pct,
+                    nfpa_section="NFPA 72 §10.6.4",
+                )
+            )
 
             prev_point = dev_pos
 
         # For Class A, also compute return path drop
-        if getattr(circuit, 'circuit_class', None) == CircuitClass.CLASS_A:
-            return_length = getattr(circuit, 'return_length_m', 0.0)
+        if getattr(circuit, "circuit_class", None) == CircuitClass.CLASS_A:
+            return_length = getattr(circuit, "return_length_m", 0.0)
             if return_length > 0 and total_current > 0:
                 return_drop = 2.0 * total_current * resistance_per_m * return_length
                 cumulative_drop += return_drop
@@ -613,8 +598,7 @@ class CableRoutingEngine:
 
         if not is_compliant:
             violations_list.append(
-                f"Voltage drop {total_drop_pct:.1f}% exceeds maximum "
-                f"{self._max_drop_pct:.1f}% per NFPA 72 §10.6.4"
+                f"Voltage drop {total_drop_pct:.1f}% exceeds maximum {self._max_drop_pct:.1f}% per NFPA 72 §10.6.4"
             )
 
         # Check for obstacle intersections and generate firestop warnings
@@ -622,14 +606,14 @@ class CableRoutingEngine:
             prev_pt = panel_pos
             for dev in devices:
                 dev_pt = (
-                    getattr(dev, 'position_x', 0.0),
-                    getattr(dev, 'position_y', 0.0),
-                    getattr(dev, 'position_z', 0.0),
+                    getattr(dev, "position_x", 0.0),
+                    getattr(dev, "position_y", 0.0),
+                    getattr(dev, "position_z", 0.0),
                 )
                 for obs in self._obstacles:
                     if obs.intersects_line_segment(prev_pt, dev_pt):
-                        if getattr(obs, 'requires_firestop', False) or getattr(obs, 'is_rated', False):
-                            rating = getattr(obs, 'fire_rating_hours', 0.0)
+                        if getattr(obs, "requires_firestop", False) or getattr(obs, "is_rated", False):
+                            rating = getattr(obs, "fire_rating_hours", 0.0)
                             warnings_list.append(
                                 f"firestopping required: cable penetrates "
                                 f"{obs.obstacle_type.value} '{obs.obstacle_id}' "

@@ -22,19 +22,19 @@ Environment Variables:
   AUDIT_HMAC_KEY    — Required for audit store integrity (no default!)
   FIREAI_DB_PATH    — Path to audit database
 """
+
 import logging
 import os
 import secrets
 import threading
 import time
-from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, Request, Depends, Security
-from fastapi.security import APIKeyHeader
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, field_validator
 import uvicorn
+from fastapi import Depends, FastAPI, HTTPException, Request, Security
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
+from pydantic import BaseModel, Field, field_validator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -123,6 +123,7 @@ async def verify_api_key(api_key: str = Security(_API_KEY_HEADER)) -> str:
 # RATE LIMITER
 # ============================================================================
 
+
 class RateLimiter:
     """Simple in-memory rate limiter per client IP.
 
@@ -171,10 +172,7 @@ class RateLimiter:
         if len(self._clients) <= self._MAX_CLIENTS:
             return
         cutoff = now - self._window
-        stale = [
-            cid for cid, reqs in self._clients.items()
-            if not reqs or reqs[-1] < cutoff
-        ]
+        stale = [cid for cid, reqs in self._clients.items() if not reqs or reqs[-1] < cutoff]
         for cid in stale:
             del self._clients[cid]
 
@@ -186,7 +184,7 @@ _rate_limiter = RateLimiter(max_requests=100, window_seconds=60)
 # APPLICATION
 # ============================================================================
 
-from fireai.core.nfpa72_models import RoomSpec, CeilingSpec, CeilingType
+from fireai.core.nfpa72_models import CeilingSpec, CeilingType, RoomSpec
 
 # ✅ FIX (from consultant review): Lazy initialization instead of module-level
 # instantiation. The old code created FireAISystem at import time, which meant:
@@ -209,14 +207,16 @@ def _get_system() -> "FireAISystem":
         with _system_lock:
             if _system is None:
                 from fireai.core.fireai_core import FireAISystem
+
                 db_path = os.environ.get("FIREAI_DB_PATH", "fireai.sqlite3")
                 _system = FireAISystem(db_path=db_path)
     return _system
 
+
 app = FastAPI(
     title="FireAI - NFPA 72 Expert System",
     description="Adaptive detector placement with persistent learning. "
-                "Requires API key authentication via X-API-Key header.",
+    "Requires API key authentication via X-API-Key header.",
     version="10.1.0",
 )
 
@@ -225,6 +225,7 @@ app = FastAPI(
 _api_cors_origins = os.environ.get("FIREAI_CORS_ORIGINS", "http://localhost:3000").split(",")
 if "*" in _api_cors_origins:
     import logging
+
     logging.getLogger("fireai.security").critical(
         "CORS wildcard '*' detected in FIREAI_CORS_ORIGINS — REJECTED. "
         "Safety-critical system: specify explicit origins."
@@ -259,19 +260,28 @@ async def rate_limit_middleware(request: Request, call_next):
 # ============================================================================
 
 # NFPA 72 physical limits
-MAX_ROOM_DIMENSION = 200.0   # meters (no room is bigger)
-MAX_POLYGON_POINTS = 100     # prevent DoS
-MIN_CEILING_HEIGHT = 0.5     # meters
-MAX_CEILING_HEIGHT = 30.0    # meters (per NFPA 72 scope)
+MAX_ROOM_DIMENSION = 200.0  # meters (no room is bigger)
+MAX_POLYGON_POINTS = 100  # prevent DoS
+MIN_CEILING_HEIGHT = 0.5  # meters
+MAX_CEILING_HEIGHT = 30.0  # meters (per NFPA 72 scope)
 VALID_OCCUPANCY_TYPES = {
-    "office", "commercial", "industrial", "warehouse",
-    "residential", "healthcare", "education", "assembly",
-    "mercantile", "storage", "utility", "corridor",
+    "office",
+    "commercial",
+    "industrial",
+    "warehouse",
+    "residential",
+    "healthcare",
+    "education",
+    "assembly",
+    "mercantile",
+    "storage",
+    "utility",
+    "corridor",
 }
 
 
 class RoomRequest(BaseModel):
-    room_id: str = Field(..., min_length=1, max_length=128, pattern=r'^[a-zA-Z0-9_\-\.]+$')
+    room_id: str = Field(..., min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_\-\.]+$")
     polygon: List[List[float]] = Field(..., min_length=3, max_length=MAX_POLYGON_POINTS)
     height: float = Field(3.0, gt=MIN_CEILING_HEIGHT, le=MAX_CEILING_HEIGHT)
     height_high: Optional[float] = Field(None, gt=MIN_CEILING_HEIGHT, le=MAX_CEILING_HEIGHT)
@@ -296,10 +306,7 @@ class RoomRequest(BaseModel):
                 raise ValueError(f"Point {i} must have exactly 2 coordinates (x, y)")
             x, y = point
             if abs(x) > MAX_ROOM_DIMENSION or abs(y) > MAX_ROOM_DIMENSION:
-                raise ValueError(
-                    f"Point {i} coordinates exceed maximum room dimension "
-                    f"({MAX_ROOM_DIMENSION}m)"
-                )
+                raise ValueError(f"Point {i} coordinates exceed maximum room dimension ({MAX_ROOM_DIMENSION}m)")
         return v
 
     @field_validator("height_high")
@@ -316,10 +323,7 @@ class RoomRequest(BaseModel):
         """Validate occupancy type against known types."""
         v_lower = v.lower().strip()
         if v_lower not in VALID_OCCUPANCY_TYPES:
-            raise ValueError(
-                f"Unknown occupancy type: '{v}'. "
-                f"Valid types: {sorted(VALID_OCCUPANCY_TYPES)}"
-            )
+            raise ValueError(f"Unknown occupancy type: '{v}'. Valid types: {sorted(VALID_OCCUPANCY_TYPES)}")
         return v_lower
 
     @field_validator("ceiling_type")
@@ -359,12 +363,15 @@ class RoomResponse(BaseModel):
 # HELPERS
 # ============================================================================
 
+
 def _build_spec(req: RoomRequest) -> RoomSpec:
     """Convert request to RoomSpec."""
     ceiling = CeilingSpec.create_safe(
         height_at_low_point_m=req.height,
         height_at_high_point_m=req.height_high or req.height,
-        ceiling_type=CeilingType[req.ceiling_type] if req.ceiling_type in [c.name for c in CeilingType] else CeilingType.FLAT,
+        ceiling_type=CeilingType[req.ceiling_type]
+        if req.ceiling_type in [c.name for c in CeilingType]
+        else CeilingType.FLAT,
     )
     # CRITICAL FIX: Calculate width/depth from polygon using geometric SPAN.
     # Previously used max(x) and max(y) which is WRONG for translated/negative
@@ -388,7 +395,7 @@ def _to_response(r) -> RoomResponse:
     return RoomResponse(
         room_id=r.room_id,
         compliant=r.compliant,
-        safe_to_submit=r.safe_to_submit if hasattr(r, 'safe_to_submit') else False,
+        safe_to_submit=r.safe_to_submit if hasattr(r, "safe_to_submit") else False,
         confidence=r.confidence.value if r.confidence else "UNKNOWN",
         confidence_score=r.confidence_score or 0,
         detector_count=len(r.detector_positions),
@@ -407,6 +414,7 @@ def _to_response(r) -> RoomResponse:
 # ============================================================================
 # ENDPOINTS
 # ============================================================================
+
 
 @app.get("/health")
 def health():
@@ -483,8 +491,10 @@ def audit_verify():
 # V25 — Integration Pipeline Endpoints
 # ============================================================================
 
+
 class IntegrationRequest(BaseModel):
     """Request model for the full integration pipeline."""
+
     building_id: str = Field(..., min_length=1, max_length=256)
     floors: Optional[List[dict]] = None
     panel_positions: Optional[List[List[float]]] = None
@@ -515,18 +525,12 @@ def run_integration(req: IntegrationRequest):
         # Convert panel_positions from list[list] to list[tuple]
         panel_positions = None
         if req.panel_positions:
-            panel_positions = [
-                (p[0], p[1], p[2]) if len(p) == 3 else (p[0], p[1], 0.0)
-                for p in req.panel_positions
-            ]
+            panel_positions = [(p[0], p[1], p[2]) if len(p) == 3 else (p[0], p[1], 0.0) for p in req.panel_positions]
 
         # Convert obstacle_polygons from list[list[list]] to list[list[tuple]]
         obstacle_polygons = None
         if req.obstacle_polygons:
-            obstacle_polygons = [
-                [(v[0], v[1]) for v in poly]
-                for poly in req.obstacle_polygons
-            ]
+            obstacle_polygons = [[(v[0], v[1]) for v in poly] for poly in req.obstacle_polygons]
 
         result = _get_system().run_integration(
             building_id=req.building_id,
@@ -559,7 +563,7 @@ def hashchain_report():
     """
     try:
         system = _get_system()
-        if hasattr(system, '_hash_chain') and system._hash_chain is not None:
+        if hasattr(system, "_hash_chain") and system._hash_chain is not None:
             return system._hash_chain.compliance_report()
         return {
             "status": "no_hash_chain",

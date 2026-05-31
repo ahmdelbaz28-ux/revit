@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 # Load .env file if python-dotenv is available (optional dependency)
 try:
     from dotenv import load_dotenv
+
     load_dotenv(override=False)  # Never override real environment variables
 except ImportError:
     pass  # dotenv is optional
@@ -43,14 +44,15 @@ class FireAIConfig:
     observability when keys are not set. This is by design: Langfuse
     is observability, not control. Pipeline MUST work without it.
     """
-    database_path:    str
-    environment:      Literal["development", "testing", "production"]
-    log_level:        str
-    max_batch_size:   int
-    enable_wal:       bool
+
+    database_path: str
+    environment: Literal["development", "testing", "production"]
+    log_level: str
+    max_batch_size: int
+    enable_wal: bool
     coverage_threshold_pct: float
-    langfuse_enabled:  bool
-    langfuse_host:     str
+    langfuse_enabled: bool
+    langfuse_host: str
 
     def __post_init__(self) -> None:
         # Validate database path is writable (unless :memory: or testing)
@@ -62,8 +64,7 @@ class FireAIConfig:
                     logger.info("Created database directory: %s", db_dir)
                 except OSError as exc:
                     raise ValueError(
-                        f"Cannot create database directory '{db_dir}': {exc}. "
-                        "Set FIREAI_DB_PATH to a writable path."
+                        f"Cannot create database directory '{db_dir}': {exc}. Set FIREAI_DB_PATH to a writable path."
                     ) from exc
 
         # Coverage threshold sanity — NFPA 72 requires 100%
@@ -135,14 +136,11 @@ def _load_config() -> FireAIConfig:
 
     environment = _env("FIREAI_ENV", "development")
     if environment not in ("development", "testing", "production"):
-        raise ValueError(
-            f"FIREAI_ENV='{environment}' is invalid. "
-            "Must be one of: development, testing, production."
-        )
+        raise ValueError(f"FIREAI_ENV='{environment}' is invalid. Must be one of: development, testing, production.")
 
     # Safe default DB path — relative to CWD, always writable in dev
     default_db_path = ":memory:" if environment == "testing" else "./data/fireai.db"
-    database_path   = raw_db_path or default_db_path
+    database_path = raw_db_path or default_db_path
 
     # V80: Langfuse observability configuration
     # Langfuse is OBSERVABILITY — not required for pipeline execution
@@ -154,20 +152,22 @@ def _load_config() -> FireAIConfig:
     langfuse_enabled = langfuse_explicitly_enabled and bool(langfuse_public_key) and bool(langfuse_secret_key)
 
     cfg = FireAIConfig(
-        database_path           = database_path,
-        environment             = environment,  # type: ignore[arg-type]
-        log_level               = _env("FIREAI_LOG_LEVEL", "INFO").upper(),
-        max_batch_size          = _env_int("FIREAI_MAX_BATCH_SIZE", 500, 10, 5000),
-        enable_wal              = _env_bool("FIREAI_ENABLE_WAL", True),
-        coverage_threshold_pct  = _env_float("FIREAI_COVERAGE_THRESHOLD_PCT", 99.0, 90.0, 100.0),
-        langfuse_enabled        = langfuse_enabled,
-        langfuse_host           = langfuse_host,
+        database_path=database_path,
+        environment=environment,  # type: ignore[arg-type]
+        log_level=_env("FIREAI_LOG_LEVEL", "INFO").upper(),
+        max_batch_size=_env_int("FIREAI_MAX_BATCH_SIZE", 500, 10, 5000),
+        enable_wal=_env_bool("FIREAI_ENABLE_WAL", True),
+        coverage_threshold_pct=_env_float("FIREAI_COVERAGE_THRESHOLD_PCT", 99.0, 90.0, 100.0),
+        langfuse_enabled=langfuse_enabled,
+        langfuse_host=langfuse_host,
     )
 
     logger.info(
         "FireAI configuration loaded: env=%s, db=%s, coverage_threshold=%.2f%%, langfuse=%s",
-        cfg.environment, cfg.database_path, cfg.coverage_threshold_pct,
-        'ENABLED' if cfg.langfuse_enabled else 'disabled',
+        cfg.environment,
+        cfg.database_path,
+        cfg.coverage_threshold_pct,
+        "ENABLED" if cfg.langfuse_enabled else "disabled",
     )
     return cfg
 

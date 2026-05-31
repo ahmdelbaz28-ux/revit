@@ -51,12 +51,12 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -65,23 +65,24 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 try:
     from fireai.core.provenance import (
+        ConfidenceLevel,
+        ConfidenceScore,
         DecisionProvenance,
         RuleApplied,
         Violation,
-        ConfidenceScore,
-        ConfidenceLevel,
     )
 except ImportError:
-    DecisionProvenance = None   # type: ignore[misc,assignment]
-    RuleApplied = None          # type: ignore[misc,assignment]
-    Violation = None            # type: ignore[misc,assignment]
-    ConfidenceScore = None      # type: ignore[misc,assignment]
-    ConfidenceLevel = None      # type: ignore[misc,assignment]
+    DecisionProvenance = None  # type: ignore[misc,assignment]
+    RuleApplied = None  # type: ignore[misc,assignment]
+    Violation = None  # type: ignore[misc,assignment]
+    ConfidenceScore = None  # type: ignore[misc,assignment]
+    ConfidenceLevel = None  # type: ignore[misc,assignment]
 
 
 # ============================================================================
 # Logic Functions — NFPA 72 §14.4 Output Actions
 # ============================================================================
+
 
 class LogicFunction(str, Enum):
     """Output actions that a FACP can trigger per NFPA 72 §14.4.
@@ -100,6 +101,7 @@ class LogicFunction(str, Enum):
       - SMOKE_CONTROL: Activate smoke control system per NFPA 92
       - STAIRWELL_PRESSURIZATION: Pressurize escape stairwells
     """
+
     ALARM = "General Alarm / Evacuation"
     SUPERVISORY = "Supervisory Signal Only"
     TROUBLE = "Trouble Signal"
@@ -121,6 +123,7 @@ class LogicFunction(str, Enum):
 # Device Classification — Proper Enum (not string matching)
 # ============================================================================
 
+
 class DeviceInputType(str, Enum):
     """Input device types for cause-effect mapping.
 
@@ -128,6 +131,7 @@ class DeviceInputType(str, Enum):
     incorrectly matches "LOBBY STORAGE ROOM". This enum enforces
     exact classification with no ambiguity.
     """
+
     SMOKE_GENERAL = "SMOKE_GENERAL"
     SMOKE_ELEVATOR_LOBBY = "SMOKE_ELEVATOR_LOBBY"
     SMOKE_ELEVATOR_LOBBY_DESIGNATED = "SMOKE_ELEVATOR_LOBBY_DESIGNATED"
@@ -158,7 +162,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
-
     # Smoke detector in elevator lobby → Alarm + Elevator Phase I recall
     # NFPA 72 §21.3.3 / ASME A17.1
     DeviceInputType.SMOKE_ELEVATOR_LOBBY: [
@@ -168,7 +171,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
-
     # V20.2 FIX: Smoke at DESIGNATED floor lobby → recall to ALTERNATE floor
     # NFPA 72 §21.3.3: "Where the designated level smoke detector is activated,
     # the elevator shall be recalled to the alternate level."
@@ -179,7 +181,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
-
     # Smoke detector in elevator machine room → Alarm + recall to alternate
     # NFPA 72 §21.3.3: If machine room smoke, recall to alternate floor
     # V20.2 FIX: Removed ELEVATOR_PHASE_II — Phase II is MANUAL firefighter
@@ -192,7 +193,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
-
     # V20.2 FIX: Missing hoistway/shaft smoke detector type per NFPA 72 §21.3.3
     DeviceInputType.SMOKE_ELEVATOR_SHAFT: [
         LogicFunction.ALARM,
@@ -201,7 +201,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
-
     # Smoke detector in return air shaft → Alarm + HVAC shutdown + door release
     # NFPA 72 §17.7.5.6
     # V20.2 FIX: Added DOOR_RELEASE for smoke containment per NFPA 72 §14.4
@@ -211,7 +210,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
-
     # Heat detector → Alarm (no HVAC shutdown — smoke detectors should have
     # already triggered HVAC shutdown earlier in fire development)
     DeviceInputType.HEAT: [
@@ -219,7 +217,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.NAC_ZONE,
         LogicFunction.DOOR_RELEASE,
     ],
-
     # V20.2 FIX: Dedicated heat detector for elevator shunt-trip per
     # NFPA 72 §21.4.1. Must activate before sprinkler to avoid electrified water.
     DeviceInputType.HEAT_ELEVATOR_SHUNT_TRIP: [
@@ -227,7 +224,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.NAC_ZONE,
         LogicFunction.ELEVATOR_SHUNT_TRIP,
     ],
-
     # Manual call point (pull station) → Full alarm
     # NFPA 72 §10.14 — manual activation is always full evacuation
     DeviceInputType.MANUAL_CALL_POINT: [
@@ -236,7 +232,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ALL,
     ],
-
     # Duct detector → SUPERVISORY (NOT general alarm!)
     # NFPA 72 §17.7.5.6.1: Duct detectors in systems serving >2000 CFM
     # shall produce a SUPERVISORY signal, not general alarm.
@@ -248,7 +243,6 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.SUPERVISORY,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
-
     # Waterflow switch → Alarm (sprinkler system activated)
     # NFPA 72 §17.14: Waterflow alarm
     # V20.2 FIX: Removed FIRE_PUMP_START — per NFPA 20 §10.5.2.1, the pump
@@ -257,18 +251,15 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
         LogicFunction.ALARM,
         LogicFunction.NAC_ZONE,
     ],
-
     # Valve tamper switch → Supervisory only
     # NFPA 72 §17.14.2.1: Valve supervisory signal
     DeviceInputType.VALVE_TAMPER: [
         LogicFunction.SUPERVISORY,
     ],
-
     # Sprinkler supervisory switch → Supervisory only
     DeviceInputType.SPRINKLER_SUPERVISORY: [
         LogicFunction.SUPERVISORY,
     ],
-
     # V20.2 FIX: Unknown devices default to TROUBLE, NOT general alarm.
     # NFPA 72 §10.14: Alarm signals must indicate a confirmed fire condition.
     # An unknown device type is NOT a confirmed condition.
@@ -281,6 +272,7 @@ CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
 # ============================================================================
 # Device Input Dataclass — Proper typed input (not raw dicts)
 # ============================================================================
+
 
 @dataclass(frozen=True)
 class DeviceInput:
@@ -297,6 +289,7 @@ class DeviceInput:
         floor_id: Floor identifier for zone-specific outputs.
         description: Human-readable device description.
     """
+
     device_id: str
     device_type: DeviceInputType
     zone_id: str = ""
@@ -307,6 +300,7 @@ class DeviceInput:
 # ============================================================================
 # Matrix Row — Typed output row
 # ============================================================================
+
 
 @dataclass(frozen=True)
 class MatrixRow:
@@ -320,6 +314,7 @@ class MatrixRow:
         outputs_triggered: List of LogicFunction outputs.
         nfpa_references: NFPA 72 section citations for this row.
     """
+
     input_device_id: str
     zone_id: str
     floor_id: str
@@ -377,6 +372,7 @@ NFPA_REFERENCES: Dict[DeviceInputType, List[str]] = {
 # ============================================================================
 # Sequence Of Operations Matrix Generator
 # ============================================================================
+
 
 class SequenceOfOperationsMatrix:
     """Generates the NFPA 72 §14.4 Cause & Effect Matrix.
@@ -447,8 +443,10 @@ class SequenceOfOperationsMatrix:
             # for healthcare where patients need staff assistance to evacuate.
             # Adding both ALARM and NAC_ZONE ensures full notification.
             effective_outputs = list(outputs)
-            if (dev.device_type == DeviceInputType.DUCT_DETECTOR
-                    and occupancy_type.lower() in ("healthcare", "hospital")):
+            if dev.device_type == DeviceInputType.DUCT_DETECTOR and occupancy_type.lower() in (
+                "healthcare",
+                "hospital",
+            ):
                 # Add ALARM + NAC zone activation for healthcare duct detectors
                 # per NFPA 101 §9.7 and local AHJ requirements
                 if LogicFunction.ALARM not in effective_outputs:
@@ -506,9 +504,7 @@ class SequenceOfOperationsMatrix:
                 ),
             ]
 
-            has_unknown = any(
-                dev.device_type not in self.rules for dev in devices
-            )
+            has_unknown = any(dev.device_type not in self.rules for dev in devices)
             conf_level = ConfidenceLevel.MEDIUM if has_unknown else ConfidenceLevel.HIGH
             conf = ConfidenceScore(
                 input_quality_score=0.95,
@@ -521,9 +517,7 @@ class SequenceOfOperationsMatrix:
                 "matrix": matrix_data,
                 "hash": matrix_hash,
                 "device_count": len(devices),
-                "unique_output_types": list(set(
-                    o.value for row in matrix_rows for o in row.outputs_triggered
-                )),
+                "unique_output_types": list(set(o.value for row in matrix_rows for o in row.outputs_triggered)),
                 "zone_count": len(set(row.zone_id for row in matrix_rows if row.zone_id)),
             }
 
@@ -584,13 +578,15 @@ class SequenceOfOperationsMatrix:
         typed_devices = []
         for dev in devices:
             dev_type = self._classify_device(dev)
-            typed_devices.append(DeviceInput(
-                device_id=dev.get("device_id", dev.get("id", "UNK")),
-                device_type=dev_type,
-                zone_id=dev.get("zone_id", ""),
-                floor_id=dev.get("floor_id", ""),
-                description=dev.get("description", ""),
-            ))
+            typed_devices.append(
+                DeviceInput(
+                    device_id=dev.get("device_id", dev.get("id", "UNK")),
+                    device_type=dev_type,
+                    zone_id=dev.get("zone_id", ""),
+                    floor_id=dev.get("floor_id", ""),
+                    description=dev.get("description", ""),
+                )
+            )
         return self.generate_matrix(typed_devices, occupancy_type)
 
     def _classify_device(self, dev: Dict) -> DeviceInputType:
