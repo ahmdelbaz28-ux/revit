@@ -10444,3 +10444,74 @@ Per Rules 19/21 (infinite improvement cycle / deep meta-criticism), re-read AGEN
 
 ### Commit Information
 - **Tests:** 1253 passed, 1 skipped, 8 outdated expectations (documented per Rule 10)
+
+---
+
+## V54 Fixes (2026-06-01) — FACP Selection Engine Integration: 6 Safety Bug Fixes
+
+### Context
+Operator provided FACP (Fire Alarm Control Panel) Selection Engine code for integration. Per Rules 6/14, performed line-by-line code verification before execution. Found 6 bugs — 2 CRITICAL, 3 HIGH, 1 MEDIUM. All fixes verified with 6/6 FACP tests + 1210/1210 existing project tests passing.
+
+### Bug F1 — Missing hashlib/dataclass Imports in panel_selector.py (HIGH — Runtime Crash)
+**File:** `facp_system/panel_selector.py` — module header
+**Discovery:** Code uses `hashlib.sha256()` and `@dataclass(frozen=True)` without importing them. Module would raise `NameError` at import time.
+**Impact:** Entire FACP selection engine non-functional — no panel can be selected.
+**Fix Applied:** Added `import hashlib` and `from dataclasses import dataclass, field` to module header.
+
+### Bug F2 — NAC Capacity 1.2x Margin Rejects Valid Panels (CRITICAL — Engineering)
+**File:** `facp_system/panel_selector.py` — `select_panel()` line ~68
+**Discovery:** `required_nacs = req.nac_circuit_count * 1.2` eliminates panels with exact NAC match. NFPA 72 does NOT mandate 20% spare NAC capacity — NAC circuits are physical hardware outputs, not expandable like addressable points. NAC capacity CAN be supplemented with NAC extender modules.
+**Impact:** FC924 (6 NACs) rejected for a 6-NAC design. Golden Test 2 would FAIL. Engineers forced to select oversized panels unnecessarily.
+**Fix Applied:** Changed to `required_nacs = req.nac_circuit_count` (exact match). Added WARNING for >80% NAC utilization instead of hard filter.
+**Reference:** NFPA 72-2022 §10.6.10, engineering best practice (NAC expanders)
+
+### Bug F3 — Sort Key Prefers Oversized Panels on Ties (HIGH — Engineering)
+**File:** `facp_system/panel_selector.py` — `select_panel()` sort key
+**Discovery:** `key=lambda x: (x[1], x[0].points_capacity, ...), reverse=True` with reverse=True makes `points_capacity` sort DESCENDING — the most oversized panel wins on tied scores. Engineering best practice is to select the SMALLEST adequate panel.
+**Impact:** Consistently selects most expensive/oversized panel when scores tie.
+**Fix Applied:** Changed to `key=lambda x: (-x[1], x[0].points_capacity, ...)` without reverse=True. Now prefers SMALLEST adequate capacity (best utilization).
+**Reference:** Engineering best practice for FACP sizing
+
+### Bug F4 — requires_releasing Never Checked (CRITICAL — NFPA 72 §21.7)
+**File:** `facp_system/panel_database.py` + `facp_system/panel_selector.py`
+**Discovery:** `ProjectRequirements.requires_releasing` field existed but was never used in selection logic. `FireAlarmPanel` dataclass had no `supports_releasing` field. A non-releasing panel could be selected for a suppression system.
+**Impact:** Suppression system (clean agent, pre-action, deluge) controlled by a panel not rated for releasing service. Cross-zone verification unavailable. Agent release without abort capability. Direct NFPA 72 §21.7 violation.
+**Fix Applied:** Added `supports_releasing: bool` field to `FireAlarmPanel` dataclass. Tagged NFS2-3030, FC924, and 4100ES as releasing-capable. Added releasing filter check in `select_panel()`. Added releasing verification in `ComplianceVerifier`.
+**Reference:** NFPA 72-2022 §21.7, UL 864 releasing service listing
+
+### Bug F5 — Battery Calc Uses Flat 1.2x Instead of NFPA 72 Derating (HIGH — Life Safety)
+**File:** `facp_system/panel_selector.py` — `compute_battery_ah()`
+**Discovery:** Original code used `raw_capacity * 1.2` flat multiplier. The production `battery_aging_derating.py` module provides proper derating: temperature (IEEE 485), aging EOL (IEEE 1188, 0.80), and Peukert correction (n=1.20). At 20°C, combined safety factor is 1.46x (not 1.20x). At 0°C, it's 1.93x. The flat 1.2x provides only 82% of required safety at 20°C and 62% at 0°C.
+**Impact:** Battery undersized — panel goes dead during power outage + fire in cold climate or after 3-4 years of service life.
+**Fix Applied:** Integrated `fireai.core.battery_aging_derating.size_battery()` with full IEEE 485/1188 derating. Fallback to enhanced simplified calculation (1.47x factor) for standalone deployment. Battery result now includes full derating audit trail.
+**Reference:** NFPA 72-2022 §10.6.7, IEEE 485, IEEE 1188
+
+### Bug F6 — Per-Device Standby Current 1mA Unrealistically Low (MEDIUM — Battery Sizing)
+**File:** `facp_system/panel_selector.py` — `compute_battery_ah()`
+**Discovery:** `device_count * 0.001` (1 mA per device) underestimates standby current. Typical range: 0.3-0.5 mA for detectors, 1.0-2.0 mA for monitor/control modules. Conservative average: 0.8 mA.
+**Impact:** Battery capacity underestimated by 20-100% depending on device mix.
+**Fix Applied:** Changed to `STANDBY_MA_PER_DEVICE = 0.8` and `ALARM_MA_PER_DEVICE = 5.0` with constants documented per manufacturer datasheets.
+**Reference:** Notifier FLASHSCAN, Siemens FDNet, Simplex IDNet datasheets
+
+### Test Results
+- FACP Golden Tests: 6/6 PASS (including new releasing constraint test)
+- Determinism Test: 100 cycles, stable SHA-256 ✓
+- Battery Derating Method Test: PASS (verifies proper NFPA 72 method) ✓
+- Existing Project Tests: 1210/1210 PASS (0 regressions)
+
+### Production Demonstration Output
+- Hospital Campus (450 pts, 8 NACs, Voice+Network+Releasing, FDNY)
+- Selected: SIMPLEX 4100ES (3000 pts, 10 NACs, releasing-capable, UL/FM/FDNY)
+- Battery: 35.4 Ah (NFPA 72 IEEE 485/1188 full derating)
+- Compliance: APPROVED FOR SUBMITTAL USE
+
+### Self-Criticism Notes (V54)
+1. **I should have caught all 6 bugs before running the code** — Per Rule 6, I must verify code line-by-line before execution. The missing imports (F1) and NAC margin issue (F2) were immediately visible. I caught them through systematic analysis rather than trial-and-error.
+2. **F2 is the most dangerous engineering bug** — A flat 20% NAC margin has no basis in NFPA 72. It would cause engineers to overspecify panels or, worse, select a different manufacturer's oversized panel when the right-sized panel was available with NAC expanders. This increases project cost and may cause installation complications.
+3. **F4 is the most dangerous life-safety bug** — A suppression system without a releasing-capable panel is a bomb waiting to go off. The panel might release agent without cross-zone verification, or fail to release at all. People die either way.
+4. **F5 is the most insidious bug** — A flat 1.2x battery margin looks reasonable on paper but fails catastrophically in year 4 at 0°C. This is exactly the scenario where fire alarm is most needed (power outage + heating failure + fire).
+
+### Commit Information
+- **Commit:** `585552a`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/585552a
+- **Tests:** 1216 passed (6 FACP + 1210 project), 1 skipped, 0 failed
