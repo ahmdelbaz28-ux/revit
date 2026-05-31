@@ -257,6 +257,10 @@ class SecurityAuditLogger:
         self._log_dir.mkdir(parents=True, exist_ok=True)
         self._log_path = self._log_dir / "security_audit.log"
         self._chain_hash = "GENESIS"  # First entry has no predecessor
+        # V102 FIX: Thread-safe lock for chain hash integrity (same pattern
+        # as audit_log.py V69-11 FIX). Without this, concurrent log_event()
+        # calls break the tamper-evident chain.
+        self._lock = __import__("threading").Lock()
 
         # Set up dedicated logger (separate from root logger)
         self._logger = logging.getLogger("fireai.security_audit")
@@ -281,6 +285,9 @@ class SecurityAuditLogger:
     ) -> str:
         """Log a security event with tamper-evident chain hashing.
 
+        Thread-safe: acquires self._lock to prevent concurrent chain hash
+        corruption (V102 FIX — same pattern as audit_log.py V69-11 FIX).
+
         Args:
             event_type: Type of security event (use SecurityEventType constants).
             **details: Additional key-value pairs describing the event.
@@ -288,32 +295,33 @@ class SecurityAuditLogger:
         Returns:
             The event ID (hash-based) for traceability.
         """
-        timestamp = datetime.now(timezone.utc).isoformat()
+        with self._lock:
+            timestamp = datetime.now(timezone.utc).isoformat()
 
-        # Generate event ID
-        event_id = hashlib.sha256(
-            f"{timestamp}:{event_type}:{self._chain_hash}".encode("utf-8")
-        ).hexdigest()[:16]
+            # Generate event ID
+            event_id = hashlib.sha256(
+                f"{timestamp}:{event_type}:{self._chain_hash}".encode("utf-8")
+            ).hexdigest()[:16]
 
-        # Build the event record
-        event = {
-            "event_id": event_id,
-            "timestamp": timestamp,
-            "event_type": event_type,
-            "chain_hash": self._chain_hash,
-            "details": {k: mask_sensitive(str(v)) for k, v in details.items()},
-        }
+            # Build the event record
+            event = {
+                "event_id": event_id,
+                "timestamp": timestamp,
+                "event_type": event_type,
+                "chain_hash": self._chain_hash,
+                "details": {k: mask_sensitive(str(v)) for k, v in details.items()},
+            }
 
-        # Compute new chain hash for the next event
-        event_json = json.dumps(event, sort_keys=True, separators=(",", ":"))
-        self._chain_hash = hashlib.sha256(
-            event_json.encode("utf-8")
-        ).hexdigest()[:32]
+            # Compute new chain hash for the next event
+            event_json = json.dumps(event, sort_keys=True, separators=(",", ":"))
+            self._chain_hash = hashlib.sha256(
+                event_json.encode("utf-8")
+            ).hexdigest()[:32]
 
-        # Write to security audit log
-        self._logger.info(event_json)
+            # Write to security audit log
+            self._logger.info(event_json)
 
-        return event_id
+            return event_id
 
     def verify_chain(self) -> Dict[str, Any]:
         """Verify the integrity of the security audit log chain.

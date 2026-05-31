@@ -441,11 +441,21 @@ if _FIREAI_API_KEY and _FIREAI_API_KEY.lower() in _PLACEHOLDER_API_KEYS:
         "trivially guessable. Generate a random key with: "
         "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
     )
+    # V102 FIX: Refuse to start in production with a placeholder API key.
+    # In a safety-critical system, running with no effective auth means
+    # unauthorized modification of fire alarm designs is possible.
+    if os.getenv("FIREAI_ENV", "production") != "development":
+        raise RuntimeError(
+            f"SECURITY: FIREAI_API_KEY is set to placeholder '{_FIREAI_API_KEY}'. "
+            "Application REFUSES to start in production mode with a placeholder key. "
+            "Generate a strong key: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+        )
     if _SECURITY_AUDIT_AVAILABLE:
         security_audit.log_event(
             SecurityEventType.PLACEHOLDER_KEY_DETECTED,
             key_type="FIREAI_API_KEY",
-            placeholder_value=_FIREAI_API_KEY,
+            # V102 FIX: Don't log the actual key value — only a hint
+            placeholder_hint=_FIREAI_API_KEY[:4] + "..." if len(_FIREAI_API_KEY) > 4 else "***",
         )
 
 class ApiKeyMiddleware:
@@ -500,24 +510,33 @@ class ApiKeyMiddleware:
         origin = headers_dict.get("origin", "")
         host = headers_dict.get("host", "")
 
-        # Check if Origin matches our server (same-origin SPA)
-        if origin:
-            if origin in (f"http://{host}", f"https://{host}"):
+        # V102 FIX: REMOVED the same-origin bypass. Previously, if the
+        # Origin header matched the Host header, the API key was SKIPPED
+        # entirely. This is a CRITICAL vulnerability because the Origin
+        # header is client-controlled and trivially spoofed — an attacker
+        # can set Origin: http://<victim-host> to bypass ALL mutation auth.
+        #
+        # The SPA frontend MUST now send the X-API-Key header with every
+        # mutating request, even same-origin ones. This is the correct
+        # security model for a safety-critical system.
+        #
+        # Development mode still allows CORS-origin bypass for convenience,
+        # but requires FIREAI_ENV=development explicitly.
+
+        # In development mode, trust common dev origins (no API key needed)
+        if os.getenv("FIREAI_ENV") == "development" and origin:
+            if origin in (
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+                f"http://{host}",
+                f"https://{host}",
+            ):
                 await self.app(scope, receive, send)
                 return
 
-            # In development mode, trust common dev origins
-            if os.getenv("FIREAI_ENV") == "development":
-                if origin in (
-                    "http://localhost:3000",
-                    "http://localhost:5173",
-                    "http://127.0.0.1:3000",
-                    "http://127.0.0.1:5173",
-                ):
-                    await self.app(scope, receive, send)
-                    return
-
-        # No matching origin — require API key
+        # All other requests — require API key
         import hmac
         api_key = headers_dict.get("x-api-key", "")
 
