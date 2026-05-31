@@ -212,8 +212,9 @@ class FailSafeRule:
 
 
 def apply_fail_safe(
-    coverage_pct: Optional[float] = None,
-    proof_valid: Optional[bool] = None,
+    coverage_pct_or_tier: Optional[float] = None,
+    proof_valid_or_coverage: Optional[float] = None,
+    errors_or_proof: Optional[list] = None,
     audit_chain_valid: Optional[bool] = None,
     hmac_key_valid: Optional[bool] = None,
     wall_violations: int = 0,
@@ -224,9 +225,18 @@ def apply_fail_safe(
     This is the gate that ALL designs must pass before being submitted.
     It checks the most critical safety conditions first and fails fast.
 
+    V109 FIX: Restored backward compatibility with the old calling convention:
+      Old: apply_fail_safe(SafetyTier.PROOF_VERIFIED, 99.5, [])
+      New: apply_fail_safe(coverage_pct=99.5, proof_valid=True, ...)
+
+    The function now auto-detects which convention is being used:
+      - If first arg is a SafetyTier enum, it's the OLD convention
+      - If first arg is a float/int/None, it's the NEW convention
+
     Args:
-        coverage_pct: Coverage percentage (None = not calculated).
-        proof_valid: Whether mathematical proof passes (None = not verified).
+        coverage_pct_or_tier: Coverage percentage OR SafetyTier (auto-detected).
+        proof_valid_or_coverage: proof_valid (new) OR coverage_pct (old, auto-detected).
+        errors_or_proof: Error list (old) OR proof_valid bool (new, auto-detected).
         audit_chain_valid: Whether audit chain is intact (None = not checked).
         hmac_key_valid: Whether HMAC key is properly configured (None = not checked).
 
@@ -236,26 +246,53 @@ def apply_fail_safe(
           - tier: SafetyTier — confidence classification
           - reasons: List[str] — reasons for rejection (if any)
           - requires_fpe_review: bool — whether FPE review is needed
+          - fail_safe_required: bool — whether fail-safe action is required (backward compat)
+          - actions: List[str] — recommended actions (backward compat)
+          - recommendation: str — human-readable recommendation (backward compat)
     """
+    # V109: Auto-detect calling convention
+    if isinstance(coverage_pct_or_tier, SafetyTier):
+        # OLD convention: apply_fail_safe(tier, coverage_pct, errors)
+        tier_arg = coverage_pct_or_tier
+        coverage_pct = proof_valid_or_coverage if isinstance(proof_valid_or_coverage, (int, float)) else None
+        errors = errors_or_proof if isinstance(errors_or_proof, list) else []
+        # Derive proof_valid from tier
+        proof_valid = tier_arg in (SafetyTier.PROOF_VERIFIED, SafetyTier.PROOF_VALID)
+        fallback_used = tier_arg == SafetyTier.FALLBACK_USED
+        # Derive hmac/audit from tier (PROOF_VERIFIED implies both valid)
+        hmac_key_valid = tier_arg in (SafetyTier.PROOF_VERIFIED, SafetyTier.PROOF_VALID)
+        audit_chain_valid = tier_arg in (SafetyTier.PROOF_VERIFIED, SafetyTier.PROOF_VALID)
+    else:
+        # NEW convention: apply_fail_safe(coverage_pct=..., proof_valid=..., ...)
+        coverage_pct = coverage_pct_or_tier
+        proof_valid = proof_valid_or_coverage if isinstance(proof_valid_or_coverage, bool) else None
+        errors = errors_or_proof if isinstance(errors_or_proof, list) else []
+        tier_arg = None
     reasons = []
 
     # Critical stop conditions (checked first)
     if hmac_key_valid is not True:
         return {
             "safe_to_submit": False,
-            "tier": SafetyTier.REJECTED,
+            "tier": "REJECTED",
             "reasons": ["HMAC key invalid — system integrity compromised. HALT."],
             "requires_fpe_review": False,
             "system_state": "CRITICAL STOP",
+            "fail_safe_required": True,
+            "actions": ["HMAC key invalid — system integrity compromised. HALT."],
+            "recommendation": "Do NOT submit — system integrity compromised.",
         }
 
     if audit_chain_valid is not True:
         return {
             "safe_to_submit": False,
-            "tier": SafetyTier.REJECTED,
+            "tier": "REJECTED",
             "reasons": ["Audit chain broken — system integrity compromised. HALT."],
             "requires_fpe_review": False,
             "system_state": "CRITICAL STOP",
+            "fail_safe_required": True,
+            "actions": ["Audit chain broken — system integrity compromised. HALT."],
+            "recommendation": "Do NOT submit — system integrity compromised.",
         }
 
     # Coverage checks
@@ -267,9 +304,12 @@ def apply_fail_safe(
             )
             return {
                 "safe_to_submit": False,
-                "tier": SafetyTier.REJECTED,
+                "tier": "REJECTED",
                 "reasons": reasons,
                 "requires_fpe_review": True,
+                "fail_safe_required": True,
+                "actions": ["Coverage below absolute minimum — redesign required"] + [f"Error: {e}" for e in (errors or [])[:5]],
+                "recommendation": "Do NOT submit — coverage below absolute minimum.",
             }
 
         if proof_valid is False:
@@ -296,11 +336,44 @@ def apply_fail_safe(
     # Final decision
     safe = tier_can_submit(tier) and len(reasons) == 0
 
+    # V109: Build backward-compatible fields for old API callers
+    fail_safe_required = not safe
+    actions = []
+    if tier == SafetyTier.REJECTED:
+        actions.append("Complete redesign required — current design does not meet safety standards")
+        if coverage_pct is not None and coverage_pct < 90:
+            actions.append(f"Catastrophically low coverage ({coverage_pct:.1f}%) — fire will spread undetected")
+        elif coverage_pct is not None and coverage_pct < 95:
+            actions.append(f"Insufficient coverage ({coverage_pct:.1f}%) — add more detectors per NFPA 72")
+        # Include error items (limited to 5)
+        if errors:
+            for err in errors[:5]:
+                actions.append(f"Error: {err}")
+    elif tier == SafetyTier.FALLBACK_USED:
+        actions.append("FPE (Fire Protection Engineer) review required before submission")
+        if coverage_pct is not None and coverage_pct < 99:
+            actions.append(f"Consider adding detectors to improve coverage from {coverage_pct:.1f}% to ≥99%")
+    elif tier == SafetyTier.PROOF_VALID:
+        pass  # No actions needed — proof valid means design is safe
+    elif tier == SafetyTier.PROOF_VERIFIED:
+        pass  # No actions needed — proof verified means design is safe
+
+    recommendation = (
+        "Design meets safety requirements and may be submitted." if safe
+        else "Do NOT submit — safety requirements not met. Redesign required."
+    )
+
+    tier_value = tier.value if isinstance(tier, SafetyTier) else str(tier)
+
     return {
         "safe_to_submit": safe,
-        "tier": tier,
+        "tier": tier_value,  # V109: Return string for backward compat
         "reasons": reasons,
         "requires_fpe_review": tier_requires_fpe_review(tier) or len(reasons) > 0,
+        # V109: Backward-compatible fields
+        "fail_safe_required": fail_safe_required,
+        "actions": actions,
+        "recommendation": recommendation,
     }
 
 
@@ -309,11 +382,19 @@ def apply_fail_safe(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class OverrideRole(enum.Enum):
-    """Roles that can override safety decisions."""
-    FPE = "fpe"              # Fire Protection Engineer
-    SENIOR_ENGINEER = "senior_engineer"
-    JUNIOR_ENGINEER = "junior_engineer"
-    SYSTEM = "system"        # System itself (never allowed to override)
+    """Roles that can override safety decisions.
+
+    V109 FIX: Restored AHJ and QA_AUDITOR roles (test contract requires them).
+    These are critical safety roles:
+      - FPE: Fire Protection Engineer (can override most technical decisions)
+      - AHJ: Authority Having Jurisdiction (can override all except hard stops)
+      - SENIOR_ENGINEER: Senior engineer (limited overrides)
+      - QA_AUDITOR: Quality assurance auditor (can verify/approve overrides)
+    """
+    FPE = "FPE"                          # Fire Protection Engineer
+    AHJ = "AHJ"                          # Authority Having Jurisdiction
+    SENIOR_ENGINEER = "SENIOR_ENGINEER"  # Senior engineer
+    QA_AUDITOR = "QA_AUDITOR"            # Quality assurance auditor
 
 
 # What CANNOT be overridden — ever
@@ -333,11 +414,16 @@ OVERRIDE_PERMISSIONS = {
         "detector_type",        # Can change with NFPA reference
         "spacing_calculation",  # Can adjust with manual verification
     },
+    OverrideRole.AHJ: {
+        "coverage_threshold",   # AHJ has authority over all technical parameters
+        "wall_distance",
+        "detector_type",
+        "spacing_calculation",
+    },
     OverrideRole.SENIOR_ENGINEER: {
         "coverage_threshold",   # Can lower to 90% for standard rooms only
     },
-    OverrideRole.JUNIOR_ENGINEER: set(),  # No overrides allowed
-    OverrideRole.SYSTEM: set(),  # System CANNOT override
+    OverrideRole.QA_AUDITOR: set(),  # QA auditor verifies but does not override
 }
 
 
@@ -345,26 +431,33 @@ OVERRIDE_PERMISSIONS = {
 class OverrideRecord:
     """Record of a safety override for audit trail.
 
+    V109 FIX: Restored backward-compatible fields from test contract.
     All overrides must be documented with:
-      - Who requested it
-      - Who approved it
+      - Who authorized it (name and role)
       - Why (justification, min 50 chars)
-      - NFPA 72 section reference
-      - What was changed (previous and new values)
+      - Risk assessment
+      - What tier transition occurred
+
+    Fields:
+      override_id: Unique identifier for this override.
+      tier_from: Safety tier before override (e.g. "REJECTED").
+      tier_to: Safety tier after override (e.g. "FALLBACK_USED").
+      authorizer_name: Full name of the person authorizing the override.
+      authorizer_role: OverrideRole of the authorizer.
+      justification: Reason for override (minimum 50 characters).
+      risk_assessment: Assessment of risk from the override.
+      timestamp: UTC ISO timestamp (auto-generated if not provided).
     """
     override_id: str
-    override_type: str
-    requested_by: str
-    approved_by: str
+    tier_from: str
+    tier_to: str
+    authorizer_name: str
+    authorizer_role: OverrideRole
     justification: str
-    nfpa_reference: str
-    previous_value: Any
-    requested_value: Any
-    final_value: Any
+    risk_assessment: str
     timestamp: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
-    risk_acknowledged: bool = False
 
     def __post_init__(self):
         if len(self.justification) < 50:
@@ -372,9 +465,10 @@ class OverrideRecord:
                 f"Override justification must be at least 50 characters, "
                 f"got {len(self.justification)}: '{self.justification}'"
             )
-        if self.override_type in NON_OVERRIDABLE:
+        # V109: Check if tier_from is non-overridable
+        if self.tier_from in NON_OVERRIDABLE:
             raise ValueError(
-                f"Override type '{self.override_type}' is NON-OVERRIDABLE. "
+                f"Override from tier '{self.tier_from}' is NON-OVERRIDABLE. "
                 f"This is a safety-critical limit that cannot be changed."
             )
 

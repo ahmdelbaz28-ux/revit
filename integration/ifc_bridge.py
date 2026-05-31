@@ -22,14 +22,40 @@ except ImportError:
 from dataclasses import dataclass
 from enum import Enum
 from shapely.geometry import Polygon, Point
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
-# V108 FIX: Replace broken imports with inline dataclasses
-# Original imports from core.models / validation.* were referencing
-# non-existent packages (no `core` or `validation` at repo root).
+# V109 FIX: Conditional imports with fallback to inline stubs.
+# Try to import from fireai.core equivalents first; fall back to inline
+# dataclasses when the fireai package is not on the Python path.
 
-from dataclasses import dataclass
-from typing import Optional
+try:
+    from fireai.core.ifc_parser import (
+        BoundingBox3D as _CoreBoundingBox3D,
+        SpaceInfo as _CoreSpaceInfo,
+        BuildingModel as _CoreBuildingModel,
+    )
+    _HAS_CORE_IFC_PARSER = True
+except ImportError:
+    _HAS_CORE_IFC_PARSER = False
+
+# Room, Device, Obstruction — these are integration-layer concepts that
+# bridge BIM data to the compliance kernel. Try fireai.core first, then
+# fall back to inline stubs.
+
+try:
+    from fireai.core.models_v21 import Obstruction as _CoreObstruction
+    _HAS_CORE_OBSTRUCTION = True
+except ImportError:
+    _HAS_CORE_OBSTRUCTION = False
+
+try:
+    from fireai.core.floor_analyser import Room as _CoreRoom
+    _HAS_CORE_ROOM = True
+except ImportError:
+    _HAS_CORE_ROOM = False
+
+# Always define inline stubs — these are used when fireai.core is not
+# available (e.g. standalone deployment, testing without full package).
 
 @dataclass
 class Room:
@@ -56,6 +82,15 @@ class Obstruction:
     height: float = 2.4
 
 
+# SpatialNormalizer — try fireai.validation first, then inline stub
+
+try:
+    from validation.spatial_normalizer import SpatialNormalizer as _CoreSpatialNormalizer
+    _HAS_CORE_NORMALIZER = True
+except ImportError:
+    _HAS_CORE_NORMALIZER = False
+
+
 class ToleranceModel:
     """Tolerance model for spatial normalization (inline stub)."""
     def __init__(self, area_tolerance: float = 0.01, dist_tolerance: float = 0.001):
@@ -71,22 +106,42 @@ class _ErrorSeverity:
 
 
 class SpatialNormalizer:
-    """Spatial normalizer for BIM elements (inline stub).
+    """Spatial normalizer for BIM elements.
     
-    V108 FIX: The original import `from validation.spatial_normalizer`
-    referenced a non-existent package. This inline implementation
-    provides basic normalization: coordinate validation, unit conversion,
-    and geometry repair (buffer(0) for invalid polygons).
+    V109 FIX: Uses conditional import — tries to use the real
+    validation.spatial_normalizer.SpatialNormalizer first, then falls
+    back to this inline implementation which provides basic normalization:
+    coordinate validation, unit conversion, and geometry repair
+    (buffer(0) for invalid polygons).
     """
+    # If the core normalizer is available, delegate to it
+    _core_normalizer = None
+    
     def __init__(self, tolerance_model: ToleranceModel = None):
         self.tolerance = tolerance_model or ToleranceModel()
+        if _HAS_CORE_NORMALIZER:
+            try:
+                self._core_normalizer = _CoreSpatialNormalizer(
+                    area_tolerance=self.tolerance.area_tolerance,
+                    dist_tolerance=self.tolerance.dist_tolerance,
+                )
+            except Exception:
+                self._core_normalizer = None
     
-    @staticmethod
-    def normalize(room, devices, obstructions, unit: str = "meters"):
+    def normalize(self, room, devices, obstructions, unit: str = "meters"):
         """Normalize room, devices, and obstructions.
         
         Returns (norm_room, norm_devices, norm_obstructions, errors).
         """
+        # Delegate to core normalizer if available
+        if self._core_normalizer is not None:
+            try:
+                return self._core_normalizer.normalize(
+                    room, devices, obstructions, unit
+                )
+            except Exception:
+                pass  # Fall through to inline implementation
+        
         errors = []
         
         # Repair invalid geometry

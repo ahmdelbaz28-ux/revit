@@ -124,7 +124,29 @@ class _WireGaugeInstance:
         return NotImplemented
 
 
-class WireGauge:
+class _WireGaugeMeta(type):
+    """Metaclass enabling iteration over WireGauge class attributes.
+
+    V109 FIX: Python does NOT invoke __iter__ as a classmethod when iterating
+    over a class object (``for g in WireGauge:``). Only a metaclass __iter__
+    makes the class itself iterable. Without this, the test
+    ``for gauge in WireGauge:`` raises TypeError.
+    """
+    def __iter__(cls):
+        return iter(cls._ALL_GAUGES)
+
+    def __len__(cls):
+        return len(cls._ALL_GAUGES)
+
+    def __contains__(cls, item):
+        if isinstance(item, _WireGaugeInstance):
+            return item in cls._ALL_GAUGES
+        if isinstance(item, str):
+            return item in cls.VALID_GAUGES
+        return False
+
+
+class WireGauge(metaclass=_WireGaugeMeta):
     """
     NEC Article 760 / NEC Chapter 9 Table 8 — Fire alarm wire gauges.
 
@@ -198,22 +220,8 @@ class WireGauge:
     # Valid gauge strings (for input validation)
     VALID_GAUGES: Tuple[str, ...] = ("18", "16", "14", "12", "10", "8", "6")
 
-    @classmethod
-    def __iter__(cls):
-        """Iterate over all gauge instances."""
-        return iter(cls._ALL_GAUGES)
-
-    @classmethod
-    def __len__(cls) -> int:
-        return len(cls._ALL_GAUGES)
-
-    @classmethod
-    def __contains__(cls, item) -> bool:
-        if isinstance(item, _WireGaugeInstance):
-            return item in cls._ALL_GAUGES
-        if isinstance(item, str):
-            return item in cls.VALID_GAUGES
-        return False
+    # V109: __iter__, __len__, __contains__ moved to metaclass _WireGaugeMeta
+    # (classmethod dunder methods don't work for class-level iteration in Python)
 
     @classmethod
     def get_resistance_per_m(cls, awg: str) -> float:

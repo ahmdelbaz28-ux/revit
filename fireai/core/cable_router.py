@@ -171,7 +171,7 @@ class CableRoute:
                 f"{self.route_id}|{self.start}|{self.end}|"
                 f"{self.total_length_m:.6f}|{self.straight_length_m:.6f}|"
                 f"{self.num_bends}|{self.num_elevation_changes}|"
-                f"{self.wire_gauge.awg_value}|{self.voltage_drop_v:.6f}|"
+                f"{self.wire_gauge if isinstance(self.wire_gauge, str) else self.wire_gauge.awg_value}|{self.voltage_drop_v:.6f}|"
                 f"{self.voltage_drop_pct:.6f}|{int(self.is_compliant)}|"
                 f"{wp_coords}"
             )
@@ -566,7 +566,14 @@ class CableRouter:
         # if provided. Falls back to ambient_temp_c for backward compatibility.
         # These are physically different quantities — see method docstring.
         vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else ambient_temp_c
-        r_at_20c = wire_gauge.resistance_ohm_per_km
+        # V109 FIX: wire_gauge param is a string key (e.g. "14"), not a
+        # _WireGaugeInstance. Must resolve to instance for resistance lookup.
+        if isinstance(wire_gauge, str):
+            wg_instance = WireGauge.get_resistance_per_m(wire_gauge)
+            # Convert Ω/m to Ω/km for the temperature correction formula
+            r_at_20c = wg_instance * 1000.0
+        else:
+            r_at_20c = wire_gauge.resistance_ohm_per_km
         r_per_km = temperature_corrected_resistance(r_at_20c, vdrop_temp)
         length_km = physical_length / 1000.0
         v_drop = alarm_current_a * 2.0 * r_per_km * length_km  # ×2 DC return

@@ -44,6 +44,20 @@ from fireai.core.contracts_validation import (
 # Reuse wire gauge and resistance data
 from fireai.core.cable_routing_engine import WireGauge
 
+
+def _resolve_wire_gauge(wire_gauge):
+    """Resolve a wire_gauge string or instance to a _WireGaugeInstance.
+
+    V109 FIX: wire_gauge parameter can be either a string key (e.g. "14")
+    or a _WireGaugeInstance. This helper normalizes both cases.
+    """
+    if isinstance(wire_gauge, str):
+        for wg in WireGauge:
+            if wg.awg_value == wire_gauge:
+                return wg
+        raise ValueError(f"Unknown wire gauge: '{wire_gauge}'")
+    return wire_gauge
+
 # Reuse NEC ampacity verification from nfpa72_engine
 from fireai.core.nfpa72_engine import (
     check_ampacity,
@@ -280,7 +294,7 @@ class ConstraintEngine:
             formula=(
                 f"L_actual = {cable_length_m:.1f}m "
                 f"{'≤' if is_satisfied else '>'} "
-                f"L_max = {max_length}m (AWG {wire_gauge.awg_value})"
+                f"L_max = {max_length}m (AWG {_resolve_wire_gauge(wire_gauge).awg_value})"
             ),
         )
 
@@ -334,7 +348,7 @@ class ConstraintEngine:
         """
         # Compute voltage drop with DC return path (×2)
         # V60 FIX: Use temperature-corrected resistance per NEC practice
-        r_at_20c = wire_gauge.resistance_ohm_per_km
+        r_at_20c = _resolve_wire_gauge(wire_gauge).resistance_ohm_per_km
         r_per_km = temperature_corrected_resistance(r_at_20c, conductor_operating_temp_c)
         length_km = cable_length_m / 1000.0
         v_drop = alarm_current_a * 2.0 * r_per_km * length_km
@@ -708,7 +722,7 @@ class ConstraintEngine:
         """
         amp_result = check_ampacity(
             alarm_current_a=alarm_current_a,
-            awg_gauge=wire_gauge.awg_value,
+            awg_gauge=_resolve_wire_gauge(wire_gauge).awg_value,
             conductor_temp_rating_c=conductor_temp_rating_c,
             ambient_temp_c=ambient_temp_c,
             num_current_carrying=num_current_carrying,

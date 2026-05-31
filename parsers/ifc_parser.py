@@ -80,10 +80,23 @@ class IFCParser:
         return spaces
     
     def _extract_devices(self, instances: List[Dict]) -> List[Dict]:
-        """Extract fire suppression devices."""
+        """Extract fire protection devices from multiple IFC fire entity types.
+
+        Supports:
+          - IfcFireSuppressionDevice_Type  (sprinklers, standpipes)
+          - IfcAlarm                       (fire alarm devices)
+          - IfcSensor                      (smoke/heat detectors)
+          - IfcProtectiveDevice            (fire dampers, fire doors)
+        """
+        _FIRE_ENTITY_TYPES = {
+            'IfcFireSuppressionDevice_Type',
+            'IfcAlarm',
+            'IfcSensor',
+            'IfcProtectiveDevice',
+        }
         devices = []
         for inst in instances:
-            if inst.get('type') == 'IfcFireSuppressionDevice_Type':
+            if inst.get('type') in _FIRE_ENTITY_TYPES:
                 attrs = inst.get('attributes', {})
                 applicable = inst.get('applicable_to', [])
                 
@@ -120,13 +133,19 @@ class IFCParser:
         return len(floors)
     
     def parse(self) -> IFCAnalysis:
-        """Main parsing method."""
+        """Main parsing method.
+
+        Raises:
+            ValueError: If the IFC file cannot be loaded or parsed.
+        """
         # Load data
         if self.data is None:
             try:
                 self.data = self._load_json()
             except Exception as e:
-                return None
+                raise ValueError(
+                    f"Failed to load IFC file '{self.ifc_path}': {e}"
+                ) from e
         
         instances = self._parse_instances(self.data)
         

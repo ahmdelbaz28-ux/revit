@@ -326,6 +326,138 @@ def _extract_fire_rating(
     return is_rated, rating_hours
 
 
+def _compute_world_placement(element) -> Optional[Tuple[float, float, float]]:
+    """Recursively resolve nested IfcLocalPlacement chain to world coordinates.
+
+    IFC supports nested placements where an IfcLocalPlacement references a
+    parent via PlacementRelTo. The world position is the sum of all offsets
+    in the chain. Previously only the first-level RelativePlacement was read,
+    causing elements with nested placements (e.g. elements placed relative
+    to a storey, which is placed relative to a building) to have incorrect
+    coordinates — they appeared at their local offset instead of their true
+    world position.
+
+    Args:
+        element: IfcOpenShell element with ObjectPlacement attribute.
+
+    Returns:
+        (x, y, z) world coordinates, or None if placement cannot be resolved.
+    """
+    try:
+        placement = element.ObjectPlacement
+        if placement is None:
+            return None
+
+        # Accumulate offsets walking UP the PlacementRelTo chain.
+        # Parent placements are added first (outermost), then local offsets.
+        offsets: List[Tuple[float, float, float]] = []
+
+        current = placement
+        visited = set()  # Guard against circular references
+        while current is not None:
+            placement_id = id(current)
+            if placement_id in visited:
+                log.warning(
+                    "Circular PlacementRelTo chain detected for element %s — "
+                    "stopping traversal.",
+                    getattr(element, 'GlobalId', '?'),
+                )
+                break
+            visited.add(placement_id)
+
+            if hasattr(current, 'RelativePlacement') and current.RelativePlacement is not None:
+                loc = current.RelativePlacement
+                if hasattr(loc, 'Location') and loc.Location is not None:
+                    coords = loc.Location.Coordinates
+                    ox = float(coords[0]) if len(coords) > 0 else 0.0
+                    oy = float(coords[1]) if len(coords) > 1 else 0.0
+                    oz = float(coords[2]) if len(coords) > 2 else 0.0
+                    offsets.append((ox, oy, oz))
+                else:
+                    offsets.append((0.0, 0.0, 0.0))
+            else:
+                offsets.append((0.0, 0.0, 0.0))
+
+            # Walk to parent placement
+            if hasattr(current, 'PlacementRelTo') and current.PlacementRelTo is not None:
+                current = current.PlacementRelTo
+            else:
+                break
+
+        # Sum all offsets (order doesn't matter for pure translation)
+        wx = sum(o[0] for o in offsets)
+        wy = sum(o[1] for o in offsets)
+        wz = sum(o[2] for o in offsets)
+
+        # Validate coordinates
+        for val in [wx, wy, wz]:
+            if not math.isfinite(val):
+                return None
+
+        return (wx, wy, wz)
+
+    except Exception as exc:
+        log.critical(
+            "V93 SAFETY: World placement computation failed for %s — "
+            "DROPPING element (returning None). Elements with unknown "
+            "position are MORE DANGEROUS than missing elements. Error: %s",
+            getattr(element, 'GlobalId', '?'), exc
+        )
+        return None
+
+
+def _extract_extrusion_direction(item) -> Optional[Tuple[float, float, float]]:
+    """Extract the extrusion direction from an IfcExtrudedAreaSolid.
+
+    IfcExtrudedAreaSolid.ExtrudedDirection is a unit IfcDirection vector
+    indicating the direction of extrusion. If the direction cannot be
+    extracted, returns None (caller should default to Z-axis with warning).
+
+    Args:
+        item: IfcExtrudedAreaSolid entity.
+
+    Returns:
+        (dx, dy, dz) direction vector (not necessarily normalized), or None.
+    """
+    try:
+        if hasattr(item, 'ExtrudedDirection') and item.ExtrudedDirection is not None:
+            direction = item.ExtrudedDirection
+            if hasattr(direction, 'DirectionRatios'):
+                ratios = list(direction.DirectionRatios)
+                dx = float(ratios[0]) if len(ratios) > 0 else 0.0
+                dy = float(ratios[1]) if len(ratios) > 1 else 0.0
+                dz = float(ratios[2]) if len(ratios) > 2 else 0.0
+                # Validate
+                if math.isfinite(dx) and math.isfinite(dy) and math.isfinite(dz):
+                    mag = math.sqrt(dx*dx + dy*dy + dz*dz)
+                    if mag > 1e-12:
+                        return (dx, dy, dz)
+            # DirectionRatios not available
+            return None
+        return None
+    except Exception:
+        return None
+
+
+def _is_z_axis_direction(dx: float, dy: float, dz: float, tolerance: float = 1e-6) -> bool:
+    """Check if an extrusion direction is approximately the Z-axis (0, 0, ±1).
+
+    Args:
+        dx, dy, dz: Direction vector components.
+        tolerance: Angular tolerance for off-axis check.
+
+    Returns:
+        True if the direction is along the Z-axis.
+    """
+    # Normalize
+    mag = math.sqrt(dx*dx + dy*dy + dz*dz)
+    if mag < 1e-12:
+        return True  # Degenerate, treat as Z
+    nx, ny, nz = dx / mag, dy / mag, dz / mag
+    # Z-axis means nx ≈ 0, ny ≈ 0, |nz| ≈ 1
+    return abs(nx) < tolerance and abs(ny) < tolerance
+
+
 def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
     """Extract bounding box from an IFC element.
 
@@ -343,44 +475,18 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
     element_type = _classify_ifc_element(ifc_class)
     element_id = element.GlobalId or str(element.id())
 
-    # Try to get local placement (fallback method)
-    try:
-        placement = element.ObjectPlacement
-        if placement is None:
-            return None
-
-        loc = placement.RelativePlacement
-        if loc is None:
-            return None
-
-        # Extract location from IfcAxis2Placement3D
-        if hasattr(loc, 'Location') and loc.Location is not None:
-            coords = loc.Location.Coordinates
-            cx, cy, cz = float(coords[0]), float(coords[1]), float(coords[2]) if len(coords) > 2 else 0.0
-        else:
-            cx, cy, cz = 0.0, 0.0, 0.0
-
-        # Validate coordinates
-        for val in [cx, cy, cz]:
-            if not math.isfinite(val):
-                return None
-
-    except Exception as exc:
+    # Resolve world placement (handles nested PlacementRelTo chain)
+    world_pos = _compute_world_placement(element)
+    if world_pos is None:
         # V93 FIX: Element placement extraction failure MUST return None.
-        # V67 logged the warning but still defaulted to (0,0,0), making
-        # elements invisible to the cable router — cables routed through
-        # walls/partitions that failed geometry extraction. Per Rule 17:
-        # a half-solution (logging without blocking) is worse than no
-        # solution because it creates a false sense of security.
         log.critical(
-            "V93 SAFETY: Element placement extraction failed for %s — "
-            "DROPPING element (returning None). Elements with unknown "
-            "position are MORE DANGEROUS than missing elements, because "
-            "they appear in the model at (0,0,0) but are invisible "
-            "to the cable router. Error: %s",
-            getattr(element, 'GlobalId', '?'), exc
+            "V93 SAFETY: World placement computation returned None for %s — "
+            "DROPPING element. Elements with unknown position are MORE "
+            "DANGEROUS than missing elements.",
+            getattr(element, 'GlobalId', '?')
         )
         return None
+    cx, cy, cz = world_pos
 
     # Try to get representation geometry for bounding box
     min_x = cx
@@ -423,6 +529,36 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                             )
                             return None
 
+                        # ── Extract extrusion direction ──────────────────────
+                        # FIX: Previously the extrusion direction was always
+                        # assumed to be Z-axis (0,0,1), so depth was only
+                        # added to max_z. This is incorrect for horizontally
+                        # extruded elements (e.g. beams extruded along X or Y)
+                        # which would have their depth added to the wrong axis,
+                        # producing a bounding box with zero width in the
+                        # extrusion direction — invisible to the cable router.
+                        extrusion_dir = _extract_extrusion_direction(item)
+                        is_z_extrusion = True  # Default assumption
+
+                        if extrusion_dir is not None:
+                            dx, dy, dz = extrusion_dir
+                            is_z_extrusion = _is_z_axis_direction(dx, dy, dz)
+                            if not is_z_extrusion:
+                                log.info(
+                                    "Non-Z extrusion direction (%.4f, %.4f, %.4f) "
+                                    "for element %s — computing rotated bounding box.",
+                                    dx, dy, dz, element_id,
+                                )
+                        else:
+                            # Could not extract direction — default to Z with warning
+                            log.warning(
+                                "Could not extract ExtrudedDirection for element %s "
+                                "— defaulting to Z-axis extrusion. If the element is "
+                                "actually extruded along X/Y, its bounding box will "
+                                "be incorrect.",
+                                element_id,
+                            )
+
                         # Get profile bounds
                         profile = item.SweptArea
                         if hasattr(profile, 'Position') and profile.Position is not None:
@@ -451,12 +587,55 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                                     xdim, ydim, element_id
                                 )
                                 return None
-                            min_x = cx + px + prof_x
-                            min_y = cy + py + prof_y
-                            min_z = cz + pz
-                            max_x = min_x + xdim
-                            max_y = min_y + ydim
-                            max_z = min_z + depth
+                            if is_z_extrusion:
+                                # Standard Z-axis extrusion (most common case)
+                                min_x = cx + px + prof_x
+                                min_y = cy + py + prof_y
+                                min_z = cz + pz
+                                max_x = min_x + xdim
+                                max_y = min_y + ydim
+                                max_z = min_z + depth
+                            else:
+                                # Non-Z extrusion: compute axis-aligned bounding
+                                # box from the 8 corners of the extruded solid.
+                                # Profile defines a rectangle in the XY plane at
+                                # the item position; the depth extrudes it along
+                                # the extrusion direction.
+                                _ndx, _ndy, _ndz = extrusion_dir
+                                _nmag = math.sqrt(_ndx**2 + _ndy**2 + _ndz**2)
+                                if _nmag > 1e-12:
+                                    _ndx /= _nmag
+                                    _ndy /= _nmag
+                                    _ndz /= _nmag
+                                # Profile rectangle corners (in local 2D)
+                                base_x = cx + px + prof_x
+                                base_y = cy + py + prof_y
+                                base_z = cz + pz
+                                corners_2d = [
+                                    (0.0, 0.0),
+                                    (xdim, 0.0),
+                                    (xdim, ydim),
+                                    (0.0, ydim),
+                                ]
+                                # Build 3D corners: 4 base + 4 extruded
+                                all_corners = []
+                                for (lx, ly) in corners_2d:
+                                    # Base corner
+                                    bx = base_x + lx
+                                    by = base_y + ly
+                                    bz = base_z
+                                    all_corners.append((bx, by, bz))
+                                    # Extruded corner
+                                    ex = bx + _ndx * depth
+                                    ey = by + _ndy * depth
+                                    ez = bz + _ndz * depth
+                                    all_corners.append((ex, ey, ez))
+                                min_x = min(c[0] for c in all_corners)
+                                min_y = min(c[1] for c in all_corners)
+                                min_z = min(c[2] for c in all_corners)
+                                max_x = max(c[0] for c in all_corners)
+                                max_y = max(c[1] for c in all_corners)
+                                max_z = max(c[2] for c in all_corners)
                         elif hasattr(profile, 'Radius'):
                             radius = float(profile.Radius)
                             # V106 CRITICAL FIX: Validate radius
@@ -467,20 +646,72 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                                     radius, element_id
                                 )
                                 return None
-                            min_x = cx + px + prof_x - radius
-                            min_y = cy + py + prof_y - radius
-                            min_z = cz + pz
-                            max_x = cx + px + prof_x + radius
-                            max_y = cy + py + prof_y + radius
-                            max_z = min_z + depth
+                            if is_z_extrusion:
+                                min_x = cx + px + prof_x - radius
+                                min_y = cy + py + prof_y - radius
+                                min_z = cz + pz
+                                max_x = cx + px + prof_x + radius
+                                max_y = cy + py + prof_y + radius
+                                max_z = min_z + depth
+                            else:
+                                # Non-Z extrusion with circular profile
+                                _ndx, _ndy, _ndz = extrusion_dir
+                                _nmag = math.sqrt(_ndx**2 + _ndy**2 + _ndz**2)
+                                if _nmag > 1e-12:
+                                    _ndx /= _nmag
+                                    _ndy /= _nmag
+                                    _ndz /= _nmag
+                                # Circular profile centre in local XY
+                                pcx = cx + px + prof_x
+                                pcy = cy + py + prof_y
+                                pcz = cz + pz
+                                # For a circle, the AABB in XY is ±radius from centre
+                                # The extrusion extends from base along direction
+                                # Compute AABB of the extruded cylinder
+                                base_min_x = pcx - radius
+                                base_max_x = pcx + radius
+                                base_min_y = pcy - radius
+                                base_max_y = pcy + radius
+                                base_z_val = pcz
+                                # Extruded centre
+                                ext_cx = pcx + _ndx * depth
+                                ext_cy = pcy + _ndy * depth
+                                ext_cz = pcz + _ndz * depth
+                                all_mins_maxes = [
+                                    (base_min_x, base_min_y, base_z_val),
+                                    (base_max_x, base_max_y, base_z_val),
+                                    (ext_cx - radius, ext_cy - radius, ext_cz),
+                                    (ext_cx + radius, ext_cy + radius, ext_cz),
+                                ]
+                                min_x = min(c[0] for c in all_mins_maxes)
+                                min_y = min(c[1] for c in all_mins_maxes)
+                                min_z = min(c[2] for c in all_mins_maxes)
+                                max_x = max(c[0] for c in all_mins_maxes)
+                                max_y = max(c[1] for c in all_mins_maxes)
+                                max_z = max(c[2] for c in all_mins_maxes)
                         else:
                             # Use position as center, depth as height
-                            min_x = cx + px
-                            min_y = cy + py
-                            min_z = cz + pz
-                            max_x = min_x
-                            max_y = min_y
-                            max_z = min_z + depth
+                            if is_z_extrusion:
+                                min_x = cx + px
+                                min_y = cy + py
+                                min_z = cz + pz
+                                max_x = min_x
+                                max_y = min_y
+                                max_z = min_z + depth
+                            else:
+                                # Non-Z extrusion, no profile dimensions
+                                _ndx, _ndy, _ndz = extrusion_dir
+                                _nmag = math.sqrt(_ndx**2 + _ndy**2 + _ndz**2)
+                                if _nmag > 1e-12:
+                                    _ndx /= _nmag
+                                    _ndy /= _nmag
+                                    _ndz /= _nmag
+                                min_x = cx + px
+                                min_y = cy + py
+                                min_z = cz + pz
+                                max_x = min_x + _ndx * depth
+                                max_y = min_y + _ndy * depth
+                                max_z = min_z + _ndz * depth
     except Exception as exc:
         # V93 FIX: Geometry extraction failure MUST return None.
         # V67 logged but continued, creating a zero-volume BoundingBox3D

@@ -225,7 +225,7 @@ class RevitExporter:
                 from_location=from_loc,
                 to_location=to_loc,
                 length_m=route.total_length_m,
-                cable_type=f"AWG {route.wire_gauge.awg_value} in {CONDUIT_TYPE}",
+                cable_type=f"AWG {route.wire_gauge if isinstance(route.wire_gauge, str) else route.wire_gauge.awg_value} in {CONDUIT_TYPE}",
                 voltage_drop_v=route.voltage_drop_v,
                 voltage_drop_pct=route.voltage_drop_pct,
                 num_bends=route.num_bends,
@@ -320,7 +320,7 @@ class RevitExporter:
 
                 # Straight segment → IfcPipeSegment
                 description = (
-                    f"FA Cable Segment: AWG {route.wire_gauge.awg_value} in "
+                    f"FA Cable Segment: AWG {route.wire_gauge if isinstance(route.wire_gauge, str) else route.wire_gauge.awg_value} in "
                     f"{CONDUIT_TYPE}, L={seg_length:.3f}m. "
                     f"Per NEC 760.24, NFPA 72 §10.6.4"
                 )
@@ -563,7 +563,7 @@ class RevitExporter:
             lines.append(f"    Length: {route.total_length_m:.2f}m")
             lines.append(f"    Bends: {route.num_bends}")
             lines.append(f"    V-drop: {route.voltage_drop_v:.4f}V ({route.voltage_drop_pct:.2f}%)")
-            lines.append(f"    Wire: AWG {route.wire_gauge.awg_value}")
+            lines.append(f"    Wire: AWG {route.wire_gauge if isinstance(route.wire_gauge, str) else route.wire_gauge.awg_value}")
 
             if route.constraint_results and not route.constraint_results.all_satisfied:
                 lines.append("    VIOLATIONS:")
