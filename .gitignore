@@ -82,7 +82,7 @@ logs/
 
 # Empty placeholder directories (artifact of git reset operations)
 # NOTE: core/ removed — fireai/core/ is source code, not an artifact
-backend/
+# NOTE: backend/ REMOVED from gitignore — backend source code MUST be tracked
 repos/
 download/
 fireai/infrastructure/

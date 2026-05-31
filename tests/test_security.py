@@ -896,7 +896,8 @@ class TestPerPathRateLimitPathMatching:
         """Verify the backend_app source code uses the longest-prefix algorithm."""
         # Read source directly from file since backend_app cannot be imported
         # in the test environment (missing backend dependencies).
-        backend_app_path = Path(__file__).resolve().parent.parent / "backend_app.py"
+        # V106 FIX: Updated path from backend_app.py to backend/app.py
+        backend_app_path = Path(__file__).resolve().parent.parent / "backend" / "app.py"
         source = backend_app_path.read_text(encoding="utf-8")
         # The _find_limit method must compare prefix lengths for longest-prefix match
         assert "len(prefix) > best_len" in source, (
@@ -968,7 +969,8 @@ class TestCorsWildcardRejection:
         """Verify that the backend_app source code rejects wildcards in production."""
         # Read source directly from file since backend_app cannot be imported
         # in the test environment (missing backend dependencies).
-        backend_app_path = Path(__file__).resolve().parent.parent / "backend_app.py"
+        # V106 FIX: Updated path from backend_app.py to backend/app.py
+        backend_app_path = Path(__file__).resolve().parent.parent / "backend" / "app.py"
         source = backend_app_path.read_text(encoding="utf-8")
         # Must contain wildcard rejection logic
         assert '"*"' in source or "'*'" in source, (

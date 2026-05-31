@@ -73,33 +73,14 @@ logger = logging.getLogger(__name__)
 
 # ── Persistent Storage Paths ────────────────────────────────────────────────
 # V72 FIX: All paths are persistent (NOT /tmp/ which clears on reboot)
-# V93 FIX (BUG-96): Unified storage paths. Previously, OpenAI strategy used
-#   collection_name="fireai_memories" while Gemini used "fireai_memories_gemini"
-#   but BOTH pointed at the SAME Qdrant path. Qdrant does NOT allow two
-#   collections with different embedding dimensions in the same storage.
-#   Now: each provider gets its own Qdrant path (safe isolation) AND we
-#   use a SINGLE canonical collection name "fireai". Switching providers
-#   automatically uses the correct path/dims.
-#   Additionally, FIREAI_MEMORY_QDRANT_PATH env var is now respected.
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-
-# Canonical collection name — ONE name, not two different ones.
-CANONICAL_COLLECTION_NAME = "fireai"
-
-# Per-provider Qdrant paths (isolated by embedding dimensions)
-MEM0_QDRANT_PATH_OPENAI = Path(os.getenv(
-    "FIREAI_MEMORY_QDRANT_PATH", ""
-)) or (DATA_DIR / "mem0_qdrant_openai")
-MEM0_QDRANT_PATH_GEMINI = DATA_DIR / "mem0_qdrant_gemini"
-
-# Shared history DB (provider-agnostic — stores Mem0 operation history)
+MEM0_QDRANT_PATH = DATA_DIR / "mem0_qdrant_service"
 MEM0_HISTORY_DB = DATA_DIR / "mem0_history_service.db"
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-MEM0_QDRANT_PATH_OPENAI.mkdir(parents=True, exist_ok=True)
-MEM0_QDRANT_PATH_GEMINI.mkdir(parents=True, exist_ok=True)
+MEM0_QDRANT_PATH.mkdir(parents=True, exist_ok=True)
 
 
 # ── Configuration ──────────────────────────────────────────────────────────────
@@ -277,12 +258,8 @@ class MemoryService:
                     "vector_store": {
                         "provider": "qdrant",
                         "config": {
-                            # V93 FIX (BUG-96): OpenAI gets its own isolated
-                            # Qdrant path (1536-dim embeddings). Previously
-                            # shared a path with Gemini (384-dim) causing
-                            # dimension mismatch errors.
-                            "path": str(MEM0_QDRANT_PATH_OPENAI),
-                            "collection_name": CANONICAL_COLLECTION_NAME,
+                            "path": str(MEM0_QDRANT_PATH),
+                            "collection_name": "fireai_memories",
                             "embedding_model_dims": 1536,
                             "on_disk": True,
                         },
@@ -344,12 +321,8 @@ class MemoryService:
                     "vector_store": {
                         "provider": "qdrant",
                         "config": {
-                            # V93 FIX (BUG-96): Gemini gets its own isolated
-                            # Qdrant path (384-dim embeddings). Previously
-                            # shared a path with OpenAI (1536-dim) causing
-                            # dimension mismatch errors.
-                            "path": str(MEM0_QDRANT_PATH_GEMINI),
-                            "collection_name": CANONICAL_COLLECTION_NAME,
+                            "path": str(MEM0_QDRANT_PATH),
+                            "collection_name": "fireai_memories_gemini",
                             "embedding_model_dims": 384,
                             "on_disk": True,
                         },
@@ -489,24 +462,14 @@ class MemoryService:
             )
 
         try:
-            # mem0 v2 API: entity IDs must be inside filters={} dict.
-            # Old API (v1): search(query, user_id=x, agent_id=y, run_id=z) → raises ValueError in v2
-            # New API (v2): search(query, filters={"user_id": x, ...})
-            _search_filters: dict = {}
-            if request.user_id:
-                _search_filters["user_id"] = request.user_id
-            if request.agent_id:
-                _search_filters["agent_id"] = request.agent_id
-            if request.run_id:
-                _search_filters["run_id"] = request.run_id
-            _search_kwargs: dict = {
-                "query": request.query,
-                "top_k": request.top_k,
-                "threshold": request.threshold,
-            }
-            if _search_filters:
-                _search_kwargs["filters"] = _search_filters
-            raw_results = self._memory.search(**_search_kwargs)
+            raw_results = self._memory.search(
+                query=request.query,
+                user_id=request.user_id,
+                agent_id=request.agent_id,
+                run_id=request.run_id,
+                top_k=request.top_k,
+                threshold=request.threshold,
+            )
 
             results = []
             if isinstance(raw_results, dict) and "results" in raw_results:
@@ -575,24 +538,16 @@ class MemoryService:
             }
 
         try:
-            # mem0 v2 API: entity IDs inside filters={}, returns {"results": [...]}
-            _get_filters: dict = {}
-            if user_id:
-                _get_filters["user_id"] = user_id
-            if agent_id:
-                _get_filters["agent_id"] = agent_id
-            if run_id:
-                _get_filters["run_id"] = run_id
-            _get_kwargs: dict = {}
-            if _get_filters:
-                _get_kwargs["filters"] = _get_filters
-            raw = self._memory.get_all(**_get_kwargs)
-            # mem0 v2 returns {"results": [...]} NOT a plain list
-            memories = raw.get("results", []) if isinstance(raw, dict) else (raw if isinstance(raw, list) else [])
+            results = self._memory.get_all(
+                user_id=user_id,
+                agent_id=agent_id,
+                run_id=run_id,
+            )
+
             return {
                 "success": True,
-                "results": memories,
-                "total": len(memories),
+                "results": results if isinstance(results, list) else [],
+                "total": len(results) if isinstance(results, list) else 0,
                 "source": "memory",
             }
 
@@ -670,42 +625,21 @@ class MemoryService:
 
 
 # ── Singleton Management ──────────────────────────────────────────────────────
-# V93 FIX (BUG-98): Double-checked locking for thread-safe singleton.
-# Previous code used check-then-act without synchronization:
-#   if _memory_service is None:
-#       _memory_service = MemoryService()
-# Under concurrent requests (e.g., uvicorn with multiple threads),
-# two threads could both see _memory_service is None, both create
-# instances, and one would be orphaned (leaking Qdrant connections).
-# Same pattern as V84 zai_llm_client fix.
-
-import threading
 
 _memory_service: Optional[MemoryService] = None
-_singleton_lock = threading.Lock()
 
 
 def get_memory_service() -> MemoryService:
-    """Get or create the singleton MemoryService instance (thread-safe).
-
-    Uses double-checked locking:
-    1. Fast path: check without lock (already initialized → no contention)
-    2. Slow path: acquire lock, re-check, then create (prevents race)
-    """
+    """Get or create the singleton MemoryService instance."""
     global _memory_service
     if _memory_service is None:
-        with _singleton_lock:
-            # Re-check after acquiring lock — another thread may have
-            # created the instance while we waited
-            if _memory_service is None:
-                _memory_service = MemoryService()
+        _memory_service = MemoryService()
     return _memory_service
 
 
 async def close_memory_service():
-    """Close the singleton MemoryService instance (thread-safe)."""
+    """Close the singleton MemoryService instance."""
     global _memory_service
-    with _singleton_lock:
-        if _memory_service is not None:
-            await _memory_service.close()
-            _memory_service = None
+    if _memory_service is not None:
+        await _memory_service.close()
+        _memory_service = None
