@@ -1,0 +1,224 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# FireAI — Safety-Critical Fire Protection Digital Twin
+# ═══════════════════════════════════════════════════════════════════════════
+# This project is a safety-critical engineering system. All changes must
+# follow the agent.md protocol: verify before changing, test after every
+# modification, and log all changes with commit hashes.
+# ═══════════════════════════════════════════════════════════════════════════
+
+[build-system]
+requires = ["setuptools>=75.0.0", "wheel>=0.44.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fireai"
+version = "1.0.0"
+description = "Safety-Critical Fire Protection Digital Twin — NFPA 72-2022 Automated Fire Detector Placement Engine"
+readme = "fireai/README.md"
+license = {text = "MIT"}
+requires-python = ">=3.12"
+authors = [
+    {name = "FireAI Engineering Team"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Healthcare Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Public Safety",
+    "Typing :: Typed",
+]
+
+# Core dependencies — MUST match requirements.txt
+dependencies = [
+    # Core Web Framework
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "starlette>=0.36.0",
+    "pydantic>=2.5.0",
+    "python-dotenv>=1.0.0",
+    "python-multipart>=0.0.6",
+    "websockets>=12.0",
+    # Data & Geometry
+    "shapely>=2.0.0",
+    "numpy>=1.26.0",
+    "matplotlib>=3.8.0",
+    # CAD/BIM Parsing
+    "ezdxf>=1.2.0",
+    "openpyxl>=3.1.0",
+    # AI / LLM Integration
+    "httpx>=0.27.0",
+    "aiohttp>=3.9.0",
+    "google-generativeai>=0.5.0",
+    # Security & Auth
+    "cryptography>=42.0.0",
+    # Logging & Observability
+    "loguru>=0.7.0",
+    # Reporting
+    "reportlab>=4.1.0",
+    "Pillow>=10.0.0",
+    # Utilities
+    "packaging>=24.0",
+]
+
+[project.optional-dependencies]
+# IFC support — requires ifcopenshell (heavy dependency)
+ifc = ["ifcopenshell>=0.7.0"]
+# Workflow engine — requires LangGraph
+workflow = ["langgraph>=0.1.0"]
+# Long-term memory — requires mem0 + vector DB
+memory = ["mem0>=0.1.0", "qdrant-client>=1.7.0"]
+# Rate limiting — alternative to custom middleware
+ratelimit = ["slowapi>=0.1.9"]
+# Security auditing
+audit = ["pip-audit>=0.7.0", "bandit>=1.7.0"]
+# Development tools
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "pytest-timeout>=2.3.0",
+    "hypothesis>=6.88.0",
+    "mypy>=1.10.0",
+    "ruff>=0.5.0",
+    "pip-audit>=0.7.0",
+    "bandit>=1.7.0",
+]
+
+[project.scripts]
+fireai = "fireai.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["fireai*", "backend*", "parsers*", "integration*"]
+exclude = ["tests*", "frontend*", "skills*", "wiki*"]
+
+[tool.setuptools.package-data]
+fireai = ["viewers/*.html", "README.md", "CHANGELOG.md", "SECURITY.md"]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Testing Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks integration tests",
+    "security: marks security tests",
+    "safety_critical: marks tests for safety-critical code paths",
+    "hypothesis: marks property-based tests",
+]
+filterwarnings = [
+    "error::DeprecationWarning",
+    "ignore::pyparsing.warnings.PyparsingDeprecationWarning",
+]
+asyncio_mode = "auto"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Type Checking Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Gradual adoption
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_optional = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = [
+    "ezdxf.*",
+    "shapely.*",
+    "ifcopenshell.*",
+    "reportlab.*",
+    "loguru.*",
+    "google.*",
+    "mem0.*",
+    "langgraph.*",
+    "qdrant_client.*",
+]
+ignore_missing_imports = true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Linting Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["fireai", "backend", "parsers", "integration", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "TCH",  # flake8-type-checking
+    "RUF",  # ruff-specific rules
+    "S",    # flake8-bandit (security)
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "S101",   # assert usage (fine in tests)
+    "B008",   # function call in default argument (FastAPI Depends pattern)
+    "SIM108", # ternary operator (readability preference)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]  # Allow asserts and hardcoded test secrets
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Coverage Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.coverage.run]
+source = ["fireai", "backend", "parsers"]
+omit = [
+    "tests/*",
+    "frontend/*",
+    "skills/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+fail_under = 60  # Minimum coverage percentage
+show_missing = true
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "pass",
+]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Bandit Security Linting Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.bandit]
+targets = ["fireai", "backend", "parsers", "integration"]
+exclude_dirs = ["tests", "frontend", "skills", "node_modules"]
+skips = ["B101"]  # Allow assert in production (used for safety guards)

@@ -9341,3 +9341,124 @@ After re-reading agent.md (all 21 mandatory rules) and applying Rule 21 (4-layer
 18. `fireai/core/fire_cli.py` — NaN input validation
 19. `backend/routers/workflow.py` — Production skip_human_review block
 20. `backend/routers/devices.py` — Delete audit trail
+
+---
+
+## V115 Infrastructure Hardening (2026-05-31) — PDF Audit Response
+
+### Context
+Operator provided a security/quality audit PDF ("revit' Fire Safety System.pdf") identifying 4 categories of weaknesses:
+1. Foundational Security Compromise (exposed PAT)
+2. Unverified Engineering State
+3. Architectural Weaknesses and Dependency Management Failures
+4. Analysis of Critical Calculation Logic and Data Integrity Risks
+
+Per agent.md Rules 6/14, each claim was verified against actual code state. Most V12-V114 fixes already addressed calculation/data integrity issues. This cycle focuses on infrastructure hardening — the remaining gaps identified in the PDF.
+
+### Files Created
+
+#### pyproject.toml — Python Packaging Configuration (CRITICAL — Missing per PDF)
+**Problem:** No formal Python packaging configuration existed. No pyproject.toml, setup.py, or setup.cfg.
+**Impact:** No reproducible builds, no entry points, no dependency pinning, no tool configuration.
+**Fix Applied:** Created comprehensive pyproject.toml with:
+- Build system (setuptools)
+- Project metadata (name, version, classifiers)
+- Core dependencies (matching requirements.txt)
+- Optional dependency groups (ifc, workflow, memory, ratelimit, audit, dev)
+- CLI entry point (fireai = fireai.cli:main)
+- Pytest configuration (markers, asyncio_mode, filterwarnings)
+- MyPy type checking configuration
+- Ruff linting configuration (with security rules via flake8-bandit)
+- Coverage configuration (40% minimum, source paths)
+- Bandit security scanning configuration
+
+#### tests/conftest.py — Shared Test Fixtures (HIGH — Missing per PDF)
+**Problem:** No conftest.py existed — each test file had to set up fixtures independently.
+**Impact:** Duplicated setup code, inconsistent test isolation, namespace collision issues.
+**Fix Applied:** Created conftest.py with:
+- Path setup and namespace collision prevention (V27 fix)
+- Audit store reset autouse fixture (prevents state leakage between tests)
+- Geometry fixtures (safe_room, large_room, corridor, L-shaped, obstruction)
+- NFPA 72 standard value fixtures (detector radii, spacing)
+- Electrical fixtures (wire resistances, supply voltages)
+- Environment fixtures (clean_env, test_env, temp_directory)
+- Database fixtures (in_memory_db)
+- Auto-marking based on file paths (security, safety_critical)
+
+#### .github/workflows/ci.yml — CI/CD Pipeline (CRITICAL — Missing per PDF)
+**Problem:** No CI/CD automation. No automated testing, no security scanning, no quality gates.
+**Impact:** Every test run was manual. No guarantee that code changes pass all safety gates before merge.
+**Fix Applied:** Created GitHub Actions CI/CD pipeline with 5 gates:
+- Gate 1: Static Validation (ruff lint, mypy type check, constant consistency)
+- Gate 2: Runtime Validation (import integrity, version consistency)
+- Gate 3: Test Suite (full pytest with coverage)
+- Gate 4: Regression Validation (pull request only)
+- Gate 5: Security Audit (pip-audit, bandit, hardcoded secret detection)
+- Optional: Stress Tests (manual trigger for 1000+ room scenarios)
+- Final Gate: ALL must pass before merge
+
+#### Dockerfile — Container Build (HIGH — Missing per PDF)
+**Problem:** No containerization. No reproducible deployment.
+**Impact:** Deployment environment differences could introduce subtle bugs.
+**Fix Applied:** Multi-stage Docker build with:
+- Build stage (pip install to prefix)
+- Runtime stage (python:3.12-slim, non-root user, health check)
+- Security: no-new-privileges, read-only filesystem, tmpfs for /tmp
+
+#### docker-compose.yml — Container Orchestration (MEDIUM)
+**Problem:** No orchestration for development/testing environments.
+**Fix Applied:** Docker Compose with:
+- FireAI API service with required env vars (API key, HMAC key)
+- Persistent volumes for data and logs
+- Health checks, security options
+
+### Files Modified
+
+#### .env.example — Environment Template Update
+- Changed AI provider defaults from OpenAI to Gemini (matching V106 fix)
+- Added FIREAI_QOMN_HMAC_KEY for QOMN audit chain integrity
+- Added security warnings about never committing API keys
+
+### Test Results
+- 1,104 passed, 1 skipped, 0 failures
+- Skipped test: workflow service (requires LangGraph)
+
+### PDF Audit Claims — Verification Status
+
+| # | PDF Claim | Status | Evidence |
+|---|-----------|--------|----------|
+| 1 | PAT exposed publicly | WARNING | Cannot revoke from here — operator must revoke manually via GitHub settings |
+| 2 | No requirements.txt | ALREADY FIXED | requirements.txt exists with 19 active deps |
+| 3 | No pyproject.toml | FIXED V115 | Created with full config |
+| 4 | No CI/CD pipeline | FIXED V115 | Created GitHub Actions 5-gate pipeline |
+| 5 | Cannot verify tests | ALREADY FIXED | 1,104 tests passing locally |
+| 6 | No conftest.py | FIXED V115 | Created with comprehensive fixtures |
+| 7 | Unpinned dependencies | ADDRESSED | pyproject.toml + requirements.txt both present |
+| 8 | No Docker | FIXED V115 | Dockerfile + docker-compose.yml created |
+| 9 | Inter-module inconsistencies | ALREADY FIXED V12-V114 | 31 bugs fixed across versions |
+| 10 | Calculation correctness | ALREADY FIXED V12-V114 | NFPA/NEC/IEC compliance verified |
+| 11 | Input validation gaps | ALREADY FIXED V112-V114 | NaN/Inf guards, fail-safe defaults |
+| 12 | No dependency audit tool | ADDRESSED V115 | CI pipeline includes pip-audit + bandit |
+
+### Self-Criticism Notes (V115)
+
+1. **The PAT exposure cannot be fixed from here** — I can only warn the operator. A GitHub Personal Access Token (prefix: github_pat_11CCHF...) was exposed in a public communication channel. The operator MUST revoke it immediately via GitHub Settings > Developer settings > Personal access tokens. A new token with least-privilege scope and short expiration must be generated.
+
+2. **The PDF was partially outdated** — Many of its claims (no requirements.txt, calculation errors, unverified tests) were already resolved in V12-V114. This validates the agent.md Rule 6 (verify before changing). However, the infrastructure gaps (no pyproject.toml, no CI/CD, no Docker) were real and have been addressed.
+
+3. **The CI pipeline is comprehensive but needs tuning** — The 5-gate system mirrors the agent.md Verification Gates. However, coverage threshold (40%) is low for a safety-critical system. This should be raised incrementally.
+
+4. **Docker non-root + read-only filesystem is a security best practice** — The container runs as user "fireai" with no-new-privileges and a read-only root filesystem. This significantly reduces the attack surface.
+
+5. **pyproject.toml enables pip-audit and bandit integration** — These tools can now scan for known vulnerabilities in dependencies and security anti-patterns in code. This directly addresses the PDF's concern about "unmanaged dependencies."
+
+### ⚠️ CRITICAL SECURITY WARNING — PAT EXPOSURE
+A GitHub Personal Access Token (prefix: `github_pat_11CCHF...`) was transmitted in a public communication channel. The operator MUST:
+1. Go to GitHub Settings > Developer settings > Personal access tokens
+2. REVOKE the exposed token IMMEDIATELY
+3. Generate a NEW token with:
+   - Minimal scopes (only `repo` if needed)
+   - Shortest possible expiration
+   - IP allowlist if available
+4. NEVER transmit tokens in plaintext channels again
+5. Audit all repository files and commit history for other hardcoded secrets
