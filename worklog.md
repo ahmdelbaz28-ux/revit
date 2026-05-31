@@ -496,3 +496,32 @@ Stage Summary:
 - 1215/1215 tests PASSING
 - GitHub push VERIFIED: https://github.com/ahmdelbaz28-ux/revit/commit/5ab7187
 - Conflict resolved: AWG resistance table kept V51 NEC-corrected values (75°C, safer)
+
+---
+Task ID: V50.5
+Agent: Super Z (Main)
+Task: Analyze CI/CD failure from screenshot, fix without changing tests
+
+Work Log:
+- Analyzed uploaded screenshot of GitHub Actions CI/CD pipeline failure
+- Image showed: Gate 2 — Test Suite (3.12) was "cancelled" after 4m 10s
+- Key error: `fatal: No url found for submodule path 'repos/revit' in .gitmodules`
+- This caused `actions/checkout@v4` to fail with exit code 128
+- Root cause: 3 orphaned submodule entries in git index (mode 160000):
+  - repos/revit (commit b18fefe)
+  - repos/rules (commit 0ab9be6)
+  - repos/trpc (commit c7360d4)
+- These were registered as submodules but had NO .gitmodules file
+- The directories were empty (no actual content)
+- Fix: Removed all 3 orphaned submodule entries with `git rm --cached`
+- Added `repos/` to `.gitignore` to prevent future accidents
+- Removed empty `repos/` directory
+- All 1215 tests still pass after the fix
+- Committed as V50.5, pushed to GitHub
+
+Stage Summary:
+- Commit: 33d73b2 V50.5: Remove orphaned submodule entries
+- Root cause: orphaned submodule references without .gitmodules
+- Fix: git rm --cached + .gitignore addition
+- 1215/1215 tests PASS
+- GitHub push verified: https://github.com/ahmdelbaz28-ux/revit/commit/33d73b2
