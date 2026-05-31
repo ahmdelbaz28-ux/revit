@@ -36,6 +36,7 @@ import json
 import math
 import os
 import struct
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
@@ -420,7 +421,17 @@ def compute_heat_detector_spacing(
     h = guard_ceiling_height_m(ceiling_height_m)
     a = _guard_finite(area_per_detector_m2, "area_per_detector_m2")
     if a <= 0:
-        raise PhysicsGuardError("area_per_detector_m2", a, "coverage area must be > 0", "NFPA 72-2022 §17.6.3.1")
+        raise PhysicsGuardError(
+            "area_per_detector_m2", a,
+            "coverage area must be > 0 m2 -- zero produces zero coverage radius",
+            "NFPA 72-2022 §17.6.3.1"
+        )
+    if a < 1e-6:
+        raise PhysicsGuardError(
+            "area_per_detector_m2", a,
+            f"area {a:.2e} m2 too small -- minimum 1e-6 m2 for meaningful calculation",
+            "Physics / NFPA 72-2022 §17.6.3.1"
+        )
 
     # S = 0.7 × √A — NFPA 72 §17.6.3.1 (in feet; convert)
     # In feet: S_ft = 0.7 × √(A_ft²)
@@ -715,6 +726,7 @@ class QOMNAuditLog:
         # tamper-proof — any attacker with source access can recompute chains.
         self._hmac_key = os.environ.get("FIREAI_QOMN_HMAC_KEY", "").encode()
         self._chain_hash: str = self._compute_chain_hash(b"QOMN-GENESIS")
+        self._lock = threading.RLock()  # V-10: thread-safe under concurrent analyze_building()
 
     def _compute_chain_hash(self, data: bytes) -> str:
         """Compute chain hash using HMAC-SHA256 if key available, else SHA-256."""
@@ -733,23 +745,23 @@ class QOMNAuditLog:
         """Record a computation to the immutable audit log."""
         timestamp = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
 
-        # Compute result hash
+        # Compute result hash (outside lock — pure computation, no shared state)
         result_hash = hashlib.sha256(json.dumps(output_data, sort_keys=True, default=str).encode()).hexdigest()
 
-        # Chain hash: links this entry to all previous entries
-        chain_input = f"{self._chain_hash}:{result_hash}:{timestamp}".encode()
-        self._chain_hash = self._compute_chain_hash(chain_input)
-
-        entry = AuditEntry(
-            timestamp_utc=timestamp,
-            computation_type=computation_type,
-            input_data=dict(input_data),
-            formula_ref=formula_ref,
-            output_data=dict(output_data),
-            result_hash=result_hash,
-            layer3_passed=layer3_passed,
-        )
-        self._entries.append(entry)
+        with self._lock:  # V-10: prevent split-brain chain hash under concurrent workers
+            # Chain hash: links this entry to all previous entries (inside lock)
+            chain_input = f"{self._chain_hash}:{result_hash}:{timestamp}".encode()
+            self._chain_hash = self._compute_chain_hash(chain_input)
+            entry = AuditEntry(
+                timestamp_utc=timestamp,
+                computation_type=computation_type,
+                input_data=dict(input_data),
+                formula_ref=formula_ref,
+                output_data=dict(output_data),
+                result_hash=result_hash,
+                layer3_passed=layer3_passed,
+            )
+            self._entries.append(entry)
         return entry
 
     def export_json(self) -> Dict[str, Any]:
@@ -780,14 +792,19 @@ class QOMNAuditLog:
         key is configured. Previously, verify always used SHA-256 while
         record used HMAC-SHA256, causing ALL verifications to fail in
         production (when FIREAI_QOMN_HMAC_KEY is set).
+
+        V-10c: Acquires lock for consistent snapshot under concurrent load.
         """
-        if not self._entries:
-            return True
+        with self._lock:
+            if not self._entries:
+                return True
+            entries_snapshot = list(self._entries)
+            expected_final   = self._chain_hash
         chain = self._compute_chain_hash(b"QOMN-GENESIS")
-        for e in self._entries:
+        for e in entries_snapshot:
             chain_input = f"{chain}:{e.result_hash}:{e.timestamp_utc}"
             chain = self._compute_chain_hash(chain_input.encode())
-        return chain == self._chain_hash
+        return chain == expected_final
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

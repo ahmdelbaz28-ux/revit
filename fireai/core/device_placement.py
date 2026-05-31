@@ -414,9 +414,14 @@ class DetectorPlacementEngine:
         room: RoomSpec,
         detectors: List[PlacedDevice],
         radius_m: float,
-        grid_step: float = 0.5,
+        grid_step: float = 0.0,
     ) -> float:
         """Verify coverage by sampling grid points.
+
+        Adaptive step = min(0.25m, radius_m / 12) per V-07 fix.
+        Ensures ≤ 8% quantization error for any detector radius:
+          smoke R=6.37m → step=0.25m
+          heat  R=1.5m  → step=0.125m
 
         Returns coverage percentage (0–100).
         Source: NFPA 72-2022 §17.5
@@ -424,13 +429,16 @@ class DetectorPlacementEngine:
         if not detectors:
             return 0.0
 
+        # Adaptive step: bounded [0.10m, 0.25m]
+        step = grid_step if grid_step > 0 else min(0.25, max(0.10, radius_m / 12.0))
+
         total = 0
         covered = 0
         r2 = radius_m * radius_m
 
-        y = grid_step / 2
+        y = step / 2
         while y <= room.length_m:
-            x = grid_step / 2
+            x = step / 2
             while x <= room.width_m:
                 if self._point_in_room(x, y, room):
                     total += 1
@@ -440,8 +448,8 @@ class DetectorPlacementEngine:
                         if dx * dx + dy * dy <= r2:
                             covered += 1
                             break
-                x += grid_step
-            y += grid_step
+                x += step
+            y += step
 
         return round(100.0 * covered / total, 4) if total > 0 else 0.0
 

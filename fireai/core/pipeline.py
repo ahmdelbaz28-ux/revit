@@ -1216,6 +1216,25 @@ def analyze_room(
     stages.append(s7)
     cable_routing_data = s7.data if s7.success else {}
 
+    # Populate cable_routing_dict from Stage 7 when it succeeds
+    # (Path A via cable_connections is for pre-wired inputs; Stage 7 is the standard path)
+    if cable_routing_dict is None and s7.success and cable_routing_data.get("status") == "completed":
+        cable_routing_dict = {
+            "total_cable_length_m":  cable_routing_data.get("total_cable_length_m", 0.0),
+            "total_bends":           cable_routing_data.get("total_bends", 0),
+            "max_circuit_length_m":  cable_routing_data.get("max_circuit_length_m", 0.0),
+            "min_end_voltage_v":     cable_routing_data.get("min_end_voltage_v", 0.0),
+            "all_compliant":         cable_routing_data.get("all_compliant", False),
+            "route_count":           cable_routing_data.get("route_count", 0),
+            "violations_count":      cable_routing_data.get("violations_count", 0),
+            "code_refs":             cable_routing_data.get("code_refs", []),
+            "status":                "completed",
+        }
+        if not cable_routing_dict["all_compliant"] and cable_routing_dict["violations_count"] > 0:
+            warnings.append(
+                f"Cable routing: {cable_routing_dict['violations_count']} NEC/NFPA violations detected"
+            )
+
     total_ms = (time.perf_counter() - t_total) * 1000.0
 
     # Determine overall success
