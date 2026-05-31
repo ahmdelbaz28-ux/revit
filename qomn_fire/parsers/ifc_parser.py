@@ -9,8 +9,7 @@ Standards: ISO 16739 (IFC), ISO 10303-21 (STEP Physical File)
 """
 
 import re
-import math
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 
 from qomn_fire.core.types import Point3D, Wall, Room, Opening, Building
 from qomn_fire.core.errors import Result, GeometryError

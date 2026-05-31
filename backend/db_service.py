@@ -37,9 +37,12 @@ from backend.schemas import (
     ElementCreate,
     ElementResponse,
     ElementUpdate,
+    GeometryResponse,
+    Point3DResponse,
     ProjectCreate,
     ProjectResponse,
     ProjectUpdate,
+    SemanticPropertiesResponse,
     StatisticsResponse,
 )
 
@@ -98,8 +101,7 @@ def _normalize_sort(sort_by: str) -> str:
         return sort_by
 
     # Step 3: Unknown sort field — log warning and use safe default
-    import logging
-    logging.getLogger(__name__).warning(
+    logger.warning(
         f"Rejected sort field '{sort_by}' — not in whitelist. "
         f"Falling back to 'created_at'. "
         f"Allowed: {sorted(_SORT_WHITELIST)}"
@@ -688,30 +690,36 @@ class DatabaseService:
             return self._data_model.delete_element(element_id, source=change_source)
 
     def _element_to_response(self, element: UniversalElement, project_id: Optional[str] = None) -> ElementResponse:
-        """Convert UniversalElement to ElementResponse."""
+        """Convert UniversalElement to ElementResponse.
+
+        V115 FIX: Now passes proper Pydantic model instances instead of raw dicts
+        to ElementResponse. Previously, properties and geometry were passed as
+        plain dicts, which would fail Pydantic V2 strict validation when the
+        schema expects SemanticPropertiesResponse / GeometryResponse objects.
+        """
         props_response = None
         if element.properties:
-            props_response = {
-                "element_type": element.properties.element_type.value if hasattr(element.properties.element_type, 'value') else str(element.properties.element_type),
-                "name": element.properties.name,
-                "description": element.properties.description,
-                "material": element.properties.material,
-                "fire_rating": element.properties.fire_rating,
-                "height": element.properties.height,
-                "width": element.properties.width,
-                "load_bearing": element.properties.load_bearing,
-                "layer": element.properties.layer,
-                "revit_category": element.properties.revit_category,
-            }
+            props_response = SemanticPropertiesResponse(
+                element_type=element.properties.element_type.value if hasattr(element.properties.element_type, 'value') else str(element.properties.element_type),
+                name=element.properties.name,
+                description=element.properties.description,
+                material=element.properties.material,
+                fire_rating=element.properties.fire_rating,
+                height=element.properties.height,
+                width=element.properties.width,
+                load_bearing=element.properties.load_bearing,
+                layer=element.properties.layer,
+                revit_category=element.properties.revit_category,
+            )
 
         geom_response = None
         if element.geometry:
-            geom_response = {
-                "points": [{"x": p.x, "y": p.y, "z": p.z} for p in element.geometry.points],
-                "polyline_closed": element.geometry.polyline_closed,
-                "area": element.geometry.area,
-                "perimeter": element.geometry.perimeter,
-            }
+            geom_response = GeometryResponse(
+                points=[Point3DResponse(x=p.x, y=p.y, z=p.z) for p in element.geometry.points],
+                polyline_closed=element.geometry.polyline_closed,
+                area=element.geometry.area,
+                perimeter=element.geometry.perimeter,
+            )
 
         relationships = []
         for r in element.relationships:

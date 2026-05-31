@@ -13,9 +13,16 @@ E = TypeVar('E')
 
 class Result(Generic[T, E]):
     def __init__(self, value: Optional[T] = None, error: Optional[E] = None):
+        # BUG-43 FIX: Prevent constructing Result with neither value nor error.
+        # A Result(value=None) without an error would be is_success=True but
+        # crash on unwrap(). This is a trap in safety-critical code — a
+        # "successful" result that crashes on access is worse than an error.
+        if value is None and error is None:
+            raise ValueError(
+                "Result must hold either a value or an error, not neither. "
+                "Use Result(value=x) for success or Result(error=e) for failure."
+            )
         # BUG-1 FIX: Prevent constructing Result with BOTH value and error.
-        # A Result should be in exactly one state: success (value, no error)
-        # or failure (error, no value). Having both is a logic error.
         if value is not None and error is not None:
             raise ValueError(
                 f"Result cannot hold both value and error. "

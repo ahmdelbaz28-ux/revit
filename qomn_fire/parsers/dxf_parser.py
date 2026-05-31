@@ -19,10 +19,9 @@ multi-value group codes, instead of always returning an empty list.
 Standards: AutoCAD DXF Specification, NFPA 72 (2022)
 """
 
-import math
 import logging
 import re
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 
 from qomn_fire.core.types import Point3D, Wall, Room, Opening, Building
 from qomn_fire.core.errors import Result, GeometryError
@@ -207,9 +206,13 @@ class DxfParser:
 
                 if int_code == 0 and current and len(current) > 1:
                     # New entity starts — save the previous one
+                    # BUG-41 FIX: Previously popped the "0" key (entity type),
+                    # then tried to read it with entity.get("0", "") which always
+                    # returned "". This made the text-based DXF parser COMPLETELY
+                    # NON-FUNCTIONAL — it could never identify LINE or LWPOLYLINE
+                    # entities. Now the entity type is preserved in the dict.
                     prev = dict(current)
-                    prev.pop("0", None)
-                    if prev:
+                    if len(prev) > 1:
                         entities.append(prev)
                     current = {"0": value}
                 elif int_code == 0:
@@ -231,10 +234,10 @@ class DxfParser:
             except ValueError:
                 pass
             i += 2
+        # BUG-41 FIX: Don't pop the entity type key — it's needed to
+        # identify what kind of entity was parsed (LINE, LWPOLYLINE, etc.)
         if current and len(current) > 1:
-            current.pop("0", None)
-            if current:
-                entities.append(current)
+            entities.append(current)
         return entities
 
     @staticmethod

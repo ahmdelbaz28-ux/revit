@@ -6,7 +6,7 @@ Extended with building model types for IFC/DXF parsing pipeline.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Tuple, List, Dict, Any, Optional, Union
+from typing import Tuple, Dict, Any, Optional
 import hashlib
 
 class DeviceType(Enum):

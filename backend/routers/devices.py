@@ -9,6 +9,7 @@ circuit calculations that directly affect life safety.
 
 from __future__ import annotations
 
+import logging
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query
@@ -206,13 +207,12 @@ async def delete_device(project_id: str, device_id: str):
     device = db.get_device(project_id, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    import logging
     logging.getLogger("fireai.audit").critical(
         "SAFETY-CRITICAL: Device DELETED — project=%s device_id=%s "
         "device_type=%s name=%s — NFPA 72 requires traceability for all "
         "fire alarm device changes. Deletion affects coverage calculations.",
         project_id, device_id,
-        device.get("device_type", "unknown"),
+        device.get("type", "unknown"),
         device.get("name", "unknown"),
     )
     deleted = db.delete_device(project_id, device_id)

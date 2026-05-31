@@ -29,14 +29,29 @@ def place_smoke_detectors_room(
     s = NFPA_SMOKE_DETECTOR_SPACING_M
     half_s = s / 2.0
 
+    # BUG-42 FIX: For rooms narrower than half the NFPA spacing (4.572m),
+    # the grid-based while loop never executes, and the old fallback placed
+    # detectors at room_max - NFPA_MAX_WALL_DISTANCE_M / 2, which can be
+    # NEGATIVE relative to room_min (e.g., a 2m wide room: 2 - 3.2 = -1.2).
+    # Detectors placed outside room bounds provide ZERO coverage — the NFPA
+    # spacing analysis would be completely wrong, leaving the room unprotected.
+    # Fix: Use room center as fallback for narrow dimensions, and clamp all
+    # detector positions to stay within room bounds.
+
     x_coords = []
     x_curr = room_min.x + half_s
     while x_curr < room_max.x:
         x_coords.append(x_curr)
         x_curr += s
 
-    if not x_coords or (room_max.x - x_coords[-1]) > NFPA_MAX_WALL_DISTANCE_M:
-        x_coords.append(room_max.x - (NFPA_MAX_WALL_DISTANCE_M / 2.0))
+    if not x_coords:
+        # Room too narrow for grid — place detector at room center X
+        x_coords.append((room_min.x + room_max.x) / 2.0)
+    elif (room_max.x - x_coords[-1]) > NFPA_MAX_WALL_DISTANCE_M:
+        extra = room_max.x - (NFPA_MAX_WALL_DISTANCE_M / 2.0)
+        # Clamp to room bounds to avoid placing detectors outside the room
+        extra = max(room_min.x + 0.1, min(extra, room_max.x - 0.1))
+        x_coords.append(extra)
 
     y_coords = []
     y_curr = room_min.y + half_s
@@ -44,8 +59,14 @@ def place_smoke_detectors_room(
         y_coords.append(y_curr)
         y_curr += s
 
-    if not y_coords or (room_max.y - y_coords[-1]) > NFPA_MAX_WALL_DISTANCE_M:
-        y_coords.append(room_max.y - (NFPA_MAX_WALL_DISTANCE_M / 2.0))
+    if not y_coords:
+        # Room too narrow for grid — place detector at room center Y
+        y_coords.append((room_min.y + room_max.y) / 2.0)
+    elif (room_max.y - y_coords[-1]) > NFPA_MAX_WALL_DISTANCE_M:
+        extra = room_max.y - (NFPA_MAX_WALL_DISTANCE_M / 2.0)
+        # Clamp to room bounds to avoid placing detectors outside the room
+        extra = max(room_min.y + 0.1, min(extra, room_max.y - 0.1))
+        y_coords.append(extra)
 
     dev_counter = 1
     for x in x_coords:

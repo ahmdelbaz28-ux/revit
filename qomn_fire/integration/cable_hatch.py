@@ -14,7 +14,13 @@ overheated wires in overfilled conduit can ignite surrounding materials.
 
 import math
 from typing import Tuple, List, Dict, Any, Union, Optional
-import ezdxf
+
+# BUG-44 FIX: Guard ezdxf import — module can be imported without ezdxf installed
+try:
+    import ezdxf
+except ImportError:
+    ezdxf = None
+
 from qomn_fire.core.types import Point3D, ConduitType, ConduitRun, HatchSpec, Device
 from qomn_fire.core.errors import Result, NECViolationError, HatchPlacementError, ConduitFillError
 from qomn_fire.engine.routing import GridMap3D, astar_route_3d

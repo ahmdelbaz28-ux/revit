@@ -6,7 +6,9 @@ CRUD endpoints for building elements.
 
 from __future__ import annotations
 
+import logging
 import math
+import re
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -19,6 +21,8 @@ from backend.schemas import (
     ElementUpdate,
     PaginatedData,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/elements", tags=["elements"])
 
@@ -58,8 +62,7 @@ async def list_elements(
             ),
         )
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"list_elements failed: {e}", exc_info=True)
+        logger.error(f"list_elements failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -75,13 +78,11 @@ async def create_element(element_data: ElementCreate):
         # or class details. Sanitize before exposing to client.
         safe_msg = str(e)[:200]  # Truncate to prevent overflow
         # Remove common path patterns that leak server structure
-        import re
         safe_msg = re.sub(r'/[\w./-]+', '[PATH]', safe_msg)
         safe_msg = re.sub(r'<class \w+>', '[CLASS]', safe_msg)
         raise HTTPException(status_code=400, detail=safe_msg)
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"create_element failed: {e}", exc_info=True)
+        logger.error(f"create_element failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -97,8 +98,7 @@ async def get_element(element_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"get_element failed: {e}", exc_info=True)
+        logger.error(f"get_element failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -114,8 +114,7 @@ async def update_element(element_id: str, element_data: ElementUpdate):
     except HTTPException:
         raise
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"update_element failed: {e}", exc_info=True)
+        logger.error(f"update_element failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -131,6 +130,5 @@ async def delete_element(element_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"delete_element failed: {e}", exc_info=True)
+        logger.error(f"delete_element failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")

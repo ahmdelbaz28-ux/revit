@@ -20,7 +20,7 @@ from fastapi import APIRouter
 from backend.database import get_db
 from backend.contract import validate_health
 
-router = APIRouter(tags=["health", "reports"])
+router = APIRouter(tags=["health"])
 
 # Track application start time
 _start_time = time.time()

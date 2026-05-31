@@ -3,7 +3,6 @@ QOMN-FIRE CRYPTOGRAPHIC AND DETERMINISTIC DATA COMPACTION
 """
 
 import hashlib
-import json
 
 def get_bytes_hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()

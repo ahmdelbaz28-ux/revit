@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import quote
@@ -30,6 +31,8 @@ from fastapi.responses import StreamingResponse
 
 from backend.database import get_db
 from backend.models import GenerateReportInput
+
+logger = logging.getLogger(__name__)
 
 
 def _safe_filename(name: str) -> str:
@@ -385,7 +388,7 @@ async def export_report(
                             ))
                         elif isinstance(value, list):
                             story.append(Paragraph(
-                                f"<b>{label}:</b> {len(value)} items", styles['Normal']
+                                f"<b>{safe_label}:</b> {len(value)} items", styles['Normal']
                             ))
                             for i, item in enumerate(value[:20]):
                                 _add_data(item, f"{label}[{i}].", depth + 1)
@@ -420,8 +423,7 @@ async def export_report(
             )
         except Exception as e:
             # V113 SECURITY: Never expose str(e) to client
-            import logging
-            logging.getLogger(__name__).error(f"PDF generation failed: {e}", exc_info=True)
+            logger.error(f"PDF generation failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail="PDF generation failed — an internal error occurred. Contact administrator.",

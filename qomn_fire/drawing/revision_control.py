@@ -1,20 +1,32 @@
 """
 QOMN-FIRE REVISIONS AND CONTROL GRAPHICS
 Reference Standard: ISO 9001 quality audits.
+
+BUG-44 FIX: ezdxf import is now guarded — module can be imported
+without ezdxf installed, enabling test collection in CI environments.
 """
 
 from typing import List, Tuple
-import ezdxf
+
+try:
+    import ezdxf
+except ImportError:
+    ezdxf = None
+
 from qomn_fire.core.types import Revision
 
-def draw_revision_cloud(doc: ezdxf.document.Drawing, vertices: List[Tuple[float, float]]):
+def draw_revision_cloud(doc, vertices: List[Tuple[float, float]]):
+    if ezdxf is None:
+        raise ImportError("ezdxf library is required for revision cloud drawing.")
     msp = doc.modelspace()
     # ezdxf 1.4.x: bulge set via format='xyb' (x, y, bulge) in point tuples
     bulge_vertices = [(x, y, 0.4) for (x, y) in vertices]
     p_line = msp.add_lwpolyline(bulge_vertices, format='xyb', close=True,
                                  dxfattribs={"layer": "A-FIRE-REVC", "color": 1})
 
-def draw_revision_table(doc: ezdxf.document.Drawing, revisions: List[Revision]):
+def draw_revision_table(doc, revisions: List[Revision]):
+    if ezdxf is None:
+        raise ImportError("ezdxf library is required for revision table drawing.")
     layout = doc.layout("A1-Fire-Alarm-Plan") if "A1-Fire-Alarm-Plan" in doc.layouts else doc.layouts.new("A1-Fire-Alarm-Plan")
 
     layout.add_line((600.0, 180.0), (600.0, 250.0), dxfattribs={"color": 7})

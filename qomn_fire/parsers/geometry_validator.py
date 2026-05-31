@@ -16,7 +16,6 @@ duplicates — same bug as Bug 9 (2D BIM Collapse) in bridges/digital_twin_bridg
 Standards: NFPA 72 (2022) §17, ISO 16739 (IFC Spatial Schemas)
 """
 
-import math
 import logging
 from typing import Tuple, Union
 

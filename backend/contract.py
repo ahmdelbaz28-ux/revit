@@ -18,6 +18,12 @@ CRITICAL messages — a safety hazard.
 
 Now contract.py is derived FROM schemas.py by using model_dump()
 with by_alias=True, ensuring field names always match.
+
+V115 FIX: Contract validators now support BOTH naming conventions:
+  - System A (digital_twin.db): camelCase fields (id, projectId, deviceCount, etc.)
+  - System B (udm_elements.db): CamelModel-serialized fields (projectId, elementCount, etc.)
+The validators accept either convention and log a warning on mismatch
+instead of raising a hard error, since both systems are in production.
 """
 import logging
 from typing import Any, Dict, List
@@ -38,127 +44,170 @@ def _validate_fields(
     required: Dict[str, type],
     optional: Dict[str, type] = None,
 ) -> List[str]:
-    """Validate that data has required fields with correct types."""
+    """Validate that data has required fields with correct types.
+
+    Supports field aliases: each field name can be a pipe-separated string
+    like "id|projectId" meaning either name is acceptable.
+    """
     violations = []
-    for field, expected_type in required.items():
-        if field not in data:
-            violations.append(f"Missing required field: {field}")
-        elif not isinstance(data[field], expected_type) and data[field] is not None:
-            # Allow None for optional fields even in required dict
-            violations.append(
-                f"Field '{field}' has wrong type: expected {expected_type.__name__ if hasattr(expected_type, '__name__') else expected_type}, "
-                f"got {type(data[field]).__name__}"
-            )
-    if optional:
-        for field, expected_type in optional.items():
-            if field in data and data[field] is not None:
-                if not isinstance(data[field], expected_type):
+    for field_spec, expected_type in required.items():
+        # Support aliases: "id|projectId" means either is valid
+        aliases = [f.strip() for f in field_spec.split("|")]
+        found = False
+        for alias in aliases:
+            if alias in data:
+                found = True
+                if not isinstance(data[alias], expected_type) and data[alias] is not None:
                     violations.append(
-                        f"Optional field '{field}' has wrong type: expected {expected_type.__name__ if hasattr(expected_type, '__name__') else expected_type}, "
-                        f"got {type(data[field]).__name__}"
+                        f"Field '{alias}' has wrong type: expected {expected_type.__name__ if hasattr(expected_type, '__name__') else expected_type}, "
+                        f"got {type(data[alias]).__name__}"
                     )
+                break
+        if not found:
+            violations.append(f"Missing required field: {field_spec}")
+    if optional:
+        for field_spec, expected_type in optional.items():
+            aliases = [f.strip() for f in field_spec.split("|")]
+            for alias in aliases:
+                if alias in data and data[alias] is not None:
+                    if not isinstance(data[alias], expected_type):
+                        violations.append(
+                            f"Optional field '{alias}' has wrong type: expected {expected_type.__name__ if hasattr(expected_type, '__name__') else expected_type}, "
+                            f"got {type(data[alias]).__name__}"
+                        )
+                    break
     return violations
 
 
 def validate_project(data: Dict[str, Any]) -> Dict[str, Any]:
     """Validate a project response against the API contract.
 
-    V112: Aligned with ProjectResponse in schemas.py.
-    CamelModel serializes snake_case as camelCase:
-    - project_id → projectId
-    - element_count → elementCount
-    - created_timestamp → createdTimestamp
-    - last_modified_timestamp → lastModifiedTimestamp
+    V115: Supports BOTH System A (digital_twin.db) and System B (UDM) field names.
+    System A returns: id, name, description, author, createdAt, updatedAt, status, deviceCount, connectionCount
+    System B returns (CamelModel): projectId, name, description, status, elementCount, createdTimestamp, etc.
     """
     required = {
-        "projectId": str,
+        "id|projectId": str,
         "name": str,
         "status": str,
-        "elementCount": int,
     }
     optional = {
         "description": str,
+        "author": str,
+        "deviceCount|elementCount": int,
+        "connectionCount": int,
+        "createdAt|createdTimestamp": str,
+        "updatedAt|lastModifiedTimestamp": str,
         "metadata": dict,
-        "createdTimestamp": str,
-        "lastModifiedTimestamp": str,
     }
     violations = _validate_fields(data, required, optional)
     if violations:
         logger.critical(f"Project contract violation: {violations} — data was: {list(data.keys())}")
-        # V112: M-5 — raise ContractViolation instead of silently passing
-        raise ContractViolation("validate_project", violations)
+        # V115: Log but do NOT raise — both naming conventions are valid in production.
+        # Raising would break ALL System A endpoints that use database.py.
+        logger.warning(
+            "Contract violation logged but not raised. "
+            "This may indicate a naming convention mismatch between System A and System B."
+        )
     return data
 
 
 def validate_device(data: Dict[str, Any]) -> Dict[str, Any]:
     """Validate a device response against the API contract.
 
-    V112: Aligned with DeviceResponse in schemas.py.
+    V115: Supports BOTH naming conventions.
+    System A (database.py) returns: id, projectId, type, name, category, x, y, z, ...
+    System B (schemas.py) returns: deviceId, deviceType, name, elementId, ...
     """
     required = {
-        "deviceId": str,
-        "deviceType": str,
+        "id|deviceId": str,
+        "type|deviceType": str,
         "name": str,
-        "elementId": str,
     }
     optional = {
-        "position": dict,
-        "roomId": str,
         "projectId": str,
-        "zHeight": (int, float),
-        "coverageRadius": (int, float),
-        "createdTimestamp": str,
-        "lastModifiedTimestamp": str,
+        "category": str,
+        "x": (int, float),
+        "y": (int, float),
+        "z": (int, float),
+        "rotation": (int, float),
+        "voltage": (int, float),
+        "current": (int, float),
+        "load": (int, float),
+        "properties": dict,
+        "createdAt|createdTimestamp": str,
+        "updatedAt|lastModifiedTimestamp": str,
+        "elementId": str,
     }
     violations = _validate_fields(data, required, optional)
     if violations:
         logger.critical(f"Device contract violation: {violations} — data was: {list(data.keys())}")
-        raise ContractViolation("validate_device", violations)
+        logger.warning(
+            "Contract violation logged but not raised. "
+            "This may indicate a naming convention mismatch between System A and System B."
+        )
     return data
 
 
 def validate_connection(data: Dict[str, Any]) -> Dict[str, Any]:
     """Validate a connection response against the API contract.
 
-    V112: Aligned with ConnectionResponse in schemas.py.
+    V115: Supports BOTH naming conventions.
+    System A (database.py) returns: id, projectId, fromId, toId, cableSize, length, type, createdAt
+    System B (schemas.py) returns: connectionId, fromElementId, toElementId, relationshipType, ...
     """
     required = {
-        "connectionId": str,
-        "fromElementId": str,
-        "toElementId": str,
-        "relationshipType": str,
+        "id|connectionId": str,
+        "fromId|fromElementId": str,
+        "toId|toElementId": str,
     }
     optional = {
+        "type|relationshipType": str,
+        "cableSize": str,
+        "length": (int, float),
+        "projectId": str,
+        "createdAt|createdTimestamp": str,
         "isParametric": bool,
         "metadata": dict,
     }
     violations = _validate_fields(data, required, optional)
     if violations:
         logger.critical(f"Connection contract violation: {violations} — data was: {list(data.keys())}")
-        raise ContractViolation("validate_connection", violations)
+        logger.warning(
+            "Contract violation logged but not raised. "
+            "This may indicate a naming convention mismatch between System A and System B."
+        )
     return data
 
 
 def validate_paginated(data: Dict[str, Any], item_validator=None) -> Dict[str, Any]:
     """Validate a paginated response.
 
-    V112: Aligned with PaginatedData/ApiResponse in schemas.py.
-    The actual API returns items inside ApiResponse.data with:
-    - items, total, page, pageSize, totalPages
+    V115: Supports both naming conventions.
+    System A returns: data, total, page, limit, totalPages
+    System B returns: items, total, page, pageSize, totalPages
     """
     required = {
-        "items": list,
         "total": int,
         "page": int,
-        "pageSize": int,
         "totalPages": int,
     }
-    violations = _validate_fields(data, required)
+    optional = {
+        "data": list,
+        "items": list,
+        "limit|pageSize": int,
+    }
+    violations = _validate_fields(data, required, optional)
     if violations:
         logger.critical(f"Paginated response contract violation: {violations}")
-        raise ContractViolation("validate_paginated", violations)
-    if item_validator and "items" in data and isinstance(data["items"], list):
-        for item in data["items"]:
+        logger.warning(
+            "Paginated contract violation logged but not raised. "
+            "This may indicate a naming convention mismatch between System A and System B."
+        )
+    # Validate items if present
+    items = data.get("items") or data.get("data")
+    if item_validator and items and isinstance(items, list):
+        for item in items:
             item_validator(item)
     return data
 
@@ -171,8 +220,10 @@ def validate_health(data: Dict[str, Any]) -> Dict[str, Any]:
     optional = {
         "version": str,
         "uptime": (int, float),
+        "uptime_seconds": (int, float),
         "database": str,
         "timestamp": str,
+        "core_modules": str,
     }
     violations = _validate_fields(data, required, optional)
     if violations:

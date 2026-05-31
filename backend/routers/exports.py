@@ -22,6 +22,10 @@ from fastapi.responses import StreamingResponse
 
 from backend.database import get_db
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def _safe_filename(name: str) -> str:
     """Sanitize a project name for use in Content-Disposition headers.

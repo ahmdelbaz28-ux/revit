@@ -1,11 +1,19 @@
 """
 QOMN-FIRE HATCH AND PATTERN PLACEMENT MODULE
 Reference Standard: NFPA 72 spacing boundary shapes.
+
+BUG-44 FIX: ezdxf import is now guarded — module can be imported
+without ezdxf installed, enabling test collection in CI environments.
 """
 
 import math
 from typing import List, Tuple, Any
-import ezdxf
+
+try:
+    import ezdxf
+except ImportError:
+    ezdxf = None
+
 from qomn_fire.core.types import HatchSpec, Point3D
 from qomn_fire.core.errors import Result, HatchPlacementError
 
@@ -19,11 +27,18 @@ def generate_circle_polyline(center: Point3D, radius: float, num_sides: int = 16
     return poly
 
 def place_boundary_hatch(
-    doc: ezdxf.document.Drawing,
+    doc,
     boundary_points: List[Tuple[float, float]],
     spec: HatchSpec,
     run_id: str
 ) -> Result[Any, HatchPlacementError]:
+    if ezdxf is None:
+        return Result(error=HatchPlacementError(
+            message="ezdxf library is required for hatch placement. Install with: pip install ezdxf",
+            code_ref="CAD Dependency",
+            remedy="Install ezdxf or disable DXF drawing output."
+        ))
+
     if spec.scale < 0.001:
         return Result(error=HatchPlacementError(
             message=f"Hatch scaling factor {spec.scale} is too small (< 0.001).",

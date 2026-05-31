@@ -1,12 +1,22 @@
 """
 QOMN-FIRE TITLE BLOCK AND FACP DRAWING SHEET PLOTTER
 Reference Standard: ISO 19650 standard plotting borders.
+
+BUG-44 FIX: ezdxf import is now guarded — module can be imported
+without ezdxf installed, enabling test collection in CI environments.
 """
 
-import ezdxf
+try:
+    import ezdxf
+except ImportError:
+    ezdxf = None
+
 from qomn_fire.core.types import TitleBlock, PanelRecommendation
 
-def draw_title_block(doc: ezdxf.document.Drawing, title: TitleBlock):
+def draw_title_block(doc, title: TitleBlock):
+    if ezdxf is None:
+        raise ImportError("ezdxf library is required for title block drawing.")
+
     layout = doc.layout("A1-Fire-Alarm-Plan") if "A1-Fire-Alarm-Plan" in doc.layouts else doc.layouts.new("A1-Fire-Alarm-Plan")
 
     # Border margins
@@ -28,11 +38,14 @@ def draw_title_block(doc: ezdxf.document.Drawing, title: TitleBlock):
     layout.add_text(f"DES: {title.designer}  CHK: {title.checker}", dxfattribs={"insert": (610.0, 45.0), "height": 2.5, "color": 7})
     layout.add_text(f"PE STAMP: {title.pe_stamp}", dxfattribs={"insert": (610.0, 25.0), "height": 2.5, "color": 7})
 
-def draw_facp_schedule(doc: ezdxf.document.Drawing, rec: PanelRecommendation):
+def draw_facp_schedule(doc, rec: PanelRecommendation):
     """
     Renders the approved FACP Schedule dynamically inside the layout paper space block.
     Reference: NFPA 72 §10 submittals standards.
     """
+    if ezdxf is None:
+        raise ImportError("ezdxf library is required for FACP schedule drawing.")
+
     layout = doc.layout("A1-Fire-Alarm-Plan") if "A1-Fire-Alarm-Plan" in doc.layouts else doc.layouts.new("A1-Fire-Alarm-Plan")
 
     # Placed in left center section (X: 10 -> 250, Y: 320 -> 500)

@@ -518,9 +518,7 @@ class Database:
             )
             deleted_conns = cur.rowcount
             if deleted_conns > 0:
-                import logging
-
-                logging.getLogger(__name__).info(
+                logger.info(
                     f"Deleted {deleted_conns} orphaned connection(s) for device {device_id}"
                 )
             cur.execute(
