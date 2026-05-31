@@ -258,6 +258,7 @@ class RoomSpec:
     occupancy_type: str = "office"
     heat_detector_spec: Optional['HeatDetectorSpec'] = None
     hvac_duct_list: List[HVACDuct] = field(default_factory=list)
+    geometry_unresolved: bool = False  # V111: When True, NFPA analysis MUST be skipped
 
     def __post_init__(self):
         # ===== STRICT VALIDATION = FAIL FAST =====

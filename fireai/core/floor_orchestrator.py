@@ -202,6 +202,29 @@ class FloorOrchestrator:
         start = time.monotonic()
         result = RoomResult(room_id=spec.name, status="FAIL")
 
+        # V111 CRITICAL: Skip rooms with unresolved geometry.
+        # Running NFPA analysis on fabricated geometry produces FALSE compliance
+        # results — a building could be signed off as "protected" when it is NOT.
+        if getattr(spec, 'geometry_unresolved', False):
+            import logging
+            logging.getLogger(__name__).critical(
+                "Room '%s' has unresolved geometry — SKIPPING NFPA analysis. "
+                "Compliance results would be INVALID. "
+                "Resolve IFC geometry before running analysis.",
+                spec.name,
+            )
+            result.status = "REQUIRES_MANUAL_REVIEW"
+            result.violations = [{
+                "rule": "IFC_GEOMETRY_UNRESOLVED",
+                "severity": "CRITICAL",
+                "message": (
+                    f"Room '{spec.name}' has no valid geometry — "
+                    "NFPA analysis cannot proceed. "
+                    "Resolve IFC geometry extraction before analysis."
+                ),
+            }]
+            return result
+
         try:
             # [1] NEW Engine for every room — no shared state
             # Use DensityOptimizer V6 with hexagonal placement strategies
