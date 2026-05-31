@@ -418,6 +418,11 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(ApiKeyMiddleware)
 
+# V111 FIX: Wire PerPathRateLimitMiddleware into the middleware stack.
+# V101 defined it but never added it — security middleware that exists in code
+# but doesn't run is a life-safety hazard (false sense of security).
+app.add_middleware(PerPathRateLimitMiddleware)
+
 # ── Correlation ID middleware ──────────────────────────────────────────
 # Added LAST so it runs FIRST (Starlette middleware runs in reverse order).
 # Every request/response gets an X-Correlation-ID header for end-to-end tracing.

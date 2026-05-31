@@ -239,7 +239,7 @@ class ExactCoverageEngine:
         for loc in sensor_locations:
             try:
                 sensor_circle = Point(loc).buffer(self.effective_radius,
-                                                  resolution=self._CIRCLE_SEGS)
+                                                  quad_segs=self._CIRCLE_SEGS)
                 # Only keep the portion inside the room
                 clipped = sensor_circle.intersection(room_poly)
                 if not clipped.is_empty:

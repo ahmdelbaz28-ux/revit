@@ -8940,3 +8940,17 @@ Implement the 5 remaining security fixes from the operator's detailed security a
 3. **V110 fixed 25+ safety_assurance regressions** — the V108 refactoring broke backward compatibility by changing function signatures and OverrideRole enum values. The fix restores the old API while keeping new functionality.
 4. **WireGauge metaclass fix** — Python doesn't invoke `__iter__` as a classmethod on the class itself. Only a metaclass `__iter__` makes the class iterable (e.g., `for gauge in WireGauge:`).
 5. **1 skipped test** is expected — `test_workflow_service.py` requires LangGraph which is not installed in this environment.
+
+### V111: Dead Code Cleanup + Critical Bug Fixes + Code Quality
+- **CRITICAL**: Replace `resolution=` → `quad_segs=` in `monte_carlo.py` (3×) and `exact_coverage.py` (1×) — Shapely 2.x deprecation
+- **CRITICAL**: Eliminate ALL 6 bare `except:` clauses in `ifc_bridge.py` (3×), `dxf_parser.py`, `pdf_parser.py`, `dwg_parser.py` — silent error swallowing
+- **CRITICAL**: Fix `ifc_bridge.py` fallback to fabricated 10×10m default room — replaced with `geometry_unresolved=True` flag
+- **CRITICAL**: Fix `Room` dataclass missing `geometry_unresolved` flag for downstream NFPA skip
+- **HIGH**: Wire `PerPathRateLimitMiddleware` into middleware stack — was defined in V101 but never added to `app.add_middleware()`
+- **HIGH**: Add `__enter__`/`__exit__` context manager to `MmapCache` and `HashChainLedger` — prevent resource leaks
+- **HIGH**: Replace `ElevatorRecallPhase` hacky `type()`-based dynamic class with proper `str, Enum`
+- **HIGH**: Fix `HashChainLedger.close()` not nulling `self._fh` — double-close would crash
+- **MEDIUM**: Fix ResourceWarning in `test_cable_router.py:1006` — `open().read()` → `with open() as f:`
+- **LOW**: Replace `__import__("threading")` anti-pattern with proper `import threading` in `secret_rotation.py`
+- **LOW**: Fix 2 bare `except:` in `skills/gift-evaluator/html_tools.py`
+- 1104 tests passing, 0 ResourceWarnings, 0 bare except, 0 deprecated Shapely API usage

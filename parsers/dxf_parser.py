@@ -185,8 +185,8 @@ class DXFParser:
                         pts = [(p[0]*scale, p[1]*scale) for p in ent.get_points()]
                         if len(pts) >= 3 and ent.closed:
                             lines.append(LineString(pts))
-                    except:
-                        pass
+                    except Exception as exc:
+                        logger.debug("Polyline point extraction failed: %s", exc)
             
             if not lines:
                 continue

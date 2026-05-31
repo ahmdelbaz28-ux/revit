@@ -296,8 +296,8 @@ class PDFParser:
             # This is a placeholder - real implementation would analyze
             # PDF shapes, images, and custom symbols
             pass
-        except:
-            pass
+        except Exception as exc:
+            logger.debug("Symbol detection placeholder failed: %s", exc)
             
         return devices
 

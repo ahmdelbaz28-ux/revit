@@ -811,6 +811,13 @@ class SafetyLedger:
     def close(self) -> None:
         if self._fh:
             self._fh.close()
+            self._fh = None
+
+    def __enter__(self) -> "HashChainLedger":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
 
 @dataclass

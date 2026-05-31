@@ -89,7 +89,7 @@ def _run_resilience_check_fast(
     
     # Pre-compute coverage circles for all detectors
     circles = np.array([
-        Point(x, y).buffer(radius, resolution=12)
+        Point(x, y).buffer(radius, quad_segs=12)
         for x, y in positions
     ])
     full_coverage = unary_union(circles)
@@ -110,7 +110,7 @@ def _run_resilience_check_fast(
         
         # Calculate coverage
         circles_remaining = np.array([
-            Point(x, y).buffer(radius, resolution=12)
+            Point(x, y).buffer(radius, quad_segs=12)
             for x, y in remaining
         ])
         coverage = unary_union(circles_remaining)
@@ -169,7 +169,7 @@ def _run_resilience_check_original(
             min_coverage_seen = 0.0
             break
         
-        coverage = unary_union([Point(x, y).buffer(radius, resolution=12) for x, y in remaining])
+        coverage = unary_union([Point(x, y).buffer(radius, quad_segs=12) for x, y in remaining])
         covered_area = poly.intersection(coverage).area
         coverage_fraction = covered_area / poly.area
         

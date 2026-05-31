@@ -359,3 +359,50 @@ Stage Summary:
   - MODIFIED: fireai/core/pipeline.py (added Stage 3.5 + import)
   - MODIFIED: fireai/core/__init__.py (added rules engine exports)
   - MODIFIED: fireai/__init__.py (added lazy import entries)
+
+---
+Task ID: V111
+Agent: Super Z (Main)
+Task: V111 — Self-criticism, dead code cleanup, critical bug fixes, code quality improvements
+
+Work Log:
+- Read agent.md (8942 lines, 21 mandatory rules) — committed to all rules
+- Cloned GitHub repo and set up proper workspace at /home/z/my-project/revit/
+- Ran existing tests: 1104 passed, 1 skipped, 4 ResourceWarnings
+- Performed 4-layer meta-criticism per agent.md Rule 21
+- Launched comprehensive code audit: found 4 CRITICAL + 3 HIGH + 5 MEDIUM issues
+- Fixed ResourceWarning: unclosed file handle in test_cable_router.py:1006 (open().read() → with open())
+- Fixed CRITICAL: resolution= → quad_segs= in monte_carlo.py (3 occurrences) and exact_coverage.py (1 occurrence)
+- Fixed CRITICAL: 6 bare except: clauses replaced with except Exception: + logging
+  - integration/ifc_bridge.py: 3 bare except → except Exception with logger.warning
+  - parsers/dxf_parser.py: 1 bare except → except Exception with logger.debug
+  - parsers/pdf_parser.py: 1 bare except → except Exception with logger.debug
+  - parsers/dwg_parser.py: 1 bare except → except Exception with logger.debug
+  - skills/gift-evaluator/html_tools.py: 2 bare except → except Exception
+- Fixed CRITICAL: ifc_bridge.py fallback to fabricated 10×10m default room
+  - Replaced with geometry_unresolved=True flag on Room dataclass
+  - Added logger.critical() logging when geometry cannot be extracted
+  - Downstream code MUST skip NFPA analysis for flagged rooms
+- Fixed HIGH: PerPathRateLimitMiddleware defined but never wired into middleware stack
+  - Added app.add_middleware(PerPathRateLimitMiddleware) after ApiKeyMiddleware
+  - Security middleware that exists but doesn't run = false sense of security
+- Fixed HIGH: Resource leaks in MmapCache and HashChainLedger
+  - Added __enter__/__exit__ to MmapCache (kernel_v30_integration.py)
+  - Added __enter__/__exit__ to HashChainLedger (fireai_kernel_v30.py)
+  - Added self._fh = None after close() in HashChainLedger
+- Fixed HIGH: ElevatorRecallPhase was hacky type()-based dynamic class
+  - Replaced with proper str Enum (backward compatible)
+  - Added from enum import Enum
+- Fixed LOW: __import__("threading") anti-pattern in secret_rotation.py
+  - Replaced with proper import threading at module level
+- Ran all tests after each fix: 1104 passed, 0 ResourceWarnings
+
+Stage Summary:
+- 4 CRITICAL + 3 HIGH + 1 LOW issues fixed
+- 0 bare except: clauses remain in FireAI codebase
+- 0 Shapely resolution= deprecation warnings remain
+- 0 ResourceWarnings in test output
+- 1104 tests passing, 1 collection skip, 7 external warnings (ezdxf)
+- PerPathRateLimitMiddleware now ACTUALLY RUNNING in middleware stack
+- IFC bridge no longer fabricates 10×10m rooms when geometry extraction fails
+- All changes verified with test-and-fix loop per agent.md Rule 10

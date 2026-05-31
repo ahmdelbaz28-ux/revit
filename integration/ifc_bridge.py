@@ -19,10 +19,13 @@ try:
 except ImportError:
     IFC_AVAILABLE = False
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from shapely.geometry import Polygon, Point
 from typing import List, Tuple, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 # V109 FIX: Conditional imports with fallback to inline stubs.
 # Try to import from fireai.core equivalents first; fall back to inline
@@ -65,6 +68,9 @@ class Room:
     geometry: Polygon = None
     ceiling_height: float = 3.0
     ceiling_type: str = "SMOOTH"
+    geometry_unresolved: bool = field(default=False, repr=False)
+    # V111: When True, downstream NFPA analysis MUST skip this room —
+    # geometry is a placeholder and compliance results would be INVALID.
 
 @dataclass
 class Device:
@@ -388,7 +394,9 @@ class IFCBridge:
                     
                     if not poly.is_valid or poly.area <= 0.01:
                         poly = None
-            except:
+            except Exception as exc:
+                logger.warning("IFC geometry extraction failed for space %s: %s",
+                               getattr(space, 'GlobalId', space.id()), exc)
                 poly = None
             
             # Fallback 1: Bounding Box
@@ -402,29 +410,61 @@ class IFCBridge:
                         (max_x, max_y), (min_x, max_y),
                         (min_x, min_y)
                     ])
-                except:
+                except Exception as exc:
+                    logger.warning("IFC bounding box fallback failed for space %s: %s",
+                                   getattr(space, 'GlobalId', space.id()), exc)
                     poly = None
             
-            # Fallback 2: Try to use ObjectPlacement for simple box
+            # Fallback 2: Try to use ObjectPlacement for positioned box
             if poly is None:
                 try:
                     placement = space.ObjectPlacement
                     if placement:
                         x, y, z = self._resolve_placement(placement)
                         if x > 0 or y > 0:  # Valid placement
-                            # Create 10x10 box around placement point
-                            poly = Polygon([
-                                (x - 5, y - 5), (x + 5, y - 5),
-                                (x + 5, y + 5), (x - 5, y + 5),
-                                (x - 5, y - 5)
-                            ])
-                except:
-                    pass
+                            # V111 CRITICAL FIX: Do NOT create fabricated geometry.
+                            # A 10x10m box around a placement point is NOT real room
+                            # geometry — running NFPA compliance on it produces FALSE
+                            # results. Mark as unresolved instead.
+                            logger.critical(
+                                "IFC space %s ('%s') has no extractable geometry — "
+                                "placement at (%.1f, %.1f) but shape unknown. "
+                                "SKIPPING: fabricated geometry is a life-safety hazard.",
+                                getattr(space, 'GlobalId', space.id()),
+                                getattr(space, 'Name', 'Unnamed'),
+                                x, y
+                            )
+                except Exception as exc:
+                    logger.warning("IFC placement fallback failed for space %s: %s",
+                                   getattr(space, 'GlobalId', space.id()), exc)
             
-            # Fallback 3: Default room if nothing works
+            # V111 CRITICAL FIX: Do NOT fall back to a default 10x10m room.
+            # Previous code assigned a fabricated polygon [(0,0),(10,0),(10,10),(0,10)]
+            # when ALL geometry extraction methods failed. This means:
+            # - A room with completely unparseable geometry gets FAKE 100m²
+            # - NFPA compliance is then calculated for a room that DOES NOT EXIST
+            # - The building could be signed off as "protected" when it is NOT
+            # This is a CRITICAL life-safety defect. Unresolvable rooms must be
+            # flagged, not fabricated.
             if poly is None or not poly.is_valid or poly.area <= 0.01:
-                # Default 10x10 room at origin
-                poly = Polygon([(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)])
+                space_id = getattr(space, 'GlobalId', str(space.id()))
+                space_name = getattr(space, 'Name', 'Unnamed') or 'Unnamed'
+                logger.critical(
+                    "IFC space %s ('%s') has NO valid geometry — "
+                    "all extraction methods failed. Room added with "
+                    "geometry_unresolved=True; NFPA analysis MUST be skipped.",
+                    space_id, space_name
+                )
+                # Add room with placeholder flag — downstream code MUST skip NFPA
+                rooms.append(Room(
+                    id=space_id,
+                    name=space_name,
+                    geometry=Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
+                    ceiling_height=3.0,
+                    ceiling_type="SMOOTH",
+                    geometry_unresolved=True,  # V111: Flag for downstream rejection
+                ))
+                continue
             
             if poly and poly.is_valid and poly.area > 0.01:
                 rooms.append(Room(

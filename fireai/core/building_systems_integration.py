@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 
@@ -34,18 +35,22 @@ from typing import Any, Dict, List, Optional
 # ELEVATOR RECALL — NFPA 72 §21.3
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class ElevatorRecallPhase(enum_enum := type('Enum', (), {
-    'PHASE_I': 'PHASE_I',
-    'PHASE_II': 'PHASE_II',
-    'SHUNT_TRIP': 'SHUNT_TRIP',
-})):
+class ElevatorRecallPhase(str, Enum):
     """Elevator recall phases per NFPA 72 §21.3.
 
     Phase I: Recall to designated floor (away from fire)
     Phase II: Independent service (firefighter control)
     Shunt Trip: Power disconnect when sprinkler activates in shaft
+
+    V111 FIX: Replaced hacky type()-based dynamic class with proper str Enum.
+    The previous implementation used `type('Enum', (), {...})` with walrus
+    operator, which lacked enum safety features (iteration, membership testing,
+    type checking). A str Enum provides all of these while maintaining
+    backward compatibility with string comparisons.
     """
-    pass
+    PHASE_I = 'PHASE_I'
+    PHASE_II = 'PHASE_II'
+    SHUNT_TRIP = 'SHUNT_TRIP'
 
 
 @dataclass(frozen=True)

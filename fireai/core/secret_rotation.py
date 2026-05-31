@@ -36,6 +36,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import secrets
+import threading
 import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
@@ -71,7 +72,7 @@ class KeyRotator:
         self._default_grace_period_s = default_grace_period_s
         self._current: Dict[str, str] = {}  # key_name → current_key_value
         self._previous: Dict[str, _KeyRecord] = {}  # key_name → old_key_record
-        self._lock = __import__("threading").Lock()
+        self._lock = threading.Lock()
 
     @staticmethod
     def _fingerprint(key: str) -> str:

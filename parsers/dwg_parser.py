@@ -460,8 +460,8 @@ class DWGParser:
             if dxf_path != dwg_path:
                 try:
                     os.unlink(dxf_path)
-                except:
-                    pass
+                except Exception as exc:
+                    logger.debug("Temp file cleanup failed: %s", exc)
 
     def _parse_dxf_directly(self, dxf_path: str, start_time: float = None) -> DWGParseResult:
         """Parse DXF file directly using ezdxf without LibreDWG conversion.
