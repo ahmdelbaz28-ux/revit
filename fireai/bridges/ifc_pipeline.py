@@ -357,7 +357,12 @@ class IfcFirePipeline:
             }
         except Exception as exc:
             warnings.append(f"L2 HAC failed: {exc}")
-            return {"zone": "ZONE_1", "extent_h": 6.0, "extent_v": 3.0}
+            # V76 CRIT-07 FIX: Default to ZONE_0 (most hazardous) on failure.
+            # Previous default was ZONE_1 — non-conservative. IEC 60079-10-1:
+            # when classification fails, the safest assumption is the worst case.
+            # Zone 0 equipment (EPL Ga) is always safe for Zone 1 or 2.
+            # Zone 1 equipment (EPL Gb) is NOT safe for Zone 0 — explosion risk.
+            return {"zone": "ZONE_0", "extent_h": 6.0, "extent_v": 3.0}
 
     # ── L3: ATEX Arbitration ──────────────────────────────────────
 
@@ -394,7 +399,12 @@ class IfcFirePipeline:
             }
         except Exception as exc:
             warnings.append(f"L3 ATEX failed: {exc}")
-            return {"epl": "Gb", "tclass": "T3", "protections": ["ib"]}
+            # V76 CRIT-08 FIX: Default to most protective spec on failure.
+            # Previous default was EPL Gb/T3/ib (Zone 1 level) — non-conservative.
+            # When ATEX arbitration fails, must assume worst case: EPL Ga (Zone 0),
+            # T6 (lowest surface temp), ia (highest intrinsic safety). Equipment
+            # rated Ga/ia is always safe for less hazardous zones; the reverse is NOT true.
+            return {"epl": "Ga", "tclass": "T6", "protections": ["ia"]}
 
     # ── L5: Flame Detector Coverage ───────────────────────────────
 

@@ -241,7 +241,12 @@ class HeadlessIFCBridge:
                     "Loop_ID": str(dev.get("loop_id", "UNK")),
                     "Device_Address": str(dev.get("address", "UNK")),
                     "Validation_Hash": str(dev.get("checksum", "INVALID")),
-                    "NFPA72_Compliant": True,
+                    # V76 CRIT-04 FIX: Was hardcoded True — fabricated NFPA 72
+                    # compliance claim written to IFC BIM model regardless of
+                    # whether the device placement was actually verified. This
+                    # is a legal liability and life-safety fraud risk. Now reads
+                    # from device dict with default False (fail-safe).
+                    "NFPA72_Compliant": bool(dev.get("nfpa72_compliant", False)),
                 },
             )
 
@@ -436,13 +441,19 @@ class HeadlessIFCBridge:
         polygon, center, height, area, volume = self._tessellate_space(space)
 
         if polygon is None:
-            # Fallback: use LocalPlacement centre
-            cx, cy, cz = self._resolve_local_placement(space.ObjectPlacement)
-            center = (cx, cy, cz)
-            polygon = [(cx - 1, cy - 1, cz), (cx + 1, cy - 1, cz), (cx + 1, cy + 1, cz), (cx - 1, cy + 1, cz)]
-            height = 3.0
-            area = 4.0
-            volume = 12.0
+            # V76 CRIT-05 FIX: Previously created a phantom 2m×2m room (4m²)
+            # when tessellation failed. A 500m² atrium would receive fire
+            # protection designed for a 4m² closet — 2 detectors instead of 50+.
+            # This is a life-safety catastrophe. Now we return None to signal
+            # that geometry extraction FAILED, and the caller must skip this
+            # space with a CRITICAL log. No phantom rooms.
+            logger.critical(
+                f"IFC space '{name}' (GUID: {space.GlobalId}): "
+                f"Geometry tessellation failed — cannot extract room polygon. "
+                f"Space will be EXCLUDED from fire protection analysis. "
+                f"Manual fire protection engineering design REQUIRED for this space."
+            )
+            return None
 
         return {
             "guid": space.GlobalId,

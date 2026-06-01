@@ -178,15 +178,20 @@ MIN_EOL_VOLTAGE_VDC: float = 19.2
 MAX_VOLTAGE_DROP_FRACTION: float = 0.20
 
 # --- Wire Resistance Table (ohm per 1000 ft) ---
-# NEC Chapter 9, Table 8 — Copper conductors, uncoated, DC resistance
-# These values are at 75°C per NEC Chapter 9 Table 8 notes.
-# NEC 760 requires voltage drop calculations for fire alarm circuits.
+# NEC Chapter 9, Table 8 — Copper conductors, uncoated, DC resistance at 75°C
+# CRITICAL FIX (V76 CRIT-01): Previous values were 20°C resistance, causing 16%
+# underestimation of voltage drop. At 75°C operating temperature (the standard
+# design condition per NEC 310.14), copper resistance increases ~16% due to
+# positive temperature coefficient. Using 20°C values means circuits approved
+# as compliant could actually exceed the voltage drop limit at operating temp,
+# causing horns/strobes at end-of-line to fail during a fire.
+# Source: NEC Chapter 9, Table 8 — "Direct-Current Resistance at 75°C" column.
 WIRE_RESISTANCE_OHM_PER_1000FT: Dict[int, float] = {
-    18: 6.51,  # AWG 18 — 6.51 Ω/1000ft
-    16: 4.09,  # AWG 16 — 4.09 Ω/1000ft
-    14: 2.58,  # AWG 14 — 2.58 Ω/1000ft (standard fire alarm wire)
-    12: 1.62,  # AWG 12 — 1.62 Ω/1000ft
-    10: 1.02,  # AWG 10 — 1.02 Ω/1000ft
+    18: 7.770,  # AWG 18 — 7.770 Ω/1000ft at 75°C (was 6.51 at 20°C)
+    16: 4.890,  # AWG 16 — 4.890 Ω/1000ft at 75°C (was 4.09 at 20°C)
+    14: 3.070,  # AWG 14 — 3.070 Ω/1000ft at 75°C (was 2.58 at 20°C)
+    12: 1.930,  # AWG 12 — 1.930 Ω/1000ft at 75°C (was 1.62 at 20°C)
+    10: 1.210,  # AWG 10 — 1.210 Ω/1000ft at 75°C (was 1.02 at 20°C)
 }
 
 # --- Wire Resistance in ohm/ft (derived for per-segment calculations) ---

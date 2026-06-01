@@ -253,6 +253,26 @@ class ExactCoverageEngine:
                 )
                 continue
 
+        # V76 CRIT-09 FIX: Recompute room_area AFTER obstacle subtraction.
+        # Previously, room_area was captured at line 220 BEFORE obstacles were
+        # subtracted from room_poly (lines 230-238). This caused coverage_ratio
+        # to be inflated by the obstacle area. Example: room 200m² with 50m²
+        # obstacles and 5m² uncovered reported (200-5)/200=97.5% instead of
+        # correct (150-5)/150=96.7%. Near the 99.9% threshold, this inflation
+        # could cause a false PASS — room signed off as protected when it's not.
+        room_area = room_poly.area
+        if room_area <= 0:
+            return ExactCoverageResult(
+                is_covered=False,
+                coverage_ratio=0.0,
+                room_area_sqm=0.0,
+                effective_radius_m=self.effective_radius,
+                n_sensors=len(sensor_locations),
+                room_shape_valid=True,
+                warnings=["Room area is zero after obstacle subtraction"],
+                details="ZERO_AREA_AFTER_OBSTACLES",
+            )
+
         if not sensor_areas:
             return ExactCoverageResult(
                 is_covered=False,

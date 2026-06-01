@@ -53,14 +53,22 @@ class DXFParser:
     MIN_ROOM_AREA_M2: float = 2.0  # Min 2m² per NFPA 72 (columns are ~1.5m²)
     MAX_ROOM_AREA_M2: float = 50_000.0
 
+    # V76 CRIT-03 FIX: Corrected INSUNITS mapping per AutoCAD DXF specification.
+    # Code 8 was mapped to 1000.0 (kilometers) but is actually Microinches
+    # (2.54e-8 m). Code 3 (Miles) and Code 7 (Kilometers) were missing
+    # entirely, causing ValueError on those unit types. Wrong unit mapping
+    # produces catastrophically wrong room areas → wrong detector count →
+    # building unprotected. Source: AutoCAD DXF Reference — $INSUNITS header.
     INSUNITS_TO_METERS = {
-        0: 1.0,
-        1: 0.0254,
-        2: 0.3048,
-        4: 0.001,
-        5: 0.01,
-        6: 1.0,
-        8: 1000.0,
+        0: 1.0,         # Unspecified — assume meters (documented assumption)
+        1: 0.0254,      # Inches
+        2: 0.3048,      # Feet
+        3: 1609.344,    # Miles (was missing — caused ValueError)
+        4: 0.001,       # Millimeters
+        5: 0.01,        # Centimeters
+        6: 1.0,         # Meters
+        7: 1000.0,      # Kilometers (was missing — caused ValueError)
+        8: 2.54e-8,     # Microinches (was 1000.0 — 3.9×10¹⁰ error!)
     }
 
     def __init__(self, min_area: float = MIN_ROOM_AREA_M2, max_area: float = MAX_ROOM_AREA_M2):

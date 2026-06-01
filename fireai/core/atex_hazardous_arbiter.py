@@ -122,21 +122,30 @@ class ATEXCategory(str, Enum):
 class ProtectionType(str, Enum):
     """IEC 60079 protection concepts."""
 
-    d = "d"
-    e = "e"
-    ia = "ia"
-    ib = "ib"
-    ic = "ic"
-    ma = "ma"
-    mb = "mb"
-    nA = "nA"
-    nC = "nC"
-    nR = "nR"
-    o = "o"
-    p = "p"
-    q = "q"
-    s = "s"
-    tD = "tD"
+    # Gas protection concepts (IEC 60079-0/-1/-2/.../-18)
+    d = "d"       # Flameproof enclosure (EPL Gb — gas only)
+    e = "e"       # Increased safety (EPL Gb — gas only)
+    ia = "ia"     # Intrinsic safety, category a (EPL Ga)
+    ib = "ib"     # Intrinsic safety, category b (EPL Gb)
+    ic = "ic"     # Intrinsic safety, category c (EPL Gc)
+    ma = "ma"     # Encapsulation, category a (EPL Ga)
+    mb = "mb"     # Encapsulation, category b (EPL Gb)
+    nA = "nA"     # Non-sparking (EPL Gc — gas only)
+    nC = "nC"     # Spark-protected (EPL Gc — gas only)
+    nR = "nR"     # Restricted breathing (EPL Gc — gas only)
+    o = "o"       # Oil immersion (EPL Gb — gas only)
+    p = "p"       # Pressurization (gas variant, EPL Gb/Gc)
+    q = "q"       # Powder filling (EPL Gb — gas only)
+    s = "s"       # Special protection (EPL Ga/Gb)
+    # V76 CRIT-06 FIX: Added dust-specific protection concepts per IEC 60079-31.
+    # Previously missing — gas-only types (d, p, nA) were incorrectly allowed
+    # in dust zones. Dust entering a flameproof enclosure accumulates on hot
+    # surfaces and ignites — direct violation of IEC 60079-31:2022 §6.
+    tD = "tD"     # Dust enclosure (legacy, EPL Da/Db)
+    ta = "ta"     # Dust enclosure, category a (EPL Da — Zone 20) per IEC 60079-31
+    tb = "tb"     # Dust enclosure, category b (EPL Db — Zone 21) per IEC 60079-31
+    tc = "tc"     # Dust enclosure, category c (EPL Dc — Zone 22) per IEC 60079-31
+    mc = "mc"     # Encapsulation, category c (EPL Dc — dust) per IEC 60079-18
 
 
 class InstallationClass(str, Enum):
@@ -200,14 +209,18 @@ _ZONE_PERMITTED_PROTECTIONS: Dict[ATEXZone, Set[ProtectionType]] = {
         ProtectionType.q,
         ProtectionType.s,
     },
-    ATEXZone.ZONE_20: {ProtectionType.ia, ProtectionType.ma, ProtectionType.tD},
+    ATEXZone.ZONE_20: {ProtectionType.ia, ProtectionType.ma, ProtectionType.ta, ProtectionType.tD},
+    # V76 CRIT-06 FIX: Removed gas-only types (d, p) from dust zones.
+    # 'd' (flameproof) is EPL Gb — designed to CONTAIN gas explosions, NOT
+    # prevent dust ingress. Dust entering a 'd' enclosure accumulates on hot
+    # surfaces and ignites — IEC 60079-31:2022 §6 violation.
+    # Added 'tb' (EPL Db) for Zone 21 and 'tc'/'mc' for Zone 22 per IEC 60079-31.
     ATEXZone.ZONE_21: {
         ProtectionType.ia,
         ProtectionType.ib,
         ProtectionType.ma,
         ProtectionType.mb,
-        ProtectionType.d,
-        ProtectionType.p,
+        ProtectionType.tb,
         ProtectionType.tD,
     },
     ATEXZone.ZONE_22: {
@@ -216,10 +229,11 @@ _ZONE_PERMITTED_PROTECTIONS: Dict[ATEXZone, Set[ProtectionType]] = {
         ProtectionType.ic,
         ProtectionType.ma,
         ProtectionType.mb,
-        ProtectionType.d,
-        ProtectionType.p,
+        ProtectionType.mc,
+        ProtectionType.ta,
+        ProtectionType.tb,
+        ProtectionType.tc,
         ProtectionType.tD,
-        ProtectionType.nA,
     },
 }
 

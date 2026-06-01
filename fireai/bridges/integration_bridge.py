@@ -1203,13 +1203,19 @@ class IntegrationBridge:
             compliance_checks.append(("Digital Twin Sync", twin_compliant))
 
         # Acoustics: check the AcousticCoverageResult
+        # V76 CRIT-02 FIX: Default changed from True to False (fail-safe).
+        # If the result object lacks a 'compliant' attribute (e.g., dict instead
+        # of dataclass, or attribute renamed), the system must NOT silently
+        # approve. Missing acoustics compliance = occupants may not hear
+        # fire alarm = NFPA 72 §18.4 violation. Fail-safe = False.
         if result.acoustic_result is not None:
-            acoustic_compliant = getattr(result.acoustic_result, "compliant", True)
+            acoustic_compliant = getattr(result.acoustic_result, "compliant", False)
             compliance_checks.append(("Acoustics", acoustic_compliant))
 
         # Multi-Floor: check the BuildingAnalysis
+        # V76 CRIT-02 FIX: Same fail-safe default as acoustics.
         if result.multi_floor_result is not None:
-            mf_compliant = getattr(result.multi_floor_result, "compliant", True)
+            mf_compliant = getattr(result.multi_floor_result, "compliant", False)
             compliance_checks.append(("Multi-Floor", mf_compliant))
 
         # If no subsystems produced results, we cannot claim compliance
