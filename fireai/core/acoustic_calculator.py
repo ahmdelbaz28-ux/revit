@@ -152,6 +152,10 @@ def calculate_spl_at_distance(
     NOT the consultant's incorrect formula (20*log10(d) which assumes ref=1m).
 
     Optionally includes reverberant field contribution for indoor spaces:
+
+    V65 FIX: Added NaN/Inf input validation for source_dba, target_distance_m,
+    ref_distance_m, and room_absorption_m2. These are life-safety calculations —
+    NaN inputs produce NaN results which silently bypass compliance checks.
         Lp_total = 10 * log10(10^(Ld/10) + 10^(Lr/10))
 
     Where Ld = direct sound, Lr = reverberant sound.
@@ -168,6 +172,30 @@ def calculate_spl_at_distance(
     Returns:
         SPLResult with calculated SPL and breakdown.
     """
+    # V65 SAFETY: Reject NaN/Inf inputs — these are life-safety calculations.
+    # NaN SPL values silently bypass compliance checks (NaN < threshold is False,
+    # so non-compliant results appear compliant). This is catastrophic.
+    if not math.isfinite(source_dba):
+        raise ValueError(
+            f"source_dba must be finite, got {source_dba}. "
+            f"NaN/Inf in life-safety SPL calculations is catastrophic."
+        )
+    if not math.isfinite(target_distance_m):
+        raise ValueError(
+            f"target_distance_m must be finite, got {target_distance_m}. "
+            f"NaN/Inf distance produces undefined SPL."
+        )
+    if not math.isfinite(ref_distance_m) or ref_distance_m <= 0:
+        raise ValueError(
+            f"ref_distance_m must be positive and finite, got {ref_distance_m}. "
+            f"Non-positive or infinite reference distance makes SPL undefined."
+        )
+    if room_absorption_m2 is not None and (not math.isfinite(room_absorption_m2) or room_absorption_m2 < 0):
+        raise ValueError(
+            f"room_absorption_m2 must be non-negative and finite when provided, got {room_absorption_m2}. "
+            f"Negative or infinite absorption is physically meaningless."
+        )
+
     if target_distance_m <= 0:
         return SPLResult(
             effective_dba=source_dba,
@@ -723,18 +751,35 @@ class AcousticSPLCalculator:
             # Total SPL at this point from all speakers
             total_pt_spl = 10.0 * math.log10(sum_power) if sum_power > 0 else 0.0
 
+            # V65 SAFETY: Guard against inf/NaN in computed SPL.
+            # If sum_power overflows (extreme speaker ratings), log10(inf) = inf.
+            # Inf SPL would bypass compliance checks incorrectly.
+            if not math.isfinite(total_pt_spl):
+                total_pt_spl = MAX_SOUND_LEVEL_DBA + 1.0  # Force non-compliant
+
             # Add reverberant field contribution if room absorption provided
             if room_absorption_m2 is not None and room_absorption_m2 > 0 and speakers:
                 # Reverberant field adds to direct sound
                 # Use average speaker power for reverberant estimate
                 avg_rating = sum(s.rating_dba for s in speakers) / len(speakers)
                 avg_ref = sum(s.ref_distance_m for s in speakers) / len(speakers)
+                # V65 SAFETY: Validate avg_ref is positive and finite before log10
+                if not math.isfinite(avg_ref) or avg_ref <= 0:
+                    avg_ref = DEFAULT_REF_DISTANCE_M
                 reverberant_spl = avg_rating + 10.0 * math.log10(4.0 / room_absorption_m2)
                 reverberant_spl += 10.0 * math.log10(avg_ref**2)
 
-                total_pt_spl = 10.0 * math.log10(
-                    math.pow(10, total_pt_spl / 10.0) + math.pow(10, reverberant_spl / 10.0)
-                )
+                # V65 SAFETY: Guard reverberant SPL against NaN/Inf
+                if not math.isfinite(reverberant_spl):
+                    # Skip reverberant contribution if it's invalid
+                    pass
+                else:
+                    combined = 10.0 * math.log10(
+                        math.pow(10, total_pt_spl / 10.0) + math.pow(10, reverberant_spl / 10.0)
+                    )
+                    # V65 SAFETY: Only use combined if it's finite
+                    if math.isfinite(combined):
+                        total_pt_spl = combined
 
             # Track worst point
             if total_pt_spl < worst_spl:

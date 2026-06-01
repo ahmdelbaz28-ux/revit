@@ -325,6 +325,21 @@ def calculate_battery_backup(
     """
     if standby_load_a < 0 or alarm_load_a < 0:
         raise ValueError("Loads must be >= 0 Amperes")
+    # V65 SAFETY: Reject NaN/Inf inputs — missing from original code.
+    # Unlike calculate_voltage_drop(), this function had no isfinite guards.
+    # NaN temperature_c produces NaN temp_derating → NaN required_ah → false pass.
+    if not math.isfinite(standby_load_a):
+        raise ValueError(f"standby_load_a must be finite, got {standby_load_a}")
+    if not math.isfinite(alarm_load_a):
+        raise ValueError(f"alarm_load_a must be finite, got {alarm_load_a}")
+    if not math.isfinite(temperature_c):
+        raise ValueError(f"temperature_c must be finite, got {temperature_c}")
+    if not math.isfinite(derating_factor):
+        raise ValueError(f"derating_factor must be finite, got {derating_factor}")
+    if not math.isfinite(standby_hours):
+        raise ValueError(f"standby_hours must be finite, got {standby_hours}")
+    if not math.isfinite(alarm_hours):
+        raise ValueError(f"alarm_hours must be finite, got {alarm_hours}")
     if not 0 < derating_factor <= 1.0:
         raise ValueError(f"derating_factor={derating_factor} must be in (0, 1]")
     if standby_hours < 24.0:

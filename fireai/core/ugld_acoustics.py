@@ -167,6 +167,24 @@ def atmospheric_attenuation_db_per_m(
 
     Reference: ISO 9613-1:1993 §6, Table 2 + Annex E
     """
+    # V65 SAFETY: Validate inputs before computation.
+    # This is a standalone function (not protected by Pydantic model validation).
+    # NaN/Inf inputs produce NaN alpha → NaN SPL → false compliance pass.
+    if not math.isfinite(center_frequency_hz) or center_frequency_hz <= 0:
+        raise ValueError(
+            f"center_frequency_hz must be positive and finite, got {center_frequency_hz}. "
+            f"Non-positive or NaN frequency makes atmospheric attenuation undefined."
+        )
+    if not math.isfinite(temp_c) or temp_c < -40.0 or temp_c > 85.0:
+        raise ValueError(
+            f"temp_c must be finite and in range [-40, 85]°C, got {temp_c}. "
+            f"Outside this range, ISO 9613-1 corrections are unreliable."
+        )
+    if not math.isfinite(relative_humidity_pct) or relative_humidity_pct < 0.0 or relative_humidity_pct > 100.0:
+        raise ValueError(
+            f"relative_humidity_pct must be finite and in range [0, 100]%, got {relative_humidity_pct}."
+        )
+
     # Find nearest reference frequency in the lookup table
     ref_freqs = sorted(_ISO_9613_ALPHA_20C_50RH.keys())
     nearest = min(ref_freqs, key=lambda f: abs(f - center_frequency_hz))

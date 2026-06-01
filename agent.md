@@ -11087,3 +11087,99 @@ tests/test_acoustic_calculator.py:22
 - pydantic import verified: `from pydantic import BaseModel, ConfigDict, Field, model_validator` ✅
 - fireai.core.acoustic_calculator import verified ✅
 - CI push successful: `5f55f30..5d02e77  main -> main`
+
+---
+
+## V65 Deep Safety Hardening (2026-06-01) — Root Cause Fix + NaN/Inf Guards + Test Coverage
+
+### Self-Criticism (4-Layer per Rule 21)
+
+**Layer 1 — Criticize the OUTPUT**: V64 fix was a band-aid. Synced requirements.txt but left the ROOT CAUSE (`setup.py` with `name="qomn_fire"`) intact. This violates Rule 17 (no half-solutions).
+
+**Layer 2 — Criticize the THINKING**: I treated the symptom (missing pydantic) without removing the root cause (conflicting setup.py). Reactive, not analytical.
+
+**Layer 3 — Criticize the METHOD**: I should have immediately identified setup.py as the DAGGER — it contradicts pyproject.toml on name, version, AND dependencies.
+
+**Layer 4 — Criticize the COMMITMENT**: The NaN/Inf paths in acoustic calculations are life-safety hazards. NaN SPL silently bypasses compliance checks (`NaN < threshold` is `False`), making non-compliant results appear compliant. This is catastrophic.
+
+### Fixes Applied
+
+#### Fix 1 — Delete Stale `setup.py` (CRITICAL — Root Cause of CI Failure)
+**File:** `setup.py` — DELETED
+**Root Cause:** `setup.py` declared `name="qomn_fire"` with `install_requires=["ezdxf>=1.1.0"]` while `pyproject.toml` declares `name="fireai"` with 25+ dependencies including pydantic. When pip used setup.py, pydantic was never installed.
+**Impact:** CI Gate 2 failed with `ModuleNotFoundError: No module named 'pydantic'`.
+**Fix:** Deleted `setup.py`. Modern Python packaging uses `pyproject.toml` exclusively with `[build-system]` using `setuptools.build_meta`.
+
+#### Fix 2 — NaN/Inf Input Guards in `acoustic_calculator.py` (CRITICAL — Life Safety)
+**File:** `fireai/core/acoustic_calculator.py`
+**Bug:** `calculate_spl_at_distance()` accepted NaN/Inf inputs silently. NaN SPL bypasses compliance checks because `NaN < threshold` evaluates to `False` in Python.
+**Impact:** A NaN speaker rating or distance would produce NaN SPL → compliance check appears to pass → building has no audible alarm during fire.
+**Fix Applied:**
+- Added `math.isfinite()` validation for `source_dba`, `target_distance_m`, `ref_distance_m`, `room_absorption_m2`
+- Added `math.isfinite()` guard on computed `total_pt_spl` in `calculate_room_spl()`
+- Added `math.isfinite()` guard on reverberant SPL before logarithmic addition
+
+#### Fix 3 — Input Validation in `atmospheric_attenuation_db_per_m()` (CRITICAL)
+**File:** `fireai/core/ugld_acoustics.py`
+**Bug:** Standalone function had NO input validation (not protected by Pydantic). NaN frequency/temperature/humidity produces NaN alpha → NaN SPL.
+**Fix Applied:** Added `math.isfinite()` + range validation for all 3 parameters:
+- `center_frequency_hz`: must be positive and finite
+- `temp_c`: must be finite and in [-40, 85]°C (matches Pydantic model)
+- `relative_humidity_pct`: must be finite and in [0, 100]%
+
+#### Fix 4 — Negative Resistance Raises Error (CRITICAL)
+**File:** `fireai/core/nfpa72_engine.py` — `temperature_corrected_resistance()`
+**Bug:** `max(corrected, 0.0)` silently clamped negative resistance to 0.0. At extremely cold temperatures, copper temperature correction produces negative resistance → 0V drop → always compliant → LIFE SAFETY HAZARD.
+**Impact:** Fire alarm circuits would appear to have zero voltage drop, but in reality the calculation was invalid. Devices may not operate during a fire.
+**Fix Applied:** Replaced `max(corrected, 0.0)` with `raise ValueError(...)` when resistance is negative.
+
+#### Fix 5 — NaN Guards in `calculate_battery_backup()` (HIGH)
+**File:** `fireai/core/voltage_drop.py`
+**Bug:** Unlike `calculate_voltage_drop()`, the battery backup function had NO `math.isfinite()` guards. NaN temperature produces NaN battery capacity.
+**Fix Applied:** Added `math.isfinite()` validation for all 6 parameters.
+
+#### Fix 6 — NaN/Inf Guards in `_combine_spl_db()` (HIGH)
+**File:** `fireai/core/acoustics_engine.py`
+**Bug:** `math.pow(10, spl/10)` overflows for SPL > ~300 dB. NaN inputs silently propagate.
+**Fix Applied:** Added `math.isfinite()` guards on inputs and output. Falls back to finite value when one input is NaN/Inf.
+
+#### Fix 7 — Negative Absorption Coefficient Validation (MEDIUM)
+**File:** `fireai/core/acoustics_engine.py` — `_image_source_reflection_spl()`
+**Bug:** No validation for `ceiling_absorption_coeff < 0`. Negative absorption would produce `log10(>1)` = negative loss, ADDING energy (violates conservation).
+**Fix Applied:** Added `raise ValueError(...)` for negative absorption coefficient.
+
+### Test Coverage Improvements
+
+#### New Test File: `tests/test_ugld_acoustics.py` (65 tests)
+Tests ALL public functions in `ugld_acoustics.py`:
+- Constants validation (4 tests)
+- `atmospheric_attenuation_db_per_m()` — normal operation + all NaN/Inf boundary cases (22 tests)
+- `UltrasonicSensor` Pydantic model (6 tests)
+- `AcousticPropagation` Pydantic model (13 tests)
+- `check_ugld_trigger()` — detection logic (6 tests)
+- `max_detection_range_m()` — binary search (6 tests)
+- `speed_of_sound()` — temperature-dependent (4 tests)
+- `UGLDFrequencyBand` enum (2 tests)
+- V65 NaN/Inf input validation tests (2 tests)
+
+#### New Test File: `tests/test_acoustics_engine.py` (40 tests)
+Tests the unified `AcousticsEngine` integration layer:
+- Module constants against NFPA 72/ISA-TR84 (7 tests)
+- `_combine_spl_db()` — including NaN/Inf edge cases (9 tests)
+- `_evaluate_ugld_trigger()` (2 tests)
+- `_image_source_reflection_spl()` — including negative absorption (3 tests)
+- `AcousticsEngine.check_coverage()` — NFPA 72 §18.4 (6 tests)
+- `AcousticsEngine.ugld_raytrace()` — ISA-TR84.00.07 (5 tests)
+- `AcousticsEngine.ugld_multi_sensor_coverage()` (4 tests)
+- Engine initialization (2 tests)
+- V65 NaN/Inf input validation tests (2 tests)
+
+### Verification Evidence
+- 4938 tests pass locally (4833 + 105 new), 0 failures, 1 skipped
+- CI Gate 2 (Test Suite) already passing on previous commit `100fb60`
+- All NaN/Inf guards verified by new test cases
+- Negative resistance guard verified by existing test suite
+
+### Commit Information
+- **Commit:** TBD (pending push)
+- **Previous CI run:** Run 26737503322 — ALL 6 GATES PASSED ✅

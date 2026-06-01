@@ -603,7 +603,20 @@ def temperature_corrected_resistance(
         raise ValueError(f"operating_temp_c must be finite and >= -50, got {operating_temp_c}")
 
     corrected = r_at_20c * (1.0 + COPPER_TEMP_COEFFICIENT * (operating_temp_c - _TABLE8_REFERENCE_TEMP_C))
-    return max(corrected, 0.0)  # Safety: never negative
+    # V65 SAFETY: Negative resistance means temperature factor made R negative.
+    # This occurs at extremely cold temperatures (below ~-234°C for copper).
+    # Silently clamping to 0.0 is DANGEROUS — it makes voltage drop = 0V,
+    # which always passes compliance. A 0V drop on a fire alarm circuit is
+    # physically impossible and masks a real failure.
+    if corrected < 0:
+        raise ValueError(
+            f"Temperature-corrected resistance is negative ({corrected:.6f} Ohm/km) "
+            f"at operating_temp_c={operating_temp_c}°C. This is physically impossible "
+            f"for copper conductors and indicates an invalid temperature input. "
+            f"Voltage drop would appear as 0V (always compliant), which is a "
+            f"LIFE-SAFETY HAZARD. Refuse to compute."
+        )
+    return corrected
 
 
 def calculate_voltage_drop(
