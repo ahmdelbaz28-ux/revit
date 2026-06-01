@@ -342,11 +342,16 @@ def calculate_battery_backup(
         raise ValueError(f"alarm_hours must be finite, got {alarm_hours}")
     if not 0 < derating_factor <= 1.0:
         raise ValueError(f"derating_factor={derating_factor} must be in (0, 1]")
+    # V65 FIX: Sub-24h standby violates NFPA 72 §10.6.7.2 (mandatory minimum).
+    # Old code only warned but allowed the calculation to proceed. Downstream
+    # code that only checks required_ah without checking nfpa_compliant could
+    # approve a non-compliant battery design. This deprecated function should
+    # block sub-24h standby — use size_battery() for proper handling.
     if standby_hours < 24.0:
-        warnings.warn(
-            f"standby_hours={standby_hours}h < 24h. NFPA 72-2022 §10.6.7.2 requires minimum 24h standby.",
-            UserWarning,
-            stacklevel=2,
+        raise ValueError(
+            f"standby_hours={standby_hours}h < 24h violates NFPA 72 §10.6.7.2 "
+            f"(minimum 24h standby). Use battery_aging_derating.size_battery() "
+            f"instead of this deprecated function."
         )
 
     # Temperature derating (IEEE 485)

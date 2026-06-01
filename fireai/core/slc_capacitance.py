@@ -241,11 +241,38 @@ class SLCCapacitanceAuditor:
             # V20.2 FIX: Unknown manufacturer → conservative warning
             cap_limit_uf = SLC_MAX_CAPACITANCE_UF.get(loop_mfr, self.max_cap_uf)
             if loop_mfr not in SLC_MAX_CAPACITANCE_UF:
+                # V65 FIX: Unknown manufacturer should add a violation, not just warn.
+                # Old code only logged a warning but marked the loop as "safe" if
+                # capacitance was below the default limit. But the actual panel limit
+                # may be tighter (e.g., 0.3µF vs default 0.5µF), so a loop at 0.45µF
+                # would be falsely marked compliant.
                 logger.warning(
                     f"Unknown manufacturer '{loop_mfr}' for SLC loop '{loop_id}'; "
                     f"using default {self.max_cap_uf} µF which may EXCEED the "
                     f"actual panel limit. Verify with manufacturer installation manual."
                 )
+                if Violation is not None:
+                    violations.append(
+                        Violation(
+                            severity="WARNING",
+                            citation=_CITE_NFPA72_12_2,
+                            description=(
+                                f"Cannot verify SLC compliance for unknown manufacturer "
+                                f"'{loop_mfr}' on loop '{loop_id}'. Default capacitance "
+                                f"limit ({self.max_cap_uf} µF) may exceed actual panel "
+                                f"specification. Verify with manufacturer datasheet."
+                            ),
+                        )
+                    )
+                else:
+                    violations.append({
+                        "severity": "WARNING",
+                        "citation": _CITE_NFPA72_12_2,
+                        "description": (
+                            f"Cannot verify SLC compliance for unknown manufacturer "
+                            f"'{loop_mfr}' on loop '{loop_id}'."
+                        ),
+                    })
 
             # V20.2 FIX: Unknown wire type → use most conservative (highest) value
             cap_pf_per_m = CABLE_CAPACITANCE_PF_PER_M.get(wire_type)

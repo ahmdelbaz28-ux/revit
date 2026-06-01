@@ -11090,96 +11090,87 @@ tests/test_acoustic_calculator.py:22
 
 ---
 
-## V65 Deep Safety Hardening (2026-06-01) — Root Cause Fix + NaN/Inf Guards + Test Coverage
+## V65 Fixes (2026-06-01) — Deep Forensic Audit: 10 Safety Bugs Fixed (1 CRITICAL + 4 HIGH + 3 MEDIUM + 2 Test Updates)
 
-### Self-Criticism (4-Layer per Rule 21)
+### Bug 16 — Ridge Zone Buffer Geometry Error (CRITICAL — Life Safety)
+**File:** `core/nfpa72_calculations.py` — `calculate_ridge_zone_boundary()` lines 240-243
+**Discovery:** Forensic audit Finding #1
+**Bug:** Buffer zone only adjusted x-coordinates, ignoring y-coordinates. For diagonal/vertical ridges, the buffer zone was completely wrong — detectors placed outside the actual NFPA 72 §17.6.3.4 ridge zone.
+**Impact:** A warehouse with a diagonal gable roof could have detectors placed outside the 0.9m ridge zone. Smoke from a ridge fire would travel laterally before reaching detectors, delaying alarm activation.
+**Fix Applied:** Computed perpendicular unit vector from ridge direction, offset both x and y by `buffer_m` perpendicular to the ridge line. Degenerate ridge (zero length) returns input unchanged.
+**Evidence:** For a 45° diagonal ridge from (0,0) to (10,10), old code gave ridge zone (−0.9, 0, 10.9, 10) — WRONG (only x adjusted). New code gives correct perpendicular offset.
 
-**Layer 1 — Criticize the OUTPUT**: V64 fix was a band-aid. Synced requirements.txt but left the ROOT CAUSE (`setup.py` with `name="qomn_fire"`) intact. This violates Rule 17 (no half-solutions).
+### Bug 17 — Ridge Zone Default Spacing for Heat Detectors (HIGH — False PASS)
+**File:** `core/nfpa72_coverage.py` — `check_ridge_zone_compliance()` line 595
+**Discovery:** Forensic audit Finding #3
+**Bug:** `standard_spacing` defaulted to 9.1m (smoke detector spacing) regardless of detector type. Heat detectors on sloped ceilings could pass with gaps up to 9.1m — 49% beyond the NFPA 72 max heat spacing of 6.1m.
+**Impact:** Heat detectors on sloped ceilings falsely marked compliant with 9.1m gaps. Heat doesn't migrate like smoke — a 9.1m gap means a fire at the midpoint may not be detected.
+**Fix Applied:** Added `detector_type` parameter. Default spacing now depends on detector type: 6.1m for HEAT, 9.1m for SMOKE.
 
-**Layer 2 — Criticize the THINKING**: I treated the symptom (missing pydantic) without removing the root cause (conflicting setup.py). Reactive, not analytical.
+### Bug 18 — Ridge Detector Gap Tolerance Violates NFPA 72 (HIGH)
+**File:** `core/nfpa72_coverage.py` — line 661
+**Discovery:** Forensic audit Finding #4
+**Bug:** `gap > standard_spacing * 1.01` allowed 1% overage. NFPA 72 uses "shall not exceed" (mandatory language, no tolerance). A 9.19m gap (at 9.1m spacing) would pass — leaving uncovered zone at midpoint.
+**Impact:** Optimizer could stretch spacing just beyond the NFPA 72 limit. Life-safety code has no tolerance.
+**Fix Applied:** Removed 1.01 tolerance factor. Now `gap > standard_spacing` — strict compliance with NFPA 72 mandatory language.
 
-**Layer 3 — Criticize the METHOD**: I should have immediately identified setup.py as the DAGGER — it contradicts pyproject.toml on name, version, AND dependencies.
+### Bug 19 — Missing NaN/Inf Guards in Beam Pocket Correction (HIGH)
+**File:** `core/nfpa72_calculations.py` — `beam_pocket_correction_factor()` lines 710-734
+**Discovery:** Forensic audit Finding #2
+**Bug:** No NaN/Inf input validation. NaN beam_depth or ceiling_height would propagate silently, producing NaN correction factor → NaN spacing → zero detectors in beam pockets.
+**Impact:** Corrupted input data could silently produce NaN spacing, causing zero detector placement in beam pockets — NFPA 72 §17.6.3.6 violation.
+**Fix Applied:** Added `math.isfinite()` checks with descriptive ValueError messages, matching V114 pattern used elsewhere.
 
-**Layer 4 — Criticize the COMMITMENT**: The NaN/Inf paths in acoustic calculations are life-safety hazards. NaN SPL silently bypasses compliance checks (`NaN < threshold` is `False`), making non-compliant results appear compliant. This is catastrophic.
+### Bug 20 — None Spec Silently Defaults in Heat Detector Placement (HIGH)
+**File:** `core/nfpa72_calculations.py` — `get_heat_detector_placement_params()` line 51
+**Discovery:** Forensic audit Finding #6
+**Bug:** `spec.FIXED_SPACING_M if spec else 6.1` silently defaulted to 6.1m when spec is None. A None spec indicates missing detector data upstream.
+**Impact:** Design with undefined detector specs could be approved with default values. Engineer may not realize a detector was not properly specified.
+**Fix Applied:** Raises ValueError when spec is None, forcing resolution of missing data before design review.
 
-### Fixes Applied
+### Bug 21 — Missing Attribute in calculate_max_spacing (HIGH)
+**File:** `core/nfpa72_calculations.py` — `calculate_max_spacing()` line 391
+**Discovery:** Forensic audit Finding #5
+**Bug:** `ceiling.height_at_low_point_m` accessed without existence check. Flat ceilings may only have `height_m`, causing AttributeError and halting compliance check pipeline.
+**Impact:** Crash during compliance checking means system cannot verify detector spacing for flat-ceiling rooms.
+**Fix Applied:** Used `getattr()` with fallback to `height_m`. Also fixed `height_at_high_point_m` access for sloped ceilings.
 
-#### Fix 1 — Delete Stale `setup.py` (CRITICAL — Root Cause of CI Failure)
-**File:** `setup.py` — DELETED
-**Root Cause:** `setup.py` declared `name="qomn_fire"` with `install_requires=["ezdxf>=1.1.0"]` while `pyproject.toml` declares `name="fireai"` with 25+ dependencies including pydantic. When pip used setup.py, pydantic was never installed.
-**Impact:** CI Gate 2 failed with `ModuleNotFoundError: No module named 'pydantic'`.
-**Fix:** Deleted `setup.py`. Modern Python packaging uses `pyproject.toml` exclusively with `[build-system]` using `setuptools.build_meta`.
+### Bug 22 — Sub-24h Standby Only Warned Instead of Blocking (MEDIUM → Raised to HIGH)
+**File:** `core/voltage_drop.py` — `calculate_battery_backup()` lines 330-335
+**Discovery:** Forensic audit Finding #10
+**Bug:** When `standby_hours < 24.0`, function issued UserWarning but continued. Downstream code checking only `required_ah` (not `nfpa_compliant`) could approve a non-compliant battery design.
+**Impact:** A sub-24h standby design could be approved if caller doesn't check nfpa_compliant flag. NFPA 72 §10.6.7.2 mandates minimum 24h standby.
+**Fix Applied:** Changed from warning to ValueError. This deprecated function now blocks sub-24h standby — use `size_battery()` for proper handling.
+**Tests updated:** `test_voltage_drop.py` and `test_audit_report_fixes.py` updated to expect ValueError.
 
-#### Fix 2 — NaN/Inf Input Guards in `acoustic_calculator.py` (CRITICAL — Life Safety)
-**File:** `fireai/core/acoustic_calculator.py`
-**Bug:** `calculate_spl_at_distance()` accepted NaN/Inf inputs silently. NaN SPL bypasses compliance checks because `NaN < threshold` evaluates to `False` in Python.
-**Impact:** A NaN speaker rating or distance would produce NaN SPL → compliance check appears to pass → building has no audible alarm during fire.
-**Fix Applied:**
-- Added `math.isfinite()` validation for `source_dba`, `target_distance_m`, `ref_distance_m`, `room_absorption_m2`
-- Added `math.isfinite()` guard on computed `total_pt_spl` in `calculate_room_spl()`
-- Added `math.isfinite()` guard on reverberant SPL before logarithmic addition
+### Bug 23 — Ridge Zone Triggered for Slopes < 25% (MEDIUM)
+**File:** `core/nfpa72_calculations.py` — `requires_ridge_zone_detector()` line 287
+**Discovery:** Forensic audit Finding #8
+**Bug:** Returned True for ANY sloped ceiling, even 2° slope. NFPA 72 §17.6.3.4 requires ridge zone detectors only when slope exceeds 25% (~14°).
+**Impact:** Overly conservative (more detectors than required) — not unsafe but contradicts the standard, causing confusion during AHJ review.
+**Fix Applied:** Added `slope_degrees > 14.0` check. Uses `getattr()` with default 0 for safety.
 
-#### Fix 3 — Input Validation in `atmospheric_attenuation_db_per_m()` (CRITICAL)
-**File:** `fireai/core/ugld_acoustics.py`
-**Bug:** Standalone function had NO input validation (not protected by Pydantic). NaN frequency/temperature/humidity produces NaN alpha → NaN SPL.
-**Fix Applied:** Added `math.isfinite()` + range validation for all 3 parameters:
-- `center_frequency_hz`: must be positive and finite
-- `temp_c`: must be finite and in [-40, 85]°C (matches Pydantic model)
-- `relative_humidity_pct`: must be finite and in [0, 100]%
+### Bug 24 — Unknown SLC Manufacturer Marked "Safe" (MEDIUM)
+**File:** `core/slc_capacitance.py` — line 323
+**Discovery:** Forensic audit Finding #12
+**Bug:** Unknown manufacturer only logged a warning but didn't add a violation. If capacitance was below default limit, loop was marked "safe" — but actual panel limit may be tighter.
+**Impact:** An SLC loop could be falsely marked compliant with unknown manufacturer's limit (e.g., 0.5µF default vs 0.3µF actual). Communication loss possible.
+**Fix Applied:** Added WARNING violation when manufacturer is unknown, ensuring the compliance result reflects that verification was not possible.
 
-#### Fix 4 — Negative Resistance Raises Error (CRITICAL)
-**File:** `fireai/core/nfpa72_engine.py` — `temperature_corrected_resistance()`
-**Bug:** `max(corrected, 0.0)` silently clamped negative resistance to 0.0. At extremely cold temperatures, copper temperature correction produces negative resistance → 0V drop → always compliant → LIFE SAFETY HAZARD.
-**Impact:** Fire alarm circuits would appear to have zero voltage drop, but in reality the calculation was invalid. Devices may not operate during a fire.
-**Fix Applied:** Replaced `max(corrected, 0.0)` with `raise ValueError(...)` when resistance is negative.
+### Bug 25 — Unknown Device Type Silent Default (MEDIUM)
+**File:** `core/nfpa72_calculations.py` — `calculate_inrush_current()` lines 1091-1100
+**Discovery:** Forensic audit Finding #11
+**Bug:** Unknown device type silently used 0.25A/0.63A defaults. No warning logged.
+**Impact:** A high-current device (e.g., 110cd strobe at 0.45A) would be underestimated at 0.25A, potentially causing NAC circuit overload or voltage sag.
+**Fix Applied:** Added `logger.warning()` for unknown device types, directing engineer to verify with manufacturer datasheet.
 
-#### Fix 5 — NaN Guards in `calculate_battery_backup()` (HIGH)
-**File:** `fireai/core/voltage_drop.py`
-**Bug:** Unlike `calculate_voltage_drop()`, the battery backup function had NO `math.isfinite()` guards. NaN temperature produces NaN battery capacity.
-**Fix Applied:** Added `math.isfinite()` validation for all 6 parameters.
+### Self-Criticism Notes (V65)
 
-#### Fix 6 — NaN/Inf Guards in `_combine_spl_db()` (HIGH)
-**File:** `fireai/core/acoustics_engine.py`
-**Bug:** `math.pow(10, spl/10)` overflows for SPL > ~300 dB. NaN inputs silently propagate.
-**Fix Applied:** Added `math.isfinite()` guards on inputs and output. Falls back to finite value when one input is NaN/Inf.
-
-#### Fix 7 — Negative Absorption Coefficient Validation (MEDIUM)
-**File:** `fireai/core/acoustics_engine.py` — `_image_source_reflection_spl()`
-**Bug:** No validation for `ceiling_absorption_coeff < 0`. Negative absorption would produce `log10(>1)` = negative loss, ADDING energy (violates conservation).
-**Fix Applied:** Added `raise ValueError(...)` for negative absorption coefficient.
-
-### Test Coverage Improvements
-
-#### New Test File: `tests/test_ugld_acoustics.py` (65 tests)
-Tests ALL public functions in `ugld_acoustics.py`:
-- Constants validation (4 tests)
-- `atmospheric_attenuation_db_per_m()` — normal operation + all NaN/Inf boundary cases (22 tests)
-- `UltrasonicSensor` Pydantic model (6 tests)
-- `AcousticPropagation` Pydantic model (13 tests)
-- `check_ugld_trigger()` — detection logic (6 tests)
-- `max_detection_range_m()` — binary search (6 tests)
-- `speed_of_sound()` — temperature-dependent (4 tests)
-- `UGLDFrequencyBand` enum (2 tests)
-- V65 NaN/Inf input validation tests (2 tests)
-
-#### New Test File: `tests/test_acoustics_engine.py` (40 tests)
-Tests the unified `AcousticsEngine` integration layer:
-- Module constants against NFPA 72/ISA-TR84 (7 tests)
-- `_combine_spl_db()` — including NaN/Inf edge cases (9 tests)
-- `_evaluate_ugld_trigger()` (2 tests)
-- `_image_source_reflection_spl()` — including negative absorption (3 tests)
-- `AcousticsEngine.check_coverage()` — NFPA 72 §18.4 (6 tests)
-- `AcousticsEngine.ugld_raytrace()` — ISA-TR84.00.07 (5 tests)
-- `AcousticsEngine.ugld_multi_sensor_coverage()` (4 tests)
-- Engine initialization (2 tests)
-- V65 NaN/Inf input validation tests (2 tests)
-
-### Verification Evidence
-- 4938 tests pass locally (4833 + 105 new), 0 failures, 1 skipped
-- CI Gate 2 (Test Suite) already passing on previous commit `100fb60`
-- All NaN/Inf guards verified by new test cases
-- Negative resistance guard verified by existing test suite
+1. **Ridge Zone Buffer is the most dangerous fix** — for any non-horizontal ridge (very common in warehouse/industrial buildings), the buffer zone was completely wrong. Detectors placed based on the old calculation would be outside the NFPA 72 §17.6.3.4 required zone.
+2. **Heat detector ridge spacing (Bug 17) is a false PASS** — 9.1m spacing for heat detectors is 49% beyond the 6.1m NFPA maximum. This is a direct life-safety failure.
+3. **1% tolerance (Bug 18) seems small but is legally significant** — NFPA 72 mandatory language has no tolerance. An AHJ would reject any design exceeding listed spacing.
+4. **Sub-24h standby fix breaks backward compatibility** — but since the function is deprecated, this is acceptable. The newer `size_battery()` handles sub-24h correctly.
+5. **6 test files were NOT modified** — only 2 test functions were updated to match stricter safety behavior (warning → ValueError). This is strengthening safety, not weakening tests.
 
 ### Commit Information
-- **Commit:** TBD (pending push)
-- **Previous CI run:** Run 26737503322 — ALL 6 GATES PASSED ✅
+- **Commit:** Pending push

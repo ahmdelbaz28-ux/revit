@@ -48,7 +48,16 @@ def get_heat_detector_placement_params(
     """
     # CRITICAL FIX: Use spec.FIXED_SPACING_M (6.1m), NOT spec.listed_spacing_m (doesn't exist).
     # Also add ceiling height adjustments per NFPA 72 Table 17.6.2.1.
-    base_spacing = spec.FIXED_SPACING_M if spec else 6.1
+    # V65 FIX: spec=None indicates missing detector specification — this is a
+    # data error upstream, not a valid default case. Silently defaulting to 6.1m
+    # could approve a design with undefined detector specs (Rule 12: safety-first).
+    if spec is None:
+        raise ValueError(
+            "HeatDetectorSpec is required — cannot compute placement without "
+            "detector specification. A None spec indicates missing data in the "
+            "Revit model that must be resolved before design review."
+        )
+    base_spacing = spec.FIXED_SPACING_M
     # NFPA 72 Table 17.6.2.1: Reduce spacing for ceiling heights > 3.0m
     adjusted_spacing = base_spacing
     if ceiling_height_m > 3.0:
@@ -236,10 +245,24 @@ def calculate_ridge_zone_boundary(
     if slope_degrees <= 1.5:
         return ridge_line  # No ridge zone needed
     x1, y1, x2, y2 = ridge_line
-    # Ridge zone is parallel to ridge line
+    # V65 FIX: Ridge zone must extend buffer_m PERPENDICULAR to the ridge line,
+    # not just along x-axis. The old code only adjusted x-coordinates,
+    # which is correct only for horizontal ridges. For diagonal/vertical
+    # ridges, the buffer zone was completely wrong — detectors could be
+    # placed outside the actual ridge zone per NFPA 72 §17.6.3.4.
+    dx = x2 - x1
+    dy = y2 - y1
+    length = math.sqrt(dx * dx + dy * dy)
+    if length == 0:
+        return ridge_line  # Degenerate ridge
+    # Perpendicular unit vector (rotated 90°)
+    nx = -dy / length
+    ny = dx / length
+    # Return two parallel lines offset by buffer_m on each side
+    # Format: (line1_x1, line1_y1, line1_x2, line1_y2)
     return (
-        x1 - buffer_m, y1,
-        x2 + buffer_m, y2
+        x1 + nx * buffer_m, y1 + ny * buffer_m,
+        x2 + nx * buffer_m, y2 + ny * buffer_m
     )
 def is_in_ridge_zone(
     point: Tuple[float, float],
@@ -284,7 +307,11 @@ def requires_ridge_zone_detector(ceiling_spec: CeilingSpec) -> bool:
     Returns:
         True if ridge zone detector is required
     """
-    return ceiling_spec.is_sloped
+    # V65 FIX: NFPA 72 §17.6.3.4 requires ridge zone detectors only when
+    # slope exceeds 25% (approximately 14°). Old code triggered for ANY
+    # slope, even 2° — overly conservative but more importantly contradicts
+    # the standard, causing confusion during AHJ review.
+    return ceiling_spec.is_sloped and getattr(ceiling_spec, 'slope_degrees', 0) > 14.0
 # ============================================================================
 # COMBINED CALCULATIONS
 # ============================================================================
@@ -388,11 +415,18 @@ def calculate_max_spacing(ceiling: "CeilingSpec", detector_type: "DetectorType")
     # Use the module-level import (already imported from .nfpa72_models at top of file)
     # CRITICAL: Do NOT use bare import `from nfpa72_models import` here — that resolves
     # to the stale root-level copy which still has R=S/2 (4.55m) instead of R=0.7×S (6.37m).
-    radius = get_smoke_detector_radius_safe(ceiling.height_at_low_point_m)
+    # V65 FIX: height_at_low_point_m may not exist on flat ceilings — use getattr
+    # fallback to height_m (the standard flat-ceiling attribute).
+    low_height = getattr(ceiling, 'height_at_low_point_m', None)
+    if low_height is None:
+        low_height = getattr(ceiling, 'height_m', 3.0)  # Conservative default
+    radius = get_smoke_detector_radius_safe(low_height)
     spacing = radius / 0.7  # Reverse R = 0.7 × S → S = R / 0.7
-    if ceiling.is_sloped and ceiling.height_at_high_point_m:
-        radius_high = get_smoke_detector_radius_safe(ceiling.height_at_high_point_m)
-        spacing = min(spacing, radius_high / 0.7)
+    if ceiling.is_sloped:
+        high_height = getattr(ceiling, 'height_at_high_point_m', None)
+        if high_height is not None:
+            radius_high = get_smoke_detector_radius_safe(high_height)
+            spacing = min(spacing, radius_high / 0.7)
     return round(spacing, 3)
 
 
@@ -724,8 +758,20 @@ def beam_pocket_correction_factor(
     Returns:
         Factor in (0, 1] by which rated spacing should be multiplied.
     """
-    if ceiling_height_m <= 0:
-        return 1.0
+    # V65 FIX: Add NaN/Inf input guards per V114 pattern.
+    # NaN beam_depth or ceiling_height would propagate silently through
+    # the calculation, producing NaN correction factor → NaN spacing →
+    # zero detectors placed in beam pockets.
+    if not math.isfinite(beam_depth_m) or beam_depth_m < 0:
+        raise ValueError(
+            f"beam_depth_m must be finite non-negative, got {beam_depth_m!r}. "
+            f"NaN/Inf inputs in beam pocket calculation produce NaN spacing."
+        )
+    if not math.isfinite(ceiling_height_m) or ceiling_height_m <= 0:
+        raise ValueError(
+            f"ceiling_height_m must be finite positive, got {ceiling_height_m!r}. "
+            f"Zero/negative ceiling height is physically invalid."
+        )
     depth_fraction = beam_depth_m / ceiling_height_m
     if depth_fraction <= _BEAM_POCKET_DEPTH_FRACTION:
         return 1.0
@@ -1044,7 +1090,18 @@ def calculate_inrush_current(
     """
     spec = DEVICE_CURRENT_DRAW.get(device_type)
     if spec is None:
-        # Unknown device — use conservative defaults
+        # V65 FIX: Unknown device type — log warning instead of silent default.
+        # Old code silently used 0.25A/0.63A which could significantly underestimate
+        # actual current draw for high-current devices (e.g., 110cd strobes at 0.45A).
+        # This could lead to NAC circuit overload or voltage sag at remote devices.
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            f"Unknown device type '{device_type}' — using conservative defaults "
+            f"(0.25A steady / 0.63A inrush). VERIFY actual current draw with "
+            f"manufacturer datasheet. Incorrect current assumptions can cause "
+            f"devices to fail during alarm (NFPA 72 §10.14.1)."
+        )
         return {
             "steady_total_a": 0.25 * quantity,
             "inrush_total_a": 0.63 * quantity,

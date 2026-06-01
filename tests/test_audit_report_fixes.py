@@ -294,18 +294,15 @@ class TestBatterySizingSafetyFactor:
         )
 
     def test_standby_below_24_hours_warns(self):
-        """Standby < 24h must trigger warning per NFPA 72 §10.6.7.2."""
+        """Standby < 24h must raise error per NFPA 72 §10.6.7.2 — V65 FIX."""
         from fireai.core.voltage_drop import calculate_battery_backup
-        import warnings as warn_module
-        with warn_module.catch_warnings(record=True) as w:
-            warn_module.simplefilter("always")
-            result = calculate_battery_backup(
+        import pytest as _pytest
+        with _pytest.raises(ValueError, match="24h"):
+            calculate_battery_backup(
                 standby_load_a=0.5,
                 alarm_load_a=2.0,
                 standby_hours=12.0,  # Below NFPA 72 minimum
             )
-            assert len(w) >= 1
-            assert "24h" in str(w[0].message)
 
     def test_negative_current_raises_error(self):
         """Negative current values must be rejected."""

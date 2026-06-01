@@ -378,8 +378,23 @@ def _compute_discharge_rate_correction(
         Correction factor (typically < 1.0 for high discharge rates).
         Multiply rated Ah by this factor to get effective capacity.
     """
-    if battery_ah_20h <= 0 or load_amps <= 0:
-        return 1.0
+    # V65 FIX: Zero/negative battery capacity or load is physically impossible.
+    # Old code silently returned 1.0, hiding data errors upstream. A zero
+    # battery capacity indicates corrupted data that must be flagged, not
+    # silently accepted. Returning 1.0 would make size_battery() compute
+    # required_ah = load / (derating * 1.0), then adequacy fails at
+    # installed_ah=0 >= required_ah — but the data error is hidden.
+    if battery_ah_20h <= 0:
+        raise ValueError(
+            f"battery_ah_20h must be positive, got {battery_ah_20h!r}. "
+            f"Zero/negative battery capacity is physically impossible and "
+            f"indicates corrupted data upstream."
+        )
+    if load_amps <= 0:
+        raise ValueError(
+            f"load_amps must be positive, got {load_amps!r}. "
+            f"Zero/negative load current is physically impossible."
+        )
 
     peukert_exponent = 1.20  # Conservative for VRLA
 

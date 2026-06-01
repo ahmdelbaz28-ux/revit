@@ -592,7 +592,8 @@ def check_ridge_zone_compliance(
     detector_positions: List[Tuple[float, float]],
     ceiling_spec: CeilingSpec,
     ridge_line: Tuple[float, float, float, float],
-    standard_spacing: float = 9.1,
+    standard_spacing: float = None,
+    detector_type: DetectorType = DetectorType.SMOKE,
 ) -> NFPAComplianceResult:
     """
     Check if sloped ceiling has a ROW of detectors in the ridge zone.
@@ -611,10 +612,18 @@ def check_ridge_zone_compliance(
         ceiling_spec:       Ceiling specification (slope, type).
         ridge_line:         (x1, y1, x2, y2) ridge line coordinates.
         standard_spacing:   Maximum detector spacing along the ridge (m).
-                            Default 9.1 m per NFPA 72 Table 17.6.3.5.1.
+                            Default depends on detector_type: 9.1m for smoke,
+                            6.1m for heat per NFPA 72 Table 17.6.3.5.1.
+        detector_type:      Type of detector (affects default spacing).
     Returns:
         NFPAComplianceResult
     """
+    # V65 FIX: Default spacing depends on detector type.
+    # Old code hardcoded 9.1m (smoke spacing) which is 49% beyond the
+    # NFPA 72 max heat spacing of 6.1m — a false PASS for heat detectors.
+    if standard_spacing is None:
+        standard_spacing = 6.1 if detector_type == DetectorType.HEAT else 9.1
+
     result = NFPAComplianceResult(is_compliant=True)
     if not requires_ridge_zone_detector(ceiling_spec):
         return result
@@ -658,7 +667,7 @@ def check_ridge_zone_compliance(
             sorted_dets = sorted(ridge_detectors, key=lambda p: ((p[0] - x1) * dx + (p[1] - y1) * dy) / ridge_len_sq)
             for i in range(len(sorted_dets) - 1):
                 gap = math.hypot(sorted_dets[i + 1][0] - sorted_dets[i][0], sorted_dets[i + 1][1] - sorted_dets[i][1])
-                if gap > standard_spacing * 1.01:
+                if gap > standard_spacing:  # V65 FIX: Removed 1% tolerance — NFPA 72 uses "shall not exceed" (mandatory language, no tolerance)
                     result.add_violation(
                         f"Ridge detector gap {gap:.1f}m exceeds spacing limit {standard_spacing}m (NFPA 72 §17.6.3.4)."
                     )

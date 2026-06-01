@@ -394,12 +394,9 @@ class TestCalculateBatteryBackup:
             calculate_battery_backup(0.5, 1.5, derating_factor=1.5)
 
     def test_standby_below_24h_warns(self):
-        """NFPA 72 §10.6.7.2: minimum 24h standby."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            result = calculate_battery_backup(0.5, 1.5, standby_hours=12.0)
-            assert len(w) >= 1
-            assert "24h" in str(w[0].message)
+        """NFPA 72 §10.6.7.2: minimum 24h standby — V65 FIX: now raises ValueError."""
+        with pytest.raises(ValueError, match="24h"):
+            calculate_battery_backup(0.5, 1.5, standby_hours=12.0)
 
     def test_standby_exactly_24h_no_warning(self):
         with warnings.catch_warnings(record=True) as w:
@@ -413,10 +410,9 @@ class TestCalculateBatteryBackup:
         result_ok = calculate_battery_backup(0.5, 1.5, standby_hours=24.0)
         assert result_ok["nfpa_compliant"] is True
 
-        with warnings.catch_warnings(record=True):
-            warnings.simplefilter("always")
-            result_bad = calculate_battery_backup(0.5, 1.5, standby_hours=12.0)
-            assert result_bad["nfpa_compliant"] is False
+        # V65 FIX: sub-24h standby now raises ValueError (not just warning)
+        with pytest.raises(ValueError, match="24h"):
+            calculate_battery_backup(0.5, 1.5, standby_hours=12.0)
 
     def test_cold_temperature_derating(self):
         """At 0°C, battery capacity is reduced."""
