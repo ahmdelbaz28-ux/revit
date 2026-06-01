@@ -54,12 +54,17 @@ class DxfParser:
                     pts = tuple([Point3D(p[0], p[1], 0.0) for p in lwpoly.get_points(format='xy')])
                     if len(pts) >= 3:
                         area = DxfParser._calculate_polygon_area(pts)
+                        # BUG-DP2 FIX: DXF files rarely contain room height information
+                        # (LWPOLYLINE is 2D). The 3.0m default is an ASSUMPTION, not
+                        # extracted geometry. Flag it so downstream systems know this height
+                        # is uncertain. Wrong room height affects NFPA 72 §17.7.3.1.4
+                        # (slope-dependent spacing) and voltage drop calculations.
                         rooms.append(Room(
                             id=f"DXF_ROOM_{idx:03d}",
                             name=f"Room {idx}",
                             boundary=pts,
                             area_m2=area,  # BUG-4 FIX: Calculated, not hardcoded
-                            height_m=3.0
+                            height_m=3.0  # BUG-DP2: Placeholder — DXF LWPOLYLINE has no height
                         ))
 
             # Extract LINE structures representing wall paths
@@ -75,8 +80,18 @@ class DxfParser:
         except ImportError:
             # ezdxf not available — fall back to text-based DXF parsing
             DxfParser._parse_dxf_text(filepath, walls, rooms)
-        except Exception:
-            # ezdxf failed — fall back to text-based DXF parsing
+        except Exception as e:
+            # BUG-DP1 FIX: Log the ezdxf error instead of silently swallowing it.
+            # The original code had bare `except Exception: pass` which meant that
+            # if ezdxf crashed on a corrupted file, no one would know WHY the
+            # building model was empty. In a safety-critical system, silent failures
+            # are DANGEROUS — a corrupted DXF file would produce a fallback building
+            # with no indication that the actual file content was never parsed.
+            logger.warning(
+                "ezdxf failed to parse DXF file '%s': %s. "
+                "Falling back to text-based parsing. The file may be corrupted.",
+                filepath, e
+            )
             DxfParser._parse_dxf_text(filepath, walls, rooms)
 
         # BUG-9 FIX: Set has_fallback_geometry flag when fallback room is injected.

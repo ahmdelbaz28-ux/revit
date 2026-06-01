@@ -61,7 +61,11 @@ class SelectionEngine:
             "aging_derating": aging_derating,
             "nfpa_margin": nfpa_margin,
             "combined_safety_factor": combined_safety_factor,
-            "enhanced_safety_factor": combined_safety_factor,
+            # BUG-PS1 FIX: Removed duplicate "enhanced_safety_factor" key that was
+            # identical to "combined_safety_factor". Having two keys with the same value
+            # creates confusion — downstream code doesn't know which to use, and neither
+            # provides more information than the other. The combined_safety_factor IS the
+            # enhanced/total safety factor: 1.10 (temp) × 1.15 (aging) × 1.20 (NFPA) = 1.518.
             "raw_capacity_ah": round(raw_capacity, 4),
             "per_device_standby_mA": 0.8,
         }

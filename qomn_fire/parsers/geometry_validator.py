@@ -72,6 +72,11 @@ class GeometryValidator:
         # Fire protection design based on placeholder geometry is INVALID
         # and DANGEROUS — it will produce wrong coverage calculations.
         # Downstream systems MUST NOT proceed with fallback geometry.
+        #
+        # SAFETY FIX (V58): Also reject rooms with placeholder boundaries.
+        # The IFC regex parser creates 10m x 10m placeholder boxes for all rooms
+        # because it cannot extract real IFC geometry. These placeholder rooms
+        # are just as dangerous as the fallback room — wrong geometry = wrong coverage.
         if b.has_fallback_geometry:
             logger.critical(
                 "SAFETY GATE: Building '%s' uses fallback/placeholder geometry. "
@@ -85,7 +90,30 @@ class GeometryValidator:
                         "All downstream calculations would produce WRONG results.",
                 code_ref="QOMN Safety Gate — Fallback Geometry Rejection",
                 remedy="Provide a valid BIM file (IFC/DXF) with actual room geometry. "
-                       "Ensure the file contains IFCSPACE or LWPOLYLINE entities."
+                       "Ensure the file contains IFCSPACE or LWPOLYLINE entities. "
+                       "Install ifcopenshell (pip install ifcopenshell) for real IFC geometry."
+            ))
+
+        # SAFETY FIX (V58): Check individual rooms for placeholder boundaries.
+        # Even if has_fallback_geometry is False (rooms were found), rooms may
+        # have placeholder boundaries from regex IFC parsing. These rooms have
+        # 10m x 10m synthetic geometry that does NOT represent the real building.
+        placeholder_rooms = [r for r in b.rooms if r.has_placeholder_boundary]
+        if placeholder_rooms:
+            logger.critical(
+                "SAFETY GATE: %d room(s) have placeholder boundary geometry. "
+                "Room IDs: %s. Fire protection design on placeholder boundaries is INVALID.",
+                len(placeholder_rooms),
+                ', '.join(r.id for r in placeholder_rooms[:5])
+            )
+            return Result(error=GeometryError(
+                message=f"{len(placeholder_rooms)} room(s) have placeholder boundary geometry — "
+                        f"the room shapes are synthetic 10m x 10m boxes, NOT real building geometry. "
+                        f"Fire protection design on placeholder boundaries is INVALID. "
+                        f"Affected rooms: {', '.join(r.id for r in placeholder_rooms[:5])}",
+                code_ref="QOMN Safety Gate — Placeholder Boundary Rejection",
+                remedy="Provide a valid BIM file (IFC/DXF) with actual room geometry, or "
+                       "install ifcopenshell (pip install ifcopenshell) for real IFC geometry extraction."
             ))
 
         # ── Check 1: At least one room ──

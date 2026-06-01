@@ -41,19 +41,34 @@ def route_conduit_and_hatch(
     conduit: ConduitType,
     conduit_id: str,
     spec: HatchSpec,
+    trade_size: str = "",
     wire_gauge: str = _DEFAULT_WIRE_GAUGE,
     wire_count: int = _DEFAULT_WIRE_COUNT
 ) -> Result[Tuple[ConduitRun, Any], Union[NECViolationError, HatchPlacementError, ConduitFillError]]:
-    # Step 1: Route the conduit path
-    route_res = astar_route_3d(grid_map, start, end, conduit, conduit_id)
+    """
+    BUG-CH1 FIX: Added trade_size parameter to pass through to routing and fill engines.
+    The original code did not pass trade_size to astar_route_3d, causing the routing
+    engine to always use default trade sizes. Also did not pass conduit_type to
+    calculate_conduit_fill, always defaulting to EMT. If the project uses RMC conduit,
+    the fill calculation would be WRONG (RMC has smaller internal area than EMT for
+    the same trade size) — potentially allowing overfilled conduit that violates
+    NEC Chapter 9 Table 1 and creates a fire hazard.
+    """
+    # Step 1: Route the conduit path — pass trade_size through to routing engine
+    route_res = astar_route_3d(grid_map, start, end, conduit, conduit_id, trade_size=trade_size)
     if route_res.is_failure:
         return Result(error=route_res.error())
 
     conduit_run = route_res.unwrap()
 
     # Step 2: SAFETY — Validate conduit fill ratio (NEC Chapter 9 Table 1)
-    # A conduit that is overfilled violates NEC and creates fire hazard
-    fill_res = calculate_conduit_fill(conduit_run.trade_size, wire_gauge, wire_count)
+    # BUG-CH1 FIX: Pass conduit_type so fill calculation uses correct internal area.
+    # EMT and RMC have different internal areas for the same trade size.
+    # Using wrong conduit type in fill calculation = wrong fill ratio = potential overfill.
+    fill_res = calculate_conduit_fill(
+        conduit_run.trade_size, wire_gauge, wire_count,
+        conduit_type=conduit.value  # Pass conduit type (EMT/RMC) for correct area lookup
+    )
     if fill_res.is_failure:
         return Result(error=fill_res.error())
 

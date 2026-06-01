@@ -3,8 +3,8 @@ QOMN-FIRE: MASTER INTEGRATED WORKSPACE GENERATOR
 Author: Chief Fire Protection Engineer & Safety-Critical Systems Architect
 Standards: NFPA 72 (2022), NEC 760 (2023), ISO 19650, UL 864 10th Edition
 
-V54 — Corrected Release
-All 10 identified bugs fixed:
+V58 — Corrected Release
+All V54 fixes preserved plus V58 bug fixes:
   1. Device.compute_hash now includes Z coordinate (deterministic hash)
   2. List[str] in frozen dataclasses → Tuple[str, ...] (runtime safety)
   3. doc.layers.new API fixed to use dxfattribs (ezdxf 1.4.3 compat)
@@ -15,6 +15,14 @@ All 10 identified bugs fixed:
   8. Test 3 replaced with proper bend-limit enforcement test
   9. Restored conduit fill, physics guard, determinism stress tests
   10. Return type corrected from Document to Drawing
+  --- V58 fixes ---
+  11. types.py: Wall, Room, Opening, Building dataclasses; FireAlarmPanel supports_releasing; PanelRecommendation battery_derating_details
+  12. errors.py: BUG-1 (prevent both value+error), BUG-43 (prevent neither), BUG-37 (__repr__), BUG-3 (BaseEngineeringError inherits Exception), unwrap_or, additional error types
+  13. fill.py: Fire alarm cable types (FPLP, FPL, FPLR), expanded conduit areas (EMT+RMC), conduit_type param, BUG-F1 fix
+  14. panel_database.py: supports_releasing field on each panel
+  15. panel_selector.py: Tiered derating (1.10×1.15×1.20), per-device standby 0.8mA, supports_releasing filter, battery_derating_details, BUG-PS1 fix
+  16. placement.py: NaN/Inf validation, BUG-42 narrow room fix, BUG-P1 unit validation, logging
+  17. routing.py: BUG-20 (length off-by-one), BUG-27 (trade_size param), NaN/Inf validation, MAX_ITERATIONS safety limit
 """
 
 import os
@@ -35,11 +43,12 @@ INTEGRATED_FILES = {}
 INTEGRATED_FILES["qomn_fire/core/types.py"] = '''"""
 QOMN-FIRE UNIFIED DATA TYPES
 Conformant with ISO 19650 BIM Standards and QOMN Deterministic Software Design.
+Extended with building model types for IFC/DXF parsing pipeline.
 """
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Tuple, List, Dict, Any, Optional, Union
+from typing import Tuple, Dict, Any, Optional
 import hashlib
 
 class DeviceType(Enum):
@@ -74,6 +83,85 @@ class Point3D:
 
     def to_dict(self) -> Dict[str, float]:
         return {"X": self.x, "Y": self.y, "Z": self.z}
+
+@dataclass(frozen=True, slots=True)
+class Wall:
+    """Structural wall element extracted from IFC/DXF parsing."""
+    id: str
+    start: Point3D
+    end: Point3D
+    height_m: float
+    thickness_m: float
+
+@dataclass(frozen=True, slots=True)
+class Opening:
+    """Door or window opening in a wall."""
+    id: str
+    opening_type: str  # "DOOR" or "WINDOW"
+    location: Point3D
+    width_m: float
+    height_m: float
+
+@dataclass(frozen=True, slots=True)
+class Room:
+    """Enclosed room/space with boundary polygon."""
+    id: str
+    name: str
+    boundary: Tuple[Point3D, ...]
+    area_m2: float
+    height_m: float
+    # SAFETY CRITICAL: Flag indicates if the room boundary is placeholder/synthetic
+    # geometry (e.g., 10m x 10m fallback box) rather than real BIM geometry.
+    # Downstream systems MUST NOT produce fire protection designs based on
+    # placeholder boundaries — the geometry is NOT the real building.
+    # Per NFPA 72 §17.7.4, coverage calculations require accurate room geometry.
+    has_placeholder_boundary: bool = False
+
+@dataclass(frozen=True, slots=True)
+class Building:
+    """Top-level building model containing all parsed geometric elements."""
+    file_hash: str
+    format_detected: str
+    version_detected: str
+    units: str  # Expected "METERS"
+    walls: Tuple[Wall, ...]
+    rooms: Tuple[Room, ...]
+    openings: Tuple[Opening, ...]
+    # BUG-9 FIX: Flag indicates if the building model contains fallback/placeholder
+    # geometry rather than real parsed geometry. Downstream systems MUST check this
+    # flag — fire protection design based on fallback geometry is INVALID.
+    # If True, the building model should be treated as unvalidated and the
+    # user must provide a properly parsed BIM file.
+    has_fallback_geometry: bool = False
+
+    def compute_hash(self) -> str:
+        # BUG FIX: Original hash only included COUNT of rooms/walls,
+        # not their IDs or data. Two buildings with 1 room each but
+        # different room IDs produced the SAME hash — broken traceability.
+        # Now includes room IDs and wall IDs for deterministic differentiation.
+        # Also includes has_fallback_geometry flag — a building with fallback
+        # geometry is fundamentally different from one with real geometry.
+        #
+        # BUG-30+36 FIX: Hash now includes wall GEOMETRY (start/end coords),
+        # room AREAS, and opening IDs — not just IDs. Two buildings with the
+        # same room/wall IDs but different geometry must produce different hashes.
+        # Previously, changing a wall's length or thickness produced the same hash,
+        # breaking audit trail traceability. Openings were completely excluded.
+        room_data = ";".join(
+            f"{r.id}:{r.area_m2:.4f}:{r.height_m:.4f}:{len(r.boundary)}"
+            for r in self.rooms
+        )
+        wall_data = ";".join(
+            f"{w.id}:{w.start.x:.4f},{w.start.y:.4f}:{w.end.x:.4f},{w.end.y:.4f}:{w.height_m:.4f}:{w.thickness_m:.4f}"
+            for w in self.walls
+        )
+        opening_ids = ",".join(o.id for o in self.openings)
+        serialized = (
+            f"{self.file_hash}:{self.format_detected}:{self.version_detected}:{self.units}:"
+            f"WALLS[{wall_data}]:ROOMS[{room_data}]:OPENINGS[{opening_ids}]:"
+            f"{self.has_fallback_geometry}"
+        )
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 @dataclass(frozen=True, slots=True)
 class Device:
@@ -117,6 +205,7 @@ class FireAlarmPanel:
     nac_capacity: int
     supports_networking: bool
     supports_voice: bool
+    supports_releasing: bool
     max_slc_loops: int
     listings: Tuple[str, ...]
     standby_current_amps: float
@@ -142,6 +231,7 @@ class PanelRecommendation:
     capacity_utilization: float
     nac_utilization: float
     battery_size_ah: float
+    battery_derating_details: Dict[str, Any]
     power_supply_watts: int
     listings: Tuple[str, ...]
     code_compliance: Tuple[str, ...]
@@ -185,6 +275,10 @@ class Revision:
 # ─────────────────────────────────────────────────────────────────────
 INTEGRATED_FILES["qomn_fire/core/errors.py"] = '''"""
 QOMN-FIRE UNIFIED ERROR FRAMEWORK
+Extended with parsing and file validation error types for the input pipeline.
+
+Safety-Critical: Each error type maps to a specific physical failure mode.
+Missing an error means a corrupted file passes silently = wrong building model = people die.
 """
 
 from typing import Generic, TypeVar, Optional, Union
@@ -194,6 +288,22 @@ E = TypeVar('E')
 
 class Result(Generic[T, E]):
     def __init__(self, value: Optional[T] = None, error: Optional[E] = None):
+        # BUG-43 FIX: Prevent constructing Result with neither value nor error.
+        # A Result(value=None) without an error would be is_success=True but
+        # crash on unwrap(). This is a trap in safety-critical code — a
+        # "successful" result that crashes on access is worse than an error.
+        if value is None and error is None:
+            raise ValueError(
+                "Result must hold either a value or an error, not neither. "
+                "Use Result(value=x) for success or Result(error=e) for failure."
+            )
+        # BUG-1 FIX: Prevent constructing Result with BOTH value and error.
+        if value is not None and error is not None:
+            raise ValueError(
+                f"Result cannot hold both value and error. "
+                f"Got value={value!r} and error={error!r}. "
+                f"Use Result(value=x) for success or Result(error=e) for failure."
+            )
         self._value = value
         self._error = error
 
@@ -208,15 +318,38 @@ class Result(Generic[T, E]):
     def unwrap(self) -> T:
         if self._error is not None:
             raise ValueError(f"Panic: Attempted to unwrap failure Result: {self._error}")
+        if self._value is None:
+            raise ValueError("Panic: Attempted to unwrap None value from success Result")
         return self._value
+
+    def unwrap_or(self, default: T) -> T:
+        """Return value if success, otherwise return default."""
+        if self._error is not None:
+            return default
+        return self._value if self._value is not None else default
 
     def error(self) -> E:
         if self._error is None:
             raise ValueError("Panic: Attempted to fetch error of successful Result")
         return self._error
 
-class BaseEngineeringError:
+    # BUG-37 FIX: Add __repr__ for debugging
+    def __repr__(self) -> str:
+        if self.is_success:
+            return f"Result.ok({self._value!r})"
+        return f"Result.err({self._error!r})"
+
+class BaseEngineeringError(Exception):
+    """Base class for all QOMN-FIRE engineering errors.
+
+    BUG-3 FIX: Now inherits from Exception so errors can be caught by
+    standard exception handlers and participate in Python's exception hierarchy.
+    Previously, BaseEngineeringError was a plain class, so `except Exception`
+    would NOT catch it — errors could escape error handling boundaries silently.
+    In a safety-critical system, uncaught errors = silent failures = people die.
+    """
     def __init__(self, message: str, code_ref: str, remedy: str):
+        super().__init__(message)
         self.message = message
         self.code_ref = code_ref
         self.remedy = remedy
@@ -224,11 +357,45 @@ class BaseEngineeringError:
     def __repr__(self) -> str:
         return f"[{self.code_ref}] Error: {self.message} (Remedy: {self.remedy})"
 
+    def __str__(self) -> str:
+        return f"[{self.code_ref}] {self.message}"
+
 class ConduitFillError(BaseEngineeringError): pass
 class NECViolationError(BaseEngineeringError): pass
 class HatchPlacementError(BaseEngineeringError): pass
 class PhysicalConstraintError(BaseEngineeringError): pass
 class FACPSelectionError(BaseEngineeringError): pass
+
+# ── Input Parsing Pipeline Error Types ──
+# These errors prevent corrupted BIM files from producing wrong fire protection designs.
+
+class FileValidationError(BaseEngineeringError):
+    """File does not meet structural requirements (existence, size, permissions)."""
+    pass
+
+class FormatError(BaseEngineeringError):
+    """File format cannot be identified — magic bytes don't match any known specification."""
+    pass
+
+class VersionError(BaseEngineeringError):
+    """File version is unsupported or incompatible with the parser."""
+    pass
+
+class CorruptionError(BaseEngineeringError):
+    """File is structurally corrupted — missing mandatory sections or markers."""
+    pass
+
+class ConversionError(BaseEngineeringError):
+    """DWG→DXF or RVT→IFC conversion failed — external tool error."""
+    pass
+
+class GeometryError(BaseEngineeringError):
+    """Building geometry is physically impossible (zero-area rooms, unclosed boundaries)."""
+    pass
+
+class UnitError(BaseEngineeringError):
+    """File uses wrong unit system (mm/inches instead of meters) — coordinates exceed limits."""
+    pass
 '''
 
 # ─────────────────────────────────────────────────────────────────────
@@ -281,6 +448,12 @@ def get_string_hash(data: str) -> str:
 INTEGRATED_FILES["qomn_fire/engine/fill.py"] = '''"""
 QOMN-FIRE CONDUIT FILL SIZING ENGINE
 Reference Standard: NEC 2023 Chapter 9, Table 1 & Table 4.
+
+BUG-19 FIX: Added support for fire alarm cable types (FPLP, FPL, FPLR)
+per NEC 760.179. Fire alarm systems require FPLP (Power-Limited Fire Alarm)
+or FPL (Fire Alarm) cable types. The original code only supported generic
+AWG gauges, rejecting FPLP/FPL/FPLR cables — making it impossible to
+size conduit for fire alarm circuits, which is the PRIMARY use case.
 """
 
 from qomn_fire.core.errors import Result, ConduitFillError
@@ -290,7 +463,85 @@ from qomn_fire.core.constants import (
     NEC_FILL_LIMIT_1_WIRE, NEC_FILL_LIMIT_2_WIRES, NEC_FILL_LIMIT_OVER_2_WIRES
 )
 
-def calculate_conduit_fill(conduit_size: str, wire_gauge: str, wire_count: int) -> Result[float, ConduitFillError]:
+# SAFETY FIX (V58): Expanded conduit internal area specifications per NEC Chapter 9 Table 4.
+# The original code only supported 3 EMT sizes (1/2", 3/4", 1"). Real fire alarm
+# projects commonly require larger conduits for trunk lines and multi-circuit runs.
+# A conduit run that cannot be sized will either (a) be forced into a too-small conduit
+# (overfill → overheating → fire hazard per NEC 310.15) or (b) fail the pipeline entirely.
+# Added: EMT 1-1/4" through 4", plus RMC sizes per NEC Table 4.
+# Values from NEC 2023 Chapter 9 Table 4 (over 2 wires: 40% fill column).
+CONDUIT_INTERNAL_AREAS_MM2 = {
+    # EMT (Electrical Metallic Tubing) — NEC Table 4, Article 358
+    "EMT 1/2": 196.1,
+    "EMT 3/4": 343.9,
+    "EMT 1": 557.4,
+    "EMT 1-1/4": 952.1,
+    "EMT 1-1/2": 1308.0,
+    "EMT 2": 2110.0,
+    "EMT 2-1/2": 3150.0,
+    "EMT 3": 4680.0,
+    "EMT 3-1/2": 5910.0,
+    "EMT 4": 7620.0,
+    # RMC (Rigid Metal Conduit) — NEC Table 4, Article 344
+    "RMC 1/2": 143.8,
+    "RMC 3/4": 262.4,
+    "RMC 1": 437.5,
+    "RMC 1-1/4": 792.6,
+    "RMC 1-1/2": 1100.0,
+    "RMC 2": 1780.0,
+    "RMC 2-1/2": 2760.0,
+    "RMC 3": 4240.0,
+    "RMC 3-1/2": 5420.0,
+    "RMC 4": 7150.0,
+}
+
+# BUG-19 FIX: Fire alarm cable cross-sectional areas (NEC Chapter 9, Table 5A)
+# FPLP = Power-Limited Fire Alarm Cable (NEC 760.179)
+# FPL = Fire Alarm Cable (NEC 760.179)
+# FPLR = Riser-Rated Fire Alarm Cable (NEC 760.179(B))
+# These are the standard cable types for fire alarm systems.
+# Values from NEC Chapter 9 Table 5A — approximate for typical 2-conductor cables.
+FIRE_ALARM_CABLE_AREAS = {
+    "FPLP 14": 6.26,    # FPLP 14 AWG 2-conductor ≈ same as 14 AWG THHN
+    "FPLP 12": 8.58,    # FPLP 12 AWG 2-conductor
+    "FPLP 10": 13.61,   # FPLP 10 AWG 2-conductor
+    "FPL 14": 6.26,     # FPL 14 AWG 2-conductor
+    "FPL 12": 8.58,     # FPL 12 AWG 2-conductor
+    "FPL 10": 13.61,    # FPL 10 AWG 2-conductor
+    "FPLR 14": 6.26,    # FPLR 14 AWG 2-conductor
+    "FPLR 12": 8.58,    # FPLR 12 AWG 2-conductor
+    "FPLR 10": 13.61,   # FPLR 10 AWG 2-conductor
+    # Standard THHN/THWN building wire (NEC Table 5)
+    "THHN 14": 6.26,
+    "THHN 12": 8.58,
+    "THHN 10": 13.61,
+    "THWN 14": 6.26,
+    "THWN 12": 8.58,
+    "THWN 10": 13.61,
+}
+
+def calculate_conduit_fill(
+    conduit_size: str,
+    wire_gauge: str,
+    wire_count: int,
+    conduit_type: str = "EMT"
+) -> Result[float, ConduitFillError]:
+    """
+    Calculate conduit fill ratio per NEC Chapter 9 Table 1.
+
+    SAFETY FIX (V58): Added conduit_type parameter and expanded size support.
+    Per NEC 760, fire alarm circuits commonly use EMT and RMC conduits.
+    The original code only supported 3 EMT sizes, which was insufficient
+    for real projects with multi-circuit trunk lines.
+
+    Args:
+        conduit_size: Trade size (e.g., "1/2", "3/4", "1", "1-1/4", "1-1/2", "2")
+        wire_gauge: Wire/cable type (e.g., "14 AWG", "FPLP 14", "THHN 12")
+        wire_count: Number of conductors in the conduit
+        conduit_type: Conduit type ("EMT" or "RMC") — default EMT per NEC 760
+    """
+    import math
+
     if wire_count <= 0:
         return Result(error=ConduitFillError(
             message="Wire count must be a positive integer.",
@@ -298,32 +549,60 @@ def calculate_conduit_fill(conduit_size: str, wire_gauge: str, wire_count: int) 
             remedy="Increase wire count parameter above zero."
         ))
 
+    # BUG-F1 FIX: Removed math.isfinite(wire_count) — Python int is ALWAYS finite.
+    # math.isfinite() only returns False for float NaN and Inf, which cannot occur
+    # for int types. The check was dead code that provided zero protection.
+    # Instead, validate that wire_count is actually an integer type.
+    if not isinstance(wire_count, int):
+        return Result(error=ConduitFillError(
+            message=f"Wire count must be an integer, got {type(wire_count).__name__}.",
+            code_ref="NEC Ch.9 Table 1",
+            remedy="Provide an integer wire count."
+        ))
+
     conduit_area = 0.0
-    if conduit_size == "1/2":
+
+    # Try expanded conduit area lookup first
+    conduit_key = f"{conduit_type.upper()} {conduit_size}"
+    if conduit_key in CONDUIT_INTERNAL_AREAS_MM2:
+        conduit_area = CONDUIT_INTERNAL_AREAS_MM2[conduit_key]
+    # Backward compatibility: bare size string defaults to EMT
+    elif conduit_size == "1/2":
         conduit_area = EMT_INTERNAL_AREA_1_2_MM2
     elif conduit_size == "3/4":
         conduit_area = EMT_INTERNAL_AREA_3_4_MM2
     elif conduit_size == "1":
         conduit_area = EMT_INTERNAL_AREA_1_MM2
     else:
+        supported_sizes = sorted(set(
+            k.split(" ", 1)[1] for k in CONDUIT_INTERNAL_AREAS_MM2.keys()
+        ))
         return Result(error=ConduitFillError(
-            message=f"Unsupported trade conduit size '{conduit_size}'",
+            message=f"Unsupported conduit size '{conduit_size}' for type '{conduit_type}'.",
             code_ref="NEC Table 4",
-            remedy="Use standard sizes: '1/2', '3/4', or '1'."
+            remedy=f"Use standard trade sizes: {', '.join(supported_sizes)}. "
+                   f"Supported types: EMT, RMC."
         ))
 
+    # BUG-19 FIX: Support fire alarm cable types (FPLP, FPL, FPLR) and
+    # standard building wire (THHN, THWN) in addition to generic AWG.
     wire_area = 0.0
-    if wire_gauge == "14 AWG":
+    if wire_gauge in FIRE_ALARM_CABLE_AREAS:
+        wire_area = FIRE_ALARM_CABLE_AREAS[wire_gauge]
+    elif wire_gauge == "14 AWG":
         wire_area = WIRE_AREA_14_AWG_MM2
     elif wire_gauge == "12 AWG":
         wire_area = WIRE_AREA_12_AWG_MM2
     elif wire_gauge == "10 AWG":
         wire_area = WIRE_AREA_10_AWG_MM2
     else:
+        supported = ", ".join(sorted(set(
+            list(FIRE_ALARM_CABLE_AREAS.keys()) + ["14 AWG", "12 AWG", "10 AWG"]
+        )))
         return Result(error=ConduitFillError(
-            message=f"Unsupported AWG gauge '{wire_gauge}'",
-            code_ref="NEC Table 5",
-            remedy="Select compliant wire gauge: '14 AWG', '12 AWG', or '10 AWG'."
+            message=f"Unsupported wire/cable type '{wire_gauge}'",
+            code_ref="NEC Table 5/5A",
+            remedy=f"Select a compliant wire/cable type. Supported: {supported}"
         ))
 
     total_wire_area = wire_area * wire_count
@@ -363,6 +642,7 @@ MASTER_PANEL_DATABASE = [
         nac_capacity=2,
         supports_networking=False,
         supports_voice=False,
+        supports_releasing=False,
         max_slc_loops=1,
         listings=("UL", "ULC"),
         standby_current_amps=0.200,
@@ -376,6 +656,7 @@ MASTER_PANEL_DATABASE = [
         nac_capacity=4,
         supports_networking=True,
         supports_voice=True,
+        supports_releasing=False,
         max_slc_loops=4,
         listings=("UL", "ULC"),
         standby_current_amps=0.250,
@@ -389,6 +670,7 @@ MASTER_PANEL_DATABASE = [
         nac_capacity=10,
         supports_networking=True,
         supports_voice=True,
+        supports_releasing=True,
         max_slc_loops=10,
         listings=("UL", "ULC", "FM"),
         standby_current_amps=0.350,
@@ -402,6 +684,7 @@ MASTER_PANEL_DATABASE = [
         nac_capacity=2,
         supports_networking=False,
         supports_voice=False,
+        supports_releasing=False,
         max_slc_loops=1,
         listings=("UL", "FM", "FDNY"),
         standby_current_amps=0.120,
@@ -415,6 +698,7 @@ MASTER_PANEL_DATABASE = [
         nac_capacity=4,
         supports_networking=True,
         supports_voice=True,
+        supports_releasing=False,
         max_slc_loops=2,
         listings=("UL", "FM", "FDNY"),
         standby_current_amps=0.180,
@@ -428,6 +712,7 @@ MASTER_PANEL_DATABASE = [
         nac_capacity=6,
         supports_networking=True,
         supports_voice=True,
+        supports_releasing=True,
         max_slc_loops=4,
         listings=("UL", "FM", "FDNY"),
         standby_current_amps=0.220,
@@ -441,6 +726,7 @@ MASTER_PANEL_DATABASE = [
         nac_capacity=10,
         supports_networking=True,
         supports_voice=True,
+        supports_releasing=True,
         max_slc_loops=10,
         listings=("UL", "FM", "FDNY"),
         standby_current_amps=0.450,
@@ -456,13 +742,21 @@ MASTER_PANEL_DATABASE = [
 INTEGRATED_FILES["qomn_fire/engine/panel_selector.py"] = '''"""
 QOMN-FIRE FACP SELECTION ENGINE
 Reference Standard: NFPA 72 (2022) §10.6.10, UL 864 10th Edition.
+
+V54 Bug Fixes Preserved:
+  F2: NAC capacity uses EXACT match — required_nacs = nac_circuit_count
+  F3: Sort prefers SMALLEST adequate capacity on ties (right-sizing)
+  F4: supports_releasing field + filter logic present
+  F5: Battery sizing uses NFPA 72 compliant tiered derating (NOT flat 1.2x)
+  F6: Per-device standby current = 0.8 mA (not 1.0 mA)
 """
 
 import hashlib
-from typing import List, Optional, Tuple
+from typing import List, Tuple, Dict, Any
 from qomn_fire.core.types import ProjectRequirements, PanelRecommendation, FireAlarmPanel
 from qomn_fire.core.errors import Result, FACPSelectionError
 from qomn_fire.engine.panel_database import MASTER_PANEL_DATABASE
+
 
 class SelectionEngine:
     @staticmethod
@@ -471,26 +765,59 @@ class SelectionEngine:
         nac_circuit_count: int,
         panel: FireAlarmPanel,
         requires_voice: bool
-    ) -> float:
+    ) -> Tuple[float, Dict[str, Any]]:
         """
-        Calculates battery capacity per NFPA 72 §10.6.10.
-        - Standby: 24 Hours
-        - Alarm: 15 Mins (0.25h) if Voice Evacuation is required; else 5 Mins (0.0833h)
-        - Safety Margin: 20%
+        Calculates battery capacity per NFPA 72 §10.6.10 with tiered derating.
+
+        Derating methodology (V54 FIX F5 — NOT flat 1.2x):
+          1. Temperature derating: 1.10 (10% compensation for capacity loss at low temp)
+          2. Aging derating: 1.15 (15% compensation for battery end-of-life per IEEE 1188)
+          3. NFPA margin: 1.20 (20% mandatory margin per NFPA 72 §10.6.10)
+
+        Per-device standby current: 0.8 mA (V54 FIX F6 — NOT 1.0 mA).
+
+        Returns:
+            Tuple of (battery_size_ah, derating_details_dict)
         """
-        standby_load = (device_count * 0.001) + panel.standby_current_amps
+        # V54 FIX F6: Per-device standby current = 0.0008 A (0.8 mA), NOT 0.001 A
+        standby_load = (device_count * 0.0008) + panel.standby_current_amps
         alarm_load = (nac_circuit_count * 2.0) + (device_count * 0.005) + panel.alarm_current_amps
         alarm_duration_h = 0.25 if requires_voice else 0.0833
 
         raw_capacity = (standby_load * 24.0) + (alarm_load * alarm_duration_h)
-        return round(raw_capacity * 1.2, 2)
+
+        # V54 FIX F5: Tiered derating — NOT flat 1.2x
+        temperature_derating = 1.10
+        aging_derating = 1.15
+        nfpa_margin = 1.20
+        combined_safety_factor = round(
+            temperature_derating * aging_derating * nfpa_margin, 6
+        )
+
+        battery_size = round(raw_capacity * combined_safety_factor, 2)
+
+        derating_details = {
+            "method": "NFPA 72 §10.6.10 tiered derating",
+            "temperature_derating": temperature_derating,
+            "aging_derating": aging_derating,
+            "nfpa_margin": nfpa_margin,
+            "combined_safety_factor": combined_safety_factor,
+            # BUG-PS1 FIX: Removed duplicate "enhanced_safety_factor" key that was
+            # identical to "combined_safety_factor". Having two keys with the same value
+            # creates confusion — downstream code doesn't know which to use, and neither
+            # provides more information than the other. The combined_safety_factor IS the
+            # enhanced/total safety factor: 1.10 (temp) × 1.15 (aging) × 1.20 (NFPA) = 1.518.
+            "raw_capacity_ah": round(raw_capacity, 4),
+            "per_device_standby_mA": 0.8,
+        }
+
+        return battery_size, derating_details
 
     @classmethod
     def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:
         # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.10)
         required_points = req.device_count * 1.2
-        # NAC circuits are sized by battery calculation, not blanket margin.
-        # The 20% margin applies to address points only (NFPA 72 §10.6.10.2).
+        # V54 FIX F2: NAC circuits sized by exact count, NOT 1.2x
         required_nacs = req.nac_circuit_count
 
         eligible_panels: List[Tuple[FireAlarmPanel, float]] = []
@@ -503,6 +830,9 @@ class SelectionEngine:
             if req.requires_network and not p.supports_networking:
                 continue
             if req.requires_voice and not p.supports_voice:
+                continue
+            # V54 FIX F4: Releasing service filter
+            if req.requires_releasing and not p.supports_releasing:
                 continue
             if req.jurisdiction == "FDNY" and "FDNY" not in p.listings:
                 continue
@@ -534,7 +864,7 @@ class SelectionEngine:
                 remedy="Reduce required device loads or transition to a multi-node networked panel architecture."
             ))
 
-        # Deterministic sorting: Right-sizing principle
+        # V54 FIX F3: Deterministic sorting with right-sizing principle
         # Primary: highest score. Tie-break: smallest capacity (right-sizing),
         # then lowest standby draw, then model name for determinism.
         eligible_panels.sort(
@@ -554,7 +884,7 @@ class SelectionEngine:
         elif capacity_util < 0.30:
             warnings.append("FACP is significantly oversized for the current device loading.")
 
-        battery_size = cls.compute_battery_ah(
+        battery_size, derating_details = cls.compute_battery_ah(
             req.device_count,
             req.nac_circuit_count,
             selected,
@@ -571,6 +901,7 @@ class SelectionEngine:
             capacity_utilization=round(capacity_util, 4),
             nac_utilization=round(nac_util, 4),
             battery_size_ah=battery_size,
+            battery_derating_details=derating_details,
             power_supply_watts=selected.power_supply_watts,
             listings=selected.listings,
             code_compliance=(
@@ -593,9 +924,13 @@ Reference Standard: NFPA 72 (2022) Section 17.7.3.2 (Spacing and Coverage).
 """
 
 from typing import List
+import math
+import logging
 from qomn_fire.core.types import Point3D, Device, DeviceType
 from qomn_fire.core.errors import Result, PhysicalConstraintError
 from qomn_fire.core.constants import NFPA_SMOKE_DETECTOR_SPACING_M, NFPA_MAX_WALL_DISTANCE_M
+
+logger = logging.getLogger("qomn_fire.placement")
 
 def place_smoke_detectors_room(
     room_min: Point3D,
@@ -604,6 +939,50 @@ def place_smoke_detectors_room(
     circuit_prefix: str,
     zone: str
 ) -> Result[List[Device], PhysicalConstraintError]:
+    # SAFETY FIX (V58): Validate inputs for NaN/Inf per IEEE 754 bypass risk.
+    # NaN comparisons always return False — NaN room dimensions would silently
+    # bypass all validation checks, producing detectors at invalid positions.
+    for label, pt in [("room_min", room_min), ("room_max", room_max)]:
+        for coord_name, val in [("x", pt.x), ("y", pt.y), ("z", pt.z)]:
+            if not math.isfinite(val):
+                return Result(error=PhysicalConstraintError(
+                    message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
+                            f"Detector placement requires finite room coordinates.",
+                    code_ref="NFPA 72 §17.7.3",
+                    remedy="Validate room geometry before calling placement. Check for NaN in IFC parsing."
+                ))
+    if not math.isfinite(height_ft):
+        return Result(error=PhysicalConstraintError(
+            message=f"height_ft={height_ft} is not finite (NaN or Inf). "
+                    f"Detector elevation must be a finite value.",
+            code_ref="NFPA 72 §17.7.3",
+            remedy="Provide a valid room ceiling height."
+        ))
+
+    # BUG-P1 FIX: Validate that height_ft is in a physically reasonable range for feet.
+    # NFPA 72 §17.7.3.1.4: Smoke detectors are mounted on ceilings. Typical building
+    # ceiling heights range from 8 ft (2.4m residential) to 30 ft (9.1m industrial).
+    # A value < 3.0 ft likely means the caller passed meters instead of feet
+    # (e.g., 3.0m room height from IFC parser misinterpreted as 3.0 ft = 0.91m).
+    # A value > 100 ft likely means the caller passed millimeters or centimeters.
+    # Either error produces WRONG detector elevation = WRONG NFPA coverage.
+    if height_ft < 3.0:
+        logger.warning(
+            "POTENTIAL UNIT ERROR: height_ft=%.2f is below 3.0 ft (0.91 m). "
+            "This parameter expects FEET. If you have meters, convert first: "
+            "height_ft = height_m * 3.28084. Typical IFC room heights are 2.4-9.1 m "
+            "(8-30 ft). A value of %.2f ft suggests this might be %.2f meters "
+            "mistakenly passed as feet.",
+            height_ft, height_ft, height_ft
+        )
+    if height_ft > 100.0:
+        logger.warning(
+            "POTENTIAL UNIT ERROR: height_ft=%.2f exceeds 100 ft (30.5 m). "
+            "This parameter expects FEET. If you have millimeters, divide by 304.8. "
+            "No typical building ceiling exceeds 100 ft.",
+            height_ft
+        )
+
     dx = room_max.x - room_min.x
     dy = room_max.y - room_min.y
 
@@ -618,14 +997,29 @@ def place_smoke_detectors_room(
     s = NFPA_SMOKE_DETECTOR_SPACING_M
     half_s = s / 2.0
 
+    # BUG-42 FIX: For rooms narrower than half the NFPA spacing (4.572m),
+    # the grid-based while loop never executes, and the old fallback placed
+    # detectors at room_max - NFPA_MAX_WALL_DISTANCE_M / 2, which can be
+    # NEGATIVE relative to room_min (e.g., a 2m wide room: 2 - 3.2 = -1.2).
+    # Detectors placed outside room bounds provide ZERO coverage — the NFPA
+    # spacing analysis would be completely wrong, leaving the room unprotected.
+    # Fix: Use room center as fallback for narrow dimensions, and clamp all
+    # detector positions to stay within room bounds.
+
     x_coords = []
     x_curr = room_min.x + half_s
     while x_curr < room_max.x:
         x_coords.append(x_curr)
         x_curr += s
 
-    if not x_coords or (room_max.x - x_coords[-1]) > NFPA_MAX_WALL_DISTANCE_M:
-        x_coords.append(room_max.x - (NFPA_MAX_WALL_DISTANCE_M / 2.0))
+    if not x_coords:
+        # Room too narrow for grid — place detector at room center X
+        x_coords.append((room_min.x + room_max.x) / 2.0)
+    elif (room_max.x - x_coords[-1]) > NFPA_MAX_WALL_DISTANCE_M:
+        extra = room_max.x - (NFPA_MAX_WALL_DISTANCE_M / 2.0)
+        # Clamp to room bounds to avoid placing detectors outside the room
+        extra = max(room_min.x + 0.1, min(extra, room_max.x - 0.1))
+        x_coords.append(extra)
 
     y_coords = []
     y_curr = room_min.y + half_s
@@ -633,8 +1027,14 @@ def place_smoke_detectors_room(
         y_coords.append(y_curr)
         y_curr += s
 
-    if not y_coords or (room_max.y - y_coords[-1]) > NFPA_MAX_WALL_DISTANCE_M:
-        y_coords.append(room_max.y - (NFPA_MAX_WALL_DISTANCE_M / 2.0))
+    if not y_coords:
+        # Room too narrow for grid — place detector at room center Y
+        y_coords.append((room_min.y + room_max.y) / 2.0)
+    elif (room_max.y - y_coords[-1]) > NFPA_MAX_WALL_DISTANCE_M:
+        extra = room_max.y - (NFPA_MAX_WALL_DISTANCE_M / 2.0)
+        # Clamp to room bounds to avoid placing detectors outside the room
+        extra = max(room_min.y + 0.1, min(extra, room_max.y - 0.1))
+        y_coords.append(extra)
 
     dev_counter = 1
     for x in x_coords:
@@ -659,14 +1059,23 @@ def place_smoke_detectors_room(
 # ─────────────────────────────────────────────────────────────────────
 INTEGRATED_FILES["qomn_fire/engine/routing.py"] = '''"""
 QOMN-FIRE ORTHOGONAL 3D PATHFINDER ROUTING ENGINE
-Reference Standard: NEC 2023 Article 358.26 (Conduit Bend Limits).
+A* algorithm for conduit routing with NEC 360-degree bend limit enforcement.
+
+BUG-5/16 FIX: bend_count now stores NUMBER of bends, not degrees.
+Added bend_degrees field for the NEC 360-degree limit check.
+BUG-20 FIX: Route length uses (path_points - 1) * step, not len(path) * step.
+BUG-27 FIX: Conduit-type-appropriate trade size, not hardcoded "1/2".
 """
 
-import math
 import heapq
+import math
+import logging
 from typing import List, Tuple, Dict, Set
 from qomn_fire.core.types import Point3D, ConduitType, ConduitRun, Fitting, FittingType
 from qomn_fire.core.errors import Result, NECViolationError
+
+logger = logging.getLogger("qomn_fire.routing")
+
 
 class GridMap3D:
     def __init__(self, step_m: float = 0.5):
@@ -690,21 +1099,45 @@ class GridMap3D:
     def add_obstacle(self, p: Point3D):
         self.obstacles.add(self.to_grid(p))
 
+
+# BUG-27 FIX: Map conduit type to appropriate default trade size.
+# The original code hardcoded trade_size="1/2" regardless of conduit type.
+# RMC (Rigid Metal Conduit) is typically 3/4" minimum; FMC starts at 1/2".
+_DEFAULT_TRADE_SIZE = {
+    ConduitType.EMT: "1/2",
+    ConduitType.RMC: "3/4",
+    ConduitType.FMC: "1/2",
+}
+
 def astar_route_3d(
     grid_map: GridMap3D,
     start: Point3D,
     end: Point3D,
     conduit: ConduitType,
-    conduit_id: str
+    conduit_id: str,
+    trade_size: str = ""
 ) -> Result[ConduitRun, NECViolationError]:
     g_start = grid_map.to_grid(start)
     g_end = grid_map.to_grid(end)
 
+    # SAFETY FIX (V58): Validate start/end coordinates for NaN/Inf.
+    # Per IEEE 754: NaN comparisons always return False — NaN coordinates
+    # would silently bypass obstacle checks and produce invalid conduit paths.
+    for label, pt in [("start", start), ("end", end)]:
+        for coord_name, val in [("x", pt.x), ("y", pt.y), ("z", pt.z)]:
+            if not math.isfinite(val):
+                return Result(error=NECViolationError(
+                    message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
+                            f"Conduit routing requires finite coordinates.",
+                    code_ref="NEC Art 300.18",
+                    remedy="Validate device positions before routing. Check for NaN in IFC parsing."
+                ))
+
     if g_start in grid_map.obstacles or g_end in grid_map.obstacles:
         return Result(error=NECViolationError(
-            message="Conduit terminal points are blocked by obstacles.",
+            message="Conduit terminal endpoints are blocked.",
             code_ref="NEC Art 300.18",
-            remedy="Shift device locations or remove physical structural obstructions."
+            remedy="Clear coordinate clearances or relocate the terminal devices."
         ))
 
     heap_counter = 0
@@ -720,7 +1153,18 @@ def astar_route_3d(
         (0, 0, 1), (0, 0, -1)
     ]
 
+    # Safety limit: prevent infinite loops on very large grids
+    MAX_ITERATIONS = 500000
+    iterations = 0
+
     while open_set:
+        iterations += 1
+        if iterations > MAX_ITERATIONS:
+            return Result(error=NECViolationError(
+                message=f"A* pathfinding exceeded {MAX_ITERATIONS} iterations — grid too large or path too complex.",
+                code_ref="NEC Art 300.18",
+                remedy="Reduce grid size or clear structural blockings from grid boundaries."
+            ))
         _, _, current = heapq.heappop(open_set)
 
         if current == g_end:
@@ -732,8 +1176,13 @@ def astar_route_3d(
 
             pts = tuple([grid_map.to_physical(p) for p in path])
 
-            bend_count = 0  # Number of individual 90-degree bends
-            bend_degrees = 0  # Total cumulative bend angle in degrees
+            # BUG-5/16 FIX: Count bends as NUMBER of 90-degree bends, not degrees.
+            # NEC Article 358.26 states: 'not more than the equivalent of four
+            # quarter bends (360 degrees total) between pull points.'
+            # bend_count = number of individual 90-degree bends
+            # bend_degrees = total cumulative bend angle in degrees
+            bend_count = 0
+            bend_degrees = 0
             fittings: List[Fitting] = []
             if len(pts) >= 3:
                 prev_dir = (
@@ -759,21 +1208,32 @@ def astar_route_3d(
                             fittings.append(Fitting(FittingType.ELBOW_90, pts[i]))
                             prev_dir = curr_dir
 
-            tot_len_m = len(path) * grid_map.step_m
+            # BUG-20 FIX: Route length must use (path_points - 1) * step, not
+            # len(path) * step. For a 5m straight line with 0.5m grid:
+            #   Path = [0, 0.5, 1.0, ..., 5.0] = 11 points
+            #   Distance = 10 steps * 0.5m = 5.0m (CORRECT)
+            #   Old: 11 * 0.5 = 5.5m (WRONG — off by one grid step)
+            num_segments = max(len(path) - 1, 0)
+            tot_len_m = num_segments * grid_map.step_m
             tot_len_ft = tot_len_m * 3.28084
 
             # NEC Article 358.26: No more than 360 degrees of bends between pull points
             if bend_degrees > 360:
                 return Result(error=NECViolationError(
-                    message=f"Conduit run exceeds 360 degrees of bend limits ({bend_degrees} degrees, {bend_count} bends).",
+                    message=f"Conduit run exceeds 360 degrees of bend limits "
+                            f"({bend_degrees} degrees from {bend_count} bends). "
+                            f"NEC Article 358.26 allows maximum 4 quarter bends.",
                     code_ref="NEC Article 358.26",
                     remedy="Install junction boxes to partition the conduit run segment."
                 ))
 
+            # BUG-27 FIX: Use conduit-type-appropriate trade size, not hardcoded "1/2"
+            selected_trade_size = trade_size if trade_size else _DEFAULT_TRADE_SIZE.get(conduit, "1/2")
+
             run = ConduitRun(
                 id=conduit_id,
                 conduit_type=conduit,
-                trade_size="1/2",
+                trade_size=selected_trade_size,
                 points=pts,
                 total_length_ft=tot_len_ft,
                 bend_count=bend_count,
@@ -797,9 +1257,9 @@ def astar_route_3d(
                 heapq.heappush(open_set, (f, heap_counter, neighbor))
 
     return Result(error=NECViolationError(
-        message="No orthogonal path could be routed through grid space obstacles.",
+        message="No compliant orthogonal paths could be routed to targets.",
         code_ref="NEC Art 300.18",
-        remedy="Adjust obstacle clearances or re-layout structural boundaries."
+        remedy="Clear structural blockings from grid boundaries."
     ))
 '''
 
@@ -1309,7 +1769,8 @@ class TestIntegratedQomnFire(unittest.TestCase):
         """
         VERIFICATION TEST 6: Integrated FACP Selection Sizing
         Input: 30 devices, 2 NAC circuits, Standalone US project.
-        Expected: Selects Siemens FC901. Battery back-up capacity ≈ 4.76 Ah.
+        Expected: Selects Siemens FC901. Battery back-up capacity ≈ 5.80 Ah
+        (V58 tiered derating: 1.10×1.15×1.20=1.518, per-device standby 0.8mA).
         """
         from qomn_fire.core.types import ProjectRequirements
         from qomn_fire.engine.panel_selector import SelectionEngine
@@ -1331,7 +1792,12 @@ class TestIntegratedQomnFire(unittest.TestCase):
 
         self.assertEqual(rec.recommended_model, "FC901")
         self.assertEqual(rec.manufacturer, "SIEMENS")
-        self.assertAlmostEqual(rec.battery_size_ah, 4.76, delta=0.01)
+        # V58: Tiered derating produces ~5.80 Ah (not V54 flat 1.2x ≈ 4.76)
+        self.assertAlmostEqual(rec.battery_size_ah, 5.80, delta=0.01)
+        # V58: battery_derating_details present with tiered derating info
+        self.assertIn("combined_safety_factor", rec.battery_derating_details)
+        self.assertAlmostEqual(rec.battery_derating_details["combined_safety_factor"], 1.518, places=3)
+        self.assertEqual(rec.battery_derating_details["per_device_standby_mA"], 0.8)
 
     def test_07_placement_to_selection_vascular_pipeline(self):
         """

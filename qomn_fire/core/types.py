@@ -68,6 +68,12 @@ class Room:
     boundary: Tuple[Point3D, ...]
     area_m2: float
     height_m: float
+    # SAFETY CRITICAL: Flag indicates if the room boundary is placeholder/synthetic
+    # geometry (e.g., 10m x 10m fallback box) rather than real BIM geometry.
+    # Downstream systems MUST NOT produce fire protection designs based on
+    # placeholder boundaries — the geometry is NOT the real building.
+    # Per NFPA 72 §17.7.4, coverage calculations require accurate room geometry.
+    has_placeholder_boundary: bool = False
 
 @dataclass(frozen=True, slots=True)
 class Building:

@@ -4,9 +4,13 @@ Reference Standard: NFPA 72 (2022) Section 17.7.3.2 (Spacing and Coverage).
 """
 
 from typing import List
+import math
+import logging
 from qomn_fire.core.types import Point3D, Device, DeviceType
 from qomn_fire.core.errors import Result, PhysicalConstraintError
 from qomn_fire.core.constants import NFPA_SMOKE_DETECTOR_SPACING_M, NFPA_MAX_WALL_DISTANCE_M
+
+logger = logging.getLogger("qomn_fire.placement")
 
 def place_smoke_detectors_room(
     room_min: Point3D,
@@ -15,6 +19,50 @@ def place_smoke_detectors_room(
     circuit_prefix: str,
     zone: str
 ) -> Result[List[Device], PhysicalConstraintError]:
+    # SAFETY FIX (V58): Validate inputs for NaN/Inf per IEEE 754 bypass risk.
+    # NaN comparisons always return False — NaN room dimensions would silently
+    # bypass all validation checks, producing detectors at invalid positions.
+    for label, pt in [("room_min", room_min), ("room_max", room_max)]:
+        for coord_name, val in [("x", pt.x), ("y", pt.y), ("z", pt.z)]:
+            if not math.isfinite(val):
+                return Result(error=PhysicalConstraintError(
+                    message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
+                            f"Detector placement requires finite room coordinates.",
+                    code_ref="NFPA 72 §17.7.3",
+                    remedy="Validate room geometry before calling placement. Check for NaN in IFC parsing."
+                ))
+    if not math.isfinite(height_ft):
+        return Result(error=PhysicalConstraintError(
+            message=f"height_ft={height_ft} is not finite (NaN or Inf). "
+                    f"Detector elevation must be a finite value.",
+            code_ref="NFPA 72 §17.7.3",
+            remedy="Provide a valid room ceiling height."
+        ))
+
+    # BUG-P1 FIX: Validate that height_ft is in a physically reasonable range for feet.
+    # NFPA 72 §17.7.3.1.4: Smoke detectors are mounted on ceilings. Typical building
+    # ceiling heights range from 8 ft (2.4m residential) to 30 ft (9.1m industrial).
+    # A value < 3.0 ft likely means the caller passed meters instead of feet
+    # (e.g., 3.0m room height from IFC parser misinterpreted as 3.0 ft = 0.91m).
+    # A value > 100 ft likely means the caller passed millimeters or centimeters.
+    # Either error produces WRONG detector elevation = WRONG NFPA coverage.
+    if height_ft < 3.0:
+        logger.warning(
+            "POTENTIAL UNIT ERROR: height_ft=%.2f is below 3.0 ft (0.91 m). "
+            "This parameter expects FEET. If you have meters, convert first: "
+            "height_ft = height_m * 3.28084. Typical IFC room heights are 2.4-9.1 m "
+            "(8-30 ft). A value of %.2f ft suggests this might be %.2f meters "
+            "mistakenly passed as feet.",
+            height_ft, height_ft, height_ft
+        )
+    if height_ft > 100.0:
+        logger.warning(
+            "POTENTIAL UNIT ERROR: height_ft=%.2f exceeds 100 ft (30.5 m). "
+            "This parameter expects FEET. If you have millimeters, divide by 304.8. "
+            "No typical building ceiling exceeds 100 ft.",
+            height_ft
+        )
+
     dx = room_max.x - room_min.x
     dy = room_max.y - room_min.y
 

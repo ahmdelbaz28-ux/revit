@@ -336,7 +336,15 @@ class TestIfcParser(unittest.TestCase):
             os.unlink(path)
 
     def test_parse_ifc_with_spaces_no_fallback(self):
-        """IFC file with IFCSPACE does NOT set has_fallback_geometry."""
+        """V58 SAFETY FIX: IFC file with IFCSPACE STILL has has_fallback_geometry=True.
+
+        The regex IFC parser CANNOT extract real room geometry — all IFCSPACE rooms
+        get placeholder 10m x 10m boundary boxes. These placeholder boundaries are
+        NOT the real building geometry, so has_fallback_geometry MUST be True.
+        This is the correct V58 safety behavior: any building with placeholder
+        boundaries is INVALID for fire protection design and must be rejected
+        by the GeometryValidator. Install ifcopenshell for real IFC geometry.
+        """
         content = (
             "ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\n"
             "#10=IFCSPACE('LAB');\n"
@@ -347,8 +355,12 @@ class TestIfcParser(unittest.TestCase):
             res = IfcParser.parse_ifc(path, "HASH")
             self.assertTrue(res.is_success)
             building = res.unwrap()
-            self.assertFalse(building.has_fallback_geometry,
-                            "has_fallback_geometry must be False when real rooms exist")
+            # V58 FIX: has_fallback_geometry MUST be True because ALL regex-parsed
+            # IFC rooms have placeholder boundaries. Real geometry requires ifcopenshell.
+            self.assertTrue(building.has_fallback_geometry,
+                           "has_fallback_geometry must be True when rooms have placeholder boundaries. "
+                           "The regex parser cannot extract real IFC geometry. "
+                           "Install ifcopenshell for real geometry extraction.")
         finally:
             os.unlink(path)
 
@@ -790,7 +802,17 @@ class TestIntegrationPipeline(unittest.TestCase):
     """End-to-end integration tests: validate → detect → parse → geometry check."""
 
     def test_ifc_pipeline_full(self):
-        """Full IFC pipeline: validate → detect → parse → geometry validate."""
+        """V58 SAFETY FIX: IFC pipeline with regex parser is REJECTED by GeometryValidator.
+
+        The regex IFC parser CANNOT extract real room geometry — all IFCSPACE rooms
+        get placeholder 10m x 10m boundary boxes. The V58 safety fix correctly
+        sets has_fallback_geometry=True for buildings with placeholder boundaries,
+        and the GeometryValidator correctly REJECTS them. This prevents fire
+        protection designs based on wrong geometry from being produced.
+
+        For a SUCCESSFUL full pipeline, install ifcopenshell (pip install ifcopenshell)
+        which provides real IFC geometry extraction.
+        """
         content = (
             "ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\n"
             "#10=IFCSPACE('ICU_ROOM');\n"
@@ -818,10 +840,17 @@ class TestIntegrationPipeline(unittest.TestCase):
             building = parse_res.unwrap()
             self.assertGreaterEqual(len(building.rooms), 1)
 
-            # Step 4: Geometry validate
+            # Step 4: Geometry validate — V58 SAFETY: MUST FAIL for placeholder geometry
+            # The regex parser creates 10m x 10m placeholder boxes, NOT real room shapes.
+            # The GeometryValidator correctly rejects placeholder buildings because fire
+            # protection design based on wrong geometry is INVALID and DANGEROUS.
             geom_res = GeometryValidator.validate_building(building)
-            self.assertTrue(geom_res.is_success,
-                           f"Geometry validation failed: {geom_res.error() if geom_res.is_failure else ''}")
+            self.assertTrue(geom_res.is_failure,
+                           f"V58 SAFETY: GeometryValidator MUST reject placeholder geometry. "
+                           f"Got unexpected success — placeholder buildings must NOT pass validation.")
+            # Verify the error is about placeholder/fallback geometry
+            self.assertIn("placeholder", str(geom_res.error()).lower(),
+                         "Rejection reason must mention placeholder/fallback geometry")
 
             # Step 5: Compute hash
             bhash = building.compute_hash()

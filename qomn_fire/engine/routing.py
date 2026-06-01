@@ -10,9 +10,12 @@ BUG-27 FIX: Conduit-type-appropriate trade size, not hardcoded "1/2".
 
 import heapq
 import math
+import logging
 from typing import List, Tuple, Dict, Set
 from qomn_fire.core.types import Point3D, ConduitType, ConduitRun, Fitting, FittingType
 from qomn_fire.core.errors import Result, NECViolationError
+
+logger = logging.getLogger("qomn_fire.routing")
 
 
 class GridMap3D:
@@ -57,6 +60,19 @@ def astar_route_3d(
 ) -> Result[ConduitRun, NECViolationError]:
     g_start = grid_map.to_grid(start)
     g_end = grid_map.to_grid(end)
+
+    # SAFETY FIX (V58): Validate start/end coordinates for NaN/Inf.
+    # Per IEEE 754: NaN comparisons always return False — NaN coordinates
+    # would silently bypass obstacle checks and produce invalid conduit paths.
+    for label, pt in [("start", start), ("end", end)]:
+        for coord_name, val in [("x", pt.x), ("y", pt.y), ("z", pt.z)]:
+            if not math.isfinite(val):
+                return Result(error=NECViolationError(
+                    message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
+                            f"Conduit routing requires finite coordinates.",
+                    code_ref="NEC Art 300.18",
+                    remedy="Validate device positions before routing. Check for NaN in IFC parsing."
+                ))
 
     if g_start in grid_map.obstacles or g_end in grid_map.obstacles:
         return Result(error=NECViolationError(

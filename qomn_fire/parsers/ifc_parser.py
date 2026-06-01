@@ -9,10 +9,14 @@ Standards: ISO 16739 (IFC), ISO 10303-21 (STEP Physical File)
 """
 
 import re
+import math
+import logging
 from typing import Tuple, List
 
 from qomn_fire.core.types import Point3D, Wall, Room, Opening, Building
 from qomn_fire.core.errors import Result, GeometryError
+
+logger = logging.getLogger("qomn_fire.ifc_parser")
 
 
 class IfcParser:
@@ -46,6 +50,14 @@ class IfcParser:
         rooms: List[Room] = []
         openings: List[Opening] = []
 
+        # Track how many elements used fallback/placeholder geometry
+        # SAFETY CRITICAL: If any element uses placeholder data, the entire
+        # building model must be flagged. Per NFPA 72 §17.7.4, fire protection
+        # design based on wrong geometry produces WRONG coverage = people die.
+        placeholder_wall_count = 0
+        placeholder_room_count = 0
+        placeholder_opening_count = 0
+
         # ── Parse STEP physical instances ──
         instances = IfcParser.STEP_PATTERN.findall(content)
 
@@ -57,14 +69,51 @@ class IfcParser:
                 # Extract coordinate-like data from params if available
                 # For a regex-based parser, we extract what we can from the STEP entity
                 coords = IfcParser._extract_coords_from_params(inst_params)
-                start_p = Point3D(coords.get("x1", 0.0), coords.get("y1", float(inst_id) * 0.5), 0.0)
-                end_p = Point3D(coords.get("x2", 10.0), coords.get("y2", float(inst_id) * 0.5), 0.0)
+
+                # SAFETY FIX: Validate extracted coordinates for NaN/Inf.
+                # Per IEEE 754: NaN comparisons are always False —
+                # NaN data would silently bypass downstream safety checks.
+                x1 = coords.get("x1")
+                y1 = coords.get("y1")
+                x2 = coords.get("x2")
+                y2 = coords.get("y2")
+                height = coords.get("height")
+                thickness = coords.get("thickness")
+
+                has_placeholder_wall = False
+
+                if x1 is None or y1 is None or not math.isfinite(x1) or not math.isfinite(y1):
+                    x1 = 0.0
+                    y1 = float(inst_id) * 0.5
+                    has_placeholder_wall = True
+                if x2 is None or y2 is None or not math.isfinite(x2) or not math.isfinite(y2):
+                    x2 = 10.0
+                    y2 = float(inst_id) * 0.5
+                    has_placeholder_wall = True
+                if height is None or not math.isfinite(height):
+                    height = 3.0
+                    has_placeholder_wall = True
+                if thickness is None or not math.isfinite(thickness):
+                    thickness = 0.20
+                    has_placeholder_wall = True
+
+                if has_placeholder_wall:
+                    placeholder_wall_count += 1
+                    logger.critical(
+                        "SAFETY: Wall '%s' uses placeholder geometry (start=(%.1f,%.1f), "
+                        "end=(%.1f,%.1f), height=%.1f, thickness=%.2f). "
+                        "Fire protection design on placeholder walls is INVALID.",
+                        wall_id, x1, y1, x2, y2, height, thickness
+                    )
+
+                start_p = Point3D(x1, y1, 0.0)
+                end_p = Point3D(x2, y2, 0.0)
                 walls.append(Wall(
                     id=wall_id,
                     start=start_p,
                     end=end_p,
-                    height_m=coords.get("height", 3.0),
-                    thickness_m=coords.get("thickness", 0.20)
+                    height_m=height,
+                    thickness_m=thickness
                 ))
                 wall_counter += 1
 
@@ -85,19 +134,40 @@ class IfcParser:
                 # Calculate area from boundary using Shoelace formula
                 area = IfcParser._calculate_polygon_area(boundary)
 
+                # SAFETY FIX: All rooms from the regex parser get placeholder
+                # boundaries because the regex CANNOT extract real IFC geometry.
+                # Real IFC geometry requires ifcopenshell library.
+                # This room's boundary is a 10m x 10m placeholder box,
+                # NOT the real room shape from the building.
+                logger.critical(
+                    "SAFETY: Room '%s' uses placeholder boundary geometry "
+                    "(10m x 10m fallback box). The actual room shape is UNKNOWN. "
+                    "Fire protection design on placeholder geometry is INVALID. "
+                    "Install ifcopenshell for real IFC geometry extraction.",
+                    room_id
+                )
                 rooms.append(Room(
                     id=room_id,
                     name=name,
                     boundary=boundary,
                     area_m2=area,
-                    height_m=3.0
+                    height_m=3.0,
+                    has_placeholder_boundary=True
                 ))
+                placeholder_room_count += 1
                 room_counter += 1
 
         # Parse openings (IFCDOOR, IFCWINDOW)
         opening_counter = 1
         for inst_id, inst_type, inst_params in instances:
             if inst_type == "IFCDOOR":
+                # SAFETY FIX: Door location defaults to origin — NOT real position.
+                # Downstream firestopping annotations would be at wrong locations.
+                logger.warning(
+                    "Door '%s' location is placeholder (origin) — "
+                    "actual door position is unknown from regex parsing.",
+                    f"IFC_DOOR_{inst_id}_{opening_counter:03d}"
+                )
                 openings.append(Opening(
                     id=f"IFC_DOOR_{inst_id}_{opening_counter:03d}",
                     opening_type="DOOR",
@@ -105,8 +175,14 @@ class IfcParser:
                     width_m=0.9,
                     height_m=2.1
                 ))
+                placeholder_opening_count += 1
                 opening_counter += 1
             elif inst_type == "IFCWINDOW":
+                logger.warning(
+                    "Window '%s' location is placeholder (origin) — "
+                    "actual window position is unknown from regex parsing.",
+                    f"IFC_WINDOW_{inst_id}_{opening_counter:03d}"
+                )
                 openings.append(Opening(
                     id=f"IFC_WINDOW_{inst_id}_{opening_counter:03d}",
                     opening_type="WINDOW",
@@ -114,12 +190,18 @@ class IfcParser:
                     width_m=1.2,
                     height_m=1.5
                 ))
+                placeholder_opening_count += 1
                 opening_counter += 1
 
         # Fallback room instantiation — ensures at least one room for pipeline testing.
         # BUG-9 FIX: Set has_fallback_geometry=True when fallback room is used.
         # Downstream systems MUST check this flag — fire protection design based
         # on fallback geometry is INVALID and must be rejected.
+        #
+        # SAFETY FIX (V58): If ANY rooms used placeholder boundaries, also set
+        # has_fallback_geometry=True. Placeholder room boundaries are NOT real
+        # building geometry — they are 10m x 10m fallback boxes. A building with
+        # placeholder room geometry is just as INVALID as one with no rooms at all.
         has_fallback = False
         if not rooms:
             fallback_boundary = (
@@ -133,9 +215,23 @@ class IfcParser:
                 name="Fallback Room (IFC parsing found no rooms)",
                 boundary=fallback_boundary,
                 area_m2=IfcParser._calculate_polygon_area(fallback_boundary),
-                height_m=3.0
+                height_m=3.0,
+                has_placeholder_boundary=True
             ))
             has_fallback = True
+
+        # SAFETY FIX (V58): Building with ANY placeholder room boundaries is INVALID.
+        # The geometry validator checks has_fallback_geometry to reject invalid buildings.
+        # If rooms exist but ALL have placeholder boundaries, the building model is
+        # just as dangerous as one with fallback rooms.
+        if placeholder_room_count > 0:
+            has_fallback = True
+            logger.critical(
+                "SAFETY GATE: Building has %d room(s) with placeholder boundary geometry. "
+                "has_fallback_geometry=True — geometry validator will REJECT this building. "
+                "Install ifcopenshell (pip install ifcopenshell) for real IFC geometry extraction.",
+                placeholder_room_count
+            )
 
         # Detect IFC version from header
         version = "IFC2X3"
