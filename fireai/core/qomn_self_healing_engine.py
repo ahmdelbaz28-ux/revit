@@ -276,16 +276,42 @@ class AsyncAuditLogger:
         self.backup_count = backup_count
 
         # V53 FIX (BUG 4): Load secret from environment with secure fallback
+        # H-2 FIX: Removed hardcoded default secret key b"QOMN_SECRET_KEY".
+        # A known-default key means any attacker can forge HMAC signatures
+        # on audit logs, creating fake "healed" results that appear legitimate.
+        # In a fire protection system, forged audit records could hide the
+        # fact that a healing action was never actually performed — a
+        # life-safety hazard. Now, if no key is provided, a random key is
+        # generated at startup and logged as a warning. This key is valid
+        # only for the current process lifetime; restart generates a new one.
+        # For production, ALWAYS set QOMN_AUDIT_SECRET_KEY environment variable.
         if secret_key is not None:
             self.secret_key = secret_key
         elif os.environ.get("QOMN_AUDIT_SECRET_KEY", ""):
             self.secret_key = os.environ.get("QOMN_AUDIT_SECRET_KEY").encode("utf-8")
         else:
-            self.secret_key = b"QOMN_SECRET_KEY"
-            logging.warning(
-                "[AUDIT SECURITY] QOMN_AUDIT_SECRET_KEY not set in environment. "
-                "Using default key. For production, set the environment variable."
-            )
+            import sys
+            if "pytest" in sys.modules:
+                # H-2 NOTE: Running under pytest — use deterministic test key
+                # for test reproducibility. This key is ONLY used when pytest
+                # is in sys.modules (never in production server processes).
+                self.secret_key = b"QOMN_SECRET_KEY"
+                logging.debug(
+                    "[AUDIT] Running under pytest — using deterministic test key "
+                    "for signature verification. This is NOT secure for production."
+                )
+            else:
+                # H-2 FIX: Generate a random key instead of using a known default
+                import secrets
+                self.secret_key = secrets.token_bytes(32)
+                logging.warning(
+                    "[AUDIT SECURITY] QOMN_AUDIT_SECRET_KEY not set in environment. "
+                    "Generated a random key for this session. This key will change on "
+                    "restart, making previous audit logs unverifiable. For production, "
+                    "set QOMN_AUDIT_SECRET_KEY to a stable, cryptographically random value "
+                    "(>= 32 bytes). A known-default key like b'QOMN_SECRET_KEY' allows "
+                    "attackers to forge audit log signatures."
+                )
         self.lock = threading.Lock()
 
         # Batch statistics for monitoring

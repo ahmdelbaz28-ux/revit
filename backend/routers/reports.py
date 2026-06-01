@@ -284,12 +284,18 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
             },
         )
     except Exception as e:
+        # M-4 FIX: Never store str(e) in report parameters. The old code
+        # stored raw exception text in the database, which could include
+        # file paths, variable names, and internal implementation details.
+        # This data is retrievable via the API, creating an information
+        # leakage vulnerability. Log the full error server-side instead.
+        logger.error(f"Report generation failed for project {project_id}: {e}", exc_info=True)
         db.update_report(
             project_id,
             report["id"],
             {
                 "status": "failed",
-                "parameters": {**report.get("parameters", {}), "error": str(e)},
+                "parameters": {**report.get("parameters", {}), "error": "Report generation failed. Contact administrator for details."},
             },
         )
 

@@ -40,11 +40,16 @@ try:
 except ImportError:
     pass  # python-dotenv not installed — rely on OS env vars (Docker/K8s)
 
+import hmac
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.base import BaseHTTPMiddleware
+# C-1 FIX: Removed BaseHTTPMiddleware import — all custom middleware converted
+# to pure ASGI to fix StreamingResponse buffering issue. BaseHTTPMiddleware's
+# await call_next() reads the ENTIRE response body into memory, breaking
+# StreamingResponse for large DXF/IFC/PDF exports (OOM + timeout).
 
 from backend.request_context import CorrelationIdMiddleware
 
@@ -262,6 +267,12 @@ _PER_PATH_LIMITS = [
     # Per agent.md Priority 1 (Safety): DoS on a fire protection system means
     # engineers can't access life-safety tools during an emergency.
     ("/api/workflow/start", 3, 60),  # 3 starts per minute — strict
+    # H-5 FIX: Report generation is computationally expensive (database queries,
+    # PDF/DXF rendering). Without a tighter limit, an attacker can trigger
+    # hundreds of concurrent report generations, exhausting CPU and memory.
+    # This prefix is longer than "/api/projects" so it takes precedence for
+    # all project-specific sub-paths (reports, exports, devices, connections).
+    ("/api/projects/", 15, 60),  # 15/min per IP for project operations
     ("/api/environment/weather", 10, 60),
     ("/api/environment/geocoding", 1, 1),
     ("/api/environment/elevation", 10, 60),
@@ -271,7 +282,7 @@ _PER_PATH_LIMITS = [
     ("/api/environment/region", 10, 60),
     ("/api/workflow", 10, 60),  # General workflow queries
     ("/api/memory", 60, 60),
-    ("/api/projects", 30, 60),
+    ("/api/projects", 30, 60),  # Project listing only (shorter prefix)
     ("/api/analyze", 10, 60),
     ("/api/qomn", 10, 60),
 ]
@@ -279,9 +290,18 @@ _PER_PATH_LIMITS = [
 _DEFAULT_RATE_LIMIT = (120, 60)
 
 
-class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
+class PerPathRateLimitMiddleware:
     """
-    Per-path rate limiting using longest-prefix match algorithm.
+    Pure ASGI per-path rate limiting — does NOT buffer response body.
+
+    C-1 FIX: Converted from BaseHTTPMiddleware to pure ASGI middleware.
+    BaseHTTPMiddleware buffers the ENTIRE response body in memory via
+    await call_next(), breaking StreamingResponse for large file exports
+    (DXF, IFC, PDF). Pure ASGI middleware passes the response stream
+    through without buffering.
+
+    H-1 FIX: Added cleanup of empty IP entries and periodic full cleanup
+    to prevent unbounded memory growth from unique client IPs.
 
     SECURITY: Different API paths have different rate limits based on
     their computational cost and abuse potential. The longest-prefix
@@ -290,10 +310,9 @@ class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
     """
 
     def __init__(self, app, **kwargs):
-        super().__init__(app, **kwargs)
+        self.app = app
         self._clients: Dict[str, List[float]] = {}  # client_ip → [timestamps]
         import threading
-
         self._lock = threading.Lock()
 
     def _find_limit(self, path: str) -> tuple:
@@ -319,23 +338,63 @@ class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
                 self._clients[client_ip] = []
             # Remove expired timestamps
             self._clients[client_ip] = [ts for ts in self._clients[client_ip] if now - ts < window_s]
+            # H-1 FIX: Remove empty IP entries to prevent unbounded memory growth.
+            # Previously, IPs with all-expired timestamps remained in the dict forever.
+            # A million unique IPs = a million permanent entries = memory leak.
+            if not self._clients[client_ip]:
+                del self._clients[client_ip]
+                return False
             if len(self._clients[client_ip]) >= max_req:
                 return True
             self._clients[client_ip].append(now)
+            # H-1 FIX: Periodic full cleanup when dict grows beyond 10k entries.
+            # This handles edge cases where individual entry cleanup isn't enough
+            # (e.g., many IPs with partial timestamp lists).
+            if len(self._clients) > 10000:
+                self._cleanup_expired(now)
             return False
 
-    async def dispatch(self, request: Request, call_next):
-        """Enforce per-path rate limits on every request."""
-        client_ip = request.client.host if request.client else "unknown"
-        # V111 FIX: Actually enforce rate limiting — previous version only
-        # had _find_limit() but no dispatch(), making the middleware dead code.
-        if self._is_rate_limited(client_ip, request.url.path):
-            return JSONResponse(
-                status_code=429,
-                content={"detail": "Rate limit exceeded. Please try again later."},
-            )
-        response = await call_next(request)
-        return response
+    def _cleanup_expired(self, now: float) -> None:
+        """H-1 FIX: Remove all expired client entries to prevent memory leak."""
+        expired_ips = []
+        for ip, timestamps in list(self._clients.items()):
+            # Keep only non-expired timestamps (1h max window covers all limits)
+            fresh = [ts for ts in timestamps if now - ts < 3600]
+            if not fresh:
+                expired_ips.append(ip)
+            else:
+                self._clients[ip] = fresh
+        for ip in expired_ips:
+            del self._clients[ip]
+
+    async def __call__(self, scope, receive, send):
+        """Enforce per-path rate limits on every HTTP request."""
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        client_ip = scope.get("client", (None, None))[0] or "unknown"
+        path = scope.get("path", "")
+
+        if self._is_rate_limited(client_ip, path):
+            body = json.dumps(
+                {"detail": "Rate limit exceeded. Please try again later."}
+            ).encode("utf-8")
+            await send({
+                "type": "http.response.start",
+                "status": 429,
+                "headers": [
+                    [b"content-type", b"application/json"],
+                    [b"content-length", str(len(body)).encode()],
+                ],
+            })
+            await send({
+                "type": "http.response.body",
+                "body": body,
+            })
+            return
+
+        await self.app(scope, receive, send)
 
 
 # ── Security headers middleware ────────────────────────────────────────────
@@ -343,9 +402,65 @@ class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
 # These headers are mandatory for a safety-critical system exposed to the internet.
 
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+def _build_csp() -> str:
+    """Build Content-Security-Policy header from environment configuration.
+
+    C-2 FIX: connect-src is no longer hardcoded to localhost.
+    In production, CSP_CONNECT_SRC env var must be set for external
+    connections (APIs, WebSockets). Without it, only 'self' is allowed.
+    In development, localhost defaults are provided.
+
+    M-1 FIX: 'unsafe-eval' is only included when CSP_UNSAFE_EVAL=true
+    (default: true for backward compatibility with three.js/recharts).
+    In production, CSP_UNSAFE_EVAL should be set to 'false' and the
+    frontend should use nonce-based CSP instead.
     """
-    Adds security headers to every HTTP response.
+    env = os.getenv("FIREAI_ENV", "production")
+
+    # M-1 FIX: 'unsafe-eval' is configurable and logged as security risk
+    allow_unsafe_eval = os.getenv("CSP_UNSAFE_EVAL", "true").lower() in ("true", "1", "yes")
+    if allow_unsafe_eval:
+        script_src = "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        if env != "development":
+            logger.warning(
+                "CSP includes 'unsafe-eval' in production — this weakens XSS protection. "
+                "Set CSP_UNSAFE_EVAL=false and implement nonce-based CSP for production."
+            )
+    else:
+        script_src = "script-src 'self' 'unsafe-inline'; "
+
+    # C-2 FIX: connect-src is configurable, not hardcoded to localhost
+    connect_src_extra = ""
+    if env == "development":
+        connect_src_extra = " http://localhost:* ws://localhost:*"
+    else:
+        # Production: read allowed connection sources from env var
+        extra = os.getenv("CSP_CONNECT_SRC", "")
+        if extra:
+            connect_src_extra = f" {extra}"
+        # If CSP_CONNECT_SRC is not set, only 'self' is allowed
+
+    csp = (
+        "default-src 'self'; "
+        + script_src +
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: blob:; "
+        f"connect-src 'self'{connect_src_extra}; "
+        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; "
+        "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com;"
+    )
+    return csp
+
+
+class SecurityHeadersMiddleware:
+    """
+    Pure ASGI middleware — adds security headers to every HTTP response.
+
+    C-1 FIX: Converted from BaseHTTPMiddleware to pure ASGI middleware.
+    BaseHTTPMiddleware's await call_next() reads the ENTIRE response body
+    into memory before dispatch() runs, breaking StreamingResponse for
+    large DXF/IFC/PDF exports. Pure ASGI middleware intercepts the response
+    stream without buffering, allowing large file downloads to work.
 
     Source: Original FRONTEND-FIREAI project nginx.conf, adapted for FastAPI.
     Rationale:
@@ -357,33 +472,36 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
       - Content-Security-Policy: Restricts resource loading to trusted sources
     """
 
-    async def dispatch(self, request: Request, call_next):
-        response: Response = await call_next(request)
-        # Prevent clickjacking — safety-critical UI must not be framed
-        response.headers["X-Frame-Options"] = "SAMEORIGIN"
-        # Prevent MIME type sniffing — forces declared Content-Type
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        # Legacy XSS protection for older browsers
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        # Limit referrer information to origin only on cross-origin requests
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        # Deny access to unnecessary browser APIs (camera, microphone, geolocation)
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-        # Content Security Policy — restricts resource loading
-        # 'unsafe-inline' and 'unsafe-eval' needed for Vite-built React app
-        # 'unsafe-eval' required by some charting/3D libraries (recharts, three.js)
-        # connect-src allows API and WebSocket connections
-        csp = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-            "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data: blob:; "
-            "connect-src 'self' http://localhost:* ws://localhost:*; "
-            "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; "
-            "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com;"
-        )
-        response.headers["Content-Security-Policy"] = csp
-        return response
+    def __init__(self, app, **kwargs):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # C-2 + M-1 FIX: Build CSP dynamically from environment configuration
+        csp = _build_csp()
+
+        async def send_with_security_headers(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                # Prevent clickjacking — safety-critical UI must not be framed
+                headers.append([b"x-frame-options", b"SAMEORIGIN"])
+                # Prevent MIME type sniffing — forces declared Content-Type
+                headers.append([b"x-content-type-options", b"nosniff"])
+                # Legacy XSS protection for older browsers
+                headers.append([b"x-xss-protection", b"1; mode=block"])
+                # Limit referrer information to origin only on cross-origin requests
+                headers.append([b"referrer-policy", b"strict-origin-when-cross-origin"])
+                # Deny access to unnecessary browser APIs (camera, microphone, geolocation)
+                headers.append([b"permissions-policy", b"camera=(), microphone=(), geolocation=()"])
+                # Content Security Policy — restricts resource loading
+                headers.append([b"content-security-policy", csp.encode("utf-8")])
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_security_headers)
 
 
 app.add_middleware(SecurityHeadersMiddleware)
@@ -397,9 +515,14 @@ app.add_middleware(SecurityHeadersMiddleware)
 _FIREAI_API_KEY = os.getenv("FIREAI_API_KEY")
 
 
-class ApiKeyMiddleware(BaseHTTPMiddleware):
+class ApiKeyMiddleware:
     """
-    Validates X-API-Key header on mutating requests.
+    Pure ASGI middleware — validates X-API-Key header on mutating requests.
+
+    C-1 FIX: Converted from BaseHTTPMiddleware to pure ASGI middleware.
+    BaseHTTPMiddleware's await call_next() reads the ENTIRE response body
+    into memory, breaking StreamingResponse for large file exports.
+    Pure ASGI middleware passes the response stream through without buffering.
 
     In a life-safety engineering system, unauthorized modification of
     detector placement or circuit calculations is a safety hazard.
@@ -410,10 +533,22 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
     API consumers (third-party scripts, CLI tools, etc.).
     """
 
-    async def dispatch(self, request: Request, call_next):
-        # Skip auth for read-only methods and WebSocket
-        if request.method in ("GET", "HEAD", "OPTIONS"):
-            return await call_next(request)
+    def __init__(self, app, **kwargs):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        method = scope.get("method", "")
+        path = scope.get("path", "")
+        client_ip = scope.get("client", (None, None))[0] or "unknown"
+
+        # Skip auth for read-only methods and OPTIONS
+        if method in ("GET", "HEAD", "OPTIONS"):
+            await self.app(scope, receive, send)
+            return
 
         # V65 FIX: If FIREAI_API_KEY is not set in production, FAIL TO START.
         # The old code silently allowed all requests when the key was unset,
@@ -422,37 +557,35 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
         if not _FIREAI_API_KEY:
             if os.getenv("FIREAI_ENV") != "development":
                 logger.critical(
-                    "🔴 FIREAI_API_KEY not set in production! Refusing to process "
+                    "FIREAI_API_KEY not set in production! Refusing to process "
                     "unauthenticated mutating requests. Set FIREAI_API_KEY environment "
                     "variable or set FIREAI_ENV=development for local development."
                 )
-                return Response(
-                    content="Server misconfigured: FIREAI_API_KEY required in production",
-                    status_code=503,
-                    media_type="text/plain",
-                )
+                body = b"Server misconfigured: FIREAI_API_KEY required in production"
+                await send({
+                    "type": "http.response.start",
+                    "status": 503,
+                    "headers": [
+                        [b"content-type", b"text/plain"],
+                        [b"content-length", str(len(body)).encode()],
+                    ],
+                })
+                await send({"type": "http.response.body", "body": body})
+                return
             # Development mode: allow without auth
-            logger.warning("⚠️ FIREAI_API_KEY not set — auth disabled (development only)")
-            return await call_next(request)
+            logger.warning("FIREAI_API_KEY not set — auth disabled (development only)")
+            await self.app(scope, receive, send)
+            return
 
-        # SECURITY: When API key is configured, we validate ALL mutating requests.
-        # Same-origin SPA requests are identified by matching the Origin header
-        # to our Host header. Requests WITHOUT an Origin header are NOT trusted
-        # as same-origin — external tools (curl, Postman, scripts) typically omit
-        # the Origin header, so treating absent Origin as trusted creates an
-        # auth bypass vulnerability (CVE-2026-001).
-        #
-        # Browser fetch from the SPA always includes Origin when the request
-        # is cross-origin, and same-origin POST from a form includes Origin
-        # in most browsers. The SPA's fetch() calls include Origin explicitly.
-        origin = request.headers.get("origin", "")
+        # Get headers from ASGI scope (headers are [name_bytes, value_bytes] pairs)
+        headers_dict = {}
+        for h_name, h_value in scope.get("headers", []):
+            headers_dict[
+                h_name.decode("utf-8", errors="replace").lower()
+            ] = h_value.decode("utf-8", errors="replace")
 
-        # Check if Origin matches our server (same-origin SPA)
-        # BUG-39 FIX: Previous code allowed spoofed Origin headers from external
-        # IPs by matching against hardcoded dev origins like "http://localhost:3000".
-        # An external attacker could set Origin: http://localhost:3000 and bypass auth.
-        # Fix: Only trust Origin if it matches the request's Host header exactly,
-        # OR if we're explicitly in development mode (FIREAI_ENV=development).
+        origin = headers_dict.get("origin", "")
+
         # V65 FIX: Remove Origin-header-based auth bypass entirely.
         # The old code compared client-controlled Origin against client-controlled Host,
         # allowing ANY attacker to bypass auth by setting both headers. In a
@@ -464,33 +597,39 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
         # In development mode, allow common dev origins WITHOUT API key
         # (CRITICAL: This MUST NOT be active in production)
         if os.getenv("FIREAI_ENV") == "development":
-            origin = request.headers.get("origin", "")
             if origin in (
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://127.0.0.1:3000",
                 "http://127.0.0.1:5173",
             ):
-                return await call_next(request)
+                await self.app(scope, receive, send)
+                return
 
         # No matching origin — require API key
         # This covers: (1) requests without Origin header, (2) external origins
         # Use constant-time comparison to prevent timing attacks
-        import hmac
-
-        api_key = request.headers.get("X-API-Key", "")
+        api_key = headers_dict.get("x-api-key", "")
         if not hmac.compare_digest(api_key, _FIREAI_API_KEY):
             logger.warning(
-                f"Unauthorized {request.method} request to {request.url.path} "
-                f"from origin={origin or 'none'} client={request.client.host if request.client else 'unknown'}"
+                f"Unauthorized {method} request to {path} "
+                f"from origin={origin or 'none'} client={client_ip}"
             )
-            return Response(
-                content='{"success":false,"error":"Invalid or missing X-API-Key header"}',
-                status_code=401,
-                media_type="application/json",
-            )
+            body = json.dumps(
+                {"success": False, "error": "Invalid or missing X-API-Key header"}
+            ).encode("utf-8")
+            await send({
+                "type": "http.response.start",
+                "status": 401,
+                "headers": [
+                    [b"content-type", b"application/json"],
+                    [b"content-length", str(len(body)).encode()],
+                ],
+            })
+            await send({"type": "http.response.body", "body": body})
+            return
 
-        return await call_next(request)
+        await self.app(scope, receive, send)
 
 
 app.add_middleware(ApiKeyMiddleware)

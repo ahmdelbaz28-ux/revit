@@ -553,6 +553,13 @@ def _handle_error(exc: Exception) -> NoReturn:
 
     V58 FIX (BUG #17): Return type changed from None to NoReturn since
     this function always raises HTTPException.
+
+    H-3 FIX: Never expose str(exc) to the client on HTTP 500 errors.
+    Python's str(Exception) can include file paths, variable names,
+    database connection strings, and internal implementation details.
+    In a fire protection system, this information could help attackers
+    understand the system internals and craft targeted exploits.
+    Detailed errors are logged server-side; clients get generic messages.
     """
     from fireai.core.qomn_kernel import PhysicsGuardError, ComputationError, ValidationError
     if isinstance(exc, PhysicsGuardError):
@@ -568,15 +575,33 @@ def _handle_error(exc: Exception) -> NoReturn:
             }
         )
     if isinstance(exc, (ComputationError, ValidationError)):
+        # H-3 FIX: Log the full error server-side, return generic message to client
+        logger.error("QOMN computation/validation error: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={
                 "error":  "COMPUTATION_VALIDATION_FAILURE",
-                "detail": str(exc),
+                "detail": "An internal computation error occurred. Check input values or contact the engineering team.",
                 "action": "Report this to the engineering team with input values.",
             }
         )
     if isinstance(exc, ValueError):
-        raise HTTPException(status_code=422, detail={"error": "INVALID_INPUT", "detail": str(exc)})
-    logger.error("QOMN kernel unexpected error: %s", exc)
-    raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR", "detail": str(exc)})
+        # M-2 FIX: Sanitize ValueError messages — Shapely/geometry errors
+        # can expose coordinates and internal variable names
+        logger.warning("QOMN ValueError: %s", exc)
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "INVALID_INPUT",
+                "detail": "Input values are invalid. Please check all parameters and try again.",
+            }
+        )
+    # H-3 FIX: Never expose str(exc) to client on unexpected errors
+    logger.error("QOMN kernel unexpected error: %s", exc, exc_info=True)
+    raise HTTPException(
+        status_code=500,
+        detail={
+            "error": "INTERNAL_ERROR",
+            "detail": "An unexpected error occurred. The engineering team has been notified.",
+        }
+    )

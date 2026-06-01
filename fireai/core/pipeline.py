@@ -352,9 +352,36 @@ def _stage1_nfpa_spacing(
     detector_type: str,
     room_area_m2: float,
 ) -> Dict:
-    """Compute NFPA 72 spacing and estimate detector count."""
+    """Compute NFPA 72 spacing and estimate detector count.
+
+    M-3 FIX: Checks for error in estimate_detector_count result before
+    using the values. Previously, if estimate["error"] was set (e.g.,
+    invalid room area), the pipeline would silently continue with
+    min_detector_count=0 and area_per_detector_m2=None, producing
+    a result that looks valid but has zero detectors for a room that
+    needs coverage — a life-safety catastrophe in fire protection.
+    """
     spacing = get_detector_spacing(ceiling_height_m, detector_type)
     estimate = estimate_detector_count(room_area_m2, ceiling_height_m, detector_type)
+
+    # M-3 FIX: Propagate error from estimate_detector_count instead of
+    # silently using invalid values. When room_area_m2 is invalid (NaN,
+    # negative, zero), estimate contains min_detector_count=0 and an
+    # error field. Without this check, the pipeline continues with zero
+    # detectors and None area_per_detector_m2, which produces a result
+    # that looks valid downstream but has no detector coverage.
+    if "error" in estimate:
+        return {
+            "error": estimate["error"],
+            "max_spacing_m": spacing.max_spacing_m,
+            "coverage_radius_m": spacing.coverage_radius_m,
+            "nfpa_section": spacing.nfpa_section,
+            "formula": spacing.formula,
+            "table_row_used": spacing.table_row_used,
+            "estimated_min_count": 0,
+            "area_per_detector_m2": None,
+        }
+
     return {
         "max_spacing_m": spacing.max_spacing_m,
         "coverage_radius_m": spacing.coverage_radius_m,

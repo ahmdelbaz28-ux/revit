@@ -72,7 +72,12 @@ async def create_connection(connection_data: ConnectionCreate):
         connection = db.create_connection(connection_data)
         return ApiResponse(success=True, data=connection, message="Connection created successfully")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # H-4 FIX: Never expose str(e) from ValueError to the client.
+        # Shapely/geometry ValueError messages include internal coordinates,
+        # variable names, and algorithm details that aid attackers.
+        # Log the full error server-side; return generic message to client.
+        logger.warning("Connection creation ValueError: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid connection data. Please check the input parameters.")
     except Exception as e:
         logger.error(f"create_connection failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")

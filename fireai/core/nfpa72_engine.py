@@ -398,10 +398,19 @@ def estimate_detector_count(
     # "failure returns success" anti-pattern — downstream code sees
     # count >= 1 and treats the room as covered. Fail-safe: return
     # count=0 with an explicit error field so callers can detect failure.
+    #
+    # C-4 FIX: Never return float("nan") in dict values. float("nan")
+    # in JSON is either sent as invalid "NaN" literal (RFC 8259 violation)
+    # or converted to null by the serializer — both silently corrupt
+    # downstream calculations. In fire protection engineering, NaN in
+    # area_per_detector_m2 could lead to zero detectors being placed
+    # for a room that actually needs coverage — a life-safety catastrophe.
+    # Replace float("nan") with None, which JSON serializes as null
+    # explicitly and callers can check for deterministically.
     if not math.isfinite(room_area_m2) or room_area_m2 <= 0:
         return {
             "min_detector_count": 0,
-            "area_per_detector_m2": float("nan"),
+            "area_per_detector_m2": None,  # C-4 FIX: was float("nan")
             "spacing_m": spacing_result.max_spacing_m,
             "coverage_radius_m": radius_m,
             "error": f"Invalid room_area_m2: {room_area_m2}",
