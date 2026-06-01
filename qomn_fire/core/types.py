@@ -105,18 +105,33 @@ class Building:
         # same room/wall IDs but different geometry must produce different hashes.
         # Previously, changing a wall's length or thickness produced the same hash,
         # breaking audit trail traceability. Openings were completely excluded.
+        #
+        # BUG-HASH8 FIX: Room boundary VERTEX COORDINATES are now included.
+        # Previously, two rooms with the same ID, area, height, and point count
+        # but DIFFERENT boundary shapes produced the same hash. Example:
+        #   Room A: 10x20m rectangle (area=200, 4 vertices)
+        #   Room B: 8x25m rectangle (area=200, 4 vertices)
+        # Both produced identical hashes despite being architecturally different.
+        # This broke audit trail integrity — a building with relocated walls
+        # was indistinguishable from the original in the hash.
+        # Boundary vertices use 2-decimal precision (1cm resolution) — sufficient
+        # for architectural geometry while avoiding floating-point noise.
         room_data = ";".join(
-            f"{r.id}:{r.area_m2:.4f}:{r.height_m:.4f}:{len(r.boundary)}"
+            f"{r.id}:{r.area_m2:.4f}:{r.height_m:.4f}:{len(r.boundary)}:"
+            + "|".join(f"{p.x:.2f},{p.y:.2f},{p.z:.2f}" for p in r.boundary)
             for r in self.rooms
         )
         wall_data = ";".join(
             f"{w.id}:{w.start.x:.4f},{w.start.y:.4f}:{w.end.x:.4f},{w.end.y:.4f}:{w.height_m:.4f}:{w.thickness_m:.4f}"
             for w in self.walls
         )
-        opening_ids = ",".join(o.id for o in self.openings)
+        opening_data = ";".join(
+            f"{o.id}:{o.opening_type}:{o.location.x:.2f},{o.location.y:.2f}:{o.width_m:.4f}:{o.height_m:.4f}"
+            for o in self.openings
+        )
         serialized = (
             f"{self.file_hash}:{self.format_detected}:{self.version_detected}:{self.units}:"
-            f"WALLS[{wall_data}]:ROOMS[{room_data}]:OPENINGS[{opening_ids}]:"
+            f"WALLS[{wall_data}]:ROOMS[{room_data}]:OPENINGS[{opening_data}]:"
             f"{self.has_fallback_geometry}"
         )
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()

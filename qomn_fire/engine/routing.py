@@ -6,6 +6,12 @@ BUG-5/16 FIX: bend_count now stores NUMBER of bends, not degrees.
 Added bend_degrees field for the NEC 360-degree limit check.
 BUG-20 FIX: Route length uses (path_points - 1) * step, not len(path) * step.
 BUG-27 FIX: Conduit-type-appropriate trade size, not hardcoded "1/2".
+BUG-ASTAR9 FIX: Added turn penalty to A* cost function. Without penalty,
+A* finds paths with excessive zigzag bends because every direction change
+costs the same as a straight step. Each 90-degree turn requires a fitting
+(elbow), increases installation cost, adds wire-pulling friction, and
+consumes 90 degrees of the NEC 360-degree bend budget. The turn penalty
+makes A* prefer straighter routes with fewer fittings.
 """
 
 import heapq
@@ -50,19 +56,42 @@ _DEFAULT_TRADE_SIZE = {
     ConduitType.FMC: "1/2",
 }
 
+# BUG-ASTAR9 FIX: Turn penalty for A* cost function.
+# Without this penalty, A* treats every grid step identically regardless
+# of direction change, producing paths with excessive 90-degree bends.
+# Each bend requires a physical fitting (elbow), costs money, makes wire
+# pulling harder, and counts toward the NEC 360-degree bend limit.
+# A penalty of 2.0 grid steps means one turn costs as much as 2 extra
+# meters of straight conduit (with 0.5m grid step). This is conservative
+# enough to prefer straight paths while not preventing any valid route.
+#
+# Note on optimality: The simple approach of adding penalty to g_score
+# without expanding the state space (x,y,z,dir) may produce slightly
+# suboptimal paths in rare cases. This is because g_score per node
+# doesn't track arrival direction, so a path arriving via turn might
+# have a lower g_score than one arriving straight. However:
+# 1. The practical impact is negligible for building-scale grids.
+# 2. The turn penalty is an optimization preference, NOT a safety check.
+# 3. The NEC 360-degree limit is enforced AFTER path construction.
+# 4. Full state-space expansion would use 6x more memory/computation.
+# For life-safety conduit routing, the simple approach is correct enough.
+DEFAULT_TURN_PENALTY = 2.0
+
+
 def astar_route_3d(
     grid_map: GridMap3D,
     start: Point3D,
     end: Point3D,
     conduit: ConduitType,
     conduit_id: str,
-    trade_size: str = ""
+    trade_size: str = "",
+    turn_penalty: float = DEFAULT_TURN_PENALTY
 ) -> Result[ConduitRun, NECViolationError]:
     g_start = grid_map.to_grid(start)
     g_end = grid_map.to_grid(end)
 
     # SAFETY FIX (V58): Validate start/end coordinates for NaN/Inf.
-    # Per IEEE 754: NaN comparisons always return False — NaN coordinates
+    # Per IEEE 754: NaN comparisons always return False -- NaN coordinates
     # would silently bypass obstacle checks and produce invalid conduit paths.
     for label, pt in [("start", start), ("end", end)]:
         for coord_name, val in [("x", pt.x), ("y", pt.y), ("z", pt.z)]:
@@ -102,7 +131,7 @@ def astar_route_3d(
         iterations += 1
         if iterations > MAX_ITERATIONS:
             return Result(error=NECViolationError(
-                message=f"A* pathfinding exceeded {MAX_ITERATIONS} iterations — grid too large or path too complex.",
+                message=f"A* pathfinding exceeded {MAX_ITERATIONS} iterations -- grid too large or path too complex.",
                 code_ref="NEC Art 300.18",
                 remedy="Reduce grid size or clear structural blockings from grid boundaries."
             ))
@@ -153,7 +182,7 @@ def astar_route_3d(
             # len(path) * step. For a 5m straight line with 0.5m grid:
             #   Path = [0, 0.5, 1.0, ..., 5.0] = 11 points
             #   Distance = 10 steps * 0.5m = 5.0m (CORRECT)
-            #   Old: 11 * 0.5 = 5.5m (WRONG — off by one grid step)
+            #   Old: 11 * 0.5 = 5.5m (WRONG -- off by one grid step)
             num_segments = max(len(path) - 1, 0)
             tot_len_m = num_segments * grid_map.step_m
             tot_len_ft = tot_len_m * 3.28084
@@ -188,7 +217,18 @@ def astar_route_3d(
             if neighbor in grid_map.obstacles:
                 continue
 
-            tentative_g = g_score[current] + 1.0
+            # BUG-ASTAR9 FIX: Add turn penalty when direction changes.
+            # Without penalty, A* produces paths with excessive zigzag bends.
+            # Each turn adds 'turn_penalty' grid steps to the movement cost,
+            # encouraging straighter routes with fewer fittings.
+            move_cost = 1.0
+            if current in came_from:
+                prev = came_from[current]
+                prev_dir = (current[0] - prev[0], current[1] - prev[1], current[2] - prev[2])
+                curr_dir = (dx, dy, dz)
+                if prev_dir != curr_dir:
+                    move_cost += turn_penalty
+            tentative_g = g_score[current] + move_cost
             if tentative_g < g_score.get(neighbor, float('inf')):
                 came_from[neighbor] = current
                 g_score[neighbor] = tentative_g

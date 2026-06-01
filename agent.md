@@ -2492,7 +2492,6 @@ Added NaN/Inf validation to `ArchitecturalWall.__init__()` and `EliteClassARoute
 
 ---
 
-<<<<<<< HEAD
 ## V57 Fixes (2026-05-26) — Comprehensive NaN/Inf Bypass Vulnerability Fixes (15 Findings)
 
 ### Context
