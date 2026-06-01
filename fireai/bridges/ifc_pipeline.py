@@ -188,8 +188,18 @@ class IfcFirePipeline:
         total_dets = len(all_devices)
         cov_pcts = [r.layer5_coverage_pct for r in all_results] or [0.0]
         blind_pcts = [r.layer7_blind_spot_pct for r in all_results] or [0.0]
-        global_cov = sum(cov_pcts) / len(cov_pcts)
-        global_bs = sum(blind_pcts) / len(blind_pcts)
+        # V78 FIX: Area-weighted average instead of arithmetic mean.
+        # Arithmetic mean: 10m²@90% + 1000m²@50% → 70% (WRONG)
+        # Area-weighted:   10m²@90% + 1000m²@50% → 50.4% (CORRECT)
+        # A small room with high coverage inflates the average unfairly.
+        areas = [getattr(r, '_space_area_m2', getattr(r, 'space_area_m2', 0.0)) for r in all_results]
+        total_area = sum(areas) if areas else 0.0
+        if total_area > 0:
+            global_cov = sum(c * a for c, a in zip(cov_pcts, areas)) / total_area
+            global_bs = sum(b * a for b, a in zip(blind_pcts, areas)) / total_area
+        else:
+            global_cov = sum(cov_pcts) / len(cov_pcts)
+            global_bs = sum(blind_pcts) / len(blind_pcts)
         elapsed = time.perf_counter() - t0
 
         return PipelineReport(
@@ -343,7 +353,13 @@ class IfcFirePipeline:
                 is_indoor=self.cfg.is_indoor,
                 env_context=env,
                 release_rate_kg_s=self.cfg.release_rate_kg_s,
-                room_volume_m3=space.get("volume_m3", 1000.0),
+                # V78 FIX: No longer default to 1000 m³ — a typical 10m²×3m room is 30 m³.
+                # 1000 m³ default overestimates air changes, producing zone extents that
+                # are too small (more dilution assumed than reality). IEC 60079-10-1
+                # requires conservative (small volume = less dilution = larger zones).
+                room_volume_m3=space.get("volume_m3") or max(
+                    space.get("area_m2", 0.0) * space.get("height_m", 3.0), 1.0
+                ),
             )
 
             warnings.extend(result.warnings)
@@ -382,7 +398,7 @@ class IfcFirePipeline:
 
             # Real API: arbitrate_v21(zone, hazard_type, autoignition_c, ...)
             atex_result = arbiter.arbitrate_v21(
-                zone=hac_result.zone if hac_result else ZoneType.ZONE_1,
+                zone=hac_result.zone if hac_result else ZoneType(l2.get("zone", "ZONE_0")),
                 hazard_type=hac_result.hazard_type if hac_result else HazardType.GAS,
                 autoignition_c=substance.autoignition_c,
                 hac_warnings=list(hac_result.warnings) if hac_result else [],

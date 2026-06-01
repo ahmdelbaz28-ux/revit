@@ -60,11 +60,17 @@ class IFCParser:
                 origin = bounds.get('origin', {})
                 dims = bounds.get('dimensions', {})
                 
+                # V78 FIX: Validate area — negative areas corrupt total_area calculation
+                raw_area = attrs.get('Area', 0)
+                if raw_area < 0:
+                    import logging; logging.getLogger(__name__).warning(f"Negative area for space {inst.get('id')}: {raw_area}")
+                    raw_area = 0
+
                 space = {
                     'id': inst.get('id'),
                     'name': attrs.get('Name'),
                     'long_name': attrs.get('LongName'),
-                    'area': attrs.get('Area', 0),
+                    'area': raw_area,
                     'elevation': attrs.get('Elevation', 0),
                     'bounds': {
                         'x': origin.get('x', 0),

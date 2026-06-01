@@ -642,7 +642,21 @@ class NotificationAssessment:
         """Run all compliance checks and aggregate results."""
         self.violations = []
         self.nfpa_references = []
-        self.is_compliant = True
+
+        # V78 FIX: Do NOT start as True — if no results were evaluated,
+        # the room must NOT claim compliance. This is a fail-closed design.
+        evaluated = sum(1 for r in [self.nac_result, self.spl_result,
+                                     self.strobe_result, self.corridor_strobe]
+                        if r is not None)
+        if evaluated == 0:
+            self.is_compliant = False
+            self.violations.append(
+                "No notification appliance evaluation performed — "
+                "cannot claim compliance per NFPA 72 §18.1"
+            )
+            return
+
+        self.is_compliant = True  # Start compliant only after confirming at least one check
 
         if self.nac_result is not None:
             if not self.nac_result.is_compliant:

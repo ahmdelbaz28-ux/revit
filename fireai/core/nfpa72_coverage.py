@@ -624,8 +624,10 @@ def check_ridge_zone_compliance(
     if standard_spacing is None:
         standard_spacing = 6.1 if detector_type == DetectorType.HEAT else 9.1
 
-    result = NFPAComplianceResult(is_compliant=True)
+    result = NFPAComplianceResult(is_compliant=False)  # V78 FIX: Fail-closed — assume non-compliant until proven
     if not requires_ridge_zone_detector(ceiling_spec):
+        # Flat ceiling or ceiling not requiring ridge zone detector — compliant by default
+        result.is_compliant = True
         return result
 
     # Collect all detectors inside the ridge zone
@@ -672,6 +674,10 @@ def check_ridge_zone_compliance(
                         f"Ridge detector gap {gap:.1f}m exceeds spacing limit {standard_spacing}m (NFPA 72 §17.6.3.4)."
                     )
                     break  # One violation is enough to flag
+
+    # V78 FIX: If no violations were added, mark as compliant
+    if not result.violations:
+        result.is_compliant = True
 
     return result
 
@@ -830,7 +836,7 @@ def check_nfpa72_compliance(
     Returns:
         NFPAComplianceResult
     """
-    result = NFPAComplianceResult(is_compliant=True)
+    result = NFPAComplianceResult(is_compliant=False)  # V78 FIX: Fail-closed — assume non-compliant until proven
     result.detector_count = len(detector_positions)
     # Check coverage
     coverage = check_coverage_polygon(detector_positions, room_spec, ceiling_spec, detector_type)
@@ -843,6 +849,9 @@ def check_nfpa72_compliance(
         if ridge_result.violations:
             result.is_compliant = False
     result.required_detector_count = result.detector_count
+    # V78 FIX: If no violations were added, mark as compliant
+    if not result.violations:
+        result.is_compliant = True
     return result
 
 

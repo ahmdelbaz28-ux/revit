@@ -477,7 +477,12 @@ class TestVoltageDropInputCompute:
         assert r_non["continuous_load_factor"] == 1.0
 
     def test_temperature_correction(self):
-        """NEC Table 310.15(B)(2)(a): temp > 30°C increases resistance."""
+        """NEC Table 310.15(B)(2)(a): temp above 75°C increases resistance.
+
+        V78 FIX: Temperature correction now uses (T - 75) instead of (T - 30)
+        because cable_resistance_ohm_per_m is specified at 75°C per NEC Table 8.
+        Temps below 75°C produce no correction (clamped to 1.0).
+        """
         data_30 = VoltageDropInput(
             supply_voltage_v=24.0,
             load_current_a=1.0,
@@ -485,20 +490,27 @@ class TestVoltageDropInputCompute:
             cable_length_m=100.0,
             ambient_temp_c=30.0,
         )
-        data_60 = VoltageDropInput(
+        data_80 = VoltageDropInput(
             supply_voltage_v=24.0,
             load_current_a=1.0,
             cable_resistance_ohm_per_m=0.01,
             cable_length_m=100.0,
-            ambient_temp_c=60.0,
+            ambient_temp_c=80.0,
         )
         r_30 = data_30.compute_voltage_drop()
-        r_60 = data_60.compute_voltage_drop()
-        assert r_60["drop_v"] > r_30["drop_v"]
-        assert r_60["temp_correction_factor"] > 1.0
+        r_80 = data_80.compute_voltage_drop()
+        assert r_80["drop_v"] > r_30["drop_v"]
+        assert r_80["temp_correction_factor"] > 1.0
 
     def test_bundling_derating(self):
-        """NEC Table 310.15(B)(3)(a): more conductors → lower bundling factor."""
+        """NEC Table 310.15(B)(3)(a): bundling factor is an ampacity derating,
+        NOT a resistance increase.
+
+        V78 FIX: bundling_factor was incorrectly divided into voltage drop.
+        Bundling reduces ampacity (current-carrying capacity), not wire
+        resistance. Wire resistance does not change when wires are bundled.
+        Voltage drop should be the SAME regardless of bundling.
+        """
         data_2 = VoltageDropInput(
             supply_voltage_v=24.0,
             load_current_a=1.0,
@@ -515,8 +527,9 @@ class TestVoltageDropInputCompute:
         )
         r_2 = data_2.compute_voltage_drop()
         r_6 = data_6.compute_voltage_drop()
-        # More conductors → lower bundling factor → higher effective drop
-        assert r_6["drop_v"] > r_2["drop_v"]
+        # V78 FIX: bundling no longer affects voltage drop — same resistance
+        assert r_6["drop_v"] == pytest.approx(r_2["drop_v"], rel=0.001)
+        # Bundling factor is still reported for ampacity checks
         assert r_6["bundling_derating_factor"] == 0.80
 
     def test_bundling_factor_table(self):

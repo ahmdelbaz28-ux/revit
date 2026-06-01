@@ -206,12 +206,47 @@ class HeadlessIFCBridge:
         Returns:
             True if export succeeded.
         """
-        # Fetch primary container (e.g. Ground Floor)
+        # Fetch storeys and sort by elevation for correct device placement
+        # V78 FIX: Previously ALL devices were placed on the first storey regardless
+        # of their z-coordinate. A 10-storey building would have 200+ devices on
+        # the ground floor in the IFC model — corrupt data for AHJ/BMS systems.
         storeys = self.model.by_type("IfcBuildingStorey")
-        target_storey = storeys[0] if storeys else None
+        storey_elevs = []
+        for s in storeys:
+            try:
+                elev = getattr(s, "Elevation", 0.0) or 0.0
+                storey_elevs.append((s, float(elev)))
+            except (TypeError, ValueError):
+                storey_elevs.append((s, 0.0))
+        storey_elevs.sort(key=lambda x: x[1])
 
         for dev in devices:
-            fa_type = "SMOKESENSOR" if "SMOKE" in dev.get("type", "").upper() else "HEATSENSOR"
+            # V78 FIX: Proper device type mapping — previously everything that wasn't
+            # SMOKE was mapped to HEATSENSOR, losing UGLD, FLAME, and combo types.
+            # This affects maintenance scheduling and ATEX marking per NFPA 72 §14.3.
+            type_upper = dev.get("type", "").upper()
+            if "SMOKE" in type_upper:
+                fa_type = "SMOKESENSOR"
+            elif "FLAME" in type_upper:
+                fa_type = "FLAMESENSOR"
+            elif "UGLD" in type_upper or "ULTRASONIC" in type_upper:
+                fa_type = "GASSENSOR"
+            elif "HEAT" in type_upper:
+                fa_type = "HEATSENSOR"
+            elif "COMBO" in type_upper or "MULTI" in type_upper:
+                fa_type = "MULTISENSOR"
+            else:
+                fa_type = "HEATSENSOR"
+                logger.warning(f"Unknown device type '{type_upper}' mapped to HEATSENSOR for device {dev.get('device_id')}")
+
+            # Match device z-coordinate to correct storey
+            z = dev.get("z", 0.0)
+            target_storey = None
+            for s, elev in storey_elevs:
+                if z >= elev - 0.5:  # 0.5m tolerance
+                    target_storey = s
+            if target_storey is None and storey_elevs:
+                target_storey = storey_elevs[0][0]
 
             device_elem = run(
                 "root.create_entity",

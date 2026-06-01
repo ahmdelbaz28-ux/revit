@@ -343,9 +343,15 @@ class VoltageDropInput(BaseModel):
         # Simplified model: temp_correction factor > 1.0 at higher temperatures.
         temp_correction = 1.0
         if self.ambient_temp_c > 30.0:
-            # Copper temperature coefficient: resistance increases ~0.393% per °C above 75°C
-            # Conservative model for voltage drop: higher temp → higher resistance
-            temp_correction = 1.0 + 0.00393 * (self.ambient_temp_c - 30.0)
+            # V78 FIX: cable_resistance_ohm_per_m is specified at 75°C (NEC Table 8).
+            # The temperature coefficient 0.00393 per °C is relative to the BASE temperature
+            # of the resistance value. Since our resistance is at 75°C, the correction
+            # must be from 75°C, NOT from 30°C. Previous formula used (T - 30) which
+            # over-corrected by 17.7% at 75°C ambient (1.177 vs correct 1.0).
+            # R_T = R_75C × (1 + 0.00393 × (T_ambient - 75))
+            temp_correction = 1.0 + 0.00393 * (self.ambient_temp_c - 75.0)
+            if temp_correction < 1.0:
+                temp_correction = 1.0  # Don't derate below reference temperature
 
         # Conductor bundling derating (NEC Table 310.15(B)(3)(a))
         bundling_factor = 1.0
@@ -367,7 +373,12 @@ class VoltageDropInput(BaseModel):
         effective_current = self.load_current_a * (1.25 if self.is_continuous_load else 1.0)
 
         # Voltage drop calculation
-        drop_v = effective_current * total_resistance / bundling_factor * temp_correction
+        # V78 FIX: Remove bundling_factor from voltage drop. Bundling is an AMPACITY
+        # derating (NEC 310.15(B)(3)(a)), NOT a resistance increase. Wire resistance
+        # does not change when wires are bundled — only the current-carrying capacity
+        # decreases. Dividing by bundling_factor overstated voltage drop by 25% for
+        # 4-6 conductors. Bundling is already handled in the ampacity check below.
+        drop_v = effective_current * total_resistance * temp_correction
         drop_fraction = drop_v / self.supply_voltage_v if self.supply_voltage_v > 0 else float("inf")
         terminal_voltage = self.supply_voltage_v - drop_v
 

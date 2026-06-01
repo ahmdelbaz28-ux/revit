@@ -548,11 +548,16 @@ class TestNotificationAssessment:
             assessment.evaluate()
             assert assessment.is_compliant is False
 
-    def test_no_results_compliant(self):
-        """No results provided → default compliant."""
+    def test_no_results_fail_closed(self):
+        """No results provided → fail-closed (non-compliant).
+
+        V78 FIX: Previously returned True when no results were evaluated,
+        which is a fail-open design — a room with no notification appliance
+        evaluation should NOT claim compliance. Now correctly returns False.
+        """
         assessment = NotificationAssessment(room_id="R1")
         assessment.evaluate()
-        assert assessment.is_compliant is True
+        assert assessment.is_compliant is False
 
     def test_nfpa_references_aggregated(self):
         """NFPA references from all checks are aggregated."""

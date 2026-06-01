@@ -80,12 +80,16 @@ DEVICE_PATTERNS = [
     (r'manual\s*pull', 'PULL_STATION'),
     (r'break\s*glass', 'PULL_STATION'),
     
-    # Notification appliances
+    # Notification appliances — ORDER MATTERS (most specific first)
+    # V78 FIX: Moved horn-strobe pattern BEFORE simple horn pattern.
+    # Previously, 'horn' matched "horn/strobe" first, misclassifying
+    # combined devices as simple HORN. NFPA 72 requires separate
+    # counting for combined vs standalone notification appliances.
+    (r'horn[\s-]*strobe', 'HORN_STROBE'),
     (r'horn', 'HORN'),
     (r'strobe', 'STROBE'),
     (r'bell', 'BELL'),
     (r'speaker', 'SPEAKER'),
-    (r'horn[\s-]*strobe', 'HORN_STROBE'),
     (r'notification', 'NOTIFICATION'),
     
     # Panel
@@ -154,7 +158,13 @@ class PDFParser:
             result.devices = devices
             result.text_content = text
             result.page_count = page_count
-            result.success = len(devices) > 0 or len(text) > 0
+            # V78 FIX: success requires at least some fire devices found.
+            # Previously, any text at all (even non-fire-related) set success=True,
+            # potentially misleading downstream code into thinking the building
+            # has been analyzed for fire protection when it hasn't.
+            result.success = len(devices) > 0
+            if len(text) > 0 and len(devices) == 0:
+                result.warnings.append("Text extracted but no fire devices identified")
             
         except ImportError as e:
             result.errors.append(f"Missing dependency: {e}")

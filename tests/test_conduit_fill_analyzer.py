@@ -143,10 +143,15 @@ class TestWireSpec:
         ws = WireSpec(awg=14, insulation=InsulationType.XHHW)
         assert ws.outer_diameter_mm == pytest.approx(3.05, abs=0.01)
 
-    def test_unknown_awg_uses_default_3_5mm(self):
-        """Unknown AWG/insulation combo should use conservative 3.5mm default."""
+    def test_unknown_awg_uses_default_6_0mm(self):
+        """Unknown AWG/insulation combo should use conservative 6.0mm default.
+
+        V78 FIX: Default changed from 3.5mm to 6.0mm (most conservative).
+        Unknown cable dimensions should assume the largest likely diameter
+        to prevent underestimating conduit fill.
+        """
         ws = WireSpec(awg=8, insulation=InsulationType.FPLP)
-        assert ws.outer_diameter_mm == pytest.approx(3.5, abs=0.01)
+        assert ws.outer_diameter_mm == pytest.approx(6.0, abs=0.01)
 
     def test_explicit_diameter_overrides_lookup(self):
         ws = WireSpec(awg=14, insulation=InsulationType.FPLP, outer_diameter_mm=5.0)
@@ -174,8 +179,8 @@ class TestWireSpec:
     def test_fiber_optic_awg_0(self):
         """Fiber optic cables use AWG=0."""
         ws = WireSpec(awg=0, insulation=InsulationType.FPLP)
-        # AWG 0 with FPLP not in lookup table, should default to 3.5mm
-        assert ws.outer_diameter_mm == pytest.approx(3.5, abs=0.01)
+        # AWG 0 with FPLP not in lookup table, should default to 6.0mm (V78 FIX)
+        assert ws.outer_diameter_mm == pytest.approx(6.0, abs=0.01)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

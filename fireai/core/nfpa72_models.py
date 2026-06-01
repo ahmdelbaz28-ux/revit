@@ -155,6 +155,7 @@ class CeilingSpec:
     original_height_m: Optional[float] = None
     beam_depth_m: float = 0.0
     beam_spacing_m: float = 0.0
+    slope_run_m: Optional[float] = None  # V78: Horizontal run for slope calculation
 
     def __post_init__(self):
         # ===== STRICT VALIDATION = FAIL FAST =====
@@ -190,8 +191,22 @@ class CeilingSpec:
                 f"Use CeilingSpec.create_safe() for automatic clamping."
             )
 
-        if self.height_at_high_point_m and self.height_at_high_point_m > self.height_at_low_point_m:
-            run = 3.0
+        # V78 FIX: Use 'is not None' instead of truthy — height_at_high_point_m
+        # of 0.0 (ground level) is a valid value, but 0.0 is falsy in Python.
+        if self.height_at_high_point_m is not None and self.height_at_high_point_m > self.height_at_low_point_m:
+            # V78 FIX: slope_run_m is required for meaningful slope calculation.
+            # Hardcoded run=3.0m was arbitrary — a 10m wide room with 2m rise
+            # got 33.7° instead of correct 11.3°, potentially misclassifying
+            # flat ceilings as sloped (affects detector spacing per §17.6.3.1.2).
+            if self.slope_run_m and self.slope_run_m > 0:
+                run = self.slope_run_m
+            else:
+                run = 3.0  # Fallback — flag for manual FPE review
+                import logging; logging.getLogger(__name__).warning(
+                    f"CeilingSpec slope_run_m not provided — using default 3.0m. "
+                    f"Actual roof run may differ, affecting slope classification. "
+                    f"Provide slope_run_m for accurate NFPA 72 §17.6.3.1.2 compliance."
+                )
             rise = self.height_at_high_point_m - self.height_at_low_point_m
             self.slope_degrees = math.degrees(math.atan(rise / run))
 

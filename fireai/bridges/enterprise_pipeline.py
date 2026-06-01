@@ -111,7 +111,21 @@ class EnterpriseOrchestrator:
             tenability_walking_speed_mps: Default walking speed for ASET/RSET.
             tenability_pre_movement_delay_s: Default pre-movement delay.
         """
-        from fireai.v17_core import AcousticSPLCalculator, StrictBatterySizer, TenabilityEvaluator
+        # V78 FIX: Safe import pattern — if v17_core is unavailable, degrade gracefully
+        # instead of crashing the entire enterprise pipeline. Per integration_bridge.py
+        # pattern: each subsystem should work independently.
+        try:
+            from fireai.v17_core import AcousticSPLCalculator, StrictBatterySizer, TenabilityEvaluator
+            self._v17_available = True
+        except ImportError as e:
+            import logging; logging.getLogger(__name__).critical(
+                f"V17 core modules unavailable: {e}. Enterprise pipeline DISABLED."
+            )
+            self._v17_available = False
+            self.acoustic_calc = None
+            self.battery_sizer = None
+            self.tenability_eval = None
+            return
 
         self.acoustic_calc = AcousticSPLCalculator(
             room_ambient_noise=acoustic_ambient_noise,

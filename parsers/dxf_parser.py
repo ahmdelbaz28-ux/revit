@@ -110,7 +110,13 @@ class DXFParser:
                 skipped += 1
                 continue
             if poly.area > self.max_area:
-                logger.warning(f"{rid}: area {poly.area:.1f}m² > max")
+                # V78 FIX: Skip oversized rooms instead of just warning.
+                # A room with area 500,000 m² is likely a unit conversion error
+                # (DXF in mm parsed as meters). Accepting it produces catastrophically
+                # wrong detector counts — a 500,000 m² room would get 0 detectors/m².
+                logger.warning(f"{rid}: area {poly.area:.1f}m² > max {self.max_area}m² — SKIPPED (possible unit error)")
+                skipped += 1
+                continue
 
             rooms.append(
                 ParsedRoom(

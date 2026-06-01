@@ -406,14 +406,18 @@ class ATEXHazardousArbiter:
         atex_zone = _V21_TO_ATEX_ZONE.get(zone)
         if atex_zone is None:
             errors.append(f"Unknown zone type: {zone.value}")
+            # V78 FIX: Default to MOST protective spec for unknown zones.
+            # Previous default was Gc/3G (Zone 2 only) — an unknown zone could
+            # be Zone 0 (continuous explosive atmosphere). Placing Zone 2 equipment
+            # in Zone 0 is an explosion risk per IEC 60079-0 §5.
             return ATEXArbitrationResult(
                 space_id=space_id,
                 equipment_spec=ATEXEquipmentSpec(
                     zone=zone,
-                    epl_required="Gc",
-                    atex_category="3G",
-                    temp_class=TemperatureClass.T4,
-                    protection_modes=["n"],
+                    epl_required="Ga",     # Most protective (Zone 0 rated)
+                    atex_category="1G",    # ATEX Category 1
+                    temp_class=TemperatureClass.T6,  # Most conservative (85°C max)
+                    protection_modes=["ia"],
                 ),
                 hazard_system=hazard_system,
                 regulatory_note="ERROR: Unknown zone",
@@ -465,7 +469,16 @@ class ATEXHazardousArbiter:
                     f"[IEC 60079-14 §5.3]"
                 )
         else:
-            temp_class = TemperatureClass.T4
+            # V78 FIX: Default to T6 (most conservative, 85°C max) when autoignition
+            # is unknown. Previous default was T4 (135°C max) — if the substance has
+            # autoignition between 85-135°C, T4 equipment could have surface temperatures
+            # exceeding the autoignition point, causing ignition. Per IEC 60079-0 §7.3,
+            # when AIT is unknown, the most conservative T-class must be used.
+            temp_class = TemperatureClass.T6
+            warnings.append(
+                "autoignition_c not provided — defaulting to T6 (most conservative). "
+                "Equipment max surface temp 85°C. [IEC 60079-0 §7.3]"
+            )
 
         # Gas group
         nec_grp = nec_group.upper() if nec_group else ""

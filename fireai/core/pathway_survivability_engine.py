@@ -313,6 +313,7 @@ class PathwaySurvivabilityEngine:
                 "fully sprinklered buildings. Minimum Level 2 required."
             )
             required_level = PathwaySurvivabilityLevel.LEVEL_2
+            result.building_level = required_level  # V78 FIX: Propagate correction to result
             result.warnings.append("Corrected: Non-sprinklered building escalated to Level 2 per NFPA 72 §12.3.3.")
 
         if spec.is_high_rise and not spec.has_voice_evac:

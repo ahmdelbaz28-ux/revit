@@ -888,14 +888,19 @@ def check_voltage_drop(
     load_current_a: float,
     cable_resistance_ohm_per_m: float,
     cable_length_m: float,
-    max_drop_fraction: float = 0.15,
+    max_drop_fraction: float = 0.10,
 ) -> Dict[str, float]:
     """
     Check that voltage drop along a cable run does not exceed the limit.
 
-    NFPA 72 §10.14 requires that the voltage at the most remote device must
-    be within the device's listed voltage range.  A common design limit is
-    15 % of nominal.
+    V78 FIX: Changed default from 0.15 (15%) to 0.10 (10%). 15% does not
+    correspond to any NFPA 72 section. NFPA 72 §27.4.1.2 limits PLFA circuits
+    (SLC/IDC) to 10% drop. NFPA 72 §10.6.4 allows NAC circuits up to 20%.
+    The 10% default is the more restrictive and commonly applicable limit.
+    For NAC circuits, callers should pass max_drop_fraction=0.20.
+
+    NFPA 72 §10.6.4 requires that the voltage at the most remote device must
+    be within the device's listed voltage range.
 
     Args:
         supply_voltage_v:          Nominal supply voltage (V).
@@ -953,8 +958,8 @@ def check_voltage_drop(
 # ---------------------------------------------------------------------------
 
 def required_battery_capacity_ah(
-    standby_current_ma: float,
-    alarm_current_ma: float,
+    standby_current_a: float,
+    alarm_current_a: float,
     standby_hours: float = 24.0,
     alarm_minutes: float = 5.0,
     safety_factor: float = 1.20,
@@ -962,23 +967,30 @@ def required_battery_capacity_ah(
     """
     Calculate required battery capacity for a fire alarm control unit.
 
-    NFPA 72 §10.6.7: 24 h standby + 5 min alarm (for most occupancies).
+    NFPA 72 §10.6.7.2.1: 24 h standby + 5 min alarm (for most occupancies).
 
     Args:
-        standby_current_ma: Quiescent load current (mA).
-        alarm_current_ma:   Full-alarm load current (mA).
-        standby_hours:      Required standby duration (hours).
+        standby_current_a:  Quiescent load current (AMPS).
+        alarm_current_a:    Full-alarm load current (AMPS).
+        standby_hours:      Required standby duration (hours, minimum 24 per §10.6.7.2.1).
         alarm_minutes:      Required alarm duration (minutes).
         safety_factor:      Multiplier for aging and temperature (default 1.20).
 
     Returns:
         Required battery capacity in ampere-hours (Ah).
+
+    V78 FIX: Changed parameter names from _ma to _a (Amps) for consistency
+    with all other battery functions: voltage_drop.calculate_battery_backup(),
+    battery_aging_derating.size_battery(), nfpa72_engine.calculate_battery().
+    Using mA was a 1000× confusion trap — passing 0.5A as standby_current_ma
+    computed 0.012 Ah instead of 12 Ah, potentially leaving a building without
+    alarm during power outage.
     """
     # V114 FIX: Input validation — NaN/Inf and negative/zero values produce
     # impossible battery capacities (e.g., safety_factor=0 → 0 Ah → no battery).
     for name, val in [
-        ("standby_current_ma", standby_current_ma),
-        ("alarm_current_ma", alarm_current_ma),
+        ("standby_current_a", standby_current_a),
+        ("alarm_current_a", alarm_current_a),
         ("standby_hours", standby_hours),
         ("alarm_minutes", alarm_minutes),
         ("safety_factor", safety_factor),
@@ -989,19 +1001,23 @@ def required_battery_capacity_ah(
                 f"NaN/Inf values corrupt battery capacity calculations — "
                 f"NFPA 72 §10.6.7 compliance cannot be verified."
             )
-    if standby_current_ma < 0:
-        raise ValueError(f"standby_current_ma must be non-negative, got {standby_current_ma}")
-    if alarm_current_ma < 0:
-        raise ValueError(f"alarm_current_ma must be non-negative, got {alarm_current_ma}")
-    if standby_hours <= 0:
-        raise ValueError(f"standby_hours must be positive, got {standby_hours}")
+    if standby_current_a < 0:
+        raise ValueError(f"standby_current_a must be non-negative, got {standby_current_a}")
+    if alarm_current_a < 0:
+        raise ValueError(f"alarm_current_a must be non-negative, got {alarm_current_a}")
+    if standby_hours < 24.0:
+        raise ValueError(
+            f"standby_hours={standby_hours}h < 24h violates NFPA 72 §10.6.7.2.1 "
+            f"(minimum 24h standby). Use battery_aging_derating.size_battery() "
+            f"for proper handling."
+        )
     if alarm_minutes <= 0:
         raise ValueError(f"alarm_minutes must be positive, got {alarm_minutes}")
     if safety_factor < 1.0:
         raise ValueError(f"safety_factor must be >= 1.0, got {safety_factor} — below 1.0 undersizes battery")
 
-    standby_ah = (standby_current_ma / 1000.0) * standby_hours
-    alarm_ah   = (alarm_current_ma   / 1000.0) * (alarm_minutes / 60.0)
+    standby_ah = standby_current_a * standby_hours
+    alarm_ah   = alarm_current_a * (alarm_minutes / 60.0)
     return round((standby_ah + alarm_ah) * safety_factor, 3)
 
 

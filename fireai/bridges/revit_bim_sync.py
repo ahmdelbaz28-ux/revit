@@ -287,7 +287,10 @@ class RevitAPIBridge:
                         room_id=str(space.id()),
                         name=name,
                         level_id=level_id,
-                        area_m2=area_m2 or 20.0,
+                        # V78 FIX: No longer default to 20 m² — phantom area under-protects
+                        # large spaces (500 m² atrium gets 20 m² of protection = 2 detectors).
+                        # Instead, flag missing area and use 0 (excluded from analysis).
+                        area_m2=area_m2 if area_m2 and area_m2 > 0 else 0.0,
                         ceiling_height_m=h_m,
                         polygon=poly,
                         source="ifc",
@@ -323,7 +326,9 @@ class RevitAPIBridge:
                     room_id=str(rd.get("room_id", str(uuid.uuid4()))),
                     name=str(rd.get("name", rd.get("room_id", "Room"))),
                     level_id=str(rd.get("level_id", rd.get("floor_id", "L-01"))),
-                    area_m2=float(rd.get("area_m2", rd.get("width", 10.0) * rd.get("length", 8.0))),
+                    # V78 FIX: Use actual area_m2 if provided; don't fabricate from width×length
+                    # defaults (10×8=80m² phantom area). A 4m² closet gets 80m² protection.
+                    area_m2=float(rd.get("area_m2", 0.0)),
                     ceiling_height_m=float(rd.get("ceiling_height", rd.get("ceiling_height_m", 3.0))),
                     polygon=[(float(p[0]), float(p[1])) for p in polygon],
                     occupancy_type=str(rd.get("occupancy_type", "office")),

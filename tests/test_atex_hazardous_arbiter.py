@@ -321,11 +321,9 @@ class TestArbitrateV21:
     def test_nan_autoignition_fail_safe_v57(self, arbiter):
         """V57 FIX: NaN autoignition is detected and warned about.
 
-        NOTE: The source code has a logic bug where after setting temp_class=T6
-        and autoignition_c=None (to prevent NaN propagation), the subsequent
-        `else` branch overrides T6 with T4 (the default for no autoignition).
-        The V57 warning IS correctly emitted, proving NaN was detected.
-        This test documents the actual behavior and the warning presence.
+        V78 FIX: NaN autoignition now correctly defaults to T6 (most
+        conservative, 85°C max) instead of T4. Previous code had a bug
+        where the else branch overrode T6 with T4.
         """
         result = arbiter.arbitrate_v21(
             zone=ZoneType.ZONE_1,
@@ -334,13 +332,14 @@ class TestArbitrateV21:
         )
         # V57 warning must be present — proves NaN was detected
         assert any("V57" in w for w in result.warnings)
-        # temp_class falls back to T4 (known bug: else branch overrides T6)
-        assert result.equipment_spec.temp_class == TemperatureClass.T4
+        # V78 FIX: temp_class defaults to T6 (most conservative)
+        assert result.equipment_spec.temp_class == TemperatureClass.T6
 
     def test_inf_autoignition_fail_safe_v57(self, arbiter):
         """V57 FIX: Inf autoignition is detected and warned about.
 
-        Same logic bug as NaN: T6 is set then overridden by T4 in else branch.
+        V78 FIX: Inf autoignition now correctly defaults to T6 (most
+        conservative) instead of T4. Previous code overrode T6 with T4.
         """
         result = arbiter.arbitrate_v21(
             zone=ZoneType.ZONE_1,
@@ -348,7 +347,7 @@ class TestArbitrateV21:
             autoignition_c=float("inf"),
         )
         assert any("V57" in w for w in result.warnings)
-        assert result.equipment_spec.temp_class == TemperatureClass.T4
+        assert result.equipment_spec.temp_class == TemperatureClass.T6
 
     def test_gas_zone_with_dust_error(self, arbiter):
         """GAP-05: Gas zone + DUST hazard type = error."""

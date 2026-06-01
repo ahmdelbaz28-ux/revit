@@ -310,9 +310,13 @@ class WireSpec:
                 # Use frozen dataclass workaround
                 object.__setattr__(self, "outer_diameter_mm", WIRE_DIAMETERS_MM[key])
             else:
-                # Conservative estimate: 3.5mm default
-                object.__setattr__(self, "outer_diameter_mm", 3.5)
-                logger.warning(f"No diameter data for {self.insulation.value} AWG {self.awg}, using default 3.5mm")
+                # V78 FIX: Conservative default 6.0mm instead of 3.5mm.
+                # Underestimating cable area means conduit appears to have more fill
+                # capacity than it actually does — overfilled conduit can cause insulation
+                # damage and thermal buildup per NEC 310.15. Overestimating area is SAFE
+                # (rejects conduit → upsizes). FPLP shielded 14 AWG is 5.20mm actual.
+                object.__setattr__(self, "outer_diameter_mm", 6.0)
+                logger.warning(f"No diameter data for {self.insulation.value} AWG {self.awg}, using conservative default 6.0mm. Verify actual cable diameter.")
 
     @property
     def cross_section_mm2(self) -> float:

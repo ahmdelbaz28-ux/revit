@@ -164,8 +164,8 @@ class Room:
             raise ValueError(f"Room width must be positive finite, got {self.width}")
         if not isinstance(self.length, (int, float)) or self.length <= 0 or not math.isfinite(self.length):
             raise ValueError(f"Room length must be positive finite, got {self.length}")
-        if not isinstance(self.ceiling_height, (int, float)) or self.ceiling_height <= 0:
-            raise ValueError(f"Room ceiling_height must be positive, got {self.ceiling_height}")
+        if not isinstance(self.ceiling_height, (int, float)) or self.ceiling_height <= 0 or not math.isfinite(self.ceiling_height):
+            raise ValueError(f"Room ceiling_height must be positive finite, got {self.ceiling_height}")
 
 
 @dataclass
