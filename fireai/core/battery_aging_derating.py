@@ -51,6 +51,7 @@ Usage:
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -524,6 +525,17 @@ def size_battery(
         logger.critical(msg)
 
     # --- Step 1-2: Calculate Ah for each load period ---
+    # V FIX: Validate inputs are finite. NaN/Inf inputs produce
+    # nonsensical results (NaN * anything = NaN) which, while
+    # technically fail-safe (is_adequate=False), produce confusing
+    # output that doesn't clearly indicate data corruption.
+    # In a life-safety system, corrupt inputs must be explicitly rejected.
+    if not math.isfinite(standby_load_amps) or not math.isfinite(alarm_load_amps):
+        raise ValueError(
+            f"Battery load currents must be finite, got "
+            f"standby={standby_load_amps}, alarm={alarm_load_amps}. "
+            f"NaN/Inf inputs indicate data corruption upstream."
+        )
     standby_ah = standby_load_amps * standby_hours
     alarm_ah = alarm_load_amps * alarm_hours
     total_load_ah = standby_ah + alarm_ah
@@ -550,7 +562,16 @@ def size_battery(
     # required = total_load / (temp_derating * aging_derating * discharge_correction)
     combined_derating = temp_derating * aging_derating * discharge_correction
     if combined_derating <= 0:
-        combined_derating = 0.01  # Prevent division by zero
+        # V FIX: Raise ValueError instead of silently capping at 0.01.
+        # A zero or negative derating indicates invalid inputs or a
+        # calculation error. Continuing with 0.01 would produce a 100x
+        # amplification factor, giving a misleading required_ah value.
+        raise ValueError(
+            f"Combined derating factor is non-positive ({combined_derating:.6f}) — "
+            f"indicates invalid inputs or calculation error. "
+            f"Derating breakdown: temp={temp_derating:.3f}, "
+            f"aging={aging_derating:.3f}, discharge={discharge_correction:.3f}."
+        )
 
     required_ah = total_load_ah / combined_derating
 

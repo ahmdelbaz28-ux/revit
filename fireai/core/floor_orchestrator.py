@@ -106,13 +106,30 @@ class FloorResult:
     def save_audit(self, output_dir: str = "audit"):
         """Save audit trail to JSON file for liability protection"""
         import json
+        import re
         from datetime import datetime, timezone
         from pathlib import Path
 
         Path(output_dir).mkdir(exist_ok=True)
 
+        # V FIX: Sanitize project_name to prevent path traversal.
+        # In a life-safety system, audit trail integrity is paramount.
+        # An attacker could inject "../../etc/crontab" as project_name
+        # to write arbitrary files, or overwrite previous audit trails
+        # to cover up compliance failures.
+        safe_name = re.sub(r'[^A-Za-z0-9_\-]', '_', self.project_name)
+        if safe_name != self.project_name:
+            logger.warning(f"project_name sanitized for path safety: '{self.project_name}' -> '{safe_name}'")
+
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")  # V54 FIX (AUDIT-012): UTC
-        filename = f"{output_dir}/audit_{self.project_name}_{timestamp}.json"
+        filename = f"{output_dir}/audit_{safe_name}_{timestamp}.json"
+
+        # V FIX: Verify resolved path stays within output_dir (path traversal guard)
+        resolved_path = Path(filename).resolve()
+        resolved_dir = Path(output_dir).resolve()
+        if not str(resolved_path).startswith(str(resolved_dir)):
+            logger.critical(f"Path traversal blocked: '{filename}' resolves outside '{output_dir}'")
+            filename = f"{output_dir}/audit_SANITIZED_{timestamp}.json"
 
         audit_data = {
             "timestamp": datetime.now(timezone.utc).isoformat(),  # V54 FIX (AUDIT-012): UTC

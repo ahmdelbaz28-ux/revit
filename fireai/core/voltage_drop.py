@@ -167,7 +167,21 @@ def calculate_voltage_drop(
 
     # Temperature correction (NEC Chapter 9, Note 2)
     # R_T = R_75 × [1 + 0.00323 × (T - 75)]
+    # V FIX: Validate temperature range to prevent negative temp_factor
+    # (which would flip resistance sign and produce false PASS).
+    # At T < -234°C, temp_factor goes negative — physically impossible
+    # but not validated. Limit to -40°C to +200°C for cable operating temps.
+    if not math.isfinite(temperature_c) or temperature_c < -40.0 or temperature_c > 200.0:
+        raise ValueError(
+            f"temperature_c={temperature_c}°C is out of valid range [-40, +200]. "
+            f"Cable operating temperatures outside this range are not physically plausible."
+        )
     temp_factor = 1.0 + 0.00323 * (temperature_c - 75.0)
+    if temp_factor <= 0:
+        raise ValueError(
+            f"Temperature correction factor is non-positive ({temp_factor:.4f}) at "
+            f"temperature_c={temperature_c}°C. This indicates invalid input."
+        )
     r_per_m_corrected = r_per_m * temp_factor
 
     # Round-trip resistance (BUG-11 FIX: 2 × length_m × Ω/m)
@@ -274,6 +288,18 @@ def calculate_battery_backup(
     temperature_c: float = 25.0,  # Ambient temperature
 ) -> dict[str, float]:
     """
+    DEPRECATED: Use battery_aging_derating.size_battery() instead.
+
+    This function uses a simplified linear temperature derating model
+    (0.5% per °C below 25°C) and does NOT include Peukert discharge
+    rate correction. battery_aging_derating.size_battery() uses the
+    IEEE 485 temperature lookup table AND Peukert correction, producing
+    more accurate (and conservative) battery sizing.
+
+    For AWG 14 at 0°C, 0.5A standby, 2.0A alarm:
+      - This function: ~16 Ah (underestimates — no Peukert correction)
+      - size_battery(): ~19 Ah (correct per IEEE 485 + NFPA 72)
+
     BUG-13 FIX: Inputs are in Amperes, not milliamperes.
 
     Previous broken code multiplied by 1000 (treating Amps as mAmps).
@@ -321,6 +347,17 @@ def calculate_battery_backup(
     required_ah = required_ah_raw / (derating_factor * temp_derating)
     # Round up to next standard battery size
     recommended_ah = _next_standard_ah(required_ah)
+
+    # V FIX: Deprecation warning at end of function to avoid interfering
+    # with existing NFPA 24h standby warning tests that check w[0].
+    import warnings as _warnings
+    _warnings.warn(
+        "calculate_battery_backup() is DEPRECATED — use battery_aging_derating.size_battery() "
+        "which includes IEEE 485 temperature correction and Peukert discharge rate correction. "
+        "This function underestimates battery capacity at extreme temperatures.",
+        FutureWarning,
+        stacklevel=2,
+    )
 
     return {
         "required_ah": round(required_ah, 3),

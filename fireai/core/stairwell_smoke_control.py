@@ -592,12 +592,19 @@ class StairwellSmokeControlIntegrator:
         # V48 FIX: building_height_m=0.0 neuters the entire module —
         # pressurization_required = 0.0 > 22.86 = False. A 50-story building
         # would pass with zero pressurization. Now emit CRITICAL log warning.
+        # V FIX: Also set a flag to mark ALL results as non-compliant when
+        # height is unknown. In a high-rise, unknown height = unknown
+        # pressurization requirement = FAIL (fail-safe). A building with
+        # missing height data must NOT be marked compliant.
+        self._height_unknown = False
         if building_height_m <= 0.0:
             logger.critical(
                 "STAIRWELL-001: building_height_m=%.1f — stairwell smoke control is INACTIVE. "
-                "Pass building_height_m > 0 to enable pressurization analysis per NFPA 92 §6.1.",
+                "Pass building_height_m > 0 to enable pressurization analysis per NFPA 92 §6.1. "
+                "ALL stairwell zones will be marked NON-COMPLIANT (fail-safe).",
                 building_height_m,
             )
+            self._height_unknown = True
 
         _validate_finite(min_height_for_pressurization_m, "min_height_for_pressurization_m")
 
@@ -699,7 +706,16 @@ class StairwellSmokeControlIntegrator:
 
             # If pressurization is not required for this building, skip
             # detailed analysis but record the zone as non-required
+            # V FIX: When building height is unknown (height_unknown flag),
+            # mark all zones as NON-COMPLIANT (fail-safe). Unknown height
+            # means we cannot determine if pressurization is required.
             if not pressurization_required:
+                is_compliant = not self._height_unknown
+                violations_list = () if is_compliant else (
+                    "BUILDING_HEIGHT_UNKNOWN: Building height not provided — "
+                    "pressurization requirement cannot be determined per NFPA 92 §6.1. "
+                    "Zone marked NON-COMPLIANT (fail-safe).",
+                )
                 zone_results.append(
                     StairwellSmokeControlResult(
                         zone_id=zone_id,
@@ -711,8 +727,8 @@ class StairwellSmokeControlIntegrator:
                         vestibule_result=None,
                         fail_safe_assessment=None,
                         injections=(),
-                        is_compliant=True,
-                        violations=(),
+                        is_compliant=is_compliant,
+                        violations=violations_list,
                     )
                 )
                 continue

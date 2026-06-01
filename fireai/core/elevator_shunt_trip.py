@@ -227,10 +227,31 @@ class ElevatorShuntTripAuditor:
                 continue
 
             spk_id = sprinkler.get("device_id", "UNKNOWN-SPK")
-            spk_x = float(sprinkler.get("x", 0.0))
-            spk_y = float(sprinkler.get("y", 0.0))
-            spk_temp = float(sprinkler.get("temp_rating_C", 68.3))
-            spk_rti = float(sprinkler.get("rti", DEFAULT_SPRINKLER_RTI))
+            # V FIX: Wrap float() in try/except to prevent crash on non-numeric
+            # strings (e.g., "N/A", "TBD"). Log error and continue to next device.
+            try:
+                spk_x = float(sprinkler.get("x", 0.0))
+                spk_y = float(sprinkler.get("y", 0.0))
+                spk_temp = float(sprinkler.get("temp_rating_C", 68.3))
+                spk_rti = float(sprinkler.get("rti", DEFAULT_SPRINKLER_RTI))
+            except (ValueError, TypeError) as e:
+                logger.error(
+                    f"Non-numeric data in sprinkler '{spk_id}': {e}. "
+                    f"Skipping this device — cannot verify thermal response."
+                )
+                continue
+
+            # V FIX: Validate sprinkler temperature is physically plausible.
+            # NFPA 13 Table 6.2.5.1: ordinary=57-77°C, intermediate=79-163°C,
+            # high=163-191°C, extra-high=191-343°C. Values outside 40-300°C
+            # are not physically plausible for sprinkler temperature ratings.
+            if spk_temp < 40.0 or spk_temp > 300.0:
+                logger.warning(
+                    f"Sprinkler '{spk_id}' temp_rating_C={spk_temp}°C is outside "
+                    f"plausible range [40, 300] per NFPA 13 Table 6.2.5.1. "
+                    f"Using default 68.3°C for heat detector matching."
+                )
+                spk_temp = 68.3
 
             # V57 FIX: NaN/Inf in sprinkler data bypasses all safety checks.
             # NaN > X is always False → no temp_violation, no rti_violation → compliant=True.
@@ -293,8 +314,12 @@ class ElevatorShuntTripAuditor:
                 # Skip HDs already assigned to another sprinkler
                 if hd_id_candidate in used_hd_ids:
                     continue
-                hd_x = float(hd.get("x", 0.0))
-                hd_y = float(hd.get("y", 0.0))
+                # V FIX: Wrap float() in try/except to prevent crash on non-numeric data
+                try:
+                    hd_x = float(hd.get("x", 0.0))
+                    hd_y = float(hd.get("y", 0.0))
+                except (ValueError, TypeError):
+                    continue
                 dist = math.hypot(spk_x - hd_x, spk_y - hd_y)
                 if dist < best_dist:
                     best_dist = dist
@@ -302,8 +327,14 @@ class ElevatorShuntTripAuditor:
 
             if best_hd is not None and best_dist <= MAX_HD_SPRINKLER_DISTANCE_M:
                 hd_id = best_hd.get("device_id", "UNKNOWN-HD")
-                hd_temp = float(best_hd.get("temp_rating_C", 57.2))
-                hd_rti = float(best_hd.get("rti", DEFAULT_HD_RTI))
+                # V FIX: Wrap float() in try/except
+                try:
+                    hd_temp = float(best_hd.get("temp_rating_C", 57.2))
+                    hd_rti = float(best_hd.get("rti", DEFAULT_HD_RTI))
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Non-numeric data in heat detector '{hd_id}': {e}. Using defaults.")
+                    hd_temp = 57.2
+                    hd_rti = DEFAULT_HD_RTI
 
                 # V57 FIX: NaN/Inf in HD data bypasses temperature and RTI checks.
                 # NaN > threshold is False → no violation detected → compliant=True.

@@ -986,7 +986,7 @@ def verify_full_coverage(
         status = area_status
     else:
         primary_pct = point_coverage_pct
-        status = "PASS" if point_coverage_pct >= 99 else "FAIL"
+        status = "PASS" if point_coverage_pct >= 99.9 else "FAIL"
 
     return {
         "coverage_percentage": primary_pct,
