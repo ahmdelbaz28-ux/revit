@@ -22,7 +22,10 @@ from qomn_fire.core.constants import (
 # A conduit run that cannot be sized will either (a) be forced into a too-small conduit
 # (overfill → overheating → fire hazard per NEC 310.15) or (b) fail the pipeline entirely.
 # Added: EMT 1-1/4" through 4", plus RMC sizes per NEC Table 4.
-# Values from NEC 2023 Chapter 9 Table 4 (over 2 wires: 40% fill column).
+# BUG-COMMENT4 FIX: These are TOTAL internal areas from NEC Chapter 9 Table 4,
+# NOT the 40% fill column. The fill calculation divides total wire area by total
+# conduit internal area, then compares the ratio against NEC fill limits (53%, 31%, 40%).
+# If you add new conduit types, use the TOTAL internal area column, not the 40% column.
 CONDUIT_INTERNAL_AREAS_MM2 = {
     # EMT (Electrical Metallic Tubing) — NEC Table 4, Article 358
     "EMT 1/2": 196.1,
@@ -48,29 +51,44 @@ CONDUIT_INTERNAL_AREAS_MM2 = {
     "RMC 4": 7150.0,
 }
 
-# BUG-19 FIX: Fire alarm cable cross-sectional areas (NEC Chapter 9, Table 5A)
+# BUG-19 FIX: Fire alarm cable cross-sectional areas per conductor (NEC Chapter 9, Table 5/5A)
 # FPLP = Power-Limited Fire Alarm Cable (NEC 760.179)
 # FPL = Fire Alarm Cable (NEC 760.179)
 # FPLR = Riser-Rated Fire Alarm Cable (NEC 760.179(B))
-# These are the standard cable types for fire alarm systems.
-# Values from NEC Chapter 9 Table 5A — approximate for typical 2-conductor cables.
+#
+# BUG-CABLE2 FIX: These are PER-CONDUCTOR areas, NOT per-cable.
+# A 2-conductor FPLP cable contains TWO individual conductors, each with its own
+# insulation. The total cable cross-section is LARGER than a single conductor.
+# For conduit fill calculation, wire_count must count INDIVIDUAL CONDUCTORS, not cables.
+# Example: 1 cable of FPLP 14 AWG 2-conductor = 2 conductors → wire_count=2.
+#
+# Values from NEC Chapter 9 Table 5 — approximate for typical FPLP/FPL/FPLR
+# individual conductor (same cross-section as THHN of same AWG).
+# For multi-conductor cable totals, use the cable manufacturer's datasheet or
+# NEC Table 5A which lists actual cable cross-sections.
 FIRE_ALARM_CABLE_AREAS = {
-    "FPLP 14": 6.26,    # FPLP 14 AWG 2-conductor ≈ same as 14 AWG THHN
-    "FPLP 12": 8.58,    # FPLP 12 AWG 2-conductor
-    "FPLP 10": 13.61,   # FPLP 10 AWG 2-conductor
-    "FPL 14": 6.26,     # FPL 14 AWG 2-conductor
-    "FPL 12": 8.58,     # FPL 12 AWG 2-conductor
-    "FPL 10": 13.61,    # FPL 10 AWG 2-conductor
-    "FPLR 14": 6.26,    # FPLR 14 AWG 2-conductor
-    "FPLR 12": 8.58,    # FPLR 12 AWG 2-conductor
-    "FPLR 10": 13.61,   # FPLR 10 AWG 2-conductor
-    # Standard THHN/THWN building wire (NEC Table 5)
+    "FPLP 14": 6.26,    # FPLP 14 AWG single conductor ≈ same as 14 AWG THHN
+    "FPLP 12": 8.58,    # FPLP 12 AWG single conductor
+    "FPLP 10": 13.61,   # FPLP 10 AWG single conductor
+    "FPL 14": 6.26,     # FPL 14 AWG single conductor
+    "FPL 12": 8.58,     # FPL 12 AWG single conductor
+    "FPL 10": 13.61,    # FPL 10 AWG single conductor
+    "FPLR 14": 6.26,    # FPLR 14 AWG single conductor
+    "FPLR 12": 8.58,    # FPLR 12 AWG single conductor
+    "FPLR 10": 13.61,   # FPLR 10 AWG single conductor
+    # Standard THHN/THWN building wire (NEC Table 5) — per conductor
     "THHN 14": 6.26,
     "THHN 12": 8.58,
     "THHN 10": 13.61,
     "THWN 14": 6.26,
     "THWN 12": 8.58,
     "THWN 10": 13.61,
+    # Multi-conductor cable totals (NEC Table 5A) — per CABLE, not per conductor
+    # wire_count=1 for these entries means 1 cable (not 1 conductor)
+    "FPLP 14-2C": 15.0,   # FPLP 14 AWG 2-conductor cable (approx from NEC Table 5A)
+    "FPLP 12-2C": 20.0,   # FPLP 12 AWG 2-conductor cable
+    "FPLR 14-2C": 15.0,   # FPLR 14 AWG 2-conductor cable
+    "FPLR 12-2C": 20.0,   # FPLR 12 AWG 2-conductor cable
 }
 
 def calculate_conduit_fill(

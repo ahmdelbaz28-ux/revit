@@ -222,6 +222,20 @@ class IfcParser:
 
         # SAFETY FIX (V58): Building with ANY placeholder room boundaries is INVALID.
         # The geometry validator checks has_fallback_geometry to reject invalid buildings.
+        # BUG-WALL7 FIX: Also flag building when walls have placeholder geometry.
+        # Walls with placeholder coordinates (wrong start/end points) would produce
+        # wrong obstacle maps for conduit routing, potentially routing cables through
+        # real walls. A building with placeholder walls is just as dangerous as one
+        # with placeholder rooms.
+        if placeholder_wall_count > 0:
+            has_fallback = True
+            logger.critical(
+                "SAFETY GATE: Building has %d wall(s) with placeholder geometry. "
+                "has_fallback_geometry=True — geometry validator will REJECT this building. "
+                "Install ifcopenshell (pip install ifcopenshell) for real IFC geometry extraction.",
+                placeholder_wall_count
+            )
+
         # If rooms exist but ALL have placeholder boundaries, the building model is
         # just as dangerous as one with fallback rooms.
         if placeholder_room_count > 0:
