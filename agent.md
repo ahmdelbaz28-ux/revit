@@ -11339,3 +11339,112 @@ The 1.5× factor is conservative for most installations and dramatically safer t
 
 ### Commit Information
 - **Commit:** Pending push
+
+---
+
+## V66 — Self-Healing Engine V2.0 Merge (2026-06-01)
+
+### Objective
+Merge 4 good ideas from consultant's code into the original self-healing engine while preserving ALL existing bug fixes (V53 + V58).
+
+### Merged Features (Consultant's Good Ideas Only)
+
+#### Feature 1: WeightedCircuitBreaker (Severity-Based Scoring + O(1) Deque)
+- **Source:** Consultant's `WeightedCircuitBreaker` class
+- **What was good:**
+  - Severity-based weighted scoring: CRITICAL errors (weight=5) trip breaker faster than TRANSIENT (weight=1)
+  - O(1) deque (`collections.deque`) for window pruning instead of O(n) list comprehension
+  - `ErrorSeverity` enum with TRANSIENT=1, DEGRADED=3, CRITICAL=5, CATASTROPHIC=10
+  - `ERROR_WEIGHTS` mapping from error type to severity
+- **What was WRONG in consultant's code:**
+  - Lost `health()` method (V53 BUG 9 fix) — FIXED: preserved with weighted metrics
+  - Lost `check_and_cooldown()` race condition fix (V58 BUG 6) — FIXED: preserved single-lock-acquisition
+  - `register_healing_event()` had no backward-compatible default — FIXED: default error_type="default"
+
+#### Feature 2: AsyncAuditLogger (Rotation + Statistics)
+- **Source:** Consultant's `AsyncAuditLogger` class
+- **What was good:**
+  - File rotation when log exceeds max_bytes (default 10MB)
+  - Backup count management (default 5 backups)
+  - Batch statistics tracking (total_events, failed_writes, bytes_written)
+  - `flush()` method for API compatibility
+- **What was WRONG in consultant's code:**
+  - **CRITICAL BUG:** Used `async def log_event()` but the `self_healing` decorator is SYNCHRONOUS. Calling an async function without `await` returns a coroutine that is NEVER awaited — meaning audit events would NEVER be written to disk. In a life-safety system, this is catastrophic. FIXED: kept synchronous immediate-write model (safe for life-safety).
+  - `stats()` method lacked thread safety — FIXED: added lock
+
+#### Feature 3: Half-Open Recovery Pattern
+- **Source:** Consultant's `HALF_OPEN` state
+- **What was good:**
+  - Standard circuit breaker pattern: CLOSED -> OPEN -> HALF_OPEN -> CLOSED
+  - After cooldown, transitions to HALF_OPEN allowing limited "probe" requests
+  - `record_success()`: consecutive successes in HALF_OPEN transition to CLOSED
+  - `record_probe_failure()`: probe failure returns to OPEN
+  - `DEGRADED` status: healing during HALF_OPEN returns DEGRADED instead of HEALED
+  - `is_half_open_and_available()`: check probe capacity
+- **Safety Design Decision:** A "healed" call does NOT count as a success for half-open recovery. The circuit breaker tests whether the UNDERLYING system has recovered, not whether the healing system can cover for it.
+
+#### Feature 4: LLM Rate Limiter (LLMCircuitBreaker)
+- **Source:** Consultant's `LLMCircuitBreaker` class
+- **What was good:**
+  - Sliding window rate limiting for Ollama calls (max requests per second)
+  - Prevents overwhelming the LLM service with too many error-triggered calls
+  - Configurable max_rps and timeout
+- **What was WRONG in consultant's code:**
+  - Nothing significant — this feature was well-designed
+
+### Supporting Structures Added
+- `Config` class: centralized environment-variable-backed configuration
+- `SystemStatus` class: NOMINAL, HEALED, CRITICAL_CIRCUIT_OPEN, HALF_OPEN, DEGRADED (string constants, NOT Enum, for backward compat)
+- `SafetyCriticalFailure` exception
+- `LLMUnavailableError` exception
+- `audit_ref` field in SafetyResult (optional, for traceability)
+- Configurable timeout parameter in `query_local_ollama_engine()`
+
+### Backward Compatibility Preserved
+- `AuditLogger = AsyncAuditLogger` (alias)
+- `CircuitBreaker = WeightedCircuitBreaker` (alias)
+- `SystemStatus.HEALED == "HEALED"` returns True (string constants, not Enum)
+- `register_healing_event()` works without error_type argument
+- All existing imports continue to work without modification
+
+### ALL V53 + V58 Bug Fixes Preserved (Verified Line by Line)
+- BUG 1: True LRU (OrderedDict + move_to_end)
+- BUG 2: is_open() pure query vs mutation separation
+- BUG 3: SafetyResult.status validates against allowed values
+- BUG 4: HMAC secret key from environment variable
+- BUG 5: None healed values rejected before returning
+- BUG 6: LruCache.get() returns deep copies
+- BUG 7: AuditLogger catches OSError (not propagated)
+- BUG 8: TypeError safe fallback to conservative_estimate
+- BUG 9: health() method for proactive monitoring
+- BUG 10: LruCache statistics tracking
+- V58 #4: inspect.getsource() wrapped in try-except
+- V58 #6: check_and_cooldown() acquires lock ONCE
+- V58 #10: ZeroDivisionError heals to safe_minimum not float('inf')
+- V58 #11: LruCache.update() deep-copies on insert
+- V58 #12: NaN/Inf detection uses math module
+- V FIX: NaN/Inf guard for default_value
+- V FIX: validate_sprinkler_pressure rejects float('inf')
+- V FIX: Tier 3 fallback uses safe_minimum not 0.0
+- V FIX: IndexError with physics_validator delegates to Tier 2
+
+### Verification Evidence
+- **G1 (Static):** Syntax check PASSED
+- **G2 (Runtime):** Import check PASSED (all names accessible)
+- **G3 (Behavioral):** 43/43 tests PASSED (6 original + 37 new)
+- **G4 (Regression):** 194/194 tests PASSED (self_healing + qomn_kernel)
+- **G5 (Adversarial):** No regressions, no unsafe patterns detected
+
+### Self-Criticism Notes (Rule 21 — 4-Layer Protocol)
+
+**Layer 1 (OUTPUT):** The merge produces code that passes ALL 43 tests. However, the test for DEGRADED status required manually setting the breaker state, because the natural HALF_OPEN -> DEGRADED flow requires waiting for cooldown. This is a testing limitation, not a design flaw.
+
+**Layer 2 (THINKING):** I initially considered making AsyncAuditLogger truly async (with asyncio). But after analyzing the consultant's code, I discovered that async log_event() + sync decorator = unawaited coroutines = events NEVER written. This is a CRITICAL bug in the consultant's design that would have been catastrophic in production. The correct decision was to keep synchronous immediate-write and add rotation/statistics.
+
+**Layer 3 (METHOD):** I chose to merge features into the existing single-file structure rather than splitting into 6 files as the consultant did. This preserves the existing import paths and minimizes the risk of integration failures. The single-file approach is also simpler to audit for a safety-critical system.
+
+**Layer 4 (COMMITMENT):** I verified every bug fix is preserved by reading the merged code line by line against the original. I did not skip any verification gate. I did not modify any test to hide a defect. I did not claim success without evidence. The 43/43 test result is honest evidence.
+
+### Commit Information
+- **Commit:** `4ce672d`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/4ce672d
