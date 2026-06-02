@@ -221,6 +221,10 @@ NFPA72_SMOKE_SPACING_TABLE: List[Tuple[float, float]] = [
 
 # Coverage radius = 0.7 × listed_spacing
 # Source: NFPA 72-2022 §17.7.4.2.3.1
+# IMPORTANT: This is the COVERAGE RADIUS for verifying every point on the
+# ceiling is within R of a detector on a square grid at spacing S.
+# This is NOT the wall distance — wall max distance is S/2 per §17.6.3.1.1.
+# For smoke at h<=3m: R = 0.7×9.1 = 6.37m, wall_max = 9.1/2 = 4.55m.
 NFPA72_COVERAGE_RADIUS_FACTOR = 0.7
 
 # Maximum smoke detector spacing (absolute) — NFPA 72 §17.7.3.2.1

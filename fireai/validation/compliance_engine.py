@@ -83,12 +83,30 @@ class ComplianceEngine:
             ),
             ComplianceRule(
                 clause_id="NFPA72:17.7.4.2.3.1",
-                description="Coverage radius R = 0.7 x S",
+                description="Coverage radius R = 0.7 x S (for square grid verification)",
                 validator=lambda ctx: (
                     ctx.get('radius_m', 0) <= ctx.get('spacing_m', 0) * 0.701
                     and ctx.get('radius_m', 0) >= ctx.get('spacing_m', 999) * 0.699
                 ),
-                remediation="Verify R = 0.7 x S per 17.7.4.2.3.1",
+                remediation="Verify R = 0.7 x S per 17.7.4.2.3.1 (coverage radius for circular detection on square grid)",
+                severity="HIGH",
+            ),
+            ComplianceRule(
+                clause_id="NFPA72:17.6.3.1.1.wall_max",
+                description="Max wall distance = S/2 (half the listed spacing)",
+                validator=lambda ctx: (
+                    ctx.get('wall_distance_m', float('inf')) <= ctx.get('spacing_m', 0) * 0.501
+                ),
+                remediation="Reduce wall distance to <= S/2 per NFPA 72 §17.6.3.1.1. For smoke at h<=3m: S=9.1m, wall max=4.55m",
+                severity="CRITICAL",
+            ),
+            ComplianceRule(
+                clause_id="NFPA72:17.6.3.1.1.wall_min",
+                description="Min wall distance = 4 inches (0.1016m, dead air space)",
+                validator=lambda ctx: (
+                    ctx.get('wall_distance_m', 0) >= 0.1016
+                ),
+                remediation="Move detector at least 0.1016m (4 inches) from wall per NFPA 72 §17.6.3.1.1 (dead air space)",
                 severity="HIGH",
             ),
 

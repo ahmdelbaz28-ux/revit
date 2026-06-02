@@ -306,6 +306,7 @@ class RoomSpec:
     width_m: float = 10.0
     depth_m: float = 10.0
     custom_polygon: list = None  # NEW: List of (x,y) tuples for custom room shape (sets polygon field)
+    holes: Optional[list] = None  # Interior rings (holes) — list of list of (x,y) tuples per NFPA 72 §17.7.4.2
     polygon: Optional[ShapelyPolygon] = None
     ceiling_spec: Optional[CeilingSpec] = None
     detector_type: Optional[DetectorType] = None
@@ -429,13 +430,55 @@ class RoomSpec:
         elif occ.lower().strip() not in valid_types:
             errors.append(f"occupancy_type '{occ}' not in valid set")
 
-        # Raise if ANY validation fails
+        # ===== VALIDATE HOLES (interior rings) =====
+        # SAFETY FIX: Rooms with interior holes (columns, shafts, chases)
+        # must have those holes excluded from coverage verification.
+        # Without this, detectors placed over a hole would falsely report
+        # coverage of an area that physically cannot have a detector above it.
+        validated_holes = []
+        if self.holes is not None:
+            if not isinstance(self.holes, list):
+                errors.append("holes must be a list of hole polygons (each hole is a list of (x,y) tuples)")
+            else:
+                for hi, hole in enumerate(self.holes):
+                    if not isinstance(hole, list) or len(hole) < 4:
+                        errors.append(f"hole {hi} must have at least 4 points, got {len(hole) if isinstance(hole, list) else 'non-list'}")
+                    else:
+                        try:
+                            hole_poly = ShapelyPolygon(hole)
+                            if not hole_poly.is_valid or hole_poly.area <= 0:
+                                errors.append(f"hole {hi} is invalid or has zero area")
+                            else:
+                                validated_holes.append(list(hole))
+                        except Exception as e:
+                            errors.append(f"hole {hi} geometry error: {e}")
+
+        # Raise if ANY validation fails (including holes)
         if errors:
             raise ValueError(f"RoomSpec validation failed for '{self.room_id}': " + "; ".join(errors))
 
         # ===== BUILD POLYGON FROM DIMENSIONS =====
         if self.polygon is None:
-            self.polygon = ShapelyPolygon([(0, 0), (self.width_m, 0), (self.width_m, self.depth_m), (0, self.depth_m)])
+            exterior = [(0, 0), (self.width_m, 0), (self.width_m, self.depth_m), (0, self.depth_m)]
+        elif isinstance(self.polygon, ShapelyPolygon):
+            exterior = list(self.polygon.exterior.coords)
+        else:
+            exterior = [(0, 0), (self.width_m, 0), (self.width_m, self.depth_m), (0, self.depth_m)]
+
+        # Apply holes (interior rings) to the polygon
+        if validated_holes:
+            hole_coords = [list(h) for h in validated_holes]
+            self.polygon = ShapelyPolygon(exterior, hole_coords)
+            if not self.polygon.is_valid:
+                # Attempt repair with buffer(0)
+                self.polygon = self.polygon.buffer(0)
+            if not self.polygon.is_valid or self.polygon.area <= 0:
+                raise ValueError(
+                    f"RoomSpec '{self.room_id}': polygon with holes is invalid after construction. "
+                    f"Check that holes are fully contained within the exterior boundary."
+                )
+        elif not isinstance(self.polygon, ShapelyPolygon):
+            self.polygon = ShapelyPolygon(exterior)
 
         # ===== BUILD CEILING SPEC =====
         if self.ceiling_spec is None:

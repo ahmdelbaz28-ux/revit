@@ -118,9 +118,14 @@ class TestCoverageRule:
         """Coverage >= 99.9% should pass."""
         context = {
             'coverage_pct': 99.9,
+            # Include wall distance context so new wall rules don't trigger
+            'wall_distance_m': 4.0,  # Within S/2 for typical spacing
+            'spacing_m': 9.1,  # Standard smoke detector spacing
         }
         violations = engine.validate(context)
-        coverage_violations = [v for v in violations if '17.6.3.1.1' in v]
+        coverage_violations = [v for v in violations if '17.6.3.1.1' in v and 'coverage' in v.lower()]
+        # Note: Only check coverage-specific violations, not wall distance violations
+        # which are tested separately
         assert len(coverage_violations) == 0, \
             f"99.9% coverage should pass, got: {coverage_violations}"
 
@@ -128,9 +133,11 @@ class TestCoverageRule:
         """Coverage < 99.9% should fail."""
         context = {
             'coverage_pct': 95.0,
+            'wall_distance_m': 4.0,
+            'spacing_m': 9.1,
         }
         violations = engine.validate(context)
-        coverage_violations = [v for v in violations if '17.6.3.1.1' in v]
+        coverage_violations = [v for v in violations if '17.6.3.1.1' in v and '99.9%' in v]
         assert len(coverage_violations) > 0, \
             "95% coverage should be flagged as non-compliant"
 

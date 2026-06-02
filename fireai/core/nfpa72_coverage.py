@@ -285,14 +285,22 @@ def suggest_duct_detectors(room: RoomSpec, detector_type: str = "smoke") -> List
 def create_room_polygon(room_spec: RoomSpec) -> Polygon:
     """
     Create Shapely polygon from room specification.
-    Handles both rectangular and L-shaped rooms.
+    Handles rectangular, L-shaped, and rooms with interior holes (columns, shafts).
+
+    SAFETY FIX: Interior holes (columns, elevator shafts, mechanical chases) are
+    physically impassable areas where detectors CANNOT be placed. Without hole
+    handling, the coverage check would count these areas as "covered" by a detector
+    placed over the hole — a FALSE PASS. With this fix, holes are subtracted from
+    the room polygon, ensuring coverage verification only counts real floor area.
+
     Args:
-        room_spec: Room specification
+        room_spec: Room specification (may include holes field)
     Returns:
-        Shapely Polygon object
+        Shapely Polygon object (with interior rings if holes provided)
     """
     if room_spec.polygon:
-        return Polygon(room_spec.polygon)
+        # RoomSpec.__post_init__ already constructed polygon with holes
+        return room_spec.polygon
     # Default rectangular room
     return Polygon([(0, 0), (room_spec.width_m, 0), (room_spec.width_m, room_spec.depth_m), (0, room_spec.depth_m)])
 

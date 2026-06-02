@@ -443,10 +443,23 @@ def calculate_max_spacing(ceiling: "CeilingSpec", detector_type: "DetectorType")
 
 
 def calculate_coverage_radius(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
-    """NFPA 72 §17.6.3.1 - coverage radius R = 0.7 × S.
+    """NFPA 72 §17.7.4.2.3.1 - coverage radius R = 0.7 × S.
 
-    CRITICAL FIX: Was using S/2 (spacing / 2.0), but NFPA 72 §17.7.4.2.3.1
-    defines the coverage radius as R = 0.7 × S, not S/2.
+    The coverage radius R = 0.7 × S is the distance from a detector to the
+    farthest point in its coverage cell on a square grid at spacing S.
+    This is NOT the same as the wall distance (S/2 per §17.6.3.1.1).
+
+    DISTINCTION (DO NOT CONFUSE):
+    - Coverage radius R = 0.7 × S: Used for verifying every point on the
+      ceiling is within R of a detector. For smoke at h<=3m: R = 6.37m.
+    - Wall distance = S/2: Maximum distance from a detector to the nearest
+      wall. For smoke at h<=3m: wall_dist = 4.55m.
+    - These are DIFFERENT quantities. R > wall_dist because the diagonal
+      of a square (0.707×S) is longer than half its side (0.5×S).
+
+    HISTORICAL NOTE: An earlier version used S/2 for coverage radius, which
+    was overly conservative (rejected compliant layouts). The 0.7 factor is
+    the correct NFPA 72 interpretation for square grid coverage verification.
     """
     spacing = calculate_max_spacing(ceiling, detector_type)
     return round(spacing * 0.7, 4)
