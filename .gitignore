@@ -100,3 +100,6 @@ qomn_fire_healing_audit.jsonl
 coverage.json
 reports/
 fireai_learning.sqlite3
+
+# Local pip dependencies (never commit)
+.pip_deps/

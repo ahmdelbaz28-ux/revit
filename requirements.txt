@@ -40,3 +40,6 @@ Pillow>=10.0.0
 
 # Utilities
 packaging>=24.0
+
+# Testing (required by CI pipeline)
+hypothesis>=6.88.0

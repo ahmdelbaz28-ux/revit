@@ -93,7 +93,7 @@ dev = [
 fireai = "fireai.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["fireai*", "backend*", "parsers*", "integration*", "facp_system*", "qomn_fire*"]
+include = ["fireai*", "backend*", "parsers*", "integration*", "facp_system*", "qomn_fire*", "qomn_conduit*"]
 exclude = ["tests*", "frontend*", "skills*", "wiki*"]
 
 [tool.setuptools.package-data]
@@ -164,7 +164,7 @@ ignore_missing_imports = true
 [tool.ruff]
 target-version = "py312"
 line-length = 120
-src = ["fireai", "backend", "parsers", "integration", "facp_system", "qomn_fire", "tests"]
+src = ["fireai", "backend", "parsers", "integration", "facp_system", "qomn_fire", "qomn_conduit", "tests"]
 
 [tool.ruff.lint]
 select = [
@@ -244,7 +244,7 @@ ignore = [
 # ═══════════════════════════════════════════════════════════════════════════
 
 [tool.coverage.run]
-source = ["fireai", "backend", "parsers", "facp_system", "qomn_fire"]
+source = ["fireai", "backend", "parsers", "facp_system", "qomn_fire", "qomn_conduit"]
 omit = [
     "tests/*",
     "frontend/*",
@@ -268,6 +268,6 @@ exclude_lines = [
 # ═══════════════════════════════════════════════════════════════════════════
 
 [tool.bandit]
-targets = ["fireai", "backend", "parsers", "integration", "facp_system", "qomn_fire"]
+targets = ["fireai", "backend", "parsers", "integration", "facp_system", "qomn_fire", "qomn_conduit"]
 exclude_dirs = ["tests", "frontend", "skills", "node_modules"]
 skips = ["B101"]  # Allow assert in production (used for safety guards)

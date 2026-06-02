@@ -47,7 +47,7 @@ jobs:
         run: mkdir -p reports
 
       - name: Ruff lint
-        run: ruff check fireai/ --exit-non-zero-on-fix
+        run: ruff check fireai/ qomn_conduit/ --exit-non-zero-on-fix
 
       # V50.2: Format check deferred to gradual adoption.
       # Many files are root-owned in the build environment and cannot
@@ -56,13 +56,13 @@ jobs:
       #   run: ruff format --check fireai/
 
       - name: MyPy type check
-        run: mypy fireai/ --ignore-missing-imports --no-strict-optional || true
+        run: mypy fireai/ qomn_conduit/ --ignore-missing-imports --no-strict-optional || true
         # V53: mypy is advisory for now — strict mode not yet enforced.
         # Ignores missing third-party stubs. Exit code does not block pipeline.
         continue-on-error: true
 
       - name: Bandit security scan
-        run: bandit -r fireai/ -f json -o reports/bandit.json
+        run: bandit -r fireai/ qomn_conduit/ -f json -o reports/bandit.json
         # V50.2: Bandit generates informational JSON report. Exit code 1 on any
         # finding (even LOW severity) would block the pipeline. The report is
         # reviewed manually. HIGH severity findings must be addressed before merge.
@@ -115,9 +115,9 @@ jobs:
 
       - name: Run test suite with coverage
         run: |
-          pytest tests/ -v \
+          pytest tests/ qomn_conduit/tests/ -v \
             --tb=short \
-            --cov=fireai \
+            --cov=fireai --cov=qomn_conduit \
             --cov-report=html:reports/coverage_html \
             --cov-report=term-missing \
             --cov-fail-under=45 \
@@ -179,8 +179,8 @@ jobs:
           pip install -e .
           pip install pytest pytest-asyncio
 
-      - name: Run core NFPA 72 tests
-        run: pytest tests/test_nfpa72_engine.py tests/test_qomn_integration.py -v --tb=short
+      - name: Run core NFPA 72 and qomn_conduit regression tests
+        run: pytest tests/test_nfpa72_engine.py tests/test_qomn_integration.py qomn_conduit/tests/test_catalog.py qomn_conduit/tests/test_fill.py qomn_conduit/tests/test_bend.py -v --tb=short
 
   # ── Gate 5: Dependency Audit ───────────────────────────────────────────
   dependency-audit:
