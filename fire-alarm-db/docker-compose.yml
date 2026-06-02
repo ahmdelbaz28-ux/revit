@@ -5,9 +5,9 @@ services:
     image: postgres:15
     container_name: firealarm-db
     environment:
-      POSTGRES_USER: firealarm
-      POSTGRES_PASSWORD: firealarm123
-      POSTGRES_DB: firealarmdb
+      POSTGRES_USER: ${DB_USER:-firealarm}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: ${DB_NAME:-firealarmdb}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -27,10 +27,10 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://firealarm:firealarm123@db:5432/firealarmdb
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER:-firealarm}:${DB_PASSWORD:-changeme}@db:5432/${DB_NAME:-firealarmdb}}
       MODEL_PATH: ./best.pt
-      HOST: 0.0.0.0
-      PORT: 8000
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-8000}
     ports:
       - "8000:8000"
     volumes:

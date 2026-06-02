@@ -23,12 +23,15 @@ import threading
 import zipfile
 import tempfile
 import logging
+import secrets
+import re
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Header, status
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthCredentials
 from uvicorn import run
 
 # Configure logging
@@ -37,6 +40,46 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# =============================================================================
+# Security Configuration
+# =============================================================================
+
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:8000').split(',')
+API_KEY = os.getenv('API_KEY')
+if not API_KEY:
+    logger.warning("API_KEY environment variable not set. Using insecure default.")
+    API_KEY = secrets.token_urlsafe(32)
+
+security = HTTPBearer()
+
+def verify_api_key(credentials: HTTPAuthCredentials = Depends(security)) -> str:
+    """Verify API key from Authorization header"""
+    if credentials.credentials != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid API key"
+        )
+    return credentials.credentials
+
+def validate_input_string(value: str, max_length: int = 255, pattern: Optional[str] = None) -> str:
+    """Validate string input"""
+    if not value or len(value) > max_length:
+        raise ValueError(f"Invalid input: must be between 1 and {max_length} characters")
+    if pattern and not re.match(pattern, value):
+        raise ValueError(f"Invalid input format: {pattern}")
+    return value
+
+def validate_task_id(task_id: str) -> str:
+    """Validate task ID to prevent path traversal"""
+    try:
+        uuid.UUID(task_id)
+        return task_id
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid task ID format"
+        )
 
 # Import pipeline components
 try:
@@ -69,13 +112,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for all origins (development)
+# Enable CORS with restricted origins
+cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
@@ -136,8 +180,7 @@ def root():
     return {
         "service": "Fire Alarm Elite Pipeline",
         "version": "1.0.0",
-        "status": "running",
-        "docs": "/docs"
+        "status": "running"
     }
 
 
@@ -200,7 +243,7 @@ def healthz():
 
 
 @app.get("/api/domains")
-def get_domains():
+def get_domains(api_key: str = Depends(verify_api_key)):
     """
     Get list of available engineering domains.
     
@@ -209,18 +252,18 @@ def get_domains():
     - registry: Mapping of domain names to logic classes
     """
     if not ENGINE_AVAILABLE:
-        raise HTTPException(status_code=500, detail="Engineering engine not available")
+        raise HTTPException(status_code=500, detail="Service unavailable")
     
-    # Get available domains
     domains = EngineeringLogicFactory.get_available_domains()
     
     return {
         "domains": domains,
         "registry": EngineeringDesignEngine.domain_registry,
         "default": "FireAlarm"
+    }
 
 @app.post("/api/rules-engine")
-def run_rules_engine(rooms: List[dict]):
+def run_rules_engine(rooms: List[dict], api_key: str = Depends(verify_api_key)):
     """Run the Fire Alarm Rules Engine for device placement.
     
     Request body: list of Room objects with id, type, area, polygon
@@ -229,15 +272,14 @@ def run_rules_engine(rooms: List[dict]):
     from rules_engine.core.engine import run_fire_alarm_engine
     return run_fire_alarm_engine(rooms)
 
-    }
-
 
 @app.post("/api/elite-design")
 async def elite_design(
     image: UploadFile = File(None),
     project_name: str = Form(...),
     standard: str = Form('egyptian'),
-    domain: str = Form('FireAlarm')
+    domain: str = Form('FireAlarm'),
+    api_key: str = Depends(verify_api_key)
 ):
     """
     Submit a new design task
@@ -253,34 +295,43 @@ async def elite_design(
     - status: "processing"
     """
     if not PIPELINE_AVAILABLE:
-        raise HTTPException(status_code=500, detail="Pipeline not available")
+        raise HTTPException(status_code=500, detail="Service unavailable")
     
-    # Validate image
+    try:
+        validate_input_string(project_name, max_length=100)
+        validate_input_string(standard, max_length=50, pattern=r'^[a-z]+$')
+        validate_input_string(domain, max_length=50, pattern=r'^[a-zA-Z0-9]+$')
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
     if not image:
         raise HTTPException(status_code=400, detail="Image required")
     
-    # Generate task ID
     task_id = str(uuid.uuid4())
     logger.info(f"Task {task_id}: project={project_name}")
     
-    # Save uploaded image
     image_ext = Path(image.filename).suffix or '.png'
+    if not image_ext.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+        raise HTTPException(status_code=400, detail="Invalid image format")
+    
     image_path = TEMP_DIR / f"{task_id}{image_ext}"
     
     try:
         content = await image.read()
+        if len(content) > 50 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="File too large")
         with open(image_path, 'wb') as f:
             f.write(content)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save image: {e}")
+        logger.error(f"Failed to save image: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process image")
     
-    # Initialize task (if no image provided, pipeline will use test data)
     if not content:
-        # Create a dummy test image
         logger.info(f"Task {task_id}: No image provided, using test data")
         image_path = None
     
-    # Create task
     TASKS[task_id] = {
         'status': 'processing',
         'project_name': project_name,
@@ -292,7 +343,6 @@ async def elite_design(
         'error': None
     }
     
-    # Start background thread
     thread = threading.Thread(
         target=run_design_task,
         args=(task_id, str(image_path) if image_path and content else None, project_name, standard, domain)
@@ -309,7 +359,7 @@ async def elite_design(
 
 
 @app.get("/api/task/{task_id}")
-def get_task_status(task_id: str):
+def get_task_status(task_id: str, api_key: str = Depends(verify_api_key)):
     """
     Get task status
     
@@ -319,41 +369,42 @@ def get_task_status(task_id: str):
     - project_name: Project name
     - download_url: URL to download ZIP (if completed)
     """
-    if task_id not in TASKS:
+    validated_id = validate_task_id(task_id)
+    
+    if validated_id not in TASKS:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    task = TASKS[task_id]
+    task = TASKS[validated_id]
     
     response = {
-        "task_id": task_id,
+        "task_id": validated_id,
         "status": task['status'],
         "project_name": task.get('project_name')
     }
     
-    # Add download URL if completed
     if task['status'] == 'completed' and task.get('zip_path'):
-        response['download_url'] = f"/download/{task_id}"
-        response['output_zip'] = task['zip_path']
+        response['download_url'] = f"/download/{validated_id}"
     
-    # Add error if failed
     if task['status'] == 'error':
-        response['error'] = task.get('error', 'Unknown error')
+        response['error'] = "Task processing failed"
     
     return response
 
 
 @app.get("/download/{task_id}")
-def download_result(task_id: str):
+def download_result(task_id: str, api_key: str = Depends(verify_api_key)):
     """
     Download result ZIP file
     
     Returns:
     - File attachment: {project_name}_outputs.zip
     """
-    if task_id not in TASKS:
+    validated_id = validate_task_id(task_id)
+    
+    if validated_id not in TASKS:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    task = TASKS[task_id]
+    task = TASKS[validated_id]
     
     if task['status'] != 'completed':
         raise HTTPException(status_code=400, detail="Task not completed")
@@ -379,10 +430,10 @@ def download_result(task_id: str):
 @app.exception_handler(Exception)
 def global_exception_handler(request, exc):
     """Global exception handler"""
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    logger.error(f"Unhandled exception: {type(exc).__name__}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc)}
+        content={"detail": "Internal server error"}
     )
 
 

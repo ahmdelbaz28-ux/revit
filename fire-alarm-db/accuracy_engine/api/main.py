@@ -1,10 +1,18 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import BaseModel
+import os
+import secrets
+import re
+import logging
 from typing import List, Tuple
+from fastapi import FastAPI, Depends, HTTPException, Header, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from pydantic import BaseModel
 import io
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from core.engine import run_accuracy_engine
 from core.decision_pipeline import run_decision_pipeline
@@ -34,11 +42,32 @@ from core.gkil.proof_engine import RegulatoryProofEngine, CanonicalProofSerializ
 
 app = FastAPI(title="FireAlarmAI Accuracy Engine")
 
+# Security Configuration
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:8000').split(',')
+API_KEY = os.getenv('API_KEY')
+if not API_KEY:
+    logger.warning("API_KEY environment variable not set. Using insecure default.")
+    API_KEY = secrets.token_urlsafe(32)
+
+security = HTTPBearer()
+
+def verify_api_key(credentials: HTTPAuthCredentials = Depends(security)) -> str:
+    """Verify API key from Authorization header"""
+    if credentials.credentials != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid API key"
+        )
+    return credentials.credentials
+
+# Configure CORS with restricted origins
+cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 class RoomModel(BaseModel):
@@ -57,15 +86,13 @@ def serve_ui():
     return FileResponse("index.html")
 
 @app.post("/api/accuracy-engine")
-def run_engine(request: EngineRequest):
+def run_engine(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     result = run_accuracy_engine(rooms)
     return result
 
-
-
 @app.post("/api/optimize-layout")
-def optimize_layout(request: EngineRequest):
+def optimize_layout(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     mode = request.mode if hasattr(request, 'mode') else "balanced"
 
@@ -112,7 +139,7 @@ def optimize_layout(request: EngineRequest):
     }
 
 @app.post("/api/safety-assessment")
-def safety_assessment(request: EngineRequest):
+def safety_assessment(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
 
     pipeline_result = run_decision_pipeline(rooms)
@@ -185,7 +212,7 @@ def safety_assessment(request: EngineRequest):
 
 
 @app.post("/api/risk-assessment")
-def risk_assessment(request: EngineRequest):
+def risk_assessment(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     pipeline_result = run_decision_pipeline(rooms)
     devices = pipeline_result.get("devices", [])
@@ -216,14 +243,14 @@ def risk_assessment(request: EngineRequest):
 
 
 @app.post("/api/auto-improve")
-def auto_improve(request: EngineRequest):
+def auto_improve(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     result = apply_improvements_and_reassess(rooms)
     return result
 
 
 @app.post("/api/compliance-verification")
-def compliance_verification(request: EngineRequest):
+def compliance_verification(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     from core.decision_pipeline import run_decision_pipeline
     pipeline_result = run_decision_pipeline(rooms)
@@ -236,7 +263,7 @@ def compliance_verification(request: EngineRequest):
 
 
 @app.post("/api/unified-assessment")
-def unified_assessment(request: EngineRequest):
+def unified_assessment(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     from core.improvement_engine import apply_improvements_and_reassess
     from core.safety.fire_load_risk import fire_load_risk
     from core.safety.failure_mode_analysis import detector_failure_impact
@@ -347,7 +374,7 @@ class DecisionRequest(BaseModel):
     rooms: List[RoomModel]
 
 @app.post("/api/decision-pipeline")
-def run_pipeline(request: DecisionRequest):
+def run_pipeline(request: DecisionRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     result = run_decision_pipeline(rooms)
     return result
@@ -373,7 +400,7 @@ def export_dxf():
 
 
 @app.post("/api/monte-carlo")
-def monte_carlo_simulation(request: EngineRequest, iterations: int = 1000):
+def monte_carlo_simulation(request: EngineRequest, iterations: int = 1000, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     from core.improvement_engine import apply_improvements_and_reassess
     
@@ -406,7 +433,7 @@ def monte_carlo_simulation(request: EngineRequest, iterations: int = 1000):
 
 
 @app.post("/api/risk-graph")
-def risk_graph(request: EngineRequest, scenarios: int = 100):
+def risk_graph(request: EngineRequest, scenarios: int = 100, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     from core.improvement_engine import apply_improvements_and_reassess
     
@@ -426,7 +453,7 @@ def risk_graph(request: EngineRequest, scenarios: int = 100):
 
 
 @app.post("/api/composite-risk")
-def composite_risk(request: EngineRequest, scenarios: int = 100):
+def composite_risk(request: EngineRequest, scenarios: int = 100, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     from core.improvement_engine import apply_improvements_and_reassess
     
@@ -446,7 +473,7 @@ def composite_risk(request: EngineRequest, scenarios: int = 100):
 
 
 @app.post("/api/export-cad-graph")
-def export_cad_graph(request: EngineRequest):
+def export_cad_graph(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     from core.risk_tensor.engine import run_composite_risk_analysis
     from core.risk_tensor.system_topology import build_system_topology
@@ -524,7 +551,7 @@ def export_cad_graph(request: EngineRequest):
 
 
 @app.post("/api/validate-stratification")
-def validate_stratification(request: EngineRequest):
+def validate_stratification(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     from core.risk_tensor.engine import run_composite_risk_analysis
     from core.risk_tensor.system_topology import build_system_topology
@@ -583,7 +610,7 @@ def validate_stratification(request: EngineRequest):
 
 
 @app.post("/api/generate-proof")
-def generate_proof(request: EngineRequest):
+def generate_proof(request: EngineRequest, api_key: str = Depends(verify_api_key)):
     rooms = [r.model_dump() for r in request.rooms]
     from core.risk_tensor.engine import run_composite_risk_analysis
     from core.risk_tensor.system_topology import build_system_topology
@@ -666,3 +693,12 @@ def generate_proof(request: EngineRequest):
         "verified_count": len([p for p in proofs if p["verified"]]),
         "engine_version": f"RPE-{rpe.ontology_version}-{rpe.nfpa_version}"
     }
+
+@app.exception_handler(Exception)
+def global_exception_handler(request, exc):
+    """Global exception handler - hide internal details"""
+    logger.error(f"Unhandled exception: {type(exc).__name__}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
