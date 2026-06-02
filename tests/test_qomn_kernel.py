@@ -510,10 +510,27 @@ class TestComputeHeatDetectorSpacing:
         expected_s = 0.7 * math.sqrt(100.0)  # 7.0m
         assert result["spacing_m"] == pytest.approx(expected_s, rel=0.01)
 
-    def test_large_area_capped(self):
-        """Very large area still capped at 15.24m."""
-        result = compute_heat_detector_spacing(3.0, 10000.0)
+    def test_area_at_nfpa_max_accepted(self):
+        """V117: At the NFPA 72 §17.6.3.1 max area (232.26 m² = 2500 ft²),
+        spacing is 0.7×√232.26 ≈ 10.668 m, well under the 15.24 m cap."""
+        result = compute_heat_detector_spacing(3.0, 232.26)
+        assert result["spacing_m"] == pytest.approx(0.7 * math.sqrt(232.26), rel=1e-4)
         assert result["spacing_m"] <= NFPA72_HEAT_MAX_SPACING_M
+
+    def test_area_above_nfpa_max_rejected(self):
+        """V117 FIX: Areas exceeding NFPA 72 §17.6.3.1 max (232.26 m² =
+        2500 ft²) MUST be rejected, not silently clamped. Silent clamping
+        was a fail-safe HALF-SOLUTION (agent.md Rule #17) that masked
+        engineering errors — a user requesting heat-detector coverage of
+        10000 m² with a single detector has an INVALID design that must be
+        surfaced, not hidden behind a min() clamp."""
+        with pytest.raises(PhysicsGuardError, match=r"§17\.6\.3\.1.*232\.26"):
+            compute_heat_detector_spacing(3.0, 10000.0)
+
+    def test_area_just_above_max_rejected(self):
+        """V117: Boundary test — 232.27 m² (1 cm² above max) must reject."""
+        with pytest.raises(PhysicsGuardError, match=r"232\.26"):
+            compute_heat_detector_spacing(3.0, 232.27)
 
     def test_coverage_radius(self):
         result = compute_heat_detector_spacing(3.0, 100.0)

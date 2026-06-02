@@ -432,13 +432,40 @@ def compute_heat_detector_spacing(
             f"area {a:.2e} m2 too small -- minimum 1e-6 m2 for meaningful calculation",
             "Physics / NFPA 72-2022 §17.6.3.1"
         )
+    # V117 FIX: Reject area > NFPA 72 §17.6.3.1 maximum coverage (232.26 m²
+    # ≈ 2500 ft²). Previously, an absurd input like area=10000 m² was silently
+    # clamped to spacing=15.24 m via min(), producing a result that LOOKED
+    # valid but was based on out-of-spec input. Per agent.md Rule #17
+    # (NO HALF-SOLUTIONS) and the Anti-Deception Directive, fail-safe clamping
+    # of bad input is a HALF-SOLUTION: it hides an engineering error instead
+    # of surfacing it. The max derives from: max_spacing = 15.24 m → max
+    # square coverage area = 15.24² ≈ 232.26 m² (same physical limit used in
+    # guard_area_m2 for smoke detectors at line 106). NFPA 72 §17.6.3.1 caps
+    # heat detector spacing at 50 ft (15.24 m); any area requiring larger
+    # spacing is physically incompatible with the code. Caller must split the
+    # space into multiple detector coverage zones.
+    NFPA72_HEAT_MAX_AREA_M2 = 232.26  # 2500 ft² × 0.0929 = 232.26 m²
+    if a > NFPA72_HEAT_MAX_AREA_M2:
+        raise PhysicsGuardError(
+            "area_per_detector_m2", f"{a:.2f}",
+            (
+                f"exceeds NFPA 72 §17.6.3.1 maximum {NFPA72_HEAT_MAX_AREA_M2} m² "
+                f"(2500 ft²) per heat detector. At max spacing 15.24 m (50 ft), "
+                f"a single detector covers at most {NFPA72_HEAT_MAX_AREA_M2} m². "
+                "Split the space into multiple detector coverage zones."
+            ),
+            "NFPA 72-2022 §17.6.3.1"
+        )
 
     # S = 0.7 × √A — NFPA 72 §17.6.3.1 (in feet; convert)
     # In feet: S_ft = 0.7 × √(A_ft²)
     # In meters: √(A_m²) × 0.7 = S_m
     spacing_m = 0.7 * math.sqrt(a)
 
-    # Apply maximum — NFPA 72 §17.6.3.1
+    # Defensive: clamp at NFPA absolute max in case of float-precision edge cases.
+    # With the area guard above, this branch is now unreachable for any
+    # a ≤ 232.26 since 0.7×√232.26 ≈ 10.668 m < 15.24 m. Retained as a
+    # safety belt-and-braces measure per QOMN Layer 0 spec.
     spacing_m = min(spacing_m, NFPA72_HEAT_MAX_SPACING_M)
 
     radius_m = NFPA72_COVERAGE_RADIUS_FACTOR * spacing_m

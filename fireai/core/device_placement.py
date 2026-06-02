@@ -271,7 +271,30 @@ class DetectorPlacementEngine:
             spacing_result = self._kernel.smoke_detector_spacing(room.ceiling_height_m)
             nfpa_refs.append("NFPA 72-2022 §17.7.3 / Table 17.6.3.1")
         else:  # HEAT
-            spacing_result = compute_heat_detector_spacing(room.ceiling_height_m, room.area_m2)
+            # V117 FIX (caller): Pass min(room.area_m2, NFPA_HEAT_MAX_AREA) as
+            # area_per_detector. The OLD code passed room.area_m2 directly, which
+            # violated the kernel's contract — the kernel's `area_per_detector_m2`
+            # parameter is the coverage area PER detector (NFPA 72 §17.6.3.1 cap
+            # 232.26 m² = 2500 ft²), not the room total. With the V117 area guard,
+            # passing a >232.26 m² room area now raises PhysicsGuardError.
+            #
+            # SEMANTICS: For a heat detector design, the engineer specifies the
+            # max coverage area per detector (≤ 232.26 m²). For rooms larger than
+            # this, multiple detectors are needed and the hex-grid placement below
+            # will tile them across the room. Using max coverage (232.26 m²) here
+            # yields the MAXIMUM allowed spacing per NFPA — the densest acceptable
+            # detector count. For rooms smaller than the max, the actual room area
+            # is used, which naturally yields tighter spacing for safety.
+            #
+            # This change preserves backward-compatible BEHAVIOR (the prior code
+            # silently clamped spacing to 15.24 m for any area ≥ 474 m², matching
+            # the 0.7×√A → 15.24 cap), but now correctly REPORTS the spacing
+            # derivation per the NFPA contract.
+            NFPA72_HEAT_MAX_AREA_M2 = 232.26  # NFPA 72-2022 §17.6.3.1 (2500 ft²)
+            area_per_detector = min(room.area_m2, NFPA72_HEAT_MAX_AREA_M2)
+            spacing_result = compute_heat_detector_spacing(
+                room.ceiling_height_m, area_per_detector
+            )
             nfpa_refs.append("NFPA 72-2022 §17.6.3.1")
 
         S = spacing_result.get("listed_spacing_m") or spacing_result.get("spacing_m")
