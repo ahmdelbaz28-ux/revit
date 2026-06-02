@@ -54,8 +54,8 @@ if not API_KEY:
 security = HTTPBearer()
 
 def verify_api_key(credentials: HTTPAuthCredentials = Depends(security)) -> str:
-    """Verify API key from Authorization header"""
-    if credentials.credentials != API_KEY:
+    """Verify API key from Authorization header using constant-time comparison"""
+    if not secrets.compare_digest(credentials.credentials, API_KEY):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid API key"
@@ -130,6 +130,9 @@ app.add_middleware(
 # Task storage: task_id -> {'status': str, 'result': dict, 'zip_path': str}
 TASKS: Dict[str, dict] = {}
 
+# Lock for thread-safe access to TASKS dictionary
+tasks_lock = threading.Lock()
+
 # Temp directory for uploads
 TEMP_DIR = Path(tempfile.mkdtemp(prefix='firealarm_uploads_'))
 
@@ -139,7 +142,7 @@ TEMP_DIR = Path(tempfile.mkdtemp(prefix='firealarm_uploads_'))
 # =============================================================================
 
 def run_design_task(task_id: str, image_path: str, project_name: str, standard: str = 'egyptian', domain: str = 'FireAlarm'):
-    """Run design task in background thread"""
+    """Run design task in background thread (thread-safe)"""
     try:
         logger.info(f"Starting task {task_id}: project={project_name}, domain={domain}")
         
@@ -155,19 +158,21 @@ def run_design_task(task_id: str, image_path: str, project_name: str, standard: 
             domain=domain
         )
         
-        # Update task status
-        TASKS[task_id]['status'] = 'completed'
-        TASKS[task_id]['result'] = result
-        
-        if result.get('output_zip'):
-            TASKS[task_id]['zip_path'] = result['output_zip']
+        # Update task status (thread-safe)
+        with tasks_lock:
+            TASKS[task_id]['status'] = 'completed'
+            TASKS[task_id]['result'] = result
+            
+            if result.get('output_zip'):
+                TASKS[task_id]['zip_path'] = result['output_zip']
         
         logger.info(f"Task {task_id} completed: {result.get('status')}")
         
     except Exception as e:
         logger.error(f"Task {task_id} failed: {e}", exc_info=True)
-        TASKS[task_id]['status'] = 'error'
-        TASKS[task_id]['error'] = str(e)
+        with tasks_lock:
+            TASKS[task_id]['status'] = 'error'
+            TASKS[task_id]['error'] = str(e)
 
 
 # =============================================================================
@@ -298,7 +303,7 @@ async def elite_design(
         raise HTTPException(status_code=500, detail="Service unavailable")
     
     try:
-        validate_input_string(project_name, max_length=100)
+        validate_input_string(project_name, max_length=100, pattern=r'^[a-zA-Z0-9\s_\-\.]+$')
         validate_input_string(standard, max_length=50, pattern=r'^[a-z]+$')
         validate_input_string(domain, max_length=50, pattern=r'^[a-zA-Z0-9]+$')
     except ValueError as e:
@@ -332,16 +337,18 @@ async def elite_design(
         logger.info(f"Task {task_id}: No image provided, using test data")
         image_path = None
     
-    TASKS[task_id] = {
-        'status': 'processing',
-        'project_name': project_name,
-        'image_path': str(image_path) if image_path and content else None,
-        'standard': standard,
-        'domain': domain,
-        'result': None,
-        'zip_path': None,
-        'error': None
-    }
+    # Create task (thread-safe)
+    with tasks_lock:
+        TASKS[task_id] = {
+            'status': 'processing',
+            'project_name': project_name,
+            'image_path': str(image_path) if image_path and content else None,
+            'standard': standard,
+            'domain': domain,
+            'result': None,
+            'zip_path': None,
+            'error': None
+        }
     
     thread = threading.Thread(
         target=run_design_task,
@@ -361,7 +368,7 @@ async def elite_design(
 @app.get("/api/task/{task_id}")
 def get_task_status(task_id: str, api_key: str = Depends(verify_api_key)):
     """
-    Get task status
+    Get task status (thread-safe)
     
     Returns:
     - task_id: Task UUID
@@ -371,10 +378,12 @@ def get_task_status(task_id: str, api_key: str = Depends(verify_api_key)):
     """
     validated_id = validate_task_id(task_id)
     
-    if validated_id not in TASKS:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    task = TASKS[validated_id]
+    with tasks_lock:
+        if validated_id not in TASKS:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        # Get a consistent snapshot of task state
+        task = dict(TASKS[validated_id])
     
     response = {
         "task_id": validated_id,
@@ -394,17 +403,19 @@ def get_task_status(task_id: str, api_key: str = Depends(verify_api_key)):
 @app.get("/download/{task_id}")
 def download_result(task_id: str, api_key: str = Depends(verify_api_key)):
     """
-    Download result ZIP file
+    Download result ZIP file (thread-safe)
     
     Returns:
     - File attachment: {project_name}_outputs.zip
     """
     validated_id = validate_task_id(task_id)
     
-    if validated_id not in TASKS:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    task = TASKS[validated_id]
+    with tasks_lock:
+        if validated_id not in TASKS:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        # Get a consistent snapshot of task state
+        task = dict(TASKS[validated_id])
     
     if task['status'] != 'completed':
         raise HTTPException(status_code=400, detail="Task not completed")

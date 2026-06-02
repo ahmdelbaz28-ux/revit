@@ -5,7 +5,7 @@ import logging
 from typing import List, Tuple
 from fastapi import FastAPI, Depends, HTTPException, Header, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthCredentials
 from pydantic import BaseModel
 import io
@@ -52,8 +52,8 @@ if not API_KEY:
 security = HTTPBearer()
 
 def verify_api_key(credentials: HTTPAuthCredentials = Depends(security)) -> str:
-    """Verify API key from Authorization header"""
-    if credentials.credentials != API_KEY:
+    """Verify API key from Authorization header using constant-time comparison"""
+    if not secrets.compare_digest(credentials.credentials, API_KEY):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid API key"
