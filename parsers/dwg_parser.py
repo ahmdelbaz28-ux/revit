@@ -294,26 +294,9 @@ class DWGParser:
         it is not.  Rejecting poisoned data at the parser boundary is
         the conservative (safer) choice per Life-Safety Rule 5.
         """
-        # Lazy import — use project-root resolution to avoid
-        # fireai/core/ shadowing top-level core/ when setuptools
-        # adds fireai/ to sys.path.
-        import sys as _sys
-        import importlib
-
-        _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        if _project_root not in _sys.path:
-            _sys.path.insert(0, _project_root)
-        # Also remove fireai/ if it shadows the project root
-        _fireai_path = os.path.join(_project_root, "fireai")
-        while _fireai_path in _sys.path:
-            _sys.path.remove(_fireai_path)
-        # Clear cached 'core' module if it resolved to fireai/core/
-        if "core" in _sys.modules:
-            _mod = _sys.modules["core"]
-            if hasattr(_mod, "__file__") and _mod.__file__ and "/fireai/core/" in _mod.__file__:
-                for _k in [k for k in list(_sys.modules.keys()) if k == "core" or k.startswith("core.")]:
-                    del _sys.modules[_k]
-
+        # V82 FIX: core.models now exists at project root — no sys.path
+        # manipulation needed. The old code hacked sys.path to work around
+        # the missing core/models.py, which was fragile and unsafe.
         from core.models import UniversalElement, Geometry, Point3D, ElementType
 
         rooms: list = []

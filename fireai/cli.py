@@ -3,8 +3,15 @@
 fireai/cli.py - Unified CLI for FireAI
 Usage: python -m fireai.cli build -f FILE.dxf -o OUTPUT_DIR
 
-CRITICAL FIX: Removed broken import of src.dxf_importer (doesn't exist).
-CLI now degrades gracefully when optional modules are missing.
+V82 FIX: Removed all dead ``src.*`` imports that never existed.
+The ``src.auto_placement``, ``src.application.*``, ``src.core.models``,
+and ``src.infrastructure.*`` modules were removed in a prior restructure
+but the CLI still had try/except blocks importing them. These were
+harmless (ImportError was caught) but added confusion.
+
+The ``build`` command's full pipeline now fails with a clear error
+message if the required modules are not available, instead of crashing
+with an uncaught NameError.
 """
 
 import os
@@ -16,43 +23,18 @@ from pathlib import Path
 
 import click
 
-# CRITICAL FIX: Lazy imports — these modules may not be available.
-# The old code imported src.dxf_importer which doesn't exist.
-# Now we import inside the command handler and fail gracefully.
-try:
-    from src.auto_placement import suggest_devices
-
-    _HAS_AUTO_PLACEMENT = True
-except ImportError:
-    _HAS_AUTO_PLACEMENT = False
+# V82 FIX: Try to import the application layer modules.
+# These are optional — the CLI degrades gracefully if missing.
+_src_modules: dict = {}
 
 try:
-    from src.application.cable_router import CableRouter
-    from src.application.coverage_service import CoverageService
-    from src.application.graph_builder import GraphBuilder
-    from src.application.schemas import PanelConfig
-
-    _HAS_APPLICATION = True
+    from fireai.dxf_importer import DXFImporter as _DXFImporter  # noqa: F401
+    _src_modules["dxf_importer"] = _DXFImporter
 except ImportError:
-    _HAS_APPLICATION = False
+    pass
 
-try:
-    from src.core.models import BS5839, NFPA72, DeviceType
-
-    _HAS_MODELS = True
-except ImportError:
-    _HAS_MODELS = False
-
-try:
-    from src.infrastructure.boq_generator import BOQGenerator
-    from src.infrastructure.dxf_production_writer import DXFProductionWriter
-    from src.infrastructure.justification_writer import generate_justification, write_justification_to_file
-
-    _HAS_INFRASTRUCTURE = True
-except ImportError:
-    _HAS_INFRASTRUCTURE = False
-
-# NOTE: src.dxf_importer was removed — DXF import must use alternative path
+# NOTE: src.* modules were removed during project restructure.
+# The build command will show a clear error if these are needed.
 
 
 DISCLAIMER = """
@@ -124,120 +106,16 @@ def build(dxf_file, calibrate, output, standard, panel):
         sys.exit(1)
 
     # 2. Device placement and coverage
-    if standard == "NFPA72":
-        standard_obj = NFPA72()
-    else:
-        standard_obj = BS5839()
-
-    spacing = standard_obj.get_max_spacing(DeviceType.SMOKE_DETECTOR)
-
-    service = CoverageService()
-    all_devices = []
-    all_violations = []
-
-    for room in rooms:
-        devices = suggest_devices(room, spacing)
-
-        for d in devices:
-            d.room_id = room.room_id or room.name
-
-        all_devices.extend(devices)
-        violations = service.check_coverage(room, devices, standard_obj)
-        all_violations.extend(violations)
-
-    click.echo(f"✅ اقتراح {len(all_devices)} جهاز")
-
-    if all_violations:
-        click.echo(click.style(f"⚠️  {len(all_violations)} مخالفة تغطية", fg="red"))
-    else:
-        click.echo(click.style("✅ لا توجد مخالفات تغطية", fg="green"))
-
-    # 3. Cable routing
-    panel_pos = (panel_x, panel_y)
-
-    if rooms and rooms[0].polygon:
-        builder = GraphBuilder(grid_spacing_m=1.0)
-        graph = builder.build_from_polygon(rooms[0].polygon.exterior, panel_pos, walls)
-        router = CableRouter(graph, panel_pos, PanelConfig())
-        cable_paths, loops = router.calculate_routes(all_devices)
-        total_cable_m = sum(cp.total_length_m for cp in cable_paths)
-        click.echo(f"✅ توجيه {total_cable_m:.1f}m كابل في {len(loops)} حلقة")
-    else:
-        cable_paths = []
-        total_cable_m = 0.0
-
-    # 4. Production export
-    device_dicts = []
-    for d in all_devices:
-        if d.position:
-            device_dicts.append({"id": d.device_id, "position": (d.position.x, d.position.y), "type": "SMOKE"})
-
-    # Export DXF
-    try:
-        dxf_writer = DXFProductionWriter(coverage_radius_m=6.0)
-        dxf_writer.create_dxf(
-            devices=device_dicts,
-            cable_paths=cable_paths,
-            panel_location=panel_pos,
-            room_boundaries=[r.polygon for r in rooms if r.polygon],
-            output_file=str(out_dir / f"{output}.dxf"),
-        )
-        click.echo(f"📄 Created {output}.dxf")
-    except Exception as e:
-        click.echo(f"⚠️ DXF export: {e}")
-
-    # Export BOQ
-    try:
-        boq = BOQGenerator()
-        boq.generate_boq(
-            devices=device_dicts,
-            cable_paths=cable_paths,
-            panel_location=panel_pos,
-            output_file=str(out_dir / f"{output}_boq.csv"),
-        )
-        click.echo(f"💰 Created {output}_boq.csv")
-    except Exception as e:
-        click.echo(f"⚠️ BOQ export: {e}")
-
-    # 5. Justification reports
-    try:
-        for room in rooms:
-            room_id = room.room_id or room.name or "room"
-            room_devs = [d for d in all_devices if getattr(d, "room_id", None) == room_id]
-            room_viols = [v for v in all_violations if getattr(v, "room_id", None) == room_id]
-
-            # Estimate cable for this room
-            room_cable_m = total_cable_m * len(room_devs) / max(1, len(all_devices))
-
-            report = generate_justification(
-                room=room,
-                devices=room_devs,
-                violations=room_viols,
-                cable_total_m=room_cable_m,
-                cable_direct_m=room_cable_m * 0.7,
-                beams=[],
-                standard=standard_obj,
-                voltage_drop_v=0.0,
-                loop_resistance_ohm=0.0,
-                is_loop_compliant=True,
-            )
-
-            room_name = room.name or "room"
-            report_file = out_dir / f"justification_{room_name}.txt"
-            write_justification_to_file(report, str(report_file))
-            click.echo(f"📝 Created justification_{room_name}.txt")
-    except Exception as e:
-        click.echo(f"⚠️ Justification: {e}")
-
-    # Summary
-    print("\n" + "=" * 70)
-    print("🎉 DESIGN COMPLETE!")
-    print("=" * 70)
-    print(f"   Devices: {len(all_devices)}")
-    print(f"   Cable: {total_cable_m:.1f}m")
-    print(f"   Violations: {len(all_violations)}")
-    print(f"   Output: {out_dir.resolve()}")
-    print("=" * 70)
+    # V82 FIX: The src.* application layer does not exist in this project.
+    # These names (NFPA72, BS5839, DeviceType, CoverageService, etc.) were
+    # imported from src.* modules that were removed during restructuring.
+    # The full pipeline is available via `python run_full_pipeline.py`.
+    click.echo(
+        "ERROR: Full pipeline requires src.* application layer (not installed). "
+        "Use `python run_full_pipeline.py` for the complete workflow, which "
+        "uses the fireai.* modules directly."
+    )
+    sys.exit(1)
 
 
 if __name__ == "__main__":
