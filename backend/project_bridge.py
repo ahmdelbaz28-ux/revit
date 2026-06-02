@@ -510,3 +510,194 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
     except Exception as e:
         logger.critical("UDM bridge unavailable during device deletion: %s", e)
         return False
+
+
+# ── Connection Synchronization ───────────────────────────────────────────────
+# Connections (cable wiring between fire alarm devices) are created in
+# System A (digital_twin.db) but must be synced to System B (udm_elements.db)
+# so that the conflict detection system has a complete picture of the project.
+#
+# SAFETY: Without connection sync, the UDM has an incomplete view of cable
+# relationships between devices. This means:
+#   - Spatial analysis in System B doesn't know about cable connections
+#   - Voltage drop calculations in the conflict system lack cable length data
+#   - Circuit topology is invisible to cross-project conflict detection
+#
+# Connection mapping between System A and System B:
+#     System A connection `id`       → System B relationship `relationship_id`
+#     System A connection `fromId`   → System B relationship `from_element_id`
+#     System A connection `toId`     → System B relationship `to_element_id`
+#     (constant)                     → System B relationship `relationship_type` = "cable_connection"
+#     System A connection fields     → System B relationship `metadata` (JSON)
+
+
+def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> bool:
+    """Sync a connection from System A to System B after creation.
+
+    Maps System A connection fields to System B relationship fields so that
+    the conflict detection system can see cable wiring between devices.
+
+    Returns True if sync succeeded, False if it failed (but does NOT block).
+    """
+    try:
+        from backend.db_service import DatabaseService
+
+        udm = DatabaseService()
+
+        connection_id = connection_data.get("id", "")
+        from_id = connection_data.get("fromId", "")
+        to_id = connection_data.get("toId", "")
+
+        # Build properties JSON with cable metadata
+        properties = {
+            "source": "digital_twin_connection",
+            "cableSize": connection_data.get("cableSize", ""),
+            "length": connection_data.get("length", 0.0),
+            "type": connection_data.get("type", ""),
+            "original_id": connection_id,
+            "project_id": project_id,
+        }
+
+        try:
+            with udm._service_lock:
+                conn = udm._data_model._conn
+                cursor = conn.cursor()
+
+                # Ensure relationships table exists with is_deleted and
+                # last_modified_timestamp columns. The table may have been
+                # created by UniversalDataModel without these columns, so we
+                # also ALTER TABLE to add them if missing.
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS relationships (
+                        relationship_id TEXT PRIMARY KEY,
+                        from_element_id TEXT NOT NULL,
+                        to_element_id TEXT NOT NULL,
+                        relationship_type TEXT NOT NULL,
+                        is_parametric INTEGER DEFAULT 0,
+                        metadata JSON,
+                        is_deleted INTEGER DEFAULT 0,
+                        last_modified_timestamp TEXT
+                    )
+                """)
+
+                # Add is_deleted column if it doesn't exist (the table may
+                # have been created by UniversalDataModel without it)
+                try:
+                    cursor.execute(
+                        "ALTER TABLE relationships ADD COLUMN is_deleted INTEGER DEFAULT 0"
+                    )
+                except Exception:
+                    pass  # Column already exists — safe to ignore
+
+                # Add last_modified_timestamp column if it doesn't exist
+                try:
+                    cursor.execute(
+                        "ALTER TABLE relationships ADD COLUMN last_modified_timestamp TEXT"
+                    )
+                except Exception:
+                    pass  # Column already exists — safe to ignore
+
+                # Insert or replace relationship
+                now = datetime.now(timezone.utc).isoformat()
+                cursor.execute(
+                    "INSERT OR REPLACE INTO relationships "
+                    "(relationship_id, from_element_id, to_element_id, "
+                    "relationship_type, is_parametric, metadata, "
+                    "is_deleted, last_modified_timestamp) "
+                    "VALUES (?, ?, ?, ?, ?, ?, 0, ?)",
+                    (
+                        connection_id,
+                        from_id,
+                        to_id,
+                        "cable_connection",
+                        0,
+                        json.dumps(properties),
+                        now,
+                    ),
+                )
+
+                conn.commit()
+
+            logger.info("Connection %s synced to UDM for project %s", connection_id, project_id)
+            return True
+        except Exception as e:
+            logger.error("Failed to sync connection %s to UDM: %s", connection_id, e)
+            return False
+
+    except Exception as e:
+        logger.critical("UDM bridge unavailable during connection sync: %s", e)
+        return False
+
+
+def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
+    """Sync a connection deletion from System A to System B.
+
+    Soft-deletes the relationship in UDM. Soft delete preserves the
+    audit trail for NFPA 72 traceability — cable connection deletions
+    must be traceable for liability and inspection compliance.
+
+    Returns True if sync succeeded, False if it failed (but does NOT block).
+    """
+    try:
+        from backend.db_service import DatabaseService
+
+        udm = DatabaseService()
+
+        try:
+            with udm._service_lock:
+                conn = udm._data_model._conn
+                cursor = conn.cursor()
+
+                # Ensure is_deleted and last_modified_timestamp columns exist
+                # (same safety net as sync_connection_to_udm)
+                try:
+                    cursor.execute(
+                        "ALTER TABLE relationships ADD COLUMN is_deleted INTEGER DEFAULT 0"
+                    )
+                except Exception:
+                    pass
+                try:
+                    cursor.execute(
+                        "ALTER TABLE relationships ADD COLUMN last_modified_timestamp TEXT"
+                    )
+                except Exception:
+                    pass
+
+                # Soft-delete the relationship (preserve audit trail)
+                now = datetime.now(timezone.utc).isoformat()
+                cursor.execute(
+                    "UPDATE relationships SET is_deleted = 1, last_modified_timestamp = ? "
+                    "WHERE relationship_id = ?",
+                    (now, connection_id),
+                )
+
+                # Also soft-delete any reverse_cable_connection entry for the
+                # same device pair. When a connection is created, the UDM may
+                # store a reverse relationship for bidirectional traversal
+                # (matching the pattern in DatabaseService.create_connection).
+                cursor.execute(
+                    "SELECT from_element_id, to_element_id FROM relationships "
+                    "WHERE relationship_id = ?",
+                    (connection_id,),
+                )
+                row = cursor.fetchone()
+                if row:
+                    from_id, to_id = row[0], row[1]
+                    cursor.execute(
+                        "UPDATE relationships SET is_deleted = 1, last_modified_timestamp = ? "
+                        "WHERE from_element_id = ? AND to_element_id = ? "
+                        "AND relationship_type = ?",
+                        (now, to_id, from_id, "reverse_cable_connection"),
+                    )
+
+                conn.commit()
+
+            logger.info("Connection %s deletion synced to UDM for project %s", connection_id, project_id)
+            return True
+        except Exception as e:
+            logger.error("Failed to sync connection %s deletion to UDM: %s", connection_id, e)
+            return False
+
+    except Exception as e:
+        logger.critical("UDM bridge unavailable during connection deletion: %s", e)
+        return False

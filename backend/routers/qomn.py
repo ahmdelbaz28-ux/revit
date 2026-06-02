@@ -43,6 +43,32 @@ router = APIRouter(tags=["qomn"])
 _kernel = None
 _kernel_lock = threading.Lock()
 
+# ── Cached kernel exception classes ─────────────────────────────────────────
+# V116 FIX: Cache exception classes at module level instead of importing
+# inside _handle_error(). The old code did `from fireai.core.qomn_kernel
+# import PhysicsGuardError, ...` inside the function body. If that import
+# failed for ANY reason (module partially loaded, class renamed, corruption),
+# the ORIGINAL exception was silently replaced by an ImportError — which then
+# propagated as an unhandled HTTP 500 with no useful information.
+# In a fire protection system, masking a real computation error is a
+# SAFETY HAZARD per agent.md Anti-Deception Directive.
+_PhysicsGuardError = None
+_ComputationError = None
+_ValidationError = None
+
+try:
+    from fireai.core.qomn_kernel import PhysicsGuardError as _PGE
+    from fireai.core.qomn_kernel import ComputationError as _CE
+    from fireai.core.qomn_kernel import ValidationError as _VE
+    _PhysicsGuardError = _PGE
+    _ComputationError = _CE
+    _ValidationError = _VE
+except ImportError:
+    # Kernel not available — _get_kernel() will return 503 before any
+    # computation runs. These remain None and _handle_error falls through
+    # to generic error handling (safe degradation).
+    pass
+
 
 def _get_kernel():
     """Lazy-initialize QOMNKernel singleton with thread-safe double-checked locking.
@@ -180,7 +206,6 @@ async def compute_smoke_spacing(req: SmokeSpacingRequest):
     IEEE-754 computation hash for cross-platform verification.
     """
     try:
-        from fireai.core.qomn_kernel import PhysicsGuardError
         kernel = _get_kernel()
         result = kernel.smoke_detector_spacing(req.ceiling_height_m)
         return {"success": True, "data": result}
@@ -640,9 +665,16 @@ def _handle_error(exc: Exception) -> NoReturn:
     In a fire protection system, this information could help attackers
     understand the system internals and craft targeted exploits.
     Detailed errors are logged server-side; clients get generic messages.
+
+    V116 FIX: Use module-level cached exception classes instead of
+    importing inside this function. The old code did `from fireai.core.qomn_kernel
+    import PhysicsGuardError, ...` here — if that import failed, the ORIGINAL
+    exception was silently replaced by an ImportError, masking the real error.
+    In a safety-critical system, this is a SAFETY HAZARD per agent.md
+    Anti-Deception Directive. Now we use cached classes with safe fallback.
     """
-    from fireai.core.qomn_kernel import PhysicsGuardError, ComputationError, ValidationError
-    if isinstance(exc, PhysicsGuardError):
+    # V116: Use cached exception classes — safe even if kernel is unavailable
+    if _PhysicsGuardError is not None and isinstance(exc, _PhysicsGuardError):
         raise HTTPException(
             status_code=422,
             detail={
@@ -654,14 +686,25 @@ def _handle_error(exc: Exception) -> NoReturn:
                 "action":    "Review input values. Consult licensed FPE if limits are unclear.",
             }
         )
-    if isinstance(exc, (ComputationError, ValidationError)):
+    if _ComputationError is not None and isinstance(exc, _ComputationError):
         # H-3 FIX: Log the full error server-side, return generic message to client
-        logger.error("QOMN computation/validation error: %s", exc, exc_info=True)
+        logger.error("QOMN computation error: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={
-                "error":  "COMPUTATION_VALIDATION_FAILURE",
+                "error":  "COMPUTATION_FAILURE",
                 "detail": "An internal computation error occurred. Check input values or contact the engineering team.",
+                "action": "Report this to the engineering team with input values.",
+            }
+        )
+    if _ValidationError is not None and isinstance(exc, _ValidationError):
+        # H-3 FIX: Log the full error server-side, return generic message to client
+        logger.error("QOMN validation error: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error":  "VALIDATION_FAILURE",
+                "detail": "An internal validation error occurred. Check input values or contact the engineering team.",
                 "action": "Report this to the engineering team with input values.",
             }
         )
@@ -676,6 +719,9 @@ def _handle_error(exc: Exception) -> NoReturn:
                 "detail": "Input values are invalid. Please check all parameters and try again.",
             }
         )
+    if isinstance(exc, HTTPException):
+        # Re-raise already-formed HTTP exceptions (e.g., from _get_kernel 503)
+        raise exc
     # H-3 FIX: Never expose str(exc) to client on unexpected errors
     logger.error("QOMN kernel unexpected error: %s", exc, exc_info=True)
     raise HTTPException(

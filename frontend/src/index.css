@@ -1,0 +1,55 @@
+/* FireAI Digital Twin — Global Styles */
+@import "tailwindcss";
+
+:root {
+  --color-background: #0f172a;
+  --color-foreground: #e2e8f0;
+  --color-primary: #ea580c;
+  --color-primary-foreground: #ffffff;
+  --color-muted: #1e293b;
+  --color-muted-foreground: #94a3b8;
+  --color-border: #334155;
+  --color-card: #1e293b;
+  --color-card-foreground: #e2e8f0;
+  --color-destructive: #ef4444;
+  --color-accent: #1e293b;
+  --color-accent-foreground: #e2e8f0;
+  --radius: 0.5rem;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-foreground);
+}

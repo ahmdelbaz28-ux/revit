@@ -90,6 +90,11 @@ async def create_connection(project_id: str, input_data: CreateConnectionInput):
     }
     connection = db.create_connection(project_id, conn_data)
     validate_connection(connection)
+
+    # Sync connection to UDM for conflict detection
+    from backend.project_bridge import sync_connection_to_udm
+    sync_connection_to_udm(project_id, conn_data)
+
     return {"data": connection, "success": True}
 
 
@@ -101,4 +106,9 @@ async def delete_connection(project_id: str, connection_id: str):
     deleted = db.delete_connection(project_id, connection_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Connection not found")
+
+    # Sync connection deletion to UDM (soft-delete for audit trail)
+    from backend.project_bridge import sync_connection_delete_to_udm
+    sync_connection_delete_to_udm(project_id, connection_id)
+
     return {"data": None, "success": True, "message": "Connection deleted"}

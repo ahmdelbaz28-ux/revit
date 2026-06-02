@@ -258,6 +258,73 @@ async def get_air_quality(
     }
 
 
+def _build_coverage_note(coverage_area: str, source: str) -> str:
+    """
+    Build a human-readable coverage note for the severe-weather response.
+
+    Informs the user when severe weather data may be incomplete or
+    unavailable for their location, and suggests checking local
+    meteorological services.
+
+    Args:
+        coverage_area: Geographic coverage indicator ("us", "eu", "global", "none")
+        source: Data source that was used ("nws", "meteoalarm", "openmeteo", "default")
+
+    Returns:
+        Coverage note string for the API response
+    """
+    if source != "default" and coverage_area != "none":
+        # We have a real source — note is informational only
+        coverage_labels = {
+            "us": "US National Weather Service (NWS)",
+            "eu": "MeteoAlarm (EU/EEA)",
+            "global": "Open-Meteo (limited global coverage)",
+        }
+        label = coverage_labels.get(coverage_area, "Unknown")
+        return (
+            f"Severe weather alerts sourced from {label}. "
+            f"This source covers the requested location. "
+            f"For additional local weather information, consult your "
+            f"national meteorological service."
+        )
+
+    # No alert source available
+    if coverage_area == "us":
+        return (
+            "Severe weather alert data is currently unavailable for this "
+            "US location (NWS API unreachable). Check weather.gov for "
+            "current alerts. Per NFPA 72 §10.6, assume normal conditions "
+            "but verify with local NWS forecasts for power outage risk."
+        )
+    elif coverage_area == "eu":
+        return (
+            "Severe weather alert data is currently unavailable for this "
+            "European location (MeteoAlarm API unreachable). Check "
+            "meteoalarm.org or your national meteorological service for "
+            "current alerts. Per NFPA 72 §10.6 / EN 54-13, assume normal "
+            "conditions but verify with local weather services."
+        )
+    elif coverage_area == "global":
+        return (
+            "No dedicated severe weather alert source is available for "
+            "this location. Open-Meteo provides limited weather data only. "
+            "Please check your local meteorological service for active "
+            "weather alerts. For fire protection engineering, apply "
+            "conservative assumptions per NFPA 72 §10.6 (power outage risk) "
+            "and §10.14 (temperature derating) until local alert data "
+            "can be confirmed."
+        )
+    else:
+        return (
+            "No severe weather alert source covers this location. "
+            "Please check your local meteorological service for active "
+            "weather warnings. For fire protection engineering calculations, "
+            "apply conservative assumptions per applicable standards "
+            "(NFPA 72 §10.6, §10.14; NFPA 92 §6.4.2) until local "
+            "alert data can be confirmed."
+        )
+
+
 @router.get("/severe-weather")
 async def get_severe_weather(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
@@ -272,8 +339,15 @@ async def get_severe_weather(
       - Emergency notification design (NFPA 72 Chapter 24)
       - Evacuation planning (weather affects egress time)
 
-    Source: US National Weather Service (NWS) — US locations only
-    Fallback: No alerts (assume normal conditions)
+    Sources (international dispatch):
+      - US: National Weather Service (NWS) — continental US
+      - EU/EEA: MeteoAlarm — EU member states + EEA/EFTA
+      - Global: Open-Meteo (limited, WMO weather codes)
+      - Default: No alerts (assume normal conditions)
+
+    The `coverage_area` field indicates which source covers the location.
+    The `coverage_note` field provides guidance when no alert source
+    is available for the requested location.
     """
     sw_svc = get_severe_weather_service()
     data = await sw_svc.fetch_severe_weather(lat, lon)
@@ -294,6 +368,10 @@ async def get_severe_weather(
         a for a in data.active_alerts if a.affects_fire_safety
     ]
 
+    # Determine coverage note based on coverage area
+    coverage_area = getattr(data, "coverage_area", "none")
+    coverage_note = _build_coverage_note(coverage_area, data.source)
+
     return {
         "success": True,
         "data": {
@@ -305,6 +383,8 @@ async def get_severe_weather(
             "fire_safety_alert_count": len(fire_safety_alerts),
             "source": data.source,
             "is_default": data.is_default,
+            "coverage_area": coverage_area,
+            "coverage_note": coverage_note,
             "engineering_notes": {
                 "power": (
                     f"Power outage risk: {'YES — ensure secondary power per NFPA 72 §10.6' if data.has_power_outage_risk else 'No active power outage risk alerts'}."
@@ -637,6 +717,11 @@ async def get_full_phase2_context(
                 "has_extreme_temp": severe_weather.has_extreme_temp,
                 "source": severe_weather.source,
                 "is_default": severe_weather.is_default,
+                "coverage_area": getattr(severe_weather, "coverage_area", "none"),
+                "coverage_note": _build_coverage_note(
+                    getattr(severe_weather, "coverage_area", "none"),
+                    severe_weather.source,
+                ),
             },
             # Engineering context (computed from weather)
             "engineering": {
