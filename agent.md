@@ -12595,3 +12595,100 @@ STEP) — agents should not hide their iteration errors.
 ### Commit Hash & GitHub Link
 (See post-push report below — populated after `git push`.)
 
+
+---
+
+## V119 — CSP Secure-by-Default in Production (Finding #4) (2026-06-03)
+
+**Author:** Arena Agent (autonomous review cycle, authorized by operator)
+**Branch:** `V119/csp-secure-default`
+**Triage Reference:** `VULNERABILITY_TRIAGE.md` Finding #4 (Score 19/50)
+
+### Files Modified
+- `backend/app.py` (+45 / -10) — `_build_csp()` now uses environment-aware
+  defaults for `CSP_UNSAFE_EVAL`. Logging escalated from WARNING → ERROR
+  for production-with-unsafe-eval misconfigurations.
+- `.env.example` (+27) — documents the new default behavior, when to enable
+  in production (and accepted risk), and connection-source guidance.
+- `tests/test_csp_security.py` (NEW, 198 lines, 28 tests) — full coverage
+  for: environment-aware defaults (3), explicit overrides (15 parametrized),
+  logging escalation (3), structural integrity (7).
+
+### Root Cause
+Previously, `CSP_UNSAFE_EVAL` defaulted to `"true"` regardless of environment.
+Comment said "default: true for backward compatibility with three.js/recharts"
+but verified the project uses recharts ^2.15.4 and three ^0.160.0 — modern
+versions that DO NOT require `unsafe-eval` in production builds. No `new
+Function()` or `eval()` calls exist in `frontend/src/`.
+
+Result: every production deployment got an insecure CSP unless the operator
+remembered to set `CSP_UNSAFE_EVAL=false` — a clear violation of
+"secure-by-default" principle and agent.md Priority #1 (Safety) → on a
+safety-critical fire alarm UI, this amplifies any XSS to potentially allow
+silent modification of detector placements/battery sizes.
+
+### Fix Strategy (Root-Cause per Rule #17)
+NOT a half-fix (don't just flip the default and break dev workflow). The
+chosen approach:
+  1. Production environments default to secure (no unsafe-eval)
+  2. Development environments default to permissive (Vite/HMR needs eval
+     in dev builds — a real, current dependency that flipping breaks)
+  3. Explicit setting always wins (operator override available either way)
+  4. WARNING log escalated to ERROR when production has unsafe-eval enabled,
+     so misconfigurations cannot hide in log noise
+  5. .env.example documents the trade-off with code-ref to the safety
+     impact, not just a vague "weakens XSS protection" line
+
+### Behavioral Impact
+- **Production deployments WITHOUT explicit CSP_UNSAFE_EVAL setting:**
+  CSP no longer includes `'unsafe-eval'` (secure). Frontend bundle MUST be
+  built without runtime code generation — verified true for current
+  package.json deps.
+- **Production deployments WITH explicit `CSP_UNSAFE_EVAL=true`:**
+  Still works (operator override). Now logs at ERROR level — visible in
+  any aggregation/alerting setup.
+- **Development environments:** No change in default (still permissive),
+  preserving Vite/HMR workflow.
+- **Existing tests:** Zero regressions; 5,050 → 5,078 (+28 new V119 tests).
+
+### Verification Evidence
+- 28/28 new CSP tests: ✅ PASS
+- **5,078 / 5,078 FULL TEST SUITE PASS** on Python 3.13 (1 skipped, 0 failed)
+- Static syntax check on backend/app.py: ✅ OK
+- Test isolation: tests load `_build_csp()` via ast extraction to avoid
+  pulling the full app.py import chain (routers + DB + core modules)
+- Truthy/falsy parsing verified across 13 string variants
+
+### Verification Gates Passed (per agent.md)
+- [Gate 1] Static: ✅ syntax OK
+- [Gate 2] Runtime: ✅ 5,078 / 5,078 tests
+- [Gate 3] Behavioral: ✅ secure default in prod, permissive in dev,
+  explicit overrides work both ways, log escalation works
+- [Gate 4] Regression: ✅ all 5,050 pre-V119 tests still PASS
+- [Gate 5] Adversarial: ✅ verified frontend has no eval/new-Function calls;
+  verified package.json lib versions support no-unsafe-eval; documented
+  the security impact in user-facing .env.example
+
+### Self-Criticism (Rule #21)
+- **Layer 1 (Output):** Is the secure default correct? Yes — modern recharts
+  and three.js work without unsafe-eval. Operator can opt-in if needed.
+- **Layer 2 (Thinking):** Did I just flip the default and call it done?
+  No — I made it environment-aware to avoid breaking dev workflow, escalated
+  the log severity, documented the trade-off, and wrote 28 tests covering
+  the policy space (3 envs × 2 settings × explicit/implicit).
+- **Layer 3 (Method):** Did I verify the frontend actually works without
+  it? Verified by code search: no `eval()` or `new Function()` in
+  `frontend/src/`, and the declared library versions support it.
+- **Layer 4 (Commitment):** Did I update .env.example so operators know
+  about the change? Yes — explicit section with security impact documented.
+
+### Unresolved Concerns
+- `'unsafe-inline'` is still in script-src for backward compat with inline
+  event handlers. Future hardening: migrate to nonce-based CSP for fully
+  strict security. Out of scope for V119 (would require frontend changes).
+- frontend/dist/ build output not currently verified for no-unsafe-eval
+  compliance via integration test (would require running vite build).
+
+### Commit Hash & GitHub Link
+(See post-push report below — populated after `git push`.)
+

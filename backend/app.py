@@ -411,21 +411,57 @@ def _build_csp() -> str:
     connections (APIs, WebSockets). Without it, only 'self' is allowed.
     In development, localhost defaults are provided.
 
-    M-1 FIX: 'unsafe-eval' is only included when CSP_UNSAFE_EVAL=true
-    (default: true for backward compatibility with three.js/recharts).
-    In production, CSP_UNSAFE_EVAL should be set to 'false' and the
-    frontend should use nonce-based CSP instead.
+    M-1 FIX (original): 'unsafe-eval' is only included when CSP_UNSAFE_EVAL=true.
+    Original default was "true" (always include) for backward compatibility
+    with three.js / recharts which historically required runtime code generation.
+
+    V119 FIX (Finding #4): The CSP_UNSAFE_EVAL default is now ENVIRONMENT-AWARE
+    rather than blanket-"true". Rationale per agent.md Priority #1 (Safety) +
+    Anti-Deception Directive:
+      - Production environments default to "false" (secure-by-default).
+        Operators who genuinely need it (legacy frontend builds, three.js
+        without WASM, etc.) must explicitly opt-in via CSP_UNSAFE_EVAL=true
+        and accept the documented XSS amplification risk.
+      - Development environments default to "true" preserving DX (hot-reload,
+        Vite/HMR which uses eval in dev builds), without operator action.
+
+    Modern recharts (>=2.x) and three.js (>=0.150) work WITHOUT 'unsafe-eval'
+    in production builds. Verified for this codebase:
+      - frontend/package.json declares recharts ^2.15.4 and three ^0.160.0
+        — both versions support no-unsafe-eval production builds.
+      - No `new Function(...)` or `eval(...)` calls exist in frontend/src/.
+
+    When unsafe-eval IS enabled in production, this function logs at ERROR
+    level (escalated from WARNING) so the misconfiguration cannot be hidden
+    in log noise — surfacing the engineering risk per Anti-Deception
+    Directive ("hidden failure modes must be surfaced").
     """
     env = os.getenv("FIREAI_ENV", "production")
 
-    # M-1 FIX: 'unsafe-eval' is configurable and logged as security risk
-    allow_unsafe_eval = os.getenv("CSP_UNSAFE_EVAL", "true").lower() in ("true", "1", "yes")
+    # V119 FIX: Environment-aware default. Production = secure-by-default
+    # (no unsafe-eval); development = developer-convenience (eval allowed
+    # for Vite/HMR). Operators may override either default explicitly.
+    _csp_unsafe_eval_env = os.getenv("CSP_UNSAFE_EVAL")
+    if _csp_unsafe_eval_env is None:
+        # No explicit setting — pick safe default per environment
+        allow_unsafe_eval = (env == "development")
+    else:
+        allow_unsafe_eval = _csp_unsafe_eval_env.lower() in ("true", "1", "yes")
+
     if allow_unsafe_eval:
         script_src = "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
         if env != "development":
-            logger.warning(
-                "CSP includes 'unsafe-eval' in production — this weakens XSS protection. "
-                "Set CSP_UNSAFE_EVAL=false and implement nonce-based CSP for production."
+            # V119: Escalated from WARNING → ERROR. A misconfigured production
+            # CSP weakens XSS protection on a safety-critical UI; this must
+            # be visible in any reasonable log aggregation/alerting setup.
+            logger.error(
+                "SECURITY: CSP includes 'unsafe-eval' in production "
+                "(CSP_UNSAFE_EVAL=%s). This weakens XSS protection on a "
+                "safety-critical fire alarm UI. Recommended: unset "
+                "CSP_UNSAFE_EVAL (secure default applies) or set to 'false', "
+                "and migrate to nonce-based CSP for any frontend code that "
+                "genuinely requires runtime code generation.",
+                _csp_unsafe_eval_env,
             )
     else:
         script_src = "script-src 'self' 'unsafe-inline'; "
