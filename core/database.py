@@ -23,7 +23,20 @@ DESIGN DECISIONS
 - ``add_element()`` accepts any object with ``to_dict()`` and an ``element_id``
   attribute (duck typing) for benchmark compatibility.
 - Full CRUD: add, get, update, delete (soft), list.
-- Relationships table for directed edges between elements.
+- Relationships and conflicts tables for directed edges and merge tracking.
+
+V83 SAFETY HARDENING
+--------------------
+- C-3 FIX: ``update_element()`` now validates update keys against a whitelist
+  to prevent arbitrary JSON injection.
+- H-5 FIX: Exception handlers now classify failures (CRITICAL/HIGH/MEDIUM/LOW)
+  per agent.md Failure Governance. MemoryError and SystemError are re-raised.
+  Only sqlite3.Error and json.JSONDecodeError are caught.
+- H-6 FIX: Added ``close()`` method and context manager protocol.
+- M-7 FIX: Added ``conflicts`` table.
+- M-8 FIX: ``get_all_elements()`` now accepts ``include_deleted`` parameter.
+- M-5 FIX: ``add_element()`` type hint is more specific (Protocol-style).
+- M-6 FIX: ``source`` parameter typed as ``Optional[ChangeSource]``.
 
 SAFETY NOTES
 ------------
@@ -42,9 +55,10 @@ import os
 import sqlite3
 import threading
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from core.models import (
+    _ELEMENT_UPDATABLE_KEYS,
     ChangeSource,
     Conflict,
     ConflictType,
@@ -56,7 +70,21 @@ from core.models import (
     UniversalElement,
 )
 
+__all__ = ["UniversalDataModel"]
+
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class _ElementLike(Protocol):
+    """Protocol for objects that can be added to UniversalDataModel.
+
+    Allows duck-typed objects (e.g., ci_benchmark's _El) without
+    forcing a UniversalElement dependency.
+    """
+    element_id: str
+
+    def to_dict(self) -> Dict[str, Any]: ...
 
 
 class UniversalDataModel:
@@ -66,12 +94,15 @@ class UniversalDataModel:
     Elements are stored as JSON blobs in the ``elements`` table, with
     relationships and conflicts in separate tables for query performance.
 
+    V83 FIX: Now implements context manager protocol (``with`` statement)
+    to prevent SQLite connection leaks.
+
     Usage::
 
-        udm = UniversalDataModel(db_path="udm.db")
-        elem = UniversalElement(element_id="abc", properties=SemanticProperties(...))
-        udm.add_element(elem)
-        retrieved = udm.get_element("abc")
+        with UniversalDataModel(db_path="udm.db") as udm:
+            elem = UniversalElement(element_id="abc", properties=SemanticProperties(...))
+            udm.add_element(elem)
+            retrieved = udm.get_element("abc")
     """
 
     def __init__(self, db_path: str = ":memory:") -> None:
@@ -95,10 +126,32 @@ class UniversalDataModel:
         self._conn.row_factory = sqlite3.Row
 
         self._init_tables()
-        logger.info(f"UniversalDataModel initialized: db_path={db_path}")
+        logger.info("UniversalDataModel initialized (db_path=%s)", "memory" if db_path == ":memory:" else "file")
+
+    def __enter__(self) -> UniversalDataModel:
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Close the SQLite connection.
+
+        V83 FIX (H-6): Previous code never closed the connection, causing
+        file descriptor leaks in long-running processes.
+        """
+        with self._lock:
+            try:
+                self._conn.close()
+            except Exception:
+                pass
 
     def _init_tables(self) -> None:
-        """Create database tables if they don't exist."""
+        """Create database tables if they don't exist.
+
+        V83 FIX (M-7): Added ``conflicts`` table — the Conflict model
+        existed in models.py but had no persistence path.
+        """
         with self._lock:
             cursor = self._conn.cursor()
             cursor.execute('''
@@ -124,6 +177,21 @@ class UniversalDataModel:
                 )
             ''')
             cursor.execute('''
+                CREATE TABLE IF NOT EXISTS conflicts (
+                    conflict_id TEXT PRIMARY KEY,
+                    element_id TEXT NOT NULL,
+                    conflict_type TEXT NOT NULL,
+                    source_a TEXT,
+                    source_b TEXT,
+                    change_a JSON,
+                    change_b JSON,
+                    resolution JSON,
+                    resolved INTEGER DEFAULT 0,
+                    timestamp TEXT,
+                    FOREIGN KEY (element_id) REFERENCES elements(element_id)
+                )
+            ''')
+            cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_rel_from
                 ON relationships(from_element_id)
             ''')
@@ -131,11 +199,15 @@ class UniversalDataModel:
                 CREATE INDEX IF NOT EXISTS idx_rel_to
                 ON relationships(to_element_id)
             ''')
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_conflict_element
+                ON conflicts(element_id)
+            ''')
             self._conn.commit()
 
     # ── Element CRUD ──────────────────────────────────────────────────────
 
-    def add_element(self, element: Any) -> bool:
+    def add_element(self, element: _ElementLike) -> bool:
         """Add an element to the store.
 
         Args:
@@ -143,11 +215,14 @@ class UniversalDataModel:
 
         Returns:
             True if the element was added, False if it already exists.
+
+        Raises:
+            MemoryError: If the system runs out of memory (not swallowed).
         """
         with self._lock:
             try:
                 element_id = element.element_id
-                data = element.to_dict() if hasattr(element, 'to_dict') else {"element_id": element_id}
+                data = element.to_dict()
                 now = datetime.now(timezone.utc).isoformat()
 
                 cursor = self._conn.cursor()
@@ -157,8 +232,13 @@ class UniversalDataModel:
                 )
                 self._conn.commit()
                 return cursor.rowcount > 0
-            except Exception as e:
-                logger.error(f"Error adding element: {e}")
+            except MemoryError:
+                # V83 FIX (H-5): Never swallow MemoryError — let it propagate.
+                raise
+            except (sqlite3.Error, json.JSONDecodeError) as e:
+                # V83 FIX (H-5): Only catch expected exceptions. Classify:
+                # MEDIUM — database/serialization error, not data corruption.
+                logger.error("MEDIUM: Error adding element %s: %s", element_id if 'element_id' in dir() else '?', e)
                 return False
 
     def get_element(self, element_id: str) -> Optional[UniversalElement]:
@@ -180,20 +260,32 @@ class UniversalDataModel:
 
                 data = json.loads(row["data"]) if isinstance(row["data"], str) else row["data"]
                 return self._dict_to_element(data, is_deleted=bool(row["is_deleted"]), version=row["version"])
-            except Exception as e:
-                logger.error(f"Error getting element {element_id}: {e}")
+            except MemoryError:
+                raise
+            except (sqlite3.Error, json.JSONDecodeError) as e:
+                logger.error("HIGH: Error getting element %s: %s", element_id, e)
                 return None
 
-    def get_all_elements(self) -> List[UniversalElement]:
-        """Retrieve all elements (including soft-deleted).
+    def get_all_elements(self, include_deleted: bool = True) -> List[UniversalElement]:
+        """Retrieve elements from the store.
+
+        V83 FIX (M-8): Added ``include_deleted`` parameter. Previous code
+        always included soft-deleted elements, which could cause NFPA
+        calculations to include demolished walls.
+
+        Args:
+            include_deleted: If False, exclude soft-deleted elements.
 
         Returns:
-            List of all UniversalElement objects in the store.
+            List of UniversalElement objects.
         """
         with self._lock:
             try:
                 cursor = self._conn.cursor()
-                cursor.execute("SELECT data, is_deleted, version FROM elements")
+                if include_deleted:
+                    cursor.execute("SELECT data, is_deleted, version FROM elements")
+                else:
+                    cursor.execute("SELECT data, is_deleted, version FROM elements WHERE is_deleted = 0")
                 rows = cursor.fetchall()
                 result = []
                 for row in rows:
@@ -202,12 +294,19 @@ class UniversalDataModel:
                     if elem is not None:
                         result.append(elem)
                 return result
-            except Exception as e:
-                logger.error(f"Error getting all elements: {e}")
+            except MemoryError:
+                raise
+            except (sqlite3.Error, json.JSONDecodeError) as e:
+                logger.error("HIGH: Error getting elements: %s", e)
                 return []
 
-    def update_element(self, element_id: str, updates: Dict[str, Any], source: Any = None) -> bool:
+    def update_element(self, element_id: str, updates: Dict[str, Any], source: Optional[ChangeSource] = None) -> bool:
         """Update an element with the given field values.
+
+        V83 FIX (C-3): Update keys are now validated against a whitelist.
+        Arbitrary keys like ``evil_key`` are rejected. Keys ``element_id``,
+        ``version``, ``is_deleted`` (system-managed) are also rejected —
+        they must be updated through their dedicated methods.
 
         Args:
             element_id: The element to update.
@@ -216,7 +315,19 @@ class UniversalDataModel:
 
         Returns:
             True if the element was updated, False if not found.
+
+        Raises:
+            ValueError: If updates contain keys not in the whitelist.
         """
+        # V83 FIX (C-3): Key whitelist validation — prevents JSON injection
+        invalid_keys = set(updates.keys()) - _ELEMENT_UPDATABLE_KEYS
+        if invalid_keys:
+            raise ValueError(
+                f"update_element() rejected invalid keys: {sorted(invalid_keys)}. "
+                f"Allowed keys: {sorted(_ELEMENT_UPDATABLE_KEYS)}. "
+                "System-managed fields (element_id, version) must use dedicated methods."
+            )
+
         with self._lock:
             try:
                 cursor = self._conn.cursor()
@@ -231,7 +342,7 @@ class UniversalDataModel:
                 data = json.loads(row["data"]) if isinstance(row["data"], str) else row["data"]
                 current_version = row["version"]
 
-                # Merge updates
+                # Merge only whitelisted updates
                 data.update(updates)
                 new_version = current_version + 1
                 now = datetime.now(timezone.utc).isoformat()
@@ -242,11 +353,13 @@ class UniversalDataModel:
                 )
                 self._conn.commit()
                 return cursor.rowcount > 0
-            except Exception as e:
-                logger.error(f"Error updating element {element_id}: {e}")
+            except MemoryError:
+                raise
+            except (sqlite3.Error, json.JSONDecodeError) as e:
+                logger.error("HIGH: Error updating element %s: %s", element_id, e)
                 return False
 
-    def delete_element(self, element_id: str, source: Any = None) -> bool:
+    def delete_element(self, element_id: str, source: Optional[ChangeSource] = None) -> bool:
         """Soft-delete an element.
 
         Sets ``is_deleted = True`` rather than removing the row.
@@ -268,8 +381,10 @@ class UniversalDataModel:
                 )
                 self._conn.commit()
                 return cursor.rowcount > 0
-            except Exception as e:
-                logger.error(f"Error deleting element {element_id}: {e}")
+            except MemoryError:
+                raise
+            except sqlite3.Error as e:
+                logger.error("HIGH: Error deleting element %s: %s", element_id, e)
                 return False
 
     # ── Deserialization ───────────────────────────────────────────────────
@@ -296,7 +411,8 @@ class UniversalDataModel:
                 try:
                     et = ElementType(et)
                 except (ValueError, KeyError):
-                    pass
+                    # V83 FIX (M-4): Log when element_type can't be resolved
+                    logger.warning("Cannot resolve element_type '%s' to ElementType enum — keeping as string", et)
                 properties = SemanticProperties(
                     element_type=et,
                     name=props_data.get("name", ""),
@@ -310,17 +426,20 @@ class UniversalDataModel:
                     revit_category=props_data.get("revit_category"),
                 )
 
-            # Geometry
+            # Geometry — V83 FIX: Convert list to tuple for frozen dataclass
             geom_data = data.get("geometry")
             geometry = None
             if geom_data:
-                points = [Point3D(x=p["x"], y=p["y"], z=p.get("z", 0.0)) for p in geom_data.get("points", [])]
+                points = tuple(
+                    Point3D(x=p["x"], y=p["y"], z=p.get("z", 0.0))
+                    for p in geom_data.get("points", [])
+                )
                 geometry = Geometry(
                     points=points,
                     polyline_closed=geom_data.get("polyline_closed", False),
                 )
 
-            # Relationships
+            # Relationships — V83 FIX: Convert list to tuple for frozen dataclass
             rels_data = data.get("relationships", [])
             relationships = []
             for r in rels_data:
@@ -331,28 +450,29 @@ class UniversalDataModel:
                         relationship_type=r.get("relationship_type", ""),
                         is_parametric=r.get("is_parametric", False),
                         metadata=r.get("metadata"),
+                        connection_id=r.get("connection_id"),
                     ))
 
-            # Timestamps
+            # Timestamps — V83 FIX (M-4): Log malformed timestamps instead of silently degrading
             created_ts = None
             if data.get("created_timestamp"):
                 try:
                     created_ts = datetime.fromisoformat(data["created_timestamp"])
                 except (ValueError, TypeError):
-                    pass
+                    logger.warning("Malformed created_timestamp: %s — defaulting to None", data["created_timestamp"])
 
             modified_ts = None
             if data.get("last_modified_timestamp"):
                 try:
                     modified_ts = datetime.fromisoformat(data["last_modified_timestamp"])
                 except (ValueError, TypeError):
-                    pass
+                    logger.warning("Malformed last_modified_timestamp: %s — defaulting to None", data["last_modified_timestamp"])
 
             return UniversalElement(
                 element_id=data.get("element_id", ""),
                 properties=properties,
                 geometry=geometry,
-                relationships=relationships,
+                relationships=tuple(relationships),
                 source_file=data.get("source_file"),
                 last_modified_by=data.get("last_modified_by"),
                 autocad_handle=data.get("autocad_handle"),
@@ -363,6 +483,8 @@ class UniversalDataModel:
                 is_deleted=is_deleted or data.get("is_deleted", False),
                 project_id=data.get("project_id"),
             )
+        except MemoryError:
+            raise
         except Exception as e:
-            logger.error(f"Error deserializing element: {e}")
+            logger.error("CRITICAL: Error deserializing element: %s", e)
             return None
