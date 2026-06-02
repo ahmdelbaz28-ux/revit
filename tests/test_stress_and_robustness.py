@@ -3,6 +3,10 @@
 """
 import pytest
 import random
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from src.core.models import Room, Device, DeviceType, Violation, NFPA72, BS5839, RoomType, Point, Polygon, DesignProject
 from src.application.coverage_service import CoverageService
 from src.application.wall_distance_service import WallDistanceService

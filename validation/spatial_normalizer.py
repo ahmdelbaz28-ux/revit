@@ -239,7 +239,7 @@ class SpatialNormalizer:
         errors = []
         room_geom = room.geometry
         
-        # Check each device is in room
+        # Check each device is in room (within or on boundary)
         for device in devices:
             if not room_geom.covers(device.position):
                 errors.append(GeometryError(
@@ -259,9 +259,9 @@ class SpatialNormalizer:
                     original_state="obstruction partially outside room"
                 ))
             
-            # Check no device inside obstruction
+            # Check no device inside obstruction (not on boundary)
             for device in devices:
-                if obs.geometry.covers(device.position):
+                if obs.geometry.contains(device.position):
                     errors.append(GeometryError(
                         message=f"Device {device.id} is inside obstruction {obs.id}",
                         entity_id=device.id,
@@ -303,8 +303,8 @@ class SpatialNormalizer:
                 id=device.id,
                 device_type=device.device_type,
                 position=Point(new_x, new_y),
-                z_height=device.z_height if hasattr(device, 'z_height') else device.z_height,
-                coverage_radius=device.coverage_radius if hasattr(device, 'coverage_radius') else device.coverage_radius
+                z_height=device.z_height,
+                coverage_radius=device.coverage_radius
             ))
         
         return shifted_room, shifted_devices

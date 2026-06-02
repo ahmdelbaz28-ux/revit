@@ -25,10 +25,17 @@ def repair_self_intersection(polygon: Polygon) -> Polygon:
     repaired = polygon.buffer(0)
     
     # If buffer produced multiple polygons, take the largest
-    if hasattr(repaired, 'geoms') or repaired.geom_type == 'MultiPolygon':
+    if repaired.is_empty:
+        return polygon  # Cannot repair, return original
+    
+    if repaired.geom_type == 'MultiPolygon':
         # Get the largest polygon
-        if repaired.geom_type == 'MultiPolygon':
-            repaired = max(repaired.geoms, key=lambda p: p.area)
+        repaired = max(repaired.geoms, key=lambda p: p.area)
+    elif not isinstance(repaired, Polygon):
+        return polygon  # Cannot repair to polygon, return original
+    
+    if repaired.is_empty or repaired.area <= 0:
+        return polygon
     
     return repaired
 
@@ -130,9 +137,13 @@ def repair_polygon(polygon: Polygon, tol: ToleranceModel) -> tuple[Polygon, bool
     
     # Step 2: If still invalid, try buffer(0) again
     if not polygon.is_valid:
-        polygon = polygon.buffer(0)
-        if polygon != original:
-            modified = True
+        repaired = polygon.buffer(0)
+        if not repaired.is_empty and repaired.geom_type in ('Polygon', 'MultiPolygon'):
+            if repaired.geom_type == 'MultiPolygon':
+                repaired = max(repaired.geoms, key=lambda p: p.area)
+            if repaired != original:
+                modified = True
+                polygon = repaired
     
     # Step 3: Remove duplicate points
     repaired = repair_duplicate_points(polygon, tol.linear_epsilon)

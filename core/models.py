@@ -59,8 +59,9 @@ class Violation:
         """Validate violation data"""
         if self.value < 0:
             raise ValueError(f"Violation value cannot be negative: {self.value}")
-        if self.threshold <= 0:
-            raise ValueError(f"Threshold must be positive: {self.threshold}")
+        # Threshold can be 0 or positive (0 for geometry errors, negative checks)
+        if self.threshold < 0:
+            raise ValueError(f"Threshold must be non-negative: {self.threshold}")
 
 
 # =============================================================================
