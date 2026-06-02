@@ -337,11 +337,17 @@ class TestNFPA72Constants:
         assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.144)
 
     def test_heat_max_spacing(self):
-        """NFPA 72 §17.6.3.1: max 15.240m (50ft)."""
-        assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(15.240)
+        """NFPA 72 Table 17.6.2.1: max 6.1m (20ft) for fixed-temperature heat.
+        CRITICAL FIX: Was 15.240m (50ft) which was the LINEAR detection spacing,
+        not fixed-temperature. 15.24m would produce R=10.67m — 2.5× overestimate.
+        """
+        assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(6.1)
 
     def test_wall_min_distance(self):
-        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.305)
+        """NFPA 72 §17.6.3.1.1: 4 inches (0.1016m) dead air space minimum.
+        CRITICAL FIX: Was 0.305m which conflated with wall MAX distance S/2.
+        """
+        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.1016)
 
     def test_pull_station_height(self):
         """NFPA 72 §17.15.7: 48 inches = 1.219m AFF."""
@@ -486,10 +492,13 @@ class TestComputeSmokeDetectorSpacing:
         result = compute_smoke_detector_spacing(3.0)
         assert len(result["computation_hash"]) > 0
 
-    def test_wall_min_distance(self):
-        """Wall min = 0.5 × S per §17.7.4.2.3.1."""
+    def test_wall_distances(self):
+        """Wall min = 0.1016m (4in dead air), Wall max = 0.5 × S per §17.6.3.1.1."""
         result = compute_smoke_detector_spacing(3.0)
-        assert result["wall_min_m"] == pytest.approx(
+        # wall_min_m: dead air space minimum (4 inches = 0.1016m)
+        assert result["wall_min_m"] == pytest.approx(0.1016, rel=1e-3)
+        # wall_max_m: maximum wall distance = S/2 per §17.6.3.1.1
+        assert result["wall_max_m"] == pytest.approx(
             0.5 * result["listed_spacing_m"], rel=1e-4
         )
 
@@ -503,17 +512,25 @@ class TestComputeSmokeDetectorSpacing:
 
 
 class TestComputeHeatDetectorSpacing:
-    """NFPA 72 §17.6.3.1: S = 0.7 × √A, max 15.24m."""
+    """NFPA 72 §17.6.3.1: S = 0.7 × √A, max 6.1m (20ft fixed-temperature)."""
 
     def test_small_area(self):
+        """S = 0.7 × √A = 7.0m but capped at 6.1m (fixed-temp heat max spacing)."""
         result = compute_heat_detector_spacing(3.0, 100.0)
-        expected_s = 0.7 * math.sqrt(100.0)  # 7.0m
+        # 0.7 × √100 = 7.0m, but NFPA72_HEAT_MAX_SPACING_M = 6.1m caps it
+        assert result["spacing_m"] == pytest.approx(6.1, rel=0.01)
+
+    def test_very_small_area_uncapped(self):
+        """Small area where S = 0.7 × √A < 6.1m — no cap applied."""
+        result = compute_heat_detector_spacing(3.0, 50.0)
+        expected_s = 0.7 * math.sqrt(50.0)  # ≈4.95m — well below 6.1m cap
         assert result["spacing_m"] == pytest.approx(expected_s, rel=0.01)
 
     def test_large_area_capped(self):
-        """Very large area still capped at 15.24m."""
+        """Very large area still capped at 6.1m (fixed-temp heat max spacing)."""
         result = compute_heat_detector_spacing(3.0, 10000.0)
         assert result["spacing_m"] <= NFPA72_HEAT_MAX_SPACING_M
+        assert result["spacing_m"] <= 6.1
 
     def test_coverage_radius(self):
         result = compute_heat_detector_spacing(3.0, 100.0)

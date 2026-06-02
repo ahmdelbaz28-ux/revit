@@ -291,7 +291,11 @@ class DetectorPlacementEngine:
                 "coverage radius must be a positive finite number — cannot verify coverage without valid radius",
                 "NFPA 72 §17.7"
             )
-        wall_min = spacing_result.get("wall_min_m", 0.305)  # default 0.3m
+        # wall_offset: distance from wall for first/last detector row.
+        # Per NFPA 72 §17.6.3.1.1, max wall distance = S/2 (half the listed spacing).
+        # Per NFPA 72 §17.6.3.1.1, min wall distance = 4 inches (0.1016m, dead air space).
+        # The grid starts at wall_max_m from the wall (S/2), not wall_min_m (4 inches).
+        wall_offset = spacing_result.get("wall_max_m", spacing_result.get("wall_min_m", S / 2.0))
 
         # ── Beam obstruction check ─────────────────────────────────────────────
         beam_sections = self._check_beam_obstructions(room, S)
@@ -304,7 +308,7 @@ class DetectorPlacementEngine:
             nfpa_refs.append("NFPA 72-2022 §17.7.3.2.5 (sloped ceiling)")
 
         # ── Place detectors on hex grid ────────────────────────────────────────
-        detectors = self._hex_grid_placement(room, S, R, wall_min)
+        detectors = self._hex_grid_placement(room, S, R, wall_offset)
 
         # ── Verify coverage ────────────────────────────────────────────────────
         coverage_pct = self._verify_coverage(room, detectors, R)

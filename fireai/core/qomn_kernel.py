@@ -224,13 +224,20 @@ NFPA72_SMOKE_SPACING_TABLE: List[Tuple[float, float]] = [
 NFPA72_COVERAGE_RADIUS_FACTOR = 0.7
 
 # Maximum smoke detector spacing (absolute) — NFPA 72 §17.7.3.2.1
-NFPA72_SMOKE_MAX_SPACING_M = 9.144  # 30 ft
+NFPA72_SMOKE_MAX_SPACING_M = 9.144  # 30 ft = 9.144m (exact foot conversion; nfpa72_models.py rounds to 9.1m)
 
 # Maximum heat detector spacing — NFPA 72 §17.6.3.1
-NFPA72_HEAT_MAX_SPACING_M = 15.240  # 50 ft
+NFPA72_HEAT_MAX_SPACING_M = 6.1  # 20 ft = 6.1m per NFPA 72 Table 17.6.2.1 (fixed-temperature heat)
+# CRITICAL FIX: Was 15.24m (50ft) which is the LINEAR detection spacing, NOT fixed-temperature.
+# Using 15.24m would produce R = 0.7 × 15.24 = 10.67m — a 2.5× overestimate vs correct
+# R = 0.7 × 6.1 = 4.27m. This could produce false PASS results for heat detector coverage.
 
 # Minimum distance from wall — NFPA 72 §17.7.4.2.3.1
-NFPA72_WALL_MIN_DISTANCE_M = 0.305  # 0.5 × spacing minimum from wall
+NFPA72_WALL_MIN_DISTANCE_M = 0.1016  # 4 inches per NFPA 72 §17.6.3.1.1 (dead air space)
+# CRITICAL FIX: Was 0.305m (1ft) which conflated with wall MAX distance S/2.
+# The MINIMUM distance is 4 inches (0.1016m) — detectors must not be closer to wall than this.
+# The MAXIMUM distance from wall is S/2 (4.55m for smoke, 3.05m for heat) per §17.6.3.1.1.
+NFPA72_WALL_MAX_DISTANCE_FACTOR = 0.5  # S/2 per NFPA 72 §17.6.3.1.1
 
 # Pull station height — NFPA 72 §17.15.7
 NFPA72_PULL_STATION_HEIGHT_M = 1.219  # 48 inches = 1.219 m AFF
@@ -393,7 +400,8 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
     return {
         "listed_spacing_m": round(spacing_m, 6),
         "coverage_radius_m": round(radius_m, 6),
-        "wall_min_m": round(0.5 * spacing_m, 6),  # §17.7.4.2.3.1
+        "wall_min_m": round(NFPA72_WALL_MIN_DISTANCE_M, 4),  # 0.1016m dead air space per §17.6.3.1.1
+        "wall_max_m": round(0.5 * spacing_m, 6),  # S/2 max wall distance per §17.6.3.1.1
         "corner_min_m": round(0.7 * spacing_m, 6),
         "nfpa_section": "NFPA 72-2022 §17.7.3 / Table 17.6.3.1",
         "table_row_used": table_row,
