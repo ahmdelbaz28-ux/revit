@@ -12887,3 +12887,123 @@ NOT having these rules is well-documented: V120 Phase A audit
 - No code touched, no test impact, no behavioral change
 - Test suite: 5,101/5,101 PASS (unchanged from V120)
 
+
+---
+
+## V122 — DWG Parser Path Security Hardening (Finding #5) (2026-06-03)
+
+**Author:** Arena Agent (autonomous, authorized by operator)
+**Branch:** `V122/dwg-parser-path-security`
+**Type:** Security hardening — closes inconsistency between parsers
+**Triage:** NEW Finding #5 discovered during V121 post-cycle audit
+
+### Defect
+`parsers/dwg_parser.py` accepted user-controlled file paths and passed
+them directly to `subprocess.run([dxf-out, "--file", dwg_path, ...])`
+WITHOUT any path validation. Compare to `parsers/ddc_adapter.py` which
+implements defense-in-depth (path traversal, symlink, extension
+whitelist, allowed-bases enforcement). This is an architectural
+inconsistency: same threat surface (subprocess + user path), but only
+one parser hardened.
+
+Attack vectors closed by V122:
+  1. **Argument injection**: path = `--malicious` would be interpreted
+     by `dxf-out` as a flag, not a file. V122 rejects any path starting
+     with `-`.
+  2. **Path traversal**: paths outside FIREAI_ALLOWED_UPLOAD_DIRS now
+     rejected with SECURITY error.
+  3. **Null byte truncation**: paths containing `\x00` rejected before
+     reaching the subprocess (defense against C-string truncation in
+     downstream binaries).
+  4. **Wrong extensions**: only `.dwg` and `.dxf` accepted at the entry
+     point.
+  5. **Decompression bomb / DoS**: file size capped (default 100 MB,
+     configurable via `FIREAI_DWG_MAX_FILE_SIZE_BYTES`).
+  6. **TOCTOU between validation and subprocess**: parser now passes
+     the RESOLVED canonical path (post-`.resolve()`) to subprocess
+     instead of the user-supplied string.
+
+### Architectural Improvement (per Rule #23)
+The validation logic was extracted from `ddc_adapter.py` into a new
+module `parsers/_path_security.py` (~200 lines) so that all current
+and future parsers can apply the same security contract from a single
+source of truth. Per the new Rule #23 (V121), this is the correct
+posture for safety-critical shared logic.
+
+`ddc_adapter.py` already has its own inline copy and can be refactored
+to use the shared helper in a future cycle (out of scope V122 to keep
+the change focused).
+
+### Defense in Depth
+`_convert_to_dxf()` (the private subprocess-invoking method) now does
+its own belt-and-braces re-check of the path. If a future refactor
+forgets entry-point validation, the subprocess STILL refuses to run
+with a path that looks like an argument. This makes the security
+property a local invariant of the function, not just a contract
+between distant call sites.
+
+### Files Modified
+- `parsers/_path_security.py` (NEW, 224 lines) — shared validation
+  helpers: `validate_input_path`, `validate_file_size`, `UnsafePathError`
+- `parsers/dwg_parser.py` (+87 lines, -3 lines) — wired the helpers
+  into `parse()`, `parse_dwg()`, and `_convert_to_dxf()`
+- `tests/test_dwg_parser_security_v122.py` (NEW, 304 lines, 22 tests)
+  covering: 8 helper unit tests + 2 size tests + 6 DWGParser integration
+  tests + 4 parse_dwg alias tests + 2 belt-and-braces tests
+
+### Verification Evidence
+- 22/22 new V122 tests: ✅ PASS
+- **5,123 / 5,123 FULL TEST SUITE PASS** on Python 3.13.13
+  (= 5,101 post-V120 baseline + 22 new V122 tests)
+- Static syntax: ✅ OK on all modified files
+- All pre-V122 tests continue to pass — ZERO regression
+
+### Verification Gates Passed (per agent.md)
+- [Gate 1] Static: ✅ syntax OK
+- [Gate 2] Runtime: ✅ 5,123 / 5,123
+- [Gate 3] Behavioral: ✅ all 6 attack vectors blocked, valid files work
+- [Gate 4] Regression: ✅ zero
+- [Gate 5] Adversarial: ✅ belt-and-braces re-check at subprocess
+  boundary verifies security is a local invariant, not just a contract
+
+### Self-Criticism (Rule #21)
+- **Layer 1 (Output):** Are the 6 attack vectors actually closed? Yes,
+  each one has a dedicated test that constructs the attack and verifies
+  rejection.
+- **Layer 2 (Thinking):** Did I just copy ddc_adapter's checks? I went
+  further: I extracted them into a shared module per Rule #23, AND I
+  added belt-and-braces at the subprocess boundary (which ddc_adapter
+  doesn't currently have). I also added an argument-injection check
+  (leading `-`) which ddc_adapter doesn't explicitly have either.
+- **Layer 3 (Method):** Did I refactor ddc_adapter to also use the
+  shared helper? No — deferred to keep V122 scope focused. Documented
+  as a known follow-up.
+- **Layer 4 (Commitment):** Tests are not just smoke tests — they
+  construct actual attack payloads (`--evil`, null byte, oversized
+  file) and verify rejection. The reload-bug I hit during test
+  development was openly documented and fixed properly (test refactored
+  to call helper directly rather than re-importing the module).
+
+### Test Development Self-Critique
+First test run had 2 failures in `TestConvertToDxfBeltAndBraces`. The
+underlying code WAS raising the right exception with the right message
+— pytest was failing because an earlier test (`test_parse_rejects_oversized_file`)
+called `importlib.reload(parsers.dwg_parser)`, which replaced the
+`DWGConversionError` class identity for subsequent tests in the same
+module. I diagnosed this directly (not by guessing), rewrote the
+reload-test to use the helper directly instead of reloading, and the
+suite is now clean.
+
+This is documented openly per Rule #5 (EXPLAIN AFTER EACH STEP) and
+the Anti-Deception Directive applies to my own iteration errors too.
+
+### Unresolved Concerns
+- `ddc_adapter.py` should be refactored to use `_path_security`
+  helpers (currently duplicate inline copy). Phase 2 candidate.
+- Other parsers (`pdf_parser.py`, `image_parser.py`, `excel_parser.py`,
+  etc.) accept user paths via `open()` but do NOT use the shared
+  helper. They are lower risk (no subprocess) but deserve consistency.
+
+### Commit Hash & GitHub Link
+(See post-push report below)
+

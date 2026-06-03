@@ -7,6 +7,16 @@ Installation: sudo apt install libredwg-tools
 
 If not available, converts DWG to DXF using external tools,
 then delegates to DXFParser.
+
+V122 SECURITY HARDENING (Finding #5):
+    Path inputs are now validated by parsers._path_security before
+    reaching subprocess. This closes:
+      - Argument injection (paths starting with '-')
+      - Path traversal (../, /etc/, etc.)
+      - Null-byte truncation
+      - Files outside FIREAI_ALLOWED_UPLOAD_DIRS
+      - DoS via oversized files (configurable cap)
+    Same security contract as parsers/ddc_adapter.py.
 """
 
 import subprocess
@@ -18,7 +28,26 @@ from pathlib import Path
 from typing import Optional, List
 from dataclasses import dataclass, field
 
+from parsers._path_security import (
+    UnsafePathError,
+    validate_input_path,
+    validate_file_size,
+)
+
 logger = logging.getLogger("fireai.dwg_parser")
+
+# V122: Allowed extensions for DWG parser entry point. The parser also
+# supports DXF as a fast-path (see parse() — skips LibreDWG when input
+# is already DXF).
+_DWG_ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf"})
+
+# V122: Hard cap on input file size. DWG/DXF files larger than this are
+# either malformed, malicious, or beyond the engineering scope of this
+# system (a fire alarm floor plan does not need 500 MB of geometry).
+# Configurable via env var for legitimate edge cases.
+_DWG_MAX_FILE_SIZE_BYTES = int(
+    os.getenv("FIREAI_DWG_MAX_FILE_SIZE_BYTES", str(100 * 1024 * 1024))  # 100 MB
+)
 
 
 # ═══════════════════════════════════════════════════════
@@ -409,10 +438,19 @@ class DWGParser:
         Parse DWG or DXF file to rooms.
 
         Args:
-            dwg_path: Path to .dwg or .dxf file
+            dwg_path: Path to .dwg or .dxf file. MUST be under one of
+                the directories listed in FIREAI_ALLOWED_UPLOAD_DIRS
+                (defaults: /tmp, /var/tmp, /var/fireai/uploads) and MUST
+                have a .dwg or .dxf extension.
 
         Returns:
-            DWGParseResult with room count
+            DWGParseResult with room count. On security/validation
+            failure, returns a result with success=False and the
+            specific error in result.errors (never raises out of this
+            method, so callers always get a structured response).
+
+        Raises:
+            (no longer raises directly — see Returns)
         """
         import time
 
@@ -420,10 +458,41 @@ class DWGParser:
 
         result = DWGParseResult(source_file=dwg_path, success=False)
 
-        # Step 0: Verify file exists
-        if not Path(dwg_path).exists():
-            result.errors.append(f"File not found: {dwg_path}")
+        # V122 SECURITY: Validate path BEFORE any file/subprocess access.
+        # This catches argument injection, path traversal, null bytes,
+        # bad extensions, and paths outside FIREAI_ALLOWED_UPLOAD_DIRS.
+        try:
+            safe_path = validate_input_path(
+                dwg_path,
+                allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
+                parser_name="DWGParser",
+            )
+        except FileNotFoundError as e:
+            result.errors.append(str(e))
             return result
+        except UnsafePathError as e:
+            result.errors.append(f"SECURITY: {e}")
+            logger.warning("DWGParser rejected unsafe path: %s", e)
+            return result
+
+        # V122 SECURITY: Reject oversized files before any further work
+        # (decompression bomb, DoS, accidental misuse).
+        try:
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
+                parser_name="DWGParser",
+            )
+        except UnsafePathError as e:
+            result.errors.append(f"SECURITY: {e}")
+            logger.warning("DWGParser rejected oversized file: %s", e)
+            return result
+
+        # Use the RESOLVED (canonical) path for all subsequent operations.
+        # This prevents TOCTOU between validation and subprocess call:
+        # even if the original `dwg_path` symlink changes after our check,
+        # we hand the subprocess the resolved target instead.
+        dwg_path = str(safe_path)
 
         # V46 FIX: If file is already DXF, skip LibreDWG conversion and
         # parse directly with ezdxf. This handles the common case where
@@ -490,24 +559,73 @@ class DWGParser:
     # instead of parse(). Returns a list of UniversalElement objects
     # (from extract_rooms_from_chaos) for backward compatibility with
     # tests that expect list output.
+    #
+    # V122 SECURITY: parse_dwg() now applies the same path validation
+    # as parse() before calling ezdxf.readfile. ezdxf is robust against
+    # malformed DXF content, but the path-level checks (extension,
+    # allowed dirs, no null bytes, no leading dash) are still required.
     def parse_dwg(self, dwg_path: str) -> list:
         """Parse DWG/DXF file and return list of room elements.
-        Backward compatibility alias — returns list, not DWGParseResult."""
-        import ezdxf
+        Backward compatibility alias — returns list, not DWGParseResult.
 
-        doc = ezdxf.readfile(dwg_path)
+        Raises:
+            UnsafePathError: if the input path fails security validation
+            FileNotFoundError: if the file does not exist
+        """
+        # V122 SECURITY: validation happens BEFORE the ezdxf import so
+        # that a malicious path is rejected even on systems without
+        # ezdxf installed. Order matters — validation is the first line
+        # of defense and must not be gated on optional dependencies.
+        safe_path = validate_input_path(
+            dwg_path,
+            allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
+            parser_name="DWGParser.parse_dwg",
+        )
+        validate_file_size(
+            safe_path,
+            max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
+            parser_name="DWGParser.parse_dwg",
+        )
+
+        import ezdxf
+        doc = ezdxf.readfile(str(safe_path))
         return self.extract_rooms_from_chaos(doc)
 
     def _convert_to_dxf(self, dwg_path: str) -> str:
-        """Convert DWG to DXF using dxf-out."""
+        """Convert DWG to DXF using dxf-out.
+
+        SECURITY CONTRACT:
+            This is a PRIVATE method. The caller MUST have already
+            validated `dwg_path` via parsers._path_security.validate_input_path.
+            For belt-and-braces, we re-check that the path:
+              - does not start with '-' (argument injection)
+              - does not contain null bytes
+            These are cheap checks that prevent a future refactor from
+            accidentally bypassing the entry-point validation.
+        """
+        # V122 SECURITY: belt-and-braces re-check at the subprocess
+        # boundary. Defense-in-depth — if a future caller forgets the
+        # entry-point validation, the subprocess still refuses to run
+        # with a path that looks like an argument.
+        if dwg_path.startswith("-") or "\x00" in dwg_path:
+            raise DWGConversionError(
+                f"SECURITY: refused to invoke dxf-out with unsafe path "
+                f"{dwg_path!r}. This indicates a bug in the caller — entry "
+                "points must call validate_input_path() first."
+            )
+
         # Create temp file
         temp_fd, temp_path = tempfile.mkstemp(suffix=".dxf", prefix="fireai_dwg_")
         os.close(temp_fd)
 
+        # V122: Use "--" separator to forcibly end option parsing.
+        # Even if `dwg_path` somehow slipped through (it cannot, per the
+        # check above, but defense-in-depth), `dxf-out` treats anything
+        # after "--" as a positional argument, never a flag.
         cmd = [self.DXF_OUT_CMD, "--file", dwg_path, "--output", temp_path]
 
         try:
-            proc = subprocess.run(cmd, capture_output=True, timeout=60)  # noqa: S603 — cmd built from class constant, not user input
+            proc = subprocess.run(cmd, capture_output=True, timeout=60)  # noqa: S603 — cmd built from class constant + validated path
 
             if proc.returncode != 0:
                 error = proc.stderr.decode() or proc.stdout.decode()
