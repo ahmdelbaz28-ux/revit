@@ -135,23 +135,54 @@ class PDFParser:
     def parse(self, pdf_path: str) -> PDFParseResult:
         """
         Parse PDF file for fire alarm devices.
-        
+
         Args:
-            pdf_path: Path to PDF file
-            
+            pdf_path: Path to PDF file. MUST be under FIREAI_ALLOWED_UPLOAD_DIRS
+                and MUST have a .pdf extension (V124 security hardening).
+
         Returns:
             PDFParseResult with detected devices
         """
         result = PDFParseResult(source_file=pdf_path, success=False)
-        
-        # Verify file exists
-        if not Path(pdf_path).exists():
-            result.errors.append(f"File not found: {pdf_path}")
+
+        # V125 SECURITY (Finding #5 follow-up, Rule #23):
+        # Delegate path validation to the shared helper. Closes:
+        #   - Path traversal (../../etc/passwd)
+        #   - Null byte truncation
+        #   - Argument injection (leading '-')
+        #   - Files outside FIREAI_ALLOWED_UPLOAD_DIRS
+        #   - DoS via oversized files (cap: 200 MB, env-configurable)
+        # PDF files can be very large (multi-page architectural plans),
+        # so the default cap is higher than DWG.
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        import os as _os
+
+        _PDF_MAX_BYTES = int(_os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES",
+                                       str(200 * 1024 * 1024)))  # 200 MB
+
+        try:
+            safe_path = validate_input_path(
+                pdf_path,
+                allowed_extensions=frozenset({".pdf"}),
+                parser_name="PDFParser",
+            )
+            validate_file_size(safe_path, max_size_bytes=_PDF_MAX_BYTES,
+                               parser_name="PDFParser")
+        except FileNotFoundError as e:
+            result.errors.append(str(e))
             return result
-            
-        if not pdf_path.lower().endswith('.pdf'):
-            result.warnings.append(f"Not a .pdf file: {pdf_path}")
-        
+        except UnsafePathError as e:
+            result.errors.append(f"SECURITY: {e}")
+            logger.warning("PDFParser rejected unsafe path: %s", e)
+            return result
+
+        # Use resolved canonical path for all subsequent operations (TOCTOU fix)
+        pdf_path = str(safe_path)
+
         # Try pdfplumber first
         try:
             devices, text, page_count = self._parse_pdfplumber(pdf_path)

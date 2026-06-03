@@ -148,8 +148,43 @@ class IFCParser:
         """Main parsing method.
 
         Raises:
-            ValueError: If the IFC file cannot be loaded or parsed.
+            ValueError: If the IFC file cannot be loaded or parsed,
+                including security validation failures (V125 hardening).
         """
+        # V125 SECURITY (Rule #23): validate self.ifc_path BEFORE opening.
+        # The path was supplied at __init__ time; this is the last gate
+        # before file I/O. Closes path traversal, null bytes, argument
+        # injection (defense-in-depth — even though IFC parser doesn't
+        # call subprocess, a path like "-test" could confuse log
+        # formatters or shell-piping consumers), and oversized files.
+        # NOTE: This parser is documented as JSON-based (see module
+        # docstring). True binary IFC support would require a separate
+        # parser; here we accept .ifc and .json for the JSON variant.
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        import os as _os
+
+        _IFC_MAX_BYTES = int(_os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES",
+                                        str(500 * 1024 * 1024)))  # 500 MB
+        try:
+            safe_path = validate_input_path(
+                self.ifc_path,
+                allowed_extensions=frozenset({".ifc", ".json"}),
+                parser_name="IFCParser",
+            )
+            validate_file_size(safe_path, max_size_bytes=_IFC_MAX_BYTES,
+                               parser_name="IFCParser")
+        except FileNotFoundError as e:
+            raise ValueError(f"IFC file not found: {e}") from e
+        except UnsafePathError as e:
+            raise ValueError(f"SECURITY: {e}") from e
+
+        # Use resolved canonical path for the actual load (TOCTOU fix)
+        self.ifc_path = str(safe_path)
+
         # Load data
         if self.data is None:
             try:

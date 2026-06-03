@@ -86,23 +86,45 @@ class WordParser:
     def parse(self, file_path: str) -> WordParseResult:
         """
         Parse Word document.
-        
+
         Args:
-            file_path: Path to .docx file
-            
+            file_path: Path to .docx file. MUST be under
+                FIREAI_ALLOWED_UPLOAD_DIRS (V124 security hardening).
+
         Returns:
             WordParseResult with extracted info
         """
         result = WordParseResult(source_file=file_path, success=False)
-        
-        # Verify file
-        if not Path(file_path).exists():
-            result.errors.append(f"File not found: {file_path}")
+
+        # V125 SECURITY (Rule #23): delegate to shared path-security helper.
+        # Same threat model as Excel — .docx is a zip container that python-docx
+        # decompresses; oversized files can cause RAM exhaustion.
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        import os as _os
+
+        _DOCX_MAX_BYTES = int(_os.getenv("FIREAI_WORD_MAX_FILE_SIZE_BYTES",
+                                         str(25 * 1024 * 1024)))  # 25 MB
+
+        try:
+            safe_path = validate_input_path(
+                file_path,
+                allowed_extensions=frozenset({".docx"}),
+                parser_name="WordParser",
+            )
+            validate_file_size(safe_path, max_size_bytes=_DOCX_MAX_BYTES,
+                               parser_name="WordParser")
+        except FileNotFoundError as e:
+            result.errors.append(str(e))
             return result
-            
-        if not file_path.lower().endswith('.docx'):
-            result.errors.append("Only .docx files supported")
+        except UnsafePathError as e:
+            result.errors.append(f"SECURITY: {e}")
             return result
+
+        file_path = str(safe_path)
             
         try:
             from docx import Document

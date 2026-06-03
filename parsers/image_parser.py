@@ -124,24 +124,48 @@ class ImageParser:
     def parse(self, image_path: str) -> ImageParseResult:
         """
         Parse image to rooms.
-        
+
         Args:
-            image_path: Path to image file
-            
+            image_path: Path to image file. MUST be under
+                FIREAI_ALLOWED_UPLOAD_DIRS and have a supported extension
+                (V124 security hardening).
+
         Returns:
             ImageParseResult with detected rooms
         """
         result = ImageParseResult(source_file=image_path, success=False)
-        
-        # Verify file
-        if not Path(image_path).exists():
-            result.errors.append(f"File not found: {image_path}")
+
+        # V125 SECURITY (Rule #23): delegate to shared path-security helper.
+        # Closes path traversal, null bytes, argument injection, oversized
+        # file DoS. Image-parser DoS is a real concern — decompression
+        # bombs in PNG/JPEG can balloon to many GB of RAM.
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        import os as _os
+
+        _IMG_MAX_BYTES = int(_os.getenv("FIREAI_IMAGE_MAX_FILE_SIZE_BYTES",
+                                        str(50 * 1024 * 1024)))  # 50 MB
+
+        try:
+            safe_path = validate_input_path(
+                image_path,
+                allowed_extensions=frozenset(self.SUPPORTED_FORMATS),
+                parser_name="ImageParser",
+            )
+            validate_file_size(safe_path, max_size_bytes=_IMG_MAX_BYTES,
+                               parser_name="ImageParser")
+        except FileNotFoundError as e:
+            result.errors.append(str(e))
             return result
-            
-        ext = Path(image_path).suffix.lower()
-        if ext not in self.SUPPORTED_FORMATS:
-            result.errors.append(f"Unsupported format: {ext}")
+        except UnsafePathError as e:
+            result.errors.append(f"SECURITY: {e}")
             return result
+
+        image_path = str(safe_path)
+        ext = safe_path.suffix.lower()
             
         try:
             # Load image
