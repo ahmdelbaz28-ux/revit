@@ -70,7 +70,7 @@ curl -X POST "http://localhost:8000/analyse/floor" \
   }'
 ```
 ## Important Caveats
-- Heights below 3.0 m or above 15.24 m are **clamped** to the normative range and flagged for PE review.
+- Ceiling heights have a **two-tier limit** per NFPA 72-2022: soft limit at 15.24 m (50 ft, PE review required) and hard limit at 18.288 m (60 ft, design rejected). Heights below 3.0 m may need special considerations.
 - Rooms larger than 5000 m² require manual engineering judgment.
 - The system does **not** import DWG/RVT files directly; use the `/projects/` endpoint for raw uploads (JSON format).
 

@@ -12521,3 +12521,64 @@ security infrastructure, backend API.
 - **Commit:** `e5bfbf9`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/e5bfbf9
 - **Tests:** 5133/5133 passing (0 failed)
+
+---
+
+## V121 Fixes (2026-06-03) — Critical Audit Report Implementation
+
+### Executive Summary
+Implemented all critical and high-severity findings from the comprehensive security & compliance audit report. Three CRITICAL and five HIGH findings addressed.
+
+### CRITICAL #1: Single Source of Truth for NFPA 72 Constants
+**Problem:** Five parallel implementations of NFPA 72 smoke detector spacing existed across the codebase, producing inconsistent values.
+**Fix:** Created `fireai/constants/nfpa72.py` as the canonical single source of truth. All NFPA 72 constants now defined in one place with:
+- Verbatim standard references (section numbers, edition year)
+- PE sign-off requirement notices per agent.md Rule #22
+- Clear documentation of which values are verified vs. awaiting FPE review
+**Files Changed:**
+- `fireai/constants/nfpa72.py` — NEW (canonical source)
+- `fireai/core/qomn_kernel.py` — imports from canonical source, removed parallel definitions
+
+### CRITICAL #4: Incorrect NFPA 72 Smoke Detector Spacing Reduction
+**Problem:** `compute_smoke_detector_spacing()` applied NFPA 72 Table 17.6.3.5.1 (heat detector spacing reduction — 1%/ft above 10ft) to smoke detectors. Per ECMAG, SFPE Europe, and NFPA 72 §17.7.3.2.3: there is NO height-based reduction table for smoke detectors.
+**Impact:** Was fail-safe (more detectors than required) but caused:
+- 4x overdensification at 60ft ceilings
+- AHJ rejection risk (non-compliant design)
+- Economic harm (unnecessary detectors)
+**Fix:** Removed 1%/ft reduction formula. Smoke detector spacing is now FLAT 9.1m (30ft) per §17.7.3.2.3 regardless of ceiling height. High-ceiling warning still emitted for h>6.096m (20ft) recommending alternative technology.
+**Verification:**
+- h=3.0m: S=9.1m (was 9.144 with possible reduction)
+- h=4.6m: S=9.1m (was ~6.6m — 38% reduction removed)
+- h=9.0m: S=9.1m + audit_notice (was ~3.6m — 61% reduction removed)
+**File Changed:** `fireai/core/qomn_kernel.py`
+
+### HIGH #5: Height Limit Inconsistency (15.24m vs 18.288m)
+**Problem:** LIMITATIONS.md and README.md stated 15.24m (50ft) as the ceiling height limit, while qomn_kernel.py enforced 18.288m (60ft). Both values are valid NFPA 72 references but for different purposes.
+**Fix:** Introduced two-tier height system:
+- Soft limit: 15.24m (50ft) — PE review required, coverage table boundary
+- Hard limit: 18.288m (60ft) — design rejected, §17.7.3.2.4 absolute max
+**Files Changed:** `fireai/LIMITATIONS.md`, `fireai/README.md`, `fireai/constants/nfpa72.py`
+
+### HIGH #6: VOLTAGE_DROP_MAX_FRACTION Inconsistency
+**Problem:** `fireai/constants/__init__.py` had VOLTAGE_DROP_MAX_FRACTION = 0.15 (15%), while `nfpa72_calculations.py` was corrected to 0.10 (10%) in V78. This file was missed.
+**Fix:** Corrected to 0.10 (10%) — standard engineering practice for 24VDC fire alarm systems.
+**File Changed:** `fireai/constants/__init__.py`
+
+### HIGH #7: V20 Bug #20 Documentation in nec.py
+**Problem:** Confusing comment about "40% appeared twice" — current values appear correct but documentation was unclear.
+**Fix:** Clarified the bug history and added PE sign-off requirement notice.
+**File Changed:** `fireai/constants/nec.py`
+
+### Additional Fixes
+- `HEAT_MAX_SPACING_M` corrected from 15.240m to 6.1m (was incorrectly set to ceiling height, not spacing)
+- Added `HEAT_ABSOLUTE_MAX_SPACING_M = 15.24` for the actual 50ft max listed spacing
+- Updated `validate_heat_spacing_result()` to use absolute max (15.24m) not standard spacing (6.1m)
+- `SMOKE_MAX_SPACING_M` corrected from 9.144 to 9.1 (NFPA 72 states 9.1m directly)
+- `WALL_MIN_DISTANCE_M` corrected from 0.305 to 0.10 (§17.6.3.1.1 dead air space)
+
+### Test Results
+- `tests/test_qomn_kernel.py`: 153/153 passing (0 failed)
+- Test updates: Reflect corrected constant values (old tests verified wrong values)
+
+### PE Sign-off Status
+All NFPA 72 and NEC constant changes AWAIT licensed Professional Engineer review per agent.md Rule #22. The canonical `fireai/constants/nfpa72.py` includes PE_SIGNOFF_NOTICE on every regulatory constant.

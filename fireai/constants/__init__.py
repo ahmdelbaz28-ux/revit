@@ -166,10 +166,15 @@ sustained loads."""
 NOMINAL_SUPPLY_VOLTAGE_V: float = 24.0
 
 # Default safety margin for voltage drop
-VOLTAGE_DROP_MAX_FRACTION: float = 0.15
-"""Maximum allowable voltage drop as fraction of supply (15%).
-Per NFPA 72 §10.14, the voltage at the most remote device must
-be within the device's listed voltage range."""
+# V121 FIX: Corrected from 0.15 (15%) to 0.10 (10%) per V78 fix.
+# This file was missed when nfpa72_calculations.py was corrected in V78.
+VOLTAGE_DROP_MAX_FRACTION: float = 0.10
+"""Maximum allowable voltage drop as fraction of supply (10%).
+V78 Fix (now applied here too): Was 0.15 (15%) which is too permissive.
+Per NFPA 72 §10.14, the voltage at the most remote device must be within
+the device's listed voltage range. 10% is standard engineering practice
+for 24VDC fire alarm systems. NOTE: fireai/constants/nfpa72.py also has
+this corrected value as the canonical source."""
 
 
 # ============================================================================

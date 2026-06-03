@@ -311,17 +311,19 @@ class TestPhysicsGuardError:
 class TestNFPA72Constants:
     """Verify NFPA 72 reference constants match published standard."""
 
+    # V121 FIX: Smoke spacing table updated to canonical values from
+    # fireai/constants/nfpa72.py. Old values applied heat detector
+    # reduction (1%/ft) to smoke detectors — a known misapplication.
+    # New table has 9 rows (conservative height-adjusted values).
     def test_smoke_spacing_table_entries(self):
-        # V127: Table now has 9 rows (from NFPA 72 Table 17.6.3.1.1)
-        # instead of 10 rows (old table with 1%/ft reduction entries)
         assert len(NFPA72_SMOKE_SPACING_TABLE) == 9
 
     def test_smoke_spacing_first_row(self):
-        """V127: ≤3.0m → 9.10m (30ft) per NFPA 72 Table 17.6.3.1.1."""
+        """≤3.0m → 9.1m (30ft listed spacing)."""
         assert NFPA72_SMOKE_SPACING_TABLE[0] == (3.0, 9.10)
 
     def test_smoke_spacing_last_row(self):
-        """V127: ≤12.2m → 5.60m per NFPA 72 Table 17.6.3.1.1."""
+        """≤12.2m → 5.6m — conservative fallback."""
         assert NFPA72_SMOKE_SPACING_TABLE[-1] == (12.2, 5.60)
 
     def test_spacing_decreases_with_height(self):
@@ -334,16 +336,24 @@ class TestNFPA72Constants:
         """R = 0.7 × S per NFPA 72 §17.7.4.2.3.1."""
         assert NFPA72_COVERAGE_RADIUS_FACTOR == 0.7
 
+    # V121 FIX: SMOKE_MAX_SPACING_M corrected from 9.144 to 9.1
+    # (NFPA 72 states 9.1m, not 30ft×0.3048=9.144)
     def test_smoke_max_spacing(self):
-        """V127: NFPA 72 §17.7.3.2.3.1: max 9.10m (30ft per verbatim text)."""
-        assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.10)
+        """NFPA 72 §17.7.3.2.3: max 9.1m (30ft)."""
+        assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.1)
 
+    # V121 FIX: HEAT_MAX_SPACING_M corrected from 15.240 to 6.1
+    # (6.1m = 20ft is the standard spacing at h≤3.0m per Table 17.6.3.5.1;
+    # 15.24m = 50ft is the ABSOLUTE max listed spacing, now in
+    # fireai/constants/nfpa72.py as HEAT_ABSOLUTE_MAX_SPACING_M)
     def test_heat_max_spacing(self):
-        """NFPA 72 §17.6.3.1: max 15.240m (50ft)."""
-        assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(15.240)
+        """NFPA 72 §17.6.3.1: standard spacing at h≤3.0m = 6.1m (20ft)."""
+        assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(6.1)
 
+    # V121 FIX: WALL_MIN_DISTANCE corrected from 0.305 to 0.10
+    # (NFPA 72 §17.6.3.1.1 specifies 0.1m dead air space minimum)
     def test_wall_min_distance(self):
-        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.305)
+        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.10)
 
     def test_pull_station_height(self):
         """NFPA 72 §17.15.7: 48 inches = 1.219m AFF."""
@@ -455,23 +465,29 @@ class TestF64Hash:
 class TestComputeSmokeDetectorSpacing:
     """NFPA 72 Table 17.6.3.1 + §17.7.3.2.3 height adjustment."""
 
+    # V121 FIX: Spacing is now flat 9.1m per §17.7.3.2.3
     def test_low_ceiling(self):
-        """h ≤ 3.048m → S = 9.144m, R = 0.7 × 9.144 = 6.4008m."""
+        """h ≤ 3.0m → S = 9.1m, R = 0.7 × 9.1 = 6.37m."""
         result = compute_smoke_detector_spacing(3.0)
-        assert result["listed_spacing_m"] == pytest.approx(9.144, rel=0.01)
-        assert result["coverage_radius_m"] == pytest.approx(0.7 * 9.144, rel=0.01)
+        assert result["listed_spacing_m"] == pytest.approx(9.1, rel=0.01)
+        assert result["coverage_radius_m"] == pytest.approx(0.7 * 9.1, rel=0.01)
 
+    # V121 FIX: Smoke detector spacing is now FLAT 9.1m per §17.7.3.2.3.
+    # The 1%/ft height reduction has been removed — it was a misapplication
+    # of the heat detector table (Table 17.6.3.5.1) to smoke detectors.
     def test_medium_ceiling(self):
-        """h = 4.0m falls in 3.658-4.572 row → base S = 8.534m."""
+        """h = 4.0m → flat spacing 9.1m per §17.7.3.2.3 (no reduction)."""
         result = compute_smoke_detector_spacing(4.0)
-        # Height adjustment above 3.048m reduces spacing
-        assert result["listed_spacing_m"] < 8.534
+        # V121: No height adjustment for smoke detectors — flat 9.1m
+        assert result["listed_spacing_m"] == pytest.approx(9.1)
 
-    def test_high_ceiling_reduces_spacing(self):
-        """Higher ceiling → smaller spacing."""
+    # V121 FIX: Removed test that height reduces smoke spacing.
+    # Per NFPA 72-2022 §17.7.3.2.3, smoke detector spacing is flat.
+    def test_high_ceiling_does_not_reduce_spacing(self):
+        """V121: Flat spacing means high ceiling = same spacing."""
         r_low = compute_smoke_detector_spacing(3.0)
         r_high = compute_smoke_detector_spacing(6.0)
-        assert r_high["listed_spacing_m"] < r_low["listed_spacing_m"]
+        assert r_high["listed_spacing_m"] == r_low["listed_spacing_m"]
 
     def test_coverage_radius_is_07_times_spacing(self):
         """NFPA 72 §17.7.4.2.3.1: R = 0.7 × S."""
@@ -512,12 +528,18 @@ class TestComputeHeatDetectorSpacing:
         expected_s = 0.7 * math.sqrt(100.0)  # 7.0m
         assert result["spacing_m"] == pytest.approx(expected_s, rel=0.01)
 
+    # V121 FIX: HEAT_MAX_SPACING_M is now 6.1 (standard spacing),
+    # not 15.24 (absolute max). The test checks against the wrong constant.
+    # The absolute max is HEAT_ABSOLUTE_MAX_SPACING_M = 15.24.
+    # Since 0.7×√232.26 ≈ 10.668 < 15.24 (absolute max), this passes.
     def test_area_at_nfpa_max_accepted(self):
         """V117: At the NFPA 72 §17.6.3.1 max area (232.26 m² = 2500 ft²),
-        spacing is 0.7×√232.26 ≈ 10.668 m, well under the 15.24 m cap."""
+        spacing is 0.7×√232.26 ≈ 10.668 m, under the 15.24 m absolute max."""
         result = compute_heat_detector_spacing(3.0, 232.26)
         assert result["spacing_m"] == pytest.approx(0.7 * math.sqrt(232.26), rel=1e-4)
-        assert result["spacing_m"] <= NFPA72_HEAT_MAX_SPACING_M
+        # V121: Check against absolute max (15.24), not standard spacing (6.1)
+        from fireai.constants.nfpa72 import HEAT_ABSOLUTE_MAX_SPACING_M
+        assert result["spacing_m"] <= HEAT_ABSOLUTE_MAX_SPACING_M
 
     def test_area_above_nfpa_max_rejected(self):
         """V117 FIX: Areas exceeding NFPA 72 §17.6.3.1 max (232.26 m² =
@@ -715,9 +737,10 @@ class TestValidateHeatSpacingResult:
         with pytest.raises(ComputationError, match="NaN"):
             validate_heat_spacing_result(result)
 
+    # V121 FIX: Error message updated to say "absolute max"
     def test_exceeds_max_rejected(self):
         result = {"spacing_m": 20.0, "coverage_radius_m": 14.0}
-        with pytest.raises(ValidationError, match="NFPA 72 max"):
+        with pytest.raises(ValidationError, match="absolute max"):
             validate_heat_spacing_result(result)
 
 
@@ -922,7 +945,7 @@ class TestIntegrationScenarios:
         """Typical office: 3m ceiling, 100m² area."""
         kernel = QOMNKernel()
         smoke = kernel.smoke_detector_spacing(3.0)
-        assert smoke["listed_spacing_m"] == pytest.approx(9.144, rel=0.01)
+        assert smoke["listed_spacing_m"] == pytest.approx(9.1, rel=0.01)
         # Verify spacing and radius are reasonable for office use
         assert smoke["coverage_radius_m"] > 5.0  # R ≈ 6.4m for 3m ceiling
         # Verify at least 1 detector needed for 100m²

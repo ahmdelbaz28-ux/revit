@@ -21,7 +21,11 @@ MAX_CONDUCTOR_FILL_PCT: dict = {
     "3_plus":      40,   # NEC Ch.9 Table 1: 3+ conductors = 40%
 }
 """Maximum conduit fill percentages per NEC Chapter 9, Table 1.
-V20 Bug #20: "40%" appeared twice in dict; second was meant to be "53%"."""
+V20 Bug #20: Original dict had "40%" appearing twice — the second "40%"
+was meant to be "53%" (1_conductor value). This has been corrected:
+current values are 53/31/40 which match NEC Chapter 9 Table 1.
+PE SIGN-OFF REQUIRED per agent.md Rule #22: Any change to these values
+must be verified against NEC 2023 Chapter 9, Table 1 official PDF."""
 
 # ============================================================================
 # NEC Table 310.15(B)(3)(a) — Conductor Derating for Bundling
