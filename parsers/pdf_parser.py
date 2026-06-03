@@ -13,6 +13,7 @@ DEPENDENCIES:
     pip install pdfplumber pymupdf
 """
 
+import os
 import re
 import logging
 from pathlib import Path
@@ -143,6 +144,28 @@ class PDFParser:
         Returns:
             PDFParseResult with detected devices
         """
+        # V126: Path security + file-size cap
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        _ALLOWED_EXTENSIONS = frozenset({".pdf"})
+        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES", 200 * 1024 * 1024))  # 200 MB default
+        try:
+            safe_path = validate_input_path(
+                pdf_path,
+                allowed_extensions=_ALLOWED_EXTENSIONS,
+                parser_name="PDFParser",
+            )
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_MAX_FILE_SIZE_BYTES,
+                parser_name="PDFParser",
+            )
+        except UnsafePathError as e:
+            raise ValueError(str(e)) from e
+
         result = PDFParseResult(source_file=pdf_path, success=False)
 
         # V125 SECURITY (Finding #5 follow-up, Rule #23):
@@ -185,7 +208,7 @@ class PDFParser:
 
         # Try pdfplumber first
         try:
-            devices, text, page_count = self._parse_pdfplumber(pdf_path)
+            devices, text, page_count = self._parse_pdfplumber(str(safe_path))
             result.devices = devices
             result.text_content = text
             result.page_count = page_count

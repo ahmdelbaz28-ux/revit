@@ -11,6 +11,7 @@ Expected columns:
     - occupancy_type: office, residential, etc. (optional)
 """
 
+import os
 import pandas as pd
 import logging
 from pathlib import Path
@@ -116,6 +117,28 @@ class ExcelParser:
         Returns:
             ExcelParseResult with room list
         """
+        # V126: Path security + file-size cap
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        _ALLOWED_EXTENSIONS = frozenset({".xlsx", ".xls", ".csv"})
+        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_EXCEL_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))  # 25 MB default
+        try:
+            safe_path = validate_input_path(
+                file_path,
+                allowed_extensions=_ALLOWED_EXTENSIONS,
+                parser_name="ExcelParser",
+            )
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_MAX_FILE_SIZE_BYTES,
+                parser_name="ExcelParser",
+            )
+        except UnsafePathError as e:
+            raise ValueError(str(e)) from e
+
         result = ExcelParseResult(source_file=file_path, success=False)
 
         # V125 SECURITY (Rule #23): delegate to shared path-security helper.
@@ -152,7 +175,7 @@ class ExcelParser:
             
         try:
             # Read Excel
-            df = pd.read_excel(file_path, engine='openpyxl')
+            df = pd.read_excel(str(safe_path), engine='openpyxl')
             
             if df.empty:
                 result.errors.append("Excel file is empty")

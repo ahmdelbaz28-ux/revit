@@ -11,6 +11,7 @@ Features:
 Supported formats: JPEG, PNG, BMP, TIFF, GIF, WebP, HEIC
 """
 
+import os
 import cv2
 import numpy as np
 import logging
@@ -133,6 +134,28 @@ class ImageParser:
         Returns:
             ImageParseResult with detected rooms
         """
+        # V126: Path security + file-size cap
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        _ALLOWED_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".webp"})
+        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_IMAGE_MAX_FILE_SIZE_BYTES", 50 * 1024 * 1024))  # 50 MB default
+        try:
+            safe_path = validate_input_path(
+                image_path,
+                allowed_extensions=_ALLOWED_EXTENSIONS,
+                parser_name="ImageParser",
+            )
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_MAX_FILE_SIZE_BYTES,
+                parser_name="ImageParser",
+            )
+        except UnsafePathError as e:
+            raise ValueError(str(e)) from e
+
         result = ImageParseResult(source_file=image_path, success=False)
 
         # V125 SECURITY (Rule #23): delegate to shared path-security helper.
@@ -169,7 +192,7 @@ class ImageParser:
             
         try:
             # Load image
-            img = self._load_image(image_path)
+            img = self._load_image(str(safe_path))
             if img is None:
                 result.errors.append("Failed to load image")
                 return result

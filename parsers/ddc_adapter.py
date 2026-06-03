@@ -211,6 +211,7 @@ class DDCAdapter:
         from parsers._path_security import (
             UnsafePathError,
             validate_input_path,
+            validate_file_size,
         )
 
         _ALLOWED_EXTENSIONS = frozenset(_DDC_CONVERTERS.keys())
@@ -225,6 +226,21 @@ class DDCAdapter:
             # historically raised ValueError. We map UnsafePathError →
             # ValueError so downstream `except ValueError:` blocks in
             # callers continue to work without modification.
+            raise ValueError(str(e)) from e
+
+        # V126: File-size cap — reject oversized files before feeding them
+        # to the DDC subprocess. Without this, a multi-GB .rvt/.ifc would
+        # exhaust memory and potentially hang the converter for hours.
+        _DDC_MAX_FILE_SIZE_BYTES = int(
+            os.getenv("FIREAI_DDC_MAX_FILE_SIZE_BYTES", 500 * 1024 * 1024)  # 500 MB default
+        )
+        try:
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_DDC_MAX_FILE_SIZE_BYTES,
+                parser_name="DDCAdapter",
+            )
+        except UnsafePathError as e:
             raise ValueError(str(e)) from e
 
         # Local alias for the resolved Path; rest of method unchanged.

@@ -701,12 +701,18 @@ class TestV13AdaptiveReSolve:
     the adaptive re-solve error is caught and reported to the user.
     """
 
-    def test_adaptive_re_solve_import_error_handled(self):
-        """When ConstraintSolver import fails, error is reported gracefully."""
+    def test_adaptive_re_solve_constraint_solver_recovers(self):
+        """When DensityOptimizer fails but ConstraintSolver recovers, result is PASS.
+
+        V124 created constraint_solver.py, so the import now succeeds.
+        This test verifies the recovery path: DensityOptimizer fails,
+        ConstraintSolver succeeds with >=99.9% coverage → status = PASS.
+        """
         fo = FloorOrchestrator()
 
         from fireai.core.nfpa72_models import RoomSpec, CeilingSpec, DetectorType
         from fireai.core.spatial_engine.density_optimizer import DetectorLayout, Room
+        from fireai.core.spatial_engine.constraint_solver import ConstraintSolverResult
         from shapely.geometry import Polygon
 
         spec = RoomSpec(
@@ -729,11 +735,17 @@ class TestV13AdaptiveReSolve:
             method="hex_test",
         )
 
+        # ConstraintSolver recovers with full coverage
+        recovery_result = ConstraintSolverResult(
+            num_devices=4,
+            positions=[(2.0, 2.0), (6.0, 2.0), (2.0, 6.0), (6.0, 6.0)],
+            coverage_percent=99.95,
+        )
+
         with patch(
             "fireai.core.floor_orchestrator.DensityOptimizer.optimize",
             return_value=failing_layout,
         ):
-            # Mock verify_full_coverage to return FAIL
             with patch(
                 "fireai.core.floor_orchestrator.verify_full_coverage",
                 return_value={
@@ -742,11 +754,86 @@ class TestV13AdaptiveReSolve:
                     "worst_case_distance_m": 8.0,
                 },
             ):
-                result = fo._process_one_room(spec)
-                # Should be FAIL (ConstraintSolver doesn't exist or also fails)
-                assert result.status == "FAIL"
-                # Should have error about coverage failure
-                assert len(result.errors) > 0
+                with patch(
+                    "fireai.core.floor_orchestrator.ConstraintSolver",
+                    create=True,
+                ) as MockCS:
+                    MockCS.return_value.find_optimal_placement.return_value = recovery_result
+                    # Need to patch the import inside the try block
+                    with patch(
+                        "fireai.core.spatial_engine.constraint_solver.ConstraintSolver",
+                        return_value=MockCS.return_value,
+                    ):
+                        result = fo._process_one_room(spec)
+                        # ConstraintSolver recovered → PASS
+                        assert result.status == "PASS"
+                        # Should have audit note about adaptive re-solve
+                        assert any("Adaptive Re-solve" in str(n) for n in result.audit_notes)
+
+    def test_adaptive_re_solve_both_solvers_fail(self):
+        """When DensityOptimizer AND ConstraintSolver both fail, result is FAIL.
+
+        This replaces the old test that checked ImportError — now we verify
+        the double-failure path explicitly by mocking ConstraintSolver to
+        return insufficient coverage.
+        """
+        fo = FloorOrchestrator()
+
+        from fireai.core.nfpa72_models import RoomSpec, CeilingSpec, DetectorType
+        from fireai.core.spatial_engine.density_optimizer import DetectorLayout, Room
+        from fireai.core.spatial_engine.constraint_solver import ConstraintSolverResult
+        from shapely.geometry import Polygon
+
+        spec = RoomSpec(
+            room_id="ROOM-1",
+            name="Room-1",
+            width_m=8.0,
+            depth_m=8.0,
+            polygon=Polygon([(0, 0), (8, 0), (8, 8), (0, 8)]),
+            ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
+            detector_type=DetectorType.SMOKE,
+        )
+
+        # Create a failing layout from DensityOptimizer
+        failing_layout = DetectorLayout(
+            room=Room(name="Room-1", width=8.0, length=8.0, ceiling_height=3.0),
+            detectors=[(4.0, 4.0)],
+            coverage_pct=50.0,  # Below 99.9%
+            proof_valid=False,
+            nfpa_valid=False,
+            method="hex_test",
+        )
+
+        # ConstraintSolver ALSO fails — returns coverage below 99.9%
+        double_fail_result = ConstraintSolverResult(
+            num_devices=1,
+            positions=[(4.0, 4.0)],
+            coverage_percent=50.0,
+        )
+
+        with patch(
+            "fireai.core.floor_orchestrator.DensityOptimizer.optimize",
+            return_value=failing_layout,
+        ):
+            with patch(
+                "fireai.core.floor_orchestrator.verify_full_coverage",
+                return_value={
+                    "compliance_status": "FAIL",
+                    "coverage_percentage": 50.0,
+                    "worst_case_distance_m": 8.0,
+                },
+            ):
+                with patch(
+                    "fireai.core.spatial_engine.constraint_solver.ConstraintSolver"
+                ) as MockCS:
+                    MockCS.return_value.find_optimal_placement.return_value = double_fail_result
+                    result = fo._process_one_room(spec)
+                    # Both solvers failed → FAIL
+                    assert result.status == "FAIL"
+                    # Should have errors about coverage failure
+                    assert len(result.errors) > 0
+                    # Should mention adaptive re-solve also failed
+                    assert any("Adaptive re-solve also failed" in str(e) for e in result.errors)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

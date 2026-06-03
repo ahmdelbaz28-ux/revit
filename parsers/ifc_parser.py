@@ -16,6 +16,7 @@ Extracted data:
 - Building structure
 """
 
+import os
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -151,15 +152,10 @@ class IFCParser:
             ValueError: If the IFC file cannot be loaded or parsed,
                 including security validation failures (V125 hardening).
         """
-        # V125 SECURITY (Rule #23): validate self.ifc_path BEFORE opening.
+        # V125/V126 SECURITY (Rule #23): validate self.ifc_path BEFORE opening.
         # The path was supplied at __init__ time; this is the last gate
         # before file I/O. Closes path traversal, null bytes, argument
-        # injection (defense-in-depth — even though IFC parser doesn't
-        # call subprocess, a path like "-test" could confuse log
-        # formatters or shell-piping consumers), and oversized files.
-        # NOTE: This parser is documented as JSON-based (see module
-        # docstring). True binary IFC support would require a separate
-        # parser; here we accept .ifc and .json for the JSON variant.
+        # injection (defense-in-depth), and oversized files.
         from parsers._path_security import (
             UnsafePathError,
             validate_input_path,
@@ -169,10 +165,11 @@ class IFCParser:
 
         _IFC_MAX_BYTES = int(_os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES",
                                         str(500 * 1024 * 1024)))  # 500 MB
+        _ALLOWED_EXTENSIONS = frozenset({".ifc", ".ifcxml", ".json"})
         try:
             safe_path = validate_input_path(
                 self.ifc_path,
-                allowed_extensions=frozenset({".ifc", ".json"}),
+                allowed_extensions=_ALLOWED_EXTENSIONS,
                 parser_name="IFCParser",
             )
             validate_file_size(safe_path, max_size_bytes=_IFC_MAX_BYTES,

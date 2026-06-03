@@ -9,6 +9,7 @@ Extracts:
     - Special requirements/notes
 """
 
+import os
 import re
 import logging
 from pathlib import Path
@@ -94,6 +95,28 @@ class WordParser:
         Returns:
             WordParseResult with extracted info
         """
+        # V126: Path security + file-size cap
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        _ALLOWED_EXTENSIONS = frozenset({".docx", ".doc"})
+        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_WORD_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))  # 25 MB default
+        try:
+            safe_path = validate_input_path(
+                file_path,
+                allowed_extensions=_ALLOWED_EXTENSIONS,
+                parser_name="WordParser",
+            )
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_MAX_FILE_SIZE_BYTES,
+                parser_name="WordParser",
+            )
+        except UnsafePathError as e:
+            raise ValueError(str(e)) from e
+
         result = WordParseResult(source_file=file_path, success=False)
 
         # V125 SECURITY (Rule #23): delegate to shared path-security helper.
@@ -129,7 +152,7 @@ class WordParser:
         try:
             from docx import Document
             
-            doc = Document(file_path)
+            doc = Document(str(safe_path))
             
             # Extract from all paragraphs
             all_text = '\n'.join(p.text for p in doc.paragraphs)

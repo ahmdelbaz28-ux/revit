@@ -7,6 +7,7 @@ FIREAI PDF INPUT LAYER — Real Drawing Parser
 Author: The Eye That Refuses to Stay Closed
 """
 
+import os
 import re
 import logging
 from pathlib import Path
@@ -250,6 +251,28 @@ class PDFInputLayer:
         Returns:
             InputLayerResult with extracted data
         """
+        # V126: Path security + file-size cap
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        _ALLOWED_EXTENSIONS = frozenset({".pdf"})
+        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES", 200 * 1024 * 1024))  # 200 MB default
+        try:
+            safe_path = validate_input_path(
+                pdf_path,
+                allowed_extensions=_ALLOWED_EXTENSIONS,
+                parser_name="PDFInputLayer",
+            )
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_MAX_FILE_SIZE_BYTES,
+                parser_name="PDFInputLayer",
+            )
+        except UnsafePathError as e:
+            raise ValueError(str(e)) from e
+
         result = InputLayerResult(
             source_pdf=pdf_path,
             confidence_result=None
@@ -257,7 +280,7 @@ class PDFInputLayer:
         
         # Step 1: Check confidence gate FIRST
         try:
-            confidence = ParserConfidence(pdf_path).evaluate()
+            confidence = ParserConfidence(str(safe_path)).evaluate()
             result.confidence_result = confidence
             
             if confidence.gate == GateDecision.REJECT:
@@ -274,7 +297,7 @@ class PDFInputLayer:
         
         # Step 2: Extract actual data
         try:
-            self._extract_data(pdf_path, result)
+            self._extract_data(str(safe_path), result)
         except Exception as e:
             import traceback
             full_tb = traceback.format_exc()
