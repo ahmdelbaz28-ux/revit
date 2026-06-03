@@ -186,92 +186,50 @@ class DDCAdapter:
 
         start = time.monotonic()
 
-        input_path_obj = Path(input_path)
-        if not input_path_obj.exists():
-            raise FileNotFoundError(f"Input file not found: {input_path}")
-
-        # SECURITY FIX: Resolve the path and verify it's within an allowed
-        # directory. This prevents path traversal attacks where a malicious
-        # input_path like "/etc/passwd" or "../../../etc/shadow" could be
-        # passed to the subprocess. Only files within designated upload/data
-        # directories are permitted.
-        safe_path = input_path_obj.resolve()
-
-        # Allowed base directories (configurable via env var)
-        _allowed_bases_str = os.getenv(
-            "FIREAI_ALLOWED_UPLOAD_DIRS",
-            "/tmp,/var/tmp,/var/fireai/uploads",
+        # V123 REFACTOR (per agent.md Rule #23 — single source of truth):
+        # All path-security validation now delegates to the shared helper
+        # in parsers._path_security. The previous ~70 lines of inline
+        # path-traversal / symlink / allowed-bases / extension checks
+        # have been replaced with a single call to validate_input_path()
+        # which performs the same checks PLUS new defenses introduced by
+        # V122 (null byte rejection, leading-dash argument-injection
+        # guard). This guarantees DDC and DWG parsers share IDENTICAL
+        # security posture — no drift possible.
+        #
+        # Behavioral changes vs. pre-V123:
+        #   + Null bytes in input_path now rejected (previously no check)
+        #   + Paths starting with '-' rejected (argument-injection guard)
+        #   = Path traversal, allowed-bases, symlink resolution, and
+        #     extension whitelist behaviors are PRESERVED IDENTICALLY
+        #
+        # Exception mapping:
+        #   FileNotFoundError raised by helper → re-raised unchanged
+        #     (preserves backward-compat for callers that catch it)
+        #   UnsafePathError raised by helper → re-raised as ValueError
+        #     (preserves backward-compat: pre-V123 raised ValueError for
+        #     path-traversal & extension errors)
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
         )
-        _allowed_bases = [Path(d).resolve() for d in _allowed_bases_str.split(",") if d.strip()]
 
-        # Always allow temp directories (created by tempfile.mkdtemp)
-        _temp_dir = Path(tempfile.gettempdir()).resolve()
-        if _temp_dir not in _allowed_bases:
-            _allowed_bases.append(_temp_dir)
-
-        # Also allow the current working directory (for development only)
-        # V105 FIX (MEDIUM-8): Only add CWD in development mode. In
-        # production containers, CWD=/app allows any file under /app to be
-        # passed to the DDC converter, potentially including .env files.
-        if os.getenv("FIREAI_ENV") == "development":
-            _cwd = Path.cwd().resolve()
-            if _cwd not in _allowed_bases:
-                _allowed_bases.append(_cwd)
-
-        # Verify path is within an allowed directory
-        _path_in_allowed_dir = False
-        for base in _allowed_bases:
-            try:
-                safe_path.relative_to(base)
-                _path_in_allowed_dir = True
-                break
-            except ValueError:
-                continue
-
-        if not _path_in_allowed_dir:
-            raise ValueError(
-                f"SECURITY: Input file path '{safe_path}' is outside allowed "
-                f"directories. Path traversal detected. Allowed bases: "
-                f"{[str(b) for b in _allowed_bases]}"
-            )
-
-        # V104 FIX (HIGH): The previous symlink check was dead code.
-        # Path.resolve() follows ALL symlinks, so safe_path.is_symlink()
-        # was ALWAYS False after resolve(). The check never fired.
-        #
-        # The real protection needed is: if the ORIGINAL (pre-resolve) path
-        # is a symlink, verify that the RESOLVED TARGET is still within an
-        # allowed directory. This catches attacks where a symlink inside an
-        # allowed directory points to a sensitive file also inside an allowed
-        # directory (e.g., /tmp/upload/link.ifc → /tmp/secret_config.json).
-        #
-        # However, for files within allowed directories that the user has
-        # legitimate access to, the path traversal check above (relative_to)
-        # is sufficient — resolve() already ensures we follow symlinks to
-        # their final destination and verify THAT destination is allowed.
-        # The original check was trying to add an extra restriction (deny
-        # symlinks even within allowed dirs) but was never effective.
-        #
-        # New approach: Check the ORIGINAL path for symlinks BEFORE resolve.
-        # If the original is a symlink, log it and verify the resolved target
-        # is within allowed dirs (which the check above already does, since
-        # safe_path IS the resolved target).
-        if input_path_obj.is_symlink():
-            logger.info(
-                f"Input path is a symlink: {input_path_obj} → {safe_path}. "
-                f"Resolved target verified within allowed directories."
-            )
-
-        ext = input_path_obj.suffix.lower()
-
-        # SECURITY FIX: Validate file extension against allowed set BEFORE
-        # any subprocess invocation. Prevents path traversal or unexpected
-        # file types from reaching the converter binary.
         _ALLOWED_EXTENSIONS = frozenset(_DDC_CONVERTERS.keys())
-        if ext not in _ALLOWED_EXTENSIONS:
-            raise ValueError(
-                f"File extension '{ext}' is not allowed. Permitted extensions: {sorted(_ALLOWED_EXTENSIONS)}"
+        try:
+            safe_path = validate_input_path(
+                input_path,
+                allowed_extensions=_ALLOWED_EXTENSIONS,
+                parser_name="DDCAdapter",
             )
+        except UnsafePathError as e:
+            # Preserve pre-V123 contract: path-traversal / bad extension
+            # historically raised ValueError. We map UnsafePathError →
+            # ValueError so downstream `except ValueError:` blocks in
+            # callers continue to work without modification.
+            raise ValueError(str(e)) from e
+
+        # Local alias for the resolved Path; rest of method unchanged.
+        input_path_obj = Path(input_path)
+        ext = input_path_obj.suffix.lower()
 
         binary = self._get_binary(ext)
         if binary is None:

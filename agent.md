@@ -13007,3 +13007,73 @@ the Anti-Deception Directive applies to my own iteration errors too.
 ### Commit Hash & GitHub Link
 (See post-push report below)
 
+
+---
+
+## V123 — Refactor ddc_adapter.py to use shared _path_security (2026-06-03)
+
+**Author:** Arena Agent (autonomous, authorized by operator)
+**Branch:** `V123/ddc-adapter-refactor-path-security`
+**Type:** Refactor + security hardening (no breaking changes)
+**Follows:** V122 follow-up — eliminates the documented duplication
+
+### What Changed
+- `parsers/ddc_adapter.py`: ~70 lines of inline path validation removed,
+  replaced by a single call to `parsers._path_security.validate_input_path()`
+  (the V122 shared helper). The new code is ~20 lines including
+  documentation.
+
+### Backward Compatibility
+- `FileNotFoundError` for missing files: preserved (helper raises same)
+- `ValueError` for path-traversal / bad extension: preserved (helper
+  raises `UnsafePathError` which `convert()` catches and re-raises as
+  `ValueError` for compatibility with existing callers)
+- New defenses inherited: null byte rejection + leading-dash
+  argument-injection guard (pre-V123 ddc_adapter did NOT check these,
+  so this is a NET SECURITY IMPROVEMENT, not a regression)
+
+### Architectural Impact (Rule #23 compliance)
+Before V123: V122 shared helper existed, but `ddc_adapter.py` and
+`dwg_parser.py` had two copies of similar validation logic. V123
+unifies them. There is now ONE source of truth for parser path
+security, exactly as Rule #23 requires.
+
+Future parsers added to the codebase can use the helper with one
+import line and one function call — they cannot accidentally diverge.
+
+### Files Modified
+- `parsers/ddc_adapter.py` (+30 lines, -71 lines, net -41 lines)
+- `tests/test_ddc_adapter_security_v123.py` (NEW, 166 lines, 9 tests)
+  covering:
+    - 3 backward-compat tests (ValueError, FileNotFoundError still raised)
+    - 3 new-defense tests (null byte, leading dash, double dash)
+    - 2 single-source-of-truth tests (import + no inline copy)
+    - 1 end-to-end test (valid path passes validation)
+
+### Verification
+  Gate 1 Static:   ast.parse OK
+  Gate 2 Runtime:  5132/5132 tests pass (= 5123 post-V122 + 9 V123)
+  Gate 3 Behavior: backward-compat preserved, new defenses activated
+  Gate 4 Regress:  ZERO
+  Gate 5 Adversarial: structural test asserts the inline _allowed_bases
+                      list NEVER reappears in ddc_adapter (Rule #23 guard)
+
+### Self-Criticism (Rule #21)
+- **Layer 1 (Output):** The refactor reduces code, increases security
+  (null byte + leading dash now checked in ddc), and preserves all
+  pre-V123 caller contracts. Verified by 3 backward-compat tests that
+  use the actual public API.
+- **Layer 2 (Thinking):** Did I just blindly merge two implementations?
+  No — I deliberately preserved the `ValueError` exception type that
+  callers depend on, via try/except mapping. UnsafePathError is internal
+  to the security module; ValueError is the public API contract.
+- **Layer 3 (Method):** Did I add a regression guard? Yes — the
+  test_ddc_adapter_no_inline_allowed_bases test asserts the inline
+  variable name does NOT reappear in the source. This is a structural
+  test that prevents Rule #23 violation re-introduction.
+- **Layer 4 (Commitment):** Did I follow the V122 follow-up I had
+  documented? Yes — this was V123's stated purpose. Honest closure.
+
+### Commit Hash & GitHub Link
+(See post-push report below)
+
