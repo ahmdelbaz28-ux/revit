@@ -345,12 +345,40 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
       For h > 10 ft (3.048m): spacing reduces 1% per foot above 10 ft
       Source: NFPA 72-2022 §17.7.3.2.3
 
+    ⚠️ V120 AUDIT NOTICE — KNOWN REGULATORY DISCREPANCY
+    ═══════════════════════════════════════════════════════
+    This function's "1% per foot reduction" formula has been flagged
+    as a likely misapplication of NFPA 72-2022 Table 17.6.3.5.1 (the
+    HEAT detector spacing reduction table) to smoke detectors. Per
+    consistent FPE guidance (ECMAG May 2022, SFPE Europe Issue 33,
+    NFPA Research Foundation 2023), NFPA 72 §17.7.3.2.3.1 specifies
+    a flat 30 ft (9.144 m) nominal spacing for smoke detectors with
+    NO per-foot reduction. Above ~20 ft, spot-type smoke detection is
+    inappropriate and alternative technology (beam per §17.7.4.6,
+    aspirating per §17.7.4.7) or performance-based design (Annex B)
+    should be used.
+
+    The defect is in the FAIL-SAFE direction (excess detectors are
+    deployed, not too few) — no life-safety regression — but it
+    violates NFPA traceability (Priority #7) and creates economic
+    over-design.
+
+    Full audit at: /SMOKE_SPACING_AUDIT_FINDING_1.md (Phase A merged
+    in V120 as a runtime WARNING; data tables AWAIT FPE REVIEW per
+    agent.md Rule #17 — no half-solutions on safety-critical datasets).
+
+    The agent's confidence in the audit finding is 95% but its
+    confidence in selecting replacement numerical values is only 50%
+    — therefore the values are LEFT UNCHANGED pending licensed FPE
+    sign-off. This is the engineering-correct posture per Rule #17.
+    ═══════════════════════════════════════════════════════
+
     Args:
         ceiling_height_m: Ceiling height in meters.
 
     Returns:
         dict with listed_spacing_m, coverage_radius_m, nfpa_table_ref,
-        computation_hash.
+        computation_hash, and (V120) audit_notice when above 6.096 m.
 
     Raises:
         PhysicsGuardError: If ceiling_height_m is outside bounds.
@@ -374,6 +402,7 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
 
     # Apply height adjustment above 10 ft (3.048m)
     # Reduce 1% per foot above 10 ft — NFPA 72-2022 §17.7.3.2.3
+    # ⚠️ V120 AUDIT: This adjustment is under FPE review (see docstring).
     HEIGHT_ADJUSTMENT_BASE_M = 3.048  # 10 ft
     if h > HEIGHT_ADJUSTMENT_BASE_M:
         feet_above_10 = (h - HEIGHT_ADJUSTMENT_BASE_M) / 0.3048
@@ -390,7 +419,36 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
     # Compute deterministic hash for audit
     result_hash = _f64_hash(spacing_m) + _f64_hash(radius_m)
 
-    return {
+    # V120 SAFETY NET — WARNING for high-ceiling spot smoke detection.
+    # Per ECMAG (FPE): "never install spot-type smoke detectors on
+    # ceilings 20 feet or higher under any circumstances." This warning
+    # surfaces the regulatory concern to operators in the runtime logs
+    # without changing any computed values (those await FPE review).
+    # An audit_notice key is added to the result so consumer UIs can
+    # display it alongside the spacing number.
+    audit_notice: Optional[str] = None
+    _SPOT_SMOKE_HIGH_CEILING_M = 6.096  # 20 ft per ECMAG / NFPA §17.7.1.11
+    if h > _SPOT_SMOKE_HIGH_CEILING_M:
+        audit_notice = (
+            f"⚠️ V120 AUDIT WARNING: ceiling {h:.2f} m > "
+            f"{_SPOT_SMOKE_HIGH_CEILING_M} m (20 ft). Per NFPA 72-2022 "
+            "§17.7.1.11 (stratification) and consistent FPE guidance "
+            "(ECMAG, SFPE Europe), spot-type smoke detection is "
+            "unreliable above this height. Consider: (a) projected beam "
+            "detectors per §17.7.4.6; (b) air-sampling per §17.7.4.7; "
+            "(c) performance-based design per Annex B. The returned "
+            "spacing value uses an under-review reduction formula — "
+            "see /SMOKE_SPACING_AUDIT_FINDING_1.md for details."
+        )
+        try:
+            import logging as _logging
+            _logger = _logging.getLogger("fireai.core.qomn_kernel")
+            _logger.warning(audit_notice)
+        except Exception:
+            # Logging failures must never break the engineering computation
+            pass
+
+    result = {
         "listed_spacing_m": round(spacing_m, 6),
         "coverage_radius_m": round(radius_m, 6),
         "wall_min_m": round(0.5 * spacing_m, 6),  # §17.7.4.2.3.1
@@ -400,6 +458,9 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
         "formula": "R = 0.7 × S [§17.7.4.2.3.1]",
         "computation_hash": result_hash,
     }
+    if audit_notice is not None:
+        result["audit_notice"] = audit_notice
+    return result
 
 
 def compute_heat_detector_spacing(

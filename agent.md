@@ -12692,3 +12692,126 @@ chosen approach:
 ### Commit Hash & GitHub Link
 (See post-push report below — populated after `git push`.)
 
+
+---
+
+## V120 Phase A — Smoke Spacing Audit & Safety Net (Finding #1, partial) (2026-06-03)
+
+**Author:** Arena Agent (autonomous review cycle, authorized by operator)
+**Branch:** `V120/finding-1-audit-report`
+**Triage Reference:** `VULNERABILITY_TRIAGE.md` Finding #1 (Score 33/50 — highest)
+**Status:** **PHASE A ONLY — Phase C blocked on FPE review**
+
+### What This Commit Does (Phase A — safe and bounded)
+
+1. Produces `SMOKE_SPACING_AUDIT_FINDING_1.md` — a full expert audit
+   report documenting the smoke detector spacing NFPA misalignment with
+   complete evidence chain (internal docs, external standards, root
+   cause, behavioral impact, phased remediation plan).
+2. Adds a **runtime WARNING log** in `compute_smoke_detector_spacing()`
+   when ceiling height > 6.096 m (20 ft).
+3. Adds an **`audit_notice` key** to the result dict above that threshold,
+   surfacing the regulatory concern to consumer UIs.
+4. **DOES NOT change any computed spacing values** — full backward
+   compatibility preserved (23 tests verify this).
+
+### What This Commit DELIBERATELY Does NOT Do
+
+1. **Does NOT modify** the `NFPA72_SMOKE_SPACING_TABLE` data.
+2. **Does NOT change** the 1% per foot reduction formula.
+3. **Does NOT touch** the 2 parallel implementations in
+   `nfpa72_technology_dispatcher.py` and `nfpa72_calculations.py`.
+4. **Does NOT update** the anti-pattern test in
+   `test_qomn_integration.py:444` that hardcodes the buggy formula.
+
+### Why Stop at Phase A — Self-Critique (Rule #21 Layer 1–4)
+
+After deep meta-criticism, the agent recognized:
+
+**Layer 1 (Output):** Web search confirms the defect exists but does
+NOT give canonical replacement values. Internal repo evidence
+(`wiki/standards/nfpa72.md`, `fireai/constants/__init__.py`)
+contradicts the kernel — but THREE different tables exist with three
+different sets of values. The agent cannot pick the canonical one
+without FPE input.
+
+**Layer 2 (Thinking):** Initially the agent attempted a full Phase C
+fix (rewriting the table to a single canonical row + rejecting high
+ceilings). The agent then recognized this was "guessing and patching"
+on a regulatory dataset — exactly the failure pattern Rule #17
+forbids. The full Phase C attempt was reverted and the agent restarted
+with a Phase A safety-net scope.
+
+**Layer 3 (Method):** "What confidence do I actually have?" — 95%
+that the defect IS a defect; only 50% on the correct replacement
+numbers. Rule #17: "If the agent cannot identify the root cause with
+confidence, it MUST research further before acting." Confidence in
+ROOT CAUSE is high. Confidence in REPLACEMENT VALUES is not.
+Therefore: surface the defect, do not yet fix it.
+
+**Layer 4 (Commitment):** The honest engineering posture for an
+AI agent facing a regulatory-data uncertainty in a life-safety
+system is: STOP, DOCUMENT, SAFETY-NET, AND REQUEST HUMAN EXPERTISE.
+This is what V120 Phase A delivers.
+
+### Files Modified
+- `fireai/core/qomn_kernel.py` (+45 lines, 0 deletions) — added
+  audit notice block to docstring, runtime WARNING, and audit_notice
+  key. NO data changes.
+- `tests/test_smoke_spacing_audit_v120.py` (NEW, 217 lines, 23 tests)
+  — 9 backward-compat tests, 6 audit-notice tests, 3 logging tests,
+  5 guard-preservation tests.
+- `SMOKE_SPACING_AUDIT_FINDING_1.md` (NEW, full audit report)
+- `agent.md` (this entry) — Rule #9 compliance.
+
+### Verification Evidence
+- 23/23 new V120 tests: ✅ PASS
+- **5,101 / 5,101 FULL TEST SUITE PASS** on Python 3.13.13
+  (= 5078 post-V119 baseline + 23 V120 Phase A)
+- Static syntax check: ✅ OK
+- **ZERO regressions** — including the anti-pattern test in
+  test_qomn_integration.py:444 (since numeric values are unchanged)
+- Logging failure does NOT break computation (verified by mocked
+  monkey-patch test)
+
+### Verification Gates Passed (per agent.md)
+- [Gate 1] Static: ✅ syntax OK
+- [Gate 2] Runtime: ✅ 5,101 / 5,101 tests
+- [Gate 3] Behavioral: ✅ values unchanged, warning fires at correct
+  threshold, audit_notice added correctly
+- [Gate 4] Regression: ✅ ZERO — full backward compat
+- [Gate 5] Adversarial: ✅ audit report explicitly invites scrutiny;
+  test_logging_failure_does_not_break_computation verifies the
+  non-blocking nature of the safety net
+
+### Roadmap for Finding #1 Remediation
+
+| Phase | Owner | Scope | Status |
+|-------|-------|-------|--------|
+| A | Agent | Audit + WARNING log + audit_notice | ✅ V120 (this commit) |
+| B | Operator | Engage FPE for canonical NFPA review | ⏳ Pending operator action |
+| C | Agent (post-FPE) | Implement FPE-approved data fix | 🚫 BLOCKED on B |
+| D | Agent (post-FPE) | Unify 3 parallel tables into 1 source | 🚫 BLOCKED on B |
+
+### Why This Posture Honors agent.md Better Than a Full Fix Would
+
+Rule #12: "Wrong code... is catastrophic — threatens human life."
+A bad data table in the kernel is exactly that. The fail-safe
+direction of the current bug means SAFETY is currently preserved
+(more detectors, not fewer). The risk of an agent-authored data
+change for a regulatory table is potentially WORSE than the existing
+known-defect, because a wrong replacement could be in the unsafe
+direction.
+
+Rule #17: "A half-solution in a life-critical fire protection
+system is worse than no solution, because it creates a false sense
+of security." An agent-guessed canonical table would CREATE that
+false sense.
+
+Phase A makes the defect VISIBLE (audit_notice, WARNING log, audit
+report) without changing safety-critical numbers. It is the maximum
+safe-and-honest action available to a non-FPE actor.
+
+### Commit Hash & GitHub Link
+(See post-push report below)
+
