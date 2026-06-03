@@ -26,7 +26,10 @@ if (sentryDsn) {
     release: `fireai-digital-twin@${import.meta.env.VITE_APP_VERSION || "1.0.0"}`,
     tracesSampleRate: 0.1,
     replaysSessionSampleRate: 0.0,
-    replaysOnErrorSampleRate: 1.0,
+    // SECURITY: Limit replay capture rate to 10% to reduce risk of
+    // capturing sensitive engineering data (fire alarm designs, building plans)
+    // in Sentry session replays. Full 1.0 rate could expose PII/building data.
+    replaysOnErrorSampleRate: 0.1,
     integrations: [
       Sentry.browserTracingIntegration(),
     ],

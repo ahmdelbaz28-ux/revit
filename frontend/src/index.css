@@ -35,6 +35,24 @@ body {
   min-height: 100vh;
 }
 
+/*
+ * SAFETY-CRITICAL: focus-visible styles ensure keyboard navigation
+ * is always visible. Fire alarm engineers MUST be able to navigate
+ * the interface using keyboard-only in emergency situations.
+ */
+
+/* Ensure visible focus indicators for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove default focus ring for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;

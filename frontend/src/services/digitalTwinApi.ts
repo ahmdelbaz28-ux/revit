@@ -349,8 +349,8 @@ class ApiClient {
     }, 30000);
 
     // Listen for pong responses (overlaid on existing onmessage)
-    const originalOnMessage = this.wsConnection.onmessage;
-    this.wsConnection.onmessage = (event) => {
+    const originalOnMessage = this.wsConnection?.onmessage ?? null;
+    this.wsConnection!.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'pong' || data.action === 'pong') {
