@@ -124,24 +124,29 @@ def _get_hmac_key() -> str:
             )
         return key
 
+    # -- Production enforcement --------------------------------
+    is_production = (
+        os.environ.get("FIREAI_ENV", "").lower() == "production"
+        or os.environ.get("PRODUCTION", "") == "1"
+        or os.environ.get("ENV", "").lower() == "production"
+    )
+    if is_production:
+        raise SecurityError(
+            "AUDIT_HMAC_KEY is not set in production environment. "
+            "Audit chain HMAC cannot be verified without a stable key. "
+            'Set AUDIT_HMAC_KEY: python -c "import secrets; print(secrets.token_hex(32))"'
+        )
     # -- Development fallback --------------------------------
-    # No AUDIT_HMAC_KEY set. Generate a per-process random key.
-    # This is NOT for production - the warning makes that clear.
     if _DEV_HMAC_KEY is None:
         import secrets as _secrets
-
         _DEV_HMAC_KEY = _secrets.token_hex(32)
-
     if not _DEV_KEY_WARNED:
         _DEV_KEY_WARNED = True
         logger.warning(
-            "\n"
-            "AUDIT_HMAC_KEY not set - using auto-generated dev key.\n"
-            "This is INSECURE for production!\n"
-            "Set AUDIT_HMAC_KEY env var (32+ chars) for production.\n"
-            'Generate: python -c "import secrets; print(secrets.token_hex(32))"'
+            "\n[SECURITY] AUDIT_HMAC_KEY not set — auto-generated dev key in use.\n"
+            "[SECURITY] Set FIREAI_ENV=production to enforce key requirement in prod.\n"
+            '[SECURITY] Generate: python -c "import secrets; print(secrets.token_hex(32))"'
         )
-
     return _DEV_HMAC_KEY
 
 
