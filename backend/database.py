@@ -208,27 +208,35 @@ class Database:
         return self.get_project(project_data["id"])
 
     def get_project(self, project_id: str) -> Optional[dict]:
-        """Get a project by ID, with device and connection counts."""
+        """Get a project by ID, with device and connection counts — single query."""
         with self._lock:
             cur = self._conn.cursor()
-            cur.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            cur.execute(
+                """
+                SELECT
+                    p.*,
+                    COALESCE(d.device_count, 0) AS device_count,
+                    COALESCE(c.connection_count, 0) AS connection_count
+                FROM projects p
+                LEFT JOIN (
+                    SELECT project_id, COUNT(*) AS device_count
+                    FROM devices
+                    GROUP BY project_id
+                ) d ON p.id = d.project_id
+                LEFT JOIN (
+                    SELECT project_id, COUNT(*) AS connection_count
+                    FROM connections
+                    GROUP BY project_id
+                ) c ON p.id = c.project_id
+                WHERE p.id = ?
+                """,
+                (project_id,),
+            )
             row = cur.fetchone()
             if not row:
                 return None
 
-            # Count devices and connections
-            cur.execute(
-                "SELECT COUNT(*) FROM devices WHERE project_id = ?",
-                (project_id,),
-            )
-            device_count = cur.fetchone()[0]
-            cur.execute(
-                "SELECT COUNT(*) FROM connections WHERE project_id = ?",
-                (project_id,),
-            )
-            connection_count = cur.fetchone()[0]
-
-        return self._row_to_project(row, device_count, connection_count)
+        return self._row_to_project(row, row["device_count"], row["connection_count"])
 
     def list_projects(
         self,
@@ -237,7 +245,7 @@ class Database:
         sort: str = "created_at",
         order: str = "desc",
     ) -> dict:
-        """List projects with pagination."""
+        """List projects with pagination — uses JOIN to avoid N+1 counts."""
         # Whitelist sort columns and order direction to prevent SQL injection
         _ALLOWED_PROJECT_SORTS = {"id", "name", "created_at", "updated_at", "status", "author"}
         if sort not in _ALLOWED_PROJECT_SORTS:
@@ -254,29 +262,36 @@ class Database:
             cur.execute("SELECT COUNT(*) FROM projects")
             total = cur.fetchone()[0]
 
-            # Get paginated results
+            # Get paginated results with device/connection counts in ONE query (no N+1)
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM projects ORDER BY {sort} {order} LIMIT ? OFFSET ?",  # noqa: S608 — sort/order whitelisted above
+                f"""
+                SELECT
+                    p.*,
+                    COALESCE(d.device_count, 0) AS device_count,
+                    COALESCE(c.connection_count, 0) AS connection_count
+                FROM projects p
+                LEFT JOIN (
+                    SELECT project_id, COUNT(*) AS device_count
+                    FROM devices
+                    GROUP BY project_id
+                ) d ON p.id = d.project_id
+                LEFT JOIN (
+                    SELECT project_id, COUNT(*) AS connection_count
+                    FROM connections
+                    GROUP BY project_id
+                ) c ON p.id = c.project_id
+                ORDER BY p.{sort} {order}
+                LIMIT ? OFFSET ?
+                """,  # noqa: S608 — sort/order whitelisted above
                 (limit, offset),
             )
             rows = cur.fetchall()
 
-            # Get counts for each project
-            projects = []
-            for row in rows:
-                pid = row["id"]
-                cur.execute(
-                    "SELECT COUNT(*) FROM devices WHERE project_id = ?",
-                    (pid,),
-                )
-                dc = cur.fetchone()[0]
-                cur.execute(
-                    "SELECT COUNT(*) FROM connections WHERE project_id = ?",
-                    (pid,),
-                )
-                cc = cur.fetchone()[0]
-                projects.append(self._row_to_project(row, dc, cc))
+            projects = [
+                self._row_to_project(row, row["device_count"], row["connection_count"])
+                for row in rows
+            ]
 
         total_pages = max(1, (total + limit - 1) // limit)
         return {

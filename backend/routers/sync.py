@@ -197,20 +197,22 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
 def _validate_ws_api_key(websocket: WebSocket) -> bool:
     """Check if the WebSocket connection provides a valid API key.
 
-    The key can be provided as:
-    - Query parameter: /ws?api_key=...
-    - First message after connect: {"action": "auth", "apiKey": "..."}
+    The key MUST be provided as the FIRST message after connect:
+    {"action": "auth", "apiKey": "..."}
+
+    Query parameter auth (ws?api_key=...) is DEPRECATED and REJECTED
+    because query parameters can be exposed in:
+    - Server access logs (nginx, Apache, load balancers)
+    - Browser history
+    - Referrer headers
+    - Proxy logs
     """
     if not _FIREAI_API_KEY:
         return True  # No API key configured → auth disabled
 
-    # Check query parameter — use constant-time comparison to prevent
-    # timing attacks (Rule 14: Security priority in agent.md).
-    import hmac
-    api_key = websocket.query_params.get("api_key", "")
-    if hmac.compare_digest(api_key, _FIREAI_API_KEY):
-        return True
-
+    # Query parameter auth is DEPRECATED for security — query params
+    # leak in server logs, browser history, and referrer headers.
+    # Only message-based auth is accepted.
     return False
 
 
@@ -221,8 +223,10 @@ async def websocket_endpoint(websocket: WebSocket):
     SECURITY:
     - Origin validation: Rejects cross-origin connections when API key is set
     - API key validation: Required when FIREAI_API_KEY is configured
-      - Can be provided as query param: ws://host/ws?api_key=YOUR_KEY
-      - Or as first message: {"action": "auth", "apiKey": "YOUR_KEY"}
+      - MUST be provided as FIRST message after connect:
+        {"action": "auth", "apiKey": "YOUR_KEY"}
+      - Query parameter auth (ws?api_key=...) is REJECTED — query params
+        leak in server access logs, browser history, referrer headers, proxies.
 
     Message format:
       Incoming: {"action": "subscribe", "projectId": "..."}
@@ -238,22 +242,20 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.close(code=4001, reason="Unauthorized origin")
         return
 
-    # ── API key check (via query param) ─────────────────────────────────
-    # Use constant-time comparison (hmac.compare_digest) to prevent timing attacks.
-    import hmac as _hmac
-    api_key_from_query = websocket.query_params.get("api_key", "")
+    # ── API key check (message-based only) ────────────────────────────────
+    # Query parameter auth is REJECTED for security (query params leak in
+    # server access logs, browser history, referrer headers, proxy logs).
     needs_auth = bool(_FIREAI_API_KEY)
-    auth_via_query = _hmac.compare_digest(api_key_from_query, _FIREAI_API_KEY) if needs_auth else True
 
-    # SECURITY FIX (BUG-28): Do NOT add to connection manager until authenticated.
+    # SECURITY FIX: Do NOT add to connection manager until authenticated.
     # Previously, manager.connect() was called BEFORE auth check, giving
     # unauthenticated clients a 5-second window to receive broadcast messages.
     # Now we accept the WebSocket first, verify auth, then add to manager.
     await websocket.accept()
 
-    # If auth is required and not provided via query param, wait for auth message
-    authenticated = auth_via_query
-    if needs_auth and not authenticated:
+    # If auth is required, wait for auth message
+    authenticated = not needs_auth
+    if needs_auth:
         try:
             # Wait up to 5 seconds for auth message
             raw = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
