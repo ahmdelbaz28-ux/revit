@@ -17,17 +17,26 @@ LIFE-SAFETY NOTE:
 
 from __future__ import annotations
 
+import hmac
 import logging
 import os
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends, Header
 
 from backend.services.workflow_service import (
     get_workflow_service,
     close_workflow_service,
     WorkflowService,
 )
+from backend.database import _FIREAI_API_KEY
+
+
+def verify_api_key_dep(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
+    """Verify API key from X-API-Key header."""
+    if _FIREAI_API_KEY and (not x_api_key or not hmac.compare_digest(x_api_key, _FIREAI_API_KEY)):
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing API key")
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +95,7 @@ def _validate_file_path(file_path: str) -> str:
         if not allowed_dir:
             continue
         allowed_real = os.path.realpath(allowed_dir)
-        if real_path.startswith(allowed_real):
+        if real_path == allowed_real or real_path.startswith(allowed_real + os.sep):
             return file_path  # OK — within allowed directory
 
     # If file doesn't exist yet (upload pending), check the parent path
@@ -97,7 +106,7 @@ def _validate_file_path(file_path: str) -> str:
         if not allowed_dir:
             continue
         allowed_real = os.path.realpath(allowed_dir)
-        if parent_dir.startswith(allowed_real):
+        if parent_dir == allowed_real or parent_dir.startswith(allowed_real + os.sep):
             return file_path
 
     raise HTTPException(
@@ -109,10 +118,11 @@ def _validate_file_path(file_path: str) -> str:
         ),
     )
 
+
 router = APIRouter(prefix="/workflow", tags=["workflow"])
 
 
-@router.post("/start")
+@router.post("/start", dependencies=[Depends(verify_api_key_dep)])
 async def start_workflow(
     file_path: str = Query(
         ..., min_length=1, max_length=1000,
@@ -152,10 +162,8 @@ async def start_workflow(
         # V114 FIX: Block skip_human_review in production environments.
         # NFPA 72 requires PE review for all fire alarm designs.
         # Allowing this in production is a direct violation of NFPA 72.
-        import os
         env = os.getenv("FIREAI_ENV", os.getenv("NODE_ENV", "production")).lower()
         if env not in ("development", "dev", "test", "testing"):
-            from fastapi import HTTPException
             raise HTTPException(
                 status_code=403,
                 detail=(
@@ -184,7 +192,7 @@ async def start_workflow(
     }
 
 
-@router.get("/{workflow_id}/status")
+@router.get("/{workflow_id}/status", dependencies=[Depends(verify_api_key_dep)])
 async def get_workflow_status(
     workflow_id: str,
 ):
@@ -209,7 +217,7 @@ async def get_workflow_status(
     }
 
 
-@router.post("/{workflow_id}/approve")
+@router.post("/{workflow_id}/approve", dependencies=[Depends(verify_api_key_dep)])
 async def approve_workflow(
     workflow_id: str,
     reviewer_comments: Optional[str] = Query(
@@ -250,7 +258,7 @@ async def approve_workflow(
     }
 
 
-@router.post("/{workflow_id}/reject")
+@router.post("/{workflow_id}/reject", dependencies=[Depends(verify_api_key_dep)])
 async def reject_workflow(
     workflow_id: str,
     reviewer_comments: Optional[str] = Query(
@@ -290,7 +298,7 @@ async def reject_workflow(
     }
 
 
-@router.get("/{workflow_id}/audit")
+@router.get("/{workflow_id}/audit", dependencies=[Depends(verify_api_key_dep)])
 async def get_audit_trail(
     workflow_id: str,
 ):

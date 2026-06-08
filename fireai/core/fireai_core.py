@@ -308,8 +308,11 @@ class FireAISystem:
         if run_resilience and len(detector_positions) > 0:
             try:
                 from fireai.core.monte_carlo_pipeline import MCPipelineAdapter
+                from fireai.core.nfpa72_models import get_smoke_detector_radius_safe
 
                 mc_adapter = MCPipelineAdapter(n_trials=500)  # Fast default for interactive use
+                # FIX: Use dynamic coverage radius based on room ceiling height
+                ceiling_height = room_spec.ceiling_spec.height_at_low_point_m if room_spec.ceiling_spec else 3.0
                 mc_result = mc_adapter._sim.simulate_room_reliability(
                     detectors=[
                         (d[0], d[1]) if isinstance(d, (list, tuple)) and len(d) >= 2 else (d.x, d.y)
@@ -318,7 +321,7 @@ class FireAISystem:
                     ],
                     room_width=room_spec.width_m,
                     room_length=room_spec.depth_m,
-                    coverage_radius=6.37,
+                    coverage_radius=get_smoke_detector_radius_safe(ceiling_height),
                 )
                 resilient = mc_result.get("is_reliable", False)
                 p_full = mc_result.get("p_full_coverage", 0.0)
@@ -696,6 +699,7 @@ class FireAISystem:
         if enable_monte_carlo:
             try:
                 from fireai.core.monte_carlo_pipeline import MCPipelineAdapter
+                from fireai.core.nfpa72_models import get_smoke_detector_radius_safe
 
                 mc_adapter = MCPipelineAdapter(n_trials=1000)
                 # Run MC on rooms from floor data
@@ -718,11 +722,14 @@ class FireAISystem:
                                         elif isinstance(d, (list, tuple)) and len(d) >= 2:
                                             det_tuples.append((float(d[0]), float(d[1])))
                                     if det_tuples:
+                                        # FIX: Use dynamic coverage radius based on ceiling height
+                                        ceiling_height = float(room.get("ceiling_height", 3.0))
+                                        coverage = get_smoke_detector_radius_safe(ceiling_height) if ceiling_height > 0 else 6.37
                                         sim_result = mc_adapter._sim.simulate_room_reliability(
                                             detectors=det_tuples,
                                             room_width=float(room.get("width", 10.0)),
                                             room_length=float(room.get("length", 8.0)),
-                                            coverage_radius=float(room.get("coverage_radius", 6.37)),
+                                            coverage_radius=coverage,
                                         )
                                         room_mc_results.append(sim_result)
                 mc_result = {

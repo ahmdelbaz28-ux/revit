@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import time
 from dataclasses import dataclass
 from enum import IntEnum
@@ -135,7 +136,7 @@ class AirQualityService:
     """
 
     WAQI_GEO_URL = "https://api.waqi.info/feed/geo:{lat};{lon}/"
-    WAQI_TOKEN = "demo"  # Free demo token — rate-limited but functional
+    WAQI_TOKEN = os.getenv("WAQI_API_TOKEN", "demo")  # Free demo token — rate-limited but functional
 
     def __init__(self, cache_ttl: float = 1800.0, request_timeout: float = 10.0):
         self._cache: dict[str, tuple[AirQualityData, float]] = {}
