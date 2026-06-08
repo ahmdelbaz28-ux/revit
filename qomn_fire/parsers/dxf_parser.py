@@ -16,17 +16,38 @@ group code 10/20 for LWPOLYLINE vertices) using lists instead of overwriting.
 BUG-11 FIX: _extract_polyline_points() now actually extracts vertices from the
 multi-value group codes, instead of always returning an empty list.
 
+V128 SECURITY HARDENING (Finding #5):
+    Path inputs are now validated by parsers._path_security before
+    reaching ezdxf. This closes:
+      - Path traversal (../../etc/passwd, /etc/, etc.)
+      - Null-byte truncation (C-string attack)
+      - Argument injection (leading '-' interpreted as flag)
+      - Files outside FIREAI_ALLOWED_UPLOAD_DIRS
+      - DoS via oversized files (configurable cap)
+
 Standards: AutoCAD DXF Specification, NFPA 72 (2022)
 """
 
 import logging
 import re
+import os
 from typing import Tuple, List
 
 from qomn_fire.core.types import Point3D, Wall, Room, Opening, Building
 from qomn_fire.core.errors import Result, GeometryError
+from parsers._path_security import (
+    UnsafePathError,
+    validate_input_path,
+    validate_file_size,
+)
 
 logger = logging.getLogger("qomn_fire.dxf_parser")
+
+# V128: Allowed extensions and size cap for DXF parser
+_DXF_ALLOWED_EXTENSIONS = frozenset({".dxf"})
+_DXF_MAX_FILE_SIZE_BYTES = int(
+    os.getenv("FIREAI_DXF_MAX_FILE_SIZE_BYTES", str(100 * 1024 * 1024))  # 100 MB
+)
 
 
 class DxfParser:
@@ -37,10 +58,53 @@ class DxfParser:
         """
         Parses DXF entities (LINES and LWPOLYLINES) into standard structural types.
         Citing: AutoCAD DXF Standards, NFPA 72 §17.
+
+        V128 SECURITY: Validates path BEFORE any file access via ezdxf.
+        Closes path traversal, null-byte, argument injection, and oversized file DoS.
         """
         walls: List[Wall] = []
         rooms: List[Room] = []
         openings: List[Opening] = []
+
+        # V128 SECURITY: Validate path BEFORE any file/subprocess access.
+        # This catches argument injection, path traversal, null bytes,
+        # bad extensions, and paths outside FIREAI_ALLOWED_UPLOAD_DIRS.
+        try:
+            safe_path = validate_input_path(
+                filepath,
+                allowed_extensions=_DXF_ALLOWED_EXTENSIONS,
+                parser_name="DXFParser",
+            )
+        except FileNotFoundError as e:
+            return Result(error=GeometryError(
+                message=str(e),
+                code_ref="OS File IO",
+                remedy="Verify file path and existence."
+            ))
+        except UnsafePathError as e:
+            return Result(error=GeometryError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with .dxf extension."
+            ))
+
+        # V128 SECURITY: Reject oversized files before any further work
+        try:
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_DXF_MAX_FILE_SIZE_BYTES,
+                parser_name="DXFParser",
+            )
+        except UnsafePathError as e:
+            return Result(error=GeometryError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="File exceeds size limit; split or reduce geometry complexity."
+            ))
+
+        # Use the RESOLVED (canonical) path for all subsequent operations.
+        # This prevents TOCTOU between validation and ezdxf call.
+        filepath = str(safe_path)
 
         # ── Try ezdxf first (production path) ──
         try:

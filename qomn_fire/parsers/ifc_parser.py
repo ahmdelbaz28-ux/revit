@@ -5,18 +5,39 @@ Parses IFC (Industry Foundation Classes) models and extracts geometric elements.
 Safety-Critical: Wrong IFC parsing = wrong building geometry = wrong fire protection.
 A room with wrong coordinates gets wrong detector coverage = people die.
 
+V128 SECURITY HARDENING (Finding #5):
+    Path inputs are now validated by parsers._path_security before
+    file I/O. This closes:
+      - Path traversal (../../etc/passwd, /etc/, etc.)
+      - Null-byte truncation (C-string attack)
+      - Argument injection (defense-in-depth)
+      - Files outside FIREAI_ALLOWED_UPLOAD_DIRS
+      - DoS via oversized files (configurable cap)
+
 Standards: ISO 16739 (IFC), ISO 10303-21 (STEP Physical File)
 """
 
 import re
 import math
 import logging
+import os
 from typing import Tuple, List
 
 from qomn_fire.core.types import Point3D, Wall, Room, Opening, Building
 from qomn_fire.core.errors import Result, GeometryError
+from parsers._path_security import (
+    UnsafePathError,
+    validate_input_path,
+    validate_file_size,
+)
 
 logger = logging.getLogger("qomn_fire.ifc_parser")
+
+# V128: Allowed extensions and size cap for IFC parser
+_IFC_ALLOWED_EXTENSIONS = frozenset({".ifc", ".ifcxml", ".json"})
+_IFC_MAX_FILE_SIZE_BYTES = int(
+    os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES", str(500 * 1024 * 1024))  # 500 MB
+)
 
 
 class IfcParser:
@@ -35,7 +56,47 @@ class IfcParser:
         if native ifcopenshell is not present.
 
         Citing: ISO 16739 (IFC Spatial Schemas), ISO 10303-21 (STEP).
+
+        V128 SECURITY: Validates path BEFORE any file I/O.
+        Closes path traversal, null-byte, argument injection, and oversized file DoS.
         """
+        # V128 SECURITY: Validate path BEFORE any file I/O.
+        try:
+            safe_path = validate_input_path(
+                filepath,
+                allowed_extensions=_IFC_ALLOWED_EXTENSIONS,
+                parser_name="IFCParser",
+            )
+        except FileNotFoundError as e:
+            return Result(error=GeometryError(
+                message=str(e),
+                code_ref="OS File IO",
+                remedy="Verify file path and existence."
+            ))
+        except UnsafePathError as e:
+            return Result(error=GeometryError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with .ifc/.ifcxml/.json extension."
+            ))
+
+        # V128 SECURITY: Reject oversized files before any further work
+        try:
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_IFC_MAX_FILE_SIZE_BYTES,
+                parser_name="IFCParser",
+            )
+        except UnsafePathError as e:
+            return Result(error=GeometryError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="File exceeds size limit; split or reduce model complexity."
+            ))
+
+        # Use the RESOLVED (canonical) path for the actual load (TOCTOU fix)
+        filepath = str(safe_path)
+
         try:
             with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()

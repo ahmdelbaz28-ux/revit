@@ -5,6 +5,12 @@ Guarantees file safety, size limits, and checks for physical file corruption.
 Safety-Critical: A corrupted BIM file produces wrong building geometry,
 which produces wrong fire protection designs, which can kill people.
 
+V128 SECURITY HARDENING (Finding #5):
+    Path inputs are now validated by parsers._path_security BEFORE
+    file_validator methods execute. The file_validator runs AFTER
+    format_detector (which already validates), but adds defense-in-depth
+    re-checks at its own entry point.
+
 Standards: ISO 10303-21 §6 (STEP file structure), AutoCAD DXF Specification
 """
 
@@ -14,6 +20,11 @@ from typing import Union
 
 from qomn_fire.core.errors import Result, FileValidationError, CorruptionError
 from qomn_fire.parsers.format_detector import FormatDetector
+from parsers._path_security import (
+    UnsafePathError,
+    validate_input_path,
+    validate_file_size,
+)
 
 
 # 1 Gigabyte safety limit — files larger than this likely contain
@@ -29,8 +40,51 @@ class FileValidator:
         """
         Validates file existence, readability, size limits, and returns file SHA-256 hash.
         Returns Result containing SHA-256 hex digest or error.
+
+        V128 SECURITY: Defense-in-depth path validation at validator entry.
+        FormatDetector already validates, but this adds a second gate.
         """
-        # ── Step 1: Existence check ──
+        # V128 SECURITY: Defense-in-depth path validation.
+        # FormatDetector already validated, but we re-validate here
+        # to catch any direct calls to FileValidator that bypass format_detector.
+        try:
+            safe_path = validate_input_path(
+                filepath,
+                # Allow all BIM formats for validation
+                allowed_extensions=frozenset({".ifc", ".ifcxml", ".json", ".dwg", ".dxf", ".rvt"}),
+                parser_name="FileValidator",
+            )
+        except FileNotFoundError as e:
+            return Result(error=FileValidationError(
+                message=str(e),
+                code_ref="OS IO API",
+                remedy="Verify file directory path and name parameters."
+            ))
+        except UnsafePathError as e:
+            return Result(error=FileValidationError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with valid BIM extension."
+            ))
+
+        # V128 SECURITY: Reject oversized files (also checked by format_detector)
+        try:
+            validate_file_size(
+                safe_path,
+                max_size_bytes=MAX_FILE_SIZE_BYTES,
+                parser_name="FileValidator",
+            )
+        except UnsafePathError as e:
+            return Result(error=FileValidationError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="File exceeds 1GB safety limit."
+            ))
+
+        # Use the RESOLVED (canonical) path for all subsequent operations (TOCTOU fix)
+        filepath = str(safe_path)
+
+        # ── Step 1: Existence check (redundant with validate_input_path but explicit) ──
         if not os.path.exists(filepath):
             return Result(error=FileValidationError(
                 message=f"File not found on disk at: '{filepath}'",
@@ -55,7 +109,7 @@ class FileValidator:
                 remedy="Discard corrupted empty export file."
             ))
 
-        # ── Step 4: Size limit check ──
+        # ── Step 4: Size limit check (also validated by validate_file_size) ──
         if file_size > MAX_FILE_SIZE_BYTES:
             return Result(error=FileValidationError(
                 message=f"File exceeds absolute 1GB safety limit ({file_size / (1024*1024):.1f}MB).",

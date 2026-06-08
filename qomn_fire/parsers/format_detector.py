@@ -8,6 +8,15 @@ Standards:
 - ISO 10303-21 (STEP Physical File)
 - OLE Compound File Binary Format (MS-CFB)
 
+V128 SECURITY HARDENING (Finding #5):
+    Path inputs are now validated by parsers._path_security before
+    file I/O. This closes:
+      - Path traversal (../../etc/passwd, /etc/, etc.)
+      - Null-byte truncation (C-string attack)
+      - Argument injection (defense-in-depth)
+      - Files outside FIREAI_ALLOWED_UPLOAD_DIRS
+      - DoS via oversized files (configurable cap)
+
 Safety-Critical: Wrong format detection = wrong parser = wrong building model = wrong fire protection.
 """
 
@@ -16,6 +25,16 @@ import re
 from typing import Tuple
 
 from qomn_fire.core.errors import Result, FormatError
+from parsers._path_security import (
+    UnsafePathError,
+    validate_input_path,
+    validate_file_size,
+)
+
+# V128: Allowed extensions and size cap for format detector
+_FORMAT_MAX_FILE_SIZE_BYTES = int(
+    os.getenv("FIREAI_FORMAT_MAX_FILE_SIZE_BYTES", str(100 * 1024 * 1024))  # 100 MB
+)
 
 
 class FormatDetector:
@@ -44,13 +63,47 @@ class FormatDetector:
         Returns Result containing (format, version) or FormatError.
 
         Citing: ISO 16739 & AutoCAD DXF Specifications.
+
+        V128 SECURITY: Validates path BEFORE any file I/O.
+        Closes path traversal, null-byte, argument injection, and oversized file DoS.
         """
-        if not os.path.exists(filepath):
+        # V128 SECURITY: Validate path BEFORE any file I/O.
+        try:
+            safe_path = validate_input_path(
+                filepath,
+                # Allow all BIM formats for format detection
+                allowed_extensions=frozenset({".ifc", ".ifcxml", ".json", ".dwg", ".dxf", ".rvt"}),
+                parser_name="FormatDetector",
+            )
+        except FileNotFoundError as e:
             return Result(error=FormatError(
-                message=f"Target file does not exist: '{filepath}'",
+                message=str(e),
                 code_ref="OS File IO Exception",
                 remedy="Ensure path correctness before parsing."
             ))
+        except UnsafePathError as e:
+            return Result(error=FormatError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with valid BIM extension."
+            ))
+
+        # V128 SECURITY: Reject oversized files before any further work
+        try:
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_FORMAT_MAX_FILE_SIZE_BYTES,
+                parser_name="FormatDetector",
+            )
+        except UnsafePathError as e:
+            return Result(error=FormatError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="File exceeds size limit."
+            ))
+
+        # Use the RESOLVED (canonical) path for all subsequent operations (TOCTOU fix)
+        filepath = str(safe_path)
 
         try:
             with open(filepath, "rb") as f:

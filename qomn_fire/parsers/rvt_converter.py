@@ -5,6 +5,15 @@ Converts binary Revit model files to IFC format for parsing.
 Safety-Critical: A failed conversion means no building model,
 which means no fire protection design. Converter must never silently
 produce corrupted output.
+
+V128 SECURITY HARDENING (Finding #5):
+    Path inputs are now validated by parsers._path_security before
+    subprocess invocation. This closes:
+      - Path traversal (../../etc/passwd, /etc/, etc.)
+      - Null-byte truncation (C-string attack)
+      - Argument injection (leading '-' interpreted as flag)
+      - Files outside FIREAI_ALLOWED_UPLOAD_DIRS
+      - DoS via oversized files (configurable cap)
 """
 
 import subprocess
@@ -12,6 +21,17 @@ import shutil
 import os
 
 from qomn_fire.core.errors import Result, ConversionError
+from parsers._path_security import (
+    UnsafePathError,
+    validate_input_path,
+    validate_file_size,
+)
+
+# V128: Allowed extensions and size cap for RVT converter
+_RVT_ALLOWED_EXTENSIONS = frozenset({".rvt"})
+_RVT_MAX_FILE_SIZE_BYTES = int(
+    os.getenv("FIREAI_RVT_MAX_FILE_SIZE_BYTES", str(2 * 1024 * 1024 * 1024))  # 2 GB
+)
 
 
 class RvtConverter:
@@ -22,13 +42,46 @@ class RvtConverter:
         """
         Converts binary Revit model into IFC file format.
         Returns Result containing output path or ConversionError.
+
+        V128 SECURITY: Validates source path BEFORE any file access or subprocess.
+        Closes path traversal, null-byte, argument injection, and oversized file DoS.
         """
-        if not os.path.exists(rvt_path):
+        # V128 SECURITY: Validate source path BEFORE any file access or subprocess.
+        try:
+            safe_path = validate_input_path(
+                rvt_path,
+                allowed_extensions=_RVT_ALLOWED_EXTENSIONS,
+                parser_name="RvtConverter",
+            )
+        except FileNotFoundError as e:
             return Result(error=ConversionError(
-                message="Source RVT file not found.",
+                message=str(e),
                 code_ref="File IO Exception",
                 remedy="Check source Revit file path."
             ))
+        except UnsafePathError as e:
+            return Result(error=ConversionError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with .rvt extension."
+            ))
+
+        # V128 SECURITY: Reject oversized files before any further work
+        try:
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_RVT_MAX_FILE_SIZE_BYTES,
+                parser_name="RvtConverter",
+            )
+        except UnsafePathError as e:
+            return Result(error=ConversionError(
+                message=f"SECURITY: {e}",
+                code_ref="Parser Security Gate",
+                remedy="File exceeds size limit; split model or use selective export."
+            ))
+
+        # Use the RESOLVED (canonical) path for all subsequent operations (TOCTOU fix)
+        rvt_path = str(safe_path)
 
         converter_bin = shutil.which("revit-extractor") or shutil.which("RevitCLI")
         if not converter_bin:
