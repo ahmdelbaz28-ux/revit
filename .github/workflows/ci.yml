@@ -56,16 +56,14 @@ jobs:
       #   run: ruff format --check fireai/
 
       - name: MyPy type check
-        run: mypy fireai/ qomn_conduit/ --ignore-missing-imports --no-strict-optional || true
-        # V53: mypy is advisory for now — strict mode not yet enforced.
-        # Ignores missing third-party stubs. Exit code does not block pipeline.
-        continue-on-error: true
+        run: mypy fireai/ qomn_conduit/ --ignore-missing-imports --no-strict-optional
+        # V129: mypy is now ENFORCING. Strict mode blocks pipeline on type errors.
+        # Ignores missing third-party stubs but fails on internal type violations.
 
       - name: Bandit security scan
         run: bandit -r fireai/ qomn_conduit/ -f json -o reports/bandit.json
-        # V50.2: Bandit generates informational JSON report. Exit code 1 on any
-        # finding (even LOW severity) would block the pipeline. The report is
-        # reviewed manually. HIGH severity findings must be addressed before merge.
+        # V129: Bandit JSON report generation continues on error (exit code 1 on LOW).
+        # The severity gate below enforces HIGH severity failure.
         continue-on-error: true
 
       - name: Bandit severity gate
@@ -120,12 +118,13 @@ jobs:
             --cov=fireai --cov=qomn_conduit \
             --cov-report=html:reports/coverage_html \
             --cov-report=term-missing \
-            --cov-fail-under=45 \
-            -x --ignore=tests/test_v22_hypothesis_radar.py
-            # V55: Coverage threshold set to 45% (up from 31% in V54).
-            # Path to 60%: add tests for remaining large modules
+            --cov-fail-under=50 \
+            -x
+            # V129: Coverage threshold raised to 50% (from 45%).
+            # Path to 60%: add tests for large uncovered modules
             # (digital_twin, multi_floor_orchestrator, routing_engine_v10,
-            # fireai_kernel_v30, stairwell_smoke_control, bps_allocator).
+            # fireai_kernel_v30, stairwell_smoke_control, bps_allocator,
+            # websocket_manager, mcp_server, tools, v17_core, qomn_conduit).
 
       - name: Upload coverage report
         if: always()
