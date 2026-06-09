@@ -324,6 +324,35 @@
 
 ## 12. Technical Debt to Address Before Scale
 
+### 12.0 Triple Audit Implementation Consolidation
+**Priority**: High
+**Effort**: 3-5 days
+**Benefit**: Unified tamper-evident audit chain; consistent HMAC verification; reduced maintenance burden
+**Risk of not implementing**: Three separate audit implementations exist with different schemas, different hash chain algorithms, and different HMAC approaches:
+- `fireai/core/audit_log.py` (QOMN Layer 4): canonical JSON hashing + `entry_hash` chain
+- `fireai/core/audit_store.py` (standalone): pipe-delimited string hashing + `previous_hash/current_hash` chain + ECDSA layer
+- `fireai/core/audit_trail.py` (simplified): independent SHA-256 per entry, **no chain linking between entries** — entries can be reordered undetected
+
+If `audit_log.py` and `audit_store.py` are both used in the same analysis, there is no mechanism to verify their combined chain integrity. `audit_trail.py` is weakest — tampering could reorder entries without detection.
+**When**: Before release (life-safety audit integrity)  
+**Evidence**: `fireai/core/audit_log.py:compute_entry_hash()` (line ~73) uses canonical JSON. `fireai/core/audit_store.py:_compute_hash()` (line ~229) uses pipe-delimited string. `fireai/core/audit_trail.py` has no `prev_hash` field — each entry is independently hashed.
+
+### 12.0.1 DeltaCache Content Hash Truncation (64-bit → 128-bit)
+**Priority**: High
+**Effort**: 1 hour
+**Benefit**: Eliminate birthday collision vulnerability in cache key hashing
+**Risk of not implementing**: `delta_cache.py:_content_hash()` truncates SHA-256 to **16 hex chars (64 bits)**. V114/V99 fixes upgraded `audit_trail.py` and `nfpa72_models.py` hash truncations to 32 chars (128 bits) for collision resistance. The DeltaCache still uses the old 64-bit truncation. With 50,000 cached entries, the birthday collision probability at 64 bits is ~1.4% — a cache collision means a wrong computation result is returned for a different room's query.
+**When**: Before release (1-hour fix, directly affects computation correctness)
+**Evidence**: `fireai/core/delta_cache.py:53` — `_content_hash()` truncates to 16 hex chars. V114 upgraded `audit_trail.py` to 32 chars but this file was missed.
+
+### 12.0.2 Placeholder Ridge Line for Sloped Ceilings
+**Priority**: Medium
+**Effort**: 2-3 days
+**Benefit**: Correct NFPA 72 Section 17.6.3.4 detector placement for gable/shed ceilings
+**Risk of not implementing**: `nfpa72_models.py:291` — `ridge_line` property returns hardcoded `(0, 0, 10, 0)`, explicitly marked "Placeholder". Sloped/gable ceiling detector placement uses this ridge to determine spacing zones. The placeholder produces incorrect placement for all non-flat ceilings.
+**When**: After release (placeholder is documented; flat ceilings work correctly which covers most cases)
+**Evidence**: `fireai/core/nfpa72_models.py:291` — `ridge_line` returns `(0, 0, 10, 0)`. NFPA 72 §17.6.3.4 requires ridge detection for sloped ceilings.
+
 ### 12.1 `calculate_battery_backup()` Deprecation Migration
 **Priority**: Medium  
 **Effort**: 1-2 days  
@@ -363,18 +392,20 @@
 | # | Improvement | Priority | Effort | Reason |
 |---|-------------|----------|--------|--------|
 | 1 | **Automated Database Backup** | Critical | 1-2 days | Safety-critical data loss risk with no backup |
-| 2 | **Reverse Proxy / TLS Termination** | High | 1-2 days | Production HTTPS is mandatory for safety-critical system |
-| 3 | **Weather Service Response Cache** | Medium | 1-2 days | External API rate limits will cause 429 failures |
-| 4 | **Metrics Endpoint (/api/metrics)** | High | 2-3 days | Production operators are blind without quantitative metrics |
-| 5 | **Backend Error Reporting** | Medium | 1-2 days | Frontend has Sentry; backend has nothing |
-| 6 | **OpenAPI/Swagger UI Enablement** | Medium | 1 hour | Interactive API docs for integrators |
-| 7 | **SQLite WAL Auto-Checkpoint Tuning** | Medium | 1 hour | Prevents WAL file unbounded growth |
-| 8 | **AWG Table 8/9 Migration** | Medium | 2-3 days | Life-safety accuracy (voltage drop calculations) |
-| 9 | **`calculate_battery_backup()` Migration** | Medium | 1-2 days | Remove 12 deprecation warnings, prevent future breakage |
-| 10 | **Request Latency Logging** | Medium | 1 day | Baseline for production monitoring |
-| 11 | **Composite Index on devices(project_id, type)** | Medium | 1 hour | Faster filtered device queries |
+| 2 | **DeltaCache Hash Truncation Fix (64→128 bit)** | High | 1 hour | Birthday collision risk returns wrong computation results |
+| 3 | **Triple Audit Implementation Consolidation** | High | 3-5 days | audit_trail.py has no chain linking — tampering undetected |
+| 4 | **Reverse Proxy / TLS Termination** | High | 1-2 days | Production HTTPS is mandatory for safety-critical system |
+| 5 | **Weather Service Response Cache** | Medium | 1-2 days | External API rate limits will cause 429 failures |
+| 6 | **Metrics Endpoint (/api/metrics)** | High | 2-3 days | Production operators are blind without quantitative metrics |
+| 7 | **Backend Error Reporting** | Medium | 1-2 days | Frontend has Sentry; backend has nothing |
+| 8 | **OpenAPI/Swagger UI Enablement** | Medium | 1 hour | Interactive API docs for integrators |
+| 9 | **SQLite WAL Auto-Checkpoint Tuning** | Medium | 1 hour | Prevents WAL file unbounded growth |
+| 10 | **AWG Table 8/9 Migration** | Medium | 2-3 days | Life-safety accuracy (voltage drop calculations) |
+| 11 | **`calculate_battery_backup()` Migration** | Medium | 1-2 days | Remove 12 deprecation warnings, prevent future breakage |
+| 12 | **Request Latency Logging** | Medium | 1 day | Baseline for production monitoring |
+| 13 | **Composite Index on devices(project_id, type)** | Medium | 1 hour | Faster filtered device queries |
 
-**Total before-release effort**: ~12-15 days
+**Total before-release effort**: ~15-18 days
 
 ### B) Improvements That Can Safely Wait Until AFTER Release
 
@@ -401,16 +432,18 @@
 
 ## Final Answer: "If this were your product, what would you improve before shipping it to real users?"
 
-**Before shipping, I would implement 5 critical items:**
+**Before shipping, I would implement 6 critical items:**
 
 1. **Automated database backup** — A safety-critical system storing fire alarm designs with no backup mechanism is unacceptable. A single disk failure or corruption event destroys all engineering data. This is a 1-2 day implementation (cron job + VACUUM INTO + volume snapshot) that eliminates the highest-impact risk.
 
-2. **Reverse proxy with TLS termination** — Production deployment without HTTPS means all engineering data (fire alarm designs, building plans, device locations) travels over the network in plaintext. For a safety-critical system, this violates basic security hygiene. Adding a caddy/nginx container to `docker-compose.yml` takes 1-2 days and provides automatic HTTPS via Let's Encrypt.
+2. **DeltaCache hash truncation fix** — `_content_hash()` truncates to 16 hex chars (64 bits), creating a birthday collision probability of ~1.4% at 50,000 cached entries. A collision returns the wrong computation result for a different room — a correctness bug in a safety-critical calculator. This is a 1-hour fix (change truncation from 16 to 32 chars, matching V114/V99 fixes already applied elsewhere).
 
-3. **Structured metrics endpoint** — Production operators currently have no quantitative visibility. They cannot detect slow endpoints, rising error rates, or cache degradation. The health check says "ok" but doesn't measure anything. A `/api/metrics` endpoint exposing request latency, error rates, computation time, and cache hit/miss ratios takes 2-3 days and is essential for operating a production system responsibly.
+3. **Reverse proxy with TLS termination** — Production deployment without HTTPS means all engineering data (fire alarm designs, building plans, device locations) travels over the network in plaintext. For a safety-critical system, this violates basic security hygiene. Adding a caddy/nginx container to `docker-compose.yml` takes 1-2 days and provides automatic HTTPS via Let's Encrypt.
 
-4. **Weather/geocoding response caching** — External API calls (NWS, WAQI, MeteoAlarm) happen on every request with no caching. These services have rate limits. Under moderate production usage, 429 errors will cascade into failed environmental data lookups, which cascade into failed NFPA 72 analyses. A simple TTL-based cache takes 1-2 days and prevents this entire failure chain.
+4. **Triple audit implementation consolidation** — Three separate audit systems (`audit_log.py`, `audit_store.py`, `audit_trail.py`) use different hash chain algorithms and different HMAC approaches. `audit_trail.py` has **no chain linking between entries** — entries can be reordered undetected, which defeats tamper detection for a safety-critical audit trail. Consolidation to one implementation with consistent HMAC-SHA256 chain linking is essential.
 
-5. **OpenAPI/Swagger UI enablement** — This is a 1-hour configuration change that transforms the developer experience. Third-party integrators, future team members, and QA engineers can immediately test API endpoints in the browser. It's free (FastAPI generates it automatically) and only needs environment-aware access control.
+5. **Structured metrics endpoint** — Production operators currently have no quantitative visibility. They cannot detect slow endpoints, rising error rates, or cache degradation. The health check says "ok" but doesn't measure anything. A `/api/metrics` endpoint exposing request latency, error rates, computation time, and cache hit/miss ratios takes 2-3 days and is essential for operating a production system responsibly.
 
-These 5 items total ~7-9 days of work and address the highest-impact risks: data loss, security, observability, reliability, and developer experience. Everything else can safely wait for v1.1.0.
+6. **Weather/geocoding response caching** — External API calls (NWS, WAQI, MeteoAlarm) happen on every request with no caching. These services have rate limits. Under moderate production usage, 429 errors will cascade into failed environmental data lookups, which cascade into failed NFPA 72 analyses. A simple TTL-based cache takes 1-2 days and prevents this entire failure chain.
+
+These 6 items total ~9-12 days of work and address the highest-impact risks: data loss, computation correctness, audit integrity, security, observability, and reliability. Everything else can safely wait for v1.1.0.
