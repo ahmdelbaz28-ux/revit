@@ -138,12 +138,16 @@ class TestResolveDbPath:
 
     def test_explicit_path(self):
         result = _resolve_db_path("/tmp/test_audit.db")
-        assert result == "/tmp/test_audit.db"
+        # Cross-platform: os.path.abspath normalizes the path
+        assert "test_audit.db" in result
+        assert result == os.path.abspath(result)  # must be absolute
 
     def test_env_variable(self):
         with patch.dict(os.environ, {"FIREAI_DB_PATH": "/tmp/env_audit.db"}):
             result = _resolve_db_path(None)
-            assert result == "/tmp/env_audit.db"
+            # Cross-platform: os.path.abspath normalizes the path
+            assert "env_audit.db" in result
+            assert result == os.path.abspath(result)  # must be absolute
 
     def test_default_path(self):
         with patch.dict(os.environ, {}, clear=True):

@@ -45,16 +45,43 @@ from backend.services.severe_weather_service import (
 from backend.services.hazmat_service import (
     HazmatService, HazardousMaterialData, MaterialGroup, TemperatureClass,
 )
-from backend.services.workflow_service import (
-    WorkflowService, PipelineState, WorkflowStatus,
-    get_workflow_service, close_workflow_service,
-)
-from backend.services.memory_service import (
-    MemoryService, MemoryAddRequest, MemorySearchRequest,
-    MemorySearchResponse, MemoryResult, MemoryServiceStatus,
-    MemoryScope, MemoryCategory,
-    get_memory_service, close_memory_service,
-)
+
+# Optional: Workflow Engine — requires langgraph (pip install fireai[workflow])
+try:
+    from backend.services.workflow_service import (
+        WorkflowService, PipelineState, WorkflowStatus,
+        get_workflow_service, close_workflow_service,
+    )
+    WORKFLOW_AVAILABLE = True
+except ImportError:
+    WORKFLOW_AVAILABLE = False
+    WorkflowService = None  # type: ignore[misc,assignment]
+    PipelineState = None  # type: ignore[misc,assignment]
+    WorkflowStatus = None  # type: ignore[misc,assignment]
+    get_workflow_service = None  # type: ignore[misc,assignment]
+    close_workflow_service = None  # type: ignore[misc,assignment]
+
+# Optional: Memory Layer — requires mem0 + qdrant-client (pip install fireai[memory])
+try:
+    from backend.services.memory_service import (
+        MemoryService, MemoryAddRequest, MemorySearchRequest,
+        MemorySearchResponse, MemoryResult, MemoryServiceStatus,
+        MemoryScope, MemoryCategory,
+        get_memory_service, close_memory_service,
+    )
+    MEMORY_AVAILABLE = True
+except ImportError:
+    MEMORY_AVAILABLE = False
+    MemoryService = None  # type: ignore[misc,assignment]
+    MemoryAddRequest = None  # type: ignore[misc,assignment]
+    MemorySearchRequest = None  # type: ignore[misc,assignment]
+    MemorySearchResponse = None  # type: ignore[misc,assignment]
+    MemoryResult = None  # type: ignore[misc,assignment]
+    MemoryServiceStatus = None  # type: ignore[misc,assignment]
+    MemoryScope = None  # type: ignore[misc,assignment]
+    MemoryCategory = None  # type: ignore[misc,assignment]
+    get_memory_service = None  # type: ignore[misc,assignment]
+    close_memory_service = None  # type: ignore[misc,assignment]
 
 __all__ = [
     # Phase 1
@@ -66,10 +93,10 @@ __all__ = [
     "AirQualityService", "AirQualityData",
     "SevereWeatherService", "SevereWeatherData", "WeatherAlert",
     "HazmatService", "HazardousMaterialData", "MaterialGroup", "TemperatureClass",
-    # Phase 3 — Workflow Engine
+    # Phase 3 — Workflow Engine (optional)
     "WorkflowService", "PipelineState", "WorkflowStatus",
     "get_workflow_service", "close_workflow_service",
-    # Phase 4 — Memory Layer
+    # Phase 4 — Memory Layer (optional)
     "MemoryService", "MemoryAddRequest", "MemorySearchRequest",
     "MemorySearchResponse", "MemoryResult", "MemoryServiceStatus",
     "MemoryScope", "MemoryCategory",

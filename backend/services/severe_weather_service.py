@@ -38,7 +38,10 @@ from __future__ import annotations
 import logging
 import re
 import time
-import xml.etree.ElementTree as ET
+try:
+    import defusedxml.ElementTree as ET  # nosec B314 — safe XML parser
+except ImportError:
+    import xml.etree.ElementTree as ET  # fallback when defusedxml unavailable
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -758,8 +761,8 @@ class SevereWeatherService:
         has_extreme_temp = False
 
         try:
-            # Parse Atom XML feed
-            root = ET.fromstring(response.text)
+            # Parse Atom XML feed (ET is defusedxml.ElementTree when available — noqa S314)
+            root = ET.fromstring(response.text)  # noqa: S314
 
             # Atom namespace
             ns = {

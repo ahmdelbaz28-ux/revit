@@ -337,6 +337,8 @@ class TestAuditLogInit:
             db_path = os.path.join(tmpdir, "test_audit.db")
             log = AuditLog(db_path)
             assert log._db_path == db_path
+            # V131 FIX: Close connection to avoid Windows file-lock during cleanup
+            log.close()
 
     def test_hmac_key_optional(self):
         """HMAC key is optional."""

@@ -50,12 +50,16 @@ dependencies = [
     # CAD/BIM Parsing
     "ezdxf>=1.2.0",
     "openpyxl>=3.1.0",
+    "pymupdf>=1.23.0",
+    "opencv-python>=4.8.0",
+    "pandas>=2.1.0",
     # AI / LLM Integration
     "httpx>=0.27.0",
     "aiohttp>=3.9.0",
     "google-generativeai>=0.5.0",
     # Security & Auth
     "cryptography>=42.0.0",
+    "defusedxml>=0.7.1",
     # Logging & Observability
     "loguru>=0.7.0",
     # Reporting
@@ -93,7 +97,7 @@ dev = [
 fireai = "fireai.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["fireai*", "backend*", "parsers*", "integration*", "facp_system*", "qomn_fire*", "qomn_conduit*"]
+include = ["fireai*", "backend*", "parsers*", "integration*", "facp_system*", "qomn_fire*", "qomn_conduit*", "core*"]
 exclude = ["tests*", "frontend*", "skills*", "wiki*"]
 
 [tool.setuptools.package-data]

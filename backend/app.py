@@ -169,17 +169,17 @@ async def lifespan(app: FastAPI):
     await close_hazmat_service()
     logger.info("External API services closed (Phase 1 + Phase 2)")
 
-    # Shutdown — close workflow service
-    from backend.services.workflow_service import close_workflow_service
+    # Shutdown — close workflow service (if available)
+    if WORKFLOW_ROUTER_AVAILABLE:
+        from backend.services.workflow_service import close_workflow_service
+        await close_workflow_service()
+        logger.info("Workflow service closed")
 
-    await close_workflow_service()
-    logger.info("Workflow service closed")
-
-    # Shutdown — close memory service
-    from backend.services.memory_service import close_memory_service
-
-    await close_memory_service()
-    logger.info("Memory service closed")
+    # Shutdown — close memory service (if available)
+    if MEMORY_ROUTER_AVAILABLE:
+        from backend.services.memory_service import close_memory_service
+        await close_memory_service()
+        logger.info("Memory service closed")
 
     # Shutdown — do NOT close the singleton; it would break hot-reload
     logger.info("Shutting down... FireAI Digital Twin API stopped")
@@ -779,10 +779,21 @@ from backend.routers import (
     conflicts,
     connections_v2,
     environment,
-    workflow,
-    memory,
     facp,
 )
+
+# Optional routers: only available when respective dependencies are installed
+try:
+    from backend.routers import workflow
+    WORKFLOW_ROUTER_AVAILABLE = True
+except ImportError:
+    WORKFLOW_ROUTER_AVAILABLE = False
+
+try:
+    from backend.routers import memory
+    MEMORY_ROUTER_AVAILABLE = True
+except ImportError:
+    MEMORY_ROUTER_AVAILABLE = False
 
 # Health check at /api/health
 app.include_router(health.router, prefix="/api")
@@ -817,11 +828,13 @@ app.include_router(connections_v2.router)
 # Environmental data at /api/environment (weather, geocoding, regulatory)
 app.include_router(environment.router, prefix="/api")
 
-# Workflow engine at /api/workflow (LangGraph State Machine)
-app.include_router(workflow.router, prefix="/api")
+# Workflow engine at /api/workflow (optional — requires langgraph)
+if WORKFLOW_ROUTER_AVAILABLE:
+    app.include_router(workflow.router, prefix="/api")
 
-# Memory layer at /api/memory (Mem0-based long-term memory)
-app.include_router(memory.router, prefix="/api")
+# Memory layer at /api/memory (optional — requires mem0 + qdrant-client)
+if MEMORY_ROUTER_AVAILABLE:
+    app.include_router(memory.router, prefix="/api")
 
 # FACP selection & compliance at /api/facp (NFPA 72 SS10.6.10, UL 864)
 app.include_router(facp.router, prefix="/api")

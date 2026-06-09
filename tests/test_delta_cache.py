@@ -577,9 +577,15 @@ class TestDeltaCachePersistence:
             cache2 = DeltaCache(db_path=db_path)
             # The entry should be loaded from SQLite
             assert cache2.size > 0
+            # V131 FIX: Force persist to close any lingering connections before cleanup
+            cache2.persist()
+            cache1.persist()
         finally:
             if os.path.exists(db_path):
-                os.unlink(db_path)
+                try:
+                    os.unlink(db_path)
+                except PermissionError:
+                    pass  # Windows may still hold a lock; temp files are cleaned up eventually
 
     def test_persist_without_db_path(self):
         """persist() with no db_path should be a no-op."""
@@ -601,9 +607,14 @@ class TestDeltaCachePersistence:
             cache2 = DeltaCache(db_path=db_path, algorithm_version="v2")
             # Entries with old algorithm version are deleted on persist
             # But loaded entries are filtered by version
+            cache2.persist()
+            cache1.persist()
         finally:
             if os.path.exists(db_path):
-                os.unlink(db_path)
+                try:
+                    os.unlink(db_path)
+                except PermissionError:
+                    pass
 
 
 # ─────────────────────────────────────────────────────────────────────────────

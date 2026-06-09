@@ -200,7 +200,7 @@ def calculate_conduit_fill(
         conduit_area = EMT_INTERNAL_AREA_1_MM2
     else:
         supported_sizes = sorted(set(
-            k.split(" ", 1)[1] for k in CONDUIT_INTERNAL_AREAS_MM2.keys()
+            k.split(" ", 1)[1] for k in CONDUIT_INTERNAL_AREAS_MM2
         ))
         return Result(error=ConduitFillError(
             message=f"Unsupported conduit size '{conduit_size}' for type '{conduit_type}'.",
