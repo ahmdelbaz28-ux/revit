@@ -27,7 +27,7 @@ class SystemGovernanceEngine:
                       idempotency_key: str,
                       risk_level: str = "low",
                       action_requires_write: bool = False,
-                      required_action: Optional[str] = None) -> tuple[bool, PolicyDecision, ExecutionTrace]:
+                      required_action: Optional[str] = None) -> Tuple[bool, PolicyDecision, ExecutionTrace]:
         """
         Process a request through the governance engine (THE HARD GATE)
         
@@ -72,7 +72,7 @@ class SystemGovernanceEngine:
             required_action=required_action
         )
     
-    def validate_and_approve(self, request: ExecutionRequest) -> tuple[PolicyDecision, ExecutionTrace]:
+    def validate_and_approve(self, request: ExecutionRequest) -> Tuple[PolicyDecision, ExecutionTrace]:
         """
         Validate and approve a pre-created request
         

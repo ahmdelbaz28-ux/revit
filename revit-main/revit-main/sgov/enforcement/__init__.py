@@ -4,7 +4,7 @@ SGL Enforcement Engine - Hard Gate Implementation
 
 import time
 import threading
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from ..models import ExecutionRequest, PolicyDecision, ExecutionTrace, ExecutionStatus
 from ..validation import InputValidationEngine
 from ..auth import AuthorizationEngine
@@ -25,7 +25,7 @@ class IdempotencyManager:
         self.cache: Dict[str, Any] = {}
         self._lock = threading.Lock()
     
-    def check_and_record(self, idempotency_key: str, request_data: Any) -> tuple[bool, Optional[Any]]:
+    def check_and_record(self, idempotency_key: str, request_data: Any) -> Tuple[bool, Optional[Any]]:
         """
         Check if request with this idempotency key has been processed before
         
@@ -66,7 +66,7 @@ class EnforcementEngine:
     def enforce_governance(self, 
                           request: ExecutionRequest, 
                           action_requires_write: bool = False,
-                          required_action: Optional[str] = None) -> tuple[bool, PolicyDecision, ExecutionTrace]:
+                          required_action: Optional[str] = None) -> Tuple[bool, PolicyDecision, ExecutionTrace]:
         """
         Enforce governance requirements for a request
         
@@ -205,7 +205,7 @@ class EnforcementEngine:
                           idempotency_key: str, 
                           risk_level: str = "low",
                           action_requires_write: bool = False,
-                          required_action: Optional[str] = None) -> tuple[bool, PolicyDecision, ExecutionTrace]:
+                          required_action: Optional[str] = None) -> Tuple[bool, PolicyDecision, ExecutionTrace]:
         """
         Convenience method to check if a request is allowed
         

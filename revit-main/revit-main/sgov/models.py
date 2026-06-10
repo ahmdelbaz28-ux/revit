@@ -92,7 +92,7 @@ class ExecutionRequest:
             role=Role(role.lower()),
             payload=payload,
             idempotency_key=idempotency_key,
-            risk_level=Risk(risk_level.lower()),
+            risk_level=RiskLevel(risk_level.lower()),
             timestamp=datetime.utcnow(),
             validated=False,
             metadata=metadata or {}
