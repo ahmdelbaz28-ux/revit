@@ -1,0 +1,14 @@
+{
+    "description": "NFPA 72 conduit fill example — 20×#14 THHN in ½\" EMT (VIOLATION)",
+    "conduit_type": "EMT",
+    "trade_size": "1/2",
+    "cable_diameters_in": [0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111, 0.111],
+    "expected": {
+        "fill_percentage": 44.094,
+        "max_allowed_pct": 40.0,
+        "is_compliant": false,
+        "status": "VIOLATION",
+        "recommended_size": "3/4"
+    },
+    "nec_reference": "NEC 2022 Chapter 9, Table 1 (20 conductors → 40% max, exceeds 40%)"
+}

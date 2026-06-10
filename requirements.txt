@@ -1,0 +1,83 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# FireAI — Safety-Critical Fire Protection Digital Twin
+# ═══════════════════════════════════════════════════════════════════════════
+# This file MUST be kept in sync with pyproject.toml [project] dependencies.
+# If you add a dependency to pyproject.toml, add it here too.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Core Web Framework
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+starlette>=0.36.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+python-multipart>=0.0.6
+websockets>=12.0
+
+# Data & Geometry
+shapely>=2.0.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+
+# CAD/BIM Parsing
+ezdxf>=1.2.0
+openpyxl>=3.1.0
+pymupdf>=1.23.0
+opencv-python>=4.8.0
+pandas>=2.1.0
+
+# HTTP Client & Retry
+httpx>=0.27.0
+aiohttp>=3.9.0
+tenacity>=8.2.0
+
+# AI / LLM Integration
+google-generativeai>=0.5.0
+
+# Security & Auth
+cryptography>=42.0.0
+defusedxml>=0.7.1
+
+# Logging & Observability
+loguru>=0.7.0
+
+# Reporting
+reportlab>=4.1.0
+Pillow>=10.0.0
+
+# Utilities
+packaging>=24.0
+
+# Testing (required by CI pipeline)
+hypothesis>=6.88.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Optional Dependencies — install with: pip install fireai[workflow,memory,ifc]
+# ═══════════════════════════════════════════════════════════════════════════
+# If NOT installed, affected endpoints return 503 (Service Unavailable).
+# The core API (projects, devices, connections, FACP, QOMN) works without these.
+
+# Workflow Engine — LangGraph State Machine
+#   Affects: /api/workflow/* endpoints
+#   Install: pip install fireai[workflow]  or  pip install langgraph>=0.1.0
+# langgraph>=0.1.0
+
+# Long-term Memory — Mem0 + Qdrant Vector DB
+#   Affects: /api/memory/* endpoints
+#   Install: pip install fireai[memory]  or  pip install mem0>=0.1.0 qdrant-client>=1.7.0
+# mem0>=0.1.0
+# qdrant-client>=1.7.0
+
+# IFC Support — ifcopenshell for Building Information Modeling
+#   Affects: /api/projects/:id/export/ifc endpoint
+#   Install: pip install fireai[ifc]  or  pip install ifcopenshell>=0.7.0
+# ifcopenshell>=0.7.0
+
+# Rate Limiting — slowapi as alternative to custom middleware
+#   Install: pip install fireai[ratelimit]  or  pip install slowapi>=0.1.9
+# slowapi>=0.1.9
+
+# Security Auditing — bandit + pip-audit
+#   Install: pip install fireai[audit]  or  pip install bandit>=1.7.0 pip-audit>=0.7.0
+# bandit>=1.7.0
+# pip-audit>=0.7.0

@@ -1,0 +1,50 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# FireAI — Docker Compose for Development and Testing
+# ═══════════════════════════════════════════════════════════════════════════
+# SAFETY NOTE: This is a safety-critical system.
+#   - Production deployments MUST use secrets management (not .env files)
+#   - All HMAC keys MUST be generated with cryptographically secure methods
+#   - CORS wildcards are ALWAYS rejected in production
+# ═══════════════════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+services:
+  # ─── FireAI API Server ──────────────────────────────────────────────────
+  fireai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fireai-api
+    ports:
+      - "8000:8000"
+    environment:
+      - FIREAI_ENV=${FIREAI_ENV:-production}
+      - FIREAI_API_KEY=${FIREAI_API_KEY:?ERROR: FIREAI_API_KEY must be set}
+      - FIREAI_EVIDENCE_HMAC_KEY=${FIREAI_EVIDENCE_HMAC_KEY:?ERROR: HMAC key must be set}
+      - FIREAI_MEMORY_LLM_PROVIDER=${FIREAI_MEMORY_LLM_PROVIDER:-gemini}
+      - FIREAI_MEMORY_LLM_MODEL=${FIREAI_MEMORY_LLM_MODEL:-gemini-2.0-flash}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - LOG_LEVEL=${LOG_LEVEL:-WARNING}
+      - DATABASE_URL=sqlite:///data/fireai.db
+    volumes:
+      - fireai-data:/app/data
+      - fireai-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=100M
+
+volumes:
+  fireai-data:
+    driver: local
+  fireai-logs:
+    driver: local

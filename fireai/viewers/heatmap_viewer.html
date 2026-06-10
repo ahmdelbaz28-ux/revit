@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<!--
+  heatmap_viewer.html — FireAI V24 3D Coverage Heatmap Viewer
+  WebGL / Three.js — no server required, open directly in browser.
+  Reads heatmap_export.json (drag-and-drop or via file picker).
+  Standards: NFPA 72-2022 §17.8.3.4 — coverage visualization.
+
+  Usage:
+    1. Run FireAI pipeline with export_heatmap_json()
+    2. Open this HTML file in a browser
+    3. Drag-and-drop the generated JSON file, or click "Open JSON File"
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FireAI V24 — 3D Coverage Heatmap</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#111; color:#eee; font-family:Arial,sans-serif; overflow:hidden; }
+  #canvas-container { width:100vw; height:100vh; position:relative; }
+  #ui { position:absolute; top:12px; left:12px; z-index:10; pointer-events:none; }
+  #ui h1 { font-size:16px; font-weight:bold; color:#fff; margin-bottom:6px; }
+  #stats { font-size:12px; line-height:1.8; background:rgba(0,0,0,0.65);
+           padding:10px 14px; border-radius:6px; }
+  #legend { margin-top:10px; background:rgba(0,0,0,0.65);
+            padding:10px 14px; border-radius:6px; font-size:12px; }
+  .legend-row { display:flex; align-items:center; margin:3px 0; }
+  .legend-dot { width:12px; height:12px; border-radius:50%; margin-right:8px; flex-shrink:0; }
+  #tooltip { position:absolute; background:rgba(0,0,0,0.82); color:#fff;
+             font-size:11px; padding:8px 12px; border-radius:5px; pointer-events:none;
+             display:none; z-index:20; line-height:1.6; min-width:180px; }
+  #dropzone { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+              text-align:center; color:#aaa; font-size:18px; }
+  #dropzone small { display:block; margin-top:8px; font-size:13px; color:#666; }
+  #file-btn { margin-top:14px; padding:8px 20px; background:#1a6fc4; color:#fff;
+              border:none; border-radius:4px; cursor:pointer; font-size:14px;
+              pointer-events:all; }
+  #controls { position:absolute; bottom:16px; right:16px; z-index:10;
+              background:rgba(0,0,0,0.65); padding:10px 14px; border-radius:6px;
+              font-size:11px; color:#bbb; pointer-events:none; }
+  #filter-panel { position:absolute; top:12px; right:12px; z-index:10;
+                  background:rgba(0,0,0,0.65); padding:10px 14px; border-radius:6px;
+                  font-size:12px; }
+  #filter-panel label { display:flex; align-items:center; margin:3px 0; cursor:pointer; }
+  #filter-panel input[type=checkbox] { margin-right:6px; cursor:pointer; }
+  #filter-panel input[type=range] { width:120px; margin-left:8px; }
+</style>
+</head>
+<body>
+
+<div id="canvas-container">
+  <canvas id="canvas"></canvas>
+
+  <div id="ui">
+    <h1>FireAI V24 — Coverage Heatmap</h1>
+    <div id="stats">Load a heatmap JSON to begin.</div>
+    <div id="legend" style="display:none">
+      <b>Coverage Classes</b>
+      <div class="legend-row"><div class="legend-dot" style="background:#00AA44"></div>Redundant (Optical + Acoustic)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#FFD700"></div>Optical Only</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#FF8C00"></div>Acoustic Only</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#CC0000"></div>Blind Spot</div>
+    </div>
+  </div>
+
+  <div id="filter-panel" style="display:none">
+    <b>Filter</b><br>
+    <label><input type="checkbox" id="f-red" checked> Redundant</label>
+    <label><input type="checkbox" id="f-opt" checked> Optical Only</label>
+    <label><input type="checkbox" id="f-aco" checked> Acoustic Only</label>
+    <label><input type="checkbox" id="f-bsp" checked> Blind Spot</label>
+    <br><br>
+    <label>Point size: <input type="range" id="pt-size" min="1" max="20" value="6"></label>
+    <br>
+    <label>Z-slice: <input type="range" id="z-slice" min="0" max="100" value="100"> all</label>
+  </div>
+
+  <div id="dropzone">
+    <div>Drop heatmap JSON here</div>
+    <small>or click to browse</small>
+    <br>
+    <button id="file-btn" onclick="document.getElementById('file-input').click()">
+      Open JSON File
+    </button>
+    <input type="file" id="file-input" accept=".json" style="display:none">
+  </div>
+
+  <div id="tooltip"></div>
+
+  <div id="controls">
+    Orbit: drag | Zoom: scroll | Pan: right-drag
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// Scene setup
+const canvas    = document.getElementById('canvas');
+const renderer  = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x111111);
+
+const scene     = new THREE.Scene();
+scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+scene.add(new THREE.DirectionalLight(0xffffff, 0.8));
+
+const camera    = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.01, 10000);
+camera.position.set(10, 10, 20);
+
+const controls  = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+
+// State
+let allPoints    = [];
+let pointsMesh   = null;
+let ptSize       = 6;
+let zMax         = Infinity;
+let filterSet    = new Set(['REDUNDANT_HYBRID','OPTICAL_ONLY','ACOUSTIC_ONLY','BLIND_SPOT']);
+const CLASS_COLOR= {
+  REDUNDANT_HYBRID: new THREE.Color('#00AA44'),
+  OPTICAL_ONLY:     new THREE.Color('#FFD700'),
+  ACOUSTIC_ONLY:    new THREE.Color('#FF8C00'),
+  BLIND_SPOT:       new THREE.Color('#CC0000'),
+};
+
+// Load data
+function loadData(json) {
+  allPoints = json.points || [];
+  updateStats(json.statistics || {});
+  document.getElementById('dropzone').style.display = 'none';
+  document.getElementById('legend').style.display   = 'block';
+  document.getElementById('filter-panel').style.display = 'block';
+
+  // Z-slice range
+  const zs = allPoints.map(p=>p.z);
+  const zMin2=Math.min(...zs), zMax2=Math.max(...zs);
+  const zSlider = document.getElementById('z-slice');
+  zSlider.min=0; zSlider.max=100; zSlider.value=100;
+  zSlider.oninput = ()=>{
+    zMax = zMin2 + (zMax2-zMin2)*(+zSlider.value/100);
+    zSlider.nextSibling.textContent = zSlider.value==100 ? ' all' : ` z<=${zMax.toFixed(1)}m`;
+    rebuildMesh();
+  };
+  document.getElementById('pt-size').oninput = e=>{
+    ptSize=+e.target.value; if(pointsMesh) pointsMesh.material.size=ptSize;
+  };
+  ['red','opt','aco','bsp'].forEach((id,i)=>{
+    const cls=['REDUNDANT_HYBRID','OPTICAL_ONLY','ACOUSTIC_ONLY','BLIND_SPOT'][i];
+    document.getElementById('f-'+id).onchange=e=>{
+      e.target.checked ? filterSet.add(cls) : filterSet.delete(cls);
+      rebuildMesh();
+    };
+  });
+
+  rebuildMesh();
+  fitCamera();
+}
+
+function rebuildMesh() {
+  if(pointsMesh){ scene.remove(pointsMesh); pointsMesh.geometry.dispose(); pointsMesh=null; }
+  const visible = allPoints.filter(p=>
+    filterSet.has(p.class) && p.z <= zMax
+  );
+  if(!visible.length) return;
+
+  const geo  = new THREE.BufferGeometry();
+  const pos  = new Float32Array(visible.length*3);
+  const col  = new Float32Array(visible.length*3);
+
+  visible.forEach((p,i)=>{
+    pos[i*3]=p.x; pos[i*3+1]=p.z; pos[i*3+2]=-p.y;  // Y-up for Three.js
+    const c = CLASS_COLOR[p.class] || new THREE.Color('#888888');
+    col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b;
+  });
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+
+  const mat = new THREE.PointsMaterial({
+    size: ptSize, vertexColors:true, sizeAttenuation:true,
+    transparent:true, opacity:0.88,
+  });
+  pointsMesh = new THREE.Points(geo, mat);
+  pointsMesh.userData.points = visible;
+  scene.add(pointsMesh);
+}
+
+function fitCamera() {
+  if(!allPoints.length) return;
+  const xs=allPoints.map(p=>p.x), ys=allPoints.map(p=>p.y), zs=allPoints.map(p=>p.z);
+  const cx=(Math.min(...xs)+Math.max(...xs))/2;
+  const cy=(Math.min(...ys)+Math.max(...ys))/2;
+  const cz=(Math.min(...zs)+Math.max(...zs))/2;
+  const span=Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys))*1.5;
+  controls.target.set(cx, cz, -cy);
+  camera.position.set(cx+span*0.6, cz+span*0.4, -cy+span*0.8);
+  controls.update();
+}
+
+function updateStats(s) {
+  document.getElementById('stats').innerHTML =
+    `<b>Total points:</b> ${s.total_points||0}<br>`+
+    `<span style="color:#00AA44">&#9632;</span> Redundant: ${s.redundant_hybrid_pct||0}%<br>`+
+    `<span style="color:#FFD700">&#9632;</span> Optical Only: ${s.optical_only_pct||0}%<br>`+
+    `<span style="color:#FF8C00">&#9632;</span> Acoustic Only: ${s.acoustic_only_pct||0}%<br>`+
+    `<span style="color:#CC0000">&#9632;</span> Blind Spots: <b>${s.blind_spot_pct||0}%</b>`;
+}
+
+// Tooltip (raycaster)
+const raycaster= new THREE.Raycaster();
+const mouse    = new THREE.Vector2();
+const tooltip  = document.getElementById('tooltip');
+raycaster.params.Points.threshold = 0.5;
+
+renderer.domElement.addEventListener('mousemove', e=>{
+  mouse.x =  (e.clientX/innerWidth)*2-1;
+  mouse.y = -(e.clientY/innerHeight)*2+1;
+  raycaster.setFromCamera(mouse, camera);
+  if(!pointsMesh){ tooltip.style.display='none'; return; }
+  const hits = raycaster.intersectObject(pointsMesh);
+  if(hits.length){
+    const idx = hits[0].index;
+    const pt  = pointsMesh.userData.points[idx];
+    tooltip.style.display='block';
+    tooltip.style.left=(e.clientX+14)+'px';
+    tooltip.style.top =(e.clientY-10)+'px';
+    tooltip.innerHTML=
+      `<b>${pt.class.replace(/_/g,' ')}</b><br>`+
+      `X:${pt.x.toFixed(2)} Y:${pt.y.toFixed(2)} Z:${pt.z.toFixed(2)}<br>`+
+      `Optical detectors: ${pt.optical_count}<br>`+
+      (pt.acoustic_snr_db!=null?`Acoustic SNR: ${pt.acoustic_snr_db.toFixed(1)} dB<br>`:'Acoustic SNR: --<br>');
+  } else {
+    tooltip.style.display='none';
+  }
+});
+
+// File loading
+function handleFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{ try{ loadData(JSON.parse(e.target.result)); }
+                     catch(err){ alert('Invalid JSON: '+err.message); } };
+  reader.readAsText(file);
+}
+document.getElementById('file-input').onchange=e=>{
+  if(e.target.files[0]) handleFile(e.target.files[0]);
+};
+document.body.addEventListener('dragover', e=>e.preventDefault());
+document.body.addEventListener('drop', e=>{
+  e.preventDefault();
+  const f=e.dataTransfer.files[0];
+  if(f&&f.name.endsWith('.json')) handleFile(f);
+});
+
+// Resize
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+// Render loop
+function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); }
+animate();
+</script>
+</body>
+</html>

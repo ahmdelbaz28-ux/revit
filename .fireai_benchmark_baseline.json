@@ -1,0 +1,70 @@
+{
+  "fireai_version": "29.0.0",
+  "timestamp": 1780985106.6425474,
+  "benchmarks": {
+    "point3d_creation": {
+      "name": "point3d_creation",
+      "ops_per_sec": 466859.0,
+      "latency_us": 2.142,
+      "n_iterations": 500000,
+      "std_dev_pct": 0.39,
+      "is_stub": false
+    },
+    "geometry_area_4pt": {
+      "name": "geometry_area_4pt",
+      "ops_per_sec": 4081600.0,
+      "latency_us": 0.245,
+      "n_iterations": 500000,
+      "std_dev_pct": 0.36,
+      "is_stub": false
+    },
+    "geometry_perimeter_4pt": {
+      "name": "geometry_perimeter_4pt",
+      "ops_per_sec": 276919.0,
+      "latency_us": 3.611,
+      "n_iterations": 500000,
+      "std_dev_pct": 0.12,
+      "is_stub": false
+    },
+    "db_add_element": {
+      "name": "db_add_element",
+      "ops_per_sec": 14400.0,
+      "latency_us": 69.445,
+      "n_iterations": 5000,
+      "std_dev_pct": 4.94,
+      "is_stub": false
+    },
+    "db_batch_1000": {
+      "name": "db_batch_1000",
+      "ops_per_sec": 64182.0,
+      "latency_us": 15.581,
+      "n_iterations": 5,
+      "std_dev_pct": 3.2,
+      "is_stub": false
+    },
+    "assemble_10k_rooms": {
+      "name": "assemble_10k_rooms",
+      "ops_per_sec": 10554.0,
+      "latency_us": 94.75,
+      "n_iterations": 1,
+      "std_dev_pct": 0.0,
+      "is_stub": false
+    },
+    "delta_cache_hit": {
+      "name": "delta_cache_hit",
+      "ops_per_sec": 63297.0,
+      "latency_us": 15.798,
+      "n_iterations": 500000,
+      "std_dev_pct": 0.24,
+      "is_stub": false
+    },
+    "delta_cache_miss": {
+      "name": "delta_cache_miss",
+      "ops_per_sec": 37410.0,
+      "latency_us": 26.731,
+      "n_iterations": 10000,
+      "std_dev_pct": 2.01,
+      "is_stub": false
+    }
+  }
+}

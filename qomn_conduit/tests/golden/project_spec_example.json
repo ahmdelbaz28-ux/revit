@@ -1,0 +1,12 @@
+{
+    "description": "Project spec example — 1 conductor in ½\" EMT",
+    "conduit_type": "EMT",
+    "trade_size": "1/2",
+    "cable_diameters_in": [0.111],
+    "expected": {
+        "fill_percentage": 3.194,
+        "max_allowed_pct": 53.0,
+        "is_compliant": true,
+        "status": "COMPLIANT"
+    }
+}

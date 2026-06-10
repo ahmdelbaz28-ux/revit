@@ -1,0 +1,105 @@
+# ============================================================
+# FireAI NFPA 72 Rules Engine — .gitignore
+# Safety-critical system: never commit runtime/binary artifacts
+# ============================================================
+
+# Python bytecode — NEVER commit compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+fireai.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.python-version
+
+# Test and coverage artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+.hypothesis/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/build/
+frontend/.cache/
+*.tsbuildinfo
+
+# Databases — NEVER commit SQLite or vector DB files
+# These contain runtime state and project data, not source code
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+data/qdrant*/
+data/mem0*/
+data/checkpoints/
+
+# Environment & secrets — CRITICAL: NEVER commit API keys or credentials
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+!.env.example
+
+# Editor / OS artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# Runtime data directories
+data/
+uploads/
+checkpoints/
+logs/
+*.log
+
+# Empty placeholder directories (artifact of git reset operations)
+# NOTE: core/ removed — fireai/core/ is source code, not an artifact
+# NOTE: backend/ REMOVED from gitignore — backend source code MUST be tracked
+repos/
+download/
+fireai/infrastructure/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+.env
+repos/
+qomn_fire_healing_audit.jsonl
+audit/
+qomn_fire_healing_audit.jsonl
+coverage.json
+reports/
+fireai_learning.sqlite3
+
+# Local pip dependencies (never commit)
+.pip_deps/
