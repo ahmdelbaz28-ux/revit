@@ -393,7 +393,7 @@ class MLPipeline:
     ) -> ModelArtifact:
         if hyperparameters is None:
             hyperparameters = {}
-        if not features.features or not features.target:
+        if not features.features:
             raise ValueError("features must contain data and target")
 
         X = features.features
