@@ -285,6 +285,7 @@ _PER_PATH_LIMITS = [
     ("/api/projects", 30, 60),  # Project listing only (shorter prefix)
     ("/api/analyze", 10, 60),
     ("/api/qomn", 10, 60),
+    ("/api/parse-dwg", 5, 60),  # DWG parsing is CPU+subprocess intensive
     ("/api/facp", 15, 60),  # FACP selection/compliance (less compute-intensive than QOMN)
 ]
 
@@ -771,6 +772,7 @@ from backend.routers import (
     projects,
     devices,
     connections,
+    dwg,
     reports,
     exports,
     sync,
@@ -842,6 +844,9 @@ app.include_router(facp.router, prefix="/api")
 
 # QOMN engineering kernel at /api/qomn (NFPA 72, NEC 2023)
 app.include_router(qomn.router, prefix="/api")
+
+# DWG/DXF parsing at /api/parse-dwg
+app.include_router(dwg.router, prefix="/api")
 
 # WebSocket at /ws
 app.include_router(sync.ws_router)
