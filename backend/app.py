@@ -780,6 +780,7 @@ from backend.routers import (
     connections_v2,
     environment,
     facp,
+    qomn,
 )
 
 # Optional routers: only available when respective dependencies are installed
@@ -838,6 +839,9 @@ if MEMORY_ROUTER_AVAILABLE:
 
 # FACP selection & compliance at /api/facp (NFPA 72 SS10.6.10, UL 864)
 app.include_router(facp.router, prefix="/api")
+
+# QOMN engineering kernel at /api/qomn (NFPA 72, NEC 2023)
+app.include_router(qomn.router, prefix="/api")
 
 # WebSocket at /ws
 app.include_router(sync.ws_router)
