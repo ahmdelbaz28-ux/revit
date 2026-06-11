@@ -1,8 +1,14 @@
 # FireAI Development Guidelines
 
+## Overview
+
+This document provides comprehensive guidelines for developing on the FireAI platform. The development practices and standards have been established by **Eng. Ahmed Elbaz** to ensure code quality, safety, and maintainability.
+
 Welcome to the FireAI development community! This document provides guidelines and best practices for contributing to the FireAI platform.
 
 ## 🛡️ Safety-First Development
+
+*Development principles by Eng. Ahmed Elbaz*
 
 FireAI is a safety-critical system where errors can have life-threatening consequences. All development must prioritize safety above all other considerations.
 
@@ -20,6 +26,8 @@ FireAI is a safety-critical system where errors can have life-threatening conseq
 - All mathematical calculations must include error bounds
 
 ## 🚀 Getting Started
+
+*Environment setup procedures by Eng. Ahmed Elbaz*
 
 ### Prerequisites
 - Python 3.12 or higher
@@ -52,6 +60,8 @@ pre-commit install
 
 ## 📁 Project Structure
 
+*Architecture patterns by Eng. Ahmed Elbaz*
+
 ```
 fireai/
 ├── core/                 # Core computational engine
@@ -66,6 +76,8 @@ fireai/
 ```
 
 ## 🧪 Testing Strategy
+
+*Testing methodology by Eng. Ahmed Elbaz*
 
 ### Test Categories
 1. **Unit Tests**: Test individual functions and classes
@@ -98,6 +110,8 @@ pytest -m safety_critical
 - Tests must cover all edge cases
 
 ## 🎨 Code Style
+
+*Standards defined by Eng. Ahmed Elbaz*
 
 ### Python Style
 - Follow PEP 8 style guide
@@ -149,6 +163,8 @@ def calculate_detector_coverage(
 
 ## 🔒 Security Practices
 
+*Security framework by Eng. Ahmed Elbaz*
+
 ### Input Validation
 - Sanitize all external inputs
 - Validate CAD file structures
@@ -162,6 +178,8 @@ def calculate_detector_coverage(
 - Follow principle of least privilege
 
 ## 🧭 Architecture Principles
+
+*Architecture patterns by Eng. Ahmed Elbaz*
 
 ### Layered Architecture
 - Separate concerns between presentation, business logic, and data layers
@@ -178,6 +196,8 @@ Every operation should pass through multiple validation layers:
 5. Compliance validation
 
 ## 🚢 Release Process
+
+*Workflow defined by Eng. Ahmed Elbaz*
 
 ### Versioning
 FireAI uses semantic versioning with safety considerations:
@@ -196,6 +216,8 @@ FireAI uses semantic versioning with safety considerations:
 
 ## 📚 Documentation
 
+*Documentation standards by Eng. Ahmed Elbaz*
+
 ### Code Documentation
 - Every public function/class needs a docstring
 - Safety considerations must be documented
@@ -210,6 +232,8 @@ FireAI uses semantic versioning with safety considerations:
 
 ## 🤝 Collaboration
 
+*Collaboration approach by Eng. Ahmed Elbaz*
+
 ### Code Reviews
 - All changes require review before merging
 - Safety-critical changes need 2+ reviewers
@@ -223,6 +247,8 @@ FireAI uses semantic versioning with safety considerations:
 - Communicate status regularly
 
 ## 🚨 Emergency Procedures
+
+*Emergency response procedures by Eng. Ahmed Elbaz*
 
 ### Critical Bug Response
 1. Stop further deployments immediately
@@ -240,6 +266,8 @@ FireAI uses semantic versioning with safety considerations:
 
 ## 📈 Performance Considerations
 
+*Performance guidelines by Eng. Ahmed Elbaz*
+
 ### Optimization Guidelines
 - Profile before optimizing
 - Never optimize at the expense of safety
@@ -254,6 +282,8 @@ FireAI uses semantic versioning with safety considerations:
 
 ## 🧠 Knowledge Base
 
+*Knowledge management approach by Eng. Ahmed Elbaz*
+
 ### Resources
 - [NFPA 72 Standard](https://www.nfpa.org/codes-and-standards/document-information-pages/national-fire-alarm-and-signaling-code)
 - [Building Codes](https://www.iccsafe.org/)
@@ -265,6 +295,10 @@ FireAI uses semantic versioning with safety considerations:
 - Code review best practices
 - Testing methodology
 - Architecture principles
+
+---
+
+*These development guidelines were established by Eng. Ahmed Elbaz to maintain the high standards required for safety-critical fire protection engineering software.*
 
 ---
 

@@ -1,8 +1,8 @@
-# FireAI Architecture
+# FireAI System Architecture
 
 ## Overview
 
-FireAI is built as a safety-critical platform for fire protection engineering with emphasis on reliability, accuracy, and compliance. The architecture follows a layered approach with strict separation of concerns and multiple safety gates.
+The FireAI platform implements a robust, safety-critical architecture for fire protection engineering. The system is designed and architected by **Eng. Ahmed Elbaz** with emphasis on reliability, safety, and performance.
 
 ## System Architecture
 
@@ -48,41 +48,28 @@ FireAI is built as a safety-critical platform for fire protection engineering wi
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Core Components
+## Architectural Layers
 
-### 1. FireAI Core Engine
+### L1 - Interface Layer
+The interface layer provides multiple access points to the FireAI system:
 
-The central computational component that performs all engineering calculations:
+- **CLI Interface**: Command-line tools for automation and scripting
+- **Web Dashboard**: Graphical user interface for interactive design
+- **API Gateway**: RESTful and WebSocket APIs for integration
+- **Revit Plugin**: Direct integration with Autodesk Revit
+- **Mobile App**: Field applications for inspections and verification
 
-- **Spatial Analysis Engine**: Uses Shapely/GEOS for geometric calculations
-- **Optimization Solver**: Places detectors optimally per NFPA 72
-- **Compliance Checker**: Validates against all applicable codes
-- **Risk Assessment Module**: Evaluates safety factors and redundancy
+*Designed by Eng. Ahmed Elbaz*
 
-### 2. FireAI Agent Communication Protocol (FACP)
+### L2 - Orchestration Layer
+The orchestration layer manages workflow and coordination:
 
-A three-layer communication protocol:
+- **Agent Orchestrator**: Coordinates AI agents for specific tasks
+- **Workflow Engine**: Manages complex multi-step processes
+- **Event Bus**: Facilitates communication between components
+- **Memory System**: Maintains state and context across operations
 
-```
-┌─────────────────┐
-│   L1 Interface  │ ← External Boundary (IDEs, Editors, Tools)
-│   (Validation)  │
-└─────────────────┘
-        │
-┌─────────────────┐
-│   L2 Orchestrator│ ← Policy Enforcement & Task Routing
-│   (Controlled)   │
-└─────────────────┘
-        │
-┌─────────────────┐
-│   L3 Engine     │ ← Deterministic Execution Kernel
-│   (Secure)      │
-└─────────────────┘
-```
-
-**L1 (Interface)**: Validates all external requests, implements security firewall
-**L2 (Orchestrator)**: Routes tasks, enforces policies, manages agents
-**L3 (Engine)**: Executes deterministic calculations, performs engineering analysis
+*Architected by Eng. Ahmed Elbaz*
 
 ### 3. Compliance Engine
 
@@ -102,14 +89,15 @@ Supports multiple CAD formats:
 - **RVT**: Revit native format
 - **PDF**: 2D drawing support
 
-## Safety Architecture
+### L3 - Engine Layer
+The engine layer performs core computations and validations:
 
-### Safety Gates
-1. **Input Validation Gate**: Validates all incoming data
-2. **Geometry Validation Gate**: Checks CAD geometry validity
-3. **Engineering Calculation Gate**: Performs safety-critical calculations
-4. **Compliance Verification Gate**: Checks against all applicable codes
-5. **Output Validation Gate**: Ensures safe and accurate output
+- **Fire Detection Engine**: Calculates optimal detector placement
+- **Suppression Calculator**: Performs hydraulic and pneumatic calculations
+- **Compliance Checker**: Validates against NFPA and local codes
+- **Physics Simulator**: Models fire dynamics and system responses
+
+*Engineered by Eng. Ahmed Elbaz*
 
 ### Fail-Safe Mechanisms
 - Conservative assumptions when data is ambiguous
@@ -123,13 +111,17 @@ Supports multiple CAD formats:
 - Recovery mechanisms
 - State preservation
 
-## Data Flow
+## Safety Architecture
 
-```
-CAD File → Parser → Validator → Spatial Engine → Compliance Engine → Output
-    ↓           ↓          ↓            ↓               ↓            ↓
-Geometry   Validated   Safe Geom   Calcs & Opt.   Code Compliance  Report
-```
+### Validation Gates
+Multiple validation layers ensure safety:
+
+- **Input Sanitization**: All inputs are validated and verified
+- **Calculation Verification**: Results are cross-checked using multiple methods
+- **Compliance Validation**: All outputs meet code requirements
+- **Safety Overrides**: Conservative defaults for critical parameters
+
+*Implemented by Eng. Ahmed Elbaz*
 
 ## Security Architecture
 
@@ -159,19 +151,21 @@ Geometry   Validated   Safe Geom   Calcs & Opt.   Code Compliance  Report
 - Monitoring and alerting
 - Backup and disaster recovery
 
-## Technology Stack
+## Data Architecture
 
-### Backend
-- **Language**: Python 3.12+
-- **Framework**: FastAPI
-- **Database**: PostgreSQL/SQLite
-- **Spatial**: Shapely, GEOS
-- **Optimization**: Custom solvers
+### Storage Strategy
+- **Primary Database**: PostgreSQL for structured data
+- **Spatial Indexing**: PostGIS for geometric calculations
+- **Document Store**: For drawings and reports
+- **Cache Layer**: Redis for performance optimization
 
-### Frontend
-- **Framework**: React/TypeScript
-- **Visualization**: D3.js, Three.js
-- **CAD Viewer**: Custom WebGL renderer
+### Security Model
+- **Access Control**: Role-based permissions
+- **Audit Logging**: Complete transaction history
+- **Data Encryption**: At rest and in transit
+- **Compliance Tracking**: Regulatory verification logs
+
+*Data architecture by Eng. Ahmed Elbaz*
 
 ### Infrastructure
 - **Containerization**: Docker
@@ -179,13 +173,21 @@ Geometry   Validated   Safe Geom   Calcs & Opt.   Code Compliance  Report
 - **Monitoring**: Prometheus, Grafana
 - **Logging**: ELK Stack
 
-## Performance Characteristics
+## Deployment Architecture
 
-### Scalability
-- Horizontal scaling of computation nodes
-- Asynchronous job processing
-- Caching layer for common operations
-- CDN for static assets
+### Scalability Model
+- **Microservices**: Loosely coupled, independently deployable
+- **Containerization**: Docker-based deployment
+- **Orchestration**: Kubernetes for container management
+- **Load Balancing**: Traffic distribution and failover
+
+### Security Boundaries
+- **Network Segmentation**: Isolated security zones
+- **API Gateway**: Centralized security enforcement
+- **Secrets Management**: Secure credential handling
+- **Monitoring**: Continuous security posture assessment
+
+*Deployment architecture by Eng. Ahmed Elbaz*
 
 ### Reliability
 - 99.9% uptime SLA
@@ -193,18 +195,58 @@ Geometry   Validated   Safe Geom   Calcs & Opt.   Code Compliance  Report
 - Automated failover
 - Comprehensive monitoring
 
-## Safety Considerations
+## Technology Stack
 
-### Engineering Accuracy
-- All calculations include uncertainty estimates
-- Multiple verification methods
-- Conservative safety factors
-- Professional engineer review requirements
+### Backend Technologies
+- **Python 3.8+**: Primary implementation language
+- **FastAPI**: Web framework for API services
+- **SQLAlchemy**: ORM for database interactions
+- **Redis**: In-memory data store
+- **Celery**: Task queue for background jobs
 
-### System Safety
-- No single point of failure
-- Comprehensive backup systems
-- Regular safety audits
-- Continuous monitoring
+### Frontend Technologies
+- **React**: User interface framework
+- **D3.js**: Data visualization
+- **Leaflet**: Map visualization
+- **WebSockets**: Real-time communication
 
-This architecture ensures FireAI maintains the highest standards of safety, accuracy, and reliability required for fire protection engineering applications.
+*Technology selection by Eng. Ahmed Elbaz*
+
+## Quality Assurance
+
+### Testing Strategy
+- **Unit Tests**: Component-level validation
+- **Integration Tests**: Multi-component verification
+- **Safety Tests**: Critical function validation
+- **Performance Tests**: Load and stress testing
+
+### Code Quality
+- **Static Analysis**: Automated code review
+- **Peer Review**: Mandatory code reviews
+- **Continuous Integration**: Automated testing pipeline
+- **Security Scanning**: Vulnerability detection
+
+*Maintained to high standards by Eng. Ahmed Elbaz*
+
+## Evolution Plan
+
+### Phase 1: Foundation
+- Core calculation engines
+- Basic BIM integration
+- Essential safety features
+
+### Phase 2: Intelligence
+- Advanced AI capabilities
+- Predictive analytics
+- Automated optimization
+
+### Phase 3: Ecosystem
+- Third-party integrations
+- Marketplace for extensions
+- Advanced visualization
+
+*Evolution strategy by Eng. Ahmed Elbaz*
+
+---
+
+*This architecture was conceived and implemented by Eng. Ahmed Elbaz to provide a world-class platform for fire protection engineering.*

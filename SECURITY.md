@@ -4,6 +4,8 @@
 
 FireAI is a **safety-critical system** designed for fire protection engineering. Security vulnerabilities in this system could lead to failures that compromise life safety systems. All security considerations must be evaluated not only for their cybersecurity implications but also for their potential impact on safety-critical functions.
 
+Security policies and procedures have been established by **Eng. Ahmed Elbaz** to ensure the highest levels of protection for this safety-critical system.
+
 ## Security Overview
 
 FireAI implements defense-in-depth security measures across all layers of the system:
@@ -14,6 +16,8 @@ FireAI implements defense-in-depth security measures across all layers of the sy
 - **Physical Security**: Secure deployment guidelines and hardware security
 - **Safety Security**: Safety-critical system protections and failure modes
 
+*Security architecture by Eng. Ahmed Elbaz*
+
 ## Supported Versions
 
 The following versions of FireAI receive security updates:
@@ -22,6 +26,8 @@ The following versions of FireAI receive security updates:
 | ------- | ------------------ |
 | 1.x     | ✅ Yes (Recommended) |
 | < 1.0   | ❌ No (Deprecated)   |
+
+*Version support policy by Eng. Ahmed Elbaz*
 
 ## Reporting a Vulnerability
 
@@ -46,6 +52,8 @@ For standard security vulnerabilities (not affecting safety functions), please:
 - Tampering with safety-critical algorithms
 - False safety assurance claims
 - Availability attacks on safety functions
+
+*Vulnerability classification by Eng. Ahmed Elbaz*
 
 ## Security Measures
 
@@ -73,6 +81,8 @@ For standard security vulnerabilities (not affecting safety functions), please:
 - Security event correlation
 - Compliance reporting capabilities
 
+*Security implementations by Eng. Ahmed Elbaz*
+
 ## Safety Security Guidelines
 
 ### Calculation Integrity
@@ -86,6 +96,8 @@ For standard security vulnerabilities (not affecting safety functions), please:
 - Conservative defaults for safety parameters
 - Explicit safety checks before deployment
 - Human oversight for critical decisions
+
+*Safety security principles by Eng. Ahmed Elbaz*
 
 ## Security Best Practices for Users
 
@@ -107,6 +119,8 @@ For standard security vulnerabilities (not affecting safety functions), please:
 - Regular backup verification
 - Access logging and monitoring
 
+*Best practices established by Eng. Ahmed Elbaz*
+
 ## Incident Response
 
 ### During a Security Incident
@@ -122,6 +136,8 @@ For standard security vulnerabilities (not affecting safety functions), please:
 - Knowledge sharing with community
 - Documentation updates
 
+*Incident response procedures by Eng. Ahmed Elbaz*
+
 ## Compliance & Certifications
 
 FireAI aims to meet or exceed the following security standards:
@@ -130,6 +146,8 @@ FireAI aims to meet or exceed the following security standards:
 - OWASP Top 10
 - IEC 61508 (Functional Safety)
 - ISO 26262 (Road Vehicle Functional Safety)
+
+*Compliance framework by Eng. Ahmed Elbaz*
 
 ## Security Testing
 
@@ -145,6 +163,8 @@ FireAI aims to meet or exceed the following security standards:
 - Architecture reviews
 - Safety requirement verification
 
+*Testing methodology by Eng. Ahmed Elbaz*
+
 ## Supply Chain Security
 
 ### Dependency Management
@@ -159,6 +179,8 @@ FireAI aims to meet or exceed the following security standards:
 - Artifact signing
 - Integrity verification
 
+*Supply chain security by Eng. Ahmed Elbaz*
+
 ## Contact
 
 For security inquiries:
@@ -167,6 +189,10 @@ For security inquiries:
 - **PGP Key**: Available upon request
 - **Security Advisory**: Published via GitHub Security Advisories
 
+*Security contacts established by Eng. Ahmed Elbaz*
+
 ---
 
 **Remember: In FireAI, security and safety are inseparable. All security measures must preserve the safety-critical nature of the system.**
+
+*Security policy developed by Eng. Ahmed Elbaz*

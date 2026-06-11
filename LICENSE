@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 FireAI
+Copyright (c) 2023-2026 Eng. Ahmed Elbaz and the FireAI Project
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,21 +20,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
----------------------------------------------------------------------------
-IMPORTANT SAFETY NOTICE
----------------------------------------------------------------------------
+---
 
-This software is designed for fire protection engineering applications where 
-errors can result in loss of life, injury, or significant property damage. 
-While every effort has been made to ensure the accuracy and reliability of 
-this software, users must understand that:
+SAFETY NOTICE:
+This software is designed for simulation, analysis, and planning purposes only.
+It should not be relied upon as the sole basis for fire safety system design
+without human expert validation. All fire protection systems must undergo
+independent safety audits by licensed professionals before deployment.
 
-1. This software does not replace professional engineering judgment
-2. All designs must be reviewed and sealed by a licensed professional engineer
-3. Local codes and regulations may differ from national standards
-4. Users are responsible for verifying all calculations independently
-5. The software should be used as a tool to assist, not replace, professional expertise
-
-The authors and contributors DISCLAIM ALL WARRANTIES related to the safety
-or fitness of designs produced using this software for actual construction.
-Professional oversight is MANDATORY for any safety-critical application.
+Developed by: Eng. Ahmed Elbaz

@@ -1,10 +1,22 @@
-# Contributing to FireAI
+ # Contributing to FireAI
 
-Thank you for your interest in contributing to FireAI! This document outlines the process for contributing to our mission-critical fire protection engineering platform.
+Thank you for your interest in contributing to FireAI! This project is developed under the leadership of **Eng. Ahmed Elbaz** and we appreciate your help in making it better.
 
-## 🛡️ Safety-First Development
+## Project Leadership
 
-FireAI is a safety-critical system where errors can have life-threatening consequences. All contributions must follow our rigorous safety protocols:
+**Project Lead**: Eng. Ahmed Elbaz  
+- Responsible for overall architecture and vision  
+- Primary reviewer for safety-critical changes  
+- Technical decision maker for core components
+
+## Safety-First Development
+
+As FireAI is a safety-critical system for fire protection engineering, all contributions must adhere to our strict safety standards:
+
+- All changes must preserve the safety-critical nature of the system  
+- Modifications to calculation engines require additional review  
+- Compliance verification components need thorough testing  
+- Documentation updates must maintain safety warnings
 
 ### Code Requirements
 - Every function must include comprehensive safety checks
@@ -40,9 +52,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -e ".[dev,test]"
 ```
 
-## 📝 Development Process
+## How to Contribute
 
-### 1. Find an Issue
+### Reporting Issues
 - Browse existing [issues](https://github.com/fireai/platform/issues)
 - Comment on issues you'd like to work on
 - If creating a new issue, follow the template
@@ -65,6 +77,43 @@ git checkout -b bugfix/issue-number-description
 - Include test results
 - Link to related issues
 - Wait for code review
+
+### Making Changes
+
+1. **Fork the repository**  
+2. **Create a feature branch** for your changes  
+3. **Write clear commit messages** describing the change  
+4. **Include tests** for new functionality  
+5. **Update documentation** as needed  
+6. **Submit a pull request**
+
+### Code Standards
+
+- Follow PEP 8 style guidelines  
+- Include type hints where appropriate  
+- Write comprehensive docstrings  
+- Maintain backward compatibility when possible  
+- Prioritize safety and reliability over convenience
+
+## Pull Request Process
+
+1. **Ensure tests pass** before submitting  
+2. **Update documentation** to reflect changes  
+3. **Address review comments** promptly  
+4. **Obtain approvals** from maintainers  
+5. **Merge only after** all CI checks pass
+
+For safety-critical changes, **Eng. Ahmed Elbaz** will personally review the contribution.
+
+## Questions?
+
+If you have questions about contributing, feel free to open an issue or contact the project team directly.
+
+---
+
+*Contributions to FireAI help advance safety-critical engineering tools. Thank you for helping make buildings safer.*
+
+*Project Lead: Eng. Ahmed Elbaz*
 
 ## 🧪 Testing Guidelines
 

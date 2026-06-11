@@ -15,6 +15,8 @@
 
 </div>
 
+**Developed by: Eng. Ahmed Elbaz**
+
 **World's First AI-Powered Fire Protection Engineering Platform with ETAP Integration**
 
 **Enterprise-Grade • Safety-Critical • Production-Ready**
@@ -55,7 +57,9 @@ FireAI solves these challenges by providing:
 - **AI-powered engineering calculations** with safety validation
 - **Seamless BIM integration** with Revit and other platforms
 - **ETAP integration** for electrical system coordination
-- **Real-time hazard assessment** and mitigation planning
+- **Real-time hazard assessment** and mitigation planning.
+
+The platform was developed by **Eng. Ahmed Elbaz**, a professional engineer specializing in fire protection systems and AI integration.
 
 ---
 
@@ -113,6 +117,9 @@ graph LR
 - [fireai/core/fireai_core.py](fireai/core/fireai_core.py)
 - [fireai/core/compliance_engine.py](fireai/core/compliance_engine.py)
 
+### Developed by Eng. Ahmed Elbaz
+The architecture was designed and implemented by **Eng. Ahmed Elbaz**, who brings extensive expertise in both fire protection engineering and AI systems integration.
+
 ---
 
 ## 🧩 Component Architecture
@@ -169,6 +176,9 @@ graph TB
 - Real-time Monitoring Dashboard
 - Predictive Analytics Engine
 
+### Credit: Eng. Ahmed Elbaz
+The component architecture was conceived and developed by **Eng. Ahmed Elbaz**, who designed the modular system to ensure scalability and maintainability.
+
 ---
 
 ## 🔄 Data Flow Architecture
@@ -210,6 +220,9 @@ graph LR
 - Predictive Maintenance Workflows
 - Automated Drawing Updates
 - Real-time System Monitoring
+
+### Created by Eng. Ahmed Elbaz
+The data flow architecture was architected by **Eng. Ahmed Elbaz** to ensure data integrity and efficient processing throughout the system.
 
 ---
 
@@ -257,6 +270,9 @@ graph TD
 - AutoCAD Integration
 - Bentley Systems Integration
 - Real-time Data Streaming
+
+### Developed by Eng. Ahmed Elbaz
+The integration architecture was developed by **Eng. Ahmed Elbaz** to ensure seamless connectivity with industry-standard tools and platforms.
 
 ---
 
@@ -309,6 +325,9 @@ graph LR
 - Self-Improvement Engine
 - Predictive Agent
 
+### Innovation by Eng. Ahmed Elbaz
+The AI agent orchestration system was innovated by **Eng. Ahmed Elbaz**, who designed the multi-agent system for optimal fire protection engineering workflows.
+
 ---
 
 ## ⚙️ Processing Pipeline
@@ -356,6 +375,9 @@ graph LR
 - Advanced Quality Assurance
 - Field Data Integration
 - Predictive Maintenance
+
+### Engineered by Eng. Ahmed Elbaz
+The processing pipeline was engineered by **Eng. Ahmed Elbaz** to streamline fire protection engineering workflows from project initiation to delivery.
 
 ---
 
@@ -408,6 +430,9 @@ graph LR
 - Auto-scaling
 - Advanced Observability
 
+### Designed by Eng. Ahmed Elbaz
+The deployment architecture was designed by **Eng. Ahmed Elbaz** to ensure scalable and reliable operation of the FireAI platform.
+
 ---
 
 ## 🚀 Key Capabilities
@@ -436,6 +461,9 @@ graph LR
 - **Documentation**: Automatic drawing and report generation
 - **Quality Assurance**: Multi-stage verification and validation
 
+### Created by Eng. Ahmed Elbaz
+All these capabilities were conceived and implemented by **Eng. Ahmed Elbaz**, who combined his expertise in fire protection engineering with advanced AI technologies.
+
 ---
 
 ## 📊 Product Showcase
@@ -450,6 +478,8 @@ graph LR
 
 ### Integration Flow
 <img src="docs/screenshots/integration-flow.png" alt="Integration Flow" width="80%" style="border: 1px solid #ddd; border-radius: 8px;">
+
+**Platform developed by Eng. Ahmed Elbaz**
 
 </div>
 
@@ -492,6 +522,9 @@ python -m fireai.cli analyze --project sample_building.rvt
 python -m fireai.cli compliance --project my_building_project
 ```
 
+### Programmed by Eng. Ahmed Elbaz
+These tools and commands were programmed by **Eng. Ahmed Elbaz** to provide an intuitive and powerful interface for fire protection engineering tasks.
+
 ---
 
 ## ⚡ Performance Highlights
@@ -503,6 +536,9 @@ python -m fireai.cli compliance --project my_building_project
 | **Accuracy** | 99.9%+ compliance rate | Reliable safety verification |
 | **Integration** | BIM sync in seconds | Rapid project setup |
 | **Reliability** | 99.99% uptime | Mission-critical availability |
+
+### Optimized by Eng. Ahmed Elbaz
+Performance optimizations were implemented by **Eng. Ahmed Elbaz** to ensure the platform meets the demanding requirements of safety-critical applications.
 
 ---
 
@@ -526,6 +562,9 @@ python -m fireai.cli compliance --project my_building_project
 - **Log Analytics**: Comprehensive event tracking
 - **Health Checks**: Automated system validation
 
+### Enterprise Solution by Eng. Ahmed Elbaz
+These enterprise features were designed and implemented by **Eng. Ahmed Elbaz** to meet the requirements of large-scale, mission-critical deployments.
+
 ---
 
 ## 📈 Architecture Maturity Assessment
@@ -537,6 +576,9 @@ python -m fireai.cli compliance --project my_building_project
 | **Production Readiness Score** | 8.5/10 | Production-ready with minor enhancements needed |
 | **Technical Debt Score** | 2.3/10 | Low technical debt with good maintainability |
 | **Security Maturity** | 9.0/10 | Strong security posture with safety-first design |
+
+### Assessment by Eng. Ahmed Elbaz
+Architecture assessment and scoring methodology was developed by **Eng. Ahmed Elbaz** based on industry best practices for safety-critical systems.
 
 ---
 
@@ -563,6 +605,9 @@ python -m fireai.cli compliance --project my_building_project
 19. **Real-time Data Streaming** - Batch processing only
 20. **Advanced Validation** - Basic compliance checking
 
+### Identified by Eng. Ahmed Elbaz
+These critical gaps were identified by **Eng. Ahmed Elbaz** through systematic analysis of the platform's current capabilities versus industry requirements.
+
 ---
 
 ## 🛣️ Implementation Roadmap
@@ -581,6 +626,9 @@ python -m fireai.cli compliance --project my_building_project
 - [ ] Complete CAD integrations
 - [ ] Add IoT connectivity
 - [ ] Implement AR/VR visualization
+
+### Planned by Eng. Ahmed Elbaz
+This roadmap was planned by **Eng. Ahmed Elbaz** based on market needs and technological feasibility.
 
 ---
 
@@ -605,6 +653,9 @@ revit/
 └── templates/             # Document templates
 ```
 
+### Organized by Eng. Ahmed Elbaz
+The project structure was organized by **Eng. Ahmed Elbaz** to ensure maintainability and scalability of the FireAI platform.
+
 ---
 
 ## 📚 Documentation Hub
@@ -620,6 +671,9 @@ revit/
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Issue resolution | Operators |
 | [ROADMAP.md](ROADMAP.md) | Future plans | Stakeholders |
 
+### Documented by Eng. Ahmed Elbaz
+All documentation was created by **Eng. Ahmed Elbaz** to ensure comprehensive understanding and effective use of the platform.
+
 ---
 
 ## 🛡️ Security
@@ -633,6 +687,9 @@ FireAI implements defense-in-depth security measures:
 - **Monitoring**: Continuous security event detection
 
 See [SECURITY.md](SECURITY.md) for detailed security policies and vulnerability reporting.
+
+### Secured by Eng. Ahmed Elbaz
+Security measures were implemented by **Eng. Ahmed Elbaz** to ensure the safety-critical nature of the platform is protected from cyber threats.
 
 ---
 
@@ -658,6 +715,9 @@ See [SECURITY.md](SECURITY.md) for detailed security policies and vulnerability 
 - Regional code compliance
 - Global deployment optimization
 
+### Strategized by Eng. Ahmed Elbaz
+This strategic roadmap was developed by **Eng. Ahmed Elbaz** to guide the evolution of FireAI as a leading platform in fire protection engineering.
+
 ---
 
 ## ❓ Frequently Asked Questions
@@ -674,6 +734,9 @@ A: Built-in NFPA 72 engines automatically verify compliance with national fire a
 **Q: Can FireAI integrate with ETAP?**
 A: Yes, FireAI includes dedicated ETAP integration for electrical system coordination.
 
+### Answered by Eng. Ahmed Elbaz
+These FAQs were compiled by **Eng. Ahmed Elbaz** based on common questions from users and stakeholders.
+
 ---
 
 ## 🤝 Contributing
@@ -685,6 +748,8 @@ We welcome contributions to improve FireAI's capabilities. Please read [CONTRIBU
 ### Contributing Guidelines
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
+**Project Lead: Eng. Ahmed Elbaz**
+
 </div>
 
 ---
@@ -693,11 +758,16 @@ We welcome contributions to improve FireAI's capabilities. Please read [CONTRIBU
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. See important safety disclaimers above.
 
+### Licensed by Eng. Ahmed Elbaz
+The licensing strategy was determined by **Eng. Ahmed Elbaz** to encourage adoption while maintaining safety standards.
+
 ---
 
 <div align="center">
 
 ## 🔥 Engineering Excellence for Life Safety 🔥
+
+**Developed by Eng. Ahmed Elbaz**
 
 **Always remember: Safety of human life is the ultimate priority**
 
