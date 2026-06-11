@@ -1,43 +1,21 @@
-# FireAI Installation Guide
-
-## Table of Contents
-1. [System Requirements](#system-requirements)
-2. [Prerequisites](#prerequisites)
-3. [Installation Methods](#installation-methods)
-4. [Platform-Specific Instructions](#platform-specific-instructions)
-5. [Container Installation](#container-installation)
-6. [Development Installation](#development-installation)
-7. [Verification](#verification)
-8. [Post-Installation Configuration](#post-installation-configuration)
-9. [Troubleshooting](#troubleshooting)
-10. [Uninstallation](#uninstallation)
+# Installation Guide for FireAI Platform
 
 ## System Requirements
 
-### Minimum Requirements
-- **Operating System**: Windows 10/11, macOS 10.15+, or Linux (Ubuntu 18.04+, CentOS 7+)
-- **CPU**: 2 cores, 2.0 GHz or faster
-- **RAM**: 8 GB minimum, 16 GB recommended
-- **Storage**: 10 GB available disk space
-- **Network**: Internet connection for initial setup and updates
+### Operating System
+- Windows 10/11, macOS 10.15+, or Linux (Ubuntu 20.04+, CentOS 8+)
+- 64-bit architecture required
+- Minimum 8GB RAM (16GB recommended)
+- 10GB available disk space
 
-### Recommended Requirements
-- **CPU**: 4+ cores, 2.5 GHz or faster
-- **RAM**: 16 GB minimum, 32 GB recommended for heavy workloads
-- **Storage**: SSD with 20 GB available space
-- **Network**: High-speed internet connection
+### Python Environment
+- **Python 3.8 or higher** (now compatible with Python 3.8+)
+- pip package manager
+- virtual environment support
 
-### Software Requirements
-- **Python**: 3.8 or higher (3.9+ recommended)
-- **pip**: Python package installer (≥21.0)
-- **Git**: Version control system (≥2.20)
-- **Virtual Environment Tool**: venv, conda, or similar
-
-### Optional Requirements (for full functionality)
-- **ETAP**: Electrical power system analysis software
-- **GIS Software**: Geographic information system (ArcGIS, QGIS, etc.)
-- **Docker**: Containerization platform (≥20.0)
-- **PostgreSQL**: Database server (≥12.0) for production use
+### Additional Dependencies
+- Git version control system
+- C compiler for native extensions (GCC on Linux/macOS, MSVC on Windows)
 
 ## Prerequisites
 
@@ -101,87 +79,48 @@ git --version
 # Should show Git version
 ```
 
-## Installation Methods
+## Installation Steps
 
-### Method 1: PyPI Installation (Recommended for Users)
+### 1. Clone the Repository
 
-This method installs FireAI from the Python Package Index and is recommended for most users.
+```bash
+git clone https://github.com/ahmdelbaz28-ux/revit.git
+cd revit
+```
 
-1. **Create and activate virtual environment** (recommended):
-   ```bash
-   # Create virtual environment
-   python -m venv fireai-env
-   
-   # Activate virtual environment
-   # On Windows:
-   fireai-env\Scripts\activate
-   # On macOS/Linux:
-   source fireai-env/bin/activate
-   ```
+### 2. Create Virtual Environment
 
-2. **Upgrade pip** (recommended):
-   ```bash
-   pip install --upgrade pip
-   ```
+```bash
+# Create virtual environment
+python -m venv fireai-env
 
-3. **Install FireAI**:
-   ```bash
-   pip install fireai
-   ```
+# Activate on Windows
+fireai-env\Scripts\activate
 
-4. **Verify installation**:
-   ```bash
-   fireai --version
-   ```
+# Activate on macOS/Linux
+source fireai-env/bin/activate
+```
 
-### Method 2: GitHub Installation (Latest Development Version)
+### 3. Upgrade pip
 
-This method installs the latest development version directly from GitHub.
+```bash
+python -m pip install --upgrade pip
+```
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-org/fireai.git
-   cd fireai
-   ```
+### 4. Install Dependencies
 
-2. **Create and activate virtual environment**:
-   ```bash
-   python -m venv fireai-env
-   # On Windows:
-   fireai-env\Scripts\activate
-   # On macOS/Linux:
-   source fireai-env/bin/activate
-   ```
+```bash
+pip install -r requirements.txt
+```
 
-3. **Install in development mode**:
-   ```bash
-   pip install -e .
-   ```
+> **Note**: If you encounter compilation issues with certain packages (especially numpy, scipy), you may need to install Microsoft C++ Build Tools on Windows or Xcode Command Line Tools on macOS.
 
-### Method 3: Local Source Installation
+### 5. Install FireAI Package
 
-This method installs from a local source code directory.
-
-1. **Navigate to the source directory**:
-   ```bash
-   cd /path/to/fireai/source
-   ```
-
-2. **Create and activate virtual environment**:
-   ```bash
-   python -m venv fireai-env
-   # On Windows:
-   fireai-env\Scripts\activate
-   # On macOS/Linux:
-   source fireai-env/bin/activate
-   ```
-
-3. **Install from local source**:
-   ```bash
-   pip install .
-   # Or for development:
-   pip install -e .
-   ```
+```bash
+# Install in development mode
+pip install -e .
+```
 
 ## Platform-Specific Instructions
 
@@ -297,106 +236,30 @@ This method installs from a local source code directory.
    fireai --version
    ```
 
-## Container Installation
+## Docker Installation (Alternative)
 
-### Docker Installation
+For containerized deployment:
 
-1. **Install Docker**:
-   - **Windows/macOS**: Download Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
-   - **Linux**: Follow the official Docker installation guide for your distribution
+```bash
+# Build Docker image
+docker build -t fireai .
 
-2. **Verify Docker installation**:
-   ```bash
-   docker --version
-   docker run hello-world
+# Run in container
+docker run -it fireai
+```
    ```
 
-3. **Pull FireAI Docker image**:
-   ```bash
-   docker pull your-docker-registry/fireai:latest
-   ```
+## Development Setup
 
-4. **Run FireAI container**:
-   ```bash
-   docker run -d -p 8000:8000 --name fireai-container your-docker-registry/fireai:latest
-   ```
+For development purposes:
 
-### Building from Dockerfile
+```bash
+# Install with development dependencies
+pip install -e ".[dev]"
 
-1. **Navigate to FireAI source directory**:
-   ```bash
-   cd /path/to/fireai/source
-   ```
-
-2. **Build Docker image**:
-   ```bash
-   docker build -t fireai:latest .
-   ```
-
-3. **Run the container**:
-   ```bash
-   docker run -d -p 8000:8000 --name fireai-app fireai:latest
-   ```
-
-### Docker Compose Installation
-
-1. **Create docker-compose.yml**:
-   ```yaml
-   version: '3.8'
-   
-   services:
-     fireai:
-       build: .
-       ports:
-         - "8000:8000"
-       volumes:
-         - ./data:/app/data
-         - ./config:/app/config
-       environment:
-         - PYTHONPATH=/app
-         - FIREAI_ENV=production
-       restart: unless-stopped
-   ```
-
-2. **Run with Docker Compose**:
-   ```bash
-   docker-compose up -d
-   ```
-
-## Development Installation
-
-### Setting Up Development Environment
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-org/fireai.git
-   cd fireai
-   ```
-
-2. **Create virtual environment**:
-   ```bash
-   python -m venv fireai-dev
-   # On Windows:
-   fireai-dev\Scripts\activate
-   # On macOS/Linux:
-   source fireai-dev/bin/activate
-   ```
-
-3. **Install in development mode with extra dependencies**:
-   ```bash
-   pip install -e ".[dev,test]"
-   # Or install everything:
-   pip install -r requirements-dev.txt
-   ```
-
-4. **Install pre-commit hooks** (if available):
-   ```bash
-   pre-commit install
-   ```
-
-5. **Run tests to verify installation**:
-   ```bash
-   pytest
+# Install pre-commit hooks
+pre-commit install
+```
    ```
 
 ### Installing Specific Versions
@@ -416,80 +279,50 @@ This method installs from a local source code directory.
    pip install git+https://github.com/your-org/fireai.git@branch-name
    ```
 
-## Verification
+## Verification Steps
 
-### Basic Verification
+### 1. Check Python Version
 
-1. **Check version**:
-   ```bash
-   fireai --version
-   ```
+```bash
+python --version
+```
 
-2. **Check help**:
-   ```bash
-   fireai --help
-   ```
+Expected: Python 3.8 or higher
 
-3. **Run basic diagnostics**:
-   ```bash
-   fireai diagnose
-   ```
+### 2. Test Basic Import
 
-### Functional Verification
+```bash
+python -c "import fireai; print('FireAI imported successfully')"
+```
 
-1. **Test basic functionality**:
-   ```bash
-   fireai test-connection
-   ```
+### 3. Run Basic Commands
 
-2. **Check system requirements**:
-   ```bash
-   fireai check-system
-   ```
+```bash
+# Check available CLI commands
+python -m fireai.cli --help
 
-3. **Verify configuration**:
-   ```bash
-   fireai config validate
-   ```
-
-### Web Interface Verification
-
-1. **Start the web server**:
-   ```bash
-   fireai serve --port 8000
-   ```
-
-2. **Open browser** and navigate to `http://localhost:8000`
-
-3. **Check if the interface loads correctly**
+# Initialize a new project
+python -m fireai.cli init
+```
 
 ## Post-Installation Configuration
 
-### Initial Configuration
+### 1. Environment Variables
 
-1. **Generate configuration file**:
-   ```bash
-   fireai init-config
-   ```
+Create a `.env` file in the project root:
 
-2. **Edit configuration** in `~/.fireai/config.yaml` or the generated file
+```bash
+cp .env.example .env
+```
 
-3. **Set up security keys**:
-   ```bash
-   fireai generate-keys
-   ```
+Edit `.env` with your specific configuration.
 
-### Database Setup (if applicable)
+### 2. Database Initialization
 
-1. **Initialize database**:
-   ```bash
-   fireai db init
-   ```
-
-2. **Run migrations**:
-   ```bash
-   fireai db migrate
-   ```
+```bash
+# Initialize database
+alembic upgrade head
+```
 
 ### First-Time Setup
 
@@ -505,143 +338,66 @@ This method installs from a local source code directory.
 
 ## Troubleshooting
 
-### Common Installation Issues
+### Common Issues
 
-#### Permission Errors
+#### 1. Compilation Errors
+If you encounter compilation errors during installation:
 
-**Problem**: Permission denied during installation
-**Solution**:
+**Windows:**
+- Install Microsoft C++ Build Tools
+- Or use pre-compiled wheels: `pip install --only-binary=all -r requirements.txt`
+
+**macOS:**
+- Install Xcode Command Line Tools: `xcode-select --install`
+
+**Linux:**
+- Install build essentials: `sudo apt-get install build-essential`
+
+#### 2. Memory Issues
+For systems with limited RAM:
+- Increase virtual memory/swapping
+- Install packages individually: `pip install <package-name>`
+- Use `--no-cache-dir` flag: `pip install --no-cache-dir <package>`
+
+#### 3. Permission Issues
+If you encounter permission errors:
+- Use virtual environment (recommended)
+- Use `--user` flag: `pip install --user -r requirements.txt`
+
+### Environment Setup Verification
+
 ```bash
-# Use --user flag to install to user directory
-pip install --user fireai
-
-# Or create and use virtual environment (recommended)
-python -m venv fireai-env
-source fireai-env/bin/activate  # On Windows: fireai-env\Scripts\activate
-pip install fireai
-```
-
-#### Dependency Conflicts
-
-**Problem**: Dependency conflicts during installation
-**Solution**:
-```bash
-# Create fresh virtual environment
-python -m venv fresh-env
-source fresh-env/bin/activate
-pip install --upgrade pip setuptools wheel
-pip install fireai
-```
-
-#### Missing Dependencies
-
-**Problem**: Missing system dependencies
-**Solution** (Linux):
-```bash
-# Ubuntu/Debian
-sudo apt install build-essential libssl-dev libffi-dev python3-dev
-
-# CentOS/RHEL
-sudo yum groupinstall "Development Tools"
-sudo yum install openssl-devel libffi-devel python3-devel
-```
-
-#### Python Version Issues
-
-**Problem**: Incorrect Python version
-**Solution**:
-```bash
-# Check Python version
+# Verify Python version
 python --version
 
-# Use specific Python version
-python3.9 -m pip install fireai
+# Verify pip
+pip --version
 
-# Or use pyenv to manage Python versions
-pyenv install 3.9.16
-pyenv local 3.9.16
-pip install fireai
+# Verify installed packages
+pip list | grep fireai
 ```
 
-### Diagnostic Commands
-
-1. **Check system compatibility**:
-   ```bash
-   fireai check-system
-   ```
-
-2. **Detailed installation diagnostics**:
-   ```bash
-   fireai diagnose --verbose
-   ```
-
-3. **Check environment**:
-   ```bash
-   pip list | grep fireai
-   which fireai
-   ```
-
-### Reinstallation
-
-If you need to reinstall FireAI:
-
-1. **Uninstall current version**:
-   ```bash
-   pip uninstall fireai
-   ```
-
-2. **Clean up virtual environment** (if using):
-   ```bash
-   # Remove virtual environment directory
-   rm -rf fireai-env  # On Windows: rmdir /s fireai-env
-   ```
-
-3. **Follow installation steps again**
-
-## Uninstallation
-
-### Standard Uninstallation
-
-1. **Uninstall FireAI**:
-   ```bash
-   pip uninstall fireai
-   ```
-
-2. **Confirm removal** when prompted
-
-### Complete Cleanup
-
-1. **Uninstall FireAI and dependencies**:
-   ```bash
-   pip uninstall fireai
-   ```
-
-2. **Remove virtual environment** (if used):
-   ```bash
-   rm -rf fireai-env  # On Windows: rmdir /s fireai-env
-   ```
-
-3. **Remove configuration files** (optional):
-   ```bash
-   # Remove user configuration
-   rm -rf ~/.fireai
-   # Remove any config files in current directory
-   rm -f config.yaml
-   ```
-
-### Docker Cleanup
-
-1. **Stop and remove container**:
-   ```bash
-   docker stop fireai-container
-   docker rm fireai-container
-   ```
-
-2. **Remove Docker image**:
-   ```bash
-   docker rmi your-docker-registry/fireai:latest
    ```
 
 ---
 
-*Congratulations! You have successfully installed FireAI. For next steps, please refer to the [QUICKSTART.md](./QUICKSTART.md) guide to begin using the platform.*
+## Next Steps
+
+After successful installation:
+
+1. Review the [QUICKSTART.md](QUICKSTART.md) guide
+2. Explore the [DEVELOPMENT.md](DEVELOPMENT.md) documentation
+3. Check the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) guide for advanced topics
+
+## Support
+
+If you encounter issues during installation:
+
+- Check the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) guide
+- Search existing GitHub issues
+- Create a new issue with detailed error information
+- Include your operating system, Python version, and error messages
+
+---
+
+**Important**: Remember that FireAI is a safety-critical system. Ensure your installation environment meets security requirements before using in production scenarios.

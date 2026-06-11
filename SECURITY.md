@@ -1,131 +1,172 @@
-# Security Policy for FireAI
+# Security Policy for FireAI Platform
 
-## 🛡️ Security Overview
+## 🚨 Critical Safety Notice
 
-FireAI is a safety-critical system where security vulnerabilities can have life-threatening consequences. We take security very seriously and appreciate the community's efforts to responsibly disclose vulnerabilities.
+FireAI is a **safety-critical system** designed for fire protection engineering. Security vulnerabilities in this system could lead to failures that compromise life safety systems. All security considerations must be evaluated not only for their cybersecurity implications but also for their potential impact on safety-critical functions.
 
-## 🚨 Critical Security Notice
+## Security Overview
 
-**FireAI systems directly impact human safety.** Any security vulnerability could potentially:
-- Allow malicious modification of fire protection designs
-- Cause false compliance certifications
-- Disable safety systems
-- Manipulate sensor readings or detector placements
+FireAI implements defense-in-depth security measures across all layers of the system:
 
-**All security issues must be treated with the highest priority.**
+- **Application Security**: Secure coding practices, input validation, and access controls
+- **Network Security**: Encrypted communications and network segmentation
+- **Data Security**: Encryption at rest and in transit, integrity verification
+- **Physical Security**: Secure deployment guidelines and hardware security
+- **Safety Security**: Safety-critical system protections and failure modes
 
-## 📞 Reporting a Vulnerability
+## Supported Versions
 
-### Critical Security Issues
-For critical security vulnerabilities that could affect safety:
-- Email: [security-critical@fireai.org](mailto:security-critical@fireai.org)
-- **Response time: Within 4 hours**
-- **Fix time: Within 24-48 hours**
+The following versions of FireAI receive security updates:
 
-### Non-Critical Security Issues
-For less critical security issues:
-- Submit through GitHub Security Advisory system
-- Or create a private security issue
-- **Response time: Within 24 hours**
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.x     | ✅ Yes (Recommended) |
+| < 1.0   | ❌ No (Deprecated)   |
 
-### Information to Include
-When reporting a vulnerability, please include:
-- Type of vulnerability
-- Step-by-step instructions to reproduce
-- Potential impact on safety
-- Affected versions
-- Suggested remediation
+## Reporting a Vulnerability
 
-## 📋 Security Best Practices
+### Safety-Critical Vulnerabilities
+If you discover a vulnerability that could compromise the safety functions of FireAI (incorrect calculations, false compliance reports, etc.), please contact us immediately:
 
-### For Users
-- Keep FireAI updated to the latest version
-- Validate all generated designs independently
-- Use in conjunction with professional engineering review
-- Monitor system logs for anomalies
+- **Email**: security@fireai.org
+- **PGP Key**: Available upon request for sensitive disclosures
+- **Response Time**: We aim to respond to safety-critical vulnerabilities within 24 hours
 
-### For Developers
-- All code must pass security review before merge
-- Input validation for all external data sources
-- Principle of least privilege for all components
-- Defense-in-depth for safety-critical functions
+### Standard Security Vulnerabilities
+For standard security vulnerabilities (not affecting safety functions), please:
 
-## 🔍 Security Measures
+1. **Submit via GitHub Issues** with the "security-vulnerability" label
+2. **Use responsible disclosure** practices
+3. **Allow time for remediation** before public disclosure
 
-### Input Validation
-- All CAD files are validated against schema
-- Geometry is checked for validity
-- External references are sanitized
-- Buffer overflow protections are in place
+### What Constitutes a Safety-Critical Vulnerability?
 
-### Access Control
-- Role-based access controls
-- Audit logging of all actions
-- Session management
-- Authentication for all interfaces
+- Incorrect fire safety calculations
+- Bypass of compliance verification
+- Tampering with safety-critical algorithms
+- False safety assurance claims
+- Availability attacks on safety functions
+
+## Security Measures
+
+### Authentication & Authorization
+- Multi-factor authentication for administrative access
+- Role-based access control (RBAC)
+- Principle of least privilege
+- Session management with secure tokens
 
 ### Data Protection
-- Encryption for sensitive data
-- Secure communication channels
-- Safe storage of credentials
-- Data integrity verification
+- AES-256 encryption for data at rest
+- TLS 1.3 for data in transit
+- Integrity checking for safety-critical data
+- Secure backup and recovery procedures
 
-## 🧪 Security Testing
+### Input Validation
+- Strict input sanitization
+- Boundary checks on all calculations
+- Type validation for all parameters
+- Safe defaults for all configurable parameters
+
+### Audit & Logging
+- Comprehensive audit trails
+- Tamper-evident logging
+- Security event correlation
+- Compliance reporting capabilities
+
+## Safety Security Guidelines
+
+### Calculation Integrity
+- All safety calculations must be independently verifiable
+- Deterministic execution for safety-critical functions
+- Checksums and digital signatures for critical data
+- Redundant calculation verification where possible
+
+### Fail-Safe Principles
+- Systems must fail to a safe state
+- Conservative defaults for safety parameters
+- Explicit safety checks before deployment
+- Human oversight for critical decisions
+
+## Security Best Practices for Users
+
+### Deployment Security
+- Deploy in isolated, secured environments
+- Regular security patching
+- Network segmentation
+- Access controls and monitoring
+
+### Operational Security
+- Regular security audits
+- Change management procedures
+- Incident response planning
+- Personnel security training
+
+### Data Security
+- Protect building and occupancy data
+- Secure transmission of sensitive information
+- Regular backup verification
+- Access logging and monitoring
+
+## Incident Response
+
+### During a Security Incident
+1. **Isolate affected systems** to prevent spread
+2. **Preserve evidence** for forensic analysis
+3. **Assess safety impact** immediately
+4. **Notify stakeholders** based on severity
+5. **Implement workarounds** to maintain safety
+
+### Post-Incident Activities
+- Root cause analysis
+- Security measure improvements
+- Knowledge sharing with community
+- Documentation updates
+
+## Compliance & Certifications
+
+FireAI aims to meet or exceed the following security standards:
+- NIST Cybersecurity Framework
+- ISO/IEC 27001
+- OWASP Top 10
+- IEC 61508 (Functional Safety)
+- ISO 26262 (Road Vehicle Functional Safety)
+
+## Security Testing
 
 ### Automated Testing
-- Static analysis for security vulnerabilities
-- Dynamic analysis during runtime
-- Fuzz testing for input parsers
-- Dependency vulnerability scanning
+- Static Application Security Testing (SAST)
+- Dynamic Application Security Testing (DAST)
+- Interactive Application Security Testing (IAST)
+- Software Composition Analysis (SCA)
 
-### Manual Review
-- Security code reviews
-- Architecture assessments
-- Penetration testing
-- Red team exercises
+### Manual Testing
+- Penetration testing by certified professionals
+- Code reviews by security experts
+- Architecture reviews
+- Safety requirement verification
 
-## 🏷️ Supported Versions
+## Supply Chain Security
 
-| Version | Supported | Security Updates |
-|---------|-----------|------------------|
-| 1.x     | ✅         | Latest patch     |
-| < 1.0   | ❌         | None             |
+### Dependency Management
+- Regular dependency scanning
+- Known vulnerability checks
+- Software Bill of Materials (SBOM)
+- Trusted source verification
 
-## 📊 Security Metrics
+### Build Security
+- Reproducible builds
+- Secure build environments
+- Artifact signing
+- Integrity verification
 
-- Zero-day vulnerabilities: **0**
-- Time to fix critical issues: **< 48 hours**
-- Security audit frequency: **Quarterly**
-- Code review requirement: **100%**
+## Contact
 
-## 📄 Incident Response
-
-In case of a security incident:
-1. Isolate affected systems immediately
-2. Notify security team via emergency contact
-3. Preserve evidence for investigation
-4. Communicate with stakeholders
-5. Deploy patches and verify fixes
-6. Document and learn from incident
-
-## 🤝 Responsible Disclosure
-
-We follow responsible disclosure practices:
-- Work with researchers to fix vulnerabilities
-- Provide timely updates on progress
-- Credit researchers appropriately
-- Coordinate public disclosure timing
-
-## 📈 Security Scorecard
-
-Our security posture is continuously monitored:
-- Code scanning: ✅ Active
-- Dependency scanning: ✅ Active  
-- Secret scanning: ✅ Active
-- Security advisories: ✅ Managed
+For security inquiries:
+- **General Security**: security@fireai.org
+- **Emergency Response**: emergency-security@fireai.org (for active incidents)
+- **PGP Key**: Available upon request
+- **Security Advisory**: Published via GitHub Security Advisories
 
 ---
 
-**Remember: In FireAI, security == safety.** All security issues are treated with the utmost urgency.
-
-For questions about our security practices, contact [security@fireai.org](mailto:security@fireai.org)
+**Remember: In FireAI, security and safety are inseparable. All security measures must preserve the safety-critical nature of the system.**
