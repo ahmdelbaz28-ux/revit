@@ -12,7 +12,7 @@
 [![Tests](https://img.shields.io/badge/tests-5954_passed-brightgreen)](https://github.com/ahmdelbaz28-ux/revit/actions)
 [![Electron](https://img.shields.io/badge/electron-33.4.11-blue)](https://www.electronjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com/)
-[![ARM64](https://img.shields.io/badge/ARM64-AppImage-success)](https://github.com/ahmdelbaz28-ux/revit/releases)
+[![Docker](https://img.shields.io/badge/docker-multi--stage-blue)](https://www.docker.com/)
 [![NFPA 72](https://img.shields.io/badge/NFPA-72_2022-red)](https://www.nfpa.org/)
 [![NEC](https://img.shields.io/badge/NEC-Chapter_9-purple)](https://www.nfpa.org/)
 
@@ -26,7 +26,46 @@
 
 ## Safety Notice
 
-> **⚠️ SAFETY DISCLAIMER** — This platform is designed for **simulation, analysis, and planning purposes only**. Never rely solely on this software for actual fire safety system design without human expert validation. All fire protection systems must undergo independent safety audits by licensed professionals. Safety of human life depends on proper implementation of NFPA codes and professional engineering judgment.
+> **⚠️ SAFETY DISCLAIMER** — This platform is designed for **simulation, analysis, and planning purposes only**. Never rely solely on this software for actual fire safety system design without human expert validation. All fire protection systems must undergo independent safety audits by licensed professionals. Safety of human life depends on proper implementation of NFPA codes and professional engineering judgment.**
+
+---
+
+## Quick Start (Docker — Production)
+
+```bash
+# Prerequisites: Docker, git
+
+git clone https://github.com/ahmdelbaz28-ux/revit.git
+cd revit
+
+# Configure environment
+cp .env.example .env
+# EDIT .env: set FIREAI_API_KEY (random 64-char hex), CORS_ORIGINS, CSP_CONNECT_SRC
+
+# Build and run
+docker build -t fireai:latest .
+docker compose up -d
+
+# Open http://localhost:8000
+```
+
+### Quick Start (Source — Development)
+
+```bash
+# Prerequisites: Python 3.12+, Node.js 22+
+apt-get install -y python3 python3-pip nodejs npm
+
+# Backend
+pip install -r requirements.txt
+
+# Frontend
+cd frontend && npm install && npm run build && cd ..
+
+# Run
+export FIREAI_ENV=development
+python -m backend.app
+# Open http://localhost:8000
+```
 
 ---
 
@@ -91,8 +130,8 @@
     <td>PDF reports, DXF schedules, Revit export, compliance proof documents, audit trails</td>
   </tr>
   <tr>
-    <td><strong>🖥️ Desktop App</strong></td>
-    <td>Electron + React + Vite, 157 MB ARM64 AppImage, FastAPI backend, 54 API endpoints</td>
+    <td><strong>🖥️ Deployment</strong></td>
+    <td>Docker multi-stage, FastAPI backend, React SPA, 72 API endpoints, SQLite twin DB</td>
   </tr>
 </table>
 
@@ -116,7 +155,7 @@
 | [Integration Flow](docs/assets/architecture/integration-flow.svg) | BIM, External APIs, Enterprise & IoT integrations |
 | [AI Agent Flow](docs/assets/architecture/ai-agent-flow.svg) | Agent layer, analytics, memory, output generation |
 | [Engineering Pipeline](docs/assets/architecture/engineering-pipeline.svg) | 7-stage: Import → Validate → Analyze → Route → Compliance → Output → Audit |
-| [Deployment Architecture](docs/assets/architecture/deployment-architecture.svg) | Desktop standalone + Client-server enterprise |
+| [Deployment Architecture](docs/assets/architecture/deployment-architecture.svg) | Docker multi-stage (root `Dockerfile` + `docker-compose.yml`) |
 
 ---
 
@@ -204,47 +243,14 @@
 - ✅ **CSD Generator** — `fireai/core/csd_generator.py`
 
 ### Deployment
+- ✅ **Docker (multi-stage)** — `Dockerfile` + `docker-compose.yml` at repo root
 - ✅ **Linux ARM64 AppImage** — 157 MB, production-ready
 - 🟡 **Windows x64** — Requires CI runner (No Wine on ARM64)
 - 🔵 **macOS** — Planned for future release
-- 🔵 **Docker/K8s** — Configs available in `deploy/`
 
 ---
 
-## Quick Start
-
-### Prerequisites
-
-```bash
-# System dependencies (Linux)
-apt-get install -y python3 python3-pip nodejs npm libasound2t64 libxkbcommon0 libgbm1 libgtk-3-0 libnss3
-```
-
-### Run from Source
-
-```bash
-# Clone the repository
-git clone https://github.com/ahmdelbaz28-ux/revit.git
-cd revit
-
-# Backend setup
-pip install -r requirements.txt
-
-# Frontend setup
-cd frontend && npm install
-npm run build
-
-# Start the backend (serves frontend automatically)
-cd ..
-export FIREAI_ENV=development
-python -m backend.app
-
-# In another terminal, start Electron (optional)
-cd frontend
-npx electron electron/compiled/main.js
-```
-
-### Run Tests
+## Run Tests
 
 ```bash
 # Python tests (5,954 tests)
@@ -263,29 +269,23 @@ cd frontend && npm test
 ```
 revit/
 ├── backend/              # FastAPI Python backend
-│   ├── app.py            # Application entry point
+│   ├── app.py            # Application entry point (72 routes)
 │   ├── routers/          # 18 API routers
 │   ├── services/         # External API services
-│   └── database.py       # SQLite data layer
-├── core/                 # Core data models
-├── parsers/              # File format parsers
-├── fireai/               # Engineering kernel
-│   ├── core/             # 124+ engineering modules
-│   ├── agents/           # AI agents
-│   ├── analytics/        # ML & analytics
-│   ├── bridges/          # BIM/CAD integration bridges
-│   ├── conduits/         # Conduit engineering
-│   ├── validation/       # Compliance validation
-│   └── mcp_server/       # Model Context Protocol server
-├── frontend/             # Electron + React SPA
-│   ├── electron/         # Electron main/preload
+│   ├── database.py       # SQLite data layer
+│   ├── db_service.py     # Database service with bridge APIs
+│   ├── response.py       # Unified JSON response helpers
+│   └── schemas.py        # Pydantic request/response schemas
+├── core/                 # Core data models (UDM)
+├── frontend/             # React SPA (Vite)
 │   ├── src/              # React components
 │   └── dist/             # Vite build output
-├── qomn_fire/            # QOMN-FIRE engineering kernel
-├── qomn_conduit/         # QOMN conduit engineering
-├── tests/                # 100+ test files (5,954 tests)
-├── deploy/               # Docker, K8s, Helm configs
-└── docs/                 # Documentation & assets
+├── Dockerfile            # Multi-stage production build
+├── docker-compose.yml    # Docker Compose config
+├── .dockerignore         # Docker build exclusions
+├── .env.example          # Environment template
+├── requirements.txt      # Python dependencies
+└── .github/workflows/    # CI/CD pipelines
 ```
 
 ---
@@ -295,8 +295,8 @@ revit/
 | Status | Indicator | Details |
 |--------|-----------|---------|
 | **Release Status** | 🟡 Release Candidate | v1.0.0 — All code gates pass |
-| **Build Status** | ✅ PASS | ARM64 AppImage (157 MB) |
-| **Runtime Status** | ✅ PASS | Backend 54/54 routes, health check |
+| **Build Status** | ✅ PASS | Docker multi-stage + ARM64 AppImage |
+| **Runtime Status** | ✅ PASS | Backend 72/72 routes, health check |
 | **Security Status** | ✅ PASS | 0 critical, 0 exploitable high vulns |
 | **Test Status** | ✅ PASS | 5,954 Python + 54 TypeScript, 0 failures |
 | **Code Coverage** | ⚠️ 39% | Security modules 91%, kernel 62% avg |
