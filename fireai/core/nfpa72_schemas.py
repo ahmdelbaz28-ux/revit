@@ -92,10 +92,11 @@ class NFPA72Input(BaseModel):
     ceiling_height_m: float = Field(
         ...,
         gt=0,
-        le=15.24,
-        description="Ceiling height (H) in meters. Must be > 0 and ≤ 15.24m "
-                    "(50ft) per NFPA 72 §17.6.3.1.1. Heights outside 3.0-15.24m "
-                    "require PE review flag.",
+        le=18.288,
+        description="Ceiling height (H) in meters. Must be > 0 and ≤ 18.288m "
+                    "(60ft) per NFPA 72 §17.7.3.2.4. Heights above 15.24m (50ft) "
+                    "require PE review flag. V128 FIX: Was ≤ 15.24m (50ft) which "
+                    "incorrectly rejected valid smoke detector placements at 15.24-18.288m.",
     )
 
     ceiling_type: CeilingTypePydantic = Field(

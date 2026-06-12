@@ -321,7 +321,9 @@ class TestCeilingSpecCreateSafe:
 
     def test_high_height_clamped_to_max(self):
         spec = CeilingSpec.create_safe(20.0)
-        assert spec.height_m == 15.24
+        # V128 FIX: Max ceiling height is now 18.288m (60ft) per NFPA 72 §17.7.3.2.4,
+        # not 15.24m (50ft) which was the heat detector limit incorrectly applied to smoke.
+        assert spec.height_m == 18.288
         assert spec.was_clamped is True
         assert spec.original_height_m == 20.0
 
@@ -801,9 +803,10 @@ class TestGetSmokeDetectorRadius:
         with pytest.raises(CeilingHeightError):
             get_smoke_detector_radius(2.5)
 
-    def test_reject_above_15_24m(self):
+    def test_reject_above_18_288m(self):
+        # V128 FIX: Upper limit is now 18.288m (60ft) per NFPA 72 §17.7.3.2.4
         with pytest.raises(CeilingHeightError):
-            get_smoke_detector_radius(16.0)
+            get_smoke_detector_radius(19.0)
 
     def test_radius_decreases_with_height(self):
         """Higher ceilings → smaller radius → more detectors → safer."""
@@ -858,8 +861,9 @@ class TestValidateCeilingHeight:
             validate_ceiling_height(2.5)
 
     def test_above_max_raises(self):
+        # V128 FIX: Max is now 18.288m (60ft) — 16.0m is valid, use 19.0m instead
         with pytest.raises(CeilingHeightError, match="exceeds NFPA 72 maximum"):
-            validate_ceiling_height(16.0)
+            validate_ceiling_height(19.0)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -911,7 +915,8 @@ class TestGetSmokeDetectorRadiusSafe:
         assert details["flag"] is not None
         assert "HIGH_CEILING" in details["flag"]
         assert details["conservative"] is True
-        assert details["effective_height"] == 15.24
+        # V128 FIX: Effective height now capped at 18.288m (60ft), not 15.24m (50ft)
+        assert details["effective_height"] == 18.288
 
     def test_15_24m_standard(self):
         r = get_smoke_detector_radius_safe(15.24)

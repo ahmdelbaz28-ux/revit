@@ -128,9 +128,10 @@ class TestNFPA72Input:
         with pytest.raises(ValidationError, match="greater than 0"):
             NFPA72Input(spacing_m=9.1, ceiling_height_m=-1.0)
 
-    def test_reject_ceiling_height_above_15_24(self):
-        with pytest.raises(ValidationError, match="less than or equal to 15.24"):
-            NFPA72Input(spacing_m=9.1, ceiling_height_m=16.0)
+    def test_reject_ceiling_height_above_18_288(self):
+        # V128 FIX: Max ceiling height is now 18.288m (60ft) per NFPA 72 §17.7.3.2.4
+        with pytest.raises(ValidationError, match="less than or equal to 18.288"):
+            NFPA72Input(spacing_m=9.1, ceiling_height_m=19.0)
 
     def test_reject_nan_ceiling_height(self):
         with pytest.raises(ValidationError):

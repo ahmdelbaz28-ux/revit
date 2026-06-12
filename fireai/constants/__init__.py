@@ -7,12 +7,15 @@ Per "From Prototype to Production-Grade" §Phase 2 recommendation #2:
 Each constant must be given a descriptive name and a comment citing the
 specific NFPA or NEC clause it implements."
 
-This module replaces scattered magic numbers across the codebase with
-a single source of truth. Every constant has:
-  - A descriptive UPPERCASE name
-  - The exact standard clause citation
-  - A default value traceable to the standard
-  - Type annotation using typing.Final where possible
+V128 FIX: This module now imports ALL NFPA 72 constants from the canonical
+source (fireai.constants.nfpa72) per Single Source of Truth principle.
+No NFPA 72 constant may be defined here — only re-exported from nfpa72.py.
+This eliminates the 5-way parallel implementation bug where constants/__init__.py,
+nfpa72.py, qomn_kernel.py, nfpa72_calculations.py, and nfpa72_technology_dispatcher.py
+all had DIFFERENT values for the same NFPA 72 constant.
+
+BATTERY_SAFETY_FACTOR FIX: Was 1.20 (20% margin) here but 1.25 (25% margin)
+in canonical nfpa72.py per NFPA 72 §10.6.7.2.1. Now imported from canonical source.
 
 Standards Referenced:
   - NFPA 72-2022: National Fire Alarm and Signaling Code
@@ -25,129 +28,78 @@ Standards Referenced:
 """
 
 # ============================================================================
-# NFPA 72 — DETECTOR SPACING & COVERAGE (Chapter 17)
+# NFPA 72 — CANONICAL IMPORTS (Single Source of Truth)
+# V128 FIX: All NFPA 72 constants imported from fireai.constants.nfpa72
+# No duplicate definitions allowed — one source of truth only.
 # ============================================================================
 
-# Coverage radius factor: R = 0.7 x S
-# NFPA 72-2022 §17.7.4.2.3.1
-COVERAGE_FACTOR_FLAT_CEILING: float = 0.7
-"""Coverage radius factor for flat ceilings. R = 0.7 x S where S is the
-listed spacing. Per NFPA 72 §17.7.4.2.3.1, when detectors are placed on
-a square grid at spacing S, the circular coverage radius R = 0.7S ensures
-all points (including grid corners) are covered."""
+from fireai.constants.nfpa72 import (
+    # Detector spacing & coverage (Chapter 17)
+    SMOKE_MAX_SPACING_M,
+    COVERAGE_RADIUS_FACTOR as COVERAGE_FACTOR_FLAT_CEILING,
+    SMOKE_COVERAGE_RADIUS_M,
+    HEAT_MAX_SPACING_M,
+    HEAT_ABSOLUTE_MAX_SPACING_M,
+    WALL_MIN_DISTANCE_M,
+    SMOKE_MAX_WALL_DISTANCE_M,
+    HEAT_MAX_WALL_DISTANCE_M,
+    RIDGE_ZONE_BUFFER_M,
+    SLOPE_THRESHOLD_DEGREES,
+    BEAM_POCKET_DEPTH_FRACTION,
+    VERIFY_STEP_M,
+    PLACEMENT_MARGIN_M,
+    SMOKE_HEIGHT_SPACING_TABLE,
+    HEAT_HEIGHT_SPACING_TABLE,
+    COMBINED_HEIGHT_SPACING_TABLE as NFPA72_HEIGHT_SPACING_TABLE,
+    SMOKE_SPACING_FALLBACK_M as NFPA72_SMOKE_SPACING_FALLBACK_M,
+    HEAT_SPACING_FALLBACK_M as NFPA72_HEAT_SPACING_FALLBACK_M,
+    SMOKE_TABLE_MAX_HEIGHT_M as NFPA72_ABSOLUTE_MAX_HEIGHT_M,
+    COVERAGE_THRESHOLD_PCT,
+    MAX_ROOM_AREA_SQM,
 
-# Maximum listed spacing for smoke detectors on flat ceilings ≤ 3.0m
-# NFPA 72-2022 §17.6.3.1.1, Table 17.6.3.1.1
-SMOKE_MAX_SPACING_M: float = 9.10
-"""Maximum listed spacing for smoke detectors on smooth flat ceilings
-≤ 3.0m (10 ft). Per NFPA 72 Table 17.6.3.1.1. At h=3.0m, S=9.1m
-(30 ft), producing coverage radius R = 0.7 x 9.1 = 6.37m."""
+    # Ceiling height limits (Chapter 17)
+    SMOKE_MAX_CEILING_HEIGHT_M,
+    HEAT_MAX_CEILING_HEIGHT_M,
+    CEILING_HEIGHT_HARD_LIMIT_M,
+    CEILING_HEIGHT_SOFT_LIMIT_M,
+    CEILING_HEIGHT_MIN_M,
+    SMOKE_PRACTICAL_CEILING_HEIGHT_M,
 
-# Maximum listed spacing for heat detectors on flat ceilings ≤ 3.0m
-# NFPA 72-2022 §17.6.2.1, Table 17.6.3.5.1
-HEAT_MAX_SPACING_M: float = 6.10
-"""Maximum listed spacing for heat detectors on smooth flat ceilings
-≤ 3.0m (10 ft). Per NFPA 72 Table 17.6.2.1. At h=3.0m, S=6.1m
-(20 ft). Heat detectors use square-grid (Chebyshev) coverage geometry."""
+    # Pull stations (Chapter 17)
+    PULL_STATION_HEIGHT_M,
+    PULL_STATION_MAX_CORRIDOR_SPACING_M,
+    PULL_STATION_FROM_EXIT_M,
 
-# Coverage radius at ceiling height ≤ 3.0m (smoke)
-# Derived: R = COVERAGE_FACTOR_FLAT_CEILING x SMOKE_MAX_SPACING_M
-SMOKE_COVERAGE_RADIUS_M: float = round(COVERAGE_FACTOR_FLAT_CEILING * SMOKE_MAX_SPACING_M, 2)  # 6.37
-"""Coverage radius for smoke detectors at h≤3.0m. R = 0.7 x 9.1 = 6.37m."""
+    # Notification appliances (Chapter 18)
+    NAC_WALL_HEIGHT_M,
+    NAC_MIN_CD,
+    NAC_SLEEPING_MIN_CD,
 
-# Wall minimum distance — dead air space
-# NFPA 72-2022 §17.6.3.1.1
-WALL_MIN_DISTANCE_M: float = 0.10
-"""Minimum distance of detector from wall per NFPA 72 §17.6.3.1.1.
-Detectors must be ≥0.1m from any wall to avoid dead air space where
-smoke may not reach the detector due to boundary layer effects."""
+    # Battery calculations (Chapter 10)
+    BATTERY_STANDBY_HOURS,
+    BATTERY_ALARM_MINUTES,
+    BATTERY_SAFETY_FACTOR,  # V128 FIX: Was 1.20 locally, now 1.25 from canonical
+    BATTERY_DISCHARGE_EFFICIENCY,
 
-# Maximum wall distance = S/2
-# NFPA 72-2022 §17.6.3.1.1
-SMOKE_MAX_WALL_DISTANCE_M: float = SMOKE_MAX_SPACING_M / 2.0  # 4.55
-HEAT_MAX_WALL_DISTANCE_M: float = HEAT_MAX_SPACING_M / 2.0  # 3.05
+    # Voltage drop (Chapter 10)
+    DC_RETURN_PATH_FACTOR,
+    MIN_TERMINAL_VOLTAGE_V,
+    NOMINAL_SUPPLY_VOLTAGE_V,
+    VOLTAGE_DROP_MAX_FRACTION,
 
-# Ridge zone buffer for sloped ceilings
-# NFPA 72-2022 §17.6.3.4
-RIDGE_ZONE_BUFFER_M: float = 0.90
-"""Ridge zone buffer distance for sloped ceilings. At least one detector
-must be within 0.9m (3 ft) of the ridge per NFPA 72 §17.6.3.4."""
+    # Elevator shunt trip (Chapter 21)
+    DEFAULT_HD_RTI,
+    DEFAULT_SPRINKLER_RTI,
+    SHUNT_TRIP_MIN_TEMP_GAP_C,
 
-# Slope threshold for ridge zone requirement
-# NFPA 72-2022 §17.6.3.4
-SLOPE_THRESHOLD_DEGREES: float = 1.5
-"""Minimum ceiling slope (degrees) to require ridge zone detectors.
-Ceilings with slope > 1.5° per NFPA 72 §17.6.3.4 require at least
-one detector within the ridge zone."""
-
-# Beam pocket depth threshold (10% of ceiling height)
-# NFPA 72-2022 §17.6.3.6
-BEAM_POCKET_DEPTH_FRACTION: float = 0.10
-"""Fraction of ceiling height that defines a beam pocket per NFPA 72
-§17.6.3.6. If beam depth exceeds 10% of ceiling height, spacing must
-be reduced within each beam pocket."""
-
-# Verification step for coverage grid
-# NFPA 72-2022 §17.7.4.2.3.1 (grid verification methodology)
-VERIFY_STEP_M: float = 0.20
-"""Step size for verification grid in coverage checking. Per V26 fix,
-PLACEMENT_MARGIN = VERIFY_STEP x sqrt2/2 ≈ 0.141m ensures alignment
-between placement and verification radii."""
-
-# Placement margin derived from verification step
-# V26 Fix — aligns placement with verification
-PLACEMENT_MARGIN_M: float = VERIFY_STEP_M * (2**0.5) / 2.0  # ≈ 0.141
-
-# Height-Adjusted Detector Spacing Table
-# NFPA 72-2022 Table 17.6.3.1.1
-NFPA72_HEIGHT_SPACING_TABLE = [
-    # (ceiling_height_max_m, smoke_adjusted_spacing_m, heat_adjusted_spacing_m)
-    (3.0, 9.10, 6.10),  # Listed spacings at h≤3.0m
-    (3.7, 8.70, 5.80),
-    (4.6, 8.20, 5.50),
-    (5.5, 7.70, 5.20),
-    (6.1, 7.30, 4.90),
-    (7.6, 6.80, 4.60),
-    (9.1, 6.40, 4.30),
-    (10.7, 6.00, 4.00),
-    (12.2, 5.60, 3.70),
-]
-NFPA72_ABSOLUTE_MAX_HEIGHT_M: float = 12.2
-NFPA72_SMOKE_SPACING_FALLBACK_M: float = 5.20  # Beyond 12.2m → conservative
-NFPA72_HEAT_SPACING_FALLBACK_M: float = 3.50  # Beyond 12.2m → conservative
-
-# Coverage area threshold
-# NFPA 72-2022 §17.7.6.1
-COVERAGE_THRESHOLD_PCT: float = 99.9
-"""Minimum coverage percentage for PASS. Uses 99.9% (not 100%) to account
-for floating-point precision in Shapely area calculations. Per V13 fix,
-area-based coverage is primary; point-sampling is secondary."""
-
-# Maximum room area for valid rooms (atriums can be 3000+ m²)
-MAX_ROOM_AREA_SQM: float = 10000.0
-"""Maximum room area in m². V12 Bug #4: raised from 200 to 10000 to
-allow atriums and lobbies which are the most important spaces for
-fire protection. Per NFPA 72, large spaces require MORE protection,
-not less."""
+    # PE sign-off
+    PE_SIGNOFF_NOTICE,
+)
 
 
 # ============================================================================
-# NFPA 72 — VOLTAGE DROP & CIRCUITS (Chapter 10)
+# NEC — VOLTAGE DROP & CIRCUITS (not in nfpa72.py — kept here)
 # ============================================================================
-
-# DC return path factor (round-trip conductor)
-# NFPA 72-2022 §10.14
-DC_RETURN_PATH_FACTOR: float = 2.0
-"""Voltage drop must include both supply and return conductors.
-V_drop = 2 x I x R x L per NFPA 72 §10.14. V14 Bug #12: code was
-missing this x2 factor, reporting 50% of actual voltage drop."""
-
-# Minimum terminal voltage for notification appliances
-# NFPA 72-2022 §10.14.1
-MIN_TERMINAL_VOLTAGE_V: float = 16.0
-"""Minimum operating voltage for 24VDC notification appliances.
-Per NFPA 72 §10.14.1, appliances must operate within their listed
-voltage range. 16V is the common minimum for 24VDC systems."""
 
 # Voltage drop limits
 # NEC §210.19(A)(1): Branch circuit ≤ 3%
@@ -161,42 +113,6 @@ CONTINUOUS_LOAD_FACTOR: float = 1.25
 """Conductors must have ampacity ≥ 125% of continuous load per
 NEC §210.19(A)(1). This prevents conductor overheating under
 sustained loads."""
-
-# Nominal supply voltage for fire alarm systems
-NOMINAL_SUPPLY_VOLTAGE_V: float = 24.0
-
-# Default safety margin for voltage drop
-# V121 FIX: Corrected from 0.15 (15%) to 0.10 (10%) per V78 fix.
-# This file was missed when nfpa72_calculations.py was corrected in V78.
-VOLTAGE_DROP_MAX_FRACTION: float = 0.10
-"""Maximum allowable voltage drop as fraction of supply (10%).
-V78 Fix (now applied here too): Was 0.15 (15%) which is too permissive.
-Per NFPA 72 §10.14, the voltage at the most remote device must be within
-the device's listed voltage range. 10% is standard engineering practice
-for 24VDC fire alarm systems. NOTE: fireai/constants/nfpa72.py also has
-this corrected value as the canonical source."""
-
-
-# ============================================================================
-# NFPA 72 — BATTERY CALCULATIONS (Chapter 10)
-# ============================================================================
-
-# Default standby duration
-# NFPA 72-2022 §10.6.7
-BATTERY_STANDBY_HOURS: float = 24.0
-"""Required standby duration for fire alarm batteries. Per NFPA 72
-§10.6.7, most occupancies require 24 hours of standby capacity."""
-
-# Default alarm duration
-# NFPA 72-2022 §10.6.7
-BATTERY_ALARM_MINUTES: float = 5.0
-"""Required alarm duration for fire alarm batteries. Per NFPA 72
-§10.6.7, 5 minutes of alarm capacity after standby depletion."""
-
-# Battery aging/temperature safety factor
-BATTERY_SAFETY_FACTOR: float = 1.20
-"""Multiplier for battery capacity to account for aging and temperature
-derating. 1.20 = 20% margin per industry practice and NFPA 72 §10.6.7."""
 
 
 # ============================================================================
@@ -234,30 +150,6 @@ V51 FIX: Old values (14=30A, 12=35A, 10=45A) were from the 90°C
 column or another table, NOT the 75°C column. Using 90°C ampacity
 with 75°C rated terminations violates NEC 110.14(C)(1). The 75°C
 column is the correct reference for THHN/THWN fire alarm cables."""
-
-
-# ============================================================================
-# NFPA 72 — ELEVATOR SHUNT TRIP (Chapter 21)
-# ============================================================================
-
-# Default RTI values
-# V20.2 Bug #18: DEFAULT_HD_RTI was 50 (same as sprinkler, check never triggered)
-DEFAULT_HD_RTI: float = 100.0
-"""Default Response Time Index for standard-response heat detectors per
-UL 521. V20.2 Bug #18: was 50.0 (same as quick-response sprinkler),
-making the V19.1 RTI check a no-op. Standard-response HDs have RTI
-100-150. Quick-response sprinklers have RTI ≈ 50. A slow HD paired
-with a fast sprinkler means the sprinkler bursts before power is severed
-→ electrified water → firefighter electrocution."""
-
-DEFAULT_SPRINKLER_RTI: float = 50.0
-"""Default RTI for quick-response sprinklers per FM Global research."""
-
-# Shunt trip temperature gap
-SHUNT_TRIP_MIN_TEMP_GAP_C: float = 5.0
-"""Minimum temperature difference between HD rating and sprinkler rating.
-Per ASME A17.1 and NFPA 72 §21.4.2, the HD must activate BEFORE the
-sprinkler to allow time for power disconnection."""
 
 
 # ============================================================================

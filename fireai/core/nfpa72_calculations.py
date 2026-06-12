@@ -558,7 +558,11 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 # resulting in over-conservative placement (too many detectors).
 #
 # (ceiling_height_max_meters, smoke_adjusted_spacing_m, heat_adjusted_spacing_m)
-from fireai.constants import NFPA72_HEIGHT_SPACING_TABLE as _CANONICAL_HEIGHT_TABLE
+# V128: Import from CANONICAL single source of truth (fireai/constants/nfpa72.py)
+# to eliminate divergent duplicate tables across the codebase.
+# Previously, this was imported via fireai.constants (which had its own duplicates).
+# Now imports directly from the authoritative nfpa72.py module.
+from fireai.constants.nfpa72 import COMBINED_HEIGHT_SPACING_TABLE as _CANONICAL_HEIGHT_TABLE
 
 _NFPA72_TABLE_17_6_3_1_1 = list(_CANONICAL_HEIGHT_TABLE)
 
