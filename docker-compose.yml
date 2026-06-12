@@ -15,13 +15,14 @@ services:
     environment:
       - FIREAI_ENV=${FIREAI_ENV:-production}
       - FIREAI_API_KEY=${FIREAI_API_KEY:?ERROR: FIREAI_API_KEY must be set}
-      - FIREAI_EVIDENCE_HMAC_KEY=${FIREAI_EVIDENCE_HMAC_KEY:?ERROR: HMAC key must be set}
-      - FIREAI_MEMORY_LLM_PROVIDER=${FIREAI_MEMORY_LLM_PROVIDER:-gemini}
-      - FIREAI_MEMORY_LLM_MODEL=${FIREAI_MEMORY_LLM_MODEL:-gemini-2.0-flash}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - LOG_LEVEL=${LOG_LEVEL:-WARNING}
-      - DIGITAL_TWIN_DB_PATH=/app/data/digital_twin.db
-      - UDM_DB_PATH=/app/data/udm_elements.db
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./db/digital_twin.db}
+      - UDM_DB_PATH=${UDM_DB_PATH:-./db/udm_elements.db}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      - CSP_UNSAFE_EVAL=${CSP_UNSAFE_EVAL:-false}
+      - CSP_CONNECT_SRC=${CSP_CONNECT_SRC:-http://localhost:5173 ws://localhost:5173 http://localhost:8000}
+      - FIREAI_DATA_DIRS=${FIREAI_DATA_DIRS:-/tmp/fireai_uploads:/data:/uploads}
+      - FIREAI_ALLOWED_UPLOAD_DIRS=${FIREAI_ALLOWED_UPLOAD_DIRS:-/tmp:/var/tmp:/var/fireai/uploads}
+      - FIREAI_DWG_MAX_FILE_SIZE_BYTES=${FIREAI_DWG_MAX_FILE_SIZE_BYTES:-104857600}
     volumes:
       - fireai-data:/app/data
       - fireai-logs:/app/logs
