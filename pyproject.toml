@@ -147,6 +147,7 @@ known_third_party = ["numpy", "scipy", "shapely", "pydantic", "fastapi", "sqlalc
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = [".git", "__pycache__", "venv", "env", "revit-main", "facp_distributed"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

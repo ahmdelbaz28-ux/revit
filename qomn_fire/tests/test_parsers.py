@@ -147,7 +147,7 @@ class TestFormatDetector(unittest.TestCase):
 
     def test_unknown_format_returns_error(self):
         """File with unrecognized content returns FormatError."""
-        with tempfile.NamedTemporaryFile(mode='wb', suffix='.bin', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.ifc', delete=False) as f:
             f.write(b"\x00\x01\x02\x03RANDOM_GARBAGE")
             f.flush()
             path = f.name
