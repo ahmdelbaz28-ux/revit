@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="750"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/></linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10" fill="#475569"/></marker>
+  </defs>
+  <rect width="1200" height="750" fill="url(#bg)" rx="12"/>
+  <text x="40" y="45" fill="#e2e8f0" font-size="22" font-weight="700">Integration Architecture</text>
+  <text x="40" y="65" fill="#94a3b8" font-size="12">External System Connectors — All Implemented</text>
+
+  <!-- BIM column -->
+  <rect x="40" y="90" width="350" height="640" rx="8" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1" stroke-opacity=".3"/>
+  <text x="60" y="118" fill="#60a5fa" font-size="14" font-weight="600">BIM INTEGRATION</text>
+  <rect x="60" y="135" width="310" height="55" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="75" y="158" fill="#93c5fd" font-size="12" font-weight="600">Revit BIM Sync</text>
+  <text x="75" y="178" fill="#94a3b8" font-size="10">fireai/bridges/revit_bim_sync.py</text>
+  <line x1="215" y1="190" x2="215" y2="210" stroke="#475569" stroke-width="1" marker-end="url(#arr)"/>
+  <rect x="60" y="215" width="310" height="55" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="75" y="238" fill="#93c5fd" font-size="12" font-weight="600">IFC Headless Bridge</text>
+  <text x="75" y="258" fill="#94a3b8" font-size="10">fireai/bridges/ifc_headless_bridge.py</text>
+  <line x1="215" y1="270" x2="215" y2="290" stroke="#475569" stroke-width="1" marker-end="url(#arr)"/>
+  <rect x="60" y="295" width="310" height="55" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="75" y="318" fill="#93c5fd" font-size="12" font-weight="600">AutoCAD Bridge</text>
+  <text x="75" y="338" fill="#94a3b8" font-size="10">fireai/integration/autocad_bridge.py</text>
+  <line x1="215" y1="350" x2="215" y2="370" stroke="#475569" stroke-width="1" marker-end="url(#arr)"/>
+  <rect x="60" y="375" width="310" height="55" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="75" y="398" fill="#93c5fd" font-size="12" font-weight="600">Bentley Bridge</text>
+  <text x="75" y="418" fill="#94a3b8" font-size="10">fireai/integration/bentley_bridge.py</text>
+  <line x1="215" y1="430" x2="215" y2="450" stroke="#475569" stroke-width="1" marker-end="url(#arr)"/>
+  <rect x="60" y="455" width="310" height="55" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="75" y="478" fill="#93c5fd" font-size="12" font-weight="600">MCP Server (Revit)</text>
+  <text x="75" y="498" fill="#94a3b8" font-size="10">fireai/mcp_server/revit_mcp_server.py</text>
+
+  <!-- External API column -->
+  <rect x="420" y="90" width="370" height="640" rx="8" fill="#083344" stroke="#22d3ee" stroke-width="1" stroke-opacity=".3"/>
+  <text x="440" y="118" fill="#22d3ee" font-size="14" font-weight="600">EXTERNAL API SERVICES</text>
+  <rect x="440" y="135" width="330" height="50" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="455" y="158" fill="#67e8f9" font-size="12" font-weight="600">Open-Meteo Weather API</text>
+  <text x="455" y="175" fill="#94a3b8" font-size="10">backend/services/weather_service.py</text>
+  <rect x="440" y="195" width="330" height="50" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="455" y="218" fill="#67e8f9" font-size="12" font-weight="600">Nominatim Geocoding</text>
+  <text x="455" y="235" fill="#94a3b8" font-size="10">backend/services/geocoding_service.py</text>
+  <rect x="440" y="255" width="330" height="50" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="455" y="278" fill="#67e8f9" font-size="12" font-weight="600">Open Topo Data (Elevation)</text>
+  <text x="455" y="295" fill="#94a3b8" font-size="10">backend/services/elevation_service.py</text>
+  <rect x="440" y="315" width="330" height="50" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="455" y="338" fill="#67e8f9" font-size="12" font-weight="600">WAQI Air Quality Index</text>
+  <text x="455" y="355" fill="#94a3b8" font-size="10">backend/services/air_quality_service.py</text>
+  <rect x="440" y="375" width="330" height="50" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="455" y="398" fill="#67e8f9" font-size="12" font-weight="600">NWS Severe Weather</text>
+  <text x="455" y="415" fill="#94a3b8" font-size="10">backend/services/severe_weather_service.py</text>
+  <rect x="440" y="435" width="330" height="50" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="455" y="458" fill="#67e8f9" font-size="12" font-weight="600">REST Countries</text>
+  <text x="455" y="475" fill="#94a3b8" font-size="10">backend/services/region_service.py</text>
+  <rect x="440" y="495" width="330" height="50" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="455" y="518" fill="#67e8f9" font-size="12" font-weight="600">Hazmat Database</text>
+  <text x="455" y="535" fill="#94a3b8" font-size="10">backend/services/hazmat_service.py</text>
+
+  <!-- Enterprise column -->
+  <rect x="820" y="90" width="350" height="640" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="1" stroke-opacity=".3"/>
+  <text x="840" y="118" fill="#34d399" font-size="14" font-weight="600">ENTERPRISE &amp; IoT</text>
+  <rect x="840" y="135" width="310" height="55" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="855" y="158" fill="#6ee7b7" font-size="12" font-weight="600">IoT Pipeline</text>
+  <text x="855" y="178" fill="#94a3b8" font-size="10">fireai/integration/iot_pipeline.py</text>
+  <line x1="995" y1="190" x2="995" y2="210" stroke="#475569" stroke-width="1" marker-end="url(#arr)"/>
+  <rect x="840" y="215" width="310" height="55" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="855" y="238" fill="#6ee7b7" font-size="12" font-weight="600">Enterprise Pipeline</text>
+  <text x="855" y="258" fill="#94a3b8" font-size="10">fireai/bridges/enterprise_pipeline.py</text>
+  <line x1="995" y1="270" x2="995" y2="290" stroke="#475569" stroke-width="1" marker-end="url(#arr)"/>
+  <rect x="840" y="295" width="310" height="55" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="855" y="318" fill="#6ee7b7" font-size="12" font-weight="600">Field Data Service</text>
+  <text x="855" y="338" fill="#94a3b8" font-size="10">fireai/integration/field_data_service.py</text>
+  <line x1="995" y1="350" x2="995" y2="370" stroke="#475569" stroke-width="1" marker-end="url(#arr)"/>
+  <rect x="840" y="375" width="310" height="55" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="855" y="398" fill="#6ee7b7" font-size="12" font-weight="600">Mobile API</text>
+  <text x="855" y="418" fill="#94a3b8" font-size="10">fireai/integration/mobile_api.py</text>
+  <line x1="995" y1="430" x2="995" y2="450" stroke="#475569" stroke-width="1" marker-end="url(#arr)"/>
+  <rect x="840" y="455" width="310" height="55" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="855" y="478" fill="#6ee7b7" font-size="12" font-weight="600">AR/VR Visualizer</text>
+  <text x="855" y="498" fill="#94a3b8" font-size="10">fireai/integration/ar_vr_visualizer.py</text>
+</svg>

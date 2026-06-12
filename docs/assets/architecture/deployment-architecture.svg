@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="600"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/></linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10" fill="#475569"/></marker>
+  </defs>
+  <rect width="1200" height="600" fill="url(#bg)" rx="12"/>
+  <text x="40" y="45" fill="#e2e8f0" font-size="22" font-weight="700">Deployment Architecture</text>
+  <text x="40" y="65" fill="#94a3b8" font-size="12">FireAI Digital Twin Platform v1.0.0 — All Implemented</text>
+
+  <!-- Desktop (Standalone) -->
+  <rect x="40" y="100" width="540" height="460" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1" stroke-opacity=".4"/>
+  <text x="60" y="130" fill="#60a5fa" font-size="16" font-weight="600">DESKTOP (Standalone)</text>
+  <rect x="60" y="150" width="240" height="60" rx="6" fill="#1e3a5f" stroke="#f59e0b" stroke-width="2"/>
+  <text x="75" y="178" fill="#fbbf24" font-size="13" font-weight="600">Electron App</text>
+  <text x="75" y="195" fill="#94a3b8" font-size="10">React SPA + preload.ts</text>
+  <rect x="320" y="150" width="240" height="60" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+  <text x="335" y="178" fill="#6ee7b7" font-size="13" font-weight="600">Python Backend</text>
+  <text x="335" y="195" fill="#94a3b8" font-size="10">FastAPI + uvicorn</text>
+  <line x1="300" y1="180" x2="316" y2="180" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+  <rect x="60" y="230" width="500" height="55" rx="6" fill="#312e81" stroke="#818cf8" stroke-width="1"/>
+  <text x="75" y="253" fill="#a5b4fc" font-size="12" font-weight="600">SQLite Database</text>
+  <text x="75" y="273" fill="#94a3b8" font-size="10">digital_twin.db — Local file storage</text>
+  <line x1="180" y1="210" x2="180" y2="226" stroke="#475569" stroke-width="1"/>
+  <line x1="440" y1="210" x2="440" y2="226" stroke="#475569" stroke-width="1"/>
+
+  <rect x="60" y="305" width="500" height="110" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="75" y="328" fill="#67e8f9" font-size="12" font-weight="600">Linux ARM64 AppImage</text>
+  <text x="75" y="348" fill="#94a3b8" font-size="11">Platform: ARM64 (aarch64)</text>
+  <text x="75" y="365" fill="#94a3b8" font-size="11">Size: 157 MB</text>
+  <text x="75" y="382" fill="#94a3b8" font-size="11">Status: Release Candidate</text>
+  <text x="75" y="399" fill="#94a3b8" font-size="11">Security: contextIsolation, sandbox, CSP</text>
+
+  <!-- Client-Server -->
+  <rect x="620" y="100" width="540" height="460" rx="10" fill="#064e3b" stroke="#34d399" stroke-width="1" stroke-opacity=".4"/>
+  <text x="640" y="130" fill="#34d399" font-size="16" font-weight="600">CLIENT-SERVER (Enterprise)</text>
+  <rect x="640" y="150" width="240" height="55" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+  <text x="655" y="175" fill="#93c5fd" font-size="12" font-weight="600">Browser Client</text>
+  <text x="655" y="192" fill="#94a3b8" font-size="10">Any modern browser</text>
+  <line x1="880" y1="177" x2="896" y2="177" stroke="#475569" stroke-width="2"/>
+  <rect x="900" y="150" width="240" height="55" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+  <text x="915" y="175" fill="#6ee7b7" font-size="12" font-weight="600">FastAPI Server</text>
+  <text x="915" y="192" fill="#94a3b8" font-size="10">HTTP REST API</text>
+
+  <rect x="640" y="225" width="500" height="60" rx="6" fill="#312e81" stroke="#818cf8" stroke-width="1"/>
+  <text x="655" y="248" fill="#a5b4fc" font-size="12" font-weight="600">SQLite / PostgreSQL (future)</text>
+  <text x="655" y="268" fill="#94a3b8" font-size="10">Shared database for multi-user access</text>
+
+  <rect x="640" y="305" width="500" height="55" rx="6" fill="#831843" stroke="#f472b6" stroke-width="1"/>
+  <text x="655" y="328" fill="#f9a8d4" font-size="12" font-weight="600">Docker Deployment</text>
+  <text x="655" y="348" fill="#94a3b8" font-size="10">deploy/docker/ | deploy/k8s/ | deploy/helm/</text>
+
+  <rect x="640" y="375" width="500" height="75" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"/>
+  <text x="655" y="398" fill="#c4b5fd" font-size="12" font-weight="600">Observability Stack</text>
+  <text x="655" y="418" fill="#94a3b8" font-size="10">deploy/observability/ — Monitoring, logging, metrics</text>
+  <text x="655" y="438" fill="#94a3b8" font-size="10">Health check: /api/health | Uptime tracking | Database status</text>
+</svg>

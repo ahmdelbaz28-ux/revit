@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="layer1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".15"/><stop offset="1" stop-color="#3b82f6" stop-opacity=".05"/></linearGradient>
+    <linearGradient id="layer2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".15"/><stop offset="1" stop-color="#8b5cf6" stop-opacity=".05"/></linearGradient>
+    <linearGradient id="layer3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ec4899" stop-opacity=".15"/><stop offset="1" stop-color="#ec4899" stop-opacity=".05"/></linearGradient>
+    <linearGradient id="layer4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f59e0b" stop-opacity=".15"/><stop offset="1" stop-color="#f59e0b" stop-opacity=".05"/></linearGradient>
+    <linearGradient id="layer5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".15"/><stop offset="1" stop-color="#10b981" stop-opacity=".05"/></linearGradient>
+    <linearGradient id="layer6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#06b6d4" stop-opacity=".15"/><stop offset="1" stop-color="#06b6d4" stop-opacity=".05"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)" rx="12"/>
+  <text x="40" y="45" fill="#e2e8f0" font-size="22" font-weight="700">System Architecture</text>
+  <text x="40" y="65" fill="#94a3b8" font-size="12">FireAI Digital Twin Platform v1.0.0</text>
+
+  <!-- Layer 6: External Systems -->
+  <rect x="40" y="85" width="1120" height="110" rx="8" fill="url(#layer6)" stroke="#22d3ee" stroke-width="1" stroke-opacity=".3"/>
+  <text x="55" y="108" fill="#22d3ee" font-size="13" font-weight="600">EXTERNAL SYSTEMS</text>
+  <rect x="55" y="120" width="130" height="36" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="70" y="143" fill="#67e8f9" font-size="11">Revit API</text>
+  <rect x="195" y="120" width="130" height="36" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="210" y="143" fill="#67e8f9" font-size="11">AutoCAD DWG/DXF</text>
+  <rect x="335" y="120" width="130" height="36" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="350" y="143" fill="#67e8f9" font-size="11">Bentley &amp; IFC</text>
+  <rect x="475" y="120" width="130" height="36" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="490" y="143" fill="#67e8f9" font-size="11">Open-Meteo API</text>
+  <rect x="615" y="120" width="130" height="36" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="630" y="143" fill="#67e8f9" font-size="11">Nominatim GIS</text>
+  <rect x="755" y="120" width="130" height="36" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="770" y="143" fill="#67e8f9" font-size="11">REST Countries</text>
+  <rect x="895" y="120" width="130" height="36" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="910" y="143" fill="#67e8f9" font-size="11">NWS Weather</text>
+  <text x="1040" y="120" width="130" height="36" fill="#67e8f9" font-size="11">WAQI Air Quality</text>
+
+  <!-- Arrow -->
+  <line x1="600" y1="195" x2="600" y2="215" stroke="#475569" stroke-width="2"/>
+  <polygon points="600,218 595,212 605,212" fill="#475569"/>
+
+  <!-- Layer 5: Integration Layer -->
+  <rect x="40" y="220" width="1120" height="110" rx="8" fill="url(#layer5)" stroke="#34d399" stroke-width="1" stroke-opacity=".3"/>
+  <text x="55" y="243" fill="#34d399" font-size="13" font-weight="600">INTEGRATION LAYER</text>
+  <rect x="55" y="255" width="160" height="36" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="70" y="278" fill="#6ee7b7" font-size="11">IFC Headless Bridge</text>
+  <rect x="225" y="255" width="160" height="36" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="240" y="278" fill="#6ee7b7" font-size="11">Revit BIM Sync</text>
+  <rect x="395" y="255" width="160" height="36" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="410" y="278" fill="#6ee7b7" font-size="11">AutoCAD Bridge</text>
+  <rect x="565" y="255" width="160" height="36" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="580" y="278" fill="#6ee7b7" font-size="11">Bentley Bridge</text>
+  <rect x="735" y="255" width="160" height="36" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="750" y="278" fill="#6ee7b7" font-size="11">Enterprise Pipeline</text>
+  <rect x="905" y="255" width="240" height="36" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="920" y="278" fill="#6ee7b7" font-size="11">MCP Server &amp; IoT Pipeline</text>
+  <text x="345" y="310" fill="#a7f3d0" font-size="10" text-anchor="middle">DWGs, DXFs, IFCs, PDFs, Word, Excel, Images, RVT</text>
+
+  <!-- Arrow -->
+  <line x1="600" y1="330" x2="600" y2="350" stroke="#475569" stroke-width="2"/>
+  <polygon points="600,353 595,347 605,347" fill="#475569"/>
+
+  <!-- Layer 4: FireAI Core -->
+  <rect x="40" y="355" width="1120" height="120" rx="8" fill="url(#layer4)" stroke="#fbbf24" stroke-width="1" stroke-opacity=".3"/>
+  <text x="55" y="378" fill="#fbbf24" font-size="13" font-weight="600">FIREAI CORE — ORCHESTRATION &amp; DATA</text>
+  <rect x="55" y="390" width="180" height="36" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+  <text x="70" y="413" fill="#fde68a" font-size="11">Analysis Pipeline</text>
+  <rect x="245" y="390" width="180" height="36" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+  <text x="260" y="413" fill="#fde68a" font-size="11">Digital Twin Core</text>
+  <rect x="435" y="390" width="180" height="36" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+  <text x="450" y="413" fill="#fde68a" font-size="11">Unified Data Model</text>
+  <rect x="625" y="390" width="180" height="36" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+  <text x="640" y="413" fill="#fde68a" font-size="11">Audit Store &amp; Trail</text>
+  <rect x="815" y="390" width="180" height="36" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+  <text x="830" y="413" fill="#fde68a" font-size="11">Event Bus &amp; Provenance</text>
+  <text x="100" y="458" fill="#fde68a" font-size="10">Multi-floor orchestrator | Room lifecycle | BIM sanitizer | Blockchain readiness gate</text>
+
+  <!-- Arrow -->
+  <line x1="600" y1="475" x2="600" y2="495" stroke="#475569" stroke-width="2"/>
+  <polygon points="600,498 595,492 605,492" fill="#475569"/>
+
+  <!-- Layer 3: Engineering Engines -->
+  <rect x="40" y="500" width="1120" height="120" rx="8" fill="url(#layer3)" stroke="#f472b6" stroke-width="1" stroke-opacity=".3"/>
+  <text x="55" y="523" fill="#f472b6" font-size="13" font-weight="600">ENGINEERING ENGINES</text>
+  <rect x="55" y="535" width="170" height="36" rx="6" fill="#831843" stroke="#f472b6" stroke-width="1"/>
+  <text x="70" y="558" fill="#f9a8d4" font-size="10">NFPA 72 Engine</text>
+  <rect x="235" y="535" width="170" height="36" rx="6" fill="#831843" stroke="#f472b6" stroke-width="1"/>
+  <text x="250" y="558" fill="#f9a8d4" font-size="10">Acoustics Engine</text>
+  <rect x="415" y="535" width="170" height="36" rx="6" fill="#831843" stroke="#f472b6" stroke-width="1"/>
+  <text x="430" y="558" fill="#f9a8d4" font-size="10">Coverage Engine</text>
+  <rect x="595" y="535" width="170" height="36" rx="6" fill="#831843" stroke="#f472b6" stroke-width="1"/>
+  <text x="610" y="558" fill="#f9a8d4" font-size="10">Cable Routing</text>
+  <rect x="775" y="535" width="170" height="36" rx="6" fill="#831843" stroke="#f472b6" stroke-width="1"/>
+  <text x="790" y="558" fill="#f9a8d4" font-size="10">Conduit Fill</text>
+  <rect x="955" y="535" width="180" height="36" rx="6" fill="#831843" stroke="#f472b6" stroke-width="1"/>
+  <text x="970" y="558" fill="#f9a8d4" font-size="10">Voltage Drop</text>
+  <text x="100" y="603" fill="#f9a8d4" font-size="10">Battery sizing | Egress | Hydraulic | Duct detector | Pathway survivability | HAC classification | ASET/RSET</text>
+
+  <!-- Arrow -->
+  <line x1="600" y1="620" x2="600" y2="640" stroke="#475569" stroke-width="2"/>
+  <polygon points="600,643 595,637 605,637" fill="#475569"/>
+
+  <!-- Layer 2: AI Agents -->
+  <rect x="40" y="645" width="1120" height="110" rx="8" fill="url(#layer2)" stroke="#a78bfa" stroke-width="1" stroke-opacity=".3"/>
+  <text x="55" y="668" fill="#a78bfa" font-size="13" font-weight="600">AI AGENTS &amp; ANALYTICS</text>
+  <rect x="55" y="680" width="170" height="36" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"/>
+  <text x="70" y="703" fill="#c4b5fd" font-size="11">Learning Agent</text>
+  <rect x="235" y="680" width="170" height="36" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"/>
+  <text x="250" y="703" fill="#c4b5fd" font-size="11">Predictive Agent</text>
+  <rect x="415" y="680" width="170" height="36" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"/>
+  <text x="430" y="703" fill="#c4b5fd" font-size="11">Self-Improvement</text>
+  <rect x="595" y="680" width="170" height="36" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"/>
+  <text x="610" y="703" fill="#c4b5fd" font-size="11">Predictive Analytics</text>
+  <rect x="775" y="680" width="170" height="36" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"/>
+  <text x="790" y="703" fill="#c4b5fd" font-size="11">ML Pipeline</text>
+  <rect x="955" y="680" width="180" height="36" rx="6" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"/>
+  <text x="970" y="703" fill="#c4b5fd" font-size="11">Tool Selector</text>
+  <text x="100" y="740" fill="#c4b5fd" font-size="10">Mem0 memory service | LangGraph workflows | Predictive maintenance | Monte Carlo simulation</text>
+
+  <!-- Arrow -->
+  <line x1="600" y1="755" x2="600" y2="775" stroke="#475569" stroke-width="2"/>
+  <polygon points="600,778 595,772 605,772" fill="#475569"/>
+
+  <!-- Layer 1: Presentation Layer -->
+  <rect x="40" y="780" width="1120" height="100" rx="8" fill="url(#layer1)" stroke="#60a5fa" stroke-width="1" stroke-opacity=".3"/>
+  <text x="55" y="803" fill="#60a5fa" font-size="13" font-weight="600">PRESENTATION LAYER</text>
+  <rect x="55" y="815" width="200" height="36" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="70" y="838" fill="#93c5fd" font-size="11">Electron Desktop App</text>
+  <rect x="265" y="815" width="200" height="36" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="280" y="838" fill="#93c5fd" font-size="11">FastAPI REST API</text>
+  <rect x="475" y="815" width="200" height="36" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="490" y="838" fill="#93c5fd" font-size="11">WebSocket Manager</text>
+  <rect x="685" y="815" width="200" height="36" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="700" y="838" fill="#93c5fd" font-size="11">Swagger / OpenAPI</text>
+  <rect x="895" y="815" width="240" height="36" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="910" y="838" fill="#93c5fd" font-size="11">CSP-Secured SPA (React)</text>
+</svg>

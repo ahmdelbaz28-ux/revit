@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="500"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/></linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10" fill="#475569"/></marker>
+  </defs>
+  <rect width="1200" height="500" fill="url(#bg)" rx="12"/>
+  <text x="40" y="45" fill="#e2e8f0" font-size="22" font-weight="700">Product Roadmap</text>
+  <text x="40" y="65" fill="#94a3b8" font-size="12">FireAI Digital Twin Platform — Current &amp; Future Milestones</text>
+
+  <!-- Timeline base -->
+  <line x1="100" y1="400" x2="1100" y2="400" stroke="#334155" stroke-width="3"/>
+  <line x1="100" y1="400" x2="1100" y2="400" stroke="url(#bg)" stroke-width="1"/>
+  <line x1="100" y1="400" x2="1100" y2="400" stroke="#475569" stroke-width="2" stroke-dasharray="4,4"/>
+
+  <!-- Current marker -->
+  <circle cx="320" cy="400" r="10" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <text x="320" y="425" fill="#ef4444" font-size="12" font-weight="600" text-anchor="middle">▼ CURRENT</text>
+  <text x="320" y="443" fill="#94a3b8" font-size="11" text-anchor="middle">Q2 2026 · v1.0.0</text>
+
+  <!-- Next marker -->
+  <circle cx="600" cy="400" r="10" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+  <text x="600" y="425" fill="#f59e0b" font-size="12" font-weight="600" text-anchor="middle">▼ NEXT</text>
+  <text x="600" y="443" fill="#94a3b8" font-size="11" text-anchor="middle">Q3 2026</text>
+
+  <!-- Future marker -->
+  <circle cx="900" cy="400" r="10" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+  <text x="900" y="425" fill="#3b82f6" font-size="12" font-weight="600" text-anchor="middle">▼ FUTURE</text>
+  <text x="900" y="443" fill="#94a3b8" font-size="11" text-anchor="middle">Q4 2026+</text>
+
+  <!-- Current state card -->
+  <rect x="100" y="90" width="440" height="285" rx="10" fill="#1e293b" stroke="#ef4444" stroke-width="1"/>
+  <rect x="100" y="90" width="440" height="40" rx="10" fill="#ef4444" opacity=".15"/>
+  <text x="130" y="117" fill="#ef4444" font-size="16" font-weight="700">Current State</text>
+  <text x="130" y="145" fill="#e2e8f0" font-size="12" font-weight="600">Phase 1-8 Production Readiness Delivered</text>
+  <text x="130" y="168" fill="#94a3b8" font-size="11">✅ NFPA 72 engine with coverage, acoustics, voltage drop</text>
+  <text x="130" y="185" fill="#94a3b8" font-size="11">✅ AI Agents: learning, predictive, self-improvement</text>
+  <text x="130" y="202" fill="#94a3b8" font-size="11">✅ BIM integration: Revit, IFC, AutoCAD, Bentley</text>
+  <text x="130" y="219" fill="#94a3b8" font-size="11">✅ Compliance: NFPA 72, NEC, UL 864, IBC, ATEX</text>
+  <text x="130" y="236" fill="#94a3b8" font-size="11">✅ Auditing: SHA-256 hash chain, HMAC, Merkle proofs</text>
+  <text x="130" y="253" fill="#94a3b8" font-size="11">✅ Electron desktop app with security hardening</text>
+  <text x="130" y="270" fill="#94a3b8" font-size="11">✅ 157 MB ARM64 AppImage</text>
+  <text x="130" y="287" fill="#94a3b8" font-size="11">✅ 5,954 Python + 54 TypeScript tests passing</text>
+  <text x="130" y="310" fill="#64748b" font-size="11">⚠️ Windows build requires CI runner</text>
+  <text x="130" y="327" fill="#64748b" font-size="11">⚠️ Code coverage below targets (39%)</text>
+  <text x="130" y="344" fill="#64748b" font-size="11">⚠️ macOS build not validated</text>
+
+  <!-- Arrow from current to next -->
+  <line x1="545" y1="230" x2="575" y2="230" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Next state card -->
+  <rect x="580" y="90" width="280" height="285" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+  <rect x="580" y="90" width="280" height="40" rx="10" fill="#f59e0b" opacity=".15"/>
+  <text x="610" y="117" fill="#f59e0b" font-size="16" font-weight="700">Next Milestone</text>
+  <text x="610" y="145" fill="#e2e8f0" font-size="12" font-weight="600">Q3 2026</text>
+  <text x="610" y="168" fill="#94a3b8" font-size="11">🟡 3D visualization engine</text>
+  <text x="610" y="185" fill="#94a3b8" font-size="11">🟡 Sloped ceiling detection</text>
+  <text x="610" y="202" fill="#94a3b8" font-size="11">🟡 EN 54 compliance</text>
+  <text x="610" y="219" fill="#94a3b8" font-size="11">🟡 BS 5839 integration</text>
+  <text x="610" y="236" fill="#94a3b8" font-size="11">🟡 Canadian ULC standards</text>
+  <text x="610" y="253" fill="#94a3b8" font-size="11">🟡 Revit 2027 API support</text>
+  <text x="610" y="270" fill="#94a3b8" font-size="11">🟡 AutoCAD 2027 plugin</text>
+  <text x="610" y="287" fill="#94a3b8" font-size="11">🟡 Rhino/Grasshopper integration</text>
+  <text x="610" y="310" fill="#94a3b8" font-size="11">🟡 Windows x64 build release</text>
+  <text x="610" y="327" fill="#94a3b8" font-size="11">🟡 Code coverage ≥ 80%</text>
+
+  <!-- Arrow from next to future -->
+  <line x1="865" y1="230" x2="885" y2="230" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Future state card -->
+  <rect x="890" y="90" width="270" height="285" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+  <rect x="890" y="90" width="270" height="40" rx="10" fill="#3b82f6" opacity=".15"/>
+  <text x="920" y="117" fill="#3b82f6" font-size="16" font-weight="700">Future Vision</text>
+  <text x="920" y="145" fill="#e2e8f0" font-size="12" font-weight="600">Q4 2026+</text>
+  <text x="920" y="168" fill="#94a3b8" font-size="11">🔵 Predictive maintenance</text>
+  <text x="920" y="185" fill="#94a3b8" font-size="11">🔵 Anomaly detection in designs</text>
+  <text x="920" y="202" fill="#94a3b8" font-size="11">🔵 Automated design suggestions</text>
+  <text x="920" y="219" fill="#94a3b8" font-size="11">🔵 Historical project learning</text>
+  <text x="920" y="236" fill="#94a3b8" font-size="11">🔵 Load flow analysis (ETAP-style)</text>
+  <text x="920" y="253" fill="#94a3b8" font-size="11">🔵 Short circuit analysis</text>
+  <text x="920" y="270" fill="#94a3b8" font-size="11">🔵 Arc flash hazard analysis</text>
+  <text x="920" y="287" fill="#94a3b8" font-size="11">🔵 Real-time IoT sensor integration</text>
+  <text x="920" y="310" fill="#94a3b8" font-size="11">🔵 macOS release</text>
+  <text x="920" y="327" fill="#94a3b8" font-size="11">🔵 Third-party safety certification</text>
+</svg>

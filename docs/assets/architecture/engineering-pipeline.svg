@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="800"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/></linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10" fill="#475569"/></marker>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)" rx="12"/>
+  <text x="40" y="45" fill="#e2e8f0" font-size="22" font-weight="700">Engineering Processing Pipeline</text>
+  <text x="40" y="65" fill="#94a3b8" font-size="12">7-Stage Automated Engineering Analysis — All Implemented</text>
+
+  <g transform="translate(0, 100)">
+    <!-- Stage 1: Import -->
+    <rect x="60" y="0" width="1080" height="75" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+    <circle cx="90" cy="37" r="20" fill="#3b82f6"/><text x="90" y="43" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">1</text>
+    <text x="130" y="32" fill="#93c5fd" font-size="14" font-weight="600">Import &amp; Parse</text>
+    <text x="130" y="52" fill="#94a3b8" font-size="11">DWG | DXF | IFC | PDF | RVT | Excel | Word | Image</text>
+    <text x="850" y="37" fill="#64748b" font-size="11">parsers/</text>
+
+    <line x1="600" y1="75" x2="600" y2="100" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- Stage 2: Validate -->
+    <rect x="60" y="105" width="1080" height="75" rx="6" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+    <circle cx="90" cy="142" r="20" fill="#3b82f6"/><text x="90" y="148" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">2</text>
+    <text x="130" y="137" fill="#93c5fd" font-size="14" font-weight="600">Validate &amp; Sanitize</text>
+    <text x="130" y="157" fill="#94a3b8" font-size="11">BIM Input Sanitizer | Geometry Validation | File Integrity | Security Checks</text>
+    <text x="850" y="142" fill="#64748b" font-size="11">fireai/core/bim_input_sanitizer.py</text>
+
+    <line x1="600" y1="180" x2="600" y2="205" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- Stage 3: Analyze -->
+    <rect x="60" y="210" width="1080" height="75" rx="6" fill="#831843" stroke="#f472b6" stroke-width="1"/>
+    <circle cx="90" cy="247" r="20" fill="#db2777"/><text x="90" y="253" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">3</text>
+    <text x="130" y="242" fill="#f9a8d4" font-size="14" font-weight="600">Engineering Analysis</text>
+    <text x="130" y="262" fill="#f9a8d4" font-size="11">NFPA 72 Coverage | Acoustics | Voltage Drop | Battery | Egress | Duct Detector</text>
+    <text x="850" y="247" fill="#64748b" font-size="11">fireai/core/</text>
+
+    <line x1="600" y1="285" x2="600" y2="310" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- Stage 4: Route -->
+    <rect x="60" y="315" width="1080" height="75" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+    <circle cx="90" cy="352" r="20" fill="#d97706"/><text x="90" y="358" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">4</text>
+    <text x="130" y="347" fill="#fde68a" font-size="14" font-weight="600">Route &amp; Place</text>
+    <text x="130" y="367" fill="#fde68a" font-size="11">Cable Routing | Conduit Fill | Device Placement | Detector Placement | MIP Solver</text>
+    <text x="850" y="352" fill="#64748b" font-size="11">fireai/core/ + qomn_conduit/</text>
+
+    <line x1="600" y1="390" x2="600" y2="415" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- Stage 5: Compliance -->
+    <rect x="60" y="420" width="1080" height="75" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+    <circle cx="90" cy="457" r="20" fill="#059669"/><text x="90" y="463" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">5</text>
+    <text x="130" y="452" fill="#6ee7b7" font-size="14" font-weight="600">Compliance Validation</text>
+    <text x="130" y="472" fill="#6ee7b7" font-size="11">NFPA 72 | NEC | UL 864 | IBC | ATEX | International Standards</text>
+    <text x="850" y="457" fill="#64748b" font-size="11">fireai/validation/</text>
+
+    <line x1="600" y1="495" x2="600" y2="520" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- Stage 6: Report -->
+    <rect x="60" y="525" width="1080" height="75" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+    <circle cx="90" cy="562" r="20" fill="#0891b2"/><text x="90" y="568" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">6</text>
+    <text x="130" y="557" fill="#67e8f9" font-size="14" font-weight="600">Generate Outputs</text>
+    <text x="130" y="577" fill="#67e8f9" font-size="11">PDF Reports | DXF Schedules | Revit Export | Compliance Proof Docs</text>
+    <text x="850" y="562" fill="#64748b" font-size="11">fireai/core/ + backend/routers/exports.py</text>
+
+    <line x1="600" y1="600" x2="600" y2="625" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- Stage 7: Audit -->
+    <rect x="60" y="630" width="1080" height="75" rx="6" fill="#312e81" stroke="#818cf8" stroke-width="1"/>
+    <circle cx="90" cy="667" r="20" fill="#6366f1"/><text x="90" y="673" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">7</text>
+    <text x="130" y="662" fill="#a5b4fc" font-size="14" font-weight="600">Audit &amp; Blockchain Proof</text>
+    <text x="130" y="682" fill="#a5b4fc" font-size="11">Audit Store | Hash Chain | HMAC | Merkle Proof | Release Gates</text>
+    <text x="850" y="667" fill="#64748b" font-size="11">fireai/core/audit_*</text>
+  </g>
+</svg>

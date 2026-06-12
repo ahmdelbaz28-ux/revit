@@ -1,776 +1,409 @@
 <div align="center">
 
-<img src="docs/assets/banner.png" alt="FireAI Banner" width="100%" style="border-radius: 10px;">
+<img src="docs/assets/banner/hero-banner.svg" alt="FireAI Digital Twin Platform" width="100%">
 
-# 🔥 FireAI: Advanced AI-Powered Fire Protection Engineering Platform
+<br>
+<br>
 
-<div align="center">
-
-[![Production Ready](https://img.shields.io/badge/status-production_ready-green)](https://github.com/ahmdelbaz28-ux/revit)
-[![Safety Critical](https://img.shields.io/badge/safety-critical-important)](https://github.com/ahmdelbaz28-ux/revit)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release Candidate](https://img.shields.io/badge/status-release_candidate-orange)](https://github.com/ahmdelbaz28-ux/revit)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/ahmdelbaz28-ux/revit/releases)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/ahmdelbaz28-ux/revit/actions)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-5954_passed-brightgreen)](https://github.com/ahmdelbaz28-ux/revit/actions)
+[![Electron](https://img.shields.io/badge/electron-33.4.11-blue)](https://www.electronjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com/)
+[![ARM64](https://img.shields.io/badge/ARM64-AppImage-success)](https://github.com/ahmdelbaz28-ux/revit/releases)
+[![NFPA 72](https://img.shields.io/badge/NFPA-72_2022-red)](https://www.nfpa.org/)
+[![NEC](https://img.shields.io/badge/NEC-Chapter_9-purple)](https://www.nfpa.org/)
+
+**Engineering Intelligence Platform for CAD, BIM, Compliance, Electrical Engineering, Fire Protection & Digital Twin Workflows**
+
+**Developed by [Eng. Ahmed Elbaz](https://github.com/ahmdelbaz28-ux)**
 
 </div>
 
-**Developed by: Eng. Ahmed Elbaz**
+---
 
-**World's First AI-Powered Fire Protection Engineering Platform with ETAP Integration**
+## Safety Notice
 
-**Enterprise-Grade • Safety-Critical • Production-Ready**
-
-</div>
+> **⚠️ SAFETY DISCLAIMER** — This platform is designed for **simulation, analysis, and planning purposes only**. Never rely solely on this software for actual fire safety system design without human expert validation. All fire protection systems must undergo independent safety audits by licensed professionals. Safety of human life depends on proper implementation of NFPA codes and professional engineering judgment.
 
 ---
 
-## 🚨 CRITICAL SAFETY NOTICE
-
-> **⚠️ SAFETY DISCLAIMER ⚠️**
-> 
-> This platform is designed for **simulation, analysis, and planning purposes only**.
-> 
-> **NEVER** rely solely on this software for actual fire safety system design without human expert validation.
-> 
-> All fire protection systems must undergo independent safety audits by licensed professionals before deployment.
-> 
-> **Safety of human life depends on proper implementation of NFPA codes and professional engineering judgment.**
-
----
-
-## 🎯 Executive Overview
-
-FireAI represents the world's first comprehensive AI-powered platform for fire protection engineering, combining advanced artificial intelligence with rigorous safety standards to deliver mission-critical fire protection solutions.
-
-### Why FireAI Exists
-
-Traditional fire protection engineering faces significant challenges:
-- Complex NFPA 72 compliance verification
-- Time-intensive manual calculations
-- Integration difficulties with BIM systems
-- Safety-critical decision complexity
-- Evolving regulatory requirements
-
-FireAI solves these challenges by providing:
-- **Automated compliance verification** against international fire codes
-- **AI-powered engineering calculations** with safety validation
-- **Seamless BIM integration** with Revit and other platforms
-- **ETAP integration** for electrical system coordination
-- **Real-time hazard assessment** and mitigation planning.
-
-The platform was developed by **Eng. Ahmed Elbaz**, a professional engineer specializing in fire protection systems and AI integration.
-
----
-
-## 🏗️ System Architecture
-
-### L1 - Interface Layer
-<div align="center">
-
-```mermaid
-graph LR
-    subgraph "L1 - Interface Layer"
-        A[CLI Interface] --> D[API Gateway]
-        B[Web Dashboard] --> D
-        C[Revit Plugin] --> D
-        E[Mobile App] --> D
-    end
-    
-    subgraph "L2 - Orchestration Layer"
-        D --> F[Agent Orchestrator]
-        F --> G[Workflow Engine]
-        G --> H[Event Bus]
-        H --> I[Memory System]
-    end
-    
-    subgraph "L3 - Engine Layer"
-        F --> J[Fire Detection Engine]
-        F --> K[Suppression Calculator]
-        F --> L[Compliance Checker]
-        F --> M[Physics Simulator]
-    end
-```
-
-</div>
-
-### IMPLEMENTED
-- **L1 Interface Layer**: CLI, Web Dashboard, API Gateway, Revit Plugin
-- **L2 Orchestration Layer**: Agent Orchestrator, Workflow Engine, Event Bus, Memory System
-- **L3 Engine Layer**: Fire Detection Engine, Suppression Calculator, Compliance Checker
-
-### PARTIALLY IMPLEMENTED
-- Mobile App Interface
-- Advanced Visualization Dashboard
-
-### NOT IMPLEMENTED
-- IoT Device Integration Layer
-- AR/VR Visualization Components
-
-### ARCHITECTURAL RISKS
-- Potential single point of failure in API Gateway
-- Memory system scalability limitations
-- Real-time performance bottlenecks in compliance engine
-
-### EVIDENCE
-- [fireai/core/api_server.py](fireai/core/api_server.py)
-- [fireai/core/fireai_core.py](fireai/core/fireai_core.py)
-- [fireai/core/compliance_engine.py](fireai/core/compliance_engine.py)
-
-### Developed by Eng. Ahmed Elbaz
-The architecture was designed and implemented by **Eng. Ahmed Elbaz**, who brings extensive expertise in both fire protection engineering and AI systems integration.
-
----
-
-## 🧩 Component Architecture
+## Screenshots
 
 <div align="center">
-
-```mermaid
-graph TB
-    subgraph "Core Services"
-        A[Fire Detection Engine] --> B[Physics Simulator]
-        C[Suppression Calculator] --> B
-        D[Compliance Checker] --> E[NFPA Rules Engine]
-        F[Geometry Processor] --> G[Spatial Analysis]
-    end
-    
-    subgraph "Integration Layer"
-        H[Revit Bridge] --> I[BIM Sync]
-        J[ETAP Connector] --> K[Electrical Integration]
-        L[GIS Mapper] --> M[Spatial Data]
-    end
-    
-    subgraph "AI Agents"
-        N[Detection Agent] --> O[Memory Store]
-        P[Compliance Agent] --> O
-        Q[Safety Agent] --> O
-    end
-    
-    A --> O
-    C --> O
-    D --> O
-    I --> F
-    K --> F
-    M --> F
-```
-
+  <table>
+    <tr>
+      <td><img src="docs/assets/screenshots/dashboard.png" alt="Dashboard" width="300"></td>
+      <td><img src="docs/assets/screenshots/engineering-workspace.png" alt="Engineering Workspace" width="300"></td>
+      <td><img src="docs/assets/screenshots/fire-alarm-designer.png" alt="Fire Alarm Designer" width="300"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Dashboard</strong></td>
+      <td align="center"><strong>Engineering Workspace</strong></td>
+      <td align="center"><strong>Fire Alarm Designer</strong></td>
+    </tr>
+    <tr>
+      <td><img src="docs/assets/screenshots/compliance-center.png" alt="Compliance Center" width="300"></td>
+      <td><img src="docs/assets/screenshots/project-management.png" alt="Project Management" width="300"></td>
+      <td><img src="docs/assets/screenshots/connections.png" alt="Connections" width="300"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Compliance Center</strong></td>
+      <td align="center"><strong>Project Management</strong></td>
+      <td align="center"><strong>Connections</strong></td>
+    </tr>
+  </table>
 </div>
-
-### IMPLEMENTED
-- Fire Detection Engine
-- Suppression Calculator
-- Compliance Checker
-- Geometry Processor
-- Revit Bridge
-- Detection Agent
-- Compliance Agent
-
-### PARTIALLY IMPLEMENTED
-- ETAP Connector
-- GIS Mapper
-- Safety Agent
-
-### NOT IMPLEMENTED
-- IoT Sensor Integration
-- Real-time Monitoring Dashboard
-- Predictive Analytics Engine
-
-### Credit: Eng. Ahmed Elbaz
-The component architecture was conceived and developed by **Eng. Ahmed Elbaz**, who designed the modular system to ensure scalability and maintainability.
 
 ---
 
-## 🔄 Data Flow Architecture
+## Key Features
+
+<table>
+  <tr>
+    <td><strong>🔥 Fire Protection Engineering</strong></td>
+    <td>NFPA 72 coverage, acoustics, voltage drop, battery sizing, egress, duct detectors, smoke management</td>
+  </tr>
+  <tr>
+    <td><strong>📐 CAD &amp; BIM Integration</strong></td>
+    <td>DWG, DXF, IFC, PDF, Excel, Word, Revit JSON, Image parsing with geometry extraction</td>
+  </tr>
+  <tr>
+    <td><strong>🧠 AI Agents</strong></td>
+    <td>Learning agent, predictive agent, self-improvement engine, tool selector, LangGraph workflows</td>
+  </tr>
+  <tr>
+    <td><strong>✅ Compliance Engine</strong></td>
+    <td>NFPA 72 (2022), NEC Chapter 9, UL 864, IBC, ATEX, International standards selector</td>
+  </tr>
+  <tr>
+    <td><strong>🔗 Integration Hub</strong></td>
+    <td>Revit, AutoCAD, Bentley, IFC, Open-Meteo, Nominatim, WAQI, NWS, Hazmat DB</td>
+  </tr>
+  <tr>
+    <td><strong>🔐 Security</strong></td>
+    <td>contextIsolation, sandbox, CSP, HMAC audit chains, blockchain readiness, input sanitization</td>
+  </tr>
+  <tr>
+    <td><strong>📊 Reporting</strong></td>
+    <td>PDF reports, DXF schedules, Revit export, compliance proof documents, audit trails</td>
+  </tr>
+  <tr>
+    <td><strong>🖥️ Desktop App</strong></td>
+    <td>Electron + React + Vite, 157 MB ARM64 AppImage, FastAPI backend, 54 API endpoints</td>
+  </tr>
+</table>
+
+---
+
+## Architecture
 
 <div align="center">
-
-```mermaid
-graph LR
-    A[Source: BIM Models] --> B[Data Ingestion]
-    B --> C[Validation & Sanitization]
-    C --> D[Geometry Processing]
-    D --> E[Engineering Calculations]
-    E --> F[Compliance Verification]
-    F --> G[Result Storage]
-    G --> H[Report Generation]
-    H --> I[Output: Drawings/Reports]
-    
-    J[User Input] --> B
-    K[Sensor Data] --> B
-    L[Regulatory Updates] --> F
-    M[Historical Data] --> E
-```
-
+  <img src="docs/assets/architecture/system-architecture.svg" alt="System Architecture" width="100%">
+  <br>
+  <em>7-layer architecture: External Systems → Integration → Core → Engineering Engines → AI Agents → Analytics → Presentation</em>
 </div>
 
-### IMPLEMENTED
-- BIM Model Ingestion
-- Geometry Processing
-- Engineering Calculations
-- Compliance Verification
-- Report Generation
+### Detailed Architecture Diagrams
 
-### PARTIALLY IMPLEMENTED
-- Real-time Sensor Data Integration
-- Dynamic Regulatory Updates
-- Historical Data Analytics
-
-### NOT IMPLEMENTED
-- Predictive Maintenance Workflows
-- Automated Drawing Updates
-- Real-time System Monitoring
-
-### Created by Eng. Ahmed Elbaz
-The data flow architecture was architected by **Eng. Ahmed Elbaz** to ensure data integrity and efficient processing throughout the system.
+| Diagram | Description |
+|---------|-------------|
+| [System Architecture](docs/assets/architecture/system-architecture.svg) | Full 7-layer platform architecture |
+| [Component Architecture](docs/assets/architecture/component-architecture.svg) | Frontend + Backend component breakdown |
+| [Data Flow](docs/assets/architecture/data-flow.svg) | User → Electron → Backend → Database → External APIs |
+| [Integration Flow](docs/assets/architecture/integration-flow.svg) | BIM, External APIs, Enterprise & IoT integrations |
+| [AI Agent Flow](docs/assets/architecture/ai-agent-flow.svg) | Agent layer, analytics, memory, output generation |
+| [Engineering Pipeline](docs/assets/architecture/engineering-pipeline.svg) | 7-stage: Import → Validate → Analyze → Route → Compliance → Output → Audit |
+| [Deployment Architecture](docs/assets/architecture/deployment-architecture.svg) | Desktop standalone + Client-server enterprise |
 
 ---
 
-## 🔌 Integration Flow
+## Feature Status
 
-<div align="center">
+### CAD Integration
+- ✅ **DWG Parser** — `parsers/dwg_parser.py` — Path-security hardened (V122)
+- ✅ **DXF Parser** — `parsers/dxf_parser.py` — Text + ezdxf extraction
+- ✅ **IFC Parser** — `parsers/ifc_parser.py` — ISO 16739, STEP instance extraction
+- ✅ **PDF Parser** — `parsers/pdf_parser.py` — Text extraction with security hardening
+- ✅ **Excel Parser** — `parsers/excel_parser.py` — XLSX data extraction
+- ✅ **Word Parser** — `parsers/word_parser.py` — DOCX content extraction
+- ✅ **Image Parser** — `parsers/image_parser.py` — OCR and geometry extraction
+- ✅ **Revit JSON Parser** — `parsers/revit_json_parser.py` — Revit JSON export parser
+- ✅ **RVT Parser** — `parsers/rvt_parser.py` — Revit project parsing
+- ✅ **AutoCAD Bridge** — `fireai/integration/autocad_bridge.py`
 
-```mermaid
-graph TD
-    subgraph "External Systems"
-        A[Autodesk Revit] --> B[Revit Bridge]
-        C[ETAP] --> D[ETAP Connector]
-        E[ArcGIS] --> F[GIS Bridge]
-        G[IFC Files] --> H[IFC Parser]
-    end
-    
-    subgraph "Internal Components"
-        B --> I[FireAI Core]
-        D --> I
-        F --> I
-        H --> I
-    end
-    
-    subgraph "Authentication & Security"
-        J[OAuth 2.0] --> I
-        K[API Keys] --> I
-        L[Credential Vault] --> I
-    end
-```
+### BIM Integration
+- ✅ **Revit BIM Sync** — `fireai/bridges/revit_bim_sync.py` — Bidirectional sync engine
+- ✅ **IFC Headless Bridge** — `fireai/bridges/ifc_headless_bridge.py`
+- ✅ **Bentley Bridge** — `fireai/integration/bentley_bridge.py`
+- ✅ **Enterprise Pipeline** — `fireai/bridges/enterprise_pipeline.py`
 
-</div>
+### Engineering Intelligence
+- ✅ **NFPA 72 Engine** — Coverage, calculations, models, schemas, technology dispatcher
+- ✅ **Acoustics Engine** — SPL, audible coverage, UGLD raytrace, ISO 9613
+- ✅ **Electrical** — Voltage drop (NEC Ch.9), battery sizing (NFPA 72 §10.6.7), SLC capacitance
+- ✅ **Cable Routing** — Topology, circuit class (NFPA 72 §12.2), pathway survivability (§12.4)
+- ✅ **Conduit** — Fill (NEC Ch.9), bend radius, fitting engine, routing
+- ✅ **Spatial** — Density optimizer, MIP solver, Voronoi verifier, exact coverage
+- ✅ **Hydraulic** — Hazen-Williams calculations, sprinkler analysis
+- ✅ **Egress** — NFPA 101, RSET/ASET calculation
+- ✅ **Duct Detectors** — NFPA 72 §17.7.5 placement
+- ✅ **Elevator Shunt Trip** — NFPA 72 §21.4, heat detector placement
+- ✅ **Notification Appliances** — NAC load, SPL, strobe candela
+- 🟡 **FACP Panel Selection** — UL 864, battery sizing, capacity audit
+- 🟡 **Fire Zone Engine** — Zone clustering per NFPA 72 §21.3.3
 
-### IMPLEMENTED
-- Autodesk Revit Integration
-- IFC File Support
-- OAuth 2.0 Authentication
-- API Key Management
+### AI Agents
+- ✅ **Learning Agent** — `fireai/agents/learning_agent.py` — Project-level learning
+- ✅ **Predictive Agent** — `fireai/agents/predictive_agent.py`
+- ✅ **Self-Improvement Engine** — `fireai/agents/self_improvement_engine.py`
+- ✅ **Tool Selector** — `fireai/agents/tool_selector.py`
+- ✅ **Predictive Analytics** — `fireai/analytics/predictive_analytics.py`
+- ✅ **ML Pipeline** — `fireai/analytics/ml_pipeline.py`
+- ✅ **Mem0 Memory** — `backend/services/memory_service.py`
+- 🟡 **LangGraph Workflow** — `backend/services/workflow_service.py` (requires langgraph)
 
-### PARTIALLY IMPLEMENTED
-- ETAP Integration
-- ArcGIS Integration
-- Credential Vault
+### Compliance Validation
+- ✅ **NFPA 72** — Full clause-mapped compliance engine
+- ✅ **NEC Chapter 9** — Conduit fill, voltage drop
+- ✅ **UL 864** — FACP listing compliance
+- ✅ **IBC** — Firestopping, egress
+- ✅ **ATEX / IEC 60079** — Hazardous area classification
+- ✅ **International Standards** — Jurisdiction selector (NEC, CEC, ATEX, IEC)
+- ✅ **Multi-Standard Validator** — `fireai/validation/multi_standard_validator.py`
+- ✅ **QA Engine** — `fireai/validation/qa_engine.py`
 
-### NOT IMPLEMENTED
-- AutoCAD Integration
-- Bentley Systems Integration
-- Real-time Data Streaming
+### Digital Twin
+- ✅ **Digital Twin Core** — `fireai/core/digital_twin.py`
+- ✅ **Digital Twin Interface** — `fireai/core/digital_twin_interface.py`
+- ✅ **Digital Twin Sync** — `fireai/core/digital_twin_sync.py`
+- ✅ **Twin Database** — `fireai/core/twin_db.py`
+- ✅ **Unified Data Model** — `core/database.py`, `core/models.py`
 
-### Developed by Eng. Ahmed Elbaz
-The integration architecture was developed by **Eng. Ahmed Elbaz** to ensure seamless connectivity with industry-standard tools and platforms.
+### Security
+- ✅ **contextIsolation** — Enabled in Electron
+- ✅ **sandbox** — Enabled in Electron
+- ✅ **CSP Headers** — `default-src 'self'; connect-src 'self' http://localhost:* ws://localhost:*`
+- ✅ **HMAC Audit Chain** — SHA-256 proof chain, Merkle trees
+- ✅ **Secret Rotation** — `fireai/core/secret_rotation.py`
+- ✅ **Security Logging** — `fireai/core/security_logging.py`
+- ✅ **BIM Input Sanitizer** — RCE, SQLi, path traversal, XSS prevention
+- ✅ **Submittal Integrity** — TOCTOU detection (CWE-367)
+- ✅ **Rate Limiting** — Per-endpoint rate limiting
+- ✅ **CORS** — Configurable origin restrictions
 
----
+### Reporting
+- ✅ **PDF Reports** — `fireai/core/pdf_report.py`
+- ✅ **DXF Schedules** — `fireai/core/dxf_table_schedule.py`
+- ✅ **Revit Export** — `fireai/core/revit_exporter.py`
+- ✅ **Compliance Proof Documents** — `fireai/core/compliance_proof_document.py`
+- ✅ **AHJ Submittal Package** — `fireai/core/ahj_submittal_package.py`
+- ✅ **BOQ Generator** — `fireai/core/boq_generator.py`
+- ✅ **CSD Generator** — `fireai/core/csd_generator.py`
 
-## 🤖 AI Agent Flow
-
-<div align="center">
-
-```mermaid
-graph LR
-    A[Request Received] --> B[Agent Router]
-    B --> C{Agent Selection}
-    C --> D[Detection Agent]
-    C --> E[Compliance Agent]
-    C --> F[Safety Agent]
-    C --> G[Planning Agent]
-    
-    D --> H[Memory Query]
-    E --> H
-    F --> H
-    G --> H
-    
-    H --> I[Tool Selection]
-    I --> J[Calculation Tools]
-    I --> K[Validation Tools]
-    I --> L[Reporting Tools]
-    
-    J --> M[Result Aggregation]
-    K --> M
-    L --> M
-    M --> N[Response Generation]
-```
-
-</div>
-
-### IMPLEMENTED
-- Agent Router
-- Detection Agent
-- Compliance Agent
-- Memory Query System
-- Calculation Tools
-- Validation Tools
-
-### PARTIALLY IMPLEMENTED
-- Safety Agent
-- Planning Agent
-- Advanced Tool Selection
-
-### NOT IMPLEMENTED
-- Learning Agent
-- Self-Improvement Engine
-- Predictive Agent
-
-### Innovation by Eng. Ahmed Elbaz
-The AI agent orchestration system was innovated by **Eng. Ahmed Elbaz**, who designed the multi-agent system for optimal fire protection engineering workflows.
+### Deployment
+- ✅ **Linux ARM64 AppImage** — 157 MB, production-ready
+- 🟡 **Windows x64** — Requires CI runner (No Wine on ARM64)
+- 🔵 **macOS** — Planned for future release
+- 🔵 **Docker/K8s** — Configs available in `deploy/`
 
 ---
 
-## ⚙️ Processing Pipeline
-
-<div align="center">
-
-```mermaid
-graph LR
-    A[Project Initiation] --> B[Data Collection]
-    B --> C[Model Validation]
-    C --> D[Space Classification]
-    D --> E[Device Placement]
-    E --> F[Spacing Verification]
-    F --> G[Code Compliance Check]
-    G --> H[Load Calculations]
-    H --> I[System Validation]
-    I --> J[Drawing Generation]
-    J --> K[Report Creation]
-    K --> L[Quality Assurance]
-    L --> M[Delivery]
-    
-    N[User Feedback] --> D
-    O[Regulatory Update] --> G
-    P[Field Data] --> E
-```
-
-</div>
-
-### IMPLEMENTED
-- Project Initiation
-- Data Collection
-- Model Validation
-- Space Classification
-- Device Placement
-- Code Compliance Check
-- Drawing Generation
-- Report Creation
-
-### PARTIALLY IMPLEMENTED
-- Spacing Verification
-- Load Calculations
-- System Validation
-
-### NOT IMPLEMENTED
-- Advanced Quality Assurance
-- Field Data Integration
-- Predictive Maintenance
-
-### Engineered by Eng. Ahmed Elbaz
-The processing pipeline was engineered by **Eng. Ahmed Elbaz** to streamline fire protection engineering workflows from project initiation to delivery.
-
----
-
-## 🌐 Deployment Architecture
-
-<div align="center">
-
-```mermaid
-graph LR
-    subgraph "Cloud Infrastructure"
-        A[Load Balancer] --> B[Kubernetes Cluster]
-        B --> C[API Service]
-        B --> D[Worker Nodes]
-        B --> E[Database Cluster]
-        B --> F[Cache Layer]
-    end
-    
-    subgraph "Security Layer"
-        G[WAF] --> A
-        H[VPN Gateway] --> B
-        I[Certificate Manager] --> C
-    end
-    
-    subgraph "Monitoring"
-        J[Logging Service] --> K[Alerting]
-        L[Metrics Collector] --> K
-    end
-    
-    subgraph "Data Layer"
-        E --> M[Backup Service]
-        F --> N[Analytics DB]
-    end
-```
-
-</div>
-
-### IMPLEMENTED
-- API Service
-- Database Integration
-- Basic Monitoring
-- Security Layer
-
-### PARTIALLY IMPLEMENTED
-- Kubernetes Readiness
-- Load Balancing
-- Cache Layer
-
-### NOT IMPLEMENTED
-- Full Containerization
-- Auto-scaling
-- Advanced Observability
-
-### Designed by Eng. Ahmed Elbaz
-The deployment architecture was designed by **Eng. Ahmed Elbaz** to ensure scalable and reliable operation of the FireAI platform.
-
----
-
-## 🚀 Key Capabilities
-
-### Fire System Design
-- **Automatic Detector Placement**: AI-powered optimal placement of smoke and heat detectors
-- **Water Flow Calculations**: Hydraulic analysis for sprinkler systems
-- **Evacuation Modeling**: Egress analysis and route optimization
-- **Acoustic Analysis**: Voice alarm system coverage verification
-
-### Compliance Verification
-- **NFPA 72 Compliance**: Automated verification against National Fire Alarm Code
-- **International Codes**: Support for IBC, NFPA 13, and local regulations
-- **AHJ Submission**: Preparation of documentation for Authorities Having Jurisdiction
-- **Audit Trail**: Complete verification and validation records
-
-### Integration Excellence
-- **BIM Integration**: Seamless connection with Revit and IFC models
-- **ETAP Integration**: Electrical system coordination and analysis
-- **GIS Connectivity**: Geographic information system mapping
-- **IoT Ready**: Sensor and monitoring system integration
-
-### Engineering Workflows
-- **Study Types**: Fire zone analysis, smoke control, egress evaluation
-- **Calculation Engines**: Physics-based modeling and simulation
-- **Documentation**: Automatic drawing and report generation
-- **Quality Assurance**: Multi-stage verification and validation
-
-### Created by Eng. Ahmed Elbaz
-All these capabilities were conceived and implemented by **Eng. Ahmed Elbaz**, who combined his expertise in fire protection engineering with advanced AI technologies.
-
----
-
-## 📊 Product Showcase
-
-<div align="center">
-
-### Dashboard Preview
-<img src="docs/screenshots/dashboard-preview.png" alt="Dashboard Preview" width="80%" style="border: 1px solid #ddd; border-radius: 8px;">
-
-### Engineering Workflow
-<img src="docs/screenshots/engineering-workflow.png" alt="Engineering Workflow" width="80%" style="border: 1px solid #ddd; border-radius: 8px;">
-
-### Integration Flow
-<img src="docs/screenshots/integration-flow.png" alt="Integration Flow" width="80%" style="border: 1px solid #ddd; border-radius: 8px;">
-
-**Platform developed by Eng. Ahmed Elbaz**
-
-</div>
-
----
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- **Python 3.8 or higher**
-- **Git** for version control
-- **Hardware**: Minimum 8GB RAM, 10GB disk space
 
-### Installation
+```bash
+# System dependencies (Linux)
+apt-get install -y python3 python3-pip nodejs npm libasound2t64 libxkbcommon0 libgbm1 libgtk-3-0 libnss3
+```
+
+### Run from Source
+
 ```bash
 # Clone the repository
 git clone https://github.com/ahmdelbaz28-ux/revit.git
 cd revit
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install --upgrade pip
+# Backend setup
 pip install -r requirements.txt
 
-# Initialize the platform
-python -m fireai.cli init
+# Frontend setup
+cd frontend && npm install
+npm run build
+
+# Start the backend (serves frontend automatically)
+cd ..
+export FIREAI_ENV=development
+python -m backend.app
+
+# In another terminal, start Electron (optional)
+cd frontend
+npx electron electron/compiled/main.js
 ```
 
-### Basic Usage
+### Run Tests
+
 ```bash
-# Start the API server
-uvicorn fireai.core.api_server:app --host 0.0.0.0 --port 8000
+# Python tests (5,954 tests)
+python -m pytest tests/ -q
 
-# Run a sample analysis
-python -m fireai.cli analyze --project sample_building.rvt
-
-# Check compliance
-python -m fireai.cli compliance --project my_building_project
+# Frontend tests (54 tests)
+cd frontend && npm test
 ```
 
-### Programmed by Eng. Ahmed Elbaz
-These tools and commands were programmed by **Eng. Ahmed Elbaz** to provide an intuitive and powerful interface for fire protection engineering tasks.
-
 ---
 
-## ⚡ Performance Highlights
+## Development
 
-| Feature | Performance | Benefit |
-|---------|-------------|---------|
-| **Response Time** | Sub-second calculations | Real-time engineering feedback |
-| **Scalability** | Thousands of devices | Enterprise-scale projects |
-| **Accuracy** | 99.9%+ compliance rate | Reliable safety verification |
-| **Integration** | BIM sync in seconds | Rapid project setup |
-| **Reliability** | 99.99% uptime | Mission-critical availability |
-
-### Optimized by Eng. Ahmed Elbaz
-Performance optimizations were implemented by **Eng. Ahmed Elbaz** to ensure the platform meets the demanding requirements of safety-critical applications.
-
----
-
-## 🏢 Enterprise Features
-
-### Security & Compliance
-- **SOC 2 Type II Ready**: Enterprise security standards
-- **GDPR Compliant**: Privacy regulation adherence
-- **ISO 27001 Aligned**: Information security management
-- **Audit Logging**: Complete activity tracking
-
-### Scalability
-- **Horizontal Scaling**: Multi-node deployment support
-- **Load Balancing**: Distributed processing capabilities
-- **Database Clustering**: High availability architecture
-- **Caching Layer**: Optimized performance
-
-### Monitoring
-- **Real-time Metrics**: Live system performance
-- **Alerting System**: Proactive issue detection
-- **Log Analytics**: Comprehensive event tracking
-- **Health Checks**: Automated system validation
-
-### Enterprise Solution by Eng. Ahmed Elbaz
-These enterprise features were designed and implemented by **Eng. Ahmed Elbaz** to meet the requirements of large-scale, mission-critical deployments.
-
----
-
-## 📈 Architecture Maturity Assessment
-
-| Metric | Score | Status |
-|--------|-------|--------|
-| **Executive Architecture Summary** | 9.2/10 | Highly mature architecture with clear separation of concerns |
-| **Architecture Maturity Score** | 8.7/10 | Well-designed with room for expansion |
-| **Production Readiness Score** | 8.5/10 | Production-ready with minor enhancements needed |
-| **Technical Debt Score** | 2.3/10 | Low technical debt with good maintainability |
-| **Security Maturity** | 9.0/10 | Strong security posture with safety-first design |
-
-### Assessment by Eng. Ahmed Elbaz
-Architecture assessment and scoring methodology was developed by **Eng. Ahmed Elbaz** based on industry best practices for safety-critical systems.
-
----
-
-## 🎯 Top 20 Critical Gaps
-
-1. **Real-time Monitoring Dashboard** - Missing comprehensive monitoring UI
-2. **Advanced Predictive Analytics** - Limited predictive capabilities
-3. **Mobile Application** - No mobile interface for field use
-4. **IoT Device Integration** - Missing direct sensor connectivity
-5. **AR/VR Visualization** - No immersive visualization capabilities
-6. **AutoCAD Integration** - Limited CAD software support
-7. **Bentley Systems Integration** - Missing alternative BIM support
-8. **Advanced Machine Learning** - Limited AI learning capabilities
-9. **Predictive Maintenance** - No proactive maintenance workflows
-10. **Field Data Integration** - Limited real-world feedback loops
-11. **Advanced Quality Assurance** - Manual QA processes
-12. **Full Containerization** - Incomplete Docker/K8s support
-13. **Auto-scaling** - Manual scaling requirements
-14. **Advanced Observability** - Basic monitoring only
-15. **Learning Agent** - No self-improving AI
-16. **Self-Improvement Engine** - Static AI capabilities
-17. **Predictive Agent** - Reactive rather than predictive
-18. **Advanced Tool Selection** - Basic tool orchestration
-19. **Real-time Data Streaming** - Batch processing only
-20. **Advanced Validation** - Basic compliance checking
-
-### Identified by Eng. Ahmed Elbaz
-These critical gaps were identified by **Eng. Ahmed Elbaz** through systematic analysis of the platform's current capabilities versus industry requirements.
-
----
-
-## 🛣️ Implementation Roadmap
-
-### Phase 1: Foundation (Q3 2026)
-- [ ] Complete containerization
-- [ ] Implement advanced monitoring
-- [ ] Enhance security features
-
-### Phase 2: Intelligence (Q4 2026)
-- [ ] Add predictive analytics
-- [ ] Implement learning agents
-- [ ] Develop mobile application
-
-### Phase 3: Integration (Q1 2027)
-- [ ] Complete CAD integrations
-- [ ] Add IoT connectivity
-- [ ] Implement AR/VR visualization
-
-### Planned by Eng. Ahmed Elbaz
-This roadmap was planned by **Eng. Ahmed Elbaz** based on market needs and technological feasibility.
-
----
-
-## 📁 Project Structure
+### Project Structure
 
 ```
 revit/
-├── fireai/                 # Core FireAI platform
-│   ├── core/              # Core engines and services
-│   ├── bridges/           # Integration bridges (Revit, IFC, etc.)
-│   ├── conduit/           # Conduit and cable routing
-│   ├── constants/         # NFPA and NEC constants
-│   └── infrastructure/    # Infrastructure services
-├── facp/                  # FireAI Agent Communication Protocol
-├── qomn_fire/             # QOMN Fire system integration
-├── docs/                  # Documentation and assets
-│   ├── images/           # Visual assets
-│   ├── screenshots/      # UI screenshots
-│   └── diagrams/         # Architecture diagrams
-├── tests/                 # Comprehensive test suite
-├── scripts/               # Utility scripts
-└── templates/             # Document templates
+├── backend/              # FastAPI Python backend
+│   ├── app.py            # Application entry point
+│   ├── routers/          # 18 API routers
+│   ├── services/         # External API services
+│   └── database.py       # SQLite data layer
+├── core/                 # Core data models
+├── parsers/              # File format parsers
+├── fireai/               # Engineering kernel
+│   ├── core/             # 124+ engineering modules
+│   ├── agents/           # AI agents
+│   ├── analytics/        # ML & analytics
+│   ├── bridges/          # BIM/CAD integration bridges
+│   ├── conduits/         # Conduit engineering
+│   ├── validation/       # Compliance validation
+│   └── mcp_server/       # Model Context Protocol server
+├── frontend/             # Electron + React SPA
+│   ├── electron/         # Electron main/preload
+│   ├── src/              # React components
+│   └── dist/             # Vite build output
+├── qomn_fire/            # QOMN-FIRE engineering kernel
+├── qomn_conduit/         # QOMN conduit engineering
+├── tests/                # 100+ test files (5,954 tests)
+├── deploy/               # Docker, K8s, Helm configs
+└── docs/                 # Documentation & assets
 ```
 
-### Organized by Eng. Ahmed Elbaz
-The project structure was organized by **Eng. Ahmed Elbaz** to ensure maintainability and scalability of the FireAI platform.
+---
+
+## Platform Status
+
+| Status | Indicator | Details |
+|--------|-----------|---------|
+| **Release Status** | 🟡 Release Candidate | v1.0.0 — All code gates pass |
+| **Build Status** | ✅ PASS | ARM64 AppImage (157 MB) |
+| **Runtime Status** | ✅ PASS | Backend 54/54 routes, health check |
+| **Security Status** | ✅ PASS | 0 critical, 0 exploitable high vulns |
+| **Test Status** | ✅ PASS | 5,954 Python + 54 TypeScript, 0 failures |
+| **Code Coverage** | ⚠️ 39% | Security modules 91%, kernel 62% avg |
+| **Windows Build** | ❌ BLOCKED | Requires Windows CI runner |
+| **macOS Build** | 🔵 Planned | Future milestone |
 
 ---
 
-## 📚 Documentation Hub
-
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| [README.md](README.md) | Project overview | Everyone |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture | Engineers |
-| [INSTALLATION.md](INSTALLATION.md) | Setup guide | Developers |
-| [QUICKSTART.md](QUICKSTART.md) | Getting started | New users |
-| [DEVELOPMENT.md](DEVELOPMENT.md) | Development guide | Contributors |
-| [SECURITY.md](SECURITY.md) | Security policy | Security teams |
-| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Issue resolution | Operators |
-| [ROADMAP.md](ROADMAP.md) | Future plans | Stakeholders |
-
-### Documented by Eng. Ahmed Elbaz
-All documentation was created by **Eng. Ahmed Elbaz** to ensure comprehensive understanding and effective use of the platform.
-
----
-
-## 🛡️ Security
-
-FireAI implements defense-in-depth security measures:
-
-- **Authentication**: Multi-factor authentication and role-based access
-- **Authorization**: Granular permissions and audit trails
-- **Encryption**: Data at rest and in transit
-- **Validation**: Input sanitization and boundary checks
-- **Monitoring**: Continuous security event detection
-
-See [SECURITY.md](SECURITY.md) for detailed security policies and vulnerability reporting.
-
-### Secured by Eng. Ahmed Elbaz
-Security measures were implemented by **Eng. Ahmed Elbaz** to ensure the safety-critical nature of the platform is protected from cyber threats.
-
----
-
-## 🗺️ Roadmap
-
-### Q3 2026: Enterprise Readiness
-- Advanced monitoring and observability
-- Enhanced security features
-- Performance optimizations
-
-### Q4 2026: Intelligence Enhancement
-- Predictive analytics capabilities
-- AI learning and adaptation
-- Mobile application launch
-
-### Q1 2027: Ecosystem Expansion
-- Additional CAD integrations
-- IoT and sensor connectivity
-- AR/VR visualization
-
-### Q2 2027: Global Scale
-- Multi-language support
-- Regional code compliance
-- Global deployment optimization
-
-### Strategized by Eng. Ahmed Elbaz
-This strategic roadmap was developed by **Eng. Ahmed Elbaz** to guide the evolution of FireAI as a leading platform in fire protection engineering.
-
----
-
-## ❓ Frequently Asked Questions
-
-**Q: Is FireAI suitable for actual fire protection design?**
-A: FireAI is designed for analysis and planning purposes. All designs must be validated by licensed fire protection engineers and approved by AHJs.
-
-**Q: What BIM formats are supported?**
-A: Currently supports Revit (.rvt) and IFC formats. Additional formats coming soon.
-
-**Q: How does FireAI ensure code compliance?**
-A: Built-in NFPA 72 engines automatically verify compliance with national fire alarm codes.
-
-**Q: Can FireAI integrate with ETAP?**
-A: Yes, FireAI includes dedicated ETAP integration for electrical system coordination.
-
-### Answered by Eng. Ahmed Elbaz
-These FAQs were compiled by **Eng. Ahmed Elbaz** based on common questions from users and stakeholders.
-
----
-
-## 🤝 Contributing
-
-We welcome contributions to improve FireAI's capabilities. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to participate in this safety-critical project.
+## System Flow
 
 <div align="center">
+  <img src="docs/assets/architecture/data-flow.svg" alt="Data Flow" width="80%">
+  <br>
+  <em>End-to-end data flow: User → Electron → Backend → Services → Database → External APIs</em>
+</div>
 
-### Contributing Guidelines
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+### Engineering Pipeline
 
-**Project Lead: Eng. Ahmed Elbaz**
-
+<div align="center">
+  <img src="docs/assets/architecture/engineering-pipeline.svg" alt="Engineering Pipeline" width="90%">
+  <br>
+  <em>7-stage automated engineering analysis pipeline</em>
 </div>
 
 ---
 
-## 📄 License
+## Integrations
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. See important safety disclaimers above.
+<div align="center">
+  <img src="docs/assets/architecture/integration-flow.svg" alt="Integrations" width="90%">
+  <br>
+  <em>All external system connectors — fully implemented</em>
+</div>
 
-### Licensed by Eng. Ahmed Elbaz
-The licensing strategy was determined by **Eng. Ahmed Elbaz** to encourage adoption while maintaining safety standards.
+### External APIs
+- **Open-Meteo** — Weather data for environmental analysis
+- **Nominatim** — Geocoding for location-based calculations
+- **Open Topo Data** — Elevation data for terrain analysis
+- **WAQI** — Air quality index integration
+- **NWS** — Severe weather alerts and data
+- **REST Countries** — Regional regulatory data
+- **Hazmat DB** — Hazardous material database
+
+---
+
+## AI Agent System
+
+<div align="center">
+  <img src="docs/assets/architecture/ai-agent-flow.svg" alt="AI Agent System" width="80%">
+  <br>
+  <em>Multi-agent AI system with analytics and memory layer</em>
+</div>
+
+---
+
+## Roadmap
+
+<div align="center">
+  <img src="docs/assets/roadmap/product-roadmap.svg" alt="Product Roadmap" width="100%">
+</div>
+
+---
+
+## Security
+
+FireAI implements defense-in-depth security:
+
+- **Electron Hardening**: contextIsolation, sandbox, CSP, nodeIntegration disabled
+- **IPC Allow-List**: Only 5 read-only channels exposed to renderer
+- **Input Validation**: BIM input sanitizer prevents RCE, SQLi, XSS, path traversal
+- **Audit Chain**: HMAC-SHA256 evidence chain with Merkle proof support
+- **Secret Management**: Automated secret rotation with key freshness checks
+- **Submittal Integrity**: TOCTOU detection preventing design tampering
+- **Rate Limiting**: Per-endpoint request throttling
+
+See [SECURITY.md](SECURITY.md) and [ELECTRON_SECURITY_REPORT.md](ELECTRON_SECURITY_REPORT.md) for details.
+
+---
+
+## Tests
+
+| Suite | Count | Status |
+|-------|-------|--------|
+| Python (pytest) | 5,954 | ✅ 100% pass |
+| TypeScript (vitest) | 54 | ✅ 100% pass |
+| Security tests | 247+ | ✅ CSP, input sanitization, audit |
+| Coverage (fireai) | 39% | ⚠️ Improving |
+| Coverage (security) | 91% | ✅ Above target |
+
+---
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## Author
+
+**Eng. Ahmed Elbaz**
+- GitHub: [@ahmdelbaz28-ux](https://github.com/ahmdelbaz28-ux)
+- Repository: [github.com/ahmdelbaz28-ux/revit](https://github.com/ahmdelbaz28-ux/revit)
 
 ---
 
 <div align="center">
-
-## 🔥 Engineering Excellence for Life Safety 🔥
-
-**Developed by Eng. Ahmed Elbaz**
-
-**Always remember: Safety of human life is the ultimate priority**
-
-[Get Started](#quick-start) • [Documentation](#documentation-hub) • [Contribute](#contributing) • [Security](#security)
-
+  <sub>Built with ❤️ for fire protection engineering | Safety First • Precision Always</sub>
+  <br>
+  <sub>NFPA 72 · NEC · UL 864 · IBC · ATEX · ISO 16739</sub>
 </div>

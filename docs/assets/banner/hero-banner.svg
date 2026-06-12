@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bgb" x1="0" y1="0" x2="1200" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a"/><stop offset="50%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="acc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ef4444"/><stop offset="100%" stop-color="#f59e0b"/></linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ef4444" stop-opacity="0"/><stop offset="30%" stop-color="#ef4444" stop-opacity=".6"/><stop offset="70%" stop-color="#f59e0b" stop-opacity=".6"/><stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="1200" height="300" fill="url(#bgb)" rx="12"/>
+  <rect x="0" y="0" width="1200" height="4" fill="url(#line)"/>
+
+  <!-- Logo -->
+  <circle cx="100" cy="130" r="50" fill="none" stroke="url(#acc)" stroke-width="4"/>
+  <circle cx="100" cy="130" r="42" fill="none" stroke="url(#acc)" stroke-width="2" stroke-dasharray="8 4" opacity=".5"/>
+  <text x="75" y="140" fill="#ef4444" font-size="36" font-weight="900">FI</text>
+
+  <!-- Product Name -->
+  <text x="180" y="120" fill="#e2e8f0" font-size="36" font-weight="800" letter-spacing="-1">FireAI</text>
+  <text x="180" y="155" fill="#94a3b8" font-size="22" font-weight="400" letter-spacing="-.5">Digital Twin Platform</text>
+
+  <!-- Tagline -->
+  <text x="180" y="190" fill="#64748b" font-size="14" font-weight="400">Engineering Intelligence Platform for CAD, BIM, Compliance,</text>
+  <text x="180" y="210" fill="#64748b" font-size="14" font-weight="400">Electrical Engineering, Fire Protection &amp; Digital Twin Workflows</text>
+
+  <!-- Badges -->
+  <rect x="180" y="230" width="95" height="26" rx="13" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="227" y="248" fill="#6ee7b7" font-size="11" text-anchor="middle">v1.0.0 RC</text>
+  <rect x="285" y="230" width="95" height="26" rx="13" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="332" y="248" fill="#93c5fd" font-size="11" text-anchor="middle">5,954 Tests</text>
+  <rect x="390" y="230" width="95" height="26" rx="13" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"/>
+  <text x="437" y="248" fill="#c4b5fd" font-size="11" text-anchor="middle">AI-Powered</text>
+  <rect x="495" y="230" width="95" height="26" rx="13" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+  <text x="542" y="248" fill="#fde68a" font-size="11" text-anchor="middle">Open Source</text>
+
+  <!-- Right side decoration -->
+  <g transform="translate(900, 40)" opacity=".15">
+    <rect x="0" y="0" width="260" height="220" rx="12" stroke="#475569" stroke-width="1" fill="none"/>
+    <text x="130" y="40" fill="#475569" font-size="10" text-anchor="middle">ARCHITECTURE OVERVIEW</text>
+    <line x1="30" y1="55" x2="230" y2="55" stroke="#475569" stroke-width=".5"/>
+    <circle cx="50" cy="75" r="4" fill="#3b82f6"/><text x="62" y="79" fill="#475569" font-size="8">NFPA 72 Engine</text>
+    <circle cx="50" cy="95" r="4" fill="#8b5cf6"/><text x="62" y="99" fill="#475569" font-size="8">AI Agents</text>
+    <circle cx="50" cy="115" r="4" fill="#ec4899"/><text x="62" y="119" fill="#475569" font-size="8">Acoustics</text>
+    <circle cx="50" cy="135" r="4" fill="#f59e0b"/><text x="62" y="139" fill="#475569" font-size="8">Compliance</text>
+    <circle cx="50" cy="155" r="4" fill="#10b981"/><text x="62" y="159" fill="#475569" font-size="8">Digital Twin</text>
+    <circle cx="50" cy="175" r="4" fill="#06b6d4"/><text x="62" y="179" fill="#475569" font-size="8">BIM Integration</text>
+    <circle cx="50" cy="195" r="4" fill="#f43f5e"/><text x="62" y="199" fill="#475569" font-size="8">Safety-Critical</text>
+  </g>
+</svg>

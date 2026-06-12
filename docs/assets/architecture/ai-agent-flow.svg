@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 650" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="650"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/></linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10" fill="#475569"/></marker>
+  </defs>
+  <rect width="1200" height="650" fill="url(#bg)" rx="12"/>
+  <text x="40" y="45" fill="#e2e8f0" font-size="22" font-weight="700">AI Agent Architecture</text>
+  <text x="40" y="65" fill="#94a3b8" font-size="12">FireAI Agent System — All Implemented</text>
+
+  <!-- Input -->
+  <rect x="420" y="90" width="360" height="45" rx="8" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+  <text x="540" y="119" fill="#93c5fd" font-size="13" font-weight="600" text-anchor="middle">Project Requirements / Engineering Query</text>
+  <line x1="540" y1="135" x2="540" y2="160" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Agent Layer -->
+  <rect x="60" y="170" width="1080" height="200" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="1" stroke-opacity=".3"/>
+  <text x="80" y="198" fill="#a78bfa" font-size="14" font-weight="600">AI AGENT LAYER</text>
+  <!-- Agent boxes -->
+  <rect x="80" y="215" width="190" height="60" rx="6" fill="#4c1d95" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="100" y="240" fill="#c4b5fd" font-size="12" font-weight="600">Learning Agent</text>
+  <text x="100" y="258" fill="#94a3b8" font-size="9">fireai/agents/learning_agent.py</text>
+  <rect x="290" y="215" width="190" height="60" rx="6" fill="#4c1d95" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="310" y="240" fill="#c4b5fd" font-size="12" font-weight="600">Predictive Agent</text>
+  <text x="310" y="258" fill="#94a3b8" font-size="9">fireai/agents/predictive_agent.py</text>
+  <rect x="500" y="215" width="190" height="60" rx="6" fill="#4c1d95" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="520" y="240" fill="#c4b5fd" font-size="12" font-weight="600">Self-Improvement</text>
+  <text x="520" y="258" fill="#94a3b8" font-size="9">fireai/agents/self_improvement.py</text>
+  <rect x="710" y="215" width="190" height="60" rx="6" fill="#4c1d95" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="730" y="240" fill="#c4b5fd" font-size="12" font-weight="600">Tool Selector</text>
+  <text x="730" y="258" fill="#94a3b8" font-size="9">fireai/agents/tool_selector.py</text>
+  <rect x="920" y="215" width="200" height="60" rx="6" fill="#4c1d95" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="940" y="240" fill="#c4b5fd" font-size="12" font-weight="600">LangGraph Workflow</text>
+  <text x="940" y="258" fill="#94a3b8" font-size="9">backend/services/workflow.py</text>
+
+  <line x1="540" y1="370" x2="540" y2="395" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Analytics Layer -->
+  <rect x="60" y="400" width="1080" height="150" rx="8" fill="#831843" stroke="#f472b6" stroke-width="1" stroke-opacity=".3"/>
+  <text x="80" y="428" fill="#f472b6" font-size="14" font-weight="600">ANALYTICS &amp; MEMORY LAYER</text>
+  <rect x="80" y="445" width="240" height="50" rx="6" fill="#831843" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="100" y="468" fill="#f9a8d4" font-size="12" font-weight="600">Predictive Analytics</text>
+  <text x="100" y="485" fill="#94a3b8" font-size="9">fireai/analytics/predictive_analytics.py</text>
+  <rect x="340" y="445" width="240" height="50" rx="6" fill="#831843" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="360" y="468" fill="#f9a8d4" font-size="12" font-weight="600">ML Pipeline</text>
+  <text x="360" y="485" fill="#94a3b8" font-size="9">fireai/analytics/ml_pipeline.py</text>
+  <rect x="600" y="445" width="240" height="50" rx="6" fill="#831843" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="620" y="468" fill="#f9a8d4" font-size="12" font-weight="600">Mem0 Memory Service</text>
+  <text x="620" y="485" fill="#94a3b8" font-size="9">backend/services/memory_service.py</text>
+  <rect x="860" y="445" width="260" height="50" rx="6" fill="#831843" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="880" y="468" fill="#f9a8d4" font-size="12" font-weight="600">Monte Carlo Simulation</text>
+  <text x="880" y="485" fill="#94a3b8" font-size="9">fireai/core/monte_carlo.py</text>
+
+  <!-- Output -->
+  <line x1="540" y1="550" x2="540" y2="580" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+  <rect x="300" y="585" width="600" height="45" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+  <text x="540" y="614" fill="#6ee7b7" font-size="13" font-weight="600" text-anchor="middle">Design Recommendations / Compliance Reports / Predictions</text>
+</svg>

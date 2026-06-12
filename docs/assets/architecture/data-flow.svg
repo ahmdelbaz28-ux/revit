@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="900"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="2"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10" fill="#475569"/></marker>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)" rx="12"/>
+  <text x="40" y="45" fill="#e2e8f0" font-size="22" font-weight="700">Data Flow</text>
+  <text x="40" y="65" fill="#94a3b8" font-size="12">FireAI Digital Twin Platform v1.0.0</text>
+
+  <!-- User -->
+  <rect x="450" y="90" width="300" height="50" rx="8" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+  <text x="540" y="122" fill="#93c5fd" font-size="14" font-weight="600" text-anchor="middle">User / Engineer</text>
+  <line x1="600" y1="140" x2="600" y2="170" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Electron App -->
+  <rect x="400" y="175" width="400" height="50" rx="8" fill="#1e3a5f" stroke="#f59e0b" stroke-width="2"/>
+  <text x="540" y="207" fill="#fbbf24" font-size="14" font-weight="600" text-anchor="middle">Electron Desktop App (React SPA)</text>
+  <line x1="400" y1="200" x2="250" y2="200" stroke="#475569" stroke-width="2"/>
+  <text x="325" y="193" fill="#94a3b8" font-size="10" text-anchor="middle">IPC invoke</text>
+
+  <!-- Preload -->
+  <rect x="100" y="180" width="130" height="40" rx="6" fill="#78350f" stroke="#f59e0b" stroke-width="1"/>
+  <text x="120" y="206" fill="#fde68a" font-size="11" font-weight="500">preload.ts</text>
+  <text x="100" y="250" fill="#94a3b8" font-size="10">contextBridge ✓</text>
+  <text x="100" y="266" fill="#94a3b8" font-size="10">5 IPC channels</text>
+  <line x1="230" y1="200" x2="395" y2="200" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- HTTP REST -->
+  <line x1="600" y1="225" x2="600" y2="260" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="610" y="248" fill="#94a3b8" font-size="10">HTTP REST</text>
+
+  <!-- Backend -->
+  <rect x="350" y="265" width="500" height="50" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+  <text x="540" y="297" fill="#6ee7b7" font-size="14" font-weight="600" text-anchor="middle">FastAPI Backend (uvicorn)</text>
+
+  <!-- Backend internal arrows -->
+  <line x1="500" y1="315" x2="500" y2="345" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="430" y="338" fill="#94a3b8" font-size="10">Routers</text>
+  <line x1="700" y1="315" x2="700" y2="345" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="710" y="338" fill="#94a3b8" font-size="10">Services</text>
+
+  <!-- Services layer -->
+  <rect x="100" y="350" width="430" height="60" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="115" y="375" fill="#6ee7b7" font-size="11" font-weight="600">Services</text>
+  <text x="115" y="395" fill="#a7f3d0" font-size="10">Weather | Elevation | Geocoding | Air Quality | Hazmat | Region | Memory</text>
+
+  <!-- Core layer -->
+  <rect x="550" y="350" width="550" height="60" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+  <text x="565" y="375" fill="#fde68a" font-size="11" font-weight="600">Engineering Kernel</text>
+  <text x="565" y="395" fill="#fde68a" font-size="10">NFPA 72 | Acoustics | Electrical | Cable | Conduit | Safety</text>
+
+  <!-- Arrow to DB -->
+  <line x1="600" y1="410" x2="600" y2="445" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="610" y="435" fill="#94a3b8" font-size="10">CRUD</text>
+
+  <!-- Database -->
+  <rect x="400" y="450" width="400" height="50" rx="8" fill="#312e81" stroke="#818cf8" stroke-width="2"/>
+  <text x="540" y="482" fill="#a5b4fc" font-size="14" font-weight="600" text-anchor="middle">SQLite Database (digital_twin.db)</text>
+
+  <!-- External arrows -->
+  <line x1="100" y1="380" x2="40" y2="380" stroke="#475569" stroke-width="1" marker-end="url(#arrow)"/>
+  <text x="50" y="370" fill="#94a3b8" font-size="9">HTTP</text>
+  <rect x="10" y="500" width="120" height="35" rx="5" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="25" y="522" fill="#67e8f9" font-size="10">Open-Meteo</text>
+  <rect x="140" y="500" width="120" height="35" rx="5" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="155" y="522" fill="#67e8f9" font-size="10">Nominatim</text>
+  <rect x="270" y="500" width="120" height="35" rx="5" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="285" y="522" fill="#67e8f9" font-size="10">WAQI</text>
+  <rect x="810" y="500" width="120" height="35" rx="5" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="825" y="522" fill="#67e8f9" font-size="10">NWS</text>
+  <rect x="940" y="500" width="120" height="35" rx="5" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+  <text x="955" y="522" fill="#67e8f9" font-size="10">REST Countries</text>
+</svg>

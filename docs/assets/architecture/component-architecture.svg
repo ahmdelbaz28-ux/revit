@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="box"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)" rx="12"/>
+  <text x="40" y="45" fill="#e2e8f0" font-size="22" font-weight="700">Component Architecture</text>
+  <text x="40" y="65" fill="#94a3b8" font-size="12">FireAI Digital Twin Platform v1.0.0</text>
+
+  <!-- Frontend -->
+  <rect x="40" y="90" width="540" height="790" rx="8" fill="url(#box)" stroke="#3b82f6" stroke-width="1" stroke-opacity=".4"/>
+  <text x="55" y="115" fill="#60a5fa" font-size="14" font-weight="600">FRONTEND (React + TypeScript + Vite)</text>
+  <rect x="55" y="130" width="250" height="32" rx="5" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="65" y="151" fill="#93c5fd" font-size="11">Dashboard</text>
+  <rect x="315" y="130" width="250" height="32" rx="5" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="325" y="151" fill="#93c5fd" font-size="11">Project Management</text>
+  <rect x="55" y="170" width="250" height="32" rx="5" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="65" y="191" fill="#93c5fd" font-size="11">Engineering Workspace</text>
+  <rect x="315" y="170" width="250" height="32" rx="5" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="325" y="191" fill="#93c5fd" font-size="11">Fire Alarm Designer</text>
+  <rect x="55" y="210" width="250" height="32" rx="5" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="65" y="231" fill="#93c5fd" font-size="11">Compliance Center</text>
+  <rect x="315" y="210" width="250" height="32" rx="5" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="325" y="231" fill="#93c5fd" font-size="11">Elements &amp; Connections</text>
+  <rect x="55" y="250" width="250" height="32" rx="5" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="65" y="271" fill="#93c5fd" font-size="11">Report Generator</text>
+  <rect x="315" y="250" width="250" height="32" rx="5" fill="#1e3a5f" stroke="#60a5fa" stroke-width="1"/>
+  <text x="325" y="271" fill="#93c5fd" font-size="11">Clash Detection</text>
+
+  <text x="55" y="305" fill="#60a5fa" font-size="12" font-weight="600">COMPONENTS</text>
+  <rect x="55" y="315" width="160" height="28" rx="4" fill="#1e3a5f" stroke="#60a5fa" stroke-width=".5"/>
+  <text x="62" y="334" fill="#93c5fd" font-size="10">InteractiveCanvas</text>
+  <rect x="220" y="315" width="160" height="28" rx="4" fill="#1e3a5f" stroke="#60a5fa" stroke-width=".5"/>
+  <text x="227" y="334" fill="#93c5fd" font-size="10">EngineeringCanvas</text>
+  <rect x="385" y="315" width="180" height="28" rx="4" fill="#1e3a5f" stroke="#60a5fa" stroke-width=".5"/>
+  <text x="392" y="334" fill="#93c5fd" font-size="10">FaultSimulationWorkspace</text>
+  <rect x="55" y="348" width="160" height="28" rx="4" fill="#1e3a5f" stroke="#60a5fa" stroke-width=".5"/>
+  <text x="62" y="367" fill="#93c5fd" font-size="10">ProjectSidebar</text>
+  <rect x="220" y="348" width="160" height="28" rx="4" fill="#1e3a5f" stroke="#60a5fa" stroke-width=".5"/>
+  <text x="227" y="367" fill="#93c5fd" font-size="10">ReportManager</text>
+  <rect x="385" y="348" width="180" height="28" rx="4" fill="#1e3a5f" stroke="#60a5fa" stroke-width=".5"/>
+  <text x="392" y="367" fill="#93c5fd" font-size="10">AICopilot</text>
+
+  <text x="55" y="400" fill="#60a5fa" font-size="12" font-weight="600">PAGES (12 routes)</text>
+  <text x="55" y="420" fill="#94a3b8" font-size="10">/ /projects /engineering /fire-alarm /elements /elements/:id</text>
+  <text x="55" y="435" fill="#94a3b8" font-size="10">/connections /conflicts /reports /settings</text>
+
+  <text x="55" y="465" fill="#60a5fa" font-size="12" font-weight="600">HOOKS &amp; SERVICES</text>
+  <rect x="55" y="475" width="120" height="26" rx="4" fill="#1e3a5f" stroke="#475569" stroke-width=".5"/>
+  <text x="62" y="493" fill="#94a3b8" font-size="9">useTelemetryStream</text>
+  <rect x="180" y="475" width="120" height="26" rx="4" fill="#1e3a5f" stroke="#475569" stroke-width=".5"/>
+  <text x="187" y="493" fill="#94a3b8" font-size="9">useFaultLogic</text>
+  <rect x="305" y="475" width="120" height="26" rx="4" fill="#1e3a5f" stroke="#475569" stroke-width=".5"/>
+  <text x="312" y="493" fill="#94a3b8" font-size="9">api service</text>
+  <rect x="430" y="475" width="120" height="26" rx="4" fill="#1e3a5f" stroke="#475569" stroke-width=".5"/>
+  <text x="437" y="493" fill="#94a3b8" font-size="9">Zustand store</text>
+
+  <text x="55" y="525" fill="#60a5fa" font-size="12" font-weight="600">ELECTRON SHELL</text>
+  <rect x="55" y="535" width="240" height="32" rx="5" fill="#1e3a5f" stroke="#f59e0b" stroke-width="1"/>
+  <text x="65" y="556" fill="#fbbf24" font-size="11">main.ts — Window, IPC, Backend lifecycle</text>
+  <rect x="305" y="535" width="270" height="32" rx="5" fill="#1e3a5f" stroke="#f59e0b" stroke-width="1"/>
+  <text x="315" y="556" fill="#fbbf24" font-size="11">preload.ts — contextBridge (5 channels)</text>
+  <text x="55" y="590" fill="#94a3b8" font-size="10">IPC channels: get-app-info, get-backend-url, get-backend-status, show-open-dialog, show-save-dialog</text>
+  <text x="55" y="605" fill="#94a3b8" font-size="10">Security: contextIsolation=true, sandbox=true, nodeIntegration=false</text>
+
+  <!-- Backend -->
+  <rect x="620" y="90" width="540" height="790" rx="8" fill="url(#box)" stroke="#10b981" stroke-width="1" stroke-opacity=".4"/>
+  <text x="635" y="115" fill="#34d399" font-size="14" font-weight="600">BACKEND (Python + FastAPI)</text>
+
+  <text x="635" y="145" fill="#34d399" font-size="12" font-weight="600">API ROUTERS</text>
+  <rect x="635" y="155" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="173" fill="#6ee7b7" font-size="10">health.py</text>
+  <rect x="800" y="155" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="807" y="173" fill="#6ee7b7" font-size="10">projects.py</text>
+  <rect x="965" y="155" width="180" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="972" y="173" fill="#6ee7b7" font-size="10">connections.py</text>
+  <rect x="635" y="186" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="204" fill="#6ee7b7" font-size="10">devices.py</text>
+  <rect x="800" y="186" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="807" y="204" fill="#6ee7b7" font-size="10">elements.py</text>
+  <rect x="965" y="186" width="180" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="972" y="204" fill="#6ee7b7" font-size="10">conflicts.py</text>
+  <rect x="635" y="217" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="235" fill="#6ee7b7" font-size="10">facp.py</text>
+  <rect x="800" y="217" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="807" y="235" fill="#6ee7b7" font-size="10">qomn.py</text>
+  <rect x="965" y="217" width="180" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="972" y="235" fill="#6ee7b7" font-size="10">reports.py</text>
+  <rect x="635" y="248" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="266" fill="#6ee7b7" font-size="10">environment.py</text>
+  <rect x="800" y="248" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="807" y="266" fill="#6ee7b7" font-size="10">exports.py</text>
+  <rect x="965" y="248" width="180" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="972" y="266" fill="#6ee7b7" font-size="10">monitor.py</text>
+  <rect x="635" y="279" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="297" fill="#6ee7b7" font-size="10">dwg.py</text>
+  <rect x="800" y="279" width="160" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="807" y="297" fill="#6ee7b7" font-size="10">sync.py</text>
+  <rect x="965" y="279" width="180" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="972" y="297" fill="#6ee7b7" font-size="10">workflow.py</text>
+
+  <text x="635" y="330" fill="#34d399" font-size="12" font-weight="600">SERVICES</text>
+  <text x="635" y="350" fill="#6ee7b7" font-size="10">weather_service | elevation_service | geocoding_service</text>
+  <text x="635" y="365" fill="#6ee7b7" font-size="10">air_quality_service | hazmat_service | region_service</text>
+  <text x="635" y="380" fill="#6ee7b7" font-size="10">severe_weather_service | memory_service | workflow_service</text>
+
+  <text x="635" y="415" fill="#34d399" font-size="12" font-weight="600">DATA LAYER</text>
+  <rect x="635" y="425" width="240" height="32" rx="5" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="645" y="446" fill="#6ee7b7" font-size="11">database.py — SQLite + UniversalDataModel</text>
+  <rect x="885" y="425" width="260" height="32" rx="5" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="895" y="446" fill="#6ee7b7" font-size="11">db_service.py — CRUD + Query builder</text>
+  <rect x="635" y="462" width="240" height="32" rx="5" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="645" y="483" fill="#6ee7b7" font-size="11">models.py — Pydantic schemas</text>
+  <rect x="885" y="462" width="260" height="32" rx="5" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+  <text x="895" y="483" fill="#6ee7b7" font-size="11">schemas.py — Validation + serialization</text>
+
+  <text x="635" y="520" fill="#34d399" font-size="12" font-weight="600">ENGINEERING KERNEL (fireai/)</text>
+  <rect x="635" y="530" width="250" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="548" fill="#6ee7b7" font-size="10">NFPA 72: engine, coverage, models, calculations</text>
+  <rect x="895" y="530" width="250" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="902" y="548" fill="#6ee7b7" font-size="10">Acoustics: engine, calculator, UGLD raytrace</text>
+  <rect x="635" y="561" width="250" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="579" fill="#6ee7b7" font-size="10">Electrical: voltage drop, battery, SLC capacitance</text>
+  <rect x="895" y="561" width="250" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="902" y="579" fill="#6ee7b7" font-size="10">Cable: cable_router, network_topology</text>
+  <rect x="635" y="592" width="250" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="610" fill="#6ee7b7" font-size="10">Conduit: fill, bend, fitting, routing, catalog</text>
+  <rect x="895" y="592" width="250" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="902" y="610" fill="#6ee7b7" font-size="10">Spatial: density_optimizer, MIP solver, voronoi</text>
+  <rect x="635" y="623" width="250" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="641" fill="#6ee7b7" font-size="10">FACP: panel selection, battery sizing, capacity</text>
+  <rect x="895" y="623" width="250" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="902" y="641" fill="#6ee7b7" font-size="10">Safety: hazard_override, survivability, egress</text>
+
+  <text x="635" y="680" fill="#34d399" font-size="12" font-weight="600">PARSERS</text>
+  <rect x="635" y="690" width="180" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="708" fill="#6ee7b7" font-size="10">dwg_parser.py</text>
+  <rect x="820" y="690" width="180" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="827" y="708" fill="#6ee7b7" font-size="10">dxf_parser.py</text>
+  <rect x="1005" y="690" width="140" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="1012" y="708" fill="#6ee7b7" font-size="10">ifc_parser.py</text>
+  <rect x="635" y="721" width="180" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="642" y="739" fill="#6ee7b7" font-size="10">pdf_parser.py</text>
+  <rect x="820" y="721" width="180" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="827" y="739" fill="#6ee7b7" font-size="10">excel_parser.py</text>
+  <rect x="1005" y="721" width="140" height="26" rx="4" fill="#064e3b" stroke="#34d399" stroke-width=".5"/>
+  <text x="1012" y="739" fill="#6ee7b7" font-size="10">revit_json.py</text>
+
+  <text x="635" y="775" fill="#34d399" font-size="12" font-weight="600">AI &amp; ANALYTICS</text>
+  <rect x="635" y="785" width="250" height="26" rx="4" fill="#4c1d95" stroke="#a78bfa" stroke-width=".5"/>
+  <text x="642" y="803" fill="#c4b5fd" font-size="10">PredictiveAnalytics | MLPipeline</text>
+  <rect x="895" y="785" width="250" height="26" rx="4" fill="#4c1d95" stroke="#a78bfa" stroke-width=".5"/>
+  <text x="902" y="803" fill="#c4b5fd" font-size="10">LearningAgent | ToolSelector</text>
+  <rect x="635" y="816" width="250" height="26" rx="4" fill="#4c1d95" stroke="#a78bfa" stroke-width=".5"/>
+  <text x="642" y="834" fill="#c4b5fd" font-size="10">SelfImprovementEngine | Mem0</text>
+  <rect x="895" y="816" width="250" height="26" rx="4" fill="#4c1d95" stroke="#a78bfa" stroke-width=".5"/>
+  <text x="902" y="834" fill="#c4b5fd" font-size="10">LangGraph Workflow | AR/VR Visualizer</text>
+</svg>
