@@ -79,36 +79,32 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
         }
 
         try:
-            with udm._service_lock:
-                conn = udm._data_model._conn
-                cursor = conn.cursor()
-                cursor.execute(
-                    "INSERT OR IGNORE INTO projects "
-                    "(project_id, name, description, status, metadata, "
-                    "created_timestamp, last_modified_timestamp) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        project_id,
-                        name,
-                        description,
-                        status,
-                        json.dumps(metadata),
-                        created_at,
-                        updated_at,
-                    ),
-                )
-                conn.commit()
+            udm.bridge_insert(
+                "INSERT OR IGNORE INTO projects "
+                "(project_id, name, description, status, metadata, "
+                "created_timestamp, last_modified_timestamp) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    project_id,
+                    name,
+                    description,
+                    status,
+                    json.dumps(metadata),
+                    created_at,
+                    updated_at,
+                ),
+            )
 
-                # Update in-memory cache
-                udm._projects[project_id] = {
-                    "project_id": project_id,
-                    "name": name,
-                    "description": description,
-                    "status": status,
-                    "metadata": metadata,
-                    "created_timestamp": created_at,
-                    "last_modified_timestamp": updated_at,
-                }
+            # Update in-memory cache
+            udm._projects[project_id] = {
+                "project_id": project_id,
+                "name": name,
+                "description": description,
+                "status": status,
+                "metadata": metadata,
+                "created_timestamp": created_at,
+                "last_modified_timestamp": updated_at,
+            }
 
             logger.info("Project %s synced to UDM successfully", project_id)
             return True
@@ -140,62 +136,51 @@ def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool
 
         # Build SET clauses for the update
         try:
-            with udm._service_lock:
-                conn = udm._data_model._conn
-                cursor = conn.cursor()
+            set_clauses = []
+            values = []
 
-                set_clauses = []
-                values = []
+            if "name" in updates and updates["name"] is not None:
+                set_clauses.append("name = ?")
+                values.append(updates["name"])
+            if "description" in updates and updates["description"] is not None:
+                set_clauses.append("description = ?")
+                values.append(updates["description"])
+            if "status" in updates and updates["status"] is not None:
+                set_clauses.append("status = ?")
+                values.append(updates["status"])
 
-                # Map System A update fields to System B columns
-                if "name" in updates and updates["name"] is not None:
-                    set_clauses.append("name = ?")
-                    values.append(updates["name"])
-                if "description" in updates and updates["description"] is not None:
-                    set_clauses.append("description = ?")
-                    values.append(updates["description"])
-                if "status" in updates and updates["status"] is not None:
-                    set_clauses.append("status = ?")
-                    values.append(updates["status"])
+            now = datetime.now(timezone.utc).isoformat()
+            set_clauses.append("last_modified_timestamp = ?")
+            values.append(now)
 
-                # Always update the modification timestamp
-                now = datetime.now(timezone.utc).isoformat()
-                set_clauses.append("last_modified_timestamp = ?")
-                values.append(now)
+            if "author" in updates and updates["author"] is not None:
+                metadata = existing.metadata if existing.metadata else {}
+                metadata["author"] = updates["author"]
+                set_clauses.append("metadata = ?")
+                values.append(json.dumps(metadata))
 
-                # If author is being updated, merge into metadata JSON
-                if "author" in updates and updates["author"] is not None:
-                    # Read current metadata, merge author, write back
-                    metadata = existing.metadata if existing.metadata else {}
-                    metadata["author"] = updates["author"]
-                    set_clauses.append("metadata = ?")
-                    values.append(json.dumps(metadata))
+            if set_clauses:
+                values.append(project_id)
+                udm.bridge_sql(
+                    f"UPDATE projects SET {', '.join(set_clauses)} WHERE project_id = ?",
+                    tuple(values),
+                    commit=True,
+                )
 
-                if set_clauses:
-                    values.append(project_id)
-                    cursor.execute(
-                        f"UPDATE projects SET {', '.join(set_clauses)} "  # noqa: S608 — set_clauses built from whitelisted column names
-                        f"WHERE project_id = ?",
-                        values,
-                    )
-                    conn.commit()
-
-                    # Update in-memory cache
-                    if project_id in udm._projects:
-                        field_map = {
-                            "name": "name",
-                            "description": "description",
-                            "status": "status",
-                        }
-                        for field, value in updates.items():
-                            if value is not None and field in field_map:
-                                udm._projects[project_id][field_map[field]] = value
-                        udm._projects[project_id]["last_modified_timestamp"] = now
-                        # Update metadata.author if author changed
-                        if "author" in updates and updates["author"] is not None:
-                            meta = udm._projects[project_id].get("metadata", {})
-                            meta["author"] = updates["author"]
-                            udm._projects[project_id]["metadata"] = meta
+                if project_id in udm._projects:
+                    field_map = {
+                        "name": "name",
+                        "description": "description",
+                        "status": "status",
+                    }
+                    for field, value in updates.items():
+                        if value is not None and field in field_map:
+                            udm._projects[project_id][field_map[field]] = value
+                    udm._projects[project_id]["last_modified_timestamp"] = now
+                    if "author" in updates and updates["author"] is not None:
+                        meta = udm._projects[project_id].get("metadata", {})
+                        meta["author"] = updates["author"]
+                        udm._projects[project_id]["metadata"] = meta
 
             logger.info("Project %s update synced to UDM", project_id)
             return True
@@ -221,35 +206,27 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
         udm = DatabaseService()
 
         try:
-            with udm._service_lock:
-                conn = udm._data_model._conn
-                cursor = conn.cursor()
-
-                # Ensure element_projects table exists before deleting from it.
-                # This table is created lazily by DatabaseService; it may not
-                # exist yet if no elements have ever been associated with a project.
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS element_projects (
-                        element_id TEXT,
-                        project_id TEXT,
-                        PRIMARY KEY (element_id, project_id)
-                    )
-                """)
-
-                # Delete element associations first (referential integrity)
-                cursor.execute(
-                    "DELETE FROM element_projects WHERE project_id = ?",
-                    (project_id,),
+            udm.bridge_create_table("""
+                CREATE TABLE IF NOT EXISTS element_projects (
+                    element_id TEXT,
+                    project_id TEXT,
+                    PRIMARY KEY (element_id, project_id)
                 )
-                cursor.execute(
-                    "DELETE FROM projects WHERE project_id = ?",
-                    (project_id,),
-                )
-                conn.commit()
+            """)
 
-                # Update in-memory cache
-                if project_id in udm._projects:
-                    del udm._projects[project_id]
+            udm.bridge_sql(
+                "DELETE FROM element_projects WHERE project_id = ?",
+                (project_id,),
+                commit=True,
+            )
+            udm.bridge_sql(
+                "DELETE FROM projects WHERE project_id = ?",
+                (project_id,),
+                commit=True,
+            )
+
+            if project_id in udm._projects:
+                del udm._projects[project_id]
 
             logger.info("Project %s deletion synced to UDM", project_id)
             return True
@@ -312,59 +289,49 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
         })
 
         try:
-            with udm._service_lock:
-                conn = udm._data_model._conn
-                cursor = conn.cursor()
-
-                # Ensure elements table exists
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS elements (
-                        element_id TEXT PRIMARY KEY,
-                        element_type TEXT NOT NULL,
-                        name TEXT,
-                        position TEXT,
-                        properties TEXT,
-                        created_timestamp TEXT,
-                        last_modified_timestamp TEXT,
-                        is_deleted INTEGER DEFAULT 0
-                    )
-                """)
-
-                # Ensure element_projects table exists
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS element_projects (
-                        element_id TEXT,
-                        project_id TEXT,
-                        PRIMARY KEY (element_id, project_id)
-                    )
-                """)
-
-                # Insert or replace element
-                now = datetime.now(timezone.utc).isoformat()
-                cursor.execute(
-                    "INSERT OR REPLACE INTO elements "
-                    "(element_id, element_type, name, position, properties, "
-                    "created_timestamp, last_modified_timestamp, is_deleted) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
-                    (
-                        device_id,
-                        device_data.get("type", "device"),
-                        device_data.get("name", ""),
-                        json.dumps(position),
-                        json.dumps(properties),
-                        now,
-                        now,
-                    ),
+            udm.bridge_create_table("""
+                CREATE TABLE IF NOT EXISTS elements (
+                    element_id TEXT PRIMARY KEY,
+                    element_type TEXT NOT NULL,
+                    name TEXT,
+                    position TEXT,
+                    properties TEXT,
+                    created_timestamp TEXT,
+                    last_modified_timestamp TEXT,
+                    is_deleted INTEGER DEFAULT 0
                 )
+            """)
 
-                # Link element to project
-                cursor.execute(
-                    "INSERT OR IGNORE INTO element_projects (element_id, project_id) "
-                    "VALUES (?, ?)",
-                    (device_id, project_id),
+            udm.bridge_create_table("""
+                CREATE TABLE IF NOT EXISTS element_projects (
+                    element_id TEXT,
+                    project_id TEXT,
+                    PRIMARY KEY (element_id, project_id)
                 )
+            """)
 
-                conn.commit()
+            now = datetime.now(timezone.utc).isoformat()
+            udm.bridge_insert(
+                "INSERT OR REPLACE INTO elements "
+                "(element_id, element_type, name, position, properties, "
+                "created_timestamp, last_modified_timestamp, is_deleted) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
+                (
+                    device_id,
+                    device_data.get("type", "device"),
+                    device_data.get("name", ""),
+                    json.dumps(position),
+                    json.dumps(properties),
+                    now,
+                    now,
+                ),
+            )
+
+            udm.bridge_insert(
+                "INSERT OR IGNORE INTO element_projects (element_id, project_id) "
+                "VALUES (?, ?)",
+                (device_id, project_id),
+            )
 
             logger.info("Device %s synced to UDM for project %s", device_id, project_id)
             return True
@@ -388,74 +355,66 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str
         udm = DatabaseService()
 
         try:
-            with udm._service_lock:
-                conn = udm._data_model._conn
-                cursor = conn.cursor()
+            set_clauses = []
+            values = []
 
-                set_clauses = []
-                values = []
+            if "type" in updates and updates["type"] is not None:
+                set_clauses.append("element_type = ?")
+                values.append(updates["type"])
 
-                # Map device fields to element fields
-                if "type" in updates and updates["type"] is not None:
-                    set_clauses.append("element_type = ?")
-                    values.append(updates["type"])
+            if "name" in updates and updates["name"] is not None:
+                set_clauses.append("name = ?")
+                values.append(updates["name"])
 
-                if "name" in updates and updates["name"] is not None:
-                    set_clauses.append("name = ?")
-                    values.append(updates["name"])
+            position_fields = {"x", "y", "z"}
+            if position_fields.intersection(updates.keys()):
+                row = udm.bridge_sql(
+                    "SELECT position FROM elements WHERE element_id = ?",
+                    (device_id,),
+                    fetch=True,
+                )
+                row_data = row.fetchone() if hasattr(row, 'fetchone') else None
+                current_pos = json.loads(row_data[0]) if row_data and row_data[0] else {}
+                for axis in ("x", "y", "z"):
+                    if axis in updates and updates[axis] is not None:
+                        current_pos[axis] = updates[axis]
+                set_clauses.append("position = ?")
+                values.append(json.dumps(current_pos))
 
-                # Update position if x, y, or z changed
-                position_fields = {"x", "y", "z"}
-                if position_fields.intersection(updates.keys()):
-                    # Read current position and merge
-                    cursor.execute(
-                        "SELECT position FROM elements WHERE element_id = ?",
-                        (device_id,),
-                    )
-                    row = cursor.fetchone()
-                    current_pos = json.loads(row[0]) if row and row[0] else {}
-                    for axis in ("x", "y", "z"):
-                        if axis in updates and updates[axis] is not None:
-                            current_pos[axis] = updates[axis]
-                    set_clauses.append("position = ?")
-                    values.append(json.dumps(current_pos))
+            property_fields = {"voltage", "current", "load", "rotation", "category", "properties"}
+            if property_fields.intersection(updates.keys()):
+                row = udm.bridge_sql(
+                    "SELECT properties FROM elements WHERE element_id = ?",
+                    (device_id,),
+                    fetch=True,
+                )
+                row_data = row.fetchone() if hasattr(row, 'fetchone') else None
+                current_props = json.loads(row_data[0]) if row_data and row_data[0] else {}
+                if "voltage" in updates:
+                    current_props["voltage"] = updates["voltage"]
+                if "current" in updates:
+                    current_props["current"] = updates["current"]
+                if "load" in updates:
+                    current_props["load_amperes"] = updates["load"]
+                if "rotation" in updates:
+                    current_props["rotation"] = updates["rotation"]
+                if "category" in updates:
+                    current_props["device_category"] = updates["category"]
+                if "properties" in updates and updates["properties"]:
+                    current_props.update(updates["properties"])
+                set_clauses.append("properties = ?")
+                values.append(json.dumps(current_props))
 
-                # Update properties with device metadata
-                property_fields = {"voltage", "current", "load", "rotation", "category", "properties"}
-                if property_fields.intersection(updates.keys()):
-                    cursor.execute(
-                        "SELECT properties FROM elements WHERE element_id = ?",
-                        (device_id,),
-                    )
-                    row = cursor.fetchone()
-                    current_props = json.loads(row[0]) if row and row[0] else {}
-                    if "voltage" in updates:
-                        current_props["voltage"] = updates["voltage"]
-                    if "current" in updates:
-                        current_props["current"] = updates["current"]
-                    if "load" in updates:
-                        current_props["load_amperes"] = updates["load"]
-                    if "rotation" in updates:
-                        current_props["rotation"] = updates["rotation"]
-                    if "category" in updates:
-                        current_props["device_category"] = updates["category"]
-                    if "properties" in updates and updates["properties"]:
-                        current_props.update(updates["properties"])
-                    set_clauses.append("properties = ?")
-                    values.append(json.dumps(current_props))
-
-                if set_clauses:
-                    now = datetime.now(timezone.utc).isoformat()
-                    set_clauses.append("last_modified_timestamp = ?")
-                    values.append(now)
-
-                    values.append(device_id)
-                    cursor.execute(
-                        f"UPDATE elements SET {', '.join(set_clauses)} "  # noqa: S608 — set_clauses built from whitelisted column names
-                        f"WHERE element_id = ?",
-                        values,
-                    )
-                    conn.commit()
+            if set_clauses:
+                now = datetime.now(timezone.utc).isoformat()
+                set_clauses.append("last_modified_timestamp = ?")
+                values.append(now)
+                values.append(device_id)
+                udm.bridge_sql(
+                    f"UPDATE elements SET {', '.join(set_clauses)} WHERE element_id = ?",
+                    tuple(values),
+                    commit=True,
+                )
 
             logger.info("Device %s update synced to UDM for project %s", device_id, project_id)
             return True
@@ -482,24 +441,18 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
         udm = DatabaseService()
 
         try:
-            with udm._service_lock:
-                conn = udm._data_model._conn
-                cursor = conn.cursor()
-
-                # Soft-delete the element (preserve audit trail)
-                now = datetime.now(timezone.utc).isoformat()
-                cursor.execute(
-                    "UPDATE elements SET is_deleted = 1, last_modified_timestamp = ? "
-                    "WHERE element_id = ?",
-                    (now, device_id),
-                )
-
-                # Remove project association
-                cursor.execute(
-                    "DELETE FROM element_projects WHERE element_id = ? AND project_id = ?",
-                    (device_id, project_id),
-                )
-                conn.commit()
+            now = datetime.now(timezone.utc).isoformat()
+            udm.bridge_sql(
+                "UPDATE elements SET is_deleted = 1, last_modified_timestamp = ? "
+                "WHERE element_id = ?",
+                (now, device_id),
+                commit=True,
+            )
+            udm.bridge_sql(
+                "DELETE FROM element_projects WHERE element_id = ? AND project_id = ?",
+                (device_id, project_id),
+                commit=True,
+            )
 
             logger.info("Device %s deletion synced to UDM for project %s", device_id, project_id)
             return True
@@ -559,64 +512,46 @@ def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> 
         }
 
         try:
-            with udm._service_lock:
-                conn = udm._data_model._conn
-                cursor = conn.cursor()
-
-                # Ensure relationships table exists with is_deleted and
-                # last_modified_timestamp columns. The table may have been
-                # created by UniversalDataModel without these columns, so we
-                # also ALTER TABLE to add them if missing.
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS relationships (
-                        relationship_id TEXT PRIMARY KEY,
-                        from_element_id TEXT NOT NULL,
-                        to_element_id TEXT NOT NULL,
-                        relationship_type TEXT NOT NULL,
-                        is_parametric INTEGER DEFAULT 0,
-                        metadata JSON,
-                        is_deleted INTEGER DEFAULT 0,
-                        last_modified_timestamp TEXT
-                    )
-                """)
-
-                # Add is_deleted column if it doesn't exist (the table may
-                # have been created by UniversalDataModel without it)
-                try:
-                    cursor.execute(
-                        "ALTER TABLE relationships ADD COLUMN is_deleted INTEGER DEFAULT 0"
-                    )
-                except Exception:
-                    pass  # Column already exists — safe to ignore
-
-                # Add last_modified_timestamp column if it doesn't exist
-                try:
-                    cursor.execute(
-                        "ALTER TABLE relationships ADD COLUMN last_modified_timestamp TEXT"
-                    )
-                except Exception:
-                    pass  # Column already exists — safe to ignore
-
-                # Insert or replace relationship
-                now = datetime.now(timezone.utc).isoformat()
-                cursor.execute(
-                    "INSERT OR REPLACE INTO relationships "
-                    "(relationship_id, from_element_id, to_element_id, "
-                    "relationship_type, is_parametric, metadata, "
-                    "is_deleted, last_modified_timestamp) "
-                    "VALUES (?, ?, ?, ?, ?, ?, 0, ?)",
-                    (
-                        connection_id,
-                        from_id,
-                        to_id,
-                        "cable_connection",
-                        0,
-                        json.dumps(properties),
-                        now,
-                    ),
+            udm.bridge_create_table("""
+                CREATE TABLE IF NOT EXISTS relationships (
+                    relationship_id TEXT PRIMARY KEY,
+                    from_element_id TEXT NOT NULL,
+                    to_element_id TEXT NOT NULL,
+                    relationship_type TEXT NOT NULL,
+                    is_parametric INTEGER DEFAULT 0,
+                    metadata JSON,
+                    is_deleted INTEGER DEFAULT 0,
+                    last_modified_timestamp TEXT
                 )
+            """)
 
-                conn.commit()
+            # Ensure compatibility columns exist (safe to ignore if already present)
+            for col in [
+                "ADD COLUMN is_deleted INTEGER DEFAULT 0",
+                "ADD COLUMN last_modified_timestamp TEXT",
+            ]:
+                try:
+                    udm.bridge_sql(f"ALTER TABLE relationships {col}")
+                except Exception:
+                    pass
+
+            now = datetime.now(timezone.utc).isoformat()
+            udm.bridge_insert(
+                "INSERT OR REPLACE INTO relationships "
+                "(relationship_id, from_element_id, to_element_id, "
+                "relationship_type, is_parametric, metadata, "
+                "is_deleted, last_modified_timestamp) "
+                "VALUES (?, ?, ?, ?, ?, ?, 0, ?)",
+                (
+                    connection_id,
+                    from_id,
+                    to_id,
+                    "cable_connection",
+                    0,
+                    json.dumps(properties),
+                    now,
+                ),
+            )
 
             logger.info("Connection %s synced to UDM for project %s", connection_id, project_id)
             return True
@@ -644,53 +579,39 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
         udm = DatabaseService()
 
         try:
-            with udm._service_lock:
-                conn = udm._data_model._conn
-                cursor = conn.cursor()
-
-                # Ensure is_deleted and last_modified_timestamp columns exist
-                # (same safety net as sync_connection_to_udm)
+            for col in [
+                "ADD COLUMN is_deleted INTEGER DEFAULT 0",
+                "ADD COLUMN last_modified_timestamp TEXT",
+            ]:
                 try:
-                    cursor.execute(
-                        "ALTER TABLE relationships ADD COLUMN is_deleted INTEGER DEFAULT 0"
-                    )
-                except Exception:
-                    pass
-                try:
-                    cursor.execute(
-                        "ALTER TABLE relationships ADD COLUMN last_modified_timestamp TEXT"
-                    )
+                    udm.bridge_sql(f"ALTER TABLE relationships {col}")
                 except Exception:
                     pass
 
-                # Soft-delete the relationship (preserve audit trail)
-                now = datetime.now(timezone.utc).isoformat()
-                cursor.execute(
+            now = datetime.now(timezone.utc).isoformat()
+            udm.bridge_sql(
+                "UPDATE relationships SET is_deleted = 1, last_modified_timestamp = ? "
+                "WHERE relationship_id = ?",
+                (now, connection_id),
+                commit=True,
+            )
+
+            row = udm.bridge_sql(
+                "SELECT from_element_id, to_element_id FROM relationships "
+                "WHERE relationship_id = ?",
+                (connection_id,),
+                fetch=True,
+            )
+            row_data = row.fetchone() if hasattr(row, 'fetchone') else None
+            if row_data:
+                from_id, to_id = row_data[0], row_data[1]
+                udm.bridge_sql(
                     "UPDATE relationships SET is_deleted = 1, last_modified_timestamp = ? "
-                    "WHERE relationship_id = ?",
-                    (now, connection_id),
+                    "WHERE from_element_id = ? AND to_element_id = ? "
+                    "AND relationship_type = ?",
+                    (now, to_id, from_id, "reverse_cable_connection"),
+                    commit=True,
                 )
-
-                # Also soft-delete any reverse_cable_connection entry for the
-                # same device pair. When a connection is created, the UDM may
-                # store a reverse relationship for bidirectional traversal
-                # (matching the pattern in DatabaseService.create_connection).
-                cursor.execute(
-                    "SELECT from_element_id, to_element_id FROM relationships "
-                    "WHERE relationship_id = ?",
-                    (connection_id,),
-                )
-                row = cursor.fetchone()
-                if row:
-                    from_id, to_id = row[0], row[1]
-                    cursor.execute(
-                        "UPDATE relationships SET is_deleted = 1, last_modified_timestamp = ? "
-                        "WHERE from_element_id = ? AND to_element_id = ? "
-                        "AND relationship_type = ?",
-                        (now, to_id, from_id, "reverse_cable_connection"),
-                    )
-
-                conn.commit()
 
             logger.info("Connection %s deletion synced to UDM for project %s", connection_id, project_id)
             return True

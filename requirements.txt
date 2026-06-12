@@ -1,51 +1,43 @@
-# Core dependencies
+# Auto-generated from pyproject.toml — unified for Python 3.12+
 psutil>=5.8.0
-shapely>=1.8.0  # Earlier version compatible with Python 3.8
-numpy>=1.21.0   # Earlier version compatible with Python 3.8
-scipy>=1.7.0    # Earlier version compatible with Python 3.8
-pydantic>=1.10.0  # Earlier version compatible with Python 3.8
-fastapi>=0.68.0   # Earlier version compatible with Python 3.8
-uvicorn>=0.15.0   # Earlier version compatible with Python 3.8
-
-# Database and persistence
-sqlalchemy>=1.4.0  # Earlier version compatible with Python 3.8
-alembic>=1.7.0     # Earlier version compatible with Python 3.8
-asyncpg>=0.25.0    # Earlier version compatible with Python 3.8
-pymysql>=1.0.0     # Earlier version compatible with Python 3.8
-
-# Configuration and environment
-python-dotenv>=0.19.0  # Earlier version compatible with Python 3.8
-pyyaml>=5.4          # Earlier version compatible with Python 3.8
-toml>=0.10.2
-
-# HTTP and networking
-requests>=2.25.0     # Earlier version compatible with Python 3.8
-httpx>=0.22.0        # Earlier version compatible with Python 3.8
-pyjwt>=2.1.0         # Earlier version compatible with Python 3.8
-cryptography>=3.4.0  # Earlier version compatible with Python 3.8
-
-# Authentication and security
+shapely>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+pydantic>=2.0.0
+fastapi>=0.100.0
+uvicorn>=0.20.0
+sqlalchemy>=2.0.0
+pyyaml>=6.0
+requests>=2.28.0
+python-multipart>=0.0.6
+pyjwt>=2.6.0
 passlib[bcrypt]>=1.7.4
-argon2-cffi>=21.1.0  # Earlier version compatible with Python 3.8
+bcrypt>=4.0.0
+python-dotenv>=1.0.0
+alembic>=1.10.0
 
-# CAD and geometry processing
-ezdxf>=0.16.0        # Earlier version compatible with Python 3.8
-ifcopenshell>=0.6.0  # Earlier version compatible with Python 3.8
-opencv-python>=4.5.0 # Earlier version compatible with Python 3.8
-pillow>=8.0.0        # Earlier version compatible with Python 3.8
+# Extra critical deps for API services
+httpx>=0.27.0
+cryptography>=41.0.0
+argon2-cffi>=23.0.0
+websockets>=12.0
+tenacity>=8.2.0
 
-# Data processing and utilities
-pandas>=1.3.0        # Earlier version compatible with Python 3.8
-geopandas>=0.10.0    # Earlier version compatible with Python 3.8
-networkx>=2.5        # Earlier version compatible with Python 3.8
-sympy>=1.8           # Earlier version compatible with Python 3.8
+# CAD and data processing
+ezdxf>=1.0.0
+ifcopenshell>=0.7.0
+opencv-python>=4.5.0
+pillow>=8.0.0
+pandas>=1.3.0
+networkx>=2.5
+sympy>=1.8
 
-# Async and concurrency
-asyncio-mqtt>=0.10.0 # Earlier version compatible with Python 3.8
-redis>=4.0.0         # Earlier version compatible with Python 3.8
-celery>=5.1.0        # Earlier version compatible with Python 3.8
+# Async
+redis>=4.0.0
+celery>=5.1.0
+asyncio-mqtt>=0.10.0
 
-# Testing and development
-pytest>=6.0.0        # Earlier version compatible with Python 3.8
-pytest-asyncio>=0.17.0  # Earlier version compatible with Python 3.8
-pytest-cov>=3.0.0    # Earlier version compatible with Python 3.8
+# Testing (dev)
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0

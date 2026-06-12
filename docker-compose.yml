@@ -1,16 +1,10 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # FireAI — Docker Compose for Development and Testing
 # ═══════════════════════════════════════════════════════════════════════════
-# SAFETY NOTE: This is a safety-critical system.
-#   - Production deployments MUST use secrets management (not .env files)
-#   - All HMAC keys MUST be generated with cryptographically secure methods
-#   - CORS wildcards are ALWAYS rejected in production
-# ═══════════════════════════════════════════════════════════════════════════
 
 version: "3.9"
 
 services:
-  # ─── FireAI API Server ──────────────────────────────────────────────────
   fireai:
     build:
       context: .
@@ -26,7 +20,8 @@ services:
       - FIREAI_MEMORY_LLM_MODEL=${FIREAI_MEMORY_LLM_MODEL:-gemini-2.0-flash}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - LOG_LEVEL=${LOG_LEVEL:-WARNING}
-      - DATABASE_URL=sqlite:///data/fireai.db
+      - DIGITAL_TWIN_DB_PATH=/app/data/digital_twin.db
+      - UDM_DB_PATH=/app/data/udm_elements.db
     volumes:
       - fireai-data:/app/data
       - fireai-logs:/app/logs
@@ -39,7 +34,6 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    read_only: true
     tmpfs:
       - /tmp:size=100M
 

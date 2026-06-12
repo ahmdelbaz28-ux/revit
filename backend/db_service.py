@@ -689,6 +689,40 @@ class DatabaseService:
 
             return self._data_model.delete_element(element_id, source=change_source)
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # Bridge helpers — used by project_bridge.py for cross-database sync
+    # These provide safe raw SQL access without exposing private internals
+    # ──────────────────────────────────────────────────────────────────────────
+
+    @property
+    def bridge_lock(self) -> threading.RLock:
+        """Lock for bridge operations. Always acquire before bridge_sql()."""
+        return self._service_lock
+
+    def bridge_sql(self, sql: str, params: tuple = (), commit: bool = False, fetch: bool = False):
+        """Execute raw SQL for bridge sync operations safely.
+
+        Ensures proper lock ordering and connection safety.
+        Used ONLY by project_bridge.py for cross-database synchronization.
+        """
+        with self._service_lock:
+            cursor = self._safe_db_execute(sql, params, commit=commit)
+            if fetch:
+                return cursor
+            return True
+
+    def bridge_create_table(self, create_sql: str):
+        """Create a table safely for bridge operations."""
+        with self._service_lock:
+            self._safe_db_execute(create_sql, commit=True)
+
+    def bridge_insert(self, sql: str, params: tuple):
+        """Insert a row for bridge sync."""
+        with self._service_lock:
+            self._safe_db_execute(sql, params, commit=True)
+
+    # ──────────────────────────────────────────────────────────────────────────
+
     def _element_to_response(self, element: UniversalElement, project_id: Optional[str] = None) -> ElementResponse:
         """Convert UniversalElement to ElementResponse.
 

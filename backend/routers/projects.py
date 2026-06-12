@@ -23,6 +23,7 @@ from backend.project_bridge import (
     sync_project_update_to_udm,
     sync_project_delete_to_udm,
 )
+from backend.response import success, error
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -59,7 +60,7 @@ async def list_projects(
     db = get_db()
     result = db.list_projects(page=page, limit=limit, sort=_normalize_sort(sort), order=order)
     validate_paginated(result, item_validator=validate_project)
-    return {"success": True, "data": result}
+    return success(result)
 
 
 @router.post("", status_code=201)
@@ -81,7 +82,7 @@ async def create_project(input_data: CreateProjectInput):
     except Exception:
         pass  # Bridge failures are logged internally, must not block
 
-    return {"data": project, "success": True}
+    return success(project)
 
 
 @router.get("/{project_id}")
@@ -92,7 +93,7 @@ async def get_project(project_id: str):
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     validate_project(project)
-    return {"data": project, "success": True}
+    return success(project)
 
 
 @router.put("/{project_id}")
@@ -113,7 +114,7 @@ async def update_project(project_id: str, input_data: UpdateProjectInput):
     except Exception:
         pass  # Bridge failures are logged internally, must not block
 
-    return {"data": project, "success": True}
+    return success(project)
 
 
 @router.delete("/{project_id}")
@@ -130,4 +131,4 @@ async def delete_project(project_id: str):
     except Exception:
         pass  # Bridge failures are logged internally, must not block
 
-    return {"data": None, "success": True, "message": "Project deleted"}
+    return success(None, "Project deleted")

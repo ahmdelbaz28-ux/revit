@@ -60,6 +60,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ── Startup environment validation ─────────────────────────────────────────
+
+_ENV = os.getenv("FIREAI_ENV", "production")
+if _ENV == "production":
+    _required = ["FIREAI_API_KEY"]
+    _missing = [k for k in _required if not os.getenv(k)]
+    if _missing:
+        logger.critical(
+            "Missing required environment variables in production mode: %s. "
+            "The application will start but may reject mutating requests.",
+            ", ".join(_missing),
+        )
+
 # ── Security Audit Logging & Log Rotation ──────────────────────────────────
 # V100+V105: Structured security event logging with tamper-evident chain
 # hashing, sensitive data masking, and size-based log rotation.
@@ -75,6 +88,29 @@ try:
 except ImportError:
     logger.warning("security_logging module not available — security audit disabled")
     _SECURITY_AUDIT_AVAILABLE = False
+
+# ── Optional router availability flags (set BEFORE lifespan) ──────────────
+
+WORKFLOW_ROUTER_AVAILABLE: bool = False
+MEMORY_ROUTER_AVAILABLE: bool = False
+
+try:
+    from backend.routers import workflow
+    WORKFLOW_ROUTER_AVAILABLE = True
+except ImportError:
+    pass
+
+try:
+    from backend.routers import memory
+    MEMORY_ROUTER_AVAILABLE = True
+except ImportError:
+    pass
+
+
+# ── Unified API response helpers ──────────────────────────────────────────
+
+from backend.response import success as api_success, error as api_error
+
 
 # ── Application lifecycle ──────────────────────────────────────────────────
 
@@ -753,14 +789,11 @@ async def generic_exception_handler(request: Request, exc: Exception):
     )
     is_dev = os.getenv("FIREAI_ENV") == "development"
     error_detail = f"{type(exc).__name__}: {exc}" if is_dev else "Internal server error"
+    from backend.response import error as api_error_response
+    resp = api_error_response(error_detail)
+    resp["status_code"] = 500
     return Response(
-        content=json.dumps(
-            {
-                "success": False,
-                "error": error_detail,
-                "status_code": 500,
-            }
-        ),
+        content=json.dumps(resp),
         status_code=500,
         media_type="application/json",
     )
@@ -785,18 +818,7 @@ from backend.routers import (
     qomn,
 )
 
-# Optional routers: only available when respective dependencies are installed
-try:
-    from backend.routers import workflow
-    WORKFLOW_ROUTER_AVAILABLE = True
-except ImportError:
-    WORKFLOW_ROUTER_AVAILABLE = False
-
-try:
-    from backend.routers import memory
-    MEMORY_ROUTER_AVAILABLE = True
-except ImportError:
-    MEMORY_ROUTER_AVAILABLE = False
+# Optional routers: already imported before lifespan() above
 
 # Health check at /api/health
 app.include_router(health.router, prefix="/api")
