@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: fireai
+    runtime: docker
+    repo: https://github.com/ahmdelbaz28-ux/revit
+    branch: main
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: FIREAI_ENV
+        value: production
+      - key: FIREAI_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://fireai.onrender.com
+      - key: CSP_CONNECT_SRC
+        value: https://fireai.onrender.com wss://fireai.onrender.com
+    healthCheckPath: /api/health
