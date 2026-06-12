@@ -72,18 +72,13 @@ try:
 except ImportError:
     SHAPELY_AVAILABLE = False
 
-# ── ProductionConfig import with fallback ──────────────────────────────────
+# ── ProductionConfig import ──────────────────────────────────────────────
 try:
     from fireai.core.production_config import get_production_config
 
     HAS_PRODUCTION_CONFIG = True
 except ImportError:
-    try:
-        from core.production_config import get_production_config
-
-        HAS_PRODUCTION_CONFIG = True
-    except ImportError:
-        HAS_PRODUCTION_CONFIG = False
+    HAS_PRODUCTION_CONFIG = False
 
 
 # ════════════════════════════════════════════════════════════════════════════

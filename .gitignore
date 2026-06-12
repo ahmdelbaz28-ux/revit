@@ -164,3 +164,25 @@ config/secrets.json
 reports/
 coverage.json
 audit/
+
+# Node.js
+node_modules/
+
+# Electron
+frontend/release/
+frontend/electron/backend/
+frontend/electron/core/
+frontend/electron/fireai/
+frontend/electron/parsers/
+frontend/electron/requirements.txt
+
+# Build artifacts
+frontend/dist/
+
+# Database files
+db/*.db
+db/*.db-shm
+db/*.db-wal
+
+# Audit logs
+*.jsonl

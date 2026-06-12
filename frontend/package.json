@@ -1,11 +1,21 @@
 {
-  "name": "@fireai/frontend",
+  "name": "fireai-digital-twin",
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "description": "FireAI Digital Twin — Safety-Critical Fire Alarm Engineering Platform",
+  "author": {
+    "name": "FireAI Team",
+    "email": "engineering@fireai.org"
+  },
+  "homepage": "https://fireai.org",
+  "license": "MIT",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "build:electron": "npm run build && npm run compile:electron && npm run copy:backend && electron-builder",
+    "compile:electron": "tsc -p tsconfig.electron.json",
+    "copy:backend": "node scripts/copy-backend.cjs",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
@@ -86,6 +96,8 @@
     "@types/three": "^0.160.0",
     "@vitejs/plugin-react": "^4.2.0",
     "chokidar": "^4.0.3",
+    "electron": "^33.4.0",
+    "electron-builder": "^25.1.8",
     "fast-glob": "^3.3.3",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4.0.0",
@@ -94,5 +106,52 @@
     "typescript": "^5.7.0",
     "vite": "6.4.2",
     "vitest": "^4.1.6"
+  },
+  "build": {
+    "appId": "org.fireai.digitaltwin",
+    "productName": "FireAI Digital Twin",
+    "directories": {
+      "output": "release"
+    },
+  "files": [
+    {"from": ".", "filter": ["dist/**/*"]},
+    {"from": ".", "filter": ["electron/compiled/**/*"]},
+    {"from": ".", "filter": ["electron/backend/**/*"]},
+    {"from": ".", "filter": ["electron/parsers/**/*"]},
+    {"from": ".", "filter": ["electron/core/**/*"]},
+    {"from": ".", "filter": ["electron/fireai/**/*"]},
+    {"from": ".", "filter": ["electron/requirements.txt"]},
+    {"from": ".", "filter": ["package.json"]}
+  ],
+  "extraResources": [],
+  "asarUnpack": [
+    "electron/backend/**",
+    "electron/parsers/**",
+    "electron/core/**",
+    "electron/fireai/**"
+  ],
+    "win": {
+      "target": ["nsis", "portable"],
+      "artifactName": "FireAI-DigitalTwin-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "artifactName": "FireAI-DigitalTwin-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "artifactName": "FireAI-DigitalTwin-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp"
+    },
+    "extraMetadata": {
+      "main": "electron/compiled/main.js"
+    }
   }
 }

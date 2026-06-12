@@ -74,11 +74,6 @@ _PPE_USED_MSG = (
     "Use subprocess isolation instead. See V0.3 Safety Guard in docstring."
 )
 
-import os
-import sys
-
-# Import FloorAnalyser and its dependencies
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from fireai.core.delta_cache import DeltaCache
 from fireai.core.fire_zone_engine import FireZoneEngine, ZoneConstraints, ZoneReport
 from fireai.core.floor_analyser import FloorAnalyser, FloorReport
