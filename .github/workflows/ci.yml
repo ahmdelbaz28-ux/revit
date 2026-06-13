@@ -56,7 +56,8 @@ jobs:
       #   run: ruff format --check fireai/
 
       - name: MyPy type check
-        run: mypy fireai/ qomn_conduit/ --ignore-missing-imports --no-strict-optional || echo "TYPE_CHECK_WARNING: MyPy found type annotation issues. Review and fix in follow-up."
+        run: |
+          mypy fireai/ qomn_conduit/ --ignore-missing-imports --no-strict-optional || echo "TYPE_CHECK_WARNING MyPy found type annotation issues. Review and fix in follow-up."
         # V131 FIX: Made non-blocking while type annotations are being improved.
         # Current status: 75 errors in 9 files (mostly test files with int/float mismatches).
         # These do not affect runtime behavior or safety.
@@ -242,7 +243,8 @@ jobs:
         continue-on-error: true  # JSON report is informational; strict check above gates
 
       - name: Audit project dependencies (strict)
-        run: pip-audit --desc || echo "DEPENDENCY_AUDIT_WARNING: Vulnerabilities found. Review and fix in follow-up."
+        run: |
+          pip-audit --desc || echo "DEPENDENCY_AUDIT_WARNING Vulnerabilities found. Review and fix in follow-up."
         # V131 FIX: Made non-blocking while vulnerabilities are being addressed.
         # GitHub reports 24 vulnerabilities (11 high, 9 moderate, 4 low).
         # These are in transitive dependencies, not direct FireAI code.

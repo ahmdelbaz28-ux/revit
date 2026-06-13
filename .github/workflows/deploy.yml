@@ -54,7 +54,8 @@ jobs:
         run: ruff check fireai/ backend/ --exit-non-zero-on-fix
 
       - name: Type check
-        run: mypy fireai/ backend/ --ignore-missing-imports --no-strict-optional || echo "TYPE_CHECK_WARNING: MyPy found type annotation issues."
+        run: |
+          mypy fireai/ backend/ --ignore-missing-imports --no-strict-optional || echo "TYPE_CHECK_WARNING MyPy found type annotation issues"
         continue-on-error: true
 
       - name: Security scan
