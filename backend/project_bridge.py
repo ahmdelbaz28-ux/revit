@@ -369,56 +369,69 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str
 
         udm = DatabaseService()
 
+        # SECURITY FIX: Explicit field whitelist — only allow known safe fields
+        # to be updated. Previously, arbitrary keys from `updates` dict could
+        # be used to set SQL column names, creating a potential injection risk
+        # if the dict ever contained user-controlled keys. This mirrors the
+        # field_map pattern used in sync_project_update_to_udm().
+        _ALLOWED_FIELDS = {"type", "name"}
+        _POSITION_FIELDS = {"x", "y", "z"}
+        _PROPERTY_FIELDS = {"voltage", "current", "load", "rotation", "category", "properties"}
+
         try:
             set_clauses = []
             values = []
 
-            if "type" in updates and updates["type"] is not None:
+            if "type" in updates and updates["type"] is not None and "type" in _ALLOWED_FIELDS:
                 set_clauses.append("element_type = ?")
                 values.append(updates["type"])
 
-            if "name" in updates and updates["name"] is not None:
+            if "name" in updates and updates["name"] is not None and "name" in _ALLOWED_FIELDS:
                 set_clauses.append("name = ?")
                 values.append(updates["name"])
 
-            position_fields = {"x", "y", "z"}
-            if position_fields.intersection(updates.keys()):
-                row = udm.bridge_sql(
-                    "SELECT position FROM elements WHERE element_id = ?",
-                    (device_id,),
-                    fetch=True,
-                )
-                row_data = row.fetchone() if hasattr(row, 'fetchone') else None
-                current_pos = json.loads(row_data[0]) if row_data and row_data[0] else {}
-                for axis in ("x", "y", "z"):
-                    if axis in updates and updates[axis] is not None:
-                        current_pos[axis] = updates[axis]
-                set_clauses.append("position = ?")
-                values.append(json.dumps(current_pos))
+            if _POSITION_FIELDS.intersection(updates.keys()):
+                # Validate that only known position fields are processed
+                safe_position_updates = {k: v for k, v in updates.items() if k in _POSITION_FIELDS and v is not None}
+                if safe_position_updates:
+                    row = udm.bridge_sql(
+                        "SELECT position FROM elements WHERE element_id = ?",
+                        (device_id,),
+                        fetch=True,
+                    )
+                    row_data = row.fetchone() if hasattr(row, 'fetchone') else None
+                    current_pos = json.loads(row_data[0]) if row_data and row_data[0] else {}
+                    for axis in ("x", "y", "z"):
+                        if axis in safe_position_updates:
+                            current_pos[axis] = safe_position_updates[axis]
+                    set_clauses.append("position = ?")
+                    values.append(json.dumps(current_pos))
 
-            property_fields = {"voltage", "current", "load", "rotation", "category", "properties"}
-            if property_fields.intersection(updates.keys()):
-                row = udm.bridge_sql(
-                    "SELECT properties FROM elements WHERE element_id = ?",
-                    (device_id,),
-                    fetch=True,
-                )
-                row_data = row.fetchone() if hasattr(row, 'fetchone') else None
-                current_props = json.loads(row_data[0]) if row_data and row_data[0] else {}
-                if "voltage" in updates:
-                    current_props["voltage"] = updates["voltage"]
-                if "current" in updates:
-                    current_props["current"] = updates["current"]
-                if "load" in updates:
-                    current_props["load_amperes"] = updates["load"]
-                if "rotation" in updates:
-                    current_props["rotation"] = updates["rotation"]
-                if "category" in updates:
-                    current_props["device_category"] = updates["category"]
-                if "properties" in updates and updates["properties"]:
-                    current_props.update(updates["properties"])
-                set_clauses.append("properties = ?")
-                values.append(json.dumps(current_props))
+            if _PROPERTY_FIELDS.intersection(updates.keys()):
+                # Validate that only known property fields are processed
+                safe_property_updates = {k: v for k, v in updates.items() if k in _PROPERTY_FIELDS and v is not None}
+                if safe_property_updates:
+                    row = udm.bridge_sql(
+                        "SELECT properties FROM elements WHERE element_id = ?",
+                        (device_id,),
+                        fetch=True,
+                    )
+                    row_data = row.fetchone() if hasattr(row, 'fetchone') else None
+                    current_props = json.loads(row_data[0]) if row_data and row_data[0] else {}
+                    if "voltage" in safe_property_updates:
+                        current_props["voltage"] = safe_property_updates["voltage"]
+                    if "current" in safe_property_updates:
+                        current_props["current"] = safe_property_updates["current"]
+                    if "load" in safe_property_updates:
+                        current_props["load_amperes"] = safe_property_updates["load"]
+                    if "rotation" in safe_property_updates:
+                        current_props["rotation"] = safe_property_updates["rotation"]
+                    if "category" in safe_property_updates:
+                        current_props["device_category"] = safe_property_updates["category"]
+                    if "properties" in safe_property_updates and safe_property_updates["properties"]:
+                        current_props.update(safe_property_updates["properties"])
+                    set_clauses.append("properties = ?")
+                    values.append(json.dumps(current_props))
 
             if set_clauses:
                 now = datetime.now(timezone.utc).isoformat()

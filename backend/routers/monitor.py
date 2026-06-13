@@ -26,6 +26,7 @@ from typing import Any, DefaultDict, Deque, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
+from fireai.version import __package_version__
 
 logger = logging.getLogger(__name__)
 
@@ -375,7 +376,7 @@ class MonitorState:
                 "status": status,
                 "uptime_seconds": round(uptime, 2),
                 "uptime_human": self._format_uptime(uptime),
-                "version": os.getenv("FIREAI_VERSION", "1.0.0"),
+                "version": __package_version__,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "database": "connected" if db_connected else "disconnected",
                 "engines": {

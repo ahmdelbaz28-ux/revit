@@ -44,24 +44,80 @@ class ConnectionManager:
 
     Tracks per-client project subscriptions so that broadcasts only
     reach clients that subscribed to the relevant project.
+
+    SECURITY: Enforces a per-IP connection limit (max 5 concurrent
+    WebSocket connections per IP) to prevent resource exhaustion attacks.
+    Without this limit, a single attacker could open thousands of
+    WebSocket connections, exhausting server memory and file descriptors.
     """
+
+    MAX_CONNECTIONS_PER_IP = 5
 
     def __init__(self) -> None:
         self.active_connections: list[WebSocket] = []
         # Track which projects each connection is subscribed to
         self._subscriptions: dict[WebSocket, set[str]] = {}
+        # Track IP addresses for per-IP connection limiting
+        self._ip_connections: dict[str, list[WebSocket]] = {}
+
+    def _get_client_ip(self, websocket: WebSocket) -> str:
+        """Extract client IP from the WebSocket connection."""
+        if websocket.client:
+            return websocket.client.host
+        return "unknown"
 
     async def connect(self, websocket: WebSocket) -> None:
+        """Accept and register a WebSocket connection.
+
+        Returns True if connection was accepted, False if rejected
+        due to per-IP limit exceeded.
+        """
+        client_ip = self._get_client_ip(websocket)
+        current_count = len(self._ip_connections.get(client_ip, []))
+
+        if current_count >= self.MAX_CONNECTIONS_PER_IP:
+            logger.warning(
+                f"WebSocket connection rejected for IP {client_ip}: "
+                f"limit of {self.MAX_CONNECTIONS_PER_IP} concurrent connections exceeded "
+                f"(current: {current_count})"
+            )
+            await websocket.close(
+                code=4004,
+                reason=f"Connection limit exceeded: max {self.MAX_CONNECTIONS_PER_IP} per IP",
+            )
+            return False
+
         await websocket.accept()
         self.active_connections.append(websocket)
         self._subscriptions[websocket] = set()
-        logger.info(f"WebSocket client connected. Total: {len(self.active_connections)}")
+
+        # Track per-IP connections
+        if client_ip not in self._ip_connections:
+            self._ip_connections[client_ip] = []
+        self._ip_connections[client_ip].append(websocket)
+
+        logger.info(
+            f"WebSocket client connected from {client_ip}. "
+            f"Total: {len(self.active_connections)}, "
+            f"IP connections: {len(self._ip_connections[client_ip])}/{self.MAX_CONNECTIONS_PER_IP}"
+        )
+        return True
 
     def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
         self._subscriptions.pop(websocket, None)
-        logger.info(f"WebSocket client disconnected. Total: {len(self.active_connections)}")
+
+        # Remove from per-IP tracking
+        client_ip = self._get_client_ip(websocket)
+        if client_ip in self._ip_connections:
+            if websocket in self._ip_connections[client_ip]:
+                self._ip_connections[client_ip].remove(websocket)
+            # Clean up empty IP entries to prevent memory leak
+            if not self._ip_connections[client_ip]:
+                del self._ip_connections[client_ip]
+
+        logger.info(f"WebSocket client disconnected from {client_ip}. Total: {len(self.active_connections)}")
 
     def subscribe(self, websocket: WebSocket, project_id: str) -> None:
         """Subscribe a connection to updates for a specific project."""
@@ -243,6 +299,25 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.close(code=4001, reason="Unauthorized origin")
         return
 
+    # ── Per-IP connection limit check ────────────────────────────────────
+    # Must happen BEFORE accept() — we use the manager's connect method
+    # which handles both the accept and the IP limit check.
+    # However, we need to do auth BEFORE adding to the manager to prevent
+    # data leaks. So we check the IP limit manually here first.
+    client_ip = websocket.client.host if websocket.client else "unknown"
+    current_ip_count = len(manager._ip_connections.get(client_ip, []))
+    if current_ip_count >= manager.MAX_CONNECTIONS_PER_IP:
+        logger.warning(
+            f"WebSocket connection rejected for IP {client_ip}: "
+            f"limit of {manager.MAX_CONNECTIONS_PER_IP} concurrent connections exceeded "
+            f"(current: {current_ip_count})"
+        )
+        await websocket.close(
+            code=4004,
+            reason=f"Connection limit exceeded: max {manager.MAX_CONNECTIONS_PER_IP} per IP",
+        )
+        return
+
     # ── API key check (message-based only) ────────────────────────────────
     # Query parameter auth is REJECTED for security (query params leak in
     # server access logs, browser history, referrer headers, proxy logs).
@@ -284,9 +359,18 @@ async def websocket_endpoint(websocket: WebSocket):
             return
 
     # Auth succeeded — NOW add to connection manager (safe from data leak)
+    # Manually add since we already accepted the WebSocket above
     manager.active_connections.append(websocket)
     manager._subscriptions[websocket] = set()
-    logger.info(f"WebSocket client authenticated and connected. Total: {len(manager.active_connections)}")
+    # Track per-IP connections
+    if client_ip not in manager._ip_connections:
+        manager._ip_connections[client_ip] = []
+    manager._ip_connections[client_ip].append(websocket)
+    logger.info(
+        f"WebSocket client authenticated and connected from {client_ip}. "
+        f"Total: {len(manager.active_connections)}, "
+        f"IP connections: {len(manager._ip_connections[client_ip])}/{manager.MAX_CONNECTIONS_PER_IP}"
+    )
 
     try:
         while True:

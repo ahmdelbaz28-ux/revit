@@ -29,9 +29,11 @@ function getApiKey(): string | null {
   const envKey = import.meta.env.VITE_FIREAI_API_KEY;
   if (envKey) return envKey;
 
-  // 2. Check localStorage (set via Settings page at runtime)
+  // 2. Check sessionStorage (set via Settings page at runtime)
+  // SECURITY FIX: Use sessionStorage instead of localStorage to reduce XSS attack window.
+  // SessionStorage is cleared when the tab closes, limiting key exposure time.
   try {
-    const stored = localStorage.getItem('fireai_settings');
+    const stored = sessionStorage.getItem('fireai_settings');
     if (stored) {
       const settings = JSON.parse(stored);
       if (settings?.apiKey && typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
@@ -39,7 +41,7 @@ function getApiKey(): string | null {
       }
     }
   } catch {
-    // Invalid JSON in localStorage — ignore
+    // Invalid JSON in sessionStorage — ignore
   }
 
   // 3. No key available — return null (backend will return 401 for mutating requests)
@@ -258,6 +260,13 @@ class ApiClient {
   async createConnection(data: ConnectionCreate): Promise<UdmConnection> {
     return this.fetchWithRetry<UdmConnection>('/connections', {
       method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateConnection(id: string, data: Partial<ConnectionCreate>): Promise<UdmConnection> {
+    return this.fetchWithRetry<UdmConnection>(`/connections/${encodeURIComponent(id)}`, {
+      method: 'PUT',
       body: JSON.stringify(data),
     });
   }

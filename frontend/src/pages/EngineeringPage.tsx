@@ -2,8 +2,12 @@
  * EngineeringPage.tsx - Engineering calculations using CalculationEngine
  * Provides input forms for voltage drop, short circuit, cable sizing, load flow
  * Runs calculations using the ENGINE (not API) and displays results
+ *
+ * SAFETY-CRITICAL: All numeric inputs are validated before calculation.
+ * Invalid inputs show red borders and error messages. Calculate buttons
+ * are disabled when inputs are out of range.
  */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +48,123 @@ import {
   type EngineeringReport,
 } from '@/engine/CalculationEngine';
 
+// ============================================================================
+// VALIDATION SYSTEM - Safety-critical input validation
+// ============================================================================
+
+interface ValidationRule {
+  min?: number;
+  max?: number;
+  allowNegative?: boolean;
+  allowZero?: boolean;
+  label: string;
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  error: string | null;
+}
+
+/** Valid AWG sizes from 14 to 4/0 */
+const VALID_AWG_SIZES = ['14', '12', '10', '8', '6', '4', '3', '2', '1', '1/0', '2/0', '3/0', '4/0'];
+
+function validateNumeric(value: string, rule: ValidationRule): ValidationResult {
+  if (!value || value.trim() === '') {
+    return { isValid: false, error: `${rule.label} is required` };
+  }
+
+  const num = parseFloat(value);
+
+  if (isNaN(num)) {
+    return { isValid: false, error: `${rule.label} must be a valid number` };
+  }
+
+  if (!isFinite(num)) {
+    return { isValid: false, error: `${rule.label} must be a finite number` };
+  }
+
+  if (!rule.allowNegative && num < 0) {
+    return { isValid: false, error: `${rule.label} cannot be negative` };
+  }
+
+  if (!rule.allowZero && num === 0) {
+    return { isValid: false, error: `${rule.label} cannot be zero` };
+  }
+
+  if (rule.min !== undefined && num < rule.min) {
+    return { isValid: false, error: `${rule.label} must be ≥ ${rule.min}` };
+  }
+
+  if (rule.max !== undefined && num > rule.max) {
+    return { isValid: false, error: `${rule.label} must be ≤ ${rule.max}` };
+  }
+
+  return { isValid: true, error: null };
+}
+
+/** Returns CSS class for input based on validation state */
+function validationClass(isValid: boolean | null): string {
+  if (isValid === null) return 'bg-slate-900 border-slate-600 text-slate-100';
+  if (isValid) return 'bg-slate-900 border-slate-600 text-slate-100';
+  return 'bg-slate-900 border-red-500 text-slate-100 ring-1 ring-red-500/30';
+}
+
+// ============================================================================
+// Validation Rules (domain-specific for fire alarm engineering)
+// ============================================================================
+
+const VOLTAGE_RULE: ValidationRule = { min: 0, max: 1000, label: 'Voltage' };
+const CURRENT_RULE: ValidationRule = { min: 0, max: 100, allowZero: true, label: 'Current' };
+const DISTANCE_RULE: ValidationRule = { min: 0, max: 1000, label: 'Distance' };
+const CABLE_LENGTH_RULE: ValidationRule = { min: 0, max: 5000, label: 'Cable Length' };
+const CROSS_SECTION_RULE: ValidationRule = { min: 0, max: 1000, label: 'Cross Section' };
+const POWER_FACTOR_RULE: ValidationRule = { min: 0, max: 1, label: 'Power Factor' };
+const TEMPERATURE_RULE: ValidationRule = { min: -40, max: 200, label: 'Temperature' };
+const BREAKER_RATING_RULE: ValidationRule = { min: 0, max: 100, label: 'Breaker Rating' };
+const LOAD_CURRENT_RULE: ValidationRule = { min: 0, max: 100, label: 'Load Current' };
+const POWER_RULE: ValidationRule = { min: 0, max: 10000, label: 'Power' };
+
+// ============================================================================
+// ValidatedInput - Input field with validation feedback
+// ============================================================================
+
+function ValidatedInput({
+  value,
+  onChange,
+  rule,
+  type = 'number',
+  step,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  rule: ValidationRule;
+  type?: string;
+  step?: string;
+  placeholder?: string;
+}) {
+  const validation = validateNumeric(value, rule);
+  return (
+    <div className="space-y-1">
+      <Input
+        type={type}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={validationClass(value === '' ? null : validation.isValid)}
+        placeholder={placeholder}
+      />
+      {!validation.isValid && value !== '' && (
+        <p className="text-[11px] text-red-400 leading-tight">{validation.error}</p>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// EngineeringPage Component
+// ============================================================================
+
 export function EngineeringPage() {
   const [activeTab, setActiveTab] = useState('voltage-drop');
 
@@ -80,11 +201,58 @@ export function EngineeringPage() {
   // Complete Report
   const [report, setReport] = useState<EngineeringReport | null>(null);
 
+  // ============================================================================
+  // Validation state (computed)
+  // ============================================================================
+
+  const vdValid = useMemo(() => {
+    const v = [
+      validateNumeric(vdCurrent, CURRENT_RULE),
+      validateNumeric(vdLength, CABLE_LENGTH_RULE),
+      validateNumeric(vdCrossSection, CROSS_SECTION_RULE),
+      validateNumeric(vdPowerFactor, POWER_FACTOR_RULE),
+      validateNumeric(vdVoltage, VOLTAGE_RULE),
+    ];
+    return v.every(r => r.isValid);
+  }, [vdCurrent, vdLength, vdCrossSection, vdPowerFactor, vdVoltage]);
+
+  const scValid = useMemo(() => {
+    const v = [
+      validateNumeric(scVoltage, VOLTAGE_RULE),
+      validateNumeric(scLength, CABLE_LENGTH_RULE),
+      validateNumeric(scCrossSection, CROSS_SECTION_RULE),
+      validateNumeric(scBreakerRating, BREAKER_RATING_RULE),
+    ];
+    return v.every(r => r.isValid);
+  }, [scVoltage, scLength, scCrossSection, scBreakerRating]);
+
+  const csValid = useMemo(() => {
+    const v = [
+      validateNumeric(csLoadCurrent, LOAD_CURRENT_RULE),
+      validateNumeric(csAmbientTemp, TEMPERATURE_RULE),
+    ];
+    return v.every(r => r.isValid);
+  }, [csLoadCurrent, csAmbientTemp]);
+
+  const lfValid = useMemo(() => {
+    const v = [
+      validateNumeric(lfPower, POWER_RULE),
+      validateNumeric(lfVoltage, VOLTAGE_RULE),
+      validateNumeric(lfPowerFactor, POWER_FACTOR_RULE),
+    ];
+    return v.every(r => r.isValid);
+  }, [lfPower, lfVoltage, lfPowerFactor]);
+
+  const reportValid = useMemo(() => {
+    return vdValid && csValid && scValid;
+  }, [vdValid, csValid, scValid]);
+
+  // ============================================================================
+  // Calculation handlers (with validation gates)
+  // ============================================================================
+
   const handleVoltageDrop = () => {
-    // BUG-41 FIX: Guard against NaN inputs — empty fields produce NaN via parseFloat('')
-    // which silently propagates through calculations, producing "NaN%" with PASS/FAIL badges.
-    const vals = [vdCurrent, vdLength, vdCrossSection, vdPowerFactor, vdVoltage];
-    if (vals.some(v => !v || isNaN(parseFloat(v)))) return;
+    if (!vdValid) return;
     const result = calculateVoltageDrop(
       parseFloat(vdCurrent),
       parseFloat(vdLength),
@@ -93,15 +261,13 @@ export function EngineeringPage() {
       parseFloat(vdPowerFactor),
       parseFloat(vdVoltage),
     );
-    // Don't display NaN results — they're meaningless and potentially dangerous
     if (result && !isNaN(result.percentage)) {
       setVdResult(result);
     }
   };
 
   const handleShortCircuit = () => {
-    const vals = [scVoltage, scLength, scCrossSection, scBreakerRating];
-    if (vals.some(v => !v || isNaN(parseFloat(v)))) return;
+    if (!scValid) return;
     const result = calculateShortCircuit(
       parseFloat(scVoltage),
       parseFloat(scLength),
@@ -116,6 +282,7 @@ export function EngineeringPage() {
   };
 
   const handleCableSizing = () => {
+    if (!csValid) return;
     const result = calculateCableSizing(
       parseFloat(csLoadCurrent),
       csMaterial,
@@ -126,6 +293,7 @@ export function EngineeringPage() {
   };
 
   const handleLoadFlow = () => {
+    if (!lfValid) return;
     const result = calculateLoadFlow(
       parseFloat(lfPower),
       parseFloat(lfVoltage),
@@ -135,6 +303,7 @@ export function EngineeringPage() {
   };
 
   const handleCompleteReport = () => {
+    if (!reportValid) return;
     const result = generateCompleteReport(
       parseFloat(vdCurrent),
       parseFloat(vdLength),
@@ -162,6 +331,7 @@ export function EngineeringPage() {
           <Button
             className="bg-red-600 hover:bg-red-700 text-white border-none"
             onClick={handleCompleteReport}
+            disabled={!reportValid}
           >
             <FileText className="h-4 w-4 mr-1" />
             Generate Full Report
@@ -255,11 +425,11 @@ export function EngineeringPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Current (A)</Label>
-                      <Input type="number" value={vdCurrent} onChange={(e) => setVdCurrent(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={vdCurrent} onChange={setVdCurrent} rule={CURRENT_RULE} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Length (m)</Label>
-                      <Input type="number" value={vdLength} onChange={(e) => setVdLength(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={vdLength} onChange={setVdLength} rule={CABLE_LENGTH_RULE} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Material</Label>
@@ -275,18 +445,18 @@ export function EngineeringPage() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Cross Section (mm²)</Label>
-                      <Input type="number" value={vdCrossSection} onChange={(e) => setVdCrossSection(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={vdCrossSection} onChange={setVdCrossSection} rule={CROSS_SECTION_RULE} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Power Factor</Label>
-                      <Input type="number" step="0.01" value={vdPowerFactor} onChange={(e) => setVdPowerFactor(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={vdPowerFactor} onChange={setVdPowerFactor} rule={POWER_FACTOR_RULE} step="0.01" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Voltage (V)</Label>
-                      <Input type="number" value={vdVoltage} onChange={(e) => setVdVoltage(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={vdVoltage} onChange={setVdVoltage} rule={VOLTAGE_RULE} />
                     </div>
                   </div>
-                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white border-none" onClick={handleVoltageDrop}>
+                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white border-none" onClick={handleVoltageDrop} disabled={!vdValid}>
                     <Calculator className="h-4 w-4 mr-1" /> Calculate Voltage Drop
                   </Button>
                 </CardContent>
@@ -343,11 +513,11 @@ export function EngineeringPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Nominal Voltage (V)</Label>
-                      <Input type="number" value={scVoltage} onChange={(e) => setScVoltage(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={scVoltage} onChange={setScVoltage} rule={VOLTAGE_RULE} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Cable Length (m)</Label>
-                      <Input type="number" value={scLength} onChange={(e) => setScLength(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={scLength} onChange={setScLength} rule={CABLE_LENGTH_RULE} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Material</Label>
@@ -363,14 +533,14 @@ export function EngineeringPage() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Cross Section (mm²)</Label>
-                      <Input type="number" value={scCrossSection} onChange={(e) => setScCrossSection(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={scCrossSection} onChange={setScCrossSection} rule={CROSS_SECTION_RULE} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Breaker Rating (kA)</Label>
-                      <Input type="number" value={scBreakerRating} onChange={(e) => setScBreakerRating(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={scBreakerRating} onChange={setScBreakerRating} rule={BREAKER_RATING_RULE} />
                     </div>
                   </div>
-                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white border-none" onClick={handleShortCircuit}>
+                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white border-none" onClick={handleShortCircuit} disabled={!scValid}>
                     <Calculator className="h-4 w-4 mr-1" /> Calculate Short Circuit
                   </Button>
                 </CardContent>
@@ -414,7 +584,7 @@ export function EngineeringPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Load Current (A)</Label>
-                      <Input type="number" value={csLoadCurrent} onChange={(e) => setCsLoadCurrent(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={csLoadCurrent} onChange={setCsLoadCurrent} rule={LOAD_CURRENT_RULE} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Material</Label>
@@ -444,10 +614,10 @@ export function EngineeringPage() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Ambient Temp (°C)</Label>
-                      <Input type="number" value={csAmbientTemp} onChange={(e) => setCsAmbientTemp(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={csAmbientTemp} onChange={setCsAmbientTemp} rule={TEMPERATURE_RULE} />
                     </div>
                   </div>
-                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white border-none" onClick={handleCableSizing}>
+                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white border-none" onClick={handleCableSizing} disabled={!csValid}>
                     <Calculator className="h-4 w-4 mr-1" /> Calculate Cable Size
                   </Button>
                 </CardContent>
@@ -494,18 +664,18 @@ export function EngineeringPage() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Real Power (kW)</Label>
-                      <Input type="number" value={lfPower} onChange={(e) => setLfPower(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={lfPower} onChange={setLfPower} rule={POWER_RULE} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Voltage (V)</Label>
-                      <Input type="number" value={lfVoltage} onChange={(e) => setLfVoltage(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={lfVoltage} onChange={setLfVoltage} rule={VOLTAGE_RULE} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-slate-300 text-xs">Power Factor</Label>
-                      <Input type="number" step="0.01" value={lfPowerFactor} onChange={(e) => setLfPowerFactor(e.target.value)} className="bg-slate-900 border-slate-600 text-slate-100" />
+                      <ValidatedInput value={lfPowerFactor} onChange={setLfPowerFactor} rule={POWER_FACTOR_RULE} step="0.01" />
                     </div>
                   </div>
-                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white border-none" onClick={handleLoadFlow}>
+                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white border-none" onClick={handleLoadFlow} disabled={!lfValid}>
                     <Calculator className="h-4 w-4 mr-1" /> Calculate Load Flow
                   </Button>
                 </CardContent>

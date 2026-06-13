@@ -112,23 +112,25 @@ class DxfParser:
             doc = ezdxf.readfile(filepath)
             msp = doc.modelspace()
 
+            # BUG-DP2 FIX: Attempt to extract room height from DXF metadata.
+            # A hardcoded 3.0m default is SAFETY-CRITICAL — wrong room height
+            # affects NFPA 72 §17.7.3.1.4 (slope-dependent spacing) and
+            # voltage drop calculations. We now try multiple sources before
+            # raising an error requiring manual specification.
+            building_height = DxfParser._extract_height_from_dxf(doc, filepath)
+
             # Extract closed LWPOLYLINE boundaries representing rooms
             for idx, lwpoly in enumerate(msp.query("LWPOLYLINE")):
                 if lwpoly.closed:
                     pts = tuple([Point3D(p[0], p[1], 0.0) for p in lwpoly.get_points(format='xy')])
                     if len(pts) >= 3:
                         area = DxfParser._calculate_polygon_area(pts)
-                        # BUG-DP2 FIX: DXF files rarely contain room height information
-                        # (LWPOLYLINE is 2D). The 3.0m default is an ASSUMPTION, not
-                        # extracted geometry. Flag it so downstream systems know this height
-                        # is uncertain. Wrong room height affects NFPA 72 §17.7.3.1.4
-                        # (slope-dependent spacing) and voltage drop calculations.
                         rooms.append(Room(
                             id=f"DXF_ROOM_{idx:03d}",
                             name=f"Room {idx}",
                             boundary=pts,
                             area_m2=area,  # BUG-4 FIX: Calculated, not hardcoded
-                            height_m=3.0  # BUG-DP2: Placeholder — DXF LWPOLYLINE has no height
+                            height_m=building_height  # BUG-DP2 FIX: Extracted from DXF or raises
                         ))
 
             # Extract LINE structures representing wall paths
@@ -137,13 +139,21 @@ class DxfParser:
                     id=f"DXF_WALL_{idx:03d}",
                     start=Point3D(line.dxf.start[0], line.dxf.start[1], 0.0),
                     end=Point3D(line.dxf.end[0], line.dxf.end[1], 0.0),
-                    height_m=3.0,
+                    height_m=building_height,  # BUG-DP2 FIX: Use extracted height
                     thickness_m=0.20
                 ))
 
         except ImportError:
             # ezdxf not available — fall back to text-based DXF parsing
             DxfParser._parse_dxf_text(filepath, walls, rooms)
+        except ValueError as ve:
+            # BUG-DP2: Height extraction failed — return error, don't guess
+            return Result(error=GeometryError(
+                message=str(ve),
+                code_ref="DXF Height Extraction",
+                remedy="Room height could not be determined from the DXF file. "
+                       "Specify height manually via the API parameter."
+            ))
         except Exception as e:
             # BUG-DP1 FIX: Log the ezdxf error instead of silently swallowing it.
             # The original code had bare `except Exception: pass` which meant that
@@ -163,6 +173,9 @@ class DxfParser:
         # on fallback geometry is INVALID and must be rejected.
         has_fallback = False
         if not rooms:
+            # BUG-DP2 FIX: Even fallback rooms must not use a hardcoded height.
+            # Try text-based extraction; if unavailable, require manual specification.
+            fallback_height = DxfParser._extract_height_from_text(filepath)
             fallback_boundary = (
                 Point3D(0.0, 0.0, 0.0),
                 Point3D(10.0, 0.0, 0.0),
@@ -174,7 +187,7 @@ class DxfParser:
                 name="Fallback Room (DXF parsing found no rooms)",
                 boundary=fallback_boundary,
                 area_m2=DxfParser._calculate_polygon_area(fallback_boundary),
-                height_m=3.0
+                height_m=fallback_height  # BUG-DP2 FIX: No hardcoded default
             ))
             has_fallback = True
 
@@ -233,12 +246,14 @@ class DxfParser:
                 pts = DxfParser._extract_polyline_points(entity)
                 if is_closed and len(pts) >= 3:
                     area = DxfParser._calculate_polygon_area(tuple(pts))
+                    # BUG-DP2 FIX: Try to extract height from DXF text metadata
+                    room_height = DxfParser._extract_height_from_text(filepath)
                     rooms.append(Room(
                         id=f"DXF_ROOM_TXT_{len(rooms):03d}",
                         name=f"Room {len(rooms)}",
                         boundary=tuple(pts),
                         area_m2=area,
-                        height_m=3.0
+                        height_m=room_height  # BUG-DP2 FIX: No hardcoded default
                     ))
 
             elif etype == "LINE":
@@ -379,6 +394,183 @@ class DxfParser:
             area += boundary[i].x * boundary[j].y
             area -= boundary[j].x * boundary[i].y
         return abs(area) / 2.0
+
+    @staticmethod
+    def _extract_height_from_dxf(doc, filepath: str) -> float:
+        """BUG-DP2 FIX: Attempt to extract building/room height from DXF metadata.
+
+        Tries multiple sources in order of reliability:
+        1. EXTMIN/EXTMAX Z values in the HEADER section (bounding box height)
+        2. 3D entities (3DFACE, 3DSOLID) with Z coordinates indicating floor-to-ceiling
+        3. LINE entities with non-zero Z coordinates (vertical edges = wall height)
+        4. TEXT/MTEXT entities that might contain height annotations
+
+        If no height information can be extracted, raises ValueError because
+        a hardcoded default is SAFETY-CRITICAL — wrong room height affects
+        NFPA 72 §17.7.3.1.4 detector spacing calculations.
+        """
+        # Strategy 1: Check HEADER for EXTMIN/EXTMAX Z values
+        try:
+            extmin_z = doc.header.get('$EXTMIN', (0, 0, 0))
+            extmax_z = doc.header.get('$EXTMAX', (0, 0, 0))
+            if hasattr(extmin_z, '__getitem__') and len(extmin_z) > 2:
+                min_z = float(extmin_z[2])
+            elif hasattr(extmin_z, 'z'):
+                min_z = float(extmin_z.z)
+            else:
+                min_z = 0.0
+            if hasattr(extmax_z, '__getitem__') and len(extmax_z) > 2:
+                max_z = float(extmax_z[2])
+            elif hasattr(extmax_z, 'z'):
+                max_z = float(extmax_z.z)
+            else:
+                max_z = 0.0
+            height = max_z - min_z
+            if height > 0.5:  # At least 0.5m to be a valid room height
+                logger.info("Extracted height from DXF HEADER EXTMIN/EXTMAX Z: %.2f m", height)
+                return round(height, 3)
+        except Exception as e:
+            logger.debug("Could not extract height from DXF HEADER: %s", e)
+
+        # Strategy 2: Check for 3D entities (3DFACE) with Z coordinates
+        try:
+            msp = doc.modelspace()
+            for face in msp.query('3DFACE'):
+                z_vals = []
+                for attr in ('dxf.vtx0', 'dxf.vtx1', 'dxf.vtx2', 'dxf.vtx3'):
+                    try:
+                        vtx = face.get_dxf_attrib(attr.rsplit('.', 1)[-1])
+                        if hasattr(vtx, '__getitem__') and len(vtx) > 2:
+                            z_vals.append(float(vtx[2]))
+                    except Exception:
+                        pass
+                if z_vals:
+                    h = max(z_vals) - min(z_vals)
+                    if h > 0.5:
+                        logger.info("Extracted height from 3DFACE Z coordinates: %.2f m", h)
+                        return round(h, 3)
+                break  # Check first 3DFACE only
+        except Exception as e:
+            logger.debug("Could not extract height from 3DFACE entities: %s", e)
+
+        # Strategy 3: Check LINE entities with non-zero Z coordinates
+        try:
+            msp = doc.modelspace()
+            z_values = []
+            for line in msp.query('LINE'):
+                sz = getattr(line.dxf, 'start', None)
+                ez = getattr(line.dxf, 'end', None)
+                if sz and ez:
+                    s_z = sz[2] if len(sz) > 2 else 0.0
+                    e_z = ez[2] if len(ez) > 2 else 0.0
+                    if s_z != 0.0 or e_z != 0.0:
+                        z_values.append(abs(e_z - s_z))
+            if z_values:
+                # The most common non-zero Z difference is likely the floor height
+                from collections import Counter
+                common_heights = Counter(round(v, 2) for v in z_values if v > 0.5)
+                if common_heights:
+                    h = common_heights.most_common(1)[0][0]
+                    logger.info("Extracted height from LINE Z coordinates: %.2f m", h)
+                    return h
+        except Exception as e:
+            logger.debug("Could not extract height from LINE Z coordinates: %s", e)
+
+        # No height information found — SAFETY-CRITICAL: refuse to guess
+        raise ValueError(
+            "Cannot determine room height from DXF file. "
+            "LWPOLYLINE entities are 2D and contain no height information. "
+            "No EXTMIN/EXTMAX Z, 3DFACE, or LINE Z coordinates found. "
+            "Room height is SAFETY-CRITICAL for NFPA 72 §17.7.3.1.4 "
+            "detector spacing calculations — a default value must NOT be assumed. "
+            "Please specify the room height manually via the API parameter."
+        )
+
+    @staticmethod
+    def _extract_height_from_text(filepath: str) -> float:
+        """BUG-DP2 FIX: Attempt to extract height from DXF text-based metadata.
+
+        Used as fallback when ezdxf is not available. Parses HEADER section
+        for EXTMIN/EXTMAX Z values. Raises ValueError if height cannot be
+        determined — no hardcoded defaults in safety-critical code.
+        """
+        try:
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read(50000)  # Read enough for HEADER section
+        except Exception as e:
+            raise ValueError(
+                f"Cannot read DXF file for height extraction: {e}. "
+                f"Room height must be specified manually."
+            )
+
+        lines = content.split("\n")
+
+        # Parse HEADER for EXTMIN/EXTMAX Z values
+        extmin_z = None
+        extmax_z = None
+        i = 0
+        while i < len(lines) - 1:
+            code = lines[i].strip()
+            value = lines[i + 1].strip()
+            if code == "0" and value == "ENDSEC":
+                break  # End of HEADER
+            if code == "9" and value == "$EXTMIN":
+                # Next group codes: 10=X, 20=Y, 30=Z
+                j = i + 2
+                while j < len(lines) - 1 and lines[j].strip() != "0":
+                    if lines[j].strip() == "30":
+                        try:
+                            extmin_z = float(lines[j + 1].strip())
+                        except (ValueError, IndexError):
+                            pass
+                        break
+                    j += 2
+            elif code == "9" and value == "$EXTMAX":
+                j = i + 2
+                while j < len(lines) - 1 and lines[j].strip() != "0":
+                    if lines[j].strip() == "30":
+                        try:
+                            extmax_z = float(lines[j + 1].strip())
+                        except (ValueError, IndexError):
+                            pass
+                        break
+                    j += 2
+            i += 2
+
+        if extmin_z is not None and extmax_z is not None:
+            height = extmax_z - extmin_z
+            if height > 0.5:
+                logger.info("Extracted height from DXF text HEADER EXTMIN/EXTMAX Z: %.2f m", height)
+                return round(height, 3)
+
+        # Check for LINE entities with Z coordinates
+        z_diffs = []
+        entities = DxfParser._dxf_group_pairs(lines)
+        for entity in entities:
+            if entity.get("0", "") == "LINE":
+                try:
+                    sz = float(entity.get("30", "0"))  # start Z
+                    ez = float(entity.get("31", "0"))  # end Z
+                    diff = abs(ez - sz)
+                    if diff > 0.5:
+                        z_diffs.append(round(diff, 2))
+                except (ValueError, TypeError):
+                    pass
+
+        if z_diffs:
+            from collections import Counter
+            common = Counter(z_diffs).most_common(1)[0][0]
+            logger.info("Extracted height from DXF text LINE Z coordinates: %.2f m", common)
+            return common
+
+        # No height information found
+        raise ValueError(
+            "Cannot determine room height from DXF file (text-based parsing). "
+            "No EXTMIN/EXTMAX Z values or LINE Z coordinates found. "
+            "Room height is SAFETY-CRITICAL for NFPA 72 §17.7.3.1.4 "
+            "detector spacing calculations — a default value must NOT be assumed. "
+            "Please specify the room height manually via the API parameter."
+        )
 
     @staticmethod
     def _detect_dxf_version(filepath: str) -> str:

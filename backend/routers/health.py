@@ -20,6 +20,7 @@ from fastapi import APIRouter
 
 from backend.contract import validate_health
 from backend.database import get_db
+from fireai.version import __package_version__
 
 logger = logging.getLogger(__name__)
 
@@ -51,21 +52,34 @@ async def health_check():
         # Simple query to verify database is responsive
         result = db.list_projects(page=1, limit=1)
         db_connected = result is not None
-    except Exception:
+    except Exception as e:
+        logger.debug("Health check: main database connection failed: %s", e)
         db_connected = False
 
+    # Check UDM (UniversalDataModel) database connectivity
+    udm_connected = True
+    try:
+        from backend.db_service import DatabaseService
+        udm = DatabaseService()
+        udm_stats = udm.get_statistics()
+        udm_connected = udm_stats is not None
+    except Exception as e:
+        logger.debug("Health check: UDM database connection failed: %s", e)
+        udm_connected = False
+
     uptime = time.time() - _start_time
-    status = "ok" if db_connected else "degraded"
+    status = "ok" if (db_connected and udm_connected) else "degraded"
 
     # Check if core NFPA 72 modules are loaded
     core_modules = "loaded" if _core_modules_loaded else "unavailable"
 
     health_data = {
         "status": status,
-        "version": "1.0.0",
+        "version": __package_version__,
         "uptime": round(uptime, 2),
         "uptime_seconds": round(uptime, 2),
         "database": "connected" if db_connected else "disconnected",
+        "udm_database": "connected" if udm_connected else "disconnected",
         "core_modules": core_modules,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

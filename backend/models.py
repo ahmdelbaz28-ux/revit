@@ -81,9 +81,9 @@ class Device(BaseModel):
     """A fire alarm device within a project."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     projectId: str
-    type: str = Field(min_length=1)
-    name: str = Field(min_length=1)
-    category: str = Field(min_length=1)
+    type: str = Field(min_length=1, max_length=255)
+    name: str = Field(min_length=1, max_length=255)
+    category: str = Field(min_length=1, max_length=255)
     x: float
     y: float
     z: float = Field(default=0.0)
@@ -110,9 +110,9 @@ class Device(BaseModel):
 
 class CreateDeviceInput(BaseModel):
     """Input for creating a new device."""
-    type: str = Field(min_length=1)
-    name: str = Field(min_length=1)
-    category: str = Field(min_length=1)
+    type: str = Field(min_length=1, max_length=255)
+    name: str = Field(min_length=1, max_length=255)
+    category: str = Field(min_length=1, max_length=255)
     x: float
     y: float
     z: Optional[float] = Field(default=0.0)
@@ -150,7 +150,7 @@ class UpdateDeviceInput(BaseModel):
     Without this field, updating load: 500 intending 500mA would store 500A —
     a 1000x error in life-safety battery sizing calculations.
     """
-    name: Optional[str] = Field(default=None, min_length=1)
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
     x: Optional[float] = Field(default=None)
     y: Optional[float] = Field(default=None)
     z: Optional[float] = Field(default=None)
@@ -188,8 +188,8 @@ class Connection(BaseModel):
 
 class CreateConnectionInput(BaseModel):
     """Input for creating a new connection."""
-    fromId: str = Field(min_length=1)
-    toId: str = Field(min_length=1)
+    fromId: str = Field(min_length=1, max_length=255)
+    toId: str = Field(min_length=1, max_length=255)
     cableSize: Optional[str] = Field(default="1.5mm²")
     length: Optional[float] = Field(default=0.0, ge=0)
     type: Optional[str] = Field(default="power")
@@ -222,8 +222,8 @@ class Report(BaseModel):
     """An engineering report for a project."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     projectId: str
-    type: str = Field(min_length=1)
-    name: str = Field(default="")
+    type: str = Field(min_length=1, max_length=255)
+    name: str = Field(default="", max_length=255)
     parameters: dict = Field(default_factory=dict)
     status: Literal["pending", "completed", "failed"] = Field(default="pending")
     createdAt: str = Field(
@@ -234,9 +234,41 @@ class Report(BaseModel):
 
 class GenerateReportInput(BaseModel):
     """Input for generating a new report."""
-    type: str = Field(min_length=1)
-    name: Optional[str] = Field(default=None)
+    type: str = Field(min_length=1, max_length=255)
+    name: Optional[str] = Field(default=None, max_length=255)
     parameters: Optional[dict] = Field(default=None)
+
+    @field_validator("parameters")
+    @classmethod
+    def validate_parameters_size(cls, v):
+        """Limit parameters JSON size to 10KB and nesting depth to 5."""
+        if v is None:
+            return v
+        import json as _json
+        serialized = _json.dumps(v)
+        if len(serialized) > 10240:
+            raise ValueError(
+                f"parameters: JSON size ({len(serialized)} bytes) exceeds "
+                f"maximum (10240 bytes)"
+            )
+
+        def _get_depth(obj, current=0):
+            if isinstance(obj, dict):
+                if not obj:
+                    return current
+                return max(_get_depth(val, current + 1) for val in obj.values())
+            elif isinstance(obj, list):
+                if not obj:
+                    return current
+                return max(_get_depth(item, current + 1) for item in obj)
+            return current
+
+        depth = _get_depth(v)
+        if depth > 5:
+            raise ValueError(
+                f"parameters: nesting depth ({depth}) exceeds maximum (5)"
+            )
+        return v
 
 
 # ============================================================================

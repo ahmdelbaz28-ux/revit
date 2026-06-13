@@ -219,10 +219,30 @@ async def lifespan(app: FastAPI):
         logger.info("Memory service closed")
 
     # Shutdown — do NOT close the singleton; it would break hot-reload
+    # However, in production we should checkpoint WAL and close DB connections properly
+    if os.getenv("FIREAI_ENV", "production") != "development":
+        try:
+            from backend.database import get_db
+            db = get_db()
+            # Run WAL checkpoint to ensure all data is flushed to the main DB file
+            db._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            logger.info("Production shutdown: WAL checkpoint completed")
+        except Exception as e:
+            logger.warning("Production shutdown: WAL checkpoint failed: %s", e)
+        try:
+            from backend.db_service import DatabaseService
+            db_service = DatabaseService()
+            db_service.close()
+            logger.info("Production shutdown: UDM database connection closed")
+        except Exception as e:
+            logger.debug("Production shutdown: UDM close failed (may not be initialized): %s", e)
+
     logger.info("Shutting down... FireAI Digital Twin API stopped")
 
 
 # ── Create FastAPI app ─────────────────────────────────────────────────────
+
+from fireai.version import __package_version__
 
 app = FastAPI(
     title="FireAI Digital Twin API",
@@ -231,7 +251,7 @@ app = FastAPI(
         "fire alarm engineering platform. Supports project management, "
         "device and connection CRUD, engineering reports, and BIM/CAD exports."
     ),
-    version="1.0.0",
+    version=__package_version__,
     lifespan=lifespan,
 )
 
@@ -598,7 +618,16 @@ _FIREAI_API_KEY = os.getenv("FIREAI_API_KEY")
 
 class ApiKeyMiddleware:
     """
-    Pure ASGI middleware — validates X-API-Key header on mutating requests.
+    Pure ASGI middleware — validates X-API-Key header on ALL requests.
+
+    SECURITY FIX: Previously, GET/HEAD requests bypassed auth entirely,
+    allowing unauthenticated access to all project data, device details,
+    and engineering reports. In a safety-critical system, unauthorized
+    reads of fire alarm engineering data are a security risk.
+
+    Now, ALL HTTP methods require API key authentication EXCEPT:
+      - OPTIONS (CORS preflight)
+      - Whitelisted paths: health endpoints, docs, OpenAPI schema, root, static files
 
     C-1 FIX: Converted from BaseHTTPMiddleware to pure ASGI middleware.
     BaseHTTPMiddleware's await call_next() reads the ENTIRE response body
@@ -607,15 +636,38 @@ class ApiKeyMiddleware:
 
     In a life-safety engineering system, unauthorized modification of
     detector placement or circuit calculations is a safety hazard.
-    This middleware ensures only authorized clients can modify data.
+    This middleware ensures only authorized clients can access data.
 
     Same-origin requests (from the SPA frontend served by this app)
-    are always allowed — the API key is only required for external
-    API consumers (third-party scripts, CLI tools, etc.).
+    in development mode are allowed without API key for convenience.
     """
+
+    # Paths that do NOT require authentication
+    _AUTH_WHITELIST = {
+        "/api/health",
+        "/api/health/statistics",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/",
+    }
+
+    # Path prefixes that do NOT require authentication (static assets, etc.)
+    _AUTH_WHITELIST_PREFIXES = (
+        "/assets/",  # Frontend static assets
+    )
 
     def __init__(self, app, **kwargs):
         self.app = app
+
+    def _is_whitelisted(self, path: str) -> bool:
+        """Check if a path is whitelisted from authentication."""
+        if path in self._AUTH_WHITELIST:
+            return True
+        for prefix in self._AUTH_WHITELIST_PREFIXES:
+            if path.startswith(prefix):
+                return True
+        return False
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -626,20 +678,25 @@ class ApiKeyMiddleware:
         path = scope.get("path", "")
         client_ip = scope.get("client", (None, None))[0] or "unknown"
 
-        # Skip auth for read-only methods and OPTIONS
-        if method in ("GET", "HEAD", "OPTIONS"):
+        # OPTIONS (CORS preflight) never requires auth
+        if method == "OPTIONS":
+            await self.app(scope, receive, send)
+            return
+
+        # Whitelisted paths never require auth (health, docs, static files)
+        if self._is_whitelisted(path):
             await self.app(scope, receive, send)
             return
 
         # V65 FIX: If FIREAI_API_KEY is not set in production, FAIL TO START.
         # The old code silently allowed all requests when the key was unset,
         # which means a deployed system with a missing env variable has zero
-        # access control — anyone can modify fire alarm engineering data.
+        # access control — anyone can access fire alarm engineering data.
         if not _FIREAI_API_KEY:
             if os.getenv("FIREAI_ENV") != "development":
                 logger.critical(
                     "FIREAI_API_KEY not set in production! Refusing to process "
-                    "unauthenticated mutating requests. Set FIREAI_API_KEY environment "
+                    "unauthenticated requests. Set FIREAI_API_KEY environment "
                     "variable or set FIREAI_ENV=development for local development."
                 )
                 body = b"Server misconfigured: FIREAI_API_KEY required in production"
@@ -672,8 +729,8 @@ class ApiKeyMiddleware:
         # allowing ANY attacker to bypass auth by setting both headers. In a
         # life-safety system, this is catastrophic — an unauthorized person could
         # modify fire alarm projects, corrupting engineering data.
-        # The API key is now required for ALL mutating requests regardless of origin.
-        # Same-origin SPA requests must include the X-API-Key header.
+        # The API key is now required for ALL requests (except whitelisted) regardless
+        # of origin or HTTP method. Same-origin SPA requests must include X-API-Key.
         #
         # In development mode, allow common dev origins WITHOUT API key
         # (CRITICAL: This MUST NOT be active in production)
@@ -683,6 +740,8 @@ class ApiKeyMiddleware:
                 "http://localhost:5173",
                 "http://127.0.0.1:3000",
                 "http://127.0.0.1:5173",
+                "http://localhost:8000",
+                "http://127.0.0.1:8000",
             ):
                 await self.app(scope, receive, send)
                 return
@@ -714,6 +773,84 @@ class ApiKeyMiddleware:
 
 
 app.add_middleware(ApiKeyMiddleware)
+
+# ── Request body size limit middleware ─────────────────────────────────────
+# SECURITY: Prevent denial-of-service via oversized request bodies.
+# Without size limits, an attacker can send multi-GB payloads, consuming
+# all server memory and CPU parsing JSON/form data.
+
+_MAX_JSON_BYTES = 10 * 1024 * 1024       # 10 MB for JSON
+_MAX_MULTIPART_BYTES = 100 * 1024 * 1024  # 100 MB for multipart/form-data
+
+
+class RequestBodySizeMiddleware:
+    """
+    Pure ASGI middleware — rejects requests with oversized Content-Length.
+
+    Enforces body size limits based on Content-Type:
+      - application/json: 10 MB max
+      - multipart/form-data: 100 MB max
+      - Other/unspecified: 10 MB max
+
+    Returns 413 Payload Too Large if the limit is exceeded.
+    Checks Content-Length header BEFORE the request body is processed,
+    preventing memory exhaustion from oversized payloads.
+    """
+
+    def __init__(self, app, **kwargs):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        method = scope.get("method", "")
+        # Only check requests that typically have a body
+        if method in ("POST", "PUT", "PATCH"):
+            headers_dict = {}
+            for h_name, h_value in scope.get("headers", []):
+                headers_dict[
+                    h_name.decode("utf-8", errors="replace").lower()
+                ] = h_value.decode("utf-8", errors="replace")
+
+            content_length_str = headers_dict.get("content-length", "")
+            if content_length_str:
+                try:
+                    content_length = int(content_length_str)
+                except (ValueError, TypeError):
+                    content_length = 0
+
+                content_type = headers_dict.get("content-type", "").lower()
+                if "multipart/form-data" in content_type:
+                    max_size = _MAX_MULTIPART_BYTES
+                else:
+                    max_size = _MAX_JSON_BYTES
+
+                if content_length > max_size:
+                    body = json.dumps({
+                        "success": False,
+                        "error": (
+                            f"Request body too large: {content_length} bytes "
+                            f"exceeds maximum {max_size} bytes "
+                            f"({'100MB multipart' if max_size == _MAX_MULTIPART_BYTES else '10MB JSON'})"
+                        ),
+                    }).encode("utf-8")
+                    await send({
+                        "type": "http.response.start",
+                        "status": 413,
+                        "headers": [
+                            [b"content-type", b"application/json"],
+                            [b"content-length", str(len(body)).encode()],
+                        ],
+                    })
+                    await send({"type": "http.response.body", "body": body})
+                    return
+
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(RequestBodySizeMiddleware)
 
 # V111 FIX: Wire PerPathRateLimitMiddleware into the middleware stack.
 # V101 defined it but never added it — security middleware that exists in code
@@ -895,7 +1032,7 @@ if not (Path(__file__).resolve().parent.parent / "frontend" / "dist").is_dir():
         """Root endpoint — API information (only when no frontend build)."""
         return {
             "message": "FireAI Digital Twin API",
-            "version": "1.0.0",
+            "version": __package_version__,
             "status": "running",
             "docs": "/docs",
             "health": "/api/health",

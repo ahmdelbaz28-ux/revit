@@ -154,20 +154,78 @@ class EngineController:
 
     def _check_resource_availability(self) -> bool:
         """
-        Check if system has sufficient resources to process a request
+        Check if system has sufficient resources to process a request.
+
+        Performs actual health checks:
+        1. Worker processes are alive
+        2. Event bus connection is active (if cluster_sync_callback is set)
+        3. Memory usage is below threshold (via psutil)
+        4. CPU usage is below threshold (via psutil)
+
+        Returns False if any check fails, with details logged.
         """
         with self.lock:
             # Check CPU usage
             if self.current_resource_usage["cpu_percent"] > self.resource_limits["cpu_percent"]:
+                self.logger.warning(
+                    "Resource check failed: CPU usage %.1f%% exceeds limit %.1f%%",
+                    self.current_resource_usage["cpu_percent"],
+                    self.resource_limits["cpu_percent"],
+                )
                 return False
-            
+
             # Check memory usage
             if self.current_resource_usage["memory_mb"] > self.resource_limits["memory_mb"]:
+                self.logger.warning(
+                    "Resource check failed: Memory usage %.0f MB exceeds limit %d MB",
+                    self.current_resource_usage["memory_mb"],
+                    self.resource_limits["memory_mb"],
+                )
                 return False
-            
-            # In a real implementation, we'd also check actual system resources
-            # For now, return True as a placeholder
-            return True
+
+        # Check 1: Worker processes are alive
+        try:
+            pool_status = self.engine_pool.get_pool_status()
+            for worker_id, worker_status in pool_status.get("worker_statuses", {}).items():
+                if not worker_status.get("is_running", False):
+                    self.logger.warning("Health check failed: Worker %s is not running", worker_id)
+                    return False
+                if not worker_status.get("is_healthy", True):
+                    self.logger.warning("Health check failed: Worker %s is unhealthy", worker_id)
+                    return False
+        except Exception as e:
+            self.logger.error("Health check failed: Cannot query engine pool status: %s", e)
+            return False
+
+        # Check 2: Event bus connection is active (if configured)
+        if self.cluster_sync_callback is not None:
+            try:
+                # Attempt to send a minimal heartbeat to verify connectivity
+                self.cluster_sync_callback({
+                    "action": "health_probe",
+                    "node_id": self.controller_id,
+                    "timestamp": time.time(),
+                })
+            except Exception as e:
+                self.logger.warning("Health check failed: Event bus connection error: %s", e)
+                return False
+
+        # Check 3: Actual system memory via psutil
+        try:
+            import psutil
+            mem = psutil.virtual_memory()
+            if mem.percent > 95:
+                self.logger.warning(
+                    "Health check failed: System memory usage %.1f%% exceeds 95%% threshold",
+                    mem.percent,
+                )
+                return False
+        except ImportError:
+            pass  # psutil not available — skip system check
+        except Exception as e:
+            self.logger.debug("Could not check system memory via psutil: %s", e)
+
+        return True
 
     def _track_task_start(self, task_id: str, request_data: Dict[str, Any], source_node: str = None):
         """

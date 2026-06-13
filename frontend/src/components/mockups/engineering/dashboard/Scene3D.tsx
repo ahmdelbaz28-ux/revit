@@ -97,7 +97,7 @@ export function Scene3D() {
     // Measure performance
     performance.measure('Scene3D-Init', 'Scene3D-Mount');
     const measure = performance.getEntriesByName('Scene3D-Init')[0];
-    console.log(`[Scene3D] Mounted and initialized in ${measure.duration.toFixed(2)}ms`);
+    if (import.meta.env.DEV) console.log(`[Scene3D] Mounted and initialized in ${measure.duration.toFixed(2)}ms`);
     performance.clearMarks('Scene3D-Mount');
     performance.clearMeasures('Scene3D-Init');
 

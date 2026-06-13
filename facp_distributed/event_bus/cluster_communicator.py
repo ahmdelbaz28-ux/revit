@@ -86,7 +86,7 @@ class ClusterCommunicator:
     """
     Manages communication between nodes in the distributed FACP cluster
     """
-    def __init__(self, node_id: str = None, host: str = "0.0.0.0", port: int = 9000, 
+    def __init__(self, node_id: Optional[str] = None, host: str = "0.0.0.0", port: int = 9000, 
                  node_type: str = "worker", location: str = "primary"):
         self.node_id = node_id or f"node_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.host = host
@@ -681,7 +681,7 @@ class DistributedClusterCommunicator(ClusterCommunicator):
     """
     Extended cluster communicator with additional distributed features
     """
-    def __init__(self, node_id: str = None, host: str = "0.0.0.0", port: int = 9000, 
+    def __init__(self, node_id: Optional[str] = None, host: str = "0.0.0.0", port: int = 9000, 
                  node_type: str = "worker", location: str = "primary"):
         super().__init__(node_id, host, port, node_type, location)
         self.consensus_algorithm = "raft"  # Default consensus algorithm

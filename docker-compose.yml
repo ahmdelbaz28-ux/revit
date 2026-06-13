@@ -17,7 +17,7 @@ services:
       - FIREAI_API_KEY=${FIREAI_API_KEY:?ERROR: FIREAI_API_KEY must be set}
       - DATABASE_URL=${DATABASE_URL:-sqlite:///./db/digital_twin.db}
       - UDM_DB_PATH=${UDM_DB_PATH:-./db/udm_elements.db}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
       - CSP_UNSAFE_EVAL=${CSP_UNSAFE_EVAL:-false}
       - CSP_CONNECT_SRC=${CSP_CONNECT_SRC:-http://localhost:5173 ws://localhost:5173 http://localhost:8000}
       - FIREAI_DATA_DIRS=${FIREAI_DATA_DIRS:-/tmp/fireai_uploads:/data:/uploads}
@@ -37,6 +37,14 @@ services:
       - no-new-privileges:true
     tmpfs:
       - /tmp:size=100M
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
 
 volumes:
   fireai-data:

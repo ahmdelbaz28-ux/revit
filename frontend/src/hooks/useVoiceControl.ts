@@ -15,7 +15,7 @@ export function useVoiceControl() {
 
       rec.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript.toLowerCase();
-        console.log('Voice Command Received:', transcript);
+        if (import.meta.env.DEV) console.log('Voice Command Received:', transcript);
         
         // Handle commands
         if (transcript.includes('add generator')) {
@@ -52,7 +52,7 @@ export function useVoiceControl() {
       };
 
       rec.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
+        if (import.meta.env.DEV) console.error('Speech recognition error', event.error);
         setIsListening(false);
         actions.setVoiceActive(false);
         actions.pushError({
@@ -76,7 +76,7 @@ export function useVoiceControl() {
         setIsListening(true);
         actions.setVoiceActive(true);
       } catch (e) {
-        console.error("Failed to start recognition", e);
+        if (import.meta.env.DEV) console.error("Failed to start recognition", e);
       }
     } else {
       actions.pushError({

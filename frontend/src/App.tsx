@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useHealth } from '@/hooks/useApi';
 import { ErrorBoundary } from '@/components/core/ErrorBoundary';
+import { PageErrorBoundary } from '@/components/core/PageErrorBoundary';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { ProjectsPage } from '@/pages/ProjectsPage';
 import { EngineeringPage } from '@/pages/EngineeringPage';
@@ -248,16 +249,16 @@ function AppInner() {
         <main className="flex-1 flex flex-col overflow-hidden">
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/projects" element={<ProjectsPage />} />
-              <Route path="/engineering" element={<EngineeringPage />} />
-              <Route path="/fire-alarm" element={<FireAlarmPage />} />
-              <Route path="/elements" element={<ElementsPage />} />
-              <Route path="/elements/:id" element={<ElementDetailPage />} />
-              <Route path="/connections" element={<ConnectionsPage />} />
-              <Route path="/conflicts" element={<ConflictsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/" element={<PageErrorBoundary pageName="Dashboard"><DashboardPage /></PageErrorBoundary>} />
+              <Route path="/projects" element={<PageErrorBoundary pageName="Projects"><ProjectsPage /></PageErrorBoundary>} />
+              <Route path="/engineering" element={<PageErrorBoundary pageName="Engineering"><EngineeringPage /></PageErrorBoundary>} />
+              <Route path="/fire-alarm" element={<PageErrorBoundary pageName="Fire Alarm Designer"><FireAlarmPage /></PageErrorBoundary>} />
+              <Route path="/elements" element={<PageErrorBoundary pageName="Elements"><ElementsPage /></PageErrorBoundary>} />
+              <Route path="/elements/:id" element={<PageErrorBoundary pageName="Element Detail"><ElementDetailPage /></PageErrorBoundary>} />
+              <Route path="/connections" element={<PageErrorBoundary pageName="Connections"><ConnectionsPage /></PageErrorBoundary>} />
+              <Route path="/conflicts" element={<PageErrorBoundary pageName="Conflicts"><ConflictsPage /></PageErrorBoundary>} />
+              <Route path="/reports" element={<PageErrorBoundary pageName="Reports"><ReportsPage /></PageErrorBoundary>} />
+              <Route path="/settings" element={<PageErrorBoundary pageName="Settings"><SettingsPage /></PageErrorBoundary>} />
               <Route path="*" element={<div className="flex-1 flex items-center justify-center"><div className="text-center"><h2 className="text-2xl font-bold text-slate-300 mb-2">404</h2><p className="text-slate-500">Page not found</p><NavLink to="/" className="text-red-400 hover:text-red-300 text-sm mt-4 inline-block">Return to Dashboard</NavLink></div></div>} />
             </Routes>
           </Suspense>

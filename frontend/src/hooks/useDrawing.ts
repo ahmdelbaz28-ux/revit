@@ -130,7 +130,7 @@ export function useDrawing() {
   const maxHistory = 50;
 
   const pushHistory = useCallback(() => {
-    historyRef.current.push(JSON.parse(JSON.stringify(state)));
+    historyRef.current.push(structuredClone(state));
     if (historyRef.current.length > maxHistory) {
       historyRef.current.shift();
     }
@@ -140,14 +140,14 @@ export function useDrawing() {
   const undo = useCallback(() => {
     if (historyRef.current.length === 0) return;
     const previous = historyRef.current.pop()!;
-    futureRef.current.push(JSON.parse(JSON.stringify(state)));
+    futureRef.current.push(structuredClone(state));
     setState(previous);
   }, [state]);
 
   const redo = useCallback(() => {
     if (futureRef.current.length === 0) return;
     const next = futureRef.current.pop()!;
-    historyRef.current.push(JSON.parse(JSON.stringify(state)));
+    historyRef.current.push(structuredClone(state));
     setState(next);
   }, [state]);
 

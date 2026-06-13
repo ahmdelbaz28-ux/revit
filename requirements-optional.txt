@@ -1,0 +1,10 @@
+# Optional dependencies for FACP distributed system and integration modules
+# Install with: pip install -r requirements-optional.txt
+
+# FACP Distributed System — Redis-backed event bus and task queue
+redis>=4.0.0
+celery>=5.1.0
+asyncio-mqtt>=0.10.0
+
+# Load testing (dev)
+locust>=2.20.0

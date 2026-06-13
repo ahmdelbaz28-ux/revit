@@ -11,9 +11,9 @@ import math
 import re
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from backend.db_service import DatabaseService
+from backend.db_service import DatabaseService, get_db_service
 from backend.schemas import (
     ApiResponse,
     ElementCreate,
@@ -36,10 +36,10 @@ async def list_elements(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_timestamp", description="Sort field"),
     sort_order: str = Query("desc", description="Sort order (asc/desc)"),
+    db: DatabaseService = Depends(get_db_service),
 ):
     """List elements with optional filtering and pagination."""
     try:
-        db = DatabaseService()
         elements, total = db.list_elements(
             element_type=element_type,
             project_id=project_id,
@@ -67,10 +67,12 @@ async def list_elements(
 
 
 @router.post("", response_model=ApiResponse[ElementResponse], status_code=201)
-async def create_element(element_data: ElementCreate):
+async def create_element(
+    element_data: ElementCreate,
+    db: DatabaseService = Depends(get_db_service),
+):
     """Create a new element."""
     try:
-        db = DatabaseService()
         element = db.create_element(element_data)
         return ApiResponse(success=True, data=element, message="Element created successfully")
     except ValueError as e:
@@ -87,10 +89,12 @@ async def create_element(element_data: ElementCreate):
 
 
 @router.get("/{element_id}", response_model=ApiResponse[ElementResponse])
-async def get_element(element_id: str):
+async def get_element(
+    element_id: str,
+    db: DatabaseService = Depends(get_db_service),
+):
     """Get an element by ID."""
     try:
-        db = DatabaseService()
         element = db.get_element(element_id)
         if element is None:
             raise HTTPException(status_code=404, detail=f"Element {element_id} not found")
@@ -103,10 +107,13 @@ async def get_element(element_id: str):
 
 
 @router.put("/{element_id}", response_model=ApiResponse[ElementResponse])
-async def update_element(element_id: str, element_data: ElementUpdate):
+async def update_element(
+    element_id: str,
+    element_data: ElementUpdate,
+    db: DatabaseService = Depends(get_db_service),
+):
     """Update an element."""
     try:
-        db = DatabaseService()
         element = db.update_element(element_id, element_data)
         if element is None:
             raise HTTPException(status_code=404, detail=f"Element {element_id} not found")
@@ -119,10 +126,12 @@ async def update_element(element_id: str, element_data: ElementUpdate):
 
 
 @router.delete("/{element_id}", response_model=ApiResponse[None])
-async def delete_element(element_id: str):
+async def delete_element(
+    element_id: str,
+    db: DatabaseService = Depends(get_db_service),
+):
     """Soft delete an element."""
     try:
-        db = DatabaseService()
         success = db.delete_element(element_id)
         if not success:
             raise HTTPException(status_code=404, detail=f"Element {element_id} not found")

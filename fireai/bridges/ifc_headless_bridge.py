@@ -418,8 +418,8 @@ class HeadlessIFCBridge:
             if placement:
                 _, _, z = self._resolve_local_placement(placement)
                 return z
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to resolve local placement for storey elevation: %s", e)
         # Fallback to storey.Elevation attribute
         try:
             return float(storey.Elevation) if storey.Elevation else 0.0
@@ -437,8 +437,8 @@ class HeadlessIFCBridge:
                 parent = self._get_parent_storey(container)
                 if parent:
                     return parent
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to get parent storey: %s", e)
         return None
 
     def _get_geom_settings(self):
@@ -587,8 +587,8 @@ class HeadlessIFCBridge:
                         "aabb_max": aabb_max,
                         "aabb_vertices": aabb_vertices,
                     }
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Geometry extraction failed for element: %s", e)
 
         # V76 HIGH-09 FIX: Previously created a phantom 30cm AABB when geometry
         # extraction failed. A 30cm box replacing a 10m wall means corridors

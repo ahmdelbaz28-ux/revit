@@ -12,6 +12,50 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+def _validate_json_size_and_depth(
+    value: Any, field_name: str, max_bytes: int = 10240, max_depth: int = 5
+) -> Any:
+    """Validate JSON dict size and nesting depth.
+
+    Prevents denial-of-service via deeply nested or oversized JSON payloads.
+    - max_bytes: Maximum serialized JSON size in bytes (default 10KB)
+    - max_depth: Maximum nesting depth (default 5)
+    """
+    import json as _json
+
+    # Check serialized size
+    try:
+        serialized = _json.dumps(value)
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"{field_name}: must be JSON-serializable ({e})")
+
+    if len(serialized) > max_bytes:
+        raise ValueError(
+            f"{field_name}: JSON size ({len(serialized)} bytes) exceeds "
+            f"maximum ({max_bytes} bytes)"
+        )
+
+    # Check nesting depth
+    def _get_depth(obj: Any, current: int = 0) -> int:
+        if isinstance(obj, dict):
+            if not obj:
+                return current
+            return max(_get_depth(v, current + 1) for v in obj.values())
+        elif isinstance(obj, list):
+            if not obj:
+                return current
+            return max(_get_depth(item, current + 1) for item in obj)
+        return current
+
+    depth = _get_depth(value)
+    if depth > max_depth:
+        raise ValueError(
+            f"{field_name}: nesting depth ({depth}) exceeds maximum ({max_depth})"
+        )
+
+    return value
+
+
 # V108 FIX: Add camelCase alias generator so Pydantic schemas serialize
 # to camelCase (matching the API contract in backend/contract.py) while
 # keeping Python snake_case attribute names internally.
@@ -102,28 +146,28 @@ class GeometryResponse(CamelModel):
 
 class SemanticPropertiesCreate(BaseModel):
     element_type: ElementType
-    name: str
-    description: Optional[str] = None
-    material: Optional[str] = None
-    fire_rating: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = Field(None, max_length=5000)
+    material: Optional[str] = Field(None, max_length=255)
+    fire_rating: Optional[str] = Field(None, max_length=255)
     height: Optional[float] = None
     width: Optional[float] = None
     load_bearing: bool = False
-    layer: Optional[str] = None
-    revit_category: Optional[str] = None
+    layer: Optional[str] = Field(None, max_length=255)
+    revit_category: Optional[str] = Field(None, max_length=255)
 
 
 class SemanticPropertiesUpdate(BaseModel):
     element_type: Optional[ElementType] = None
-    name: Optional[str] = None
-    description: Optional[str] = None
-    material: Optional[str] = None
-    fire_rating: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = Field(None, max_length=5000)
+    material: Optional[str] = Field(None, max_length=255)
+    fire_rating: Optional[str] = Field(None, max_length=255)
     height: Optional[float] = None
     width: Optional[float] = None
     load_bearing: Optional[bool] = None
-    layer: Optional[str] = None
-    revit_category: Optional[str] = None
+    layer: Optional[str] = Field(None, max_length=255)
+    revit_category: Optional[str] = Field(None, max_length=255)
 
 
 class SemanticPropertiesResponse(CamelModel):
@@ -209,6 +253,14 @@ class ProjectCreate(BaseModel):
     status: ProjectStatus = ProjectStatus.DRAFT
     metadata: Optional[Dict[str, Any]] = None
 
+    @field_validator("metadata")
+    @classmethod
+    def validate_metadata_size(cls, v):
+        """Limit metadata JSON size to 10KB and nesting depth to 5."""
+        if v is None:
+            return v
+        return _validate_json_size_and_depth(v, "metadata", max_bytes=10240, max_depth=5)
+
 
 class ProjectUpdate(BaseModel):
     """Schema for updating a project."""
@@ -216,6 +268,14 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[ProjectStatus] = None
     metadata: Optional[Dict[str, Any]] = None
+
+    @field_validator("metadata")
+    @classmethod
+    def validate_metadata_size(cls, v):
+        """Limit metadata JSON size to 10KB and nesting depth to 5."""
+        if v is None:
+            return v
+        return _validate_json_size_and_depth(v, "metadata", max_bytes=10240, max_depth=5)
 
 
 class ProjectResponse(CamelModel):
@@ -245,8 +305,8 @@ class ProjectListResponse(CamelModel):
 
 class DeviceCreate(BaseModel):
     """Schema for creating a device (element with electrical/equipment type)."""
-    device_type: str = Field(..., min_length=1)
-    name: str = Field(..., min_length=1)
+    device_type: str = Field(..., min_length=1, max_length=255)
+    name: str = Field(..., min_length=1, max_length=255)
     position: Optional[Dict[str, float]] = None  # {x, y, z}
     room_id: Optional[str] = None
     project_id: Optional[str] = None
@@ -254,6 +314,18 @@ class DeviceCreate(BaseModel):
     coverage_radius: float = 6.37
     properties: Optional[SemanticPropertiesCreate] = None
     geometry: Optional[GeometryCreate] = None
+
+    @field_validator("properties")
+    @classmethod
+    def validate_properties_size(cls, v):
+        """Limit properties JSON size to 10KB and nesting depth to 5."""
+        if v is None:
+            return v
+        # Validate the serialized size of the properties dict
+        import json as _json
+        raw = v.model_dump() if hasattr(v, 'model_dump') else v
+        _validate_json_size_and_depth(raw, "properties", max_bytes=10240, max_depth=5)
+        return v
 
 
 class DeviceResponse(CamelModel):
@@ -279,7 +351,7 @@ class ConnectionCreate(BaseModel):
     """Schema for creating a connection (relationship)."""
     from_element_id: str
     to_element_id: str
-    relationship_type: str = Field(..., min_length=1)
+    relationship_type: str = Field(..., min_length=1, max_length=255)
     is_parametric: bool = False
     metadata: Optional[Dict[str, Any]] = None
 
@@ -399,3 +471,10 @@ class ExportRequest(BaseModel):
     element_types: Optional[List[str]] = None
     include_deleted: bool = False
     format: str = "json"
+
+
+class ConnectionUpdate(BaseModel):
+    """Schema for updating an existing connection."""
+    cable_size: Optional[str] = Field(None, max_length=255)
+    length: Optional[float] = Field(None, ge=0)
+    type: Optional[str] = Field(None, max_length=255)

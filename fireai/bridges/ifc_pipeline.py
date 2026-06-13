@@ -711,10 +711,10 @@ class IfcFirePipeline:
                 substance = sub_reg.get_by_cas(self.cfg.substance_cas)
                 if substance is not None:
                     return substance
-            except Exception:
-                pass
-        except Exception:
-            pass
+            except Exception as e:
+                logger.debug("Substance registry lookup failed for CAS %s: %s", self.cfg.substance_cas, e)
+        except Exception as e:
+            logger.debug("Spectral signature registry lookup failed for CAS %s: %s", self.cfg.substance_cas, e)
 
         # Fallback: propane — ONLY when registry is unavailable, with CRITICAL warning
         logger.critical(

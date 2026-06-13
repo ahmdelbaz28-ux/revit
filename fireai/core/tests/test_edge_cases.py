@@ -359,10 +359,19 @@ class TestSingleDetectorRooms:
         assert result["min_detector_count"] > 1
 
     def test_high_ceiling_reduces_spacing(self):
-        """Higher ceilings produce tighter spacing."""
+        """Higher ceilings produce tighter spacing for heat detectors only.
+        Per NFPA 72-2022 Table 17.6.3.1, smoke detector spacing is flat 9.1m
+        at all ceiling heights — so we test heat detectors here."""
+        low = get_detector_spacing(3.0, "heat")
+        high = get_detector_spacing(9.0, "heat")
+        assert high.max_spacing_m <= low.max_spacing_m
+
+    def test_smoke_spacing_flat_at_all_heights(self):
+        """NFPA 72-2022: smoke detector spacing is flat 9.1m at all ceiling heights."""
         low = get_detector_spacing(3.0, "smoke")
         high = get_detector_spacing(9.0, "smoke")
-        assert high.max_spacing_m < low.max_spacing_m
+        assert low.max_spacing_m == 9.1
+        assert high.max_spacing_m == 9.1
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

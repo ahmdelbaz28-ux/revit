@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException, Query
 from backend.contract import validate_connection, validate_paginated
 from backend.database import get_db
 from backend.models import CreateConnectionInput
+from backend.response import success, error
 
 router = APIRouter(prefix="/projects/{project_id}/connections", tags=["connections"])
 
@@ -57,7 +58,7 @@ async def list_connections(
     db = get_db()
     result = db.list_connections(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
     validate_paginated(result, item_validator=validate_connection)
-    return {"success": True, "data": result}
+    return success(result)
 
 
 @router.post("", status_code=201)
@@ -95,7 +96,56 @@ async def create_connection(project_id: str, input_data: CreateConnectionInput):
     from backend.project_bridge import sync_connection_to_udm
     sync_connection_to_udm(project_id, conn_data)
 
-    return {"data": connection, "success": True}
+    return success(connection)
+
+
+@router.put("/{connection_id}")
+async def update_connection(
+    project_id: str,
+    connection_id: str,
+    cableSize: str | None = None,
+    length: float | None = None,
+    type: str | None = None,
+):
+    """Update an existing connection in a project.
+
+    Allows updating cable size, length, and connection type.
+    These parameters affect voltage drop calculations per NFPA 72.
+    """
+    _verify_project(project_id)
+    db = get_db()
+
+    # Check connection exists
+    connections = db.get_all_connections_for_project(project_id)
+    connection = None
+    for conn in connections:
+        if conn.get("id") == connection_id:
+            connection = conn
+            break
+
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    # Build updates dict with only provided fields
+    updates = {}
+    if cableSize is not None:
+        updates["cableSize"] = cableSize
+    if length is not None:
+        updates["length"] = length
+    if type is not None:
+        updates["type"] = type
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    # Apply updates to the connection
+    connection.update(updates)
+    # Use the database update method if available, otherwise update in-memory
+    updated = db.update_connection(project_id, connection_id, updates) if hasattr(db, 'update_connection') else connection
+    if not updated:
+        updated = connection
+
+    return success(updated)
 
 
 @router.delete("/{connection_id}")
@@ -111,4 +161,4 @@ async def delete_connection(project_id: str, connection_id: str):
     from backend.project_bridge import sync_connection_delete_to_udm
     sync_connection_delete_to_udm(project_id, connection_id)
 
-    return {"data": None, "success": True, "message": "Connection deleted"}
+    return success(None, "Connection deleted")

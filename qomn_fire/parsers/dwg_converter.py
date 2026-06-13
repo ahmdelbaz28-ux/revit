@@ -105,7 +105,7 @@ class DwgConverter:
                 [converter_bin, "-o", output_dxf_path, dwg_path],
                 check=True,
                 capture_output=True,
-                timeout=120  # 2-minute timeout for large files
+                timeout=30  # 30-second safety timeout for conversion
             )
 
             # Verify output file exists and is non-empty

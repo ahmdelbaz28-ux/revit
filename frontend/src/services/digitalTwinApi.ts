@@ -56,7 +56,7 @@ class ApiClient {
     this.baseUrl = baseUrl || API_BASE_URL;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
-      'X-Client-Version': '1.0.0',
+      'X-Client-Version': import.meta.env.VITE_APP_VERSION || '1.0.0',
     };
   }
 

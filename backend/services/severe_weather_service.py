@@ -1179,8 +1179,9 @@ class SevereWeatherService:
                             )
                             self._set_cached(latitude, longitude, data)
                             return data
-                        except Exception:
-                            pass  # Fall through to Open-Meteo
+                        except Exception as e:
+                            logger.debug("NWS API failed, falling through to Open-Meteo: %s", e)
+                            # Fall through to Open-Meteo
 
                     # No country code resolved or MeteoAlarm failed —
                     # try Open-Meteo as global fallback
@@ -1203,7 +1204,8 @@ class SevereWeatherService:
                     data = await self._fetch_openmeteo_alerts(latitude, longitude)
                     self._set_cached(latitude, longitude, data)
                     return data
-                except Exception:
+                except Exception as e:
+                    logger.debug("Open-Meteo alert fallback also failed, using defaults: %s", e)
                     default = self._get_default(latitude, longitude, coverage_area="eu")
                     self._set_cached(latitude, longitude, default)
                     return default

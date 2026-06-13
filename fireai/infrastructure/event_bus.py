@@ -485,8 +485,8 @@ class RedisEventBus(EventBus):
             stream_key = f"{self._stream_prefix}{event_type}"
             try:
                 await r.xgroup_create(stream_key, self._consumer_group, id="0", mkstream=True)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Redis stream group creation failed for %s (may already exist): %s", stream_key, e)
         self._poll_task = asyncio.create_task(self._poll_loop())
         logger.info(f"RedisEventBus started (consumer={self._consumer_name})")
 
@@ -497,7 +497,7 @@ class RedisEventBus(EventBus):
             try:
                 await self._poll_task
             except asyncio.CancelledError:
-                pass
+                pass  # Expected during shutdown
         if self._redis:
             await self._redis.close()
         logger.info("RedisEventBus stopped")

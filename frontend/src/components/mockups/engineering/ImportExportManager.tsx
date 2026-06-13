@@ -32,7 +32,7 @@ export function ImportExportManager() {
         
         // TODO: Convert DXF Entities (Lines, Circles) to Nexus Devices/Connections
         // This is a placeholder for the complex conversion logic
-        console.log('DXF Parsed:', dxfData);
+        if (import.meta.env.DEV) console.log('DXF Parsed:', dxfData);
         if (dxfData && dxfData.entities) {
           alert(`DXF Imported Successfully!\nFound ${dxfData.entities.length} entities.\n(Conversion to smart objects pending implementation)`);
         }
@@ -40,7 +40,7 @@ export function ImportExportManager() {
         // Example: Trigger an action to add parsed data to store
         // actions.importEntities(convertedEntities); 
       } catch (err) {
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
         alert('Failed to parse DXF file. Ensure it is a valid ASCII DXF.');
       }
     };

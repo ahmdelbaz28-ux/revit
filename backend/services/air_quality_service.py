@@ -136,7 +136,7 @@ class AirQualityService:
     """
 
     WAQI_GEO_URL = "https://api.waqi.info/feed/geo:{lat};{lon}/"
-    WAQI_TOKEN = os.getenv("WAQI_API_TOKEN", "demo")  # Free demo token — rate-limited but functional
+    WAQI_TOKEN = os.getenv("WAQI_API_TOKEN")  # Must be set explicitly — no insecure fallback
 
     def __init__(self, cache_ttl: float = 1800.0, request_timeout: float = 10.0):
         self._cache: dict[str, tuple[AirQualityData, float]] = {}
@@ -208,6 +208,14 @@ class AirQualityService:
         Returns:
             AirQualityData with source="waqi"
         """
+        if not self.WAQI_TOKEN:
+            raise ValueError(
+                "WAQI_API_TOKEN is not set. Configure the WAQI_API_TOKEN environment "
+                "variable to enable air quality data fetching from the World Air Quality "
+                "Index API. Without a valid token, API calls will fail. Get a free token "
+                "at https://aqicn.org/data-platform/token/"
+            )
+
         client = await self._get_client()
         url = self.WAQI_GEO_URL.format(lat=latitude, lon=longitude)
         response = await client.get(

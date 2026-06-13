@@ -953,14 +953,14 @@ class Database:
             try:
                 self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
                 self._conn.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("WAL checkpoint or close failed in Database.close(): %s", e)
 
     def __del__(self) -> None:
         try:
             self.close()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Database.__del__ close failed: %s", e)
 
 
 # ============================================================================

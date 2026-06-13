@@ -90,6 +90,13 @@ const MAX_LOG_ENTRIES = 500;
 const MAX_ERROR_ENTRIES = 200;
 const MAX_FAULT_ENTRIES = 100;
 
+// Method stubs for AppState — these are placeholder functions that are
+// immediately overwritten by the `actions` object below. They exist only
+// to satisfy TypeScript's type contract on the AppState interface.
+// Previously, full method implementations were duplicated here AND in `actions`,
+// which was a maintenance hazard (bugs could be fixed in one place but not the other).
+const _stub = () => { /* placeholder — real implementation in `actions` */ };
+
 const initialState: AppState = {
   theme: 'dark',
   devices: [],
@@ -108,43 +115,19 @@ const initialState: AppState = {
   connectionStatus: 'disconnected',
   voiceActive: false,
   faults: [],
-  setDataMode: (mode: 'live' | 'simulation' | 'demo' | 'mock') => setState({ dataMode: mode }),
-  toggleHelp: () => setState((s) => ({ helpOpen: !s.helpOpen })),
-  addLog: (log: string | Omit<LogEntry, 'id' | 'timestamp'>) => {
-    const now = Date.now();
-    const newLog: LogEntry = typeof log === 'string'
-      ? { id: uid(), message: log, type: 'info', timestamp: now }
-      : { ...log, id: uid(), timestamp: now };
-    setState((s) => ({ eventLogs: [newLog, ...s.eventLogs].slice(0, MAX_LOG_ENTRIES) }));
-  },
-  addElement: (element: Omit<CanvasElement, 'id'> | CanvasElement) => {
-    const newElement: CanvasElement = 'id' in element ? element : { ...element, id: uid() };
-    setState((s) => ({ canvasElements: [...s.canvasElements, newElement] }));
-  },
-  removeElement: (id: string) => setState((s) => ({ canvasElements: s.canvasElements.filter(el => el.id !== id) })),
-  pushError: (message: string | { message: string }) => {
-    const now = Date.now();
-    const msg = typeof message === 'string' ? message : message.message;
-    const error: AppError = { id: uid(), message: msg, severity: 'critical', timestamp: now };
-    setState((s) => ({
-      errorLog: [error, ...s.errorLog].slice(0, MAX_ERROR_ENTRIES),
-      errors: [error, ...s.errors].slice(0, MAX_ERROR_ENTRIES),
-    }));
-  },
-  setSelectedElement: (id: string | null) => setState({ selectedElementId: id, selectedElement: id }),
-  removeFault: (id: string | { id: string }) => {
-    const faultId = typeof id === 'string' ? id : id.id;
-    setState((s) => ({ faults: s.faults.filter(f => f.id !== faultId) }));
-  },
-  addFault: (fault: string | { type: string }) => {
-    const now = Date.now();
-    const faultType = typeof fault === 'string' ? fault : fault.type;
-    const newFault = { id: uid(), type: faultType, timestamp: now };
-    setState((s) => ({ faults: [...s.faults, newFault].slice(0, MAX_FAULT_ENTRIES) }));
-  },
-  updateLiveData: (data: Record<string, unknown>) => setState((s) => ({ liveData: { ...s.liveData, ...data } })),
-  setConnectionStatus: (status: 'connected' | 'disconnected' | 'connecting') => setState({ connectionStatus: status }),
-  setVoiceActive: (active: boolean) => setState({ voiceActive: active }),
+  // Stub methods — real implementations are in `actions` below
+  setDataMode: () => _stub(),
+  toggleHelp: () => _stub(),
+  addLog: () => _stub(),
+  addElement: () => _stub(),
+  removeElement: () => _stub(),
+  pushError: () => _stub(),
+  setSelectedElement: () => _stub(),
+  removeFault: () => _stub(),
+  addFault: () => _stub(),
+  updateLiveData: () => _stub(),
+  setConnectionStatus: () => _stub(),
+  setVoiceActive: () => _stub(),
 };
 
 // --- State Management Logic ---

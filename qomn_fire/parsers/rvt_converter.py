@@ -103,7 +103,7 @@ class RvtConverter:
                 [converter_bin, "/export", "IFC", rvt_path, output_ifc_path],
                 check=True,
                 capture_output=True,
-                timeout=300  # 5-minute timeout for large Revit models
+                timeout=30  # 30-second safety timeout for conversion
             )
 
             # Verify output file exists and is non-empty

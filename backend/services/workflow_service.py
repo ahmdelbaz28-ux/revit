@@ -1689,7 +1689,8 @@ class WorkflowService:
                 # Flush to ensure all traces/scores are sent
                 try:
                     flush_langfuse()
-                except Exception:
+                except Exception as e:
+                    logger.debug("Langfuse flush failed (non-blocking): %s", e)
                     pass  # Non-blocking
 
             return result if result else initial_state

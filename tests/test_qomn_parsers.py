@@ -553,6 +553,8 @@ class TestDxfParser(unittest.TestCase):
         """
         DXF file with no extractable entities must provide a fallback room.
         BUG-4 VALIDATION: Area must be calculated from boundary, not hardcoded to 100.
+        BUG-DP2 VALIDATION: Height must be extracted from DXF metadata, not hardcoded.
+        When no height info exists, the parser must return an error (safety-critical).
         """
         from qomn_fire.parsers.dxf_parser import DxfParser
 
@@ -561,11 +563,38 @@ class TestDxfParser(unittest.TestCase):
             f.write("0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF\n")
 
         res = DxfParser.parse_dxf(dxf_path, "test_hash")
+        # BUG-DP2 FIX: Without height info, parser must return error (safety-critical)
+        self.assertTrue(res.is_failure, "Expected failure for DXF without height information")
+        self.assertIn("height", str(res.error()).lower(),
+                       f"Error should mention height: {res.error()}")
+
+    def test_dxf_fallback_room_with_height(self):
+        """
+        DXF file with EXTMIN/EXTMAX Z values but no room entities
+        must provide a fallback room with correct height.
+        BUG-DP2: Height extracted from HEADER EXTMIN/EXTMAX Z.
+        """
+        from qomn_fire.parsers.dxf_parser import DxfParser
+
+        dxf_path = os.path.join(self.tmpdir, "with_height.dxf")
+        with open(dxf_path, "w", encoding="utf-8") as f:
+            # Write a DXF with EXTMIN/EXTMAX Z values specifying 3.5m height
+            f.write(
+                "0\nSECTION\n2\nHEADER\n"
+                "9\n$ACADVER\n1\nAC1015\n"
+                "9\n$EXTMIN\n10\n0.0\n20\n0.0\n30\n0.0\n"
+                "9\n$EXTMAX\n10\n100.0\n20\n100.0\n30\n3.5\n"
+                "0\nENDSEC\n0\nEOF\n"
+            )
+
+        res = DxfParser.parse_dxf(dxf_path, "test_hash_with_height")
         self.assertTrue(res.is_success, f"DXF parsing failed: {res.error() if res.is_failure else ''}")
         building = res.unwrap()
         self.assertGreater(len(building.rooms), 0)
         # Fallback room is 10x10 = 100 m2 (calculated by Shoelace from boundary)
         self.assertEqual(building.rooms[0].area_m2, 100.0)
+        # Height should be 3.5m (extracted from EXTMIN/EXTMAX Z)
+        self.assertAlmostEqual(building.rooms[0].height_m, 3.5, places=1)
 
 
 class TestBuildingHash(unittest.TestCase):

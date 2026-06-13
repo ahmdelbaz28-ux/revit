@@ -113,25 +113,19 @@ class RevitAPIBridge:
 
             return "revit_api"
         except (ImportError, ModuleNotFoundError):
-            pass
-
-        # Try pyrevit
+            pass  # Revit API only available inside Revit process
         try:
             import revit  # noqa: F401
 
             return "pyrevit"
         except (ImportError, ModuleNotFoundError):
-            pass
-
-        # Try ifcopenshell (works everywhere)
+            pass  # pyrevit not available (works everywhere)
         try:
             import ifcopenshell  # noqa: F401
 
             return "ifcopenshell"
         except (ImportError, ModuleNotFoundError):
-            pass
-
-        # JSON fallback (always works)
+            pass  # ifcopenshell not available (always works)
         return "json_file"
 
     @property

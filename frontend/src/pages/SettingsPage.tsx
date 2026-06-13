@@ -1,6 +1,6 @@
 /**
  * SettingsPage.tsx - Application configuration
- * Stores settings in localStorage
+ * Stores settings in sessionStorage (SECURITY FIX: reduces XSS attack window vs localStorage)
  */
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,10 @@ import {
   Save,
   RotateCcw,
   CheckCircle2,
+  Eye,
+  EyeOff,
+  Loader2,
+  Key,
 } from 'lucide-react';
 
 // ============================================================================
@@ -32,6 +36,7 @@ import {
 
 interface AppSettings {
   apiUrl: string;
+  apiKey: string;
   engineeringStandard: 'IEC' | 'NEC';
   theme: 'dark' | 'light';
   autoRefreshInterval: number;
@@ -41,6 +46,7 @@ interface AppSettings {
 
 const DEFAULT_SETTINGS: AppSettings = {
   apiUrl: '/api',
+  apiKey: '',
   engineeringStandard: 'IEC',
   theme: 'dark',
   autoRefreshInterval: 30,
@@ -52,7 +58,7 @@ const SETTINGS_KEY = 'fireai_settings';
 
 function loadSettings(): AppSettings {
   try {
-    const stored = localStorage.getItem(SETTINGS_KEY);
+    const stored = sessionStorage.getItem(SETTINGS_KEY);
     if (stored) {
       return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
     }
@@ -63,7 +69,7 @@ function loadSettings(): AppSettings {
 }
 
 function saveSettings(settings: AppSettings): void {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  sessionStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
 // ============================================================================
@@ -74,6 +80,9 @@ export function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState<'success' | 'error' | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Load settings on mount, cleanup timer on unmount
@@ -86,6 +95,9 @@ export function SettingsPage() {
     setSettings(prev => ({ ...prev, [key]: value }));
     setHasChanges(true);
     setSaved(false);
+    if (key === 'apiKey') {
+      setConnectionTestResult(null);
+    }
   };
 
   const handleSave = () => {
@@ -109,7 +121,38 @@ export function SettingsPage() {
     setSettings(DEFAULT_SETTINGS);
     setHasChanges(true);
     setSaved(false);
+    setConnectionTestResult(null);
   };
+
+  const handleTestConnection = async () => {
+    setTestingConnection(true);
+    setConnectionTestResult(null);
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (settings.apiKey) {
+        headers['X-API-Key'] = settings.apiKey;
+      }
+      const baseUrl = settings.apiUrl || '/api';
+      const response = await fetch(`${baseUrl}/health`, {
+        method: 'GET',
+        headers,
+        signal: AbortSignal.timeout(10000),
+      });
+      if (response.ok) {
+        setConnectionTestResult('success');
+      } else {
+        setConnectionTestResult('error');
+      }
+    } catch {
+      setConnectionTestResult('error');
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const appVersion = import.meta.env.VITE_APP_VERSION || '1.0.0';
 
   return (
     <div className="flex-1 overflow-auto">
@@ -207,6 +250,71 @@ export function SettingsPage() {
               />
               <p className="text-xs text-slate-500">
                 How often dashboard data refreshes automatically (0 = disabled)
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* API Key Configuration */}
+        <Card className="border-slate-700 bg-slate-800/80">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-amber-400" />
+              <CardTitle className="text-lg text-slate-100">API Key</CardTitle>
+            </div>
+            <CardDescription className="text-slate-400">
+              Authentication key for the backend API
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">API Key</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showApiKey ? 'text' : 'password'}
+                    value={settings.apiKey}
+                    onChange={(e) => updateSetting('apiKey', e.target.value)}
+                    className="bg-slate-900 border-slate-600 text-slate-100 font-mono pr-10"
+                    placeholder="Enter your API key"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
+                    aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+                  >
+                    {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-600 text-slate-300 shrink-0"
+                  onClick={handleTestConnection}
+                  disabled={testingConnection}
+                >
+                  {testingConnection ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Shield className="h-4 w-4 mr-1" />
+                  )}
+                  Test Connection
+                </Button>
+              </div>
+              {connectionTestResult === 'success' && (
+                <p className="text-xs text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Connection successful
+                </p>
+              )}
+              {connectionTestResult === 'error' && (
+                <p className="text-xs text-red-400 flex items-center gap-1">
+                  Connection failed. Check your API URL and key.
+                </p>
+              )}
+              <p className="text-xs text-slate-500">
+                The API key is stored in sessionStorage (cleared when browser tab closes) for security.
+                You can find your API key in the backend configuration or ask your system administrator.
               </p>
             </div>
           </CardContent>
@@ -346,7 +454,7 @@ export function SettingsPage() {
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Version</p>
                 <Separator className="my-1 bg-slate-700" />
-                <p className="font-mono text-slate-200">1.0.0</p>
+                <p className="font-mono text-slate-200">{appVersion}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Platform</p>
@@ -356,7 +464,7 @@ export function SettingsPage() {
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Storage</p>
                 <Separator className="my-1 bg-slate-700" />
-                <p className="font-mono text-slate-200">localStorage</p>
+                <p className="font-mono text-slate-200">sessionStorage</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Config Key</p>

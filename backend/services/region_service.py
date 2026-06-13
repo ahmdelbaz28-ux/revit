@@ -227,8 +227,9 @@ class RegionService:
                         region_name=f"{region_name} / {subregion}".strip(" /"),
                         source="local_map+rest-countries",
                     )
-            except Exception:
-                pass  # API optional — we have the framework from local map
+            except Exception as e:
+                logger.debug("REST Countries API optional fetch failed for %s: %s", cc, e)
+                # API optional — we have the framework from local map
 
             return RegionContext(
                 country_code=cc,

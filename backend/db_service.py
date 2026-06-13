@@ -428,8 +428,8 @@ class DatabaseService:
                         (project_id,),
                     )
                     conn.commit()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Failed to delete project %s from DB after association error: %s", project_id, e)
 
             # Remove from cache
             del self._projects[project_id]
@@ -441,8 +441,8 @@ class DatabaseService:
         element_count = 0
         try:
             element_count = self._count_project_elements(project_dict["project_id"])
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to count elements for project %s: %s", project_dict.get('project_id', '?'), e)
 
         return ProjectResponse(
             project_id=project_dict["project_id"],
@@ -584,8 +584,8 @@ class DatabaseService:
                     )
                     for row in cursor.fetchall():
                         project_element_ids.add(row[0])
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to query element_projects for project filter: %s", e)
                 elements = [e for e in elements if e.element_id in project_element_ids]
 
             # Filter by deletion status
@@ -655,16 +655,16 @@ class DatabaseService:
                 if update_data.last_modified_by:
                     try:
                         source = ChangeSource(update_data.last_modified_by)
-                    except ValueError:
-                        pass
+                    except ValueError as ve:
+                        logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
                 self._data_model.delete_element(element_id, source=source)
             elif updates:
                 source = ChangeSource.MANUAL
                 if update_data.last_modified_by:
                     try:
                         source = ChangeSource(update_data.last_modified_by)
-                    except ValueError:
-                        pass
+                    except ValueError as ve:
+                        logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
                 self._data_model.update_element(
                     element_id, updates, source=source
                 )
@@ -972,8 +972,8 @@ class DatabaseService:
                     )
                     for row in cursor2.fetchall():
                         project_element_ids.add(row[0])
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to query element_projects for connection filter: %s", e)
                 connections = [
                     c for c in connections
                     if c.from_element_id in project_element_ids or c.to_element_id in project_element_ids
@@ -1224,8 +1224,8 @@ class DatabaseService:
                     )
                     for row in cursor.fetchall():
                         project_element_ids.add(row[0])
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to query element_projects for export filter: %s", e)
                 elements = [e for e in elements if e.element_id in project_element_ids]
 
             if element_types:
@@ -1252,8 +1252,8 @@ class DatabaseService:
                         "is_parametric": row[4],
                         "metadata": json.loads(row[5]) if row[5] else None,
                     })
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to query relationships for export: %s", e)
 
             # Export projects
             projects = list(self._projects.values())
@@ -1276,8 +1276,8 @@ class DatabaseService:
         with self._service_lock:
             try:
                 self._data_model.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Failed to close data model: %s", e)
 
     @classmethod
     def reset(cls) -> None:
@@ -1286,6 +1286,24 @@ class DatabaseService:
             if cls._instance is not None:
                 try:
                     cls._instance.close()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to close DatabaseService during reset: %s", e)
                 cls._instance = None
+
+
+def get_db_service() -> DatabaseService:
+    """Dependency injection provider for DatabaseService.
+
+    Returns the singleton DatabaseService instance. Use with FastAPI's
+    Depends() to inject it into route handlers instead of creating a
+    new DatabaseService() per request, which would create a new
+    UniversalDataModel + SQLite connection on every call.
+
+    Usage:
+        from backend.db_service import get_db_service
+
+        @router.get("/elements")
+        async def list_elements(db: DatabaseService = Depends(get_db_service)):
+            ...
+    """
+    return DatabaseService()

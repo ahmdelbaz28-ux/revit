@@ -20,6 +20,7 @@ from backend.models import (
     CreateDeviceInput,
     UpdateDeviceInput,
 )
+from backend.response import success, error
 
 router = APIRouter(prefix="/projects/{project_id}/devices", tags=["devices"])
 
@@ -66,7 +67,7 @@ async def list_devices(
     db = get_db()
     result = db.list_devices(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
     validate_paginated(result, item_validator=validate_device)
-    return {"success": True, "data": result}
+    return success(result)
 
 
 @router.post("", status_code=201)
@@ -126,7 +127,7 @@ async def create_device(project_id: str, input_data: CreateDeviceInput):
     from backend.project_bridge import sync_device_to_udm
     sync_device_to_udm(project_id, device_data)
 
-    return {"data": device, "success": True}
+    return success(device)
 
 
 @router.get("/{device_id}")
@@ -138,7 +139,7 @@ async def get_device(project_id: str, device_id: str):
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
     validate_device(device)
-    return {"data": device, "success": True}
+    return success(device)
 
 
 @router.put("/{device_id}")
@@ -200,7 +201,7 @@ async def update_device(
     from backend.project_bridge import sync_device_update_to_udm
     sync_device_update_to_udm(project_id, device_id, updates)
 
-    return {"data": device, "success": True}
+    return success(device)
 
 
 @router.delete("/{device_id}")
@@ -231,4 +232,4 @@ async def delete_device(project_id: str, device_id: str):
     from backend.project_bridge import sync_device_delete_to_udm
     sync_device_delete_to_udm(project_id, device_id)
 
-    return {"data": None, "success": True, "message": "Device deleted"}
+    return success(None, "Device deleted")

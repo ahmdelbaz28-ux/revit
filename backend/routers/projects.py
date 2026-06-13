@@ -26,9 +26,6 @@ from backend.project_bridge import (
 from backend.response import success
 
 router = APIRouter(prefix="/projects", tags=["projects"])
-
-
-# camelCase → snake_case sort field mapping
 _SORT_MAP = {
     "createdAt": "created_at",
     "updatedAt": "updated_at",
