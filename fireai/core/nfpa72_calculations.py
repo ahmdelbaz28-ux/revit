@@ -1338,3 +1338,80 @@ def auto_select_awg(
         "compliant": True,
         "all_candidates": all_candidates,
     }
+
+
+# ============================================================================
+# VOLTAGE DROP CALCULATION BY AWG GAUGE (NEC Chapter 9)
+# ============================================================================
+
+
+def calculate_voltage_drop(
+    wire_gauge: int,
+    current: float,
+    distance: float,
+    voltage: float = 24.0,
+) -> Dict[str, Any]:
+    """Calculate voltage drop for fire alarm circuits per NEC Chapter 9.
+
+    NEC Section 210.19(A): Voltage drop must not exceed 3% for branch
+    circuits. NEC Section 215.2(A): Voltage drop must not exceed 5%
+    for feeders. For fire alarm systems, the more restrictive 3% limit
+    is used as the default compliance threshold per NFPA 72 §10.6.4.
+
+    This function uses imperial units (AWG, feet) to match the standard
+    wire resistance tables in NEC Chapter 9, Table 8.
+
+    Args:
+        wire_gauge: AWG wire gauge (e.g., 18, 16, 14, 12, 10).
+            Must be a key in AWG_RESISTANCE_TABLE.
+        current: Current in amperes (A).
+        distance: One-way distance in feet (ft).
+        voltage: System voltage (default 24V for fire alarm systems).
+
+    Returns:
+        Dictionary with:
+            voltage_drop: Voltage dropped (V), rounded to 4 decimals.
+            percentage: Drop as percentage of system voltage, rounded to 2 decimals.
+            compliant: True if percentage ≤ 3.0 (NEC branch circuit limit).
+            wire_resistance: Resistance per 1000ft from NEC Table 8.
+
+    Raises:
+        ValueError: If wire_gauge not in standard sizes, or if any
+            numeric parameter is invalid (NaN, Inf, negative).
+    """
+    # Input validation per agent.md Rule 5
+    if not isinstance(wire_gauge, int) or wire_gauge not in AWG_RESISTANCE_TABLE:
+        raise ValueError(
+            f"Unsupported wire gauge: {wire_gauge}. "
+            f"Supported: {list(AWG_RESISTANCE_TABLE.keys())}. "
+            f"Per NEC Chapter 9, Table 8, only standard AWG sizes are tabulated."
+        )
+    for name, val in [("current", current), ("distance", distance), ("voltage", voltage)]:
+        if not isinstance(val, (int, float)) or not math.isfinite(val):
+            raise ValueError(
+                f"{name} must be a finite number, got {val!r}. "
+                f"Voltage drop calculations require valid numeric inputs per NFPA 72 §10.14."
+            )
+    if current < 0:
+        raise ValueError(f"current must be non-negative, got {current}")
+    if distance < 0:
+        raise ValueError(f"distance must be non-negative, got {distance}")
+    if voltage <= 0:
+        raise ValueError(f"voltage must be positive, got {voltage}")
+
+    wire_resistance_per_1000ft = AWG_RESISTANCE_TABLE[wire_gauge]["ohm_per_1000ft"]
+
+    # Calculate resistance for the distance (round trip = 2× one-way)
+    resistance = wire_resistance_per_1000ft * (distance / 1000.0) * 2
+    voltage_drop = current * resistance
+    percentage = (voltage_drop / voltage) * 100.0
+
+    # NEC compliance: max 3% for branch circuits
+    compliant = percentage <= 3.0
+
+    return {
+        "voltage_drop": round(voltage_drop, 4),
+        "percentage": round(percentage, 2),
+        "compliant": compliant,
+        "wire_resistance": wire_resistance_per_1000ft,
+    }

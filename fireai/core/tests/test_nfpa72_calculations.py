@@ -30,6 +30,7 @@ from fireai.core.nfpa72_calculations import (
     calculate_corridor_spacing,
     calculate_duct_detector_positions,
     check_voltage_drop,
+    calculate_voltage_drop,
     required_battery_capacity_ah,
     calculate_inrush_current,
     calculate_nac_loading,
@@ -822,3 +823,92 @@ class TestAutoSelectAWG:
     def test_all_candidates_populated(self):
         result = auto_select_awg(24.0, 0.5, 100.0)
         assert len(result["all_candidates"]) == len(AWG_RESISTANCE_TABLE)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 25. calculate_voltage_drop (AWG + feet interface)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestVoltageDropAWG:
+    """NEC Chapter 9: Voltage drop calculations by AWG gauge and distance in feet.
+
+    These tests verify the calculate_voltage_drop function which provides
+    a simplified interface using imperial units (AWG gauge, feet) for
+    fire alarm circuit design per NEC Chapter 9, Table 8.
+
+    NEC Section 210.19(A): Voltage drop must not exceed 3% for branch
+    circuits. NEC Section 215.2(A): Voltage drop must not exceed 5%
+    for feeders.
+    """
+
+    def test_18awg_50ft_05a_24v(self):
+        """18 AWG, 50ft, 0.5A on 24V system — short run should be compliant."""
+        result = calculate_voltage_drop(wire_gauge=18, current=0.5, distance=50)
+        assert result["compliant"] is True
+        assert result["percentage"] < 3.0
+        assert result["voltage_drop"] > 0
+
+    def test_18awg_300ft_05a_24v(self):
+        """18 AWG, 300ft, 0.5A — long run, may approach or exceed 3%."""
+        result = calculate_voltage_drop(wire_gauge=18, current=0.5, distance=300)
+        # 18 AWG has 7.770 ohm/1000ft; round-trip resistance = 7.770 * 0.300 * 2 = 4.662 ohm
+        # drop = 0.5 * 4.662 = 2.331V; percentage = 2.331/24 * 100 = 9.71%
+        assert result["percentage"] > 3.0  # Should NOT be compliant at 300ft
+
+    def test_16awg_100ft_05a_24v(self):
+        """16 AWG, 100ft, 0.5A — should be compliant."""
+        result = calculate_voltage_drop(wire_gauge=16, current=0.5, distance=100)
+        assert result["compliant"] is True
+        assert result["percentage"] < 3.0
+
+    def test_14awg_200ft_1a_24v(self):
+        """14 AWG, 200ft, 1.0A — safety-critical boundary test per NEC."""
+        result = calculate_voltage_drop(wire_gauge=14, current=1.0, distance=200)
+        # 14 AWG has 3.070 ohm/1000ft; round-trip = 3.070 * 0.200 * 2 = 1.228 ohm
+        # drop = 1.0 * 1.228 = 1.228V; percentage = 1.228/24 * 100 = 5.12%
+        assert result["percentage"] > 3.0  # Exceeds NEC branch circuit limit
+
+    def test_12awg_100ft_1a_24v(self):
+        """12 AWG, 100ft, 1.0A — larger wire should be compliant."""
+        result = calculate_voltage_drop(wire_gauge=12, current=1.0, distance=100)
+        assert result["compliant"] is True
+        assert result["percentage"] < 3.0
+
+    def test_invalid_wire_gauge(self):
+        """Unsupported wire gauge raises ValueError per NEC Chapter 9."""
+        with pytest.raises(ValueError, match="Unsupported wire gauge"):
+            calculate_voltage_drop(wire_gauge=20, current=0.5, distance=50)
+
+    def test_negative_current_raises(self):
+        """Negative current must raise ValueError — safety-critical input validation."""
+        with pytest.raises(ValueError, match="non-negative"):
+            calculate_voltage_drop(wire_gauge=14, current=-0.5, distance=50)
+
+    def test_negative_distance_raises(self):
+        """Negative distance must raise ValueError — safety-critical input validation."""
+        with pytest.raises(ValueError, match="non-negative"):
+            calculate_voltage_drop(wire_gauge=14, current=0.5, distance=-50)
+
+    def test_zero_voltage_raises(self):
+        """Zero voltage must raise ValueError — cannot calculate percentage."""
+        with pytest.raises(ValueError, match="positive"):
+            calculate_voltage_drop(wire_gauge=14, current=0.5, distance=50, voltage=0)
+
+    def test_nan_input_raises(self):
+        """NaN input must raise ValueError — NaN bypasses comparison checks."""
+        with pytest.raises(ValueError, match="finite number"):
+            calculate_voltage_drop(wire_gauge=14, current=float("nan"), distance=50)
+
+    def test_returns_wire_resistance(self):
+        """Result includes the wire resistance from NEC Table 8."""
+        result = calculate_voltage_drop(wire_gauge=14, current=0.5, distance=100)
+        assert result["wire_resistance"] == AWG_RESISTANCE_TABLE[14]["ohm_per_1000ft"]
+
+    def test_custom_voltage(self):
+        """Test with non-default voltage (e.g., 120V AC circuit)."""
+        result = calculate_voltage_drop(wire_gauge=12, current=10.0, distance=100, voltage=120.0)
+        # 12 AWG has 1.930 ohm/1000ft; round-trip = 1.930 * 0.100 * 2 = 0.386 ohm
+        # drop = 10.0 * 0.386 = 3.86V; percentage = 3.86/120 * 100 = 3.22%
+        assert result["voltage_drop"] > 0
+        assert result["percentage"] > 0
