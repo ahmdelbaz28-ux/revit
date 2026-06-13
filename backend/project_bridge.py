@@ -52,8 +52,8 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
     project_id = project_data.get("id", "")
 
     try:
-        from backend.db_service import DatabaseService
         from backend.database import get_db
+        from backend.db_service import DatabaseService
 
         udm = DatabaseService()
         db = get_db()
@@ -141,8 +141,8 @@ def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
-        from backend.db_service import DatabaseService
         from backend.database import get_db
+        from backend.db_service import DatabaseService
 
         udm = DatabaseService()
         db = get_db()
@@ -231,8 +231,8 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
-        from backend.db_service import DatabaseService
         from backend.database import get_db
+        from backend.db_service import DatabaseService
 
         udm = DatabaseService()
         db = get_db()
@@ -305,8 +305,8 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
     device_id = device_data.get("id", "")
 
     try:
-        from backend.db_service import DatabaseService
         from backend.database import get_db
+        from backend.db_service import DatabaseService
 
         udm = DatabaseService()
         db = get_db()
@@ -424,8 +424,8 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
-        from backend.db_service import DatabaseService
         from backend.database import get_db
+        from backend.db_service import DatabaseService
 
         udm = DatabaseService()
         db = get_db()
@@ -535,8 +535,8 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
-        from backend.db_service import DatabaseService
         from backend.database import get_db
+        from backend.db_service import DatabaseService
 
         udm = DatabaseService()
         db = get_db()
@@ -606,8 +606,8 @@ def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> 
     connection_id = connection_data.get("id", "")
 
     try:
-        from backend.db_service import DatabaseService
         from backend.database import get_db
+        from backend.db_service import DatabaseService
 
         udm = DatabaseService()
         db = get_db()
@@ -697,8 +697,8 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
-        from backend.db_service import DatabaseService
         from backend.database import get_db
+        from backend.db_service import DatabaseService
 
         udm = DatabaseService()
         db = get_db()

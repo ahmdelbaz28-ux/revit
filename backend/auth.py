@@ -6,7 +6,7 @@ from the request and enforcing permission checks on endpoints.
 
 from __future__ import annotations
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import HTTPException, Request, status
 
 from backend.rbac import Permission, Role, has_permission
 

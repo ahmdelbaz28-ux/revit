@@ -42,6 +42,7 @@ V7.4 FIX — Placement/Verification Mismatch (CRITICAL — Life Safety):
 import math
 import time
 from dataclasses import dataclass, field
+
 from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M
 
 # ── ConvergenceConfig integration (PDF Phase 3 requirement) ──

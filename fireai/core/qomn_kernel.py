@@ -289,9 +289,15 @@ NFPA72_NAC_SLEEPING_MIN_CD = 177  # 177 candela
 # Now we store the 20°C reference values and apply temperature correction
 # in compute_voltage_drop() using R_T = R_20 * [1 + alpha*(T-20)].
 from fireai.constants.nec import (
-    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as NEC_TABLE8_RESISTANCE_OHM_PER_KM,
     COPPER_TEMP_COEFFICIENT,
+)
+from fireai.constants.nec import (
     DEFAULT_OPERATING_TEMP_C as _NEC_DEFAULT_OPERATING_TEMP_C,
+)
+from fireai.constants.nec import (
+    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as NEC_TABLE8_RESISTANCE_OHM_PER_KM,
+)
+from fireai.constants.nec import (
     TABLE8_REFERENCE_TEMP_C as _NEC_TABLE8_REFERENCE_TEMP_C,
 )
 

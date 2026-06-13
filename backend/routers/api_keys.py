@@ -10,7 +10,6 @@ Provides CRUD operations for API keys with role-based access control:
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -21,8 +20,8 @@ from backend.api_keys import (
     list_api_keys,
     update_api_key_role,
 )
-from backend.auth import get_current_role, require_permission
-from backend.rbac import Permission, Role, ROLE_PERMISSIONS
+from backend.auth import require_permission
+from backend.rbac import ROLE_PERMISSIONS, Permission, Role
 
 logger = logging.getLogger(__name__)
 

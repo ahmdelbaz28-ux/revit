@@ -15,7 +15,6 @@ PE SIGN-OFF REQUIRED for any changes to canonical constants.
 
 import json
 import logging
-import os
 import re
 import sys
 from collections import defaultdict
@@ -90,20 +89,20 @@ CANONICAL_SOURCES = {
 def find_constant_definitions(root_path: Path) -> dict[str, list[dict]]:
     """Find where constants are defined (not imported)."""
     definitions = defaultdict(list)
-    
+
     # Pattern to find constant definitions like: CONSTANT_NAME = value
     pattern = re.compile(r'^([A-Z][A-Z0-9_]*)\s*=\s*(.+)', re.MULTILINE)
-    
+
     for py_file in root_path.rglob("*.py"):
         if "__pycache__" in str(py_file) or "test_" in py_file.name:
             continue
-        
+
         try:
             content = py_file.read_text()
             for match in pattern.finditer(content):
                 const_name = match.group(1)
                 const_value = match.group(2).strip()
-                
+
                 # Check if this looks like a numeric constant
                 if any(c.isdigit() for c in const_value[:10]):
                     definitions[const_name].append({
@@ -113,7 +112,7 @@ def find_constant_definitions(root_path: Path) -> dict[str, list[dict]]:
                     })
         except Exception as e:
             logger.warning("Error scanning %s for constant definitions: %s", py_file, e)
-    
+
     return dict(definitions)
 
 
@@ -175,13 +174,13 @@ def find_constant_usages(root_path: Path, constants: list[str]) -> dict[str, lis
 def check_constant_consistency(root_path: Path) -> list[dict]:
     """Check for constant drift (different values in different places)."""
     drift_issues = []
-    
+
     definitions = find_constant_definitions(root_path)
-    
+
     for const_name, canonical_value in CANONICAL_CONSTANTS.items():
         if const_name not in definitions:
             continue
-        
+
         for def_info in definitions[const_name]:
             # Extract numeric value from the definition
             value_str = def_info["value"]
@@ -201,18 +200,18 @@ def check_constant_consistency(root_path: Path) -> list[dict]:
                         })
             except (ValueError, AttributeError) as e:
                 logger.debug("Cannot extract numeric value for drift check: %s", e)
-    
+
     return drift_issues
 
 
 def generate_report(root_path: Path) -> dict[str, Any]:
     """Generate comprehensive constants index report."""
-    
+
     constants_list = list(CANONICAL_CONSTANTS.keys())
     definitions = find_constant_definitions(root_path)
     usages = find_constant_usages(root_path, constants_list)
     drift_issues = check_constant_consistency(root_path)
-    
+
     report = {
         "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         "canonicals": CANONICAL_CONSTANTS,
@@ -226,34 +225,34 @@ def generate_report(root_path: Path) -> dict[str, Any]:
             "drift_count": len(drift_issues),
         },
     }
-    
+
     return report
 
 
 def main():
     root = Path(__file__).parent.parent.parent
     output_file = root / "fireai" / "CONSTANTS_USAGE_MAP.json"
-    
+
     print("🔍 Scanning codebase for constant definitions and usages...")
     report = generate_report(root)
-    
-    print(f"\n📊 Constants Index Report")
-    print(f"=" * 60)
+
+    print("\n📊 Constants Index Report")
+    print("=" * 60)
     print(f"Total canonical constants: {report['summary']['total_constants']}")
     print(f"Total definitions found:   {report['summary']['total_definitions']}")
     print(f"Total usages found:        {report['summary']['total_usages']}")
     print(f"⚠️  Drift issues detected:  {report['summary']['drift_count']}")
-    
+
     if report['drift_issues']:
-        print(f"\n🚨 DRIFT ISSUES (MUST FIX):")
+        print("\n🚨 DRIFT ISSUES (MUST FIX):")
         for issue in report['drift_issues']:
             print(f"  - {issue['constant']}: {issue['issue']}")
             print(f"    File: {issue['file']}:{issue['line']}")
-    
+
     # Write JSON report
     output_file.write_text(json.dumps(report, indent=2))
     print(f"\n✅ Full report saved to: {output_file}")
-    
+
     # Write Markdown summary
     md_file = root / "fireai" / "CONSTANTS_USAGE_REPORT.md"
     with open(md_file, 'w') as f:
@@ -264,7 +263,7 @@ def main():
         f.write(f"- Definitions found: {report['summary']['total_definitions']}\n")
         f.write(f"- Usages found: {report['summary']['total_usages']}\n")
         f.write(f"- Drift issues: {report['summary']['drift_count']}\n\n")
-        
+
         if report['drift_issues']:
             f.write("## 🚨 Drift Issues (MUST FIX)\n\n")
             for issue in report['drift_issues']:
@@ -275,9 +274,9 @@ def main():
                 f.write(f"- Issue: {issue['issue']}\n\n")
         else:
             f.write("## ✅ No Drift Issues Detected\n\n")
-    
+
     print(f"✅ Markdown report saved to: {md_file}")
-    
+
     return 0 if report['summary']['drift_count'] == 0 else 1
 
 

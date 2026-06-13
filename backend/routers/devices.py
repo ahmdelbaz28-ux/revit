@@ -22,7 +22,7 @@ from backend.models import (
     UpdateDeviceInput,
 )
 from backend.rbac import Permission
-from backend.response import success, error
+from backend.response import success
 
 router = APIRouter(prefix="/projects/{project_id}/devices", tags=["devices"])
 

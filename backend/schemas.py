@@ -322,7 +322,6 @@ class DeviceCreate(BaseModel):
         if v is None:
             return v
         # Validate the serialized size of the properties dict
-        import json as _json
         raw = v.model_dump() if hasattr(v, 'model_dump') else v
         _validate_json_size_and_depth(raw, "properties", max_bytes=10240, max_depth=5)
         return v

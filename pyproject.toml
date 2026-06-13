@@ -232,6 +232,7 @@ ignore = [
     "C901",   # Function too complex — known; refactor incrementally
     "E741",   # Ambiguous variable name — common in math/physics code
     "E402",   # Module import not at top — intentional for circular-dependency avoidance
+    "B008",   # Function call in argument defaults — standard FastAPI Depends pattern
     "B904",   # raise without from — legacy pattern; fix incrementally
 ]
 

@@ -17,7 +17,7 @@ from backend.contract import validate_connection, validate_paginated
 from backend.database import get_db
 from backend.models import CreateConnectionInput
 from backend.rbac import Permission
-from backend.response import success, error
+from backend.response import success
 
 router = APIRouter(prefix="/projects/{project_id}/connections", tags=["connections"])
 
