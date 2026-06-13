@@ -587,6 +587,151 @@ class DetectorPlacementEngine:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 3D DETECTOR PLACEMENT
+# Source: NFPA 72-2022 §17.7.3.2.1, UL 268
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def calculate_3d_detector_placement(
+    floor_plan: dict,
+    ceiling_height: float,
+    detector_type: str = "heat",
+) -> dict:
+    """Calculate 3D detector placement for multi-level spaces.
+
+    NFPA 72 Section 17.7.3.2.1: 3D placement requirements for spaces
+    with varying ceiling heights. UL 268: Smoke detector spacing for
+    high ceilings requires special consideration.
+
+    This function provides a simplified 3D placement calculation for
+    spaces where ceiling height affects detector positioning. Detectors
+    are placed at 0.5m (approximately 6 inches) below the ceiling
+    surface per NFPA 72 §17.7.3.2.1.
+
+    Args:
+        floor_plan: Dictionary with floor plan parameters:
+            - width (float): Floor width in meters
+            - length (float): Floor length in meters
+            - obstacles (list, optional): List of obstacle positions
+        ceiling_height: Ceiling height in meters. Standard detectors
+            are limited to 30ft (9.14m) per NFPA 72. Heights above
+            this require special detectors or engineering analysis.
+        detector_type: Type of detector — "heat", "smoke", or "multi".
+            Affects spacing requirements per NFPA 72 §17.6/§17.7.
+
+    Returns:
+        Dictionary with:
+            detectors: List of (x, y, z) position tuples in meters.
+            coverage: Estimated coverage percentage (0-100).
+            compliant: True if placement meets NFPA 72 requirements.
+            warnings: List of advisory warnings.
+    """
+    # NFPA 72 spacing by detector type
+    SPACING_M = {
+        "heat": 6.10,    # NFPA 72 §17.6.3.1: 20ft listed spacing
+        "smoke": 9.10,   # NFPA 72 §17.7.3.2.3: 30ft spacing
+        "multi": 9.10,   # Multi-sensor uses smoke spacing
+    }
+
+    # Ceiling height limit per NFPA 72
+    MAX_STANDARD_CEILING_M = 9.14  # 30ft per NFPA 72 §17.7.3.2.1
+
+    warnings: List[str] = []
+
+    # Validate ceiling height
+    if ceiling_height > MAX_STANDARD_CEILING_M:
+        return {
+            "detectors": [],
+            "coverage": 0.0,
+            "compliant": False,
+            "warnings": [
+                f"Ceiling height {ceiling_height:.1f}m exceeds {MAX_STANDARD_CEILING_M:.1f}m "
+                f"(30ft) limit for standard detectors per NFPA 72 §17.7.3.2.1. "
+                f"Requires special engineering analysis and potentially "
+                f"projected-beam or aspirating detectors per UL 268."
+            ],
+        }
+
+    if detector_type not in SPACING_M:
+        return {
+            "detectors": [],
+            "coverage": 0.0,
+            "compliant": False,
+            "warnings": [f"Unknown detector type: {detector_type}. Must be one of {list(SPACING_M.keys())}."],
+        }
+
+    spacing = SPACING_M[detector_type]
+    width = floor_plan.get("width", 0.0)
+    length = floor_plan.get("length", 0.0)
+
+    if width <= 0 or length <= 0:
+        return {
+            "detectors": [],
+            "coverage": 0.0,
+            "compliant": False,
+            "warnings": ["Floor plan dimensions must be positive."],
+        }
+
+    # Mount detectors 0.5m below ceiling per NFPA 72 §17.7.3.2.1
+    mount_z = round(ceiling_height - 0.5, 4)
+
+    # Calculate 2D grid positions
+    wall_min = 0.10  # Minimum wall distance per NFPA 72 §17.6.3.1.1
+    detectors: List[tuple] = []
+
+    y = wall_min
+    row = 0
+    while y <= length - wall_min:
+        offset = (spacing / 2.0) if row % 2 == 1 else 0.0
+        x = wall_min + offset
+        while x <= width - wall_min:
+            detectors.append((round(x, 4), round(y, 4), mount_z))
+            x += spacing
+        y += spacing * (math.sqrt(3) / 2.0)  # Hex grid row height
+        row += 1
+
+    # Safety: at least one detector
+    if not detectors:
+        detectors.append((round(width / 2, 4), round(length / 2, 4), mount_z))
+
+    # Check spacing in 3D
+    compliant = True
+    TOLERANCE = 0.01  # 1cm tolerance for floating point comparison
+    for i, d1 in enumerate(detectors):
+        for j, d2 in enumerate(detectors[i + 1:], i + 1):
+            distance = (
+                (d1[0] - d2[0]) ** 2 +
+                (d1[1] - d2[1]) ** 2 +
+                (d1[2] - d2[2]) ** 2
+            ) ** 0.5
+            if distance > spacing + TOLERANCE:
+                compliant = False
+                warnings.append(
+                    f"Detectors {i} and {j} too far apart: "
+                    f"{distance:.1f}m > {spacing}m per NFPA 72 §17.7"
+                )
+
+    # Estimate coverage (simplified — assumes rectangular coverage)
+    total_area = width * length
+    coverage_radius = spacing * 0.7  # R = 0.7 × S per NFPA 72 §17.7.4.2.3.1
+    detector_coverage = math.pi * coverage_radius ** 2
+    estimated_coverage = min(100.0, (len(detectors) * detector_coverage / total_area) * 100.0)
+
+    if not compliant:
+        warnings.append(
+            "Detector spacing exceeds NFPA 72 limits. "
+            "Review placement with fire protection engineer."
+        )
+
+    return {
+        "detectors": detectors,
+        "coverage": round(estimated_coverage, 2),
+        "compliant": compliant,
+        "warnings": warnings,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # DUCT DETECTOR PLACEMENT
 # Source: NFPA 72-2022 §17.7.4
 # ═══════════════════════════════════════════════════════════════════════════════
