@@ -10,8 +10,8 @@
 | Metric | Count |
 |--------|-------|
 | Tracked constants | 26 |
-| Total usages | 155 |
-| Drift issues | 1 |
+| Total usages | 157 |
+| Drift issues | 0 |
 
 ---
 
@@ -344,7 +344,7 @@
 
 **Canonical Source:** `fireai/constants/nfpa72.py`
 
-**Usages (7):**
+**Usages (9):**
 
 - `fireai/core/qomn_kernel.py`:229
 - `fireai/constants/nfpa72.py`:269
@@ -353,12 +353,8 @@
 - `fireai/tools/crossref_indexer.py`:108
 - `fireai/tools/constant_indexer.py`:35
 - `fireai/tools/constant_indexer.py`:73
-
-## ⚠️ Drift Issues
-
-| File | Issue | Expected | Fix |
-|------|-------|----------|-----|
-| `fireai/core/spatial_engine/density_optimizer.py` | WALL_MIN_M defined inline (should import from canonical) | Import from canonical | from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M |
+- `fireai/core/spatial_engine/density_optimizer.py`:45
+- `fireai/core/spatial_engine/density_optimizer.py`:73
 
 
 ## ✅ Import Guidelines

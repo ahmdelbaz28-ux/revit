@@ -42,6 +42,7 @@ V7.4 FIX — Placement/Verification Mismatch (CRITICAL — Life Safety):
 import math
 import time
 from dataclasses import dataclass, field
+from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M
 
 # ── ConvergenceConfig integration (PDF Phase 3 requirement) ──
 # The density optimizer MUST have formal termination conditions:
@@ -69,7 +70,7 @@ DETECTOR_RADIUS = 0.7 * MAX_SPACING_M  # 6.37 m (NFPA 72 §17.7.4.2.3.1 - 0.7S R
 # NFPA 72 specifies 4 inches minimum wall distance = 101.6mm, not 100mm.
 # The 1.6mm difference caused detectors at 100mm to pass density_optimizer
 # NFPA audit but fail nfpa72_coverage validation (which uses 0.1016m).
-WALL_MIN_M = 0.1016  # NFPA 72 §17.6.3.1.1 — 4 inches = 101.6mm
+WALL_MIN_M = WALL_MIN_DISTANCE_M  # NFPA 72 §17.6.3.1.1 — 4 inches = 101.6mm (alias for canonical)
 VERIFY_STEP = 0.20  # proof resolution (m)
 COARSE_STEP = 1.00  # hierarchical coarse grid step (m)
 # V7.4: Placement margin — must match the fine verification margin to ensure
