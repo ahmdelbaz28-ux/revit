@@ -43,10 +43,15 @@ import math
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from fireai.constants.nec import NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as AWG_RESISTANCE_OHM_PER_KM
-from fireai.constants.nec import COPPER_TEMP_COEFFICIENT, DEFAULT_OPERATING_TEMP_C, TABLE8_REFERENCE_TEMP_C
+from fireai.constants.nec import (
+    COPPER_TEMP_COEFFICIENT,
+    DEFAULT_OPERATING_TEMP_C,
+    TABLE8_REFERENCE_TEMP_C,
+)
+from fireai.constants.nec import (
+    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as AWG_RESISTANCE_OHM_PER_KM,
+)
 from fireai.constants.nfpa72 import HEAT_HEIGHT_SPACING_TABLE as _HEAT_SPACING_TABLE
-from fireai.constants.nfpa72 import HEAT_SPACING_FALLBACK_M
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WIRE RESISTANCE TABLE — Imported from canonical source

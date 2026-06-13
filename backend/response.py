@@ -49,7 +49,6 @@ def safe_filename(name: str) -> str:
     the Content-Disposition header (quotes, semicolons, newlines, backslashes).
     This is a security-critical function — project names are user-controlled input.
     """
-    import re
     from urllib.parse import quote
     # Remove characters that could break Content-Disposition headers
     safe = name.replace('"', "'").replace(';', '').replace('\n', '').replace('\r', '').replace('\\', '')

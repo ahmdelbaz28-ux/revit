@@ -46,7 +46,6 @@ async def mock_auth_middleware(request, call_next):
     """
     request.state.fireai_role = Role.ENGINEER
     return await call_next(request)
->>>>>>> c12ab938 (fix: Resolve all test failures — 19 fixed, 0 remaining (5854 passed))
 
 
 app.include_router(router, prefix="/api")

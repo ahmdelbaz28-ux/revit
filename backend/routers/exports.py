@@ -22,8 +22,8 @@ from fastapi.responses import StreamingResponse
 
 from backend.auth import require_permission
 from backend.database import get_db
-from backend.response import safe_filename as _safe_filename
 from backend.rbac import Permission
+from backend.response import safe_filename as _safe_filename
 
 logger = logging.getLogger(__name__)
 

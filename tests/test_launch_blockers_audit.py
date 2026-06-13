@@ -995,7 +995,6 @@ class TestRegressionProtection:
         # R_T = R_20 × [1 + α×(T-20)] = 4.263 × 1.21615 = 5.184 Ω/km at 75°C
         # V_drop = 2 × 1.0 × 100 × (5.184/1000) = 1.037V
         assert abs(result['voltage_drop_v'] - 1.037) < 0.01
->>>>>>> c12ab938 (fix: Resolve all test failures — 19 fixed, 0 remaining (5854 passed))
 
 
 # ============================================================================

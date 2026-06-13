@@ -160,7 +160,6 @@ class TestQOMNKernelLayer2Computation:
         # R_effective = R_20 × temp_correction = 4.263 × (1 + 0.00393×55) = 5.184 Ω/km
         expected = 2.0 * 2.5 * 100 * (4.263 * (1.0 + 0.00393 * 55.0) / 1000.0)
         assert abs(r["voltage_drop_v"] - expected) < 1e-4, \
->>>>>>> c12ab938 (fix: Resolve all test failures — 19 fixed, 0 remaining (5854 passed))
             f"Expected {expected:.4f}V, got {r['voltage_drop_v']}"
 
     def test_voltage_drop_invalid_gauge(self, kernel):
@@ -479,7 +478,6 @@ class TestGoldenOutputs:
         # R_effective = R_20 × temp_correction = 4.263 × (1 + 0.00393×55) = 5.184 Ω/km
         expected = 2.0 * 2.5 * 100 * (4.263 * (1.0 + 0.00393 * 55.0) / 1000.0)
         assert abs(r["voltage_drop_v"] - expected) < 1e-4
->>>>>>> c12ab938 (fix: Resolve all test failures — 19 fixed, 0 remaining (5854 passed))
 
     def test_deterministic_across_instances(self):
         """Two independent kernel instances produce identical hashes."""

@@ -77,7 +77,6 @@ async def parse_dwg(file: UploadFile = File(...)):  # noqa: B008
                 )
             chunks.append(chunk)
         contents = b''.join(chunks)
->>>>>>> c12ab938 (fix: Resolve all test failures — 19 fixed, 0 remaining (5854 passed))
 
         # ── Validate non-empty file ─────────────────────────────────────
         if not contents:
