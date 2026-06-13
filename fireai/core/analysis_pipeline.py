@@ -333,6 +333,98 @@ class AnalysisPipeline:
         """
         return self._twin
 
+    # ── Input Validation ────────────────────────────────────────────────────
+
+    def validate_input(self, data: dict) -> tuple:
+        """Validate pipeline input data before analysis.
+
+        NFPA 72 Section 10.4: Input validation requirements for fire
+        safety analysis. All input data must be validated before any
+        engineering calculations are performed to prevent garbage-in,
+        garbage-out scenarios that could produce dangerous design
+        recommendations.
+
+        This method performs comprehensive validation of the input
+        data dictionary, checking for required fields, valid values,
+        and NFPA 72 compliance of the input parameters.
+
+        Args:
+            data: Input data dictionary containing:
+                - floor_plan (dict): Required. Must include 'area' (positive)
+                  and 'exits' (at least one).
+                - detector_specs (dict): Required. Must include 'type' (one
+                  of: heat, smoke, multi, beam).
+                - occupancy_class (str): Required. Must be a valid IBC
+                  occupancy classification.
+
+        Returns:
+            Tuple of (is_valid: bool, errors: list[str]).
+            is_valid is True only if no errors were found.
+            errors contains human-readable descriptions of each validation
+            failure.
+        """
+        errors: List[str] = []
+
+        # Check required fields
+        required_fields = ["floor_plan", "detector_specs", "occupancy_class"]
+        for field in required_fields:
+            if field not in data:
+                errors.append(f"Missing required field: {field}")
+
+        # Validate floor_plan
+        if "floor_plan" in data:
+            fp = data["floor_plan"]
+            if not isinstance(fp, dict):
+                errors.append("floor_plan must be a dictionary")
+            else:
+                if "area" not in fp or fp.get("area", 0) <= 0:
+                    errors.append(
+                        "floor_plan.area must be a positive number — "
+                        "NFPA 72 §17.7 requires a defined area for detector placement"
+                    )
+                if "exits" not in fp or not fp.get("exits"):
+                    errors.append(
+                        "floor_plan must have at least one exit — "
+                        "NFPA 72 §17.15 requires exit identification for pull station placement"
+                    )
+
+        # Validate detector_specs
+        if "detector_specs" in data:
+            ds = data["detector_specs"]
+            if not isinstance(ds, dict):
+                errors.append("detector_specs must be a dictionary")
+            else:
+                if "type" not in ds:
+                    errors.append(
+                        "detector_specs.type is required — "
+                        "NFPA 72 §17.6/§17.7 requires specifying detector type"
+                    )
+                valid_types = ["heat", "smoke", "multi", "beam"]
+                if ds.get("type") not in valid_types:
+                    errors.append(
+                        f"Invalid detector type: {ds.get('type')}. "
+                        f"Must be one of {valid_types} per NFPA 72 §17.6/§17.7."
+                    )
+
+        # Validate occupancy_class
+        if "occupancy_class" in data:
+            oc = data["occupancy_class"]
+            valid_classes = [
+                "A-1", "A-2", "A-3", "A-4", "A-5",
+                "B", "E", "F-1", "F-2",
+                "H-1", "H-2", "H-3", "H-4", "H-5",
+                "I-1", "I-2", "I-3", "I-4",
+                "M", "R-1", "R-2", "R-3", "R-4",
+                "S-1", "S-2", "U",
+            ]
+            if oc not in valid_classes:
+                errors.append(
+                    f"Invalid occupancy class: {oc}. "
+                    f"Must be a valid IBC occupancy classification per NFPA 101."
+                )
+
+        return (len(errors) == 0, errors)
+
     # ── Single Room Analysis ────────────────────────────────────────────────
 
     def analyze_room(
