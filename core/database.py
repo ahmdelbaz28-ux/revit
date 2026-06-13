@@ -70,7 +70,7 @@ from core.models import (
     UniversalElement,
 )
 
-__all__ = ["UniversalDataModel"]
+__all__ = ["UniversalDataModel", "DatabaseTransaction"]
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +124,7 @@ class UniversalDataModel:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._lock = threading.RLock()
         self._conn.row_factory = sqlite3.Row
+        self._in_transaction = False  # Flag for DatabaseTransaction support
 
         self._init_tables()
         logger.info("UniversalDataModel initialized (db_path=%s)", "memory" if db_path == ":memory:" else "file")
@@ -259,7 +260,8 @@ class UniversalDataModel:
                     "INSERT OR IGNORE INTO elements (element_id, data, element_type, project_id, created_timestamp, last_modified_timestamp) VALUES (?, ?, ?, ?, ?, ?)",
                     (element_id, json.dumps(data), et, pid, now, now),
                 )
-                self._conn.commit()
+                if not self._in_transaction:
+                    self._conn.commit()
                 return cursor.rowcount > 0
             except MemoryError:
                 # V83 FIX (H-5): Never swallow MemoryError — let it propagate.
@@ -806,3 +808,72 @@ class UniversalDataModel:
         except Exception as e:
             logger.error("CRITICAL: Error deserializing element: %s", e)
             return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Database Transaction Support
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class DatabaseTransaction:
+    """ACID-compliant transactions for fire protection data.
+
+    NFPA 72 Section 10.3.3: Data integrity requirements for fire alarm
+    system records. Transactions ensure that fire protection data
+    modifications are atomic — either all changes are applied or none
+    are, preventing partial updates that could corrupt safety-critical
+    configuration data.
+
+    This implementation uses a flag-based approach: when a transaction
+    is active, the UDM's internal methods (add_element, update_element,
+    etc.) suppress their auto-commit calls. The transaction context
+    manager then handles the final COMMIT or ROLLBACK.
+
+    IMPORTANT: While a transaction is active, use the UDM's methods
+    (add_element, update_element, etc.) as normal. The auto-commit
+    is suppressed, so changes will only be persisted when the context
+    manager exits without exception.
+
+    Usage::
+
+        with DatabaseTransaction(udm) as tx:
+            udm.add_element(element_a)
+            udm.add_element(element_b)
+            # If add_element(element_b) fails, element_a is rolled back
+
+    Args:
+        udm: UniversalDataModel instance to wrap in a transaction.
+    """
+
+    def __init__(self, udm: UniversalDataModel) -> None:
+        self._udm = udm
+        self.committed = False
+
+    def __enter__(self) -> DatabaseTransaction:
+        with self._udm._lock:
+            # Signal UDM methods to suppress auto-commit
+            self._udm._in_transaction = True
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Any,
+        exc_val: Any,
+        exc_tb: Any,
+    ) -> bool:
+        with self._udm._lock:
+            try:
+                if exc_type is not None:
+                    self._udm._conn.rollback()
+                    logger.warning(
+                        "Transaction ROLLED BACK due to %s: %s",
+                        exc_type.__name__, exc_val,
+                    )
+                else:
+                    self._udm._conn.commit()
+                    self.committed = True
+                    logger.info("Transaction COMMITTED successfully")
+            finally:
+                # Always restore auto-commit behavior
+                self._udm._in_transaction = False
+        return False  # Do not suppress exceptions

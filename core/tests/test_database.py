@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from core.database import UniversalDataModel, _ElementLike
+from core.database import UniversalDataModel, DatabaseTransaction, _ElementLike
 from core.models import (
     ChangeSource,
     Conflict,
@@ -999,3 +999,102 @@ class TestRoundTrip:
         result = UniversalDataModel._dict_to_element(data)
         assert result is not None
         assert result.element_id == sample_element.element_id
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DatabaseTransaction Tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestDatabaseTransaction:
+    """NFPA 72 Section 10.3.3: Data integrity tests for ACID transactions.
+
+    Fire protection system data must maintain integrity at all times.
+    Partial updates to fire alarm zone configurations, detector
+    placements, or circuit definitions could result in dangerous
+    inconsistencies. DatabaseTransaction ensures atomicity.
+    """
+
+    def test_transaction_commit(self, udm: UniversalDataModel, sample_element):
+        """Test successful transaction commit.
+
+        When no exception occurs within the transaction context,
+        all operations should be committed atomically.
+        """
+        with DatabaseTransaction(udm) as tx:
+            udm.add_element(sample_element)
+        assert tx.committed is True
+        # Verify commit
+        result = udm.get_element("elem-001")
+        assert result is not None
+        assert result.element_id == "elem-001"
+
+    def test_transaction_rollback_on_exception(self, udm: UniversalDataModel, sample_element):
+        """Test transaction rollback on exception.
+
+        If an exception occurs within the transaction, all
+        operations should be rolled back to maintain data
+        integrity per NFPA 72 Section 10.3.3.
+        """
+        with pytest.raises(ValueError, match="Simulated error"):
+            with DatabaseTransaction(udm) as tx:
+                udm.add_element(sample_element)
+                raise ValueError("Simulated error")
+        assert tx.committed is False
+        # Verify rollback — element should NOT exist
+        result = udm.get_element("elem-001")
+        assert result is None
+
+    def test_transaction_committed_flag(self, udm: UniversalDataModel, sample_element):
+        """Test that committed flag correctly reflects transaction state."""
+        tx = DatabaseTransaction(udm)
+        assert tx.committed is False
+        with tx:
+            udm.add_element(sample_element)
+        assert tx.committed is True
+
+    def test_multiple_operations_atomic_commit(self, udm: UniversalDataModel, sample_element):
+        """Test that multiple operations in a transaction are committed atomically."""
+        elem2 = UniversalElement(
+            element_id="elem-002",
+            properties=SemanticProperties(
+                name="Second Element",
+                element_type=ElementType.DOOR,
+            ),
+        )
+        with DatabaseTransaction(udm) as tx:
+            udm.add_element(sample_element)
+            udm.add_element(elem2)
+        assert tx.committed is True
+        # Both elements should exist
+        assert udm.get_element("elem-001") is not None
+        assert udm.get_element("elem-002") is not None
+
+    def test_rollback_preserves_prior_data(self, udm: UniversalDataModel, sample_element):
+        """Test that a rolled-back transaction does not affect prior committed data.
+
+        If data was committed before the transaction, a rollback
+        should not affect it. This is critical for fire protection
+        systems where prior zone configurations must be preserved.
+        """
+        # First, add an element outside a transaction (auto-commit)
+        udm.add_element(sample_element)
+        assert udm.get_element("elem-001") is not None
+
+        # Now start a transaction that fails
+        elem2 = UniversalElement(
+            element_id="elem-002",
+            properties=SemanticProperties(
+                name="Second Element",
+                element_type=ElementType.DOOR,
+            ),
+        )
+        with pytest.raises(RuntimeError):
+            with DatabaseTransaction(udm) as tx:
+                udm.add_element(elem2)
+                raise RuntimeError("Simulated failure")
+
+        # Original element should still exist
+        assert udm.get_element("elem-001") is not None
+        # elem-002 should NOT exist (rolled back)
+        assert udm.get_element("elem-002") is None
