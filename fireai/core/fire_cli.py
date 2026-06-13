@@ -14,7 +14,7 @@ import json
 import math
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Literal
 
 _VERSION = "1.0.0"
 
@@ -73,7 +73,9 @@ def cmd_analyse(args: argparse.Namespace) -> int:
 def _analyse_room(data: Dict[str, Any]) -> int:
     try:
         from fireai.core.geometry_utils import is_rectangular
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
         from fireai.core.polygon_optimizer import PolygonDensityOptimizer, PolygonRoom
         from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room
 
@@ -123,7 +125,7 @@ def _analyse_room(data: Dict[str, Any]) -> int:
                 length=length,
                 ceiling_height=ceiling_h,
             )
-            cov_det_type = "heat" if "heat" in det_type.lower() else "smoke"
+            cov_det_type: Literal["smoke", "heat"] = "heat" if "heat" in det_type.lower() else "smoke"
             spec = calculate_coverage_radius_from_height(ceiling_h, cov_det_type)
             radius = spec.radius
             layout = DensityOptimizer().optimize(room, coverage_radius=radius)

@@ -27,9 +27,8 @@ References:
 
 from __future__ import annotations
 
-import math
 import logging
-from typing import Union
+import math
 
 logger = logging.getLogger(__name__)
 

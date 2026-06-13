@@ -679,9 +679,8 @@ class ATEXHazardousArbiter:
                     )
 
         marking_prefix = "AEx" if hazard_system == HazardSystem.NEC_DIVISION else "Ex"
-        recommended_protection = self._recommend_protection(zone)
+        self._recommend_protection(zone)
 
-        full_marking = f"{marking_prefix} {recommended_protection.value} {iec_group} {temp_class} {required_epl.value}"
 
         # Fix #17
         is_level = _FIRE_DETECTOR_IS_LEVEL.get(zone, "ib")

@@ -299,7 +299,7 @@ def compute_path_difference(
     t_entry = 0.0
     t_exit = 1.0
 
-    for axis, s_val, r_val, o_min, o_max in [
+    for _axis, s_val, r_val, o_min, o_max in [
         (0, sx, rx, ox_min, ox_max),
         (1, sy, ry, oy_min, oy_max),
     ]:

@@ -236,7 +236,7 @@ class ConstantCollector(ast.NodeVisitor):
         """
         if not isinstance(node.value, ast.Dict):
             return
-        for key_node, val_node in zip(node.value.keys, node.value.values):
+        for key_node, val_node in zip(node.value.keys, node.value.values, strict=False):
             if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
                 continue
             key_str = key_node.value
@@ -257,7 +257,7 @@ class ConstantCollector(ast.NodeVisitor):
         """Scan annotated dict literal assignments (e.g., PHYSICAL_CONSTANTS: Dict = {...})."""
         if not isinstance(node.value, ast.Dict):
             return
-        for key_node, val_node in zip(node.value.keys, node.value.values):
+        for key_node, val_node in zip(node.value.keys, node.value.values, strict=False):
             if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
                 continue
             key_str = key_node.value
@@ -502,7 +502,7 @@ def _print_report(report: ConsistencyReport, root: Path) -> int:
                 seen.add(key)
                 unique_sus.append(lit)
         print(f"\n[WARN] Suspicious raw literals ({len(unique_sus)}):")
-        print(f"   (These should use a named constant instead of a raw number)")
+        print("   (These should use a named constant instead of a raw number)")
         for lit in sorted(unique_sus, key=lambda l: (str(l.file), l.line)):
             rel = lit.file.relative_to(root) if root in lit.file.parents else lit.file
             print(f"  {rel}:{lit.line}  value={lit.value}  should be {lit.hint}")

@@ -565,9 +565,9 @@ def convert_division_to_zone(
         )
     if result is None:
         raise ValueError(
-            f"CLASS_III (combustible fibers) has NO IEC Zone equivalent. "
-            f"NFPA 70 Art. 503 only. Cannot convert to Zone system. "
-            f"[Fix #4]"
+            "CLASS_III (combustible fibers) has NO IEC Zone equivalent. "
+            "NFPA 70 Art. 503 only. Cannot convert to Zone system. "
+            "[Fix #4]"
         )
     return result
 

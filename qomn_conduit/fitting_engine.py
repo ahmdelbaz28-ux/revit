@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import math
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from qomn_conduit.bend import (
     MAX_CUMULATIVE_BEND_DEG,
@@ -32,8 +32,15 @@ from qomn_conduit.bend import (
 from qomn_conduit.catalog import get_fitting
 from qomn_conduit.errors import CodeViolationError, PhysicsError, Severity
 from qomn_conduit.types import (
-    ConduitRun, ConduitSegment, ConduitType, FittingType,
-    PlacedFitting, Point3D, Result, RoutePath, TradeSize,
+    ConduitRun,
+    ConduitSegment,
+    ConduitType,
+    FittingType,
+    PlacedFitting,
+    Point3D,
+    Result,
+    RoutePath,
+    TradeSize,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────

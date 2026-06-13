@@ -648,9 +648,9 @@ class AdaptivePipeline:
 
     async def run(self, source: AsyncIterator[Any]) -> AsyncGenerator[Any, None]:
         self._running = True
-        out_queue = asyncio.Queue(maxsize=1000)
+        out_queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=1000)
 
-        stage_fns = [fn for _, fn, _ in self._stages]
+        [fn for _, fn, _ in self._stages]
         for idx, (name, fn, _) in enumerate(self._stages):
             in_q = self._queues[idx]
             out_q = self._queues[idx + 1] if idx + 1 < len(self._stages) else out_queue
@@ -834,7 +834,7 @@ class SafetyLedger:
             self._fh.close()
             self._fh = None
 
-    def __enter__(self) -> "HashChainLedger":
+    def __enter__(self) -> SafetyLedger:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -1250,7 +1250,7 @@ class KernelCore:
         all_detectors: List[Dict] = []
         all_violations: List[str] = []
 
-        for room, prob, sol in zip(rooms, problems, solutions):
+        for room, prob, sol in zip(rooms, problems, solutions, strict=False):
             if not sol.placements:
                 all_violations.append(f"Room {room.name}: no detectors placed")
                 continue
@@ -1368,7 +1368,7 @@ class KernelCore:
         by_room: Dict[str, List[Dict]] = defaultdict(list)
         for d in detectors:
             by_room[d["room_id"]].append(d)
-        for rid, dets in by_room.items():
+        for _rid, dets in by_room.items():
             if len(dets) < 2:
                 continue
             for i in range(len(dets) - 1):
@@ -1493,7 +1493,7 @@ class AdapterBridge:
         solutions = self._kernel._solver.solve_batch(problems)
 
         detectors: List[Dict] = []
-        for room, prob, sol in zip(rooms, problems, solutions):
+        for room, prob, sol in zip(rooms, problems, solutions, strict=False):
             for i, (x, y) in enumerate(sol.placements):
                 detectors.append(
                     {

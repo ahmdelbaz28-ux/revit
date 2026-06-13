@@ -9,14 +9,18 @@ Reference: NEC 358.24 (EMT), 352.24 (PVC), 344.24 (RGD).
 """
 
 import math
+
 import pytest
 
 from qomn_conduit import (
-    ConduitType, TradeSize, verify_bend_radius, calculate_developed_length,
-    verify_cumulative_bends, MAX_CUMULATIVE_BEND_DEG, BendResult,
+    MAX_CUMULATIVE_BEND_DEG,
+    ConduitType,
+    TradeSize,
+    calculate_developed_length,
+    verify_bend_radius,
+    verify_cumulative_bends,
 )
-from qomn_conduit.errors import PhysicsError, CodeViolationError
-
+from qomn_conduit.errors import CodeViolationError, PhysicsError
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 1: Compliant bend radii

@@ -373,7 +373,7 @@ class CircuitTopology:
                 )
 
         # ── Check 3: Device coordinate validity ──
-        for i, dev in enumerate(self.devices):
+        for _i, dev in enumerate(self.devices):
             if not math.isfinite(dev.position_x):
                 violations.append(
                     {

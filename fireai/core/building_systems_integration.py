@@ -497,23 +497,23 @@ class BuildingSystemsAssessment:
                 self.violations.extend(r.violations)
             self.nfpa_references.append(r.nfpa_section)
 
-        for r in self.hvac_results:
-            if not r.is_compliant:
+        for hvac_r in self.hvac_results:
+            if not hvac_r.is_compliant:
                 self.is_compliant = False
-                self.violations.extend(r.violations)
-            self.nfpa_references.append(r.nfpa_section)
+                self.violations.extend(hvac_r.violations)
+            self.nfpa_references.append(hvac_r.nfpa_section)
 
-        for r in self.smoke_control_results:
-            if not r.is_compliant:
+        for smoke_r in self.smoke_control_results:
+            if not smoke_r.is_compliant:
                 self.is_compliant = False
-                self.violations.extend(r.violations)
-            self.nfpa_references.append(r.nfpa_section)
+                self.violations.extend(smoke_r.violations)
+            self.nfpa_references.append(smoke_r.nfpa_section)
 
-        for r in self.fire_pump_results:
-            if not r.is_compliant:
+        for fp_r in self.fire_pump_results:
+            if not fp_r.is_compliant:
                 self.is_compliant = False
-                self.violations.extend(r.violations)
-            self.nfpa_references.append(r.nfpa_section)
+                self.violations.extend(fp_r.violations)
+            self.nfpa_references.append(fp_r.nfpa_section)
 
         # Deduplicate references
         self.nfpa_references = list(dict.fromkeys(self.nfpa_references))

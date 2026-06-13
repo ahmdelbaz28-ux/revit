@@ -32,13 +32,16 @@ from __future__ import annotations
 
 import heapq
 import math
-from dataclasses import dataclass, field
-from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
-from fireai.conduit.catalog import get_fitting
 from fireai.conduit.errors import PhysicsError, RoutingError
 from fireai.conduit.types import (
-    ConduitType, FittingType, Point3D, Result, RoutePath, TradeSize,
+    ConduitType,
+    Point3D,
+    Result,
+    RoutePath,
+    TradeSize,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -402,7 +405,7 @@ class ConduitRouter:
         # ── Reconstruct path ─────────────────────────────────────────────────
 
         waypoints: List[Point3D] = []
-        node: Optional[_AStarNode] = found
+        node: Optional[_AStarNode] = found  # type: ignore[no-redef]
         while node is not None:
             waypoints.append(node.point)
             node = node.parent

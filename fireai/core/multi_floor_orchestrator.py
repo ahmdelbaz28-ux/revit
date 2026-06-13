@@ -880,7 +880,7 @@ class MultiFloorOrchestrator:
                 assign_count = min(remaining_devices, available)
 
                 # Assign device addresses
-                for i in range(assign_count):
+                for _i in range(assign_count):
                     address_counter += 1
                     current_loop.device_addresses.append(f"{current_loop.loop_id}:{address_counter:03d}")
 
@@ -985,7 +985,7 @@ class MultiFloorOrchestrator:
                 awg="14",
                 nominal_voltage=NOMINAL_VOLTAGE_FA,
             )
-            loop.voltage_drop_compliant = vd_result["is_compliant"]
+            loop.voltage_drop_compliant = vd_result["is_compliant"]  # type: ignore[assignment]
             if not vd_result["is_compliant"]:
                 loop.warnings.append(
                     f"Loop {loop.loop_id} voltage drop "
@@ -1172,8 +1172,8 @@ class MultiFloorOrchestrator:
             return results
 
         floor_ids = [fa.floor_id for fa in sorted(floor_assignments, key=lambda fa: fa.floor_index)]
-        num_floors = len(floor_ids)
-        top_floor = floor_ids[-1] if floor_ids else ""
+        len(floor_ids)
+        floor_ids[-1] if floor_ids else ""
 
         # ── 1. Elevator shaft smoke propagation ────────────────────────
         for elev in elevators:
@@ -1680,7 +1680,7 @@ class MultiFloorOrchestrator:
                     current_a=total_current,
                     one_way_length_m=one_way_length,
                 )
-                wire_gauge = rec.get("recommended_awg", "14")
+                wire_gauge = rec.get("recommended_awg", "14")  # type: ignore[assignment]
 
             result = RiserRoutingResult(
                 from_floor=fa_current.floor_id,
@@ -1688,7 +1688,7 @@ class MultiFloorOrchestrator:
                 cable_length_m=round(cable_length, 2),
                 wire_gauge=wire_gauge,
                 voltage_drop_pct=vd_result["voltage_drop_pct"],
-                voltage_drop_compliant=vd_result["is_compliant"],
+                voltage_drop_compliant=vd_result["is_compliant"],  # type: ignore[arg-type]
                 nfpa_reference="NFPA 72-2022 §27.4.1 / NEC Art. 760",
             )
 
@@ -1705,16 +1705,16 @@ class MultiFloorOrchestrator:
         # ── Use CableRoutingEngine if available ────────────────────────
         if _HAS_CABLE_ROUTING and CableRoutingEngine is not None:
             try:
-                engine = CableRoutingEngine()
+                CableRoutingEngine()
                 # Add floor-level obstacles for routing
-                for fa in sorted_floors:
+                for _fa in sorted_floors:
                     # CableRoutingEngine.add_obstacle() would be called here
                     # with actual building geometry from BIM/DXF
                     pass
 
                 # Route between panel (ground floor) and each upper floor
                 for i in range(1, len(sorted_floors)):
-                    fa_target = sorted_floors[i]
+                    sorted_floors[i]
                     # Use routing engine for actual path finding
                     # (obstacle-aware routing with A* or similar)
                     # route_result = engine.route(

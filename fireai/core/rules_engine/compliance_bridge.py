@@ -526,7 +526,7 @@ class NFPA72ComplianceChecker:
         """Run compliance evaluation and return a structured report."""
         logger.info(f"Starting NFPA 72 compliance evaluation for session {self.engine.session_id}")
         try:
-            results = self.engine.evaluate()
+            self.engine.evaluate()
 
             # SAFETY FIX (CRITICAL-5): Sync standalone TMS with engine's
             # internal TMS after evaluation. The engine maintains _derived_from

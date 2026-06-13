@@ -182,7 +182,6 @@ class RevitAPIBridge:
             for room in rooms:
                 if room.Area <= 0:
                     continue
-                loc = room.Location
                 level = doc.GetElement(room.LevelId)
                 h_param = room.get_Parameter(DB.BuiltInParameter.ROOM_UPPER_OFFSET)
                 h_m = h_param.AsDouble() * 0.3048 if h_param else 3.0  # ft -> m
@@ -463,7 +462,7 @@ class BIMSyncOrchestrator:
             try:
                 from fireai.core.floor_analyser import FloorAnalyser
 
-                analyser = FloorAnalyser()
+                analyser = FloorAnalyser()  # type: ignore[call-arg]
             except ImportError:
                 return {
                     "status": "error",

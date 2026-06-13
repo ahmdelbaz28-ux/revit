@@ -381,7 +381,7 @@ class ElevatorShuntTripAuditor:
                         f"Thermal Response MISMATCH for HD '{hd_id}' guarding "
                         f"sprinkler '{spk_id}' in {room_id}: "
                         + "; ".join(parts)
-                        + f". Water shock on 480V windings is IMMINENT."
+                        + ". Water shock on 480V windings is IMMINENT."
                     )
                     if Violation is not None:
                         violations.append(

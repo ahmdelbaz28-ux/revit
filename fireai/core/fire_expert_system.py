@@ -9,11 +9,15 @@ engine, replacing any previous naive grid algorithm.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import Any, List
 
 from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
-from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, DetectorLayout, Room
+from fireai.core.spatial_engine.density_optimizer import (
+    DensityOptimizer,
+    DetectorLayout,
+    Room,
+)
 
 # ── Expert-system facade ────────────────────────────────────────────────────────
 
@@ -78,6 +82,10 @@ class FireExpertSystem:
 class AnalysisResult:
     layout: DetectorLayout
     theoretical_lower_bound: int
+    room_id: str = ""
+    detector_positions: list = field(default_factory=list)
+    detector_type: Any = None
+    coverage_result: Any = None
 
     @property
     def name(self):
@@ -110,7 +118,6 @@ class AnalysisResult:
         return self.count / self.theoretical_lower_bound
 
     def summary(self) -> str:
-        room = self.layout.room
         status = "PASS" if self.passed else "FAIL"
         return (
             f"[{status}] {self.name:30s} | "

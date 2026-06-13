@@ -210,7 +210,7 @@ def _test_gemini_connectivity(api_key: str) -> bool:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-2.0-flash")
         # Minimal request to verify quota and connectivity
-        response = model.generate_content("ping", request_options={"timeout": 10})
+        model.generate_content("ping", request_options={"timeout": 10})
         # If we get here, Gemini is working
         return True
     except Exception as e:
@@ -597,10 +597,10 @@ def get_mem0_config() -> Dict[str, Any]:
 
     # Add base_url for proxy/OpenRouter/OpenQuotta mode
     if provider_info.get("base_url"):
-        llm_config["config"]["openai_base_url"] = provider_info["base_url"]
+        llm_config["config"]["openai_base_url"] = provider_info["base_url"]  # type: ignore[index]
         # Only add base_url to embedder if it uses OpenAI provider (not local)
         if provider_info["embedder_provider"] != "local":
-            embedder_config["config"]["openai_base_url"] = provider_info["base_url"]
+            embedder_config["config"]["openai_base_url"] = provider_info["base_url"]  # type: ignore[index]
 
     config = {
         "llm": llm_config,
@@ -736,12 +736,11 @@ class FireAIMemory:
             },
         }
         if project_id:
-            kwargs["filters"]["run_id"] = project_id
+            kwargs["filters"]["run_id"] = project_id  # type: ignore[index]
 
         return self.mem0.search(**kwargs)
 
     def get_all_memories(self, project_id: Optional[str] = None) -> List[Dict]:
-        """Get all stored memories for the engineer."""
         kwargs = {
             "filters": {
                 "user_id": self.engineer_id,
@@ -749,7 +748,7 @@ class FireAIMemory:
             },
         }
         if project_id:
-            kwargs["filters"]["run_id"] = project_id
+            kwargs["filters"]["run_id"] = project_id  # type: ignore[index]
 
         return self.mem0.get_all(**kwargs)
 
@@ -785,7 +784,7 @@ if __name__ == "__main__":
                 "occupancy_type": "corridor",
             },
         )
-        print(f"   [OK] Memory added")
+        print("   [OK] Memory added")
 
         # Test: Search for standards
         print("\n3. Searching for detector spacing requirements...")

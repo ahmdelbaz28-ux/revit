@@ -11,8 +11,8 @@ useful even in monolithic mode for type safety and documentation.
 """
 
 from __future__ import annotations
-import math
 
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -505,9 +505,9 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
             if not shapely_poly.is_valid:
                 # is_valid checks for self-intersection, ring orientation, etc.
                 raise ContractViolation(
-                    f"polygon is self-intersecting or otherwise invalid. "
-                    f"Self-intersecting polygons produce wrong area calculations, "
-                    f"which leads to incorrect detector counts. Fix the polygon geometry."
+                    "polygon is self-intersecting or otherwise invalid. "
+                    "Self-intersecting polygons produce wrong area calculations, "
+                    "which leads to incorrect detector counts. Fix the polygon geometry."
                 )
     except ImportError:
         # V114 FIX: Shapely unavailable = geometric validation SKIPPED = potential danger.

@@ -17,9 +17,9 @@ import logging
 import threading
 import time
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Tuple
+from datetime import datetime, timedelta, timezone
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from fireai.infrastructure.event_bus import Event
 

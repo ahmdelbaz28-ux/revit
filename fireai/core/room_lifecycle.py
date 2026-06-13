@@ -574,7 +574,7 @@ class RoomLifecycleManager:
         """
         with self._lock:
             # Initialize all states to zero
-            status: Dict[RoomState, int] = {s: 0 for s in RoomState}
+            status: Dict[RoomState, int] = dict.fromkeys(RoomState, 0)
             for lifecycle in self._rooms.values():
                 # Access state directly (we already hold our own lock,
                 # but RoomLifecycle.state also acquires its internal lock)
@@ -737,7 +737,7 @@ if __name__ == "__main__":
     assert not lc2.can_transition_to(RoomState.VERIFIED)
     try:
         lc2.transition_to(RoomState.VERIFIED, "Skip ahead", "system")
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError as e:
         assert "Illegal transition" in str(e)
         print(f"   ✓ Illegal transition blocked: {e}")
@@ -756,7 +756,7 @@ if __name__ == "__main__":
     lc3.transition_to(RoomState.VERIFYING, "Retry after investigation", "system")
     lc3.transition_to(RoomState.VERIFIED, "3/3 PASS on retry", "system")
     assert lc3.state == RoomState.VERIFIED
-    print(f"   ✓ WARNING → VERIFYING (retry) → VERIFIED path works")
+    print("   ✓ WARNING → VERIFYING (retry) → VERIFIED path works")
 
     # ── Test 4: WARNING → VERIFIED (PE override) ────────────────────
     print("\n[TEST 4] WARNING → VERIFIED (PE override)")
@@ -773,7 +773,7 @@ if __name__ == "__main__":
     )
     assert lc4.state == RoomState.VERIFIED
     assert lc4.history[-1].actor == "pe"
-    print(f"   ✓ PE override: WARNING → VERIFIED with actor='pe'")
+    print("   ✓ PE override: WARNING → VERIFIED with actor='pe'")
 
     # ── Test 5: FAILED → PENDING (retry) ────────────────────────────
     print("\n[TEST 5] FAILED → PENDING (retry)")
@@ -785,7 +785,7 @@ if __name__ == "__main__":
 
     lc5.transition_to(RoomState.PENDING, "Retry after fix", "system")
     assert lc5.state == RoomState.PENDING
-    print(f"   ✓ FAILED → PENDING retry works")
+    print("   ✓ FAILED → PENDING retry works")
 
     # ── Test 6: CERTIFIED → REJECTED (AHJ override) ────────────────
     print("\n[TEST 6] CERTIFIED → REJECTED (AHJ override)")
@@ -807,7 +807,7 @@ if __name__ == "__main__":
 
     lc6.transition_to(RoomState.PENDING, "Resubmit with corrections", "system")
     assert lc6.state == RoomState.PENDING
-    print(f"   ✓ AHJ override: CERTIFIED → REJECTED → PENDING (resubmit)")
+    print("   ✓ AHJ override: CERTIFIED → REJECTED → PENDING (resubmit)")
 
     # ── Test 7: Duration in State ───────────────────────────────────
     print("\n[TEST 7] Duration in state tracking")
@@ -831,7 +831,7 @@ if __name__ == "__main__":
     # Verify immutability
     try:
         history[0].reason = "tampered"
-        assert False, "RoomTransition should be frozen"
+        raise AssertionError("RoomTransition should be frozen")
     except AttributeError:
         pass
     print(f"   ✓ History: {len(history)} transitions, immutable records confirmed")

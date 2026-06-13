@@ -419,7 +419,7 @@ class SequenceOfOperationsMatrix:
         """
         matrix_rows: List[MatrixRow] = []
         warnings: List[str] = []
-        violations = []
+        violations: list[str] = []
 
         for dev in devices:
             # Look up cause-effect rules for this device type
@@ -517,8 +517,8 @@ class SequenceOfOperationsMatrix:
                 "matrix": matrix_data,
                 "hash": matrix_hash,
                 "device_count": len(devices),
-                "unique_output_types": list(set(o.value for row in matrix_rows for o in row.outputs_triggered)),
-                "zone_count": len(set(row.zone_id for row in matrix_rows if row.zone_id)),
+                "unique_output_types": list({o.value for row in matrix_rows for o in row.outputs_triggered}),
+                "zone_count": len({row.zone_id for row in matrix_rows if row.zone_id}),
             }
 
             return DecisionProvenance.new(

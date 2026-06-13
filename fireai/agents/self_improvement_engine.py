@@ -10,13 +10,11 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import sqlite3
-import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 

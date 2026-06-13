@@ -9,14 +9,18 @@ Reference: NEC 2022 Chapter 9, Table 4; NEC 358.24, 352.24, 344.24.
 """
 
 import math
+
 import pytest
 
 from qomn_conduit import (
-    ConduitType, TradeSize, FittingType,
-    get_fitting, catalog_size, all_fittings, Fitting,
+    ConduitType,
+    FittingType,
+    TradeSize,
+    all_fittings,
+    catalog_size,
+    get_fitting,
 )
 from qomn_conduit.errors import CatalogError
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 1: All catalog entries have positive dimensions
@@ -27,21 +31,21 @@ class TestCatalogPositiveDimensions:
 
     def test_all_fittings_have_positive_od(self):
         """All fittings must have OD > 0."""
-        for key, fitting in all_fittings().items():
+        for _key, fitting in all_fittings().items():
             assert fitting.od_in > 0.0, (
                 f"Fitting {fitting.catalog_number} has OD={fitting.od_in} ≤ 0"
             )
 
     def test_all_fittings_have_non_negative_weight(self):
         """All fittings must have weight >= 0."""
-        for key, fitting in all_fittings().items():
+        for _key, fitting in all_fittings().items():
             assert fitting.weight_kg >= 0.0, (
                 f"Fitting {fitting.catalog_number} has weight={fitting.weight_kg} < 0"
             )
 
     def test_elbows_have_positive_bend_radius(self):
         """All elbow fittings must have bend_radius > 0."""
-        for key, fitting in all_fittings().items():
+        for _key, fitting in all_fittings().items():
             if fitting.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45):
                 assert fitting.bend_radius_in > 0.0, (
                     f"Elbow {fitting.catalog_number} has bend_radius={fitting.bend_radius_in} ≤ 0"
@@ -49,7 +53,7 @@ class TestCatalogPositiveDimensions:
 
     def test_elbows_have_positive_developed_length(self):
         """All elbow fittings must have developed_length > 0."""
-        for key, fitting in all_fittings().items():
+        for _key, fitting in all_fittings().items():
             if fitting.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45):
                 assert fitting.developed_length_in > 0.0, (
                     f"Elbow {fitting.catalog_number} has developed_length={fitting.developed_length_in} ≤ 0"
@@ -57,7 +61,7 @@ class TestCatalogPositiveDimensions:
 
     def test_couplings_have_positive_body_length(self):
         """All coupling fittings must have body_length > 0."""
-        for key, fitting in all_fittings().items():
+        for _key, fitting in all_fittings().items():
             if fitting.fitting_type == FittingType.COUPLING:
                 assert fitting.body_length_in > 0.0, (
                     f"Coupling {fitting.catalog_number} has body_length={fitting.body_length_in} ≤ 0"
@@ -133,7 +137,7 @@ class TestCatalogNumberPattern:
 
     def test_elbow_catalog_numbers_start_with_letter(self):
         """Elbow catalog numbers must start with E, P, S, or R."""
-        for key, fitting in all_fittings().items():
+        for _key, fitting in all_fittings().items():
             if fitting.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45):
                 assert fitting.catalog_number[0] in "EPSR", (
                     f"Elbow {fitting.catalog_number} doesn't start with E/P/S/R"
@@ -141,7 +145,7 @@ class TestCatalogNumberPattern:
 
     def test_coupling_catalog_numbers(self):
         """Coupling catalog numbers must follow EC-/ES-/PC-/RC- pattern."""
-        for key, fitting in all_fittings().items():
+        for _key, fitting in all_fittings().items():
             if fitting.fitting_type == FittingType.COUPLING:
                 assert fitting.catalog_number[:2] in ("EC", "ES", "PC", "SC", "RC"), (
                     f"Coupling {fitting.catalog_number} has unexpected prefix"

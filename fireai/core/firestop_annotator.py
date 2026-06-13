@@ -27,7 +27,7 @@ from __future__ import annotations
 from typing import Any, List, Tuple
 
 try:
-    from shapely.geometry import LineString, Polygon
+    from shapely.geometry import LineString
 
     SHAPELY_AVAILABLE = True
 except ImportError:

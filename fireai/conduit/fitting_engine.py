@@ -29,18 +29,24 @@ from __future__ import annotations
 
 import math
 import uuid
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from fireai.conduit.bend import (
     MAX_CUMULATIVE_BEND_DEG,
-    verify_bend_radius,
     verify_cumulative_bends,
 )
 from fireai.conduit.catalog import get_fitting
 from fireai.conduit.errors import CodeViolationError, PhysicsError, Severity
 from fireai.conduit.types import (
-    ConduitRun, ConduitSegment, ConduitType, FittingType,
-    PlacedFitting, Point3D, Result, RoutePath, TradeSize,
+    ConduitRun,
+    ConduitSegment,
+    ConduitType,
+    FittingType,
+    PlacedFitting,
+    Point3D,
+    Result,
+    RoutePath,
+    TradeSize,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────

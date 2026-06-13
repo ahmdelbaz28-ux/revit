@@ -32,34 +32,23 @@ import re
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 # Import the existing sanitization module
 from fireai.core.bim_input_sanitizer import (
     sanitize_bim_parameter,
-    sanitize_room_name,
     sanitize_file_path,
-    validate_numeric_parameter,
+    sanitize_room_name,
+)
+from fireai.core.hazard_override import (
+    HazardOverrideVerifier,
 )
 
 # Import engineering validation modules
 from fireai.core.hydraulic_solver import (
-    MIN_SPRINKLER_PRESSURE_PSI,
-    MIN_C_FACTOR,
     MAX_C_FACTOR,
+    MIN_C_FACTOR,
     MIN_PIPE_DIAMETER_INCHES,
-    HAZARD_DESIGN_REQUIREMENTS,
-    validate_roughness_factor,
-)
-from fireai.core.hazard_override import (
-    HazardOverrideVerifier,
-    MANDATORY_HAZARD_OVERRIDES,
-)
-from fireai.core.unit_converter import (
-    revit_internal_to_metres,
-    metres_to_revit_internal,
-    revit_internal_to_mm,
-    mm_to_revit_internal,
 )
 
 logger = logging.getLogger(__name__)

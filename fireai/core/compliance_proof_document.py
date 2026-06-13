@@ -42,6 +42,7 @@ from typing import List, Optional
 
 from fireai.core.spatial_engine.consensus_engine import (
     ConfidenceLevel,
+    ConsensusEngine,
     ConsensusResult,
 )
 from fireai.core.spatial_engine.density_optimizer import (
@@ -169,7 +170,7 @@ class ComplianceProofDocument:
             f"**Designer:** {self.designer or 'TBD'}",
             f"**Jurisdiction:** {self.jurisdiction or 'TBD'}",
             f"**Date:** {self.generation_date}",
-            f"**FireAI Version:** V30",
+            "**FireAI Version:** V30",
             f"**Total Rooms:** {len(self.records)}",
         ]
         return "\n".join(lines)
@@ -190,8 +191,8 @@ class ComplianceProofDocument:
             "",
             "### 1.2 Design Parameters",
             "",
-            f"| Parameter | Value | NFPA Reference |",
-            f"|-----------|-------|----------------|",
+            "| Parameter | Value | NFPA Reference |",
+            "|-----------|-------|----------------|",
             f"| Maximum Spacing (S) | {MAX_SPACING_M:.1f} m (30 ft) | NFPA 72 Table 17.6.3.1.1 |",
             f"| Coverage Radius (R) | {DETECTOR_RADIUS:.2f} m (0.7 × S) | NFPA 72 §17.7.4.2.3.1 |",
             f"| Wall Minimum Distance | {WALL_MIN_M:.2f} m (4 in) | NFPA 72 §17.6.3.1.1 |",
@@ -375,8 +376,8 @@ class ComplianceProofDocument:
         lines = [
             "## 4. Consensus Verification Summary",
             "",
-            f"| Status | Count | Percentage |",
-            f"|--------|-------|------------|",
+            "| Status | Count | Percentage |",
+            "|--------|-------|------------|",
             f"| VERIFIED (3/3) | {verified} | {100 * verified / total:.0f}% |",
             f"| WARNING (2/3) | {warning} | {100 * warning / total:.0f}% |",
             f"| FAIL (≤1/3) | {fail} | {100 * fail / total:.0f}% |",

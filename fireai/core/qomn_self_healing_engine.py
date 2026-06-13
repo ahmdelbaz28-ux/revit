@@ -58,25 +58,24 @@ V76 BUG FIXES:
 """
 
 import copy
+import functools
+import hashlib
+import hmac
+import inspect
+import json
+import logging
 import math
 import os
-import sys
-import time
-import json
-import hmac
-import hashlib
-import logging
-import inspect
-import functools
-import traceback
-import urllib.request
-import urllib.error
 import threading
+import time
+import traceback
+import urllib.error
+import urllib.request
 from collections import OrderedDict, deque
-from datetime import datetime, timezone
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
 # Setup secure audit logger console format
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
@@ -101,6 +100,10 @@ class ErrorSeverity(Enum):
     CATASTROPHIC = 10
 
 
+# V53 FIX (BUG 3) + V2.0 EXTENSION: Allowed status values as type constraint
+StatusType = Literal["NOMINAL", "HEALED", "CRITICAL_CIRCUIT_OPEN", "HALF_OPEN", "DEGRADED"]
+
+
 class SystemStatus:
     """Allowed status values for SafetyResult and system state reporting.
 
@@ -111,11 +114,11 @@ class SystemStatus:
     V53 FIX (BUG 3): Status values are constrained to prevent invalid strings.
     V2.0 EXTENSION: Added HALF_OPEN and DEGRADED for weighted CB + half-open.
     """
-    NOMINAL = "NOMINAL"
-    HEALED = "HEALED"
-    CRITICAL_CIRCUIT_OPEN = "CRITICAL_CIRCUIT_OPEN"
-    HALF_OPEN = "HALF_OPEN"
-    DEGRADED = "DEGRADED"
+    NOMINAL: StatusType = "NOMINAL"
+    HEALED: StatusType = "HEALED"
+    CRITICAL_CIRCUIT_OPEN: StatusType = "CRITICAL_CIRCUIT_OPEN"
+    HALF_OPEN: StatusType = "HALF_OPEN"
+    DEGRADED: StatusType = "DEGRADED"
 
 
 # V53 FIX (BUG 3) + V2.0 EXTENSION: Allowed status values as type constraint
@@ -126,7 +129,6 @@ VALID_STATUSES = (
     SystemStatus.HALF_OPEN,
     SystemStatus.DEGRADED,
 )
-StatusType = Literal["NOMINAL", "HEALED", "CRITICAL_CIRCUIT_OPEN", "HALF_OPEN", "DEGRADED"]
 
 
 @dataclass(frozen=True)
@@ -682,13 +684,13 @@ class LruCache:
     def stats(self) -> Dict[str, int]:
         """V53 FIX (BUG 10): Return cache statistics for operational monitoring."""
         with self.lock:
-            return {
+            return {  # type: ignore[dict-item]
                 "size": len(self.cache),
                 "maxsize": self.maxsize,
                 "hits": self._hits,
                 "misses": self._misses,
                 "evictions": self._evictions,
-                "hit_ratio": self._hits / (self._hits + self._misses) if (self._hits + self._misses) > 0 else 0.0
+                "hit_ratio": self._hits / (self._hits + self._misses) if (self._hits + self._misses) > 0 else 0.0  # type: ignore[dict-item]
             }
 
 
@@ -1221,7 +1223,7 @@ def self_healing(
                             )
 
                             after_hash = compute_hash(replacement)
-                            audit_ref = global_audit_logger.log_event({
+                            global_audit_logger.log_event({
                                 "function_name": func_name,
                                 "error_type": "NominalPhysicsViolation",
                                 "error_message": (
@@ -1255,7 +1257,7 @@ def self_healing(
                         )
 
                         after_hash = compute_hash(safe_minimum)
-                        audit_ref = global_audit_logger.log_event({
+                        global_audit_logger.log_event({
                             "function_name": func_name,
                             "error_type": "PhysicsValidatorCrash",
                             "error_message": str(validator_err),
@@ -1363,7 +1365,7 @@ def self_healing(
                 # Execution failed: capture original stack context
                 err_type = type(e).__name__
                 err_msg = str(e)
-                stack_trace = traceback.format_exc()
+                traceback.format_exc()
 
                 # V2.0: If in HALF_OPEN state, probe has FAILED
                 # A "healed" result does NOT count as a success for recovery --

@@ -193,7 +193,7 @@ class VoronoiVerifier:
                 ),
             )
 
-        except Exception as e:
+        except Exception:
             # Fall back to brute-force if Voronoi fails
             return self._verify_brute_force(width, length, detectors)
 

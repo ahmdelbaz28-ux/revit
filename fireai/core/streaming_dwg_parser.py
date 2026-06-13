@@ -331,13 +331,13 @@ class StreamingDXFParser:
                     pending_lines.extend(new_lines)
                     polygons = _assemble_closed_polygons_v29(pending_lines, self.tolerance)
                     for poly in polygons:
-                        area = _shoelace_area(poly)
+                        area = _shoelace_area(poly)  # type: ignore[arg-type]
                         if area < self.min_area_m2:
                             continue
                         room_counter += 1
                         yield StreamedRoom(
                             room_id=f"R-{room_counter:08d}",
-                            polygon=poly,
+                            polygon=poly,  # type: ignore[arg-type]
                             area_m2=round(area, 4),
                             floor_id=self.floor_id,
                             source_line=stats.lines_parsed,

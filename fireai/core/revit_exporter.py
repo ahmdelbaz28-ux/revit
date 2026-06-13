@@ -393,7 +393,7 @@ class RevitExporter:
         """
         elements = self.generate_ifc_elements(schedule)
 
-        output = {
+        output: dict[str, Any] = {
             "schema": "IFC4",
             "workset": self._workset,
             "elements": [],
@@ -499,7 +499,7 @@ class RevitExporter:
         # Collect all unique code references from decision logs
         code_refs = set()
         for route in schedule.routes:
-            for desc, ref in route.decision_log:
+            for _desc, ref in route.decision_log:
                 if ref:
                     code_refs.add(ref)
 

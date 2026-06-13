@@ -9,7 +9,16 @@ import secrets
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import BackgroundTasks, Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -284,7 +293,7 @@ async def get_audit_trail() -> Dict[str, Any]:
 # Rate-limited endpoints
 @app.post("/projects/", tags=["Projects"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
-async def upload_file(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
+async def upload_file(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: B008
     content = await file.read()
     if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(status_code=413, detail=f"File too large. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.")
@@ -315,7 +324,7 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
             forced_type = DetectorType(body.forced_detector_type)
         except ValueError:
             raise HTTPException(status_code=422, detail=f"Unknown detector type: {body.forced_detector_type}")
-    result = _expert_system.analyse_room(
+    result = _expert_system.analyse_room(  # type: ignore[call-arg]
         room_spec=room_spec, forced_detector_type=forced_type, required_coverage_pct=body.required_coverage_pct
     )
     _audit_trail.log_placement(

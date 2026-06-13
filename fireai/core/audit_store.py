@@ -57,7 +57,7 @@ from typing import Any, Dict, List, Optional
 
 # Optional ECDSA support - graceful degradation if not installed
 try:
-    from ecdsa import BadSignatureError, NIST256p, SigningKey, VerifyingKey
+    from ecdsa import BadSignatureError, SigningKey, VerifyingKey
 
     HAS_ECDSA = True
 except ImportError:
@@ -515,7 +515,7 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
     key = _get_hmac_key()
 
     # Check each event
-    for i, row in enumerate(rows):
+    for _i, row in enumerate(rows):
         # Handle both V10 (8 cols) and V11 (9 cols) rows
         if len(row) >= 9:
             event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature, _ = row[:9]

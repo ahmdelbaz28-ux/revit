@@ -1424,7 +1424,7 @@ class HACClassificationEngine:
             ventilation_degree,
             SubstancePropertiesLegacy(substance_name="_hybrid_dust", material_type=HazardousMaterial.DUST_COMB),
         )
-        dummy_warnings = []
+        dummy_warnings = []  # type: ignore[var-annotated]
         gas_zone = self._apply_ventilation_availability(gas_zone, ventilation_avail, dummy_warnings)
         dust_zone = self._apply_ventilation_availability(dust_zone, ventilation_avail, dummy_warnings)
         if _ZONE_HAZARD_ORDER.get(gas_zone, 99) <= _ZONE_HAZARD_ORDER.get(dust_zone, 99):

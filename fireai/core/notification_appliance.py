@@ -30,8 +30,8 @@ traced to its NFPA/NEC source section.
 
 from __future__ import annotations
 
-import math
 import logging
+import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -122,7 +122,7 @@ def calculate_nac_load(
         raise ValueError(f"nac_rating_a must be positive finite, got {nac_rating_a}")
 
     total_current = 0.0
-    for i, dev in enumerate(devices):
+    for _i, dev in enumerate(devices):
         if not math.isfinite(dev.current_a) or dev.current_a < 0:
             raise ValueError(f"Device '{dev.device_id}' has invalid current: {dev.current_a}")
         total_current += dev.current_a

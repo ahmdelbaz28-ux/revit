@@ -25,20 +25,17 @@ from __future__ import annotations
 
 import logging
 import queue
-import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from fireai.mcp_server.thread_safe_queue import (
-    ThreadSafeModelUpdateQueue,
-    ModelUpdateAction,
-    ModelUpdateType,
-    ModelUpdateResult,
-    ModelUpdateStatus,
-)
 from fireai.mcp_server.sanitized_handler import (
-    SanitizedMCPHandler,
     MCPRequest,
     MCPResponse,
+    SanitizedMCPHandler,
+)
+from fireai.mcp_server.thread_safe_queue import (
+    ModelUpdateAction,
+    ModelUpdateType,
+    ThreadSafeModelUpdateQueue,
 )
 
 logger = logging.getLogger(__name__)
@@ -259,15 +256,12 @@ class RevitMCPServer:
         """Handle a hazard class query (read-only)."""
         from fireai.core.hazard_override import MANDATORY_HAZARD_OVERRIDES
         # Reuse the handler's existing verifier instance
-        verifier = self._handler._hazard_verifier
         # Return the mandatory override table for reference
         return MCPResponse(
             request_id=request.request_id,
             success=True,
             result={
-                "mandatory_overrides": {
-                    k: v for k, v in MANDATORY_HAZARD_OVERRIDES.items()
-                },
+                "mandatory_overrides": dict(MANDATORY_HAZARD_OVERRIDES.items()),
                 "available_classifications": [
                     "light_hazard",
                     "ordinary_hazard_1",

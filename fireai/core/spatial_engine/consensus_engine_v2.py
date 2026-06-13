@@ -455,7 +455,7 @@ class ConsensusEngineV2:
         room_coords: Optional[List[Tuple[float, float]]] = None,
         width: Optional[float] = None,
         length: Optional[float] = None,
-        detectors: List[tuple] = [],
+        detectors: List[tuple] = None,
         grid_proof_valid: Optional[bool] = None,
         grid_coverage_pct: Optional[float] = None,
         obstacles: Optional[List[List[Tuple[float, float]]]] = None,
@@ -479,6 +479,8 @@ class ConsensusEngineV2:
         Returns:
             ConsensusResult with combined verdict.
         """
+        if detectors is None:
+            detectors = []
         if room_coords is not None and not is_rectangular_polygon(room_coords):
             return self.verify_polygon(
                 room_coords=room_coords,

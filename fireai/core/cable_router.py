@@ -346,7 +346,7 @@ class CableRouter:
         res = self._model.grid_resolution
 
         # Separation distance in grid cells (300mm / resolution)
-        sep_cells = int(math.ceil(0.3 / res))
+        int(math.ceil(0.3 / res))
 
         # IFC class keywords that indicate electrical systems
         _ELECTRICAL_IFC_KEYWORDS = {
@@ -602,7 +602,7 @@ class CableRouter:
         if verify_constraints:
             constraint_results = self._constraint_engine.check_all(
                 cable_length_m=physical_length,
-                wire_gauge=wire_gauge,
+                wire_gauge=wire_gauge,  # type: ignore[arg-type]
                 num_bends=num_bends,
                 num_elevation_changes=num_elev,
                 min_electrical_separation_mm=300.0,

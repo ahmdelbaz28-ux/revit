@@ -464,7 +464,7 @@ def _is_z_axis_direction(dx: float, dy: float, dz: float, tolerance: float = 1e-
     mag = math.sqrt(dx * dx + dy * dy + dz * dz)
     if mag < 1e-12:
         return True  # Degenerate, treat as Z
-    nx, ny, nz = dx / mag, dy / mag, dz / mag
+    nx, ny, _nz = dx / mag, dy / mag, dz / mag
     # Z-axis means nx ≈ 0, ny ≈ 0, |nz| ≈ 1
     return abs(nx) < tolerance and abs(ny) < tolerance
 

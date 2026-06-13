@@ -147,7 +147,6 @@ class IfcFirePipeline:
         all_results: List[SpaceAnalysisResult] = []
         all_devices: List[Dict[str, Any]] = []
         all_hybrid_maps: List[Any] = []
-        all_grids: List[List[Any]] = []
         slc_loop = 1
         slc_address = 1
 
@@ -195,8 +194,8 @@ class IfcFirePipeline:
         areas = [getattr(r, '_space_area_m2', getattr(r, 'space_area_m2', 0.0)) for r in all_results]
         total_area = sum(areas) if areas else 0.0
         if total_area > 0:
-            global_cov = sum(c * a for c, a in zip(cov_pcts, areas)) / total_area
-            global_bs = sum(b * a for b, a in zip(blind_pcts, areas)) / total_area
+            global_cov = sum(c * a for c, a in zip(cov_pcts, areas, strict=False)) / total_area
+            global_bs = sum(b * a for b, a in zip(blind_pcts, areas, strict=False)) / total_area
         elif all_results:
             # V79 FIX: All spaces have zero area — geometry extraction may have failed.
             # Arithmetic mean of unreliable coverage values is still unreliable.
@@ -423,7 +422,7 @@ class IfcFirePipeline:
             return {
                 "epl": spec.epl_required,
                 "tclass": spec.temp_class.value,
-                "protections": [p for p in spec.protection_modes],
+                "protections": list(spec.protection_modes),
             }
         except Exception as exc:
             warnings.append(f"L3 ATEX failed: {exc}")
@@ -658,7 +657,7 @@ class IfcFirePipeline:
 
     def _to_raytrace_obstructions(self, obstructions_data: List[Dict]) -> List[Any]:
         """Convert IFC AABB data → FireAI Obstruction objects."""
-        result = []
+        result: List[Any] = []
         try:
             from fireai.core.models_v21 import Obstruction, WavelengthBand
         except ImportError:
@@ -725,7 +724,7 @@ class IfcFirePipeline:
             self.__class__.__name__,
             self.cfg.substance_cas,
         )
-        return SubstanceProperties(
+        return SubstanceProperties(  # type: ignore[call-arg]
             name="Propane (DEFAULT — VERIFY)",
             hazard_type=HazardType.GAS,
             lfl_vol_pct=2.1,

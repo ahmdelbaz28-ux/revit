@@ -12,15 +12,13 @@ import logging
 import math
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
+from fireai.agents.learning_agent import LearningAgent
 from fireai.analytics.ml_pipeline import DesignData, MLPipeline, RoomDesignData
 from fireai.analytics.predictive_analytics import (
-    BuildingData,
     PredictiveAnalyticsEngine,
-    RiskScore,
 )
-from fireai.agents.learning_agent import LearningAgent
 
 logger = logging.getLogger(__name__)
 
@@ -241,8 +239,7 @@ class PredictiveAgent:
     def what_if(self, design: DesignData, scenario: str) -> WhatIfResult:
         baseline = self.analyze_future_state(design, DesignChange(description="baseline", changes={}))
 
-        scenario_changes: Dict[str, Any] = {}
-        scenario_map = {
+        scenario_map: Dict[str, Dict[str, Any]] = {
             "add_detectors": {"add_detectors": 2},
             "remove_detectors": {"add_detectors": -1},
             "reduce_obstructions": {"obstruction_count": 0},

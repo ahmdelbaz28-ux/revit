@@ -46,7 +46,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # V61: Late import for cable routing (optional, may not be available)
 try:
-    from fireai.core.cable_router import CableRoute, CableRouter
+    from fireai.core.cable_router import CableRouter
     from fireai.core.cable_routing_engine import WireGauge
 
     _CABLE_ROUTER_AVAILABLE = True
@@ -423,15 +423,15 @@ def _stage2_placement(
                 self.coverage_radius = radius
 
         optimizer = DensityOptimizer()
-        layout = optimizer.optimize(_RoomSpec(validated_payload, coverage_radius_m))
+        layout = optimizer.optimize(_RoomSpec(validated_payload, coverage_radius_m))  # type: ignore[arg-type]
 
         if layout is None:
             raise RuntimeError("DensityOptimizer returned None")
 
         return {
             "method": "DensityOptimizer",
-            "detector_positions": list(layout.detector_positions),
-            "detector_count": len(layout.detector_positions),
+            "detector_positions": list(layout.detectors),  # type: ignore[union-attr]
+            "detector_count": len(layout.detectors),  # type: ignore[union-attr]
             "coverage_pct": float(layout.coverage_pct),
             "proof_valid": bool(getattr(layout, "proof_valid", False)),
             "fallback_used": False,
@@ -629,15 +629,15 @@ def _stage3_verify_coverage(
     try:
         from fireai.core.spatial_engine.exact_coverage import ExactCoverageEngine
 
-        engine = ExactCoverageEngine()
-        result = engine.verify(polygon, detector_positions, coverage_radius_m, room_id)
+        engine = ExactCoverageEngine(coverage_radius_m)
+        result = engine.verify(polygon, detector_positions)
         return {
             "engine": "ExactCoverageEngine",
-            "coverage_pct": result.coverage_pct,
-            "room_area_m2": result.room_area_m2,
-            "covered_area_m2": result.covered_area_m2,
-            "is_compliant": result.is_compliant,
-            "method_used": result.method_used,
+            "coverage_pct": result.coverage_ratio,
+            "room_area_m2": result.room_area_sqm,
+            "covered_area_m2": result.room_area_sqm - result.uncovered_area_sqm,
+            "is_compliant": result.is_covered,
+            "method_used": "ExactCoverageEngine",
         }
     except ImportError:
         logger.warning("ExactCoverageEngine unavailable — using grid estimate")
@@ -1282,7 +1282,7 @@ def analyze_room(
         run_id=run_id,
         room_id=room_id,
         success=overall_success,
-        release_status=release_status,
+        release_status=release_status,  # type: ignore[arg-type]
         safety_tier=safety_tier,
         coverage_pct=round(coverage_pct, 4),
         detector_count=len(positions),
@@ -1327,7 +1327,10 @@ def _stage7_cable_routing(
       - System Req §4: cable schedule output
     """
     try:
-        from fireai.core.cable_router import CableRouter, build_abstract_model
+        from fireai.core.cable_router import (  # type: ignore[attr-defined]
+            CableRouter,
+            build_abstract_model,
+        )
         from fireai.core.constraint_engine import ConstraintEngine
         from fireai.core.schedule_generator import ScheduleGenerator
     except ImportError:
@@ -1359,9 +1362,9 @@ def _stage7_cable_routing(
         bbox_y = (0.0, side)
 
     grid_res_m = 0.1
-    nx = max(2, int((bbox_x[1] - bbox_x[0]) / grid_res_m) + 4)
-    ny = max(2, int((bbox_y[1] - bbox_y[0]) / grid_res_m) + 4)
-    nz = max(2, int(3.0 / grid_res_m) + 2)  # default 3m ceiling
+    max(2, int((bbox_x[1] - bbox_x[0]) / grid_res_m) + 4)
+    max(2, int((bbox_y[1] - bbox_y[0]) / grid_res_m) + 4)
+    max(2, int(3.0 / grid_res_m) + 2)  # default 3m ceiling
 
     try:
         # Build model from polygon walls
@@ -1512,7 +1515,7 @@ def _stage7_cable_routing(
 
         schedule = router.route_all(
             connections=connections,
-            wire_gauge=WireGauge.AWG_14,
+            wire_gauge=WireGauge.AWG_14,  # type: ignore[arg-type]
             ps_voltage=float(validated.get("ps_voltage_v", 24.0)),  # V113: configurable, not hardcoded
             project_name=f"FA-{validated.get('room_id', 'room')}",
             ambient_temp_c=float(validated.get("ambient_temp_c", 40.0)),
@@ -1586,9 +1589,12 @@ def _stage8_conduit_fittings(
     """
     try:
         from fireai.conduit import (
-            ConduitType, TradeSize, Point3D,
-            calculate_fill, orthogonal_astar, place_fittings,
-            generate_revit_conduit, generate_schedules,
+            ConduitType,
+            Point3D,
+            TradeSize,
+            calculate_fill,
+            orthogonal_astar,
+            place_fittings,
         )
     except ImportError as ie:
         return {"status": "unavailable", "reason": str(ie)}

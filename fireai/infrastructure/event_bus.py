@@ -18,17 +18,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import math
 import os
 import threading
 import time
 import uuid
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Tuple, TypeVar
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -464,7 +462,7 @@ class RedisEventBus(EventBus):
         if self._redis is None:
             try:
                 import redis.asyncio as aioredis
-                self._redis = aioredis.from_url(self._redis_url, decode_responses=True)
+                self._redis = aioredis.from_url(self._redis_url, decode_responses=True)  # type: ignore[assignment]
                 logger.info(f"Connected to Redis at {self._redis_url}")
             except ImportError:
                 raise RuntimeError("redis-py is required for RedisEventBus: pip install redis")
@@ -519,7 +517,7 @@ class RedisEventBus(EventBus):
                             count=10,
                             block=2000,
                         )
-                        for stream_name, messages in results:
+                        for _stream_name, messages in results:
                             for msg_id, msg_data in messages:
                                 event = Event.from_dict(msg_data)
                                 await self._deliver(event)
@@ -568,7 +566,7 @@ class RedisEventBus(EventBus):
                 continue
             stream_key = f"{self._stream_prefix}{et}"
             messages = await r.xrange(stream_key, min="-", max="+")
-            for msg_id, msg_data in messages:
+            for _msg_id, msg_data in messages:
                 event = Event.from_dict(msg_data)
                 if from_time and event.timestamp < from_time:
                     continue
@@ -633,7 +631,7 @@ class KafkaEventBus(EventBus):
                     bootstrap_servers=self._bootstrap_servers,
                     client_id=f"fireai-producer-{uuid.uuid4().hex[:8]}",
                 )
-                await self._producer.start()
+                await self._producer.start()  # type: ignore[attr-defined]
                 logger.info(f"Kafka producer connected to {self._bootstrap_servers}")
             except ImportError:
                 raise RuntimeError("aiokafka is required for KafkaEventBus: pip install aiokafka")
@@ -651,7 +649,7 @@ class KafkaEventBus(EventBus):
                     enable_auto_commit=True,
                     auto_offset_reset="earliest",
                 )
-                await self._consumer.start()
+                await self._consumer.start()  # type: ignore[attr-defined]
                 logger.info(f"Kafka consumer started for topics: {topics}")
             except ImportError:
                 raise RuntimeError("aiokafka is required for KafkaEventBus: pip install aiokafka")

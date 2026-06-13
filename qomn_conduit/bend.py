@@ -25,9 +25,13 @@ from __future__ import annotations
 import math
 
 from qomn_conduit.catalog import get_fitting
-from qomn_conduit.errors import PhysicsError, CodeViolationError, Severity
+from qomn_conduit.errors import CodeViolationError, PhysicsError, Severity
 from qomn_conduit.types import (
-    BendResult, ConduitType, FittingType, Result, TradeSize,
+    BendResult,
+    ConduitType,
+    FittingType,
+    Result,
+    TradeSize,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────

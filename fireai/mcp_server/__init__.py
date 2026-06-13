@@ -28,19 +28,19 @@ an uncontrolled integration point. This module provides a SAFE foundation
 for all MCP/Revit communication.
 """
 
-from fireai.mcp_server.thread_safe_queue import (
-    ThreadSafeModelUpdateQueue,
-    ModelUpdateAction,
-    ModelUpdateType,
-    ModelUpdateResult,
-    ModelUpdateStatus,
-)
+from fireai.mcp_server.revit_mcp_server import RevitMCPServer
 from fireai.mcp_server.sanitized_handler import (
-    SanitizedMCPHandler,
     MCPRequest,
     MCPResponse,
+    SanitizedMCPHandler,
 )
-from fireai.mcp_server.revit_mcp_server import RevitMCPServer
+from fireai.mcp_server.thread_safe_queue import (
+    ModelUpdateAction,
+    ModelUpdateResult,
+    ModelUpdateStatus,
+    ModelUpdateType,
+    ThreadSafeModelUpdateQueue,
+)
 
 __all__ = [
     "ThreadSafeModelUpdateQueue",

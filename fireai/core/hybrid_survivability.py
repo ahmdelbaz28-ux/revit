@@ -599,7 +599,7 @@ class HybridSurvivabilityEngine:
         }
 
         points_out: List[Dict] = []
-        for pt_idx, pr in hybrid_map.point_results.items():
+        for _pt_idx, pr in hybrid_map.point_results.items():
             cls_str = pr.survivability_class.value
             cls_counts[cls_str] += 1
 

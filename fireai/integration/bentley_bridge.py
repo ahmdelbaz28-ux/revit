@@ -16,7 +16,6 @@ References:
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import os
 from dataclasses import dataclass, field
@@ -180,7 +179,7 @@ class BentleyBridge:
             raise FileNotFoundError(f"Bentley file not found: {path}")
 
         ext = os.path.splitext(path)[1].lower()
-        file_size = os.path.getsize(path)
+        os.path.getsize(path)
 
         with open(path, "rb") as f:
             raw = f.read()
@@ -378,8 +377,8 @@ class BentleyBridge:
                 HeadlessIFCBridge,
             )
 
-            bridge = HeadlessIFCBridge()
-            return bridge.import_ifc(path)
+            bridge = HeadlessIFCBridge()  # type: ignore[call-arg]
+            return bridge.import_ifc(path)  # type: ignore[attr-defined]
         except ImportError:
             logger.warning(
                 "HeadlessIFCBridge not available — "

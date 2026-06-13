@@ -55,6 +55,7 @@ import enum
 import hashlib
 import json
 import logging
+import math
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -63,7 +64,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .digital_twin import DigitalTwin
 from .event_bus import EventBus, Events
-from .spatial_engine.consensus_engine import ConfidenceLevel, ConsensusEngine, ConsensusResult
+from .spatial_engine.consensus_engine import (
+    ConfidenceLevel,
+    ConsensusEngine,
+    ConsensusResult,
+)
 from .spatial_engine.density_optimizer import (
     DETECTOR_RADIUS,
     MAX_SPACING_M,
@@ -73,7 +78,10 @@ from .spatial_engine.density_optimizer import (
     DetectorLayout,
     Room,
 )
-from .spatial_engine.proof_certificate import ProofCertificate, ProofCertificateGenerator
+from .spatial_engine.proof_certificate import (
+    ProofCertificate,
+    ProofCertificateGenerator,
+)
 
 logger = logging.getLogger("fireai.pipeline")
 
@@ -963,7 +971,7 @@ class AnalysisPipeline:
             source="AnalysisPipeline",
         )
 
-        for i, (room, room_id, ceiling_height) in enumerate(rooms):
+        for _i, (room, room_id, ceiling_height) in enumerate(rooms):
             try:
                 result = self.analyze_room(
                     room=room,

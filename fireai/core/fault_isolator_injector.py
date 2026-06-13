@@ -237,7 +237,7 @@ def inject_fault_isolators(
         iso_device = _make_isolator(
             index=isolator_count,
             position=last_pos,
-            reason=f"Class A loop return point per NFPA 72 §21.4",
+            reason="Class A loop return point per NFPA 72 §21.4",
             zone_before=current_zone,
             zone_after=None,
         )

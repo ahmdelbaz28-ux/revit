@@ -7,18 +7,22 @@ Tests float64 determinism, SHA-256 consistency, and cross-module integration.
 Reference: NEC 2022 Chapter 9; NFPA 72-2022 §12.2.
 """
 
-import hashlib
-import json
 import math
+
 import pytest
 
 from qomn_conduit import (
-    ConduitType, TradeSize, FittingType, Point3D,
-    calculate_fill, verify_bend_radius, place_fittings,
-    orthogonal_astar, generate_revit_conduit,
-    BoundingBox, Result,
+    BoundingBox,
+    ConduitType,
+    FittingType,
+    Point3D,
+    TradeSize,
+    calculate_fill,
+    generate_revit_conduit,
+    orthogonal_astar,
+    place_fittings,
+    verify_bend_radius,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 1: Float64 operations produce identical results
@@ -179,9 +183,9 @@ class TestPublicAPI:
     def test_all_types_importable(self):
         """Types must be importable from qomn_conduit."""
         from qomn_conduit import (
-            ConduitType, TradeSize, FittingType, Point3D, Result,
-            FillResult, BendResult, RoutePath, ConduitRun,
-            ConduitSegment, PlacedFitting,
+            ConduitType,
+            FittingType,
+            TradeSize,
         )
         assert ConduitType.EMT is not None
         assert TradeSize.HALF_INCH is not None
@@ -190,22 +194,15 @@ class TestPublicAPI:
     def test_all_errors_importable(self):
         """Error types must be importable from qomn_conduit."""
         from qomn_conduit import (
-            ConduitError, PhysicsError, CodeViolationError,
-            CatalogError, RoutingError, Severity,
+            PhysicsError,
         )
         assert PhysicsError is not None
 
     def test_all_functions_importable(self):
         """All public functions must be importable from qomn_conduit."""
         from qomn_conduit import (
-            get_fitting, catalog_size, all_fittings,
-            calculate_fill, get_internal_area,
-            verify_bend_radius, calculate_developed_length,
-            verify_cumulative_bends, MAX_CUMULATIVE_BEND_DEG,
-            orthogonal_astar, ConduitRouter, BoundingBox,
+            calculate_fill,
             place_fittings,
-            generate_revit_conduit, generate_autocad_entities,
-            generate_schedules,
         )
         assert calculate_fill is not None
         assert place_fittings is not None

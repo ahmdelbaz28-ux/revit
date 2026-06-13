@@ -21,53 +21,53 @@ Usage:
     )
 """
 
-from qomn_conduit.types import (
-    ConduitType,
-    TradeSize,
-    FittingType,
-    Point3D,
-    Result,
-    FillResult,
-    BendResult,
-    RoutePath,
-    ConduitRun,
-    ConduitSegment,
-    PlacedFitting,
-)
-from qomn_conduit.errors import (
-    ConduitError,
-    PhysicsError,
-    CodeViolationError,
-    CatalogError,
-    RoutingError,
-    Severity,
+from qomn_conduit.bend import (
+    MAX_CUMULATIVE_BEND_DEG,
+    calculate_developed_length,
+    verify_bend_radius,
+    verify_cumulative_bends,
 )
 from qomn_conduit.catalog import (
     Fitting,
-    get_fitting,
-    catalog_size,
     all_fittings,
+    catalog_size,
+    get_fitting,
+)
+from qomn_conduit.errors import (
+    CatalogError,
+    CodeViolationError,
+    ConduitError,
+    PhysicsError,
+    RoutingError,
+    Severity,
 )
 from qomn_conduit.fill import (
     calculate_fill,
     get_internal_area,
 )
-from qomn_conduit.bend import (
-    verify_bend_radius,
-    calculate_developed_length,
-    verify_cumulative_bends,
-    MAX_CUMULATIVE_BEND_DEG,
+from qomn_conduit.fitting_engine import place_fittings
+from qomn_conduit.output import (
+    generate_autocad_entities,
+    generate_revit_conduit,
+    generate_schedules,
 )
 from qomn_conduit.router import (
     BoundingBox,
     ConduitRouter,
     orthogonal_astar,
 )
-from qomn_conduit.fitting_engine import place_fittings
-from qomn_conduit.output import (
-    generate_revit_conduit,
-    generate_autocad_entities,
-    generate_schedules,
+from qomn_conduit.types import (
+    BendResult,
+    ConduitRun,
+    ConduitSegment,
+    ConduitType,
+    FillResult,
+    FittingType,
+    PlacedFitting,
+    Point3D,
+    Result,
+    RoutePath,
+    TradeSize,
 )
 
 __all__ = [

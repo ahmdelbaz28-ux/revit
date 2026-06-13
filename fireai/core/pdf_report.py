@@ -49,8 +49,8 @@ try:
     from fireai.core.building_engine import BuildingReport
     from fireai.core.scenario_engine import ScenarioBatteryResult
 except ImportError:
-    BuildingReport = object
-    ScenarioBatteryResult = object
+    BuildingReport = object  # type: ignore[misc, assignment]
+    ScenarioBatteryResult = object  # type: ignore[misc, assignment]
 
 # ---------------------------------------------------------------------------
 # Colour palette

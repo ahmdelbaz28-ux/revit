@@ -53,13 +53,12 @@ import logging
 import math
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
 
 try:
     from shapely.geometry import Point, Polygon
-    from shapely.ops import unary_union
 
     HAS_SHAPELY = True
 except ImportError:

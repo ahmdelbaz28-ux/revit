@@ -32,9 +32,13 @@ from __future__ import annotations
 import math
 
 from fireai.conduit.catalog import get_fitting
-from fireai.conduit.errors import PhysicsError, CodeViolationError, Severity
+from fireai.conduit.errors import CodeViolationError, PhysicsError, Severity
 from fireai.conduit.types import (
-    BendResult, ConduitType, FittingType, Result, TradeSize,
+    BendResult,
+    ConduitType,
+    FittingType,
+    Result,
+    TradeSize,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────

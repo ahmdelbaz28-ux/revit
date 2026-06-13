@@ -13,23 +13,25 @@ V9 CHANGES (2026-05-14):
 - Added lru_cache memoization to pure calculation functions
 - Added get_smoke_detector_coverage_max_safe import
 """
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple, Optional, Literal
 from functools import lru_cache
+from typing import Any, Dict, List, Literal, Optional, Tuple
+
 from .nfpa72_models import (
     CeilingSpec,
-    RoomSpec,
     DetectorType,
-    HeatDetectionMode,
-    CeilingType,
-    CeilingHeightError,
-    get_smoke_detector_radius,
-    get_smoke_detector_radius_safe,          # V9: safe fallback
-    get_smoke_detector_coverage_max,
-    get_smoke_detector_coverage_max_safe,    # V9: safe fallback
     HeatDetectorSpec,
+    HVACDuct,
+    RoomSpec,
+    get_smoke_detector_coverage_max,
+    get_smoke_detector_radius,
+    get_smoke_detector_radius_safe,  # V9: safe fallback
 )
+
+
 def get_heat_detector_placement_params(
     spec: HeatDetectorSpec,
     ceiling_height_m: float,
@@ -472,13 +474,14 @@ def calculate_max_wall_distance(ceiling: "CeilingSpec", detector_type: "Detector
 def estimate_detector_count_polygon(polygon, ceiling_height_m: float, detector_type: str) -> int:
     """Estimate detector count for a polygon based on coverage area."""
     import math
+
     from shapely.geometry import Polygon
     # CRITICAL: Use module-level import (already from .nfpa72_models) — bare import
     # would resolve to stale root copy with wrong values.
-    
+
     if not isinstance(polygon, Polygon):
         return 0
-    
+
     area = polygon.area
     radius = get_smoke_detector_coverage_max(ceiling_height_m)
     # Each detector covers π * r²
@@ -562,7 +565,9 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 # to eliminate divergent duplicate tables across the codebase.
 # Previously, this was imported via fireai.constants (which had its own duplicates).
 # Now imports directly from the authoritative nfpa72.py module.
-from fireai.constants.nfpa72 import COMBINED_HEIGHT_SPACING_TABLE as _CANONICAL_HEIGHT_TABLE
+from fireai.constants.nfpa72 import (
+    COMBINED_HEIGHT_SPACING_TABLE as _CANONICAL_HEIGHT_TABLE,
+)
 
 _NFPA72_TABLE_17_6_3_1_1 = list(_CANONICAL_HEIGHT_TABLE)
 
@@ -1146,21 +1151,21 @@ def calculate_inrush_current(
             f"manufacturer datasheet. Incorrect current assumptions can cause "
             f"devices to fail during alarm (NFPA 72 §10.14.1)."
         )
-        return {
+        return {  # type: ignore[dict-item]
             "steady_total_a": 0.25 * quantity,
             "inrush_total_a": 0.63 * quantity,
             "inrush_factor": 2.5,
-            "device_type": device_type,
+            "device_type": device_type,  # type: ignore[dict-item]
             "quantity": quantity,
         }
 
     steady = spec["steady_a"] * quantity
     inrush = spec["inrush_a"] * quantity
-    return {
+    return {  # type: ignore[dict-item]
         "steady_total_a": round(steady, 4),
         "inrush_total_a": round(inrush, 4),
         "inrush_factor": spec["inrush_factor"],
-        "device_type": device_type,
+        "device_type": device_type,  # type: ignore[dict-item]
         "quantity": quantity,
     }
 

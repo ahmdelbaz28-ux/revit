@@ -11,11 +11,13 @@ Reference: NEC 358.26 / 352.26 / 344.26; NEC 358.120; NEC 110.3(B).
 import pytest
 
 from qomn_conduit import (
-    ConduitType, TradeSize, FittingType, Point3D, RoutePath,
-    place_fittings, ConduitRun, PlacedFitting,
+    ConduitType,
+    FittingType,
+    Point3D,
+    RoutePath,
+    TradeSize,
+    place_fittings,
 )
-from qomn_conduit.errors import PhysicsError
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helper: create a RoutePath from waypoints

@@ -521,7 +521,6 @@ class ConduitSizer:
         c_type = conduit_type.upper()
         optimal_size = None
         actual_fill_pct = 100.0
-        max_fill_area = 0.0
 
         # Try preferred conduit type first, then alternatives
         conduit_order = [c_type]
@@ -529,21 +528,20 @@ class ConduitSizer:
             if ct.value not in conduit_order:
                 conduit_order.append(ct.value)
 
-        for ct in conduit_order:
+        for ct in conduit_order:  # type: ignore[assignment]
             for trade_size in ["1/2", "3/4", "1", "1-1/4", "1-1/2", "2", "2-1/2", "3", "3-1/2", "4"]:
                 key = (ct, trade_size)
                 if key not in CONDUIT_SPECS:
                     continue
 
                 full_area = CONDUIT_SPECS[key]["area_mm2"]
-                allowed_area = full_area * fill_limit
+                full_area * fill_limit
                 fill_pct = (total_area / full_area) * 100.0
 
                 if fill_pct <= fill_limit * 100:
                     optimal_size = trade_size
                     actual_fill_pct = fill_pct
-                    max_fill_area = allowed_area
-                    c_type = ct
+                    c_type = ct  # type: ignore[assignment]
                     break
 
             if optimal_size:
@@ -581,7 +579,7 @@ class ConduitSizer:
         # Build result
         is_compliant = actual_fill_pct <= fill_limit * 100 and plfa_nplfa_separated
 
-        result = ConduitFillResult(
+        ConduitFillResult(
             bundle_id=bundle_id,
             total_cable_area_mm2=round(total_area, 2),
             conductor_count=conductor_count,

@@ -304,7 +304,7 @@ def _find_dead_code(
         for imp in collector.imports:
             # Extract the name that was imported
             module_parts = imp.module_name.split(".")
-            imported_name = module_parts[-1] if module_parts else ""
+            module_parts[-1] if module_parts else ""
 
             # Check if the imported module base name is used
             base_name = imp.module_name.split(".")[0]

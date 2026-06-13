@@ -194,7 +194,9 @@ class EliteTechnologyDispatcher:
         # Heat detectors at h≤3.0m use S=6.1m (R=4.27m), NOT S=9.1m.
         # NFPA 72 Table 17.6.3.1.1 / Table 17.6.3.5.1.
         if detector_category == "heat":
-            from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+            from fireai.core.nfpa72_calculations import (
+                calculate_coverage_radius_from_height,
+            )
 
             heat_spec = calculate_coverage_radius_from_height(ceiling_height_m, "heat")
             return TechnologyDecision(

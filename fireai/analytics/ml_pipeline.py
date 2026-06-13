@@ -16,9 +16,9 @@ import pickle
 import random
 import sqlite3
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ class _LinearRegression:
             self.coef_ = [0.0] * m
             self.intercept_ = 0.0
             return
-        Xt = list(zip(*X))
+        Xt = list(zip(*X, strict=False))
         x_means = [sum(col) / n for col in Xt]
         y_mean = sum(y) / n
         coef: List[float] = []
@@ -128,7 +128,7 @@ class _LinearRegression:
             den = sum((X[i][j] - x_means[j]) ** 2 for i in range(n))
             coef.append(num / den if den != 0 else 0.0)
         self.coef_ = coef
-        self.intercept_ = y_mean - sum(c * xm for c, xm in zip(coef, x_means))
+        self.intercept_ = y_mean - sum(c * xm for c, xm in zip(coef, x_means, strict=False))
 
     def predict(self, X: List[List[float]]) -> List[float]:
         return [self.intercept_ + sum(c * x[j] for j, c in enumerate(self.coef_)) for x in X]
@@ -145,7 +145,7 @@ class _RandomForestClassifier:
         random.seed(self.random_state)
         self.trees = []
         n = len(X)
-        m = len(X[0]) if X else 0
+        len(X[0]) if X else 0
         for _ in range(self.n_estimators):
             indices = [random.randint(0, n - 1) for _ in range(n)]
             X_boot = [X[i] for i in indices]
@@ -161,7 +161,7 @@ class _RandomForestClassifier:
         best_feat = 0
         best_thresh = 0.0
         for feat in range(m):
-            values = sorted(set(X[i][feat] for i in range(len(X))))
+            values = sorted({X[i][feat] for i in range(len(X))})
             for val in values:
                 left_y = [y[i] for i in range(len(X)) if X[i][feat] <= val]
                 right_y = [y[i] for i in range(len(X)) if X[i][feat] > val]
@@ -235,7 +235,7 @@ class _RandomForestRegressor:
         best_feat = 0
         best_thresh = 0.0
         for feat in range(m):
-            values = sorted(set(X[i][feat] for i in range(len(X))))
+            values = sorted({X[i][feat] for i in range(len(X))})
             for val in values:
                 left_y = [y[i] for i in range(len(X)) if X[i][feat] <= val]
                 right_y = [y[i] for i in range(len(X)) if X[i][feat] > val]
@@ -420,7 +420,7 @@ class MLPipeline:
 
         model.fit(X_train, y_train)
 
-        y_pred = model.predict(X_test) if hasattr(model, "predict") else []
+        model.predict(X_test) if hasattr(model, "predict") else []
         eval_report = self._evaluate_model(model, model_type, X_test, y_test)
 
         cv_scores: List[float] = []
@@ -441,7 +441,7 @@ class MLPipeline:
                 fold_model.fit(X_ft, y_ft)
                 fold_pred = fold_model.predict(X_fv) if hasattr(fold_model, "predict") else []
                 if fold_pred and target == "coverage_pct":
-                    mae = sum(abs(a - b) for a, b in zip(y_fv, fold_pred)) / max(len(fold_pred), 1)
+                    mae = sum(abs(a - b) for a, b in zip(y_fv, fold_pred, strict=False)) / max(len(fold_pred), 1)
                     cv_scores.append(mae)
             if cv_scores:
                 eval_report.mae = sum(cv_scores) / len(cv_scores)
@@ -494,23 +494,23 @@ class MLPipeline:
         if not y_pred:
             return EvaluationReport()
         report = EvaluationReport()
-        errors = [abs(a - b) for a, b in zip(y_test, y_pred)] if len(y_test) == len(y_pred) else []
+        errors = [abs(a - b) for a, b in zip(y_test, y_pred, strict=False)] if len(y_test) == len(y_pred) else []
         if errors:
             report.mae = round(sum(errors) / max(len(errors), 1), 6)
-            sq_errors = [(a - b) ** 2 for a, b in zip(y_test, y_pred)]
+            sq_errors = [(a - b) ** 2 for a, b in zip(y_test, y_pred, strict=False)]
             report.rmse = round(math.sqrt(sum(sq_errors) / max(len(sq_errors), 1)), 6)
         if model_type in ("random_forest_classifier",):
-            correct = sum(1 for a, b in zip(y_test, y_pred) if abs(a - b) < 0.5) if len(y_test) == len(y_pred) else 0
+            correct = sum(1 for a, b in zip(y_test, y_pred, strict=False) if abs(a - b) < 0.5) if len(y_test) == len(y_pred) else 0
             report.accuracy = round(correct / max(len(y_test), 1), 6)
-            tp = sum(1 for a, b in zip(y_test, y_pred) if a > 0.5 and b > 0.5) if len(y_test) == len(y_pred) else 0
-            fp = sum(1 for a, b in zip(y_test, y_pred) if a < 0.5 < b) if len(y_test) == len(y_pred) else 0
-            fn = sum(1 for a, b in zip(y_test, y_pred) if a > 0.5 > b) if len(y_test) == len(y_pred) else 0
+            tp = sum(1 for a, b in zip(y_test, y_pred, strict=False) if a > 0.5 and b > 0.5) if len(y_test) == len(y_pred) else 0
+            fp = sum(1 for a, b in zip(y_test, y_pred, strict=False) if a < 0.5 < b) if len(y_test) == len(y_pred) else 0
+            fn = sum(1 for a, b in zip(y_test, y_pred, strict=False) if a > 0.5 > b) if len(y_test) == len(y_pred) else 0
             report.precision = round(tp / max(tp + fp, 1), 6)
             report.recall = round(tp / max(tp + fn, 1), 6)
             report.f1 = round(2 * report.precision * report.recall / max(report.precision + report.recall, 1e-9), 6)
         else:
             if y_test and y_pred:
-                ss_res = sum((a - b) ** 2 for a, b in zip(y_test, y_pred))
+                ss_res = sum((a - b) ** 2 for a, b in zip(y_test, y_pred, strict=False))
                 y_mean = sum(y_test) / len(y_test)
                 ss_tot = sum((a - y_mean) ** 2 for a in y_test)
                 report.r2 = round(1.0 - ss_res / max(ss_tot, 1e-9), 6)

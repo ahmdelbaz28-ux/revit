@@ -5,9 +5,8 @@ import logging
 import logging.handlers
 import os
 import re
-import time
-from typing import Any, Dict, Optional
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 _SENSITIVE_PATTERNS: list[re.Pattern] = [
     re.compile(r'(?i)(api[_-]?key|apikey|secret|password|token|credential|auth[_-]?token)["\']?\s*[:=]\s*["\']?([^"\'&\s,;}]+)'),

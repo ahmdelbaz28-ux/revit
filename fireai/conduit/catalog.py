@@ -34,10 +34,10 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
-from fireai.conduit.types import ConduitType, FittingType, TradeSize, Result
-from fireai.conduit.errors import CatalogError, PhysicsError
+from fireai.conduit.errors import CatalogError
+from fireai.conduit.types import ConduitType, FittingType, Result, TradeSize
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Catalog number validation pattern

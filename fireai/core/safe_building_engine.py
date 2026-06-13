@@ -201,7 +201,7 @@ class SafeBuildingEngine:
                 try:
                     res_payload = w.result(timeout=180)
                     results.append(res_payload)
-                except Exception as fatal_outage:
+                except Exception:
                     logger.error(f"Task timeout or death on thread assigned to: {room_trace}")
                     results.append({"room_id": room_trace, "success": False, "status": "CRASH"})
         return results

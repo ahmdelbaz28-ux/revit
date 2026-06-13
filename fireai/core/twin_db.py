@@ -438,7 +438,7 @@ class TwinSystemOfRecord:
         """
         if len(poly_a) != len(poly_b):
             return False
-        for pa, pb in zip(poly_a, poly_b):
+        for pa, pb in zip(poly_a, poly_b, strict=False):
             # Handle tuples, lists, or dict representations
             if isinstance(pa, dict):
                 ax, ay = float(pa.get("x", 0)), float(pa.get("y", 0))

@@ -869,10 +869,10 @@ class EnvironmentalContext(BaseModel):
                 )
             if self.fouling_category == FoulingCategory.CLEAN:
                 warnings.append(
-                    f"MENA/GULF region with CLEAN fouling category. GCC desert "
-                    f"sandstorms can degrade fouling to 0.45-0.55 for outdoor "
-                    f"detectors. CLEAN assumption may be optimistic. "
-                    f"[FM Global DS 5-48 §3.2.1]"
+                    "MENA/GULF region with CLEAN fouling category. GCC desert "
+                    "sandstorms can degrade fouling to 0.45-0.55 for outdoor "
+                    "detectors. CLEAN assumption may be optimistic. "
+                    "[FM Global DS 5-48 §3.2.1]"
                 )
 
         # EGYPT region: peak summer ~45C
@@ -1989,7 +1989,7 @@ class VolumetricMedium(BaseModel):
             raw = self.alpha_override.get(band, 0.0)
             # Also check string value in case dict was built with str keys
             if raw == 0.0:
-                raw = self.alpha_override.get(band.value, 0.0)
+                raw = self.alpha_override.get(band.value, 0.0)  # type: ignore[call-overload]
             return float(raw) * self.concentration_factor
 
         # Priority 2: type-based default — emit warning

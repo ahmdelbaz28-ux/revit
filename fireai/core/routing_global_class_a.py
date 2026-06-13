@@ -105,7 +105,12 @@ class EliteGlobalRouter:
                 inputs={"panel": panel, "terminal_node": terminal_device},
                 rules_applied=[rule_applied],
                 algorithm={"name": "astar_matrix_masking", "version": "v13_unified"},
-                confidence=ConfidenceScore(1.0, 1.0, 1.0, ConfidenceLevel.HIGH),
+                confidence=ConfidenceScore(
+                    level=ConfidenceLevel.HIGH,
+                    value=1.0,
+                    reason="Class A routing",
+                    standard_reference="HIGH",
+                ),
                 selected_because=f"Geographic constraint satisfied for isolation routing.{firestop_note}",
                 violations=[],
             )
@@ -129,7 +134,12 @@ class EliteGlobalRouter:
                 inputs={"panel": panel, "terminal_node": terminal_device},
                 rules_applied=[rule_applied],
                 algorithm={"name": "astar_matrix_masking", "version": "v13_unified"},
-                confidence=ConfidenceScore(1.0, 1.0, 1.0, ConfidenceLevel.REFUSE),
+                confidence=ConfidenceScore(
+                    level=ConfidenceLevel.LOW,
+                    value=0.0,
+                    reason="Class A routing failed",
+                    standard_reference="REFUSE",
+                ),
                 selected_because="Return path blocked by separation constraint",
                 violations=[violation],
             )

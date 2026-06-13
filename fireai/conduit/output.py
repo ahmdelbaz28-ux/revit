@@ -27,7 +27,10 @@ import math
 from typing import Any, Dict, List
 
 from fireai.conduit.types import (
-    Point3D, ConduitRun, ConduitSegment, ConduitType, FittingType, PlacedFitting,
+    ConduitRun,
+    ConduitType,
+    FittingType,
+    Point3D,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -117,17 +117,20 @@ class _WireGaugeInstance:
 class _WireGaugeMeta(type):
     """Metaclass enabling iteration over WireGauge class attributes."""
 
+    _ALL_GAUGES: Tuple[_WireGaugeInstance, ...]
+    VALID_GAUGES: Tuple[str, ...]
+
     def __iter__(cls):
-        return iter(cls._ALL_GAUGES)
+        return iter(cls._ALL_GAUGES)  # type: ignore[attr-defined]
 
     def __len__(cls):
-        return len(cls._ALL_GAUGES)
+        return len(cls._ALL_GAUGES)  # type: ignore[attr-defined]
 
     def __contains__(cls, item):
         if isinstance(item, _WireGaugeInstance):
-            return item in cls._ALL_GAUGES
+            return item in cls._ALL_GAUGES  # type: ignore[attr-defined]
         if isinstance(item, str):
-            return item in cls.VALID_GAUGES
+            return item in cls.VALID_GAUGES  # type: ignore[attr-defined]
         return False
 
 
@@ -194,6 +197,8 @@ class ObstacleType(Enum):
     SHAFT = "SHAFT"
     ELECTRICAL = "ELECTRICAL"
     HVAC = "HVAC"
+    STRUCTURAL = "STRUCTURAL"
+    ARCHITECTURAL = "ARCHITECTURAL"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -219,8 +224,8 @@ class RoutingObstacle3D:
         fire_rating_hours: Fire resistance rating in hours.
     """
 
-    obstacle_id: str
-    obstacle_type: ObstacleType
+    obstacle_id: str = ""
+    obstacle_type: ObstacleType = ObstacleType.STRUCTURAL
     x1: float = 0.0
     y1: float = 0.0
     z1: float = 0.0
@@ -230,6 +235,13 @@ class RoutingObstacle3D:
     requires_firestop: bool = False
     is_rated: bool = False
     fire_rating_hours: float = 0.0
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    width: float = 1.0
+    height: float = 1.0
+    depth: float = 1.0
+    clearance_m: float = 0.0
 
     def contains_point(self, x: float, y: float, z: float) -> bool:
         """Check if a point is inside or on the boundary of this obstacle."""
@@ -749,7 +761,13 @@ class CableRoutingEngine:
 
         # Build a simple namespace for the result
         class _RouteInternal:
-            pass
+            is_compliant: bool
+            total_voltage_drop_v: float
+            total_voltage_drop_pct: float
+            end_of_line_voltage_v: float
+            segments: list
+            warnings: list
+            violations: list
 
         result = _RouteInternal()
         result.is_compliant = is_compliant

@@ -204,7 +204,7 @@ def calculate_battery_for_panels(
         ``is_adequate``, ``cost_usd``, ``per_panel_ah``.
     """
     # Per-panel required capacity
-    per_panel_ah = required_battery_capacity_ah(
+    per_panel_ah = required_battery_capacity_ah(  # type: ignore[call-arg]
         standby_current_ma=spec.standby_current_ma,
         alarm_current_ma=spec.alarm_current_ma,
         standby_hours=spec.standby_hours,
@@ -347,7 +347,7 @@ def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
     total_isolators_needed = 0
 
     for loop in loops:
-        loop_id = loop.get("loop_id", "unknown")
+        loop.get("loop_id", "unknown")
         devices = loop.get("devices", [])
         max_between = loop.get("max_devices_between_isolators", 32)
 
@@ -669,7 +669,9 @@ def generate_full_boq(
                 room_side = math.sqrt(max(area, 1.0))
 
                 try:
-                    from fireai.core.acoustic_calculator import calculate_min_speakers_for_room
+                    from fireai.core.acoustic_calculator import (
+                        calculate_min_speakers_for_room,
+                    )
 
                     speaker_result = calculate_min_speakers_for_room(
                         room_length_m=room_side,

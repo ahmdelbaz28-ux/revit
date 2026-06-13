@@ -143,19 +143,19 @@ class ParameterOptimizer:
                     if not lay.proof_valid or lay.wall_violations > 0:
                         all_valid = False
                     per_room.append(
-                        dict(
-                            room=room.name,
-                            count=lay.count,
-                            coverage=lay.coverage_pct,
-                            proof_valid=lay.proof_valid,
-                            wall_violations=lay.wall_violations,
-                            method=lay.method,
-                            ms=ms,
-                        )
+                        {
+                            "room": room.name,
+                            "count": lay.count,
+                            "coverage": lay.coverage_pct,
+                            "proof_valid": lay.proof_valid,
+                            "wall_violations": lay.wall_violations,
+                            "method": lay.method,
+                            "ms": ms,
+                        }
                     )
                 except Exception as exc:
                     all_valid = False
-                    per_room.append(dict(room=room.name, error=str(exc)))
+                    per_room.append({"room": room.name, "error": str(exc)})
 
             _dm.VERIFY_STEP = old_step
 

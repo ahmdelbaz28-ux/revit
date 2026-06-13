@@ -90,7 +90,11 @@ def __getattr__(name):
         # V17 Critical Trilogy — import from v17_core package
         _V17_NAMES = {"AcousticSPLCalculator", "StrictBatterySizer", "TenabilityEvaluator"}
         if name in _V17_NAMES:
-            from fireai.v17_core import AcousticSPLCalculator, StrictBatterySizer, TenabilityEvaluator
+            from fireai.v17_core import (
+                AcousticSPLCalculator,
+                StrictBatterySizer,
+                TenabilityEvaluator,
+            )
 
             return {
                 "AcousticSPLCalculator": AcousticSPLCalculator,
@@ -102,7 +106,7 @@ def __getattr__(name):
 
             return EnterpriseOrchestrator
 
-        from fireai.core import __dict__ as core_dict
+        from fireai.core import __dict__ as core_dict  # type: ignore[attr-defined]
 
         if name in core_dict:
             return core_dict[name]

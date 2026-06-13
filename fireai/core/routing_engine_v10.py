@@ -47,7 +47,7 @@ import logging
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 
@@ -318,7 +318,6 @@ class _ObstacleIndex:
             # Map STRtree index back to original obstacle index
             # (valid_polys may be shorter than self._polys if any are None)
             self._valid_to_original: Dict[int, int] = {}
-            orig_idx = 0
             valid_idx = 0
             for i, poly in enumerate(self._polys):
                 if poly is not None:
@@ -1053,7 +1052,7 @@ class RoutingEngineV10:
 # ════════════════════════════════════════════════════════════════════════════
 
 # Allow existing code that imports EngineeringRouter to use the new engine
-EngineeringRouter = RoutingEngineV10
+EngineeringRouter = RoutingEngineV10  # type: ignore[misc]
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1192,7 +1191,7 @@ def _self_test():
 
     # ── 7. NaN obstacle rejection ──
     try:
-        bad_obs = RoutingObstacle(obstacle_type="wall", x=float("nan"), y=0.0, width=1.0, height=1.0)
+        RoutingObstacle(obstacle_type="wall", x=float("nan"), y=0.0, width=1.0, height=1.0)
         check("NaN obstacle rejection", False, "Should have raised ValueError")
     except ValueError:
         check("NaN obstacle rejection", True)
@@ -1210,8 +1209,8 @@ def _self_test():
 
     # ── 10. Batch routing ──
     router6 = RoutingEngineV10()
-    segments = [((0, 0), (10, 10)), ((5, 5), (15, 15))]
-    batch = router6.route_batch(segments)
+    segments = [((0, 0), (10, 10)), ((5, 5), (15, 15))]  # type: ignore[arg-type]
+    batch = router6.route_batch(segments)  # type: ignore[arg-type]
     check("Batch routing", len(batch) == 2, f"results={len(batch)}")
 
     # ── 11. Version in result ──
@@ -1419,7 +1418,7 @@ class EliteClassARouter:
             return {}
 
         # 1. GENERATE OUTGOING LEG — Daisy-chain through ALL devices
-        forward_path = []
+        forward_path: list[Any] = []  # type: ignore[name-defined]
         waypoints = [facp_node] + list(loop_devices)
 
         for i in range(len(waypoints) - 1):
@@ -1487,7 +1486,7 @@ class EliteClassARouter:
 
     def _calculate_firestops(self, path: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
         """Find fire-rated wall penetration points along a cable path."""
-        firestops = []
+        firestops: list[Tuple[float, float]] = []
         if not SHAPELY_AVAILABLE or len(path) < 2:
             return firestops
 
@@ -1522,7 +1521,7 @@ class EliteClassARouter:
         g_c = max(0, min(self.cols - 1, g_c))
 
         open_q = [(0.0, (s_r, s_c))]
-        came_from = {}
+        came_from: dict[Tuple[int, int], Tuple[int, int]] = {}
         g_score = {(s_r, s_c): 0.0}
 
         dirs = [(1, 0), (-1, 0), (0, 1), (0, -1)]
@@ -1556,4 +1555,4 @@ class EliteClassARouter:
 # ── Backward-Compatible Aliases ──────────────────────────────────────────
 # V55 introduced RoutingEngineV10 as the canonical name.
 # The old engineering_router.py used "EngineeringRouter" as the main class.
-EngineeringRouter = RoutingEngineV10
+EngineeringRouter = RoutingEngineV10  # type: ignore[misc]

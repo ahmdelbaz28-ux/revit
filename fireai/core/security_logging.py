@@ -186,7 +186,7 @@ def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
     _refresh_env_cache()
 
     # Mask values from sensitive environment variables (using cache)
-    for var_name, value in _ENV_VALUE_CACHE.items():
+    for _var_name, value in _ENV_VALUE_CACHE.items():
         if value in result:
             result = result.replace(value, mask)
 

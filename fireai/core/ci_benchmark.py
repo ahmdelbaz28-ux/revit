@@ -121,7 +121,7 @@ class CIBenchmarkSuite:
         try:
             from core.models import Geometry, Point3D
 
-            g = Geometry(points=[Point3D(0, 0), Point3D(10, 0), Point3D(10, 8), Point3D(0, 8)])
+            g = Geometry(points=[Point3D(0, 0), Point3D(10, 0), Point3D(10, 8), Point3D(0, 8)])  # type: ignore[arg-type]
             ops, std = _run_timed(g.calculate_area, n=500_000)
             return BenchResult("geometry_area_4pt", ops, 1e6 / ops, 500_000, std)
         except ImportError:
@@ -132,7 +132,7 @@ class CIBenchmarkSuite:
         try:
             from core.models import Geometry, Point3D
 
-            g = Geometry(points=[Point3D(0, 0), Point3D(10, 0), Point3D(10, 8), Point3D(0, 8)], polyline_closed=True)
+            g = Geometry(points=[Point3D(0, 0), Point3D(10, 0), Point3D(10, 8), Point3D(0, 8)], polyline_closed=True)  # type: ignore[arg-type]
             ops, std = _run_timed(g.calculate_perimeter, n=500_000)
             return BenchResult("geometry_perimeter_4pt", ops, 1e6 / ops, 500_000, std)
         except ImportError:
@@ -176,13 +176,13 @@ class CIBenchmarkSuite:
                 def to_dict(self):
                     return {"element_id": self.element_id}
 
-            db = UniversalDataModel(db_path=":memory:")
+            UniversalDataModel(db_path=":memory:")
             els = [_El() for _ in range(1000)]
             rounds = []
             for _ in range(5):
                 db2 = UniversalDataModel(db_path=":memory:")
                 t = time.perf_counter()
-                db2.add_elements_batch(els)
+                db2.add_elements_batch(els)  # type: ignore[arg-type]
                 rounds.append(time.perf_counter() - t)
             avg = sum(rounds) / len(rounds)
             elem_per_s = 1000.0 / avg
@@ -388,7 +388,7 @@ def main() -> int:
 
     print(f"\nFireAI CI Benchmark Suite - threshold: {args.threshold}%")
     print("=" * 80)
-    results = suite.run_all()
+    suite.run_all()
 
     if args.baseline == "save":
         suite.save_baseline(args.baseline_file)

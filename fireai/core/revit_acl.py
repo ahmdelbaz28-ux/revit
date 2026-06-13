@@ -362,7 +362,7 @@ class RevitObstructionDTO(BaseModel):
 
             return Obstruction(
                 obstruction_id=self.obstruction_id or self.element_id,
-                vertices=verts,
+                vertices=verts,  # type: ignore[arg-type]
                 spectral_transparency={
                     WavelengthBand.UV: float(self.transparency_uv or 0.0),
                     WavelengthBand.VIS: float(self.transparency_vis or 0.0),

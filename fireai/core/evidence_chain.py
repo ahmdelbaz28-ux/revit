@@ -298,7 +298,7 @@ class EvidenceChain:
 
         # 5. HMAC signature
         if not hmac.compare_digest(signature, self._sign(envelope_hash)):
-            raise EvidenceChainError(f"HMAC signature invalid — envelope may have been forged")
+            raise EvidenceChainError("HMAC signature invalid — envelope may have been forged")
 
         return True
 

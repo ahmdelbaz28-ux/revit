@@ -271,7 +271,7 @@ class ConstraintEngine:
         Returns:
             ConstraintResult with pass/fail status.
         """
-        max_length = _NAC_MAX_LENGTHS_M.get(wire_gauge, 229.0)
+        max_length = _NAC_MAX_LENGTHS_M.get(wire_gauge, 229.0)  # type: ignore[call-overload]
 
         is_satisfied = cable_length_m <= max_length
 
@@ -555,7 +555,7 @@ class ConstraintEngine:
             limit_value=self._min_conduit_inches,
             unit="inches",
             severity="HIGH",
-            remediation=(f'Use minimum ¾" red painted EMT per project specification') if not is_satisfied else "",
+            remediation=('Use minimum ¾" red painted EMT per project specification') if not is_satisfied else "",
             formula=(
                 f'Ø_conduit = {conduit_inches}" {"≥" if is_satisfied else "<"} Ø_min = {self._min_conduit_inches}"'
             ),
@@ -1136,8 +1136,8 @@ class ConstraintEngine:
         Returns:
             Movement cost in equivalent meters.
         """
-        dx = to_cell[0] - from_cell[0]
-        dy = to_cell[1] - from_cell[1]
+        to_cell[0] - from_cell[0]
+        to_cell[1] - from_cell[1]
         dz = to_cell[2] - from_cell[2]
 
         # Base cost: one cell length

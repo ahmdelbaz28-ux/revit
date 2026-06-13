@@ -456,7 +456,7 @@ def calculate_voltage_drop_vdc(
     """
     i = _guard_non_negative_finite(total_current_a, "total_current_a")
     l = _guard_non_negative_finite(one_way_length_ft, "one_way_length_ft")
-    v = _guard_positive_finite(nominal_voltage_vdc, "nominal_voltage_vdc")
+    _guard_positive_finite(nominal_voltage_vdc, "nominal_voltage_vdc")
 
     if awg not in WIRE_RESISTANCE_OHM_PER_FT:
         raise ValueError(
@@ -936,7 +936,6 @@ class NACBoosterAllocator:
         cumulative_load: float = 0.0
         active_booster_id: int = 1
         current_load: float = 0.0
-        nac_circuit_results: List[NACCircuitResult] = []
 
         sorted_floors = sorted(
             floor_data,

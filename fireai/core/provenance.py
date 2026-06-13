@@ -62,12 +62,20 @@ class ConfidenceScore:
         value: Numeric confidence (0.0 to 1.0).
         reason: Human-readable justification.
         standard_reference: Applicable standard (e.g., 'NFPA 72 §17.6.3.1.1').
+        input_quality_score: Quality score for input data (0.0 to 1.0).
+        rule_coverage: Fraction of applicable rules that were verified (0.0 to 1.0).
+        geometry_certainty: Certainty of geometric inputs (0.0 to 1.0).
+        overall: Overall confidence level (alias for level).
     """
 
     level: ConfidenceLevel = ConfidenceLevel.MEDIUM
     value: float = 0.5
     reason: str = ""
     standard_reference: str = ""
+    input_quality_score: float = 0.5
+    rule_coverage: float = 0.5
+    geometry_certainty: float = 0.5
+    overall: ConfidenceLevel = ConfidenceLevel.MEDIUM
 
     def __post_init__(self):
         if not (0.0 <= self.value <= 1.0):
@@ -84,6 +92,10 @@ class RuleApplied:
         standard: Source standard (e.g., 'NFPA 72-2022').
         section: Section number (e.g., '§17.6.3.1.1').
         result: Outcome of applying this rule ('PASS', 'FAIL', 'WARNING', 'N/A').
+        value_used: The numeric or string value used when applying this rule.
+        unit: Unit of measurement for value_used (e.g., 'm', 'ft', 'VDC').
+        constant_id: Identifier for the engineering constant referenced.
+        citation: Full citation string for the rule source.
     """
 
     rule_id: str = ""
@@ -91,6 +103,10 @@ class RuleApplied:
     standard: str = ""
     section: str = ""
     result: str = ""
+    value_used: Optional[Any] = None
+    unit: str = ""
+    constant_id: str = ""
+    citation: str = ""
 
     def __post_init__(self):
         if self.result not in ("PASS", "FAIL", "WARNING", "N/A", ""):
@@ -107,6 +123,8 @@ class Violation:
         description: Human-readable violation description.
         nfpa_section: Applicable NFPA section.
         remediation: Suggested fix.
+        citation: Full citation string for the violated rule.
+        location: Location identifier where the violation was found.
     """
 
     rule_id: str = ""
@@ -114,6 +132,8 @@ class Violation:
     description: str = ""
     nfpa_section: str = ""
     remediation: str = ""
+    citation: str = ""
+    location: str = ""
 
     def __post_init__(self):
         if self.severity not in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
@@ -142,6 +162,14 @@ class DecisionProvenance:
         timestamp: Unix timestamp of decision.
         parent_id: ID of parent decision (for hierarchical decisions).
         computation_hash: SHA-256 hash for tamper detection.
+        value: The decision value or result payload.
+        inputs: Input parameters that influenced this decision.
+        algorithm: Algorithm metadata (name, version, corrections).
+        feasible_alternatives_considered: Number of alternatives evaluated.
+        selected_because: Rationale for why this decision was selected.
+        alternatives_top_3: Top 3 alternative decisions considered.
+        warnings: Warnings generated during decision-making.
+        violations_detected: Violations detected during decision-making.
     """
 
     decision_id: str = ""
@@ -154,6 +182,30 @@ class DecisionProvenance:
     timestamp: float = field(default_factory=time.time)
     parent_id: Optional[str] = None
     computation_hash: str = ""
+    value: Any = None
+    inputs: Dict[str, Any] = field(default_factory=dict)
+    algorithm: Dict[str, Any] = field(default_factory=dict)
+    feasible_alternatives_considered: int = 0
+    selected_because: str = ""
+    alternatives_top_3: List[Any] = field(default_factory=list)
+    warnings: List[Any] = field(default_factory=list)
+    violations_detected: Optional[List[Any]] = None
+
+    @classmethod
+    def new(cls, **kwargs: Any) -> "DecisionProvenance":
+        """Factory method to create a DecisionProvenance with auto-generated ID.
+
+        Accepts the same keyword arguments as the constructor, plus
+        automatically generates decision_id and timestamp if not provided.
+        """
+        if "decision_id" not in kwargs:
+            kwargs["decision_id"] = (
+                f"dp-{hashlib.md5(str(kwargs).encode(), usedforsecurity=False).hexdigest()[:12]}"
+            )
+        if "timestamp" not in kwargs:
+            kwargs["timestamp"] = time.time()
+        obj = cls(**kwargs)
+        return obj
 
     def compute_hash(self) -> str:
         """Compute SHA-256 hash of the decision for tamper detection."""

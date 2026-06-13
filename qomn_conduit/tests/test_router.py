@@ -10,11 +10,11 @@ Reference: NEC 300.4 (physical protection), 358.26 (bend limit).
 import pytest
 
 from qomn_conduit import (
-    ConduitType, TradeSize, Point3D, orthogonal_astar,
-    BoundingBox, ConduitRouter, RoutePath,
+    BoundingBox,
+    Point3D,
+    orthogonal_astar,
 )
-from qomn_conduit.errors import RoutingError, PhysicsError
-
+from qomn_conduit.errors import RoutingError
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 1: Determinism — same input produces identical output

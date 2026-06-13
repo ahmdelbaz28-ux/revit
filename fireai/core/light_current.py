@@ -27,7 +27,7 @@ import hashlib
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Tuple
+from typing import Any, Tuple
 
 # ─── Contract Violation (reuse from contracts_validation if available) ────────
 
@@ -70,7 +70,7 @@ class EgressType(Enum):
 # ─── QOMN-FIRE Layer 1 Reference Constants ──────────────────────────────────
 
 # TIA-568 Cable Specifications
-_CABLE_SPECS = {
+_CABLE_SPECS: dict[CableType, dict[str, Any]] = {
     CableType.CAT6: {
         "max_horizontal_m": 90.0,
         "max_total_m": 100.0,
@@ -97,7 +97,7 @@ _CABLE_SPECS = {
 _MIN_POWER_SEPARATION_MM = 300.0  # TIA-569-E
 
 # TIA-598 Fiber Specifications
-_FIBER_SPECS = {
+_FIBER_SPECS: dict[FiberType, dict[str, Any]] = {
     FiberType.OS1: {
         "max_length_m": 10000.0,
         "max_attenuation_db_km": 1.0,
@@ -441,7 +441,6 @@ def calculate_cctv_coverage(
     # Using tangent for half-angle: coverage_width = 2 × height × tan(angle/2)
     half_angle_rad = math.radians(coverage_angle / 2.0)
     coverage_width = 2.0 * height_m * math.tan(half_angle_rad)
-    coverage_length = coverage_width  # Assume symmetric FOV
 
     # Account for overlap: effective coverage = coverage × (1 - overlap/100)
     effective_coverage = coverage_width * (1.0 - min_overlap_pct / 100.0)
@@ -535,24 +534,24 @@ def validate_access_control(
     # Fail-secure on egress doors violates NFPA 101
     if egress_type == "fail_secure":
         violations.append(
-            f"Fail-secure locks on egress doors violate NFPA 101 §7.2.1.6 — "
-            f"doors must unlock upon power failure for free egress"
+            "Fail-secure locks on egress doors violate NFPA 101 §7.2.1.6 — "
+            "doors must unlock upon power failure for free egress"
         )
         is_compliant = False
 
     # Door position switch check
     if not has_door_switch:
         violations.append(
-            f"Door position switch missing — NFPA 72 requires door monitoring "
-            f"for access-controlled egress doors per §21.9.2"
+            "Door position switch missing — NFPA 72 requires door monitoring "
+            "for access-controlled egress doors per §21.9.2"
         )
         is_compliant = False
 
     # Request-to-exit check
     if not has_rte:
         violations.append(
-            f"Request-to-exit missing — NFPA 101 §7.2.1.6 requires "
-            f"a means to exit without credentials (motion sensor or push button)"
+            "Request-to-exit missing — NFPA 101 §7.2.1.6 requires "
+            "a means to exit without credentials (motion sensor or push button)"
         )
         is_compliant = False
 

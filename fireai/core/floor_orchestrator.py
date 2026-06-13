@@ -9,12 +9,17 @@ CRITICAL SAFETY:
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple, cast
 
 from .audit_trail import AuditTrail
 from .nfpa72_coverage import verify_full_coverage
 from .nfpa72_models import NFPAComplianceError, RoomSpec
-from .spatial_engine.density_optimizer import DETECTOR_RADIUS, MAX_SPACING_M, DensityOptimizer, Room
+from .spatial_engine.density_optimizer import (
+    DETECTOR_RADIUS,
+    MAX_SPACING_M,
+    DensityOptimizer,
+    Room,
+)
 
 
 # CRITICAL FIX: InvalidInputError was caught but never imported or defined.
@@ -283,12 +288,14 @@ class FloorOrchestrator:
             try:
                 from .nfpa72_calculations import calculate_coverage_radius_from_height
             except ImportError:
-                from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+                from fireai.core.nfpa72_calculations import (
+                    calculate_coverage_radius_from_height,
+                )
             det_type = (
                 spec.detector_type.value if hasattr(spec.detector_type, "value") else str(spec.detector_type or "SMOKE")
             )
             try:
-                cov_spec = calculate_coverage_radius_from_height(ceiling_h, det_type)
+                cov_spec = calculate_coverage_radius_from_height(ceiling_h, cast(Literal["smoke", "heat"], det_type))
                 height_radius = cov_spec.radius
                 height_spacing = cov_spec.spacing_max
             except Exception as e:

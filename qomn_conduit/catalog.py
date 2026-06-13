@@ -55,7 +55,6 @@ from typing import Dict, Tuple
 from qomn_conduit.errors import CatalogError, PhysicsError
 from qomn_conduit.types import ConduitType, FittingType, Result, TradeSize
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Fitting — immutable catalog entry
 # ─────────────────────────────────────────────────────────────────────────────

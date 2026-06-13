@@ -52,10 +52,10 @@ try:
     )
 except ImportError:
     DecisionProvenance = None  # type: ignore[misc,assignment]
-    RuleApplied = None
-    Violation = None
-    ConfidenceScore = None
-    ConfidenceLevel = None
+    RuleApplied = None  # type: ignore[misc,assignment]
+    Violation = None  # type: ignore[misc,assignment]
+    ConfidenceScore = None  # type: ignore[misc,assignment]
+    ConfidenceLevel = None  # type: ignore[misc,assignment]
 
 # Import the physics-correct implementation from fireai.core
 from fireai.core.acoustic_calculator import (

@@ -307,7 +307,7 @@ class FlameDetectorAOCRayTrace:
                 ys = [p[1] for p in pts]
                 zs = [p[2] for p in pts]
                 bbox = (min(xs), min(ys), min(zs), max(xs), max(ys), max(zs))
-                self._spatial_index.insert(i, bbox)
+                self._spatial_index.insert(i, bbox)  # type: ignore[attr-defined]
             self._rtree_available = True
         except ImportError:
             self._rtree_available = False
@@ -550,7 +550,7 @@ class FlameDetectorAOCRayTrace:
             # V21.2: Spectral transmittance per band (solid + volumetric)
             best_transmittance = 0.0
             for band in detector.spectral_bands:
-                t = self._ray_spectral_transmittance_v21(src, tgt, obstructions, volumetric_media, band)
+                t = self._ray_spectral_transmittance_v21(src, tgt, obstructions, volumetric_media, band)  # type: ignore[arg-type]
                 best_transmittance = max(best_transmittance, t)
 
             # Point is covered if best transmittance >= threshold
@@ -782,7 +782,7 @@ class FlameDetectorAOCRayTrace:
 
         # Fix #20: Build per-detector covered point sets
         targets = self._generate_grid(floor_bounds)
-        target_set = set(targets)
+        set(targets)
 
         detector_covered_sets: List[set] = []
         for res in individual:

@@ -229,7 +229,7 @@ def get_temperature_derating_factor(temperature_c: float) -> float:
 
     # Exact match
     if temperature_c in TEMPERATURE_DERATING:
-        return min(TEMPERATURE_DERATING[temperature_c], 1.00)
+        return min(TEMPERATURE_DERATING[temperature_c], 1.00)  # type: ignore[index]
 
     # Linear interpolation between nearest data points
     # Find the two bracketing temperatures

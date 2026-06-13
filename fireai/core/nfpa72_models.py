@@ -38,10 +38,12 @@ logger = logging.getLogger(__name__)
 # with the canonical value of 18.288m (60ft) in fireai/constants/nfpa72.py.
 # This caused valid smoke detector placements at 15.24m-18.288m to be rejected.
 from fireai.constants.nfpa72 import (
-    SMOKE_MAX_CEILING_HEIGHT_M as _SMOKE_MAX_CEILING_HEIGHT_M,
-    HEAT_MAX_CEILING_HEIGHT_M as _HEAT_MAX_CEILING_HEIGHT_M,
     CEILING_HEIGHT_MIN_M as _NFPA_HEIGHT_MIN_M,
 )
+from fireai.constants.nfpa72 import (
+    SMOKE_MAX_CEILING_HEIGHT_M as _SMOKE_MAX_CEILING_HEIGHT_M,
+)
+
 _NFPA_HEIGHT_MAX_M = _SMOKE_MAX_CEILING_HEIGHT_M  # Default to smoke detector limits (18.288m)
 MIN_WALL_DISTANCE_M = 0.10  # 4 inches per NFPA 72 §17.6.3.1.1
 MAX_DIMENSION_M = 1000.0  # Max room dimension in meters
@@ -215,10 +217,10 @@ class CeilingSpec:
                 run = self.slope_run_m
             else:
                 run = 3.0  # Fallback — flag for manual FPE review
-                import logging; logging.getLogger(__name__).warning(
-                    f"CeilingSpec slope_run_m not provided — using default 3.0m. "
-                    f"Actual roof run may differ, affecting slope classification. "
-                    f"Provide slope_run_m for accurate NFPA 72 §17.6.3.1.2 compliance."
+                logger.warning(
+                    "CeilingSpec slope_run_m not provided — using default 3.0m. "
+                    "Actual roof run may differ, affecting slope classification. "
+                    "Provide slope_run_m for accurate NFPA 72 §17.6.3.1.2 compliance."
                 )
             rise = self.height_at_high_point_m - self.height_at_low_point_m
             self.slope_degrees = math.degrees(math.atan(rise / run))
@@ -271,14 +273,14 @@ class CeilingSpec:
         if height_at_high_point_m is not None:
             kwargs["height_at_high_point_m"] = height_at_high_point_m
         if ceiling_type is not None:
-            kwargs["ceiling_type"] = ceiling_type
+            kwargs["ceiling_type"] = ceiling_type  # type: ignore[assignment]
         # Pass beam parameters (V12 compatibility)
         if beam_depth_m is not None and beam_depth_m > 0:
             kwargs["beam_depth_m"] = beam_depth_m
         if beam_spacing_m is not None and beam_spacing_m > 0:
             kwargs["beam_spacing_m"] = beam_spacing_m
 
-        return cls(**kwargs)
+        return cls(**kwargs)  # type: ignore[arg-type]
 
     @property
     def height_m(self) -> float:
@@ -940,7 +942,7 @@ def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: boo
         "conservative": flag is not None,
     }
     if _return_details:
-        return radius, details
+        return radius, details  # type: ignore[return-value]
     return radius
 
 
@@ -992,7 +994,7 @@ def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_detail
         flag = "HIGH_CEILING"
     try:
         max_cov = _get_max_internal(safe_h)
-    except Exception as e:
+    except Exception:
         max_cov = _get_max_internal(3.0)
         flag = "FALLBACK"
     details = {"input_height": actual, "effective_height": safe_h, "max_coverage": max_cov, "flag": flag}

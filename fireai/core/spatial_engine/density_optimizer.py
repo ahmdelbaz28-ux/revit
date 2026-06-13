@@ -342,18 +342,18 @@ class DensityOptimizer:
 
         # Second pass: if none with 99.9%+, pick highest coverage NFPA-compliant
         if best is None:
-            best_cov = -1
+            best_cov = -1.0
             for lay in cands:
                 if lay.nfpa_valid and lay.coverage_pct > best_cov:
-                    best_cov = lay.coverage_pct
+                    best_cov = float(lay.coverage_pct)
                     best = lay
 
         # Third pass: if none NFPA-compliant, pick highest coverage
         if best is None:
-            best_cov = -1
+            best_cov = -1.0
             for lay in cands:
                 if lay.coverage_pct > best_cov:
-                    best_cov = lay.coverage_pct
+                    best_cov = float(lay.coverage_pct)
                     best = lay
 
         # Fallback to _fallback only if no candidates
@@ -369,7 +369,7 @@ class DensityOptimizer:
         # ── Convergence audit (PDF Phase 3 evidence) ──
         elapsed = time.monotonic() - self._start_time if self._start_time else 0
         if not hasattr(best, "convergence_info"):
-            best.convergence_info = {
+            best.convergence_info = {  # type: ignore[attr-defined]
                 "iterations": self._iteration_count,
                 "elapsed_seconds": round(elapsed, 3),
                 "converged": True,
@@ -675,7 +675,7 @@ class DensityOptimizer:
         n_cells_y = max(1, int(math.ceil(L / cell_size)))
 
         # Grid point generation and spatial index
-        grid_points = []
+        grid_points: list[tuple[float, float]] = []
         cell_to_points: dict[tuple[int, int], list[int]] = {}
         x = 0.0
         while True:
@@ -725,7 +725,7 @@ class DensityOptimizer:
         # Try to remove each detector (greedy, largest index first)
         # PDF Phase 3 FIX: Added iteration limit to prevent infinite loops.
         # The while-changed loop must have a safety cap.
-        removed = set()
+        removed: set[int] = set()
         changed = True
         pass_count = 0
         while changed and pass_count < REMOVE_REDUNDANT_MAX_PASSES:
@@ -815,7 +815,7 @@ class DensityOptimizer:
             return
 
         dets_arr = np.array(dets, dtype=np.float64)
-        R2 = self.R**2 + 1e-9
+        self.R**2 + 1e-9
         step = VERIFY_STEP
         coarse_step = COARSE_STEP
 

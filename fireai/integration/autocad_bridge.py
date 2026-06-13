@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import math
 import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -603,13 +602,13 @@ class AutoCADBridge:
 
         try:
             doc = ezdxf.readfile(
-                io.StringIO(content)
+                io.StringIO(content)  # type: ignore[arg-type]
             )
         except Exception:
             doc = ezdxf.new("R2010")
             try:
                 doc = ezdxf.readfile(
-                    io.StringIO(content)
+                    io.StringIO(content)  # type: ignore[arg-type]
                 )
             except Exception as exc:
                 logger.error(

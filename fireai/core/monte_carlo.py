@@ -87,7 +87,7 @@ def _run_resilience_check_fast(
 
     # Pre-compute coverage circles for all detectors
     circles = np.array([Point(x, y).buffer(radius, quad_segs=12) for x, y in positions])
-    full_coverage = unary_union(circles)
+    unary_union(circles)
     total_area = poly.area
 
     np.random.seed(seed)

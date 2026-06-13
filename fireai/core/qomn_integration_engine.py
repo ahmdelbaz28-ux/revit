@@ -23,14 +23,14 @@ Architecture:
 
 from __future__ import annotations
 
-import math
-import json
-import heapq
 import hashlib
+import heapq
+import json
 import logging
+import math
+from dataclasses import dataclass
 from enum import Enum
-from typing import List, Tuple, Dict, Any, Optional
-from dataclasses import dataclass, field
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +206,7 @@ class CableRouter:
 
         # Tie-breaker counter to maintain absolute heap priority determinism
         heap_counter = 0
-        open_set = []
+        open_set: list[tuple[float, int, tuple[int, int, int]]] = []
         heapq.heappush(open_set, (0.0, heap_counter, start_grid))
 
         came_from: Dict[Tuple[int, int, int], Tuple[int, int, int]] = {}
@@ -592,7 +592,7 @@ class CableHatchIntegrator:
         Generates canonical, beautifully structured Revit/IFC integration JSON.
         Completely deterministic sort ordering prevents dynamic git merge conflicts.
         """
-        revit_output = {
+        revit_output: dict[str, Any] = {
             "SchemaVersion": "1.0",
             "Metadata": {
                 "Project": "QOMN INTEGRATION SYSTEM",

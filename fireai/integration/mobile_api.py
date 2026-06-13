@@ -13,7 +13,6 @@ import hashlib
 import logging
 import secrets
 import time
-import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -262,10 +261,7 @@ class MobileAPI:
     # ── Projects ────────────────────────────────────────────────────────
 
     def get_projects(self, user_id: str) -> List[ProjectSummary]:
-        return [
-            p
-            for p in self._projects.values()
-        ]
+        return list(self._projects.values())
 
     def add_project(self, project: ProjectSummary) -> None:
         self._projects[project.project_id] = project
@@ -349,9 +345,7 @@ class MobileAPI:
     ) -> SyncPackage:
         try:
             user_tasks = self.get_field_tasks(user_id)
-            updated_tasks = [
-                t for t in user_tasks
-            ]
+            updated_tasks = list(user_tasks)
 
             projects = list(self._projects.values())
 
@@ -360,9 +354,7 @@ class MobileAPI:
                 generated_at=datetime.now(timezone.utc),
                 projects=projects,
                 tasks=updated_tasks,
-                inspections=[
-                    r for r in self._reports.values()
-                ],
+                inspections=list(self._reports.values()),  # type: ignore[arg-type]
                 reference_data={
                     "task_types": [t.value for t in TaskType],
                     "task_statuses": [s.value for s in TaskStatus],

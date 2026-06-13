@@ -8,7 +8,7 @@ import os
 import secrets
 from typing import Dict, List, Optional
 
-from fastapi import WebSocket, HTTPException
+from fastapi import HTTPException, WebSocket
 from fastapi.security import APIKeyHeader
 
 logger = logging.getLogger(__name__)

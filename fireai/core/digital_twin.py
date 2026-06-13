@@ -638,7 +638,7 @@ class TwinSimulator:
         sim_dets = {did: copy.deepcopy(d) for did, d in detectors.items()}
 
         original_score = self._compute_health_score(sim_dets)
-        original_coverage = self._compute_coverage_pct(sim_dets)
+        self._compute_coverage_pct(sim_dets)
 
         # Apply the simulated change
         apply_fn(sim_dets)
@@ -693,8 +693,8 @@ class TwinSimulator:
         """Compute coverage as percentage of rooms with at least one OK detector."""
         if not dets:
             return 0.0
-        rooms = set(d.room_id for d in dets.values())
-        covered = set(d.room_id for d in dets.values() if d.status == DetectorStatus.OK)
+        rooms = {d.room_id for d in dets.values()}
+        covered = {d.room_id for d in dets.values() if d.status == DetectorStatus.OK}
         return round(len(covered) / len(rooms) * 100, 2) if rooms else 0.0
 
 
@@ -1211,7 +1211,7 @@ class DigitalTwin:
                 "",
                 {
                     "drift_count": len(drifts),
-                    "drift_types": list(set(d.drift_type.value for d in drifts)),
+                    "drift_types": list({d.drift_type.value for d in drifts}),
                     "critical": [d.drift_id for d in drifts if d.severity == "critical"],
                 },
             )
@@ -1254,7 +1254,7 @@ class DigitalTwin:
         with self._lock:
             all_rooms = set(self._room_ids)
         rooms = all_rooms
-        rooms_with_ok = set(d.room_id for d in detectors.values() if d.status == DetectorStatus.OK)
+        rooms_with_ok = {d.room_id for d in detectors.values() if d.status == DetectorStatus.OK}
         rooms_without_ok = rooms - rooms_with_ok
 
         # Coverage percentage (only rooms with at least one OK detector count)
@@ -1264,7 +1264,7 @@ class DigitalTwin:
         # V20.2 FIX: total==0 means NO protection → score=0.0, NOT 1.0
         if total == 0:
             health_score = 0.0
-            critical_issues = ["ZERO detectors in building — NO fire protection (NFPA 72 §1.2)"]
+            critical_issues: List[str] = ["ZERO detectors in building — NO fire protection (NFPA 72 §1.2)"]
         else:
             # V20.2 FIX: Exclude DECOMMISSIONED from denominator
             active_total = total - decommed
@@ -1281,7 +1281,7 @@ class DigitalTwin:
         if total == 0:
             pass  # Already set above
         else:
-            critical_issues: List[str] = []
+            critical_issues: List[str] = []  # type: ignore[no-redef]
         warnings: List[str] = []
 
         if rooms_without_ok:

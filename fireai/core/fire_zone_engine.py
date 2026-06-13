@@ -241,7 +241,7 @@ class FireZoneEngine:
 
         # Step 2: Create zones within each occupancy group
         zone_counter = 0
-        for occ_type, occ_rooms in occupancy_groups.items():
+        for _occ_type, occ_rooms in occupancy_groups.items():
             if self.constraints.prefer_adjacent and adjacency:
                 # Adjacency-aware clustering
                 clusters = self._cluster_adjacent(occ_rooms, adjacency)

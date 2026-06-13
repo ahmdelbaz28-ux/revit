@@ -32,12 +32,12 @@ NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 try:
-    from shapely.geometry import MultiPolygon, Point, Polygon
+    from shapely.geometry import Point, Polygon
     from shapely.ops import unary_union
 
     HAS_SHAPELY = True
@@ -357,7 +357,7 @@ class ExactCoverageEngine:
         )
 
     @staticmethod
-    def _fast_union(geoms: list) -> any:
+    def _fast_union(geoms: list) -> Any:
         """
         V55 B3: Union list of geometries using the fastest available method.
 

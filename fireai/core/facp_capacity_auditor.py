@@ -393,7 +393,7 @@ class FACPCapacityAuditor:
                     decision_type="capacity_audit",
                     value=status,
                     inputs={"nac_circuits": len(nac_circuits)},
-                    rules_applied=rules_applied,
+                    rules_applied=rules_applied,  # type: ignore[arg-type]
                     algorithm={"name": "facp_global_inrush"},
                     feasible_alternatives_considered=0,
                     selected_because="PSU capacity constraint",
@@ -580,7 +580,7 @@ class FACPCapacityAuditor:
                     decision_type="capacity_audit",
                     value="PASS" if all_pass else "FAIL",
                     inputs={"slc_loops": len(slc_loops)},
-                    rules_applied=[],
+                    rules_applied=[],  # type: ignore[arg-type]
                     algorithm={"name": "facp_slc_protocol"},
                     feasible_alternatives_considered=0,
                     selected_because="SLC protocol constraint",

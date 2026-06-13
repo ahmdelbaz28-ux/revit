@@ -351,11 +351,11 @@ class NetworkTopologyAuditor:
         # CRITICAL: Disconnected rings — degree-2 nodes but not fully connected
         if topology_type == "disconnected_rings":
             desc = (
-                f"Network panels each have 2 connections but the graph is "
-                f"not fully connected. The topology consists of isolated "
-                f"ring segments, which means some panels cannot reach the "
-                f"master at all. NFPA 72 §23.8 requires all panels to be "
-                f"on a single connected Class X network."
+                "Network panels each have 2 connections but the graph is "
+                "not fully connected. The topology consists of isolated "
+                "ring segments, which means some panels cannot reach the "
+                "master at all. NFPA 72 §23.8 requires all panels to be "
+                "on a single connected Class X network."
             )
             if Violation is not None:
                 violations.append(

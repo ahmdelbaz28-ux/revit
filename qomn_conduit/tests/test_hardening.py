@@ -15,16 +15,24 @@ Reference: Agent Rule 21 — Deep Meta-Criticism and Recursive Self-Repair.
 """
 
 import math
+
 import pytest
 
 from qomn_conduit import (
-    ConduitType, TradeSize, FittingType, Point3D, RoutePath,
-    calculate_fill, verify_bend_radius, place_fittings,
-    orthogonal_astar, generate_revit_conduit,
-    get_fitting, catalog_size,
-    BoundingBox, FillResult, ConduitRun,
+    BoundingBox,
+    ConduitType,
+    FillResult,
+    FittingType,
+    Point3D,
+    RoutePath,
+    TradeSize,
+    calculate_fill,
+    catalog_size,
+    generate_revit_conduit,
+    get_fitting,
+    orthogonal_astar,
+    place_fittings,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test 1: Deterministic run ID — same path → same run_id

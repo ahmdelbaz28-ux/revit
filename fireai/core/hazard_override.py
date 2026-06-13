@@ -30,10 +30,9 @@ Design Principle (from agent.md Rule 12):
 from __future__ import annotations
 
 import logging
-import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 

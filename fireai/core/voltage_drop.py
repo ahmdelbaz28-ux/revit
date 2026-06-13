@@ -31,8 +31,8 @@ Standards:
 from __future__ import annotations
 
 import math
-import warnings
 from functools import lru_cache
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # AWG Resistance Table — Ω per km at 75°C reference temperature
@@ -195,7 +195,7 @@ def calculate_voltage_drop(
     # NFPA 72-2022 §27.4.1.2: <= 10% drop for FA circuits
     compliant = v_drop_pct <= MAX_VOLTAGE_DROP_PCT
 
-    return {
+    result: dict[str, Any] = {
         "voltage_drop_v": round(v_drop, 4),
         "voltage_drop_pct": round(v_drop_pct, 3),
         "terminal_voltage_v": round(v_terminal, 4),
@@ -208,6 +208,7 @@ def calculate_voltage_drop(
         "nfpa_max_drop_pct": MAX_VOLTAGE_DROP_PCT,
         "nfpa_reference": "NFPA 72-2022 §27.4.1.2",
     }
+    return result
 
 
 def calculate_max_circuit_length(
@@ -379,7 +380,7 @@ def calculate_battery_backup(
         stacklevel=2,
     )
 
-    return {
+    result2: dict[str, Any] = {
         "required_ah": round(required_ah, 3),
         "recommended_ah": recommended_ah,
         "standby_ah": round(standby_load_a * standby_hours, 3),
@@ -392,6 +393,7 @@ def calculate_battery_backup(
         "standby_hours": standby_hours,
         "alarm_hours": alarm_hours,
     }
+    return result2
 
 
 def _next_standard_ah(required_ah: float) -> float:

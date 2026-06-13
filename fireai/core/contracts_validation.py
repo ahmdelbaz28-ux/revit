@@ -187,7 +187,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     warnings: List[str] = []
 
     # ── Step 2: Required Field Check ──────────────────────────────────────
-    for field_name, (expected_type, description) in _REQUIRED_FIELDS.items():
+    for field_name, (_expected_type, description) in _REQUIRED_FIELDS.items():
         if field_name not in payload:
             raise ContractViolation(
                 f"Missing required field '{field_name}': {description}",

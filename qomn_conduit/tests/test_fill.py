@@ -10,13 +10,16 @@ Reference: NEC 2022 Chapter 9, Table 1 and Table 4.
 import json
 import math
 import os
+
 import pytest
 
 from qomn_conduit import (
-    ConduitType, TradeSize, calculate_fill, get_internal_area, FillResult,
+    ConduitType,
+    TradeSize,
+    calculate_fill,
+    get_internal_area,
 )
-from qomn_conduit.errors import PhysicsError, CodeViolationError
-
+from qomn_conduit.errors import PhysicsError
 
 _GOLDEN_DIR = os.path.join(os.path.dirname(__file__), "golden")
 

@@ -30,12 +30,22 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from fireai.core.qomn_kernel import (
-    NFPA72_NAC_MIN_CD,
-    NFPA72_NAC_SLEEPING_MIN_CD,
-    NFPA72_NAC_WALL_HEIGHT_M,
-    NFPA72_PULL_STATION_FROM_EXIT_M,
-    NFPA72_PULL_STATION_HEIGHT_M,
+from fireai.constants.nfpa72 import (
+    NAC_MIN_CD as NFPA72_NAC_MIN_CD,
+)
+from fireai.constants.nfpa72 import (
+    NAC_SLEEPING_MIN_CD as NFPA72_NAC_SLEEPING_MIN_CD,
+)
+from fireai.constants.nfpa72 import (
+    NAC_WALL_HEIGHT_M as NFPA72_NAC_WALL_HEIGHT_M,
+)
+from fireai.constants.nfpa72 import (
+    PULL_STATION_FROM_EXIT_M as NFPA72_PULL_STATION_FROM_EXIT_M,
+)
+from fireai.constants.nfpa72 import (
+    PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,
+)
+from fireai.core.qomn_kernel import (  # type: ignore[attr-defined]
     PhysicsGuardError,
     QOMNKernel,
     compute_heat_detector_spacing,

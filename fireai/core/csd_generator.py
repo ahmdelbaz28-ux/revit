@@ -4,11 +4,11 @@ This module defines the necessary enums, dataclasses, and generator class for
 CSD representation and compliance reporting.
 """
 
-from datetime import datetime
+import uuid
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
-import uuid
 
 
 class CSDDeviceType(Enum):

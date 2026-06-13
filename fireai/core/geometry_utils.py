@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 Point = Tuple[float, float]
 Polygon = List[Point]
@@ -193,7 +193,7 @@ def points_in_polygon(
     Batch wrapper — not a NumPy-vectorised implementation.
     """
     closed = _ensure_closed(poly)
-    bounds = polygon_bounds(closed[:-1])
+    polygon_bounds(closed[:-1])
     return [point_in_polygon(p, closed, include_boundary) for p in points]
 
 

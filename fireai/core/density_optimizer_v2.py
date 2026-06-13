@@ -63,9 +63,11 @@ try:
     from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 except ImportError:
     try:
-        from core.spatial_engine.density_optimizer import DensityOptimizer
+        from core.spatial_engine.density_optimizer import (  # type: ignore[no-redef]
+            DensityOptimizer,  # type: ignore[no-redef,import-untyped]
+        )
     except ImportError:
-        DensityOptimizer = None  # type: ignore
+        DensityOptimizer = None  # type: ignore[assignment,no-redef, misc]
 
 # ── Import models with fallback ────────────────────────────────────────────
 # V112: fireai.core.models does NOT exist. RoomSpec is in nfpa72_models.
@@ -76,16 +78,16 @@ try:
     from fireai.core.nfpa72_models import RoomSpec
 except ImportError:
     try:
-        from core.nfpa72_models import RoomSpec
+        from core.nfpa72_models import RoomSpec  # type: ignore[no-redef]
     except ImportError:
-        RoomSpec = None  # type: ignore
+        RoomSpec = None  # type: ignore[assignment,no-redef, misc]
 
 # Geometry and Point3D are NOT available in the codebase.
 # These were referenced from a non-existent fireai.core.models module.
 # Setting to None with a clear warning so that any code attempting to use
 # them will fail visibly rather than silently producing wrong results.
-Geometry = None  # type: ignore — NOT IMPLEMENTED
-Point3D = None  # type: ignore — NOT IMPLEMENTED
+Geometry = None  # type: ignore[assignment,misc]  # NOT IMPLEMENTED
+Point3D = None  # type: ignore[assignment,misc]  # NOT IMPLEMENTED
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -169,7 +171,7 @@ def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
                 else:
                     geom = None
 
-                spec = RoomSpec(
+                spec = RoomSpec(  # type: ignore[call-arg]
                     room_id=room_id,
                     room_name=room_spec_dict.get("room_name", room_id),
                     room_type=room_spec_dict.get("room_type", "unknown"),
@@ -177,7 +179,7 @@ def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
                     geometry=geom,
                 )
             else:
-                spec = room_spec_dict  # Already a RoomSpec-like object
+                spec = room_spec_dict  # type: ignore[assignment]
         else:
             spec = room_spec_dict
 
@@ -185,7 +187,7 @@ def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
         optimizer = DensityOptimizer()
 
         # Run optimization
-        result = optimizer.optimize(room_spec=spec, detector_type=detector_type, **kwargs)
+        result = optimizer.optimize(room_spec=spec, detector_type=detector_type, **kwargs)  # type: ignore[call-arg]
 
         return (room_id, result)
 

@@ -22,10 +22,10 @@ from __future__ import annotations
 import json
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +266,7 @@ class StandardValidator(ABC):
         rule_id: str,
         section: str,
         description: str,
-        validator: callable,
+        validator: Callable,
         severity: SeverityLevel = SeverityLevel.HIGH,
         details: str = "",
         remediation: str = "",
@@ -779,7 +779,7 @@ def get_validator(standard: ValidationStandard) -> StandardValidator:
     cls = _VALIDATOR_MAP.get(standard)
     if cls is None:
         raise ValueError(f"No validator registered for standard: {standard}")
-    return cls()
+    return cls()  # type: ignore[call-arg]
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1034,7 +1034,7 @@ class MultiStandardValidator:
     @staticmethod
     def _build_summary(report: ValidationReport) -> str:
         lines = [
-            f"Multi-Standard Validation Summary",
+            "Multi-Standard Validation Summary",
             f"Design: {report.design_name or report.design_id}",
             f"Timestamp: {report.timestamp}",
             f"Standards validated: {len(report.standards_validated)}",
@@ -1068,12 +1068,12 @@ class MultiStandardValidator:
                 "total_failed": report.total_failed,
                 "summary": report.summary,
             },
-            "standard_reports": {},
+            "standard_reports": {},  # type: ignore[index]
             "cross_system": None,
         }
 
         for std_name, std_report in report.standard_reports.items():
-            data["standard_reports"][std_name] = {
+            data["standard_reports"][std_name] = {  # type: ignore[index]
                 "standard": std_report.standard.value,
                 "passed": std_report.passed,
                 "total_rules": std_report.total_rules,
@@ -1127,7 +1127,7 @@ class MultiStandardValidator:
     def to_markdown(self, report: ValidationReport) -> str:
         """Generate a Markdown-formatted validation report."""
         lines: List[str] = []
-        lines.append(f"# Multi-Standard Validation Report")
+        lines.append("# Multi-Standard Validation Report")
         lines.append("")
         lines.append(f"**Design:** {report.design_name or report.design_id}")
         lines.append(f"**Timestamp:** {report.timestamp}")
@@ -1147,7 +1147,7 @@ class MultiStandardValidator:
         # Per-standard reports
         lines.append("## Per-Standard Results")
         lines.append("")
-        for std_name, std_report in report.standard_reports.items():
+        for _std_name, std_report in report.standard_reports.items():
             icon = "✅" if std_report.passed else "❌"
             lines.append(f"### {icon} {std_report.standard.value}")
             lines.append("")

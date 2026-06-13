@@ -108,7 +108,7 @@ def guard_area_m2(area_m2: float) -> float:
         raise PhysicsGuardError("area_m2", v, "area must be > 0 m²", "Physics")
     if v > NFPA_MAX_M2:
         raise PhysicsGuardError(
-            "area_m2", f"{v:.2f}", f"exceeds NFPA 72 max 232.26 m² (2500 ft²) per detector", "NFPA 72-2022 §17.7.3.2.1"
+            "area_m2", f"{v:.2f}", "exceeds NFPA 72 max 232.26 m² (2500 ft²) per detector", "NFPA 72-2022 §17.7.3.2.1"
         )
     return v
 
@@ -213,29 +213,21 @@ def guard_efficiency(eff: float) -> float:
 # All NFPA 72 constants are now in fireai/constants/nfpa72.py (Single Source of Truth).
 # The old table applied heat detector reduction (1%/ft) to smoke detectors —
 # a known misapplication of NFPA 72 Table 17.6.3.5.1.
-from fireai.constants.nfpa72 import (
-    SMOKE_MAX_SPACING_M as NFPA72_SMOKE_MAX_SPACING_M,
-    HEAT_MAX_SPACING_M as NFPA72_HEAT_MAX_SPACING_M,
-    HEAT_ABSOLUTE_MAX_SPACING_M as _HEAT_ABSOLUTE_MAX_SPACING_M,
-    COVERAGE_RADIUS_FACTOR as NFPA72_COVERAGE_RADIUS_FACTOR,
-    SMOKE_MAX_CEILING_HEIGHT_M as _SMOKE_MAX_CEILING_HEIGHT_M,
-    HEAT_MAX_CEILING_HEIGHT_M as _HEAT_MAX_CEILING_HEIGHT_M,
-    CEILING_HEIGHT_HARD_LIMIT_M as _CEILING_HEIGHT_HARD_LIMIT_M,
-    SMOKE_PRACTICAL_CEILING_HEIGHT_M as _SMOKE_PRACTICAL_CEILING_HEIGHT_M,
-    WALL_MIN_DISTANCE_M as NFPA72_WALL_MIN_DISTANCE_M,
-    PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,
-    PULL_STATION_MAX_CORRIDOR_SPACING_M as NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M,
-    PULL_STATION_FROM_EXIT_M as NFPA72_PULL_STATION_FROM_EXIT_M,
-    NAC_WALL_HEIGHT_M as NFPA72_NAC_WALL_HEIGHT_M,
-    NAC_MIN_CD as NFPA72_NAC_MIN_CD,
-    NAC_SLEEPING_MIN_CD as NFPA72_NAC_SLEEPING_MIN_CD,
-    SMOKE_HEIGHT_SPACING_TABLE as NFPA72_SMOKE_SPACING_TABLE,
-    SMOKE_SPACING_FALLBACK_M as NFPA72_SMOKE_SPACING_FALLBACK_M,
-    SMOKE_TABLE_MAX_HEIGHT_M as NFPA72_SMOKE_TABLE_MAX_HEIGHT_M,
-    BATTERY_STANDBY_HOURS as NFPA72_STANDBY_HOURS,
+from fireai.constants.nfpa72 import (  # noqa: E402,I001
     BATTERY_ALARM_MINUTES as NFPA72_ALARM_MINUTES,
-    BATTERY_SAFETY_FACTOR as NFPA72_BATTERY_SAFETY_FACTOR,
     BATTERY_DISCHARGE_EFFICIENCY as NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
+    BATTERY_SAFETY_FACTOR as NFPA72_BATTERY_SAFETY_FACTOR,
+    BATTERY_STANDBY_HOURS as NFPA72_STANDBY_HOURS,
+    CEILING_HEIGHT_HARD_LIMIT_M as _CEILING_HEIGHT_HARD_LIMIT_M,
+    COVERAGE_RADIUS_FACTOR as NFPA72_COVERAGE_RADIUS_FACTOR,
+    HEAT_ABSOLUTE_MAX_SPACING_M as _HEAT_ABSOLUTE_MAX_SPACING_M,
+    HEAT_MAX_SPACING_M as NFPA72_HEAT_MAX_SPACING_M,
+    PULL_STATION_FROM_EXIT_M as NFPA72_PULL_STATION_FROM_EXIT_M,  # noqa: F401
+    PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,  # noqa: F401
+    SMOKE_HEIGHT_SPACING_TABLE as NFPA72_SMOKE_SPACING_TABLE,  # noqa: F401
+    SMOKE_MAX_SPACING_M as NFPA72_SMOKE_MAX_SPACING_M,
+    SMOKE_PRACTICAL_CEILING_HEIGHT_M as _SMOKE_PRACTICAL_CEILING_HEIGHT_M,
+    WALL_MIN_DISTANCE_M as NFPA72_WALL_MIN_DISTANCE_M,  # noqa: F401
 )
 
 # Backward-compatible aliases (old names used by other modules)
@@ -294,13 +286,6 @@ NEC_AMPACITY_60C: Dict[str, float] = {
     "3/0": 165.0,
     "4/0": 195.0,
 }
-
-# ── NFPA 72 Battery Sizing Constants ─────────────────────────────────────
-# Source: NFPA 72-2022 §10.6.7.2.1
-NFPA72_STANDBY_HOURS = 24.0  # 24 hours standby required
-NFPA72_ALARM_MINUTES = 5.0  # 5 minutes full alarm (5/60 hours)
-NFPA72_BATTERY_SAFETY_FACTOR = 1.25  # 25% additional capacity (§10.6.7.2.1)
-NFPA72_BATTERY_DISCHARGE_EFFICIENCY = 0.80  # 80% usable capacity
 
 # ── TIA-568 Cabling Standards ─────────────────────────────────────────────
 # Source: TIA-568-D (2018 Edition)
@@ -391,7 +376,7 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
     # detectors, causing up to 65% over-densification at high ceilings.
     _SPOT_SMOKE_HIGH_CEILING_M = _SMOKE_PRACTICAL_CEILING_HEIGHT_M  # 6.096m (20ft)
     spacing_m = NFPA72_SMOKE_MAX_SPACING_M  # 9.1m — FLAT per §17.7.3.2.3
-    table_row = f"Flat spacing S=9.1m per NFPA 72 §17.7.3.2.3 (NO height reduction)"
+    table_row = "Flat spacing S=9.1m per NFPA 72 §17.7.3.2.3 (NO height reduction)"
 
     # Coverage radius — NFPA 72 §17.7.4.2.3.1
     radius_m = NFPA72_COVERAGE_RADIUS_FACTOR * spacing_m
@@ -464,7 +449,7 @@ def compute_heat_detector_spacing(
     Returns:
         dict with spacing_m, coverage_radius_m, compliance status.
     """
-    h = guard_ceiling_height_m(ceiling_height_m)
+    guard_ceiling_height_m(ceiling_height_m)
     a = _guard_finite(area_per_detector_m2, "area_per_detector_m2")
     if a <= 0:
         raise PhysicsGuardError(

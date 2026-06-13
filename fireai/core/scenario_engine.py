@@ -1074,7 +1074,7 @@ class ScenarioReporter:
     def to_text(battery: ScenarioBatteryResult) -> str:
         lines = [
             f"{'=' * 64}",
-            f"SCENARIO BATTERY REPORT",
+            "SCENARIO BATTERY REPORT",
             f"Detector type: {battery.det_type}  Count: {battery.det_count}",
             f"Scenarios: {len(battery.results)}  Pass: {battery.pass_count}  Fail: {battery.fail_count}",
             f"NFPA 72-2022 §17.7.3 limit: {_NFPA_MAX_DETECTION_S}s",

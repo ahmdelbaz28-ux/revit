@@ -26,7 +26,7 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from fireai.core.geometry_utils import (
     bounding_rect_dimensions,
@@ -240,7 +240,7 @@ def _greedy_set_cover(
     # Pre-compute coverage sets (index-based for speed)
     n = len(interior_points)
     coverage: List[List[int]] = []
-    for ci, cand in enumerate(interior_points):
+    for _ci, cand in enumerate(interior_points):
         covered = [i for i, pt in enumerate(interior_points) if (pt[0] - cand[0]) ** 2 + (pt[1] - cand[1]) ** 2 <= r2]
         coverage.append(covered)
 
@@ -367,7 +367,7 @@ class PolygonDensityOptimizer:
         t0 = time.time()
 
         # Calculate NFPA 72 coverage radius from ceiling height
-        cov_det_type = "heat" if "heat" in room.detector_type.lower() else "smoke"
+        cov_det_type: Literal['smoke', 'heat'] = "heat" if "heat" in room.detector_type.lower() else "smoke"
         spec = calculate_coverage_radius_from_height(room.ceiling_height, cov_det_type)
         radius = spec.radius
 
@@ -500,7 +500,7 @@ class PolygonDensityOptimizer:
             return
 
         # Convert dicts to DuctSpec if needed
-        duct_specs = []
+        duct_specs: list[DuctSpec] = []  # type: ignore[arg-type]
         for d in room.ducts:
             if isinstance(d, DuctSpec):
                 duct_specs.append(d)
@@ -515,7 +515,7 @@ class PolygonDensityOptimizer:
         if not duct_specs:
             return
 
-        results = analyse_ducts(duct_specs)
+        results = analyse_ducts(duct_specs)  # type: ignore[arg-type]
         all_warnings = [w for r in results for w in r.warnings]
 
         summary.duct_devices = results

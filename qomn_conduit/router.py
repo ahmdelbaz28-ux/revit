@@ -21,12 +21,16 @@ from __future__ import annotations
 
 import heapq
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from qomn_conduit.errors import PhysicsError, RoutingError
 from qomn_conduit.types import (
-    ConduitType, FittingType, Point3D, Result, RoutePath, TradeSize,
+    ConduitType,
+    Point3D,
+    Result,
+    RoutePath,
+    TradeSize,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────

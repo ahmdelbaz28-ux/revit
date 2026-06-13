@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import sqlite3
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -215,7 +214,7 @@ class LearningAgent:
 
         scored.sort(key=lambda x: x[0], reverse=True)
         results: List[DesignExperience] = []
-        for sim, row in scored[:top_k]:
+        for _sim, row in scored[:top_k]:
             results.append(
                 DesignExperience(
                     experience_id=row["experience_id"],
@@ -297,7 +296,7 @@ class LearningAgent:
 
         scored.sort(key=lambda x: x[0], reverse=True)
         results: List[DesignPattern] = []
-        for score, row in scored[:5]:
+        for _score, row in scored[:5]:
             results.append(
                 DesignPattern(
                     pattern_id=row["pattern_id"],

@@ -129,8 +129,8 @@ class ContractValidator:
         key = f"{method}:{endpoint}"
         self._contracts[key] = {
             "response_model": response_model,
-            "nfpa_reference": nfpa_reference,
-            "safety_critical": safety_critical,
+            "nfpa_reference": nfpa_reference,  # type: ignore[dict-item]
+            "safety_critical": safety_critical,  # type: ignore[dict-item]
         }
         logger.debug(f"Contract registered: {key}")
 
@@ -184,7 +184,7 @@ class ContractValidator:
             # explicitly registered — this is a security gap. Only LOG and
             # DISABLED modes allow unregistered endpoints through.
             if self.severity == ContractSeverity.STRICT:
-                raise ValidationError.from_exception_data(
+                raise ValidationError.from_exception_data(  # type: ignore[call-arg]
                     title=f"No contract registered for {method}:{endpoint}",
                     input_data=data,
                 )
@@ -196,7 +196,7 @@ class ContractValidator:
             return data
 
         response_model: Type[BaseModel] = contract["response_model"]
-        safety_critical: bool = contract.get("safety_critical", False)
+        safety_critical: bool = contract.get("safety_critical", False)  # type: ignore[assignment]
 
         try:
             # Validate using Pydantic model
@@ -277,7 +277,7 @@ class ContractValidator:
         """
         schemas: Dict[str, Any] = {}
 
-        for key, contract in self._contracts.items():
+        for _key, contract in self._contracts.items():
             response_model: Type[BaseModel] = contract["response_model"]
             schema = response_model.model_json_schema()
             model_name = response_model.__name__

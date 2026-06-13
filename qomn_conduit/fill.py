@@ -27,10 +27,13 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional, Tuple
 
+from qomn_conduit.errors import CodeViolationError, PhysicsError
 from qomn_conduit.types import (
-    ConduitType, TradeSize, FillResult, Result,
+    ConduitType,
+    FillResult,
+    Result,
+    TradeSize,
 )
-from qomn_conduit.errors import PhysicsError, CodeViolationError, Severity
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NEC Chapter 9, Table 1 — Fill Percentage Limits

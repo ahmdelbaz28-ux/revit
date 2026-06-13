@@ -1,7 +1,14 @@
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
-from typing import Callable
 import functools
 import time
+from typing import Callable
+
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 METRIC_ENGINE_RUNS = Counter(
     'fireai_engine_runs_total', 'Total engine runs', ['engine', 'status']
@@ -54,6 +61,5 @@ def track_engine_run(engine: str):
 
 
 def metrics_endpoint():
-    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
     data = generate_latest()
     return data, 200, {'Content-Type': CONTENT_TYPE_LATEST}

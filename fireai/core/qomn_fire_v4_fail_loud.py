@@ -22,19 +22,19 @@ Citations: NFPA 101 (2021), NFPA 72 (2022), NEC 760 (2023), IEEE-754 (2019)
 Author: Safety-Critical Systems Architect (Fail-Loud Rewrite)
 """
 
+import collections
+import hashlib
+import hmac
+import json
+import math
 import os
 import sys
-import json
-import time
-import math
-import hmac
-import hashlib
 import threading
-import collections
-from datetime import datetime, timezone
-from typing import Any, Optional, Callable, List, Dict, Tuple, Set
+import time
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
 # =====================================================================
@@ -181,11 +181,11 @@ class AsyncAuditLogger:
         with cls._init_lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
-                cls._instance._initialized = False
+                cls._instance._initialized = False  # type: ignore[as-type, has-type]
             return cls._instance
 
     def __init__(self, filepath: Optional[str] = None):
-        if self._initialized:
+        if self._initialized:  # type: ignore[has-type]
             return
         self._initialized = True
 
@@ -220,12 +220,10 @@ class AsyncAuditLogger:
         ).hexdigest()[:12]
 
         # [v4.0 NEW] إضافة مستوى الخطورة
-        severity = event_data.get("severity", "INFO")
+        event_data.get("severity", "INFO")
         if event_data.get("status") == "REJECTED":
-            severity = "CRITICAL"
             event_data["severity"] = "CRITICAL"
         elif event_data.get("status") == "HEALED":
-            severity = "WARNING"
             event_data["severity"] = "WARNING"
 
         serialized = json.dumps(event_data, sort_keys=True, default=str)
@@ -468,11 +466,11 @@ def fail_loud_v4(
                     "arg_count": len(args),
                     "kwarg_keys": sorted(kwargs.keys()),
                 }
-                before_hash = hashlib.sha256(
+                hashlib.sha256(
                     json.dumps(input_summary, sort_keys=True, default=str).encode()
                 ).hexdigest()
             except Exception:
-                before_hash = "HASH_ERROR"
+                pass
 
             # Tier 3: Circuit Breaker
             if cb.is_open:
@@ -534,7 +532,7 @@ def fail_loud_v4(
                 err_msg = str(e)
                 err_classification = classify_error(e)
 
-                circuit_closed = cb.register(err_type)
+                cb.register(err_type)
 
                 # ============================================================
                 # القرار الأهم: هل نشفي أم نرفض؟

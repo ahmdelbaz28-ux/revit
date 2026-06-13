@@ -115,10 +115,14 @@ class EnterpriseOrchestrator:
         # instead of crashing the entire enterprise pipeline. Per integration_bridge.py
         # pattern: each subsystem should work independently.
         try:
-            from fireai.v17_core import AcousticSPLCalculator, StrictBatterySizer, TenabilityEvaluator
+            from fireai.v17_core import (
+                AcousticSPLCalculator,
+                StrictBatterySizer,
+                TenabilityEvaluator,
+            )
             self._v17_available = True
         except ImportError as e:
-            import logging; logging.getLogger(__name__).critical(
+            logger.critical(
                 f"V17 core modules unavailable: {e}. Enterprise pipeline DISABLED."
             )
             self._v17_available = False

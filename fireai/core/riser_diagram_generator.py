@@ -34,7 +34,6 @@ from typing import Any, Dict, List, Tuple
 
 try:
     import ezdxf
-    from ezdxf.enums import TextEntityAlignment
 
     HAS_EZDXF = True
 except ImportError:

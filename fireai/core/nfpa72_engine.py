@@ -793,7 +793,7 @@ def get_ambient_derating_factor(
     # Find the nearest temperature entry at or below the requested temp
     # V62 FIX: Added 60 degC column support. Previously, 60 degC rated
     # conductors incorrectly used the 75 degC column, overstating ampacity.
-    col_idx = {60: 0, 75: 1, 90: 2}[conductor_temp_rating_c]
+    col_idx = {60: 0, 75: 1, 90: 2}[int(conductor_temp_rating_c)]  # type: ignore[index]
 
     sorted_temps = sorted(AMBIENT_TEMP_CORRECTION_FACTORS.keys())
 
@@ -1030,7 +1030,7 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
     violations = []
     isolator_count = 0
     current_segment_devices = 0
-    segment_zone_ids = set()
+    segment_zone_ids = set()  # type: ignore[var-annotated]
     current_circuit = None
 
     for i, dev in enumerate(devices):

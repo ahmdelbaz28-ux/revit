@@ -107,10 +107,10 @@ def sanitize_bim_parameter(param_value: str) -> str:
                 "This may be an active attack on the fire protection system."
             )
             raise ValueError(
-                f"Potential injection attack detected in input. "
-                f"The value contains a pattern consistent with code/SQL injection. "
-                f"For safety, this input is REJECTED. "
-                f"[OWASP A03:2021-Injection]"
+                "Potential injection attack detected in input. "
+                "The value contains a pattern consistent with code/SQL injection. "
+                "For safety, this input is REJECTED. "
+                "[OWASP A03:2021-Injection]"
             )
 
     # Whitelist: alphanumeric, spaces, safe design punctuation

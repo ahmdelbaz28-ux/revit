@@ -30,7 +30,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -915,10 +915,10 @@ class QAEngine:
         for category, fields in required_fields.items():
             items = getattr(design, category, [])
             for i, item in enumerate(items):
-                for field in fields:
-                    if field not in item:
+                for field_name in fields:
+                    if field_name not in item:
                         missing.append(
-                            f"{category}[{i}]: missing '{field}'"
+                            f"{category}[{i}]: missing '{field_name}'"
                         )
 
         if missing:

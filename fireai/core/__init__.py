@@ -67,7 +67,6 @@ from fireai.core.fireai_cli_engine import (
     Layer2Result,
     Layer3Result,
     Layer5Result,
-    PipelineResult,
 )
 from fireai.core.firestop_annotator import FirestoppingAnnotator
 from fireai.core.flame_detector_aoc_raytrace import FlameDetectorAOCRayTrace
@@ -185,7 +184,11 @@ from fireai.core.room_lifecycle import (
     RoomState,
     RoomTransition,
 )
-from fireai.core.routing_engine_v10 import ArchitecturalWall, EliteClassARouter, RouteSegment
+from fireai.core.routing_engine_v10 import (
+    ArchitecturalWall,
+    EliteClassARouter,
+    RouteSegment,
+)
 
 # V12 — Class A Routing + Firestopping + Safe Building Engine + DXF Schedule
 from fireai.core.routing_global_class_a import EliteGlobalRouter

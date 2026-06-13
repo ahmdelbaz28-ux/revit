@@ -273,7 +273,7 @@ class ProjectLearner:
             r = random.random() * total
             cum = 0.0
             chosen = pts[-1]
-            for p, d in zip(pts, d2):
+            for p, d in zip(pts, d2, strict=False):
                 cum += d
                 if cum >= r:
                     chosen = p

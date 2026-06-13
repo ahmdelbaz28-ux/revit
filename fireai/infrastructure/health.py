@@ -4,7 +4,7 @@ import dataclasses
 import os
 import shutil
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Literal, Optional
 
 START_TIME = time.monotonic()
@@ -88,9 +88,9 @@ def check_redis(host: str = 'localhost', port: int = 6379, password: Optional[st
         info = r.info()
         return {
             'ok': True,
-            'connected_slaves': info.get('connected_slaves', 0),
-            'used_memory_human': info.get('used_memory_human', ''),
-            'uptime_in_seconds': info.get('uptime_in_seconds', 0),
+            'connected_slaves': info.get('connected_slaves', 0),  # type: ignore[union-attr]
+            'used_memory_human': info.get('used_memory_human', ''),  # type: ignore[union-attr]
+            'uptime_in_seconds': info.get('uptime_in_seconds', 0),  # type: ignore[union-attr]
         }
     except ImportError:
         return {'ok': False, 'error': 'redis package not installed'}

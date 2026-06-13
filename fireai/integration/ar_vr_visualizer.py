@@ -26,7 +26,6 @@ References:
 
 from __future__ import annotations
 
-import base64
 import json
 import logging
 import math
@@ -669,7 +668,7 @@ class ARVRVisualizer:
             room_id = room.get("room_id", f"room_{room_idx}")
             poly = room.get("polygon", [])
             ceiling_h = room.get("ceiling_height_m", self.DEFAULT_CEILING_HEIGHT)
-            name = room.get("name", room_id)
+            room.get("name", room_id)
 
             if not poly or len(poly) < 3:
                 continue
@@ -1100,7 +1099,6 @@ class ARVRVisualizer:
         geometries: List[dict] = []
         materials_list: List[dict] = []
         nodes_list: List[dict] = []
-        object_map: Dict[str, int] = {}
 
         geo_map: Dict[str, int] = {}
         mat_map: Dict[str, int] = {}
@@ -1208,7 +1206,7 @@ class ARVRVisualizer:
         mat_refs: List[Optional[int]] = []
 
         # Collect vertex data for each node
-        for node_idx, node in enumerate(scene.nodes):
+        for _node_idx, node in enumerate(scene.nodes):
             if not node.geometry:
                 nodes_json.append({
                     "name": node.name,
@@ -1239,7 +1237,7 @@ class ARVRVisualizer:
                 translated[i + 2] += node.position.z
 
             offset_pos = len(all_positions) // 3
-            offset_idx = len(all_indices)
+            len(all_indices)
 
             all_positions.extend(translated)
             all_indices.extend(tri + offset_pos for tri in tris)
@@ -1470,7 +1468,7 @@ class ARVRVisualizer:
             z = radius * math.sin(theta)
             verts.extend([x, hh, z])
 
-        total_per_ring = segments + 1
+        segments + 1
 
         # Bottom cap triangles
         for i in range(segments):
@@ -1540,7 +1538,7 @@ class ARVRVisualizer:
         else:
             camera_pos = "10 5 10"
 
-        html_parts.append(f'<a-scene background="color: #1a1a2e" renderer="antialias: true" vr-mode-ui="enabled: true">')
+        html_parts.append('<a-scene background="color: #1a1a2e" renderer="antialias: true" vr-mode-ui="enabled: true">')
 
         # Lighting
         html_parts.append('  <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>')
@@ -1789,7 +1787,7 @@ class ARVRVisualizer:
             lines.append('    token outputs:surface.connect = None')
             lines.append('    token outputs:surface.connect = </{}/PBRShader.outputs:surface>'.format(mat_name))
             lines.append('')
-            lines.append(f'    def Shader "PBRShader"')
+            lines.append('    def Shader "PBRShader"')
             lines.append('    {')
             lines.append('        uniform token info:id = "UsdPreviewSurface"')
             lines.append(f'        color3f inputs:diffuseColor = ({rgba[0]:.4f}, {rgba[1]:.4f}, {rgba[2]:.4f})')
@@ -1818,7 +1816,7 @@ class ARVRVisualizer:
                 lines.append('        {')
                 lines.append(f'            double3 xformOp:translate = ({kf.position.x:.4f}, {kf.position.y:.4f}, {kf.position.z:.4f})')
                 lines.append('            uniform token[] xformOpOrder = ["xformOp:translate"]')
-                lines.append(f'            float focalLength = 50')
+                lines.append('            float focalLength = 50')
                 lines.append('        }')
                 lines.append('')
             lines.append('    }')
@@ -1830,7 +1828,7 @@ class ARVRVisualizer:
         lines.append('def Xform "SceneMetadata"')
         lines.append('{')
         lines.append(f'    string design_id = "{scene.metadata.get("design_id", "")}"')
-        lines.append(f'    string generator = "FireAI_ARVRVisualizer"')
+        lines.append('    string generator = "FireAI_ARVRVisualizer"')
         lines.append('}')
 
         return "\n".join(lines)
@@ -1868,16 +1866,12 @@ class ARVRVisualizer:
 
         # Determine USD geom type
         if geom.type == "box":
-            usd_type = "Cube"
             size_attr = f'size = {max(geom.width, geom.height, geom.depth):.4f}'
         elif geom.type == "sphere":
-            usd_type = "Sphere"
             size_attr = f'radius = {geom.radius:.4f}'
         elif geom.type == "cylinder":
-            usd_type = "Cylinder"
             size_attr = f'height = {geom.height:.4f}  radius = {geom.radius:.4f}'
         else:
-            usd_type = "Cube"
             size_attr = "size = 1"
 
         lines.append(f'{prefix}def Mesh "{node_name}"')

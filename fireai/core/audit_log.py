@@ -348,7 +348,7 @@ class AuditLog:
         col_names = [desc[0] for desc in self._conn.execute("SELECT * FROM audit_entries LIMIT 0;").description]
 
         for row in all_rows:
-            row_dict = dict(zip(col_names, row))
+            row_dict = dict(zip(col_names, row, strict=False))
             try:
                 entry = self._row_to_entry(row_dict)
             except Exception as exc:
@@ -385,7 +385,7 @@ class AuditLog:
             if row is None:
                 return None
             col_names = [desc[0] for desc in cur.description]
-            return self._row_to_entry(dict(zip(col_names, row)))
+            return self._row_to_entry(dict(zip(col_names, row, strict=False)))
 
     def get_analysis(self, analysis_id: str) -> List[AuditEntry]:
         """Retrieve all entries belonging to an analysis, in insertion order.
@@ -402,7 +402,7 @@ class AuditLog:
                 (analysis_id,),
             )
             col_names = [desc[0] for desc in cur.description]
-            return [self._row_to_entry(dict(zip(col_names, row))) for row in cur.fetchall()]
+            return [self._row_to_entry(dict(zip(col_names, row, strict=False))) for row in cur.fetchall()]
 
     def export_json(self, analysis_id: str) -> str:
         """Export an analysis audit trail as a signed JSON string.

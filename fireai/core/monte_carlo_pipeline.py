@@ -118,7 +118,7 @@ class DetectorReliabilitySimulator:
         R_sq = coverage_radius**2
         n_pts = len(grid_pts)
 
-        for trial in range(self.n_trials):
+        for _trial in range(self.n_trials):
             # Randomly fail detectors
             active = [det for det in detectors if self._rng.random() > p_fail and self._rng.random() > p_blind]
 

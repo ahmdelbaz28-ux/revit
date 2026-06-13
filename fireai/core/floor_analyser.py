@@ -103,7 +103,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fireai.core.geometry_utils import (
     grid_points_in_polygon,
@@ -120,7 +120,12 @@ from fireai.core.nfpa72_technology_dispatcher import (
     dispatch_detector_technology,
 )
 from fireai.core.sensor_physics_advisor import SensorPhysicsAdvisor
-from fireai.core.spatial_engine.density_optimizer import DETECTOR_RADIUS, DensityOptimizer, DetectorLayout, Room
+from fireai.core.spatial_engine.density_optimizer import (
+    DETECTOR_RADIUS,
+    DensityOptimizer,
+    DetectorLayout,
+    Room,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -498,10 +503,7 @@ class FloorAnalyser:
             # Fix 6: detector_type with safe default
             det_type_str = room_dict.get("detector_type", "smoke_photoelectric")
             # Map FloorAnalyser detector types to CoverageSpec types
-            if "heat" in det_type_str.lower():
-                cov_det_type = "heat"
-            else:
-                cov_det_type = "smoke"
+            cov_det_type: Literal["smoke", "heat"] = "heat" if "heat" in det_type_str.lower() else "smoke"
             spec = calculate_coverage_radius_from_height(ceiling_h, cov_det_type)
             radius = spec.radius
 
@@ -1195,7 +1197,6 @@ class FloorAnalyser:
             from fireai.core.scenario_engine import (
                 ScenarioLibrary,
                 ScenarioRunner,
-                ScenarioVerdict,
                 get_fire_load,
             )
         except ImportError:
@@ -1370,7 +1371,7 @@ if __name__ == "__main__":
     import sys
 
     sys.path.insert(0, ".")
-    from density_optimizer import DensityOptimizer
+    from density_optimizer import DensityOptimizer  # type: ignore[no-redef]
 
     opt = DensityOptimizer()
     analyser = FloorAnalyser(floor_id="test_floor", optimizer=opt)

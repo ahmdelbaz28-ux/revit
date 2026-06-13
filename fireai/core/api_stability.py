@@ -127,8 +127,8 @@ def deprecated(
                 _warned.add(fn.__name__)
             return fn(*args, **kwargs)
 
-        wrapper._deprecated = True
-        wrapper._replacement = replacement
+        wrapper._deprecated = True  # type: ignore[attr-defined]
+        wrapper._replacement = replacement  # type: ignore[attr-defined]
         return wrapper
 
     return decorator

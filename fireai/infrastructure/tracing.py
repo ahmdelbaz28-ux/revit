@@ -1,27 +1,29 @@
 try:
     from opentelemetry import trace
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+    from opentelemetry.propagate import set_global_textmap
+    from opentelemetry.propagators.composite import CompositeHTTPPropagator
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from opentelemetry.sdk.trace.export.in_memory import InMemorySpanExporter
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-    from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-    from opentelemetry.propagators.composite import CompositeHTTPPropagator
-    from opentelemetry.propagate import set_global_textmap
+    from opentelemetry.trace.propagation.tracecontext import (
+        TraceContextTextMapPropagator,
+    )
     _OPENTELEMETRY_AVAILABLE = True
 except ImportError:
-    trace = None
-    TracerProvider = None
+    trace = None  # type: ignore[assignment]
+    TracerProvider = None  # type: ignore[assignment]
     BatchSpanProcessor = None
     InMemorySpanExporter = None
     OTLPSpanExporter = None
-    TraceContextTextMapPropagator = None
-    CompositeHTTPPropagator = None
+    TraceContextTextMapPropagator = None  # type: ignore[misc]
+    CompositeHTTPPropagator = None  # type: ignore[misc]
     set_global_textmap = None
     _OPENTELEMETRY_AVAILABLE = False
 
 import functools
-import typing as t
 import logging
+import typing as t
 from contextvars import ContextVar
 
 _current_span: ContextVar[t.Optional[t.Any]] = ContextVar('current_span', default=None)
@@ -84,7 +86,7 @@ def get_current_span() -> t.Optional[t.Any]:
 def extract_traceparent(headers: t.Dict[str, str]) -> t.Optional[t.Dict[str, str]]:
     if _propagator is None:
         return None
-    ctx = _propagator.extract(headers)
+    _propagator.extract(headers)
     for carrier in [headers]:
         if 'traceparent' in {k.lower() for k in carrier}:
             return {'traceparent': carrier.get('traceparent') or carrier.get('Traceparent', '')}
@@ -141,4 +143,4 @@ class TraceContext:
             await self.app(scope, receive, wrapped_send)
 
         if token:
-            trace.detach(token)
+            trace.detach(token)  # type: ignore[union-attr, attr-defined]

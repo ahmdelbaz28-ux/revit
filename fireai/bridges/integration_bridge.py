@@ -91,7 +91,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # ── Subsystem 1: Cable Routing Engine ────────────────────────────────────────
 try:
-    from fireai.core.cable_routing_engine import (
+    from fireai.core.cable_routing_engine import (  # type: ignore[attr-defined]
         CableRoutingEngine,
         CircuitTopology,
         RouteResult,
@@ -704,7 +704,7 @@ class IntegrationBridge:
         if config.obstacle_polygons and CableRoutingEngine is not None:
             # Import the obstacle dataclass locally — it was imported
             # successfully along with CableRoutingEngine
-            from fireai.core.cable_routing_engine import RoutingObstacle3D
+            from fireai.core.cable_routing_engine import ObstacleType, RoutingObstacle3D
 
             for poly in config.obstacle_polygons:
                 if len(poly) < 3:
@@ -717,7 +717,7 @@ class IntegrationBridge:
 
                 obstacles.append(
                     RoutingObstacle3D(
-                        obstacle_type="architectural",
+                        obstacle_type=ObstacleType.ARCHITECTURAL,
                         x=min_x,
                         y=min_y,
                         z=0.0,
@@ -783,7 +783,7 @@ class IntegrationBridge:
             nac_current = max(0.5, len(device_positions) * DEFAULT_NAC_CURRENT_PER_DEVICE_A)
 
             # Route Class B (home-run) circuit from this panel
-            route = engine.route_loop(
+            route = engine.route_loop(  # type: ignore[attr-defined]
                 circuit_id=f"NAC-{len(all_routes) + 1}",
                 topology=CircuitTopology.CLASS_B,
                 panel_pos=panel_pos,
@@ -1095,7 +1095,9 @@ class IntegrationBridge:
             )
             # Return a non-compliant result so the compliance gate sees acoustics as FAILED
             try:
-                from fireai.core.acoustic_calculator import AcousticCoverageResult
+                from fireai.core.acoustic_calculator import (  # type: ignore[attr-defined]
+                    AcousticCoverageResult,  # type: ignore[attr-defined,import-untyped]
+                )
                 worst_result = AcousticCoverageResult(
                     room_id="BUILDING_WIDE",
                     compliant=False,

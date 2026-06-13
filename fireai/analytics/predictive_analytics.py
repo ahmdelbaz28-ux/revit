@@ -292,7 +292,7 @@ class PredictiveAnalyticsEngine:
         trouble_rate = len(trouble_events) / max(len(age_hours), 1)
 
         fc = _holt_winters_forecast(age_hours, horizon=30, alpha=self.alpha, beta=self.beta, gamma=self.gamma, season_period=self.season_period)
-        predicted_next_age = fc["forecast"][-1] if fc["forecast"] else age_hours[-1]
+        fc["forecast"][-1] if fc["forecast"] else age_hours[-1]
 
         base_ttf = 87600.0
         if failure_rate > 0:
@@ -325,7 +325,7 @@ class PredictiveAnalyticsEngine:
         )
 
     def predict_coverage_degradation(self, room_id: str, days: int) -> CoverageForecast:
-        now = datetime.now(timezone.utc)
+        datetime.now(timezone.utc)
         n = max(days, 1)
         coverage_series = self._simulate_recent_coverage(room_id)
         horizon = n

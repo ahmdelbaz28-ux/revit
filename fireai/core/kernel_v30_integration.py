@@ -45,7 +45,7 @@ try:
         """Detect actual SIMD capability."""
         try:
             # NumPy exposes CPU info on some builds
-            info = np.__config__.blas_opt_info
+            pass
         except Exception as e:
             logger.debug(f"V112: _detect_simd: failed to read numpy BLAS config: {e!r}")
             pass
@@ -299,7 +299,7 @@ class MmapResultCache:
         self._size = size_mb * 1024 * 1024
         self._lock = threading.Lock()
         self._mmap: Optional[mmap.mmap] = None
-        self._file = None
+        self._file: Any = None
         self._data_ptr = self.HEADER_SZ  # next write position in data region
         self._open()
 
@@ -323,7 +323,7 @@ class MmapResultCache:
             )
             if not exists or self._mmap[:4] != self.MAGIC:
                 self._init_header()
-        except Exception as exc:
+        except Exception:
             self._mmap = None  # Degrade gracefully
 
     def _init_header(self) -> None:
@@ -473,12 +473,14 @@ class KernelV30Dispatcher:
                 pass
 
         # Lazy import DensityOptimizer for fallback
-        self._fallback = None
+        self._fallback: Any = None
 
     def _get_fallback(self):
         if self._fallback is None:
             try:
-                from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
+                from fireai.core.spatial_engine.density_optimizer import (
+                    DensityOptimizer,
+                )
 
                 self._fallback = DensityOptimizer(radius=self.R)
             except ImportError:
@@ -648,7 +650,7 @@ class KernelV30Dispatcher:
             coverage_pct=round(cov_pct, 2),
             proof_valid=proof_valid,
             nfpa_valid=proof_valid,
-            wall_violations=[],
+            wall_violations=[],  # type: ignore[arg-type]
             method="v30_simd_hex",
             violations=[],
             warnings=[],
@@ -702,7 +704,7 @@ class KernelV30Dispatcher:
             coverage_pct=round(cov_pct, 2),
             proof_valid=proof_valid,
             nfpa_valid=proof_valid,
-            wall_violations=[],
+            wall_violations=[],  # type: ignore[arg-type]
             method="v30_scalar_hex",
             violations=[],
             warnings=[],
@@ -769,7 +771,7 @@ class KernelV30Dispatcher:
                 coverage_pct=data.get("coverage_pct", 0.0),
                 proof_valid=data.get("proof_valid", False),
                 nfpa_valid=data.get("nfpa_valid", False),
-                wall_violations=[],
+                wall_violations=[],  # type: ignore[arg-type]
                 method=data.get("method", "v30_cached"),
                 violations=[],
                 warnings=data.get("warnings", []),

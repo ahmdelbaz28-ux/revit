@@ -23,12 +23,17 @@ Environment Variables:
   FIREAI_DB_PATH    — Path to audit database
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import secrets
 import threading
 import time
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
+
+if TYPE_CHECKING:
+    from fireai.core.fireai_core import FireAISystem
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, Security
@@ -369,9 +374,7 @@ def _build_spec(req: RoomRequest) -> RoomSpec:
     ceiling = CeilingSpec.create_safe(
         height_at_low_point_m=req.height,
         height_at_high_point_m=req.height_high or req.height,
-        ceiling_type=CeilingType[req.ceiling_type]
-        if req.ceiling_type in [c.name for c in CeilingType]
-        else CeilingType.FLAT,
+        ceiling_type=next((c for c in CeilingType if c.value == req.ceiling_type), CeilingType.FLAT)
     )
     # CRITICAL FIX: Calculate width/depth from polygon using geometric SPAN.
     # Previously used max(x) and max(y) which is WRONG for translated/negative

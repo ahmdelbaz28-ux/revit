@@ -8,16 +8,19 @@ for correct format, determinism, and completeness.
 Reference: Autodesk Revit MEP API; AutoCAD DXF R2018; NEC 358.
 """
 
-import hashlib
 import json
-import pytest
 
 from qomn_conduit import (
-    ConduitType, TradeSize, FittingType, Point3D, RoutePath,
-    place_fittings, generate_revit_conduit, generate_autocad_entities,
-    generate_schedules, ConduitRun,
+    ConduitRun,
+    ConduitType,
+    Point3D,
+    RoutePath,
+    TradeSize,
+    generate_autocad_entities,
+    generate_revit_conduit,
+    generate_schedules,
+    place_fittings,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helper: create a simple ConduitRun for testing

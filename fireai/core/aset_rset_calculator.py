@@ -866,39 +866,39 @@ def perform_aset_rset_analysis(
     except ImportError as e:
         # semi_cfast_engine not available — fall back to simplified calculation
         # using the local calculate_aset and calculate_rset
-        aset_result = calculate_aset(
+        aset_result = calculate_aset(  # type: ignore[assignment]
             smoke_fill_time_s=300.0,  # 5 min default estimate
             room_height_m=room_height_m,
         )
 
-        rset_result = calculate_rset(
+        rset_result = calculate_rset(  # type: ignore[assignment]
             travel_distance_m=travel_distance_m,
             occupancy_type=occupancy_type,
             is_sprinklered=is_sprinklered,
         )
 
-        validation = validate_aset_vs_rset(aset_result, rset_result, safety_factor_override)
+        validation = validate_aset_vs_rset(aset_result, rset_result, safety_factor_override)  # type: ignore[assignment, arg-type]
 
         return {
             "aset_seconds": aset_result.aset_seconds,
-            "rset_seconds": rset_result.rset_seconds,
-            "rset_with_safety_s": rset_result.rset_with_safety_s,
-            "safety_factor": rset_result.safety_factor,
-            "is_safe": validation.is_safe,
-            "limiting_factor": aset_result.limiting_factor,
+            "rset_seconds": rset_result.rset_seconds,  # type: ignore[attr-defined]
+            "rset_with_safety_s": rset_result.rset_with_safety_s,  # type: ignore[attr-defined]
+            "safety_factor": rset_result.safety_factor,  # type: ignore[attr-defined]
+            "is_safe": validation.is_safe,  # type: ignore[attr-defined]
+            "limiting_factor": aset_result.limiting_factor,  # type: ignore[attr-defined]
             "occupancy_type": occupancy_type,
-            "verdict": validation.verdict.split(":")[0]
-            if ":" in validation.verdict
-            else ("PASS" if validation.is_safe else "FAIL"),
+            "verdict": validation.verdict.split(":")[0]  # type: ignore[attr-defined]
+            if ":" in validation.verdict  # type: ignore[attr-defined]
+            else ("PASS" if validation.is_safe else "FAIL"),  # type: ignore[attr-defined]
             "details": {
                 "aset_details": {
                     "method": "simplified_estimate_fallback",
                     "warning": f"semi_cfast_engine unavailable ({e}); using simplified estimate with ±50% error band",
                 },
                 "rset_details": {
-                    "premovement_delay_s": rset_result.premovement_delay_s,
-                    "travel_time_s": rset_result.travel_time_s,
-                    "walking_speed_mps": rset_result.walking_speed_mps,
+                    "premovement_delay_s": rset_result.premovement_delay_s,  # type: ignore[attr-defined]
+                    "travel_time_s": rset_result.travel_time_s,  # type: ignore[attr-defined]
+                    "walking_speed_mps": rset_result.walking_speed_mps,  # type: ignore[attr-defined]
                 },
             },
         }

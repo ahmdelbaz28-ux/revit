@@ -419,7 +419,7 @@ if __name__ == "__main__":
 
     # Test 1: Basic pub/sub
     bus = EventBus()
-    received = []
+    received: list[Any] = []
     bus.subscribe(Events.ROOM_ANALYSIS_START, lambda e: received.append(e))
     bus.publish(Events.ROOM_ANALYSIS_START, {"room_id": "R-01"})
     assert len(received) == 1, f"Expected 1 event, got {len(received)}"
@@ -427,7 +427,7 @@ if __name__ == "__main__":
     print("  [PASS] Test 1: Basic pub/sub")
 
     # Test 2: Wildcard subscription
-    all_events = []
+    all_events: list[Any] = []
     bus.subscribe("*", lambda e: all_events.append(e))
     bus.publish(Events.DETECTOR_PLACED, {"count": 5})
     bus.publish(Events.NFPA_COMPLIANT, {"ref": "NFPA 72"})
@@ -458,7 +458,7 @@ if __name__ == "__main__":
 
     # Test 6: Thread safety
     bus3 = EventBus()
-    errors = []
+    errors: list[Any] = []
 
     def publish_many():
         try:
@@ -477,8 +477,9 @@ if __name__ == "__main__":
     print("  [PASS] Test 6: Thread safety (4 threads × 50 events)")
 
     # Test 7: Unsubscribe
-    counter = []
-    cb = lambda e: counter.append(1)
+    counter: list[int] = []
+    def cb(e):
+        return counter.append(1)
     bus3.subscribe(Events.COVERAGE_VERIFIED, cb)
     bus3.publish(Events.COVERAGE_VERIFIED, {})
     assert len(counter) == 1

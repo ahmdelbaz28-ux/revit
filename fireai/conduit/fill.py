@@ -33,10 +33,13 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional, Tuple
 
+from fireai.conduit.errors import CodeViolationError, PhysicsError, Severity
 from fireai.conduit.types import (
-    ConduitType, TradeSize, FillResult, Result,
+    ConduitType,
+    FillResult,
+    Result,
+    TradeSize,
 )
-from fireai.conduit.errors import PhysicsError, CodeViolationError, Severity
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NEC Chapter 9, Table 1 — Fill Percentage Limits
@@ -338,7 +341,7 @@ def calculate_fill_compliant(
                 max_allowed_pct=max_pct,
                 is_compliant=False,
                 recommended_size=None,
-                nec_reference=f"NEC 2022 Ch.9 Table 1 — VIOLATION",
+                nec_reference="NEC 2022 Ch.9 Table 1 — VIOLATION",
             )
             return Result.ok(fill_result)
         return result  # PhysicsError — always propagate

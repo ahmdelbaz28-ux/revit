@@ -558,7 +558,7 @@ class DeltaCache:
             "cache_entries": self._cache.size,
         }
 
-        return results, stats
+        return results, stats  # type: ignore[return-value]
 
     def persist(self) -> None:
         """Persist cache to SQLite database (legacy feature).
@@ -628,11 +628,6 @@ class DeltaCache:
         finally:
             if conn is not None:
                 conn.close()
-
-    @property
-    def stats(self) -> Dict[str, int]:
-        """Cache statistics (legacy property)."""
-        return dict(self._legacy_stats)
 
     @property
     def size(self) -> int:

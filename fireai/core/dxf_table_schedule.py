@@ -24,9 +24,11 @@ try:
     from ezdxf.addons import TablePainter as Table
 except ImportError:
     try:
-        from ezdxf.addons import Table  # Older ezdxf versions
+        from ezdxf.addons import (  # type: ignore[attr-defined, no-redef]
+            Table,  # type: ignore[attr-defined,no-redef,import-untyped] # Older ezdxf versions
+        )
     except ImportError:
-        Table = None
+        Table = None  # type: ignore[misc]
 
 
 class TrueAECDraftingTable:

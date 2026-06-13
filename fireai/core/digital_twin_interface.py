@@ -1174,13 +1174,13 @@ if __name__ == "__main__":
     # ── Test 3: Checksum Computation ──────────────────────────────────
     print("\n[TEST 3] Checksum computation")
     positions = [(3.0, 2.5, 3.0), (7.0, 5.5, 3.0)]
-    checksum1 = twin.compute_checksum(positions)
-    checksum2 = twin.compute_checksum(positions)
+    checksum1 = twin.compute_checksum(positions)  # type: ignore[arg-type]
+    checksum2 = twin.compute_checksum(positions)  # type: ignore[arg-type]
     assert checksum1 == checksum2, "Deterministic checksum required"
     checksum3 = twin.compute_checksum([(3.0, 2.5, 3.0)])
     assert checksum1 != checksum3, "Different positions → different checksum"
     print(f"   ✓ Deterministic checksum: {checksum1[:16]}...")
-    print(f"   ✓ Different positions produce different checksum")
+    print("   ✓ Different positions produce different checksum")
 
     # ── Test 4: Empty checksum ────────────────────────────────────────
     print("\n[TEST 4] Empty detector positions checksum")
@@ -1279,7 +1279,7 @@ if __name__ == "__main__":
     print("\n[TEST 15] Invalid state assignment")
     try:
         twin.state = "not_a_state"  # type: ignore
-        assert False, "Should have raised TypeError"
+        raise AssertionError("Should have raised TypeError")
     except TypeError:
         print("   ✓ TypeError raised for invalid state")
 
@@ -1287,7 +1287,7 @@ if __name__ == "__main__":
     print("\n[TEST 16] Empty snapshot rejection")
     try:
         twin.snapshot([])
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError:
         print("   ✓ ValueError raised for empty room_results")
 

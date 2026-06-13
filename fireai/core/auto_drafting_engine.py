@@ -50,7 +50,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 try:
     import ezdxf
-    from ezdxf.enums import TextEntityAlignment
 
     HAS_EZDXF = True
 except ImportError:
@@ -711,8 +710,8 @@ class AutoDraftingEngine:
         callouts = []
 
         for i in range(len(path) - 1):
-            start_g = router._world_to_grid(*path[i])
-            end_g = router._world_to_grid(*path[i + 1])
+            router._world_to_grid(*path[i])
+            router._world_to_grid(*path[i + 1])
 
             # Check if path segment crosses fire-rated wall cells
             segment_cells = router._rasterize_line(path[i], path[i + 1])

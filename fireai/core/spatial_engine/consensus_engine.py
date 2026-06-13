@@ -29,12 +29,17 @@ WHY THIS MATTERS:
 NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 """
 
+from __future__ import annotations
+
 import enum
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from .analytical_verifier import AnalyticalVerifier
 from .voronoi_verifier import VoronoiVerifier
+
+if TYPE_CHECKING:
+    from .consensus_engine_v2 import EngineNameV2
 
 
 class ConfidenceLevel(enum.Enum):
@@ -57,7 +62,7 @@ class EngineName(enum.Enum):
 class EngineVerdict:
     """Result from a single verification engine."""
 
-    engine: EngineName
+    engine: Union[EngineName, EngineNameV2]
     passed: bool
     details: str = ""
     raw_result: Optional[object] = None  # The full result object from the engine
@@ -201,7 +206,7 @@ class ConsensusEngine:
         discrepancies = []
 
         # Find discrepancies
-        passing_engines = [v.engine.value for v in verdicts if v.passed]
+        [v.engine.value for v in verdicts if v.passed]
         failing_engines = [v.engine.value for v in verdicts if not v.passed]
 
         if failing_engines:
