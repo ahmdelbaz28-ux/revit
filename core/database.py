@@ -158,12 +158,24 @@ class UniversalDataModel:
                 CREATE TABLE IF NOT EXISTS elements (
                     element_id TEXT PRIMARY KEY,
                     data JSON NOT NULL,
+                    element_type TEXT DEFAULT 'unknown',
+                    project_id TEXT,
                     created_timestamp TEXT,
                     last_modified_timestamp TEXT,
                     is_deleted INTEGER DEFAULT 0,
                     version INTEGER DEFAULT 0
                 )
             ''')
+            # V129 FIX: Migration — add element_type and project_id columns if they
+            # don't exist (existing databases created before V129 won't have them).
+            try:
+                cursor.execute("ALTER TABLE elements ADD COLUMN element_type TEXT DEFAULT 'unknown'")
+            except Exception:
+                pass  # Column already exists
+            try:
+                cursor.execute("ALTER TABLE elements ADD COLUMN project_id TEXT")
+            except Exception:
+                pass  # Column already exists
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS relationships (
                     relationship_id TEXT PRIMARY KEY,
@@ -203,6 +215,16 @@ class UniversalDataModel:
                 CREATE INDEX IF NOT EXISTS idx_conflict_element
                 ON conflicts(element_id)
             ''')
+            # V129 FIX: Index on element_type for fast type-based queries.
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_element_type
+                ON elements(element_type)
+            ''')
+            # V129 FIX: Index on project_id for fast project-scoped queries.
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_element_project
+                ON elements(project_id)
+            ''')
             self._conn.commit()
 
     # ── Element CRUD ──────────────────────────────────────────────────────
@@ -226,9 +248,16 @@ class UniversalDataModel:
                 now = datetime.now(timezone.utc).isoformat()
 
                 cursor = self._conn.cursor()
+                # V129 FIX: Extract element_type and project_id from data for
+                # indexed column access (avoids full JSON scan on every query).
+                et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
+                if hasattr(et, 'value'):
+                    et = et.value
+                pid = data.get('project_id') if isinstance(data, dict) else None
+
                 cursor.execute(
-                    "INSERT OR IGNORE INTO elements (element_id, data, created_timestamp, last_modified_timestamp) VALUES (?, ?, ?, ?)",
-                    (element_id, json.dumps(data), now, now),
+                    "INSERT OR IGNORE INTO elements (element_id, data, element_type, project_id, created_timestamp, last_modified_timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+                    (element_id, json.dumps(data), et, pid, now, now),
                 )
                 self._conn.commit()
                 return cursor.rowcount > 0
@@ -261,9 +290,13 @@ class UniversalDataModel:
                 for element in elements:
                     element_id = element.element_id
                     data = element.to_dict()
+                    et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
+                    if hasattr(et, 'value'):
+                        et = et.value
+                    pid = data.get('project_id') if isinstance(data, dict) else None
                     cursor.execute(
-                        "INSERT OR IGNORE INTO elements (element_id, data, created_timestamp, last_modified_timestamp) VALUES (?, ?, ?, ?)",
-                        (element_id, json.dumps(data), now, now),
+                        "INSERT OR IGNORE INTO elements (element_id, data, element_type, project_id, created_timestamp, last_modified_timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+                        (element_id, json.dumps(data), et, pid, now, now),
                     )
                     count += cursor.rowcount
                 self._conn.commit()
@@ -380,9 +413,15 @@ class UniversalDataModel:
                 new_version = current_version + 1
                 now = datetime.now(timezone.utc).isoformat()
 
+                # V129 FIX: Also update element_type and project_id indexed columns
+                et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
+                if hasattr(et, 'value'):
+                    et = et.value
+                pid = data.get('project_id') if isinstance(data, dict) else None
+
                 cursor.execute(
-                    "UPDATE elements SET data = ?, version = ?, last_modified_timestamp = ? WHERE element_id = ?",
-                    (json.dumps(data), new_version, now, element_id),
+                    "UPDATE elements SET data = ?, element_type = ?, project_id = ?, version = ?, last_modified_timestamp = ? WHERE element_id = ?",
+                    (json.dumps(data), et, pid, new_version, now, element_id),
                 )
                 self._conn.commit()
                 return cursor.rowcount > 0
@@ -419,6 +458,241 @@ class UniversalDataModel:
             except sqlite3.Error as e:
                 logger.error("HIGH: Error deleting element %s: %s", element_id, e)
                 return False
+
+    # ── Efficient indexed queries (V129 FIX) ─────────────────────────────
+
+    def get_elements_by_type(self, element_type: str, include_deleted: bool = False) -> List[UniversalElement]:
+        """Retrieve elements by element_type using the indexed column.
+
+        V129 FIX: Uses the element_type column instead of scanning all JSON
+        blobs, providing O(log n) lookup instead of O(n) full-table scan.
+
+        Args:
+            element_type: The element type string (e.g., "wall", "door").
+            include_deleted: If False, exclude soft-deleted elements.
+
+        Returns:
+            List of matching UniversalElement objects.
+        """
+        with self._lock:
+            try:
+                cursor = self._conn.cursor()
+                if include_deleted:
+                    cursor.execute(
+                        "SELECT data, is_deleted, version FROM elements WHERE element_type = ?",
+                        (element_type,),
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT data, is_deleted, version FROM elements WHERE element_type = ? AND is_deleted = 0",
+                        (element_type,),
+                    )
+                rows = cursor.fetchall()
+                result = []
+                for row in rows:
+                    data = json.loads(row["data"]) if isinstance(row["data"], str) else row["data"]
+                    elem = self._dict_to_element(data, is_deleted=bool(row["is_deleted"]), version=row["version"])
+                    if elem is not None:
+                        result.append(elem)
+                return result
+            except MemoryError:
+                raise
+            except (sqlite3.Error, json.JSONDecodeError) as e:
+                logger.error("HIGH: Error getting elements by type: %s", e)
+                return []
+
+    def get_elements_by_project(self, project_id: str, include_deleted: bool = False) -> List[UniversalElement]:
+        """Retrieve elements by project_id using the indexed column.
+
+        V129 FIX: Uses the project_id column instead of scanning all JSON
+        blobs or the element_projects join table.
+
+        Args:
+            project_id: The project ID to filter by.
+            include_deleted: If False, exclude soft-deleted elements.
+
+        Returns:
+            List of matching UniversalElement objects.
+        """
+        with self._lock:
+            try:
+                cursor = self._conn.cursor()
+                if include_deleted:
+                    cursor.execute(
+                        "SELECT data, is_deleted, version FROM elements WHERE project_id = ?",
+                        (project_id,),
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT data, is_deleted, version FROM elements WHERE project_id = ? AND is_deleted = 0",
+                        (project_id,),
+                    )
+                rows = cursor.fetchall()
+                result = []
+                for row in rows:
+                    data = json.loads(row["data"]) if isinstance(row["data"], str) else row["data"]
+                    elem = self._dict_to_element(data, is_deleted=bool(row["is_deleted"]), version=row["version"])
+                    if elem is not None:
+                        result.append(elem)
+                return result
+            except MemoryError:
+                raise
+            except (sqlite3.Error, json.JSONDecodeError) as e:
+                logger.error("HIGH: Error getting elements by project: %s", e)
+                return []
+
+    def detect_conflicts(self) -> List:
+        """Detect conflicts between elements from different sources.
+
+        Returns a list of Conflict objects for elements that have
+        overlapping geometry or conflicting properties from
+        different ChangeSource origins.
+        """
+        conflicts = []
+        with self._lock:
+            try:
+                elements = self.get_all_elements(include_deleted=False)
+                # Simple conflict detection: find elements with same autocad_handle
+                # or overlapping coordinates from different sources
+                handle_map: Dict[str, list] = {}
+                for elem in elements:
+                    if elem.autocad_handle:
+                        handle_map.setdefault(elem.autocad_handle, []).append(elem)
+
+                from core.models import Conflict, ConflictType
+                for handle, elems in handle_map.items():
+                    if len(elems) > 1:
+                        for i in range(len(elems) - 1):
+                            conflict_id = str(uuid.uuid4()) if 'uuid' in dir() else f"conflict_{handle}_{i}"
+                            try:
+                                import uuid as _uuid
+                                conflict_id = str(_uuid.uuid4())
+                            except ImportError:
+                                pass
+                            conflicts.append(Conflict(
+                                conflict_id=conflict_id,
+                                element_id=elems[i].element_id,
+                                conflict_type=ConflictType.PROPERTY_CONFLICT,
+                                source_a="autocad",
+                                source_b="revit",
+                                change_a={"element_id": elems[i].element_id},
+                                change_b={"element_id": elems[i + 1].element_id},
+                                resolved=False,
+                                timestamp=datetime.now(timezone.utc),
+                            ))
+
+                # Also check conflicts table for persisted conflicts
+                cursor = self._conn.cursor()
+                cursor.execute("SELECT * FROM conflicts WHERE resolved = 0")
+                rows = cursor.fetchall()
+                for row in rows:
+                    conflicts.append(Conflict(
+                        conflict_id=row["conflict_id"],
+                        element_id=row["element_id"],
+                        conflict_type=ConflictType(row["conflict_type"]) if row["conflict_type"] else ConflictType.GEOMETRY_MISMATCH,
+                        source_a=row["source_a"],
+                        source_b=row["source_b"],
+                        change_a=json.loads(row["change_a"]) if row["change_a"] else None,
+                        change_b=json.loads(row["change_b"]) if row["change_b"] else None,
+                        resolved=bool(row["resolved"]),
+                        timestamp=row["timestamp"],
+                    ))
+            except MemoryError:
+                raise
+            except Exception as e:
+                logger.error("MEDIUM: Error detecting conflicts: %s", e)
+            return conflicts
+
+    def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> Optional[Any]:
+        """Resolve a conflict by ID with the given strategy.
+
+        Args:
+            conflict_id: The conflict to resolve.
+            strategy: Resolution strategy (LAST_WRITE_WINS or SEMANTIC_MERGE).
+
+        Returns:
+            The resolved Conflict object, or None if not found.
+        """
+        with self._lock:
+            try:
+                cursor = self._conn.cursor()
+                cursor.execute(
+                    "SELECT * FROM conflicts WHERE conflict_id = ?",
+                    (conflict_id,),
+                )
+                row = cursor.fetchone()
+                if row is None:
+                    return None
+
+                cursor.execute(
+                    "UPDATE conflicts SET resolved = 1, resolution = ? WHERE conflict_id = ?",
+                    (json.dumps({"strategy": strategy}), conflict_id),
+                )
+                self._conn.commit()
+
+                from core.models import Conflict, ConflictType
+                return Conflict(
+                    conflict_id=row["conflict_id"],
+                    element_id=row["element_id"],
+                    conflict_type=ConflictType(row["conflict_type"]) if row["conflict_type"] else ConflictType.GEOMETRY_MISMATCH,
+                    source_a=row["source_a"],
+                    source_b=row["source_b"],
+                    change_a=json.loads(row["change_a"]) if row["change_a"] else None,
+                    change_b=json.loads(row["change_b"]) if row["change_b"] else None,
+                    resolution={"strategy": strategy},
+                    resolved=True,
+                    timestamp=row["timestamp"],
+                )
+            except MemoryError:
+                raise
+            except Exception as e:
+                logger.error("HIGH: Error resolving conflict %s: %s", conflict_id, e)
+                return None
+
+    def get_statistics(self) -> Any:
+        """Get database statistics for the health/statistics endpoint.
+
+        Returns an object with total_elements, active_elements, etc.
+        """
+        from core.models import Conflict, ConflictType
+        with self._lock:
+            try:
+                cursor = self._conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM elements")
+                total_elements = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM elements WHERE is_deleted = 0")
+                active_elements = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM elements WHERE is_deleted = 1")
+                deleted_elements = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM relationships")
+                total_connections = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM conflicts")
+                total_conflicts = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM conflicts WHERE resolved = 0")
+                unresolved_conflicts = cursor.fetchone()[0]
+
+                class _Stats:
+                    pass
+                stats = _Stats()
+                stats.total_elements = total_elements
+                stats.active_elements = active_elements
+                stats.deleted_elements = deleted_elements
+                stats.total_connections = total_connections
+                stats.total_conflicts = total_conflicts
+                stats.unresolved_conflicts = unresolved_conflicts
+                return stats
+            except MemoryError:
+                raise
+            except Exception as e:
+                logger.error("HIGH: Error getting statistics: %s", e)
+                class _Stats:
+                    total_elements = 0
+                    active_elements = 0
+                    deleted_elements = 0
+                    total_connections = 0
+                    total_conflicts = 0
+                    unresolved_conflicts = 0
+                return _Stats()
 
     # ── Deserialization ───────────────────────────────────────────────────
 

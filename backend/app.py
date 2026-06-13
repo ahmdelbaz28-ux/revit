@@ -564,6 +564,12 @@ class SecurityHeadersMiddleware:
                 headers.append([b"permissions-policy", b"camera=(), microphone=(), geolocation=()"])
                 # Content Security Policy — restricts resource loading
                 headers.append([b"content-security-policy", csp.encode("utf-8")])
+                # V129 FIX: HSTS header — enforce HTTPS in all environments.
+                # Even in development, including HSTS prevents accidental HTTP
+                # usage. Max-age=31536000 = 1 year. includeSubDomains prevents
+                # HTTP on any subdomain. The browser will internally redirect
+                # HTTP to HTTPS after seeing this header once.
+                headers.append([b"strict-transport-security", b"max-age=31536000; includeSubDomains"])
                 message = {**message, "headers": headers}
             await send(message)
 
