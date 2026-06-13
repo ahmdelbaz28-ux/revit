@@ -387,12 +387,16 @@ class TestNECConstants:
     """Verify NEC Table 8 and ampacity constants."""
 
     def test_resistance_table_keys(self):
-        expected = {"18", "16", "14", "12", "10", "8", "6", "4", "2", "1", "1/0", "2/0", "3/0", "4/0"}
+        # C-3 FIX: Table now uses 20°C stranded values from fireai/constants/nec.py
+        # Includes AWG 3 which is in the stranded conductor table
+        expected = {"18", "16", "14", "12", "10", "8", "6", "4", "3", "2", "1", "1/0", "2/0", "3/0", "4/0"}
         assert set(NEC_TABLE8_RESISTANCE_OHM_PER_KM.keys()) == expected
 
     def test_awg14_resistance(self):
-        """AWG 14: 8.19 Ω/km at 75°C (NEC Table 8)."""
-        assert NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] == pytest.approx(8.19, abs=0.01)
+        """AWG 14: 4.263 Ω/km at 20°C stranded (NEC Table 8).
+        C-3 FIX: Value changed from 8.19 (incorrect 75°C claim) to 4.263 (correct 20°C stranded).
+        Temperature correction to 75°C is applied in compute_voltage_drop()."""
+        assert NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] == pytest.approx(4.263, abs=0.01)
 
     def test_resistance_increases_with_gauge(self):
         """Thinner wire (higher AWG) has more resistance."""
@@ -619,19 +623,26 @@ class TestComputeBatteryCapacityAh:
 
 
 class TestComputeVoltageDrop:
-    """NEC Chapter 9, Table 8: V_drop = 2 × I × L × R_per_m."""
+    """NEC Chapter 9, Table 8: V_drop = 2 × I × L × R_per_m (at operating temp)."""
 
     def test_basic_calculation(self):
-        """V_drop = 2 × I × L × R/km / 1000."""
+        """V_drop = 2 × I × L × R/km / 1000 × temp_correction.
+        C-3 FIX: Now includes temperature correction from 20°C to 75°C operating temp.
+        R_75 = R_20 × [1 + 0.00393 × (75-20)] = R_20 × 1.2163"""
         result = compute_voltage_drop(1.0, 100.0, "14")
-        r_per_m = NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] / 1000.0
+        # Resistance at 20°C ref, corrected to 75°C operating temp
+        r_20_per_m = NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] / 1000.0
+        temp_correction = 1.0 + 0.00393 * (75.0 - 20.0)  # 1.2163
+        r_per_m = r_20_per_m * temp_correction
         expected = 2.0 * 1.0 * 100.0 * r_per_m
         assert result["voltage_drop_v"] == pytest.approx(expected, rel=0.01)
 
     def test_return_factor_of_two(self):
         """SAFETY: Factor of 2 for DC round-trip (supply + return)."""
         result = compute_voltage_drop(1.0, 100.0, "14")
-        r_per_m = NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] / 1000.0
+        r_20_per_m = NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] / 1000.0
+        temp_correction = 1.0 + 0.00393 * (75.0 - 20.0)
+        r_per_m = r_20_per_m * temp_correction
         # Without ×2 factor would be:
         single = 1.0 * 100.0 * r_per_m
         assert result["voltage_drop_v"] == pytest.approx(2.0 * single, rel=0.01)

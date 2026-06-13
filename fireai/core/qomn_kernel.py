@@ -282,24 +282,18 @@ NFPA72_NAC_MIN_CD = 75  # 75 candela
 NFPA72_NAC_SLEEPING_MIN_CD = 177  # 177 candela
 
 # ── NEC Table 8 — Wire Resistance (Copper, Stranded) ──────────────────────
-# Source: NEC 2023 Edition, Chapter 9, Table 8
-# Values in Ω/km at 75°C (maximum operating temp per NEC 310.4 note)
-NEC_TABLE8_RESISTANCE_OHM_PER_KM: Dict[str, float] = {
-    "18": 20.9,  # AWG 18 — 20.9 Ω/km
-    "16": 13.1,  # AWG 16 — 13.1 Ω/km
-    "14": 8.19,  # AWG 14 — 8.19 Ω/km (most common fire alarm)
-    "12": 5.16,  # AWG 12 — 5.16 Ω/km
-    "10": 3.24,  # AWG 10 — 3.24 Ω/km
-    "8": 2.03,  # AWG 8  — 2.03 Ω/km
-    "6": 1.28,  # AWG 6  — 1.28 Ω/km
-    "4": 0.808,  # AWG 4  — 0.808 Ω/km
-    "2": 0.508,  # AWG 2  — 0.508 Ω/km
-    "1": 0.403,  # AWG 1  — 0.403 Ω/km
-    "1/0": 0.320,  # AWG 1/0 — 0.320 Ω/km
-    "2/0": 0.253,  # AWG 2/0 — 0.253 Ω/km
-    "3/0": 0.201,  # AWG 3/0 — 0.201 Ω/km
-    "4/0": 0.160,  # AWG 4/0 — 0.160 Ω/km
-}
+# C-3 FIX: Values now sourced from the canonical Single Source of Truth
+# in fireai/constants/nec.py. The old hardcoded values (8.19, 5.16, 3.24
+# ohm/km at "75°C") were 1.1-3.2% BELOW the NEC published values, causing
+# underestimation of voltage drop — a life-safety hazard.
+# Now we store the 20°C reference values and apply temperature correction
+# in compute_voltage_drop() using R_T = R_20 * [1 + alpha*(T-20)].
+from fireai.constants.nec import (
+    NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as NEC_TABLE8_RESISTANCE_OHM_PER_KM,
+    COPPER_TEMP_COEFFICIENT,
+    DEFAULT_OPERATING_TEMP_C as _NEC_DEFAULT_OPERATING_TEMP_C,
+    TABLE8_REFERENCE_TEMP_C as _NEC_TABLE8_REFERENCE_TEMP_C,
+)
 
 # NEC wire ampacity at 60°C insulation — NEC 2023 §310.16
 NEC_AMPACITY_60C: Dict[str, float] = {
@@ -665,7 +659,16 @@ def compute_voltage_drop(
             f"AWG gauge '{awg_gauge}' not in NEC Table 8. Valid: {sorted(NEC_TABLE8_RESISTANCE_OHM_PER_KM.keys())}"
         )
 
-    r_ohm_per_m = NEC_TABLE8_RESISTANCE_OHM_PER_KM[awg] / 1000.0
+    # C-3 FIX: Apply temperature correction from 20°C reference to operating temp.
+    # The NEC Table 8 values are at 20°C reference temperature.
+    # For voltage drop calculations, resistance at operating temperature must be used:
+    #   R_T = R_20 × [1 + α × (T - 20)]
+    # At 75°C (default for THHN/THWN): R_75 = R_20 × 1.2163 (21.6% higher)
+    # Using the 20°C values directly (as the old code did with "75°C" values
+    # that were actually lower than 20°C) UNDERESTIMATES voltage drop.
+    r_20_ohm_per_km = NEC_TABLE8_RESISTANCE_OHM_PER_KM[awg]
+    temp_correction = 1.0 + COPPER_TEMP_COEFFICIENT * (_NEC_DEFAULT_OPERATING_TEMP_C - _NEC_TABLE8_REFERENCE_TEMP_C)
+    r_ohm_per_m = (r_20_ohm_per_km * temp_correction) / 1000.0
 
     # V_drop = 2 × I × L × R  (round-trip DC)
     # Source: NEC Chapter 9, Note 2 (DC two-conductor circuit)

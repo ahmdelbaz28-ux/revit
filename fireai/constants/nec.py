@@ -102,3 +102,53 @@ CONDUIT_SPECS_RMC: dict = {
     4.0:  {"inner_diameter_mm": 102.3, "area_100pct_mm2": 8217.0, "area_40pct_mm2": 3287.0},
 }
 """RMC conduit specifications per NEC Chapter 9, Table 4."""
+
+
+# ============================================================================
+# NEC Chapter 9, Table 8 — Wire Resistance (Copper, Stranded)
+# C-3 FIX: Single Source of Truth for NEC Table 8 resistance values.
+# All other modules MUST import from here — no duplicate tables.
+# ============================================================================
+
+# Resistance values in ohm/km at 20°C reference temperature
+# Source: NEC 2023 Edition, Chapter 9, Table 8 (Copper, Stranded)
+# Using STRANDED values (conservative: higher resistance = higher voltage drop)
+# Stranded conductors have slightly higher resistance than solid due to
+# inter-strand contact resistance and slightly reduced cross-sectional area.
+# For safety-critical voltage drop calculations, stranded values ensure
+# we never UNDERESTIMATE voltage drop.
+NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C: dict = {
+    "18": 10.870,   # AWG 18 stranded
+    "16": 6.820,    # AWG 16 stranded
+    "14": 4.263,    # AWG 14 stranded (per 1000ft: 1.299 ohm → 4.263 ohm/km)
+    "12": 2.668,    # AWG 12 stranded (per 1000ft: 0.812 ohm → 2.668 ohm/km)
+    "10": 1.678,    # AWG 10 stranded (per 1000ft: 0.511 ohm → 1.678 ohm/km)
+    "8":  1.054,    # AWG 8 stranded
+    "6":  0.662,    # AWG 6 stranded
+    "4":  0.416,    # AWG 4 stranded
+    "3":  0.330,    # AWG 3 stranded
+    "2":  0.261,    # AWG 2 stranded
+    "1":  0.207,    # AWG 1 stranded
+    "1/0": 0.164,   # AWG 1/0 stranded
+    "2/0": 0.130,   # AWG 2/0 stranded
+    "3/0": 0.103,   # AWG 3/0 stranded
+    "4/0": 0.0818,  # AWG 4/0 stranded
+}
+"""NEC Chapter 9, Table 8 — Copper stranded conductor resistance at 20°C.
+Values in ohm/km. Source: NEC 2023, Chapter 9, Table 8.
+Using STRANDED values as they are HIGHER than solid (conservative for
+voltage drop calculations — never underestimates)."""
+
+# Copper temperature coefficient of resistance
+# Source: NEC Chapter 9, Table 8 notes; NEMA/IEC standards
+COPPER_TEMP_COEFFICIENT: float = 0.00393
+"""Temperature coefficient of resistance for copper: 0.00393 per degree C.
+Formula: R_T = R_20 * [1 + alpha * (T - 20)]
+At 75°C operating temperature: R_75 = R_20 * 1.2163 (21.6% higher than 20°C)"""
+
+# Default operating temperature for fire alarm circuits
+# Per NEC 310.16: 75°C for THHN/THWN insulated cables (75°C column)
+DEFAULT_OPERATING_TEMP_C: float = 75.0
+
+# Reference temperature for NEC Table 8 values
+TABLE8_REFERENCE_TEMP_C: float = 20.0

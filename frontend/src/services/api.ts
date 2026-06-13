@@ -19,6 +19,33 @@ import type {
 
 const API_BASE = '/api';
 
+/**
+ * C-1 FIX: Get API key from environment or runtime config.
+ * In production, the backend requires X-API-Key for all mutating requests.
+ * The key is read from: VITE_FIREAI_API_KEY env var > localStorage settings > prompt.
+ */
+function getApiKey(): string | null {
+  // 1. Check Vite env variable (set at build time or in .env)
+  const envKey = import.meta.env.VITE_FIREAI_API_KEY;
+  if (envKey) return envKey;
+
+  // 2. Check localStorage (set via Settings page at runtime)
+  try {
+    const stored = localStorage.getItem('fireai_settings');
+    if (stored) {
+      const settings = JSON.parse(stored);
+      if (settings?.apiKey && typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
+        return settings.apiKey.trim();
+      }
+    }
+  } catch {
+    // Invalid JSON in localStorage — ignore
+  }
+
+  // 3. No key available — return null (backend will return 401 for mutating requests)
+  return null;
+}
+
 class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -32,6 +59,7 @@ class ApiClient {
   /**
    * Fetch with retry and exponential backoff.
    * Extracts `data` from the `{success, data, message}` response wrapper.
+   * C-1 FIX: Includes X-API-Key header when available for production auth.
    */
   private async fetchWithRetry<T>(
     url: string,
@@ -45,12 +73,23 @@ class ApiClient {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30000);
 
+        // Build headers with optional API key
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        const apiKey = getApiKey();
+        if (apiKey) {
+          headers['X-API-Key'] = apiKey;
+        }
+        // Merge caller headers (can override Content-Type for file uploads)
+        if (options?.headers) {
+          const callerHeaders = options.headers as Record<string, string>;
+          Object.assign(headers, callerHeaders);
+        }
+
         const response = await fetch(`${API_BASE}${url}`, {
           ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            ...options?.headers,
-          },
+          headers,
           signal: controller.signal,
         });
 

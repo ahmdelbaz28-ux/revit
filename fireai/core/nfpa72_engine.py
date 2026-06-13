@@ -210,18 +210,27 @@ CONDUCTOR_COUNT_DERATING = {
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # NFPA 72 TABLE 17.6.3.1 — Detector Spacing vs Ceiling Height
+# M-10 FIX: _SMOKE_SPACING_TABLE replaced with flat 9.1m per V130 fix.
+# NFPA 72-2022 §17.7.3.2.3 mandates flat 9.1m for smoke detectors at ALL heights.
+# The old table incorrectly applied heat detector reduction to smoke detectors.
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# M-10 FIX: Smoke detector spacing is FLAT at 9.1m per NFPA 72 §17.7.3.2.3.
+# The old height-reduced table (8.20, 7.30, 6.40...) was the V130 bug —
+# it applied heat detector reduction (Table 17.6.3.5.1) to smoke detectors,
+# which is WRONG. Smoke detectors have NO height-based spacing reduction.
+# Source: fireai/constants/nfpa72.py SMOKE_HEIGHT_SPACING_TABLE (canonical).
 _SMOKE_SPACING_TABLE = [
     # (max_ceiling_height_m, listed_spacing_m)
-    (3.0, 9.10),  # 30 ft → 9.1 m
-    (3.9, 8.20),  # 27 ft → 8.2 m
-    (4.9, 7.30),  # 24 ft → 7.3 m
-    (6.1, 6.40),  # 21 ft → 6.4 m
-    (7.6, 5.50),  # 18 ft → 5.5 m
-    (9.1, 4.60),  # 15 ft → 4.6 m
-    (10.7, 3.70),  # 12 ft → 3.7 m
-    (12.2, 3.00),  # 10 ft → 3.0 m
+    # ALL heights: flat 9.10m per NFPA 72-2022 §17.7.3.2.3
+    (3.0, 9.10),   # flat 9.1m
+    (3.9, 9.10),   # flat 9.1m
+    (4.9, 9.10),   # flat 9.1m
+    (6.1, 9.10),   # flat 9.1m
+    (7.6, 9.10),   # flat 9.1m
+    (9.1, 9.10),   # flat 9.1m
+    (10.7, 9.10),  # flat 9.1m
+    (12.2, 9.10),  # flat 9.1m
 ]
 
 _HEAT_SPACING_TABLE = [
@@ -349,7 +358,9 @@ def get_detector_spacing(
     det_type = detector_type.lower()
     table = _SMOKE_SPACING_TABLE if det_type == "smoke" else _HEAT_SPACING_TABLE
 
-    spacing = 3.00  # Conservative default for heights exceeding table
+    # M-10 FIX: Smoke detector fallback is flat 9.10m (no height reduction).
+    # Heat detector fallback is conservative 3.00m (height-based reduction applies).
+    spacing = 9.10 if det_type == "smoke" else 3.00
     row_desc = f">{table[-1][0]}m (conservative)"
 
     for max_h, listed_s in table:

@@ -23,6 +23,10 @@ router = APIRouter(prefix="/parse-dwg", tags=["dwg"])
 
 _DWG_ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf"})
 
+# C-5 FIX: Maximum upload size (100 MB) to prevent OOM attacks.
+# A safety-critical system must not be vulnerable to DoS via oversized uploads.
+_MAX_DWG_SIZE_BYTES = 100 * 1024 * 1024  # 100 MB
+
 
 @router.post("")
 async def parse_dwg(file: UploadFile = File(...)):  # noqa: B008
@@ -44,14 +48,31 @@ async def parse_dwg(file: UploadFile = File(...)):  # noqa: B008
             detail=f"Unsupported file extension '{ext}'. Allowed: {', '.join(sorted(_DWG_ALLOWED_EXTENSIONS))}",
         )
 
-    # ── Save upload to a temp file ──────────────────────────────────────
+    # ── Save upload to a temp file with size limit (C-5 FIX) ────────────
     try:
         fd, temp_path = tempfile.mkstemp(
             suffix=ext, prefix="fireai_dwg_upload_"
         )
         os.close(fd)
 
-        contents = await file.read()
+        # Read in chunks to enforce size limit without loading entire file into memory
+        file_size = 0
+        chunks = []
+        async for chunk in file.chunks():
+            file_size += len(chunk)
+            if file_size > _MAX_DWG_SIZE_BYTES:
+                # Clean up temp file before raising
+                try:
+                    os.unlink(temp_path)
+                except OSError:
+                    pass
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File too large (max {_MAX_DWG_SIZE_BYTES // (1024*1024)} MB). "
+                           "Upload a smaller file or split the drawing.",
+                )
+            chunks.append(chunk)
+        contents = b''.join(chunks)
 
         # ── Validate non-empty file ─────────────────────────────────────
         if not contents:

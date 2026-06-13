@@ -157,37 +157,41 @@ class TestGetDetectorSpacing:
         assert result.table_row_used == "≤3.0m"
 
     def test_smoke_at_4m(self):
-        """At 4.0 m, smoke detector falls into ≤4.9m row."""
+        """At 4.0 m, smoke detector: flat 9.10m per NFPA 72 §17.7.3.2.3.
+        M-10 FIX: No height-based reduction for smoke detectors."""
         result = get_detector_spacing(4.0, "smoke")
-        # 4.0m > 3.0m but ≤ 4.9m → spacing = 7.30
-        assert result.max_spacing_m == 7.30
-        assert result.coverage_radius_m == round(0.7 * 7.30, 4)
+        # M-10 FIX: Smoke spacing is flat 9.10m at ALL heights
+        assert result.max_spacing_m == 9.10
+        assert result.coverage_radius_m == round(0.7 * 9.10, 4)
 
     def test_smoke_at_7_5m(self):
-        """At 7.5 m, smoke detector falls into ≤7.6m row (just under)."""
+        """At 7.5 m, smoke detector: flat 9.10m per NFPA 72 §17.7.3.2.3.
+        M-10 FIX: No height-based reduction for smoke detectors."""
         result = get_detector_spacing(7.5, "smoke")
-        # 7.5m ≤ 7.6m → spacing = 5.50
-        assert result.max_spacing_m == 5.50
-        assert result.coverage_radius_m == round(0.7 * 5.50, 4)
+        # M-10 FIX: Smoke spacing is flat 9.10m at ALL heights
+        assert result.max_spacing_m == 9.10
+        assert result.coverage_radius_m == round(0.7 * 9.10, 4)
 
     def test_smoke_at_12_2m(self):
-        """At exactly 12.2 m, smoke detector uses the last table row (≤12.2m)."""
+        """At exactly 12.2 m, smoke detector: flat 9.10m per NFPA 72 §17.7.3.2.3.
+        M-10 FIX: No height-based reduction for smoke detectors."""
         result = get_detector_spacing(12.2, "smoke")
-        assert result.max_spacing_m == 3.00
-        assert result.coverage_radius_m == round(0.7 * 3.00, 4)
+        # M-10 FIX: Smoke spacing is flat 9.10m at ALL heights
+        assert result.max_spacing_m == 9.10
+        assert result.coverage_radius_m == round(0.7 * 9.10, 4)
         assert result.table_row_used == "≤12.2m"
 
     def test_smoke_at_15m_exceeds_table(self):
-        """At 15 m, smoke detector exceeds table — conservative default."""
+        """At 15 m, smoke detector exceeds table — flat 9.10m fallback.
+        M-10 FIX: Flat 9.10m at all heights, even beyond table."""
         result = get_detector_spacing(15.0, "smoke")
-        assert result.max_spacing_m == 3.00  # Conservative default
-        assert result.coverage_radius_m == round(0.7 * 3.00, 4)
-        assert "conservative" in result.table_row_used.lower()
+        assert result.max_spacing_m == 9.10  # Flat spacing fallback
+        assert result.coverage_radius_m == round(0.7 * 9.10, 4)
 
     def test_smoke_at_100m_exceeds_table(self):
-        """Very high ceiling — still gets conservative default."""
+        """Very high ceiling — flat 9.10m fallback."""
         result = get_detector_spacing(100.0, "smoke")
-        assert result.max_spacing_m == 3.00
+        assert result.max_spacing_m == 9.10
 
     # --- Heat detector ---
 
@@ -262,10 +266,11 @@ class TestGetDetectorSpacing:
         assert "17.6.3.1" in result.nfpa_section
 
     def test_formula_contains_spacing_and_height(self):
-        """Formula string should contain the spacing value and height."""
+        """Formula string should contain the spacing value and height.
+        M-10 FIX: Smoke spacing is now flat 9.1m at all heights."""
         result = get_detector_spacing(4.0, "smoke")
-        # spacing is formatted as raw float, so 7.3 not 7.30
-        assert "7.3" in result.formula
+        # M-10 FIX: spacing is flat 9.1m, not height-reduced 7.3m
+        assert "9.1" in result.formula
         assert "4.0" in result.formula
 
 
@@ -297,9 +302,12 @@ class TestEstimateDetectorCount:
         assert result["min_detector_count"] > 1
 
     def test_high_ceiling_needs_more_detectors(self):
-        """Higher ceiling = smaller spacing = more detectors for same area."""
-        low = estimate_detector_count(200.0, 3.0, "smoke")
-        high = estimate_detector_count(200.0, 10.0, "smoke")
+        """M-10 FIX: Smoke detectors have FLAT spacing at all heights.
+        For smoke detectors, spacing doesn't change with height.
+        For heat detectors, higher ceiling = smaller spacing = more detectors.
+        We test with heat detectors to verify the height-based reduction."""
+        low = estimate_detector_count(200.0, 3.0, "heat")
+        high = estimate_detector_count(200.0, 10.0, "heat")
         assert high["min_detector_count"] > low["min_detector_count"]
 
     def test_heat_vs_smoke(self):
@@ -1148,16 +1156,20 @@ class TestCrossCutting:
         assert abs(v_drop_at_max - expected_max_drop) < 0.1
 
     def test_all_spacing_tables_have_decreasing_spacing(self):
-        """As ceiling height increases, spacing should decrease."""
-        for table_name, table in [
-            ("smoke", _SMOKE_SPACING_TABLE),
-            ("heat", _HEAT_SPACING_TABLE),
-        ]:
-            spacings = [s for _, s in table]
-            for i in range(len(spacings) - 1):
-                assert spacings[i] > spacings[i + 1], (
-                    f"{table_name} table: spacing should decrease with height"
-                )
+        """As ceiling height increases, HEAT detector spacing should decrease.
+        M-10 FIX: Smoke detector spacing is FLAT (9.10m) at all heights per
+        NFPA 72 §17.7.3.2.3 — it does NOT decrease. Only heat detectors
+        have height-based spacing reduction per Table 17.6.3.5.1."""
+        # Heat table: spacing MUST decrease with height
+        heat_spacings = [s for _, s in _HEAT_SPACING_TABLE]
+        for i in range(len(heat_spacings) - 1):
+            assert heat_spacings[i] > heat_spacings[i + 1], (
+                f"heat table: spacing should decrease with height"
+            )
+        # Smoke table: spacing is FLAT at 9.10m (no height reduction)
+        smoke_spacings = [s for _, s in _SMOKE_SPACING_TABLE]
+        for s in smoke_spacings:
+            assert s == 9.10, f"smoke spacing must be flat 9.10m, got {s}"
 
     def test_smoke_spacing_always_ge_heat_spacing(self):
         """At the same ceiling height, smoke detectors allow larger spacing."""

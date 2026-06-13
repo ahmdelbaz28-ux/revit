@@ -185,10 +185,11 @@ frontend/electron/requirements.txt
 # Build artifacts
 frontend/dist/
 
-# Database files
-db/*.db
-db/*.db-shm
-db/*.db-wal
+# Database files (M-1 FIX: also exclude root-level .db files)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
 
 # Audit logs
 *.jsonl

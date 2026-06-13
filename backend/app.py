@@ -53,9 +53,12 @@ from fastapi.staticfiles import StaticFiles
 # StreamingResponse for large DXF/IFC/PDF exports (OOM + timeout).
 from backend.request_context import CorrelationIdMiddleware
 
-# Configure logging
+# H-6 FIX: Read log level from environment instead of hardcoding INFO.
+# Docker sets LOG_LEVEL=WARNING but basicConfig was overriding it.
+_log_level_name = os.getenv("LOG_LEVEL", "INFO").upper()
+_log_level = getattr(logging, _log_level_name, logging.INFO)
 logging.basicConfig(
-    level=logging.INFO,
+    level=_log_level,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
@@ -67,11 +70,16 @@ if _ENV == "production":
     _required = ["FIREAI_API_KEY"]
     _missing = [k for k in _required if not os.getenv(k)]
     if _missing:
+        # C-4 FIX: Fail-fast in production instead of silently continuing.
+        # A safety-critical system with no API key gives a false sense of
+        # security — reads succeed but all writes silently fail (503).
         logger.critical(
-            "Missing required environment variables in production mode: %s. "
-            "The application will start but may reject mutating requests.",
+            "FATAL: Missing required environment variables in production mode: %s. "
+            "Refusing to start — set these variables before deploying.",
             ", ".join(_missing),
         )
+        import sys
+        sys.exit(1)
 
 # ── Security Audit Logging & Log Rotation ──────────────────────────────────
 # V100+V105: Structured security event logging with tamper-evident chain
