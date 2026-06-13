@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-13 19:38:08",
+  "generated_at": "2026-06-13 21:35:30",
   "canonicals": {
     "SMOKE_MAX_SPACING_M": 9.1,
     "HEAT_MAX_SPACING_M": 6.1,
@@ -256,7 +256,7 @@
       {
         "file": "fireai/core/nfpa72_models.py",
         "line": 48,
-        "value": "0.10  # 4 inches per NFPA 72 \u00a717.6.3.1.1"
+        "value": "0.1016  # 4 inches per NFPA 72 \u00a717.6.3.1.1 (was 0."
       }
     ],
     "MAX_DIMENSION_M": [
@@ -318,14 +318,14 @@
     "TIA568_HORIZONTAL_MAX_M": [
       {
         "file": "fireai/core/qomn_kernel.py",
-        "line": 324,
+        "line": 318,
         "value": "90.0  # 90m horizontal \u2014 TIA-568-D \u00a76.1.1"
       }
     ],
     "TIA568_TOTAL_CHANNEL_MAX_M": [
       {
         "file": "fireai/core/qomn_kernel.py",
-        "line": 325,
+        "line": 319,
         "value": "100.0  # 100m total including patch cords"
       }
     ],
@@ -980,6 +980,20 @@
         "value": "1e-4  # float comparison tolerance"
       }
     ],
+    "SMOKE_MAX_SPACING_M": [
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 170,
+        "value": "9.1"
+      }
+    ],
+    "EXAMPLE_WRONG_WALL": [
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 173,
+        "value": "0.10  # Renamed to avoid constant_indexer false po"
+      }
+    ],
     "COVERAGE_SAFETY_FACTOR": [
       {
         "file": "fireai/core/spatial_engine/constraint_solver.py",
@@ -1470,6 +1484,12 @@
         "context": "SMOKE_MAX_CEILING_HEIGHT_M,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 29,
+        "type": "usage",
+        "context": "\"SMOKE_MAX_CEILING_HEIGHT_M\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 38,
         "type": "usage",
@@ -1518,6 +1538,12 @@
         "line": 234,
         "type": "usage",
         "context": "\"GRAVITY_M_S2\": 9.81,"
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 40,
+        "type": "usage",
+        "context": "\"GRAVITY_M_S2\": \"backend/services/elevation_service.py\","
       },
       {
         "file": "fireai/tools/constant_indexer.py",
@@ -1570,6 +1596,12 @@
         "context": "BATTERY_ALARM_MINUTES,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 32,
+        "type": "usage",
+        "context": "\"BATTERY_ALARM_MINUTES\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 42,
         "type": "usage",
@@ -1600,6 +1632,12 @@
         "line": 39,
         "type": "usage",
         "context": "BATTERY_SAFETY_FACTOR,  # V128 FIX: Was 1.20 locally, now 1.25 from canonical"
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 33,
+        "type": "usage",
+        "context": "\"BATTERY_SAFETY_FACTOR\": \"fireai/constants/nfpa72.py\","
       },
       {
         "file": "fireai/tools/constant_indexer.py",
@@ -1634,6 +1672,12 @@
         "context": "BATTERY_STANDBY_HOURS,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 31,
+        "type": "usage",
+        "context": "\"BATTERY_STANDBY_HOURS\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 41,
         "type": "usage",
@@ -1664,6 +1708,12 @@
         "line": 90,
         "type": "usage",
         "context": "COVERAGE_RADIUS_FACTOR as COVERAGE_FACTOR_FLAT_CEILING,"
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 23,
+        "type": "usage",
+        "context": "\"COVERAGE_RADIUS_FACTOR\": \"fireai/constants/nfpa72.py\","
       },
       {
         "file": "fireai/tools/constant_indexer.py",
@@ -1704,6 +1754,12 @@
         "context": "HEAT_MAX_SPACING_M,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 22,
+        "type": "usage",
+        "context": "\"HEAT_MAX_SPACING_M\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 31,
         "type": "usage",
@@ -1742,6 +1798,12 @@
         "context": "PULL_STATION_FROM_EXIT_M,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 37,
+        "type": "usage",
+        "context": "\"PULL_STATION_FROM_EXIT_M\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 47,
         "type": "usage",
@@ -1772,6 +1834,12 @@
         "line": 69,
         "type": "usage",
         "context": "PULL_STATION_HEIGHT_M,"
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 36,
+        "type": "usage",
+        "context": "\"PULL_STATION_HEIGHT_M\": \"fireai/constants/nfpa72.py\","
       },
       {
         "file": "fireai/tools/constant_indexer.py",
@@ -1812,6 +1880,24 @@
         "context": "SMOKE_MAX_SPACING_M,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 21,
+        "type": "usage",
+        "context": "\"SMOKE_MAX_SPACING_M\": \"fireai/constants/nfpa72.py\","
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 167,
+        "type": "import",
+        "context": "from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M"
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 170,
+        "type": "usage",
+        "context": "SMOKE_MAX_SPACING_M = 9.1"
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 30,
         "type": "usage",
@@ -1842,6 +1928,18 @@
         "line": 84,
         "type": "usage",
         "context": "WALL_MIN_DISTANCE_M,"
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 26,
+        "type": "usage",
+        "context": "\"WALL_MIN_DISTANCE_M\": \"fireai/constants/nfpa72.py\","
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 108,
+        "type": "import",
+        "context": "\"fix\": \"from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M\","
       },
       {
         "file": "fireai/tools/constant_indexer.py",
@@ -2078,6 +2176,12 @@
         "context": "NAC_MIN_CD,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 34,
+        "type": "usage",
+        "context": "\"NAC_MIN_CD\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 44,
         "type": "usage",
@@ -2104,6 +2208,12 @@
         "context": "NAC_SLEEPING_MIN_CD,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 35,
+        "type": "usage",
+        "context": "\"NAC_SLEEPING_MIN_CD\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 45,
         "type": "usage",
@@ -2122,6 +2232,12 @@
         "line": 74,
         "type": "usage",
         "context": "SMOKE_COVERAGE_RADIUS_M,"
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 24,
+        "type": "usage",
+        "context": "\"SMOKE_COVERAGE_RADIUS_M\": \"fireai/constants/nfpa72.py\","
       },
       {
         "file": "fireai/tools/constant_indexer.py",
@@ -2150,6 +2266,12 @@
         "context": "HEAT_MAX_CEILING_HEIGHT_M,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 30,
+        "type": "usage",
+        "context": "\"HEAT_MAX_CEILING_HEIGHT_M\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 39,
         "type": "usage",
@@ -2176,6 +2298,12 @@
         "context": "SMOKE_MAX_WALL_DISTANCE_M,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 27,
+        "type": "usage",
+        "context": "\"SMOKE_MAX_WALL_DISTANCE_M\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 36,
         "type": "usage",
@@ -2200,6 +2328,12 @@
         "line": 56,
         "type": "usage",
         "context": "HEAT_MAX_WALL_DISTANCE_M,"
+      },
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 28,
+        "type": "usage",
+        "context": "\"HEAT_MAX_WALL_DISTANCE_M\": \"fireai/constants/nfpa72.py\","
       },
       {
         "file": "fireai/tools/constant_indexer.py",
@@ -2248,6 +2382,12 @@
         "context": "VOLTAGE_DROP_MAX_FRACTION,"
       },
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 38,
+        "type": "usage",
+        "context": "\"VOLTAGE_DROP_MAX_FRACTION\": \"fireai/constants/nfpa72.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 49,
         "type": "usage",
@@ -2255,6 +2395,12 @@
       }
     ],
     "HEAT_COVERAGE_RADIUS_M": [
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 25,
+        "type": "usage",
+        "context": "\"HEAT_COVERAGE_RADIUS_M\": \"fireai/constants/nfpa72.py\","
+      },
       {
         "file": "fireai/tools/constant_indexer.py",
         "line": 34,
@@ -2269,6 +2415,12 @@
       }
     ],
     "MOLAR_MASS_AIR": [
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 41,
+        "type": "usage",
+        "context": "\"MOLAR_MASS_AIR\": \"backend/services/elevation_service.py\","
+      },
       {
         "file": "fireai/tools/constant_indexer.py",
         "line": 52,
@@ -2296,6 +2448,12 @@
     ],
     "UNIVERSAL_GAS_CONSTANT": [
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 42,
+        "type": "usage",
+        "context": "\"UNIVERSAL_GAS_CONSTANT\": \"backend/services/elevation_service.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 53,
         "type": "usage",
@@ -2322,6 +2480,12 @@
     ],
     "DEFAULT_AQI": [
       {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 43,
+        "type": "usage",
+        "context": "\"DEFAULT_AQI\": \"backend/services/air_quality_service.py\","
+      },
+      {
         "file": "fireai/tools/constant_indexer.py",
         "line": 54,
         "type": "usage",
@@ -2335,12 +2499,18 @@
       },
       {
         "file": "backend/services/air_quality_service.py",
-        "line": 389,
+        "line": 397,
         "type": "usage",
         "context": "aqi=DEFAULT_AQI,"
       }
     ],
     "DEFAULT_PM25_UG_M3": [
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 44,
+        "type": "usage",
+        "context": "\"DEFAULT_PM25_UG_M3\": \"backend/services/air_quality_service.py\","
+      },
       {
         "file": "fireai/tools/constant_indexer.py",
         "line": 55,
@@ -2355,18 +2525,24 @@
       },
       {
         "file": "backend/services/air_quality_service.py",
-        "line": 256,
+        "line": 264,
         "type": "usage",
         "context": "pm25_ug_m3 = DEFAULT_PM25_UG_M3"
       },
       {
         "file": "backend/services/air_quality_service.py",
-        "line": 390,
+        "line": 398,
         "type": "usage",
         "context": "pm25_ug_m3=DEFAULT_PM25_UG_M3,"
       }
     ],
     "DEFAULT_PM10_UG_M3": [
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 45,
+        "type": "usage",
+        "context": "\"DEFAULT_PM10_UG_M3\": \"backend/services/air_quality_service.py\","
+      },
       {
         "file": "fireai/tools/constant_indexer.py",
         "line": 56,
@@ -2381,18 +2557,24 @@
       },
       {
         "file": "backend/services/air_quality_service.py",
-        "line": 258,
+        "line": 266,
         "type": "usage",
         "context": "pm10_ug_m3 = DEFAULT_PM10_UG_M3"
       },
       {
         "file": "backend/services/air_quality_service.py",
-        "line": 391,
+        "line": 399,
         "type": "usage",
         "context": "pm10_ug_m3=DEFAULT_PM10_UG_M3,"
       }
     ],
     "DEFAULT_LFL_VOL_PCT": [
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 46,
+        "type": "usage",
+        "context": "\"DEFAULT_LFL_VOL_PCT\": \"backend/services/hazmat_service.py\","
+      },
       {
         "file": "fireai/tools/constant_indexer.py",
         "line": 57,
@@ -2431,6 +2613,12 @@
       }
     ],
     "DEFAULT_AUTO_IGNITION_C": [
+      {
+        "file": "fireai/tools/crossref_indexer.py",
+        "line": 47,
+        "type": "usage",
+        "context": "\"DEFAULT_AUTO_IGNITION_C\": \"backend/services/hazmat_service.py\","
+      },
       {
         "file": "fireai/tools/constant_indexer.py",
         "line": 58,
@@ -2484,8 +2672,8 @@
   "drift_issues": [],
   "summary": {
     "total_constants": 33,
-    "total_definitions": 202,
-    "total_usages": 165,
+    "total_definitions": 204,
+    "total_usages": 194,
     "drift_count": 0
   }
 }

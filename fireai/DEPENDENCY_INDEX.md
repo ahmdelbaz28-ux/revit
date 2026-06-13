@@ -35,12 +35,12 @@ Layer 1 (Foundation):     contracts, nfpa72_models, nfpa72_calculations
 ## 🚨 Circular Import Chains
 
 1. `nfpa72_models` → `nfpa72_models`
-2. `digital_twin` → `digital_twin`
-3. `digital_twin_sync` → `digital_twin_sync`
+2. `digital_twin_sync` → `digital_twin_sync`
+3. `digital_twin` → `digital_twin`
 4. `acoustic_calculator` → `acoustic_calculator`
-5. `ugld_raytrace` → `ugld_raytrace`
-6. `ugld_acoustics` → `ugld_acoustics`
-7. `acoustics_engine` → `acoustics_engine`
+5. `acoustics_engine` → `acoustics_engine`
+6. `ugld_raytrace` → `ugld_raytrace`
+7. `ugld_acoustics` → `ugld_acoustics`
 8. `secret_rotation` → `secret_rotation`
 9. `security_logging` → `security_logging`
 10. `battery_aging_derating` → `battery_aging_derating`

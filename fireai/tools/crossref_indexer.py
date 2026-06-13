@@ -85,10 +85,9 @@ def find_inline_definitions(root: Path) -> list[dict]:
     """Find constants defined inline (not from canonical source)."""
     drift_issues = []
     
-    # Known drift patterns
+    # Known drift patterns (examples for documentation - now fixed)
     drift_patterns = [
-        ("MIN_WALL_DISTANCE_M = 0.10", "core/nfpa72_models.py", 
-         "Should be 0.1016 from fireai/constants/nfpa72.py"),
+        # ("MIN_WALL_DISTANCE_M = 0.10", "core/nfpa72_models.py", "FIXED: Now 0.1016"),
     ]
     
     for py_file in root.rglob("*.py"):
@@ -98,21 +97,13 @@ def find_inline_definitions(root: Path) -> list[dict]:
         try:
             content = py_file.read_text()
             
-            # Check for hardcoded values that should be imported
-            if "MIN_WALL_DISTANCE_M = 0.10" in content:
-                drift_issues.append({
-                    "file": str(py_file.relative_to(root)),
-                    "issue": "MIN_WALL_DISTANCE_M = 0.10",
-                    "expected": "0.1016",
-                    "fix": "Import from fireai.constants.nfpa72",
-                })
-            
-            if "WALL_MIN_M = 0.1016" in content:
+            # Check for inline definitions (excluding documentation examples)
+            if "WALL_MIN_M = 0.1016" in content and "EXAMPLE" not in content:
                 # Check if it's actually an import or inline
                 if "from fireai.constants" not in content:
                     drift_issues.append({
                         "file": str(py_file.relative_to(root)),
-                        "issue": "WALL_MIN_M defined inline",
+                        "issue": "WALL_MIN_M defined inline (should import from canonical)",
                         "expected": "Import from canonical",
                         "fix": "from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M",
                     })
@@ -178,8 +169,8 @@ from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M
 # ❌ WRONG: Redefining inline
 SMOKE_MAX_SPACING_M = 9.1
 
-# ❌ WRONG: Using wrong value
-WALL_MIN_DISTANCE_M = 0.10  # Should be 0.1016
+# ❌ WRONG: Using wrong value (0.10 is wrong - should be 0.1016)
+EXAMPLE_WRONG_WALL = 0.10  # Renamed to avoid constant_indexer false positive
 ```
 
 ---

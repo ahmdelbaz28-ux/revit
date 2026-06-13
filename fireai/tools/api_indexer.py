@@ -21,7 +21,7 @@ def extract_endpoints(routers_dir: Path) -> dict:
     http_methods = ['get', 'post', 'put', 'patch', 'delete', 'ws']
     
     for router_file in routers_dir.glob("*.py"):
-        if router_file.name.startswith("_") or router_file.name == "health.py":
+        if router_file.name.startswith("_") or router_file.name.startswith("test_"):
             continue
             
         content = router_file.read_text()
@@ -122,7 +122,7 @@ def generate_markdown(endpoints: dict) -> str:
         
         for route in routes:
             doc = route['doc'] or ""
-            md += f"| {route['method']} | `{route['path']}` | {module} | {doc} |\n"
+            md += f"| {route['method']} | `{route['path']}` | {category} | {doc} |\n"
         
         md += "\n"
     
