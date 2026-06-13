@@ -13,7 +13,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.auth import require_permission
 from backend.db_service import DatabaseService, get_db_service
+from backend.rbac import Permission
 from backend.schemas import (
     ApiResponse,
     ElementCreate,
@@ -24,10 +26,10 @@ from backend.schemas import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/elements", tags=["elements"])
+router = APIRouter(prefix="/api/v1/elements", tags=["elements"])
 
 
-@router.get("", response_model=ApiResponse[PaginatedData[ElementResponse]])
+@router.get("", response_model=ApiResponse[PaginatedData[ElementResponse]], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def list_elements(
     element_type: Optional[str] = Query(None, description="Filter by element type"),
     project_id: Optional[str] = Query(None, description="Filter by project ID"),
@@ -66,7 +68,7 @@ async def list_elements(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("", response_model=ApiResponse[ElementResponse], status_code=201)
+@router.post("", response_model=ApiResponse[ElementResponse], status_code=201, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def create_element(
     element_data: ElementCreate,
     db: DatabaseService = Depends(get_db_service),
@@ -88,7 +90,7 @@ async def create_element(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/{element_id}", response_model=ApiResponse[ElementResponse])
+@router.get("/{element_id}", response_model=ApiResponse[ElementResponse], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def get_element(
     element_id: str,
     db: DatabaseService = Depends(get_db_service),
@@ -106,7 +108,7 @@ async def get_element(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.put("/{element_id}", response_model=ApiResponse[ElementResponse])
+@router.put("/{element_id}", response_model=ApiResponse[ElementResponse], dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))])
 async def update_element(
     element_id: str,
     element_data: ElementUpdate,
@@ -125,7 +127,7 @@ async def update_element(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.delete("/{element_id}", response_model=ApiResponse[None])
+@router.delete("/{element_id}", response_model=ApiResponse[None], dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))])
 async def delete_element(
     element_id: str,
     db: DatabaseService = Depends(get_db_service),

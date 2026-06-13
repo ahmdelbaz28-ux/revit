@@ -2,12 +2,12 @@
 backend/routers/monitor.py — Real-time Monitoring Dashboard API.
 
 Endpoints:
-  GET /api/monitor/health          → Aggregated health status
-  GET /api/monitor/metrics         → Prometheus-formatted metrics
-  GET /api/monitor/engine-status   → Per-engine status
-  GET /api/monitor/agent-activity  → Agent activity log
-  GET /api/monitor/security-alerts → Active security alerts
-  GET /api/monitor/alerts          → Current alert state
+  GET /api/v1/monitor/health          → Aggregated health status
+  GET /api/v1/monitor/metrics         → Prometheus-formatted metrics
+  GET /api/v1/monitor/engine-status   → Per-engine status
+  GET /api/v1/monitor/agent-activity  → Agent activity log
+  GET /api/v1/monitor/security-alerts → Active security alerts
+  GET /api/v1/monitor/alerts          → Current alert state
 
 All endpoints are rate-limited and include real data from the database,
 event bus, and security logging system.
@@ -24,8 +24,11 @@ from collections import defaultdict, deque
 from datetime import datetime, timezone
 from typing import Any, DefaultDict, Deque, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
+
+from backend.auth import require_permission
+from backend.rbac import Permission
 from fireai.version import __package_version__
 
 logger = logging.getLogger(__name__)
@@ -526,9 +529,9 @@ def _check_rate_limit(request: Request) -> None:
 # Endpoints
 # ════════════════════════════════════════════════════════════════════════════
 
-@router.get("/api/monitor/health")
+@router.get("/api/v1/monitor/health", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_health(request: Request):
-    """GET /api/monitor/health — Aggregated system health status.
+    """GET /api/v1/monitor/health — Aggregated system health status.
 
     Returns real health data from all monitored subsystems including
     engine statuses, database connectivity, and uptime.
@@ -550,9 +553,9 @@ async def get_health(request: Request):
     }
 
 
-@router.get("/api/monitor/metrics")
+@router.get("/api/v1/monitor/metrics", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_metrics(request: Request):
-    """GET /api/monitor/metrics — Prometheus-format metrics.
+    """GET /api/v1/monitor/metrics — Prometheus-format metrics.
 
     Returns engine metrics, security alert counts, and system
     performance data in Prometheus exposition format.
@@ -565,12 +568,12 @@ async def get_metrics(request: Request):
     )
 
 
-@router.get("/api/monitor/engine-status")
+@router.get("/api/v1/monitor/engine-status", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_engine_status(
     request: Request,
     engine_id: Optional[str] = Query(None, description="Filter by engine ID"),
 ):
-    """GET /api/monitor/engine-status — Per-engine status and health.
+    """GET /api/v1/monitor/engine-status — Per-engine status and health.
 
     Returns detailed status for each registered engine including
     CPU, memory, uptime, and version information.
@@ -604,14 +607,14 @@ async def get_engine_status(
     }
 
 
-@router.get("/api/monitor/agent-activity")
+@router.get("/api/v1/monitor/agent-activity", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_agent_activity(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max records to return"),
     agent_id: Optional[str] = Query(None, description="Filter by agent ID"),
     activity_type: Optional[str] = Query(None, description="Filter by activity type"),
 ):
-    """GET /api/monitor/agent-activity — Agent activity log.
+    """GET /api/v1/monitor/agent-activity — Agent activity log.
 
     Returns recent agent actions including design operations,
     validation runs, and export activities.
@@ -634,14 +637,14 @@ async def get_agent_activity(
     }
 
 
-@router.get("/api/monitor/security-alerts")
+@router.get("/api/v1/monitor/security-alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_security_alerts(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max alerts to return"),
     severity: Optional[str] = Query(None, pattern="^(low|medium|high|critical)$"),
     resolved: Optional[bool] = Query(None, description="Filter by resolved state"),
 ):
-    """GET /api/monitor/security-alerts — Active and historical security alerts.
+    """GET /api/v1/monitor/security-alerts — Active and historical security alerts.
 
     Returns security events from the audit logging system including
     unauthorized access attempts, API key violations, and suspicious activity.
@@ -688,9 +691,9 @@ async def get_security_alerts(
     }
 
 
-@router.get("/api/monitor/alerts")
+@router.get("/api/v1/monitor/alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_alerts(request: Request):
-    """GET /api/monitor/alerts — Current alert state.
+    """GET /api/v1/monitor/alerts — Current alert state.
 
     Evaluates all alert rules against current system state and
     returns currently firing alerts with severity and details.

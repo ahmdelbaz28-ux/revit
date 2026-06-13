@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Sentry from "@sentry/react";
 import React from "react";
 import App from "./App";
+import "./i18n";
 import "./index.css";
 
 // ── React Query Client ────────────────────────────────────────────────────

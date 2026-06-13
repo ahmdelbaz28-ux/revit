@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.auth import require_permission
 from backend.contract import validate_connection, validate_paginated
 from backend.database import get_db
 from backend.models import CreateConnectionInput
+from backend.rbac import Permission
 from backend.response import success, error
 
 router = APIRouter(prefix="/projects/{project_id}/connections", tags=["connections"])
@@ -45,7 +47,7 @@ def _normalize_sort(sort: str) -> str:
     return _SORT_MAP.get(sort, "created_at")
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_permission(Permission.CONNECTION_READ))])
 async def list_connections(
     project_id: str,
     page: int = Query(1, ge=1),
@@ -61,7 +63,7 @@ async def list_connections(
     return success(result)
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))])
 async def create_connection(project_id: str, input_data: CreateConnectionInput):
     """Create a new connection in a project."""
     _verify_project(project_id)
@@ -99,7 +101,7 @@ async def create_connection(project_id: str, input_data: CreateConnectionInput):
     return success(connection)
 
 
-@router.put("/{connection_id}")
+@router.put("/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))])
 async def update_connection(
     project_id: str,
     connection_id: str,
@@ -148,7 +150,7 @@ async def update_connection(
     return success(updated)
 
 
-@router.delete("/{connection_id}")
+@router.delete("/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))])
 async def delete_connection(project_id: str, connection_id: str):
     """Delete a connection from a project."""
     _verify_project(project_id)

@@ -2,7 +2,8 @@
  * SettingsPage.tsx - Application configuration
  * Stores settings in sessionStorage (SECURITY FIX: reduces XSS attack window vs localStorage)
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +46,7 @@ interface AppSettings {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  apiUrl: '/api',
+  apiUrl: '/api/v1',
   apiKey: '',
   engineeringStandard: 'IEC',
   theme: 'dark',
@@ -77,6 +78,7 @@ function saveSettings(settings: AppSettings): void {
 // ============================================================================
 
 export function SettingsPage() {
+  const { t, i18n } = useTranslation();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -134,7 +136,7 @@ export function SettingsPage() {
       if (settings.apiKey) {
         headers['X-API-Key'] = settings.apiKey;
       }
-      const baseUrl = settings.apiUrl || '/api';
+      const baseUrl = settings.apiUrl || '/api/v1';
       const response = await fetch(`${baseUrl}/health`, {
         method: 'GET',
         headers,
@@ -155,18 +157,18 @@ export function SettingsPage() {
   const appVersion = import.meta.env.VITE_APP_VERSION || '1.0.0';
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto" aria-label={t('settings.title')}>
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Settings</h1>
-            <p className="text-sm text-slate-400 mt-1">Application configuration</p>
+            <h1 className="text-2xl font-bold text-slate-100">{t('settings.title')}</h1>
+            <p className="text-sm text-slate-400 mt-1">{t('settings.subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             {saved && (
               <span className="flex items-center gap-1 text-sm text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" /> Saved
+                <CheckCircle2 className="h-4 w-4" /> {t('settings.saved')}
               </span>
             )}
             <Button
@@ -175,7 +177,7 @@ export function SettingsPage() {
               className="border-slate-600 text-slate-300"
               onClick={handleReset}
             >
-              <RotateCcw className="h-4 w-4 mr-1" /> Reset Defaults
+              <RotateCcw className="h-4 w-4 mr-1" /> {t('common.resetDefaults')}
             </Button>
             <Button
               size="sm"
@@ -183,7 +185,7 @@ export function SettingsPage() {
               onClick={handleSave}
               disabled={!hasChanges}
             >
-              <Save className="h-4 w-4 mr-1" /> Save Settings
+              <Save className="h-4 w-4 mr-1" /> {t('common.saveSettings')}
             </Button>
           </div>
         </div>
@@ -193,63 +195,71 @@ export function SettingsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Globe className="h-5 w-5 text-blue-400" />
-              <CardTitle className="text-lg text-slate-100">API Configuration</CardTitle>
+              <CardTitle className="text-lg text-slate-100">{t('settings.apiConfiguration')}</CardTitle>
             </div>
             <CardDescription className="text-slate-400">
-              Configure the backend API endpoint
+              {t('settings.apiConfigurationDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">API Base URL</Label>
+              <Label className="text-slate-300" htmlFor="api-url">{t('settings.apiBaseUrl')}</Label>
               <Input
+                id="api-url"
                 value={settings.apiUrl}
                 onChange={(e) => updateSetting('apiUrl', e.target.value)}
                 className="bg-slate-900 border-slate-600 text-slate-100 font-mono"
                 placeholder="e.g., http://localhost:8000/api"
+                aria-describedby="api-url-hint"
               />
-              <p className="text-xs text-slate-500">
-                The base URL for the Digital Twin API. Default: /api (relative, uses same host)
+              <p id="api-url-hint" className="text-xs text-slate-500">
+                {t('settings.apiBaseUrlHint')}
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Request Timeout (seconds)</Label>
+                <Label className="text-slate-300" htmlFor="request-timeout">{t('settings.requestTimeout')}</Label>
                 <Input
+                  id="request-timeout"
                   type="number"
                   min={5}
                   max={120}
                   value={settings.requestTimeout}
                   onChange={(e) => updateSetting('requestTimeout', parseInt(e.target.value) || 15)}
                   className="bg-slate-900 border-slate-600 text-slate-100"
+                  aria-label={t('settings.requestTimeout')}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Max Retries</Label>
+                <Label className="text-slate-300" htmlFor="max-retries">{t('settings.maxRetries')}</Label>
                 <Input
+                  id="max-retries"
                   type="number"
                   min={0}
                   max={10}
                   value={settings.maxRetries}
                   onChange={(e) => updateSetting('maxRetries', parseInt(e.target.value) || 3)}
                   className="bg-slate-900 border-slate-600 text-slate-100"
+                  aria-label={t('settings.maxRetries')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Auto-refresh Interval (seconds)</Label>
+              <Label className="text-slate-300" htmlFor="auto-refresh">{t('settings.autoRefreshInterval')}</Label>
               <Input
+                id="auto-refresh"
                 type="number"
                 min={5}
                 max={300}
                 value={settings.autoRefreshInterval}
                 onChange={(e) => updateSetting('autoRefreshInterval', parseInt(e.target.value) || 30)}
                 className="bg-slate-900 border-slate-600 text-slate-100"
+                aria-label={t('settings.autoRefreshInterval')}
               />
               <p className="text-xs text-slate-500">
-                How often dashboard data refreshes automatically (0 = disabled)
+                {t('settings.autoRefreshHint')}
               </p>
             </div>
           </CardContent>
@@ -260,29 +270,31 @@ export function SettingsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Key className="h-5 w-5 text-amber-400" />
-              <CardTitle className="text-lg text-slate-100">API Key</CardTitle>
+              <CardTitle className="text-lg text-slate-100">{t('settings.apiKey')}</CardTitle>
             </div>
             <CardDescription className="text-slate-400">
-              Authentication key for the backend API
+              {t('settings.apiKeyDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">API Key</Label>
+              <Label className="text-slate-300" htmlFor="api-key">{t('settings.apiKey')}</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
+                    id="api-key"
                     type={showApiKey ? 'text' : 'password'}
                     value={settings.apiKey}
                     onChange={(e) => updateSetting('apiKey', e.target.value)}
                     className="bg-slate-900 border-slate-600 text-slate-100 font-mono pr-10"
                     placeholder="Enter your API key"
+                    aria-describedby="api-key-hint"
                   />
                   <button
                     type="button"
                     onClick={() => setShowApiKey(!showApiKey)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
-                    aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+                    aria-label={showApiKey ? t('settings.hideApiKey') : t('settings.showApiKey')}
                   >
                     {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -299,22 +311,21 @@ export function SettingsPage() {
                   ) : (
                     <Shield className="h-4 w-4 mr-1" />
                   )}
-                  Test Connection
+                  {t('common.testConnection')}
                 </Button>
               </div>
               {connectionTestResult === 'success' && (
-                <p className="text-xs text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" /> Connection successful
+                <p className="text-xs text-emerald-400 flex items-center gap-1" role="status">
+                  <CheckCircle2 className="h-3 w-3" /> {t('settings.connectionSuccessful')}
                 </p>
               )}
               {connectionTestResult === 'error' && (
-                <p className="text-xs text-red-400 flex items-center gap-1">
-                  Connection failed. Check your API URL and key.
+                <p className="text-xs text-red-400 flex items-center gap-1" role="alert">
+                  {t('settings.connectionFailed')}
                 </p>
               )}
-              <p className="text-xs text-slate-500">
-                The API key is stored in sessionStorage (cleared when browser tab closes) for security.
-                You can find your API key in the backend configuration or ask your system administrator.
+              <p id="api-key-hint" className="text-xs text-slate-500">
+                {t('settings.apiKeyHint')}
               </p>
             </div>
           </CardContent>
@@ -325,15 +336,15 @@ export function SettingsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-amber-400" />
-              <CardTitle className="text-lg text-slate-100">Engineering Standard</CardTitle>
+              <CardTitle className="text-lg text-slate-100">{t('settings.engineeringStandard')}</CardTitle>
             </div>
             <CardDescription className="text-slate-400">
-              Default standard for engineering calculations
+              {t('settings.engineeringStandardDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">Default Standard</Label>
+              <Label className="text-slate-300">{t('settings.defaultStandard')}</Label>
               <Select
                 value={settings.engineeringStandard}
                 onValueChange={(v) => updateSetting('engineeringStandard', v as 'IEC' | 'NEC')}
@@ -342,8 +353,8 @@ export function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-700">
-                  <SelectItem value="IEC">IEC (International Electrotechnical Commission)</SelectItem>
-                  <SelectItem value="NEC">NEC (National Electrical Code - NFPA 70)</SelectItem>
+                  <SelectItem value="IEC">{t('settings.iec')}</SelectItem>
+                  <SelectItem value="NEC">{t('settings.nec')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -351,18 +362,16 @@ export function SettingsPage() {
             <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
               {settings.engineeringStandard === 'IEC' ? (
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-300">IEC Standards</p>
+                  <p className="text-xs font-medium text-slate-300">{t('settings.iecStandards')}</p>
                   <p className="text-xs text-slate-400">
-                    Uses IEC 60364 for low-voltage installations, IEC 60909 for short circuit calculations, 
-                    and IEC 60502 for cable sizing. Voltage levels: 230/400V.
+                    {t('settings.iecDescription')}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-300">NEC Standards</p>
+                  <p className="text-xs font-medium text-slate-300">{t('settings.necStandards')}</p>
                   <p className="text-xs text-slate-400">
-                    Uses NFPA 70 (NEC) for electrical installations, IEEE 1584 for arc flash, 
-                    and NEMA standards for fire alarm. Voltage levels: 120/208V, 277/480V.
+                    {t('settings.necDescription')}
                   </p>
                 </div>
               )}
@@ -375,20 +384,20 @@ export function SettingsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Palette className="h-5 w-5 text-purple-400" />
-              <CardTitle className="text-lg text-slate-100">Theme Preferences</CardTitle>
+              <CardTitle className="text-lg text-slate-100">{t('settings.themePreferences')}</CardTitle>
             </div>
             <CardDescription className="text-slate-400">
-              Customize the application appearance
+              {t('settings.themePreferencesDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
               <div>
-                <p className="text-sm font-medium text-slate-200">Dark Mode</p>
+                <p className="text-sm font-medium text-slate-200">{t('settings.darkMode')}</p>
                 <p className="text-xs text-slate-400">
                   {settings.theme === 'dark'
-                    ? 'Dark theme is currently active'
-                    : 'Switch to dark theme for reduced eye strain'}
+                    ? t('settings.darkModeActive')
+                    : t('settings.darkModeInactive')}
                 </p>
               </div>
               <Switch
@@ -416,7 +425,7 @@ export function SettingsPage() {
                     <div className="h-4 w-4 rounded bg-emerald-600/30" />
                   </div>
                 </div>
-                <p className="text-xs text-slate-300 mt-2">Dark</p>
+                <p className="text-xs text-slate-300 mt-2">{t('settings.dark')}</p>
               </button>
               <button
                 onClick={() => updateSetting('theme', 'light')}
@@ -435,8 +444,42 @@ export function SettingsPage() {
                     <div className="h-4 w-4 rounded bg-emerald-100" />
                   </div>
                 </div>
-                <p className={`text-xs mt-2 ${settings.theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Light</p>
+                <p className={`text-xs mt-2 ${settings.theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>{t('settings.light')}</p>
               </button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Language */}
+        <Card className="border-slate-700 bg-slate-800/80">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-blue-400" />
+              <CardTitle className="text-lg text-slate-100">{t('settings.language')}</CardTitle>
+            </div>
+            <CardDescription className="text-slate-400">
+              {t('settings.languageDesc')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300" htmlFor="language-select">{t('settings.language')}</Label>
+              <Select
+                value={i18n.language?.startsWith('ar') ? 'ar' : 'en'}
+                onValueChange={(lng) => {
+                  i18n.changeLanguage(lng);
+                  document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+                  document.documentElement.lang = lng;
+                }}
+              >
+                <SelectTrigger id="language-select" className="bg-slate-900 border-slate-600 text-slate-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectItem value="en">{t('settings.english')}</SelectItem>
+                  <SelectItem value="ar">{t('settings.arabic')}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -446,7 +489,7 @@ export function SettingsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-slate-400" />
-              <CardTitle className="text-lg text-slate-100">System Information</CardTitle>
+              <CardTitle className="text-lg text-slate-100">{t('settings.systemInfo')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>

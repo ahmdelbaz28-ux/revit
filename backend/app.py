@@ -5,14 +5,17 @@ FireAI Digital Twin — Main Application Entry Point
 Full-featured FastAPI application serving the Digital Twin REST API.
 
 Mounts:
-  - /api/projects     → Projects CRUD
-  - /api/projects/:id/devices      → Devices CRUD
-  - /api/projects/:id/connections  → Connections CRUD
-  - /api/projects/:id/reports      → Reports
-  - /api/projects/:id/export/*     → DXF, Revit, IFC exports
-  - /api/projects/:id/sync         → Project sync
-  - /api/health       → Health check
+  - /api/v1/projects     → Projects CRUD
+  - /api/v1/projects/:id/devices      → Devices CRUD
+  - /api/v1/projects/:id/connections  → Connections CRUD
+  - /api/v1/projects/:id/reports      → Reports
+  - /api/v1/projects/:id/export/*     → DXF, Revit, IFC exports
+  - /api/v1/projects/:id/sync         → Project sync
+  - /api/v1/health       → Health check
   - /ws               → WebSocket for real-time updates
+
+Legacy /api/ routes are supported via LegacyAPIMiddleware which rewrites
+them to /api/v1/ and adds deprecation headers.
 
 Serves the frontend build from frontend/dist/ at the root path.
 """
@@ -323,27 +326,31 @@ _PER_PATH_LIMITS = [
     # workflows, exhausting server memory (OOM) and API rate limits.
     # Per agent.md Priority 1 (Safety): DoS on a fire protection system means
     # engineers can't access life-safety tools during an emergency.
-    ("/api/workflow/start", 3, 60),  # 3 starts per minute — strict
+    #
+    # API Versioning: LegacyAPIMiddleware rewrites /api/ → /api/v1/ before
+    # rate limiting, so only /api/v1/ paths need to be listed here.
+    ("/api/v1/workflow/start", 3, 60),  # 3 starts per minute — strict
     # H-5 FIX: Report generation is computationally expensive (database queries,
     # PDF/DXF rendering). Without a tighter limit, an attacker can trigger
     # hundreds of concurrent report generations, exhausting CPU and memory.
-    # This prefix is longer than "/api/projects" so it takes precedence for
+    # This prefix is longer than "/api/v1/projects" so it takes precedence for
     # all project-specific sub-paths (reports, exports, devices, connections).
-    ("/api/projects/", 15, 60),  # 15/min per IP for project operations
-    ("/api/environment/weather", 10, 60),
-    ("/api/environment/geocoding", 1, 1),
-    ("/api/environment/elevation", 10, 60),
-    ("/api/environment/air-quality", 10, 60),
-    ("/api/environment/severe", 10, 60),
-    ("/api/environment/hazmat", 30, 60),
-    ("/api/environment/region", 10, 60),
-    ("/api/workflow", 10, 60),  # General workflow queries
-    ("/api/memory", 60, 60),
-    ("/api/projects", 30, 60),  # Project listing only (shorter prefix)
-    ("/api/analyze", 10, 60),
-    ("/api/qomn", 10, 60),
-    ("/api/parse-dwg", 5, 60),  # DWG parsing is CPU+subprocess intensive
-    ("/api/facp", 15, 60),  # FACP selection/compliance (less compute-intensive than QOMN)
+    ("/api/v1/projects/", 15, 60),  # 15/min per IP for project operations
+    ("/api/v1/environment/weather", 10, 60),
+    ("/api/v1/environment/geocoding", 1, 1),
+    ("/api/v1/environment/elevation", 10, 60),
+    ("/api/v1/environment/air-quality", 10, 60),
+    ("/api/v1/environment/severe", 10, 60),
+    ("/api/v1/environment/hazmat", 30, 60),
+    ("/api/v1/environment/region", 10, 60),
+    ("/api/v1/workflow", 10, 60),  # General workflow queries
+    ("/api/v1/memory", 60, 60),
+    ("/api/v1/projects", 30, 60),  # Project listing only (shorter prefix)
+    ("/api/v1/analyze", 10, 60),
+    ("/api/v1/qomn", 10, 60),
+    ("/api/v1/parse-dwg", 5, 60),  # DWG parsing is CPU+subprocess intensive
+    ("/api/v1/facp", 15, 60),  # FACP selection/compliance (less compute-intensive than QOMN)
+    ("/api/v1/monitor", 15, 60),  # Monitor dashboard
 ]
 
 _DEFAULT_RATE_LIMIT = (120, 60)
@@ -612,8 +619,21 @@ app.add_middleware(SecurityHeadersMiddleware)
 # require X-API-Key header matching FIREAI_API_KEY env var.
 # GET requests are allowed without auth for read-only access.
 # If FIREAI_API_KEY is not set, auth is disabled (development mode only).
+#
+# RBAC: API keys are now validated against the RBAC key store (backend/api_keys.py).
+# Each key has an associated role (admin, engineer, viewer). The role is
+# stored in scope["fireai_role"] and request.state.fireai_role for downstream
+# permission checking.
 
 _FIREAI_API_KEY = os.getenv("FIREAI_API_KEY")
+
+# Import RBAC key validation — may fail if api_keys module is not yet ready
+try:
+    from backend.api_keys import validate_api_key as _rbac_validate_api_key
+    from backend.rbac import Role as _RBACRole
+    _RBAC_AVAILABLE = True
+except ImportError:
+    _RBAC_AVAILABLE = False
 
 
 class ApiKeyMiddleware:
@@ -644,8 +664,10 @@ class ApiKeyMiddleware:
 
     # Paths that do NOT require authentication
     _AUTH_WHITELIST = {
-        "/api/health",
-        "/api/health/statistics",
+        "/api/v1/health",
+        "/api/v1/health/statistics",
+        "/api/health",          # Legacy (rewritten by LegacyAPIMiddleware)
+        "/api/health/statistics",  # Legacy (rewritten by LegacyAPIMiddleware)
         "/docs",
         "/redoc",
         "/openapi.json",
@@ -710,8 +732,10 @@ class ApiKeyMiddleware:
                 })
                 await send({"type": "http.response.body", "body": body})
                 return
-            # Development mode: allow without auth
+            # Development mode: allow without auth, default to ADMIN role
             logger.warning("FIREAI_API_KEY not set — auth disabled (development only)")
+            if _RBAC_AVAILABLE:
+                scope["fireai_role"] = _RBACRole.ADMIN
             await self.app(scope, receive, send)
             return
 
@@ -743,14 +767,32 @@ class ApiKeyMiddleware:
                 "http://localhost:8000",
                 "http://127.0.0.1:8000",
             ):
+                if _RBAC_AVAILABLE:
+                    scope["fireai_role"] = _RBACRole.ADMIN
                 await self.app(scope, receive, send)
                 return
 
         # No matching origin — require API key
         # This covers: (1) requests without Origin header, (2) external origins
-        # Use constant-time comparison to prevent timing attacks
         api_key = headers_dict.get("x-api-key", "")
-        if not hmac.compare_digest(api_key, _FIREAI_API_KEY):
+
+        # ── RBAC key validation ──────────────────────────────────────────
+        # Try the RBAC key store first (supports multiple keys with roles).
+        # If the key is found in the RBAC store, use its role.
+        # If not found, fall back to legacy hmac comparison (assigns ADMIN).
+        resolved_role = None
+
+        if _RBAC_AVAILABLE and api_key:
+            key_info = _rbac_validate_api_key(api_key)
+            if key_info is not None:
+                resolved_role = key_info.role
+
+        # Legacy fallback: compare against FIREAI_API_KEY env var
+        if resolved_role is None and api_key and _FIREAI_API_KEY:
+            if hmac.compare_digest(api_key, _FIREAI_API_KEY):
+                resolved_role = _RBACRole.ADMIN if _RBAC_AVAILABLE else None
+
+        if resolved_role is None:
             logger.warning(
                 f"Unauthorized {method} request to {path} "
                 f"from origin={origin or 'none'} client={client_ip}"
@@ -768,6 +810,12 @@ class ApiKeyMiddleware:
             })
             await send({"type": "http.response.body", "body": body})
             return
+
+        # ── Set role on request scope for downstream permission checks ───
+        scope["fireai_role"] = resolved_role
+        # Also store in scope["state"] so FastAPI Request.state can access it
+        scope.setdefault("state", {})
+        scope["state"]["fireai_role"] = resolved_role
 
         await self.app(scope, receive, send)
 
@@ -863,6 +911,64 @@ app.add_middleware(PerPathRateLimitMiddleware)
 
 app.add_middleware(CorrelationIdMiddleware)
 
+# ── Legacy API compatibility middleware ──────────────────────────────────────
+# API Versioning: Rewrites /api/ requests (without v1) to /api/v1/ internally
+# and adds deprecation headers to the response.
+# Added LAST so it runs FIRST (outermost middleware) — path rewrite must
+# happen before auth, rate limiting, and routing.
+
+class LegacyAPIMiddleware:
+    """
+    Pure ASGI middleware — provides backward compatibility for /api/ routes.
+
+    - Rewrites /api/xxx to /api/v1/xxx internally (no HTTP redirect)
+    - Adds 'Deprecation: true' response header
+    - Adds 'Warning: 299 - "API v1 is now at /api/v1/, /api/ is deprecated"' response header
+
+    This allows existing clients using /api/ to continue working while
+    being notified that they should migrate to /api/v1/.
+    """
+
+    def __init__(self, app, **kwargs):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
+        is_legacy = False
+
+        # Check if path starts with /api/ but NOT /api/v1/
+        if path.startswith("/api/") and not path.startswith("/api/v1/"):
+            # Rewrite path to /api/v1/xxx
+            new_path = "/api/v1" + path[4:]  # Replace /api/ with /api/v1/
+            scope["path"] = new_path
+            # Also update raw_path if present
+            if "raw_path" in scope:
+                scope["raw_path"] = new_path.encode("utf-8")
+            is_legacy = True
+
+        if is_legacy:
+            # Intercept the response to add deprecation headers
+            async def send_with_deprecation(message):
+                if message["type"] == "http.response.start":
+                    headers = list(message.get("headers", []))
+                    headers.append([b"deprecation", b"true"])
+                    headers.append(
+                        [b"warning", b'299 - "API v1 is now at /api/v1/, /api/ is deprecated"']
+                    )
+                    message["headers"] = headers
+                await send(message)
+
+            await self.app(scope, receive, send_with_deprecation)
+        else:
+            await self.app(scope, receive, send)
+
+
+app.add_middleware(LegacyAPIMiddleware)
+
 # ── Global exception handler ──────────────────────────────────────────────
 # Safety-critical system: ALL errors must return structured JSON responses.
 # Unhandled exceptions must NEVER leak stack traces to the client in production.
@@ -946,6 +1052,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 # ── Import and mount routers ───────────────────────────────────────────────
 
 from backend.routers import (
+    api_keys,
     conflicts,
     connections,
     connections_v2,
@@ -965,58 +1072,65 @@ from backend.routers import (
 
 # Optional routers: already imported before lifespan() above
 
-# Health check at /api/health
-app.include_router(health.router, prefix="/api")
+# ── API v1 Routes ──────────────────────────────────────────────────────────
+# All routers are now mounted at /api/v1/ for API versioning.
+# Legacy /api/ routes are supported via LegacyAPIMiddleware.
 
-# Project management at /api/projects
-app.include_router(projects.router, prefix="/api")
+# Health check at /api/v1/health
+app.include_router(health.router, prefix="/api/v1")
 
-# Device management at /api/projects/:id/devices
-app.include_router(devices.router, prefix="/api")
+# Project management at /api/v1/projects
+app.include_router(projects.router, prefix="/api/v1")
 
-# Connection management at /api/projects/:id/connections
-app.include_router(connections.router, prefix="/api")
+# Device management at /api/v1/projects/:id/devices
+app.include_router(devices.router, prefix="/api/v1")
 
-# Report generation at /api/projects/:id/reports
-app.include_router(reports.router, prefix="/api")
+# Connection management at /api/v1/projects/:id/connections
+app.include_router(connections.router, prefix="/api/v1")
 
-# Export endpoints at /api/projects/:id/export/*
-app.include_router(exports.router, prefix="/api")
+# Report generation at /api/v1/projects/:id/reports
+app.include_router(reports.router, prefix="/api/v1")
 
-# Sync endpoints at /api/projects/:id/sync
-app.include_router(sync.router, prefix="/api")
+# Export endpoints at /api/v1/projects/:id/export/*
+app.include_router(exports.router, prefix="/api/v1")
 
-# Element CRUD at /api/elements (UniversalDataModel-backed)
+# Sync endpoints at /api/v1/projects/:id/sync
+app.include_router(sync.router, prefix="/api/v1")
+
+# Element CRUD at /api/v1/elements (UniversalDataModel-backed)
 app.include_router(elements.router)
 
-# Conflict detection/resolution at /api/conflicts
+# Conflict detection/resolution at /api/v1/conflicts
 app.include_router(conflicts.router)
 
-# Relationship-based connections at /api/connections (UniversalDataModel)
+# Relationship-based connections at /api/v1/connections (UniversalDataModel)
 app.include_router(connections_v2.router)
 
-# Environmental data at /api/environment (weather, geocoding, regulatory)
-app.include_router(environment.router, prefix="/api")
+# Environmental data at /api/v1/environment (weather, geocoding, regulatory)
+app.include_router(environment.router, prefix="/api/v1")
 
-# Workflow engine at /api/workflow (optional — requires langgraph)
+# Workflow engine at /api/v1/workflow (optional — requires langgraph)
 if WORKFLOW_ROUTER_AVAILABLE:
-    app.include_router(workflow.router, prefix="/api")
+    app.include_router(workflow.router, prefix="/api/v1")
 
-# Memory layer at /api/memory (optional — requires mem0 + qdrant-client)
+# Memory layer at /api/v1/memory (optional — requires mem0 + qdrant-client)
 if MEMORY_ROUTER_AVAILABLE:
-    app.include_router(memory.router, prefix="/api")
+    app.include_router(memory.router, prefix="/api/v1")
 
-# FACP selection & compliance at /api/facp (NFPA 72 SS10.6.10, UL 864)
-app.include_router(facp.router, prefix="/api")
+# FACP selection & compliance at /api/v1/facp (NFPA 72 SS10.6.10, UL 864)
+app.include_router(facp.router, prefix="/api/v1")
 
-# QOMN engineering kernel at /api/qomn (NFPA 72, NEC 2023)
-app.include_router(qomn.router, prefix="/api")
+# QOMN engineering kernel at /api/v1/qomn (NFPA 72, NEC 2023)
+app.include_router(qomn.router, prefix="/api/v1")
 
-# DWG/DXF parsing at /api/parse-dwg
-app.include_router(dwg.router, prefix="/api")
+# DWG/DXF parsing at /api/v1/parse-dwg
+app.include_router(dwg.router, prefix="/api/v1")
 
-# Monitor dashboard at /api/monitor
+# Monitor dashboard at /api/v1/monitor
 app.include_router(monitor.router)
+
+# API Key management at /api/v1/admin/keys (admin only)
+app.include_router(api_keys.router, prefix="/api/v1")
 
 # WebSocket at /ws
 app.include_router(sync.ws_router)
@@ -1035,7 +1149,7 @@ if not (Path(__file__).resolve().parent.parent / "frontend" / "dist").is_dir():
             "version": __package_version__,
             "status": "running",
             "docs": "/docs",
-            "health": "/api/health",
+            "health": "/api/v1/health",
         }
 
 

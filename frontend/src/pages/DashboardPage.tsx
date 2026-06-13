@@ -2,6 +2,7 @@
  * DashboardPage.tsx - Connected dashboard showing real API data
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import { useCreateProject } from '@/hooks/useApi';
 import type { Project } from '@/services/digitalTwinApi';
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const { data: health, loading: healthLoading, connected, refetch: refetchHealth } = useHealth();
   const { data: projects, loading: projectsLoading, error: projectsError, refetch: refetchProjects } = useProjects();
   const { mutate: createProject, loading: creating } = useCreateProject();
@@ -57,13 +59,13 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto" aria-label={t('dashboard.title')}>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
-            <p className="text-sm text-slate-400 mt-1">FireAI Revit Digital Twin Platform</p>
+            <h1 className="text-2xl font-bold text-slate-100">{t('dashboard.title')}</h1>
+            <p className="text-sm text-slate-400 mt-1">{t('dashboard.subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -73,15 +75,16 @@ export function DashboardPage() {
               onClick={() => { refetchHealth(); refetchProjects(); }}
             >
               <RefreshCw className="h-4 w-4 mr-1" />
-              Refresh
+              {t('common.refresh')}
             </Button>
             <Button
               size="sm"
               className="bg-red-600 hover:bg-red-700 text-white border-none"
               onClick={() => setShowCreateForm(true)}
+              aria-label={t('dashboard.createProject')}
             >
               <Plus className="h-4 w-4 mr-1" />
-              New Project
+              {t('dashboard.newProject')}
             </Button>
           </div>
         </div>
@@ -89,7 +92,7 @@ export function DashboardPage() {
         {/* Connection Status Bar */}
         <Card className={`border ${connected ? 'border-emerald-500/30 bg-emerald-500/5' : healthLoading ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between" role="status" aria-live="polite" aria-label={t('dashboard.apiStatus')}>
               <div className="flex items-center gap-3">
                 {connected ? (
                   <CheckCircle2 className="h-5 w-5 text-emerald-400" />
@@ -100,7 +103,7 @@ export function DashboardPage() {
                 )}
                 <div>
                   <span className="text-sm font-medium text-slate-200">
-                    Backend: {connected ? 'Connected' : healthLoading ? 'Connecting...' : 'Disconnected'}
+                    Backend: {connected ? t('dashboard.connected') : healthLoading ? t('dashboard.connecting') : t('dashboard.disconnected')}
                   </span>
                   {health && (
                     <span className="text-xs text-slate-400 ml-3">
@@ -119,29 +122,29 @@ export function DashboardPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="Projects"
+            title={t('dashboard.projects')}
             value={projectsLoading ? '...' : String(projects?.length || 0)}
-            subtitle={`${activeProjects} active`}
+            subtitle={`${activeProjects} ${t('dashboard.active')}`}
             icon={<FolderKanban className="h-5 w-5" />}
             color="blue"
           />
           <StatCard
-            title="Total Devices"
+            title={t('dashboard.totalDevices')}
             value={projectsLoading ? '...' : String(totalDevices)}
-            subtitle="Across all projects"
+            subtitle={t('dashboard.acrossAllProjects')}
             icon={<Cpu className="h-5 w-5" />}
             color="emerald"
           />
           <StatCard
-            title="Connections"
+            title={t('dashboard.connections')}
             value={projectsLoading ? '...' : String(totalConnections)}
-            subtitle="Cable connections"
+            subtitle={t('dashboard.cableConnections')}
             icon={<Cable className="h-5 w-5" />}
             color="amber"
           />
           <StatCard
-            title="API Status"
-            value={connected ? 'Healthy' : 'Down'}
+            title={t('dashboard.apiStatus')}
+            value={connected ? t('dashboard.healthy') : t('dashboard.down')}
             subtitle={health ? `v${health.version}` : 'No response'}
             icon={<Server className="h-5 w-5" />}
             color={connected ? 'emerald' : 'red'}
@@ -152,12 +155,12 @@ export function DashboardPage() {
         {showCreateForm && (
           <Card className="border-slate-700 bg-slate-800/80">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-100">Create New Project</CardTitle>
-              <CardDescription className="text-slate-400">Add a new digital twin project</CardDescription>
+              <CardTitle className="text-lg text-slate-100">{t('dashboard.createProject')}</CardTitle>
+              <CardDescription className="text-slate-400">{t('projects.subtitle')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Project Name</Label>
+                <Label className="text-slate-300">{t('dashboard.projectName')}</Label>
                 <Input
                   placeholder="e.g., Tower-B Fire Alarm System"
                   value={newProjectName}
@@ -166,7 +169,7 @@ export function DashboardPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Description</Label>
+                <Label className="text-slate-300">{t('dashboard.description')}</Label>
                 <Input
                   placeholder="Brief description of the project"
                   value={newProjectDesc}
@@ -180,14 +183,14 @@ export function DashboardPage() {
                   onClick={handleCreateProject}
                   disabled={creating || !newProjectName.trim()}
                 >
-                  {creating ? 'Creating...' : 'Create Project'}
+                  {creating ? t('dashboard.creating') : t('dashboard.createProject')}
                 </Button>
                 <Button
                   variant="outline"
                   className="border-slate-600 text-slate-300"
                   onClick={() => setShowCreateForm(false)}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </CardContent>
@@ -199,9 +202,9 @@ export function DashboardPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg text-slate-100">Recent Projects</CardTitle>
+                <CardTitle className="text-lg text-slate-100">{t('dashboard.recentProjects')}</CardTitle>
                 <CardDescription className="text-slate-400">
-                  {projectsLoading ? 'Loading...' : projectsError ? `Error: ${projectsError}` : `${projects?.length || 0} projects found`}
+                  {projectsLoading ? t('common.loading') : projectsError ? `${t('common.error')}: ${projectsError}` : t('dashboard.projectsFound', { count: projects?.length || 0 })}
                 </CardDescription>
               </div>
               <NavLink to="/projects">
@@ -210,7 +213,7 @@ export function DashboardPage() {
                   size="sm"
                   className="text-slate-400 hover:text-slate-200"
                 >
-                  View All <ArrowUpRight className="h-3 w-3 ml-1" />
+                  {t('dashboard.viewAll')} <ArrowUpRight className="h-3 w-3 ml-1" />
                 </Button>
               </NavLink>
             </div>
@@ -219,12 +222,12 @@ export function DashboardPage() {
             {projectsLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Activity className="h-6 w-6 text-slate-400 animate-pulse" />
-                <span className="ml-2 text-slate-400">Loading projects...</span>
+                <span className="ml-2 text-slate-400">{t('dashboard.loadingProjects')}</span>
               </div>
             ) : !projects || projects.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <FolderKanban className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p>No projects found. Create your first project!</p>
+                <p>{t('dashboard.noProjects')}</p>
               </div>
             ) : (
               <ScrollArea className="max-h-96">
@@ -276,14 +279,14 @@ export function DashboardPage() {
         {/* System Info */}
         <Card className="border-slate-700 bg-slate-800/80">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-slate-100">System Information</CardTitle>
+            <CardTitle className="text-lg text-slate-100">{t('dashboard.systemInformation')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <InfoItem label="API Version" value={health?.version || 'N/A'} />
-              <InfoItem label="Database" value={health?.database || 'N/A'} />
-              <InfoItem label="Uptime" value={health ? `${Math.floor((health.uptime || 0) / 60)} min` : 'N/A'} />
-              <InfoItem label="Last Check" value={health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : 'N/A'} />
+              <InfoItem label={t('dashboard.apiVersion')} value={health?.version || 'N/A'} />
+              <InfoItem label={t('dashboard.database')} value={health?.database || 'N/A'} />
+              <InfoItem label={t('dashboard.uptime')} value={health ? `${Math.floor((health.uptime || 0) / 60)} min` : 'N/A'} />
+              <InfoItem label={t('dashboard.lastCheck')} value={health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : 'N/A'} />
             </div>
           </CardContent>
         </Card>
@@ -311,7 +314,7 @@ function StatCard({ title, value, subtitle, icon, color }: {
   };
 
   return (
-    <Card className="border-slate-700 bg-slate-800/80">
+    <Card className="border-slate-700 bg-slate-800/80" role="status">
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium uppercase tracking-wider text-slate-400">{title}</span>

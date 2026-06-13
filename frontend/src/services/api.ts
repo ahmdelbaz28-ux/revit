@@ -17,7 +17,7 @@ import type {
   HealthStatus,
 } from '@/types';
 
-const API_BASE = '/api';
+const API_BASE = '/api/v1';
 
 /**
  * C-1 FIX: Get API key from environment or runtime config.

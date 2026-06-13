@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { Link } from 'react-router-dom';
@@ -18,6 +19,7 @@ const ELEMENT_TYPES = [
 const PAGE_SIZE = 20;
 
 function Elements() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState<string>('');
@@ -47,11 +49,11 @@ function Elements() {
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 1;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-label={t('elements.title')}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Elements</h1>
+          <h1 className="text-2xl font-bold text-white">{t('elements.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">
             {data ? `${data.total} total elements` : 'Loading...'}
           </p>
@@ -119,15 +121,15 @@ function Elements() {
         <>
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" aria-label={t('elements.title')}>
                 <thead>
                   <tr className="border-b border-slate-700 bg-slate-800/50">
-                    <th className="text-left text-slate-400 font-medium px-4 py-3">Name</th>
-                    <th className="text-left text-slate-400 font-medium px-4 py-3">Type</th>
-                    <th className="text-left text-slate-400 font-medium px-4 py-3">Area</th>
-                    <th className="text-left text-slate-400 font-medium px-4 py-3">Version</th>
-                    <th className="text-left text-slate-400 font-medium px-4 py-3">Modified</th>
-                    <th className="text-right text-slate-400 font-medium px-4 py-3">Actions</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Name</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Type</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Area</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Version</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Modified</th>
+                    <th scope="col" className="text-right text-slate-400 font-medium px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -210,6 +212,7 @@ function Elements() {
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
                   className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
+                  aria-label={t('common.previous')}
                 >
                   Previous
                 </button>
@@ -217,6 +220,7 @@ function Elements() {
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
                   className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
+                  aria-label={t('common.next')}
                 >
                   Next
                 </button>

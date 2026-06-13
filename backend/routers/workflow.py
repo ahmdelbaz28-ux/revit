@@ -24,7 +24,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
+from backend.auth import require_permission
 from backend.database import _FIREAI_API_KEY
+from backend.rbac import Permission
 from backend.services.workflow_service import (
     get_workflow_service,
 )
@@ -120,7 +122,7 @@ def _validate_file_path(file_path: str) -> str:
 router = APIRouter(prefix="/workflow", tags=["workflow"])
 
 
-@router.get("/status")
+@router.get("/status", dependencies=[Depends(require_permission(Permission.WORKFLOW_READ))])
 async def get_workflow_engine_status():
     """
     Get overall workflow engine status.
@@ -154,7 +156,7 @@ async def get_workflow_engine_status():
     })
 
 
-@router.post("/start", dependencies=[Depends(verify_api_key_dep)])
+@router.post("/start", dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))])
 async def start_workflow(
     file_path: str = Query(
         ..., min_length=1, max_length=1000,
@@ -224,7 +226,7 @@ async def start_workflow(
     }
 
 
-@router.get("/{workflow_id}/status", dependencies=[Depends(verify_api_key_dep)])
+@router.get("/{workflow_id}/status", dependencies=[Depends(require_permission(Permission.WORKFLOW_READ))])
 async def get_workflow_status(
     workflow_id: str,
 ):
@@ -249,7 +251,7 @@ async def get_workflow_status(
     }
 
 
-@router.post("/{workflow_id}/approve", dependencies=[Depends(verify_api_key_dep)])
+@router.post("/{workflow_id}/approve", dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))])
 async def approve_workflow(
     workflow_id: str,
     reviewer_comments: Optional[str] = Query(
@@ -290,7 +292,7 @@ async def approve_workflow(
     }
 
 
-@router.post("/{workflow_id}/reject", dependencies=[Depends(verify_api_key_dep)])
+@router.post("/{workflow_id}/reject", dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))])
 async def reject_workflow(
     workflow_id: str,
     reviewer_comments: Optional[str] = Query(
@@ -330,7 +332,7 @@ async def reject_workflow(
     }
 
 
-@router.get("/{workflow_id}/audit", dependencies=[Depends(verify_api_key_dep)])
+@router.get("/{workflow_id}/audit", dependencies=[Depends(require_permission(Permission.WORKFLOW_READ))])
 async def get_audit_trail(
     workflow_id: str,
 ):

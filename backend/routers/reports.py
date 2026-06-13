@@ -26,11 +26,13 @@ import uuid
 from datetime import datetime, timezone
 from urllib.parse import quote
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
+from backend.auth import require_permission
 from backend.database import get_db
 from backend.models import GenerateReportInput
+from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 
@@ -238,7 +240,7 @@ def _normalize_sort(sort: str) -> str:
     return _SORT_MAP.get(sort, "created_at")
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
 async def list_reports(
     project_id: str,
     page: int = Query(1, ge=1),
@@ -253,7 +255,7 @@ async def list_reports(
     return {"success": True, "data": result}
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
 async def generate_report(project_id: str, input_data: GenerateReportInput):
     """Generate a new engineering report."""
     _verify_project(project_id)
@@ -307,7 +309,7 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
     return {"data": result, "success": report_success}
 
 
-@router.get("/{report_id}")
+@router.get("/{report_id}", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
 async def get_report(project_id: str, report_id: str):
     """Get a report by ID."""
     _verify_project(project_id)
@@ -318,7 +320,7 @@ async def get_report(project_id: str, report_id: str):
     return {"data": report, "success": True}
 
 
-@router.get("/{report_id}/export")
+@router.get("/{report_id}/export", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
 async def export_report(
     project_id: str,
     report_id: str,

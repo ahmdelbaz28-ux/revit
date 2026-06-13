@@ -16,10 +16,12 @@ from __future__ import annotations
 import logging
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from backend.auth import require_permission
 from backend.contract import validate_health
 from backend.database import get_db
+from backend.rbac import Permission
 from fireai.version import __package_version__
 
 logger = logging.getLogger(__name__)
@@ -39,7 +41,7 @@ def set_core_modules_loaded(loaded: bool) -> None:
     _core_modules_loaded = loaded
 
 
-@router.get("/health")
+@router.get("/health", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def health_check():
     """
     Health check endpoint.
@@ -75,6 +77,7 @@ async def health_check():
 
     health_data = {
         "status": status,
+        "api_version": "v1",
         "version": __package_version__,
         "uptime": round(uptime, 2),
         "uptime_seconds": round(uptime, 2),
@@ -90,7 +93,7 @@ async def health_check():
     return success(validated)
 
 
-@router.get("/health/statistics")
+@router.get("/health/statistics", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def get_health_statistics():
     """
     Health statistics endpoint.
@@ -168,7 +171,7 @@ async def get_health_statistics():
 
 
 # Keep legacy /reports/statistics path working (frontwards-compat)
-@router.get("/reports/statistics")
+@router.get("/reports/statistics", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def get_statistics():
     """Legacy alias for /health/statistics."""
     return await get_health_statistics()

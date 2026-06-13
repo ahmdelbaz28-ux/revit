@@ -18,10 +18,12 @@ import logging
 from datetime import datetime, timezone
 from urllib.parse import quote
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
+from backend.auth import require_permission
 from backend.database import get_db
+from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +51,7 @@ def _verify_project(project_id: str) -> dict:
     return project
 
 
-@router.get("/dxf")
+@router.get("/dxf", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
 async def export_dxf(project_id: str):
     """Export project as DXF (AutoCAD Drawing Exchange Format)."""
     project = _verify_project(project_id)
@@ -153,7 +155,7 @@ async def export_dxf(project_id: str):
     )
 
 
-@router.get("/revit")
+@router.get("/revit", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
 async def export_revit(project_id: str):
     """Export project as Revit-compatible JSON."""
     project = _verify_project(project_id)
@@ -219,7 +221,7 @@ async def export_revit(project_id: str):
     )
 
 
-@router.get("/ifc")
+@router.get("/ifc", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
 async def export_ifc(
     project_id: str,
     version: str = Query("IFC4", pattern="^(IFC2X3|IFC4)$"),

@@ -32,8 +32,11 @@ import logging
 import threading
 from typing import Any, Dict, List, NoReturn
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
+
+from backend.auth import require_permission
+from backend.rbac import Permission
 
 # V118: Canonical NEC Table 8 gauge set — MUST stay in sync with
 # fireai/core/qomn_kernel.py:NEC_TABLE8_RESISTANCE_OHM_PER_KM keys.
@@ -245,7 +248,7 @@ class DuctDetectorRequest(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.post("/qomn/smoke-spacing")
+@router.post("/qomn/smoke-spacing", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def compute_smoke_spacing(req: SmokeSpacingRequest):
     """Compute smoke detector spacing per NFPA 72 Table 17.6.3.1.
 
@@ -267,7 +270,7 @@ async def compute_smoke_spacing(req: SmokeSpacingRequest):
         _handle_error(exc)
 
 
-@router.post("/qomn/heat-spacing")
+@router.post("/qomn/heat-spacing", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def compute_heat_spacing(req: HeatSpacingRequest):
     """Compute heat detector spacing per NFPA 72 §17.6.3.1.
 
@@ -285,7 +288,7 @@ async def compute_heat_spacing(req: HeatSpacingRequest):
         _handle_error(exc)
 
 
-@router.post("/qomn/battery")
+@router.post("/qomn/battery", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def compute_battery(req: BatteryRequest):
     """Compute battery capacity per NFPA 72 §10.6.7.2.1.
 
@@ -307,7 +310,7 @@ async def compute_battery(req: BatteryRequest):
         _handle_error(exc)
 
 
-@router.post("/qomn/voltage-drop")
+@router.post("/qomn/voltage-drop", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def compute_voltage_drop(req: VoltageDropRequest):
     """Compute circuit voltage drop per NEC Chapter 9, Table 8.
 
@@ -325,7 +328,7 @@ async def compute_voltage_drop(req: VoltageDropRequest):
         _handle_error(exc)
 
 
-@router.post("/qomn/place-detectors")
+@router.post("/qomn/place-detectors", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def place_detectors(req: RoomRequest):
     """Place fire alarm detectors in a room per NFPA 72-2022.
 
@@ -457,7 +460,7 @@ async def place_detectors(req: RoomRequest):
         _handle_error(exc)
 
 
-@router.post("/qomn/place-duct")
+@router.post("/qomn/place-duct", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def place_duct_detector(req: DuctDetectorRequest):
     """Compute duct detector placement per NFPA 72 §17.7.4.
 
@@ -495,7 +498,7 @@ async def place_duct_detector(req: DuctDetectorRequest):
         _handle_error(exc)
 
 
-@router.get("/qomn/audit")
+@router.get("/qomn/audit", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_audit_log():
     """Export full QOMN audit log for AHJ review.
 
@@ -516,7 +519,7 @@ async def get_audit_log():
     }
 
 
-@router.get("/qomn/physics-guards")
+@router.get("/qomn/physics-guards", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_physics_guards():
     """Return all physics guard limits with code references.
 
@@ -587,7 +590,7 @@ async def get_physics_guards():
     }
 
 
-@router.get("/qomn/constants")
+@router.get("/qomn/constants", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_qomn_constants():
     """Return all QOMN-FIRE engineering constants with code references.
 
@@ -647,7 +650,7 @@ async def get_qomn_constants():
     }
 
 
-@router.post("/qomn/golden-tests")
+@router.post("/qomn/golden-tests", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def run_golden_tests():
     """Run QOMN golden test suite per QOMN Specification §9.
 

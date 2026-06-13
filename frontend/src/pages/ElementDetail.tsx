@@ -3,8 +3,11 @@ import { api } from '@/services/api';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { ElementUpdate } from '@/types';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 function ElementDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -13,6 +16,7 @@ function ElementDetail() {
   const [editMaterial, setEditMaterial] = useState('');
   const [editFireRating, setEditFireRating] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: element, isLoading, error } = useQuery({
     queryKey: ['element', id],
@@ -114,15 +118,12 @@ function ElementDetail() {
             Edit
           </button>
           <button
-            onClick={() => {
-              if (confirm('Are you sure you want to delete this element?')) {
-                deleteMutation.mutate();
-              }
-            }}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={deleteMutation.isPending}
             className="px-4 py-2 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+            aria-label={t('common.delete')}
           >
-            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            {deleteMutation.isPending ? 'Deleting...' : t('common.delete')}
           </button>
         </div>
       </div>
@@ -308,6 +309,18 @@ function ElementDetail() {
           <p className="text-slate-500 text-sm">No connections found</p>
         )}
       </div>
+
+      {/* Accessible Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title={t('elements.deleteElement')}
+        message={t('elementDetail.deleteConfirmMessage')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => { deleteMutation.mutate(); }}
+        onCancel={() => setShowDeleteConfirm(false)}
+        variant="danger"
+      />
     </div>
   );
 }

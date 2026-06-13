@@ -2,6 +2,7 @@
  * ProjectsPage.tsx - Project management with full CRUD + Device & Connection creation
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +41,7 @@ import {
 } from 'lucide-react';
 import { useProjects, useDevices, useConnections, useCreateProject, useDeleteProject, useSyncProject } from '@/hooks/useApi';
 import { api } from '@/services/digitalTwinApi';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DEVICE_LIBRARY, DEVICE_CATEGORIES, getDevicesByCategory } from '@/types/deviceLibrary';
 import type { DeviceCategory, DeviceSpec } from '@/types/deviceLibrary';
 import type { Project, Device, CreateDeviceInput, CreateConnectionInput } from '@/services/digitalTwinApi';
@@ -77,6 +79,7 @@ const CABLE_SIZES = [
 // ============================================================================
 
 export function ProjectsPage() {
+  const { t } = useTranslation();
   const { data: projects, loading: projectsLoading, error: projectsError, refetch: refetchProjects } = useProjects();
   const { mutate: createProject, loading: creating, error: createError } = useCreateProject();
   const { mutate: deleteProject, loading: deleting } = useDeleteProject();
@@ -103,6 +106,9 @@ export function ProjectsPage() {
   const [creatingConnection, setCreatingConnection] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
+  // Delete confirmation dialog state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+
   const selectedProject = projects?.find((p: Project) => p.id === selectedProjectId) || null;
 
   // ---------------------------------------------------------------------------
@@ -125,14 +131,6 @@ export function ProjectsPage() {
   };
 
   const handleDeleteProject = async (id: string) => {
-    // SAFETY FIX (H3): Require explicit confirmation before deleting a project.
-    // In a life-safety engineering platform, accidental deletion of a project
-    // with all its devices and connections is catastrophic.
-    const project = projects?.find((p: Project) => p.id === id);
-    const projectName = project?.name || 'this project';
-    if (!window.confirm(`Are you sure you want to delete "${projectName}"?\n\nThis will permanently delete ALL devices, connections, and reports in this project.\n\nThis action CANNOT be undone.`)) {
-      return;
-    }
     const result = await deleteProject(id);
     if (result !== null) {
       refetchProjects();
@@ -140,6 +138,7 @@ export function ProjectsPage() {
         setSelectedProjectId(null);
       }
     }
+    setDeleteConfirm(null);
   };
 
   const handleSyncProject = async (id: string) => {
@@ -787,13 +786,13 @@ export function ProjectsPage() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto" aria-label={t('projects.title')}>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Projects</h1>
-            <p className="text-sm text-slate-400 mt-1">Manage digital twin projects</p>
+            <h1 className="text-2xl font-bold text-slate-100">{t('projects.title')}</h1>
+            <p className="text-sm text-slate-400 mt-1">{t('projects.subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -928,8 +927,9 @@ export function ProjectsPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                        onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: project.id, name: project.name }); }}
                         disabled={deleting}
+                        aria-label={t('projects.deleteProject')}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -964,6 +964,18 @@ export function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {/* Accessible Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm !== null}
+        title={t('projects.deleteConfirmTitle')}
+        message={t('projects.deleteConfirmMessage', { name: deleteConfirm?.name || 'this project' })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => deleteConfirm && handleDeleteProject(deleteConfirm.id)}
+        onCancel={() => setDeleteConfirm(null)}
+        variant="danger"
+      />
     </div>
   );
 }

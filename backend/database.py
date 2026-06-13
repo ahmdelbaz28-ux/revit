@@ -8,6 +8,7 @@ BIM element persistence. This module provides simple CRUD tables for:
   - connections
   - reports
   - sync_status
+  - sync_operations
 
 Uses WAL mode and thread-safe connection management.
 """
@@ -38,8 +39,8 @@ class Database:
     Thread-safe SQLite database for the Digital Twin REST API.
 
     Provides CRUD operations for projects, devices, connections,
-    reports, and sync status. Uses WAL mode for concurrent read
-    performance and RLock for thread safety.
+    reports, sync status, and sync operations. Uses WAL mode for
+    concurrent read performance and RLock for thread safety.
     """
 
     def __init__(self, db_path: str = _DB_PATH) -> None:
@@ -166,6 +167,20 @@ class Database:
                 )
             """)
 
+            # ── Sync Operations (granular per-entity sync tracking) ────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS sync_operations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entity_type TEXT NOT NULL,
+                    entity_id TEXT NOT NULL,
+                    target_db TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    last_sync_at TEXT,
+                    error_message TEXT,
+                    retry_count INTEGER DEFAULT 0
+                )
+            """)
+
             # ── Indexes for performance ─────────────────────────────────
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")
@@ -177,6 +192,7 @@ class Database:
             # Slow operations could cause timeouts that appear as failures in a safety system.
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)")
 
     # ========================================================================
     # Projects CRUD
@@ -852,6 +868,101 @@ class Database:
             )
 
         return self.get_sync_status(project_id)
+
+    # ========================================================================
+    # Sync Operations (granular per-entity sync tracking)
+    # ========================================================================
+
+    def record_sync(
+        self,
+        entity_type: str,
+        entity_id: str,
+        target_db: str,
+        status: str,
+        error: str = None,
+    ) -> int:
+        """Record a sync operation status.
+
+        Inserts a new row or updates an existing pending row for the same
+        entity_type + entity_id + target_db combination.
+
+        Args:
+            entity_type: Type of entity (e.g. "project", "device", "connection").
+            entity_id: ID of the entity being synced.
+            target_db: Target database name (e.g. "udm_elements").
+            status: Sync status — "pending", "syncing", "synced", or "error".
+            error: Optional error message if status is "error".
+
+        Returns:
+            The row ID of the inserted/updated sync operation.
+        """
+        now = datetime.now(timezone.utc).isoformat()
+
+        with self._transaction() as cur:
+            # Check for an existing pending/syncing record for this entity
+            cur.execute(
+                """SELECT id, status, retry_count FROM sync_operations
+                   WHERE entity_type = ? AND entity_id = ? AND target_db = ?
+                   ORDER BY id DESC LIMIT 1""",
+                (entity_type, entity_id, target_db),
+            )
+            existing = cur.fetchone()
+
+            if existing and existing["status"] in ("pending", "syncing", "error"):
+                # Update existing record
+                row_id = existing["id"]
+                retry_count = existing["retry_count"]
+                if status == "error":
+                    retry_count += 1
+                cur.execute(
+                    """UPDATE sync_operations
+                       SET status = ?, last_sync_at = ?, error_message = ?, retry_count = ?
+                       WHERE id = ?""",
+                    (status, now, error, retry_count, row_id),
+                )
+            else:
+                # Insert new record
+                cur.execute(
+                    """INSERT INTO sync_operations
+                       (entity_type, entity_id, target_db, status, last_sync_at,
+                        error_message, retry_count)
+                       VALUES (?, ?, ?, ?, ?, ?, 0)""",
+                    (entity_type, entity_id, target_db, status, now, error),
+                )
+                row_id = cur.lastrowid
+
+        return row_id
+
+    def get_pending_syncs(self, max_retries: int = 3) -> list:
+        """Get sync operations that need to be retried.
+
+        Returns all operations with status "pending" or "error" where
+        retry_count has not exceeded max_retries.
+        """
+        with self._lock:
+            cur = self._conn.cursor()
+            cur.execute(
+                """SELECT * FROM sync_operations
+                   WHERE status IN ('pending', 'error')
+                     AND retry_count < ?
+                   ORDER BY id ASC""",
+                (max_retries,),
+            )
+            rows = cur.fetchall()
+
+        return [
+            {
+                "id": row["id"],
+                "entityType": row["entity_type"],
+                "entityId": row["entity_id"],
+                "targetDb": row["target_db"],
+                "status": row["status"],
+                "lastSyncAt": row["last_sync_at"],
+                "errorMessage": row["error_message"],
+                "retryCount": row["retry_count"],
+            }
+            for row in rows
+        ]
 
     # ========================================================================
     # Row converters (DB row -> API dict)

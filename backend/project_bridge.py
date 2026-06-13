@@ -38,26 +38,34 @@ from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
+_TARGET_DB = "udm_elements"
+
 
 def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
     """Sync a project from System A to System B after creation.
 
     Maps System A fields to System B fields and creates the project
-    in the UDM database.
+    in the UDM database. Records the sync status in sync_operations.
 
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
+    project_id = project_data.get("id", "")
+
     try:
         from backend.db_service import DatabaseService
+        from backend.database import get_db
 
         udm = DatabaseService()
+        db = get_db()
 
-        project_id = project_data.get("id", "")
+        # Record sync attempt as "syncing"
+        db.record_sync("project", project_id, _TARGET_DB, "syncing")
 
         # Check if project already exists in UDM
         existing = udm.get_project(project_id)
         if existing is not None:
             logger.info("Project %s already exists in UDM — skipping sync", project_id)
+            db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
 
         # Create in UDM — use the SAME ID from System A.
@@ -107,25 +115,39 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
             }
 
             logger.info("Project %s synced to UDM successfully", project_id)
+            db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
             logger.error("Failed to sync project %s to UDM: %s", project_id, e)
+            db.record_sync("project", project_id, _TARGET_DB, "error", str(e))
             return False
 
     except Exception as e:
         logger.critical("UDM bridge unavailable during project sync: %s", e)
+        # Try to record the failure — may also fail if DB is unavailable
+        try:
+            from backend.database import get_db
+            get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
+        except Exception:
+            pass
         return False
 
 
 def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool:
     """Sync a project update from System A to System B.
 
+    Records the sync status in sync_operations.
+
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
         from backend.db_service import DatabaseService
+        from backend.database import get_db
 
         udm = DatabaseService()
+        db = get_db()
+
+        db.record_sync("project", project_id, _TARGET_DB, "syncing")
 
         # Check if project exists in UDM
         existing = udm.get_project(project_id)
@@ -183,13 +205,20 @@ def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool
                         udm._projects[project_id]["metadata"] = meta
 
             logger.info("Project %s update synced to UDM", project_id)
+            db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
             logger.error("Failed to sync project %s update to UDM: %s", project_id, e)
+            db.record_sync("project", project_id, _TARGET_DB, "error", str(e))
             return False
 
     except Exception as e:
         logger.critical("UDM bridge unavailable during project update: %s", e)
+        try:
+            from backend.database import get_db
+            get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
+        except Exception:
+            pass
         return False
 
 
@@ -197,13 +226,18 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
     """Sync a project deletion from System A to System B.
 
     Deletes the project and all element associations from UDM.
+    Records the sync status in sync_operations.
 
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
         from backend.db_service import DatabaseService
+        from backend.database import get_db
 
         udm = DatabaseService()
+        db = get_db()
+
+        db.record_sync("project", project_id, _TARGET_DB, "syncing")
 
         try:
             udm.bridge_create_table("""
@@ -229,13 +263,20 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
                 del udm._projects[project_id]
 
             logger.info("Project %s deletion synced to UDM", project_id)
+            db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
             logger.error("Failed to sync project %s deletion to UDM: %s", project_id, e)
+            db.record_sync("project", project_id, _TARGET_DB, "error", str(e))
             return False
 
     except Exception as e:
         logger.critical("UDM bridge unavailable during project deletion: %s", e)
+        try:
+            from backend.database import get_db
+            get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
+        except Exception:
+            pass
         return False
 
 
@@ -257,15 +298,20 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
 
     Maps System A device fields to System B element fields so that
     the conflict detection system can detect spatial overlaps.
+    Records the sync status in sync_operations.
 
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
+    device_id = device_data.get("id", "")
+
     try:
         from backend.db_service import DatabaseService
+        from backend.database import get_db
 
         udm = DatabaseService()
+        db = get_db()
 
-        device_id = device_data.get("id", "")
+        db.record_sync("device", device_id, _TARGET_DB, "syncing")
 
         # Build position JSON from x, y, z coordinates
         position = {
@@ -349,25 +395,38 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
             )
 
             logger.info("Device %s synced to UDM for project %s", device_id, project_id)
+            db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
             logger.error("Failed to sync device %s to UDM: %s", device_id, e)
+            db.record_sync("device", device_id, _TARGET_DB, "error", str(e))
             return False
 
     except Exception as e:
         logger.critical("UDM bridge unavailable during device sync: %s", e)
+        try:
+            from backend.database import get_db
+            get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
+        except Exception:
+            pass
         return False
 
 
 def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str, Any]) -> bool:
     """Sync a device update from System A to System B.
 
+    Records the sync status in sync_operations.
+
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
         from backend.db_service import DatabaseService
+        from backend.database import get_db
 
         udm = DatabaseService()
+        db = get_db()
+
+        db.record_sync("device", device_id, _TARGET_DB, "syncing")
 
         # SECURITY FIX: Explicit field whitelist — only allow known safe fields
         # to be updated. Previously, arbitrary keys from `updates` dict could
@@ -445,13 +504,20 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str
                 )
 
             logger.info("Device %s update synced to UDM for project %s", device_id, project_id)
+            db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
             logger.error("Failed to sync device %s update to UDM: %s", device_id, e)
+            db.record_sync("device", device_id, _TARGET_DB, "error", str(e))
             return False
 
     except Exception as e:
         logger.critical("UDM bridge unavailable during device update: %s", e)
+        try:
+            from backend.database import get_db
+            get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
+        except Exception:
+            pass
         return False
 
 
@@ -460,13 +526,18 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
 
     Soft-deletes the element and removes its project association.
     Soft delete preserves the audit trail for NFPA 72 traceability.
+    Records the sync status in sync_operations.
 
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
         from backend.db_service import DatabaseService
+        from backend.database import get_db
 
         udm = DatabaseService()
+        db = get_db()
+
+        db.record_sync("device", device_id, _TARGET_DB, "syncing")
 
         try:
             now = datetime.now(timezone.utc).isoformat()
@@ -483,13 +554,20 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
             )
 
             logger.info("Device %s deletion synced to UDM for project %s", device_id, project_id)
+            db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
             logger.error("Failed to sync device %s deletion to UDM: %s", device_id, e)
+            db.record_sync("device", device_id, _TARGET_DB, "error", str(e))
             return False
 
     except Exception as e:
         logger.critical("UDM bridge unavailable during device deletion: %s", e)
+        try:
+            from backend.database import get_db
+            get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
+        except Exception:
+            pass
         return False
 
 
@@ -517,15 +595,20 @@ def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> 
 
     Maps System A connection fields to System B relationship fields so that
     the conflict detection system can see cable wiring between devices.
+    Records the sync status in sync_operations.
 
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
+    connection_id = connection_data.get("id", "")
+
     try:
         from backend.db_service import DatabaseService
+        from backend.database import get_db
 
         udm = DatabaseService()
+        db = get_db()
 
-        connection_id = connection_data.get("id", "")
+        db.record_sync("connection", connection_id, _TARGET_DB, "syncing")
         from_id = connection_data.get("fromId", "")
         to_id = connection_data.get("toId", "")
 
@@ -582,13 +665,20 @@ def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> 
             )
 
             logger.info("Connection %s synced to UDM for project %s", connection_id, project_id)
+            db.record_sync("connection", connection_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
             logger.error("Failed to sync connection %s to UDM: %s", connection_id, e)
+            db.record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
             return False
 
     except Exception as e:
         logger.critical("UDM bridge unavailable during connection sync: %s", e)
+        try:
+            from backend.database import get_db
+            get_db().record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
+        except Exception:
+            pass
         return False
 
 
@@ -598,13 +688,18 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
     Soft-deletes the relationship in UDM. Soft delete preserves the
     audit trail for NFPA 72 traceability — cable connection deletions
     must be traceable for liability and inspection compliance.
+    Records the sync status in sync_operations.
 
     Returns True if sync succeeded, False if it failed (but does NOT block).
     """
     try:
         from backend.db_service import DatabaseService
+        from backend.database import get_db
 
         udm = DatabaseService()
+        db = get_db()
+
+        db.record_sync("connection", connection_id, _TARGET_DB, "syncing")
 
         try:
             for col in [
@@ -642,11 +737,18 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
                 )
 
             logger.info("Connection %s deletion synced to UDM for project %s", connection_id, project_id)
+            db.record_sync("connection", connection_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
             logger.error("Failed to sync connection %s deletion to UDM: %s", connection_id, e)
+            db.record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
             return False
 
     except Exception as e:
         logger.critical("UDM bridge unavailable during connection deletion: %s", e)
+        try:
+            from backend.database import get_db
+            get_db().record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
+        except Exception:
+            pass
         return False

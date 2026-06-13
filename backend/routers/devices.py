@@ -12,14 +12,16 @@ from __future__ import annotations
 import logging
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.auth import require_permission
 from backend.contract import validate_device, validate_paginated
 from backend.database import get_db
 from backend.models import (
     CreateDeviceInput,
     UpdateDeviceInput,
 )
+from backend.rbac import Permission
 from backend.response import success, error
 
 router = APIRouter(prefix="/projects/{project_id}/devices", tags=["devices"])
@@ -54,7 +56,7 @@ def _normalize_sort(sort: str) -> str:
     return _SORT_MAP.get(sort, "created_at")
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
 async def list_devices(
     project_id: str,
     page: int = Query(1, ge=1),
@@ -70,7 +72,7 @@ async def list_devices(
     return success(result)
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))])
 async def create_device(project_id: str, input_data: CreateDeviceInput):
     """Create a new device in a project.
 
@@ -130,7 +132,7 @@ async def create_device(project_id: str, input_data: CreateDeviceInput):
     return success(device)
 
 
-@router.get("/{device_id}")
+@router.get("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
 async def get_device(project_id: str, device_id: str):
     """Get a device by ID within a project."""
     _verify_project(project_id)
@@ -142,7 +144,7 @@ async def get_device(project_id: str, device_id: str):
     return success(device)
 
 
-@router.put("/{device_id}")
+@router.put("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_UPDATE))])
 async def update_device(
     project_id: str, device_id: str, input_data: UpdateDeviceInput
 ):
@@ -204,7 +206,7 @@ async def update_device(
     return success(device)
 
 
-@router.delete("/{device_id}")
+@router.delete("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_DELETE))])
 async def delete_device(project_id: str, device_id: str):
     """Delete a device from a project.
 

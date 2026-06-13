@@ -2,6 +2,7 @@
  * ReportsPage.tsx - Generate, view, and export project reports
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,7 @@ import {
 import { useProjects, useReports } from '@/hooks/useApi';
 import { api } from '@/services/digitalTwinApi';
 import type { Project, Report, GenerateReportInput } from '@/services/digitalTwinApi';
+import { AccessibleToast } from '@/components/ui/AccessibleToast';
 
 // ============================================================================
 // Report type definitions
@@ -48,6 +50,7 @@ const REPORT_TYPES = [
 // ============================================================================
 
 export function ReportsPage() {
+  const { t } = useTranslation();
   const { data: projects, loading: projectsLoading, refetch: refetchProjects } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
@@ -59,6 +62,8 @@ export function ReportsPage() {
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
 
   const selectedProject = projects?.find((p: Project) => p.id === selectedProjectId) || null;
 
@@ -107,7 +112,8 @@ export function ReportsPage() {
       window.URL.revokeObjectURL(url);
     } catch {
       // Export may fail if backend doesn't support it
-      alert('Export failed. The backend may not support this export format yet.');
+      setToastMessage(t('reports.exportFailed'));
+      setToastType('error');
     } finally {
       setExporting(null);
     }
@@ -148,13 +154,13 @@ export function ReportsPage() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto" aria-label={t('reports.title')}>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Reports</h1>
-            <p className="text-sm text-slate-400 mt-1">Generate and manage project reports</p>
+            <h1 className="text-2xl font-bold text-slate-100">{t('reports.title')}</h1>
+            <p className="text-sm text-slate-400 mt-1">{t('reports.subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             {selectedProjectId && (
@@ -164,7 +170,7 @@ export function ReportsPage() {
                 className="border-slate-600 text-slate-300"
                 onClick={() => refetchReports()}
               >
-                <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+                <RefreshCw className="h-4 w-4 mr-1" /> {t('common.refresh')}
               </Button>
             )}
           </div>
@@ -395,6 +401,15 @@ export function ReportsPage() {
           </Card>
         )}
       </div>
+
+      {/* Accessible Toast Notification */}
+      {toastMessage && (
+        <AccessibleToast
+          message={toastMessage}
+          type={toastType}
+          onClose={() => setToastMessage(null)}
+        />
+      )}
     </div>
   );
 }

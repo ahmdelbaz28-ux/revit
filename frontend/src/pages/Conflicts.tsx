@@ -1,8 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function Conflicts() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [resolveTarget, setResolveTarget] = useState<string | null>(null);
   const [resolveStrategy, setResolveStrategy] = useState('LAST_WRITE_WINS');
@@ -34,11 +36,11 @@ function Conflicts() {
   const unresolvedCount = conflicts ? conflicts.length - resolvedCount : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-label={t('conflicts.title')}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Conflicts</h1>
+          <h1 className="text-2xl font-bold text-white">{t('conflicts.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">
             {conflicts
               ? `${unresolvedCount} unresolved / ${resolvedCount} resolved`
@@ -121,15 +123,15 @@ function Conflicts() {
       {conflictsData && !isLoading && (
         <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label={t('conflicts.title')}>
               <thead>
                 <tr className="border-b border-slate-700 bg-slate-800/50">
-                  <th className="text-left text-slate-400 font-medium px-4 py-3">Element</th>
-                  <th className="text-left text-slate-400 font-medium px-4 py-3">Type</th>
-                  <th className="text-left text-slate-400 font-medium px-4 py-3">Sources</th>
-                  <th className="text-left text-slate-400 font-medium px-4 py-3">Status</th>
-                  <th className="text-left text-slate-400 font-medium px-4 py-3">Timestamp</th>
-                  <th className="text-right text-slate-400 font-medium px-4 py-3">Actions</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Element</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Type</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Sources</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Status</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Timestamp</th>
+                  <th scope="col" className="text-right text-slate-400 font-medium px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>

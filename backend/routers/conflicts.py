@@ -10,9 +10,11 @@ import logging
 import math
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.auth import require_permission
 from backend.db_service import DatabaseService
+from backend.rbac import Permission
 from backend.schemas import (
     ApiResponse,
     ConflictResolveRequest,
@@ -22,10 +24,10 @@ from backend.schemas import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/conflicts", tags=["conflicts"])
+router = APIRouter(prefix="/api/v1/conflicts", tags=["conflicts"])
 
 
-@router.get("", response_model=ApiResponse[PaginatedData[ConflictResponse]])
+@router.get("", response_model=ApiResponse[PaginatedData[ConflictResponse]], dependencies=[Depends(require_permission(Permission.CONFLICT_READ))])
 async def list_conflicts(
     resolved: Optional[bool] = Query(None, description="Filter by resolution status"),
     conflict_type: Optional[str] = Query(None, description="Filter by conflict type"),
@@ -58,7 +60,7 @@ async def list_conflicts(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/detect", response_model=ApiResponse[list])
+@router.post("/detect", response_model=ApiResponse[list], dependencies=[Depends(require_permission(Permission.CONFLICT_READ))])
 async def detect_conflicts():
     """Run conflict detection on all elements."""
     try:
@@ -74,7 +76,7 @@ async def detect_conflicts():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/{conflict_id}/resolve", response_model=ApiResponse[ConflictResponse])
+@router.post("/{conflict_id}/resolve", response_model=ApiResponse[ConflictResponse], dependencies=[Depends(require_permission(Permission.CONFLICT_RESOLVE))])
 async def resolve_conflict(conflict_id: str, resolve_data: ConflictResolveRequest):
     """Resolve a conflict by ID."""
     try:

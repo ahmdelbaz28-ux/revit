@@ -34,8 +34,11 @@ from __future__ import annotations
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+from backend.auth import require_permission
+from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +208,7 @@ def _require_facp():
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
-@router.post("/facp/select")
+@router.post("/facp/select", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
 async def select_facp(req: FACPSelectionRequest):
     """Select optimal FACP for project requirements.
 
@@ -285,7 +288,7 @@ async def select_facp(req: FACPSelectionRequest):
         )
 
 
-@router.post("/facp/verify")
+@router.post("/facp/verify", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
 async def verify_facp(req: FACPVerificationRequest):
     """Verify compliance of a panel recommendation.
 
@@ -362,7 +365,7 @@ async def verify_facp(req: FACPVerificationRequest):
         )
 
 
-@router.post("/facp/schedule")
+@router.post("/facp/schedule", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
 async def generate_facp_schedule(req: FACPScheduleRequest):
     """Generate DXF schedule table for the selected FACP.
 
@@ -421,7 +424,7 @@ async def generate_facp_schedule(req: FACPScheduleRequest):
         )
 
 
-@router.post("/facp/spec")
+@router.post("/facp/spec", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
 async def generate_facp_spec(req: FACPSpecRequest):
     """Generate CSI specification (Section 28 31 11) for the selected FACP.
 
@@ -493,7 +496,7 @@ async def generate_facp_spec(req: FACPSpecRequest):
         )
 
 
-@router.get("/facp/panels")
+@router.get("/facp/panels", dependencies=[Depends(require_permission(Permission.FACP_READ))])
 async def list_available_panels():
     """List all FACP panels in the database with full specifications.
 

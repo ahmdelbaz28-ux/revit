@@ -26,7 +26,7 @@ from backend.schemas import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/connections", tags=["connections-v2"])
+router = APIRouter(prefix="/api/v1/connections", tags=["connections-v2"])
 
 
 @router.get("", response_model=ApiResponse[PaginatedData[ConnectionResponse]])

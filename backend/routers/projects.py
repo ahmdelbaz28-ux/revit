@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.auth import require_permission
 from backend.contract import validate_paginated, validate_project
 from backend.database import get_db
 from backend.models import (
@@ -23,6 +24,7 @@ from backend.project_bridge import (
     sync_project_to_udm,
     sync_project_update_to_udm,
 )
+from backend.rbac import Permission
 from backend.response import success
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -46,7 +48,7 @@ def _normalize_sort(sort: str) -> str:
     return _SORT_MAP.get(sort, "created_at")
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_permission(Permission.PROJECT_READ))])
 async def list_projects(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
@@ -60,7 +62,7 @@ async def list_projects(
     return success(result)
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))])
 async def create_project(input_data: CreateProjectInput):
     """Create a new project."""
     db = get_db()
@@ -82,7 +84,7 @@ async def create_project(input_data: CreateProjectInput):
     return success(project)
 
 
-@router.get("/{project_id}")
+@router.get("/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_READ))])
 async def get_project(project_id: str):
     """Get a project by ID."""
     db = get_db()
@@ -93,7 +95,7 @@ async def get_project(project_id: str):
     return success(project)
 
 
-@router.put("/{project_id}")
+@router.put("/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))])
 async def update_project(project_id: str, input_data: UpdateProjectInput):
     """Update an existing project."""
     db = get_db()
@@ -114,7 +116,7 @@ async def update_project(project_id: str, input_data: UpdateProjectInput):
     return success(project)
 
 
-@router.delete("/{project_id}")
+@router.delete("/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_DELETE))])
 async def delete_project(project_id: str):
     """Delete a project and all its children."""
     db = get_db()

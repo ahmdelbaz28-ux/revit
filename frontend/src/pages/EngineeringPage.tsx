@@ -8,6 +8,7 @@
  * are disabled when inputs are out of range.
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -144,6 +145,8 @@ function ValidatedInput({
   placeholder?: string;
 }) {
   const validation = validateNumeric(value, rule);
+  const isInvalid = !validation.isValid && value !== '';
+  const errorId = `error-${rule.label.replace(/\s+/g, '-').toLowerCase()}`;
   return (
     <div className="space-y-1">
       <Input
@@ -153,9 +156,12 @@ function ValidatedInput({
         onChange={(e) => onChange(e.target.value)}
         className={validationClass(value === '' ? null : validation.isValid)}
         placeholder={placeholder}
+        aria-invalid={isInvalid || undefined}
+        aria-describedby={isInvalid ? errorId : undefined}
+        aria-label={rule.label}
       />
-      {!validation.isValid && value !== '' && (
-        <p className="text-[11px] text-red-400 leading-tight">{validation.error}</p>
+      {isInvalid && (
+        <p id={errorId} className="text-[11px] text-red-400 leading-tight" role="alert">{validation.error}</p>
       )}
     </div>
   );
@@ -166,6 +172,7 @@ function ValidatedInput({
 // ============================================================================
 
 export function EngineeringPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('voltage-drop');
 
   // Voltage Drop inputs
@@ -320,13 +327,13 @@ export function EngineeringPage() {
   };
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto" aria-label={t('engineering.title')}>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Engineering Calculations</h1>
-            <p className="text-sm text-slate-400 mt-1">IEC 60364, IEC 60909 & NEC compliant calculations</p>
+            <h1 className="text-2xl font-bold text-slate-100">{t('engineering.title')}</h1>
+            <p className="text-sm text-slate-400 mt-1">{t('engineering.subtitle')}</p>
           </div>
           <Button
             className="bg-red-600 hover:bg-red-700 text-white border-none"
@@ -334,7 +341,7 @@ export function EngineeringPage() {
             disabled={!reportValid}
           >
             <FileText className="h-4 w-4 mr-1" />
-            Generate Full Report
+            {t('engineering.generateReport')}
           </Button>
         </div>
 
@@ -360,25 +367,25 @@ export function EngineeringPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <ReportItem
-                  title="Voltage Drop"
+                  title={t('engineering.voltageDrop')}
                   status={report.voltageDrop.status}
                   value={`${report.voltageDrop.percentage}%`}
                   detail={`Limit: ${report.voltageDrop.limit}%`}
                 />
                 <ReportItem
-                  title="Short Circuit"
+                  title={t('engineering.shortCircuit')}
                   status={report.shortCircuit.status}
                   value={`${report.shortCircuit.prospectiveCurrent} kA`}
                   detail={`Breaker: ${report.shortCircuit.breakerRating} kA`}
                 />
                 <ReportItem
-                  title="Cable Sizing"
+                  title={t('engineering.cableSizing')}
                   status={report.cableSizing.suitable ? 'PASS' : 'FAIL'}
                   value={`${report.cableSizing.recommendedCrossSection} mm²`}
                   detail={`Ampacity: ${report.cableSizing.finalAmpacity}A`}
                 />
                 <ReportItem
-                  title="Load Flow"
+                  title={t('engineering.loadFlow')}
                   status={report.loadFlow.efficiency > 0.8 ? 'PASS' : 'FAIL'}
                   value={`${report.loadFlow.current}A`}
                   detail={`Efficiency: ${(report.loadFlow.efficiency * 100).toFixed(1)}%`}
