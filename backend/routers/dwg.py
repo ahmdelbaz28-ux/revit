@@ -52,11 +52,29 @@ async def parse_dwg(file: UploadFile = File(...)):
         os.close(fd)
 
         contents = await file.read()
+
+        # ── Validate non-empty file ─────────────────────────────────────
+        if not contents:
+            raise HTTPException(
+                status_code=422,
+                detail={"success": False, "error": "Empty file uploaded"},
+            )
+
         with open(temp_path, "wb") as f:
             f.write(contents)
 
         # ── Parse via DWGParser ─────────────────────────────────────────
-        from parsers.dwg_parser import DWGParser
+        try:
+            from parsers.dwg_parser import DWGParser
+        except ImportError as import_err:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "success": False,
+                    "error": f"DWG parser module unavailable: {import_err}",
+                    "hint": "Ensure all parser dependencies are installed (ezdxf, pymupdf).",
+                },
+            )
 
         parser = DWGParser()
         result = parser.parse(temp_path)
@@ -88,6 +106,8 @@ async def parse_dwg(file: UploadFile = File(...)):
             "warnings": result.warnings,
         }
 
+    except HTTPException:
+        raise  # Re-raise HTTPExceptions (400, 422, 503) — don't convert to 500
     except Exception as exc:
         logger.error(
             "DWG parse request failed: %s: %s", type(exc).__name__, exc,

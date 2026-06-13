@@ -8,7 +8,10 @@ GEOMETRY EXTRACTOR — Wall Detection for NFPA 72 Engine
 Author: The Consultant Who Refused to Lie
 """
 
-import fitz  # PyMuPDF
+try:
+    import fitz  # PyMuPDF
+except ImportError:
+    fitz = None  # PDF features unavailable without pymupdf
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum

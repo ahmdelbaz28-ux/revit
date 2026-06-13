@@ -12,7 +12,10 @@ Gate decisions:
 Author: The Consultant Who Refused to Lie
 """
 
-import fitz  # PyMuPDF
+try:
+    import fitz  # PyMuPDF
+except ImportError:
+    fitz = None  # PDF features unavailable without pymupdf
 import os
 from typing import Dict, Tuple, Optional
 from dataclasses import dataclass, field
@@ -50,6 +53,11 @@ class ParserConfidence:
     """
 
     def __init__(self, pdf_path: str):
+        if fitz is None:
+            raise ImportError(
+                "PyMuPDF (pymupdf) is required for PDF parsing. "
+                "Install with: pip install pymupdf"
+            )
         if not os.path.exists(pdf_path):
             raise FileNotFoundError(f"Drawing not found: {pdf_path}")
         self.pdf_path = pdf_path

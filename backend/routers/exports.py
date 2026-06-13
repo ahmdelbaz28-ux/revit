@@ -300,9 +300,9 @@ async def export_ifc(
             "root.create_entity", ifc_file, ifc_class="IfcBuildingStorey"
         )
 
-        ifcopenshell.api.run("aggregate.assign_object", ifc_file, product=site, relating_object=project_ifc)
-        ifcopenshell.api.run("aggregate.assign_object", ifc_file, product=building, relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", ifc_file, product=storey, relating_object=building)
+        ifcopenshell.api.run("aggregate.assign_object", ifc_file, products=[site], relating_object=project_ifc)
+        ifcopenshell.api.run("aggregate.assign_object", ifc_file, products=[building], relating_object=site)
+        ifcopenshell.api.run("aggregate.assign_object", ifc_file, products=[storey], relating_object=building)
 
         # Add devices as building element proxies
         for device in devices:
@@ -313,15 +313,29 @@ async def export_ifc(
                 name=device["name"],
             )
             ifcopenshell.api.run(
-                "spatial.assign_container", ifc_file, product=proxy, relating_structure=storey
+                "spatial.assign_container", ifc_file, products=[proxy], relating_structure=storey
             )
 
-        output = io.BytesIO()
-        ifc_file.write(output)
-        output.seek(0)
+        # Write IFC to a temporary file, then read it back.
+        # ifcopenshell >= 0.8 requires write() to take a file path (str),
+        # not a BytesIO. Older versions accepted BytesIO but the current
+        # version raises TypeError for non-str/non-PathLike arguments.
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".ifc", delete=False, prefix="fireai_ifc_") as tmp:
+            tmp_path = tmp.name
+        try:
+            ifc_file.write(tmp_path)
+            with open(tmp_path, "rb") as f:
+                ifc_bytes = f.read()
+        finally:
+            import os as _os
+            try:
+                _os.unlink(tmp_path)
+            except OSError:
+                pass
 
         return StreamingResponse(
-            io.BytesIO(output.getvalue()),
+            io.BytesIO(ifc_bytes),
             media_type="application/ifc",
             headers={
                 "Content-Disposition": f"attachment; filename=\"{_safe_filename(project['name'])}.ifc\""
