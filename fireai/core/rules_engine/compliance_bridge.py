@@ -601,3 +601,152 @@ class NFPA72ComplianceChecker:
                 supporting_fact_ids=source_ids,
                 producing_rule_id=producing_rule,
             )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DUAL-ENGINE COMPLIANCE VERIFICATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@dataclass
+class DualComplianceResult:
+    """Result from running BOTH compliance engines in parallel.
+
+    SAFETY PRINCIPLE: If the two engines disagree, the design MUST be REJECTED.
+    A divergence means one engine found a violation the other missed — which
+    could be a real life-safety issue. In a safety-critical system, we never
+    accept a design where ANY engine reports a problem, even if the other passes.
+
+    Reference: AGENTS.md Rule 6 (No Unauthorized Changes) and Rule 7 (Stop on Errors)
+    """
+
+    is_safe: bool
+    rules_engine_safe: bool
+    clause_engine_safe: bool
+    engines_agree: bool
+    divergence_details: List[str] = field(default_factory=list)
+    rules_engine_report: Optional[ComplianceReport] = None
+    clause_engine_violations: List[str] = field(default_factory=list)
+    combined_violations: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        """Ensure is_safe is the AND of both engines AND agreement."""
+        if not self.engines_agree:
+            # Divergence = REJECT regardless of individual results
+            self.is_safe = False
+
+
+def dual_compliance_check(
+    context: Dict[str, Any],
+    session_id: str = "",
+) -> DualComplianceResult:
+    """Run BOTH compliance engines and REJECT on divergence.
+
+    SAFETY: This is the highest-level compliance verification. It runs:
+    1. ComplianceEngine (clause-mapped, validation/compliance_engine.py)
+    2. NFPA72ComplianceChecker (declarative rules engine)
+
+    If BOTH pass → PASS
+    If EITHER fails → FAIL
+    If they DISAGREE → FAIL with divergence flag
+
+    Divergence indicates a bug in one of the engines — a serious safety issue.
+    All divergences are logged at CRITICAL level for investigation.
+
+    Args:
+        context: Dictionary with compliance parameters (spacing_m, coverage_pct, etc.)
+        session_id: Optional session ID for audit tracking
+
+    Returns:
+        DualComplianceResult with combined pass/fail and divergence info
+    """
+    from fireai.validation.compliance_engine import ComplianceEngine
+
+    # ── Engine 1: Clause-mapped ComplianceEngine ──────────────────────────
+    clause_engine = ComplianceEngine()
+    clause_violations = clause_engine.validate(context)
+    clause_safe = len(clause_violations) == 0
+
+    # ── Engine 2: Declarative Rules Engine ────────────────────────────────
+    rules_checker = NFPA72ComplianceChecker(session_id=session_id)
+
+    # Add room context to rules engine if available
+    if "ceiling_height_m" in context:
+        rules_checker.add_room(
+            room_id=context.get("room_id", "dual-check-room"),
+            ceiling_height_m=context["ceiling_height_m"],
+            detector_type=context.get("detector_type", "smoke"),
+            room_area_m2=context.get("room_area_m2"),
+        )
+
+    # Add detector context if available
+    if "spacing_m" in context:
+        rules_checker.add_detector(
+            detector_id="dual-check-detector",
+            room_id=context.get("room_id", "dual-check-room"),
+            detector_type=context.get("detector_type", "smoke"),
+            x=0.0,
+            y=0.0,
+            listed_spacing_m=context["spacing_m"],
+        )
+
+    rules_report = rules_checker.evaluate()
+    rules_safe = rules_report.is_safe
+
+    # ── Check for divergence ──────────────────────────────────────────────
+    engines_agree = clause_safe == rules_safe
+    divergence_details = []
+
+    if not engines_agree:
+        if clause_safe and not rules_safe:
+            divergence_details.append(
+                "DIVERGENCE: Clause engine PASSED but Rules engine FAILED. "
+                "The Rules engine found violations that the clause engine missed. "
+                "This may indicate a gap in the clause engine's rule coverage."
+            )
+        elif not clause_safe and rules_safe:
+            divergence_details.append(
+                "DIVERGENCE: Clause engine FAILED but Rules engine PASSED. "
+                "The clause engine found violations that the Rules engine missed. "
+                "This may indicate a gap in the rules engine's rule coverage."
+            )
+
+        # Log at CRITICAL level — divergence is a safety concern
+        for detail in divergence_details:
+            logger.critical(
+                "COMPLIANCE ENGINE DIVERGENCE DETECTED: %s "
+                "Session: %s, Context: %s",
+                detail, session_id, context,
+            )
+
+    # ── Combine violations ────────────────────────────────────────────────
+    combined = list(clause_violations)
+    for issue in rules_report.critical_issues:
+        combined.append(f"[RULES-CRITICAL] {issue.get('message', 'Unknown')}")
+    for issue in rules_report.violations:
+        combined.append(f"[RULES-VIOLATION] {issue.get('message', 'Unknown')}")
+    for detail in divergence_details:
+        combined.append(f"[DIVERGENCE] {detail}")
+
+    # ── Construct result ──────────────────────────────────────────────────
+    # is_safe = True ONLY if BOTH engines pass AND they agree
+    is_safe = clause_safe and rules_safe and engines_agree
+
+    result = DualComplianceResult(
+        is_safe=is_safe,
+        rules_engine_safe=rules_safe,
+        clause_engine_safe=clause_safe,
+        engines_agree=engines_agree,
+        divergence_details=divergence_details,
+        rules_engine_report=rules_report,
+        clause_engine_violations=clause_violations,
+        combined_violations=combined,
+    )
+
+    logger.info(
+        "Dual compliance check complete: safe=%s, clause_safe=%s, "
+        "rules_safe=%s, agree=%s, violations=%d",
+        result.is_safe, clause_safe, rules_safe, engines_agree, len(combined),
+    )
+
+    return result

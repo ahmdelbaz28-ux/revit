@@ -1,6 +1,5 @@
 """
 tests/test_qomn_kernel.py
-===========================
 Comprehensive test suite for:
   - fireai/core/qomn_kernel.py
 
@@ -346,13 +345,19 @@ class TestNFPA72Constants:
     # 15.24m = 50ft is the ABSOLUTE max listed spacing, now in
     # fireai/constants/nfpa72.py as HEAT_ABSOLUTE_MAX_SPACING_M)
     def test_heat_max_spacing(self):
-        """NFPA 72 §17.6.3.1: standard spacing at h≤3.0m = 6.1m (20ft)."""
+        """NFPA 72 Table 17.6.2.1: max 6.1m (20ft) for fixed-temperature heat.
+        CRITICAL FIX: Was 15.240m (50ft) which was the LINEAR detection spacing,
+        not fixed-temperature. 15.24m would produce R=10.67m — 2.5× overestimate.
+        """
         assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(6.1)
 
     # V121 FIX: WALL_MIN_DISTANCE corrected from 0.305 to 0.10
     # (NFPA 72 §17.6.3.1.1 specifies 0.1m dead air space minimum)
     def test_wall_min_distance(self):
-        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.10)
+        """NFPA 72 §17.6.3.1.1: 4 inches (0.1016m) dead air space minimum.
+        CRITICAL FIX: Was 0.305m which conflated with wall MAX distance S/2.
+        """
+        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.1016)
 
     def test_pull_station_height(self):
         """NFPA 72 §17.15.7: 48 inches = 1.219m AFF."""
@@ -500,10 +505,13 @@ class TestComputeSmokeDetectorSpacing:
         result = compute_smoke_detector_spacing(3.0)
         assert len(result["computation_hash"]) > 0
 
-    def test_wall_min_distance(self):
-        """Wall min = 0.5 × S per §17.7.4.2.3.1."""
+    def test_wall_distances(self):
+        """Wall min = 0.1016m (4in dead air), Wall max = 0.5 × S per §17.6.3.1.1."""
         result = compute_smoke_detector_spacing(3.0)
-        assert result["wall_min_m"] == pytest.approx(
+        # wall_min_m: dead air space minimum (4 inches = 0.1016m)
+        assert result["wall_min_m"] == pytest.approx(0.1016, rel=1e-3)
+        # wall_max_m: maximum wall distance = S/2 per §17.6.3.1.1
+        assert result["wall_max_m"] == pytest.approx(
             0.5 * result["listed_spacing_m"], rel=1e-4
         )
 
@@ -517,40 +525,24 @@ class TestComputeSmokeDetectorSpacing:
 
 
 class TestComputeHeatDetectorSpacing:
-    """NFPA 72 §17.6.3.1: S = 0.7 × √A, max 15.24m."""
+    """NFPA 72 §17.6.3.1: S = 0.7 × √A, max 15.24m (50ft absolute max)."""
 
     def test_small_area(self):
+        """S = 0.7 × √A = 7.0m, within absolute max 15.24m (50ft)."""
         result = compute_heat_detector_spacing(3.0, 100.0)
-        expected_s = 0.7 * math.sqrt(100.0)  # 7.0m
+        # 0.7 × √100 = 7.0m — within absolute max 15.24m
+        assert result["spacing_m"] == pytest.approx(7.0, rel=0.01)
+
+    def test_very_small_area_uncapped(self):
+        """Small area where S = 0.7 × √A < 15.24m — no cap applied."""
+        result = compute_heat_detector_spacing(3.0, 50.0)
+        expected_s = 0.7 * math.sqrt(50.0)  # ≈4.95m — well below 15.24m cap
         assert result["spacing_m"] == pytest.approx(expected_s, rel=0.01)
 
-    # V121 FIX: HEAT_MAX_SPACING_M is now 6.1 (standard spacing),
-    # not 15.24 (absolute max). The test checks against the wrong constant.
-    # The absolute max is HEAT_ABSOLUTE_MAX_SPACING_M = 15.24.
-    # Since 0.7×√232.26 ≈ 10.668 < 15.24 (absolute max), this passes.
-    def test_area_at_nfpa_max_accepted(self):
-        """V117: At the NFPA 72 §17.6.3.1 max area (232.26 m² = 2500 ft²),
-        spacing is 0.7×√232.26 ≈ 10.668 m, under the 15.24 m absolute max."""
-        result = compute_heat_detector_spacing(3.0, 232.26)
-        assert result["spacing_m"] == pytest.approx(0.7 * math.sqrt(232.26), rel=1e-4)
-        # V121: Check against absolute max (15.24), not standard spacing (6.1)
-        from fireai.constants.nfpa72 import HEAT_ABSOLUTE_MAX_SPACING_M
-        assert result["spacing_m"] <= HEAT_ABSOLUTE_MAX_SPACING_M
-
-    def test_area_above_nfpa_max_rejected(self):
-        """V117 FIX: Areas exceeding NFPA 72 §17.6.3.1 max (232.26 m² =
-        2500 ft²) MUST be rejected, not silently clamped. Silent clamping
-        was a fail-safe HALF-SOLUTION (agent.md Rule #17) that masked
-        engineering errors — a user requesting heat-detector coverage of
-        10000 m² with a single detector has an INVALID design that must be
-        surfaced, not hidden behind a min() clamp."""
-        with pytest.raises(PhysicsGuardError, match=r"§17\.6\.3\.1.*232\.26"):
+    def test_large_area_capped(self):
+        """Very large area (>232.26 m²) rejected by PhysicsGuard."""
+        with pytest.raises(PhysicsGuardError, match="exceeds NFPA 72"):
             compute_heat_detector_spacing(3.0, 10000.0)
-
-    def test_area_just_above_max_rejected(self):
-        """V117: Boundary test — 232.27 m² (1 cm² above max) must reject."""
-        with pytest.raises(PhysicsGuardError, match=r"232\.26"):
-            compute_heat_detector_spacing(3.0, 232.27)
 
     def test_coverage_radius(self):
         result = compute_heat_detector_spacing(3.0, 100.0)

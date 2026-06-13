@@ -1,6 +1,5 @@
 """
 fireai/core/qomn_kernel.py — QOMN-FIRE Deterministic Engineering Kernel
-=========================================================================
 QOMN-FIRE: Zero-Defect Fire Alarm & Light Current Engineering Kernel
 
 ARCHITECTURE: Five strict layers per QOMN specification:
@@ -230,29 +229,48 @@ from fireai.constants.nfpa72 import (  # noqa: E402,I001
     WALL_MIN_DISTANCE_M as NFPA72_WALL_MIN_DISTANCE_M,  # noqa: F401
 )
 
-# Backward-compatible aliases (old names used by other modules)
-NFPA72_SMOKE_MAX_SPACING_M = NFPA72_SMOKE_MAX_SPACING_M
-NFPA72_HEAT_MAX_SPACING_M = NFPA72_HEAT_MAX_SPACING_M
-NFPA72_COVERAGE_RADIUS_FACTOR = NFPA72_COVERAGE_RADIUS_FACTOR
+# Coverage radius = 0.7 × listed_spacing
+# Source: NFPA 72-2022 §17.7.4.2.3.1
+# IMPORTANT: This is the COVERAGE RADIUS for verifying every point on the
+# ceiling is within R of a detector on a square grid at spacing S.
+# This is NOT the wall distance — wall max distance is S/2 per §17.6.3.1.1.
+# For smoke at h<=3m: R = 0.7×9.1 = 6.37m, wall_max = 9.1/2 = 4.55m.
+NFPA72_COVERAGE_RADIUS_FACTOR = 0.7
 
-# V131 FIX: NAC (Notification Appliance Circuit) constants per NFPA 72-2022
-# §18.5.5.2 — Minimum candela ratings for visible notification appliances
-NFPA72_NAC_MIN_CD = 15          # §18.5.5.2 — Minimum candela (non-sleeping areas)
-NFPA72_NAC_SLEEPING_MIN_CD = 110  # §18.5.5.2 — Minimum candela (sleeping areas, UL 1971)
+# Maximum smoke detector spacing (absolute) — NFPA 72 §17.7.3.2.3
+# V130 FIX: Flat 9.1m per §17.7.3.2.3 (NO height reduction) — imported from fireai.constants.nfpa72
+# NOTE: NFPA72_SMOKE_MAX_SPACING_M is imported at line 227 — do NOT redefine with a literal.
 
-# ── All NFPA 72 constants now imported from canonical source above ─────
-# V121 FIX: Duplicate constants removed. See fireai/constants/nfpa72.py.
-# Old values that CHANGED:
-#   SMOKE_MAX_SPACING_M: 9.144 → 9.1 (NFPA 72 states 9.1m, not 30ft×0.3048)
-#   HEAT_MAX_SPACING_M: 15.240 → 6.10 (was WRONG — 15.24m is ceiling height,
-#     not spacing; correct heat spacing is 6.1m per Table 17.6.3.5.1)
-#   WALL_MIN_DISTANCE_M: 0.305 → 0.10 (0.305 was S/2 at old spacing;
-#     NFPA 72 §17.6.3.1.1 specifies 0.1m dead air space minimum)
-#
-# ⚠️ HEAT_MAX_SPACING_M was 15.240 (50 ft) — this was the MAXIMUM LISTED
-# spacing for heat detectors (50ft per NFPA 72 §17.6.3.1), but the actual
-# standard spacing at h<=3.0m is 20ft (6.1m). The 50ft value is the
-# maximum for SPECIAL applications, not default spacing. Corrected to 6.1m.
+# Maximum heat detector spacing — NFPA 72 §17.6.3.1
+# CRITICAL FIX: Was 15.24m (50ft) which is the LINEAR detection spacing, NOT fixed-temperature.
+# Using 15.24m would produce R = 0.7 × 15.24 = 10.67m — a 2.5× overestimate vs correct
+# R = 0.7 × 6.1 = 4.27m. This could produce false PASS results for heat detector coverage.
+# NOTE: NFPA72_HEAT_MAX_SPACING_M is imported at line 223 — do NOT redefine with a literal.
+
+# Minimum distance from wall — NFPA 72 §17.7.4.2.3.1
+NFPA72_WALL_MIN_DISTANCE_M = 0.1016  # 4 inches per NFPA 72 §17.6.3.1.1 (dead air space)
+# CRITICAL FIX: Was 0.305m (1ft) which conflated with wall MAX distance S/2.
+# The MINIMUM distance is 4 inches (0.1016m) — detectors must not be closer to wall than this.
+# The MAXIMUM distance from wall is S/2 (4.55m for smoke, 3.05m for heat) per §17.6.3.1.1.
+NFPA72_WALL_MAX_DISTANCE_FACTOR = 0.5  # S/2 per NFPA 72 §17.6.3.1.1
+
+# Pull station height — NFPA 72 §17.15.7
+NFPA72_PULL_STATION_HEIGHT_M = 1.219  # 48 inches = 1.219 m AFF
+
+# Pull station max spacing in corridor — NFPA 72 §17.15.5
+NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M = 61.0  # 200 ft
+
+# Pull station from exit door — NFPA 72 §17.15.3
+NFPA72_PULL_STATION_FROM_EXIT_M = 1.524  # 5 ft
+
+# Notification appliance: wall mount height — NFPA 72 §18.5.5.1
+NFPA72_NAC_WALL_HEIGHT_M = 2.032  # 80 inches AFF to bottom
+
+# Notification appliance: minimum strobe intensity — NFPA 72 §18.5.3.1
+NFPA72_NAC_MIN_CD = 75  # 75 candela
+
+# Sleeping area strobe intensity — NFPA 72 §18.5.5.7
+NFPA72_NAC_SLEEPING_MIN_CD = 177  # 177 candela
 
 # ── NEC Table 8 — Wire Resistance (Copper, Stranded) ──────────────────────
 # Source: NEC 2023 Edition, Chapter 9, Table 8
@@ -426,7 +444,8 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
     result = {
         "listed_spacing_m": round(spacing_m, 6),
         "coverage_radius_m": round(radius_m, 6),
-        "wall_min_m": round(0.5 * spacing_m, 6),
+        "wall_min_m": round(NFPA72_WALL_MIN_DISTANCE_M, 4),  # 0.1016m dead air space per §17.6.3.1.1
+        "wall_max_m": round(0.5 * spacing_m, 6),  # S/2 max wall distance per §17.6.3.1.1
         "corner_min_m": round(0.7 * spacing_m, 6),
         "nfpa_section": nfpa_section,
         "table_row_used": table_row,
