@@ -1,0 +1,2491 @@
+{
+  "generated_at": "2026-06-13 19:38:08",
+  "canonicals": {
+    "SMOKE_MAX_SPACING_M": 9.1,
+    "HEAT_MAX_SPACING_M": 6.1,
+    "COVERAGE_RADIUS_FACTOR": 0.7,
+    "SMOKE_COVERAGE_RADIUS_M": 6.37,
+    "HEAT_COVERAGE_RADIUS_M": 4.27,
+    "WALL_MIN_DISTANCE_M": 0.1016,
+    "SMOKE_MAX_WALL_DISTANCE_M": 4.55,
+    "HEAT_MAX_WALL_DISTANCE_M": 3.05,
+    "SMOKE_MAX_CEILING_HEIGHT_M": 18.288,
+    "HEAT_MAX_CEILING_HEIGHT_M": 15.24,
+    "CEILING_HEIGHT_MIN_M": 3.0,
+    "BATTERY_STANDBY_HOURS": 24.0,
+    "BATTERY_ALARM_MINUTES": 5.0,
+    "BATTERY_SAFETY_FACTOR": 1.25,
+    "NAC_MIN_CD": 75,
+    "NAC_SLEEPING_MIN_CD": 177,
+    "PULL_STATION_HEIGHT_M": 1.219,
+    "PULL_STATION_FROM_EXIT_M": 1.524,
+    "RIDGE_ZONE_BUFFER_M": 0.9,
+    "VOLTAGE_DROP_MAX_FRACTION": 0.1,
+    "GRAVITY_M_S2": 9.80665,
+    "MOLAR_MASS_AIR": 0.0289644,
+    "UNIVERSAL_GAS_CONSTANT": 8.31447,
+    "DEFAULT_AQI": 100,
+    "DEFAULT_PM25_UG_M3": 35.0,
+    "DEFAULT_PM10_UG_M3": 50.0,
+    "DEFAULT_LFL_VOL_PCT": 0.5,
+    "DEFAULT_AUTO_IGNITION_C": 200.0,
+    "NFPA72_MINIMUM_SAFETY_FACTOR": 1.2,
+    "MAX_DEVICES_BETWEEN_ISOLATORS": 32,
+    "MAX_SLC_DEVICES_DEFAULT": 250,
+    "MIN_STAIRWELL_PRESSURIZATION_PA": 25.0,
+    "MAX_PRESSURE_DIFFERENTIAL_PA": 133.0
+  },
+  "definitions": {
+    "NFPA_SMOKE_DETECTOR_SPACING_M": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 409,
+        "value": "9.144  # 30 feet smooth ceiling spacing"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 6,
+        "value": "9.144  # 30 feet smooth ceiling spacing"
+      }
+    ],
+    "NFPA_MAX_WALL_DISTANCE_M": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 410,
+        "value": "6.400       # 0.7 times spacing constraint (21 fee"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 19,
+        "value": "4.572   # 0.5 times spacing (15 feet) per \u00a717.7.3."
+      }
+    ],
+    "EMT_INTERNAL_AREA_1_2_MM2": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 413,
+        "value": "196.1"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 27,
+        "value": "196.1"
+      }
+    ],
+    "EMT_INTERNAL_AREA_3_4_MM2": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 414,
+        "value": "343.9"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 28,
+        "value": "343.9"
+      }
+    ],
+    "EMT_INTERNAL_AREA_1_MM2": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 415,
+        "value": "557.4"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 29,
+        "value": "557.4"
+      }
+    ],
+    "WIRE_AREA_14_AWG_MM2": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 418,
+        "value": "6.26"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 32,
+        "value": "6.26"
+      }
+    ],
+    "WIRE_AREA_12_AWG_MM2": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 419,
+        "value": "8.58"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 33,
+        "value": "8.58"
+      }
+    ],
+    "WIRE_AREA_10_AWG_MM2": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 420,
+        "value": "13.61"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 34,
+        "value": "13.61"
+      }
+    ],
+    "NEC_FILL_LIMIT_1_WIRE": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 423,
+        "value": "0.53"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 37,
+        "value": "0.53"
+      }
+    ],
+    "NEC_FILL_LIMIT_2_WIRES": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 424,
+        "value": "0.31"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 38,
+        "value": "0.31"
+      }
+    ],
+    "NEC_FILL_LIMIT_OVER_2_WIRES": [
+      {
+        "file": "qomn_fire_generator.py",
+        "line": 425,
+        "value": "0.40"
+      },
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 39,
+        "value": "0.40"
+      }
+    ],
+    "MAJOR": [
+      {
+        "file": "fireai/version.py",
+        "line": 22,
+        "value": "55"
+      }
+    ],
+    "MINOR": [
+      {
+        "file": "fireai/version.py",
+        "line": 23,
+        "value": "0"
+      }
+    ],
+    "PATCH": [
+      {
+        "file": "fireai/version.py",
+        "line": 24,
+        "value": "0"
+      }
+    ],
+    "NFPA_EDITION": [
+      {
+        "file": "fireai/version.py",
+        "line": 38,
+        "value": "\"NFPA 72-2022\""
+      }
+    ],
+    "IEC_HAC_EDITION": [
+      {
+        "file": "fireai/version.py",
+        "line": 39,
+        "value": "\"IEC 60079-10-1:2015 / IEC 60079-10-2:2015\""
+      }
+    ],
+    "NEC_EDITION": [
+      {
+        "file": "fireai/version.py",
+        "line": 40,
+        "value": "\"NFPA 70-2023\""
+      }
+    ],
+    "ATEX_EDITION": [
+      {
+        "file": "fireai/version.py",
+        "line": 41,
+        "value": "\"ATEX 2014/34/EU\""
+      }
+    ],
+    "STANDBY_MA_PER_DEVICE": [
+      {
+        "file": "facp_system/panel_selector.py",
+        "line": 44,
+        "value": "0.8   # mA per device (conservative average)"
+      }
+    ],
+    "ALARM_MA_PER_DEVICE": [
+      {
+        "file": "facp_system/panel_selector.py",
+        "line": 45,
+        "value": "5.0     # mA per device in alarm (LED annunciator)"
+      }
+    ],
+    "DEFAULT_TURN_PENALTY": [
+      {
+        "file": "qomn_fire/engine/routing.py",
+        "line": 78,
+        "value": "2.0"
+      }
+    ],
+    "NFPA_COVERAGE_RADIUS_M": [
+      {
+        "file": "qomn_fire/core/constants.py",
+        "line": 24,
+        "value": "6.400     # 0.7 times spacing (21 feet) per \u00a717.7."
+      }
+    ],
+    "MAX_FILE_SIZE_BYTES": [
+      {
+        "file": "qomn_fire/parsers/file_validator.py",
+        "line": 32,
+        "value": "1024 * 1024 * 1024"
+      }
+    ],
+    "MIN_WALL_DISTANCE_M": [
+      {
+        "file": "fireai/core/nfpa72_models.py",
+        "line": 48,
+        "value": "0.10  # 4 inches per NFPA 72 \u00a717.6.3.1.1"
+      }
+    ],
+    "MAX_DIMENSION_M": [
+      {
+        "file": "fireai/core/nfpa72_models.py",
+        "line": 49,
+        "value": "1000.0  # Max room dimension in meters"
+      }
+    ],
+    "MAX_POLYGON_VERTICES": [
+      {
+        "file": "fireai/core/nfpa72_models.py",
+        "line": 50,
+        "value": "5000  # Max polygon vertices"
+      }
+    ],
+    "MAX_STRING_LENGTH": [
+      {
+        "file": "fireai/core/nfpa72_models.py",
+        "line": 51,
+        "value": "200  # Max string input length"
+      }
+    ],
+    "NFPA72_WALL_MAX_DISTANCE_FACTOR": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 260,
+        "value": "0.5  # S/2 per NFPA 72 \u00a717.6.3.1.1"
+      }
+    ],
+    "NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 268,
+        "value": "61.0  # 200 ft"
+      }
+    ],
+    "NFPA72_NAC_WALL_HEIGHT_M": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 276,
+        "value": "2.032  # 80 inches AFF to bottom"
+      }
+    ],
+    "NFPA72_NAC_MIN_CD": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 279,
+        "value": "75  # 75 candela"
+      }
+    ],
+    "NFPA72_NAC_SLEEPING_MIN_CD": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 282,
+        "value": "177  # 177 candela"
+      }
+    ],
+    "TIA568_HORIZONTAL_MAX_M": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 324,
+        "value": "90.0  # 90m horizontal \u2014 TIA-568-D \u00a76.1.1"
+      }
+    ],
+    "TIA568_TOTAL_CHANNEL_MAX_M": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 325,
+        "value": "100.0  # 100m total including patch cords"
+      }
+    ],
+    "MIN_STAIRWELL_PRESSURIZATION_PA": [
+      {
+        "file": "fireai/core/building_systems_integration.py",
+        "line": 263,
+        "value": "25.0  # NFPA 92 \u00a76.3: minimum 25 Pa (0.10 in. w.g."
+      }
+    ],
+    "MAX_PRESSURE_DIFFERENTIAL_PA": [
+      {
+        "file": "fireai/core/building_systems_integration.py",
+        "line": 264,
+        "value": "133.0  # NFPA 92 \u00a76.3.3: max force to open door (~"
+      }
+    ],
+    "AGING_DERATING_EOL": [
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 121,
+        "value": "0.80  # End-of-life capacity: 80% of rated (IEEE 1"
+      }
+    ],
+    "DEFAULT_SERVICE_LIFE_YEARS": [
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 124,
+        "value": "5"
+      }
+    ],
+    "NOMINAL_CELL_VOLTAGE": [
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 129,
+        "value": "2.0  # Volts per cell (lead-acid)"
+      }
+    ],
+    "END_OF_DISCHARGE_VOLTAGE_PER_CELL": [
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 134,
+        "value": "1.75  # Volts"
+      }
+    ],
+    "NFPA72_MINIMUM_SAFETY_FACTOR": [
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 431,
+        "value": "1.20  # Mandatory per NFPA 72 \u00a710.6.7.2.1"
+      }
+    ],
+    "MAX_DEVICES_BETWEEN_ISOLATORS": [
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 89,
+        "value": "32"
+      }
+    ],
+    "MAX_SLC_DEVICES_DEFAULT": [
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 93,
+        "value": "250"
+      }
+    ],
+    "MAX_NAC_DEVICES_DEFAULT": [
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 96,
+        "value": "99"
+      }
+    ],
+    "NFPA_VERSION": [
+      {
+        "file": "fireai/core/audit_store.py",
+        "line": 72,
+        "value": "\"NFPA 72-2022\""
+      }
+    ],
+    "AUDIT_VERSION": [
+      {
+        "file": "fireai/core/audit_blockchain_bridge.py",
+        "line": 40,
+        "value": "\"1.0.0\""
+      }
+    ],
+    "MINIMUM_COVERAGE_FOR_SUBMISSION": [
+      {
+        "file": "fireai/core/safety_assurance.py",
+        "line": 87,
+        "value": "95.0  # Below this = REJECTED"
+      }
+    ],
+    "STANDARD_COVERAGE_THRESHOLD": [
+      {
+        "file": "fireai/core/safety_assurance.py",
+        "line": 88,
+        "value": "99.0  # Below this = FALLBACK_USED"
+      }
+    ],
+    "PROOF_VERIFIED_THRESHOLD": [
+      {
+        "file": "fireai/core/safety_assurance.py",
+        "line": 89,
+        "value": "99.5  # Above this = PROOF_VERIFIED"
+      }
+    ],
+    "ABSOLUTE_MINIMUM_COVERAGE": [
+      {
+        "file": "fireai/core/safety_assurance.py",
+        "line": 92,
+        "value": "90.0"
+      }
+    ],
+    "NFPA72_SMOKE_RADIUS_M": [
+      {
+        "file": "fireai/core/digital_twin.py",
+        "line": 95,
+        "value": "6.37"
+      }
+    ],
+    "NFPA72_HEAT_RADIUS_M": [
+      {
+        "file": "fireai/core/digital_twin.py",
+        "line": 99,
+        "value": "4.27"
+      }
+    ],
+    "NFPA72_HEAT_RADIUS_25FT_M": [
+      {
+        "file": "fireai/core/digital_twin.py",
+        "line": 102,
+        "value": "5.3"
+      }
+    ],
+    "NFPA72_DEFAULT_CEILING_M": [
+      {
+        "file": "fireai/core/digital_twin.py",
+        "line": 105,
+        "value": "3.0"
+      }
+    ],
+    "NFPA72_MAX_SPACING_M": [
+      {
+        "file": "fireai/core/digital_twin.py",
+        "line": 108,
+        "value": "9.1"
+      }
+    ],
+    "MIN_SPRINKLER_PRESSURE_PSI": [
+      {
+        "file": "fireai/core/hydraulic_solver.py",
+        "line": 62,
+        "value": "7.0"
+      }
+    ],
+    "HW_EXPONENT": [
+      {
+        "file": "fireai/core/hydraulic_solver.py",
+        "line": 65,
+        "value": "1.85"
+      }
+    ],
+    "HW_COEFFICIENT": [
+      {
+        "file": "fireai/core/hydraulic_solver.py",
+        "line": 68,
+        "value": "4.52"
+      }
+    ],
+    "DIAMETER_EXPONENT": [
+      {
+        "file": "fireai/core/hydraulic_solver.py",
+        "line": 71,
+        "value": "4.87"
+      }
+    ],
+    "MIN_PIPE_DIAMETER_INCHES": [
+      {
+        "file": "fireai/core/hydraulic_solver.py",
+        "line": 86,
+        "value": "0.1"
+      }
+    ],
+    "MAX_C_FACTOR": [
+      {
+        "file": "fireai/core/hydraulic_solver.py",
+        "line": 89,
+        "value": "200.0"
+      }
+    ],
+    "MIN_C_FACTOR": [
+      {
+        "file": "fireai/core/hydraulic_solver.py",
+        "line": 92,
+        "value": "1.0"
+      }
+    ],
+    "MAX_SOUND_LEVEL_DBA": [
+      {
+        "file": "fireai/core/acoustic_calculator.py",
+        "line": 61,
+        "value": "110.0  # NFPA 72 \u00a718.4.1.2"
+      }
+    ],
+    "DEFAULT_REF_DISTANCE_M": [
+      {
+        "file": "fireai/core/acoustic_calculator.py",
+        "line": 84,
+        "value": "3.0"
+      }
+    ],
+    "DEFAULT_MAX_DEVICES_BETWEEN_ISOLATORS": [
+      {
+        "file": "fireai/core/fault_isolator_injector.py",
+        "line": 77,
+        "value": "32  # Conservative engineering limit"
+      }
+    ],
+    "NFPA_CITATION_ISOLATION": [
+      {
+        "file": "fireai/core/fault_isolator_injector.py",
+        "line": 81,
+        "value": "\"NFPA 72-2022 \u00a712.3.1\""
+      }
+    ],
+    "NFPA_CITATION_ZONE_LIMIT": [
+      {
+        "file": "fireai/core/fault_isolator_injector.py",
+        "line": 82,
+        "value": "\"NFPA 72-2022 \u00a712.3.2\""
+      }
+    ],
+    "CONDUIT_TYPE": [
+      {
+        "file": "fireai/core/revit_exporter.py",
+        "line": 153,
+        "value": "\"EMT-3_4-RED\""
+      }
+    ],
+    "CONDUIT_DIAMETER_M": [
+      {
+        "file": "fireai/core/revit_exporter.py",
+        "line": 154,
+        "value": "0.01905  # \u00be\" EMT = 19.05mm"
+      }
+    ],
+    "MIN_CONDUIT_INCHES": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 95,
+        "value": "0.75  # \u00be\" per project specification"
+      }
+    ],
+    "MIN_CONDUIT_MM": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 96,
+        "value": "19.05  # \u00be\" = 19.05mm"
+      }
+    ],
+    "EMT_3_4_INNER_DIAMETER_MM": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 97,
+        "value": "15.8  # NEC Chapter 9, Table 4 \u2014 \u00be\" EMT inner diam"
+      }
+    ],
+    "EMT_3_4_OUTER_DIAMETER_MM": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 98,
+        "value": "19.05  # \u00be\" EMT outer diameter"
+      }
+    ],
+    "BEND_RADIUS_FACTOR": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 104,
+        "value": "6  # 6 \u00d7 conduit diameter per project spec / NEC 3"
+      }
+    ],
+    "MIN_ELECTRICAL_SEPARATION_MM": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 108,
+        "value": "300.0  # 300mm per project specification"
+      }
+    ],
+    "MAX_CABLE_FASTENING_INTERVAL_MM": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 111,
+        "value": "457.0  # 18\" = 457mm per NEC 760.24(A)"
+      }
+    ],
+    "EMT_3_4_AREA_SQ_MM": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 114,
+        "value": "196.0  # 100% fill area for \u00be\" EMT"
+      }
+    ],
+    "MAX_CONDUIT_FILL_PCT": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 117,
+        "value": "0.40  # 40% fill per NEC 760.154"
+      }
+    ],
+    "BEND_PENALTY_M": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 131,
+        "value": "0.5  # 90\u00b0 bend = equivalent to 0.5m extra length"
+      }
+    ],
+    "ELEVATION_PENALTY_M": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 132,
+        "value": "2.0  # Elevation change = equivalent to 2.0m extra"
+      }
+    ],
+    "ELECTRICAL_PROXIMITY_PENALTY_M": [
+      {
+        "file": "fireai/core/constraint_engine.py",
+        "line": 133,
+        "value": "1.0  # Proximity to electrical = 1.0m penalty"
+      }
+    ],
+    "API_VERSION": [
+      {
+        "file": "fireai/core/api_stability.py",
+        "line": 33,
+        "value": "\"29.0.0\""
+      }
+    ],
+    "API_VERSION_TUPLE": [
+      {
+        "file": "fireai/core/api_stability.py",
+        "line": 34,
+        "value": "(29, 0, 0)"
+      }
+    ],
+    "MIN_PLUGIN_VERSION": [
+      {
+        "file": "fireai/core/api_stability.py",
+        "line": 35,
+        "value": "\"28.0.0\"  # Oldest plugin version supported"
+      }
+    ],
+    "DEFAULT_PREMOVEMENT_DELAY_S": [
+      {
+        "file": "fireai/core/aset_rset_calculator.py",
+        "line": 100,
+        "value": "90.0  # Default if occupancy type unknown"
+      }
+    ],
+    "DEFAULT_DESIGN_WALKING_SPEED_MPS": [
+      {
+        "file": "fireai/core/aset_rset_calculator.py",
+        "line": 118,
+        "value": "0.8  # Conservative default"
+      }
+    ],
+    "COPPER_TEMP_COEFFICIENT": [
+      {
+        "file": "fireai/core/nfpa72_engine.py",
+        "line": 90,
+        "value": "0.00393  # per degC"
+      }
+    ],
+    "MARGIN": [
+      {
+        "file": "fireai/core/pdf_report.py",
+        "line": 72,
+        "value": "2 * cm"
+      }
+    ],
+    "MAX_ROOM_DIMENSION": [
+      {
+        "file": "fireai/core/api_server.py",
+        "line": 268,
+        "value": "200.0  # meters (no room is bigger)"
+      }
+    ],
+    "MAX_POLYGON_POINTS": [
+      {
+        "file": "fireai/core/api_server.py",
+        "line": 269,
+        "value": "100  # prevent DoS"
+      }
+    ],
+    "MIN_CEILING_HEIGHT": [
+      {
+        "file": "fireai/core/api_server.py",
+        "line": 270,
+        "value": "0.5  # meters"
+      }
+    ],
+    "MAX_CEILING_HEIGHT": [
+      {
+        "file": "fireai/core/api_server.py",
+        "line": 271,
+        "value": "30.0  # meters (per NFPA 72 scope)"
+      }
+    ],
+    "GENESIS_PREV_HASH": [
+      {
+        "file": "fireai/core/audit_log.py",
+        "line": 34,
+        "value": "\"0\" * 64"
+      }
+    ],
+    "DEFAULT_FILL_LIMIT": [
+      {
+        "file": "fireai/core/conduit_fill_analyzer.py",
+        "line": 246,
+        "value": "0.40  # 3+ conductors"
+      }
+    ],
+    "FA_WIRE_GAUGES": [
+      {
+        "file": "fireai/core/voltage_drop.py",
+        "line": 104,
+        "value": "(\"14\", \"12\", \"10\", \"8\")"
+      }
+    ],
+    "MAX_VOLTAGE_DROP_PCT": [
+      {
+        "file": "fireai/core/voltage_drop.py",
+        "line": 107,
+        "value": "10.0  # 10% maximum"
+      }
+    ],
+    "NOMINAL_VOLTAGE_FA": [
+      {
+        "file": "fireai/core/voltage_drop.py",
+        "line": 108,
+        "value": "24.0  # 24VDC nominal for FA systems"
+      }
+    ],
+    "FEET_TO_METRES": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 40,
+        "value": "0.3048      # Exact definition (1 ft = 0.3048 m si"
+      }
+    ],
+    "METRES_TO_FEET": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 41,
+        "value": "1.0 / 0.3048"
+      }
+    ],
+    "INCHES_TO_MM": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 42,
+        "value": "25.4        # Exact (1 in = 25.4 mm since 1959)"
+      }
+    ],
+    "MM_TO_INCHES": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 43,
+        "value": "1.0 / 25.4"
+      }
+    ],
+    "MM_TO_FEET": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 45,
+        "value": "1.0 / FEET_TO_MM"
+      }
+    ],
+    "METRES_TO_MM": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 46,
+        "value": "1000.0"
+      }
+    ],
+    "MM_TO_METRES": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 47,
+        "value": "0.001"
+      }
+    ],
+    "SQFT_TO_SQM": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 50,
+        "value": "0.09290304  # Exact (0.3048\u00b2)"
+      }
+    ],
+    "SQM_TO_SQFT": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 51,
+        "value": "1.0 / 0.09290304"
+      }
+    ],
+    "SQIN_TO_SQMM": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 52,
+        "value": "645.16      # Exact (25.4\u00b2)"
+      }
+    ],
+    "SQMM_TO_SQIN": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 53,
+        "value": "1.0 / 645.16"
+      }
+    ],
+    "CUBIC_FT_TO_CUBIC_M": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 56,
+        "value": "0.028316846592  # Exact (0.3048\u00b3)"
+      }
+    ],
+    "CUBIC_M_TO_CUBIC_FT": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 57,
+        "value": "1.0 / 0.028316846592"
+      }
+    ],
+    "GALLONS_US_TO_LITRES": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 58,
+        "value": "3.785411784      # Exact (1 US gal = 3.785411784 L"
+      }
+    ],
+    "LITRES_TO_GALLONS_US": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 59,
+        "value": "1.0 / 3.785411784"
+      }
+    ],
+    "PSI_TO_BAR": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 62,
+        "value": "0.0689476   # Approximate (1 psi \u2248 0.0689476 bar)"
+      }
+    ],
+    "BAR_TO_PSI": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 63,
+        "value": "1.0 / 0.0689476"
+      }
+    ],
+    "PSI_TO_KPA": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 64,
+        "value": "6.89476     # Approximate (1 psi \u2248 6.89476 kPa)"
+      }
+    ],
+    "KPA_TO_PSI": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 65,
+        "value": "1.0 / 6.89476"
+      }
+    ],
+    "PSF_TO_PSI": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 66,
+        "value": "1.0 / 144.0  # 1 psf = 1 lbf/ft\u00b2, 1 psi = 144 psf"
+      }
+    ],
+    "PSI_TO_PSF": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 67,
+        "value": "144.0"
+      }
+    ],
+    "PA_TO_PSI": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 68,
+        "value": "1.0 / 6894.76"
+      }
+    ],
+    "GPM_TO_LPM": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 71,
+        "value": "3.785411784  # 1 US gpm = 3.785411784 L/min"
+      }
+    ],
+    "LPM_TO_GPM": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 72,
+        "value": "1.0 / 3.785411784"
+      }
+    ],
+    "FAHRENHEIT_OFFSET": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 75,
+        "value": "32.0"
+      }
+    ],
+    "FAHRENHEIT_SCALE": [
+      {
+        "file": "fireai/core/unit_converter.py",
+        "line": 76,
+        "value": "5.0 / 9.0  # \u00b0C = (\u00b0F - 32) \u00d7 5/9"
+      }
+    ],
+    "CONTRACT_VERSION": [
+      {
+        "file": "fireai/core/contracts.py",
+        "line": 24,
+        "value": "\"v1\""
+      }
+    ],
+    "RSET": [
+      {
+        "file": "fireai/v17_core/dynamic_tenability_evaluator.py",
+        "line": 29,
+        "value": "121s, passing with 2.0x factor (242s) and incorrec"
+      }
+    ],
+    "LFL_T": [
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 218,
+        "value": "LFL_25C x (1 - 0.001824 x (T - 25)). Per IEC 60079"
+      }
+    ],
+    "TOLERANCE": [
+      {
+        "file": "fireai/tools/constant_consistency_checker.py",
+        "line": 112,
+        "value": "1e-4  # float comparison tolerance"
+      }
+    ],
+    "COVERAGE_SAFETY_FACTOR": [
+      {
+        "file": "fireai/core/spatial_engine/constraint_solver.py",
+        "line": 68,
+        "value": "0.98"
+      },
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 85,
+        "value": "0.98"
+      }
+    ],
+    "DEFAULT_TIMEOUT_SECONDS": [
+      {
+        "file": "fireai/core/spatial_engine/constraint_solver.py",
+        "line": 71,
+        "value": "60.0"
+      },
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 60,
+        "value": "300.0  # 5 minutes"
+      }
+    ],
+    "NFPA_COVERAGE_THRESHOLD": [
+      {
+        "file": "fireai/core/spatial_engine/constraint_solver.py",
+        "line": 74,
+        "value": "99.9"
+      }
+    ],
+    "MIN_GRID_STEP": [
+      {
+        "file": "fireai/core/spatial_engine/constraint_solver.py",
+        "line": 77,
+        "value": "0.5"
+      }
+    ],
+    "CIRCLE_SEGMENTS": [
+      {
+        "file": "fireai/core/spatial_engine/constraint_solver.py",
+        "line": 80,
+        "value": "16"
+      }
+    ],
+    "DEFAULT_MAX_ITERATIONS": [
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 58,
+        "value": "10_000"
+      }
+    ],
+    "DEFAULT_EPSILON": [
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 59,
+        "value": "1e-4"
+      }
+    ],
+    "REMOVE_REDUNDANT_MAX_PASSES": [
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 61,
+        "value": "100  # Safety cap for _remove_redundant loop"
+      }
+    ],
+    "MAX_SPACING_M": [
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 63,
+        "value": "9.1  # 30 ft \u2248 9.1m (rounded, matches NFPA 72 Tabl"
+      }
+    ],
+    "DETECTOR_RADIUS": [
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 64,
+        "value": "0.7 * MAX_SPACING_M  # 6.37 m (NFPA 72 \u00a717.7.4.2.3"
+      }
+    ],
+    "WALL_MIN_M": [
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 72,
+        "value": "0.1016  # NFPA 72 \u00a717.6.3.1.1 \u2014 4 inches = 101.6mm"
+      }
+    ],
+    "VERIFY_STEP": [
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 73,
+        "value": "0.20  # proof resolution (m)"
+      }
+    ],
+    "COARSE_STEP": [
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 74,
+        "value": "1.00  # hierarchical coarse grid step (m)"
+      }
+    ],
+    "DENSITY_CAP_FACTOR": [
+      {
+        "file": "fireai/core/spatial_engine/density_optimizer.py",
+        "line": 83,
+        "value": "2.0"
+      }
+    ],
+    "DEFAULT_LFL_VOL_PCT": [
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 67,
+        "value": "0.5    # Very low LFL = large zone = conservative"
+      }
+    ],
+    "DEFAULT_UFL_VOL_PCT": [
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 68,
+        "value": "15.0   # Standard upper limit"
+      }
+    ],
+    "DEFAULT_FLASH_POINT_C": [
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 69,
+        "value": "-20.0  # Low flash point = flammable at low temp ="
+      }
+    ],
+    "DEFAULT_AUTO_IGNITION_C": [
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 70,
+        "value": "200.0  # Low AIT = T3 = more restrictive equipment"
+      }
+    ],
+    "DEFAULT_ELEVATION_M": [
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 41,
+        "value": "0.0  # Sea level"
+      }
+    ],
+    "DEFAULT_ATM_PRESSURE_PA": [
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 42,
+        "value": "101325.0  # Standard atmosphere"
+      }
+    ],
+    "GRAVITY_M_S2": [
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 43,
+        "value": "9.80665  # Standard gravity"
+      }
+    ],
+    "MOLAR_MASS_AIR": [
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 44,
+        "value": "0.0289644  # kg/mol (dry air)"
+      }
+    ],
+    "UNIVERSAL_GAS_CONSTANT": [
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 45,
+        "value": "8.31447  # J/(mol\u00b7K)"
+      }
+    ],
+    "DEFAULT_AQI": [
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 60,
+        "value": "100  # MODERATE \u2014 conservative but not alarmist"
+      }
+    ],
+    "DEFAULT_PM25_UG_M3": [
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 61,
+        "value": "35.0  # WHO interim target-1 (conservative)"
+      }
+    ],
+    "DEFAULT_PM10_UG_M3": [
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 62,
+        "value": "50.0  # WHO interim target-1 (conservative)"
+      }
+    ],
+    "DEFAULT_INDOOR_TEMP_C": [
+      {
+        "file": "backend/services/weather_service.py",
+        "line": 47,
+        "value": "40.0       # Industrial indoor per IEC 60079-10-1"
+      }
+    ],
+    "DEFAULT_OUTDOOR_TEMP_C": [
+      {
+        "file": "backend/services/weather_service.py",
+        "line": 48,
+        "value": "20.0      # Standard conditions per ISO 2533"
+      }
+    ],
+    "DEFAULT_WIND_SPEED_M_S": [
+      {
+        "file": "backend/services/weather_service.py",
+        "line": 49,
+        "value": "0.5       # Stagnant indoor (conservative for zone"
+      }
+    ],
+    "DEFAULT_HUMIDITY_PCT": [
+      {
+        "file": "backend/services/weather_service.py",
+        "line": 50,
+        "value": "50.0        # Mid-range (conservative for acoustic"
+      }
+    ],
+    "MAX_EXAMPLES": [
+      {
+        "file": "skills/blog-writer/manage_examples.py",
+        "line": 13,
+        "value": "20"
+      }
+    ],
+    "PRUNE_COUNT": [
+      {
+        "file": "skills/blog-writer/manage_examples.py",
+        "line": 14,
+        "value": "5"
+      }
+    ],
+    "GRAY_COLORS": [
+      {
+        "file": "skills/pdf/scripts/toc_validate.py",
+        "line": 78,
+        "value": "{'808080', '999999', 'a0a0a0', 'a5a5a5', 'b0b0b0',"
+      }
+    ],
+    "BREATHING_MARGIN": [
+      {
+        "file": "skills/pdf/scripts/design_engine.py",
+        "line": 1130,
+        "value": "0.12  # 12% of canvas on each edge (was 15%, too t"
+      }
+    ],
+    "MAX_RESULTS": [
+      {
+        "file": "skills/ui-ux-pro-max/scripts/core.py",
+        "line": 15,
+        "value": "3"
+      }
+    ],
+    "BOX_WIDTH": [
+      {
+        "file": "skills/ui-ux-pro-max/scripts/design_system.py",
+        "line": 244,
+        "value": "90  # Wider box for more content"
+      }
+    ],
+    "PRIMARY": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 79,
+        "value": "\"1B2A4A\""
+      }
+    ],
+    "PRIMARY_LIGHT": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 80,
+        "value": "\"D6E4F0\""
+      }
+    ],
+    "ACCENT_POSITIVE": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 84,
+        "value": "\"1B7D46\"      # growth, done, pass   (deep green)"
+      }
+    ],
+    "ACCENT_NEGATIVE": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 85,
+        "value": "\"C0392B\"      # decline, overdue     (deep red)"
+      }
+    ],
+    "ACCENT_WARNING": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 86,
+        "value": "\"D4820A\"      # at-risk, watch       (deep amber)"
+      }
+    ],
+    "NEUTRAL_900": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 89,
+        "value": "\"37352F\"          # body text"
+      }
+    ],
+    "NEUTRAL_600": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 90,
+        "value": "\"8C8A84\"          # caption, secondary text"
+      }
+    ],
+    "NEUTRAL_200": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 91,
+        "value": "\"E9E9E8\"          # borders, dividers"
+      }
+    ],
+    "NEUTRAL_100": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 92,
+        "value": "\"F7F7F5\"          # alternating row fill (odd)"
+      }
+    ],
+    "NEUTRAL_50": [
+      {
+        "file": "skills/xlsx/templates/base.py",
+        "line": 93,
+        "value": "\"FAFAF9\"          # ultra-light bg (optional)"
+      }
+    ],
+    "REQUEST_TIMEOUT": [
+      {
+        "file": "skills/aminer-academic-search/scripts/aminer.py",
+        "line": 19,
+        "value": "60"
+      },
+      {
+        "file": "skills/aminer-daily-paper/scripts/recommend.py",
+        "line": 16,
+        "value": "30"
+      }
+    ],
+    "THUMBNAIL_WIDTH": [
+      {
+        "file": "skills/ppt/scripts/thumbnail.py",
+        "line": 54,
+        "value": "300  # Fixed thumbnail width in pixels"
+      }
+    ],
+    "CONVERSION_DPI": [
+      {
+        "file": "skills/ppt/scripts/thumbnail.py",
+        "line": 55,
+        "value": "100  # DPI for PDF to image conversion"
+      }
+    ],
+    "MAX_COLS": [
+      {
+        "file": "skills/ppt/scripts/thumbnail.py",
+        "line": 56,
+        "value": "6  # Maximum number of columns"
+      }
+    ],
+    "DEFAULT_COLS": [
+      {
+        "file": "skills/ppt/scripts/thumbnail.py",
+        "line": 57,
+        "value": "5  # Default number of columns"
+      }
+    ],
+    "JPEG_QUALITY": [
+      {
+        "file": "skills/ppt/scripts/thumbnail.py",
+        "line": 58,
+        "value": "95  # JPEG compression quality"
+      }
+    ],
+    "GRID_PADDING": [
+      {
+        "file": "skills/ppt/scripts/thumbnail.py",
+        "line": 61,
+        "value": "20  # Padding between thumbnails"
+      }
+    ],
+    "BORDER_WIDTH": [
+      {
+        "file": "skills/ppt/scripts/thumbnail.py",
+        "line": 62,
+        "value": "2  # Border width around thumbnails"
+      }
+    ],
+    "FONT_SIZE_RATIO": [
+      {
+        "file": "skills/ppt/scripts/thumbnail.py",
+        "line": 63,
+        "value": "0.12  # Font size as fraction of thumbnail width"
+      }
+    ],
+    "LABEL_PADDING_RATIO": [
+      {
+        "file": "skills/ppt/scripts/thumbnail.py",
+        "line": 64,
+        "value": "0.4  # Label padding as fraction of font size"
+      }
+    ],
+    "MAX_QUESTIONS_PER_ROUND": [
+      {
+        "file": "skills/quiz-mastery/src/quiz_mastery/quiz_generator.py",
+        "line": 8,
+        "value": "15"
+      }
+    ],
+    "REVIEW_INTERVALS": [
+      {
+        "file": "skills/quiz-mastery/src/quiz_mastery/mastery_engine.py",
+        "line": 9,
+        "value": "[1, 2, 4, 7, 15]"
+      }
+    ],
+    "MAX_ACCURACY_HISTORY": [
+      {
+        "file": "skills/quiz-mastery/src/quiz_mastery/mastery_engine.py",
+        "line": 12,
+        "value": "10"
+      }
+    ],
+    "DEFAULT_SIZE": [
+      {
+        "file": "skills/aminer-daily-paper/scripts/recommend.py",
+        "line": 14,
+        "value": "5"
+      }
+    ],
+    "MAX_SIZE": [
+      {
+        "file": "skills/aminer-daily-paper/scripts/recommend.py",
+        "line": 15,
+        "value": "20"
+      }
+    ]
+  },
+  "usages": {
+    "CEILING_HEIGHT_MIN_M": [
+      {
+        "file": "fireai/core/nfpa72_models.py",
+        "line": 41,
+        "type": "usage",
+        "context": "CEILING_HEIGHT_MIN_M as _NFPA_HEIGHT_MIN_M,"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 239,
+        "type": "usage",
+        "context": "CEILING_HEIGHT_MIN_M: float = 3.0"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 44,
+        "type": "usage",
+        "context": "CEILING_HEIGHT_MIN_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 40,
+        "type": "usage",
+        "context": "\"CEILING_HEIGHT_MIN_M\": 3.0,"
+      }
+    ],
+    "SMOKE_MAX_CEILING_HEIGHT_M": [
+      {
+        "file": "fireai/core/nfpa72_models.py",
+        "line": 44,
+        "type": "usage",
+        "context": "SMOKE_MAX_CEILING_HEIGHT_M as _SMOKE_MAX_CEILING_HEIGHT_M,"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 66,
+        "type": "usage",
+        "context": "SMOKE_MAX_CEILING_HEIGHT_M: float = 18.288"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 77,
+        "type": "usage",
+        "context": "SMOKE_MAX_CEILING_HEIGHT_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 38,
+        "type": "usage",
+        "context": "\"SMOKE_MAX_CEILING_HEIGHT_M\": 18.288,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 76,
+        "type": "usage",
+        "context": "\"SMOKE_MAX_CEILING_HEIGHT_M\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "GRAVITY_M_S2": [
+      {
+        "file": "fireai/core/semi_cfast_engine.py",
+        "line": 67,
+        "type": "usage",
+        "context": "\"GRAVITY_M_S2\": 9.81,"
+      },
+      {
+        "file": "fireai/core/semi_cfast_engine.py",
+        "line": 372,
+        "type": "usage",
+        "context": "g = PHYSICAL_CONSTANTS[\"GRAVITY_M_S2\"]  # 9.81 m/s\u00b2"
+      },
+      {
+        "file": "fireai/tools/constant_consistency_checker.py",
+        "line": 43,
+        "type": "usage",
+        "context": "\"GRAVITY_M_S2\": (9.81, \"\", \"SI standard (local approx)\"),"
+      },
+      {
+        "file": "fireai/tools/constant_consistency_checker.py",
+        "line": 78,
+        "type": "usage",
+        "context": "\"GRAVITY_M_S2\",  # fireai/core/semi_cfast_engine"
+      },
+      {
+        "file": "fireai/tools/constant_consistency_checker.py",
+        "line": 88,
+        "type": "usage",
+        "context": "(\"GRAVITY_M_S2\", 9.81, \"SI standard\"),"
+      },
+      {
+        "file": "fireai/tools/constant_consistency_checker.py",
+        "line": 234,
+        "type": "usage",
+        "context": "\"GRAVITY_M_S2\": 9.81,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 51,
+        "type": "usage",
+        "context": "\"GRAVITY_M_S2\": 9.80665,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 78,
+        "type": "usage",
+        "context": "\"GRAVITY_M_S2\": \"backend/services/elevation_service.py\","
+      },
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 43,
+        "type": "usage",
+        "context": "GRAVITY_M_S2 = 9.80665  # Standard gravity"
+      },
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 98,
+        "type": "usage",
+        "context": "exponent = -(MOLAR_MASS_AIR * GRAVITY_M_S2 * elevation_m) / ("
+      }
+    ],
+    "BATTERY_ALARM_MINUTES": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 216,
+        "type": "usage",
+        "context": "BATTERY_ALARM_MINUTES as NFPA72_ALARM_MINUTES,"
+      },
+      {
+        "file": "fireai/core/fireai_kernel_v30.py",
+        "line": 100,
+        "type": "usage",
+        "context": "BATTERY_ALARM_MINUTES: float = 5.0"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 353,
+        "type": "usage",
+        "context": "BATTERY_ALARM_MINUTES: float = 5.0"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 37,
+        "type": "usage",
+        "context": "BATTERY_ALARM_MINUTES,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 42,
+        "type": "usage",
+        "context": "\"BATTERY_ALARM_MINUTES\": 5.0,"
+      }
+    ],
+    "BATTERY_SAFETY_FACTOR": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 218,
+        "type": "usage",
+        "context": "BATTERY_SAFETY_FACTOR as NFPA72_BATTERY_SAFETY_FACTOR,"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 357,
+        "type": "usage",
+        "context": "BATTERY_SAFETY_FACTOR: float = 1.25"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 17,
+        "type": "usage",
+        "context": "BATTERY_SAFETY_FACTOR FIX: Was 1.20 (20% margin) here but 1.25 (25% margin)"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 39,
+        "type": "usage",
+        "context": "BATTERY_SAFETY_FACTOR,  # V128 FIX: Was 1.20 locally, now 1.25 from canonical"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 43,
+        "type": "usage",
+        "context": "\"BATTERY_SAFETY_FACTOR\": 1.25,"
+      }
+    ],
+    "BATTERY_STANDBY_HOURS": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 219,
+        "type": "usage",
+        "context": "BATTERY_STANDBY_HOURS as NFPA72_STANDBY_HOURS,"
+      },
+      {
+        "file": "fireai/core/fireai_kernel_v30.py",
+        "line": 99,
+        "type": "usage",
+        "context": "BATTERY_STANDBY_HOURS: float = 24.0"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 349,
+        "type": "usage",
+        "context": "BATTERY_STANDBY_HOURS: float = 24.0"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 41,
+        "type": "usage",
+        "context": "BATTERY_STANDBY_HOURS,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 41,
+        "type": "usage",
+        "context": "\"BATTERY_STANDBY_HOURS\": 24.0,"
+      }
+    ],
+    "COVERAGE_RADIUS_FACTOR": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 221,
+        "type": "usage",
+        "context": "COVERAGE_RADIUS_FACTOR as NFPA72_COVERAGE_RADIUS_FACTOR,"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 52,
+        "type": "usage",
+        "context": "COVERAGE_RADIUS_FACTOR: float = 0.7"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 59,
+        "type": "usage",
+        "context": "SMOKE_COVERAGE_RADIUS_M: float = round(COVERAGE_RADIUS_FACTOR * SMOKE_MAX_SPACIN"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 90,
+        "type": "usage",
+        "context": "COVERAGE_RADIUS_FACTOR as COVERAGE_FACTOR_FLAT_CEILING,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 32,
+        "type": "usage",
+        "context": "\"COVERAGE_RADIUS_FACTOR\": 0.7,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 70,
+        "type": "usage",
+        "context": "\"COVERAGE_RADIUS_FACTOR\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "HEAT_MAX_SPACING_M": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 223,
+        "type": "usage",
+        "context": "HEAT_MAX_SPACING_M as NFPA72_HEAT_MAX_SPACING_M,  # noqa: F401"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 169,
+        "type": "usage",
+        "context": "HEAT_MAX_SPACING_M: float = 6.10"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 275,
+        "type": "usage",
+        "context": "HEAT_MAX_WALL_DISTANCE_M: float = HEAT_MAX_SPACING_M / 2.0  # 3.05"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 55,
+        "type": "usage",
+        "context": "HEAT_MAX_SPACING_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 31,
+        "type": "usage",
+        "context": "\"HEAT_MAX_SPACING_M\": 6.10,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 69,
+        "type": "usage",
+        "context": "\"HEAT_MAX_SPACING_M\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "PULL_STATION_FROM_EXIT_M": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 224,
+        "type": "usage",
+        "context": "PULL_STATION_FROM_EXIT_M as NFPA72_PULL_STATION_FROM_EXIT_M,  # noqa: F401"
+      },
+      {
+        "file": "fireai/core/device_placement.py",
+        "line": 43,
+        "type": "usage",
+        "context": "PULL_STATION_FROM_EXIT_M as NFPA72_PULL_STATION_FROM_EXIT_M,"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 327,
+        "type": "usage",
+        "context": "PULL_STATION_FROM_EXIT_M: float = 1.524  # 5 ft"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 67,
+        "type": "usage",
+        "context": "PULL_STATION_FROM_EXIT_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 47,
+        "type": "usage",
+        "context": "\"PULL_STATION_FROM_EXIT_M\": 1.524,"
+      }
+    ],
+    "PULL_STATION_HEIGHT_M": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 225,
+        "type": "usage",
+        "context": "PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,  # noqa: F401"
+      },
+      {
+        "file": "fireai/core/device_placement.py",
+        "line": 46,
+        "type": "usage",
+        "context": "PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 321,
+        "type": "usage",
+        "context": "PULL_STATION_HEIGHT_M: float = 1.219  # 48 inches AFF"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 69,
+        "type": "usage",
+        "context": "PULL_STATION_HEIGHT_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 46,
+        "type": "usage",
+        "context": "\"PULL_STATION_HEIGHT_M\": 1.219,"
+      }
+    ],
+    "SMOKE_MAX_SPACING_M": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 227,
+        "type": "usage",
+        "context": "SMOKE_MAX_SPACING_M as NFPA72_SMOKE_MAX_SPACING_M,"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 43,
+        "type": "usage",
+        "context": "SMOKE_MAX_SPACING_M: float = 9.1"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 59,
+        "type": "usage",
+        "context": "SMOKE_COVERAGE_RADIUS_M: float = round(COVERAGE_RADIUS_FACTOR * SMOKE_MAX_SPACIN"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 274,
+        "type": "usage",
+        "context": "SMOKE_MAX_WALL_DISTANCE_M: float = SMOKE_MAX_SPACING_M / 2.0  # 4.55"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 79,
+        "type": "usage",
+        "context": "SMOKE_MAX_SPACING_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 30,
+        "type": "usage",
+        "context": "\"SMOKE_MAX_SPACING_M\": 9.1,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 68,
+        "type": "usage",
+        "context": "\"SMOKE_MAX_SPACING_M\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "WALL_MIN_DISTANCE_M": [
+      {
+        "file": "fireai/core/qomn_kernel.py",
+        "line": 229,
+        "type": "usage",
+        "context": "WALL_MIN_DISTANCE_M as NFPA72_WALL_MIN_DISTANCE_M,  # noqa: F401"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 269,
+        "type": "usage",
+        "context": "WALL_MIN_DISTANCE_M: float = 0.1016"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 84,
+        "type": "usage",
+        "context": "WALL_MIN_DISTANCE_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 35,
+        "type": "usage",
+        "context": "\"WALL_MIN_DISTANCE_M\": 0.1016,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 73,
+        "type": "usage",
+        "context": "\"WALL_MIN_DISTANCE_M\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "MIN_STAIRWELL_PRESSURIZATION_PA": [
+      {
+        "file": "fireai/core/building_systems_integration.py",
+        "line": 263,
+        "type": "usage",
+        "context": "MIN_STAIRWELL_PRESSURIZATION_PA = 25.0  # NFPA 92 \u00a76.3: minimum 25 Pa (0.10 in. "
+      },
+      {
+        "file": "fireai/core/building_systems_integration.py",
+        "line": 323,
+        "type": "usage",
+        "context": "if method == \"pressurization\" and design_pressure_pa < MIN_STAIRWELL_PRESSURIZAT"
+      },
+      {
+        "file": "fireai/core/building_systems_integration.py",
+        "line": 326,
+        "type": "usage",
+        "context": "f\"below minimum {MIN_STAIRWELL_PRESSURIZATION_PA} Pa per NFPA 92 \u00a76.3\""
+      },
+      {
+        "file": "fireai/core/stairwell_smoke_control.py",
+        "line": 58,
+        "type": "usage",
+        "context": "MIN_STAIRWELL_PRESSURIZATION_PA,"
+      },
+      {
+        "file": "fireai/core/stairwell_smoke_control.py",
+        "line": 95,
+        "type": "usage",
+        "context": "MIN_POSITIVE_PRESSURE_PA: float = MIN_STAIRWELL_PRESSURIZATION_PA"
+      },
+      {
+        "file": "fireai/core/stairwell_smoke_control.py",
+        "line": 106,
+        "type": "usage",
+        "context": "VESTIBULE_MIN_PRESSURIZATION_PA: float = MIN_STAIRWELL_PRESSURIZATION_PA"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 62,
+        "type": "usage",
+        "context": "\"MIN_STAIRWELL_PRESSURIZATION_PA\": 25.0,"
+      }
+    ],
+    "MAX_PRESSURE_DIFFERENTIAL_PA": [
+      {
+        "file": "fireai/core/building_systems_integration.py",
+        "line": 264,
+        "type": "usage",
+        "context": "MAX_PRESSURE_DIFFERENTIAL_PA = 133.0  # NFPA 92 \u00a76.3.3: max force to open door ("
+      },
+      {
+        "file": "fireai/core/building_systems_integration.py",
+        "line": 331,
+        "type": "usage",
+        "context": "if method == \"pressurization\" and design_pressure_pa > MAX_PRESSURE_DIFFERENTIAL"
+      },
+      {
+        "file": "fireai/core/building_systems_integration.py",
+        "line": 334,
+        "type": "usage",
+        "context": "f\"exceeds maximum {MAX_PRESSURE_DIFFERENTIAL_PA} Pa \u2014 \""
+      },
+      {
+        "file": "fireai/core/stairwell_smoke_control.py",
+        "line": 57,
+        "type": "usage",
+        "context": "MAX_PRESSURE_DIFFERENTIAL_PA,"
+      },
+      {
+        "file": "fireai/core/stairwell_smoke_control.py",
+        "line": 100,
+        "type": "usage",
+        "context": "MAX_POSITIVE_PRESSURE_PA: float = MAX_PRESSURE_DIFFERENTIAL_PA"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 63,
+        "type": "usage",
+        "context": "\"MAX_PRESSURE_DIFFERENTIAL_PA\": 133.0,"
+      }
+    ],
+    "NFPA72_MINIMUM_SAFETY_FACTOR": [
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 431,
+        "type": "usage",
+        "context": "NFPA72_MINIMUM_SAFETY_FACTOR = 1.20  # Mandatory per NFPA 72 \u00a710.6.7.2.1"
+      },
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 614,
+        "type": "usage",
+        "context": "if combined_safety_factor < NFPA72_MINIMUM_SAFETY_FACTOR:"
+      },
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 618,
+        "type": "usage",
+        "context": "f\"{NFPA72_MINIMUM_SAFETY_FACTOR:.2f}x. \""
+      },
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 631,
+        "type": "usage",
+        "context": "\"minimum_required\": NFPA72_MINIMUM_SAFETY_FACTOR,"
+      },
+      {
+        "file": "fireai/core/battery_aging_derating.py",
+        "line": 893,
+        "type": "usage",
+        "context": "\"NFPA72_MINIMUM_SAFETY_FACTOR\","
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 59,
+        "type": "usage",
+        "context": "\"NFPA72_MINIMUM_SAFETY_FACTOR\": 1.20,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 81,
+        "type": "usage",
+        "context": "\"NFPA72_MINIMUM_SAFETY_FACTOR\": \"fireai/core/battery_aging_derating.py\","
+      }
+    ],
+    "MAX_DEVICES_BETWEEN_ISOLATORS": [
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 89,
+        "type": "usage",
+        "context": "MAX_DEVICES_BETWEEN_ISOLATORS = 32"
+      },
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 299,
+        "type": "usage",
+        "context": "if count > MAX_DEVICES_BETWEEN_ISOLATORS:"
+      },
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 305,
+        "type": "usage",
+        "context": "\"max_allowed\": MAX_DEVICES_BETWEEN_ISOLATORS,"
+      },
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 309,
+        "type": "usage",
+        "context": "f\"isolators (max {MAX_DEVICES_BETWEEN_ISOLATORS} \""
+      },
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 316,
+        "type": "usage",
+        "context": "if len(self.devices) > MAX_DEVICES_BETWEEN_ISOLATORS and not self.get_isolator_i"
+      },
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 321,
+        "type": "usage",
+        "context": "\"max_without_isolators\": MAX_DEVICES_BETWEEN_ISOLATORS,"
+      },
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 326,
+        "type": "usage",
+        "context": "f\"device count exceeds {MAX_DEVICES_BETWEEN_ISOLATORS}\""
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 60,
+        "type": "usage",
+        "context": "\"MAX_DEVICES_BETWEEN_ISOLATORS\": 32,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 82,
+        "type": "usage",
+        "context": "\"MAX_DEVICES_BETWEEN_ISOLATORS\": \"fireai/core/circuit_topology.py\","
+      }
+    ],
+    "MAX_SLC_DEVICES_DEFAULT": [
+      {
+        "file": "fireai/core/circuit_topology.py",
+        "line": 93,
+        "type": "usage",
+        "context": "MAX_SLC_DEVICES_DEFAULT = 250"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 61,
+        "type": "usage",
+        "context": "\"MAX_SLC_DEVICES_DEFAULT\": 250,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 83,
+        "type": "usage",
+        "context": "\"MAX_SLC_DEVICES_DEFAULT\": \"fireai/core/circuit_topology.py\","
+      }
+    ],
+    "NAC_MIN_CD": [
+      {
+        "file": "fireai/core/device_placement.py",
+        "line": 34,
+        "type": "usage",
+        "context": "NAC_MIN_CD as NFPA72_NAC_MIN_CD,"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 338,
+        "type": "usage",
+        "context": "NAC_MIN_CD: int = 75  # 75 candela"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 59,
+        "type": "usage",
+        "context": "NAC_MIN_CD,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 44,
+        "type": "usage",
+        "context": "\"NAC_MIN_CD\": 75,"
+      }
+    ],
+    "NAC_SLEEPING_MIN_CD": [
+      {
+        "file": "fireai/core/device_placement.py",
+        "line": 37,
+        "type": "usage",
+        "context": "NAC_SLEEPING_MIN_CD as NFPA72_NAC_SLEEPING_MIN_CD,"
+      },
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 341,
+        "type": "usage",
+        "context": "NAC_SLEEPING_MIN_CD: int = 177  # 177 candela"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 60,
+        "type": "usage",
+        "context": "NAC_SLEEPING_MIN_CD,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 45,
+        "type": "usage",
+        "context": "\"NAC_SLEEPING_MIN_CD\": 177,"
+      }
+    ],
+    "SMOKE_COVERAGE_RADIUS_M": [
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 59,
+        "type": "usage",
+        "context": "SMOKE_COVERAGE_RADIUS_M: float = round(COVERAGE_RADIUS_FACTOR * SMOKE_MAX_SPACIN"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 74,
+        "type": "usage",
+        "context": "SMOKE_COVERAGE_RADIUS_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 33,
+        "type": "usage",
+        "context": "\"SMOKE_COVERAGE_RADIUS_M\": 6.37,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 71,
+        "type": "usage",
+        "context": "\"SMOKE_COVERAGE_RADIUS_M\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "HEAT_MAX_CEILING_HEIGHT_M": [
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 187,
+        "type": "usage",
+        "context": "HEAT_MAX_CEILING_HEIGHT_M: float = 15.24"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 54,
+        "type": "usage",
+        "context": "HEAT_MAX_CEILING_HEIGHT_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 39,
+        "type": "usage",
+        "context": "\"HEAT_MAX_CEILING_HEIGHT_M\": 15.24,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 77,
+        "type": "usage",
+        "context": "\"HEAT_MAX_CEILING_HEIGHT_M\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "SMOKE_MAX_WALL_DISTANCE_M": [
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 274,
+        "type": "usage",
+        "context": "SMOKE_MAX_WALL_DISTANCE_M: float = SMOKE_MAX_SPACING_M / 2.0  # 4.55"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 80,
+        "type": "usage",
+        "context": "SMOKE_MAX_WALL_DISTANCE_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 36,
+        "type": "usage",
+        "context": "\"SMOKE_MAX_WALL_DISTANCE_M\": 4.55,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 74,
+        "type": "usage",
+        "context": "\"SMOKE_MAX_WALL_DISTANCE_M\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "HEAT_MAX_WALL_DISTANCE_M": [
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 275,
+        "type": "usage",
+        "context": "HEAT_MAX_WALL_DISTANCE_M: float = HEAT_MAX_SPACING_M / 2.0  # 3.05"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 56,
+        "type": "usage",
+        "context": "HEAT_MAX_WALL_DISTANCE_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 37,
+        "type": "usage",
+        "context": "\"HEAT_MAX_WALL_DISTANCE_M\": 3.05,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 75,
+        "type": "usage",
+        "context": "\"HEAT_MAX_WALL_DISTANCE_M\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "RIDGE_ZONE_BUFFER_M": [
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 279,
+        "type": "usage",
+        "context": "RIDGE_ZONE_BUFFER_M: float = 0.90"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 71,
+        "type": "usage",
+        "context": "RIDGE_ZONE_BUFFER_M,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 48,
+        "type": "usage",
+        "context": "\"RIDGE_ZONE_BUFFER_M\": 0.90,"
+      }
+    ],
+    "VOLTAGE_DROP_MAX_FRACTION": [
+      {
+        "file": "fireai/constants/nfpa72.py",
+        "line": 383,
+        "type": "usage",
+        "context": "VOLTAGE_DROP_MAX_FRACTION: float = 0.10"
+      },
+      {
+        "file": "fireai/constants/__init__.py",
+        "line": 83,
+        "type": "usage",
+        "context": "VOLTAGE_DROP_MAX_FRACTION,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 49,
+        "type": "usage",
+        "context": "\"VOLTAGE_DROP_MAX_FRACTION\": 0.10,"
+      }
+    ],
+    "HEAT_COVERAGE_RADIUS_M": [
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 34,
+        "type": "usage",
+        "context": "\"HEAT_COVERAGE_RADIUS_M\": 4.27,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 72,
+        "type": "usage",
+        "context": "\"HEAT_COVERAGE_RADIUS_M\": \"fireai/constants/nfpa72.py\","
+      }
+    ],
+    "MOLAR_MASS_AIR": [
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 52,
+        "type": "usage",
+        "context": "\"MOLAR_MASS_AIR\": 0.0289644,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 79,
+        "type": "usage",
+        "context": "\"MOLAR_MASS_AIR\": \"backend/services/elevation_service.py\","
+      },
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 44,
+        "type": "usage",
+        "context": "MOLAR_MASS_AIR = 0.0289644  # kg/mol (dry air)"
+      },
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 98,
+        "type": "usage",
+        "context": "exponent = -(MOLAR_MASS_AIR * GRAVITY_M_S2 * elevation_m) / ("
+      }
+    ],
+    "UNIVERSAL_GAS_CONSTANT": [
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 53,
+        "type": "usage",
+        "context": "\"UNIVERSAL_GAS_CONSTANT\": 8.31447,"
+      },
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 80,
+        "type": "usage",
+        "context": "\"UNIVERSAL_GAS_CONSTANT\": \"backend/services/elevation_service.py\","
+      },
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 45,
+        "type": "usage",
+        "context": "UNIVERSAL_GAS_CONSTANT = 8.31447  # J/(mol\u00b7K)"
+      },
+      {
+        "file": "backend/services/elevation_service.py",
+        "line": 99,
+        "type": "usage",
+        "context": "UNIVERSAL_GAS_CONSTANT * temperature_k"
+      }
+    ],
+    "DEFAULT_AQI": [
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 54,
+        "type": "usage",
+        "context": "\"DEFAULT_AQI\": 100,"
+      },
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 60,
+        "type": "usage",
+        "context": "DEFAULT_AQI = 100  # MODERATE \u2014 conservative but not alarmist"
+      },
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 389,
+        "type": "usage",
+        "context": "aqi=DEFAULT_AQI,"
+      }
+    ],
+    "DEFAULT_PM25_UG_M3": [
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 55,
+        "type": "usage",
+        "context": "\"DEFAULT_PM25_UG_M3\": 35.0,"
+      },
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 61,
+        "type": "usage",
+        "context": "DEFAULT_PM25_UG_M3 = 35.0  # WHO interim target-1 (conservative)"
+      },
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 256,
+        "type": "usage",
+        "context": "pm25_ug_m3 = DEFAULT_PM25_UG_M3"
+      },
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 390,
+        "type": "usage",
+        "context": "pm25_ug_m3=DEFAULT_PM25_UG_M3,"
+      }
+    ],
+    "DEFAULT_PM10_UG_M3": [
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 56,
+        "type": "usage",
+        "context": "\"DEFAULT_PM10_UG_M3\": 50.0,"
+      },
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 62,
+        "type": "usage",
+        "context": "DEFAULT_PM10_UG_M3 = 50.0  # WHO interim target-1 (conservative)"
+      },
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 258,
+        "type": "usage",
+        "context": "pm10_ug_m3 = DEFAULT_PM10_UG_M3"
+      },
+      {
+        "file": "backend/services/air_quality_service.py",
+        "line": 391,
+        "type": "usage",
+        "context": "pm10_ug_m3=DEFAULT_PM10_UG_M3,"
+      }
+    ],
+    "DEFAULT_LFL_VOL_PCT": [
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 57,
+        "type": "usage",
+        "context": "\"DEFAULT_LFL_VOL_PCT\": 0.5,"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 67,
+        "type": "usage",
+        "context": "DEFAULT_LFL_VOL_PCT = 0.5    # Very low LFL = large zone = conservative"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 93,
+        "type": "usage",
+        "context": "lfl_vol_pct: float = DEFAULT_LFL_VOL_PCT"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 296,
+        "type": "usage",
+        "context": "lfl_vol_pct=entry.get(\"lfl\", DEFAULT_LFL_VOL_PCT),"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 341,
+        "type": "usage",
+        "context": "lfl_vol_pct=DEFAULT_LFL_VOL_PCT,  # Conservative"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 371,
+        "type": "usage",
+        "context": "lfl_vol_pct=DEFAULT_LFL_VOL_PCT,"
+      }
+    ],
+    "DEFAULT_AUTO_IGNITION_C": [
+      {
+        "file": "fireai/tools/constant_indexer.py",
+        "line": 58,
+        "type": "usage",
+        "context": "\"DEFAULT_AUTO_IGNITION_C\": 200.0,"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 70,
+        "type": "usage",
+        "context": "DEFAULT_AUTO_IGNITION_C = 200.0  # Low AIT = T3 = more restrictive equipment"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 96,
+        "type": "usage",
+        "context": "auto_ignition_c: float = DEFAULT_AUTO_IGNITION_C"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 291,
+        "type": "usage",
+        "context": "ait = entry.get(\"ait\", DEFAULT_AUTO_IGNITION_C)"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 344,
+        "type": "usage",
+        "context": "auto_ignition_c=DEFAULT_AUTO_IGNITION_C,"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 346,
+        "type": "usage",
+        "context": "temperature_class=auto_ignition_to_temp_class(DEFAULT_AUTO_IGNITION_C),"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 374,
+        "type": "usage",
+        "context": "auto_ignition_c=DEFAULT_AUTO_IGNITION_C,"
+      },
+      {
+        "file": "backend/services/hazmat_service.py",
+        "line": 376,
+        "type": "usage",
+        "context": "temperature_class=auto_ignition_to_temp_class(DEFAULT_AUTO_IGNITION_C),"
+      }
+    ]
+  },
+  "drift_issues": [],
+  "summary": {
+    "total_constants": 33,
+    "total_definitions": 202,
+    "total_usages": 165,
+    "drift_count": 0
+  }
+}
