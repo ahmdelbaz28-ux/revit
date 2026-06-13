@@ -43,36 +43,25 @@ import math
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# WIRE RESISTANCE TABLE — NEC Chapter 9, Table 8 (Copper, stranded)
-# ═══════════════════════════════════════════════════════════════════════════════
+from fireai.constants.nec import NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as AWG_RESISTANCE_OHM_PER_KM
+from fireai.constants.nec import COPPER_TEMP_COEFFICIENT, DEFAULT_OPERATING_TEMP_C, TABLE8_REFERENCE_TEMP_C
+from fireai.constants.nfpa72 import HEAT_HEIGHT_SPACING_TABLE as _HEAT_SPACING_TABLE
+from fireai.constants.nfpa72 import HEAT_SPACING_FALLBACK_M
 
-# AWG gauge → resistance in Ω/km at 20°C (copper, stranded)
-AWG_RESISTANCE_OHM_PER_KM = {
-    "18": 21.40,
-    "16": 13.40,
-    "14": 8.450,
-    "12": 5.310,
-    "10": 3.340,
-    "8": 2.100,
-    "6": 1.320,
-    "4": 0.830,
-    "3": 0.660,
-    "2": 0.520,
-    "1": 0.410,
-    "1/0": 0.327,
-    "2/0": 0.260,
-    "3/0": 0.205,
-    "4/0": 0.163,
-}
+# ═══════════════════════════════════════════════════════════════════════════════
+# WIRE RESISTANCE TABLE — Imported from canonical source
+# ═══════════════════════════════════════════════════════════════════════════════
+# C-3 FIX: AWG_RESISTANCE_OHM_PER_KM is now imported from
+# fireai.constants.nec.NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C (Single Source of Truth).
+# Previous local table had values ~2x the correct NEC Table 8 values.
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# COPPER TEMPERATURE COEFFICIENT — NEC Chapter 9, Table 8 + Physics
+# COPPER TEMPERATURE COEFFICIENT — Imported from canonical source
 # ═══════════════════════════════════════════════════════════════════════════════
-
-# Temperature coefficient of resistance for copper: alpha = 0.00393 /degC
-# Per NEMA/IEC standards and confirmed in NEC Chapter 9, Table 8 notes.
+# C-3 FIX: COPPER_TEMP_COEFFICIENT, DEFAULT_OPERATING_TEMP_C, and
+# TABLE8_REFERENCE_TEMP_C are now imported from fireai.constants.nec.
+# Previous local values duplicated the canonical source.
 #
 # Formula:
 #   R_T = R_20 * [1 + alpha * (T - 20)]
@@ -82,27 +71,8 @@ AWG_RESISTANCE_OHM_PER_KM = {
 #     R_75 = R_20 * [1 + 0.00393 * (75 - 20)] = R_20 * 1.2163
 #     Resistance is 21.6% HIGHER than at 20 degC!
 #
-# Our previous code used only R_20, which UNDERESTIMATES voltage drop
-# in real operating conditions. This is a CRITICAL safety gap for Egypt.
-#
 # NEC practice: Use 75 degC for thermoplastic insulation (THHN/THWN),
 # and the conductor rating column from NEC 310.16 for ampacity.
-COPPER_TEMP_COEFFICIENT = 0.00393  # per degC
-
-# Default conductor operating temperature for fire alarm circuits
-# Per NEC practice: 75 degC for THHN/THWN insulated FA cables
-# This is the temperature at which resistance should be calculated
-# for voltage drop, NOT 20 degC (which is the Table 8 reference).
-# V97 FIX: Changed from 20.0 to 75.0 per NEC 310.16 practice.
-# At 20°C, temperature_corrected_resistance() is a no-op (T_actual == T_ref),
-# so voltage drop is underestimated by 21.6% at 75°C operating temp.
-# 75°C is the standard operating temperature for THHN/THWN fire alarm cables
-# per NEC 310.16 (75°C column). All callers that relied on 20°C default
-# must now explicitly pass 20°C if they want the old behavior.
-_DEFAULT_OPERATING_TEMP_C = 75.0
-
-# Reference temperature for NEC Chapter 9, Table 8 resistance values
-_TABLE8_REFERENCE_TEMP_C = 20.0
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -233,15 +203,9 @@ _SMOKE_SPACING_TABLE = [
     (12.2, 9.10),  # flat 9.1m
 ]
 
-_HEAT_SPACING_TABLE = [
-    # (max_ceiling_height_m, listed_spacing_m)
-    (3.0, 6.10),  # 20 ft → 6.1 m
-    (3.9, 5.50),  # 18 ft → 5.5 m
-    (4.9, 4.90),  # 16 ft → 4.9 m
-    (6.1, 4.30),  # 14 ft → 4.3 m
-    (7.6, 3.70),  # 12 ft → 3.7 m
-    (9.1, 3.00),  # 10 ft → 3.0 m
-]
+# _HEAT_SPACING_TABLE is now imported from fireai.constants.nfpa72.HEAT_HEIGHT_SPACING_TABLE
+# C-3 FIX: Previous local table had 6 rows with divergent values vs canonical 9-row table.
+# Canonical source: NFPA 72-2022 Table 17.6.3.5.1 (heat detector height reduction).
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -587,7 +551,7 @@ _SYSTEM_VOLTAGE = 24.0
 
 def temperature_corrected_resistance(
     r_at_20c: float,
-    operating_temp_c: float = _DEFAULT_OPERATING_TEMP_C,
+    operating_temp_c: float = DEFAULT_OPERATING_TEMP_C,
 ) -> float:
     """Calculate temperature-corrected wire resistance.
 
@@ -622,7 +586,7 @@ def temperature_corrected_resistance(
     if not math.isfinite(operating_temp_c) or operating_temp_c < -50:
         raise ValueError(f"operating_temp_c must be finite and >= -50, got {operating_temp_c}")
 
-    corrected = r_at_20c * (1.0 + COPPER_TEMP_COEFFICIENT * (operating_temp_c - _TABLE8_REFERENCE_TEMP_C))
+    corrected = r_at_20c * (1.0 + COPPER_TEMP_COEFFICIENT * (operating_temp_c - TABLE8_REFERENCE_TEMP_C))
     # V65 SAFETY: Negative resistance means temperature factor made R negative.
     # This occurs at extremely cold temperatures (below ~-234°C for copper).
     # Silently clamping to 0.0 is DANGEROUS — it makes voltage drop = 0V,
@@ -646,7 +610,7 @@ def calculate_voltage_drop(
     *,
     ps_voltage: float = 24.0,
     max_drop_pct: float = _MAX_VOLTAGE_DROP_PCT,
-    ambient_temperature_c: float = _DEFAULT_OPERATING_TEMP_C,
+    ambient_temperature_c: float = DEFAULT_OPERATING_TEMP_C,
 ) -> VoltageDropResult:
     """Calculate voltage drop on a fire alarm circuit.
 
@@ -733,7 +697,7 @@ def calculate_voltage_drop(
 
     # Build formula with temperature info
     temp_note = ""
-    if abs(ambient_temperature_c - _TABLE8_REFERENCE_TEMP_C) > 1.0:
+    if abs(ambient_temperature_c - TABLE8_REFERENCE_TEMP_C) > 1.0:
         pct_increase = ((r_per_km / r_at_20c) - 1.0) * 100
         temp_note = (
             f" [R corrected: {r_at_20c:.3f}Ohm/km@20C -> "

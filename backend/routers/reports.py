@@ -24,7 +24,6 @@ import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -32,20 +31,10 @@ from fastapi.responses import StreamingResponse
 from backend.auth import require_permission
 from backend.database import get_db
 from backend.models import GenerateReportInput
+from backend.response import safe_filename as _safe_filename
 from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
-
-
-def _safe_filename(name: str) -> str:
-    """Sanitize a project name for use in Content-Disposition headers.
-
-    Prevents header injection by removing characters that could break
-    the Content-Disposition header (quotes, semicolons, newlines, backslashes).
-    This is a security-critical function — project names are user-controlled input.
-    """
-    safe = name.replace('"', "'").replace(';', '').replace('\n', '').replace('\r', '').replace('\\', '')
-    return quote(safe, safe='-_.~')
 
 router = APIRouter(prefix="/projects/{project_id}/reports", tags=["reports"])
 

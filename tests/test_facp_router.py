@@ -31,9 +31,20 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
 from backend.routers.facp import router
+from backend.rbac import Role
 
 # Create a minimal test app with just the FACP router
 app = FastAPI()
+
+
+@app.middleware("http")
+async def set_test_role(request, call_next):
+    """Set admin role on every request so require_permission passes."""
+    request.state.fireai_role = Role.ADMIN
+    response = await call_next(request)
+    return response
+
+
 app.include_router(router, prefix="/api")
 
 

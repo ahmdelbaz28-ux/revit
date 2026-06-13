@@ -26,13 +26,15 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
+from backend.api_keys import validate_api_key
 from backend.database import get_db
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/projects/{project_id}/sync", tags=["sync"])
 
-_FIREAI_API_KEY = os.getenv("FIREAI_API_KEY")
+# _FIREAI_API_KEY removed — now read at runtime for lazy loading
+# and validated against RBAC key store via backend.api_keys.validate_api_key
 
 # ── WebSocket connection manager ────────────────────────────────────────────
 
@@ -223,7 +225,7 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
     # omit Origin by default, which would bypass origin validation entirely.
     # In dev mode (no API key), allow for convenience.
     if not origin:
-        if not _FIREAI_API_KEY:
+        if not os.getenv("FIREAI_API_KEY"):
             return True  # Dev mode — no auth required
         # Production: missing Origin means external client — require auth via API key
         # Origin check is only for same-origin SPA bypass, not for auth.
@@ -244,7 +246,7 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
         return True
 
     # External origin — if API key is configured, reject without auth
-    if _FIREAI_API_KEY:
+    if os.getenv("FIREAI_API_KEY"):
         return False
 
     # No API key configured (dev mode) → allow all origins
@@ -264,7 +266,7 @@ def _validate_ws_api_key(websocket: WebSocket) -> bool:
     - Referrer headers
     - Proxy logs
     """
-    if not _FIREAI_API_KEY:
+    if not os.getenv("FIREAI_API_KEY"):
         return True  # No API key configured → auth disabled
 
     # Query parameter auth is DEPRECATED for security — query params
@@ -321,7 +323,7 @@ async def websocket_endpoint(websocket: WebSocket):
     # ── API key check (message-based only) ────────────────────────────────
     # Query parameter auth is REJECTED for security (query params leak in
     # server access logs, browser history, referrer headers, proxy logs).
-    needs_auth = bool(_FIREAI_API_KEY)
+    needs_auth = bool(os.getenv("FIREAI_API_KEY"))
 
     # SECURITY FIX: Do NOT add to connection manager until authenticated.
     # Previously, manager.connect() was called BEFORE auth check, giving
@@ -335,7 +337,12 @@ async def websocket_endpoint(websocket: WebSocket):
             # Wait up to 5 seconds for auth message
             raw = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
             message = json.loads(raw)
-            if message.get("action") == "auth" and _hmac.compare_digest(message.get("apiKey", ""), _FIREAI_API_KEY):
+            api_key_candidate = message.get("apiKey", "")
+            # Check against RBAC key store first, then env var for backward compat
+            rbac_info = validate_api_key(api_key_candidate)
+            env_key = os.getenv("FIREAI_API_KEY")
+            env_match = bool(env_key) and _hmac.compare_digest(api_key_candidate, env_key)
+            if message.get("action") == "auth" and (rbac_info is not None or env_match):
                 await websocket.send_json({
                     "channel": "system",
                     "type": "auth_success",

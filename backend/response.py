@@ -40,3 +40,18 @@ def paginated(data: list, total: int, page: int, page_size: int, total_pages: in
         "page_size": page_size,
         "total_pages": total_pages,
     })
+
+
+def safe_filename(name: str) -> str:
+    """Sanitize a filename to prevent path traversal attacks.
+
+    Prevents header injection by removing characters that could break
+    the Content-Disposition header (quotes, semicolons, newlines, backslashes).
+    This is a security-critical function — project names are user-controlled input.
+    """
+    import re
+    from urllib.parse import quote
+    # Remove characters that could break Content-Disposition headers
+    safe = name.replace('"', "'").replace(';', '').replace('\n', '').replace('\r', '').replace('\\', '')
+    # URL-encode any remaining special characters for extra safety
+    return quote(safe, safe='-_.~')

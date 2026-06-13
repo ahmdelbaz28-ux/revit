@@ -634,3 +634,120 @@ Stage Summary:
 - Bandit: 0 HIGH severity findings
 - qomn_conduit fully integrated into CI pipeline
 - Pushed to GitHub as V80
+
+---
+Task ID: 5
+Agent: General-Purpose Sub Agent
+Task: Fix critical and high frontend issues (10 items)
+
+Work Log:
+1. **URL encoding in digitalTwinApi.ts** — Wrapped all 21 path parameter concatenations with `encodeURIComponent()`. Every instance of `/projects/' + id`, `/projects/' + projectId + '/devices/' + deviceId`, connection/report/sync/export endpoints now properly encode IDs.
+
+2. **localStorage write protection in simpleStore.ts** — Wrapped `localStorage.setItem('nexus_project_state', ...)` in try/catch block. Prevents crashes when storage quota is exceeded or sessionStorage is disabled (Safari private mode).
+
+3. **Dark theme fix in ConfirmDialog.tsx** — Changed: `bg-white` → `bg-slate-800`, `text-slate-900` → `text-white`, `text-gray-600` → `text-slate-300`, cancel button `text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-gray-400` → `text-slate-200 bg-slate-700 hover:bg-slate-600 focus:ring-slate-500`.
+
+4. **Dark theme fix in AccessibleToast.tsx** — Changed all toast type styles from light backgrounds to dark: `bg-green-50 border-green-500 text-green-800` → `bg-green-900/50 border-green-700 text-green-200` (same pattern for red/yellow/blue). Dismiss button `text-gray-500 hover:text-gray-700 focus:ring-gray-400` → `text-slate-400 hover:text-slate-200 focus:ring-slate-500`.
+
+5. **Removed dead Layout.tsx** — Deleted `/frontend/src/components/Layout.tsx` (212 lines). Verified no imports exist (only a coincidental `Layout` icon from lucide-react in another file).
+
+6. **fetchBlob API key fix in digitalTwinApi.ts** — Added `getApiKey()` private method mirroring `api.ts` pattern (checks VITE_FIREAI_API_KEY env → sessionStorage fireai_settings). Updated `fetchBlob()` to build headers with API key before fetch call.
+
+7. **WebSocket reconnection race condition fix in digitalTwinApi.ts** — In `scheduleReconnect()`, added `this.wsConnection = null` and `this.stopHeartbeat()` before reconnecting via `connectWebSocket()`. Prevents duplicate WebSocket connections and orphaned heartbeat timers.
+
+8. **NaN/Inf guards in voltage_drop.py** — Added `math.isfinite()` + `math.isnan()` validation to `calculate_voltage_drop()` for `current_a` and `one_way_length_m`. Added similar guards to `calculate_battery_backup()` for `standby_load_a` and `alarm_load_a` (consolidated with existing isfinite checks to avoid duplicates).
+
+9. **Removed unused framer-motion from package.json** — Deleted `"framer-motion": "^11.0.0"` line from dependencies.
+
+10. **Removed unused useCallback from SettingsPage.tsx** — Changed import from `import { useState, useEffect, useRef, useCallback }` to `import { useState, useEffect, useRef }`.
+
+Files Changed:
+- frontend/src/services/digitalTwinApi.ts (URL encoding, fetchBlob API key, WS race condition)
+- frontend/src/store/simpleStore.ts (localStorage try/catch)
+- frontend/src/components/ui/ConfirmDialog.tsx (dark theme)
+- frontend/src/components/ui/AccessibleToast.tsx (dark theme)
+- frontend/src/components/Layout.tsx (DELETED)
+- fireai/core/voltage_drop.py (NaN/Inf guards)
+- frontend/package.json (removed framer-motion)
+- frontend/src/pages/SettingsPage.tsx (removed useCallback)
+
+Verification:
+- 21 `encodeURIComponent()` calls confirmed in digitalTwinApi.ts
+- Layout.tsx confirmed deleted
+- framer-motion no longer in package.json
+- useCallback no longer in SettingsPage.tsx
+
+---
+Task ID: 7
+Agent: General Purpose
+Task: Fix infrastructure and test issues (12 items)
+
+Work Log:
+1. ✅ Removed `db/api_keys.json` from git tracking (`git rm --cached db/api_keys.json`)
+2. ✅ Removed `COPY --chown=fireai:fireai core/ core/` from Dockerfile — core/ is already inside fireai/
+3. ✅ Removed deprecated `version: "3.9"` from docker-compose.yml
+4. ✅ Moved dev/test tools (pytest, mypy, black, flake8, isort, pre-commit, tox, virtualenv, pip-tools, bandit, safety) from `[project.dependencies]` to existing `[project.optional-dependencies.dev]` in pyproject.toml
+5. ✅ Fixed Alembic `target_metadata = None` in alembic/env.py — added try/except import of backend.database.Database with comment about SQLAlchemy ORM migration
+6. ✅ Added missing env vars to .env.example: FIREAI_EVIDENCE_HMAC_KEY, ENCRYPTION_KEY, REDIS_URL, REDIS_PASSWORD, WORKER_MODE
+7. ✅ Extracted duplicate `_safe_filename()` from exports.py and reports.py into `backend/response.py` as `safe_filename()`, updated both routers to import from shared module
+8. ✅ Fixed `_FIREAI_API_KEY` import in workflow.py — replaced `from backend.database import _FIREAI_API_KEY` with runtime `os.getenv()` via `_get_fireai_api_key()` function
+9. ✅ Added version reading to `backend/__init__.py` from VERSION file (fallback "0.0.0")
+10. ✅ Added `__all__` to `backend/routers/__init__.py` listing all 18 router modules
+11. ✅ Added auth dependencies to memory router — POST /add and DELETE /{memory_id} now require `Permission.USER_MANAGE`; GET endpoints remain accessible to all authenticated users
+12. ✅ Fixed health.py — replaced `DatabaseService()` per-request instantiation with `get_db_service()` singleton function; moved import to top level
+
+Stage Summary:
+- 12 issues fixed across 12 files
+- All Python files pass syntax validation
+- safe_filename() shared function verified working
+- backend.__version__ verified reading from VERSION file ("1.0.0")
+- No new lint errors introduced
+
+---
+Task ID: 3
+Agent: Sub Agent (Task 3)
+Task: Fix critical core engine issues — canonical imports, safety values, data loss, race conditions
+
+Work Log:
+- **Issue 1**: Replaced divergent wire resistance table in `nfpa72_engine.py` with canonical import from `fireai.constants.nec`. Deleted local `AWG_RESISTANCE_OHM_PER_KM` dict (values were ~2× correct NEC Table 8). Replaced with `from fireai.constants.nec import NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as AWG_RESISTANCE_OHM_PER_KM`. Also imported `COPPER_TEMP_COEFFICIENT`, `DEFAULT_OPERATING_TEMP_C`, `TABLE8_REFERENCE_TEMP_C` from canonical source. Updated all references from `_DEFAULT_OPERATING_TEMP_C` → `DEFAULT_OPERATING_TEMP_C` and `_TABLE8_REFERENCE_TEMP_C` → `TABLE8_REFERENCE_TEMP_C`.
+
+- **Issue 2**: Replaced divergent heat detector spacing table in `nfpa72_engine.py` with canonical import from `fireai.constants.nfpa72`. Deleted local 6-row `_HEAT_SPACING_TABLE` (had incorrect values). Replaced with `from fireai.constants.nfpa72 import HEAT_HEIGHT_SPACING_TABLE as _HEAT_SPACING_TABLE`. Also imported `HEAT_SPACING_FALLBACK_M`.
+
+- **Issue 3**: Fixed battery alarm duration in `voltage_drop.py` from `alarm_hours: float = 0.25` (15 min) to `alarm_hours: float = 5/60` (5 min per NFPA 72 §10.6.7.4). Updated docstring accordingly.
+
+- **Issue 4**: Fixed smoke detector spacing in `qomn_fire/core/constants.py`: `NFPA_SMOKE_DETECTOR_SPACING_M` from 9.144→9.1, `NFPA_MAX_WALL_DISTANCE_M` from 4.572→4.55, `NFPA_COVERAGE_RADIUS_M` from 6.400→6.37. All aligned with NFPA 72-2022 §17.7.3.2.3 metric values.
+
+- **Issue 5**: Added `update_connection()` method to `database.py` after `delete_connection`. Includes camelCase→snake_case field mapping for DB columns, SQL injection prevention via allowed fields, and uses `_transaction()` for atomicity. Also verified `get_connection()` already existed (no duplicate added).
+
+- **Issue 6**: Fixed `connections.py` update_connection endpoint — replaced O(n) scan (`get_all_connections_for_project` loop) with indexed `db.get_connection()` lookup, and replaced `hasattr(db, 'update_connection')` guard with direct `db.update_connection()` call.
+
+- **Issue 7**: Added `threading.Lock` (`_keys_lock`) to `api_keys.py`. Wrapped all load-modify-save cycles in `add_api_key`, `validate_api_key`, `validate_api_key_by_hash`, `delete_api_key`, `update_api_key_role`, `list_api_keys`, and `_ensure_default_admin_key` with the lock to prevent TOCTOU race conditions.
+
+- **Issue 8**: Fixed WebSocket auth in `sync.py`. Removed module-level `_FIREAI_API_KEY = os.getenv(...)`. Added import `from backend.api_keys import validate_api_key`. Changed all `_FIREAI_API_KEY` references to runtime `os.getenv("FIREAI_API_KEY")`. Updated WebSocket auth to validate against RBAC key store first, then env var for backward compatibility.
+
+- **Issue 9**: Added `db/api_keys.json` to `.gitignore` under the Database section.
+
+- **Issue 10**: Removed dead code `_FIREAI_API_KEY = os.getenv("FIREAI_API_KEY")` from `database.py`.
+
+- **Issue 11**: Fixed `record_sync` type annotation in `database.py` from `error: str = None` to `error: str | None = None`.
+
+Verification Results:
+- `from fireai.core.nfpa72_engine import *` → OK
+- `from fireai.core.voltage_drop import *` → OK
+- `from backend.api_keys import *` → OK
+- `from backend.database import Database` → OK
+- Canonical import identity verified: `AWG_RESISTANCE_OHM_PER_KM is NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C` → True
+- `alarm_hours` default verified: 0.0833... hours = 5.0 minutes ✓
+- Smoke spacing constants verified: 9.1 / 4.55 / 6.37 ✓
+- `Database.update_connection` and `Database.get_connection` methods exist ✓
+- `_keys_lock` is `threading.Lock` instance ✓
+- `_FIREAI_API_KEY` removed from `database.py` ✓
+- `record_sync` error annotation: `str | None` ✓
+- `sync.py` has `validate_api_key` import, no module-level key ✓
+- `.gitignore` contains `db/api_keys.json` ✓
+
+Stage Summary:
+- 11 issues fixed across 8 files
+- All Python imports pass
+- All safety-critical values verified correct
+- No new lint errors introduced

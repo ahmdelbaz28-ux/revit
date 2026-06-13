@@ -47,18 +47,6 @@ dependencies = [
     "bcrypt>=4.0.0",
     "python-dotenv>=1.0.0",
     "alembic>=1.10.0",
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "mypy>=1.0.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
-    "isort>=5.10.0",
-    "pre-commit>=3.0.0",
-    "tox>=4.0.0",
-    "virtualenv>=20.0.0",
-    "pip-tools>=7.0.0",
-    "bandit>=1.7.0",
-    "safety>=2.0.0"
 ]
 
 [project.optional-dependencies]

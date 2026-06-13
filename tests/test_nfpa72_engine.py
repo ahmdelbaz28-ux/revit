@@ -202,15 +202,15 @@ class TestGetDetectorSpacing:
         assert result.coverage_radius_m == round(0.7 * 6.10, 4)
 
     def test_heat_at_4m(self):
-        """Heat detector at 4.0m — ≤4.9m row."""
+        """Heat detector at 4.0m — ≤4.6m row."""
         result = get_detector_spacing(4.0, "heat")
-        assert result.max_spacing_m == 4.90
-        assert result.coverage_radius_m == round(0.7 * 4.90, 4)
+        assert result.max_spacing_m == 5.50
+        assert result.coverage_radius_m == round(0.7 * 5.50, 4)
 
     def test_heat_at_9m_exceeds_table(self):
-        """Heat detector at 9.1m — last row of heat table."""
+        """Heat detector at 9.1m — ≤9.1m row of heat table."""
         result = get_detector_spacing(9.1, "heat")
-        assert result.max_spacing_m == 3.00
+        assert result.max_spacing_m == 4.30
 
     def test_heat_at_15m_exceeds_table(self):
         """Heat detector at 15m — exceeds heat table, conservative default."""
@@ -836,8 +836,8 @@ class TestCalculateVoltageDrop:
         """Formula should include the wire resistance value."""
         # V97 FIX: Use 20°C so formula shows raw Table 8 resistance
         result = calculate_voltage_drop(1.0, 100.0, "14", ambient_temperature_c=20.0)
-        # Should contain 8.450 (the Ω/km for 14 AWG at 20°C)
-        assert "8.450" in result.formula
+        # Should contain 4.263 (the Ω/km for 14 AWG at 20°C per NEC Table 8)
+        assert "4.263" in result.formula
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -2,7 +2,7 @@
  * SettingsPage.tsx - Application configuration
  * Stores settings in sessionStorage (SECURITY FIX: reduces XSS attack window vs localStorage)
  */
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

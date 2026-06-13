@@ -389,6 +389,10 @@ class ApiClient {
     if (import.meta.env.DEV) console.log(`WebSocket: reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
     this.reconnectTimer = setTimeout(() => {
       if (this.wsConnection && this.wsConnection.readyState === WebSocket.CLOSED) {
+        // RACE CONDITION FIX: Nullify wsConnection and clean up heartbeat
+        // before reconnecting to prevent duplicate connections.
+        this.wsConnection = null;
+        this.stopHeartbeat();
         const savedCallbacks = new Map(this.wsCallbacks);
         this.wsCallbacks.clear();
         savedCallbacks.forEach((callbacks, channel) => {
@@ -407,7 +411,7 @@ class ApiClient {
   }
 
   async getProject(id: string): Promise<ApiResponse<Project>> {
-    return this.get<Project>('/projects/' + id);
+    return this.get<Project>('/projects/' + encodeURIComponent(id));
   }
 
   async createProject(data: CreateProjectInput): Promise<ApiResponse<Project>> {
@@ -415,11 +419,11 @@ class ApiClient {
   }
 
   async updateProject(id: string, data: UpdateProjectInput): Promise<ApiResponse<Project>> {
-    return this.put<Project>('/projects/' + id, data);
+    return this.put<Project>('/projects/' + encodeURIComponent(id), data);
   }
 
   async deleteProject(id: string): Promise<ApiResponse<void>> {
-    return this.delete<void>('/projects/' + id);
+    return this.delete<void>('/projects/' + encodeURIComponent(id));
   }
 
   // ============================================================================
@@ -427,23 +431,23 @@ class ApiClient {
   // ============================================================================
 
   async getDevices(projectId: string, params?: PaginationParams): Promise<ApiResponse<PaginatedResponse<Device>>> {
-    return this.get<PaginatedResponse<Device>>('/projects/' + projectId + '/devices', params as Record<string, string>);
+    return this.get<PaginatedResponse<Device>>('/projects/' + encodeURIComponent(projectId) + '/devices', params as Record<string, string>);
   }
 
   async getDevice(projectId: string, deviceId: string): Promise<ApiResponse<Device>> {
-    return this.get<Device>('/projects/' + projectId + '/devices/' + deviceId);
+    return this.get<Device>('/projects/' + encodeURIComponent(projectId) + '/devices/' + encodeURIComponent(deviceId));
   }
 
   async createDevice(projectId: string, data: CreateDeviceInput): Promise<ApiResponse<Device>> {
-    return this.post<Device>('/projects/' + projectId + '/devices', data);
+    return this.post<Device>('/projects/' + encodeURIComponent(projectId) + '/devices', data);
   }
 
   async updateDevice(projectId: string, deviceId: string, data: UpdateDeviceInput): Promise<ApiResponse<Device>> {
-    return this.put<Device>('/projects/' + projectId + '/devices/' + deviceId, data);
+    return this.put<Device>('/projects/' + encodeURIComponent(projectId) + '/devices/' + encodeURIComponent(deviceId), data);
   }
 
   async deleteDevice(projectId: string, deviceId: string): Promise<ApiResponse<void>> {
-    return this.delete<void>('/projects/' + projectId + '/devices/' + deviceId);
+    return this.delete<void>('/projects/' + encodeURIComponent(projectId) + '/devices/' + encodeURIComponent(deviceId));
   }
 
   // ============================================================================
@@ -451,15 +455,15 @@ class ApiClient {
   // ============================================================================
 
   async getConnections(projectId: string, params?: PaginationParams): Promise<ApiResponse<PaginatedResponse<Connection>>> {
-    return this.get<PaginatedResponse<Connection>>('/projects/' + projectId + '/connections', params as Record<string, string>);
+    return this.get<PaginatedResponse<Connection>>('/projects/' + encodeURIComponent(projectId) + '/connections', params as Record<string, string>);
   }
 
   async createConnection(projectId: string, data: CreateConnectionInput): Promise<ApiResponse<Connection>> {
-    return this.post<Connection>('/projects/' + projectId + '/connections', data);
+    return this.post<Connection>('/projects/' + encodeURIComponent(projectId) + '/connections', data);
   }
 
   async deleteConnection(projectId: string, connectionId: string): Promise<ApiResponse<void>> {
-    return this.delete<void>('/projects/' + projectId + '/connections/' + connectionId);
+    return this.delete<void>('/projects/' + encodeURIComponent(projectId) + '/connections/' + encodeURIComponent(connectionId));
   }
 
   // ============================================================================
@@ -467,19 +471,19 @@ class ApiClient {
   // ============================================================================
 
   async generateReport(projectId: string, data: GenerateReportInput): Promise<ApiResponse<Report>> {
-    return this.post<Report>('/projects/' + projectId + '/reports', data);
+    return this.post<Report>('/projects/' + encodeURIComponent(projectId) + '/reports', data);
   }
 
   async getReports(projectId: string, params?: PaginationParams): Promise<ApiResponse<PaginatedResponse<Report>>> {
-    return this.get<PaginatedResponse<Report>>('/projects/' + projectId + '/reports', params as Record<string, string>);
+    return this.get<PaginatedResponse<Report>>('/projects/' + encodeURIComponent(projectId) + '/reports', params as Record<string, string>);
   }
 
   async getReport(projectId: string, reportId: string): Promise<ApiResponse<Report>> {
-    return this.get<Report>('/projects/' + projectId + '/reports/' + reportId);
+    return this.get<Report>('/projects/' + encodeURIComponent(projectId) + '/reports/' + encodeURIComponent(reportId));
   }
 
   async exportReport(projectId: string, reportId: string, format: string): Promise<Blob> {
-    return this.fetchBlob(this.baseUrl + '/projects/' + projectId + '/reports/' + reportId + '/export?format=' + format);
+    return this.fetchBlob(this.baseUrl + '/projects/' + encodeURIComponent(projectId) + '/reports/' + encodeURIComponent(reportId) + '/export?format=' + encodeURIComponent(format));
   }
 
   // ============================================================================
@@ -490,8 +494,14 @@ class ApiClient {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
     try {
+      // Include API key header (same pattern as api.ts)
+      const headers: Record<string, string> = { ...this.defaultHeaders };
+      const apiKey = this.getApiKey();
+      if (apiKey) {
+        headers['X-API-Key'] = apiKey;
+      }
       const response = await fetch(url, {
-        headers: this.defaultHeaders,
+        headers,
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -508,15 +518,15 @@ class ApiClient {
   }
 
   async exportToDXF(projectId: string): Promise<Blob> {
-    return this.fetchBlob(this.baseUrl + '/projects/' + projectId + '/export/dxf');
+    return this.fetchBlob(this.baseUrl + '/projects/' + encodeURIComponent(projectId) + '/export/dxf');
   }
 
   async exportToRevit(projectId: string): Promise<Blob> {
-    return this.fetchBlob(this.baseUrl + '/projects/' + projectId + '/export/revit');
+    return this.fetchBlob(this.baseUrl + '/projects/' + encodeURIComponent(projectId) + '/export/revit');
   }
 
   async exportToIFC(projectId: string, version: string = 'IFC4'): Promise<Blob> {
-    return this.fetchBlob(this.baseUrl + '/projects/' + projectId + '/export/ifc?version=' + version);
+    return this.fetchBlob(this.baseUrl + '/projects/' + encodeURIComponent(projectId) + '/export/ifc?version=' + encodeURIComponent(version));
   }
 
   // ============================================================================
@@ -524,11 +534,11 @@ class ApiClient {
   // ============================================================================
 
   async syncProject(projectId: string): Promise<ApiResponse<SyncStatus>> {
-    return this.post<SyncStatus>('/projects/' + projectId + '/sync');
+    return this.post<SyncStatus>('/projects/' + encodeURIComponent(projectId) + '/sync');
   }
 
   async getSyncStatus(projectId: string): Promise<ApiResponse<SyncStatus>> {
-    return this.get<SyncStatus>('/projects/' + projectId + '/sync');
+    return this.get<SyncStatus>('/projects/' + encodeURIComponent(projectId) + '/sync');
   }
 
   // ============================================================================
@@ -537,6 +547,27 @@ class ApiClient {
 
   async healthCheck(): Promise<ApiResponse<HealthStatus>> {
     return this.get<HealthStatus>('/health');
+  }
+
+  /**
+   * Get API key from environment or runtime config.
+   * Mirrors the pattern in api.ts for consistent auth across both API clients.
+   */
+  private getApiKey(): string | null {
+    const envKey = import.meta.env.VITE_FIREAI_API_KEY;
+    if (envKey) return envKey;
+    try {
+      const stored = sessionStorage.getItem('fireai_settings');
+      if (stored) {
+        const settings = JSON.parse(stored);
+        if (settings?.apiKey && typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
+          return settings.apiKey.trim();
+        }
+      }
+    } catch {
+      // Invalid JSON in sessionStorage — ignore
+    }
+    return null;
   }
 }
 

@@ -169,7 +169,11 @@ export const setState = (nextState: Partial<AppState> | ((s: AppState) => Partia
   for (const key of SERIALIZABLE_KEYS) {
     serializable[key] = state[key];
   }
-  localStorage.setItem('nexus_project_state', JSON.stringify(serializable));
+  try {
+    localStorage.setItem('nexus_project_state', JSON.stringify(serializable));
+  } catch {
+    console.warn('Failed to persist state to localStorage');
+  }
 
   listeners.forEach((listener) => listener(state));
 };

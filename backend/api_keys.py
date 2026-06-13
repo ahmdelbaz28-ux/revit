@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import secrets
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -20,6 +21,9 @@ from backend.rbac import APIKeyInfo, Role
 logger = logging.getLogger(__name__)
 
 KEYS_FILE = os.getenv("FIREAI_API_KEYS_FILE", "db/api_keys.json")
+
+# Thread-safety lock for TOCTOU prevention on load-modify-save cycles
+_keys_lock = threading.Lock()
 
 
 def _hash_key(key: str) -> str:
@@ -50,23 +54,30 @@ def _save_keys(keys: dict) -> None:
 
 def _ensure_default_admin_key() -> None:
     """Ensure at least one admin key exists (from env var on first run)."""
-    keys = _load_keys()
-    if not keys:
-        env_key = os.getenv("FIREAI_API_KEY")
-        if env_key:
-            add_api_key(env_key, Role.ADMIN, "Default admin key (from FIREAI_API_KEY)")
-            logger.info("Created default admin API key from FIREAI_API_KEY env var")
+    with _keys_lock:
+        keys = _load_keys()
+        if not keys:
+            env_key = os.getenv("FIREAI_API_KEY")
+            if env_key:
+                key_hash = _hash_key(env_key)
+                keys[key_hash] = {
+                    "role": Role.ADMIN.value,
+                    "description": "Default admin key (from FIREAI_API_KEY)",
+                }
+                _save_keys(keys)
+                logger.info("Created default admin API key from FIREAI_API_KEY env var")
 
 
 def add_api_key(key: str, role: Role, description: str = "") -> str:
     """Add a new API key. Returns the key hash."""
-    keys = _load_keys()
-    key_hash = _hash_key(key)
-    keys[key_hash] = {
-        "role": role.value,
-        "description": description,
-    }
-    _save_keys(keys)
+    with _keys_lock:
+        keys = _load_keys()
+        key_hash = _hash_key(key)
+        keys[key_hash] = {
+            "role": role.value,
+            "description": description,
+        }
+        _save_keys(keys)
     logger.info("Added API key with role=%s, desc=%s", role.value, description)
     return key_hash
 
@@ -78,9 +89,10 @@ def validate_api_key(key: str) -> Optional[APIKeyInfo]:
     """
     if not key:
         return None
-    keys = _load_keys()
-    key_hash = _hash_key(key)
-    info = keys.get(key_hash)
+    with _keys_lock:
+        keys = _load_keys()
+        key_hash = _hash_key(key)
+        info = keys.get(key_hash)
     if not info:
         return None
     return APIKeyInfo(
@@ -97,8 +109,9 @@ def validate_api_key_by_hash(key_hash: str) -> Optional[APIKeyInfo]:
     """
     if not key_hash:
         return None
-    keys = _load_keys()
-    info = keys.get(key_hash)
+    with _keys_lock:
+        keys = _load_keys()
+        info = keys.get(key_hash)
     if not info:
         return None
     return APIKeyInfo(
@@ -120,7 +133,8 @@ def generate_api_key(role: Role, description: str = "") -> str:
 
 def list_api_keys() -> list:
     """List all API keys (without the actual key values)."""
-    keys = _load_keys()
+    with _keys_lock:
+        keys = _load_keys()
     return [
         {
             "key_hash": kh,
@@ -133,23 +147,25 @@ def list_api_keys() -> list:
 
 def delete_api_key(key_hash: str) -> bool:
     """Delete an API key by its hash."""
-    keys = _load_keys()
-    if key_hash in keys:
-        del keys[key_hash]
-        _save_keys(keys)
-        logger.info("Deleted API key %s...", key_hash[:8])
-        return True
+    with _keys_lock:
+        keys = _load_keys()
+        if key_hash in keys:
+            del keys[key_hash]
+            _save_keys(keys)
+            logger.info("Deleted API key %s...", key_hash[:8])
+            return True
     return False
 
 
 def update_api_key_role(key_hash: str, role: Role) -> bool:
     """Update the role of an existing API key."""
-    keys = _load_keys()
-    if key_hash in keys:
-        keys[key_hash]["role"] = role.value
-        _save_keys(keys)
-        logger.info("Updated API key %s... role to %s", key_hash[:8], role.value)
-        return True
+    with _keys_lock:
+        keys = _load_keys()
+        if key_hash in keys:
+            keys[key_hash]["role"] = role.value
+            _save_keys(keys)
+            logger.info("Updated API key %s... role to %s", key_hash[:8], role.value)
+            return True
     return False
 
 

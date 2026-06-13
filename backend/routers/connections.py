@@ -117,14 +117,8 @@ async def update_connection(
     _verify_project(project_id)
     db = get_db()
 
-    # Check connection exists
-    connections = db.get_all_connections_for_project(project_id)
-    connection = None
-    for conn in connections:
-        if conn.get("id") == connection_id:
-            connection = conn
-            break
-
+    # Check connection exists via indexed lookup
+    connection = db.get_connection(project_id, connection_id)
     if not connection:
         raise HTTPException(status_code=404, detail="Connection not found")
 
@@ -140,10 +134,8 @@ async def update_connection(
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
 
-    # Apply updates to the connection
-    connection.update(updates)
-    # Use the database update method if available, otherwise update in-memory
-    updated = db.update_connection(project_id, connection_id, updates) if hasattr(db, 'update_connection') else connection
+    # Apply updates via database method
+    updated = db.update_connection(project_id, connection_id, updates)
     if not updated:
         updated = connection
 

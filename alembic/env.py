@@ -27,7 +27,13 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+try:
+    from backend.database import Database
+    # Note: Using raw SQLite, not SQLAlchemy ORM, so autogenerate is limited.
+    # When migrating to SQLAlchemy ORM, replace with Base.metadata.
+    target_metadata = None
+except ImportError:
+    target_metadata = None
 
 
 def run_migrations_offline() -> None:

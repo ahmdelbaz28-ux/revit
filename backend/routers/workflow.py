@@ -25,16 +25,21 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
 from backend.auth import require_permission
-from backend.database import _FIREAI_API_KEY
 from backend.rbac import Permission
 from backend.services.workflow_service import (
     get_workflow_service,
 )
 
 
+def _get_fireai_api_key():
+    """Read FIREAI_API_KEY at runtime, not import time."""
+    return os.getenv("FIREAI_API_KEY", "")
+
+
 def verify_api_key_dep(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
     """Verify API key from X-API-Key header."""
-    if _FIREAI_API_KEY and (not x_api_key or not hmac.compare_digest(x_api_key, _FIREAI_API_KEY)):
+    _api_key = _get_fireai_api_key()
+    if _api_key and (not x_api_key or not hmac.compare_digest(x_api_key, _api_key)):
         raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing API key")
 
 

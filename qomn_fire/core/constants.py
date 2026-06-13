@@ -3,7 +3,7 @@ QOMN-FIRE PHYSICAL AND REGULATORY CONSTANTS
 """
 
 # NFPA 72 Spacing Limits (2022 §17)
-NFPA_SMOKE_DETECTOR_SPACING_M = 9.144  # 30 feet smooth ceiling spacing
+NFPA_SMOKE_DETECTOR_SPACING_M = 9.1  # 30 ft (9.1 m) per NFPA 72-2022 §17.7.3.2.3
 
 # BUG-NFPA1 FIX: Changed from 0.7S (6.400m) to 0.5S (4.572m) per NFPA 72 §17.7.3.2.3.
 # The previous value 6.400m = 0.7 × 9.144m = coverage radius R (NFPA 72 §17.7.3.2.5),
@@ -16,12 +16,12 @@ NFPA_SMOKE_DETECTOR_SPACING_M = 9.144  # 30 feet smooth ceiling spacing
 # dead air space and air currents, making the 0.5S placement rule critical for
 # reliable early detection. A detector 6m from a wall may not detect a fire at
 # the wall quickly enough to meet the code's intent.
-NFPA_MAX_WALL_DISTANCE_M = 4.572   # 0.5 times spacing (15 feet) per §17.7.3.2.3
+NFPA_MAX_WALL_DISTANCE_M = 4.55   # 0.5 times 9.1m spacing per §17.7.3.2.3
 
 # Coverage radius for single-detector rooms per NFPA 72 §17.7.3.2.5
 # Used as exception: a single detector in a room ≤ 900 ft² (84 m²) can be placed
 # up to 0.7S from walls IF it covers the entire room.
-NFPA_COVERAGE_RADIUS_M = 6.400     # 0.7 times spacing (21 feet) per §17.7.3.2.5
+NFPA_COVERAGE_RADIUS_M = 6.37     # 0.7 times 9.1m spacing per §17.7.3.2.5
 
 # NEC Conduit Area Specifications (mm2) - Chapter 9 Table 4
 EMT_INTERNAL_AREA_1_2_MM2 = 196.1

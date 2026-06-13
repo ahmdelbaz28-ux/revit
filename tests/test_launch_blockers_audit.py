@@ -991,9 +991,9 @@ class TestRegressionProtection:
         from fireai.core.qomn_kernel import compute_voltage_drop
 
         result = compute_voltage_drop(1.0, 100.0, "14", 24.0, 10.0)
-        # R = 8.19 Ω/km = 0.00819 Ω/m
-        # V_drop = 2 × 1.0 × 100 × 0.00819 = 1.638V
-        assert abs(result['voltage_drop_v'] - 1.638) < 0.01
+        # R = 4.263 Ω/km at 20°C → at 75°C: 4.263 × 1.21615 = 5.184 Ω/km = 0.005184 Ω/m
+        # V_drop = 2 × 1.0 × 100 × 0.005184 = 1.0369V
+        assert abs(result['voltage_drop_v'] - 1.0369) < 0.01
 
 
 # ============================================================================

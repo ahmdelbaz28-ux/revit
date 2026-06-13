@@ -55,24 +55,19 @@ async def parse_dwg(file: UploadFile = File(...)):  # noqa: B008
         )
         os.close(fd)
 
-        # Read in chunks to enforce size limit without loading entire file into memory
-        file_size = 0
-        chunks = []
-        async for chunk in file.chunks():
-            file_size += len(chunk)
-            if file_size > _MAX_DWG_SIZE_BYTES:
-                # Clean up temp file before raising
-                try:
-                    os.unlink(temp_path)
-                except OSError:
-                    pass
-                raise HTTPException(
-                    status_code=413,
-                    detail=f"File too large (max {_MAX_DWG_SIZE_BYTES // (1024*1024)} MB). "
-                           "Upload a smaller file or split the drawing.",
-                )
-            chunks.append(chunk)
-        contents = b''.join(chunks)
+        # Read upload content with size enforcement
+        # FastAPI's UploadFile doesn't have .chunks() — use .read() instead
+        contents = await file.read()
+        if len(contents) > _MAX_DWG_SIZE_BYTES:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large (max {_MAX_DWG_SIZE_BYTES // (1024*1024)} MB). "
+                       "Upload a smaller file or split the drawing.",
+            )
 
         # ── Validate non-empty file ─────────────────────────────────────
         if not contents:

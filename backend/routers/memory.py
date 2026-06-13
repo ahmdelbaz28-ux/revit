@@ -27,8 +27,10 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.services.memory_service import (
     MemoryAddRequest,
     MemorySearchRequest,
@@ -77,7 +79,7 @@ async def get_status():
     }
 
 
-@router.post("/add", summary="Add a memory")
+@router.post("/add", summary="Add a memory", dependencies=[Depends(require_permission(Permission.USER_MANAGE))])
 async def add_memory(request: MemoryAddRequest):
     """
     Add a memory to the FireAI memory store.
@@ -147,7 +149,7 @@ async def get_all_memories(
     return result
 
 
-@router.delete("/{memory_id}", summary="Delete a memory")
+@router.delete("/{memory_id}", summary="Delete a memory", dependencies=[Depends(require_permission(Permission.USER_MANAGE))])
 async def delete_memory(memory_id: str):
     """
     Delete a specific memory by ID.

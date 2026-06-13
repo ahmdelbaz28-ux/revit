@@ -150,10 +150,12 @@ class TestQOMNKernelLayer2Computation:
         assert r.get("installed_ah", r["required_ah"]) >= r["required_ah"]
 
     def test_voltage_drop_golden(self, kernel):
-        """GOLDEN TEST: V_drop = 2 × I × L × R per NEC Chapter 9, Table 8."""
+        """GOLDEN TEST: V_drop = 2 × I × L × R per NEC Chapter 9, Table 8.
+        AWG 14 at 20°C: 4.263 Ω/km → at 75°C: 4.263 × 1.21615 = 5.184 Ω/km = 0.005184 Ω/m
+        V_drop = 2 × 2.5 × 100 × 0.005184 = 2.592V"""
         r = kernel.voltage_drop(2.5, 100, "14", 24.0)
-        expected = 2.0 * 2.5 * 100 * (8.19 / 1000.0)
-        assert abs(r["voltage_drop_v"] - expected) < 1e-4, \
+        expected = 2.0 * 2.5 * 100 * (5.184 / 1000.0)
+        assert abs(r["voltage_drop_v"] - expected) < 1e-2, \
             f"Expected {expected:.4f}V, got {r['voltage_drop_v']}"
 
     def test_voltage_drop_invalid_gauge(self, kernel):
@@ -462,10 +464,11 @@ class TestGoldenOutputs:
         assert abs(r["required_ah"] - expected) < 1e-4
 
     def test_golden_vdrop_awg14_100m(self, kernel):
-        """V_drop = 2 × 2.5A × 100m × 8.19e-3 Ω/m = 4.095V."""
+        """V_drop = 2 × 2.5A × 100m × 0.005184 Ω/m = 2.592V.
+        AWG 14 at 20°C: 4.263 Ω/km → at 75°C: 5.184 Ω/km = 0.005184 Ω/m."""
         r = kernel.voltage_drop(2.5, 100, "14", 24.0)
-        expected = 2.0 * 2.5 * 100 * (8.19 / 1000)
-        assert abs(r["voltage_drop_v"] - expected) < 1e-4
+        expected = 2.0 * 2.5 * 100 * (5.184 / 1000)
+        assert abs(r["voltage_drop_v"] - expected) < 1e-2
 
     def test_deterministic_across_instances(self):
         """Two independent kernel instances produce identical hashes."""

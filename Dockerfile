@@ -39,7 +39,6 @@ COPY --from=python-builder /install /usr/local
 
 # Copy application code (only what's needed for production)
 COPY --chown=fireai:fireai backend/ backend/
-COPY --chown=fireai:fireai core/ core/
 COPY --chown=fireai:fireai fireai/ fireai/
 COPY --chown=fireai:fireai parsers/ parsers/
 COPY --chown=fireai:fireai integration/ integration/

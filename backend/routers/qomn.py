@@ -43,7 +43,7 @@ from backend.rbac import Permission
 # Module-level (NOT class-attr) so Pydantic V2 doesn't treat it as a
 # private model attribute (leading underscore convention).
 _NEC_TABLE8_VALID_AWG: frozenset = frozenset({
-    "18", "16", "14", "12", "10", "8", "6", "4", "2", "1",
+    "18", "16", "14", "12", "10", "8", "6", "4", "3", "2", "1",
     "1/0", "2/0", "3/0", "4/0",
 })
 

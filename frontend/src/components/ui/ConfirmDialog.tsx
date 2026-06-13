@@ -98,17 +98,17 @@ export function ConfirmDialog({
     >
       <div
         ref={dialogRef}
-        className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
+        className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
       >
         <h2
           id="confirm-dialog-title"
-          className="text-lg font-semibold mb-2 text-slate-900"
+          className="text-lg font-semibold mb-2 text-white"
         >
           {title}
         </h2>
         <p
           id="confirm-dialog-message"
-          className="text-gray-600 mb-6"
+          className="text-slate-300 mb-6"
         >
           {message}
         </p>
@@ -116,7 +116,7 @@ export function ConfirmDialog({
           <button
             ref={cancelButtonRef}
             onClick={onCancel}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            className="px-4 py-2 text-slate-200 bg-slate-700 rounded hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500"
           >
             {cancelLabel}
           </button>

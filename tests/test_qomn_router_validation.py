@@ -101,9 +101,9 @@ class TestHistoricFalseAcceptsRejected:
     """V118: These values were silently accepted by the V65 router regex
     but rejected by the kernel — a deceptive HTTP API contract."""
 
-    @pytest.mark.parametrize("bad_awg", ["3", "250", "300", "350", "400", "500"])
+    @pytest.mark.parametrize("bad_awg", ["250", "300", "350", "400", "500"])
     def test_kernel_unsupported_awg_now_rejected_at_router(self, bad_awg):
-        """V118 FIX: These 6 sizes exist in NEC for power circuits but
+        """V118 FIX: These 5 sizes exist in NEC for power circuits but
         are not in our fire-alarm-relevant NEC_TABLE8_RESISTANCE_OHM_PER_KM.
         Router previously accepted them, then kernel raised ValueError →
         user got an opaque error. Now the router rejects them upfront with

@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends
 from backend.auth import require_permission
 from backend.contract import validate_health
 from backend.database import get_db
+from backend.db_service import DatabaseService, get_db_service
 from backend.rbac import Permission
 from fireai.version import __package_version__
 
@@ -61,8 +62,7 @@ async def health_check():
     # Check UDM (UniversalDataModel) database connectivity
     udm_connected = True
     try:
-        from backend.db_service import DatabaseService
-        udm = DatabaseService()
+        udm: DatabaseService = get_db_service()
         udm_stats = udm.get_statistics()
         udm_connected = udm_stats is not None
     except Exception as e:
@@ -121,8 +121,7 @@ async def get_health_statistics():
         udm_total_conflicts = 0
         udm_unresolved_conflicts = 0
         try:
-            from backend.db_service import DatabaseService
-            udm_db = DatabaseService()
+            udm_db: DatabaseService = get_db_service()
             udm_stats = udm_db.get_statistics()
             udm_total_elements = udm_stats.total_elements
             udm_active_elements = udm_stats.active_elements

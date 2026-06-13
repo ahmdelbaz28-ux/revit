@@ -2,8 +2,6 @@
 # FireAI — Docker Compose for Development and Testing
 # ═══════════════════════════════════════════════════════════════════════════
 
-version: "3.9"
-
 services:
   fireai:
     build:

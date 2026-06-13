@@ -171,18 +171,15 @@ class TestCalculateVoltageDrop:
         with pytest.raises(ValueError, match="must be > 0"):
             calculate_voltage_drop(1.0, 100.0, "14", -24.0)
 
-    def test_nan_current_not_checked(self):
-        """Source code only checks current_a < 0; NaN passes through.
-        This is a known limitation — NaN comparisons return False in Python."""
-        # NaN < 0 is False, so the function does not raise.
-        # The result will contain NaN values — we verify this behavior.
-        result = calculate_voltage_drop(float("nan"), 100.0, "14", 24.0)
-        assert math.isnan(result["voltage_drop_v"])
+    def test_nan_current_rejected(self):
+        """NaN current must be rejected per safety-critical requirements."""
+        with pytest.raises(ValueError, match="finite"):
+            calculate_voltage_drop(float("nan"), 100.0, "14", 24.0)
 
-    def test_nan_length_not_checked(self):
-        """Source code only checks one_way_length_m < 0; NaN passes through."""
-        result = calculate_voltage_drop(1.0, float("nan"), "14", 24.0)
-        assert math.isnan(result["voltage_drop_v"])
+    def test_nan_length_rejected(self):
+        """NaN length must be rejected per safety-critical requirements."""
+        with pytest.raises(ValueError, match="finite"):
+            calculate_voltage_drop(1.0, float("nan"), "14", 24.0)
 
     def test_inf_nominal_voltage_not_checked(self):
         """Source code only checks nominal_voltage <= 0; inf passes through.
@@ -348,10 +345,10 @@ class TestCalculateBatteryBackup:
 
     def test_basic_battery_calculation(self):
         """Standard FA panel: 0.5A standby, 1.5A alarm.
-        Required = (0.5×24 + 1.5×0.25) / 0.80 = (12.0 + 0.375) / 0.80 = 15.469 Ah
+        Required = (0.5×24 + 1.5×(5/60)) / 0.80 = (12.0 + 0.125) / 0.80 = 15.15625 Ah
         """
         result = calculate_battery_backup(0.5, 1.5)
-        expected_ah = (0.5 * 24.0 + 1.5 * 0.25) / 0.80
+        expected_ah = (0.5 * 24.0 + 1.5 * (5 / 60)) / 0.80
         assert result["required_ah"] == pytest.approx(expected_ah, rel=1e-3)
 
     def test_battery_not_1000x_too_small(self):

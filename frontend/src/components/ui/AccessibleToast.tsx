@@ -19,10 +19,10 @@ export function AccessibleToast({
   }, [duration, onClose]);
 
   const typeStyles = {
-    success: 'bg-green-50 border-green-500 text-green-800',
-    error: 'bg-red-50 border-red-500 text-red-800',
-    warning: 'bg-yellow-50 border-yellow-500 text-yellow-800',
-    info: 'bg-blue-50 border-blue-500 text-blue-800',
+    success: 'bg-green-900/50 border-green-700 text-green-200',
+    error: 'bg-red-900/50 border-red-700 text-red-200',
+    warning: 'bg-yellow-900/50 border-yellow-700 text-yellow-200',
+    info: 'bg-blue-900/50 border-blue-700 text-blue-200',
   };
 
   const typeLabels = {
@@ -44,7 +44,7 @@ export function AccessibleToast({
         <button
           onClick={onClose}
           aria-label="Dismiss notification"
-          className="ml-2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded"
+          className="ml-2 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500 rounded"
         >
           ×
         </button>

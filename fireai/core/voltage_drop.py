@@ -157,8 +157,12 @@ def calculate_voltage_drop(
     """
     if current_a < 0:
         raise ValueError(f"current_a={current_a}A must be >= 0")
+    if not math.isfinite(current_a) or math.isnan(current_a):
+        raise ValueError(f"current_a={current_a}A must be a finite number")
     if one_way_length_m < 0:
         raise ValueError(f"one_way_length_m={one_way_length_m}m must be >= 0")
+    if not math.isfinite(one_way_length_m) or math.isnan(one_way_length_m):
+        raise ValueError(f"one_way_length_m={one_way_length_m}m must be a finite number")
     if nominal_voltage <= 0:
         raise ValueError(f"nominal_voltage={nominal_voltage}V must be > 0")
 
@@ -284,7 +288,7 @@ def calculate_battery_backup(
     standby_load_a: float,  # Amperes (NOT milliamps — BUG-13 confusion)
     alarm_load_a: float,  # Amperes during alarm
     standby_hours: float = 24.0,  # NFPA 72-2022 §10.6.7.2
-    alarm_hours: float = 0.25,  # 15 minutes per §10.6.7.4
+    alarm_hours: float = 5/60,  # 5 minutes per NFPA 72 §10.6.7.4
     derating_factor: float = 0.80,  # 80% usable capacity per §10.6.7.1
     temperature_c: float = 25.0,  # Ambient temperature
 ) -> dict[str, float]:
@@ -317,7 +321,7 @@ def calculate_battery_backup(
         standby_load_a:  Normal monitoring load in AMPERES
         alarm_load_a:    Full alarm load in AMPERES
         standby_hours:   Hours of standby per NFPA 72-2022 §10.6.7.2 (24h min)
-        alarm_hours:     Hours of alarm per §10.6.7.4 (0.25h = 15min)
+        alarm_hours:     Hours of alarm per §10.6.7.4 (5/60h = 5min)
         derating_factor: Battery usable fraction (0.80 per §10.6.7.1)
         temperature_c:   Ambient temp for capacity derating
 
@@ -326,13 +330,14 @@ def calculate_battery_backup(
     """
     if standby_load_a < 0 or alarm_load_a < 0:
         raise ValueError("Loads must be >= 0 Amperes")
+    # NaN/Inf guards for load inputs
+    if not math.isfinite(standby_load_a) or math.isnan(standby_load_a):
+        raise ValueError(f"standby_load_a={standby_load_a}A must be a finite number")
+    if not math.isfinite(alarm_load_a) or math.isnan(alarm_load_a):
+        raise ValueError(f"alarm_load_a={alarm_load_a}A must be a finite number")
     # V65 SAFETY: Reject NaN/Inf inputs — missing from original code.
     # Unlike calculate_voltage_drop(), this function had no isfinite guards.
     # NaN temperature_c produces NaN temp_derating → NaN required_ah → false pass.
-    if not math.isfinite(standby_load_a):
-        raise ValueError(f"standby_load_a must be finite, got {standby_load_a}")
-    if not math.isfinite(alarm_load_a):
-        raise ValueError(f"alarm_load_a must be finite, got {alarm_load_a}")
     if not math.isfinite(temperature_c):
         raise ValueError(f"temperature_c must be finite, got {temperature_c}")
     if not math.isfinite(derating_factor):

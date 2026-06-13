@@ -27,8 +27,6 @@ from typing import Generator, Optional
 
 logger = logging.getLogger(__name__)
 
-_FIREAI_API_KEY = os.getenv("FIREAI_API_KEY")
-
 # Database file location — sibling to the core fireai_universal.db
 _DB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "db")
 _DB_PATH = os.environ.get("DIGITAL_TWIN_DB_PATH", os.path.join(_DB_DIR, "digital_twin.db"))
@@ -696,6 +694,53 @@ class Database:
             )
             return cur.rowcount > 0
 
+    def update_connection(self, project_id: str, connection_id: str, updates: dict) -> dict | None:
+        """Update specific fields of a connection.
+
+        Args:
+            project_id: Project the connection belongs to.
+            connection_id: Connection to update.
+            updates: Dict of fields to update (e.g., {"cableSize": "2.5mm²"}).
+
+        Returns:
+            Updated connection dict, or None if not found.
+        """
+        # First verify the connection exists
+        connection = self.get_connection(project_id, connection_id)
+        if not connection:
+            return None
+
+        # Map API camelCase fields to database snake_case columns
+        _FIELD_MAP = {
+            "cableSize": "cable_size",
+            "length": "length",
+            "type": "type",
+            "fromId": "from_id",
+            "toId": "to_id",
+        }
+        set_parts = []
+        values = []
+        for field, value in updates.items():
+            if field in _FIELD_MAP:
+                set_parts.append(f"{_FIELD_MAP[field]} = ?")
+                values.append(value)
+
+        if not set_parts:
+            return connection
+
+        values.append(connection_id)
+        values.append(project_id)
+
+        with self._transaction() as cur:
+            cur.execute(
+                f"UPDATE connections SET {', '.join(set_parts)} WHERE id = ? AND project_id = ?",
+                values,
+            )
+            if cur.rowcount == 0:
+                return None
+
+        return self.get_connection(project_id, connection_id)
+
     def get_all_connections_for_project(self, project_id: str) -> list[dict]:
         """Get ALL connections for a project (used for exports)."""
         with self._lock:
@@ -882,7 +927,7 @@ class Database:
         entity_id: str,
         target_db: str,
         status: str,
-        error: str = None,
+        error: str | None = None,
     ) -> int:
         """Record a sync operation status.
 
