@@ -1,0 +1,73 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Regulatory Data Guard — CI workflow
+# ═══════════════════════════════════════════════════════════════════════════
+# Enforces an honor-system check on PRs that modify regulatory data files.
+# If a PR touches NFPA/NEC/IEC/ASHRAE constants/tables, the commit history
+# in the PR MUST contain EITHER:
+#   (a) a "Signed-off-by:" trailer matching a PE/FPE pattern, OR
+#   (b) a verbatim citation of the published standard with section number
+#
+# This codifies the spirit of proposed agent.md Rule 22 (see
+# GOVERNANCE_PROPOSALS.md). If the owner has declined Rule 22, delete
+# this workflow.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: Regulatory Data Guard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'fireai/core/qomn_kernel.py'
+      - 'fireai/core/nfpa72_*.py'
+      - 'fireai/core/voltage_drop.py'
+      - 'fireai/core/battery_aging_derating.py'
+      - 'fireai/core/device_placement.py'
+      - 'fireai/constants/**'
+      - 'qomn_fire/core/constants.py'
+      - 'qomn_conduit/**'
+      - 'facp_system/**'
+
+jobs:
+  check-regulatory-attestation:
+    name: "Require PE sign-off or standard citation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Inspect commit messages in PR
+        id: check
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -e
+          echo "Checking commits ${BASE_SHA}..${HEAD_SHA} for attestation..."
+          MESSAGES=$(git log "${BASE_SHA}..${HEAD_SHA}" --format='%B')
+
+          # Pattern (a): PE/FPE sign-off trailer
+          PE_PATTERN='Signed-off-by:.*(PE|FPE|P\.E\.)'
+          # Pattern (b): verbatim NFPA/NEC/IEC/ASHRAE section citation with year
+          STD_PATTERN='(NFPA [0-9]+-[0-9]{4}|NEC [0-9]{4}|IEC [0-9]+|ASHRAE [0-9]+)[^.]*§[0-9]'
+
+          if echo "$MESSAGES" | grep -qE "$PE_PATTERN"; then
+            echo "✓ PE sign-off detected"
+            exit 0
+          fi
+
+          if echo "$MESSAGES" | grep -qE "$STD_PATTERN"; then
+            echo "✓ Verbatim standard citation with section number detected"
+            exit 0
+          fi
+
+          echo "::error::This PR modifies regulatory data files but commits lack:"
+          echo "::error::  (a) 'Signed-off-by: ... PE'/'FPE' trailer, OR"
+          echo "::error::  (b) Verbatim standard citation with section §"
+          echo "::error::See agent.md Rule 22 (if adopted) and GOVERNANCE_PROPOSALS.md."
+          echo "::error::To bypass for non-engineering changes (typos, comments,"
+          echo "::error::test updates), use 'Signed-off-by: <maintainer> NON-ENGINEERING'."
+          exit 1

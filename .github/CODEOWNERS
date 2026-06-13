@@ -1,51 +1,58 @@
-# CODEOWNERS — Safety-Critical File Review Requirements
-# ====================================================
-# Per agent.md Rule #22 (Professional Engineer Sign-off) and
-# Rule #23 (Single Source of Truth), changes to these files
-# require owner review before merge.
+# CODEOWNERS for FireAI Digital Twin
 #
-# Combined with branch protection (require PR + 1 approval),
-# this guarantees @ahmdelbaz28-ux reviews every change to
-# regulated data and safety-critical code.
+# This file defines who must review changes to specific files.
+# When combined with branch protection ("Require review from Code Owners"),
+# it prevents anyone (including AI agents) from modifying safety-critical
+# regulated code without explicit owner approval.
+#
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+#
+# Last reviewer wins; use most-specific path matches.
 
-# ── Regulatory Data (NFPA, NEC, IEC, ISO) ──────────────
-# These files contain engineering constants from published
-# standards. Any modification requires PE sign-off per
-# agent.md Rule #22.
-fireai/core/qomn_kernel.py                 @ahmdelbaz28-ux
-fireai/core/nfpa72_*                       @ahmdelbaz28-ux
-fireai/core/nfpa72_technology_dispatcher.py @ahmdelbaz28-ux
-fireai/core/nfpa72_calculations.py          @ahmdelbaz28-ux
-fireai/core/nfpa72_models.py               @ahmdelbaz28-ux
-fireai/core/nfpa72_coverage.py             @ahmdelbaz28-ux
-fireai/constants/                          @ahmdelbaz28-ux
-qomn_fire/core/constants.py                @ahmdelbaz28-ux
+# ─────────────────────────────────────────────────────────────────────────
+# Default: any unmatched file requires owner review
+# ─────────────────────────────────────────────────────────────────────────
+*  @ahmdelbaz28-ux
 
-# ── Safety-Critical Core ───────────────────────────────
-# Device placement, coverage verification, and compliance
-# engines. Wrong code here can produce false PASS results.
-fireai/core/adaptive_solver.py             @ahmdelbaz28-ux
-fireai/core/cognitive_core.py              @ahmdelbaz28-ux
-fireai/core/code_compliance_engine.py      @ahmdelbaz28-ux
-fireai/core/floor_orchestrator.py          @ahmdelbaz28-ux
-fireai/core/density_optimizer.py           @ahmdelbaz28-ux
-fireai/core/spatial_engine/                @ahmdelbaz28-ux
+# ─────────────────────────────────────────────────────────────────────────
+# Safety-critical regulated data (NFPA 72, NEC, IEC, ASHRAE)
+# Touch these → owner MUST review. No exceptions.
+# ─────────────────────────────────────────────────────────────────────────
+fireai/core/qomn_kernel.py        @ahmdelbaz28-ux
+fireai/core/nfpa72_*.py           @ahmdelbaz28-ux
+fireai/core/device_placement.py   @ahmdelbaz28-ux
+fireai/core/voltage_drop.py       @ahmdelbaz28-ux
+fireai/core/battery_aging_derating.py  @ahmdelbaz28-ux
+fireai/core/floor_orchestrator.py @ahmdelbaz28-ux
+fireai/core/floor_analyser.py     @ahmdelbaz28-ux
+fireai/constants/                 @ahmdelbaz28-ux
+qomn_fire/core/constants.py       @ahmdelbaz28-ux
+qomn_conduit/                     @ahmdelbaz28-ux
+facp_system/                      @ahmdelbaz28-ux
 
-# ── Electrical Safety ──────────────────────────────────
-# Voltage drop, conduit fill, battery calculations.
-# Errors here can cause silent device failure during fire.
-fireai/core/multi_floor_analyzer.py        @ahmdelbaz28-ux
-fireai/core/engineering_router.py          @ahmdelbaz28-ux
-fireai/core/bps_allocator.py               @ahmdelbaz28-ux
-fireai/core/conduit_fill_analyzer.py       @ahmdelbaz28-ux
-fireai/core/elevator_shunt_trip.py         @ahmdelbaz28-ux
+# ─────────────────────────────────────────────────────────────────────────
+# Project governance / contract with the agent
+# ─────────────────────────────────────────────────────────────────────────
+agent.md                          @ahmdelbaz28-ux
+GOVERNANCE_PROPOSALS.md           @ahmdelbaz28-ux
+SMOKE_SPACING_AUDIT_FINDING_1.md  @ahmdelbaz28-ux
+OPERATOR_ACTION_ITEMS.md          @ahmdelbaz28-ux
+VULNERABILITY_TRIAGE.md           @ahmdelbaz28-ux
+CODE_REVIEW_REPORT.md             @ahmdelbaz28-ux
 
-# ── Security Infrastructure ────────────────────────────
-# Path security, parser hardening. Vulnerabilities here
-# affect all parsers.
-parsers/_path_security.py                  @ahmdelbaz28-ux
-agent.md                                   @ahmdelbaz28-ux
-
-# ── Backend API ────────────────────────────────────────
-# API endpoints that expose engineering results.
-backend/app.py                             @ahmdelbaz28-ux
+# ─────────────────────────────────────────────────────────────────────────
+# Security infrastructure
+# ─────────────────────────────────────────────────────────────────────────
+parsers/_path_security.py         @ahmdelbaz28-ux
+backend/app.py                    @ahmdelbaz28-ux
+backend/request_context.py        @ahmdelbaz28-ux
+backend/routers/qomn.py           @ahmdelbaz28-ux
+backend/routers/facp.py           @ahmdelbaz28-ux
+.github/                          @ahmdelbaz28-ux
+Dockerfile                        @ahmdelbaz28-ux
+docker-compose.yml                @ahmdelbaz28-ux
+.env.example                      @ahmdelbaz28-ux
+.pre-commit-config.yaml           @ahmdelbaz28-ux
+.secrets.baseline                 @ahmdelbaz28-ux
+pyproject.toml                    @ahmdelbaz28-ux
+requirements.txt                  @ahmdelbaz28-ux
