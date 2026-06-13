@@ -721,7 +721,7 @@ def calculate_coverage_radius_from_height(
 
     # exactly 12.2m — use last table entry
     # V130 FIX: Smoke = flat 9.1m per §17.7.3.2.3; Heat = 3.70m per Table 17.6.3.5.1
-    spacing = 9.10 if detector_type.lower() == "smoke" else 3.70
+    spacing = _NFPA72_SMOKE_SPACING_FALLBACK if detector_type.lower() == "smoke" else 3.70
     radius = round(0.7 * spacing, 2)
     wall_dist = round(spacing / 2.0, 2)
     return CoverageSpec(

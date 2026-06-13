@@ -332,7 +332,9 @@ class EliteTechnologyDispatcher:
 
         V130 FIX: Smoke detector spacing is flat 9.1m at ALL ceiling heights.
         There is NO height-based reduction for smoke detectors.
-        The table now returns 9.1m for every height bracket.
+        The canonical table (fireai.constants.nfpa72.SMOKE_HEIGHT_SPACING_TABLE)
+        returns 9.1m for every height bracket, so iteration is a no-op but
+        preserved for structural consistency with the heat detector path.
 
         Args:
             ceiling_height_m: Ceiling height in meters.
@@ -340,10 +342,12 @@ class EliteTechnologyDispatcher:
         Returns:
             Flat spacing S = 9.1m per NFPA 72 §17.7.3.2.3.
         """
+        # NOTE: Table iteration is vestigial — all rows return 9.10m.
+        # Kept for structural parity with heat detector spacing lookup.
         for h_max, spacing in _NFPA72_SMOKE_SPACING_TABLE:
             if ceiling_height_m <= h_max:
                 return spacing
-        # Beyond table — use most conservative value (still 9.1m)
+        # Beyond table — still flat 9.1m (no height reduction for smoke)
         return _NFPA72_SMOKE_SPACING_TABLE[-1][1]
 
 
