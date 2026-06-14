@@ -403,6 +403,12 @@ class TestErrorHandling:
 # ── 6. Integration Tests ────────────────────────────────────────────────────
 
 class TestWorkflowIntegration:
+    @pytest.fixture(autouse=True)
+    def _allow_test_data_dir(self, monkeypatch):
+        """Allow test_data directory for path traversal security check."""
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        monkeypatch.setenv("FIREAI_DATA_DIRS", f"/tmp/fireai_uploads:/data:/uploads:{project_root}")
+
     @pytest.mark.asyncio
     async def test_full_workflow_with_pdf(self, service):
         """Full workflow must complete successfully with a valid PDF."""
@@ -420,7 +426,7 @@ class TestWorkflowIntegration:
             WorkflowStatus.COMPLETED.value,
             WorkflowStatus.FAILED.value,
         )
-        assert result["transition_count"] >= 2  # At least init → parse/report (minimal PDF may skip validation)
+        assert result["transition_count"] >= 3  # At least init + parse + report
 
     @pytest.mark.asyncio
     async def test_workflow_status_retrieval(self, service):
