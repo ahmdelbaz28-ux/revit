@@ -153,6 +153,7 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
     "safety_critical: marks tests as safety-critical",
+    "security: marks tests as security-related",
     "compliance: marks tests as compliance-related"
 ]
 filterwarnings = [
