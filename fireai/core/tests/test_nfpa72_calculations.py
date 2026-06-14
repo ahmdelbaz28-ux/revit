@@ -9,6 +9,7 @@ import math
 import pytest
 
 from fireai.core.nfpa72_calculations import (
+    AWG_GAUGES,
     AWG_RESISTANCE_TABLE,
     CoverageSpec,
     auto_select_awg,
@@ -818,4 +819,6 @@ class TestAutoSelectAWG:
 
     def test_all_candidates_populated(self):
         result = auto_select_awg(24.0, 0.5, 100.0)
-        assert len(result["all_candidates"]) == len(AWG_RESISTANCE_TABLE)
+        # V131 FIX: AWG_GAUGES now excludes AWG 18/16 per NEC 760.71.
+        # The count should match the permitted gauges, not the full table.
+        assert len(result["all_candidates"]) == len(AWG_GAUGES)

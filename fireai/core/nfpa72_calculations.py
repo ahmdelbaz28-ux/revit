@@ -1085,7 +1085,15 @@ AWG_RESISTANCE_TABLE: Dict[int, Dict[str, float]] = {
 }
 
 # Available AWG gauges for auto-selection (smallest to largest)
-AWG_GAUGES: List[int] = sorted(AWG_RESISTANCE_TABLE.keys(), reverse=True)  # [18, 16, 14, 12, 10]
+# V131 FIX: NEC Article 760.71 and NFPA 72 §27.4.1 require minimum AWG 14
+# for fire alarm circuit wiring. AWG 18 and 16 are NOT permitted for FA circuits.
+# They remain in AWG_RESISTANCE_TABLE for reference/lookup but are excluded from
+# auto-selection to prevent dangerously thin wire from being specified.
+_FA_MIN_AWG: int = 14  # Minimum AWG permitted for fire alarm circuits per NEC 760.71
+AWG_GAUGES: List[int] = sorted(
+    [g for g in AWG_RESISTANCE_TABLE.keys() if g >= _FA_MIN_AWG],
+    reverse=True
+)  # [14, 12, 10]
 
 # ============================================================================
 # NAC DEVICE CURRENT DRAW — NFPA 72 §18.5 + Manufacturer Data
@@ -1255,15 +1263,15 @@ def auto_select_awg(
     supply_voltage_v: float,
     load_current_a: float,
     cable_length_m: float,
-    max_drop_fraction: float = 0.15,
+    max_drop_fraction: float = 0.10,
     min_device_voltage_v: float = 16.0,
 ) -> Dict[str, Any]:
     """Automatically select the smallest AWG wire gauge that satisfies voltage drop.
 
-    Evaluates each AWG gauge from smallest (18) to largest (10), and returns
-    the first gauge where the voltage at the most remote device stays above
-    min_device_voltage_v under both steady-state and the specified max drop
-    fraction.
+    Evaluates each AWG gauge from smallest permitted (14) to largest (10), and
+    returns the first gauge where the voltage at the most remote device stays
+    above min_device_voltage_v under both steady-state and the specified max
+    drop fraction.
 
     This bridges the gap between check_voltage_drop() (which requires manual
     resistance input) and generate_cable_boq() (which had no AWG sizing).
@@ -1274,7 +1282,8 @@ def auto_select_awg(
         supply_voltage_v: Panel supply voltage (V), typically 24 VDC.
         load_current_a:   Total circuit load current (A).
         cable_length_m:   One-way cable length (m).
-        max_drop_fraction: Maximum allowable voltage drop as fraction (default 0.15).
+        max_drop_fraction: Maximum allowable voltage drop as fraction (default 0.10).
+                         NFPA 72 §27.4.1.2 limits PLFA circuits to 10%.
         min_device_voltage_v: Minimum device operating voltage (default 16 VDC).
 
     Returns:

@@ -285,11 +285,21 @@ export function calculateCableSizing(
   // Required ampacity before derating
   const requiredAmpacity = loadCurrent / deratingFactor;
   
-  // Find suitable cross-section from tables
-  const baseAmpacity: Record<number, number> = {
+  // V131 FIX (FE-02): Separate ampacity tables per material per IEC 60364-5-52 Table B.52.4.
+  // Previously a single copper-only table was used for both Cu and Al, causing
+  // aluminum cables to be undersized (~25% overrating). Aluminum has ~61% the
+  // conductivity of copper (IEC 60228), so for the same cross-section, Al ampacity
+  // is significantly lower. An undersized Al cable would overheat and pose fire risk.
+  const baseAmpacityCu: Record<number, number> = {
     1.5: 18, 2.5: 25, 4: 34, 6: 43, 10: 60, 16: 80, 25: 105,
     35: 125, 50: 150, 70: 185, 95: 225, 120: 260, 150: 300, 185: 340, 240: 400
   };
+  // Aluminum ampacity per IEC 60364-5-52 Table B.52.4 — approximately 76-78% of Cu
+  const baseAmpacityAl: Record<number, number> = {
+    2.5: 19, 4: 26, 6: 34, 10: 47, 16: 62, 25: 80,
+    35: 97, 50: 116, 70: 143, 95: 174, 120: 201, 150: 232, 185: 263, 240: 310
+  };
+  const baseAmpacity = material === 'Al' ? baseAmpacityAl : baseAmpacityCu;
   
   let recommendedCrossSection = 1.5;
   let ampacity = 0;
@@ -539,9 +549,17 @@ export function generateCompleteReport(
 ): EngineeringReport {
   return {
     voltageDrop: calculateVoltageDrop(current, length, material, crossSection, powerFactor, voltage),
-    shortCircuit: calculateShortCircuit(voltage, length, material, crossSection, 50, upstreamBreaker),
+    // V131 FIX (FE-01): upstreamBreaker is in AMPS (e.g., 63A), but calculateShortCircuit
+    // expects breakerRating in kA (e.g., 16 kA). Passing 63A as 63kA makes every short
+    // circuit check PASS — a safety-critical bypass. Convert A → kA.
+    shortCircuit: calculateShortCircuit(voltage, length, material, crossSection, 50, upstreamBreaker / 1000),
     cableSizing: calculateCableSizing(current, material, installationMethod, ambientTemp),
-    loadFlow: calculateLoadFlow(current * voltage * Math.sqrt(3) * powerFactor / 1000, voltage, powerFactor),
+    // V131 FIX (FE-03): √3 is only valid for three-phase circuits. For single-phase,
+    // P = V × I × PF (no √3). Applying √3 to single-phase inflates power by 73%,
+    // causing oversized cables and breakers. Default to single-phase (no √3) since
+    // generateCompleteReport has no phaseType parameter. Three-phase callers should
+    // use calculateLoadFlow directly with appropriate voltage.
+    loadFlow: calculateLoadFlow(current * voltage * powerFactor / 1000, voltage, powerFactor),
     breakerCoordination: checkBreakerCoordination(upstreamBreaker, downstreamBreaker),
     timestamp: Date.now()
   };

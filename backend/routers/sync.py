@@ -64,8 +64,14 @@ class ConnectionManager:
 
     def _get_client_ip(self, websocket: WebSocket) -> str:
         """Extract client IP from the WebSocket connection."""
-        if websocket.client:
-            return websocket.client.host
+        # V131 FIX: Use getattr for defensive access — disconnect() may be
+        # called for connections that were never properly accepted (e.g.,
+        # rejected at IP limit, or a test mock without 'client' attr).
+        # Without this, disconnect() raises AttributeError, preventing cleanup
+        # of active_connections and _subscriptions — memory leak.
+        client = getattr(websocket, 'client', None)
+        if client:
+            return client.host
         return "unknown"
 
     async def connect(self, websocket: WebSocket) -> None:

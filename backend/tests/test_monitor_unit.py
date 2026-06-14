@@ -393,43 +393,62 @@ class TestSyncWSValidation:
 
     def test_validate_ws_origin_no_api_key(self):
         """Test WS origin validation when no API key is set (dev mode)."""
-        from backend.routers import sync
-        original_key = sync._FIREAI_API_KEY
+        # V131 FIX: _FIREAI_API_KEY was removed from sync.py — the module
+        # now reads os.getenv("FIREAI_API_KEY") at runtime. Tests must
+        # monkeypatch os.environ instead of the removed module attribute.
+        import os
+        from backend.routers.sync import _validate_ws_origin
+        original_key = os.environ.get("FIREAI_API_KEY")
         try:
-            sync._FIREAI_API_KEY = ""
+            os.environ.pop("FIREAI_API_KEY", None)  # No API key → dev mode
             class MockWS:
+                client = None
                 class headers:
                     @staticmethod
                     def get(key, default=""):
                         return default
-            result = sync._validate_ws_origin(MockWS())
+            result = _validate_ws_origin(MockWS())
             assert result is True  # Dev mode allows
         finally:
-            sync._FIREAI_API_KEY = original_key
+            if original_key is not None:
+                os.environ["FIREAI_API_KEY"] = original_key
+            else:
+                os.environ.pop("FIREAI_API_KEY", None)
 
     def test_validate_ws_api_key_no_key_configured(self):
         """Test WS API key validation when no key is configured."""
-        from backend.routers import sync
-        original_key = sync._FIREAI_API_KEY
+        # V131 FIX: _FIREAI_API_KEY was removed — use os.environ
+        import os
+        from backend.routers.sync import _validate_ws_api_key
+        original_key = os.environ.get("FIREAI_API_KEY")
         try:
-            sync._FIREAI_API_KEY = ""
+            os.environ.pop("FIREAI_API_KEY", None)  # No API key configured
             class MockWS:
-                pass
-            result = sync._validate_ws_api_key(MockWS())
+                client = None
+            result = _validate_ws_api_key(MockWS())
             assert result is True  # No key configured → auth disabled
         finally:
-            sync._FIREAI_API_KEY = original_key
+            if original_key is not None:
+                os.environ["FIREAI_API_KEY"] = original_key
+            else:
+                os.environ.pop("FIREAI_API_KEY", None)
 
     def test_validate_ws_api_key_with_key_configured(self):
         """Test WS API key validation when key is configured (query param rejected)."""
-        from backend.routers import sync
-        original_key = sync._FIREAI_API_KEY
+        # V131 FIX: _FIREAI_API_KEY was removed — use os.environ
+        import os
+        from backend.routers.sync import _validate_ws_api_key
+        original_key = os.environ.get("FIREAI_API_KEY")
         try:
-            sync._FIREAI_API_KEY = "test-key-123"
+            os.environ["FIREAI_API_KEY"] = "test-key-123"  # API key configured
             class MockWS:
-                pass
-            result = sync._validate_ws_api_key(MockWS())
-            # Query param auth is DEPRECATED and REJECTED
+                client = None
+            result = _validate_ws_api_key(MockWS())
+            # Query param auth is DEPRECATED and REJECTED — only
+            # message-based auth is accepted when API key is configured
             assert result is False
         finally:
-            sync._FIREAI_API_KEY = original_key
+            if original_key is not None:
+                os.environ["FIREAI_API_KEY"] = original_key
+            else:
+                os.environ.pop("FIREAI_API_KEY", None)

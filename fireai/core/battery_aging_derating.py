@@ -555,6 +555,17 @@ def size_battery(
             f"standby={standby_load_amps}, alarm={alarm_load_amps}. "
             f"NaN/Inf inputs indicate data corruption upstream."
         )
+    # V131 FIX: Negative load currents produce negative Ah consumption,
+    # making any battery appear adequate. Negative currents are physically
+    # impossible and indicate data corruption or sign error upstream.
+    # Without this check: standby=-0.5A → standby_ah=-12 → total_ah<0 →
+    # required_ah<0 → any battery "passes" — life-safety catastrophe.
+    if standby_load_amps < 0 or alarm_load_amps < 0:
+        raise ValueError(
+            f"Battery load currents must be non-negative, got "
+            f"standby={standby_load_amps}A, alarm={alarm_load_amps}A. "
+            f"Negative loads indicate data corruption or sign error upstream."
+        )
     # V79 FIX: Validate remaining numeric inputs for NaN/Inf.
     # NaN standby_hours → standby_ah = NaN → confusing results.
     # NaN min_temperature_c → temp_derating falls through comparisons → NaN.
@@ -690,7 +701,10 @@ def size_battery(
         min_operating_voltage = battery.end_of_discharge_voltage
         if battery.nominal_voltage > 0:
             voltage_drop_pct = (battery.nominal_voltage - min_operating_voltage) / battery.nominal_voltage * 100
-            if voltage_drop_pct > 12.5:  # More than 12.5% voltage drop
+            if voltage_drop_pct >= 12.5:  # V131 FIX: >= not > — for standard lead-acid
+                # batteries, drop is exactly 12.5% ((2.0-1.75)/2.0×100). The old
+                # check (>12.5) meant this warning could NEVER fire because
+                # 12.5 > 12.5 is always False — dead code for 6+ years.
                 msg = (
                     f"Battery voltage drop: {voltage_drop_pct:.1f}% from "
                     f"{battery.nominal_voltage:.1f}V to "
