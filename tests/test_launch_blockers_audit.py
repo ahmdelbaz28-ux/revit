@@ -22,8 +22,12 @@ Test Categories:
 """
 
 import math
+import os
 import pytest
 from typing import List, Tuple
+
+# Resolve repo root relative to this test file
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 # ============================================================================
@@ -539,14 +543,14 @@ class TestArchitectureCompliance:
     def test_fireai_constants_dir_exists(self):
         """fireai/constants/ directory must exist."""
         import os
-        assert os.path.isdir('/home/z/my-project/revit/fireai/constants'), (
+        assert os.path.isdir(os.path.join(REPO_ROOT, 'fireai', 'constants')), (
             "fireai/constants/ directory does not exist."
         )
 
     def test_fireai_constants_nfpa72_exists(self):
         """fireai/constants/nfpa72.py must exist as canonical source."""
         import os
-        assert os.path.isfile('/home/z/my-project/revit/fireai/constants/nfpa72.py'), (
+        assert os.path.isfile(os.path.join(REPO_ROOT, 'fireai', 'constants', 'nfpa72.py')), (
             "fireai/constants/nfpa72.py does not exist. This is the canonical "
             "source of truth for all NFPA 72 constants."
         )
@@ -554,7 +558,7 @@ class TestArchitectureCompliance:
     def test_fireai_constants_nec_exists(self):
         """fireai/constants/nec.py must exist."""
         import os
-        assert os.path.isfile('/home/z/my-project/revit/fireai/constants/nec.py'), (
+        assert os.path.isfile(os.path.join(REPO_ROOT, 'fireai', 'constants', 'nec.py')), (
             "fireai/constants/nec.py does not exist."
         )
 
@@ -563,7 +567,7 @@ class TestArchitectureCompliance:
         The actual code uses fireai/ as the root package."""
         import os
         # src/ should not exist as a code directory
-        assert not os.path.isdir('/home/z/my-project/revit/src'), (
+        assert not os.path.isdir(os.path.join(REPO_ROOT, 'src')), (
             "src/ directory exists but ARCHITECTURE.md was updated to reflect "
             "the actual fireai/ structure. Either update the code to match the "
             "documented structure, or remove the src/ directory."
@@ -572,7 +576,7 @@ class TestArchitectureCompliance:
     def test_core_dir_has_expected_modules(self):
         """fireai/core/ must contain the documented modules."""
         import os
-        core_dir = '/home/z/my-project/revit/fireai/core'
+        core_dir = os.path.join(REPO_ROOT, 'fireai', 'core')
         expected_files = [
             'qomn_kernel.py',
             'nfpa72_models.py',
