@@ -1,63 +1,45 @@
-## Pull Request
+## What does this PR do?
 
-### Description
-Brief description of the changes in this PR. Include safety considerations if applicable.
+<!-- One sentence summary. -->
 
-### Related Issue(s)
-Closes #{issue_number} <!-- Replace {issue_number} with the actual issue number -->
+## Why is this change needed?
 
-### Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] This change requires a documentation update
-- [ ] Safety hardening (critical security or safety improvement)
+<!-- Link to issue, audit report, or describe the problem. -->
 
-### Safety Impact Assessment
-Since FireAI is a safety-critical system, please assess the safety impact:
-- [ ] No safety impact
-- [ ] Minor safety improvement
-- [ ] Moderate safety improvement
-- [ ] Critical safety improvement/fix
-- [ ] Safety behavior change - requires careful review
+## Type of change
 
-### How Has This Been Tested?
-Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce.
-- [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
-- [ ] Compliance tests added/updated
-- [ ] Manual testing performed
-- [ ] CAD file compatibility testing
-- [ ] Performance testing
+- [ ] Bug fix (non-breaking)
+- [ ] New feature (non-breaking)
+- [ ] Breaking change (existing behavior changes)
+- [ ] Safety-critical: modifies regulatory data (NFPA/NEC/IEC/etc.)
+- [ ] Security hardening
+- [ ] Documentation / governance only
+- [ ] Test changes only
 
-**Test Configuration**:
-* Python Version: 
-* OS: 
-* CAD Software Version (if applicable): 
-* Test Cases: 
+## Safety-critical checklist (REQUIRED if you checked "Safety-critical")
 
-### Checklist:
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published in downstream modules
-- [ ] I have verified that my changes don't negatively impact performance
-- [ ] I have considered backwards compatibility
+- [ ] I have read `agent.md` in full
+- [ ] Commit message includes either:
+  - `Signed-off-by: <name> PE/FPE <license-number>` trailer, OR
+  - Verbatim citation of published standard (e.g., "NFPA 72-2022 §17.7.3.2.3.1")
+- [ ] I have verified no other implementation of the same regulatory
+      data exists in the repo (Rule 23: single source of truth)
+- [ ] Tests cover both the new behavior AND boundary conditions
+- [ ] Behavioral diff documented in commit message
 
-### Critical Safety Verification
-For safety-critical changes, please verify:
-- [ ] All calculations have been independently verified
-- [ ] Changes maintain compliance with NFPA standards
-- [ ] No regression in safety-related functionality
-- [ ] New safety checks have been added where necessary
-- [ ] Error handling covers all edge cases
+## Verification
 
-### Screenshots (if appropriate)
+```
+# Paste the output of:
+pytest tests/ -q --tb=line | tail -3
+ruff check fireai/ qomn_conduit/ parsers/ backend/
+bandit -ll -r fireai/ parsers/ backend/
+```
 
+## Risks
 
-### Additional Context
-Add any other context or information about the pull request here.
+<!-- What could break? Who needs to know? -->
+
+## Rollback plan
+
+<!-- If this PR causes problems in production, how do we undo it? -->
