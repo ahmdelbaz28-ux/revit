@@ -30,7 +30,6 @@ import pytest
 
 from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # V130 — Flat Spacing at ALL heights per §17.7.3.2.3
 # ═══════════════════════════════════════════════════════════════════════════════

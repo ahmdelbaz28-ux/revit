@@ -22,7 +22,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    import backend.services.workflow_service as _wfs_mod
+    import backend.services.workflow_service as _wfs_mod  # noqa: F401
     _WORKFLOW_AVAILABLE = True
 except (ModuleNotFoundError, ImportError):
     _WORKFLOW_AVAILABLE = False
@@ -34,28 +34,23 @@ if not _WORKFLOW_AVAILABLE:
         allow_module_level=True,
     )
 
+from unittest.mock import MagicMock, mock_open, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, mock_open, PropertyMock
-from typing import Any, Dict
+
 from backend.services.workflow_service import (
-    WorkflowService,
     PipelineState,
+    WorkflowService,
     WorkflowStatus,
-    build_fireai_workflow,
-    get_workflow_service,
-    close_workflow_service,
-    node_initialize,
-    node_parse,
-    node_validate,
-    node_conflict_detection,
-    node_human_review_gate,
-    node_generate_report,
-    should_proceed_after_parse,
-    should_proceed_after_validation,
-    should_require_review,
-    should_proceed_after_review,
     _compute_sha256,
     _log_transition,
+    build_fireai_workflow,
+    node_initialize,
+    node_parse,
+    should_proceed_after_parse,
+    should_proceed_after_review,
+    should_proceed_after_validation,
+    should_require_review,
 )
 
 try:
@@ -417,7 +412,7 @@ class TestNodeParse:
         mock_geo_cls.return_value = mock_extractor
         mock_extract_rooms.return_value = ([], {"status": "ok"})
 
-        result = node_parse(sample_state)
+        node_parse(sample_state)
         mock_geo_cls.assert_called_once_with(sample_state["file_path"])
         mock_extractor.extract_walls.assert_called_once()
 

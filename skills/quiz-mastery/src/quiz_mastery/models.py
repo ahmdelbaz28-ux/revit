@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
-
 
 QuestionType = Literal["single_choice", "true_false", "fill_blank", "short_answer"]
 

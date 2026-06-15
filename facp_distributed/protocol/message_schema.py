@@ -1,12 +1,11 @@
 """
 Enhanced FACP Message Schema for Distributed System
 """
+import json
 import uuid
 from datetime import datetime
-from typing import Dict, Any, Optional, List, Union
 from enum import Enum
-import json
-import hashlib
+from typing import Any, Dict, List, Optional
 
 
 class RiskLevel(Enum):
@@ -164,38 +163,38 @@ class FACPMessageValidator:
     """
     Validates FACP messages according to distributed system specification
     """
-    
+
     @staticmethod
     def validate_request(request: FACPRequest) -> tuple[bool, List[str]]:
         """Validate FACP request message for distributed system"""
         errors = []
-        
+
         # Validate protocol version
         if request.protocol != "FACP/1.1":
             errors.append(f"Invalid protocol version: {request.protocol} (expected FACP/1.1)")
-        
+
         # Validate required fields
         if not request.id:
             errors.append("Request ID is required")
-        
+
         if not request.method:
             errors.append("Method is required")
-        
+
         if request.source not in [st.value for st in SourceType]:
             errors.append(f"Invalid source type: {request.source}")
-        
+
         if request.target not in [tt.value for tt in TargetType]:
             errors.append(f"Invalid target type: {request.target}")
-        
+
         if request.execution_state not in [es.value for es in ExecutionState]:
             errors.append(f"Invalid execution state: {request.execution_state}")
-        
+
         # Validate timestamp format (basic check)
         try:
             datetime.fromisoformat(request.timestamp.replace("Z", "+00:00"))
         except ValueError:
             errors.append(f"Invalid timestamp format: {request.timestamp}")
-        
+
         # Validate security block
         if not isinstance(request.security, dict):
             errors.append("Security block must be a dictionary")
@@ -203,19 +202,19 @@ class FACPMessageValidator:
             auth_token = request.security.get("auth_token")
             if auth_token is not None and not isinstance(auth_token, str):
                 errors.append("Auth token must be a string or null")
-            
+
             permissions = request.security.get("permissions", [])
             if not isinstance(permissions, list):
                 errors.append("Permissions must be a list")
-            
+
             risk_level = request.security.get("risk_level")
             if risk_level and risk_level not in [rl.value for rl in RiskLevel]:
                 errors.append(f"Invalid risk level: {risk_level}")
-            
+
             idempotency_key = request.security.get("idempotency_key")
             if idempotency_key is not None and not isinstance(idempotency_key, str):
                 errors.append("Idempotency key must be a string or null")
-        
+
         # Validate constraints
         if not isinstance(request.constraints, dict):
             errors.append("Constraints must be a dictionary")
@@ -223,39 +222,39 @@ class FACPMessageValidator:
             if "timeout_ms" in request.constraints:
                 if not isinstance(request.constraints["timeout_ms"], int) or request.constraints["timeout_ms"] <= 0:
                     errors.append("timeout_ms must be a positive integer")
-            
+
             if "max_memory_mb" in request.constraints:
                 if not isinstance(request.constraints["max_memory_mb"], (int, float)) or request.constraints["max_memory_mb"] <= 0:
                     errors.append("max_memory_mb must be a positive number")
-            
+
             if "max_recursion_depth" in request.constraints:
                 if not isinstance(request.constraints["max_recursion_depth"], int) or request.constraints["max_recursion_depth"] <= 0:
                     errors.append("max_recursion_depth must be a positive integer")
-        
+
         return len(errors) == 0, errors
-    
+
     @staticmethod
     def validate_response(response: FACPResponse) -> tuple[bool, List[str]]:
         """Validate FACP response message for distributed system"""
         errors = []
-        
+
         # Validate protocol version
         if response.protocol != "FACP/1.1":
             errors.append(f"Invalid protocol version: {response.protocol} (expected FACP/1.1)")
-        
+
         # Validate required fields
         if not response.id:
             errors.append("Response ID is required")
-        
+
         if response.status not in [st.value for st in StatusType]:
             errors.append(f"Invalid status: {response.status}")
-        
+
         # Validate trace block
         if not isinstance(response.trace, dict):
             errors.append("Trace must be a dictionary")
-        
+
         return len(errors) == 0, errors
-    
+
     @staticmethod
     def sanitize_payload(payload: Any, max_size: int = 1024*1024) -> tuple[Any, bool, str]:  # 1MB default
         """Sanitize and validate payload size"""

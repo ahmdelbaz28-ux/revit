@@ -4,16 +4,16 @@ CRITICAL SAFETY: Reads real DXF and produces valid Polygons only.
 Any invalid geometry is rejected, never guessed.
 """
 
+import logging
 import math
+from dataclasses import dataclass, field
+from typing import List
 
 import ezdxf
 from ezdxf import recover
-from shapely.geometry import Polygon, Point, MultiPolygon
-from shapely.ops import unary_union, polygonize
+from shapely.geometry import MultiPolygon, Point, Polygon
+from shapely.ops import polygonize, unary_union
 from shapely.validation import make_valid
-from typing import List, Tuple, Optional
-from dataclasses import dataclass, field
-import logging
 
 logger = logging.getLogger("fireai.dxf_parser")
 
@@ -175,9 +175,9 @@ class DXFParser:
 
         # Failed to detect: safety-first approach
         raise RuntimeError(
-            f"Cannot determine DXF units. INSUNITS=0 and coordinate analysis inconclusive. "
-            f"File may be corrupted or use non-standard units. "
-            f"CRITICAL: Cannot proceed - incorrect unit = incorrect coverage calculation."
+            "Cannot determine DXF units. INSUNITS=0 and coordinate analysis inconclusive. "
+            "File may be corrupted or use non-standard units. "
+            "CRITICAL: Cannot proceed - incorrect unit = incorrect coverage calculation."
         )
 
     def _detect_unit_heuristic(self, doc) -> int:
@@ -187,7 +187,7 @@ class DXFParser:
         NFPA 72-compliant room areas. Only accept if EXACTLY ONE scale works.
         """
         from shapely.geometry import LineString
-        from shapely.ops import unary_union, polygonize
+        from shapely.ops import polygonize, unary_union
         from shapely.validation import make_valid
 
         msp = doc.modelspace()

@@ -33,15 +33,14 @@ Dependencies:
     - pikepdf (optional, for link annotation checks)
 """
 
-import sys
-import os
 import json
+import os
 import re
-import zipfile
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
-from pathlib import Path
-from typing import List, Dict, Tuple, Optional, Any
+import zipfile
+from typing import Any, Dict, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
 # XML namespace constants
@@ -533,7 +532,7 @@ def check_docx(docx_path: str) -> Dict[str, Any]:
     # Detect TOC field boundaries
     toc_info = find_toc_field_boundaries_v2(root)
     has_toc = toc_info['has_toc']
-    toc_begin_idx = toc_info['begin_para_idx']
+    toc_info['begin_para_idx']
     toc_separate_idx = toc_info['separate_para_idx']
     toc_end_idx = toc_info['end_para_idx']
     toc_entry_texts = toc_info['toc_entry_texts']
@@ -804,7 +803,7 @@ def check_pdf(pdf_path: str) -> Dict[str, Any]:
 
             # CHECK 4: TOC_ALL_SAME_PAGE
             if len(toc_entries) >= 2:
-                page_nums = set(pn for _, pn in toc_entries)
+                page_nums = {pn for _, pn in toc_entries}
                 if len(page_nums) == 1:
                     same_page = page_nums.pop()
                     errors.append(make_item(
@@ -1084,13 +1083,9 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
     Returns the result dict.
     """
     from docx import Document as DocxDocument
-    from docx.shared import Pt, Twips
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
-    from docx.oxml.ns import qn
     from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
 
-    errors: List[Dict] = []
-    warnings: List[Dict] = []
     info_list: List[Dict] = []
     source = os.path.basename(docx_path)
 
@@ -1121,7 +1116,7 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
             "warnings": [], "info": []
         }
 
-    paragraphs = [e for e in body if e.tag == _w('p')]
+    [e for e in body if e.tag == _w('p')]
 
     # Extract headings
     headings = []  # list of (para_index_in_body, text, level)
@@ -1187,7 +1182,6 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
             info_list.append(f"No TOC found, generating new TOC with {heading_count} entries")
             need_fix = True
             fix_reason = "no_toc"
-            toc_insert_body_idx = None  # Will determine below
     else:
         # Case 2 & 3: TOC exists, check if it's stale/placeholder
         need_fix = False
@@ -1659,7 +1653,7 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
 
         # TOC entry paragraphs — estimate page numbers based on heading position
         toc_entries = [(i, h_text, h_level) for i, (_, h_text, h_level) in enumerate(heading_entries) if h_level <= 3]
-        total_headings = len(toc_entries)
+        len(toc_entries)
         # TOC itself takes ~2 pages; cover takes ~1 page
         toc_offset = 3  # cover + TOC pages
 
@@ -1786,8 +1780,6 @@ def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_pa
         output_path: Where to save the updated DOCX (defaults to overwrite fixed_docx_path)
     """
     import zipfile as zf_mod
-    import tempfile
-    import shutil
 
     try:
         import pdfplumber
@@ -1796,7 +1788,7 @@ def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_pa
 
     try:
         from docx import Document
-        from docx.oxml.ns import qn as docx_qn
+        from docx.oxml.ns import qn as docx_qn  # noqa: F401
     except ImportError:
         return {"pass": False, "error": "python-docx not installed"}
 
@@ -1921,7 +1913,7 @@ def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_pa
             f.write(etree.tostring(root, xml_declaration=True, encoding='UTF-8', standalone=True))
 
         with zf_mod.ZipFile(output_path, 'w', zf_mod.ZIP_DEFLATED) as zf:
-            for dirpath, dirnames, filenames in os.walk(tmpdir):
+            for dirpath, _dirnames, filenames in os.walk(tmpdir):
                 for fn in filenames:
                     full_path = os.path.join(dirpath, fn)
                     arcname = os.path.relpath(full_path, tmpdir)

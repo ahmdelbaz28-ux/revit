@@ -15,9 +15,11 @@ import dataclasses
 import hashlib
 import os
 import tempfile
+
 import pytest
 
 import fireai.core.submittal_integrity_gate as _sig_mod
+
 
 # Force fallback to IntegrityCheckResult (not DecisionProvenance)
 @pytest.fixture(autouse=True)
@@ -32,9 +34,9 @@ def _disable_provenance():
         setattr(_sig_mod, attr, val)
 
 from fireai.core.submittal_integrity_gate import (
-    SubmittalIntegrityGate,
     HashRecord,
     IntegrityCheckResult,
+    SubmittalIntegrityGate,
 )
 
 

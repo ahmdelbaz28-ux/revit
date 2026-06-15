@@ -8,12 +8,13 @@ SYMBOL EXTRACTOR — Fire Protection Symbols Detection
 Author: The Consultant Who Refused to Lie
 """
 
-import fitz
-import re
 import os
-from typing import List, Dict, Optional, Tuple
+import re
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Dict, List, Tuple
+
+import fitz
 
 
 class SymbolType(Enum):
@@ -49,7 +50,7 @@ class SymbolElement:
     text: str
     page: int = 0
     raw: Dict = field(default_factory=dict)
-    
+
     def to_dict(self) -> dict:
         return {
             "type": self.symbol_type.value,
@@ -63,11 +64,11 @@ class SymbolElement:
 class SymbolExtractor:
     """
     يقرأ نصوص PDF بحثاً عن أسماء رموز NFPA.
-    
+
     USAGE:
         extractor = SymbolExtractor("drawing.pdf", 0)
         symbols = extractor.extract_symbols()
-        
+
         for sym in symbols:
             print(f"{sym.symbol_type.value}: {sym.text} at {sym.bbox}")
     """
@@ -130,11 +131,11 @@ class SymbolExtractor:
         """استخراج جميع الرموز المحتملة من النصوص."""
         words = self.page.get_text("words")  # (x0,y0,x1,y1,text,block,line,word)
         symbols = []
-        
+
         for word in words:
             text = word[4].strip()
             bbox = (word[0], word[1], word[2], word[3])
-            
+
             for sym_type, patterns in self.KEYWORDS.items():
                 for pat in patterns:
                     if re.search(pat, text, re.IGNORECASE):
@@ -147,15 +148,15 @@ class SymbolExtractor:
                             raw={"word": word}
                         ))
                         break
-        
+
         self.doc.close()
         return symbols
-    
+
     def extract_by_type(self, symbol_type: SymbolType) -> List[SymbolElement]:
         """استخراج رموز من نوع محدد."""
         all_symbols = self.extract_symbols()
         return [s for s in all_symbols if s.symbol_type == symbol_type]
-    
+
     def get_symbol_count(self) -> Dict[str, int]:
         """إحصاء الرموز المستخلصة."""
         symbols = self.extract_symbols()
@@ -164,7 +165,7 @@ class SymbolExtractor:
             key = sym.symbol_type.value
             counts[key] = counts.get(key, 0) + 1
         return counts
-    
+
     def close(self):
         """إغلاق المستند."""
         if self.doc:
@@ -174,11 +175,11 @@ class SymbolExtractor:
 def extract_symbols_from_pdf(pdf_path: str, page: int = 0) -> List[SymbolElement]:
     """
     دالة مساعدة سريعة لاستخراج الرموز.
-    
+
     Args:
         pdf_path: مسار ملف PDF
         page: رقم الصفحة (يبدأ من 0)
-        
+
     Returns:
         List of SymbolElement objects
     """
@@ -189,12 +190,12 @@ def extract_symbols_from_pdf(pdf_path: str, page: int = 0) -> List[SymbolElement
 def extract_devices_from_pdf(pdf_path: str, page: int = 0) -> Dict[str, List[SymbolElement]]:
     """
     استخراج جميع الأجهزة من PDF وتصنيفها حسب النوع.
-    
+
     Returns:
         Dict mapping SymbolType to list of symbols
     """
     symbols = extract_symbols_from_pdf(pdf_path, page)
-    
+
     # Group by type
     devices = {}
     for sym in symbols:
@@ -202,5 +203,5 @@ def extract_devices_from_pdf(pdf_path: str, page: int = 0) -> Dict[str, List[Sym
         if key not in devices:
             devices[key] = []
         devices[key].append(sym)
-    
+
     return devices

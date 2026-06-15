@@ -11,7 +11,7 @@ Safety-critical: Empty rooms = zero fire protection zones = FAILED parse.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def extract_rooms_from_walls(
         # Attempt to form room polygons from wall segments
         # This is a simplified implementation — production code would use
         # proper polygon reconstruction algorithms
-        from shapely.geometry import Polygon, LineString
+        from shapely.geometry import LineString
         from shapely.ops import polygonize
 
         lines = []

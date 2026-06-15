@@ -21,10 +21,10 @@ GRACEFUL DEGRADATION:
 
 try:
     from .parser_confidence import (
-        ParserConfidence,
         ConfidenceResult,
         GateDecision,
-        evaluate_drawing
+        ParserConfidence,
+        evaluate_drawing,
     )
 except ImportError:
     ParserConfidence = None
@@ -33,11 +33,11 @@ except ImportError:
     evaluate_drawing = None
 
 try:
+    from .geometry_extractor import ConfidenceLevel as GeometryConfidence
     from .geometry_extractor import (
         GeometryExtractor,
         WallElement,
-        ConfidenceLevel as GeometryConfidence,
-        extract_walls_from_pdf
+        extract_walls_from_pdf,
     )
 except ImportError:
     GeometryExtractor = None
@@ -48,10 +48,10 @@ except ImportError:
 # SymbolExtractor — local parser module (no src.core fallback)
 try:
     from .symbol_extractor import (
-        SymbolExtractor,
         SymbolElement,
+        SymbolExtractor,
         SymbolType,
-        extract_symbols_from_pdf
+        extract_symbols_from_pdf,
     )
 except ImportError:
     SymbolExtractor = None

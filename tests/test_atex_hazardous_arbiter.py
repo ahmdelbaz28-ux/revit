@@ -21,42 +21,33 @@ Standards:
 
 from __future__ import annotations
 
-import math
 import pytest
-from dataclasses import dataclass
-from typing import Tuple
 
 from fireai.core.atex_hazardous_arbiter import (
-    EquipmentProtectionLevel,
-    ATEXCategory,
-    ProtectionType,
-    InstallationClass,
-    ATEXValidationResult,
-    ATEXArbitrationResult,
-    ATEXHazardousArbiter,
-    _ZONE_TO_EPL,
-    _ZONE_TO_CATEGORY,
-    _ZONE_PERMITTED_PROTECTIONS,
-    _EPL_HIERARCHY,
-    _EPL_GAS_HIERARCHY,
     _EPL_DUST_HIERARCHY,
+    _EPL_GAS_HIERARCHY,
+    _EPL_HIERARCHY,
     _FIRE_DETECTOR_IS_LEVEL,
-    _validate_zone_hazard_consistency,
-    _GAS_ZONES,
-    _DUST_ZONES,
     _TEMP_CLASS_MAP,
+    _ZONE_TO_CATEGORY,
+    _ZONE_TO_EPL,
+    ATEXArbitrationResult,
+    ATEXCategory,
+    ATEXHazardousArbiter,
+    ATEXValidationResult,
+    EquipmentProtectionLevel,
+    ProtectionType,
+    _validate_zone_hazard_consistency,
 )
 from fireai.core.international_reg_selector import (
     ATEXZone,
     HazardSystem,
 )
 from fireai.core.models_v21 import (
-    ATEXEquipmentSpec,
     HazardType,
     TemperatureClass,
     ZoneType,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures

@@ -36,9 +36,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from parsers.ifc_parser import IFCParser, IFCAnalysis, parse_ifc
-from parsers._path_security import UnsafePathError
-
+from parsers.ifc_parser import IFCAnalysis, IFCParser, parse_ifc
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -131,7 +129,7 @@ def _make_valid_ifc_json(
                 "CoverageRadius": 6.37,
                 "MountingHeight": 3.0,
             },
-            "applicable_to": [f"SPACE_1"],
+            "applicable_to": ["SPACE_1"],
         })
 
     return {"instances": instances}

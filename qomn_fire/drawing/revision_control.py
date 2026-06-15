@@ -15,13 +15,14 @@ except ImportError:
 
 from qomn_fire.core.types import Revision
 
+
 def draw_revision_cloud(doc, vertices: List[Tuple[float, float]]):
     if ezdxf is None:
         raise ImportError("ezdxf library is required for revision cloud drawing.")
     msp = doc.modelspace()
     # ezdxf 1.4.x: bulge set via format='xyb' (x, y, bulge) in point tuples
     bulge_vertices = [(x, y, 0.4) for (x, y) in vertices]
-    p_line = msp.add_lwpolyline(bulge_vertices, format='xyb', close=True,
+    msp.add_lwpolyline(bulge_vertices, format='xyb', close=True,
                                  dxfattribs={"layer": "A-FIRE-REVC", "color": 1})
 
 def draw_revision_table(doc, revisions: List[Revision]):

@@ -190,7 +190,6 @@ class TestSolveSetCoveringMIPFallback:
 
     def test_fallback_does_not_generate_grid(self):
         with patch.object(_mod_ms, "PULP_AVAILABLE", False):
-            t0 = "not_run"
             result = solve_set_covering_mip(5.0, 5.0)
         assert result.solver_status == "pulp_not_installed"
         assert result.candidate_step == 1.0

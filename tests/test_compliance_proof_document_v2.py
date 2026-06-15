@@ -25,7 +25,6 @@ NFPA 72 References:
 
 from __future__ import annotations
 
-import math
 from unittest.mock import MagicMock
 
 import pytest
@@ -47,7 +46,6 @@ from fireai.core.spatial_engine.density_optimizer import (
     DetectorLayout,
     Room,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. _safe_fmt

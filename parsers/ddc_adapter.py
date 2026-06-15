@@ -35,7 +35,6 @@ SAFETY:
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import subprocess
@@ -210,8 +209,8 @@ class DDCAdapter:
         #     path-traversal & extension errors)
         from parsers._path_security import (
             UnsafePathError,
-            validate_input_path,
             validate_file_size,
+            validate_input_path,
         )
 
         _ALLOWED_EXTENSIONS = frozenset(_DDC_CONVERTERS.keys())
@@ -412,7 +411,7 @@ class DDCAdapter:
             import openpyxl
         except ImportError:
             try:
-                import xlrd  # type: ignore[import-not-found]
+                import xlrd  # type: ignore[import-not-found]  # noqa: F401
 
                 return self._extract_rooms_xlrd(xlsx_path)
             except ImportError:
@@ -432,7 +431,7 @@ class DDCAdapter:
                     headers = [str(h).strip() if h else "" for h in row]
                     continue
 
-                row_dict = dict(zip(headers, row))
+                row_dict = dict(zip(headers, row, strict=False))
                 category = str(row_dict.get("Category", "")).lower()
 
                 # Rooms are "Rooms" category in Revit, "IfcSpace" in IFC
@@ -475,7 +474,7 @@ class DDCAdapter:
                 if i == 0:
                     headers = [str(h).strip() if h else "" for h in row]
                     continue
-                row_dict = dict(zip(headers, row))
+                row_dict = dict(zip(headers, row, strict=False))
                 elements.append(row_dict)
 
             wb.close()

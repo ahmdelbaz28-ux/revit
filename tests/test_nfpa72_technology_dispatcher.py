@@ -21,18 +21,17 @@ from __future__ import annotations
 import pytest
 
 from fireai.core.nfpa72_technology_dispatcher import (
-    DetectorTechnology,
-    TechnologyDecision,
-    EliteTechnologyDispatcher,
-    dispatch_detector_technology,
-    _POINT_DETECTOR_MAX_CEILING_M,
     _BEAM_MAX_CEILING_M,
-    _SLOPE_RIDGE_ZONE_THRESHOLD_DEG,
-    _STEEP_SLOPE_THRESHOLD_DEG,
     _BEAM_SPACING_M,
     _NFPA72_SMOKE_SPACING_TABLE,
+    _POINT_DETECTOR_MAX_CEILING_M,
+    _SLOPE_RIDGE_ZONE_THRESHOLD_DEG,
+    _STEEP_SLOPE_THRESHOLD_DEG,
+    DetectorTechnology,
+    EliteTechnologyDispatcher,
+    TechnologyDecision,
+    dispatch_detector_technology,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants

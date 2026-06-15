@@ -21,19 +21,18 @@ Key V-Fixes tested:
 from __future__ import annotations
 
 import dataclasses
-import math
+
 import pytest
 
 from fireai.core.circuit_topology import (
+    MAX_DEVICES_BETWEEN_ISOLATORS,
+    MAX_NAC_DEVICES_DEFAULT,
+    MAX_SLC_DEVICES_DEFAULT,
     CircuitClass,
     CircuitDevice,
     CircuitTopology,
     CircuitType,
-    MAX_DEVICES_BETWEEN_ISOLATORS,
-    MAX_NAC_DEVICES_DEFAULT,
-    MAX_SLC_DEVICES_DEFAULT,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants

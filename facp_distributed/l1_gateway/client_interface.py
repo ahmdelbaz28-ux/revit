@@ -1,14 +1,15 @@
 """
 Client Interface for L1 Gateway in Distributed FACP System
 """
-from typing import Dict, Any, Optional, Callable
-import asyncio
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
-import uvicorn
 import threading
 import time
-import json
+import uuid
+from typing import Any, Callable, Dict
+
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
 from .gateway import L1Gateway
 
 
@@ -24,22 +25,22 @@ class ClientInterface:
         self.server = None
         self.node_id = l1_gateway.node_id
         self.request_handlers = {}
-        
+
         # Setup FastAPI routes
         self._setup_routes()
-    
+
     def _setup_routes(self):
         """Setup FastAPI routes for client interface"""
-        
+
         @self.app.post("/facp/request")
         async def handle_facp_request(request: Request):
             try:
                 # Get client IP
                 client_ip = request.client.host
-                
+
                 # Parse request data
                 request_data = await request.json()
-                
+
                 # Validate request format
                 is_valid, errors = self.l1_gateway.validate_client_request_format(request_data)
                 if not is_valid:
@@ -61,17 +62,17 @@ class ClientInterface:
                             }
                         }
                     )
-                
+
                 # Process through L1 gateway
                 success, response = self.l1_gateway.handle_client_request(request_data, client_ip)
-                
+
                 if success:
                     return response
                 else:
                     # Error response already formatted by L1 gateway
                     status_code = 400 if response.get("error") else 500
                     return JSONResponse(status_code=status_code, content=response)
-                    
+
             except Exception as e:
                 return JSONResponse(
                     status_code=500,
@@ -91,7 +92,7 @@ class ClientInterface:
                         }
                     }
                 )
-        
+
         @self.app.get("/health")
         async def health_check():
             """Health check endpoint"""
@@ -102,7 +103,7 @@ class ClientInterface:
                 "timestamp": time.time(),
                 "gateway_status": self.l1_gateway.get_gateway_status()
             }
-        
+
         @self.app.get("/metrics")
         async def get_metrics():
             """Metrics endpoint"""
@@ -111,7 +112,7 @@ class ClientInterface:
                 "security_stats": self.l1_gateway.get_security_stats(),
                 "timestamp": time.time()
             }
-    
+
     def start(self):
         """Start the client interface server"""
         def run_server():
@@ -121,20 +122,20 @@ class ClientInterface:
                 port=self.port,
                 log_level="info"
             )
-        
+
         self.server_thread = threading.Thread(target=run_server, daemon=True)
         self.server_thread.start()
         print(f"L1 Client Interface started on {self.host}:{self.port}")
-    
+
     def stop(self):
         """Stop the client interface server"""
         # In a real implementation, we'd have proper shutdown
         print(f"L1 Client Interface on {self.host}:{self.port} stopping...")
-    
+
     def register_request_handler(self, method: str, handler: Callable):
         """Register a custom handler for specific request methods"""
         self.request_handlers[method] = handler
-    
+
     def get_status(self) -> Dict[str, Any]:
         """Get status of the client interface"""
         return {
@@ -151,7 +152,7 @@ class RequestNormalizer:
     """
     Normalizes requests from various client types to FACP/1.1 format
     """
-    
+
     @staticmethod
     def normalize_vscode_extension_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize request from VSCode extension"""
@@ -185,7 +186,7 @@ class RequestNormalizer:
             }
         }
         return normalized
-    
+
     @staticmethod
     def normalize_autocad_plugin_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize request from AutoCAD plugin"""
@@ -224,7 +225,7 @@ class RequestNormalizer:
             }
         }
         return normalized
-    
+
     @staticmethod
     def normalize_revit_addin_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize request from Revit add-in"""
@@ -263,7 +264,7 @@ class RequestNormalizer:
             }
         }
         return normalized
-    
+
     @staticmethod
     def normalize_generic_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize a generic request to FACP/1.1 format"""
@@ -302,41 +303,41 @@ class RequestNormalizer:
                     "max_recursion_depth": raw_request.get("maxDepth", 5)
                 }
             }
-    
+
     @staticmethod
     def validate_normalized_request(request_data: Dict[str, Any]) -> tuple[bool, list]:
         """Validate a normalized request"""
         errors = []
-        
+
         # Check required fields
         required_fields = ["protocol", "type", "id", "method", "params", "security", "constraints"]
         for field in required_fields:
             if field not in request_data:
                 errors.append(f"Missing required field: {field}")
-        
+
         # Validate protocol version
         if request_data.get("protocol") != "FACP/1.1":
             errors.append(f"Invalid protocol version: {request_data.get('protocol')}, expected FACP/1.1")
-        
+
         # Validate type
         req_type = request_data.get("type")
         if req_type != "request":
             errors.append(f"Invalid request type: {req_type}, expected 'request'")
-        
+
         # Validate source/target
         source = request_data.get("source")
         if source != "client":
             errors.append(f"Invalid source: {source}, expected 'client' for client requests")
-        
+
         target = request_data.get("target")
         if target != "orchestrator":
             errors.append(f"Invalid target: {target}, expected 'orchestrator' for client requests")
-        
+
         # Validate execution state
         exec_state = request_data.get("execution_state")
         if exec_state != "RECEIVED":
             errors.append(f"Invalid execution state: {exec_state}, expected 'RECEIVED' for new requests")
-        
+
         return len(errors) == 0, errors
 
 
@@ -344,24 +345,23 @@ def create_client_interface_with_gateway(validation_firewall, transport_config=N
     """
     Factory function to create a complete L1 client interface with gateway
     """
-    from ..security.validation_gate import ValidationFirewall
     from ..transport.http_transport import HTTPTransport
-    
+
     # Create HTTP transport for the gateway
     transport = HTTPTransport(
         host=transport_config.get("host", "0.0.0.0") if transport_config else "0.0.0.0",
         port=transport_config.get("gateway_port", 8001) if transport_config else 8001,
         node_type="l1_gateway"
     )
-    
+
     # Create the L1 gateway
     l1_gateway = L1Gateway(validation_firewall, transport)
-    
+
     # Create the client interface
     client_interface = ClientInterface(
         l1_gateway=l1_gateway,
         host=transport_config.get("host", "0.0.0.0") if transport_config else "0.0.0.0",
         port=transport_config.get("interface_port", 8000) if transport_config else 8000
     )
-    
+
     return client_interface

@@ -17,26 +17,23 @@ Standards Referenced:
   - CSFM, FDNY COA
 """
 
-import hashlib
 import pytest
 
 from facp_system.panel_database import (
-    FireAlarmPanel,
     MASTER_PANEL_DATABASE,
     NOTIFIER_PANELS,
     SIEMENS_PANELS,
     SIMPLEX_PANELS,
 )
+from facp_system.panel_output import OutputGenerator
 from facp_system.panel_selector import (
-    SelectionEngine,
-    ProjectRequirements,
-    PanelRecommendation,
-    STANDBY_MA_PER_DEVICE,
     ALARM_MA_PER_DEVICE,
+    STANDBY_MA_PER_DEVICE,
+    PanelRecommendation,
+    ProjectRequirements,
+    SelectionEngine,
 )
 from facp_system.panel_verifier import ComplianceVerifier
-from facp_system.panel_output import OutputGenerator
-
 
 # ============================================================================
 # Fixtures
@@ -394,7 +391,7 @@ class TestSelectionEdgeCases:
             requires_releasing=False, jurisdiction="US",
             preferred_manufacturer="NOTIFIER",
         )
-        rec_no_pref = SelectionEngine.select_panel(req_no_pref)
+        SelectionEngine.select_panel(req_no_pref)
         rec_pref = SelectionEngine.select_panel(req_pref_notifier)
         # With preferred manufacturer, a NOTIFIER panel should be selected
         assert rec_pref.manufacturer == "NOTIFIER"
@@ -636,7 +633,7 @@ class TestFullPipeline:
         # Verify output generation
         schedule = OutputGenerator.generate_dxf_schedule(rec)
         spec = OutputGenerator.generate_csi_specification(hospital_campus_req, rec)
-        alternatives = OutputGenerator.generate_alternatives_table(rec)
+        OutputGenerator.generate_alternatives_table(rec)
         assert len(schedule) > 0
         assert "28 31 11" in spec
         assert "releasing" in spec.lower()
@@ -652,7 +649,7 @@ class TestFullPipeline:
                 requires_releasing=False, jurisdiction=jurisdiction,
             )
             rec = SelectionEngine.select_panel(req)
-            violations = ComplianceVerifier.verify_national_code_rules(req, rec)
+            ComplianceVerifier.verify_national_code_rules(req, rec)
             # Only FDNY jurisdiction should have a specific FDNY listing check
             if jurisdiction == "FDNY":
                 assert "FDNY" in rec.listings

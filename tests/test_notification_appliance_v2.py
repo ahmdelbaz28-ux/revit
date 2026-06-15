@@ -17,32 +17,25 @@ NFPA 72 References:
 from __future__ import annotations
 
 import math
+
 import pytest
 
 from fireai.core.notification_appliance import (
-    NACLoadResult,
-    NotificationDevice,
+    _HORN_REFERENCE_DISTANCE_M,
+    _MAX_CORRIDOR_STROBE_SPACING_M,
+    _MAX_END_OF_CORRIDOR_DISTANCE_M,
+    _NAC_LOAD_FACTOR,
+    _SQFT_PER_SQM,
+    _STROBE_CANDELA_TABLE_HIGH_CEILING,
+    _STROBE_CANDELA_TABLE_LOW_CEILING,
     NotificationAssessment,
-    SPLResult,
-    StrobeResult,
-    CorridorStrobeResult,
+    NotificationDevice,
+    calculate_corridor_strobes,
     calculate_nac_load,
     calculate_spl,
     calculate_strobe_candela,
-    calculate_corridor_strobes,
     min_horn_rating_for_room,
-    _NAC_LOAD_FACTOR,
-    _MIN_SPL_ABOVE_AMBIENT_DBA,
-    _MIN_ABSOLUTE_SPL_DBA,
-    _MAX_SPL_DBA,
-    _HORN_REFERENCE_DISTANCE_M,
-    _SQFT_PER_SQM,
-    _MAX_CORRIDOR_STROBE_SPACING_M,
-    _MAX_END_OF_CORRIDOR_DISTANCE_M,
-    _STROBE_CANDELA_TABLE_LOW_CEILING,
-    _STROBE_CANDELA_TABLE_HIGH_CEILING,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # NAC Load — Extended Edge Cases

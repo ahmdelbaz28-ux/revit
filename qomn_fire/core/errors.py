@@ -6,7 +6,7 @@ Safety-Critical: Each error type maps to a specific physical failure mode.
 Missing an error means a corrupted file passes silently = wrong building model = people die.
 """
 
-from typing import Generic, TypeVar, Optional, Union
+from typing import Generic, Optional, TypeVar
 
 T = TypeVar('T')
 E = TypeVar('E')

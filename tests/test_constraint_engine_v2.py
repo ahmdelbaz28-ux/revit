@@ -25,31 +25,30 @@ from __future__ import annotations
 
 import dataclasses
 import math
+
 import pytest
 
 from fireai.core.cable_routing_engine import WireGauge
 from fireai.core.constraint_engine import (
+    _NAC_MAX_LENGTHS_M,
+    BEND_PENALTY_M,
+    BEND_RADIUS_FACTOR,
+    ELECTRICAL_PROXIMITY_PENALTY_M,
+    ELEVATION_PENALTY_M,
+    EMT_3_4_INNER_DIAMETER_MM,
+    EMT_3_4_OUTER_DIAMETER_MM,
+    MAX_BEND_RADIUS_MM,
+    MAX_CABLE_FASTENING_INTERVAL_MM,
+    MAX_CONDUIT_FILL_PCT,
+    MIN_CONDUIT_INCHES,
+    MIN_CONDUIT_MM,
+    MIN_ELECTRICAL_SEPARATION_MM,
     ConstraintEngine,
     ConstraintResult,
     ConstraintSource,
     RoutingConstraintSet,
     _resolve_wire_gauge,
-    MIN_CONDUIT_INCHES,
-    MIN_CONDUIT_MM,
-    EMT_3_4_INNER_DIAMETER_MM,
-    EMT_3_4_OUTER_DIAMETER_MM,
-    BEND_RADIUS_FACTOR,
-    MAX_BEND_RADIUS_MM,
-    MIN_ELECTRICAL_SEPARATION_MM,
-    MAX_CABLE_FASTENING_INTERVAL_MM,
-    EMT_3_4_AREA_SQ_MM,
-    MAX_CONDUIT_FILL_PCT,
-    BEND_PENALTY_M,
-    ELEVATION_PENALTY_M,
-    ELECTRICAL_PROXIMITY_PENALTY_M,
-    _NAC_MAX_LENGTHS_M,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures

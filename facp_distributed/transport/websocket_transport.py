@@ -1,12 +1,14 @@
 """
 WebSocket Transport for Distributed FACP System
 """
-from typing import Dict, Any, Optional, Set
 import asyncio
-import websockets
 import json
 import threading
 import time
+from typing import Any, Dict, Set
+
+import websockets
+
 from .http_transport import TransportLayer
 
 
@@ -25,17 +27,17 @@ class WebSocketTransport(TransportLayer):
         self.response_callbacks = {}  # request_id -> callback
         self.running = False
         self.loop = None
-    
+
     async def _register_client(self, websocket: websockets.WebSocketServerProtocol):
         """Register a new client connection"""
         self.clients.add(websocket)
         print(f"Client connected: {websocket.remote_address}, Total clients: {len(self.clients)}")
-    
+
     async def _unregister_client(self, websocket: websockets.WebSocketServerProtocol):
         """Unregister a client connection"""
         self.clients.remove(websocket)
         print(f"Client disconnected: {websocket.remote_address}, Total clients: {len(self.clients)}")
-    
+
     async def _handle_client_message(self, websocket: websockets.WebSocketServerProtocol, path: str):
         """Handle incoming messages from a client"""
         await self._register_client(websocket)
@@ -43,19 +45,19 @@ class WebSocketTransport(TransportLayer):
             async for message in websocket:
                 try:
                     request_data = json.loads(message)
-                    
+
                     # Add node information to the request
                     request_data["trace"] = request_data.get("trace", {})
                     request_data["trace"]["node_id"] = self.node_id
                     request_data["trace"]["node_type"] = self.node_type
                     request_data["trace"]["received_at"] = time.time()
-                    
+
                     # Route to appropriate handler
                     method = request_data.get("method", "")
                     if method in self.handlers:
                         handler = self.handlers[method]
                         response = await handler(request_data) if asyncio.iscoroutinefunction(handler) else handler(request_data)
-                        
+
                         # Send response back to client
                         await websocket.send(json.dumps(response))
                     else:
@@ -75,7 +77,7 @@ class WebSocketTransport(TransportLayer):
                             }
                         }
                         await websocket.send(json.dumps(error_response))
-                        
+
                 except json.JSONDecodeError:
                     error_response = {
                         "protocol": "FACP/1.1",
@@ -114,41 +116,41 @@ class WebSocketTransport(TransportLayer):
             pass  # Connection was closed normally
         finally:
             await self._unregister_client(websocket)
-    
+
     def start(self):
         """Start WebSocket server in a separate thread"""
         def run_server():
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
-            
+
             start_server = websockets.serve(
                 self._handle_client_message,
                 self.host,
                 self.port
             )
-            
+
             self.websocket_server = self.loop.run_until_complete(start_server)
             print(f"WebSocket Transport listening on {self.host}:{self.port} (Node: {self.node_id})")
-            
+
             self.running = True
             self.loop.run_forever()
-        
+
         self.server_thread = threading.Thread(target=run_server, daemon=True)
         self.server_thread.start()
         self.is_running = True
-    
+
     def stop(self):
         """Stop WebSocket server"""
         if self.loop and self.websocket_server:
             self.loop.call_soon_threadsafe(self.websocket_server.close)
             self.running = False
             self.is_running = False
-    
+
     async def _send_to_client(self, websocket: websockets.WebSocketServerProtocol, message: str):
         """Send a message to a specific client"""
         if websocket in self.clients:
             await websocket.send(message)
-    
+
     def send_request(self, request_data: Dict[str, Any], target_node: str = None) -> Dict[str, Any]:
         """
         Send request to target WebSocket endpoint
@@ -157,11 +159,11 @@ class WebSocketTransport(TransportLayer):
         # For this implementation, we'll simulate sending to another WebSocket server
         # In a real implementation, this would connect to the target WebSocket endpoint
         import asyncio
-        
+
         async def send_to_target():
             if not target_node:
                 target_node = f"ws://{self.host}:{self.port}"
-            
+
             try:
                 async with websockets.connect(target_node) as websocket:
                     await websocket.send(json.dumps(request_data))
@@ -183,7 +185,7 @@ class WebSocketTransport(TransportLayer):
                         "latency_ms": 0
                     }
                 }
-        
+
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -206,7 +208,7 @@ class WebSocketTransport(TransportLayer):
                     "latency_ms": 0
                 }
             }
-    
+
     async def broadcast_message(self, message: str):
         """Broadcast a message to all connected clients"""
         if self.clients:

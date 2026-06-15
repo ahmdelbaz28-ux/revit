@@ -20,63 +20,58 @@ NEC References:
 
 from __future__ import annotations
 
-import dataclasses
-import hashlib
-import hmac
-import json
 import math
 import os
+
 import pytest
-from typing import Any, Dict
 
 from fireai.core.qomn_kernel import (
-    # Layer 0 — Physics Guards
-    PhysicsGuardError,
-    ComputationError,
-    ValidationError,
-    _guard_finite,
-    guard_area_m2,
-    guard_ceiling_height_m,
-    guard_current_a,
-    guard_voltage_v,
-    guard_temperature_c,
-    guard_efficiency,
+    ACCESS_CONTROL_READER_HEIGHT_M,
+    CCTV_LENS_FOV_DEG,
+    NEC_AMPACITY_60C,
+    NEC_TABLE8_RESISTANCE_OHM_PER_KM,
+    NFPA72_ALARM_MINUTES,
+    NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
+    NFPA72_BATTERY_SAFETY_FACTOR,
+    NFPA72_COVERAGE_RADIUS_FACTOR,
+    NFPA72_HEAT_MAX_SPACING_M,
+    NFPA72_PULL_STATION_FROM_EXIT_M,
+    NFPA72_PULL_STATION_HEIGHT_M,
+    NFPA72_SMOKE_MAX_SPACING_M,
     # Layer 1 — Constants
     NFPA72_SMOKE_SPACING_TABLE,
-    NFPA72_COVERAGE_RADIUS_FACTOR,
-    NFPA72_SMOKE_MAX_SPACING_M,
-    NFPA72_HEAT_MAX_SPACING_M,
-    NFPA72_WALL_MIN_DISTANCE_M,
-    NFPA72_PULL_STATION_HEIGHT_M,
-    NFPA72_PULL_STATION_FROM_EXIT_M,
     NFPA72_STANDBY_HOURS,
-    NFPA72_ALARM_MINUTES,
-    NFPA72_BATTERY_SAFETY_FACTOR,
-    NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
-    NEC_TABLE8_RESISTANCE_OHM_PER_KM,
-    NEC_AMPACITY_60C,
+    NFPA72_WALL_MIN_DISTANCE_M,
     TIA568_HORIZONTAL_MAX_M,
     TIA568_TOTAL_CHANNEL_MAX_M,
-    CCTV_LENS_FOV_DEG,
-    ACCESS_CONTROL_READER_HEIGHT_M,
-    # Layer 2 — Computation
-    _f64_hash,
-    compute_smoke_detector_spacing,
-    compute_heat_detector_spacing,
-    compute_battery_capacity_ah,
-    compute_voltage_drop,
-    # Layer 3 — Validation
-    validate_smoke_spacing_result,
-    validate_battery_result,
-    validate_voltage_drop_result,
-    validate_heat_spacing_result,
     # Layer 4 — Audit
     AuditEntry,
+    ComputationError,
+    # Layer 0 — Physics Guards
+    PhysicsGuardError,
     QOMNAuditLog,
     # Kernel
     QOMNKernel,
+    ValidationError,
+    # Layer 2 — Computation
+    _f64_hash,
+    _guard_finite,
+    compute_battery_capacity_ah,
+    compute_heat_detector_spacing,
+    compute_smoke_detector_spacing,
+    compute_voltage_drop,
+    guard_area_m2,
+    guard_ceiling_height_m,
+    guard_current_a,
+    guard_efficiency,
+    guard_temperature_c,
+    guard_voltage_v,
+    validate_battery_result,
+    validate_heat_spacing_result,
+    # Layer 3 — Validation
+    validate_smoke_spacing_result,
+    validate_voltage_drop_result,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LAYER 0 — Physics Guard Tests

@@ -16,24 +16,21 @@ This file ensures the secure default behavior cannot be silently regressed.
 from __future__ import annotations
 
 import logging
-import os
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 # Ensure project root is in sys.path
 _PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-import pytest
-
 # Import _build_csp WITHOUT triggering backend.app's heavy import chain
 # (which loads all routers + database + core modules — slow and brittle).
 # We exec just the function definition from backend/app.py by parsing the
 # source and extracting the _build_csp function + its dependencies.
-import importlib.util
 import types
+
+import pytest
 
 _APP_PATH = _PROJECT_ROOT / "backend" / "app.py"
 

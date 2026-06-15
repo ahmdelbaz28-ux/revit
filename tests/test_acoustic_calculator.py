@@ -17,29 +17,29 @@ NFPA 72 References:
 from __future__ import annotations
 
 import math
+
 import pytest
 
 from fireai.core.acoustic_calculator import (
-    AUDIBLE_REQUIREMENTS,
     AMBIENT_NOISE_LEVELS,
-    MAX_SOUND_LEVEL_DBA,
-    DEFAULT_REF_DISTANCE_M,
+    AUDIBLE_REQUIREMENTS,
     BARRIER_ATTENUATION_DB,
-    SPLResult,
-    AudibilityResult,
-    SpeakerPlacementResult,
-    CheckPoint,
-    Speaker,
-    Barrier,
-    RoomAcousticResult,
+    DEFAULT_REF_DISTANCE_M,
+    MAX_SOUND_LEVEL_DBA,
     AcousticSPLCalculator,
+    AudibilityResult,
+    Barrier,
+    CheckPoint,
+    RoomAcousticResult,
+    Speaker,
+    SpeakerPlacementResult,
+    SPLResult,
+    _frange,
+    calculate_min_speakers_for_room,
     calculate_spl_at_distance,
     check_audibility_compliance,
-    calculate_min_speakers_for_room,
     get_speaker_coverage_radius,
-    _frange,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants & Data Structures Tests

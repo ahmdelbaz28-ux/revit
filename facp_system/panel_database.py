@@ -12,6 +12,7 @@ V54 FIX F4: Added supports_releasing field to FireAlarmPanel dataclass.
 from dataclasses import dataclass
 from typing import List
 
+
 @dataclass(frozen=True)
 class FireAlarmPanel:
     model: str

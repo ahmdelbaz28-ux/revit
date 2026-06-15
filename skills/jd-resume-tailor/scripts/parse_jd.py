@@ -85,7 +85,7 @@ def extract_special(text: str) -> dict:
         flags=re.IGNORECASE,
     )
     if cities:
-        out["location"] = "/".join(sorted(set(c.lower() for c in cities)))
+        out["location"] = "/".join(sorted({c.lower() for c in cities}))
 
     # 出差 / 加班信号
     travel = re.search(r"(出差|派驻|常驻|项目制|加班|999|996|大小周)", text)
@@ -99,7 +99,7 @@ def extract_special(text: str) -> dict:
         flags=re.IGNORECASE,
     )
     if certs:
-        out["certificates"] = "/".join(sorted(set(c.strip() for c in certs)))
+        out["certificates"] = "/".join(sorted({c.strip() for c in certs}))
 
     return out
 
@@ -120,14 +120,13 @@ def extract_skills(sentences: list[str]) -> list[str]:
         "进行", "完成", "负责", "推动", "实现", "提升", "并且", "包括", "以下",
         "工作", "项目", "业务", "及其", "或者", "或", "与", "及", "的", "了",
         "并", "对", "在", "等", "以", "等等", "通过", "将", "其", "之", "至",
-        "至上", "本科", "硕士", "博士", "者优先", "根据", "进行", "支持", "参与",
-        "主导", "提供", "建立", "搭建", "设计", "驱动", "决策", "分析", "推动",
-        "迭代", "规划", "运营", "协作", "跨部门", "跨团队", "高级", "资深",
+        "至上", "本科", "硕士", "博士", "者优先", "根据", "支持", "参与",
+        "主导", "提供", "建立", "搭建", "设计", "驱动", "决策", "分析", "迭代", "规划", "运营", "协作", "跨部门", "跨团队", "高级", "资深",
         "若干", "多种", "多元", "多类",
         # 英文虚词
         "and", "the", "with", "for", "of", "or", "to", "be", "as", "an", "is",
         "are", "in", "on", "at", "by", "all", "you", "we", "us", "our", "your",
-        "a", "an", "this", "that", "these", "those", "it", "its",
+        "a", "this", "that", "these", "those", "it", "its",
     }
     # 含数字的"X年""X个"也过滤
     digit_only = re.compile(r"^\d+$")

@@ -4,7 +4,7 @@ Extracts fire alarm device locations from PDF drawings.
 
 SAFETY-CRITICAL: Parses PDF floor plans to detect:
 - Smoke detectors
-- Heat detectors  
+- Heat detectors
 - Pull stations
 - Notification appliances
 - Fire alarm panels
@@ -13,12 +13,11 @@ DEPENDENCIES:
     pip install pdfplumber pymupdf
 """
 
+import logging
 import os
 import re
-import logging
-from pathlib import Path
-from typing import List, Optional, Dict, Any
 from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 logger = logging.getLogger("fireai.pdf_parser")
 
@@ -35,7 +34,7 @@ class PDFDevice:
     page: int
     x: float            # X coordinate on page
     y: float            # Y coordinate on page
-    
+
     def to_dict(self) -> dict:
         return {
             "type": self.device_type,
@@ -55,7 +54,7 @@ class PDFParseResult:
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     text_content: str = ""
-    
+
     @property
     def device_count(self) -> int:
         return len(self.devices)
@@ -74,13 +73,13 @@ DEVICE_PATTERNS = [
     (r'ionization\s*detector', 'SMOKE_DETECTOR'),
     (r'fixed\s*temp', 'HEAT_DETECTOR'),
     (r'rate-of-rise', 'HEAT_DETECTOR'),
-    
+
     # Pull stations
     (r'pull\s*station', 'PULL_STATION'),
     (r'fire\s*alarm\s*pull', 'PULL_STATION'),
     (r'manual\s*pull', 'PULL_STATION'),
     (r'break\s*glass', 'PULL_STATION'),
-    
+
     # Notification appliances — ORDER MATTERS (most specific first)
     # V78 FIX: Moved horn-strobe pattern BEFORE simple horn pattern.
     # Previously, 'horn' matched "horn/strobe" first, misclassifying
@@ -92,18 +91,18 @@ DEVICE_PATTERNS = [
     (r'bell', 'BELL'),
     (r'speaker', 'SPEAKER'),
     (r'notification', 'NOTIFICATION'),
-    
+
     # Panel
     (r'fire\s*alarm\s*panel', 'FAP'),
     (r'control\s*panel', 'FAP'),
     (r'facp', 'FAP'),
     (r'main\s*panel', 'FAP'),
-    
+
     # Sprinkler
     (r'sprinkler', 'SPRINKLER'),
     (r'flow\s*switch', 'FLOW_SWITCH'),
     (r'tamper\s*switch', 'TAMPER_SWITCH'),
-    
+
     # Power
     (r'power\s*supply', 'POWER_SUPPLY'),
     (r'battery', 'BATTERY'),
@@ -114,11 +113,11 @@ DEVICE_PATTERNS = [
 class PDFParser:
     """
     Parses PDF floor plans for fire alarm devices.
-    
+
     USAGE:
         parser = PDFParser()
         result = parser.parse("floor_plan.pdf")
-        
+
         if result.success:
             print(f"Found {result.device_count} devices")
             for d in result.devices:
@@ -132,7 +131,7 @@ class PDFParser:
         """
         self.min_confidence = min_confidence
         self._device_cache: Dict[str, str] = {}
-        
+
     def parse(self, pdf_path: str) -> PDFParseResult:
         """
         Parse PDF file for fire alarm devices.
@@ -147,8 +146,8 @@ class PDFParser:
         # V126: Path security + file-size cap
         from parsers._path_security import (
             UnsafePathError,
-            validate_input_path,
             validate_file_size,
+            validate_input_path,
         )
         _ALLOWED_EXTENSIONS = frozenset({".pdf"})
         _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES", 200 * 1024 * 1024))  # 200 MB default
@@ -183,12 +182,13 @@ class PDFParser:
         #   - DoS via oversized files (cap: 200 MB, env-configurable)
         # PDF files can be very large (multi-page architectural plans),
         # so the default cap is higher than DWG.
+        import os as _os
+
         from parsers._path_security import (
             UnsafePathError,
-            validate_input_path,
             validate_file_size,
+            validate_input_path,
         )
-        import os as _os
 
         _PDF_MAX_BYTES = int(_os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES",
                                        str(200 * 1024 * 1024)))  # 200 MB
@@ -225,43 +225,43 @@ class PDFParser:
             result.success = len(devices) > 0
             if len(text) > 0 and len(devices) == 0:
                 result.warnings.append("Text extracted but no fire devices identified")
-            
+
         except ImportError as e:
             result.errors.append(f"Missing dependency: {e}")
-            
+
         except Exception as e:
             result.errors.append(f"Parse error: {type(e).__name__}: {e}")
-            
+
         return result
 
     def _parse_pdfplumber(self, pdf_path: str):
         """Parse using pdfplumber."""
         import pdfplumber
-        
+
         devices = []
         all_text = []
-        
+
         with pdfplumber.open(pdf_path) as pdf:
             page_count = len(pdf.pages)
-            
+
             for page_num, page in enumerate(pdf.pages, 1):
                 # Extract text
                 text = page.extract_text()
-                
+
                 # If no text, try OCR
                 if not text or len(text.strip()) < 50:
                     logger.info(f"Page {page_num}: No text found, trying OCR...")
                     text = self._ocr_page(page)
                     if text:
                         logger.info(f"Page {page_num}: OCR recovered {len(text)} chars")
-                
+
                 if text:
                     all_text.append(text)
-                    
+
                     # Find devices in text
                     page_devices = self._find_devices(text, page_num)
                     devices.extend(page_devices)
-                    
+
                 # Extract tables
                 tables = page.extract_tables()
                 for table in tables:
@@ -269,23 +269,24 @@ class PDFParser:
                         table_text = ' '.join(str(cell) for row in table for cell in row)
                         table_devices = self._find_devices(table_text, page_num)
                         devices.extend(table_devices)
-        
+
         devices = self._deduplicate_devices(devices)
-        
+
         return devices, '\n'.join(all_text), page_count
 
     def _ocr_page(self, page) -> str:
         """Extract text from page using OCR (Tesseract)."""
         try:
-            import pytesseract
             import os
-            
+
+            import pytesseract
+
             os.environ['TESSDATA_PREFIX'] = '/usr/share/tesseract-ocr'
-            
+
             # Get page as image
             img = page.to_image(resolution=150)
             pil_img = img.original
-            
+
             # Run OCR
             result = pytesseract.image_to_string(
                 pil_img,
@@ -293,7 +294,7 @@ class PDFParser:
                 config='--tessdata-dir /usr/share/tesseract-ocr/5/tessdata'
             )
             return result
-            
+
         except ImportError:
             logger.warning("pytesseract not installed")
             return ""
@@ -304,21 +305,21 @@ class PDFParser:
     def _find_devices(self, text: str, page: int) -> List[PDFDevice]:
         """Find fire alarm devices in text."""
         devices = []
-        
+
         # Normalize text
         text_lower = text.lower()
-        
+
         # Find each device type
         for pattern, device_type in DEVICE_PATTERNS:
             matches = re.finditer(pattern, text_lower, re.IGNORECASE)
-            
+
             for match in matches:
                 # Find approximate location (room number)
                 location = self._extract_location(text, match.start())
-                
+
                 # Get position if possible
                 x, y = self._guess_coordinates(text, match.start())
-                
+
                 devices.append(PDFDevice(
                     device_type=device_type,
                     location=location or "Unknown",
@@ -326,26 +327,26 @@ class PDFParser:
                     x=x,
                     y=y
                 ))
-        
+
         return devices
 
     def _extract_location(self, text: str, position: int) -> Optional[str]:
         """Extract room/location near match position."""
         # Look for room numbers nearby (e.g., Room 101, R-101, 101)
         window = text[max(0, position-50):position+50]
-        
+
         # Room patterns
         room_patterns = [
             r'(?:room|r[\s-]*|#)\s*(\d+[A-Za-z]?)',
             r'((?:\d+)[A-Za-z]?)\s*$',
             r'([A-Z]\d+)',
         ]
-        
+
         for pattern in room_patterns:
             match = re.search(pattern, window, re.IGNORECASE)
             if match:
                 return f"Room {match.group(1)}"
-                
+
         return None
 
     def _guess_coordinates(self, text: str, position: int) -> tuple:
@@ -357,10 +358,10 @@ class PDFParser:
     def _extract_layout_devices(self, page, page_num: int) -> List[PDFDevice]:
         """Extract devices from PDF layout (images/shapes)."""
         devices = []
-        
+
         # Try to detect shapes that might be devices
         # This is basic - advanced implementation would use CV/AI
-        
+
         # Check for common fire device symbols in PDF objects
         try:
             # This is a placeholder - real implementation would analyze
@@ -368,20 +369,20 @@ class PDFParser:
             pass
         except Exception as exc:
             logger.debug("Symbol detection placeholder failed: %s", exc)
-            
+
         return devices
 
     def _deduplicate_devices(self, devices: List[PDFDevice]) -> List[PDFDevice]:
         """Remove duplicate devices."""
         seen = set()
         unique = []
-        
+
         for d in devices:
             key = (d.device_type, d.location, d.page)
             if key not in seen:
                 seen.add(key)
                 unique.append(d)
-                
+
         return unique
 
 
@@ -391,24 +392,24 @@ class PDFParser:
 
 class PDFReportGenerator:
     """Generate PDF inspection reports."""
-    
+
     def __init__(self):
         self.parser = PDFParser()
-        
+
     def generate_report(self, pdf_path: str) -> dict:
         """
         Generate inspection report from PDF floor plan.
-        
+
         Returns:
             dict with report data
         """
         result = self.parser.parse(pdf_path)
-        
+
         # Count by type
         device_counts: Dict[str, int] = {}
         for d in result.devices:
             device_counts[d.device_type] = device_counts.get(d.device_type, 0) + 1
-        
+
         # Build report
         report = {
             "source": result.source_file,
@@ -419,24 +420,24 @@ class PDFReportGenerator:
             "devices": [d.to_dict() for d in result.devices],
             "errors": result.errors,
             "warnings": result.warnings,
-            
+
             # NFPA 72 summary
             "smoke_detectors": device_counts.get("SMOKE_DETECTOR", 0),
             "heat_detectors": device_counts.get("HEAT_DETECTOR", 0),
             "pull_stations": device_counts.get("PULL_STATION", 0),
             "notification_appliances": (
-                device_counts.get("HORN", 0) + 
-                device_counts.get("STROBE", 0) + 
+                device_counts.get("HORN", 0) +
+                device_counts.get("STROBE", 0) +
                 device_counts.get("HORN_STROBE", 0)
             ),
         }
-        
+
         return report
-    
+
     def print_report(self, pdf_path: str) -> str:
         """Generate and return formatted report."""
         report = self.generate_report(pdf_path)
-        
+
         lines = [
             "=" * 60,
             "FIRE ALARM PDF INSPECTION REPORT",
@@ -449,10 +450,10 @@ class PDFReportGenerator:
             "DEVICE SUMMARY",
             "-" * 40,
         ]
-        
+
         for dtype, count in report['device_counts'].items():
             lines.append(f"  {dtype}: {count}")
-            
+
         lines.extend([
             "",
             "-" * 40,
@@ -463,13 +464,13 @@ class PDFReportGenerator:
             f"  Pull Stations: {report['pull_stations']}",
             f"  Notification: {report['notification_appliances']}",
         ])
-        
+
         if report['errors']:
             lines.extend(["", "ERRORS:"] + report['errors'])
-            
+
         if report['warnings']:
             lines.extend(["", "WARNINGS:"] + report['warnings'])
-            
+
         return '\n'.join(lines)
 
 

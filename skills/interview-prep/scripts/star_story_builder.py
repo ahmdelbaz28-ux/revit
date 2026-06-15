@@ -18,7 +18,6 @@ import re
 import sys
 from pathlib import Path
 
-
 COMMON_BEHAVIORAL_QUESTIONS = {
     "ownership": [
         "讲一次你 ownership 体现得最好的经历",

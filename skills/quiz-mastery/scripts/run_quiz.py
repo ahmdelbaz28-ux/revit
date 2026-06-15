@@ -11,9 +11,9 @@
 也支持指定知识点和难度：
   python3 run_quiz.py <user_id> <document_id> [level] [kp_id1,kp_id2,...]
 """
-from pathlib import Path
 import json
 import sys
+from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 

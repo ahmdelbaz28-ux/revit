@@ -20,33 +20,23 @@ Standards:
 from __future__ import annotations
 
 import dataclasses
-import hashlib
-import math
+
 import pytest
-from typing import Tuple
 
 from fireai.core.light_current import (
-    # Enums
     CableType,
-    FiberType,
-    EgressType,
-    # Exceptions
     ContractViolation,
-    # Validation helpers
+    EgressType,
+    FiberType,
+    # Result dataclasses
     _validate_finite,
     _validate_positive,
-    # Result dataclasses
-    StructuredCablingResult,
-    FiberOpticResult,
-    CCTVResult,
-    AccessControlResult,
-    # Main functions
-    validate_horizontal_cable,
-    validate_fiber_link,
     calculate_cctv_coverage,
     validate_access_control,
+    validate_fiber_link,
+    # Main functions
+    validate_horizontal_cable,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Enum Tests

@@ -6,9 +6,9 @@
 输出：JSON 格式的 prompt（system_prompt + user_prompt），由 agent 发给 LLM 解析题目。
 LLM 返回题目 JSON 后，agent 应调用 service.import_questions() 导入。
 """
-from pathlib import Path
 import json
 import sys
+from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 

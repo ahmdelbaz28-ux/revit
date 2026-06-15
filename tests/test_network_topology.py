@@ -15,9 +15,11 @@ NFPA 72 References:
 from __future__ import annotations
 
 import dataclasses
+
 import pytest
 
 import fireai.core.network_topology as _nt_mod
+
 
 # Force fallback dict path — provenance RuleApplied/Violation field names
 # don't match what the source module expects.
@@ -33,12 +35,11 @@ def _disable_provenance():
         setattr(_nt_mod, attr, val)
 
 from fireai.core.network_topology import (
+    REQUIRED_TOPOLOGY,
+    NetworkLink,
     NetworkTopologyAuditor,
     PanelNode,
-    NetworkLink,
-    REQUIRED_TOPOLOGY,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures / Helpers

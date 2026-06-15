@@ -43,7 +43,6 @@ import webbrowser
 from pathlib import Path
 from typing import Any
 
-
 SKILL_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_PATH = SKILL_DIR / "templates" / "quiz_template.html"
 

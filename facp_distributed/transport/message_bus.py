@@ -1,12 +1,13 @@
 """
 Message Bus Transport for Distributed FACP System
 """
-from typing import Dict, Any, Optional, Callable
 import asyncio
+import json
 import threading
 import time
-import json
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from typing import Any, Callable, Dict
+
 from .http_transport import TransportLayer
 
 
@@ -21,27 +22,27 @@ class MessageBusTransport(TransportLayer):
         self.publisher = None
         self.consumer = None
         self.topics = set()
-        
+
     @abstractmethod
     def connect(self):
         """Connect to the message bus"""
         pass
-    
+
     @abstractmethod
     def disconnect(self):
         """Disconnect from the message bus"""
         pass
-    
+
     @abstractmethod
     def publish(self, topic: str, message: Dict[str, Any]):
         """Publish a message to a topic"""
         pass
-    
+
     @abstractmethod
     def subscribe(self, topic: str, handler: Callable):
         """Subscribe to a topic with a handler"""
         pass
-    
+
     def send_request(self, request_data: Dict[str, Any], target_node: str = None) -> Dict[str, Any]:
         """
         Send request via message bus
@@ -51,7 +52,7 @@ class MessageBusTransport(TransportLayer):
         topic = "facp.requests"
         if target_node:
             topic = f"facp.requests.{target_node}"
-        
+
         # Add routing information
         request_data["routing"] = {
             "source_node": self.node_id,
@@ -59,10 +60,10 @@ class MessageBusTransport(TransportLayer):
             "target_node": target_node,
             "timestamp": time.time()
         }
-        
+
         try:
             self.publish(topic, request_data)
-            
+
             # In a real implementation, we'd wait for a response
             # For now, return a success indicator
             return {
@@ -106,27 +107,27 @@ class RedisMessageBus(MessageBusTransport):
         self.redis_client = None
         self.pubsub = None
         self.running = False
-        
+
     def connect(self):
         """Connect to Redis"""
         try:
             import redis
             self.redis_client = redis.Redis(host=self.host, port=self.port, decode_responses=True)
-            
+
             # Test connection
             self.redis_client.ping()
             print(f"Connected to Redis at {self.host}:{self.port}")
-            
+
             # Setup pubsub
             self.pubsub = self.redis_client.pubsub()
-            
+
         except ImportError:
             print("Redis library not available. Install with 'pip install redis'")
             raise
         except Exception as e:
             print(f"Failed to connect to Redis: {e}")
             raise
-    
+
     def disconnect(self):
         """Disconnect from Redis"""
         if self.pubsub:
@@ -134,19 +135,19 @@ class RedisMessageBus(MessageBusTransport):
         if self.redis_client:
             self.redis_client.close()
         self.running = False
-    
+
     def publish(self, topic: str, message: Dict[str, Any]):
         """Publish a message to Redis channel"""
         message_str = json.dumps(message)
         self.redis_client.publish(topic, message_str)
-    
+
     def subscribe(self, topic: str, handler: Callable):
         """Subscribe to a Redis channel"""
         if not self.pubsub:
             raise RuntimeError("Not connected to Redis")
-        
+
         self.pubsub.subscribe(topic)
-        
+
         def message_handler():
             for message in self.pubsub.listen():
                 if message['type'] == 'message':
@@ -163,16 +164,16 @@ class RedisMessageBus(MessageBusTransport):
                         print(f"Failed to decode message from {topic}")
                     except Exception as e:
                         print(f"Error in message handler: {e}")
-        
+
         # Start message handler in a thread
         handler_thread = threading.Thread(target=message_handler, daemon=True)
         handler_thread.start()
-        
+
         # Add to subscribers
         if topic not in self.subscribers:
             self.subscribers[topic] = []
         self.subscribers[topic].append(handler)
-    
+
     def start(self):
         """Start the Redis message bus"""
         try:
@@ -182,7 +183,7 @@ class RedisMessageBus(MessageBusTransport):
             print(f"Redis Message Bus started for node {self.node_id}")
         except Exception as e:
             print(f"Failed to start Redis Message Bus: {e}")
-    
+
     def stop(self):
         """Stop the Redis message bus"""
         self.disconnect()
@@ -199,44 +200,45 @@ class NATSMessageBus(MessageBusTransport):
         self.servers = servers or ["nats://localhost:4222"]
         self.nc = None  # NATS connection
         self.running = False
-        
+
     def connect(self):
         """Connect to NATS"""
         try:
-            import nats
             import asyncio
-            
+
+            import nats
+
             async def connect_async():
                 self.nc = await nats.connect(servers=self.servers)
                 print(f"Connected to NATS at {self.servers}")
-            
+
             # Run the async connection
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             loop.run_until_complete(connect_async())
             loop.close()
-            
+
         except ImportError:
             print("NATS library not available. Install with 'pip install nats-py'")
             raise
         except Exception as e:
             print(f"Failed to connect to NATS: {e}")
             raise
-    
+
     def disconnect(self):
         """Disconnect from NATS"""
         if self.nc:
             asyncio.run(self.nc.close())
         self.running = False
-    
+
     async def async_publish(self, topic: str, message: Dict[str, Any]):
         """Async publish to NATS"""
         if not self.nc:
             raise RuntimeError("Not connected to NATS")
-        
+
         message_str = json.dumps(message)
         await self.nc.publish(topic, message_str.encode())
-    
+
     def publish(self, topic: str, message: Dict[str, Any]):
         """Publish a message to NATS subject"""
         # Run the async publish method
@@ -244,12 +246,12 @@ class NATSMessageBus(MessageBusTransport):
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self.async_publish(topic, message))
         loop.close()
-    
+
     def subscribe(self, topic: str, handler: Callable):
         """Subscribe to a NATS subject"""
         if not self.nc:
             raise RuntimeError("Not connected to NATS")
-        
+
         async def message_handler(msg):
             try:
                 data = json.loads(msg.data.decode())
@@ -262,17 +264,17 @@ class NATSMessageBus(MessageBusTransport):
                 print(f"Failed to decode message from {topic}")
             except Exception as e:
                 print(f"Error in message handler: {e}")
-        
+
         # Subscribe to the subject
         subscription = self.nc.subscribe(topic, cb=message_handler)
-        
+
         # Add to subscribers
         if topic not in self.subscribers:
             self.subscribers[topic] = []
         self.subscribers[topic].append(handler)
-        
+
         return subscription
-    
+
     def start(self):
         """Start the NATS message bus"""
         try:
@@ -282,7 +284,7 @@ class NATSMessageBus(MessageBusTransport):
             print(f"NATS Message Bus started for node {self.node_id}")
         except Exception as e:
             print(f"Failed to start NATS Message Bus: {e}")
-    
+
     def stop(self):
         """Stop the NATS message bus"""
         self.disconnect()
@@ -300,25 +302,25 @@ class InMemoryMessageBus(MessageBusTransport):
         self.channel_handlers = {}  # topic -> [handlers]
         self.running = False
         self.message_queues = {}  # topic -> list of messages
-        
+
     def connect(self):
         """Initialize in-memory message bus"""
         print("Initialized in-memory message bus")
-        
+
     def disconnect(self):
         """Cleanup in-memory message bus"""
         self.channels.clear()
         self.channel_handlers.clear()
         self.message_queues.clear()
         self.running = False
-        
+
     def publish(self, topic: str, message: Dict[str, Any]):
         """Publish a message to in-memory channel"""
         if topic not in self.message_queues:
             self.message_queues[topic] = []
-        
+
         self.message_queues[topic].append(message)
-        
+
         # Trigger handlers if any
         if topic in self.channel_handlers:
             for handler in self.channel_handlers[topic]:
@@ -331,13 +333,13 @@ class InMemoryMessageBus(MessageBusTransport):
                         handler(message)
                 except Exception as e:
                     print(f"Error in handler for topic {topic}: {e}")
-    
+
     def subscribe(self, topic: str, handler: Callable):
         """Subscribe to a topic"""
         if topic not in self.channel_handlers:
             self.channel_handlers[topic] = []
         self.channel_handlers[topic].append(handler)
-        
+
         # Process any existing messages in the queue
         if topic in self.message_queues:
             for message in self.message_queues[topic]:
@@ -345,20 +347,20 @@ class InMemoryMessageBus(MessageBusTransport):
                     handler(message)
                 except Exception as e:
                     print(f"Error processing existing message for topic {topic}: {e}")
-    
+
     def start(self):
         """Start the in-memory message bus"""
         self.connect()
         self.running = True
         self.is_running = True
         print(f"In-memory Message Bus started for node {self.node_id}")
-        
+
     def stop(self):
         """Stop the in-memory message bus"""
         self.disconnect()
         self.is_running = False
         self.running = False
-        
+
     def get_topic_messages(self, topic: str) -> list:
         """Get messages from a specific topic (for testing)"""
         return self.message_queues.get(topic, [])

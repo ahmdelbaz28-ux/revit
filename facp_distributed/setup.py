@@ -1,8 +1,9 @@
 """
 Setup file for Distributed FACP System
 """
-from setuptools import setup, find_packages
 import os
+
+from setuptools import find_packages, setup
 
 
 def read_version():

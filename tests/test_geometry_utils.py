@@ -14,34 +14,28 @@ NFPA 72 References:
 
 from __future__ import annotations
 
-import math
 import pytest
 
 from fireai.core.geometry_utils import (
     _ensure_closed,
-    shoelace_area,
-    polygon_area,
-    polygon_centroid,
-    polygon_bounds,
-    polygon_perimeter,
-    point_in_polygon,
-    points_in_polygon,
-    validate_polygon,
-    ValidationResult,
-    is_clockwise,
-    ensure_ccw,
-    rect_polygon,
-    l_shape_polygon,
-    grid_points_in_polygon,
-    is_rectangular,
     bounding_rect_dimensions,
     convex_hull_2d,
+    ensure_ccw,
+    grid_points_in_polygon,
+    is_clockwise,
+    is_rectangular,
+    l_shape_polygon,
+    point_in_polygon,
+    points_in_polygon,
+    polygon_area,
+    polygon_bounds,
+    polygon_centroid,
+    polygon_perimeter,
+    rect_polygon,
     sanitize_room_geometry,
-    SanitizeResult,
-    Point,
-    Polygon,
+    shoelace_area,
+    validate_polygon,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _ensure_closed

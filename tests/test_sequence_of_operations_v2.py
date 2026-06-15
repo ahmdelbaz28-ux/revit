@@ -41,13 +41,13 @@ def _disable_provenance():
 
 
 from fireai.core.sequence_of_operations import (
-    SequenceOfOperationsMatrix,
-    LogicFunction,
-    DeviceInputType,
-    DeviceInput,
-    MatrixRow,
     CAUSE_EFFECT_RULES,
     NFPA_REFERENCES,
+    DeviceInput,
+    DeviceInputType,
+    LogicFunction,
+    MatrixRow,
+    SequenceOfOperationsMatrix,
 )
 
 
@@ -594,12 +594,12 @@ class TestNFPAReferences:
         assert DeviceInputType.HEAT_ELEVATOR_SHUNT_TRIP not in NFPA_REFERENCES
 
     def test_all_references_are_non_empty_strings(self):
-        for dev_type, refs in NFPA_REFERENCES.items():
+        for _dev_type, refs in NFPA_REFERENCES.items():
             for ref in refs:
                 assert isinstance(ref, str) and len(ref) > 0
 
     def test_sections_contain_standard_prefix(self):
-        for dev_type, refs in NFPA_REFERENCES.items():
+        for _dev_type, refs in NFPA_REFERENCES.items():
             for ref in refs:
                 assert "NFPA" in ref or "ASME" in ref, f"Unexpected ref prefix: {ref}"
 

@@ -50,8 +50,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
-
+from typing import Callable, Dict, List, Optional, Set, Tuple
 
 # ═══════════════════════════════════════════════════════════════
 #  Section 0: Framework — Output, @cmd registry, CLI parser
@@ -849,9 +848,9 @@ def meta_brand(argv: list):
         if not quiet:
             print(f"\u2713 Updated metadata for: {os.path.basename(input_path)}")
             print(f"  Title: {title}")
-            print(f"  Author: Z.ai")
-            print(f"  Creator: Z.ai")
-            print(f"  Producer: http://z.ai")
+            print("  Author: Z.ai")
+            print("  Creator: Z.ai")
+            print("  Producer: http://z.ai")
             if out != input_path:
                 print(f"  Output: {out}")
 
@@ -1221,8 +1220,8 @@ def _monkeypatch_pypdf_method():
     in selection lists, causing join() to throw TypeError. We patch it to
     return just the value strings.
     """
-    from pypdf.generic import DictionaryObject
     from pypdf.constants import FieldDictionaryAttributes
+    from pypdf.generic import DictionaryObject
 
     original_get_inherited = DictionaryObject.get_inherited
 

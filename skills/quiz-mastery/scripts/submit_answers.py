@@ -11,9 +11,9 @@
 
 输出：评分结果 JSON（score, total, accuracy, results）。
 """
-from pathlib import Path
 import json
 import sys
+from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 

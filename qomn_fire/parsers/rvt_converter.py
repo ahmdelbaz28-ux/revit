@@ -16,16 +16,16 @@ V128 SECURITY HARDENING (Finding #5):
       - DoS via oversized files (configurable cap)
 """
 
-import subprocess
-import shutil
 import os
+import shutil
+import subprocess
 
-from qomn_fire.core.errors import Result, ConversionError
 from parsers._path_security import (
     UnsafePathError,
-    validate_input_path,
     validate_file_size,
+    validate_input_path,
 )
+from qomn_fire.core.errors import ConversionError, Result
 
 # V128: Allowed extensions and size cap for RVT converter
 _RVT_ALLOWED_EXTENSIONS = frozenset({".rvt"})
@@ -99,7 +99,7 @@ class RvtConverter:
                 ))
 
         try:
-            result = subprocess.run(
+            subprocess.run(
                 [converter_bin, "/export", "IFC", rvt_path, output_ifc_path],
                 check=True,
                 capture_output=True,

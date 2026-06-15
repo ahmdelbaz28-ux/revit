@@ -23,12 +23,18 @@ fail the pipeline. Values verified from NEC Table 4 Article 348 via
 4+ independent web sources with mathematical cross-verification.
 """
 
-from qomn_fire.core.errors import Result, ConduitFillError
 from qomn_fire.core.constants import (
-    EMT_INTERNAL_AREA_1_2_MM2, EMT_INTERNAL_AREA_3_4_MM2, EMT_INTERNAL_AREA_1_MM2,
-    WIRE_AREA_14_AWG_MM2, WIRE_AREA_12_AWG_MM2, WIRE_AREA_10_AWG_MM2,
-    NEC_FILL_LIMIT_1_WIRE, NEC_FILL_LIMIT_2_WIRES, NEC_FILL_LIMIT_OVER_2_WIRES
+    EMT_INTERNAL_AREA_1_2_MM2,
+    EMT_INTERNAL_AREA_1_MM2,
+    EMT_INTERNAL_AREA_3_4_MM2,
+    NEC_FILL_LIMIT_1_WIRE,
+    NEC_FILL_LIMIT_2_WIRES,
+    NEC_FILL_LIMIT_OVER_2_WIRES,
+    WIRE_AREA_10_AWG_MM2,
+    WIRE_AREA_12_AWG_MM2,
+    WIRE_AREA_14_AWG_MM2,
 )
+from qomn_fire.core.errors import ConduitFillError, Result
 
 # SAFETY FIX (V58): Expanded conduit internal area specifications per NEC Chapter 9 Table 4.
 # The original code only supported 3 EMT sizes (1/2", 3/4", 1"). Real fire alarm
@@ -165,7 +171,6 @@ def calculate_conduit_fill(
         wire_count: Number of conductors in the conduit
         conduit_type: Conduit type ("EMT", "RMC", or "FMC") -- default EMT per NEC 760
     """
-    import math
 
     if wire_count <= 0:
         return Result(error=ConduitFillError(
@@ -199,9 +204,9 @@ def calculate_conduit_fill(
     elif conduit_size == "1":
         conduit_area = EMT_INTERNAL_AREA_1_MM2
     else:
-        supported_sizes = sorted(set(
+        supported_sizes = sorted({
             k.split(" ", 1)[1] for k in CONDUIT_INTERNAL_AREAS_MM2
-        ))
+        })
         return Result(error=ConduitFillError(
             message=f"Unsupported conduit size '{conduit_size}' for type '{conduit_type}'.",
             code_ref="NEC Table 4",

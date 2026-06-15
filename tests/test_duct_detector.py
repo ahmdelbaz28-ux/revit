@@ -22,23 +22,18 @@ UL 268A:
 from __future__ import annotations
 
 import math
+
 import pytest
 
 from fireai.core.duct_detector import (
+    NFPA_DUCT_MAX_SPACING_M,
+    UL268A_MAX_VELOCITY_FPM,
+    UL268A_MIN_VELOCITY_FPM,
     DuctSpec,
-    DuctDetectorPosition,
-    DuctAnalysisResult,
     analyse_duct,
     analyse_ducts,
     total_duct_detectors,
-    NFPA_DUCT_MAX_SPACING_M,
-    NFPA_DUCT_MIN_WIDTH_M,
-    NFPA_DUCT_MIN_LENGTH_M,
-    NFPA_DUCT_CFM_THRESHOLD,
-    UL268A_MAX_VELOCITY_FPM,
-    UL268A_MIN_VELOCITY_FPM,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DuctSpec — Construction and Validation

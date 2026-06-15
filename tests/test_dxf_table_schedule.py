@@ -10,11 +10,11 @@ Navisworks/AutoCAD) instead of plain MTEXT (not queryable).
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-from fireai.core.dxf_table_schedule import TrueAECDraftingTable, Table
+import pytest
 
+from fireai.core.dxf_table_schedule import Table, TrueAECDraftingTable
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TrueAECDraftingTable Tests

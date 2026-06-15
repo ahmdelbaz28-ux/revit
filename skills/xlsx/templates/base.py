@@ -16,9 +16,9 @@ Usage:
 """
 
 import platform
-from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
 from copy import copy
 
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 # ============================================================
 # §1  Font Resolution (cross-platform fallback chain)
@@ -274,15 +274,21 @@ def make_chart_title(text, size_pt=12, bold=True, axis=False, max_line_chars=6):
     with \\n line breaks inside the text, which both Office and WPS render
     as line breaks within the same text box.
     """
-    from openpyxl.chart.title import Title
-    from openpyxl.chart.text import Text, RichText
-    from openpyxl.drawing.text import (
-        Paragraph, ParagraphProperties, CharacterProperties,
-        Font as DrawingFont, RichTextProperties, RegularTextRun,
-        LineBreak,
-    )
-    from copy import deepcopy
     import re
+    from copy import deepcopy
+
+    from openpyxl.chart.text import RichText, Text
+    from openpyxl.chart.title import Title
+    from openpyxl.drawing.text import (
+        CharacterProperties,
+        Paragraph,
+        ParagraphProperties,
+        RegularTextRun,
+        RichTextProperties,
+    )
+    from openpyxl.drawing.text import (
+        Font as DrawingFont,
+    )
 
     rpr = CharacterProperties(
         latin=DrawingFont(typeface=FONT_NAME),

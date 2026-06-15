@@ -1,20 +1,19 @@
 """
 Event Dispatcher for Event Bus in Distributed FACP System
 """
-from typing import Dict, Any, List, Optional, Callable, Set
+import threading
 import time
 import uuid
-import threading
-import asyncio
-from .message_queue import Message, MessageQueue, MessagePriority
-from ..protocol.message_schema import FACPRequest, FACPResponse
+from typing import Any, Callable, Dict, List, Optional
+
+from .message_queue import Message, MessagePriority, MessageQueue
 
 
 class EventListener:
     """
     Represents an event listener in the distributed system
     """
-    def __init__(self, name: str, callback: Callable[[Dict[str, Any]], None], 
+    def __init__(self, name: str, callback: Callable[[Dict[str, Any]], None],
                  event_types: List[str] = None, node_filters: List[str] = None):
         self.id = f"listener_{name}_{uuid.uuid4().hex[:8]}"
         self.name = name
@@ -92,14 +91,14 @@ class EventDispatcher:
         with self.lock:
             listener = EventListener(name, callback, event_types, node_filters)
             self.listeners[listener.id] = listener
-            
+
             # Update routing rules
             for event_type in listener.event_types:
                 if event_type not in self.routing_rules:
                     self.routing_rules[event_type] = []
                 if listener.id not in self.routing_rules[event_type]:
                     self.routing_rules[event_type].append(listener.id)
-            
+
             return listener.id
 
     def unregister_listener(self, listener_id: str) -> bool:
@@ -108,13 +107,13 @@ class EventDispatcher:
         """
         with self.lock:
             if listener_id in self.listeners:
-                listener = self.listeners[listener_id]
-                
+                self.listeners[listener_id]
+
                 # Remove from routing rules
-                for event_type, listener_ids in self.routing_rules.items():
+                for _event_type, listener_ids in self.routing_rules.items():
                     if listener_id in listener_ids:
                         listener_ids.remove(listener_id)
-                
+
                 del self.listeners[listener_id]
                 return True
             return False
@@ -124,29 +123,29 @@ class EventDispatcher:
         Dispatch an event to interested listeners
         """
         event_type = event_data.get("event_type", "unknown")
-        source_node = event_data.get("source_node", "unknown")
-        
+        event_data.get("source_node", "unknown")
+
         matched_listeners = []
-        
+
         with self.lock:
             # Find matching listeners
             possible_listeners = set()
-            
+
             # Add listeners for specific event type
             if event_type in self.routing_rules:
                 possible_listeners.update(self.routing_rules[event_type])
-            
+
             # Add listeners for wildcard event type
             if "*" in self.routing_rules:
                 possible_listeners.update(self.routing_rules["*"])
-            
+
             # Filter by actual capability to handle event
             for listener_id in possible_listeners:
                 if listener_id in self.listeners:
                     listener = self.listeners[listener_id]
                     if listener.can_handle_event(event_data):
                         matched_listeners.append(listener_id)
-        
+
         # Invoke matching listeners
         invoked_listeners = []
         for listener_id in matched_listeners:
@@ -159,10 +158,10 @@ class EventDispatcher:
                 else:
                     with self.lock:
                         self.stats["listener_errors"] += 1
-        
+
         with self.lock:
             self.stats["events_dispatched"] += 1
-        
+
         return invoked_listeners
 
     def dispatch_fcep_message(self, facp_message: Dict[str, Any]) -> List[str]:
@@ -179,7 +178,7 @@ class EventDispatcher:
             "facp_message": facp_message,
             "dispatched_at": time.time()
         }
-        
+
         return self.dispatch_event(event_data)
 
     def broadcast_event(self, event_data: Dict[str, Any], targets: List[str] = None) -> Dict[str, List[str]]:
@@ -188,18 +187,18 @@ class EventDispatcher:
         """
         if targets is None:
             targets = list(self.broadcast_targets)
-        
+
         results = {}
         for target in targets:
             # Simulate sending to different targets/nodes
             event_copy = event_data.copy()
             event_copy["broadcast_target"] = target
             event_copy["broadcast_id"] = str(uuid.uuid4())
-            
+
             # In a real distributed system, this would send to other nodes
             # For simulation, we'll just dispatch locally with target info
             results[target] = self.dispatch_event(event_copy)
-        
+
         return results
 
     def queue_event(self, event_data: Dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> bool:
@@ -212,7 +211,7 @@ class EventDispatcher:
             priority=priority,
             headers={"event_type": event_data.get("event_type", "unknown")}
         )
-        
+
         return self.event_queue.publish(message)
 
     def start_processing_queue(self):
@@ -221,13 +220,13 @@ class EventDispatcher:
         """
         if self.running:
             return
-        
+
         self.running = True
         self.dispatch_thread = threading.Thread(target=self._process_queue, daemon=True)
         self.dispatch_thread.start()
-        
+
         # Start worker threads
-        for i in range(min(self.max_dispatch_workers, 3)):  # Start with fewer workers
+        for _i in range(min(self.max_dispatch_workers, 3)):  # Start with fewer workers
             worker_thread = threading.Thread(target=self._dispatch_worker, daemon=True)
             worker_thread.start()
             self.dispatch_workers.append(worker_thread)
@@ -250,7 +249,7 @@ class EventDispatcher:
                 if message:
                     # Dispatch the event
                     self.dispatch_event(message.data)
-                    
+
                     # Acknowledge the message
                     self.event_queue.acknowledge(message.id)
                 else:
@@ -346,16 +345,16 @@ class EventDispatcher:
                 listener_stats[lid] = {
                     "invocation_count": listener.invocation_count,
                     "errors": listener.errors,
-                    "success_rate": listener.invocation_count / (listener.invocation_count + listener.errors) 
+                    "success_rate": listener.invocation_count / (listener.invocation_count + listener.errors)
                                     if (listener.invocation_count + listener.errors) > 0 else 0
                 }
-            
+
             return {
                 "dispatcher_id": self.dispatcher_id,
                 "total_events_dispatched": self.stats["events_dispatched"],
                 "total_listener_invocations": self.stats["listener_invocations"],
                 "total_listener_errors": self.stats["listener_errors"],
-                "average_listeners_per_event": self.stats["listener_invocations"] / self.stats["events_dispatched"] 
+                "average_listeners_per_event": self.stats["listener_invocations"] / self.stats["events_dispatched"]
                                                if self.stats["events_dispatched"] > 0 else 0,
                 "listener_statistics": listener_stats,
                 "queue_statistics": {
@@ -371,14 +370,14 @@ class EventDispatcher:
         # In a real system, this could implement complex filtering logic
         # For now, implement basic filtering based on event properties
         event_type = event_data.get("event_type", "")
-        
+
         # Filter out certain event types if needed
         filtered_types = []  # Add event types to filter out
         if event_type in filtered_types:
             with self.lock:
                 self.stats["events_filtered_out"] += 1
             return True
-        
+
         return False
 
     def enable_listener(self, listener_id: str) -> bool:
@@ -401,7 +400,7 @@ class EventDispatcher:
                 return True
         return False
 
-    def update_listener_filters(self, listener_id: str, event_types: List[str] = None, 
+    def update_listener_filters(self, listener_id: str, event_types: List[str] = None,
                                node_filters: List[str] = None) -> bool:
         """
         Update filters for a listener
@@ -409,23 +408,23 @@ class EventDispatcher:
         with self.lock:
             if listener_id in self.listeners:
                 listener = self.listeners[listener_id]
-                
+
                 if event_types is not None:
                     listener.event_types = event_types
                     # Update routing rules
                     for old_type in self.routing_rules:
                         if listener_id in self.routing_rules[old_type]:
                             self.routing_rules[old_type].remove(listener_id)
-                    
+
                     for event_type in event_types:
                         if event_type not in self.routing_rules:
                             self.routing_rules[event_type] = []
                         if listener_id not in self.routing_rules[event_type]:
                             self.routing_rules[event_type].append(listener_id)
-                
+
                 if node_filters is not None:
                     listener.node_filters = node_filters
-                
+
                 return True
         return False
 
@@ -435,13 +434,13 @@ class EventDispatcher:
         """
         current_time = time.time()
         cutoff_time = current_time - (min_uptime_minutes * 60)
-        
+
         listeners_to_remove = []
         with self.lock:
             for lid, listener in self.listeners.items():
                 if listener.created_at < cutoff_time and listener.invocation_count == 0:
                     listeners_to_remove.append(lid)
-        
+
         for lid in listeners_to_remove:
             self.unregister_listener(lid)
 
@@ -484,7 +483,7 @@ class DistributedEventDispatcher(EventDispatcher):
                     })
                 except Exception as e:
                     print(f"Error notifying cluster: {e}")
-        
+
         # Process locally as usual
         return super().dispatch_event(event_data)
 
@@ -495,10 +494,10 @@ class DistributedEventDispatcher(EventDispatcher):
         # Add source node information
         event_data["source_cluster_node"] = source_node
         event_data["received_at"] = time.time()
-        
+
         # Add to cluster events queue for processing
         self.cluster_events_queue.append(event_data)
-        
+
         # Process the event locally
         return self.dispatch_event(event_data)
 
@@ -509,7 +508,7 @@ class DistributedEventDispatcher(EventDispatcher):
         # Update cluster listeners
         cluster_listeners = cluster_state.get("listeners", {})
         self.cluster_listeners.update(cluster_listeners)
-        
+
         # Process any queued cluster events
         while self.cluster_events_queue:
             event = self.cluster_events_queue.pop(0)

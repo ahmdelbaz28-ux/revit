@@ -19,21 +19,18 @@ NFPA 72 References:
 
 from __future__ import annotations
 
-import math
 import pytest
 
-from fireai.core.pathway_survivability_engine import (
-    BuildingSpec,
-    SurvivabilityResult,
-    CableRequirement,
-    PathwaySurvivabilityEngine,
-)
 from fireai.core.contracts import (
     CableType,
     OccupancyCategory,
     PathwaySurvivabilityLevel,
 )
-
+from fireai.core.pathway_survivability_engine import (
+    BuildingSpec,
+    PathwaySurvivabilityEngine,
+    SurvivabilityResult,
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures

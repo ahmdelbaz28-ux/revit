@@ -5,6 +5,7 @@ Formats compliance schedules and generates CSI-format construction specs.
 
 from facp_system.panel_selector import PanelRecommendation, ProjectRequirements
 
+
 class OutputGenerator:
     @staticmethod
     def generate_dxf_schedule(rec: PanelRecommendation, qty: int = 1) -> str:
@@ -64,15 +65,15 @@ class OutputGenerator:
             "                      ENGINEERING ALTERNATIVES EVALUATION                     ",
             "=" * 80,
             f"  CURRENT DESIGN SELECTION: {rec.recommended_model}",
-            f"  COMPATIBLE UPGRADE OPTIONS:"
+            "  COMPATIBLE UPGRADE OPTIONS:"
         ]
 
         if rec.alternatives:
             for idx, alt in enumerate(rec.alternatives, 1):
                 if alt:
                     table.append(f"    Alternative {idx}: Model {alt}")
-                    table.append(f"      - Engineering Pro: Larger headroom margin to absorb expansion.")
-                    table.append(f"      - Engineering Con: Higher initial capital expense.")
+                    table.append("      - Engineering Pro: Larger headroom margin to absorb expansion.")
+                    table.append("      - Engineering Con: Higher initial capital expense.")
         else:
             table.append("    No alternative panels available in the database that meet all requirements.")
             table.append("    Consider specifying a different manufacturer or relaxing constraints.")

@@ -13,9 +13,7 @@ SAFETY PRINCIPLE under test:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional
-
-import pytest
+from typing import Any, Dict
 
 from fireai.core.release_gates import (
     _gate_battery,
@@ -29,7 +27,6 @@ from fireai.core.release_gates import (
     describe_blockers,
     verify_and_evaluate,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES — reusable inputs for a fully-passing scenario
@@ -63,11 +60,11 @@ def _green_loop_data() -> Dict[str, Any]:
 
 def _full_green_kwargs() -> Dict[str, Any]:
     """All keyword arguments that produce release_status='green'."""
-    return dict(
-        input_payload=_green_input_payload(),
-        nfpa_results=_green_nfpa_results(),
-        loop_data=_green_loop_data(),
-    )
+    return {
+        "input_payload": _green_input_payload(),
+        "nfpa_results": _green_nfpa_results(),
+        "loop_data": _green_loop_data(),
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -525,7 +522,7 @@ class TestVerifyAndEvaluate:
         result = verify_and_evaluate(**_full_green_kwargs())
         details = result["gate_details"]
         assert len(details) == 8
-        for gate_id, detail in details.items():
+        for _gate_id, detail in details.items():
             assert "name" in detail
             assert "passed" in detail
             assert "reason" in detail

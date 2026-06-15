@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import json
 from .models import KnowledgePoint
-
 
 # Maximum questions per quiz round
 MAX_QUESTIONS_PER_ROUND = 15

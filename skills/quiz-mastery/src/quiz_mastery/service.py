@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import asdict
 from pathlib import Path
-import uuid
-import json
 
-from .models import KnowledgePoint, KnowledgeSource, Question, QuizSession, MasteryRecord
-from .repository import JsonRepository
-from .quiz_generator import QuizGenerator
 from .evaluator import Evaluator
 from .mastery_engine import MasteryEngine
+from .models import (
+    KnowledgePoint,
+    KnowledgeSource,
+    MasteryRecord,
+    Question,
+    QuizSession,
+)
 from .planner import Planner
+from .quiz_generator import QuizGenerator
+from .repository import JsonRepository
 
 
 class QuizMasteryService:
@@ -246,7 +251,7 @@ class QuizMasteryService:
 
         session_id = f"quiz_{uuid.uuid4().hex[:12]}"
         kp_ids = list(
-            set(kp_id for q in questions for kp_id in q.knowledge_point_ids)
+            {kp_id for q in questions for kp_id in q.knowledge_point_ids}
         )
         level = questions[0].level if questions else 1
 

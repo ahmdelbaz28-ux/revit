@@ -4,8 +4,9 @@
 import argparse
 import random
 import zipfile
-import defusedxml.minidom
 from pathlib import Path
+
+import defusedxml.minidom
 
 
 def main():

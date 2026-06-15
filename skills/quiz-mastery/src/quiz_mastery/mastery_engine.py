@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from .models import MasteryRecord, Question, AnswerResult
-
+from .models import AnswerResult, MasteryRecord, Question
 
 # Ebbinghaus forgetting curve intervals in days
 REVIEW_INTERVALS = [1, 2, 4, 7, 15]

@@ -14,6 +14,9 @@ SAFETY NOTE: Do NOT add business logic here. This is a re-export hub only.
 Any new domain types must be defined in core/models.py and re-exported here.
 """
 
+from core.database import (  # noqa: F401
+    UniversalDataModel,
+)
 from core.models import (  # noqa: F401
     ChangeSource,
     Conflict,
@@ -24,8 +27,4 @@ from core.models import (  # noqa: F401
     Relationship,
     SemanticProperties,
     UniversalElement,
-)
-
-from core.database import (  # noqa: F401
-    UniversalDataModel,
 )

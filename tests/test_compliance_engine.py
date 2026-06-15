@@ -18,8 +18,8 @@ Standards Referenced:
 """
 
 import pytest
-from fireai.validation.compliance_engine import ComplianceEngine, ComplianceRule
 
+from fireai.validation.compliance_engine import ComplianceEngine
 
 # ============================================================================
 # Fixtures

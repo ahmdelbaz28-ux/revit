@@ -16,11 +16,10 @@ Extracted data:
 - Building structure
 """
 
-import os
 import json
+import logging
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -35,20 +34,20 @@ class IFCAnalysis:
 
 class IFCParser:
     """Parse IFC format files."""
-    
+
     def __init__(self, ifc_path: str):
         self.ifc_path = ifc_path
         self.data = None
-        
+
     def _load_json(self) -> Dict:
         """Load IFC JSON file."""
         with open(self.ifc_path, 'r') as f:
             return json.load(f)
-    
+
     def _parse_instances(self, data: Dict) -> List[Dict]:
         """Parse instances from IFC data."""
         return data.get('instances', [])
-    
+
     def _extract_spaces(self, instances: List[Dict]) -> List[Dict]:
         """Extract IfcSpace instances."""
         spaces = []
@@ -56,17 +55,17 @@ class IFCParser:
             if inst.get('type') == 'IfcSpace':
                 attrs = inst.get('attributes', {})
                 geom = inst.get('geometry', {})
-                
+
                 bounds = geom.get('bounds', {})
                 origin = bounds.get('origin', {})
                 dims = bounds.get('dimensions', {})
-                
+
                 # V78 FIX: Validate area — negative areas corrupt total_area calculation
                 # V79 FIX: Negative area → skip space entirely (not set to 0).
                 # Setting to 0 means zero protection for a room with real geometry.
                 raw_area = attrs.get('Area', 0)
                 if raw_area < 0:
-                    import logging; logging.getLogger(__name__).warning(
+                    logging.getLogger(__name__).warning(
                         "Negative area for space %s: %s. Space REJECTED — "
                         "manual fire protection design REQUIRED.",
                         inst.get('id'), raw_area,
@@ -89,9 +88,9 @@ class IFCParser:
                     }
                 }
                 spaces.append(space)
-        
+
         return spaces
-    
+
     def _extract_devices(self, instances: List[Dict]) -> List[Dict]:
         """Extract fire protection devices from multiple IFC fire entity types.
 
@@ -112,7 +111,7 @@ class IFCParser:
             if inst.get('type') in _FIRE_ENTITY_TYPES:
                 attrs = inst.get('attributes', {})
                 applicable = inst.get('applicable_to', [])
-                
+
                 device = {
                     'id': inst.get('id'),
                     'name': attrs.get('Name'),
@@ -123,9 +122,9 @@ class IFCParser:
                     'applicable_spaces': applicable,
                 }
                 devices.append(device)
-        
+
         return devices
-    
+
     def _extract_building(self, instances: List[Dict]) -> Dict:
         """Extract building info."""
         for inst in instances:
@@ -136,7 +135,7 @@ class IFCParser:
                     'long_name': attrs.get('LongName'),
                 }
         return {'name': 'Unknown'}
-    
+
     def _count_floors(self, instances: List[Dict]) -> int:
         """Count building stories."""
         floors = set()
@@ -144,7 +143,7 @@ class IFCParser:
             if inst.get('type') == 'IfcBuildingStorey':
                 floors.add(inst.get('id'))
         return len(floors)
-    
+
     def parse(self) -> IFCAnalysis:
         """Main parsing method.
 
@@ -156,12 +155,13 @@ class IFCParser:
         # The path was supplied at __init__ time; this is the last gate
         # before file I/O. Closes path traversal, null bytes, argument
         # injection (defense-in-depth), and oversized files.
+        import os as _os
+
         from parsers._path_security import (
             UnsafePathError,
-            validate_input_path,
             validate_file_size,
+            validate_input_path,
         )
-        import os as _os
 
         _IFC_MAX_BYTES = int(_os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES",
                                         str(500 * 1024 * 1024)))  # 500 MB
@@ -190,18 +190,18 @@ class IFCParser:
                 raise ValueError(
                     f"Failed to load IFC file '{self.ifc_path}': {e}"
                 ) from e
-        
+
         instances = self._parse_instances(self.data)
-        
+
         # Extract data
         building = self._extract_building(instances)
         spaces = self._extract_spaces(instances)
         devices = self._extract_devices(instances)
         floors = self._count_floors(instances)
-        
+
         # Calculate total area
         total_area = sum(s.get('area', 0) for s in spaces)
-        
+
         return IFCAnalysis(
             building_name=building.get('name', 'Unknown'),
             floors=floors,
@@ -209,7 +209,7 @@ class IFCParser:
             devices=devices,
             total_area=total_area,
         )
-    
+
     def to_standard_format(self, ifc_analysis: IFCAnalysis) -> Dict:
         """Convert IFC analysis to standard format."""
         # Extract walls from space bounds (simplified)
@@ -218,13 +218,13 @@ class IFCParser:
             bounds = space.get('bounds', {})
             x, y = bounds.get('x', 0), bounds.get('y', 0)
             w, l = bounds.get('width', 0), bounds.get('length', 0)
-            
+
             if w > 0 and l > 0:
                 walls.append({
                     'x1': x, 'y1': y,
                     'x2': x + w, 'y2': y + l,
                 })
-        
+
         return {
             'building_name': ifc_analysis.building_name,
             'floors': ifc_analysis.floors,

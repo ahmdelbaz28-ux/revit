@@ -28,9 +28,8 @@ V54 Bug Fixes Applied:
 """
 
 import hashlib
-import math
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from facp_system.panel_database import MASTER_PANEL_DATABASE, FireAlarmPanel

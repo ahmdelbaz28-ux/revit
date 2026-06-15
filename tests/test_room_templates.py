@@ -15,20 +15,19 @@ from __future__ import annotations
 
 import pytest
 
+from fireai.core.nfpa72_models import CeilingSpec, CeilingType, DetectorType, RoomSpec
 from fireai.core.room_templates import (
-    office,
-    warehouse,
+    TEMPLATES,
+    bathroom,
     corridor,
+    get_template,
+    high_ceiling_office,
     kitchen,
     meeting,
-    bathroom,
+    office,
     storage,
-    high_ceiling_office,
-    TEMPLATES,
-    get_template,
+    warehouse,
 )
-from fireai.core.nfpa72_models import RoomSpec, CeilingSpec, CeilingType, DetectorType
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Office Template
@@ -88,7 +87,7 @@ class TestWarehouseTemplate:
 
     def test_warehouse_occupancy_type_is_storage(self):
         """To create a valid warehouse room, use occupancy_type='storage'."""
-        from fireai.core.nfpa72_models import RoomSpec as NfpaRoomSpec, CeilingSpec, CeilingType
+        from fireai.core.nfpa72_models import RoomSpec as NfpaRoomSpec
         room = NfpaRoomSpec(
             room_id="warehouse_20x30",
             width_m=20, depth_m=30,
@@ -99,7 +98,7 @@ class TestWarehouseTemplate:
         assert room.ceiling_spec.height_m == 6.0
 
     def test_warehouse_area(self):
-        from fireai.core.nfpa72_models import RoomSpec as NfpaRoomSpec, CeilingSpec
+        from fireai.core.nfpa72_models import RoomSpec as NfpaRoomSpec
         room = NfpaRoomSpec(
             room_id="warehouse_20x30",
             width_m=20, depth_m=30,

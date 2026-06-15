@@ -23,26 +23,17 @@ import math
 import pytest
 
 from fireai.core.notification_appliance import (
-    CorridorStrobeResult,
-    NACLoadResult,
+    _HORN_REFERENCE_DISTANCE_M,
+    _MAX_CORRIDOR_STROBE_SPACING_M,
+    _NAC_LOAD_FACTOR,
     NotificationAssessment,
     NotificationDevice,
-    SPLResult,
-    StrobeResult,
     calculate_corridor_strobes,
     calculate_nac_load,
     calculate_spl,
     calculate_strobe_candela,
     min_horn_rating_for_room,
-    _NAC_LOAD_FACTOR,
-    _MIN_SPL_ABOVE_AMBIENT_DBA,
-    _MIN_ABSOLUTE_SPL_DBA,
-    _MAX_SPL_DBA,
-    _HORN_REFERENCE_DISTANCE_M,
-    _MAX_CORRIDOR_STROBE_SPACING_M,
-    _MAX_END_OF_CORRIDOR_DISTANCE_M,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. NOTIFICATION DEVICE DATACLASS

@@ -17,30 +17,25 @@ Standards:
 from __future__ import annotations
 
 import pytest
-from typing import Any, Dict, List
 
-from fireai.core.revit_acl import (
-    ImportError,
-    ImportReport,
-    _normalize_enum,
-    _safe_float,
-    RevitSubstanceDTO,
-    RevitObstructionDTO,
-    RevitDetectorDTO,
-    import_substances_from_revit,
-    import_obstructions_from_revit,
-    import_detectors_from_revit,
-    _HAZARD_TYPE_ALIASES,
-    _WAVELENGTH_BAND_ALIASES,
-)
 from fireai.core.models_v21 import (
     HazardType,
     WavelengthBand,
-    SubstanceProperties,
-    Obstruction,
-    FlameDetectorSpec,
 )
-
+from fireai.core.revit_acl import (
+    _HAZARD_TYPE_ALIASES,
+    _WAVELENGTH_BAND_ALIASES,
+    ImportError,
+    ImportReport,
+    RevitDetectorDTO,
+    RevitObstructionDTO,
+    RevitSubstanceDTO,
+    _normalize_enum,
+    _safe_float,
+    import_detectors_from_revit,
+    import_obstructions_from_revit,
+    import_substances_from_revit,
+)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Import Error Tracking Tests

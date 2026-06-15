@@ -32,8 +32,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 try:
-    from openpyxl import load_workbook, Workbook
-    from openpyxl.utils import get_column_letter, column_index_from_string
+    from openpyxl import Workbook, load_workbook  # noqa: F401
+    from openpyxl.utils import column_index_from_string, get_column_letter
     from openpyxl.utils.cell import coordinate_from_string
 except ImportError:
     print("Error: openpyxl required. Install: pip install openpyxl", file=sys.stderr)
@@ -377,8 +377,8 @@ def cmd_audit(argv: Sequence[str]) -> int:
     for sname in wb_form.sheetnames:
         ws_d = wb_data[sname]
         ws_f = wb_form[sname]
-        for row_d, row_f in zip(ws_d.iter_rows(), ws_f.iter_rows()):
-            for cd, cf in zip(row_d, row_f):
+        for row_d, row_f in zip(ws_d.iter_rows(), ws_f.iter_rows(), strict=False):
+            for cd, cf in zip(row_d, row_f, strict=False):
                 fval = cf.value
                 if not is_formula(fval):
                     continue
@@ -498,7 +498,7 @@ def cmd_scan(argv: Sequence[str]) -> int:
                     # Same-sheet reference check
                     range_refs = re.findall(r'([A-Z]{1,3})(\d+):([A-Z]{1,3})(\d+)', fstr)
                     for c1, r1, c2, r2 in range_refs:
-                        r1_int, r2_int = int(r1), int(r2)
+                        _r1_int, r2_int = int(r1), int(r2)
                         if r2_int > max_data_row * 3 and r2_int > 100:
                             findings.append({
                                 "type": "out_of_range",
@@ -796,7 +796,7 @@ def cmd_pivot(argv: Sequence[str]) -> int:
         ws_out = wb.create_sheet("PivotTable")
 
     # ---- Styling ----
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
     # --- Font resolution (mirrors templates/base.py logic) ---
     _platform_hints = {
@@ -1007,7 +1007,6 @@ def cmd_pivot(argv: Sequence[str]) -> int:
 
         # Anchor with enough vertical offset to avoid chart-to-chart overlap
         # ~15 rows per chart height; leave 2 extra rows gap
-        chart_row_offset = 17
         chart_anchor = ws_out.cell(
             row=loc_start_row + total_data_rows + 3,
             column=loc_start_col,

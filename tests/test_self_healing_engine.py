@@ -1,29 +1,38 @@
 # test_self_healing_engine.py
-import unittest
+import hashlib
+import hmac
+import json
 import math
 import os
-import json
-import hmac
-import hashlib
-import time
-import tempfile
 import shutil
+import tempfile
+import time
+import unittest
 
 # Import from the module
 from fireai.core.qomn_self_healing_engine import (
-    SafetyResult, AuditLogger, AsyncAuditLogger, LruCache,
-    CircuitBreaker, WeightedCircuitBreaker,
-    LLMCircuitBreaker, ErrorSeverity, SystemStatus, Config,
-    SafetyCriticalFailure, PhysicsGuardViolation, LLMUnavailableError, ERROR_WEIGHTS,
-    global_audit_logger, global_lru_cache, global_circuit_breaker,
-    global_llm_breaker,
-    self_healing, compute_hash, query_local_ollama_engine,
-    calculate_sprinkler_pressure, validate_sprinkler_pressure,
-    fetch_emergency_audio_sequence, validate_sequence_block,
-    demonstrate_and_verify_all_tiers
+    ERROR_WEIGHTS,
+    AsyncAuditLogger,
+    AuditLogger,
+    CircuitBreaker,
+    Config,
+    ErrorSeverity,
+    LLMCircuitBreaker,
+    LruCache,
+    PhysicsGuardViolation,
+    SafetyCriticalFailure,
+    SafetyResult,
+    SystemStatus,
+    WeightedCircuitBreaker,
+    calculate_sprinkler_pressure,
+    compute_hash,
+    demonstrate_and_verify_all_tiers,
+    fetch_emergency_audio_sequence,
+    global_circuit_breaker,
+    global_lru_cache,
+    self_healing,
+    validate_sprinkler_pressure,
 )
-
-import threading
 
 
 class TestQomnFireSelfHealing(unittest.TestCase):
@@ -81,7 +90,7 @@ class TestQomnFireSelfHealing(unittest.TestCase):
     def test_tier_3_circuit_breaker_trips(self):
         """Verify high frequency errors trip the circuit breaker and bypass normal calls."""
         for _ in range(15):
-            res = calculate_sprinkler_pressure(100.0, 0.0)
+            calculate_sprinkler_pressure(100.0, 0.0)
 
         # Circuit breaker must be open, forcing safe fallback static return
         final_res = calculate_sprinkler_pressure(100.0, 0.0)

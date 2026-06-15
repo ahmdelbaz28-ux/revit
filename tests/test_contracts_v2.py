@@ -18,35 +18,34 @@ NFPA 72 References:
 from __future__ import annotations
 
 import json
-import math
 import os
+
 import pytest
 
 from fireai.core.contracts import (
     CONTRACT_VERSION,
-    CeilingType,
-    ConfidenceLevel,
-    DetectorType,
-    PathwaySurvivabilityLevel,
-    CableType,
-    OccupancyCategory,
-    FeatureFlag,
     DEFAULT_FEATURE_FLAGS,
-    ParsedDrawingContract,
-    CeilingSpecContract,
-    RoomSpecificationContract,
-    DetectorPlacementContract,
-    ComplianceReportContract,
-    AuditEventContract,
-    get_feature_flags,
-    is_feature_enabled,
-    ContractViolation,
     FORBIDDEN_DERIVED_FIELDS,
     FORBIDDEN_LOOP_DERIVED_FIELDS,
-    validate_room_input,
+    AuditEventContract,
+    CableType,
+    CeilingSpecContract,
+    CeilingType,
+    ComplianceReportContract,
+    ConfidenceLevel,
+    ContractViolation,
+    DetectorPlacementContract,
+    DetectorType,
+    FeatureFlag,
+    OccupancyCategory,
+    ParsedDrawingContract,
+    PathwaySurvivabilityLevel,
+    RoomSpecificationContract,
+    get_feature_flags,
+    is_feature_enabled,
     validate_loop_input,
+    validate_room_input,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Enum Tests
@@ -576,7 +575,7 @@ class TestValidateLoopInput:
     def test_panel_voltage_default_24v(self):
         """Default panel voltage is 24V."""
         payload = self._valid_payload()
-        result = validate_loop_input(payload)
+        validate_loop_input(payload)
         # No exception = valid, 24.0 is within range
 
     def test_panel_voltage_48v_boundary(self):

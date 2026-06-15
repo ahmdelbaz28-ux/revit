@@ -19,8 +19,8 @@ Standards: NFPA 72 (2022) §17, ISO 16739 (IFC Spatial Schemas)
 import logging
 from typing import Tuple, Union
 
-from qomn_fire.core.types import Building, Room, Point3D
-from qomn_fire.core.errors import Result, GeometryError, UnitError
+from qomn_fire.core.errors import GeometryError, Result, UnitError
+from qomn_fire.core.types import Building, Point3D
 
 logger = logging.getLogger("qomn_fire.geometry_validator")
 

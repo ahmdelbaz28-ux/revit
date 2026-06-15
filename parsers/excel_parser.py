@@ -11,12 +11,12 @@ Expected columns:
     - occupancy_type: office, residential, etc. (optional)
 """
 
-import os
-import pandas as pd
 import logging
-from pathlib import Path
-from typing import List, Optional, Dict
+import os
 from dataclasses import dataclass, field
+from typing import Dict, List
+
+import pandas as pd
 
 logger = logging.getLogger("fireai.excel_parser")
 
@@ -43,11 +43,11 @@ class ExcelRoom:
     height_m: float
     detector_type: str = "SMOKE"
     occupancy_type: str = "office"
-    
+
     @property
     def floor_area(self) -> float:
         return self.width_m * self.depth_m
-    
+
     def to_dict(self) -> Dict:
         return {
             "name": self.name,
@@ -78,17 +78,17 @@ class ExcelParseResult:
 class ExcelParser:
     """
     Parses Excel room specifications into room objects.
-    
+
     USAGE:
         parser = ExcelParser()
         result = parser.parse("project_rooms.xlsx")
-        
+
         if result.success:
             print(f"Found {result.room_count} rooms")
     """
 
     REQUIRED_COLUMNS = ['name', 'width_m', 'depth_m', 'height_m']
-    
+
     # Column aliases (flexible matching)
     COLUMN_ALIASES = {
         'name': ['name', 'room', 'room_name', 'room_number', 'number', 'room_id'],
@@ -120,8 +120,8 @@ class ExcelParser:
         # V126: Path security + file-size cap
         from parsers._path_security import (
             UnsafePathError,
-            validate_input_path,
             validate_file_size,
+            validate_input_path,
         )
         _ALLOWED_EXTENSIONS = frozenset({".xlsx", ".xls", ".csv"})
         _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_EXCEL_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))  # 25 MB default
@@ -147,20 +147,20 @@ class ExcelParser:
         try:
             # Read Excel
             df = pd.read_excel(str(safe_path), engine='openpyxl')
-            
+
             if df.empty:
                 result.errors.append("Excel file is empty")
                 return result
-            
+
             # Normalize columns
             df = self._normalize_columns(df)
-            
+
             # Verify required columns
             missing = set(self.REQUIRED_COLUMNS) - set(df.columns)
             if missing:
                 result.errors.append(f"Missing required columns: {missing}")
                 return result
-            
+
             # Parse rooms
             for idx, row in df.iterrows():
                 try:
@@ -173,41 +173,41 @@ class ExcelParser:
                         )
                 except ValueError as e:
                     result.warnings.append(f"Row {idx+1}: {e}")
-                    
+
             result.room_count = len(result.rooms)
             result.success = result.room_count > 0
-            
+
         except Exception as e:
             result.errors.append(f"Parse error: {type(e).__name__}: {e}")
-            
+
         return result
 
     def _normalize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """Normalize column names to standard format."""
         df = df.copy()
-        
+
         for standard, aliases in self.COLUMN_ALIASES.items():
             for alias in aliases:
                 if alias in df.columns:
                     df.rename(columns={alias: standard}, inplace=True)
                     break
-                
+
         return df
 
     def _parse_row(self, row: pd.Series) -> ExcelRoom:
         """Parse single row to ExcelRoom."""
         name = str(row['name']).strip()
-        
+
         width = float(row['width_m'])
-        depth = float(row['depth_m']) 
+        depth = float(row['depth_m'])
         height = float(row['height_m'])
-        
+
         if width <= 0 or depth <= 0 or height <= 0:
             raise ValueError(f"Invalid dimensions for {name}")
-            
+
         detector_str = str(row.get('detector_type', 'SMOKE')).strip().upper()
         occupancy_str = str(row.get('occupancy_type', 'office')).strip().lower()
-        
+
         return ExcelRoom(
             name=name,
             width_m=width,

@@ -28,7 +28,6 @@ These tests verify:
 from __future__ import annotations
 
 import logging
-import math
 import sys
 from pathlib import Path
 
@@ -38,9 +37,11 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pytest
 
-from fireai.core.qomn_kernel import compute_smoke_detector_spacing, NFPA72_SMOKE_MAX_SPACING_M
-from fireai.constants import SMOKE_MAX_SPACING_M, NFPA72_HEIGHT_SPACING_TABLE
-
+from fireai.constants import SMOKE_MAX_SPACING_M
+from fireai.core.qomn_kernel import (
+    NFPA72_SMOKE_MAX_SPACING_M,
+    compute_smoke_detector_spacing,
+)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # V130 — Flat Spacing Values (9.1m at ALL heights per §17.7.3.2.3)

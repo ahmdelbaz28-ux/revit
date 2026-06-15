@@ -20,7 +20,6 @@ IEEE References:
 
 from __future__ import annotations
 
-import math
 import pytest
 
 from fireai.core.battery_aging_derating import (
@@ -38,7 +37,6 @@ from fireai.core.battery_aging_derating import (
     get_temperature_derating_factor,
     size_battery,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants Verification
@@ -392,7 +390,7 @@ class TestSizeBattery:
             battery=bs,
         )
         # 12V nominal → 10.5V EOD = 12.5% drop exactly
-        voltage_violations = [v for v in result.violations if v["code"] == "BATTERY-VOLTAGE-DROP"]
+        [v for v in result.violations if v["code"] == "BATTERY-VOLTAGE-DROP"]
         # The drop is exactly (12.0 - 10.5) / 12.0 * 100 = 12.5%
         # The code checks > 12.5%, so exactly 12.5% should NOT trigger
         # But due to floating point, it may or may not — just verify it doesn't crash

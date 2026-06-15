@@ -17,9 +17,9 @@ try:
 except ImportError:
     fitz = None  # PDF features unavailable without pymupdf
 import os
-from typing import Dict, Tuple, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Dict, Optional, Tuple
 
 
 class GateDecision(Enum):
@@ -119,7 +119,7 @@ class ParserConfidence:
         details = {}
 
         # Scale annotation
-        scale_keywords = ['scale', 'scale 1:', '1:', '1/8', '1/4', 'meter', 'ft', 'mètre', 
+        scale_keywords = ['scale', 'scale 1:', '1:', '1/8', '1/4', 'meter', 'ft', 'mètre',
                     'مقياس', 'drawing scale', '1:100', '1:50', '1:200']
         details["scale_found"] = any(kw in self._text.lower() for kw in [k.lower() for k in scale_keywords])
         if details["scale_found"]:
@@ -132,14 +132,14 @@ class ParserConfidence:
             score += 0.1
 
         # Legend - expanded keywords for better detection
-        legend_keywords = ['legend', 'symbol legend', 'abbreviations', 'notes and symbols', 
+        legend_keywords = ['legend', 'symbol legend', 'abbreviations', 'notes and symbols',
                         'مفتاح الرموز', 'key', 'drawing list', 'device schedule']
         details["legend_found"] = any(kw.lower() in self._text.lower() for kw in legend_keywords)
-        
+
         if details["legend_found"]:
             score += 0.1
             # Expand NFPA symbol keywords
-            nfpa_symbols = ['smoke', 'detector', 'sprinkler', 'heat', 'horn', 'strobe', 
+            nfpa_symbols = ['smoke', 'detector', 'sprinkler', 'heat', 'horn', 'strobe',
                           'pull', 'nac', 'notification', 'speaker', 'pull station', 'heat detector',
                           'smoke detector', 'manual pull', 'bell', 'indicator']
             details["nfpa_symbols_mentioned"] = [s for s in nfpa_symbols if s in self._text.lower()]
@@ -167,7 +167,7 @@ class ParserConfidence:
             is_raster = file_details.get('type') in ['raster', 'mixed']
             has_completeness = comp_details.get('scale_found') or comp_details.get('legend_found')
             has_scale = comp_details.get('scale_found') is True  # Text mentions scale
-            
+
             if is_raster and has_completeness and has_scale and final >= 0.5:
                 # First try standard text extraction
                 # V108 FIX: All src.core.* imports replaced with try/except guards.
@@ -176,15 +176,17 @@ class ParserConfidence:
                 # current codebase. Scale extraction falls through to default.
                 actual_scale = None
                 scale_confidence = 0.0
-                
+
                 # Try dimension extraction from PDF text (local module)
                 try:
-                    from .pdf_input_layer import extract_scale_from_pdf as _extract_scale
+                    from .pdf_input_layer import (
+                        extract_scale_from_pdf as _extract_scale,
+                    )
                     actual_scale = _extract_scale(self.pdf_path)
                     scale_confidence = 0.95 if actual_scale else 0.0
                 except (ImportError, Exception):
                     pass
-                
+
                 # If still no scale, try PDF parser as fallback
                 if not actual_scale:
                     try:
@@ -197,16 +199,16 @@ class ParserConfidence:
                             has_scale = True
                     except (ImportError, Exception):
                         scale_confidence = 0.0
-                
+
                 CRITICAL_SAFETY_THRESHOLD = 0.95
-                
+
                 if not actual_scale:
                     # No scale found - REJECT
                     gate = GateDecision.REJECT
                     message = (
-                        f"REJECT: No scale detected in raster PDF. "
-                        f"CV + reverse estimation attempted. "
-                        f"Provide vector PDF or verified scale bar."
+                        "REJECT: No scale detected in raster PDF. "
+                        "CV + reverse estimation attempted. "
+                        "Provide vector PDF or verified scale bar."
                     )
                 elif scale_confidence < CRITICAL_SAFETY_THRESHOLD:
                     # CV scale found but confidence < 95% - REJECT for safety
@@ -228,9 +230,9 @@ class ParserConfidence:
                 # Raster without scale - cannot get meaningful measurements
                 gate = GateDecision.REJECT
                 message = (
-                    f"REJECT: Raster drawing without scale bar. "
-                    f"Cannot extract meaningful measurements. "
-                    f"Provide vector PDF or PDF with scale bar."
+                    "REJECT: Raster drawing without scale bar. "
+                    "Cannot extract meaningful measurements. "
+                    "Provide vector PDF or PDF with scale bar."
                 )
             elif final < 0.7:
                 gate = GateDecision.REJECT

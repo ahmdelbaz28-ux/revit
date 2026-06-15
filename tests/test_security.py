@@ -19,17 +19,11 @@ from __future__ import annotations
 import hashlib
 import hmac
 import inspect
-import json
 import logging
 import os
-import re
-import tempfile
 import threading
 import time
-from collections import defaultdict
 from pathlib import Path
-from typing import Any
-from unittest.mock import patch
 
 import pytest
 
@@ -39,8 +33,6 @@ from fireai.core.security_logging import (
     SecurityEventType,
     mask_sensitive,
 )
-from fireai.core.audit_log import compute_hmac as audit_compute_hmac
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES
@@ -751,7 +743,7 @@ class TestSecurityAuditLoggerChainIntegrity:
         logger = SecurityAuditLogger(log_dir=temp_log_dir)
 
         # Log an event and capture the chain hash
-        event_id = logger.log_event(
+        logger.log_event(
             SecurityEventType.AUTH_SUCCESS, user="original_user"
         )
         chain_after = logger._chain_hash
@@ -762,7 +754,7 @@ class TestSecurityAuditLoggerChainIntegrity:
         assert chain_after != _SECURITY_GENESIS
 
         # Log another event — chain should advance again
-        event_id_2 = logger.log_event(
+        logger.log_event(
             SecurityEventType.AUTH_FAILURE, user="another_user"
         )
         chain_after_2 = logger._chain_hash

@@ -20,12 +20,10 @@ Usage:
 
 from __future__ import annotations
 
-import os
-import sys
 import logging
+import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
 
 import pytest
 

@@ -20,14 +20,15 @@ NEC References:
 from __future__ import annotations
 
 import math
+
 import pytest
-from unittest.mock import patch
 
 # NOTE: The provenance module's RuleApplied/Violation classes have different
 # field names than what conduit_fill_analyzer expects, causing TypeError.
 # We mock provenance to None to test the actual business logic via the
 # fallback dict path — consistent with the pattern used in group 3/4 tests.
 import fireai.core.conduit_fill_analyzer as _cfa_mod
+
 
 @pytest.fixture(autouse=True)
 def _disable_provenance():
@@ -42,20 +43,19 @@ def _disable_provenance():
         setattr(_cfa_mod, attr, val)
 
 from fireai.core.conduit_fill_analyzer import (
-    InsulationType,
+    CONDUCTOR_DERATING,
+    CONDUIT_SPECS,
+    DEFAULT_FILL_LIMIT,
+    FILL_LIMITS,
+    WIRE_DIAMETERS_MM,
     CircuitClass,
-    ConduitType,
-    WireSpec,
     ConduitFillResult,
     ConduitSizer,
-    WIRE_DIAMETERS_MM,
-    CONDUIT_SPECS,
-    FILL_LIMITS,
-    DEFAULT_FILL_LIMIT,
-    CONDUCTOR_DERATING,
+    ConduitType,
+    InsulationType,
+    WireSpec,
     get_derating_factor,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # InsulationType Enum
@@ -202,7 +202,7 @@ class TestFillLimits:
 
     def test_fill_limits_sum_reasonable(self):
         """All fill limits must be between 0 and 1."""
-        for count, limit in FILL_LIMITS.items():
+        for _count, limit in FILL_LIMITS.items():
             assert 0 < limit <= 1.0
         assert 0 < DEFAULT_FILL_LIMIT <= 1.0
 

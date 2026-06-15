@@ -20,32 +20,44 @@ Test Categories:
 
 import os
 import sys
-import unittest
 import tempfile
-import hashlib
+import unittest
 
 # Ensure the project root is on the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from qomn_fire.core.types import (
-    Point3D, Wall, Room, Opening, Building, Device,
-    DeviceType, ConduitType, ConduitRun, Fitting, FittingType,
-    FireAlarmPanel, ProjectRequirements, PanelRecommendation,
-    HatchSpec, TitleBlock, Revision
-)
 from qomn_fire.core.errors import (
-    Result, BaseEngineeringError, FileValidationError, FormatError,
-    VersionError, CorruptionError, ConversionError, GeometryError,
-    UnitError, ConduitFillError, NECViolationError, HatchPlacementError,
-    PhysicalConstraintError, FACPSelectionError
+    BaseEngineeringError,
+    ConduitFillError,
+    ConversionError,
+    CorruptionError,
+    FACPSelectionError,
+    FileValidationError,
+    FormatError,
+    GeometryError,
+    HatchPlacementError,
+    NECViolationError,
+    PhysicalConstraintError,
+    Result,
+    UnitError,
+    VersionError,
 )
-from qomn_fire.parsers.format_detector import FormatDetector
-from qomn_fire.parsers.file_validator import FileValidator
+from qomn_fire.core.types import (
+    Building,
+    Device,
+    DeviceType,
+    Opening,
+    Point3D,
+    Room,
+    Wall,
+)
 from qomn_fire.parsers.dwg_converter import DwgConverter
-from qomn_fire.parsers.rvt_converter import RvtConverter
-from qomn_fire.parsers.ifc_parser import IfcParser
 from qomn_fire.parsers.dxf_parser import DxfParser
+from qomn_fire.parsers.file_validator import FileValidator
+from qomn_fire.parsers.format_detector import FormatDetector
 from qomn_fire.parsers.geometry_validator import GeometryValidator
+from qomn_fire.parsers.ifc_parser import IfcParser
+from qomn_fire.parsers.rvt_converter import RvtConverter
 
 
 class TestFormatDetector(unittest.TestCase):
@@ -846,8 +858,8 @@ class TestIntegrationPipeline(unittest.TestCase):
             # protection design based on wrong geometry is INVALID and DANGEROUS.
             geom_res = GeometryValidator.validate_building(building)
             self.assertTrue(geom_res.is_failure,
-                           f"V58 SAFETY: GeometryValidator MUST reject placeholder geometry. "
-                           f"Got unexpected success — placeholder buildings must NOT pass validation.")
+                           "V58 SAFETY: GeometryValidator MUST reject placeholder geometry. "
+                           "Got unexpected success — placeholder buildings must NOT pass validation.")
             # Verify the error is about placeholder/fallback geometry
             self.assertIn("placeholder", str(geom_res.error()).lower(),
                          "Rejection reason must mention placeholder/fallback geometry")

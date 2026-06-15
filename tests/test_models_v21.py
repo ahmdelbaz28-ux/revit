@@ -19,58 +19,57 @@ Standards tested:
 from __future__ import annotations
 
 import math
+
 import pytest
 from pydantic import ValidationError
 
 from fireai.core.models_v21 import (
-    # Enums
-    VentilationLevel,
-    HazardType,
-    ZoneType,
-    EPLGas,
-    EPLDust,
-    EPLMining,
-    TemperatureClass,
-    WavelengthBand,
-    RegulatoryFramework,
-    PasquillStability,
-    ThermalMarginRule,
-    RegionProfile,
-    Jurisdiction,
-    FoulingCategory,
-    ElevationTier,
-    # Pydantic Models
-    SubstanceProperties,
-    ZoneExtent,
-    HACResult,
-    ATEXEquipmentSpec,
-    Obstruction,
-    FlameDetectorSpec,
-    RayTracePoint,
-    RegSelectorResult,
-    EnvironmentalContext,
-    SpectralSignature,
-    SpectralSignatureRegistry,
-    VolumetricMedium,
-    # Functions
-    _select_temp_class,
-    _select_temp_class_with_margin,
-    vapor_density_tier,
-    room_purge_time,
-    room_concentration_at_time,
-    burgess_wheeler_lfl,
-    beer_lambert_transmittance,
-    volumetric_path_transmittance,
-    _ray_aabb_path_length,
+    _DEFAULT_MEDIUM_ALPHA,
+    _MW_HIGH_THRESHOLD,
+    _MW_LOW_THRESHOLD,
     # Constants
     _T_CLASS_MAX,
     MIN_REDUNDANCY_BY_ZONE,
-    _MW_AIR,
-    _MW_HIGH_THRESHOLD,
-    _MW_LOW_THRESHOLD,
-    _DEFAULT_MEDIUM_ALPHA,
+    ATEXEquipmentSpec,
+    ElevationTier,
+    EnvironmentalContext,
+    EPLDust,
+    EPLGas,
+    EPLMining,
+    FlameDetectorSpec,
+    FoulingCategory,
+    HACResult,
+    HazardType,
+    Jurisdiction,
+    Obstruction,
+    PasquillStability,
+    RayTracePoint,
+    RegionProfile,
+    RegSelectorResult,
+    RegulatoryFramework,
+    SpectralSignature,
+    SpectralSignatureRegistry,
+    # Pydantic Models
+    SubstanceProperties,
+    TemperatureClass,
+    ThermalMarginRule,
+    # Enums
+    VentilationLevel,
+    VolumetricMedium,
+    WavelengthBand,
+    ZoneExtent,
+    ZoneType,
+    _ray_aabb_path_length,
+    # Functions
+    _select_temp_class,
+    _select_temp_class_with_margin,
+    beer_lambert_transmittance,
+    burgess_wheeler_lfl,
+    room_concentration_at_time,
+    room_purge_time,
+    vapor_density_tier,
+    volumetric_path_transmittance,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Enum Tests

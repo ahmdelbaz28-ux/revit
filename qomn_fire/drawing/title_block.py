@@ -11,7 +11,8 @@ try:
 except ImportError:
     ezdxf = None
 
-from qomn_fire.core.types import TitleBlock, PanelRecommendation
+from qomn_fire.core.types import PanelRecommendation, TitleBlock
+
 
 def draw_title_block(doc, title: TitleBlock):
     if ezdxf is None:

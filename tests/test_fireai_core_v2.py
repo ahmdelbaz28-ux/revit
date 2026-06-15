@@ -17,19 +17,18 @@ Security fixes tested:
 from __future__ import annotations
 
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
-from dataclasses import dataclass
 
 from fireai.core.fireai_core import (
-    FireAISystem,
-    EnhancedRoomResult,
     ConfidenceLevel,
+    EnhancedRoomResult,
+    FireAISystem,
     PlacementProof,
     ResilienceResult,
     _resolve_db_path,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ConfidenceLevel Tests
@@ -188,7 +187,7 @@ class TestFireAISystem:
             system.analyse_room(None)
 
     def test_analyse_room_invalid_user_id(self, system):
-        from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
+        from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
         spec = RoomSpec(room_id="R1", width_m=5.0, depth_m=5.0,
                         ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
                         occupancy_type="office")
@@ -196,7 +195,7 @@ class TestFireAISystem:
             system.analyse_room(spec, user_id="")
 
     def test_analyse_room_empty_user_id(self, system):
-        from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
+        from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
         spec = RoomSpec(room_id="R1", width_m=5.0, depth_m=5.0,
                         ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
                         occupancy_type="office")
@@ -255,7 +254,7 @@ class TestAnalysisIntegration:
 
         system._expert = mock_expert
 
-        from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
+        from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
         spec = RoomSpec(room_id="R1", width_m=10.0, depth_m=8.0,
                         ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
                         occupancy_type="office")
@@ -274,7 +273,7 @@ class TestAnalysisIntegration:
         mock_expert.analyse_room.side_effect = RuntimeError("Boom")
         system._expert = mock_expert
 
-        from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
+        from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
         spec = RoomSpec(room_id="R1", width_m=5.0, depth_m=5.0,
                         ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
                         occupancy_type="office")
@@ -296,7 +295,7 @@ class TestAnalysisIntegration:
         mock_expert.analyse_room.return_value = mock_analysis
         system._expert = mock_expert
 
-        from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
+        from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
         spec = RoomSpec(room_id="R1", width_m=10.0, depth_m=10.0,
                         ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
                         occupancy_type="office")
@@ -318,7 +317,7 @@ class TestAnalysisIntegration:
         mock_expert.analyse_room.return_value = mock_analysis
         system._expert = mock_expert
 
-        from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
+        from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
         spec = RoomSpec(room_id="R1", width_m=10.0, depth_m=10.0,
                         ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),
                         occupancy_type="office")
@@ -338,7 +337,7 @@ class TestAnalysisIntegration:
         mock_expert.analyse_room.return_value = mock_analysis
         system._expert = mock_expert
 
-        from fireai.core.nfpa72_models import RoomSpec, CeilingSpec
+        from fireai.core.nfpa72_models import CeilingSpec, RoomSpec
         specs = [
             RoomSpec(room_id=f"R{i}", width_m=5.0, depth_m=5.0,
                      ceiling_spec=CeilingSpec(height_at_low_point_m=3.0),

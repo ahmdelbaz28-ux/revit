@@ -15,21 +15,14 @@ NFPA 101 References:
 
 from __future__ import annotations
 
-import math
 import pytest
 
 from fireai.core.egress_calculator import (
-    calculate_egress_time,
-    minimum_exit_width,
-    EgressResult,
-    _WALKING_SPEED_M_S,
-    _STAIR_SPEED_M_S,
-    _FLOW_RATE_DOOR_PER_M,
-    _FLOW_RATE_STAIR_PER_M,
     _MIN_EGRESS_WIDTH_M,
     _SAFETY_FACTOR,
+    calculate_egress_time,
+    minimum_exit_width,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Egress Time Calculation

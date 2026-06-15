@@ -12,18 +12,17 @@ from __future__ import annotations
 import pytest
 
 from fireai.core.rules_engine.compliance_bridge import (
-    NFPA72ComplianceChecker,
     ComplianceReport,
-    room_to_facts,
+    NFPA72ComplianceChecker,
     detector_to_fact,
-    hvac_to_fact,
     elevator_to_fact,
+    hvac_to_fact,
     results_to_report,
+    room_to_facts,
 )
 from fireai.core.rules_engine.engine import (
     Fact,
     RulesEngine,
-    RulePriority,
 )
 from fireai.core.rules_engine.nfpa72_rules import NFPA72RuleSet
 

@@ -15,7 +15,6 @@ Covers all public functions, classes, and constants:
 
 from __future__ import annotations
 
-import math
 from datetime import datetime, timezone
 
 import pytest
@@ -23,18 +22,17 @@ import pytest
 from fireai.core.safety_assurance import (
     ABSOLUTE_MINIMUM_COVERAGE,
     MINIMUM_COVERAGE_FOR_SUBMISSION,
-    OverrideRecord,
-    OverrideRole,
     PROOF_VERIFIED_THRESHOLD,
     STANDARD_COVERAGE_THRESHOLD,
     EngineeringEvidencePackage,
+    OverrideRecord,
+    OverrideRole,
     SafetyTier,
     apply_fail_safe,
     classify_safety_tier,
     tier_can_submit,
     tier_requires_fpe_review,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTS
@@ -486,25 +484,25 @@ class TestOverrideRecord:
 
 def _make_evidence_package(**overrides):
     """Helper to create a standard evidence package with optional overrides."""
-    defaults = dict(
-        package_id="PKG-001",
-        room_id="ROOM-A1",
-        room_polygon=[(0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)],
-        room_area_m2=80.0,
-        ceiling_height_m=3.6,
-        ceiling_type="smooth",
-        occupancy_type="office",
-        detector_positions=[(3.3, 2.7), (6.6, 5.4)],
-        detector_type="photoelectric",
-        spacing_m=9.1,
-        coverage_radius_m=6.4,
-        coverage_pct=99.7,
-        wall_violations=0,
-        nfpa_references=["NFPA 72 §17.6.3.1", "NFPA 72 §17.7.4.2.3.1"],
-        compliance_status="COMPLIANT",
-        proof_valid=True,
-        safety_tier="PROOF_VERIFIED",
-    )
+    defaults = {
+        "package_id": "PKG-001",
+        "room_id": "ROOM-A1",
+        "room_polygon": [(0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)],
+        "room_area_m2": 80.0,
+        "ceiling_height_m": 3.6,
+        "ceiling_type": "smooth",
+        "occupancy_type": "office",
+        "detector_positions": [(3.3, 2.7), (6.6, 5.4)],
+        "detector_type": "photoelectric",
+        "spacing_m": 9.1,
+        "coverage_radius_m": 6.4,
+        "coverage_pct": 99.7,
+        "wall_violations": 0,
+        "nfpa_references": ["NFPA 72 §17.6.3.1", "NFPA 72 §17.7.4.2.3.1"],
+        "compliance_status": "COMPLIANT",
+        "proof_valid": True,
+        "safety_tier": "PROOF_VERIFIED",
+    }
     defaults.update(overrides)
     return EngineeringEvidencePackage(**defaults)
 

@@ -27,11 +27,11 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import pytest
-from fastapi.testclient import TestClient
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
-from backend.routers.facp import router
 from backend.rbac import Role
+from backend.routers.facp import router
 
 # Create a minimal test app with just the FACP router
 app = FastAPI()

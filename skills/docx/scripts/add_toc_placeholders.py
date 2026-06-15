@@ -27,7 +27,6 @@ Example:
 """
 
 import argparse
-import html
 import json
 import re
 import shutil
@@ -191,7 +190,6 @@ def _fix_heading_outline_levels(styles_xml_path: Path) -> None:
     content = styles_xml_path.read_text(encoding='utf-8')
     original = content
 
-    W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 
     for level in range(1, 7):
         style_id = f'Heading{level}'
@@ -211,7 +209,7 @@ def _fix_heading_outline_levels(styles_xml_path: Path) -> None:
         style_content = match.group(2)
 
         # Check if outlineLvl already exists in this style
-        if f'<w:outlineLvl' in style_content:
+        if '<w:outlineLvl' in style_content:
             continue
 
         # Find or create <w:pPr> within this style
@@ -254,7 +252,7 @@ def _fix_fld_char_structure(xml_content: str) -> str:
         r'<w:r(?:\s[^>]*)?>('
         r'<w:fldChar[^>]*w:fldCharType="begin"[^>]*/>'  # begin
         r')('
-        r'<w:instrText[^>]*>.*?</w:instrText>'           # instrText  
+        r'<w:instrText[^>]*>.*?</w:instrText>'           # instrText
         r')('
         r'<w:fldChar[^>]*w:fldCharType="separate"[^>]*/>'  # separate
         r')</w:r>'
@@ -460,11 +458,9 @@ def _insert_toc_placeholders(xml_content: str, entries: list = None, toc_style_m
         toc_style_mapping = {1: "9", 2: "11", 3: "12"}
 
     W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-    R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
     # Parse XML
     root = etree.fromstring(xml_content.encode('utf-8'))
-    nsmap = {'w': W, 'r': R_NS}
 
     # ── Step 1: Add bookmarks to Heading paragraphs ──
     bookmark_id_counter = 100000

@@ -3,12 +3,16 @@ QOMN-FIRE AUTOMATED DETECTOR PLACEMENT ENGINE
 Reference Standard: NFPA 72 (2022) Section 17.7.3.2 (Spacing and Coverage).
 """
 
-from typing import List
-import math
 import logging
-from qomn_fire.core.types import Point3D, Device, DeviceType
-from qomn_fire.core.errors import Result, PhysicalConstraintError
-from qomn_fire.core.constants import NFPA_SMOKE_DETECTOR_SPACING_M, NFPA_MAX_WALL_DISTANCE_M
+import math
+from typing import List
+
+from qomn_fire.core.constants import (
+    NFPA_MAX_WALL_DISTANCE_M,
+    NFPA_SMOKE_DETECTOR_SPACING_M,
+)
+from qomn_fire.core.errors import PhysicalConstraintError, Result
+from qomn_fire.core.types import Device, DeviceType, Point3D
 
 logger = logging.getLogger("qomn_fire.placement")
 

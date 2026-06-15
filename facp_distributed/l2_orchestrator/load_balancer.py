@@ -1,12 +1,12 @@
 """
 Load Balancer for L2 Orchestrator in Distributed FACP System
 """
-from typing import Dict, Any, List, Optional
+import random
+import threading
 import time
 import uuid
-import threading
-import random
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class LoadBalancingStrategy(Enum):
@@ -20,7 +20,7 @@ class EngineWorker:
     """
     Represents an engine worker node in the distributed system
     """
-    def __init__(self, worker_id: str, capabilities: List[str], 
+    def __init__(self, worker_id: str, capabilities: List[str],
                  max_concurrent_tasks: int = 10, current_load: float = 0.0):
         self.worker_id = worker_id
         self.capabilities = capabilities
@@ -39,7 +39,7 @@ class EngineWorker:
 
     def can_accept_task(self) -> bool:
         """Check if worker can accept a new task"""
-        return (self.status == "online" and 
+        return (self.status == "online" and
                 self.current_tasks < self.max_concurrent_tasks and
                 self.current_load < 0.95)  # Don't overload beyond 95%
 
@@ -97,7 +97,7 @@ class LoadBalancer:
         self.cluster_workers = {}  # cluster-wide worker info
         self.worker_selection_history = {}  # worker_id -> selection_count
 
-    def register_engine_worker(self, worker_id: str, capabilities: List[str], 
+    def register_engine_worker(self, worker_id: str, capabilities: List[str],
                               max_concurrent_tasks: int = 10, location: str = "unknown"):
         """
         Register a new engine worker with the load balancer
@@ -129,13 +129,13 @@ class LoadBalancer:
         with self.lock:
             # First, filter workers that can handle this method
             eligible_workers = []
-            for worker_id, worker in self.workers.items():
+            for _worker_id, worker in self.workers.items():
                 if self._worker_can_handle_method(worker, method) and worker.can_accept_task():
                     eligible_workers.append(worker)
-            
+
             if not eligible_workers:
                 return None
-            
+
             # Apply the selected load balancing strategy
             if self.strategy == LoadBalancingStrategy.ROUND_ROBIN:
                 selected_worker = self._round_robin_selection(eligible_workers)
@@ -148,13 +148,13 @@ class LoadBalancer:
             else:
                 # Default to least connections
                 selected_worker = self._least_connections_selection(eligible_workers)
-            
+
             if selected_worker:
                 # Register that a task will be assigned to this worker
                 selected_worker.register_task_start()
                 self.worker_selection_history[selected_worker.worker_id] += 1
                 return selected_worker.worker_id
-            
+
             return None
 
     def _worker_can_handle_method(self, worker: EngineWorker, method: str) -> bool:
@@ -164,12 +164,12 @@ class LoadBalancer:
         # Check for exact capability match
         if method in worker.capabilities:
             return True
-        
+
         # Check for wildcard matches
         for capability in worker.capabilities:
             if capability.endswith('.*') and method.startswith(capability[:-2]):
                 return True
-        
+
         return False
 
     def _round_robin_selection(self, workers: List[EngineWorker]) -> Optional[EngineWorker]:
@@ -178,7 +178,7 @@ class LoadBalancer:
         """
         if not workers:
             return None
-        
+
         # Cycle through workers
         selected = workers[self.round_robin_index % len(workers)]
         self.round_robin_index = (self.round_robin_index + 1) % len(workers)
@@ -190,7 +190,7 @@ class LoadBalancer:
         """
         if not workers:
             return None
-        
+
         # Sort by current tasks, then by load
         sorted_workers = sorted(workers, key=lambda w: (w.current_tasks, w.current_load))
         return sorted_workers[0]
@@ -201,22 +201,22 @@ class LoadBalancer:
         """
         if not workers:
             return None
-        
+
         # Calculate total weight
         total_weight = sum(max(w.weight, 0.1) for w in workers)  # Minimum weight of 0.1
-        
+
         if total_weight <= 0:
             return self._round_robin_selection(workers)
-        
+
         # Select based on weights
         random_value = random.uniform(0, total_weight)
         cumulative_weight = 0
-        
+
         for worker in workers:
             cumulative_weight += max(worker.weight, 0.1)
             if random_value <= cumulative_weight:
                 return worker
-        
+
         # Fallback to last worker
         return workers[-1]
 
@@ -226,12 +226,12 @@ class LoadBalancer:
         """
         if not workers:
             return None
-        
+
         # Get request constraints
         constraints = request_data.get("constraints", {}) if request_data else {}
-        required_memory = constraints.get("max_memory_mb", 512)
-        expected_duration = constraints.get("timeout_ms", 8000) / 1000.0  # Convert to seconds
-        
+        constraints.get("max_memory_mb", 512)
+        constraints.get("timeout_ms", 8000) / 1000.0  # Convert to seconds
+
         # Score each worker based on available resources
         scored_workers = []
         for worker in workers:
@@ -239,17 +239,17 @@ class LoadBalancer:
             memory_available = (1.0 - worker.memory_usage) * worker.max_concurrent_tasks * 512  # Estimate
             load_score = 1.0 - worker.current_load
             task_score = max(0, (worker.max_concurrent_tasks - worker.current_tasks) / worker.max_concurrent_tasks)
-            
+
             # Combined score (higher is better)
             score = (load_score * 0.4) + (task_score * 0.4) + (memory_available / 1000 * 0.2)
-            
+
             scored_workers.append((worker, score))
-        
+
         # Select worker with highest score
         if scored_workers:
             selected_worker, _ = max(scored_workers, key=lambda x: x[1])
             return selected_worker
-        
+
         # Fallback to least connections
         return self._least_connections_selection(workers)
 
@@ -261,7 +261,7 @@ class LoadBalancer:
             if worker_id in self.workers:
                 self.workers[worker_id].status = status
 
-    def update_worker_resources(self, worker_id: str, cpu_usage: float = None, 
+    def update_worker_resources(self, worker_id: str, cpu_usage: float = None,
                                memory_usage: float = None, network_latency: float = None):
         """
         Update resource usage information for a worker
@@ -290,7 +290,7 @@ class LoadBalancer:
         with self.lock:
             if worker_id in self.workers:
                 self.workers[worker_id].register_task_completion()
-            
+
             # Remove from assignment history after some time
             if task_id in self.task_assignment_history:
                 # Don't immediately remove, keep for a while for debugging
@@ -319,7 +319,7 @@ class LoadBalancer:
         with self.lock:
             online_workers = [w for w in self.workers.values() if w.is_healthy()]
             offline_workers = [w for w in self.workers.values() if not w.is_healthy()]
-            
+
             return {
                 "load_balancer_id": self.load_balancer_id,
                 "total_workers": len(self.workers),
@@ -339,9 +339,9 @@ class LoadBalancer:
         current_time = time.time()
         if current_time - self.last_health_check < self.health_check_interval:
             return
-        
+
         with self.lock:
-            for worker_id, worker in self.workers.items():
+            for _worker_id, worker in self.workers.items():
                 if not worker.is_healthy():
                     worker.status = "offline"
                     # TODO: Handle failed worker appropriately
@@ -353,23 +353,23 @@ class LoadBalancer:
         """
         with self.lock:
             online_workers = [w for w in self.workers.values() if w.is_healthy()]
-            
+
             if online_workers:
                 avg_load = sum(w.current_load for w in online_workers) / len(online_workers)
                 avg_cpu = sum(w.cpu_usage for w in online_workers) / len(online_workers)
                 avg_memory = sum(w.memory_usage for w in online_workers) / len(online_workers)
             else:
                 avg_load = avg_cpu = avg_memory = 0.0
-            
+
             return {
                 "total_workers": len(self.workers),
                 "healthy_workers": len(online_workers),
                 "average_worker_load": avg_load,
                 "average_cpu_usage": avg_cpu,
                 "average_memory_usage": avg_memory,
-                "most_selected_worker": max(self.worker_selection_history.items(), 
+                "most_selected_worker": max(self.worker_selection_history.items(),
                                           key=lambda x: x[1])[0] if self.worker_selection_history else None,
-                "selection_distribution": dict(sorted(self.worker_selection_history.items(), 
+                "selection_distribution": dict(sorted(self.worker_selection_history.items(),
                                                    key=lambda x: x[1], reverse=True))
             }
 
@@ -387,7 +387,7 @@ class LoadBalancer:
         """
         with self.lock:
             eligible_workers = []
-            for worker_id, worker in self.workers.items():
+            for _worker_id, worker in self.workers.items():
                 if self._worker_can_handle_method(worker, method) and worker.can_accept_task():
                     eligible_workers.append(worker.get_status())
             return eligible_workers
@@ -402,7 +402,7 @@ class LoadBalancer:
                 worker.status = "failed"
                 worker.failure_count += 1
                 worker.last_failure_time = time.time()
-                
+
                 # Adjust weight based on failures
                 if worker.failure_count > 3:  # Mark as unreliable after 3 failures
                     worker.weight = 0.1  # Very low weight
@@ -425,8 +425,8 @@ class LoadBalancer:
         Clean up old task assignment records
         """
         current_time = time.time()
-        cutoff_time = current_time - (max_age_minutes * 60)
-        
+        current_time - (max_age_minutes * 60)
+
         # In a real implementation, we'd track assignment times
         # For now, we'll just maintain the size
         with self.lock:
@@ -442,7 +442,7 @@ class LoadBalancer:
         with self.lock:
             # Update cluster workers information
             self.cluster_workers.update(cluster_worker_state)
-            
+
             # Potentially integrate cluster workers with local load balancing
             # This would depend on the specific distributed architecture needs
 
@@ -463,7 +463,7 @@ class AdaptiveLoadBalancer(LoadBalancer):
         """
         # Periodically evaluate if we should change strategy
         self._evaluate_strategy()
-        
+
         return super().select_engine_worker(method, request_data)
 
     def _evaluate_strategy(self):
@@ -476,7 +476,7 @@ class AdaptiveLoadBalancer(LoadBalancer):
             if len(times) >= 10:  # Need sufficient data
                 avg_response_time = sum(times) / len(times)
                 worker_performance[worker_id] = avg_response_time
-        
+
         # If we have performance data, consider switching to resource-based strategy
         if worker_performance and self.strategy != LoadBalancingStrategy.RESOURCE_BASED:
             # Check if there's significant variation in performance
@@ -489,13 +489,13 @@ class AdaptiveLoadBalancer(LoadBalancer):
         Override to record performance metrics
         """
         super().record_task_completion(task_id, worker_id)
-        
+
         if response_time is not None:
             with self.lock:
                 if worker_id not in self.performance_history:
                     self.performance_history[worker_id] = []
                 self.performance_history[worker_id].append(response_time)
-                
+
                 # Keep only recent performance data
                 if len(self.performance_history[worker_id]) > self.monitoring_window:
                     self.performance_history[worker_id] = self.performance_history[worker_id][-50:]  # Last 50 measurements

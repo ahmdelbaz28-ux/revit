@@ -14,7 +14,6 @@ Standards:
   NFPA 72 (2022) Section 17.7.3.2.3.1 — Detector zone spacing
 """
 
-import math
 import os
 import sys
 import unittest
@@ -24,9 +23,16 @@ os.environ.setdefault("FIREAI_ENV", "testing")
 os.environ.setdefault("DIGITAL_TWIN_DB_PATH", ":memory:")
 
 from fireai.core.qomn_integration_engine import (
-    Point3D, GridMap3D, CableRouter, HatchPlacementEngine,
-    CableHatchIntegrator, ConduitType, NECViolationError, HatchPlacementError,
-    CableRoutingError, compute_engine_signature,
+    CableHatchIntegrator,
+    CableRouter,
+    CableRoutingError,
+    ConduitType,
+    GridMap3D,
+    HatchPlacementEngine,
+    HatchPlacementError,
+    NECViolationError,
+    Point3D,
+    compute_engine_signature,
 )
 
 

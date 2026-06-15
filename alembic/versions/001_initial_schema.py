@@ -9,8 +9,9 @@ Captures the actual schema from backend/database.py including:
 - sync_operations (NEW — granular per-entity sync tracking)
 - Performance indexes
 """
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 # revision identifiers
 revision = '001'

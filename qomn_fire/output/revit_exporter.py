@@ -4,7 +4,9 @@ QOMN-FIRE BIM EXCHANGE SCHEMA EXPORTER
 
 import json
 from typing import List
-from qomn_fire.core.types import Device, ConduitRun, PanelRecommendation
+
+from qomn_fire.core.types import ConduitRun, Device, PanelRecommendation
+
 
 def export_to_revit_json(devices: List[Device], runs: List[ConduitRun], facp: PanelRecommendation) -> str:
     schema = {

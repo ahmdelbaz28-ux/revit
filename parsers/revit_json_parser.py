@@ -14,7 +14,7 @@ Supports:
 
 import json
 from dataclasses import dataclass
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -31,26 +31,26 @@ class RevitProject:
 
 class RevitJSONParser:
     """Parse Revit JSON exports."""
-    
+
     def __init__(self, json_path: str):
         self.json_path = json_path
         self.data = None
-        
+
     def _load_json(self) -> Dict:
         """Load JSON file."""
         with open(self.json_path, 'r') as f:
             return json.load(f)
-    
+
     def parse(self) -> Optional[RevitProject]:
         """Parse Revit JSON."""
         try:
             if self.data is None:
                 self.data = self._load_json()
-        except Exception as e:
+        except Exception:
             return None
-        
+
         info = self.data.get('project_info', {})
-        
+
         return RevitProject(
             name=info.get('name', 'Unknown'),
             version=info.get('version', 'Unknown'),
@@ -60,13 +60,13 @@ class RevitJSONParser:
             families=self.data.get('families', {}),
             parameters=self.data.get('parameters', {}),
         )
-    
+
     def get_level_count(self) -> int:
         """Get number of levels."""
         if self.data:
             return len(self.data.get('levels', []))
         return 0
-    
+
     def get_fire_alarm_families(self) -> List[str]:
         """Get fire alarm device families."""
         if self.data:
@@ -77,7 +77,7 @@ class RevitJSONParser:
                     fa_families.extend(variants)
             return fa_families
         return []
-    
+
     def get_parameters(self) -> Dict:
         """Get project parameters."""
         if self.data:

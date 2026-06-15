@@ -17,21 +17,20 @@ Key features tested:
 from __future__ import annotations
 
 import json
-import time
 import threading
+
 import pytest
 
 from fireai.core.audit_blockchain_bridge import (
-    AuditEntry,
-    HashChainAuditStore,
-    _sha256,
-    _hmac_sha256,
-    _chain_hash,
     AUDIT_SYSTEM_NAME,
     AUDIT_VERSION,
     NOT_A_BLOCKCHAIN_NOTE,
+    AuditEntry,
+    HashChainAuditStore,
+    _chain_hash,
+    _hmac_sha256,
+    _sha256,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Constants Tests
@@ -101,17 +100,17 @@ class TestHashPrimitives:
 
 class TestAuditEntry:
     def _make_entry(self, **overrides):
-        defaults = dict(
-            entry_id="test-1",
-            event_type="test_event",
-            data={"key": "value"},
-            timestamp=1000.0,
-            seq_num=0,
-            prev_hash="0" * 64,
-            chain_hash="a" * 64,
-            hmac_sig="b" * 64,
-            actor="test_user",
-        )
+        defaults = {
+            "entry_id": "test-1",
+            "event_type": "test_event",
+            "data": {"key": "value"},
+            "timestamp": 1000.0,
+            "seq_num": 0,
+            "prev_hash": "0" * 64,
+            "chain_hash": "a" * 64,
+            "hmac_sig": "b" * 64,
+            "actor": "test_user",
+        }
         defaults.update(overrides)
         return AuditEntry(**defaults)
 
@@ -194,7 +193,7 @@ class TestHashChainAuditStore:
 
     def test_verify_chain_tampered_data(self, store):
         """Tampering with entry data should be detected."""
-        e1 = store.log(event_type="e1", data={"original": True})
+        store.log(event_type="e1", data={"original": True})
         # Tamper: modify the data in-memory
         object.__setattr__(store._entries[0], "data", {"tampered": True})
         is_valid, violations = store.verify_chain()
@@ -368,7 +367,7 @@ class TestThreadSafety:
         def log_entries(n):
             try:
                 for i in range(n):
-                    store.log(event_type=f"thread_event", data={"n": i})
+                    store.log(event_type="thread_event", data={"n": i})
             except Exception as e:
                 errors.append(e)
 

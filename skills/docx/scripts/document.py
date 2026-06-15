@@ -30,16 +30,14 @@ import html
 import random
 import shutil
 import tempfile
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
-
-import zipfile
 
 import defusedxml.minidom
 from defusedxml import minidom
 
 from .utilities import XMLEditor
-
 
 # ---------------------------------------------------------------------------
 # Inline pack utility (replaces former ooxml.scripts.pack dependency)

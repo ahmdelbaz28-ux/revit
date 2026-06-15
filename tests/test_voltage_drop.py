@@ -19,23 +19,20 @@ NFPA 72 References:
 
 from __future__ import annotations
 
-import math
-import pytest
 import warnings
 
-from fireai.core.voltage_drop import (
-    get_wire_resistance_ohm_per_m,
-    calculate_voltage_drop,
-    calculate_max_circuit_length,
-    recommend_wire_gauge,
-    calculate_battery_backup,
-    _next_standard_ah,
-    MAX_VOLTAGE_DROP_PCT,
-    NOMINAL_VOLTAGE_FA,
-    FA_WIRE_GAUGES,
-    _AWG_RESISTANCE_OHM_PER_KM,
-)
+import pytest
 
+from fireai.core.voltage_drop import (
+    FA_WIRE_GAUGES,
+    MAX_VOLTAGE_DROP_PCT,
+    _next_standard_ah,
+    calculate_battery_backup,
+    calculate_max_circuit_length,
+    calculate_voltage_drop,
+    get_wire_resistance_ohm_per_m,
+    recommend_wire_gauge,
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Wire Resistance Lookup (BUG-12 FIX: keyed by AWG string)
@@ -317,7 +314,7 @@ class TestRecommendWireGauge:
             # If recommended is "12", "14" should not be compliant for same params
             thinner_gauges = {"14": [], "12": ["14"], "10": ["14", "12"], "8": ["14", "12", "10"]}
             for thinner in thinner_gauges.get(awg, []):
-                thinner_result = calculate_voltage_drop(0.5, 50.0, thinner, 24.0)
+                calculate_voltage_drop(0.5, 50.0, thinner, 24.0)
                 # At least this gauge should be non-compliant or we'd have recommended it
                 # (Note: this may not always hold due to ordering, but for small loads it should)
                 pass  # Structural check only

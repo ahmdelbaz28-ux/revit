@@ -49,9 +49,6 @@ V54 Bug Fixes Applied (vs. original user-submitted code):
 import os
 import sys
 import unittest
-from typing import List, Dict, Any, Optional, Tuple
-from dataclasses import dataclass, field
-
 
 # =====================================================================
 # AUTOMATED WORKSPACE VERIFICATION
@@ -84,7 +81,7 @@ def verify_workspace():
 class TestFACPSelectionEngine(unittest.TestCase):
 
     def setUp(self):
-        from facp_system.panel_selector import SelectionEngine, ProjectRequirements
+        from facp_system.panel_selector import ProjectRequirements, SelectionEngine
         self.engine = SelectionEngine
         self.req_class = ProjectRequirements
 
@@ -93,7 +90,7 @@ class TestFACPSelectionEngine(unittest.TestCase):
         GOLDEN TEST 1: Small building, No voice, Standalone.
         Input: 30 devices, 2 NACs.
         Expected: FC901 selected (FDNY-listed, optimal utilization).
-        
+
         Battery calculation (enhanced simplified, standalone mode):
           standby_load = (30 * 0.8/1000) + 0.120 = 0.024 + 0.120 = 0.144 A
           alarm_load = (2 * 2.0) + (30 * 5.0/1000) + 0.250 = 4.0 + 0.15 + 0.250 = 4.400 A
@@ -124,10 +121,10 @@ class TestFACPSelectionEngine(unittest.TestCase):
         GOLDEN TEST 2: High rise building with Voice Evacuation and networking.
         Input: 300 devices, 6 NACs.
         Expected: FC924 (504 pts >= 360 required, 6 NACs >= 6 required).
-        
+
         V54 FIX F2: With original 1.2x NAC margin, FC924 would be REJECTED
         (6 < 7.2). Now with exact NAC match, FC924 qualifies.
-        
+
         V54 FIX F3: With original sort, NFS2-3030 (3180 pts) would win on
         capacity tie-break. Now FC924 (504 pts, better utilization) wins.
         """
@@ -153,7 +150,7 @@ class TestFACPSelectionEngine(unittest.TestCase):
         """
         GOLDEN TEST 3: FDNY Jurisdiction Restrictions.
         Case: Panels lacking FDNY COA are rejected.
-        
+
         With V54 FIX F2 (exact NAC match), FC922 qualifies for 100 devices
         with 2 NACs (4 NACs >= 2 required, 252 pts >= 120 required).
         FC901 has 50 pts < 120 required — filtered by points, not NACs.
@@ -175,7 +172,7 @@ class TestFACPSelectionEngine(unittest.TestCase):
         """
         V54 FIX F4: Releasing service filter verification.
         Case: Project requiring releasing service must select releasing-capable panel.
-        
+
         Without the fix, a non-releasing panel could be selected for suppression.
         With the fix, only releasing-capable panels pass the filter.
         """
@@ -258,9 +255,9 @@ def execute_production_selection_pipeline():
     print("          QOMN-FIRE PANEL SELECTION ENGINE - REAL-WORLD DEMONSTRATION")
     print("="*80)
 
-    from facp_system.panel_selector import SelectionEngine, ProjectRequirements
-    from facp_system.panel_verifier import ComplianceVerifier
     from facp_system.panel_output import OutputGenerator
+    from facp_system.panel_selector import ProjectRequirements, SelectionEngine
+    from facp_system.panel_verifier import ComplianceVerifier
 
     # Project Scenario: Hospital Campus Facility
     req = ProjectRequirements(
@@ -276,18 +273,18 @@ def execute_production_selection_pipeline():
         min_temperature_c=20.0
     )
 
-    print(f"Project Inputs:")
+    print("Project Inputs:")
     print(f"  - Device Count        : {req.device_count} points (Required with margin: {req.device_count*1.2:.1f} pts)")
     print(f"  - NAC Circuit Count   : {req.nac_circuit_count} circuits")
     print(f"  - Location Compliance : {req.jurisdiction} Authority Having Jurisdiction (AHJ)")
-    print(f"  - Audio Evacuation    : YES (Requires Integrated Voice Evac)")
-    print(f"  - Releasing Service   : YES (Requires Suppression Control)")
+    print("  - Audio Evacuation    : YES (Requires Integrated Voice Evac)")
+    print("  - Releasing Service   : YES (Requires Suppression Control)")
     print(f"  - Min Temperature     : {req.min_temperature_c}C (for battery derating)")
 
     # 1. Run Selection Engine
     rec = SelectionEngine.select_panel(req)
 
-    print(f"\nEngine Recommendation:")
+    print("\nEngine Recommendation:")
     print(f"  -> Recommended Model  : {rec.recommended_model}")
     print(f"  -> Manufacturer       : {rec.manufacturer}")
     print(f"  -> Capacity Load Ratio: {rec.capacity_utilization:.2%}")

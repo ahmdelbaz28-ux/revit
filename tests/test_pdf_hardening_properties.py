@@ -16,32 +16,30 @@ This module verifies fundamental mathematical properties of:
 """
 
 import math
-import pytest
-from pydantic import ValidationError
-from hypothesis import given, settings, assume, HealthCheck
-from hypothesis import strategies as st
 
-from fireai.core.nfpa72_schemas import (
-    NFPA72Input,
-    VoltageDropInput,
-    ConvergenceConfig,
-    CeilingTypePydantic,
-    DetectorTypePydantic,
+import pytest
+from hypothesis import HealthCheck, assume, given, settings
+from hypothesis import strategies as st
+from pydantic import ValidationError
+
+from fireai.constants import (
+    COVERAGE_FACTOR_FLAT_CEILING,
+    DC_RETURN_PATH_FACTOR,
+    NFPA72_HEIGHT_SPACING_TABLE,
+    SMOKE_COVERAGE_RADIUS_M,
+    SMOKE_MAX_SPACING_M,
+    WALL_MIN_DISTANCE_M,
 )
 from fireai.core.nfpa72_calculations import (
     calculate_coverage_radius_from_height,
     check_voltage_drop,
 )
-from fireai.constants import (
-    COVERAGE_FACTOR_FLAT_CEILING,
-    SMOKE_MAX_SPACING_M,
-    SMOKE_COVERAGE_RADIUS_M,
-    DC_RETURN_PATH_FACTOR,
-    NFPA72_HEIGHT_SPACING_TABLE,
-    NFPA72_ABSOLUTE_MAX_HEIGHT_M,
-    WALL_MIN_DISTANCE_M,
+from fireai.core.nfpa72_schemas import (
+    CeilingTypePydantic,
+    ConvergenceConfig,
+    NFPA72Input,
+    VoltageDropInput,
 )
-
 
 # ============================================================================
 # Property-Based Tests — Coverage Radius

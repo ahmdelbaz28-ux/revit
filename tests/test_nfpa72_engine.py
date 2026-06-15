@@ -21,6 +21,13 @@ import math
 import pytest
 
 from fireai.core.nfpa72_engine import (
+    _BATTERY_DERATING_FACTOR,
+    _HEAT_SPACING_TABLE,
+    _MAX_DEVICES_BETWEEN_ISOLATORS,
+    _MAX_VOLTAGE_DROP_PCT,
+    _SMOKE_SPACING_TABLE,
+    _STANDARD_BATTERY_SIZES,
+    _SYSTEM_VOLTAGE,
     AWG_RESISTANCE_OHM_PER_KM,
     BatteryResult,
     SpacingResult,
@@ -30,15 +37,7 @@ from fireai.core.nfpa72_engine import (
     estimate_detector_count,
     get_detector_spacing,
     verify_fault_isolator_placement,
-    _BATTERY_DERATING_FACTOR,
-    _MAX_DEVICES_BETWEEN_ISOLATORS,
-    _MAX_VOLTAGE_DROP_PCT,
-    _SYSTEM_VOLTAGE,
-    _SMOKE_SPACING_TABLE,
-    _HEAT_SPACING_TABLE,
-    _STANDARD_BATTERY_SIZES,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. DATACLASS TESTS
@@ -958,7 +957,7 @@ class TestVerifyFaultIsolatorPlacement:
 
     def test_empty_device_list(self):
         """V69-4 FIX: Empty device list is NOT compliant — fail-safe.
-        
+
         An empty device list could indicate a data extraction failure
         (parser bug), not that the circuit is genuinely compliant.
         Missing compliance data = BLOCKED per V67 safety principle.
@@ -1164,7 +1163,7 @@ class TestCrossCutting:
         heat_spacings = [s for _, s in _HEAT_SPACING_TABLE]
         for i in range(len(heat_spacings) - 1):
             assert heat_spacings[i] > heat_spacings[i + 1], (
-                f"heat table: spacing should decrease with height"
+                "heat table: spacing should decrease with height"
             )
         # Smoke table: spacing is FLAT at 9.10m (no height reduction)
         smoke_spacings = [s for _, s in _SMOKE_SPACING_TABLE]

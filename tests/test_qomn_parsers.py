@@ -15,10 +15,10 @@ in the mock files.
 """
 
 import os
-import sys
-import unittest
-import tempfile
 import shutil
+import sys
+import tempfile
+import unittest
 
 # Ensure project root is in path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -214,7 +214,7 @@ class TestFileValidator(unittest.TestCase):
         from qomn_fire.parsers.file_validator import FileValidator
 
         empty_path = os.path.join(self.tmpdir, "empty.ifc")
-        with open(empty_path, "w") as f:
+        with open(empty_path, "w"):
             pass  # Write nothing
 
         res = FileValidator.validate_file(empty_path)
@@ -300,7 +300,7 @@ class TestGeometryValidator(unittest.TestCase):
 
     def test_valid_building_passes(self):
         """Building with valid rooms must pass geometry validation."""
-        from qomn_fire.core.types import Building, Room, Point3D
+        from qomn_fire.core.types import Building, Point3D, Room
         from qomn_fire.parsers.geometry_validator import GeometryValidator
 
         room = Room(
@@ -329,7 +329,7 @@ class TestGeometryValidator(unittest.TestCase):
         BUG-5 VALIDATION: Original code only detected rooms with identical bounding boxes.
         This test verifies that exact duplicates are caught.
         """
-        from qomn_fire.core.types import Building, Room, Point3D
+        from qomn_fire.core.types import Building, Point3D, Room
         from qomn_fire.parsers.geometry_validator import GeometryValidator
 
         r1 = Room(
@@ -366,7 +366,7 @@ class TestGeometryValidator(unittest.TestCase):
         Partially overlapping rooms must be detected when overlap > 50%.
         BUG-5 VALIDATION: Original code missed partial overlaps entirely.
         """
-        from qomn_fire.core.types import Building, Room, Point3D
+        from qomn_fire.core.types import Building, Point3D, Room
         from qomn_fire.parsers.geometry_validator import GeometryValidator
 
         r1 = Room(
@@ -418,7 +418,7 @@ class TestGeometryValidator(unittest.TestCase):
 
     def test_unclosed_room_fails(self):
         """Room with fewer than 3 boundary points must fail."""
-        from qomn_fire.core.types import Building, Room, Point3D
+        from qomn_fire.core.types import Building, Point3D, Room
         from qomn_fire.parsers.geometry_validator import GeometryValidator
 
         room = Room(
@@ -446,7 +446,7 @@ class TestGeometryValidator(unittest.TestCase):
         Coordinates exceeding 10,000m must be flagged as potential unit mismatch.
         This catches files using millimeters instead of meters.
         """
-        from qomn_fire.core.types import Building, Room, Point3D
+        from qomn_fire.core.types import Building, Point3D, Room
         from qomn_fire.parsers.geometry_validator import GeometryValidator
 
         room = Room(
@@ -602,7 +602,7 @@ class TestBuildingHash(unittest.TestCase):
 
     def test_building_hash_deterministic(self):
         """Building hash must be deterministic — same input = same hash."""
-        from qomn_fire.core.types import Building, Room, Point3D
+        from qomn_fire.core.types import Building, Point3D, Room
 
         room = Room(
             id="R1",
@@ -620,7 +620,7 @@ class TestBuildingHash(unittest.TestCase):
 
     def test_different_buildings_different_hash(self):
         """Different buildings must produce different hashes."""
-        from qomn_fire.core.types import Building, Room, Point3D
+        from qomn_fire.core.types import Building, Point3D, Room
 
         r1 = Room(id="R1", name="A", boundary=(Point3D(0,0), Point3D(5,0), Point3D(5,5), Point3D(0,5)), area_m2=25.0, height_m=3.0)
         r2 = Room(id="R2", name="B", boundary=(Point3D(0,0), Point3D(10,0), Point3D(10,10), Point3D(0,10)), area_m2=100.0, height_m=3.0)

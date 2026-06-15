@@ -16,39 +16,35 @@ Reference: NFPA 72-2022 §18.4, ISO 9613-1:1993, ISA-TR 84.00.07
 """
 
 import math
+
 import pytest
 
-from fireai.core.acoustics_engine import (
-    AcousticsEngine,
-    AcousticCoverageResult,
-    UGLDCoverageResult,
-    UGLDDetectionZone,
-    UGLDCoverageGap,
-    _combine_spl_db,
-    _image_source_reflection_spl,
-    _evaluate_ugld_trigger,
-    UGLD_CENTER_FREQUENCY_HZ,
-    UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M,
-    UGLD_MIN_SNR_DB,
-    NFPA72_PUBLIC_MODE_ABOVE_AMBIENT_DB,
-    NFPA72_PRIVATE_MODE_ABOVE_AMBIENT_DB,
-    NFPA72_SLEEPING_ABSOLUTE_MIN_DBA,
-    NFPA72_MAX_DBA,
-    DEFAULT_CEILING_ABSORPTION_COEFF,
-)
 from fireai.core.acoustic_calculator import (
-    Speaker,
     CheckPoint,
-    Barrier,
+    Speaker,
+)
+from fireai.core.acoustics_engine import (
+    DEFAULT_CEILING_ABSORPTION_COEFF,
+    NFPA72_MAX_DBA,
+    NFPA72_PRIVATE_MODE_ABOVE_AMBIENT_DB,
+    NFPA72_PUBLIC_MODE_ABOVE_AMBIENT_DB,
+    NFPA72_SLEEPING_ABSOLUTE_MIN_DBA,
+    UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M,
+    UGLD_CENTER_FREQUENCY_HZ,
+    UGLD_MIN_SNR_DB,
+    AcousticCoverageResult,
+    AcousticsEngine,
+    UGLDCoverageResult,
+    _combine_spl_db,
+    _evaluate_ugld_trigger,
+    _image_source_reflection_spl,
 )
 from fireai.core.ugld_acoustics import (
     UltrasonicSensor,
-    AcousticPropagation,
 )
 from fireai.core.ugld_raytrace import (
     AcousticObstacle,
 )
-
 
 # ============================================================================
 # Module Constants

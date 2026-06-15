@@ -23,18 +23,16 @@ NEC References:
 
 from __future__ import annotations
 
-import math
 import pytest
 from pydantic import ValidationError
 
 from fireai.core.nfpa72_schemas import (
     CeilingTypePydantic,
+    ConvergenceConfig,
     DetectorTypePydantic,
     NFPA72Input,
     VoltageDropInput,
-    ConvergenceConfig,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CeilingTypePydantic Enum

@@ -17,14 +17,14 @@ IBC References:
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
-from fireai.core.firestop_annotator import (
-    FirestoppingAnnotator,
-    SHAPELY_AVAILABLE,
-)
+import pytest
 
+from fireai.core.firestop_annotator import (
+    SHAPELY_AVAILABLE,
+    FirestoppingAnnotator,
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Skip rationale: Without Shapely, the annotator is essentially a no-op

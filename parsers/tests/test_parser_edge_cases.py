@@ -20,7 +20,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -28,12 +28,11 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from parsers.dwg_parser import DWGParser, DWGConversionError, DWGParseResult
-from parsers.dxf_parser import DXFParser, DXFParseResult, ParsedRoom
-from parsers.ifc_parser import IFCParser, IFCAnalysis, parse_ifc
-from parsers._path_security import UnsafePathError
 from shapely.geometry import Polygon
 
+from parsers.dwg_parser import DWGParser, DWGParseResult
+from parsers.dxf_parser import DXFParser
+from parsers.ifc_parser import IFCParser, parse_ifc
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -293,7 +292,7 @@ class TestDXFEdgeCases:
 
     def test_room_area_below_minimum(self, dxf_parser):
         """Rooms below min_area are skipped."""
-        custom_parser = DXFParser(min_area=50.0)
+        DXFParser(min_area=50.0)
         # A 10x10 room has area=100m² which passes min_area=50
         # But with min_area=200, it would be skipped
         small_parser = DXFParser(min_area=200.0)
@@ -338,7 +337,7 @@ class TestDXFEdgeCases:
         mock_entity.dxf.radius = 0
         # Should not crash
         try:
-            poly = dxf_parser._circle_to_polygon(mock_entity, scale=1.0)
+            dxf_parser._circle_to_polygon(mock_entity, scale=1.0)
             # Zero-radius circle produces a degenerate polygon
         except Exception:
             pass  # Graceful failure is acceptable

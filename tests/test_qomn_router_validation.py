@@ -36,12 +36,11 @@ import pytest
 from pydantic import ValidationError
 
 from backend.routers.qomn import (
-    VoltageDropRequest,
     _NEC_TABLE8_VALID_AWG,
+    VoltageDropRequest,
     _normalize_awg_gauge,
 )
 from fireai.core.qomn_kernel import NEC_TABLE8_RESISTANCE_OHM_PER_KM
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # V118 — AWG Normalization Tests (validator behavior)

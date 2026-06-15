@@ -14,18 +14,17 @@ V128 SECURITY HARDENING (Finding #5):
 Standards: ISO 10303-21 §6 (STEP file structure), AutoCAD DXF Specification
 """
 
-import os
 import hashlib
+import os
 from typing import Union
 
-from qomn_fire.core.errors import Result, FileValidationError, CorruptionError
-from qomn_fire.parsers.format_detector import FormatDetector
 from parsers._path_security import (
     UnsafePathError,
-    validate_input_path,
     validate_file_size,
+    validate_input_path,
 )
-
+from qomn_fire.core.errors import CorruptionError, FileValidationError, Result
+from qomn_fire.parsers.format_detector import FormatDetector
 
 # 1 Gigabyte safety limit — files larger than this likely contain
 # unreasonably complex geometry or are corrupted

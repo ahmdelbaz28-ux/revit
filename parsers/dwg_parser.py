@@ -19,19 +19,19 @@ V122 SECURITY HARDENING (Finding #5):
     Same security contract as parsers/ddc_adapter.py.
 """
 
+import logging
+import math
+import os
 import subprocess
 import tempfile
-import os
-import math
-import logging
-from pathlib import Path
-from typing import Optional, List
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import List
 
 from parsers._path_security import (
     UnsafePathError,
-    validate_input_path,
     validate_file_size,
+    validate_input_path,
 )
 
 logger = logging.getLogger("fireai.dwg_parser")
@@ -326,7 +326,7 @@ class DWGParser:
         # V82 FIX: core.models now exists at project root — no sys.path
         # manipulation needed. The old code hacked sys.path to work around
         # the missing core/models.py, which was fragile and unsafe.
-        from core.models import UniversalElement, Geometry, Point3D, ElementType
+        from core.models import Geometry, Point3D, UniversalElement
 
         rooms: list = []
         valid_lines: list = []  # Collect LINE segments for polygon assembly

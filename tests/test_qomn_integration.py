@@ -22,7 +22,6 @@ Standards:
   QOMN Specification §9 — Testing & Verification Protocol
 """
 
-import math
 import os
 import sys
 
@@ -241,7 +240,9 @@ class TestDevicePlacement:
     def test_smoke_detector_placed_in_room(self):
         """At least one smoke detector placed in any valid room."""
         from fireai.core.device_placement import (
-            DetectorPlacementEngine, RoomSpec, QOMNKernel
+            DetectorPlacementEngine,
+            QOMNKernel,
+            RoomSpec,
         )
         engine = DetectorPlacementEngine(QOMNKernel())
         room = RoomSpec("R001", 10.0, 8.0, 3.0)
@@ -251,7 +252,9 @@ class TestDevicePlacement:
     def test_detector_within_room_bounds(self):
         """All detectors must be within room dimensions."""
         from fireai.core.device_placement import (
-            DetectorPlacementEngine, RoomSpec, QOMNKernel
+            DetectorPlacementEngine,
+            QOMNKernel,
+            RoomSpec,
         )
         engine = DetectorPlacementEngine(QOMNKernel())
         room = RoomSpec("R002", 12.0, 8.0, 3.0)
@@ -263,7 +266,10 @@ class TestDevicePlacement:
     def test_pull_station_placed_near_exit(self):
         """Pull stations must be placed near exit doors."""
         from fireai.core.device_placement import (
-            DetectorPlacementEngine, RoomSpec, ExitDoor, QOMNKernel
+            DetectorPlacementEngine,
+            ExitDoor,
+            QOMNKernel,
+            RoomSpec,
         )
         engine = DetectorPlacementEngine(QOMNKernel())
         room = RoomSpec("R003", 10.0, 8.0, 3.0, exit_doors=[ExitDoor(0.0, 4.0)])
@@ -273,8 +279,11 @@ class TestDevicePlacement:
     def test_pull_station_height_nfpa(self):
         """Pull station height = 48\" AFF per NFPA 72 §17.15.7."""
         from fireai.core.device_placement import (
-            DetectorPlacementEngine, RoomSpec, ExitDoor,
-            QOMNKernel, NFPA72_PULL_STATION_HEIGHT_M
+            NFPA72_PULL_STATION_HEIGHT_M,
+            DetectorPlacementEngine,
+            ExitDoor,
+            QOMNKernel,
+            RoomSpec,
         )
         engine = DetectorPlacementEngine(QOMNKernel())
         room = RoomSpec("R004", 10.0, 8.0, 3.0, exit_doors=[ExitDoor(0.0, 4.0)])
@@ -285,7 +294,10 @@ class TestDevicePlacement:
     def test_notification_appliance_candela_standard(self):
         """Non-sleeping area: 75cd minimum (NFPA 72 §18.5.3.1)."""
         from fireai.core.device_placement import (
-            DetectorPlacementEngine, RoomSpec, QOMNKernel, NFPA72_NAC_MIN_CD
+            NFPA72_NAC_MIN_CD,
+            DetectorPlacementEngine,
+            QOMNKernel,
+            RoomSpec,
         )
         engine = DetectorPlacementEngine(QOMNKernel())
         room = RoomSpec("R005", 10.0, 8.0, 3.0, is_sleeping_area=False)
@@ -296,7 +308,10 @@ class TestDevicePlacement:
     def test_sleeping_area_candela_nfpa(self):
         """Sleeping area: 177cd minimum (NFPA 72 §18.5.5.7)."""
         from fireai.core.device_placement import (
-            DetectorPlacementEngine, RoomSpec, QOMNKernel, NFPA72_NAC_SLEEPING_MIN_CD
+            NFPA72_NAC_SLEEPING_MIN_CD,
+            DetectorPlacementEngine,
+            QOMNKernel,
+            RoomSpec,
         )
         engine = DetectorPlacementEngine(QOMNKernel())
         room = RoomSpec("R006", 10.0, 8.0, 3.0, is_sleeping_area=True)
@@ -306,25 +321,23 @@ class TestDevicePlacement:
 
     def test_duct_detector_velocity_guard(self):
         """Duct velocity < 60fpm (0.305m/s) must be rejected."""
-        from fireai.core.device_placement import (
-            place_duct_detector, DuctDetectorSpec
-        )
+        from fireai.core.device_placement import DuctDetectorSpec, place_duct_detector
         from fireai.core.qomn_kernel import PhysicsGuardError
         with pytest.raises(PhysicsGuardError):
             place_duct_detector(DuctDetectorSpec("D1", 0.6, 0.4, 0.1))
 
     def test_duct_detector_single_narrow(self):
         """Duct ≤ 0.305m wide needs only 1 detector."""
-        from fireai.core.device_placement import (
-            place_duct_detector, DuctDetectorSpec
-        )
+        from fireai.core.device_placement import DuctDetectorSpec, place_duct_detector
         r = place_duct_detector(DuctDetectorSpec("D2", 0.3, 0.3, 2.0))
         assert r["n_detectors"] == 1
 
     def test_computation_hash_present(self):
         """PlacementResult must have computation_hash for audit."""
         from fireai.core.device_placement import (
-            DetectorPlacementEngine, RoomSpec, QOMNKernel
+            DetectorPlacementEngine,
+            QOMNKernel,
+            RoomSpec,
         )
         engine = DetectorPlacementEngine(QOMNKernel())
         room = RoomSpec("R007", 10.0, 8.0, 3.0)
@@ -410,7 +423,7 @@ class TestPipelineQOMNIntegration:
         from fireai.core.pipeline import analyze_room
         r = analyze_room(standard_room)
         assert r.detector_count > 0, \
-            f"No detectors placed in valid room — engine failure"
+            "No detectors placed in valid room — engine failure"
 
     def test_pipeline_with_battery_includes_qomn_battery(self, standard_room):
         """When battery params provided, QOMN battery result in Stage 0.5."""

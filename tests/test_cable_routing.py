@@ -23,28 +23,24 @@ NFPA 72 References:
 from __future__ import annotations
 
 import dataclasses
-import math
+
 import pytest
-from typing import List
 
 from fireai.core.cable_routing_engine import (
-    CableRoutingEngine,
-    WireGauge,
-    RoutingObstacle3D,
-    ObstacleType,
-    RouteResult,
-    VoltageDropSegment,
     MAX_VOLTAGE_DROP_PCT,
     NOMINAL_VOLTAGE_FA,
+    CableRoutingEngine,
+    ObstacleType,
+    RoutingObstacle3D,
+    WireGauge,
 )
 from fireai.core.circuit_topology import (
-    CircuitTopology,
-    CircuitClass,
-    CircuitType,
-    CircuitDevice,
     MAX_DEVICES_BETWEEN_ISOLATORS,
+    CircuitClass,
+    CircuitDevice,
+    CircuitTopology,
+    CircuitType,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures

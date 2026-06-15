@@ -23,11 +23,10 @@ Key features tested:
 from __future__ import annotations
 
 import threading
-import time
+
 import pytest
 
-from fireai.core.event_bus import EventBus, Events, Event, EventRecorder
-
+from fireai.core.event_bus import Event, EventBus, EventRecorder, Events
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Event Data Model Tests
@@ -239,7 +238,8 @@ class TestEventBusSubscribePublish:
         """Same callback subscribed twice should be called twice."""
         bus = EventBus()
         counter = []
-        cb = lambda e: counter.append(1)
+        def cb(e):
+            return counter.append(1)
         bus.subscribe("test", cb)
         bus.subscribe("test", cb)  # Register again
         bus.publish("test")
@@ -281,7 +281,8 @@ class TestEventBusUnsubscribe:
     def test_unsubscribe_removes_callback(self):
         bus = EventBus()
         counter = []
-        cb = lambda e: counter.append(1)
+        def cb(e):
+            return counter.append(1)
         bus.subscribe("test", cb)
         bus.publish("test")
         assert len(counter) == 1
@@ -293,13 +294,15 @@ class TestEventBusUnsubscribe:
 
     def test_unsubscribe_nonexistent_callback_returns_false(self):
         bus = EventBus()
-        cb = lambda e: None
+        def cb(e):
+            return None
         result = bus.unsubscribe("test", cb)
         assert result is False
 
     def test_unsubscribe_from_wrong_event_type(self):
         bus = EventBus()
-        cb = lambda e: None
+        def cb(e):
+            return None
         bus.subscribe("event.a", cb)
         result = bus.unsubscribe("event.b", cb)
         assert result is False
@@ -434,7 +437,8 @@ class TestEventBusThreadSafety:
             try:
                 for i in range(25):
                     local_i = i
-                    cb = lambda e, idx=local_i: received.append(idx)
+                    def cb(e, idx=local_i):
+                        return received.append(idx)
                     bus.subscribe(f"event-{local_i}", cb)
                     bus.publish(f"event-{local_i}", {"idx": local_i})
             except Exception as e:

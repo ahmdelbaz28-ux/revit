@@ -19,29 +19,24 @@ Test Categories:
 
 from __future__ import annotations
 
-import math
 import pytest
 from pydantic import ValidationError
-from typing import List
 
+from fireai.core.rules_engine.api_contract import (
+    ContractSeverity,
+    ContractValidator,
+)
 from fireai.core.rules_engine.engine import (
     Fact,
     Rule,
     RulePriority,
     RuleResult,
-    RuleAuditEntry,
     RulesEngine,
 )
+from fireai.core.rules_engine.nfpa72_rules import NFPA72RuleSet
 from fireai.core.rules_engine.truth_maintenance import (
     TruthMaintenanceSystem,
-    DependencyRecord,
 )
-from fireai.core.rules_engine.nfpa72_rules import NFPA72RuleSet
-from fireai.core.rules_engine.api_contract import (
-    ContractValidator,
-    ContractSeverity,
-)
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENGINE BASICS
@@ -320,7 +315,7 @@ class TestNFPA72Rules:
                 },
             )
         )
-        results = engine.evaluate()
+        engine.evaluate()
 
         # Should produce spacing and coverage facts
         spacing_facts = engine.get_facts("spacing")
@@ -342,7 +337,7 @@ class TestNFPA72Rules:
                 },
             )
         )
-        results = engine.evaluate()
+        engine.evaluate()
         spacing_facts = engine.get_facts("spacing")
         assert len(spacing_facts) >= 1
         s = spacing_facts[0]
@@ -362,7 +357,7 @@ class TestNFPA72Rules:
                 },
             )
         )
-        results = engine.evaluate()
+        engine.evaluate()
 
         # Should produce AHJ_REVIEW_REQUIRED flag
         critical = engine.get_safety_violations()
@@ -385,7 +380,7 @@ class TestNFPA72Rules:
                 },
             )
         )
-        results = engine.evaluate()
+        engine.evaluate()
         violations = engine.get_safety_violations()
         assert any(r.rule_id == "NFPA72-004" for r in violations)
 
@@ -418,7 +413,7 @@ class TestNFPA72Rules:
                 },
             )
         )
-        results = engine.evaluate()
+        engine.evaluate()
         violations = engine.get_safety_violations()
         assert any(r.rule_id == "NFPA72-006" for r in violations)
 
@@ -452,7 +447,7 @@ class TestNFPA72Rules:
                 },
             )
         )
-        results = engine.evaluate()
+        engine.evaluate()
         violations = engine.get_safety_violations()
         assert any(r.rule_id == "NFPA72-007" for r in violations)
 
@@ -470,7 +465,7 @@ class TestNFPA72Rules:
                 },
             )
         )
-        results = engine.evaluate()
+        engine.evaluate()
         corridor_flags = engine.get_facts("corridor_flag")
         assert len(corridor_flags) >= 1
 
@@ -572,7 +567,7 @@ class TestTruthMaintenance:
             },
         )
         engine.assert_fact(room_fact)
-        results = engine.evaluate()
+        engine.evaluate()
 
         # Should have derived spacing facts
         spacing = engine.get_facts("spacing")
@@ -654,7 +649,7 @@ class TestAPIContract:
 
         data = {"id": "1"}  # Missing 'name'
         # Should NOT raise, just log
-        result = validator.validate_response("/api/test", "GET", data)
+        validator.validate_response("/api/test", "GET", data)
         violations = validator.get_violations()
         assert len(violations) == 1
 
@@ -682,7 +677,7 @@ class TestNFPA72RuleSetMetadata:
 
     def test_all_rules_have_ids(self):
         for rule in NFPA72RuleSet.all_rules():
-            assert rule.rule_id, f"Rule missing ID"
+            assert rule.rule_id, "Rule missing ID"
             assert rule.rule_name, f"Rule {rule.rule_id} missing name"
 
     def test_all_rules_have_nfpa_reference(self):
@@ -816,7 +811,7 @@ class TestEdgeCases:
             )
         )
         # Should not crash — may produce conservative spacing
-        results = engine.evaluate()
+        engine.evaluate()
         # No assertion on specific result — just no crash
 
     def test_zero_cfm_hvac(self):

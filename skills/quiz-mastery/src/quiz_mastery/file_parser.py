@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import subprocess
-import zipfile
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
-
 
 SUPPORTED_EXTENSIONS = {".md", ".txt", ".text", ".docx", ".pdf", ".ppt", ".pptx"}
 

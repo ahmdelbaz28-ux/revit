@@ -13,7 +13,7 @@ overheated wires in overfilled conduit can ignite surrounding materials.
 """
 
 import math
-from typing import Tuple, List, Dict, Any, Union, Optional
+from typing import Any, Tuple, Union
 
 # BUG-44 FIX: Guard ezdxf import — module can be imported without ezdxf installed
 try:
@@ -21,11 +21,16 @@ try:
 except ImportError:
     ezdxf = None
 
-from qomn_fire.core.types import Point3D, ConduitType, ConduitRun, HatchSpec, Device
-from qomn_fire.core.errors import Result, NECViolationError, HatchPlacementError, ConduitFillError
-from qomn_fire.engine.routing import GridMap3D, astar_route_3d
-from qomn_fire.engine.fill import calculate_conduit_fill
+from qomn_fire.core.errors import (
+    ConduitFillError,
+    HatchPlacementError,
+    NECViolationError,
+    Result,
+)
+from qomn_fire.core.types import ConduitRun, ConduitType, HatchSpec, Point3D
 from qomn_fire.drawing.hatch_engine import place_boundary_hatch
+from qomn_fire.engine.fill import calculate_conduit_fill
+from qomn_fire.engine.routing import GridMap3D, astar_route_3d
 
 # Default wire configuration for fire alarm circuits per NFPA 72
 # Most FA circuits use 14 AWG with 2-4 conductors per conduit

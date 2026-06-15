@@ -21,18 +21,16 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import json
-import math
+
 import pytest
 
 from fireai.core.evidence_chain import (
     EvidenceChain,
     EvidenceChainError,
     _canonical_dumps,
-    _sha256_payload,
     _float_round_default,
+    _sha256_payload,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -105,7 +103,7 @@ class TestFloatRoundDefault:
 
     def test_non_float_raises(self):
         with pytest.raises(TypeError):
-            _float_round_default(set([1, 2, 3]))
+            _float_round_default({1, 2, 3})
 
 
 class TestSha256Payload:
@@ -418,7 +416,7 @@ class TestEdgeCases:
         """Verify a chain of 10 envelopes."""
         envelopes = []
         prev = None
-        for i in range(10):
+        for _i in range(10):
             env = chain.build_envelope(snapshot, analysis, previous_envelope=prev)
             envelopes.append(env)
             prev = env

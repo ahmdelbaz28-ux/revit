@@ -1,10 +1,10 @@
 """
 FACP Distributed Protocol Schema Definitions
 """
-from typing import Dict, Any, Optional
-from dataclasses import dataclass, field
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, Optional
 
 
 @dataclass
@@ -12,7 +12,7 @@ class FACPDistributedSchema:
     """
     Defines the schema for distributed FACP messages
     """
-    
+
     # Enhanced Request schema for distributed system
     @staticmethod
     def request_schema() -> Dict[str, Any]:
@@ -59,7 +59,7 @@ class FACPDistributedSchema:
             },
             "required": ["protocol", "type", "id", "timestamp", "source", "target", "execution_state", "method", "params", "security", "constraints"]
         }
-    
+
     # Enhanced Response schema for distributed system
     @staticmethod
     def response_schema() -> Dict[str, Any]:
@@ -97,7 +97,7 @@ class FACPDistributedSerializationHelper:
     """
     Helper class for serializing/deserializing distributed FACP messages
     """
-    
+
     @staticmethod
     def create_request(
         method: str,
@@ -126,7 +126,7 @@ class FACPDistributedSerializationHelper:
                 "max_recursion_depth": 5
             }
         }
-    
+
     @staticmethod
     def create_response(
         req_id: str,

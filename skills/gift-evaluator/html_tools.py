@@ -1,16 +1,17 @@
-import os
 import argparse
-import json
-import html
 import base64
+import html
+import json
 import mimetypes
+import os
 import urllib.request
+
 
 def generate_gift_card(product_name, price, evaluation, thank_you_json, return_gift_json, vibe_code, image_url, output_path="gift_card_result.html"):
     """
     生成现代风格的交互式礼品鉴定卡片。
     """
-    
+
     # --- 图片转 Base64 逻辑 (保持上一步功能) ---
     final_image_src = image_url
     try:
@@ -26,12 +27,12 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
                 mime_type, _ = mimetypes.guess_type(image_url)
                 with open(image_url, "rb") as f:
                     image_data = f.read()
-        
+
         if image_data:
             if not mime_type: mime_type = "image/jpeg"
             b64_str = base64.b64encode(image_data).decode('utf-8')
             final_image_src = f"data:{mime_type};base64,{b64_str}"
-            
+
     except Exception as e:
         print(f"⚠️ 图片转换 Base64 失败，使用原链接。错误: {e}")
 
@@ -48,7 +49,7 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
 
     # --- 2. 风格配置 ---
     styles = {
-        "luxury": { 
+        "luxury": {
             "page_bg": "bg-neutral-900",
             "card_bg": "bg-neutral-900/80 backdrop-blur-xl border border-white/10",
             "text_main": "text-white", "text_sub": "text-neutral-400",
@@ -56,7 +57,7 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
             "btn_hover": "hover:bg-amber-400 hover:text-black",
             "img_bg": "bg-neutral-800" # 图片衬底色
         },
-        "standard": { 
+        "standard": {
             "page_bg": "bg-stone-200",
             "card_bg": "bg-white/95 backdrop-blur-xl border border-stone-200",
             "text_main": "text-stone-800", "text_sub": "text-stone-500",
@@ -64,7 +65,7 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
             "btn_hover": "hover:bg-red-600 hover:text-white",
             "img_bg": "bg-stone-100"
         },
-        "budget": { 
+        "budget": {
             "page_bg": "bg-yellow-50",
             "card_bg": "bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]",
             "text_main": "text-black", "text_sub": "text-gray-600",
@@ -124,8 +125,8 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        body {{ font-family: 'Inter', sans-serif; }} 
-        .serif {{ font-family: 'Noto Serif SC', serif; }} 
+        body {{ font-family: 'Inter', sans-serif; }}
+        .serif {{ font-family: 'Noto Serif SC', serif; }}
         /* 通用滚动条样式 */
         .custom-scroll::-webkit-scrollbar {{ width: 4px; }}
         .custom-scroll::-webkit-scrollbar-thumb {{ background-color: rgba(150,150,150,0.3); border-radius: 4px; }}
@@ -134,14 +135,14 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
 </head>
 <body class="{st['page_bg']} min-h-screen flex items-center justify-center p-2 md:p-8 selection:bg-red-200 selection:text-red-900">
     <div class="w-full max-w-6xl {st['card_bg']} rounded-[2.5rem] shadow-2xl overflow-hidden relative flex flex-col md:flex-row md:h-[750px] transition-all duration-500">
-        
+
         <div class="w-full md:w-[45%] flex flex-col relative shrink-0 border-b md:border-b-0 md:border-r {divider_color}">
-            
+
             <div class="relative h-72 md:h-[55%] group overflow-hidden {st['img_bg']} flex items-center justify-center p-6">
                 <img src="{final_image_src}" class="w-full h-full object-contain relative z-10 drop-shadow-xl transition-transform duration-700 group-hover:scale-105">
-                
+
                 <div class="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/80 to-transparent z-20 pointer-events-none"></div>
-                
+
                 <div class="absolute bottom-6 left-6 right-6 z-30">
                     <div class="inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest mb-2 {st['tag_bg']} backdrop-blur-md shadow-lg">
                         AI Gift Analysis
@@ -156,16 +157,16 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
 
             <div class="flex-1 p-6 md:p-8 flex flex-col min-h-0 bg-inherit relative">
                 <div class="absolute top-0 left-8 -mt-5 text-6xl opacity-20 {st['text_main']} font-serif select-none">“</div>
-                
+
                 <h3 class="text-xs font-bold uppercase tracking-widest {st['text_sub']} mb-3 flex items-center gap-2 shrink-0">
                     <span class="w-8 h-[1px] bg-current opacity-50"></span>
                     专家鉴定评价
                 </h3>
-                
+
                 <div class="{st['text_main']} text-base md:text-lg leading-relaxed italic font-medium relative z-10 overflow-y-auto custom-scroll flex-1 pr-2">
                     {evaluation}
                 </div>
-                
+
                 <div class="mt-4 pt-4 border-t {divider_color} flex items-center gap-3 shrink-0">
                     <div class="w-8 h-8 rounded-full {st['tag_bg']} flex items-center justify-center font-bold text-xs">AI</div>
                     <div class="flex flex-col">
@@ -219,8 +220,8 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
                 const feedback = element.querySelector('.copy-feedback');
                 feedback.classList.remove('opacity-0');
                 feedback.classList.remove('pointer-events-none');
-                setTimeout(() => {{ 
-                    feedback.classList.add('opacity-0'); 
+                setTimeout(() => {{
+                    feedback.classList.add('opacity-0');
                     feedback.classList.add('pointer-events-none');
                 }}, 1500);
             }});

@@ -17,13 +17,11 @@ Key features tested:
 
 from __future__ import annotations
 
-import hashlib
-import json
 import threading
+
 import pytest
 
 from fireai.core.audit_trail import AuditEntry, AuditTrail
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # AuditEntry Tests
@@ -60,14 +58,14 @@ class TestAuditEntry:
 
     def test_hash_deterministic(self):
         """Same inputs → same hash."""
-        kwargs = dict(
-            timestamp_utc="2024-01-01T00:00:00Z",
-            room_id="R-101",
-            operation="TEST_OP",
-            inputs={"a": 1},
-            outputs={"b": 2},
-            nfpa_reference="N/A",
-        )
+        kwargs = {
+            "timestamp_utc": "2024-01-01T00:00:00Z",
+            "room_id": "R-101",
+            "operation": "TEST_OP",
+            "inputs": {"a": 1},
+            "outputs": {"b": 2},
+            "nfpa_reference": "N/A",
+        }
         e1 = AuditEntry(**kwargs)
         e2 = AuditEntry(**kwargs)
         assert e1.entry_hash == e2.entry_hash

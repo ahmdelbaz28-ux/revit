@@ -1,12 +1,13 @@
 """
 Engine Worker for L3 in Distributed FACP System
 """
-from typing import Dict, Any, Optional, Callable
-import time
-import uuid
 import logging
 import threading
-from ..protocol.message_schema import FACPRequest, FACPResponse
+import time
+import uuid
+from typing import Any, Dict
+
+from ..protocol.message_schema import FACPResponse
 from ..security.isolation import SandboxController, StatelessExecutionValidator
 from .deterministic_engine import DeterministicEngine
 
@@ -16,7 +17,7 @@ class EngineWorker:
     Engine worker that executes tasks in a stateless, deterministic manner
     Runs as a separate node in the distributed system
     """
-    def __init__(self, worker_id: str = None, capabilities: list = None, 
+    def __init__(self, worker_id: str = None, capabilities: list = None,
                  max_concurrent_tasks: int = 10):
         self.worker_id = worker_id or f"engine_worker_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.capabilities = capabilities or [
@@ -34,12 +35,12 @@ class EngineWorker:
         self.status = "idle"
         self.cpu_usage = 0.0
         self.memory_usage = 0.0
-        
+
         # Initialize deterministic engine and sandbox
         self.deterministic_engine = DeterministicEngine()
         self.sandbox_controller = SandboxController(self.worker_id)
         self.stateless_validator = StatelessExecutionValidator()
-        
+
         # Create sandbox templates for different types of computations
         self.sandbox_controller.create_sandbox_template("calculation", {
             "timeout_ms": 5000,
@@ -47,14 +48,14 @@ class EngineWorker:
             "network_access": False,
             "file_access": []
         })
-        
+
         self.sandbox_controller.create_sandbox_template("validation", {
             "timeout_ms": 8000,
             "max_memory_mb": 512,
             "network_access": False,
             "file_access": []
         })
-        
+
         self.sandbox_controller.create_sandbox_template("transformation", {
             "timeout_ms": 10000,
             "max_memory_mb": 1024,
@@ -67,7 +68,7 @@ class EngineWorker:
         self.is_running = True
         self.status = "running"
         self.logger.info(f"Engine Worker {self.worker_id} started")
-        
+
         # Start the execution loop in a separate thread
         self.execution_thread = threading.Thread(target=self._execution_loop, daemon=True)
         self.execution_thread.start()
@@ -84,7 +85,7 @@ class EngineWorker:
         """
         request_id = request_data.get("id", str(uuid.uuid4()))
         method = request_data.get("method", "")
-        
+
         # Validate that this worker can handle this method
         if not self.can_handle_method(method):
             return FACPResponse(
@@ -101,7 +102,7 @@ class EngineWorker:
                     "engine_version": "FACP/1.1"
                 }
             ).to_dict()
-        
+
         # Validate request constraints
         is_valid, constraint_error = self._validate_constraints(request_data)
         if not is_valid:
@@ -119,7 +120,7 @@ class EngineWorker:
                     "engine_version": "FACP/1.1"
                 }
             ).to_dict()
-        
+
         # Execute the request
         return self._execute_request(request_data)
 
@@ -130,12 +131,12 @@ class EngineWorker:
         # Check for exact match
         if method in self.capabilities:
             return True
-        
+
         # Check for wildcard matches
         for capability in self.capabilities:
             if capability.endswith('.*') and method.startswith(capability[:-2]):
                 return True
-        
+
         return False
 
     def _validate_constraints(self, request_data: Dict[str, Any]) -> tuple[bool, str]:
@@ -143,22 +144,22 @@ class EngineWorker:
         Validate request constraints
         """
         constraints = request_data.get("constraints", {})
-        
+
         # Check timeout constraint
         timeout_ms = constraints.get("timeout_ms", 8000)
         if timeout_ms <= 0 or timeout_ms > 30000:  # Max 30 seconds for engine tasks
             return False, f"Invalid timeout constraint: {timeout_ms}ms (must be 1-30000ms)"
-        
+
         # Check memory constraint
         max_memory_mb = constraints.get("max_memory_mb", 512)
         if max_memory_mb <= 0 or max_memory_mb > 2048:  # Max 2GB for engine tasks
             return False, f"Invalid memory constraint: {max_memory_mb}MB (must be 1-2048MB)"
-        
+
         # Check recursion depth constraint
         max_depth = constraints.get("max_recursion_depth", 5)
         if max_depth <= 0 or max_depth > 10:
             return False, f"Invalid recursion depth constraint: {max_depth} (must be 1-10)"
-        
+
         return True, ""
 
     def _execute_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -168,20 +169,20 @@ class EngineWorker:
         request_id = request_data["id"]
         method = request_data["method"]
         params = request_data.get("params", {})
-        
+
         # Determine appropriate sandbox template based on method
         template_name = self._get_sandbox_template(method)
-        
+
         # Provision a sandbox for this execution
         sandbox_id = self.sandbox_controller.provision_sandbox(template_name, request_id)
-        
+
         # Update worker status
         with self.lock:
             self.current_tasks += 1
             self.status = "busy" if self.current_tasks > 0 else "idle"
-        
+
         execution_start = time.time()
-        
+
         try:
             # Execute the appropriate engine function based on method
             if method.startswith("engine.calculate") or "calculate" in method:
@@ -193,17 +194,17 @@ class EngineWorker:
             else:
                 # Default to calculation for unknown methods
                 result = self.deterministic_engine.execute_calculation(params.get("payload", {}))
-            
+
             execution_time = (time.time() - execution_start) * 1000  # Convert to ms
-            
+
             # Validate that execution was deterministic
             is_deterministic, det_message = self.stateless_validator.validate_deterministic_function(
                 lambda: result if isinstance(result, (int, float, str, bool, list, dict)) else {"result": result}
             )
-            
+
             if not is_deterministic:
                 self.logger.warning(f"Deterministic validation warning for {request_id}: {det_message}")
-            
+
             # Create successful response
             response = FACPResponse(
                 id=request_id,
@@ -218,10 +219,10 @@ class EngineWorker:
                     "deterministic": True
                 }
             ).to_dict()
-            
+
         except Exception as e:
             execution_time = (time.time() - execution_start) * 1000  # Convert to ms
-            
+
             # Create error response
             response = FACPResponse(
                 id=request_id,
@@ -238,16 +239,16 @@ class EngineWorker:
                     "sandbox_id": sandbox_id
                 }
             ).to_dict()
-        
+
         finally:
             # Clean up the sandbox
             self.sandbox_controller.destroy_sandbox(sandbox_id)
-            
+
             # Update worker status
             with self.lock:
                 self.current_tasks -= 1
                 self.status = "busy" if self.current_tasks > 0 else "idle"
-        
+
         return response
 
     def _get_sandbox_template(self, method: str) -> str:
@@ -276,7 +277,7 @@ class EngineWorker:
                         task = self.task_queue.pop(0)
                         # Process the task
                         self._process_queued_task(task)
-            
+
             # Small sleep to prevent busy waiting
             time.sleep(0.01)
 

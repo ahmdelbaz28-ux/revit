@@ -17,19 +17,19 @@ V128 SECURITY HARDENING (Finding #5):
 Standards: ISO 16739 (IFC), ISO 10303-21 (STEP Physical File)
 """
 
-import re
-import math
 import logging
+import math
 import os
-from typing import Tuple, List
+import re
+from typing import List, Tuple
 
-from qomn_fire.core.types import Point3D, Wall, Room, Opening, Building
-from qomn_fire.core.errors import Result, GeometryError
 from parsers._path_security import (
     UnsafePathError,
-    validate_input_path,
     validate_file_size,
+    validate_input_path,
 )
+from qomn_fire.core.errors import GeometryError, Result
+from qomn_fire.core.types import Building, Opening, Point3D, Room, Wall
 
 logger = logging.getLogger("qomn_fire.ifc_parser")
 

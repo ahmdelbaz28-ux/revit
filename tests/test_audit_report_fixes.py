@@ -14,12 +14,11 @@ Finding 7: Centralized unit conversion safety
 Finding 8: Hazard override verification for AI classifications
 """
 
-import math
-import pytest
+import os
 import sqlite3
 import tempfile
-import os
 
+import pytest
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FINDING 2: Hazen-Williams Friction Loss
@@ -140,6 +139,7 @@ class TestSprinklerDischarge:
     def test_below_minimum_pressure_logs_critical(self, caplog):
         """P < 7.0 psi must trigger CRITICAL log warning (NFPA 13 violation)."""
         import logging
+
         from fireai.core.hydraulic_solver import calculate_sprinkler_discharge
         with caplog.at_level(logging.CRITICAL, logger="fireai.core.hydraulic_solver"):
             q = calculate_sprinkler_discharge(5.6, 5.0)
@@ -295,8 +295,9 @@ class TestBatterySizingSafetyFactor:
 
     def test_standby_below_24_hours_warns(self):
         """Standby < 24h must raise error per NFPA 72 §10.6.7.2 — V65 FIX."""
-        from fireai.core.voltage_drop import calculate_battery_backup
         import pytest as _pytest
+
+        from fireai.core.voltage_drop import calculate_battery_backup
         with _pytest.raises(ValueError, match="24h"):
             calculate_battery_backup(
                 standby_load_a=0.5,
@@ -327,6 +328,7 @@ class TestSQLInjectionProtection:
     def test_backend_database_uses_parameterized_queries(self):
         """Check that backend/database.py uses ? placeholders, not string concat."""
         import inspect
+
         from backend.database import Database
         source = inspect.getsource(Database)
         # Should NOT have string concatenation in SQL
@@ -337,6 +339,7 @@ class TestSQLInjectionProtection:
     def test_learning_store_uses_parameterized_queries(self):
         """Check that learning_store.py uses ? placeholders."""
         import inspect
+
         from fireai.core.learning_store import LearningStore
         source = inspect.getsource(LearningStore)
         assert "?" in source
@@ -392,7 +395,10 @@ class TestUnitConversion:
 
     def test_metres_to_feet_round_trip(self):
         """Round-trip conversion must be identity."""
-        from fireai.core.unit_converter import revit_internal_to_metres, metres_to_revit_internal
+        from fireai.core.unit_converter import (
+            metres_to_revit_internal,
+            revit_internal_to_metres,
+        )
         assert metres_to_revit_internal(revit_internal_to_metres(100.0)) == pytest.approx(100.0)
 
     def test_nan_input_raises_error(self):
@@ -543,7 +549,7 @@ class TestThreadSafeRevitPattern:
     def test_database_uses_thread_lock(self):
         """Backend database must use thread-safe locking."""
         from backend.database import Database
-        db = Database.__new__(Database)
+        Database.__new__(Database)
         assert hasattr(Database, '_lock') or hasattr(Database, '_transaction')
 
     def test_revit_bridge_identifies_api_mode(self):

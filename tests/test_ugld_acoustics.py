@@ -17,22 +17,22 @@ Reference: ISO 9613-1:1993, ISA-TR 84.00.07, IEC 60079-29-4
 """
 
 import math
+
 import pytest
 
 from fireai.core.ugld_acoustics import (
-    UGLDFrequencyBand,
-    UltrasonicSensor,
+    _DEFAULT_UGLD_FREQUENCY_HZ,
+    _ISO_9613_ALPHA_20C_50RH,
+    _MIN_SNR_DB,
     AcousticPropagation,
+    UGLDFrequencyBand,
     UGLDTriggerResult,
-    check_ugld_trigger,
+    UltrasonicSensor,
     atmospheric_attenuation_db_per_m,
+    check_ugld_trigger,
     max_detection_range_m,
     speed_of_sound,
-    _DEFAULT_UGLD_FREQUENCY_HZ,
-    _MIN_SNR_DB,
-    _ISO_9613_ALPHA_20C_50RH,
 )
-
 
 # ============================================================================
 # Constants

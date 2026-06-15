@@ -19,51 +19,51 @@ NFPA 72 References:
 from __future__ import annotations
 
 import math
+
 import pytest
 from shapely.geometry import Polygon as ShapelyPolygon
 
 from fireai.core.nfpa72_models import (
     # Constants
-    MIN_WALL_DISTANCE_M,
+    DISCLAIMER,
     MAX_DIMENSION_M,
     MAX_POLYGON_VERTICES,
     MAX_STRING_LENGTH,
-    # Enums
-    CoverageGeometry,
-    HeatDetectionMode,
-    # Exceptions
-    NFPAComplianceError,
+    # Constants
+    MIN_WALL_DISTANCE_M,
     CeilingHeightError,
-    CoverageError,
-    SpacingError,
-    RidgeZoneError,
-    PanelCapacityError,
     # Dataclasses
     CeilingSpec,
-    HVACDuct,
-    RoomSpec,
-    SmokeDetectorSpec,
-    HeatDetectorSpec,
-    DetectorPlacement,
+    CeilingType,
+    CoverageError,
+    # Enums
+    CoverageGeometry,
     CoverageResult,
-    NFPAComplianceResult,
-    FireAlarmPanel,
-    # Functions
-    sanitize_string,
-    get_smoke_detector_radius,
-    get_smoke_detector_coverage_max,
-    validate_ceiling_height,
-    get_smoke_detector_radius_safe,
-    get_smoke_detector_coverage_max_safe,
-    _get_radius_internal,
-    _get_max_internal,
+    DetectorPlacement,
     # Re-exports from contracts
     DetectorType,
-    CeilingType,
-    # Constants
-    DISCLAIMER,
+    FireAlarmPanel,
+    HeatDetectionMode,
+    HeatDetectorSpec,
+    HVACDuct,
+    # Exceptions
+    NFPAComplianceError,
+    NFPAComplianceResult,
+    PanelCapacityError,
+    RidgeZoneError,
+    RoomSpec,
+    SmokeDetectorSpec,
+    SpacingError,
+    _get_max_internal,
+    _get_radius_internal,
+    get_smoke_detector_coverage_max,
+    get_smoke_detector_coverage_max_safe,
+    get_smoke_detector_radius,
+    get_smoke_detector_radius_safe,
+    # Functions
+    sanitize_string,
+    validate_ceiling_height,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants

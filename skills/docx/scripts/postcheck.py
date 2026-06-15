@@ -26,10 +26,10 @@ Checks:
   15. Report content quality — whether summary exists, whether titles are specific, whether vague conclusions are used
 """
 
-import zipfile
-import sys
 import json
 import re
+import sys
+import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
@@ -367,8 +367,9 @@ def check_image_aspect_ratio(docx_path: str, root: ET.Element) -> CheckResult:
                 # Read actual image dimensions
                 try:
                     img_data = z.read(img_zip_path)
-                    from PIL import Image as _PILImage
                     import io as _io
+
+                    from PIL import Image as _PILImage
                     pil_img = _PILImage.open(_io.BytesIO(img_data))
                     orig_w, orig_h = pil_img.size
                     if orig_w == 0 or orig_h == 0:
@@ -653,9 +654,9 @@ def check_cover_overflow(root: ET.Element) -> CheckResult:
     # Get page dimensions and margins for accurate available height calculation
     pg_sz = sect_pr.find("w:pgSz", NS)
     pg_mar = sect_pr.find("w:pgMar", NS)
-    page_height = int(pg_sz.get(f"{{{NS['w']}}}h", "16838")) if pg_sz is not None else 16838
-    margin_top = int(pg_mar.get(f"{{{NS['w']}}}top", "0")) if pg_mar is not None else 0
-    margin_bottom = int(pg_mar.get(f"{{{NS['w']}}}bottom", "0")) if pg_mar is not None else 0
+    int(pg_sz.get(f"{{{NS['w']}}}h", "16838")) if pg_sz is not None else 16838
+    int(pg_mar.get(f"{{{NS['w']}}}top", "0")) if pg_mar is not None else 0
+    int(pg_mar.get(f"{{{NS['w']}}}bottom", "0")) if pg_mar is not None else 0
 
     issues = []
     children = sec0["children"]

@@ -12,28 +12,42 @@ Reference standard: NEC 2022 Chapter 9; NFPA 72-2022 §12.2.
 """
 from __future__ import annotations
 
-import hashlib
-import json
 import math
-import sys
 import threading
-from typing import List
 
 import pytest
 
 # ── Import the public API ────────────────────────────────────────────────────
 from fireai.conduit import (
-    BoundingBox, CatalogError, CodeViolationError, ConduitError, RoutingError,
-    ConduitRouter, ConduitRun, ConduitType, FillResult, FittingType,
-    MAX_CUMULATIVE_BEND_DEG, PhysicsError, PlacedFitting, Point3D,
-    Result, RoutePath, Severity, TradeSize,
-    all_fittings, calculate_developed_length, calculate_fill,
-    calculate_fill_compliant, catalog_size, generate_autocad_entities,
-    generate_revit_conduit, generate_schedules, get_fitting,
-    get_internal_area, orthogonal_astar, place_fittings,
-    verify_bend_radius, verify_cumulative_bends,
+    BoundingBox,
+    CatalogError,
+    CodeViolationError,
+    ConduitRouter,
+    ConduitRun,
+    ConduitType,
+    FittingType,
+    PhysicsError,
+    Point3D,
+    Result,
+    RoutePath,
+    RoutingError,
+    Severity,
+    TradeSize,
+    all_fittings,
+    calculate_developed_length,
+    calculate_fill,
+    calculate_fill_compliant,
+    catalog_size,
+    generate_autocad_entities,
+    generate_revit_conduit,
+    generate_schedules,
+    get_fitting,
+    get_internal_area,
+    orthogonal_astar,
+    place_fittings,
+    verify_bend_radius,
+    verify_cumulative_bends,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION 1: Result[T,E] type
@@ -122,7 +136,7 @@ class TestCatalog:
         assert catalog_size() > 0
 
     def test_all_dimensions_positive(self):
-        for key, f in all_fittings().items():
+        for _key, f in all_fittings().items():
             assert f.od_in > 0, f"{f.catalog_number}: od_in must be > 0"
             assert f.weight_kg > 0, f"{f.catalog_number}: weight_kg must be > 0"
             if f.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45):
@@ -470,7 +484,7 @@ class TestRouter:
         assert isinstance(r.error, RoutingError)
 
     def test_nan_start_returns_physics_error(self):
-        r = orthogonal_astar(Point3D(0, 0, 0), Point3D(1, 1, 1))
+        orthogonal_astar(Point3D(0, 0, 0), Point3D(1, 1, 1))
         # Can't construct Point3D with NaN — ValueError raised in __post_init__
         with pytest.raises(ValueError):
             Point3D(float("nan"), 0, 0)
@@ -483,7 +497,7 @@ class TestRouter:
         r2 = orthogonal_astar(start, end)
         assert r1.is_ok() and r2.is_ok()
         assert len(r1.value.waypoints) == len(r2.value.waypoints)
-        for p1, p2 in zip(r1.value.waypoints, r2.value.waypoints):
+        for p1, p2 in zip(r1.value.waypoints, r2.value.waypoints, strict=False):
             assert p1.x == p2.x and p1.y == p2.y and p1.z == p2.z
 
     def test_manhattan_heuristic_admissible(self):
@@ -620,7 +634,7 @@ class TestFittingEngine:
 
     def test_four_bends_360_no_pull_box(self):
         """Exactly 4 × 90° = 360° is at the NEC limit — no pull box needed.
-        
+
         Path: right→up→right→up→right = 4 turns at 90° each = 360° total.
         NEC 358.26 allows up to AND INCLUDING 360° before requiring pull box.
         Waypoints verified to produce exactly 4 direction changes.
@@ -857,10 +871,7 @@ class TestPipelineIntegration:
     def test_public_api_importable(self):
         """All public API names importable in one line."""
         from fireai.conduit import (
-            ConduitType, TradeSize, Point3D,
-            calculate_fill, verify_bend_radius,
-            orthogonal_astar, place_fittings,
-            generate_revit_conduit, generate_schedules,
+            ConduitType,
         )
         assert ConduitType.EMT.value == "EMT"
 

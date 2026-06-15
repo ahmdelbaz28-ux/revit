@@ -20,8 +20,6 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
-from typing import Dict, List, Tuple
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -33,7 +31,6 @@ from fireai.core.hybrid_survivability import (
     HybridSurvivabilityMap,
     SurvivabilityClass,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SurvivabilityClass Tests
@@ -481,7 +478,7 @@ class TestHybridSurvivabilityEngineClassification:
         """All points have both optical and acoustic coverage."""
         engine = HybridSurvivabilityEngine()
         n = 5
-        optical = self._make_optical_result(n, redundancy_map={i: 1 for i in range(n)})
+        optical = self._make_optical_result(n, redundancy_map=dict.fromkeys(range(n), 1))
         grid = self._make_grid(n)
         sensor = MagicMock()
         sensor.sensor_id = "UGLD-1"
@@ -499,7 +496,7 @@ class TestHybridSurvivabilityEngineClassification:
         """All points have optical but no acoustic coverage."""
         engine = HybridSurvivabilityEngine()
         n = 5
-        optical = self._make_optical_result(n, redundancy_map={i: 1 for i in range(n)})
+        optical = self._make_optical_result(n, redundancy_map=dict.fromkeys(range(n), 1))
         grid = self._make_grid(n)
         sensor = MagicMock()
         sensor.sensor_id = "UGLD-1"
@@ -553,7 +550,7 @@ class TestHybridSurvivabilityEngineClassification:
         """No UGLD sensors → warning about optical-only classification."""
         engine = HybridSurvivabilityEngine()
         n = 3
-        optical = self._make_optical_result(n, redundancy_map={i: 1 for i in range(n)})
+        optical = self._make_optical_result(n, redundancy_map=dict.fromkeys(range(n), 1))
         grid = self._make_grid(n)
 
         result = engine.analyse(optical, grid, [], {})
@@ -618,7 +615,7 @@ class TestHybridSurvivabilityEngineClassification:
         # Only 2 out of 10 points have redundant hybrid
         optical = self._make_optical_result(
             n,
-            redundancy_map={i: 1 for i in range(n)}  # All have optical
+            redundancy_map=dict.fromkeys(range(n), 1)  # All have optical
         )
         grid = self._make_grid(n)
         sensor = MagicMock()

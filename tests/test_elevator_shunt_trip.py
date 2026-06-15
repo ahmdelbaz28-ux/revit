@@ -19,13 +19,13 @@ Code References:
 
 from __future__ import annotations
 
-import math
 import pytest
 
 # NOTE: Provenance module's RuleApplied/Violation field names differ from what
 # elevator_shunt_trip expects. We mock provenance to None to test business logic
 # via the fallback dict path — same pattern as group 3/4 tests.
 import fireai.core.elevator_shunt_trip as _est_mod
+
 
 @pytest.fixture(autouse=True)
 def _disable_provenance():
@@ -40,17 +40,16 @@ def _disable_provenance():
         setattr(_est_mod, attr, val)
 
 from fireai.core.elevator_shunt_trip import (
+    DEFAULT_HD_RTI,
+    DEFAULT_SPRINKLER_RTI,
+    MAX_HD_SPRINKLER_DISTANCE_M,
+    RTI_RATIO_LIMIT,
+    SAFETY_GAP_C,
+    STANDARD_HD_TEMPS_C,
+    STANDARD_SPRINKLER_TEMPS_C,
     ElevatorShuntTripAuditor,
     ShuntTripResult,
-    SAFETY_GAP_C,
-    MAX_HD_SPRINKLER_DISTANCE_M,
-    DEFAULT_SPRINKLER_RTI,
-    DEFAULT_HD_RTI,
-    RTI_RATIO_LIMIT,
-    STANDARD_SPRINKLER_TEMPS_C,
-    STANDARD_HD_TEMPS_C,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants Verification

@@ -9,12 +9,11 @@ Extracts:
     - Special requirements/notes
 """
 
+import logging
 import os
 import re
-import logging
-from pathlib import Path
-from typing import Dict, List, Optional
 from dataclasses import dataclass, field
+from typing import Dict, List
 
 logger = logging.getLogger("fireai.word_parser")
 
@@ -45,11 +44,11 @@ class WordParseResult:
 class WordParser:
     """
     Parses Word documents for project specifications.
-    
+
     USAGE:
         parser = WordParser()
         result = parser.parse("project_specs.docx")
-        
+
         if result.success:
             print(f"Project: {result.project_name}")
             print(f"Floor: {result.floor}")
@@ -66,14 +65,14 @@ class WordParser:
         r'(\d+)rd\s*floor',
         r'(\d+)th\s*floor',
     ]
-    
+
     BUILDING_PATTERNS = [
         r'building\s*([A-Z])',
         r'tower\s*([A-Z])',
         r'block\s*([A-Z])',
         r'([A-Z])\s*building',
     ]
-    
+
     CEILING_PATTERNS = [
         r'ceiling\s*height[:\s]*(\d+\.?\d*)\s*m',
         r'height[:\s]*(\d+\.?\d*)\s*m',
@@ -98,8 +97,8 @@ class WordParser:
         # V126: Path security + file-size cap
         from parsers._path_security import (
             UnsafePathError,
-            validate_input_path,
             validate_file_size,
+            validate_input_path,
         )
         _ALLOWED_EXTENSIONS = frozenset({".docx", ".doc"})
         _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_WORD_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))  # 25 MB default
@@ -124,36 +123,36 @@ class WordParser:
 
         try:
             from docx import Document
-            
+
             doc = Document(str(safe_path))
-            
+
             # Extract from all paragraphs
             all_text = '\n'.join(p.text for p in doc.paragraphs)
-            
+
             # Extract title (first heading)
             result.title = self._extract_title(doc.paragraphs)
-            
+
             # Extract project info
             result.project_name = self._extract_project_name(all_text)
             result.floor = self._extract_floor(all_text)
             result.building = self._extract_building(all_text)
-            
+
             # Extract ceiling specs
             result.ceiling_specs = self._extract_ceiling_specs(all_text)
-            
+
             # Extract requirements
             result.requirements = self._extract_requirements(doc.paragraphs)
-            
+
             # Extract notes
             result.notes = self._extract_notes(doc.paragraphs)
-            
+
             result.success = bool(result.title or result.project_name or result.floor)
-            
-        except ImportError as e:
-            result.errors.append(f"Missing dependency: python-docx not installed")
+
+        except ImportError:
+            result.errors.append("Missing dependency: python-docx not installed")
         except Exception as e:
             result.errors.append(f"Parse error: {type(e).__name__}: {e}")
-            
+
         return result
 
     def _extract_title(self, paragraphs) -> str:
@@ -171,12 +170,12 @@ class WordParser:
             r'Building[:\s]*([^\n]+)',
             r'Tower\s*([A-Z])',
         ]
-        
+
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 return match.group(1).strip()
-                
+
         return ""
 
     def _extract_floor(self, text: str) -> str:
@@ -198,7 +197,7 @@ class WordParser:
     def _extract_ceiling_specs(self, text: str) -> List[Dict]:
         """Extract ceiling specifications."""
         specs = []
-        
+
         for pattern in self.CEILING_PATTERNS:
             matches = re.finditer(pattern, text, re.IGNORECASE)
             for match in matches:
@@ -210,45 +209,45 @@ class WordParser:
                     })
                 except (ValueError, IndexError):
                     continue
-                    
+
         return specs
 
     def _extract_requirements(self, paragraphs) -> List[str]:
         """Extract requirement bullets."""
         requirements = []
-        
+
         for para in paragraphs:
             text = para.text.strip()
-            
+
             # Check for bullet points
             if text.startswith('•') or text.startswith('- ') or text.startswith('* '):
                 clean_text = text.lstrip('•-* ').strip()
-                
+
                 # Filter relevant requirements
                 if any(kw in clean_text.lower() for kw in [
-                    'detector', 'alarm', 'fire', 'sprinkler', 
+                    'detector', 'alarm', 'fire', 'sprinkler',
                     'system', 'zone', 'coverage', 'code'
                 ]):
                     requirements.append(clean_text)
-                    
+
         return requirements
 
     def _extract_notes(self, paragraphs) -> List[str]:
         """Extract notes section."""
         notes = []
         in_notes = False
-        
+
         for para in paragraphs:
             text = para.text.strip()
-            
+
             # Check for notes section
             if 'note' in text.lower() and len(text) < 20:
                 in_notes = True
                 continue
-                
+
             if in_notes and text:
                 notes.append(text)
-                
+
         return notes[:10]  # Limit to 10 notes
 
 

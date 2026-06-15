@@ -1,16 +1,16 @@
 """
 Execution Isolation System for Distributed FACP System
 """
-from typing import Dict, Any, Optional, Callable
-import time
-import threading
-import subprocess
 import os
-import signal
-import tempfile
 import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import threading
+import time
 from enum import Enum
-import resource  # Unix-specific, will handle Windows separately
+from typing import Any, Callable, Dict
 
 
 class ExecutionEnvironment(Enum):
@@ -40,21 +40,20 @@ class ExecutionIsolationManager:
         Create a sandboxed execution environment for a function
         """
         kwargs = kwargs or {}
-        
+
         # Create temporary directory for this execution
         exec_dir = tempfile.mkdtemp(dir=self.sandbox_base_path)
-        
+
         # Write function and arguments to a temporary file
         # This is a simplified approach - in a real system, we'd use proper sandboxing
-        import pickle
         import marshal
-        import types
-        
+        import pickle
+
         # Serialize function and arguments
         func_code = marshal.dumps(func.__code__)
         with open(os.path.join(exec_dir, "func.pkl"), "wb") as f:
             pickle.dump((func_code, args, kwargs), f)
-        
+
         # Create execution script
         exec_script = f"""
 import sys
@@ -93,11 +92,11 @@ except Exception as e:
     with open("result.pkl", "wb") as f:
         pickle.dump(("error", str(e)), f)
 """
-        
+
         script_path = os.path.join(exec_dir, "exec_script.py")
         with open(script_path, "w") as f:
             f.write(exec_script)
-        
+
         # Execute in subprocess with timeout
         start_time = time.time()
         try:
@@ -108,9 +107,9 @@ except Exception as e:
                 cwd=exec_dir,
                 check=False
             )
-            
+
             execution_time = (time.time() - start_time) * 1000  # Convert to ms
-            
+
             # Read result
             result_path = os.path.join(exec_dir, "result.pkl")
             if os.path.exists(result_path):
@@ -119,10 +118,10 @@ except Exception as e:
             else:
                 status = "error"
                 result = f"No result file found. Process exited with code {proc.returncode}"
-            
+
             # Cleanup
             shutil.rmtree(exec_dir)
-            
+
             # Log execution
             with self.lock:
                 self.execution_logs.append({
@@ -133,22 +132,22 @@ except Exception as e:
                     "max_memory_mb": max_memory_mb,
                     "sandbox_path": exec_dir
                 })
-            
+
             return {
                 "status": status,
                 "result": result,
                 "execution_time_ms": execution_time,
                 "sandbox_path": exec_dir
             }
-            
+
         except subprocess.TimeoutExpired:
             # Terminate the process if it timed out
             # In a real implementation, we'd need to kill the process tree
             execution_time = (time.time() - start_time) * 1000
-            
+
             # Cleanup
             shutil.rmtree(exec_dir)
-            
+
             return {
                 "status": "error",
                 "result": f"Execution timed out after {timeout}ms",
@@ -158,7 +157,7 @@ except Exception as e:
         except Exception as e:
             # Cleanup
             shutil.rmtree(exec_dir)
-            
+
             return {
                 "status": "error",
                 "result": f"Execution failed: {str(e)}",
@@ -182,14 +181,14 @@ except Exception as e:
         """
         if pid not in self.resource_limits:
             return True  # No limits set
-        
+
         limits = self.resource_limits[pid]
-        
+
         # Check timeout (this is a simplified check - real implementation would monitor continuously)
         elapsed = (time.time() - limits["applied_at"]) * 1000
         if elapsed > limits["timeout_ms"]:
             return False
-        
+
         # Memory check would require platform-specific code
         # For now, return True
         return True
@@ -265,14 +264,14 @@ class SandboxController:
         """
         if template_name not in self.sandbox_templates:
             raise ValueError(f"Sandbox template '{template_name}' not found")
-        
+
         template = self.sandbox_templates[template_name]
-        
+
         # Create sandbox directory
         sandbox_id = f"sandbox_{self.node_id}_{int(time.time())}_{len(self.active_sandboxes)}"
         sandbox_path = os.path.join(self.isolation_manager.sandbox_base_path, sandbox_id)
         os.makedirs(sandbox_path, exist_ok=True)
-        
+
         # Configure sandbox
         sandbox_info = {
             "id": sandbox_id,
@@ -284,38 +283,38 @@ class SandboxController:
             "sandbox_path": sandbox_path,
             "status": "ready"
         }
-        
+
         with self.lock:
             self.active_sandboxes[sandbox_id] = sandbox_info
-        
+
         return sandbox_id
 
-    def execute_in_sandbox(self, sandbox_id: str, func: Callable, args: tuple = (), 
+    def execute_in_sandbox(self, sandbox_id: str, func: Callable, args: tuple = (),
                           kwargs: dict = None, custom_config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Execute a function in a specific sandbox
         """
         if sandbox_id not in self.active_sandboxes:
             raise ValueError(f"Sandbox '{sandbox_id}' not found")
-        
+
         sandbox_info = self.active_sandboxes[sandbox_id]
-        
+
         # Merge custom config with template config
         config = sandbox_info["config"].copy()
         if custom_config:
             config.update(custom_config)
-        
+
         # Execute in isolated environment
         result = self.isolation_manager.create_sandboxed_execution(
             func, args, kwargs,
             timeout=config["timeout_ms"],
             max_memory_mb=config["max_memory_mb"]
         )
-        
+
         # Update sandbox status
         sandbox_info["last_execution"] = time.time()
         sandbox_info["last_result"] = result["status"]
-        
+
         return result
 
     def destroy_sandbox(self, sandbox_id: str):
@@ -324,15 +323,15 @@ class SandboxController:
         """
         if sandbox_id not in self.active_sandboxes:
             return
-        
+
         sandbox_info = self.active_sandboxes[sandbox_id]
-        
+
         # Clean up sandbox directory
         try:
             shutil.rmtree(sandbox_info["sandbox_path"])
         except:
             pass  # Directory might already be cleaned up
-        
+
         # Remove from active sandboxes
         with self.lock:
             del self.active_sandboxes[sandbox_id]
@@ -342,25 +341,25 @@ class SandboxController:
         Enforce execution constraints based on request data
         """
         constraints = request_data.get("constraints", {})
-        
+
         # Check timeout constraint
         timeout_ms = constraints.get("timeout_ms", 8000)
         if timeout_ms <= 0 or timeout_ms > 30000:  # Max 30 seconds for distributed
             return False, f"Invalid timeout constraint: {timeout_ms}ms (must be 1-30000ms)"
-        
+
         # Check memory constraint
         max_memory_mb = constraints.get("max_memory_mb", 512)
         if max_memory_mb <= 0 or max_memory_mb > 1024:  # Max 1GB for distributed
             return False, f"Invalid memory constraint: {max_memory_mb}MB (must be 1-1024MB)"
-        
+
         # Check recursion depth constraint
         max_depth = constraints.get("max_recursion_depth", 5)
         if max_depth <= 0 or max_depth > 10:
             return False, f"Invalid recursion depth constraint: {max_depth} (must be 1-10)"
-        
+
         return True, "Constraints are valid"
 
-    def validate_no_external_access(self, code: str) -> tuple[bool, List[str]]:
+    def validate_no_external_access(self, code: str) -> tuple[bool, list[str]]:
         """
         Validate that code doesn't attempt external access
         """
@@ -375,12 +374,12 @@ class SandboxController:
             "exec(",
             "__import__",
         ]
-        
+
         violations = []
         for pattern in forbidden_patterns:
             if pattern in code:
                 violations.append(f"Potentially dangerous pattern found: {pattern}")
-        
+
         return len(violations) == 0, violations
 
     def get_sandbox_health(self) -> Dict[str, Any]:
@@ -389,12 +388,12 @@ class SandboxController:
         """
         healthy_count = 0
         total_count = len(self.active_sandboxes)
-        
-        for sandbox_id, info in self.active_sandboxes.items():
+
+        for _sandbox_id, info in self.active_sandboxes.items():
             # Check if sandbox directory still exists
             if os.path.exists(info["sandbox_path"]):
                 healthy_count += 1
-        
+
         return {
             "node_id": self.node_id,
             "total_sandboxes": total_count,
@@ -409,13 +408,13 @@ class SandboxController:
         """
         current_time = time.time()
         cutoff_time = current_time - (max_age_minutes * 60)
-        
+
         unused_sandboxes = []
         for sandbox_id, info in self.active_sandboxes.items():
             last_activity = info.get("last_execution", info["provisioned_at"])
             if last_activity < cutoff_time:
                 unused_sandboxes.append(sandbox_id)
-        
+
         for sandbox_id in unused_sandboxes:
             self.destroy_sandbox(sandbox_id)
 
@@ -428,19 +427,19 @@ def create_deterministic_execution_wrapper(func: Callable) -> Callable:
         # Set a fixed random seed based on input to ensure deterministic behavior
         import hashlib
         import random
-        
+
         # Create deterministic seed from inputs
         input_str = f"{repr(args)}{repr(kwargs)}{func.__name__}"
         seed = int(hashlib.sha256(input_str.encode()).hexdigest(), 16) % (2**32)
         random.seed(seed)
-        
+
         # Execute function
         return func(*args, **kwargs)
-    
+
     # Preserve function metadata
     wrapper.__name__ = func.__name__
     wrapper.__doc__ = func.__doc__
-    
+
     return wrapper
 
 
@@ -461,8 +460,8 @@ class StatelessExecutionValidator:
             "vars(",
             "__dict__",
         ]
-    
-    def validate_stateless_code(self, code: str) -> tuple[bool, List[str]]:
+
+    def validate_stateless_code(self, code: str) -> tuple[bool, list[str]]:
         """
         Validate that code doesn't maintain state
         """
@@ -470,22 +469,22 @@ class StatelessExecutionValidator:
         for pattern in self.stateful_patterns:
             if pattern in code:
                 violations.append(f"Potential stateful pattern: {pattern}")
-        
+
         return len(violations) == 0, violations
-    
+
     def validate_deterministic_function(self, func: Callable) -> tuple[bool, str]:
         """
         Validate that a function is deterministic
         """
         # Test the function with the same inputs multiple times
         # This is a basic check - more sophisticated validation would be needed for production
-        
+
         import inspect
-        
+
         # Check if function has side effects by examining source code
         try:
             source = inspect.getsource(func)
-            
+
             # Look for potential side effects
             side_effect_indicators = [
                 "print(",
@@ -498,11 +497,11 @@ class StatelessExecutionValidator:
                 "random.",
                 "datetime.",
             ]
-            
+
             for indicator in side_effect_indicators:
                 if indicator in source:
                     return False, f"Potential side effect found: {indicator}"
-            
+
             return True, "Function appears deterministic"
         except:
             # If we can't inspect the source, assume it's potentially stateful

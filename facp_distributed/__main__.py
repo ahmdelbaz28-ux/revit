@@ -1,4 +1,4 @@
-E ME"""
+"""
 Main Entry Point for Distributed FACP System
 """
 import argparse
@@ -43,22 +43,22 @@ def create_distributed_system(config: Dict[str, Any] = None) -> Dict[str, Any]:
     Create and configure the distributed FACP system
     """
     config = config or {}
-    
+
     # Set up security components
     auth_provider = AuthProvider(config.get("auth_secret", "default_secret_for_dev"))
     rbac_engine = RBACEngine()
     permission_checker = PermissionChecker(rbac_engine)
     audit_logger = AuditLogger()
-    
+
     # Set up validation firewall
     validation_firewall = ValidationFirewall(auth_provider)
-    
+
     # Set up L2 orchestrator components
     agent_manager = DistributedAgentManager()
     task_scheduler = DistributedTaskScheduler()
     load_balancer = AdaptiveLoadBalancer()
     agent_registry = DistributedAgentRegistry()
-    
+
     # Set up orchestrator
     orchestrator = Orchestrator(
         agent_manager=agent_manager,
@@ -67,36 +67,36 @@ def create_distributed_system(config: Dict[str, Any] = None) -> Dict[str, Any]:
         permission_checker=permission_checker,
         agent_registry=agent_registry
     )
-    
+
     # Set up L3 engine controller
     engine_controller = DistributedEngineController(
         pool_size=config.get("engine_pool_size", 3),
         max_pool_size=config.get("engine_max_pool_size", 10),
         node_location=config.get("node_location", "primary")
     )
-    
+
     # Set up L1 gateway with transport
     transport_config = {
         "host": config.get("l2_host", "0.0.0.0"),
         "gateway_port": config.get("l2_port", 8001),
         "interface_port": config.get("l1_port", 8000)
     }
-    
+
     client_interface = create_client_interface_with_gateway(
         validation_firewall=validation_firewall,
         transport_config=transport_config
     )
-    
+
     # Connect components together
     # Set up cluster sync callbacks
     agent_manager.set_cluster_sync_callback(lambda msg: print(f"Agent sync: {msg}"))
     task_scheduler.set_cluster_sync_callback(lambda msg: print(f"Task sync: {msg}"))
     agent_registry.set_cluster_sync_callback(lambda msg: print(f"Registry sync: {msg}"))
     engine_controller.set_cluster_sync_callback(lambda msg: print(f"Engine sync: {msg}"))
-    
+
     # Set up the distributed engine controller
     engine_controller.start()
-    
+
     return {
         "auth_provider": auth_provider,
         "rbac_engine": rbac_engine,
@@ -119,29 +119,29 @@ def run_distributed_system(config: Dict[str, Any] = None):
     """
     print("🚀 Starting Distributed FACP System v1.1")
     print("=" * 50)
-    
+
     # Set up logging
     setup_logging()
     logger = logging.getLogger(__name__)
-    
+
     # Create the system
     system_components = create_distributed_system(config)
-    
+
     # Start the client interface (L1)
     system_components["client_interface"].start()
     print(f"✅ L1 Client Interface started on {system_components['client_interface'].host}:{system_components['client_interface'].port}")
-    
+
     # Print system status
     print("\n📋 System Status:")
     print(f"   L1 Gateway Status: {system_components['client_interface'].get_status()['running']}")
     print(f"   L2 Orchestrator Status: Running")
     print(f"   L3 Engine Controller Status: {system_components['engine_controller'].is_running}")
-    
+
     print(f"\n🌐 Available Endpoints:")
     print(f"   Health Check: http://localhost:{system_components['client_interface'].port}/health")
     print(f"   Metrics: http://localhost:{system_components['client_interface'].port}/metrics")
     print(f"   FACP Request: http://localhost:{system_components['client_interface'].port}/facp/request")
-    
+
     print(f"\n🔧 System Components Ready:")
     print(f"   Authentication Provider: ✅ Configured")
     print(f"   RBAC Engine: ✅ Active")
@@ -150,7 +150,7 @@ def run_distributed_system(config: Dict[str, Any] = None):
     print(f"   Task Scheduler: ✅ Running")
     print(f"   Load Balancer: ✅ Active")
     print(f"   Engine Pool: ✅ Initialized")
-    
+
     print(f"\n🔒 Security Features Active:")
     print(f"   Authentication: ✅ Enabled")
     print(f"   Authorization: ✅ Enforced")
@@ -158,39 +158,39 @@ def run_distributed_system(config: Dict[str, Any] = None):
     print(f"   Audit Logging: ✅ Enabled")
     print(f"   Resource Limits: ✅ Enforced")
     print(f"   Idempotency: ✅ Guaranteed")
-    
+
     print(f"\n⚡ Performance Features:")
     print(f"   Load Balancing: ✅ Adaptive")
     print(f"   Auto Scaling: ✅ Enabled")
     print(f"   Task Queuing: ✅ Active")
     print(f"   Health Checks: ✅ Running")
-    
+
     print(f"\n🔗 Distributed Features:")
     print(f"   Cluster Awareness: ✅ Ready")
     print(f"   Node Discovery: ✅ Available")
     print(f"   State Synchronization: ✅ Available")
     print(f"   Failover Support: ✅ Configured")
-    
+
     print("\n" + "=" * 50)
     print("🔥 Distributed FACP System is now running!")
     print("💡 Send FACP/1.1 requests to the L1 interface")
     print("📊 Monitor system health at /health endpoint")
     print("📋 View metrics at /metrics endpoint")
     print("=" * 50)
-    
+
     try:
         # Keep the main thread alive
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         print("\n\n🛑 Shutting down Distributed FACP System...")
-        
+
         # Stop the client interface
         system_components["client_interface"].stop()
-        
+
         # Stop the engine controller
         system_components["engine_controller"].stop()
-        
+
         print("✅ Distributed FACP System shutdown complete")
 
 
@@ -199,7 +199,7 @@ def run_test_scenario():
     Run a test scenario to verify the distributed system
     """
     print("🧪 Running Distributed System Test Scenario...")
-    
+
     # Create a simple test request
     test_request = {
         "protocol": "FACP/1.1",
@@ -237,37 +237,37 @@ def run_test_scenario():
             "max_recursion_depth": 5
         }
     }
-    
+
     print(f"📤 Sending test request: {test_request['method']}")
     print(f"🆔 Request ID: {test_request['id']}")
     print(f"🔐 Security: {test_request['security']['risk_level']} risk")
-    
+
     # Create a minimal test system
     config = {"l1_port": 8000, "l2_port": 8001}
     system_components = create_distributed_system(config)
-    
+
     # Process the test request through the system
     print("\n🔄 Request Flow Simulation:")
     print("   L1: Receiving request...")
-    
+
     # Simulate L1 processing
     success, l1_response = system_components["client_interface"].l1_gateway.handle_client_request(test_request)
     print(f"   L1: Request {'accepted' if success else 'rejected'} by validation firewall")
-    
+
     if success:
         print("   L2: Orchestrator routing request...")
         # Simulate L2 processing
         orch_success, orch_response = system_components["orchestrator"].process_request(test_request)
         print(f"   L2: Request {'processed' if orch_success else 'failed'} by orchestrator")
-        
+
         if orch_success:
             print("   L3: Engine executing calculation...")
             # Simulate L3 processing
             engine_result = system_components["engine_controller"].process_request(test_request)
             print(f"   L3: Calculation {'completed' if engine_result.get('status') == 'success' else 'failed'}")
-    
+
     print("\n✅ Test scenario completed!")
-    
+
     # Show test results
     print("\n📊 Test Results:")
     print(f"   Request ID: {test_request['id']}")
@@ -287,9 +287,9 @@ def main():
     parser.add_argument('--config', type=str, help='Configuration file path')
     parser.add_argument('--port', type=int, default=8000, help='Port for L1 interface')
     parser.add_argument('--l2-port', dest='l2_port', type=int, default=8001, help='Port for L2 orchestrator')
-    
+
     args = parser.parse_args()
-    
+
     if args.mode == 'test':
         run_test_scenario()
     else:

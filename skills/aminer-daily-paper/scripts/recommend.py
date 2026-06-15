@@ -10,7 +10,6 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-
 DEFAULT_SIZE = 5
 MAX_SIZE = 20
 REQUEST_TIMEOUT = 30

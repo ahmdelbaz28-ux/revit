@@ -4,7 +4,6 @@ Utility script for managing the blog examples library.
 Helps identify old examples to prune when the library exceeds the limit.
 """
 
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -26,7 +25,7 @@ def list_examples():
         except ValueError:
             # Skip files that don't match the naming convention
             continue
-    
+
     return sorted(examples, key=lambda x: x[0])
 
 
@@ -34,13 +33,13 @@ def check_library():
     """Check library status and recommend pruning if needed."""
     examples = list_examples()
     count = len(examples)
-    
-    print(f"Blog Examples Library Status")
-    print(f"=" * 40)
+
+    print("Blog Examples Library Status")
+    print("=" * 40)
     print(f"Total examples: {count}")
     print(f"Maximum allowed: {MAX_EXAMPLES}")
     print()
-    
+
     if count > MAX_EXAMPLES:
         print(f"⚠️  Library exceeds limit by {count - MAX_EXAMPLES} files")
         print(f"Recommend removing the {PRUNE_COUNT} oldest examples:")
@@ -49,7 +48,7 @@ def check_library():
             print(f"  {i+1}. {name} ({date.strftime('%B %d, %Y')})")
     else:
         print(f"✓ Library is within limits ({MAX_EXAMPLES - count} slots available)")
-    
+
     print()
     print("All examples (oldest first):")
     print("-" * 40)
@@ -61,19 +60,19 @@ def prune_oldest(dry_run=True):
     """Remove the oldest examples to bring library under limit."""
     examples = list_examples()
     count = len(examples)
-    
+
     if count <= MAX_EXAMPLES:
         print("Library is within limits. No pruning needed.")
         return
-    
+
     to_remove = examples[:PRUNE_COUNT]
-    
+
     if dry_run:
         print(f"DRY RUN - Would remove {len(to_remove)} files:")
     else:
         print(f"Removing {len(to_remove)} oldest files:")
-    
-    for date, name in to_remove:
+
+    for _date, name in to_remove:
         filepath = EXAMPLES_DIR / name
         if dry_run:
             print(f"  Would remove: {name}")

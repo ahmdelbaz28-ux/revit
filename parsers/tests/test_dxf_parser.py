@@ -28,7 +28,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -37,7 +37,6 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from parsers.dxf_parser import DXFParser, DXFParseResult, ParsedRoom
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -311,7 +310,6 @@ class TestRoomAreaValidation:
 
     def test_nan_area_skipped(self, parser):
         """V79 FIX: NaN area must be skipped (not silently accepted)."""
-        from shapely.geometry import Polygon
         # A polygon that could produce NaN area shouldn't crash
         # but the parse() method checks math.isfinite(area)
         assert not math.isfinite(float("nan"))

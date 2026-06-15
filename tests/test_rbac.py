@@ -16,10 +16,9 @@ import hashlib
 import json
 import os
 import tempfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import pytest
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 # ── Unit tests for RBAC models ──────────────────────────────────────────────
@@ -30,7 +29,7 @@ class TestRBACModels:
 
     def test_admin_has_all_permissions(self):
         """Admin role should have every permission defined."""
-        from backend.rbac import Role, Permission, ROLE_PERMISSIONS
+        from backend.rbac import ROLE_PERMISSIONS, Permission, Role
 
         admin_perms = ROLE_PERMISSIONS[Role.ADMIN]
         all_perms = set(Permission.__members__.values())
@@ -40,14 +39,14 @@ class TestRBACModels:
 
     def test_engineer_cannot_manage_users_or_system(self):
         """Engineer should NOT have USER_MANAGE or SYSTEM_CONFIG permissions."""
-        from backend.rbac import Role, Permission, has_permission
+        from backend.rbac import Permission, Role, has_permission
 
         assert not has_permission(Role.ENGINEER, Permission.USER_MANAGE)
         assert not has_permission(Role.ENGINEER, Permission.SYSTEM_CONFIG)
 
     def test_engineer_can_create_edit_delete_projects(self):
         """Engineer should be able to create, edit, and delete projects."""
-        from backend.rbac import Role, Permission, has_permission
+        from backend.rbac import Permission, Role, has_permission
 
         assert has_permission(Role.ENGINEER, Permission.PROJECT_READ)
         assert has_permission(Role.ENGINEER, Permission.PROJECT_CREATE)
@@ -56,7 +55,7 @@ class TestRBACModels:
 
     def test_engineer_can_run_calculations_and_reports(self):
         """Engineer should be able to run calculations and generate reports."""
-        from backend.rbac import Role, Permission, has_permission
+        from backend.rbac import Permission, Role, has_permission
 
         assert has_permission(Role.ENGINEER, Permission.CALCULATION_EXECUTE)
         assert has_permission(Role.ENGINEER, Permission.REPORT_GENERATE)
@@ -65,7 +64,7 @@ class TestRBACModels:
 
     def test_viewer_read_only(self):
         """Viewer should have ONLY read permissions — no create/update/delete."""
-        from backend.rbac import Role, Permission, has_permission
+        from backend.rbac import Permission, Role, has_permission
 
         # Viewer CAN read
         assert has_permission(Role.VIEWER, Permission.PROJECT_READ)
@@ -108,7 +107,7 @@ class TestRBACModels:
 
     def test_viewer_is_strict_subset_of_engineer(self):
         """All viewer permissions should be a subset of engineer permissions."""
-        from backend.rbac import Role, ROLE_PERMISSIONS
+        from backend.rbac import ROLE_PERMISSIONS, Role
 
         viewer_perms = ROLE_PERMISSIONS[Role.VIEWER]
         engineer_perms = ROLE_PERMISSIONS[Role.ENGINEER]
@@ -116,7 +115,7 @@ class TestRBACModels:
 
     def test_engineer_is_strict_subset_of_admin(self):
         """All engineer permissions should be a subset of admin permissions."""
-        from backend.rbac import Role, ROLE_PERMISSIONS
+        from backend.rbac import ROLE_PERMISSIONS, Role
 
         engineer_perms = ROLE_PERMISSIONS[Role.ENGINEER]
         admin_perms = ROLE_PERMISSIONS[Role.ADMIN]
@@ -124,7 +123,7 @@ class TestRBACModels:
 
     def test_get_role_permissions(self):
         """get_role_permissions should return the correct permission set."""
-        from backend.rbac import Role, get_role_permissions, ROLE_PERMISSIONS
+        from backend.rbac import ROLE_PERMISSIONS, Role, get_role_permissions
 
         for role in Role:
             assert get_role_permissions(role) == ROLE_PERMISSIONS[role]
@@ -269,8 +268,8 @@ class TestAuthDependency:
 
     def _create_test_app(self):
         """Create a minimal FastAPI app with RBAC dependency for testing."""
-        from backend.auth import require_permission, get_current_role
-        from backend.rbac import Permission, Role
+        from backend.auth import require_permission
+        from backend.rbac import Permission
 
         app = FastAPI()
 
@@ -294,7 +293,6 @@ class TestAuthDependency:
 
     def test_viewer_can_read(self):
         """Viewer should be able to access read endpoints."""
-        from backend.rbac import Role
         app = self._create_test_app()
         client = TestClient(app)
 
@@ -324,8 +322,8 @@ class TestAuthDependency:
 
     def test_admin_can_access_all(self):
         """Admin should be able to access all endpoints."""
-        from backend.rbac import Role, Permission
         from backend.auth import require_permission
+        from backend.rbac import Permission, Role
         app = self._create_test_app()
         client = TestClient(app)
 

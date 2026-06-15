@@ -1,15 +1,15 @@
 """
 Engine Controller for L3 in Distributed FACP System
 """
-from typing import Dict, Any, List, Optional
+import logging
+import threading
 import time
 import uuid
-import threading
-import logging
-from .engine_pool import EnginePool
-from .engine_worker import EngineWorker
+from typing import Any, Dict, Optional
+
 from ..protocol.message_schema import FACPRequest, FACPResponse
 from ..security.isolation import ExecutionIsolationManager
+from .engine_pool import EnginePool
 
 
 class EngineController:
@@ -52,17 +52,17 @@ class EngineController:
         with self.lock:
             if self.is_running:
                 return
-            
+
             self.engine_pool.initialize()
             self.is_running = True
-            
+
             # Start background processes
             self.heartbeat_thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
             self.health_check_thread = threading.Thread(target=self._health_check_loop, daemon=True)
-            
+
             self.heartbeat_thread.start()
             self.health_check_thread.start()
-            
+
             self.logger.info(f"Engine Controller {self.controller_id} started")
 
     def stop(self):
@@ -72,10 +72,10 @@ class EngineController:
         with self.lock:
             if not self.is_running:
                 return
-            
+
             self.engine_pool.graceful_shutdown()
             self.is_running = False
-            
+
             self.logger.info(f"Engine Controller {self.controller_id} stopped")
 
     def process_request(self, request_data: Dict[str, Any], source_node: str = None) -> Dict[str, Any]:
@@ -83,10 +83,10 @@ class EngineController:
         Process an incoming request through the engine pool
         """
         request_id = request_data.get("id", str(uuid.uuid4()))
-        
+
         # Validate request format
         try:
-            request = FACPRequest.from_dict(request_data)
+            FACPRequest.from_dict(request_data)
         except Exception as e:
             return FACPResponse(
                 id=request_id,
@@ -102,7 +102,7 @@ class EngineController:
                     "engine_version": "FACP/1.1"
                 }
             ).to_dict()
-        
+
         # Enforce resource limits
         if not self._check_resource_availability():
             return FACPResponse(
@@ -119,16 +119,16 @@ class EngineController:
                     "engine_version": "FACP/1.1"
                 }
             ).to_dict()
-        
+
         # Track the task
         self._track_task_start(request_id, request_data, source_node)
-        
+
         # Process through the engine pool
         start_time = time.time()
         result = self.engine_pool.execute_request(request_data)
-        
+
         execution_time = (time.time() - start_time) * 1000  # Convert to ms
-        
+
         # Add controller-specific information to the result
         if "trace" in result:
             result["trace"]["controller_id"] = self.controller_id
@@ -136,7 +136,7 @@ class EngineController:
                 result["trace"]["execution_path"].insert(0, "L3_EngineController")
             else:
                 result["trace"]["execution_path"] = ["L3_EngineController"]
-            
+
             # Update execution time
             result["trace"]["controller_processing_time_ms"] = execution_time
         else:
@@ -146,10 +146,10 @@ class EngineController:
                 "controller_id": self.controller_id,
                 "engine_version": "FACP/1.1"
             }
-        
+
         # Track task completion
         self._track_task_completion(request_id, result)
-        
+
         return result
 
     def _check_resource_availability(self) -> bool:
@@ -253,11 +253,11 @@ class EngineController:
                     "result_status": result.get("status"),
                     "completed": True
                 })
-                
+
                 # Move from active to history
                 del self.active_tasks[task_id]
                 self.task_history.append(task_info)
-                
+
                 # Maintain history size
                 if len(self.task_history) > self.max_task_history:
                     self.task_history = self.task_history[-self.max_task_history:]
@@ -268,7 +268,7 @@ class EngineController:
         """
         with self.lock:
             pool_status = self.engine_pool.get_pool_status()
-            
+
             return {
                 "controller_id": self.controller_id,
                 "is_running": self.is_running,
@@ -290,12 +290,12 @@ class EngineController:
         with self.lock:
             if task_id in self.active_tasks:
                 return self.active_tasks[task_id]
-            
+
             # Check in history
             for task in self.task_history:
                 if task["task_id"] == task_id:
                     return task
-        
+
         return None
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -307,12 +307,12 @@ class EngineController:
             completed_tasks = [t for t in self.task_history if t.get("completed")]
             successful_tasks = [t for t in completed_tasks if t.get("result_status") == "success"]
             failed_tasks = [t for t in completed_tasks if t.get("result_status") == "error"]
-            
+
             if completed_tasks:
                 avg_duration = sum(t.get("duration_ms", 0) for t in completed_tasks) / len(completed_tasks)
             else:
                 avg_duration = 0
-            
+
             return {
                 "controller_id": self.controller_id,
                 "total_tasks_processed": len(completed_tasks),
@@ -333,10 +333,10 @@ class EngineController:
         # Look at last 5 minutes of completed tasks
         cutoff = time.time() - 300  # 5 minutes ago
         recent_completed = [t for t in self.task_history if t.get("end_time", 0) > cutoff]
-        
+
         if not recent_completed:
             return 0.0
-        
+
         time_span_minutes = (time.time() - min(t.get("end_time", time.time()) for t in recent_completed)) / 60
         return len(recent_completed) / max(time_span_minutes, 1)  # Avoid division by zero
 
@@ -369,9 +369,9 @@ class EngineController:
         Send heartbeat to cluster
         """
         self.last_heartbeat = time.time()
-        
+
         status = self.get_controller_status()
-        
+
         # Notify cluster if callback is set
         if self.cluster_sync_callback:
             try:
@@ -390,10 +390,10 @@ class EngineController:
         Perform health check on the engine pool and workers
         """
         self.last_health_check = time.time()
-        
+
         # Check pool health
         pool_status = self.engine_pool.get_pool_status()
-        
+
         # Check for unhealthy workers
         for worker_id, worker_status in pool_status.get("worker_statuses", {}).items():
             if not worker_status.get("is_running", False):
@@ -401,10 +401,10 @@ class EngineController:
                 # In a real implementation, we might restart the worker or alert
             elif not worker_status.get("is_healthy", True):
                 self.logger.warning(f"Worker {worker_id} is not healthy")
-        
+
         # Check resource usage
         self._update_resource_usage()
-        
+
         # Check for resource exhaustion
         if not self._check_resource_availability():
             self.logger.warning("Resources are exhausted, performance may be impacted")
@@ -441,15 +441,15 @@ class EngineController:
         """
         if new_size < 1:
             raise ValueError("Pool size must be at least 1")
-        
+
         if new_size > self.max_pool_size:
             self.logger.warning(f"Requested size {new_size} exceeds max size {self.max_pool_size}")
             new_size = self.max_pool_size
-        
+
         # In a real implementation, this would resize the pool
         # For now, we'll just log the request
         self.logger.info(f"Pool size update requested: {new_size}")
-        
+
         # Actually update the pool size
         with self.lock:
             # Update pool size parameters
@@ -473,7 +473,7 @@ class EngineController:
         """
         Clean up completed tasks from memory
         """
-        current_time = time.time()
+        time.time()
         # In a real implementation, we might have tasks with TTL
         # For now, this just ensures history size is maintained
 
@@ -506,13 +506,13 @@ class EngineController:
         Force restart a specific worker (for maintenance purposes)
         """
         pool_status = self.engine_pool.get_pool_status()
-        
+
         if worker_id in pool_status.get("worker_statuses", {}):
             # In a real implementation, we would restart the specific worker
             # For now, we'll just log the action
             self.logger.info(f"Worker restart requested for {worker_id}")
             return True
-        
+
         return False
 
     def drain_controller(self) -> bool:
@@ -526,7 +526,7 @@ class EngineController:
                 # In a real implementation, we would wait for tasks to complete
                 # For now, we'll just return status
                 return False  # Not drained yet
-        
+
         self.logger.info("Controller drained successfully")
         return True
 
@@ -581,15 +581,15 @@ class DistributedEngineController(EngineController):
         """
         if not self.cluster_members:
             return 0.0
-        
+
         total_load = 0
         count = 0
-        for node_id, status in self.cluster_members.items():
+        for _node_id, status in self.cluster_members.items():
             if "pool_status" in status:
                 pool_status = status["pool_status"]
                 total_load += pool_status.get("average_load", 0)
                 count += 1
-        
+
         return total_load / count if count > 0 else 0.0
 
     def _forward_request(self, request_data: Dict[str, Any], source_node: str = None) -> Dict[str, Any]:
@@ -600,19 +600,19 @@ class DistributedEngineController(EngineController):
             # If no cross-node communication available, process locally
             self.logger.warning("No cross-node communicator available, processing locally")
             return super().process_request(request_data, source_node)
-        
+
         # Select a target node
         target_node = self._select_target_node()
-        
+
         if not target_node:
             # If no target node available, process locally
             self.logger.warning("No target node available, processing locally")
             return super().process_request(request_data, source_node)
-        
+
         try:
             # Forward the request
             result = self.cross_node_communicator.forward_request(target_node, request_data)
-            
+
             # Add forwarding information to the result
             if "trace" in result:
                 result["trace"]["forwarded_from"] = self.controller_id
@@ -623,7 +623,7 @@ class DistributedEngineController(EngineController):
                     "forwarded_to": target_node,
                     "execution_path": ["L3_EngineController", f"forwarded_to_{target_node}"]
                 }
-            
+
             return result
         except Exception as e:
             # If forwarding fails, process locally
@@ -637,14 +637,14 @@ class DistributedEngineController(EngineController):
         # Find the node with the lowest load
         best_node = None
         lowest_load = float('inf')
-        
+
         for node_id, status in self.cluster_members.items():
             if status.get("is_running", False):
                 load = status.get("pool_status", {}).get("average_load", float('inf'))
                 if load < lowest_load:
                     lowest_load = load
                     best_node = node_id
-        
+
         return best_node
 
     def sync_cluster_membership(self, cluster_state: Dict[str, Any]):

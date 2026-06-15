@@ -21,12 +21,11 @@ import pytest
 
 from fireai.core.contracts_validation import (
     ContractViolation,
-    validate_room_input,
+    _compute_area_from_polygon,
     _has_nan_inf,
     _validate_polygon,
-    _compute_area_from_polygon,
+    validate_room_input,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ContractViolation Exception

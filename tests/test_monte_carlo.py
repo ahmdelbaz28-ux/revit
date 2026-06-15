@@ -12,19 +12,15 @@ Reference: NFPA 72-2022 §17.8.3.4 (redundancy), §14.4 (reliability)
 
 from __future__ import annotations
 
-import math
 import pytest
-
 from shapely.geometry import Polygon
 
 from fireai.core.monte_carlo import (
-    run_resilience_check,
-    _run_resilience_check_original,
     _MC_ITERATIONS,
     _MC_RESILIENCE_FLOOR,
-    _NUMPY,
+    _run_resilience_check_original,
+    run_resilience_check,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures

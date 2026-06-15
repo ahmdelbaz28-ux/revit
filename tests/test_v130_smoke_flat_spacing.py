@@ -10,9 +10,8 @@ Previous code incorrectly applied heat detector reduction to smoke detectors,
 causing up to 65% over-densification at high ceilings.
 """
 
-import pytest
-import math
 
+import pytest
 
 # ============================================================================
 # Test 1: Canonical SSoT constants — smoke spacing is flat 9.1m
@@ -40,7 +39,7 @@ class TestSmokeFlatSpacingConstants:
     def test_combined_table_smoke_column_all_9_1(self):
         """Smoke column in COMBINED_HEIGHT_SPACING_TABLE must be 9.1m."""
         from fireai.constants.nfpa72 import COMBINED_HEIGHT_SPACING_TABLE
-        for h_max, smoke_spacing, heat_spacing in COMBINED_HEIGHT_SPACING_TABLE:
+        for h_max, smoke_spacing, _heat_spacing in COMBINED_HEIGHT_SPACING_TABLE:
             assert smoke_spacing == 9.1, (
                 f"At h<={h_max}m, smoke spacing = {smoke_spacing}m, expected 9.1m. "
                 f"Combined table must reflect flat spacing per §17.7.3.2.3."
@@ -166,7 +165,9 @@ class TestCoverageRadiusFromHeightSmoke:
     ])
     def test_smoke_spacing_flat_in_table_range(self, height):
         """Smoke spacing must be 9.1m for all heights in table range."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
         spec = calculate_coverage_radius_from_height(height, "smoke")
         assert spec.spacing_max == pytest.approx(9.1, abs=0.01), (
             f"At h={height}m, smoke spacing_max = {spec.spacing_max}m, expected 9.1m"
@@ -177,7 +178,9 @@ class TestCoverageRadiusFromHeightSmoke:
     ])
     def test_smoke_radius_flat_in_table_range(self, height):
         """Smoke coverage radius must be 6.37m for all heights in table range."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
         spec = calculate_coverage_radius_from_height(height, "smoke")
         assert spec.radius == pytest.approx(6.37, abs=0.01), (
             f"At h={height}m, smoke radius = {spec.radius}m, expected 6.37m"
@@ -185,7 +188,9 @@ class TestCoverageRadiusFromHeightSmoke:
 
     def test_smoke_spacing_beyond_table(self):
         """Smoke spacing beyond 12.2m must still be 9.1m (flat per §17.7.3.2.3)."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
         spec = calculate_coverage_radius_from_height(14.0, "smoke")
         assert spec.spacing_max == pytest.approx(9.1, abs=0.01), (
             f"Smoke spacing at h=14.0m = {spec.spacing_max}m, expected 9.1m"
@@ -194,7 +199,9 @@ class TestCoverageRadiusFromHeightSmoke:
     @pytest.mark.parametrize("height", [3.0, 6.0, 9.0, 12.2])
     def test_heat_spacing_decreases_with_height(self, height):
         """Heat detector spacing must decrease with height per Table 17.6.3.5.1."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
         spec = calculate_coverage_radius_from_height(height, "heat")
         # Just verify heat spacing is less than the max (6.1m)
         assert spec.spacing_max <= 6.10, (
@@ -203,7 +210,9 @@ class TestCoverageRadiusFromHeightSmoke:
 
     def test_heat_at_3m_is_6_1(self):
         """Heat detector at h<=3.0m must be 6.1m (20 ft listed spacing)."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
         spec = calculate_coverage_radius_from_height(3.0, "heat")
         assert spec.spacing_max == pytest.approx(6.10, abs=0.01)
 
@@ -221,8 +230,8 @@ class TestTechnologyDispatcherSmokeFlat:
     def test_point_smoke_spacing_flat(self, height):
         """Point smoke detector spacing must be 9.1m at all heights within table."""
         from fireai.core.nfpa72_technology_dispatcher import (
-            EliteTechnologyDispatcher,
             DetectorTechnology,
+            EliteTechnologyDispatcher,
         )
         decision = EliteTechnologyDispatcher.select_technology(
             ceiling_height_m=height,
@@ -263,8 +272,8 @@ class TestTechnologyDispatcherSmokeFlat:
     def test_high_ceiling_stratification_advisory(self):
         """Heights above 9.1m should get stratification advisory, not reduced spacing."""
         from fireai.core.nfpa72_technology_dispatcher import (
-            EliteTechnologyDispatcher,
             DetectorTechnology,
+            EliteTechnologyDispatcher,
         )
         decision = EliteTechnologyDispatcher.select_technology(
             ceiling_height_m=10.5,
@@ -291,20 +300,20 @@ class TestSSoTConsistency:
 
     def test_all_modules_agree_on_smoke_max_spacing(self):
         """All modules must agree on SMOKE_MAX_SPACING_M = 9.1."""
-        from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M as canonical
         from fireai.constants import SMOKE_MAX_SPACING_M as reexported
+        from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M as canonical
         assert canonical == reexported == 9.1
 
     def test_all_modules_agree_on_smoke_coverage_radius(self):
         """All modules must agree on SMOKE_COVERAGE_RADIUS_M = 6.37."""
-        from fireai.constants.nfpa72 import SMOKE_COVERAGE_RADIUS_M as canonical
         from fireai.constants import SMOKE_COVERAGE_RADIUS_M as reexported
+        from fireai.constants.nfpa72 import SMOKE_COVERAGE_RADIUS_M as canonical
         assert canonical == reexported == 6.37
 
     def test_qomn_kernel_imports_from_canonical(self):
         """qomn_kernel must use the canonical SMOKE_MAX_SPACING_M."""
-        from fireai.core.qomn_kernel import NFPA72_SMOKE_MAX_SPACING_M
         from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M
+        from fireai.core.qomn_kernel import NFPA72_SMOKE_MAX_SPACING_M
         assert NFPA72_SMOKE_MAX_SPACING_M == SMOKE_MAX_SPACING_M == 9.1
 
 
@@ -324,7 +333,9 @@ class TestHeatSpacingStillReduced:
     ])
     def test_heat_spacing_decreases_correctly(self, height, expected_spacing):
         """Heat detector spacing must match Table 17.6.3.5.1 reduction."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
         spec = calculate_coverage_radius_from_height(height, "heat")
         assert spec.spacing_max == pytest.approx(expected_spacing, abs=0.01), (
             f"Heat spacing at h={height}m = {spec.spacing_max}m, "

@@ -15,11 +15,12 @@ makes A* prefer straighter routes with fewer fittings.
 """
 
 import heapq
-import math
 import logging
-from typing import List, Tuple, Dict, Set
-from qomn_fire.core.types import Point3D, ConduitType, ConduitRun, Fitting, FittingType
-from qomn_fire.core.errors import Result, NECViolationError
+import math
+from typing import Dict, List, Set, Tuple
+
+from qomn_fire.core.errors import NECViolationError, Result
+from qomn_fire.core.types import ConduitRun, ConduitType, Fitting, FittingType, Point3D
 
 logger = logging.getLogger("qomn_fire.routing")
 

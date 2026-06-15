@@ -17,62 +17,46 @@ Golden File Tests:
 
 from __future__ import annotations
 
-import math
-import hashlib
 import json
+import math
+
 import pytest
-from typing import Tuple
-
-# ─── Module imports ──────────────────────────────────────────────────────────
-
-from fireai.core.ifc_parser import (
-    IfcElementType,
-    CellState,
-    BoundingBox3D,
-    SpaceInfo,
-    BuildingModel,
-    build_abstract_model,
-    get_cell_state,
-    world_to_grid,
-    grid_to_world,
-    _classify_ifc_element,
-    _build_occupancy_grid,
-)
-
-from fireai.core.constraint_engine import (
-    ConstraintSource,
-    ConstraintResult,
-    RoutingConstraintSet,
-    ConstraintEngine,
-    BEND_PENALTY_M,
-    ELEVATION_PENALTY_M,
-    ELECTRICAL_PROXIMITY_PENALTY_M,
-    MIN_CONDUIT_INCHES,
-    MIN_ELECTRICAL_SEPARATION_MM,
-    MAX_CABLE_FASTENING_INTERVAL_MM,
-    EMT_3_4_OUTER_DIAMETER_MM,
-)
 
 from fireai.core.cable_router import (
-    CableRouter,
-    CableRoute,
-    RouteWaypoint,
-    RoutingSchedule,
     DIRECTIONS_6,
+    CableRouter,
 )
-
-from fireai.core.revit_exporter import (
-    RevitExporter,
-    ScheduleRow,
-    IFCElement,
-    ReportSummary,
-    FA_WORKSET,
-    CONDUIT_TYPE,
-)
-
 from fireai.core.cable_routing_engine import WireGauge
+from fireai.core.constraint_engine import (
+    BEND_PENALTY_M,
+    ELECTRICAL_PROXIMITY_PENALTY_M,
+    ELEVATION_PENALTY_M,
+    EMT_3_4_OUTER_DIAMETER_MM,
+    MAX_CABLE_FASTENING_INTERVAL_MM,
+    MIN_CONDUIT_INCHES,
+    MIN_ELECTRICAL_SEPARATION_MM,
+    ConstraintEngine,
+    ConstraintSource,
+)
 from fireai.core.contracts_validation import ContractViolation
 
+# ─── Module imports ──────────────────────────────────────────────────────────
+from fireai.core.ifc_parser import (
+    BoundingBox3D,
+    BuildingModel,
+    CellState,
+    IfcElementType,
+    SpaceInfo,
+    _classify_ifc_element,
+    build_abstract_model,
+    get_cell_state,
+    grid_to_world,
+    world_to_grid,
+)
+from fireai.core.revit_exporter import (
+    FA_WORKSET,
+    RevitExporter,
+)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES
@@ -699,7 +683,7 @@ class TestCableRouterDeterminism:
         route1 = router.route(start=(2.0, 2.0, 1.5), end=(8.0, 5.0, 1.5))
         route2 = router.route(start=(2.0, 2.0, 1.5), end=(8.0, 5.0, 1.5))
         assert len(route1.waypoints) == len(route2.waypoints)
-        for w1, w2 in zip(route1.waypoints, route2.waypoints):
+        for w1, w2 in zip(route1.waypoints, route2.waypoints, strict=False):
             assert abs(w1.x - w2.x) < 0.001
             assert abs(w1.y - w2.y) < 0.001
             assert abs(w1.z - w2.z) < 0.001
@@ -897,7 +881,7 @@ class TestIFCElementGeneration:
         schedule = router.route_all(connections)
         exporter = RevitExporter()
         elements = exporter.generate_ifc_elements(schedule)
-        fitting_classes = [e.ifc_class for e in elements if e.ifc_class == "IfcPipeFitting"]
+        [e.ifc_class for e in elements if e.ifc_class == "IfcPipeFitting"]
         # May or may not have fittings depending on path, but structure is correct
 
     def test_ifc_json_output(self, router):
@@ -1222,7 +1206,6 @@ class TestIFCParserImportError:
     def test_parse_ifc_file_without_ifcopenshell(self, monkeypatch):
         """Should raise ImportError if IfcOpenShell is not available."""
         import fireai.core.ifc_parser as ip
-        original = ip._get_ifcopenshell
         monkeypatch.setattr(ip, '_get_ifcopenshell', lambda: None)
 
         with pytest.raises(ImportError, match="IfcOpenShell"):

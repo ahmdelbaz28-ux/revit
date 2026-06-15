@@ -31,11 +31,10 @@ import pytest
 
 from parsers._path_security import (
     UnsafePathError,
-    validate_input_path,
     validate_file_size,
+    validate_input_path,
 )
-from parsers.dwg_parser import DWGParser, DWGConversionError
-
+from parsers.dwg_parser import DWGConversionError, DWGParser
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # _path_security unit tests (shared helper)

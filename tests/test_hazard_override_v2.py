@@ -18,14 +18,13 @@ from __future__ import annotations
 import pytest
 
 from fireai.core.hazard_override import (
+    _HAZARD_SEVERITY,
+    MANDATORY_HAZARD_OVERRIDES,
     HazardClassification,
     HazardOverrideVerifier,
     OverrideResult,
-    MANDATORY_HAZARD_OVERRIDES,
     is_more_severe,
-    _HAZARD_SEVERITY,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HazardClassification Enum

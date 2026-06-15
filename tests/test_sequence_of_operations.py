@@ -15,9 +15,11 @@ ASME A17.1 — Elevator Phase I and Phase II
 from __future__ import annotations
 
 import dataclasses
+
 import pytest
 
 import fireai.core.sequence_of_operations as _soo_mod
+
 
 # Force fallback dict path — provenance RuleApplied/Violation field names
 # don't match what the source module expects.
@@ -33,13 +35,13 @@ def _disable_provenance():
         setattr(_soo_mod, attr, val)
 
 from fireai.core.sequence_of_operations import (
-    SequenceOfOperationsMatrix,
-    LogicFunction,
-    DeviceInputType,
-    DeviceInput,
-    MatrixRow,
     CAUSE_EFFECT_RULES,
     NFPA_REFERENCES,
+    DeviceInput,
+    DeviceInputType,
+    LogicFunction,
+    MatrixRow,
+    SequenceOfOperationsMatrix,
 )
 
 

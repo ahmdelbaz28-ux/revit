@@ -20,12 +20,11 @@ from __future__ import annotations
 import pytest
 
 from fireai.core.fire_zone_engine import (
-    ZoneConstraints,
     FireZone,
-    ZoneReport,
     FireZoneEngine,
+    ZoneConstraints,
+    ZoneReport,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ZoneConstraints

@@ -19,11 +19,10 @@ Key Safety Properties:
 from __future__ import annotations
 
 import threading
-import time
+
 import pytest
 
 from fireai.core.safe_building_engine import SafeBuildingEngine
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Initialization

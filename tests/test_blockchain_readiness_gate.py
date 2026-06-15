@@ -19,19 +19,18 @@ References:
 from __future__ import annotations
 
 import dataclasses
-import hashlib
+
 import pytest
 
 from fireai.core.blockchain_readiness_gate import (
     EMPTY_HASH,
     PRIORITY,
-    MerkleTree,
-    MerkleProof,
     BlockchainReadinessGate,
-    _sha256_hex,
+    MerkleProof,
+    MerkleTree,
     _hash_pair,
+    _sha256_hex,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants
@@ -282,7 +281,7 @@ class TestBlockchainReadinessGate:
     def test_anchor_preserves_original_chain(self):
         gate = BlockchainReadinessGate(["art1"])
         original = [{"event": "orig"}]
-        updated = gate.anchor_to_audit_trail(original)
+        gate.anchor_to_audit_trail(original)
         assert len(original) == 1  # Original not modified
 
     def test_anchor_event_has_merkle_root(self):

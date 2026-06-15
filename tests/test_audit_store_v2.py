@@ -21,27 +21,23 @@ Key features tested:
 
 from __future__ import annotations
 
-import json
 import os
 import sqlite3
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from fireai.core.audit_store import (
+    _MIN_HMAC_KEY_LENGTH,
+    NFPA_VERSION,
     AuditStore,
     SecurityError,
     _compute_hash,
     _get_hmac_key,
-    _MIN_HMAC_KEY_LENGTH,
     add_event,
     get_events,
     verify_chain,
-    NFPA_VERSION,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures — Use :memory: SQLite for isolation
@@ -203,7 +199,7 @@ class TestAddEvent:
     def test_chain_links(self):
         """Each event's previous_hash must match the prior event's current_hash."""
         h1 = add_event("EVENT_1", "R1", {"step": 1})
-        h2 = add_event("EVENT_2", "R1", {"step": 2})
+        add_event("EVENT_2", "R1", {"step": 2})
         events = get_events()
         assert events[1]["previous_hash"] == events[0]["current_hash"]
         assert events[0]["current_hash"] == h1
@@ -232,7 +228,7 @@ class TestAddEvent:
             ],
             "coverage_pct": 99.9,
         }
-        result = add_event("COMPLEX", "R1", details)
+        add_event("COMPLEX", "R1", details)
         events = get_events()
         assert events[0]["details"]["detectors"][0]["id"] == "D1"
 
@@ -458,14 +454,14 @@ class TestEdgeCases:
 
     def test_unicode_in_details(self):
         """Unicode values in details must be handled."""
-        result = add_event("TEST", "R1", {"name": "Büro-101", "description": "空调房间"})
+        add_event("TEST", "R1", {"name": "Büro-101", "description": "空调房间"})
         events = get_events()
         assert events[0]["details"]["name"] == "Büro-101"
 
     def test_large_details_dict(self):
         """Large details dictionary must be handled."""
         details = {f"key_{i}": f"value_{i}" for i in range(100)}
-        result = add_event("TEST", "R1", details)
+        add_event("TEST", "R1", details)
         events = get_events()
         assert len(events[0]["details"]) == 100
 
@@ -475,7 +471,7 @@ class TestEdgeCases:
             "room": {"id": "R1", "area_sqm": 25.0},
             "detectors": [{"id": "D1", "x": 1.0}],
         }
-        result = add_event("TEST", "R1", details)
+        add_event("TEST", "R1", details)
         events = get_events()
         assert events[0]["details"]["room"]["area_sqm"] == 25.0
 

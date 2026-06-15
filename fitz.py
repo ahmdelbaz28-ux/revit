@@ -18,15 +18,15 @@ SAFETY RATIONALE:
 V131 FIX: Typed declarations and type: ignore[misc] to satisfy MyPy.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 # Module-level declarations with explicit types for MyPy
 Document: Any = None
 open: Any = None
 
 try:
-    from pymupdf import *  # type: ignore[import-untyped]
     import pymupdf as _pymupdf  # type: ignore[import-untyped]
+    from pymupdf import *  # type: ignore[import-untyped]
 
     # Re-export all symbols from pymupdf for backward compatibility
     Document = _pymupdf.Document  # type: ignore[misc]

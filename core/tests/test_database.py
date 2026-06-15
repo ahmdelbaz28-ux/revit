@@ -16,24 +16,19 @@ Tests the UniversalDataModel SQLite store covering:
 
 import json
 import os
-import tempfile
-from datetime import datetime, timezone
 
 import pytest
 
 from core.database import UniversalDataModel, _ElementLike
 from core.models import (
     ChangeSource,
-    Conflict,
     ConflictType,
     ElementType,
     Geometry,
     Point3D,
-    Relationship,
     SemanticProperties,
     UniversalElement,
 )
-
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -208,7 +203,7 @@ class TestContextManager:
         model = UniversalDataModel(db_path=":memory:")
         model.__exit__(None, None, None)
         # Connection should be closed; accessing it should raise
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             model._conn.execute("SELECT 1")
 
     def test_close_idempotent(self, udm: UniversalDataModel):
@@ -988,7 +983,7 @@ class TestRoundTrip:
         assert retrieved is not None
         assert retrieved.geometry is not None
         assert len(retrieved.geometry.points) == len(sample_element.geometry.points)
-        for orig, got in zip(sample_element.geometry.points, retrieved.geometry.points):
+        for orig, got in zip(sample_element.geometry.points, retrieved.geometry.points, strict=False):
             assert abs(orig.x - got.x) < 1e-9
             assert abs(orig.y - got.y) < 1e-9
             assert abs(orig.z - got.z) < 1e-9

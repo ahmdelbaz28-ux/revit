@@ -1,5 +1,4 @@
 """Integration tests for authentication, RBAC, and API versioning."""
-import os
 import pytest
 from fastapi.testclient import TestClient
 

@@ -1,11 +1,10 @@
+import os
+import sys
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-
-import os
-import sys
 
 # Add project root to path so we can import backend modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,7 +27,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 try:
-    from backend.database import Database
+    from backend.database import Database  # noqa: F401
     # Note: Using raw SQLite, not SQLAlchemy ORM, so autogenerate is limited.
     # When migrating to SQLAlchemy ORM, replace with Base.metadata.
     target_metadata = None

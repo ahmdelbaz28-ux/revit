@@ -12,9 +12,9 @@ try:
     import fitz  # PyMuPDF
 except ImportError:
     fitz = None  # PDF features unavailable without pymupdf
-from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Dict, List, Optional, Tuple
 
 
 class ConfidenceLevel(Enum):
@@ -31,7 +31,7 @@ class WallElement:
     confidence: ConfidenceLevel
     source: str
     raw_data: Dict = field(default_factory=dict)
-    
+
     def to_dict(self) -> dict:
         geometry_list = [(round(x, 2), round(y, 2)) for x, y in self.geometry]
         return {
@@ -40,7 +40,7 @@ class WallElement:
             "source": self.source,
             "raw_data": self.raw_data
         }
-    
+
     def get_area(self) -> float:
         """Calculate approximate area using shoelace formula."""
         if len(self.geometry) < 3:
@@ -52,7 +52,7 @@ class WallElement:
             area += self.geometry[i][0] * self.geometry[j][1]
             area -= self.geometry[j][0] * self.geometry[i][1]
         return abs(area) / 2.0
-    
+
     def get_perimeter(self) -> float:
         """Calculate perimeter."""
         if len(self.geometry) < 2:
@@ -69,11 +69,11 @@ class GeometryExtractor:
     """
     يستخلص الجدران المغلقة من صفحة PDF vector.
     لا يتعامل مع الصور raster.
-    
+
     USAGE:
         extractor = GeometryExtractor("drawing.pdf", page=0)
         walls = extractor.extract_walls()
-        
+
         for wall in walls:
             print(f"Wall area: {wall.get_area():.1f} sq units")
     """
@@ -89,7 +89,7 @@ class GeometryExtractor:
     def extract_walls(self) -> List[WallElement]:
         """
         استخراج كل المسارات المغلقة التي يمكن أن تكون جدراناً.
-        
+
         Returns:
             List of WallElement objects
         """
@@ -103,7 +103,7 @@ class GeometryExtractor:
 
         self.doc.close()
         return self._merge_adjacent_walls(walls)
-    
+
     def _parse_drawing(self, draw: dict) -> Optional[WallElement]:
         """Parse a single drawing object into a WallElement."""
         # نتعامل فقط مع المسارات المغلقة (type 'f' = fill, أو 's' = stroke, 're' = rect)
@@ -158,7 +158,7 @@ class GeometryExtractor:
                 "layer": draw.get("layer")
             }
         )
-    
+
     def _extract_points_from_items(self, items: list) -> List[Tuple[float, float]]:
         """Extract points from drawing items."""
         points = []
@@ -174,60 +174,60 @@ class GeometryExtractor:
             elif item_type == "s":  # smooth curve
                 points.append((item[-2], item[-1]))
         return points
-    
+
     def _merge_adjacent_walls(self, walls: List[WallElement]) -> List[WallElement]:
         """Merge walls that share edges."""
         if len(walls) <= 1:
             return walls
-        
+
         # Sort by area (largest first - these are likely outer walls)
         walls.sort(key=lambda w: w.get_area(), reverse=True)
-        
+
         merged = []
         used = set()
-        
+
         for i, wall in enumerate(walls):
             if i in used:
                 continue
-            
+
             current = wall
             used.add(i)
-            
+
             # Try to merge with other walls
             for j, other in enumerate(walls):
                 if j in used:
                     continue
-                
+
                 # Check if walls share an edge
                 if self._walls_share_edge(current, other):
                     current = self._merge_walls(current, other)
                     used.add(j)
-            
+
             merged.append(current)
-        
+
         return merged
-    
+
     def _walls_share_edge(self, wall1: WallElement, wall2: WallElement) -> bool:
         """Check if two walls share a significant edge."""
         # Simple check: if their bounding boxes overlap significantly
         if len(wall1.geometry) < 2 or len(wall2.geometry) < 2:
             return False
-        
+
         # Get first point of each wall
         p1_start = wall1.geometry[0]
         p2_start = wall2.geometry[0]
-        
+
         # If walls are very close, they might be the same wall
         distance = ((p1_start[0] - p2_start[0])**2 + (p1_start[1] - p2_start[1])**2)**0.5
-        
+
         # Threshold for "same wall" - this is configurable
         return distance < 1.0
-    
+
     def _merge_walls(self, wall1: WallElement, wall2: WallElement) -> WallElement:
         """Merge two walls into one (simple union)."""
         # This is a simplified merge - in reality you'd use proper polygon union
         all_points = wall1.geometry[:-1] + wall2.geometry
-        
+
         return WallElement(
             geometry=all_points,
             confidence=ConfidenceLevel.MODERATE,
@@ -245,7 +245,7 @@ class GeometryExtractor:
                 if width >= 0.5:
                     count += 1
         return count
-    
+
     def get_page_info(self) -> dict:
         """Get page dimensions and info."""
         rect = self.page.rect
@@ -260,11 +260,11 @@ class GeometryExtractor:
 def extract_walls_from_pdf(pdf_path: str, page: int = 0) -> List[WallElement]:
     """
     دالة مساعدة سريعة لاستخراج الجدران.
-    
+
     Args:
         pdf_path: مسار ملف PDF
         page: رقم الصفحة ( يبدأ من 0)
-        
+
     Returns:
         List of WallElement objects
     """
@@ -275,11 +275,11 @@ def extract_walls_from_pdf(pdf_path: str, page: int = 0) -> List[WallElement]:
 def extract_rooms_from_walls(walls: List[WallElement]) -> List[dict]:
     """
     استخراج الغرف من الجدران المستخلصة.
-    
+
     كل غرفة تكون面 مغلقة (closed polygon).
     """
     rooms = []
-    
+
     for wall in walls:
         area = wall.get_area()
         if area > 10:  # Filter out tiny shapes (likely objects, not rooms)
@@ -289,8 +289,8 @@ def extract_rooms_from_walls(walls: List[WallElement]) -> List[dict]:
                 "points": wall.geometry,
                 "confidence": wall.confidence.value
             })
-    
+
     # Sort by area (largest first)
     rooms.sort(key=lambda r: r["area"], reverse=True)
-    
+
     return rooms

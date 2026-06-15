@@ -21,15 +21,13 @@ NFPA 72 References:
 from __future__ import annotations
 
 import pytest
-from unittest.mock import MagicMock, patch
 from shapely.geometry import Polygon as ShapelyPolygon
 
-from fireai.core.room_validator import (
-    validate_room_spec,
-    VALID_OCCUPANCY_TYPES,
-)
 from fireai.core.nfpa72_models import RoomSpec
-
+from fireai.core.room_validator import (
+    VALID_OCCUPANCY_TYPES,
+    validate_room_spec,
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helper — Create a valid RoomSpec for testing
@@ -38,7 +36,7 @@ from fireai.core.nfpa72_models import RoomSpec
 
 def _make_valid_room_spec(**overrides) -> RoomSpec:
     """Create a valid RoomSpec with sensible defaults.
-    
+
     The RoomSpec.__post_init__ does strict validation, so we must
     provide valid data to construct one successfully.
     """
@@ -56,7 +54,7 @@ def _make_valid_room_spec(**overrides) -> RoomSpec:
 
 def _make_valid_room_spec_no_polygon(**overrides) -> RoomSpec:
     """Create a valid RoomSpec without custom_polygon.
-    
+
     Uses width/depth dimensions only (polygon will be set by __post_init__).
     """
     defaults = {

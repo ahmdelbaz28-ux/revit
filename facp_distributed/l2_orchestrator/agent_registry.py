@@ -1,10 +1,10 @@
 """
 Agent Registry for L2 Orchestrator in Distributed FACP System
 """
-from typing import Dict, Any, List, Optional
+import threading
 import time
 import uuid
-import threading
+from typing import Any, Dict, List, Optional
 
 
 class AgentRegistry:
@@ -40,14 +40,14 @@ class AgentRegistry:
                 "status": "active",
                 "utilization": 0
             }
-            
+
             # Update indices
             for capability in agent_info.get("capabilities", []):
                 if capability not in self.capability_index:
                     self.capability_index[capability] = []
                 if agent_id not in self.capability_index[capability]:
                     self.capability_index[capability].append(agent_id)
-            
+
             # Update node index
             node_affinity = agent_info.get("node_affinity")
             if node_affinity:
@@ -55,14 +55,14 @@ class AgentRegistry:
                     self.node_agents[node_affinity] = []
                 if agent_id not in self.node_agents[node_affinity]:
                     self.node_agents[node_affinity].append(agent_id)
-            
+
             # Update type index
             agent_type = agent_info.get("type", "generic")
             if agent_type not in self.agent_types:
                 self.agent_types[agent_type] = []
             if agent_id not in self.agent_types[agent_type]:
                 self.agent_types[agent_type].append(agent_id)
-            
+
             self.last_updated = time.time()
 
     def unregister_agent(self, agent_id: str):
@@ -72,26 +72,26 @@ class AgentRegistry:
         with self.lock:
             if agent_id in self.agents:
                 agent_info = self.agents[agent_id]
-                
+
                 # Remove from indices
                 for capability in agent_info["capabilities"]:
                     if capability in self.capability_index:
                         if agent_id in self.capability_index[capability]:
                             self.capability_index[capability].remove(agent_id)
-                
+
                 node_affinity = agent_info.get("node_affinity")
                 if node_affinity and node_affinity in self.node_agents:
                     if agent_id in self.node_agents[node_affinity]:
                         self.node_agents[node_affinity].remove(agent_id)
-                
+
                 agent_type = agent_info["type"]
                 if agent_type in self.agent_types:
                     if agent_id in self.agent_types[agent_type]:
                         self.agent_types[agent_type].remove(agent_id)
-                
+
                 # Remove from main registry
                 del self.agents[agent_id]
-                
+
                 self.last_updated = time.time()
 
     def find_agent_for_method(self, method: str) -> Optional[Dict[str, Any]]:
@@ -109,7 +109,7 @@ class AgentRegistry:
                         agent_info = self.agents.get(agent_id)
                         if agent_info and agent_info["status"] == "active":
                             return agent_info
-            
+
             # Then look for wildcard matches
             for capability, agent_ids in self.capability_index.items():
                 if capability.endswith('.*') and method.startswith(capability[:-2]):
@@ -117,14 +117,14 @@ class AgentRegistry:
                         agent_info = self.agents.get(agent_id)
                         if agent_info and agent_info["status"] == "active":
                             return agent_info
-            
+
             # If no local agent found, check cluster agents
             for agent_id, agent_info in self.cluster_agents.items():
                 capabilities = agent_info.get("capabilities", [])
                 if method in capabilities or any(cap.endswith('.*') and method.startswith(cap[:-2]) for cap in capabilities):
                     if agent_info.get("status") == "active":
                         return agent_info
-            
+
             return None
 
     def find_agents_by_capability(self, capability: str) -> List[Dict[str, Any]]:
@@ -134,17 +134,17 @@ class AgentRegistry:
         with self.lock:
             agent_ids = self.capability_index.get(capability, [])
             agents = []
-            
+
             for agent_id in agent_ids:
                 agent_info = self.agents.get(agent_id)
                 if agent_info and agent_info["status"] == "active":
                     agents.append(agent_info)
-            
+
             # Also include cluster agents with this capability
             for agent_id, agent_info in self.cluster_agents.items():
                 if capability in agent_info.get("capabilities", []) and agent_info.get("status") == "active":
                     agents.append(agent_info)
-            
+
             return agents
 
     def find_agents_by_type(self, agent_type: str) -> List[Dict[str, Any]]:
@@ -154,17 +154,17 @@ class AgentRegistry:
         with self.lock:
             agent_ids = self.agent_types.get(agent_type, [])
             agents = []
-            
+
             for agent_id in agent_ids:
                 agent_info = self.agents.get(agent_id)
                 if agent_info and agent_info["status"] == "active":
                     agents.append(agent_info)
-            
+
             # Also include cluster agents of this type
             for agent_id, agent_info in self.cluster_agents.items():
                 if agent_info.get("type") == agent_type and agent_info.get("status") == "active":
                     agents.append(agent_info)
-            
+
             return agents
 
     def get_all_agents(self) -> List[Dict[str, Any]]:
@@ -210,12 +210,12 @@ class AgentRegistry:
         """
         current_time = time.time()
         stale_agents = []
-        
+
         with self.lock:
             for agent_id, agent_info in self.agents.items():
                 if current_time - agent_info["last_seen"] > max_age_seconds:
                     stale_agents.append(agent_id)
-            
+
             for agent_id in stale_agents:
                 self.unregister_agent(agent_id)
 
@@ -224,20 +224,20 @@ class AgentRegistry:
         Sync agent registry with cluster-wide agent information
         """
         current_time = time.time()
-        
+
         with self.lock:
             for agent_id, agent_info in cluster_agents.items():
                 # Update cluster agent info
                 self.cluster_agents[agent_id] = agent_info
                 self.cluster_sync_timestamps[agent_id] = current_time
-                
+
                 # Update indices for cluster agents too
                 for capability in agent_info.get("capabilities", []):
                     if capability not in self.capability_index:
                         self.capability_index[capability] = []
                     if agent_id not in self.capability_index[capability]:
                         self.capability_index[capability].append(agent_id)
-                
+
                 agent_type = agent_info.get("type", "generic")
                 if agent_type not in self.agent_types:
                     self.agent_types[agent_type] = []
@@ -251,7 +251,7 @@ class AgentRegistry:
         with self.lock:
             local_active_agents = len([a for a in self.agents.values() if a["status"] == "active"])
             cluster_active_agents = len([a for a in self.cluster_agents.values() if a.get("status") == "active"])
-            
+
             return {
                 "total_local_agents": len(self.agents),
                 "active_local_agents": local_active_agents,
@@ -277,17 +277,17 @@ class AgentRegistry:
         with self.lock:
             agent_ids = self.node_agents.get(node_id, [])
             agents = []
-            
+
             for agent_id in agent_ids:
                 agent_info = self.agents.get(agent_id)
                 if agent_info:
                     agents.append(agent_info)
-            
+
             # Also include cluster agents associated with this node
             for agent_id, agent_info in self.cluster_agents.items():
                 if agent_info.get("node_affinity") == node_id:
                     agents.append(agent_info)
-            
+
             return agents
 
     def get_agent_by_id(self, agent_id: str) -> Optional[Dict[str, Any]]:
@@ -328,14 +328,14 @@ class DistributedAgentRegistry(AgentRegistry):
         Register an agent and notify cluster
         """
         super().register_agent(agent_id, agent_info)
-        
+
         # Call registration callbacks
         for callback in self.registration_callbacks:
             try:
                 callback(agent_id, agent_info)
             except Exception:
                 pass  # Don't let callback errors affect registration
-        
+
         # Notify cluster if callback is available
         if self.cluster_sync_callback:
             self.cluster_sync_callback({
@@ -352,7 +352,7 @@ class DistributedAgentRegistry(AgentRegistry):
         """
         agent_info = self.agents.get(agent_id)
         super().unregister_agent(agent_id)
-        
+
         # Notify cluster if callback is available
         if self.cluster_sync_callback and agent_info:
             self.cluster_sync_callback({
@@ -367,7 +367,7 @@ class DistributedAgentRegistry(AgentRegistry):
         Update agent status and notify cluster
         """
         super().update_agent_status(agent_id, status)
-        
+
         # Notify cluster if callback is available
         if self.cluster_sync_callback:
             self.cluster_sync_callback({
@@ -383,7 +383,7 @@ class DistributedAgentRegistry(AgentRegistry):
         Override to handle cluster synchronization with additional logic
         """
         super().sync_with_cluster(cluster_agents)
-        
+
         # Could add additional cluster-specific logic here
 
     def get_cluster_wide_agents(self) -> Dict[str, Any]:

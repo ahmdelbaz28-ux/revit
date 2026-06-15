@@ -21,19 +21,18 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+
 import pytest
 
 from fireai.core.parameter_optimizer import (
-    ParameterOptimizer,
     ParamConfig,
     ParameterOptimizationResult,
+    ParameterOptimizer,
 )
 from fireai.core.spatial_engine.density_optimizer import (
-    Room,
     DETECTOR_RADIUS,
-    DensityOptimizer,
+    Room,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures

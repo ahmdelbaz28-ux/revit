@@ -16,16 +16,16 @@ V128 SECURITY HARDENING (Finding #5):
       - DoS via oversized files (configurable cap)
 """
 
-import subprocess
-import shutil
 import os
+import shutil
+import subprocess
 
-from qomn_fire.core.errors import Result, ConversionError
 from parsers._path_security import (
     UnsafePathError,
-    validate_input_path,
     validate_file_size,
+    validate_input_path,
 )
+from qomn_fire.core.errors import ConversionError, Result
 
 # V128: Allowed extensions and size cap for DWG converter
 _DWG_ALLOWED_EXTENSIONS = frozenset({".dwg"})
@@ -101,7 +101,7 @@ class DwgConverter:
                 ))
 
         try:
-            result = subprocess.run(
+            subprocess.run(
                 [converter_bin, "-o", output_dxf_path, dwg_path],
                 check=True,
                 capture_output=True,

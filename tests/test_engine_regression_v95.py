@@ -28,14 +28,15 @@ Reference: agent.md — Rule 17: document every bug with root cause
 
 from __future__ import annotations
 
-import pytest
 from collections import Counter
 
+import pytest
+
 from fireai.core.rules_engine.engine import (
-    RulesEngine, Fact, Rule, RulePriority, RuleResult,
+    Fact,
+    RulesEngine,
 )
 from fireai.core.rules_engine.nfpa72_rules import NFPA72RuleSet
-
 
 # ---------------------------------------------------------------------------
 # BUG-V95-ENGINE-02 — Iteration reset between evaluate() calls
@@ -245,7 +246,7 @@ class TestV95Combined:
         """Per-call not-fired dedup must hold across 10 consecutive evaluate() calls."""
         engine = RulesEngine(max_iterations=100)
         engine.add_rules(NFPA72RuleSet.all_rules())
-        n_rules = len(NFPA72RuleSet.all_rules())
+        len(NFPA72RuleSet.all_rules())
 
         for i in range(10):
             engine.assert_fact(Fact(

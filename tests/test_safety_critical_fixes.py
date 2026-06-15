@@ -21,44 +21,41 @@ P1 FIXES VERIFIED:
 Reference: NFPA 72-2022, AGENTS.md Rules 6 and 7
 """
 
-import math
 import pytest
 
-from fireai.core.qomn_kernel import (
-    NFPA72_COVERAGE_RADIUS_FACTOR,
-    NFPA72_SMOKE_MAX_SPACING_M,
-    NFPA72_HEAT_MAX_SPACING_M,
-    NFPA72_WALL_MIN_DISTANCE_M,
-    NFPA72_WALL_MAX_DISTANCE_FACTOR,
-    compute_smoke_detector_spacing,
-    compute_heat_detector_spacing,
-    PhysicsGuardError,
-)
-from fireai.core.nfpa72_models import (
-    RoomSpec,
-    CeilingSpec,
-    DetectorType,
-    HeatDetectorSpec,
-    get_smoke_detector_radius,
-    get_smoke_detector_radius_safe,
-)
 from fireai.core.nfpa72_calculations import (
     calculate_coverage_radius,
+    calculate_coverage_radius_from_height,
     calculate_max_spacing,
     calculate_max_wall_distance,
-    calculate_coverage_radius_from_height,
 )
 from fireai.core.nfpa72_coverage import (
     check_coverage_polygon,
     create_room_polygon,
 )
+from fireai.core.nfpa72_models import (
+    CeilingSpec,
+    DetectorType,
+    HeatDetectorSpec,
+    RoomSpec,
+    get_smoke_detector_radius,
+    get_smoke_detector_radius_safe,
+)
+from fireai.core.qomn_kernel import (
+    NFPA72_COVERAGE_RADIUS_FACTOR,
+    NFPA72_HEAT_MAX_SPACING_M,
+    NFPA72_SMOKE_MAX_SPACING_M,
+    NFPA72_WALL_MAX_DISTANCE_FACTOR,
+    NFPA72_WALL_MIN_DISTANCE_M,
+    PhysicsGuardError,
+    compute_heat_detector_spacing,
+    compute_smoke_detector_spacing,
+)
 from fireai.core.rules_engine.compliance_bridge import (
-    dual_compliance_check,
     DualComplianceResult,
-    NFPA72ComplianceChecker,
+    dual_compliance_check,
 )
 from fireai.validation.compliance_engine import ComplianceEngine
-
 
 # ============================================================================
 # P0-1: Heat Detector Spacing Verification

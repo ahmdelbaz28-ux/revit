@@ -17,28 +17,26 @@ NFPA/NEC References:
 from __future__ import annotations
 
 import dataclasses
-import hashlib
 import json
 import math
-import pytest
-from typing import Any, Dict, List, Tuple
 
+import pytest
+
+from fireai.core.cable_router import (
+    CableRoute,
+    RouteWaypoint,
+    RoutingSchedule,
+)
 from fireai.core.revit_exporter import (
-    ScheduleRow,
+    BEND_FITTING,
+    CONDUIT_DIAMETER_M,
+    CONDUIT_TYPE,
+    FA_WORKSET,
     IFCElement,
     ReportSummary,
     RevitExporter,
-    FA_WORKSET,
-    CONDUIT_TYPE,
-    CONDUIT_DIAMETER_M,
-    BEND_FITTING,
+    ScheduleRow,
 )
-from fireai.core.cable_router import (
-    RoutingSchedule,
-    CableRoute,
-    RouteWaypoint,
-)
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers: Construct test fixtures without full BuildingModel/A*

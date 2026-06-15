@@ -9,13 +9,17 @@ Covers system requirement §4:
 
 References: NFPA 72 §23.6.2, NEC 760.24(A)
 """
+import os
+import sys
+
 import pytest
-import sys, os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fireai.core.schedule_generator import (
-    ScheduleGenerator, ScheduleRow, ScheduleReport,
     _NFPA72_23_6_2_MAX_LEN_M,
+    ScheduleGenerator,
+    ScheduleRow,
 )
 
 

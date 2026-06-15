@@ -21,7 +21,6 @@ Invalid rooms MUST be skipped, never guessed.
 
 from __future__ import annotations
 
-import math
 import os
 import sys
 import tempfile
@@ -34,9 +33,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from parsers.dwg_parser import DWGParser, DWGConversionError, DWGParseResult
 from parsers._path_security import UnsafePathError
-
+from parsers.dwg_parser import DWGConversionError, DWGParser, DWGParseResult
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -327,7 +325,7 @@ class TestDXFFastPath:
         try:
             # parse() should not call subprocess (no LibreDWG needed)
             with patch("subprocess.run") as mock_run:
-                result = parser.parse(p)
+                parser.parse(p)
                 # subprocess should NOT be called for .dxf fast-path
                 assert mock_run.call_count == 0
         finally:

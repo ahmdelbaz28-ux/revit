@@ -6,14 +6,12 @@ This script analyzes markdown files in a storyboard project to extract and organ
 timeline events, helping writers maintain chronological consistency.
 """
 
-import os
-import re
 import json
+import re
 import sys
-from pathlib import Path
-from typing import List, Dict, Tuple, Optional
-from datetime import datetime, timedelta
 from collections import defaultdict
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 
 class TimelineEvent:
@@ -144,7 +142,6 @@ class TimelineTracker:
 
             # Split content into sections based on markers
             if markers:
-                sections = []
                 for i, (timepoint, pos) in enumerate(markers):
                     start_pos = pos
                     end_pos = markers[i + 1][1] if i + 1 < len(markers) else len(content)
@@ -207,7 +204,7 @@ class TimelineTracker:
         analysis = {
             'total_events': len(self.events),
             'total_characters': len(self.characters),
-            'characters': sorted(list(self.characters)),
+            'characters': sorted(self.characters),
             'events_by_timepoint': self._group_events_by_time(),
             'events_by_character': self._group_events_by_character(),
             'events_by_chapter': self._group_events_by_chapter(),

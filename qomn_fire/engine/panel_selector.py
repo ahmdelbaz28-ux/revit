@@ -11,9 +11,14 @@ V54 Bug Fixes Preserved:
 """
 
 import hashlib
-from typing import List, Tuple, Dict, Any
-from qomn_fire.core.types import ProjectRequirements, PanelRecommendation, FireAlarmPanel
-from qomn_fire.core.errors import Result, FACPSelectionError
+from typing import Any, Dict, List, Tuple
+
+from qomn_fire.core.errors import FACPSelectionError, Result
+from qomn_fire.core.types import (
+    FireAlarmPanel,
+    PanelRecommendation,
+    ProjectRequirements,
+)
 from qomn_fire.engine.panel_database import MASTER_PANEL_DATABASE
 
 

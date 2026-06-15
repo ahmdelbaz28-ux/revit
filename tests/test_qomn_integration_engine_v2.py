@@ -20,23 +20,22 @@ from __future__ import annotations
 import dataclasses
 import json
 import math
+
 import pytest
-from typing import List, Tuple
 
 from fireai.core.qomn_integration_engine import (
-    Point3D,
-    GridMap3D,
-    CableRouter,
-    HatchPlacementEngine,
     CableHatchIntegrator,
-    ConduitType,
-    HatchPattern,
+    CableRouter,
     CableRoutingError,
+    ConduitType,
+    GridMap3D,
+    HatchPattern,
+    HatchPlacementEngine,
     HatchPlacementError,
     NECViolationError,
+    Point3D,
     compute_engine_signature,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Point3D Tests

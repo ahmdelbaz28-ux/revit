@@ -11,8 +11,6 @@ oversized files) and return structured JSON on success/failure.
 from __future__ import annotations
 
 import sys
-import os
-import io
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).parent.resolve()
@@ -20,8 +18,8 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import pytest
-from fastapi.testclient import TestClient
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 from backend.routers.dwg import router
 

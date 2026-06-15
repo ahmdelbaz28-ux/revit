@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .models import Question, AnswerResult
+from .models import AnswerResult, Question
 
 
 class Evaluator:

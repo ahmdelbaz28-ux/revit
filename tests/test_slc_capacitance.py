@@ -18,13 +18,13 @@ Code References:
 
 from __future__ import annotations
 
-import math
 import pytest
 
 # NOTE: Provenance module's RuleApplied/Violation field names differ from what
 # slc_capacitance expects. We mock provenance to None to test business logic
 # via the fallback dict path — same pattern as group 3/4 tests.
 import fireai.core.slc_capacitance as _sc_mod
+
 
 @pytest.fixture(autouse=True)
 def _disable_provenance():
@@ -39,16 +39,15 @@ def _disable_provenance():
         setattr(_sc_mod, attr, val)
 
 from fireai.core.slc_capacitance import (
-    SLCCapacitanceAuditor,
-    SLCLoopSpec,
-    SLCCapacitanceResult,
     CABLE_CAPACITANCE_PF_PER_M,
-    SLC_MAX_CAPACITANCE_UF,
     DEFAULT_MAX_CAP_UF,
     DEVICE_CAPACITANCE_PF,
     ISOLATOR_CAPACITANCE_PF,
+    SLC_MAX_CAPACITANCE_UF,
+    SLCCapacitanceAuditor,
+    SLCCapacitanceResult,
+    SLCLoopSpec,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Cable Capacitance Table
@@ -275,7 +274,7 @@ class TestSLCCapacitanceAuditor:
         notifier_result = notifier_auditor.audit_slc_loops(loop)
         simplex_result = simplex_auditor.audit_slc_loops(loop)
         notifier_val = notifier_result.value if hasattr(notifier_result, "value") else notifier_result
-        simplex_val = simplex_result.value if hasattr(simplex_result, "value") else simplex_result
+        simplex_result.value if hasattr(simplex_result, "value") else simplex_result
         # Simplex should be more permissive (may be compliant where notifier fails)
         if not notifier_val["safe"]:
             # Simplex might still pass with 0.75 µF limit
@@ -335,7 +334,7 @@ class TestSLCCapacitanceAuditorManufacturer:
     def test_per_loop_manufacturer_override(self):
         """Per-loop manufacturer override should work."""
         auditor = SLCCapacitanceAuditor(manufacturer="notifier")
-        result = auditor.audit_slc_loops([
+        auditor.audit_slc_loops([
             {
                 "loop_id": "SLC-01",
                 "total_length_m": 100.0,

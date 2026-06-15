@@ -21,10 +21,9 @@ Test Categories:
   10. Coverage Radius Consistency — R = 0.7*S must be consistent everywhere
 """
 
-import math
 import os
+
 import pytest
-from typing import List, Tuple
 
 # Resolve repo root relative to this test file
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -58,6 +57,7 @@ class TestSSoTViolations:
         This must import from canonical source only.
         """
         import inspect
+
         from fireai.core import qomn_kernel
 
         source = inspect.getsource(qomn_kernel)
@@ -71,6 +71,7 @@ class TestSSoTViolations:
     def test_technology_dispatcher_imports_from_canonical_source(self):
         """nfpa72_technology_dispatcher.py must import table from canonical source."""
         import inspect
+
         from fireai.core import nfpa72_technology_dispatcher
 
         source = inspect.getsource(nfpa72_technology_dispatcher)
@@ -81,6 +82,7 @@ class TestSSoTViolations:
     def test_calculations_imports_from_canonical_source(self):
         """nfpa72_calculations.py must import table from canonical source."""
         import inspect
+
         from fireai.core import nfpa72_calculations
 
         source = inspect.getsource(nfpa72_calculations)
@@ -91,6 +93,7 @@ class TestSSoTViolations:
     def test_constants_init_imports_from_canonical_nfpa72(self):
         """constants/__init__.py must import and re-export from nfpa72.py, not duplicate."""
         import inspect
+
         import fireai.constants
 
         source = inspect.getsource(fireai.constants)
@@ -169,7 +172,10 @@ class TestSmokeDetectorSpacingCompliance:
         They are CONSERVATIVE (more detectors) per NFPA 72 §17.7.3.2.3
         which states flat 9.1m spacing.
         """
-        from fireai.constants.nfpa72 import SMOKE_HEIGHT_SPACING_TABLE, SMOKE_MAX_SPACING_M
+        from fireai.constants.nfpa72 import (
+            SMOKE_HEIGHT_SPACING_TABLE,
+            SMOKE_MAX_SPACING_M,
+        )
 
         prev_spacing = float('inf')
         for h_max, spacing in SMOKE_HEIGHT_SPACING_TABLE:
@@ -257,7 +263,7 @@ class TestCeilingHeightLimits:
 
     def test_guard_rejects_above_18_288m(self):
         """guard_ceiling_height_m must reject h > 18.288m."""
-        from fireai.core.qomn_kernel import guard_ceiling_height_m, PhysicsGuardError
+        from fireai.core.qomn_kernel import PhysicsGuardError, guard_ceiling_height_m
 
         with pytest.raises(PhysicsGuardError):
             guard_ceiling_height_m(19.0)
@@ -295,8 +301,8 @@ class TestCrossModuleConsistency:
 
     def test_smoke_max_spacing_consistent_everywhere(self):
         """SMOKE_MAX_SPACING_M must be 9.1 in ALL modules."""
-        from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M as canonical
         from fireai.constants import SMOKE_MAX_SPACING_M as init_val
+        from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M as canonical
         from fireai.core.qomn_kernel import NFPA72_SMOKE_MAX_SPACING_M as kernel_val
 
         assert canonical == 9.1, f"Canonical: {canonical} ≠ 9.1"
@@ -310,8 +316,8 @@ class TestCrossModuleConsistency:
 
     def test_heat_max_spacing_consistent_everywhere(self):
         """HEAT_MAX_SPACING_M must be 6.1 in ALL modules."""
-        from fireai.constants.nfpa72 import HEAT_MAX_SPACING_M as canonical
         from fireai.constants import HEAT_MAX_SPACING_M as init_val
+        from fireai.constants.nfpa72 import HEAT_MAX_SPACING_M as canonical
         from fireai.core.qomn_kernel import NFPA72_HEAT_MAX_SPACING_M as kernel_val
 
         assert canonical == 6.1, f"Canonical: {canonical} ≠ 6.1"
@@ -320,8 +326,8 @@ class TestCrossModuleConsistency:
 
     def test_coverage_radius_factor_consistent(self):
         """COVERAGE_RADIUS_FACTOR must be 0.7 in ALL modules."""
-        from fireai.constants.nfpa72 import COVERAGE_RADIUS_FACTOR as canonical
         from fireai.constants import COVERAGE_FACTOR_FLAT_CEILING as init_val
+        from fireai.constants.nfpa72 import COVERAGE_RADIUS_FACTOR as canonical
         from fireai.core.qomn_kernel import NFPA72_COVERAGE_RADIUS_FACTOR as kernel_val
 
         assert canonical == 0.7
@@ -332,7 +338,9 @@ class TestCrossModuleConsistency:
     def test_smoke_height_spacing_table_consistent(self):
         """SMOKE_HEIGHT_SPACING_TABLE must match across all modules."""
         from fireai.constants.nfpa72 import SMOKE_HEIGHT_SPACING_TABLE as canonical
-        from fireai.core.nfpa72_technology_dispatcher import _NFPA72_SMOKE_SPACING_TABLE as dispatcher_table
+        from fireai.core.nfpa72_technology_dispatcher import (
+            _NFPA72_SMOKE_SPACING_TABLE as dispatcher_table,
+        )
 
         # Convert tuples to lists for comparison
         canonical_list = list(canonical)
@@ -345,8 +353,8 @@ class TestCrossModuleConsistency:
         """COMBINED_HEIGHT_SPACING_TABLE must be consistent with individual tables."""
         from fireai.constants.nfpa72 import (
             COMBINED_HEIGHT_SPACING_TABLE,
-            SMOKE_HEIGHT_SPACING_TABLE,
             HEAT_HEIGHT_SPACING_TABLE,
+            SMOKE_HEIGHT_SPACING_TABLE,
         )
 
         for i, (h_max, smoke_s, heat_s) in enumerate(COMBINED_HEIGHT_SPACING_TABLE):
@@ -372,16 +380,16 @@ class TestCrossModuleConsistency:
 
     def test_heat_absolute_max_spacing_consistent(self):
         """HEAT_ABSOLUTE_MAX_SPACING_M must be 15.24m everywhere."""
-        from fireai.constants.nfpa72 import HEAT_ABSOLUTE_MAX_SPACING_M as canonical
         from fireai.constants import HEAT_ABSOLUTE_MAX_SPACING_M as init_val
+        from fireai.constants.nfpa72 import HEAT_ABSOLUTE_MAX_SPACING_M as canonical
 
         assert canonical == 15.24
         assert init_val == 15.24
 
     def test_wall_min_distance_consistent(self):
         """WALL_MIN_DISTANCE_M must be 0.1016m (4 inches) everywhere."""
-        from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M as canonical
         from fireai.constants import WALL_MIN_DISTANCE_M as init_val
+        from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M as canonical
 
         assert canonical == 0.1016
         assert init_val == 0.1016
@@ -401,8 +409,9 @@ class TestImportChainIntegrity:
 
     def test_constants_init_re_exports_canonical(self):
         """constants/__init__.py must re-export from nfpa72.py, not define duplicates."""
-        import fireai.constants
         import os
+
+        import fireai.constants
 
         # Read source file directly (inspect.getsource fails on __init__)
         init_path = os.path.dirname(fireai.constants.__file__) + '/__init__.py'
@@ -421,7 +430,9 @@ class TestImportChainIntegrity:
         are OK because they just re-assign the imported value. The test checks for
         assignments with LITERAL numeric values (not references to imported names).
         """
-        import inspect, re
+        import inspect
+        import re
+
         from fireai.core import qomn_kernel
 
         source = inspect.getsource(qomn_kernel)
@@ -446,8 +457,10 @@ class TestImportChainIntegrity:
 
     def test_nec_constants_in_dedicated_module(self):
         """NEC constants must be in fireai/constants/nec.py."""
-        from fireai.constants.nec import MAX_CONDUCTOR_FILL_PCT
-        from fireai.constants.nec import CONDUCTOR_DERATING_TABLE
+        from fireai.constants.nec import (
+            CONDUCTOR_DERATING_TABLE,
+            MAX_CONDUCTOR_FILL_PCT,
+        )
 
         assert MAX_CONDUCTOR_FILL_PCT is not None
         assert CONDUCTOR_DERATING_TABLE is not None
@@ -612,6 +625,7 @@ class TestPESignoffRequirements:
     def test_nfpa72_module_docstring_has_pe_warning(self):
         """nfpa72.py module docstring must mention PE sign-off requirement."""
         import inspect
+
         from fireai.constants import nfpa72
 
         doc = inspect.getdoc(nfpa72)
@@ -623,6 +637,7 @@ class TestPESignoffRequirements:
     def test_nec_module_has_pe_notice_in_docstring(self):
         """NEC constants module must indicate PE verification requirement."""
         import inspect
+
         from fireai.constants import nec
 
         doc = inspect.getdoc(nec)
@@ -649,6 +664,7 @@ class TestPESignoffRequirements:
         the module source for the comment/docstring attached to the table definition.
         """
         import inspect
+
         from fireai.constants import nfpa72
 
         source = inspect.getsource(nfpa72)
@@ -681,56 +697,78 @@ class TestNaNInfSafety:
 
     def test_smoke_spacing_rejects_nan(self):
         """compute_smoke_detector_spacing must reject NaN ceiling height."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing, PhysicsGuardError
+        from fireai.core.qomn_kernel import (
+            PhysicsGuardError,
+            compute_smoke_detector_spacing,
+        )
 
         with pytest.raises(PhysicsGuardError):
             compute_smoke_detector_spacing(float('nan'))
 
     def test_smoke_spacing_rejects_inf(self):
         """compute_smoke_detector_spacing must reject Inf ceiling height."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing, PhysicsGuardError
+        from fireai.core.qomn_kernel import (
+            PhysicsGuardError,
+            compute_smoke_detector_spacing,
+        )
 
         with pytest.raises(PhysicsGuardError):
             compute_smoke_detector_spacing(float('inf'))
 
     def test_smoke_spacing_rejects_negative(self):
         """compute_smoke_detector_spacing must reject negative ceiling height."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing, PhysicsGuardError
+        from fireai.core.qomn_kernel import (
+            PhysicsGuardError,
+            compute_smoke_detector_spacing,
+        )
 
         with pytest.raises(PhysicsGuardError):
             compute_smoke_detector_spacing(-1.0)
 
     def test_smoke_spacing_rejects_zero(self):
         """compute_smoke_detector_spacing must reject zero ceiling height."""
-        from fireai.core.qomn_kernel import compute_smoke_detector_spacing, PhysicsGuardError
+        from fireai.core.qomn_kernel import (
+            PhysicsGuardError,
+            compute_smoke_detector_spacing,
+        )
 
         with pytest.raises(PhysicsGuardError):
             compute_smoke_detector_spacing(0.0)
 
     def test_coverage_radius_rejects_nan(self):
         """calculate_coverage_radius_from_height must reject NaN."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
 
         with pytest.raises((ValueError, TypeError)):
             calculate_coverage_radius_from_height(float('nan'))
 
     def test_coverage_radius_rejects_inf(self):
         """calculate_coverage_radius_from_height must reject Inf."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
 
         with pytest.raises(ValueError):
             calculate_coverage_radius_from_height(float('inf'))
 
     def test_heat_spacing_rejects_nan_height(self):
         """Heat detector spacing must reject NaN ceiling height."""
-        from fireai.core.qomn_kernel import compute_heat_detector_spacing, PhysicsGuardError
+        from fireai.core.qomn_kernel import (
+            PhysicsGuardError,
+            compute_heat_detector_spacing,
+        )
 
         with pytest.raises(PhysicsGuardError):
             compute_heat_detector_spacing(float('nan'), 100.0)
 
     def test_battery_rejects_nan_current(self):
         """Battery calculation must reject NaN current."""
-        from fireai.core.qomn_kernel import compute_battery_capacity_ah, PhysicsGuardError
+        from fireai.core.qomn_kernel import (
+            PhysicsGuardError,
+            compute_battery_capacity_ah,
+        )
 
         with pytest.raises(PhysicsGuardError):
             compute_battery_capacity_ah(float('nan'), 1.5)
@@ -765,7 +803,9 @@ class TestCoverageRadiusConsistency:
 
     def test_calculations_uses_0_7_factor(self):
         """nfpa72_calculations must use R = 0.7 × S."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
 
         spec = calculate_coverage_radius_from_height(3.0, "smoke")
         # At h=3.0m, S=9.1m, R should be 0.7 × 9.1 = 6.37m
@@ -781,7 +821,9 @@ class TestCoverageRadiusConsistency:
         Coverage radius = 0.7 × S per §17.7.4.2.3.1.
         These are DIFFERENT values.
         """
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
 
         spec = calculate_coverage_radius_from_height(3.0, "smoke")
 
@@ -798,7 +840,9 @@ class TestCoverageRadiusConsistency:
 
     def test_heat_detector_coverage_radius(self):
         """Heat detector coverage at h=3.0m must use S=6.1m."""
-        from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
+        from fireai.core.nfpa72_calculations import (
+            calculate_coverage_radius_from_height,
+        )
 
         spec = calculate_coverage_radius_from_height(3.0, "heat")
 
@@ -837,8 +881,8 @@ class TestTechnologyDispatcherIntegration:
     def test_high_ceiling_switches_to_beam(self):
         """At h>12.2m, technology dispatcher must switch to beam detectors."""
         from fireai.core.nfpa72_technology_dispatcher import (
-            EliteTechnologyDispatcher,
             DetectorTechnology,
+            EliteTechnologyDispatcher,
         )
 
         decision = EliteTechnologyDispatcher.select_technology(15.0, 0.0, "smoke")
@@ -849,8 +893,8 @@ class TestTechnologyDispatcherIntegration:
     def test_very_high_ceiling_switches_to_asd(self):
         """At h>25m, technology dispatcher must switch to ASD."""
         from fireai.core.nfpa72_technology_dispatcher import (
-            EliteTechnologyDispatcher,
             DetectorTechnology,
+            EliteTechnologyDispatcher,
         )
 
         decision = EliteTechnologyDispatcher.select_technology(30.0, 0.0, "smoke")
@@ -1047,8 +1091,8 @@ class TestLaunchReadinessGate:
     def test_no_stale_9_144_smoke_spacing_anywhere(self):
         """The old SMOKE_MAX_SPACING_M = 9.144 (30ft × 0.3048) must not
         appear anywhere in the codebase. NFPA 72 states 9.1m, not 9.144m."""
-        import fireai.constants.nfpa72
         import fireai.constants
+        import fireai.constants.nfpa72
         import fireai.core.qomn_kernel
 
         # Check that 9.144 is NOT used as the smoke max spacing
@@ -1063,8 +1107,8 @@ class TestLaunchReadinessGate:
     def test_no_stale_15_24_heat_spacing_anywhere(self):
         """The old HEAT_MAX_SPACING_M = 15.24m was wrong — that's the
         absolute max (50ft), not the standard spacing (20ft = 6.1m)."""
-        import fireai.constants.nfpa72
         import fireai.constants
+        import fireai.constants.nfpa72
 
         # Standard heat spacing must be 6.1m (20ft), NOT 15.24m (50ft)
         assert fireai.constants.nfpa72.HEAT_MAX_SPACING_M == 6.1, (

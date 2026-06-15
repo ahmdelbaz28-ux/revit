@@ -16,9 +16,9 @@ import pytest
 
 from parsers._path_security import (
     UnsafePathError,
-    validate_input_path,
-    validate_file_size,
     _resolve_allowed_bases,
+    validate_file_size,
+    validate_input_path,
 )
 
 

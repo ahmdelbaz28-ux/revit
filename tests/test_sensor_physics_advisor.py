@@ -18,14 +18,10 @@ NFPA 72 References:
 
 from __future__ import annotations
 
-import pytest
-from typing import List
-
 from fireai.core.sensor_physics_advisor import (
     SensorAdvisory,
     SensorPhysicsAdvisor,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SensorAdvisory Dataclass Tests

@@ -23,9 +23,6 @@ Key features tested:
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass
-from typing import List, Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -46,7 +43,6 @@ from fireai.core.spatial_engine.density_optimizer import (
     DetectorLayout,
     Room,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _safe_fmt (V57 FIX)

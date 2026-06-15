@@ -60,8 +60,6 @@ from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 from core.models import (
     _ELEMENT_UPDATABLE_KEYS,
     ChangeSource,
-    Conflict,
-    ConflictType,
     ElementType,
     Geometry,
     Point3D,
@@ -654,7 +652,6 @@ class UniversalDataModel:
 
         Returns an object with total_elements, active_elements, etc.
         """
-        from core.models import Conflict, ConflictType
         with self._lock:
             try:
                 cursor = self._conn.cursor()

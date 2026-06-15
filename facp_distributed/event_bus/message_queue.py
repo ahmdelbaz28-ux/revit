@@ -1,13 +1,12 @@
 """
 Message Queue for Event Bus in Distributed FACP System
 """
-from typing import Dict, Any, List, Optional, Callable
+import queue
+import threading
 import time
 import uuid
-import threading
-import queue
-import json
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
 
 class MessagePriority(Enum):
@@ -118,19 +117,19 @@ class MessageQueue:
             with self.lock:
                 if self.queue.qsize() >= self.max_size:
                     return False  # Queue is full
-                
+
                 # Add to main queue with priority (negative for reverse priority)
                 priority_value = -message.priority.value
                 self.queue.put((priority_value, time.time(), message.id))
-                
+
                 # Add to topic-specific queue as well
                 if message.topic not in self.topic_queues:
                     self.topic_queues[message.topic] = queue.PriorityQueue(maxsize=self.max_size)
                 self.topic_queues[message.topic].put((priority_value, time.time(), message.id))
-                
+
                 # Store message reference
                 self.messages[message.id] = message
-                
+
                 self.stats["enqueued"] += 1
                 return True
         except queue.Full:
@@ -148,19 +147,19 @@ class MessageQueue:
                     q = self.topic_queues[topic_filter]
                 else:
                     q = self.queue
-                
+
                 if q.empty():
                     return None
-                
+
                 priority, timestamp, message_id = q.get_nowait()
-                
+
                 if message_id in self.messages:
                     message = self.messages[message_id]
-                    
+
                     # Update message status
                     message.status = MessageStatus.PROCESSING
                     message.processed_at = time.time()
-                    
+
                     self.stats["dequeued"] += 1
                     return message
                 else:
@@ -184,7 +183,7 @@ class MessageQueue:
         Publish a message to the appropriate topic
         """
         success = self.enqueue(message)
-        
+
         # Notify subscribers if any
         if success and message.topic in self.subscribers:
             for callback in self.subscribers[message.topic]:
@@ -193,7 +192,7 @@ class MessageQueue:
                     threading.Thread(target=callback, args=(message,), daemon=True).start()
                 except Exception as e:
                     print(f"Error in subscriber callback: {e}")
-        
+
         return success
 
     def acknowledge(self, message_id: str) -> bool:
@@ -216,11 +215,11 @@ class MessageQueue:
         with self.lock:
             if message_id not in self.messages:
                 return False
-            
+
             message = self.messages[message_id]
             message.status = MessageStatus.FAILED
             message.attempts += 1
-            
+
             if retry and message.attempts < message.max_attempts:
                 # Retry the message
                 message.status = MessageStatus.QUEUED
@@ -278,15 +277,15 @@ class MessageQueue:
         """
         current_time = time.time()
         expired_messages = []
-        
+
         with self.lock:
             for msg_id, message in self.messages.items():
                 if current_time - message.created_at > self.message_ttl:
                     expired_messages.append(msg_id)
-            
+
             for msg_id in expired_messages:
                 del self.messages[msg_id]
-        
+
         return len(expired_messages)
 
     def clear_queue(self):
@@ -299,7 +298,7 @@ class MessageQueue:
                 topic_queue.queue.clear()
             self.messages.clear()
             # Reset stats
-            self.stats = {k: 0 for k in self.stats.keys()}
+            self.stats = dict.fromkeys(self.stats.keys(), 0)
 
     def pause(self):
         """
@@ -354,25 +353,25 @@ class PriorityQueue(MessageQueue):
             with self.lock:
                 if self.queue.qsize() >= self.max_size:
                     return False
-                
+
                 # Add to both main queue and priority-specific queue
                 priority_value = -message.priority.value
                 timestamp = time.time()
-                
+
                 # Add to main queue
                 self.queue.put((priority_value, timestamp, message.id))
-                
+
                 # Add to priority-specific queue
                 self.priority_queues[message.priority].put((priority_value, timestamp, message.id))
-                
+
                 # Add to topic queue
                 if message.topic not in self.topic_queues:
                     self.topic_queues[message.topic] = queue.PriorityQueue(maxsize=self.max_size)
                 self.topic_queues[message.topic].put((priority_value, timestamp, message.id))
-                
+
                 # Store message reference
                 self.messages[message.id] = message
-                
+
                 self.stats["enqueued"] += 1
                 return True
         except queue.Full:
@@ -387,14 +386,14 @@ class PriorityQueue(MessageQueue):
                 q = self.priority_queues[priority]
                 if q.empty():
                     return None
-                
+
                 priority_val, timestamp, message_id = q.get_nowait()
-                
+
                 if message_id in self.messages:
                     message = self.messages[message_id]
                     message.status = MessageStatus.PROCESSING
                     message.processed_at = time.time()
-                    
+
                     self.stats["dequeued"] += 1
                     return message
                 else:
@@ -438,7 +437,7 @@ class DistributedMessageQueue(MessageQueue):
         Override to support distributed enqueue
         """
         success = super().enqueue(message)
-        
+
         # Replicate to other nodes if callback is available
         if success and self.cluster_sync_callback:
             self.cluster_sync_callback({
@@ -447,7 +446,7 @@ class DistributedMessageQueue(MessageQueue):
                 "node_id": self.node_id,
                 "timestamp": time.time()
             })
-        
+
         return success
 
     def sync_with_cluster(self, cluster_messages: List[Dict[str, Any]]):
@@ -465,6 +464,6 @@ class DistributedMessageQueue(MessageQueue):
         Get both local and distributed messages
         """
         local_msgs = self.get_messages_by_topic(topic) if topic else list(self.messages.values())
-        distributed_msgs = [msg for msg in self.distributed_messages.values() 
+        distributed_msgs = [msg for msg in self.distributed_messages.values()
                            if topic is None or msg.topic == topic]
         return local_msgs + distributed_msgs

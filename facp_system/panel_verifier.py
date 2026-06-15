@@ -7,8 +7,8 @@ V54 FIX F4: Added releasing service verification.
   Impact: A suppression system could pass compliance with a non-releasing panel.
 """
 
-from facp_system.panel_database import FireAlarmPanel
-from facp_system.panel_selector import ProjectRequirements, PanelRecommendation
+from facp_system.panel_selector import PanelRecommendation, ProjectRequirements
+
 
 class ComplianceVerifier:
     @staticmethod

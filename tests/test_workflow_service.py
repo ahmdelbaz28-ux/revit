@@ -18,10 +18,10 @@ LIFE-SAFETY NOTE:
   every gate must be validated, and failures must stop the pipeline.
 """
 
-import asyncio
 import os
-import pytest
 import sys
+
+import pytest
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -40,25 +40,22 @@ if not _WORKFLOW_AVAILABLE:
     )
 
 from backend.services.workflow_service import (
-    WorkflowService,
     PipelineState,
+    WorkflowService,
     WorkflowStatus,
-    build_fireai_workflow,
-    get_workflow_service,
-    close_workflow_service,
-    node_initialize,
-    node_validate,
-    node_conflict_detection,
-    node_human_review_gate,
-    node_generate_report,
-    should_proceed_after_parse,
-    should_proceed_after_validation,
-    should_require_review,
-    should_proceed_after_review,
     _compute_sha256,
     _log_transition,
+    build_fireai_workflow,
+    node_conflict_detection,
+    node_generate_report,
+    node_human_review_gate,
+    node_initialize,
+    node_validate,
+    should_proceed_after_parse,
+    should_proceed_after_review,
+    should_proceed_after_validation,
+    should_require_review,
 )
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -162,7 +159,6 @@ class TestNodeValidate:
 
     def test_validate_detects_non_finite_areas(self, sample_state):
         """Validation must detect NaN/Infinity in room areas."""
-        import math
         sample_state["rooms"] = [
             {"name": "bad_room", "area_sqm": float("nan"), "occupancy_type": "office"},
         ]

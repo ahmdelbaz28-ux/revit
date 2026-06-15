@@ -4,10 +4,11 @@ Conformant with ISO 19650 BIM Standards and QOMN Deterministic Software Design.
 Extended with building model types for IFC/DXF parsing pipeline.
 """
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Tuple, Dict, Any, Optional
 import hashlib
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Dict, Optional, Tuple
+
 
 class DeviceType(Enum):
     SMOKE_DETECTOR = "SMOKE_DETECTOR"

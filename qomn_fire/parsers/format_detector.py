@@ -24,12 +24,12 @@ import os
 import re
 from typing import Tuple
 
-from qomn_fire.core.errors import Result, FormatError
 from parsers._path_security import (
     UnsafePathError,
-    validate_input_path,
     validate_file_size,
+    validate_input_path,
 )
+from qomn_fire.core.errors import FormatError, Result
 
 # V128: Allowed extensions and size cap for format detector
 _FORMAT_MAX_FILE_SIZE_BYTES = int(

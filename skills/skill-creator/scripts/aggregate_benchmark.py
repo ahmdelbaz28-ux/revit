@@ -254,11 +254,11 @@ def generate_benchmark(benchmark_dir: Path, skill_name: str = "", skill_path: st
             })
 
     # Determine eval IDs from results
-    eval_ids = sorted(set(
+    eval_ids = sorted({
         r["eval_id"]
         for config in results.values()
         for r in config
-    ))
+    })
 
     benchmark = {
         "metadata": {
@@ -389,7 +389,7 @@ def main():
     configs = [k for k in run_summary if k != "delta"]
     delta = run_summary.get("delta", {})
 
-    print(f"\nSummary:")
+    print("\nSummary:")
     for config in configs:
         pr = run_summary[config]["pass_rate"]["mean"]
         label = config.replace("_", " ").title()

@@ -22,16 +22,16 @@ Architecture:
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 from fireai.core.building_engine import (
     BuildingEngine,
     BuildingReport,
 )
-from fireai.core.fire_zone_engine import ZoneConstraints, ZoneReport, FireZone
+from fireai.core.fire_zone_engine import ZoneConstraints
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -249,7 +249,7 @@ class TestBuildingEngineAuditStore:
         engine.analyse(simple_floors)
         # Should have at least START and COMPLETE events
         calls = mock_store.add_event.call_args_list
-        event_types = [c[1].get("event_type", c[0][0] if c[0] else "") for c in calls]
+        [c[1].get("event_type", c[0][0] if c[0] else "") for c in calls]
         # Check that add_event was called at least twice (START + COMPLETE)
         assert mock_store.add_event.call_count >= 2
 

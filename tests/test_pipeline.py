@@ -24,17 +24,15 @@ DESIGN PRINCIPLES:
 from __future__ import annotations
 
 import json
-import math
+
 import pytest
 
 from fireai.core.pipeline import (
-    analyze_room,
-    analyze_building,
     PipelineResult,
     StageResult,
+    analyze_building,
+    analyze_room,
 )
-from fireai.core.contracts_validation import ContractViolation
-
 
 # ─── Shared Fixtures ──────────────────────────────────────────────────────────
 

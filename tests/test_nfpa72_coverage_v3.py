@@ -22,41 +22,41 @@ NFPA 72 References:
 from __future__ import annotations
 
 import math
-import pytest
-from shapely.geometry import Point, Polygon, box
 
+import pytest
+from shapely.geometry import Polygon, box
+
+from fireai.core.contracts import CeilingType
 from fireai.core.nfpa72_coverage import (
-    NFPA_MIN_WALL_DISTANCE_M,
     NFPA_HVAC_EXCLUSION_RADIUS_M,
+    NFPA_MIN_WALL_DISTANCE_M,
     DuctDevice,
     WallViolation,
-    validate_wall_distances,
-    validate_hvac_exclusion_zones,
-    compute_hvac_safe_zone,
-    suggest_duct_detectors,
-    create_room_polygon,
-    is_point_in_room,
-    check_coverage_polygon,
+    adjust_coverage_for_beams,
     calculate_voronoi_coverage,
-    check_voronoi_coverage,
-    check_ridge_zone_compliance,
-    create_l_shaped_polygon,
+    check_coverage_polygon,
     check_l_shaped_coverage,
     check_nfpa72_compliance,
-    verify_full_coverage,
+    check_ridge_zone_compliance,
+    check_voronoi_coverage,
+    compute_hvac_safe_zone,
+    create_l_shaped_polygon,
+    create_room_polygon,
     get_sloped_ceiling_constraints,
-    adjust_coverage_for_beams,
+    is_point_in_room,
+    suggest_duct_detectors,
+    validate_hvac_exclusion_zones,
+    validate_wall_distances,
+    verify_full_coverage,
 )
 from fireai.core.nfpa72_models import (
     CeilingSpec,
     CoverageResult,
     DetectorType,
+    HVACDuct,
     NFPAComplianceResult,
     RoomSpec,
-    HVACDuct,
 )
-from fireai.core.contracts import CeilingType
-
 
 # =============================================================================
 # Fixtures

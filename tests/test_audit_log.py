@@ -19,12 +19,11 @@ Safety-critical features tested:
   - Export/verify round-trip
 """
 
-import json
 import dataclasses
+import json
 import os
 import sys
 import threading
-import time
 
 import pytest
 
@@ -32,13 +31,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fireai.core.audit_log import (
     GENESIS_PREV_HASH,
-    AuditEntry,
     AuditLog,
     compute_entry_hash,
     compute_hmac,
     create_audit_entry,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANT TESTS
@@ -109,7 +106,7 @@ class TestComputeEntryHash:
 
     def test_excludes_entry_hash_and_hmac(self):
         """entry_hash and hmac_signature are excluded from hash computation."""
-        entry = create_audit_entry(
+        create_audit_entry(
             analysis_id="test",
             layer=0,
             input_hash="x" * 64,
@@ -546,7 +543,7 @@ class TestAuditLogGetAnalysis:
             entry = create_audit_entry(
                 analysis_id=analysis_id,
                 layer=1,
-                input_hash=f"a" * 64,
+                input_hash="a" * 64,
                 formula_reference="NFPA 72 §17.6.3.1",
                 computation_description=f"Entry {i}",
                 output_value=f"result_{i}",

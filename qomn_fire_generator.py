@@ -27,13 +27,7 @@ All V54 fixes preserved plus V58 bug fixes:
 
 import os
 import sys
-import json
-import math
-import hashlib
-import shutil
 import unittest
-from typing import Tuple, List, Dict, Any, Optional, Union, Callable
-from dataclasses import dataclass, field
 
 INTEGRATED_FILES = {}
 
@@ -1695,7 +1689,7 @@ class TestIntegratedQomnFire(unittest.TestCase):
         Input: Same A* routing query repeated 50 times
         Expected: Every run produces identical SHA-256 hash
         """
-        from qomn_fire.core.types import Point3D, ConduitType
+        from qomn_fire.core.types import ConduitType, Point3D
         from qomn_fire.engine.routing import GridMap3D, astar_route_3d
 
         sig_ref = None
@@ -1727,7 +1721,7 @@ class TestIntegratedQomnFire(unittest.TestCase):
         Floor and ceiling slabs at z=-1 and z=1 prevent 3D escape routing.
         Expected: Fail path validation, return NECViolationError.
         """
-        from qomn_fire.core.types import Point3D, ConduitType
+        from qomn_fire.core.types import ConduitType, Point3D
         from qomn_fire.engine.routing import GridMap3D, astar_route_3d
 
         g_map = GridMap3D(step_m=1.0)
@@ -1806,8 +1800,8 @@ class TestIntegratedQomnFire(unittest.TestCase):
         Expected: Placement places 6 detectors. Selector evaluates and recommends FC901.
         """
         from qomn_fire.core.types import Point3D, ProjectRequirements
-        from qomn_fire.engine.placement import place_smoke_detectors_room
         from qomn_fire.engine.panel_selector import SelectionEngine
+        from qomn_fire.engine.placement import place_smoke_detectors_room
 
         room_min = Point3D(0.0, 0.0, 0.0)
         room_max = Point3D(25.0, 15.0, 0.0)
@@ -1847,15 +1841,31 @@ def execute_integrated_master_project():
     print("        QOMN-FIRE INTEGRATED PIPELINE: FULL PROJECT COMPILATION")
     print("="*80)
 
-    from qomn_fire.core.types import Point3D, TitleBlock, HatchSpec, ConduitType, Revision, ProjectRequirements
     from qomn_fire.core.constants import NFPA_SMOKE_DETECTOR_SPACING_M
+    from qomn_fire.core.types import (
+        ConduitType,
+        HatchSpec,
+        Point3D,
+        ProjectRequirements,
+        Revision,
+        TitleBlock,
+    )
+    from qomn_fire.drawing.dxf_generator import (
+        add_viewport,
+        create_document,
+        setup_layers,
+    )
+    from qomn_fire.drawing.hatch_engine import (
+        generate_circle_polyline,
+        place_boundary_hatch,
+    )
+    from qomn_fire.drawing.revision_control import (
+        draw_revision_table,
+    )
+    from qomn_fire.drawing.title_block import draw_facp_schedule, draw_title_block
+    from qomn_fire.engine.panel_selector import SelectionEngine
     from qomn_fire.engine.placement import place_smoke_detectors_room
     from qomn_fire.engine.routing import GridMap3D
-    from qomn_fire.engine.panel_selector import SelectionEngine
-    from qomn_fire.drawing.dxf_generator import create_document, setup_layers, add_viewport
-    from qomn_fire.drawing.hatch_engine import generate_circle_polyline, place_boundary_hatch
-    from qomn_fire.drawing.title_block import draw_title_block, draw_facp_schedule
-    from qomn_fire.drawing.revision_control import draw_revision_cloud, draw_revision_table
     from qomn_fire.integration.cable_hatch import route_conduit_and_hatch
     from qomn_fire.output.revit_exporter import export_to_revit_json
 

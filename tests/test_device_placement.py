@@ -20,29 +20,31 @@ NFPA 72 References:
 
 from __future__ import annotations
 
-import math
 import pytest
 
 from fireai.core.device_placement import (
-    # Enums
-    DetectorType as DPDetectorType,
-    OccupancyType,
-    CeilingType as DPCeilingType,
     # Dataclasses
     BeamObstruction,
-    ExitDoor,
-    RoomSpec as DPRoomSpec,
-    PlacedDevice,
-    PlacedPullStation,
-    PlacedNotificationAppliance,
-    PlacementResult,
-    DuctDetectorSpec,
     # Engine
     DetectorPlacementEngine,
+    DuctDetectorSpec,
+    ExitDoor,
+    OccupancyType,
+    PlacedDevice,
+    PlacementResult,
     place_duct_detector,
 )
+from fireai.core.device_placement import (
+    CeilingType as DPCeilingType,
+)
+from fireai.core.device_placement import (
+    # Enums
+    DetectorType as DPDetectorType,
+)
+from fireai.core.device_placement import (
+    RoomSpec as DPRoomSpec,
+)
 from fireai.core.qomn_kernel import PhysicsGuardError
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -334,7 +336,7 @@ class TestDetectorPlacementEngineHeat:
 
     def test_heat_more_detectors_than_smoke(self, engine):
         """Heat and smoke detectors placed per NFPA 72 spacing rules.
-        
+
         With the corrected heat detector spacing formula (S = 0.7 × √A,
         max 15.24m per §17.6.3.1), heat detector spacing may be larger
         than smoke spacing (flat 9.1m per §17.7.3.2.3) depending on

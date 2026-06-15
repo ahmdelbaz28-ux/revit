@@ -6,13 +6,13 @@
 输出：JSON 格式的 prompt（system_prompt + user_prompt），由 agent 发给 LLM 执行。
 LLM 返回知识点 JSON 后，agent 应调用 service.save_knowledge_points() 保存。
 """
-from pathlib import Path
 import json
 import sys
+from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
-from quiz_mastery.file_parser import parse_file, build_extraction_prompt
+from quiz_mastery.file_parser import build_extraction_prompt, parse_file
 
 
 def main() -> None:

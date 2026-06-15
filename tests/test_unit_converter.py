@@ -16,53 +16,45 @@ Standards:
 
 from __future__ import annotations
 
-import math
 import pytest
 
 from fireai.core.unit_converter import (
-    # Conversion factors
-    FEET_TO_METRES,
-    METRES_TO_FEET,
-    INCHES_TO_MM,
-    MM_TO_INCHES,
-    FEET_TO_MM,
-    MM_TO_FEET,
-    METRES_TO_MM,
-    MM_TO_METRES,
-    SQFT_TO_SQM,
-    SQM_TO_SQFT,
-    SQIN_TO_SQMM,
-    SQMM_TO_SQIN,
-    CUBIC_FT_TO_CUBIC_M,
-    CUBIC_M_TO_CUBIC_FT,
-    GALLONS_US_TO_LITRES,
-    LITRES_TO_GALLONS_US,
-    PSI_TO_BAR,
     BAR_TO_PSI,
-    PSI_TO_KPA,
-    KPA_TO_PSI,
-    PSF_TO_PSI,
-    PSI_TO_PSF,
-    PA_TO_PSI,
-    GPM_TO_LPM,
-    LPM_TO_GPM,
+    CUBIC_FT_TO_CUBIC_M,
     FAHRENHEIT_OFFSET,
     FAHRENHEIT_SCALE,
-    # Functions
-    revit_internal_to_metres,
-    metres_to_revit_internal,
-    revit_internal_to_mm,
-    mm_to_revit_internal,
-    inches_to_mm,
-    psi_to_bar,
+    # Conversion factors
+    FEET_TO_METRES,
+    FEET_TO_MM,
+    GALLONS_US_TO_LITRES,
+    GPM_TO_LPM,
+    INCHES_TO_MM,
+    LITRES_TO_GALLONS_US,
+    LPM_TO_GPM,
+    METRES_TO_FEET,
+    MM_TO_FEET,
+    MM_TO_INCHES,
+    PSF_TO_PSI,
+    PSI_TO_BAR,
+    PSI_TO_KPA,
+    PSI_TO_PSF,
+    SQFT_TO_SQM,
+    SQIN_TO_SQMM,
+    SQM_TO_SQFT,
     bar_to_psi,
-    gpm_to_lpm,
-    sqft_to_sqm,
-    fahrenheit_to_celsius,
     celsius_to_fahrenheit,
     convert_polygon_revit_to_metres,
+    fahrenheit_to_celsius,
+    gpm_to_lpm,
+    inches_to_mm,
+    metres_to_revit_internal,
+    mm_to_revit_internal,
+    psi_to_bar,
+    # Functions
+    revit_internal_to_metres,
+    revit_internal_to_mm,
+    sqft_to_sqm,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Exact Conversion Factors (NIST SP 811)

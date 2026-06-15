@@ -7,15 +7,16 @@ without ezdxf installed, enabling test collection in CI environments.
 """
 
 import math
-from typing import List, Tuple, Any
+from typing import Any, List, Tuple
 
 try:
     import ezdxf
 except ImportError:
     ezdxf = None
 
+from qomn_fire.core.errors import HatchPlacementError, Result
 from qomn_fire.core.types import HatchSpec, Point3D
-from qomn_fire.core.errors import Result, HatchPlacementError
+
 
 def generate_circle_polyline(center: Point3D, radius: float, num_sides: int = 16) -> List[Tuple[float, float]]:
     poly = []

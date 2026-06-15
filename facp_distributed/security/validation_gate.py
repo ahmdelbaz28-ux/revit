@@ -1,13 +1,14 @@
 """
 Validation Firewall for Distributed FACP System
 """
-from typing import Dict, Any, Tuple, List
+import hashlib
+import logging
+import time
+from enum import Enum
+from typing import Any, Dict, List, Tuple
+
 from ..protocol.message_schema import FACPMessageValidator, FACPRequest
 from .auth import AuthProvider
-import time
-import logging
-from enum import Enum
-import hashlib
 
 
 class RiskLevel(Enum):
@@ -98,10 +99,10 @@ class SecurityMiddleware:
         """Check if request rate is within limits"""
         # Create user identifier based on token or source node
         user_id = hashlib.sha256((token or source_node or "unknown").encode()).hexdigest()
-        
+
         current_time = time.time()
         window_size = 60  # 60 seconds window
-        
+
         # Clean old entries
         if user_id in self.rate_limits:
             self.rate_limits[user_id] = [
@@ -110,19 +111,19 @@ class SecurityMiddleware:
             ]
         else:
             self.rate_limits[user_id] = []
-        
+
         # Count current requests
         current_requests = sum(count for ts, count in self.rate_limits[user_id])
-        
+
         # Apply different limits based on risk level and source
         max_requests = 1000 if source_node and "l2" in source_node else 100  # More permissive for orchestrator nodes
-        
+
         if current_requests >= max_requests:
             return False, f"Rate limit exceeded: {max_requests} requests per {window_size}s"
-        
+
         # Add current request
         self.rate_limits[user_id].append((current_time, 1))
-        
+
         return True, ""
 
     def _apply_security_policy(self, request: FACPRequest, risk_level: str, source_node: str) -> Tuple[bool, List[str]]:
@@ -171,14 +172,14 @@ class ValidationFirewall:
         if idempotency_key and idempotency_key in self.distributed_idempotency_store:
             # Return cached response for idempotent requests
             cached_response = self.distributed_idempotency_store[idempotency_key]
-            
+
             # Check TTL
             if time.time() - cached_response.get("created_at", 0) < self.idempotency_ttl:
                 return True, cached_response["response"], []
 
         # Validate the request
         is_valid, errors, validated_data = self.middleware.validate_request(request_data, source_node)
-        
+
         if not is_valid:
             return False, {}, errors
 
@@ -213,17 +214,17 @@ class ValidationFirewall:
         """
         user_permissions = auth_context.get("permissions", [])
         user_roles = auth_context.get("roles", [])
-        
+
         # Engine access requires specific permissions
         if target == "engine":
-            return ("engine_access" in user_permissions or 
+            return ("engine_access" in user_permissions or
                    "admin" in user_permissions or
                    ("operator" in user_roles and source_node and "l2" in source_node))
-        
+
         # Client access might be limited based on user role
         elif target == "client":
             return len(user_permissions) > 0  # Basic authenticated access
-        
+
         # Orchestrator access requires basic permissions
         else:
             return len(user_permissions) > 0
@@ -242,9 +243,9 @@ class ValidationFirewall:
             "active_sessions": len(self.middleware.auth_provider.token_manager.active_tokens),
             "cached_requests": len(self.distributed_idempotency_store),
             "rate_limited_sources": len(self.middleware.rate_limits),
-            "unique_nodes_processed": len(set(
+            "unique_nodes_processed": len({
                 data.get("source_node") for data in self.distributed_idempotency_store.values()
-            ))
+            })
         }
 
     def sync_idempotency_store(self, cluster_nodes: list, sync_callback):
@@ -256,7 +257,7 @@ class ValidationFirewall:
             "node_id": getattr(self, 'node_id', 'validation_firewall'),
             "timestamp": time.time()
         }
-        
+
         # In a real implementation, this would sync with other cluster nodes
         for node in cluster_nodes:
             sync_callback(node, sync_data)
@@ -266,15 +267,15 @@ class ValidationFirewall:
         Clean up expired entries from stores
         """
         current_time = time.time()
-        
+
         # Clean up expired idempotency entries
         expired_keys = [
             key for key, value in self.distributed_idempotency_store.items()
             if current_time - value.get("created_at", 0) >= self.idempotency_ttl
         ]
-        
+
         for key in expired_keys:
             del self.distributed_idempotency_store[key]
-        
+
         # Clean up old rate limit entries (done in _check_rate_limits method)
         # This is just a periodic cleanup trigger

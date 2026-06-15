@@ -17,13 +17,13 @@ Reference: NFPA 72-2022 §12.2.2, NEC 760.154
 
 from __future__ import annotations
 
-import pytest
-from unittest.mock import MagicMock, patch
 from dataclasses import dataclass, field
 from enum import Enum
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 import fireai.core.routing_global_class_a as routing_mod
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Mock provenance classes that accept BOTH old and new field names
@@ -112,7 +112,6 @@ def _patch_provenance_in_module():
 
 from fireai.core.routing_global_class_a import EliteGlobalRouter
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # EliteGlobalRouter Initialization Tests
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -121,12 +120,12 @@ from fireai.core.routing_global_class_a import EliteGlobalRouter
 class TestEliteGlobalRouterInit:
     @patch("fireai.core.routing_global_class_a.EliteClassARouter")
     def test_init_with_bounds(self, MockRouter):
-        router = EliteGlobalRouter(global_bounds=(0, 0, 100, 50))
+        EliteGlobalRouter(global_bounds=(0, 0, 100, 50))
         MockRouter.assert_called_once_with(width=100, length=50, resolution=0.25)
 
     @patch("fireai.core.routing_global_class_a.EliteClassARouter")
     def test_init_with_custom_resolution(self, MockRouter):
-        router = EliteGlobalRouter(global_bounds=(0, 0, 50, 50), resolution=0.5)
+        EliteGlobalRouter(global_bounds=(0, 0, 50, 50), resolution=0.5)
         MockRouter.assert_called_once_with(width=50, length=50, resolution=0.5)
 
     @patch("fireai.core.routing_global_class_a.EliteClassARouter")

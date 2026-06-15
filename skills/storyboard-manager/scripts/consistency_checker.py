@@ -6,13 +6,12 @@ This script analyzes markdown files in a storyboard project to detect inconsiste
 in character details, plot elements, and world-building across the story.
 """
 
-import os
+import json
 import re
 import sys
-import json
-from pathlib import Path
-from typing import List, Dict, Set, Tuple, Optional
 from collections import defaultdict
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 
 class ConsistencyIssue:
@@ -207,9 +206,8 @@ class ConsistencyChecker:
         # Would analyze relationship declarations in character files and compare
         # with how relationships are portrayed in chapters
 
-        relationship_keywords = ['friend', 'enemy', 'lover', 'sibling', 'parent', 'child']
 
-        for char_name, profile in self.characters.items():
+        for _char_name, _profile in self.characters.items():
             # Extract relationship info from profile
             # Compare with relationships mentioned in story files
             # Flag inconsistencies
@@ -259,7 +257,7 @@ class ConsistencyChecker:
             location = str(file_path.relative_to(self.project_root))
 
             # Check if character names are spelled consistently
-            for char_name, profile in self.characters.items():
+            for char_name, _profile in self.characters.items():
                 # Look for potential misspellings (Levenshtein distance)
                 # This is simplified - would use actual string distance algorithm
 
@@ -375,12 +373,12 @@ def main():
                     for issue in issues:
                         print(f"### {issue['description']}")
                         print(f"**Type:** {issue['type']}")
-                        print(f"**Locations:**")
+                        print("**Locations:**")
                         for loc in issue['locations']:
                             print(f"- {loc}")
 
                         if issue['details']:
-                            print(f"**Details:**")
+                            print("**Details:**")
                             for key, value in issue['details'].items():
                                 print(f"- {key}: {value}")
 

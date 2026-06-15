@@ -24,23 +24,22 @@ from __future__ import annotations
 import pytest
 
 from fireai.core.international_reg_selector import (
-    HazardSystem,
-    JurisdictionRegion,
-    HazardClass,
-    NECDivision,
-    ATEXZone,
-    UnknownCountryError,
     COUNTRY_FRAMEWORK_MAP,
-    RegulatoryFrameworkLegacy,
-    InternationalRegSelector,
-    JurisdictionResult,
     DIVISION_TO_ZONE,
     ZONE_TO_DIVISION,
-    resolve,
+    ATEXZone,
+    HazardClass,
+    HazardSystem,
+    InternationalRegSelector,
+    JurisdictionRegion,
+    JurisdictionResult,
+    NECDivision,
+    RegulatoryFrameworkLegacy,
+    UnknownCountryError,
     convert_division_to_zone,
+    resolve,
 )
-from fireai.core.models_v21 import RegulatoryFramework, RegSelectorResult
-
+from fireai.core.models_v21 import RegSelectorResult, RegulatoryFramework
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Enums
@@ -428,7 +427,7 @@ class TestDivisionZoneMaps:
 
     def test_zone_to_division_roundtrip(self):
         """Zone → Division mapping must be consistent with Division → Zone."""
-        for (div, cls), zone in DIVISION_TO_ZONE.items():
+        for (_div, _cls), zone in DIVISION_TO_ZONE.items():
             if zone is not None:
                 reverse = ZONE_TO_DIVISION.get(zone)
                 assert reverse is not None, f"No reverse mapping for {zone}"

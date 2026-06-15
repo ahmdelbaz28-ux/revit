@@ -26,25 +26,21 @@ from __future__ import annotations
 import json
 import logging
 import os
-import tempfile
 import threading
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from fireai.core.security_logging import (
+    _SECURITY_GENESIS,
     SecurityAuditLogger,
     SecurityEventType,
     SensitiveDataFilter,
-    _SECURITY_GENESIS,
     _compute_chain_hash,
-    _force_refresh_env_cache,
     configure_log_rotation,
     configure_timed_rotation,
     mask_sensitive,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -332,9 +328,9 @@ class TestSecurityAuditLoggerLogEvent:
         assert "chain_hash" in data
 
     def test_chain_hash_advances(self, security_logger):
-        id1 = security_logger.log_event("AUTH_SUCCESS")
+        security_logger.log_event("AUTH_SUCCESS")
         hash_after_1 = security_logger._chain_hash
-        id2 = security_logger.log_event("AUTH_FAILURE")
+        security_logger.log_event("AUTH_FAILURE")
         hash_after_2 = security_logger._chain_hash
         assert hash_after_1 != hash_after_2
 
