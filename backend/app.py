@@ -84,6 +84,31 @@ if _ENV == "production":
         import sys
         sys.exit(1)
 
+    # Validate PostgreSQL connectivity if DATABASE_URL is set
+    _db_url = os.getenv("DATABASE_URL", "")
+    if _db_url.startswith(("postgres://", "postgresql://")):
+        try:
+            import psycopg2
+            conn = psycopg2.connect(_db_url)
+            conn.close()
+            logger.info("PostgreSQL connectivity verified at startup")
+        except Exception as e:
+            logger.critical(
+                "FATAL: DATABASE_URL points to PostgreSQL but connection failed: %s. "
+                "Refusing to start — check DATABASE_URL and network connectivity.",
+                e,
+            )
+            import sys
+            sys.exit(1)
+
+    # Warn if CORS_ORIGIN not set in production (will fail closed)
+    if not os.getenv("CORS_ORIGIN"):
+        logger.warning(
+            "WARNING: CORS_ORIGIN not set in production mode. "
+            "Cross-origin requests will be rejected. Set CORS_ORIGIN "
+            "to the allowed frontend URL(s)."
+        )
+
 # ── Security Audit Logging & Log Rotation ──────────────────────────────────
 # V100+V105: Structured security event logging with tamper-evident chain
 # hashing, sensitive data masking, and size-based log rotation.

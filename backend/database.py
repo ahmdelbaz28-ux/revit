@@ -161,7 +161,14 @@ class Database:
                     raise
 
     def _init_schema_pg(self) -> None:
-        """Create all tables in PostgreSQL with PG-compatible syntax."""
+        """Create all tables in PostgreSQL — schema MUST match _init_schema() (SQLite) exactly.
+
+        CRITICAL: The PostgreSQL schema must be identical to the SQLite schema in column
+        names, types, constraints, and indexes. Any drift will cause runtime errors when
+        the same CRUD queries (which use {self._ph()}) execute against PostgreSQL.
+        The SQLite schema is the source of truth — PG uses DOUBLE PRECISION instead of
+        REAL and SERIALLY for auto-increment, but column names and constraints must match.
+        """
         with self._pg_cursor() as cur:
             # ── Projects ────────────────────────────────────────────
             cur.execute("""
@@ -199,7 +206,7 @@ class Database:
                 )
             """)
 
-            # ── Connections ─────────────────────────────────────────
+            # ── Connections (MUST match SQLite schema exactly) ──────
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS connections (
                     id TEXT PRIMARY KEY,
@@ -208,66 +215,67 @@ class Database:
                     to_id TEXT NOT NULL,
                     cable_size TEXT NOT NULL DEFAULT '1.5mm²',
                     length DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-                    current DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-                    voltage_drop DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-                    is_overloaded BOOLEAN NOT NULL DEFAULT FALSE,
-                    properties TEXT NOT NULL DEFAULT '{}',
+                    type TEXT NOT NULL DEFAULT 'power',
                     created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
                     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
                 )
             """)
 
-            # ── Reports ─────────────────────────────────────────────
+            # ── Reports (MUST match SQLite schema exactly) ──────────
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS reports (
                     id TEXT PRIMARY KEY,
                     project_id TEXT NOT NULL,
                     type TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    content TEXT NOT NULL DEFAULT '{}',
+                    name TEXT NOT NULL DEFAULT '',
+                    parameters TEXT NOT NULL DEFAULT '{}',
+                    status TEXT NOT NULL DEFAULT 'pending'
+                        CHECK(status IN ('pending', 'completed', 'failed')),
                     created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
+                    completed_at TEXT,
                     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
                 )
             """)
 
-            # ── Sync Status ─────────────────────────────────────────
+            # ── Sync Status (MUST match SQLite schema exactly) ──────
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS sync_status (
-                    id TEXT PRIMARY KEY,
-                    project_id TEXT NOT NULL UNIQUE,
+                    project_id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL DEFAULT 'synced'
+                        CHECK(status IN ('syncing', 'synced', 'error')),
                     last_sync TEXT NOT NULL,
-                    status TEXT NOT NULL DEFAULT 'idle',
+                    pending_changes INTEGER NOT NULL DEFAULT 0,
+                    error TEXT,
                     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
                 )
             """)
 
-            # ── Sync Operations ─────────────────────────────────────
+            # ── Sync Operations (MUST match SQLite schema exactly) ──
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS sync_operations (
-                    id TEXT PRIMARY KEY,
-                    sync_id TEXT NOT NULL,
-                    operation TEXT NOT NULL,
+                    id SERIAL PRIMARY KEY,
                     entity_type TEXT NOT NULL,
                     entity_id TEXT NOT NULL,
-                    data TEXT NOT NULL DEFAULT '{}',
-                    status TEXT NOT NULL DEFAULT 'pending',
-                    created_at TEXT NOT NULL,
-                    FOREIGN KEY (sync_id) REFERENCES sync_status(id) ON DELETE CASCADE
+                    target_db TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    last_sync_at TEXT,
+                    error_message TEXT,
+                    retry_count INTEGER DEFAULT 0
                 )
             """)
 
-            # ── Indexes ─────────────────────────────────────────────
+            # ── Indexes (MUST match SQLite indexes exactly) ─────────
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_sync ON sync_operations(sync_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(type)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_category ON devices(category)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
 
-        logger.info("PostgreSQL schema initialized successfully")
+        logger.info("PostgreSQL schema initialized successfully (matching SQLite schema)")
 
     def _init_schema(self) -> None:
         """Create all tables if they don't exist (SQLite)."""

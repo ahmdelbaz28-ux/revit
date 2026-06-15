@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   :root {
@@ -120,10 +118,11 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
   }
   
   /* Custom font styles */
@@ -139,7 +138,7 @@
 
 /* RTL support */
 html[dir="rtl"] {
-  @apply text-right;
+  text-align: right;
 }
 
 /* Scrollbar styling */
@@ -149,13 +148,14 @@ html[dir="rtl"] {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-800;
+  background-color: #1e293b;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-600 rounded-md;
+  background-color: #475569;
+  border-radius: 0.375rem;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-500;
+  background-color: #64748b;
 }

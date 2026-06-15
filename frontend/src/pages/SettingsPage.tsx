@@ -51,24 +51,33 @@ export function SettingsPage() {
   const [reportFormat, setReportFormat] = useState('pdf');
   const [reportQuality, setReportQuality] = useState('high');
 
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  const persistSettings = (key: string, value: Record<string, unknown>) => {
+    try {
+      localStorage.setItem(`fireai_settings_${key}`, JSON.stringify(value));
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus(null), 2000);
+    } catch {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 3000);
+    }
+  };
+
   const handleSaveGeneral = () => {
-    // Save general settings
-    console.log('Saving general settings:', { theme, language, notifications });
+    persistSettings('general', { theme, language, notifications });
   };
 
   const handleSaveSecurity = () => {
-    // Save security settings
-    console.log('Saving security settings:', { twoFactorAuth, passwordExpiry });
+    persistSettings('security', { twoFactorAuth, passwordExpiry });
   };
 
   const handleSaveApi = () => {
-    // Save API settings
-    console.log('Saving API settings:', { apiTimeout, retryAttempts });
+    persistSettings('api', { apiTimeout, retryAttempts });
   };
 
   const handleSaveReports = () => {
-    // Save report settings
-    console.log('Saving report settings:', { autoSaveReports, reportFormat, reportQuality });
+    persistSettings('reports', { autoSaveReports, reportFormat, reportQuality });
   };
 
   return (

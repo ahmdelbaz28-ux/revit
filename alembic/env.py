@@ -24,14 +24,11 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 try:
-    from backend.database import Database  # noqa: F401
-    # Note: Using raw SQLite, not SQLAlchemy ORM, so autogenerate is limited.
-    # When migrating to SQLAlchemy ORM, replace with Base.metadata.
-    target_metadata = None
+    from backend.db_models import Base  # noqa: F401
+    target_metadata = Base.metadata
 except ImportError:
+    # Fallback if db_models not available (e.g., during initial setup)
     target_metadata = None
 
 

@@ -20,7 +20,12 @@ Usage:
 
     # V113: NEVER hardcode secret keys. Use environment variables.
     import os
-    secret = os.environ["FIREAI_EVIDENCE_SECRET"]  # Required — will fail if not set
+    secret = os.environ.get("FIREAI_EVIDENCE_SECRET")
+    if not secret:
+        raise EnvironmentError(
+            "FIREAI_EVIDENCE_SECRET is not set. Generate a key with: "
+            "python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
     chain = EvidenceChain(secret_key=secret, signer_id="fireai-v1")
     envelope = chain.build_envelope(snapshot_payload, analysis_payload)
     assert chain.verify_envelope(envelope, snapshot_payload, analysis_payload)

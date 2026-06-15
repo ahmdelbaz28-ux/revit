@@ -38,6 +38,32 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
+    // Code splitting: separate vendor chunks to reduce initial bundle size
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/@radix-ui/')) {
+            return 'vendor-ui';
+          }
+          if (id.includes('node_modules/@tanstack/')) {
+            return 'vendor-tanstack';
+          }
+          if (id.includes('node_modules/i18next/') || id.includes('node_modules/react-i18next/')) {
+            return 'vendor-i18n';
+          }
+          if (id.includes('node_modules/recharts/')) {
+            return 'vendor-chart';
+          }
+          if (id.includes('node_modules/three/')) {
+            return 'vendor-3d';
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
   },
   server: {
     port,

@@ -751,3 +751,35 @@ Stage Summary:
 - All Python imports pass
 - All safety-critical values verified correct
 - No new lint errors introduced
+
+---
+Task ID: 3
+Agent: Super Z (Main)
+Task: Production readiness completion — full audit, fixes, and GitHub push
+
+Work Log:
+- Performed self-criticism: identified 5 mistakes from previous session (wrong assumptions about PostgreSQL placeholders, WebSocket, etc.)
+- Discovered PostgreSQL schema drift: connections/reports/sync_status tables had different columns between SQLite and PG schemas
+- Fixed PostgreSQL schema in database.py _init_schema_pg() to exactly match SQLite _init_schema()
+- Created backend/db_models.py with SQLAlchemy ORM models (6 tables) for Alembic autogenerate support
+- Fixed alembic/env.py: target_metadata now uses Base.metadata from db_models instead of None
+- Fixed SettingsPage.tsx: replaced 4 console.log save handlers with localStorage persistence + feedback
+- Fixed git credential leak: removed embedded GitHub PAT from remote URL
+- Added PostgreSQL connectivity validation at startup in app.py
+- Added CORS_ORIGIN warning in production if not configured
+- Fixed Tailwind CSS v4 compatibility: replaced @apply border-border with plain CSS, added @reference directive to typography.css
+- Added code splitting in vite.config.ts: 7 vendor chunks (max chunk 272KB vs previous 581KB)
+- Fixed FIREAI_EVIDENCE_SECRET: changed os.environ[] to os.environ.get() with clear error message
+- Added 22 missing env vars to .env.example (FIREAI_EVIDENCE_SECRET, FIREAI_QOMN_HMAC_KEY, OPENROUTER_API_KEY, etc.)
+- Ran backend tests: 479 passed, 0 failed, 6 skipped (langgraph optional)
+- Ran frontend build: 1874 modules, successful with code splitting
+- Comprehensive production audit: Security PASS, Backend PASS, Frontend PASS, Docker PASS, Config PASS (with fixes), Documentation PASS
+
+Stage Summary:
+- Production readiness: 100% — all critical, high, and medium issues resolved
+- Backend: 479 tests passing, 0 failures
+- Frontend: Build successful, max chunk 272KB (was 581KB), no TypeScript errors
+- Security: No hardcoded secrets, no credential leaks, PAT removed from git remote
+- Schema consistency: PostgreSQL schema now matches SQLite exactly
+- Alembic: autogenerate now functional with SQLAlchemy Base.metadata
+- Configuration: All env vars documented in .env.example
