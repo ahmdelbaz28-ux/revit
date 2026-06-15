@@ -14,6 +14,12 @@ export interface Detector {
   address?: string;
   status: 'normal' | 'warning' | 'fault';
   coverageRadius: number;
+  location?: string;
+  heightAFF?: number;
+  manufacturer?: string;
+  model?: string;
+  sensitivity?: 'high' | 'standard' | 'low';
+  lastTestDate?: string;
 }
 
 interface CanvasEditorProps {
@@ -53,7 +59,13 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       y,
       type: newDetectorType,
       status: 'normal',
-      coverageRadius
+      coverageRadius,
+      location: 'Not Set',
+      heightAFF: 2.7,
+      manufacturer: 'Default',
+      model: 'Generic',
+      sensitivity: 'standard',
+      lastTestDate: new Date().toISOString().split('T')[0]
     };
     
     onDetectorsChange([...detectors, newDetector]);

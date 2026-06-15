@@ -27,6 +27,7 @@ import {
   XCircle,
   Loader2,
   Eye,
+  Calculator,
 } from 'lucide-react';
 import { useReports, useGenerateReport } from '@/hooks/useApi';
 import { calculateBatteryRequirements, generateBatteryReport } from '@/engine/BatteryCalculator';
@@ -245,21 +246,21 @@ export function ReportsPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-slate-100">{batteryCalculation.summary.totalStandbyCurrent}</div>
+                <div className="text-2xl font-bold text-slate-100">{batteryCalculation.totalStandbyCurrent}</div>
                 <div className="text-sm text-slate-400">{t('reports.totalStandbyCurrent')}</div>
               </div>
               <div className="bg-slate-900/50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-slate-100">{batteryCalculation.summary.totalAlarmCurrent}</div>
+                <div className="text-2xl font-bold text-slate-100">{batteryCalculation.totalAlarmCurrent}</div>
                 <div className="text-sm text-slate-400">{t('reports.totalAlarmCurrent')}</div>
               </div>
               <div className="bg-slate-900/50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-slate-100">{batteryCalculation.summary.requiredCapacity}</div>
+                <div className="text-2xl font-bold text-slate-100">{batteryCalculation.requiredCapacity}</div>
                 <div className="text-sm text-slate-400">{t('reports.requiredCapacity')}</div>
               </div>
             </div>
             <div className="mt-4">
               <div className="text-sm font-medium text-slate-300 mb-2">{t('reports.recommendedBattery')}</div>
-              <div className="text-lg font-semibold text-emerald-400">{batteryCalculation.summary.recommendedBattery}</div>
+              <div className="text-lg font-semibold text-emerald-400">{batteryCalculation.recommendedBattery.voltage}V {batteryCalculation.recommendedBattery.capacity}Ah</div>
             </div>
           </CardContent>
         </Card>

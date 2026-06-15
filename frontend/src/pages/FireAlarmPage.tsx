@@ -77,9 +77,9 @@ const mockZones = [
 export function FireAlarmPage() {
   const { t } = useTranslation();
   const [detectors, setDetectors] = useState<Detector[]>([
-    { id: 'det-1', x: 100, y: 150, type: 'smoke', status: 'normal', coverageRadius: 6.37 },
-    { id: 'det-2', x: 250, y: 200, type: 'heat', status: 'warning', coverageRadius: 4.27 },
-    { id: 'det-3', x: 400, y: 100, type: 'pull', status: 'normal', coverageRadius: 0 },
+    { id: 'det-1', x: 100, y: 150, type: 'smoke', status: 'normal', coverageRadius: 6.37, location: 'Room 101', heightAFF: 2.7, manufacturer: 'Hochiki', model: 'LT-1', sensitivity: 'standard', lastTestDate: '2023-05-15' },
+    { id: 'det-2', x: 250, y: 200, type: 'heat', status: 'warning', coverageRadius: 4.27, location: 'Room 102', heightAFF: 2.7, manufacturer: 'System Sensor', model: 'LSH-1', sensitivity: 'standard', lastTestDate: '2023-05-10' },
+    { id: 'det-3', x: 400, y: 100, type: 'pull', status: 'normal', coverageRadius: 0, location: 'Hallway', heightAFF: 1.2, manufacturer: 'Honeywell', model: 'PSS-1', sensitivity: 'standard', lastTestDate: '2023-05-12' },
   ]);
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [showProperties, setShowProperties] = useState(false);
@@ -187,7 +187,7 @@ export function FireAlarmPage() {
       {/* Device Properties Panel - Appears when device is selected */}
       {showProperties && selectedDevice && (
         <DeviceProperties 
-          device={detectors.find(d => d.id === selectedDevice)} 
+          device={detectors.find(d => d.id === selectedDevice) || null} 
           onSave={handleSaveDevice}
           onClose={() => setShowProperties(false)}
         />

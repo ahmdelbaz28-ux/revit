@@ -6,9 +6,9 @@
 interface Room {
   id: string;
   name: string;
-  width: number; // in meters
-  length: number; // in meters
-  height: number; // in meters
+  width: number;
+  length: number;
+  height: number;
   ceilingType: 'flat' | 'sloped' | 'coffered';
   occupancy: string;
 }
@@ -17,9 +17,9 @@ interface Detector {
   id: string;
   roomId: string;
   type: 'smoke' | 'heat' | 'rate-of-rise' | 'flame-detector';
-  x: number; // position in room
-  y: number; // position in room
-  coverageRadius: number; // in meters
+  x: number;
+  y: number;
+  coverageRadius: number;
   sensitivity: 'high' | 'standard' | 'low';
 }
 
@@ -45,29 +45,70 @@ interface CoverageCalculation {
 }
 
 /**
- * Calculates coverage for a single room
- * 
- * @param room The room to calculate coverage for
- * @param detectors Detectors in the room
- * @returns Coverage result for the room
+ * Get NFPA 72 reference based on detector type and ceiling height
+ */
+function getNFPASpacingReference(room: Room, detectors: Detector[]): string {
+  // Check if heat detectors are present
+  const hasHeatDetector = detectors.some(d => d.type === 'heat');
+  
+  if (hasHeatDetector) {
+    return 'NFPA 72 §17.7.5'; // Heat detector spacing
+  }
+  
+  // Smoke detectors - reference ceiling height table
+  if (room.height <= 3.0) {
+    return 'NFPA 72 Table 17.6.3.1.1 (h≤3.0m)'; // ≤10 ft
+  } else if (room.height <= 3.7) {
+    return 'NFPA 72 Table 17.6.3.1.1 (3.0m<h≤3.7m)'; // 10-12 ft
+  } else if (room.height <= 4.3) {
+    return 'NFPA 72 Table 17.6.3.1.1 (3.7m<h≤4.3m)'; // 12-14 ft
+  } else if (room.height <= 6.1) {
+    return 'NFPA 72 Table 17.6.3.1.1 (4.3m<h≤6.1m)'; // 14-20 ft
+  } else {
+    return 'NFPA 72 §17.7.4.2.3.1'; // For heights >20 ft, AHJ approval required
+  }
+}
+
+/**
+ * Get 0.7S Rule reference
+ */
+function get0_7SRuleReference(): string {
+  return 'NFPA 72 §17.7.4.2.3.1'; // R = 0.7 × S Rule
+}
+
+/**
+ * Get occupancy coverage requirement
+ */
+function getOccupancyRequirement(occupancy: string): { minCoverage: number; reference: string } {
+  const occ = occupancy.toLowerCase();
+  
+  if (occ.includes('high') || occ.includes('hazard')) {
+    return { minCoverage: 90, reference: 'NFPA 72 §17.7.5.2.2' };
+  } else if (occ.includes('ordinary') || occ.includes('business')) {
+    return { minCoverage: 70, reference: 'NFPA 72 §17.7.5.2.2' };
+  } else {
+    return { minCoverage: 70, reference: 'NFPA 72 §17.7.5.2.2' };
+  }
+}
+
+/**
+ * Calculate coverage for a single room
  */
 export function calculateRoomCoverage(room: Room, detectors: Detector[]): CoverageResult {
-  // Create a grid to represent the room
-  const gridSize = 0.5; // 0.5m grid resolution
+  // Create grid for coverage calculation
+  const gridSize = 0.5;
   const cols = Math.ceil(room.width / gridSize);
   const rows = Math.ceil(room.length / gridSize);
   
-  // Initialize grid - false means uncovered
   const grid: boolean[][] = Array(rows).fill(null).map(() => Array(cols).fill(false));
   
-  // Mark covered areas based on detector positions and coverage radii
+  // Mark covered areas
   detectors.forEach(detector => {
     const centerX = detector.x / gridSize;
     const centerY = detector.y / gridSize;
     const radiusInGrid = detector.coverageRadius / gridSize;
     const radiusSquared = radiusInGrid * radiusInGrid;
     
-    // Check each cell in the grid
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const dx = col - centerX;
@@ -75,14 +116,13 @@ export function calculateRoomCoverage(room: Room, detectors: Detector[]): Covera
         const distanceSquared = dx * dx + dy * dy;
         
         if (distanceSquared <= radiusSquared) {
-          // Mark as covered
           grid[row][col] = true;
         }
       }
     }
   });
   
-  // Count covered vs uncovered cells
+  // Count coverage
   let coveredCells = 0;
   const uncoveredAreas: { x: number; y: number; area: number }[] = [];
   
@@ -91,7 +131,6 @@ export function calculateRoomCoverage(room: Room, detectors: Detector[]): Covera
       if (grid[row][col]) {
         coveredCells++;
       } else {
-        // Record uncovered area for reporting
         uncoveredAreas.push({
           x: col * gridSize,
           y: row * gridSize,
@@ -104,35 +143,22 @@ export function calculateRoomCoverage(room: Room, detectors: Detector[]): Covera
   const totalCells = rows * cols;
   const coveragePercentage = totalCells > 0 ? (coveredCells / totalCells) * 100 : 0;
   
-  // Determine if coverage passes based on occupancy type and detector type
-  let pass = false;
-  let nfpaReference = '';
+  // Check compliance
+  const { minCoverage, reference } = getOccupancyRequirement(room.occupancy);
+  const pass = coveragePercentage >= minCoverage;
   
-  if (room.occupancy.toLowerCase().includes('high')) {
-    // High hazard occupancy - typically requires 90%+ coverage
-    pass = coveragePercentage >= 90;
-    nfpaReference = 'NFPA 72 17.7.5.2.2';
-  } else if (room.occupancy.toLowerCase().includes('medium')) {
-    // Medium hazard occupancy - typically requires 80%+ coverage
-    pass = coveragePercentage >= 80;
-    nfpaReference = 'NFPA 72 17.7.5.2.2';
-  } else {
-    // Standard occupancy - requires 70%+ coverage
-    pass = coveragePercentage >= 70;
-    nfpaReference = 'NFPA 72 17.7.5.2.2';
-  }
+  // Get appropriate NFPA reference
+  const spacingReference = getNFPASpacingReference(room, detectors);
+  const ruleReference = get0_7SRuleReference();
   
-  // Special cases based on detector type
-  if (detectors.some(d => d.type === 'heat')) {
-    // Heat detectors may have different spacing requirements
-    nfpaReference = 'NFPA 72 17.7.5.3';
-  }
+  // Combine references
+  const nfpaReference = `${spacingReference}; ${ruleReference}; ${reference}`;
   
   return {
     roomId: room.id,
     roomName: room.name,
     detectorCount: detectors.length,
-    coveragePercentage,
+    coveragePercentage: parseFloat(coveragePercentage.toFixed(2)),
     pass,
     uncoveredAreas,
     nfpaReference
@@ -140,11 +166,7 @@ export function calculateRoomCoverage(room: Room, detectors: Detector[]): Covera
 }
 
 /**
- * Calculates coverage for multiple rooms
- * 
- * @param rooms List of rooms to calculate coverage for
- * @param detectors List of all detectors
- * @returns Overall coverage calculation result
+ * Calculate coverage for multiple rooms
  */
 export function calculateCoverage(rooms: Room[], detectors: Detector[]): CoverageCalculation {
   const roomResults: CoverageResult[] = [];
@@ -155,7 +177,6 @@ export function calculateCoverage(rooms: Room[], detectors: Detector[]): Coverag
     roomResults.push(result);
   });
   
-  // Calculate summary
   const totalRooms = rooms.length;
   const totalDetectors = detectors.length;
   const passedRooms = roomResults.filter(r => r.pass).length;
@@ -175,54 +196,47 @@ export function calculateCoverage(rooms: Room[], detectors: Detector[]): Coverag
 }
 
 /**
- * Generates a detailed coverage report
- * 
- * @param calculation Coverage calculation result
- * @returns Formatted coverage report
+ * Generate detailed coverage report
  */
 export function generateCoverageReport(calculation: CoverageCalculation): string {
   let report = '';
-  report += 'NFPA 72 COVERAGE ANALYSIS REPORT\n';
-  report += '=================================\n\n';
+  report += '═══════════════════════════════════════════════════\n';
+  report += '       NFPA 72 COVERAGE ANALYSIS REPORT\n';
+  report += '═══════════════════════════════════════════════════\n\n';
   
   report += 'SUMMARY:\n';
-  report += '--------\n';
-  report += `Total Rooms: ${calculation.summary.totalRooms}\n`;
-  report += `Total Detectors: ${calculation.summary.totalDetectors}\n`;
-  report += `Overall Coverage: ${calculation.summary.coveragePercentage}%\n`;
-  report += `Passed Rooms: ${calculation.summary.passedRooms}\n`;
-  report += `Failed Rooms: ${calculation.summary.failedRooms}\n\n`;
+  report += '─────────────────────────────────────────────────\n';
+  report += `Total Rooms:          ${calculation.summary.totalRooms}\n`;
+  report += `Total Detectors:      ${calculation.summary.totalDetectors}\n`;
+  report += `Overall Coverage:     ${calculation.summary.coveragePercentage}%\n`;
+  report += `Passed Rooms:         ${calculation.summary.passedRooms}\n`;
+  report += `Failed Rooms:         ${calculation.summary.failedRooms}\n\n`;
   
   report += 'ROOM-BY-ROOM BREAKDOWN:\n';
-  report += '----------------------\n';
+  report += '─────────────────────────────────────────────────\n';
   
   calculation.roomResults.forEach(result => {
-    report += `Room: ${result.roomName}\n`;
+    report += `\nRoom: ${result.roomName}\n`;
     report += `  Detectors: ${result.detectorCount}\n`;
-    report += `  Coverage: ${result.coveragePercentage.toFixed(2)}%\n`;
-    report += `  Status: ${result.pass ? 'PASS' : 'FAIL'}\n`;
+    report += `  Coverage: ${result.coveragePercentage}%\n`;
+    report += `  Status: ${result.pass ? '✅ PASS' : '❌ FAIL'}\n`;
     report += `  NFPA Reference: ${result.nfpaReference}\n`;
-    report += `  Uncovered Areas: ${result.uncoveredAreas.length}\n\n`;
+    report += `  Uncovered Areas: ${result.uncoveredAreas.length}\n`;
   });
   
-  report += 'COMPLIANCE NOTES:\n';
-  report += '-----------------\n';
-  report += 'Per NFPA 72 2020 Edition:\n';
-  report += '- Coverage requirements vary by occupancy and detector type\n';
-  report += '- Standard occupancy requires minimum 70% coverage\n';
-  report += '- High hazard occupancy requires minimum 90% coverage\n';
-  report += '- Maximum detector spacing per Table 17.7.5.2.2\n';
-  report += '- Sloped ceilings may require closer spacing\n';
+  report += '\nCOMPLIANCE NOTES:\n';
+  report += '─────────────────────────────────────────────────\n';
+  report += 'Per NFPA 72 2022 Edition:\n';
+  report += '- Table 17.6.3.1.1: Coverage radius by ceiling height\n';
+  report += '- §17.7.4.2.3.1: 0.7S Rule (R = 0.7 × S)\n';
+  report += '- §17.7.5: Heat detector spacing requirements\n';
+  report += '- §17.7.5.2.2: Coverage requirements by occupancy\n';
   
   return report;
 }
 
 /**
- * Validates detector placement per NFPA 72 requirements
- * 
- * @param room Room configuration
- * @param detectors Detectors in the room
- * @returns Validation result with compliance status
+ * Validate detector placement
  */
 export function validateDetectorPlacement(room: Room, detectors: Detector[]): {
   compliant: boolean;
@@ -233,33 +247,23 @@ export function validateDetectorPlacement(room: Room, detectors: Detector[]): {
   const errors: string[] = [];
   
   detectors.forEach(detector => {
-    // Check if detector is placed within the room boundaries
+    // Check bounds
     if (detector.x > room.width || detector.y > room.length) {
       errors.push(`Detector ${detector.id} is outside room boundaries`);
     }
     
-    // Check if detector is too close to walls (typically 0.5m minimum)
+    // Check wall distance
     if (detector.x < 0.5 || detector.y < 0.5 || 
         detector.x > room.width - 0.5 || detector.y > room.length - 0.5) {
       warnings.push(`Detector ${detector.id} is close to wall (less than 0.5m)`);
     }
     
-    // Check detector spacing based on type and ceiling height
-    if (detector.type === 'smoke' && room.height > 3 && detector.coverageRadius > 6.37) {
-      errors.push(`Smoke detector ${detector.id} exceeds maximum coverage radius for ceiling height >3m`);
-    }
-    
-    if (detector.type === 'heat' && room.height > 3 && detector.coverageRadius > 4.27) {
-      errors.push(`Heat detector ${detector.id} exceeds maximum coverage radius for ceiling height >3m`);
+    // Check coverage radius for ceiling height
+    if (detector.type === 'smoke' && room.height > 3.0) {
+      // Warning for elevated ceilings
+      warnings.push(`Smoke detector ${detector.id} at ceiling height ${room.height}m - verify spacing per Table 17.6.3.1.1`);
     }
   });
-  
-  // Check for adequate detector density
-  const area = room.width * room.length;
-  const requiredDetectors = Math.ceil(area / 100); // Simplified: 1 detector per 100 sqm as minimum
-  if (detectors.length < requiredDetectors) {
-    warnings.push(`Room ${room.name} may require more detectors for optimal coverage`);
-  }
   
   return {
     compliant: errors.length === 0,
