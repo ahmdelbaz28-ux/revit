@@ -31,6 +31,8 @@ export type HelpTopicId =
   | 'troubleshooting.auth'
   | 'troubleshooting.app-crash';
 
+export type HelpTextDirection = 'ltr' | 'rtl';
+
 export interface HelpTopic {
   id: HelpTopicId;
   category: HelpCategory;
@@ -51,6 +53,33 @@ export interface HelpSearchResult {
   topic: HelpTopic;
   score: number;
   matchedKeywords: string[];
+}
+
+export interface ContextHelpButtonProps {
+  contextId: HelpTopicId | string;
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  className?: string;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+}
+
+export interface SmartHelpDrawerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialContextId?: HelpTopicId | string;
+  initialSearch?: string;
+}
+
+export interface SmartHelpHookValue {
+  openHelp: (contextId: HelpTopicId | string, search?: string) => void;
+  closeHelp: () => void;
+  isHelpOpen: boolean;
+  selectedTopic: HelpTopic | null;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  category: HelpCategory | 'all';
+  setCategory: (category: HelpCategory | 'all') => void;
+  topics: HelpTopic[];
+  results: HelpSearchResult[];
 }
 
 export interface SmartHelpContextValue {

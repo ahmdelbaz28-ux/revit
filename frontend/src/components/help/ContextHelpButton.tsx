@@ -1,15 +1,7 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { CircleHelp } from 'lucide-react';
-import { Button, type ButtonProps } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { useSmartHelp } from '@/hooks/useSmartHelp';
-
-interface ContextHelpButtonProps {
-  contextId: string;
-  size?: ButtonProps['size'];
-  className?: string;
-  variant?: ButtonProps['variant'];
-}
+import type { ContextHelpButtonProps } from '@/help/types';
 
 export function ContextHelpButton({
   contextId,
@@ -17,10 +9,8 @@ export function ContextHelpButton({
   className = '',
   variant = 'ghost',
 }: ContextHelpButtonProps) {
-  const { t } = useTranslation();
   const { openHelp } = useSmartHelp();
-
-  const tooltip = t('help.contextTooltip');
+  const label = 'Open help';
 
   return (
     <Button
@@ -28,8 +18,8 @@ export function ContextHelpButton({
       variant={variant}
       size={size}
       className={className}
-      title={tooltip}
-      aria-label={tooltip}
+      title={label}
+      aria-label={label}
       onClick={() => openHelp(contextId)}
     >
       <CircleHelp className="h-4 w-4" />
