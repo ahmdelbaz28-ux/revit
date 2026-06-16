@@ -43,8 +43,8 @@ logger = logging.getLogger(__name__)
 
 # Try to import ezdxf for DXF/DWG parsing (works without AutoCAD)
 try:
-    import ezdxf
-    from ezdxf.addons import odafc
+    import ezdxf  # type: ignore[import-untyped]
+    from ezdxf.addons import odafc  # type: ignore[import-untyped]
     EZDXF_AVAILABLE = True
 except ImportError:
     EZDXF_AVAILABLE = False
@@ -52,8 +52,8 @@ except ImportError:
 
 # Try to import COM libraries for AutoCAD automation (requires AutoCAD)
 try:
-    import win32com.client
-    import pythoncom
+    import win32com.client  # type: ignore[import-untyped]
+    import pythoncom  # type: ignore[import-untyped]
     COM_AVAILABLE = True
 except ImportError:
     COM_AVAILABLE = False
@@ -177,15 +177,15 @@ class AutoCADConnectionManager:
         """Check if AutoCAD process is running."""
         if not COM_AVAILABLE:
             return False
-        
+
         try:
-            pythoncom.CoInitialize()
-            acad_app = win32com.client.GetActiveObject(self.config.com_class_id)
+            pythoncom.CoInitialize()  # type: ignore[possibly-unbound]
+            acad_app = win32com.client.GetActiveObject(self.config.com_class_id)  # type: ignore[possibly-unbound]
             return acad_app is not None
         except Exception:
             return False
         finally:
-            pythoncom.CoUninitialize()
+            pythoncom.CoUninitialize()  # type: ignore[possibly-unbound]
     
     def find_autocad_installations(self) -> List[Dict[str, str]]:
         """Find all AutoCAD installations on the system."""
@@ -229,19 +229,20 @@ class AutoCADConnectionManager:
             return False
         
         try:
-            pythoncom.CoInitialize()
-            
+            pythoncom.CoInitialize()  # type: ignore[possibly-unbound]
+
             if force_new or not self.is_autocad_running():
                 # Start new AutoCAD instance
                 logger.info("Starting new AutoCAD instance...")
-                self._acad_app = win32com.client.Dispatch(self.config.com_class_id)
+                self._acad_app = win32com.client.Dispatch(self.config.com_class_id)  # type: ignore[possibly-unbound]
                 self._acad_app.Visible = True
             else:
                 # Connect to existing instance
                 logger.info("Connecting to existing AutoCAD instance...")
-                self._acad_app = win32com.client.GetActiveObject(self.config.com_class_id)
-            
+                self._acad_app = win32com.client.GetActiveObject(self.config.com_class_id)  # type: ignore[possibly-unbound]
+
             # Get active document or create new one
+            assert self._acad_app is not None
             if self._acad_app.Documents.Count == 0:
                 if self.config.default_template and os.path.exists(self.config.default_template):
                     self._doc = self._acad_app.Documents.Open(self.config.default_template)
@@ -249,18 +250,18 @@ class AutoCADConnectionManager:
                     self._doc = self._acad_app.Documents.Add()
             else:
                 self._doc = self._acad_app.ActiveDocument
-            
+
             self._connected = True
             self._reconnect_attempts = 0
             logger.info(f"Connected to AutoCAD {self._acad_app.Version}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to connect to AutoCAD: {e}")
             self._connected = False
             return False
         finally:
-            pythoncom.CoUninitialize()
+            pythoncom.CoUninitialize()  # type: ignore[possibly-unbound]
     
     def reconnect(self) -> bool:
         """Attempt to reconnect if connection lost."""
@@ -345,41 +346,32 @@ class DWGReader:
                 "blocks": {...}
             }
         """
-        filepath = Path(filepath)
+        path = Path(filepath)
         
-        if not filepath.exists():
-            raise FileNotFoundError(f"File not found: {filepath}")
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
         
         # Determine file type
-        suffix = filepath.suffix.lower()
+        suffix = path.suffix.lower()
         if suffix == ".dxf":
-            doc = ezdxf.readfile(str(filepath))
+            doc = ezdxf.readfile(str(path))  # type: ignore[possibly-unbound,attr-defined]
         elif suffix == ".dwg":
-            # ezdxf can read DWG via ODA converter (optional)
             try:
-                doc = ezdxf.readfile(str(filepath))
+                doc = ezdxf.readfile(str(path))  # type: ignore[possibly-unbound,attr-defined]
             except Exception:
-                # Fall back to ODA converter if available
-                if odafc.is_available():
-                    dxf_path = filepath.with_suffix(".dxf")
-                    odafc.convert(str(filepath), str(dxf_path))
-                    doc = ezdxf.readfile(str(dxf_path))
-                    dxf_path.unlink()  # Clean up
+                if odafc.is_available():  # type: ignore[possibly-unbound,attr-defined]
+                    dxf_path = path.with_suffix(".dxf")
+                    odafc.convert(str(path), str(dxf_path))  # type: ignore[possibly-unbound,attr-defined]
+                    doc = ezdxf.readfile(str(dxf_path))  # type: ignore[possibly-unbound,attr-defined]
+                    dxf_path.unlink()
                 else:
                     raise RuntimeError("Cannot read DWG — ODA File Converter not available")
         else:
             raise ValueError(f"Unsupported file format: {suffix}")
         
-        # Extract metadata
         metadata = self._extract_metadata(doc)
-        
-        # Extract layers
         layers = self._extract_layers(doc)
-        
-        # Extract entities
         entities = self._extract_entities(doc)
-        
-        # Extract blocks
         blocks = self._extract_blocks(doc)
         
         return {
@@ -387,7 +379,7 @@ class DWGReader:
             "layers": layers,
             "entities": entities,
             "blocks": blocks,
-            "filepath": str(filepath),
+            "filepath": str(path),
         }
     
     def _extract_metadata(self, doc: Any) -> Dict[str, Any]:

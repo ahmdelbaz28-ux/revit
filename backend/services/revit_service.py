@@ -45,16 +45,19 @@ logger = logging.getLogger(__name__)
 
 # Try to import Revit API libraries
 try:
-    # pyRevit approach (requires Revit environment)
-    from pyrevit import revit, DB
+    from pyrevit import revit, DB  # type: ignore[import-not-found,import-untyped]
     PYREVIT_AVAILABLE = True
 except ImportError:
     PYREVIT_AVAILABLE = False
     logger.warning("pyRevit not available — Revit API disabled")
+    # Define stubs so Pylance sees DB/revit as always-bound (guarded at call sites)
+    from typing import Any
+    DB = Any  # type: ignore[misc]
+    revit = Any  # type: ignore[misc]
 
 # Try IFCOpenShell for IFC parsing
 try:
-    import ifcopenshell
+    import ifcopenshell  # type: ignore[import-not-found,import-untyped]
     IFC_AVAILABLE = True
 except ImportError:
     IFC_AVAILABLE = False
@@ -171,7 +174,7 @@ class RevitConnectionManager:
     def is_revit_running(self) -> bool:
         """Check if Revit process is running."""
         try:
-            import psutil
+            import psutil  # type: ignore[import-untyped]
             for proc in psutil.process_iter(["name"]):
                 if proc.info["name"] == "Revit.exe":
                     return True
@@ -213,10 +216,11 @@ class RevitConnectionManager:
         
         try:
             # Get current Revit application
-            self._ui_app = revit.UIApplication
-            self._doc = revit.doc
-            
+            self._ui_app = revit.UIApplication  # type: ignore[possibly-unbound]
+            self._doc = revit.doc  # type: ignore[possibly-unbound]
+
             self._connected = True
+            assert self._ui_app is not None
             logger.info(f"Connected to Revit {self._ui_app.Application.VersionNumber}")
             return True
             
