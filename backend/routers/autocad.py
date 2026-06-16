@@ -402,6 +402,7 @@ async def modify_entity(request: ModifyEntityRequest):
                 detail="Not connected to AutoCAD. Call /connect first.",
             )
         
+        assert service.drawing_engine is not None
         success = service.drawing_engine.modify_entity(
             handle=request.handle,
             **request.properties,
@@ -445,6 +446,7 @@ async def delete_entity(handle: str):
                 detail="Not connected to AutoCAD. Call /connect first.",
             )
         
+        assert service.drawing_engine is not None
         success = service.drawing_engine.delete_entity(handle)
         
         if not success:

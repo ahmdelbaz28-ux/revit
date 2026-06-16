@@ -400,7 +400,8 @@ async def create_window(request: PlaceWindowRequest):
                 detail="Not connected to Revit. Call /connect first.",
             )
         
-        element_id = service.place_window(
+        assert service.modeling_engine is not None
+        element_id = service.modeling_engine.place_window(
             wall_id=request.wall_id,
             location=(request.location_x, request.location_y, request.location_z),
             window_type=request.window_type,
@@ -439,6 +440,7 @@ async def modify_element(request: ModifyElementRequest):
                 detail="Not connected to Revit. Call /connect first.",
             )
         
+        assert service.modeling_engine is not None
         success = service.modeling_engine.modify_element(
             element_id=request.element_id,
             **request.parameters,
@@ -482,6 +484,7 @@ async def delete_element(element_id: int):
                 detail="Not connected to Revit. Call /connect first.",
             )
         
+        assert service.modeling_engine is not None
         success = service.modeling_engine.delete_element(element_id)
         
         if not success:

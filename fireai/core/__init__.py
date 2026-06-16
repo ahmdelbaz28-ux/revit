@@ -55,6 +55,7 @@ from fireai.core.digital_twin_sync import (
     SyncResult,
 )
 from fireai.core.dxf_table_schedule import TrueAECDraftingTable
+from fireai.core.circuit_topology import CircuitTopology
 
 # V19 — Elevator Shunt-Trip + NAC Booster Allocator + Seismic Joint Penalty
 from fireai.core.elevator_shunt_trip import ElevatorShuntTripAuditor

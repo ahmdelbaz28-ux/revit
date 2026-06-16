@@ -435,7 +435,7 @@ class RevitModelingEngine:
         if not wall_type_id:
             raise ValueError(f"Wall type '{wall_type}' not found")
         
-        wall_type = doc.GetElement(wall_type_id)
+        wall_type_elem = doc.GetElement(wall_type_id)
         
         # Get level
         level_id = self._get_level_id_by_name(doc, level)
@@ -452,7 +452,7 @@ class RevitModelingEngine:
         # Create wall
         transaction = self.conn.start_transaction("Create Wall")
         try:
-            wall = DB.Wall.Create(doc, line, wall_type.Id, level_elem.Id, height, 0, False, False)
+            wall = DB.Wall.Create(doc, line, wall_type_elem.Id, level_elem.Id, height, 0, False, False)
             self.conn.commit_transaction(transaction)
             return wall.Id.IntegerValue
         except Exception as e:
@@ -473,7 +473,7 @@ class RevitModelingEngine:
         if not floor_type_id:
             raise ValueError(f"Floor type '{floor_type}' not found")
         
-        floor_type = doc.GetElement(floor_type_id)
+        floor_type_elem = doc.GetElement(floor_type_id)
         
         # Get level
         level_id = self._get_level_id_by_name(doc, level)
@@ -498,7 +498,7 @@ class RevitModelingEngine:
         # Create floor
         transaction = self.conn.start_transaction("Create Floor")
         try:
-            floor = DB.Floor.Create(doc, curve_loop, floor_type.Id, level_elem.Id, True)
+            floor = DB.Floor.Create(doc, curve_loop, floor_type_elem.Id, level_elem.Id, True)
             self.conn.commit_transaction(transaction)
             return floor.Id.IntegerValue
         except Exception as e:
