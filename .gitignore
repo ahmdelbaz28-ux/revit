@@ -329,3 +329,6 @@ qomn_fire/integration/output/
 # Generated files
 *.pyd
 *.so
+
+# Git worktrees
+worktree-*/
