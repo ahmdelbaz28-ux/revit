@@ -287,7 +287,9 @@ class DensityOptimizer:
 
         # Temporarily override internal radius if specified
         _override = coverage_radius is not None and coverage_radius != self.R
+        _saved = None
         if _override:
+            assert coverage_radius is not None
             _saved = (self.R, self.R_place, self.S_g, self.Ry_g)
             self.R = coverage_radius
             self.R_place = coverage_radius - PLACEMENT_MARGIN
@@ -298,6 +300,7 @@ class DensityOptimizer:
             layout = self._optimize_impl(room)
         finally:
             if _override:
+                assert _saved is not None
                 self.R, self.R_place, self.S_g, self.Ry_g = _saved
             self._start_time = None
 
@@ -478,6 +481,7 @@ class DensityOptimizer:
 
         if not along_x:
             pts = [(b, a) for a, b in pts]
+        assert self.R is not None
         return DetectorLayout(
             room=room, detectors=pts, method=f"hexG_{'x' if along_x else 'y'}", coverage_radius=self.R
         )
@@ -541,6 +545,7 @@ class DensityOptimizer:
 
         if not along_x:
             pts = [(b, a) for a, b in pts]
+        assert self.R is not None
         return DetectorLayout(
             room=room, detectors=pts, method=f"hexA_{'x' if along_x else 'y'}", coverage_radius=self.R
         )
@@ -567,8 +572,10 @@ class DensityOptimizer:
                     best_nx, best_ny, best_t = Nx, Ny, t
         if best_nx is None:
             return None
+        assert best_nx is not None and best_ny is not None
         xs = self._place(W, best_nx)
         ys = self._place(L, best_ny)
+        assert self.R is not None
         return DetectorLayout(
             room=room,
             detectors=[(x, y) for x in xs for y in ys],
@@ -819,7 +826,7 @@ class DensityOptimizer:
             return
 
         dets_arr = np.array(dets, dtype=np.float64)
-        self.R**2 + 1e-9
+        assert self.R is not None
         step = VERIFY_STEP
         coarse_step = COARSE_STEP
 
@@ -908,8 +915,8 @@ class DensityOptimizer:
             y0_c, y1_c = ys_coarse[j], ys_coarse[j + 1]
 
             # Generate fine grid within this coarse cell
-            fx = np.arange(x0_c, x1_c + step * 0.5, step)
-            fy = np.arange(y0_c, y1_c + step * 0.5, step)
+            fx = np.arange(float(x0_c), float(x1_c) + step * 0.5, step)
+            fy = np.arange(float(y0_c), float(y1_c) + step * 0.5, step)
             fx = np.clip(fx, 0, W)
             fy = np.clip(fy, 0, L)
 
@@ -1008,6 +1015,7 @@ class DensityOptimizer:
         room = layout.room
         dets = layout.detectors
         W, L = room.width, room.length
+        assert self.R is not None
         R = self.R
         R2 = R * R + 1e-9
         step = VERIFY_STEP
@@ -1100,6 +1108,7 @@ class DensityOptimizer:
         dets = layout.detectors
         S = self.max_spacing
         W, L = layout.room.width, layout.room.length
+        assert self.R is not None
         coverage_limit = self.R
         violations = []
         layout.violations = []
@@ -1205,6 +1214,7 @@ class DensityOptimizer:
 
         Complexity: O(n log n) per wall where n = number of detectors.
         """
+        assert self.R is not None
         R = self.R
         R2 = R * R
 
@@ -1290,6 +1300,7 @@ class DensityOptimizer:
         # Vectorised distance check: (k, 1, 2) - (1, n, 2) -> (k, n, 2)
         diff = test_points[:, np.newaxis, :] - dets[np.newaxis, :, :]
         dist2 = (diff**2).sum(axis=2)
+        assert self.R is not None
         r2 = self.R**2 + 1e-9
         covered = (dist2 <= r2).any(axis=1)
 
