@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Coverage Proof Certificate — Mathematical Proof of NFPA 72 Compliance
 =====================================================================

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Voronoi Verification Engine — NFPA 72 Coverage Gap Analysis
 ============================================================

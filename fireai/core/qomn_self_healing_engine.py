@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 QOMN-FIRE Self-Healing Runtime Engine V2.0
 Author: Safety-Critical Systems Architect

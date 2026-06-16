@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 try:
     from opentelemetry import trace
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter

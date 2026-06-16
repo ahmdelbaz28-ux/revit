@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 NFPA 72 V5 Models - Enums, Dataclasses, and Exceptions
 This module provides the data models for NFPA 72 Chapter 17 compliance.

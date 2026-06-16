@@ -2,6 +2,8 @@
 fireai – NFPA 72-2022 Automated Fire Detector Placement Engine
 """
 
+from __future__ import annotations
+
 # W-02 FIX: Single source of truth — import from fireai.version
 # Package version (semver) for __version__ — distinct from internal FIREAI_VERSION_FULL
 # Backward compat: also expose the V-prefixed string and dev version

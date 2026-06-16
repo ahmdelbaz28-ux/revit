@@ -3,6 +3,8 @@ Room Validator - Strict validation for FireAI V10
 Validates RoomSpec before analysis to prevent crashes and ensure data integrity.
 """
 
+from __future__ import annotations
+
 from typing import Set
 
 from .nfpa72_models import RoomSpec

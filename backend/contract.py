@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """backend/contract.py — Runtime API response contract validation.
 
 Ensures every API response matches the expected shape before being

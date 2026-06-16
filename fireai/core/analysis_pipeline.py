@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 AnalysisPipeline — Complete Fire Safety Analysis Pipeline (NFPA 72-2022)
 =========================================================================

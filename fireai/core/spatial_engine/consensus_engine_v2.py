@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 ConsensusEngine v2 — Extended Triple Verification for Non-Rectangular Rooms
 =============================================================================

@@ -3,6 +3,8 @@
 WebSocket connection manager for FastAPI with API key verification.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import secrets

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 audit_store.py - Tamper-Evident Audit Log for NFPA 72 Compliance
 =========================================================
@@ -53,7 +55,7 @@ import logging
 import os
 import sqlite3
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # Optional ECDSA support - graceful degradation if not installed
 try:
@@ -166,7 +168,7 @@ _db_initialized = False
 
 # Persistent connection for :memory: databases (each sqlite3.connect(":memory:")
 # creates a NEW empty database, so we must reuse the same connection)
-_memory_conn: sqlite3.Connection | None = None
+_memory_conn: Optional[sqlite3.Connection] = None
 _init_lock: threading.Lock = threading.Lock()  # Guards _db_initialized singleton
 
 
@@ -494,7 +496,7 @@ def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> st
     return current_hash
 
 
-def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
+def verify_chain() -> Optional[Tuple[bool, Optional[Dict[str, Any]]]]:
     """Verify the integrity of the entire hash chain AND HMAC signature.
 
     Returns:

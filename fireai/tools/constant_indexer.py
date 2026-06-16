@@ -6,6 +6,9 @@ This script scans the codebase and generates a comprehensive index of:
 1. Where each constant is DEFINED (canonical source)
 2. Where each constant is USED (imports and references)
 3. Any DRIFT detected (redefined values that differ from canonical)
+"""
+
+from __future__ import annotations
 
 Run: python -m fireai.tools.constant_indexer
 Output: fireai/CONSTANTS_USAGE_MAP.json

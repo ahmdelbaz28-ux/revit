@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 DensityOptimizer v7.4 – NFPA 72 Maximum-Reduction Placement Engine
 ====================================================================

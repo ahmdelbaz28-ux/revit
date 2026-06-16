@@ -235,7 +235,12 @@ from fireai.core.spatial_engine.consensus_engine import (
     ConsensusEngine,
     ConsensusResult,
 )
-from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
+# NOTE: DensityOptimizer is imported lazily to avoid runtime type-hint
+# incompatibilities on older Python versions (e.g., Python 3.8).
+try:
+    from fireai.core.spatial_engine.density_optimizer import DensityOptimizer  # type: ignore
+except Exception:  # pragma: no cover
+    DensityOptimizer = None  # type: ignore
 from fireai.core.spatial_engine.proof_certificate import (
     ProofCertificate,
     ProofCertificateGenerator,

@@ -23,10 +23,12 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, HTTPException, UploadFile, File, status, Depends
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from backend.rbac import Permission
+from backend.auth import require_permission
 from backend.services.digital_twin_service import (
     ConversionConfig,
     ConversionConfigManager,
@@ -37,6 +39,56 @@ from backend.services.digital_twin_service import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/digital-twin", tags=["Digital Twin"])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECURITY HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+UPLOAD_DIR = os.getenv("DIGITAL_TWIN_UPLOAD_DIR", "uploads")
+
+
+def _sanitize_filename(filename: str) -> str:
+    """
+    Sanitize filename to prevent path traversal and special-char issues.
+    Keeps only basename and replaces unsafe characters.
+    """
+    # Ensure basename-only (drops any path segments)
+    base = os.path.basename(filename or "")
+    # Reject empty / suspicious
+    if not base or base in (".", ".."):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    # Reject explicit traversal patterns
+    if ".." in base or base.startswith(("/", "\\")):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    # Replace unsafe characters; keep common safe set
+    safe = []
+    for ch in base:
+        if ch.isalnum() or ch in ("-", "_", ".", " "):
+            safe.append(ch)
+        else:
+            safe.append("_")
+    sanitized = "".join(safe).strip()
+    if not sanitized:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    return sanitized
+
+
+def _safe_resolve_upload_path(filename: str) -> str:
+    """
+    Resolve a filename under UPLOAD_DIR only. Prevents path traversal.
+    Returns the resolved absolute path if valid.
+    """
+    sanitized = _sanitize_filename(filename)
+    base_dir = os.path.realpath(UPLOAD_DIR)
+    target = os.path.realpath(os.path.join(base_dir, sanitized))
+
+    # Must stay inside uploads dir
+    if not (target + os.sep).startswith(base_dir + os.sep) and target != base_dir:
+        raise HTTPException(status_code=400, detail="Invalid file path")
+    return target
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -100,7 +152,11 @@ def get_digital_twin_service() -> DigitalTwinService:
 # ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-@router.post("/convert/autocad-to-revit", response_model=ConversionResponse)
+@router.post(
+    "/convert/autocad-to-revit",
+    response_model=ConversionResponse,
+    dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
+)
 async def convert_autocad_to_revit(
     file: UploadFile = File(...),
     output_path: Optional[str] = None,
@@ -118,6 +174,13 @@ async def convert_autocad_to_revit(
         ConversionResponse with conversion results
     """
     try:
+        # Validate file
+        if not file.filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Filename is required",
+            )
+
         # Validate file extension
         if not file.filename.lower().endswith(('.dwg', '.dxf')):
             raise HTTPException(
@@ -125,10 +188,10 @@ async def convert_autocad_to_revit(
                 detail="File must be .dwg or .dxf",
             )
         
-        # Save uploaded file temporarily
-        upload_dir = "uploads"
-        os.makedirs(upload_dir, exist_ok=True)
-        input_path = os.path.join(upload_dir, file.filename)
+        # Save uploaded file temporarily (sanitized under UPLOAD_DIR only)
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        safe_in_name = _sanitize_filename(file.filename)
+        input_path = os.path.join(UPLOAD_DIR, safe_in_name)
         
         with open(input_path, "wb") as f:
             content = await file.read()
@@ -165,7 +228,11 @@ async def convert_autocad_to_revit(
         )
 
 
-@router.post("/convert/revit-to-autocad", response_model=ConversionResponse)
+@router.post(
+    "/convert/revit-to-autocad",
+    response_model=ConversionResponse,
+    dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
+)
 async def convert_revit_to_autocad(
     file: UploadFile = File(...),
     output_path: Optional[str] = None,
@@ -181,6 +248,13 @@ async def convert_revit_to_autocad(
         ConversionResponse with conversion results
     """
     try:
+        # Validate file
+        if not file.filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Filename is required",
+            )
+
         # Validate file extension
         if not file.filename.lower().endswith('.rvt'):
             raise HTTPException(
@@ -188,10 +262,10 @@ async def convert_revit_to_autocad(
                 detail="File must be .rvt",
             )
         
-        # Save uploaded file temporarily
-        upload_dir = "uploads"
-        os.makedirs(upload_dir, exist_ok=True)
-        input_path = os.path.join(upload_dir, file.filename)
+        # Save uploaded file temporarily (sanitized under UPLOAD_DIR only)
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        safe_in_name = _sanitize_filename(file.filename)
+        input_path = os.path.join(UPLOAD_DIR, safe_in_name)
         
         with open(input_path, "wb") as f:
             content = await file.read()
@@ -227,7 +301,11 @@ async def convert_revit_to_autocad(
         )
 
 
-@router.get("/history", response_model=HistoryResponse)
+@router.get(
+    "/history",
+    response_model=HistoryResponse,
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+)
 async def get_history():
     """
     Get conversion version history.
@@ -264,7 +342,11 @@ async def get_history():
         )
 
 
-@router.post("/rollback/{version_id}", response_model=OperationResponse)
+@router.post(
+    "/rollback/{version_id}",
+    response_model=OperationResponse,
+    dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))],
+)
 async def rollback_to_version(version_id: str):
     """
     Rollback to a specific conversion version.
@@ -297,7 +379,11 @@ async def rollback_to_version(version_id: str):
         )
 
 
-@router.get("/config", response_model=ConversionConfig)
+@router.get(
+    "/config",
+    response_model=ConversionConfig,
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+)
 async def get_config():
     """
     Get conversion configuration.
@@ -316,7 +402,11 @@ async def get_config():
         )
 
 
-@router.put("/config", response_model=OperationResponse)
+@router.put(
+    "/config",
+    response_model=OperationResponse,
+    dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))],
+)
 async def update_config(config: ConversionConfig):
     """
     Update conversion configuration.
@@ -342,7 +432,10 @@ async def update_config(config: ConversionConfig):
         )
 
 
-@router.get("/download/{filename:path}")
+@router.get(
+    "/download/{filename:path}",
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+)
 async def download_file(filename: str):
     """
     Download a converted file.
@@ -354,15 +447,18 @@ async def download_file(filename: str):
         FileResponse with file content
     """
     try:
-        if not os.path.exists(filename):
+        # Restrict downloads to uploads directory only
+        resolved_path = _safe_resolve_upload_path(filename)
+
+        if not os.path.exists(resolved_path) or not os.path.isfile(resolved_path):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"File not found: {filename}",
+                detail="File not found",
             )
-        
+
         return FileResponse(
-            path=filename,
-            filename=os.path.basename(filename),
+            path=resolved_path,
+            filename=os.path.basename(resolved_path),
             media_type="application/octet-stream",
         )
     except Exception as e:

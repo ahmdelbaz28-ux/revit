@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 monte_carlo.py — Accelerated Monte Carlo Resilience Check
 =======================================================

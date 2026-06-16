@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 QOMN-FIRE v4.0 — FAIL-LOUD RESILIENCE LAYER & INTEGRATION ADAPTERS
 ====================================================================

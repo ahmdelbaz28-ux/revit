@@ -4,6 +4,8 @@ This module defines the necessary enums, dataclasses, and generator class for
 CSD representation and compliance reporting.
 """
 
+from __future__ import annotations
+
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime

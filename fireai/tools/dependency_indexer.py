@@ -6,6 +6,9 @@ Scans the codebase and generates a dependency graph to identify:
 - Module layers and their dependencies
 - Circular import risks
 - Architecture violations
+"""
+
+from __future__ import annotations
 
 Run: python -m fireai.tools.dependency_indexer
 Output: fireai/DEPENDENCY_INDEX.md

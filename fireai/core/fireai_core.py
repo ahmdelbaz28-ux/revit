@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 fireai_core.py — Central Orchestrator for FireAI Production System
 =====================================================

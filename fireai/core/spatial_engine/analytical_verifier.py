@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Analytical Verification Engine — NFPA 72 Coverage Proof
 ========================================================

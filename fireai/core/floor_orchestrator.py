@@ -6,6 +6,8 @@ CRITICAL SAFETY:
   3. Fail-Fast: RuntimeError STOPS everything.
 """
 
+from __future__ import annotations
+
 import logging
 import time
 from dataclasses import dataclass, field

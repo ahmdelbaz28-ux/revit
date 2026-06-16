@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 audit_trail.py — FireAI V5.3.0
 Immutable audit log with per-entry hash, thread-safe append.

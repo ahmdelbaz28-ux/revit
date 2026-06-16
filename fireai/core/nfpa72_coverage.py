@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 NFPA 72 V5 Coverage - Polygon and Voronoi Coverage Checks
 This module provides coverage checking using Polygon containment

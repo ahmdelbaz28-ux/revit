@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 FireAI — NFPA 72 Centralized Constants (Single Source of Truth)
 

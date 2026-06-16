@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 learning_store.py — Experience-Based Learning Store for FireAI
 =========================================================
