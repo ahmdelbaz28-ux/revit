@@ -81,7 +81,7 @@ _autocad_service: Optional[AutoCADService] = None
 
 def get_autocad_service() -> AutoCADService:
     """Get or initialize AutoCAD service singleton."""
-    global _autocad_service  # noqa: PLW0603
+    global _autocad_service
     if _autocad_service is None:
         _autocad_service = AutoCADService()
     return _autocad_service

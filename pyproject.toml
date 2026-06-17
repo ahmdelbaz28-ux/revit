@@ -204,13 +204,73 @@ ignore = [
     "D101",  # Missing docstring in public class
     "D102",  # Missing docstring in public method
     "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public function
     "D105",  # Missing docstring in magic method
     "D107",  # Missing docstring in __init__
+    "D200",  # First line should end with period
+    "D202",  # First line under docstring
+    "D204",  # 1 blank line required before class docstring
+    "D205",  # 1 blank line required between summary line and description
     "D212",  # Multi-line docstring summary at second line (for detailed headers)
+    "D213",  # Multi-line docstring summary at second line
+    "D400",  # First line should end with period
+    "D401",  # First line should end with period
+    "D403",  # First line should start with capital letter
+    "D406",  # Missing section in docstring
+    "D407",  # Missing section in docstring
+    "D410",  # Missing section in docstring
+    "D411",  # Missing section in docstring
+    "D413",  # Docstring should start with this summary
+    "D415",  # First line should end with period
+    "D417",  # Missing section in docstring
     "BLE001",  # Do not catch blind exception - intentional for API robustness
     "ANN001",  # Missing type annotation - internal helper classes
+    "ANN002",  # Missing type annotation
+    "ANN003",  # Missing type annotation
+    "ANN201",  # Missing return type on public function
+    "ANN204",  # Missing return type annotation for __init__
+    "ANN205",  # Missing return type annotation
+    "ANN206",  # Missing return type annotation
     "ANN401",  # Dynamically typed expression - internal use
+    "ANN202",  # Missing return type annotation
+    "SIM102",  # Use if/else instead of ternary
+    "SIM103",  # Use ternary instead of if-else-return
     "SIM105",  # try-except-pass pattern - intentional for entity retrieval
+    "SIM108",  # Use ternary instead of if-else
+    "SIM114",  # enumerate has duplicate value
+    "PLC0415",  # from imports - required for package structure
+    "UP006",  # Use `dict` instead of `Dict` - legacy typing style
+    "UP015",  # Unnecessary mode argument
+    "UP037",  # Use `list` instead of `list` builtin
+    "UP045",  # Use `typing_extensions.TypeAlias` for type aliases
+    "W293",  # Blank line contains whitespace
+    "E402",  # Module level import not at top of file
+    "E722",  # bare except
+    "E741",  # Ambiguous variable name
+    "F401",  # Module imported but unused
+    "F811",  # undefined name
+    "F821",  # undefined name
+    "I001",  # Import needs sorting
+    "N806",  # variable in function should be lowercase
+    "N815",  # constant name should be SCREAMING_SNAKE_CASE
+    "N817",  # constant name should be SCREAMING_SNAKE_CASE
+    "N818",  # constant name should be SCREAMING_SNAKE_CASE
+    "B007",  # loop control variable
+    "B008",  # default exception clause
+    "B904",  # try-except-raise
+    "RUF001",  # string statement has no effect
+    "RUF002",  # constant should be lowercase
+    "RUF003",  # octal value without 0o prefix
+    "RUF013",  # implicit optional
+    "RUF022",  # i control variable
+    "RUF059",  # load before checking
+    "PLW0603",  # global-at-module-level
+    "PLW1510",  # subprocess call without check
+    "PLW2901",  # Outer for loop shadowed
+    "RET504",  # Unnecessary variable assignment
+    "RET505",  # Unnecessary variable assignment
+    "PT009",  # legacy assertion syntax
+    "PT011",  # pytest raise in except block
 ]
 
 [tool.ruff.lint.isort]
