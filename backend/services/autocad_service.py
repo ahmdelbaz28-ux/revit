@@ -1,5 +1,4 @@
-"""backend/services/autocad_service.py — AutoCAD Integration Service
-================================================================
+"""AutoCAD Integration Service.
 
 Complete AutoCAD integration service with multiple connection methods.
 Based on research from:
@@ -80,22 +79,22 @@ else:
 class SimulationEntity:
     """In-memory entity for simulation mode."""
 
-    def __init__(self, entity_type: str, handle: str, properties: Dict[str, Any]):
+    def __init__(self, entity_type: str, handle: str, properties: Dict[str, Any]) -> None:
         self.entity_type = entity_type
         self.handle = handle
         self.properties = properties
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Any:  # noqa: D105
         return self.properties.get(key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:  # noqa: D105
         self.properties[key] = value
 
 
 class SimulationLayer:
     """In-memory layer for simulation mode."""
 
-    def __init__(self, name: str, color: int = 7, visible: bool = True):
+    def __init__(self, name: str, color: int = 7, visible: bool = True) -> None:
         self.name = name
         self.color = color
         self.visible = visible
@@ -105,7 +104,7 @@ class SimulationLayer:
 class SimulationDocument:
     """In-memory document for simulation mode."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.name = "Simulation"
         self.path = ""
         self.layers: Dict[str, SimulationLayer] = {"0": SimulationLayer("0", 7, True)}
@@ -121,7 +120,7 @@ class AutoCADService:
     - Simulation mode (cross-platform, no AutoCAD required)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.connection_method: Optional[ConnectionMethod] = None
         self.acad_app = None
         self.acad_doc = None
@@ -175,7 +174,7 @@ class AutoCADService:
             try:
                 self.acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
                 logger.info("Connected to existing AutoCAD instance")
-            except Exception:
+            except Exception:  # noqa: BLE001
                 # Launch new instance
                 try:
                     self.acad_app = win32com.client.Dispatch("AutoCAD.Application")
@@ -1054,7 +1053,7 @@ class AutoCADService:
             for h in handles:
                 try:
                     entities.append(self.acad_doc.HandleToObject(h))
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             if entities:
                 group = self.acad_doc.Groups.Add(group_name)
