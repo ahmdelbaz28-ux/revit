@@ -1,92 +1,80 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fireai"
-version = "1.0.0"
-description = "FireAI: Advanced AI-powered fire protection engineering platform for mission-critical safety systems"
+name = "cad-bim-integration-platform"
+dynamic = ["version"]
+description = "Complete platform for AutoCAD and Revit integration with Digital Twin capabilities"
 readme = "README.md"
-license = {file = "LICENSE"}
-authors = [
-    {name = "FireAI Team", email = "engineering@fireai.org"}
-]
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [{name = "FireAI Project", email = "contact@fireai.org"}]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research",
-    "Intended Audience :: Other Audience",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Utilities",
-    "Topic :: Security",
     "Typing :: Typed"
 ]
-keywords = ["fire-protection", "engineering", "safety", "ai", "compliance", "nfpa"]
-requires-python = ">=3.12"
+keywords = ["cad", "bim", "revit", "autocad", "digital-twin", "engineering", "integration"]
+requires-python = ">=3.8"
 dependencies = [
-    "psutil>=5.8.0",
-    "shapely>=2.0.0",
-    "numpy>=1.24.0",
-    "scipy>=1.10.0",
-    "pydantic>=2.0.0",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.20.0",
-    "sqlalchemy>=2.0.0",
-    "pyyaml>=6.0",
-    "requests>=2.28.0",
-    "python-multipart>=0.0.9",
-    "pyjwt>=2.6.0",
-    "passlib>=1.7.4",
-    "bcrypt>=4.0.0",
-    "python-dotenv>=1.0.0",
-    "alembic>=1.10.0",
+    "fastapi>=0.100.0,<1.0.0",
+    "uvicorn[standard]>=0.20.0,<1.0.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "pydantic-settings>=2.0.0,<3.0.0",
+    "sqlalchemy>=2.0.0,<3.0.0",
+    "psycopg2-binary>=2.9.0,<3.0.0",
+    "alembic>=1.10.0,<2.0.0",
+    "python-multipart>=0.0.6,<1.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    "requests>=2.28.0,<3.0.0",
+    "pyjwt[crypto]>=2.6.0,<3.0.0",
+    "passlib[bcrypt]>=1.7.0,<2.0.0",
+    "cryptography>=41.0.0,<43.0.0",
+    "websockets>=10.0.0,<12.0.0",
+    "asyncpg>=0.27.0,<1.0.0",
+    "redis>=4.5.0,<5.0.0",
+    "celery>=5.2.0,<6.0.0",
+    "redis[hiredis]>=4.5.0,<5.0.0",
+    "python-dateutil>=2.8.0,<3.0.0",
+    "pytz>=2023.0.0,<2025.0.0",
+    "pywin32>=306;platform_system=='Windows'",
+    "pythonnet>=3.0.0rc1;platform_system=='Windows'",
+    "tenacity>=8.2.0,<9.0.0",
+    "hypothesis>=6.82.0,<7.0.0"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "mypy>=1.0.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
-    "isort>=5.10.0",
-    "pre-commit>=3.0.0",
-    "tox>=4.0.0",
-    "virtualenv>=20.0.0",
-    "pip-tools>=7.0.0",
-    "bandit>=1.7.0",
-    "safety>=2.0.0",
-    "pdbpp>=0.10.3",
-    "ipdb>=0.13.9"
-]
-test = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-mock>=3.10.0",
-    "factory-boy>=3.2.0",
-    "faker>=18.0.0",
-    "hypothesis>=6.0.0"
+    "pytest>=7.0.0,<8.0.0",
+    "pytest-asyncio>=0.21.0,<1.0.0",
+    "pytest-cov>=4.0.0,<5.0.0",
+    "black>=23.0.0,<24.0.0",
+    "flake8>=6.0.0,<7.0.0",
+    "mypy>=1.0.0,<2.0.0",
+    "ruff>=0.1.0,<1.0.0",
+    "pre-commit>=3.0.0,<4.0.0",
+    "bandit>=1.7.0,<2.0.0",
+    "safety>=2.0.0,<3.0.0",
+    "types-requests>=2.28.0,<3.0.0",
+    "types-python-dateutil>=2.8.0,<3.0.0",
 ]
 docs = [
-    "sphinx>=6.0.0",
-    "sphinx-rtd-theme>=1.0.0",
-    "sphinx-autodoc-typehints>=1.19.0",
-    "myst-parser>=1.0.0",
-    "sphinx-copybutton>=0.5.0"
-]
-cad = [
-    "ezdxf>=1.0.0",
-    "ifcopenshell>=0.7.0",
-    "opencascade>=7.6.0",
-    "pillow>=10.0.0",
+    "mkdocs>=1.4.0,<2.0.0",
+    "mkdocs-material>=9.0.0,<10.0.0",
+    "mkdocstrings[python]>=0.22.0,<1.0.0",
 ]
 
 [project.scripts]
@@ -102,37 +90,95 @@ Changelog = "https://github.com/fireai/platform/blob/main/CHANGELOG.md"
 "Twitter" = "https://twitter.com/fireai_platform"
 "LinkedIn" = "https://linkedin.com/company/fireai-platform"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["fireai*", "facp*"]
-
-[tool.setuptools.package-data]
-fireai = ["py.typed", "data/*", "schemas/*"]
+[tool.setuptools_scm]
 
 [tool.black]
 line-length = 88
-target-version = ['py312']
+target-version = ['py38']
 include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-  | venv
-)/
-'''
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-known_first_party = ["fireai", "facp"]
-known_third_party = ["numpy", "scipy", "shapely", "pydantic", "fastapi", "sqlalchemy", "pytest", "requests"]
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+show_error_codes = true
+exclude = ["venv/", ".venv/", "env/", ".env/"]
+
+[[tool.mypy.overrides]]
+module = ["pywin32.*", "pythonnet.*", "clr.*", "Autodesk.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+    "--tb=short",
+    "--disable-warnings"
+]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests"
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "*/env/*",
+    "*/.env/*"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings  
+    "F",     # pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez
+    "SIM",   # flake8-simplify
+    "PGH",   # pygrep-hooks
+    "PL",    # pylint
+    "PT",    # flake8-pytest-style
+    "RUF",   # Ruff-specific rules
+]
+ignore = [
+    "PLR",   # Design related pylint codes
+    "E501",  # Line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend", "core", "parsers", "fireai", "skills", "qomn_conduit", "db", "tests"]
+known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", "requests", "pyjwt", "passlib", "cryptography", "websockets", "asyncpg", "redis", "celery", "python_dateutil", "pytz", "pywin32", "pythonnet", "tenacity", "hypothesis", "pytest", "black", "flake8", "mypy", "ruff", "pre_commit", "bandit", "safety", "types_requests", "types_python_dateutil", "mkdocs", "mkdocs_material", "mkdocstrings"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -204,27 +250,49 @@ exclude_dirs = [".git", "__pycache__", "venv", "env"]
 skips = ["B101", "B102"]  # Skip "assert used" and "exec used" for testing purposes
 
 [tool.ruff]
-line-length = 88
+line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
 select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # Pyflakes
-    "I",  # isort
-    "C",  # flake8-comprehensions
-    "B",  # flake8-bugbear
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings  
+    "F",     # pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez
+    "SIM",   # flake8-simplify
+    "PGH",   # pygrep-hooks
+    "PL",    # pylint
+    "PT",    # flake8-pytest-style
+    "RUF",   # Ruff-specific rules
+    "ANN",   # typing: Any, NoReturn, etc.
+    "BLE",   # boolean expression length
+    "RET",   # return statement practices
+    "D",     # pydocstyle
 ]
 ignore = [
-    "E501",   # Line too long — handled by ruff format
-    "C901",   # Function too complex — known; refactor incrementally
-    "E741",   # Ambiguous variable name — common in math/physics code
-    "E402",   # Module import not at top — intentional for circular-dependency avoidance
-    "B008",   # Function call in argument defaults — standard FastAPI Depends pattern
-    "B904",   # raise without from — legacy pattern; fix incrementally
+    "PLR",   # Design related pylint codes
+    "E501",  # Line too long (handled by formatter)
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D107",  # Missing docstring in __init__
 ]
 
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
-"tests/*" = ["S101", "S106", "S107"]  # Allow assert, hardcoded passwords/credentials in tests
+[tool.ruff.lint.isort]
+known-first-party = ["fireai", "facp"]
+known-third-party = ["numpy", "scipy", "shapely", "pydantic", "fastapi", "sqlalchemy", "pytest", "requests"]
+order-by-type = true
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+indent-width = 4
+line-ending = "auto"
+skip-magic-trailing-comma = false

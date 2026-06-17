@@ -3,10 +3,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
 import { useHealth } from '@/hooks/useApi';
-import { AppShell } from '@/components/layout/AppShell';
+import AppShell from '@/components/layout/AppShell';
 import { SmartHelpDrawer } from '@/components/help/SmartHelpDrawer';
-import { CommandPalette } from '@/components/command/CommandPalette';
-import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
+import CommandPalette from '@/components/command/CommandPalette';
+import OnboardingTour from '@/components/onboarding/OnboardingTour';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { EngineeringPage } from './pages/EngineeringPage';
@@ -73,7 +73,7 @@ function App() {
         backendUrl={import.meta.env.VITE_API_URL || '/api/v1'}
         environment={import.meta.env.MODE || 'development'}
         currentLanguage={i18n.language}
-        onLanguageChange={(lng) => i18n.changeLanguage(lng)}
+        onLanguageChange={(lng: string) => i18n.changeLanguage(lng)}
         onHelpOpen={() => setHelpOpen(true)}
       >
         <main className="flex-1 overflow-auto">
