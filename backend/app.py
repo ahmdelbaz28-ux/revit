@@ -28,7 +28,7 @@ import logging
 from pydantic import BaseModel
 
 # Import our CAD/BIM integration routers
-from backend.routers import autocad, revit, digital_twin, revit_integration
+from backend.routers import autocad, revit, digital_twin
 
 # Import rate limiter from centralized module (avoids circular import)
 from backend.limiter import limiter, get_remote_address
@@ -122,7 +122,6 @@ app.add_middleware(
 app.include_router(autocad.router, prefix="/api/v1/autocad", tags=["AutoCAD-v1"])
 app.include_router(revit.router, prefix="/api/v1/revit", tags=["Revit-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1/digital-twin", tags=["Digital-Twin-v1"])
-app.include_router(revit_integration.router, prefix="/api/v1/revit-integration", tags=["Revit-Integration"])
 
 # Health endpoints (no version prefix - always available)
 # These are versioned at root level for easy monitoring
