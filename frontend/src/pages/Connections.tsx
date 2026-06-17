@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { Link } from 'react-router-dom';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { ConnectionCreate } from '@/types';
 
 function Connections() {
@@ -97,13 +98,17 @@ function Connections() {
                 </tr>
               </thead>
               <tbody>
-                {connections.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-8 text-slate-500">
-                      No connections found
-                    </td>
-                  </tr>
-                ) : (
+{connections.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-8">
+                          <EmptyState
+                            icon={<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-12 w-12 text-slate-600"><path d="M10 19h4m-2-17V4a2 2 0 00-2 2v3m6 12V7a4 4 0 00-8 0v12" /></svg>}
+                            title="No connections found"
+                            description="Create connections between elements to build your system topology"
+                          />
+                        </td>
+                      </tr>
+                    ) : (
                   connections.map((conn) => (
                     <tr
                       key={conn.connection_id}

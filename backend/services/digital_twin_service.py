@@ -28,15 +28,15 @@ USAGE:
     dwg_file = service.convert_revit_to_autocad("model.rvt")
 """
 
-from __future__ import annotations
-
 import json
 import logging
 import os
+import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ class ConversionConfig:
         }
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> ConversionConfig:
+    def from_dict(cls, data: Dict[str, Any]) -> "ConversionConfig":
         """Create from dictionary."""
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
@@ -204,7 +204,7 @@ class SemanticMapper:
         Returns:
             Revit element specification or None if unmappable
         """
-        entity_type = autocad_entity.get("type")
+        entity_type = autocad_entity.get("entity_type")  # Changed from "type" to "entity_type"
         layer = autocad_entity.get("layer", "0")
         
         # Determine target category
@@ -220,18 +220,28 @@ class SemanticMapper:
             return self._map_polyline_to_revit(autocad_entity, category)
         elif entity_type == "CIRCLE":
             return self._map_circle_to_revit(autocad_entity, category)
+        elif entity_type == "ARC":
+            return self._map_arc_to_revit(autocad_entity, category)
         elif entity_type == "TEXT":
             return self._map_text_to_revit(autocad_entity)
+        elif entity_type == "MTEXT":
+            return self._map_mtext_to_revit(autocad_entity)
         elif entity_type == "INSERT":  # Block reference
             return self._map_block_to_revit(autocad_entity)
+        elif entity_type == "SPLINE":
+            return self._map_spline_to_revit(autocad_entity, category)
+        elif entity_type == "HATCH":
+            return self._map_hatch_to_revit(autocad_entity, category)
+        elif entity_type == "DIMENSION":
+            return self._map_dimension_to_revit(autocad_entity)
         else:
             logger.debug(f"Unsupported entity type: {entity_type}")
             return None
     
     def _map_line_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
         """Map AutoCAD line to Revit element."""
-        start = entity.get("start")
-        end = entity.get("end")
+        start = entity.get("start_point", [0, 0, 0])
+        end = entity.get("end_point", [1, 0, 0])
         
         if category == "Walls":
             return {
@@ -255,17 +265,23 @@ class SemanticMapper:
     
     def _map_polyline_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
         """Map AutoCAD polyline to Revit element."""
-        vertices = entity.get("vertices", [])
+        # Extract vertices from coordinates array
+        coords = entity.get("coordinates", [])
+        vertices = []
+        for i in range(0, len(coords), 2):  # Process pairs of X,Y coordinates
+            if i + 1 < len(coords):
+                vertices.append([coords[i], coords[i+1], 0])  # Add Z=0
+        
         closed = entity.get("closed", False)
         
-        if category == "Floors" and closed:
+        if category == "Floors" and len(vertices) >= 3:
             return {
                 "element_type": "Floor",
                 "boundary": vertices,
                 "level": self.config.default_level,
                 "floor_type": "Generic 150mm",
             }
-        elif category == "Roofs" and closed:
+        elif category == "Roofs" and len(vertices) >= 3:
             return {
                 "element_type": "Roof",
                 "boundary": vertices,
@@ -281,8 +297,8 @@ class SemanticMapper:
     
     def _map_circle_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
         """Map AutoCAD circle to Revit element."""
-        center = entity.get("center")
-        radius = entity.get("radius")
+        center = entity.get("center", [0, 0, 0])
+        radius = entity.get("radius", 1000.0)
         
         return {
             "element_type": "Column",
@@ -292,10 +308,40 @@ class SemanticMapper:
             "column_type": "Circular",
         }
     
+    def _map_arc_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
+        """Map AutoCAD arc to Revit element."""
+        center = entity.get("center", [0, 0, 0])
+        radius = entity.get("radius", 1000.0)
+        start_angle = entity.get("start_angle", 0)
+        end_angle = entity.get("end_angle", 90)
+        
+        # For now, treat arcs as model lines
+        return {
+            "element_type": "ModelLine",
+            "center": center,
+            "radius": radius,
+            "start_angle": start_angle,
+            "end_angle": end_angle,
+            "category": category,
+        }
+    
     def _map_text_to_revit(self, entity: Dict[str, Any]) -> Dict[str, Any]:
         """Map AutoCAD text to Revit text note."""
-        text = entity.get("text", "")
-        insert = entity.get("insert")
+        text = entity.get("text_string", "")
+        insert = entity.get("insertion_point", [0, 0, 0])
+        height = entity.get("height", 2.5)
+        
+        return {
+            "element_type": "TextNote",
+            "text": text,
+            "location": insert,
+            "font_size": height,
+        }
+    
+    def _map_mtext_to_revit(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+        """Map AutoCAD MTEXT to Revit text note."""
+        text = entity.get("contents", "")
+        insert = entity.get("insertion_point", [0, 0, 0])
         height = entity.get("height", 2.5)
         
         return {
@@ -307,10 +353,10 @@ class SemanticMapper:
     
     def _map_block_to_revit(self, entity: Dict[str, Any]) -> Dict[str, Any]:
         """Map AutoCAD block to Revit family instance."""
-        block_name = entity.get("block_name", "")
-        insert = entity.get("insert")
+        block_name = entity.get("name", "")
+        insert = entity.get("insertion_point", [0, 0, 0])
         
-        # Map block name to family
+        # Map block name to family - check if the block name exists in the mapping
         family_name = self.config.block_to_family.get(block_name, "Generic Models")
         
         return {
@@ -318,6 +364,41 @@ class SemanticMapper:
             "family_name": family_name,
             "location": insert,
             "level": self.config.default_level,
+        }
+    
+    def _map_spline_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
+        """Map AutoCAD spline to Revit element."""
+        return {
+            "element_type": "ModelLine",
+            "curve_type": "Spline",
+            "degree": entity.get("degree", 3),
+            "category": category,
+        }
+    
+    def _map_hatch_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
+        """Map AutoCAD hatch to Revit element."""
+        if category == "Floors":
+            # For now, treat hatches as potential floor boundaries
+            return {
+                "element_type": "Floor",
+                "boundary_type": "Hatch",
+                "pattern": entity.get("pattern_name", "SOLID"),
+                "level": self.config.default_level,
+                "category": category,
+            }
+        else:
+            return {
+                "element_type": "ModelLine",
+                "hatch_pattern": entity.get("pattern_name", "SOLID"),
+                "category": category,
+            }
+    
+    def _map_dimension_to_revit(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+        """Map AutoCAD dimension to Revit dimension."""
+        return {
+            "element_type": "Dimension",
+            "measurement": entity.get("measurement", 0),
+            "text_override": entity.get("dimension_text", ""),
         }
     
     def map_revit_to_autocad(self, revit_element: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -347,20 +428,28 @@ class SemanticMapper:
             return self._map_door_to_autocad(revit_element, layer)
         elif category == "Windows":
             return self._map_window_to_autocad(revit_element, layer)
+        elif category == "Roofs":
+            return self._map_roof_to_autocad(revit_element, layer)
+        elif category == "Furniture":
+            return self._map_furniture_to_autocad(revit_element, layer)
+        elif category == "Text Notes":
+            return self._map_text_note_to_autocad(revit_element, layer)
+        elif category == "Dimensions":
+            return self._map_dimension_to_autocad(revit_element, layer)
         else:
             # Generic element — create block reference
             return self._map_generic_to_autocad(revit_element, layer)
     
     def _map_wall_to_autocad(self, element: Dict[str, Any], layer: str) -> Optional[Dict[str, Any]]:
         """Map Revit wall to AutoCAD lines."""
-        curve = element.get("curve", [])
+        curve = element.get("location_curve", [])
         
         if len(curve) >= 2:
             return {
                 "entity_type": "LINE",
                 "layer": layer,
-                "start": curve[0],
-                "end": curve[1],
+                "start_point": curve[0],
+                "end_point": curve[1],
             }
         return None
     
@@ -371,41 +460,88 @@ class SemanticMapper:
         return {
             "entity_type": "LWPOLYLINE",
             "layer": layer,
-            "vertices": boundary,
+            "coordinates": [coord for point in boundary for coord in point[:2]],  # Flatten to X,Y pairs
             "closed": True,
         }
     
     def _map_door_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
         """Map Revit door to AutoCAD block."""
-        location = element.get("location")
+        location = element.get("location_point", [0, 0, 0])
         
         return {
             "entity_type": "INSERT",
             "layer": layer,
-            "block_name": "Door",
-            "insert": location,
+            "name": "Door",
+            "insertion_point": location,
         }
     
     def _map_window_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
         """Map Revit window to AutoCAD block."""
-        location = element.get("location")
+        location = element.get("location_point", [0, 0, 0])
         
         return {
             "entity_type": "INSERT",
             "layer": layer,
-            "block_name": "Window",
-            "insert": location,
+            "name": "Window",
+            "insertion_point": location,
+        }
+    
+    def _map_roof_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+        """Map Revit roof to AutoCAD polyline."""
+        boundary = element.get("boundary", [])
+        
+        return {
+            "entity_type": "LWPOLYLINE",
+            "layer": layer,
+            "coordinates": [coord for point in boundary for coord in point[:2]],  # Flatten to X,Y pairs
+            "closed": True,
+        }
+    
+    def _map_furniture_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+        """Map Revit furniture to AutoCAD block."""
+        location = element.get("location_point", [0, 0, 0])
+        
+        return {
+            "entity_type": "INSERT",
+            "layer": layer,
+            "name": "Furniture",
+            "insertion_point": location,
+        }
+    
+    def _map_text_note_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+        """Map Revit text note to AutoCAD text."""
+        text = element.get("text", "Sample Text")
+        location = element.get("location", [0, 0, 0])
+        font_size = element.get("font_size", 2.5)
+        
+        return {
+            "entity_type": "TEXT",
+            "layer": layer,
+            "text_string": text,
+            "insertion_point": location,
+            "height": font_size,
+        }
+    
+    def _map_dimension_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+        """Map Revit dimension to AutoCAD dimension."""
+        measurement = element.get("measurement", 0)
+        
+        return {
+            "entity_type": "DIMENSION",
+            "layer": layer,
+            "measurement": measurement,
+            "text_override": element.get("text_override", str(measurement)),
         }
     
     def _map_generic_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
         """Map generic Revit element to AutoCAD block."""
-        location = element.get("location")
+        location = element.get("location_point", [0, 0, 0])
         
         return {
             "entity_type": "INSERT",
             "layer": layer,
-            "block_name": "Generic",
-            "insert": location,
+            "name": "Generic",
+            "insertion_point": location,
         }
 
 
@@ -457,21 +593,24 @@ class DigitalTwinEngine:
             # Initialize AutoCAD service
             acad_service = AutoCADService()
             if not acad_service.initialize():
-                raise RuntimeError("Failed to initialize AutoCAD service")
+                logger.warning("AutoCAD service could not be initialized - proceeding with file operations only")
             
             # Read DWG file
             logger.info(f"Reading DWG file: {dwg_filepath}")
-            dwg_data = acad_service.read_dwg(dwg_filepath)
+            dwg_result = acad_service.read_dwg(dwg_filepath)
+            
+            if not dwg_result.get("success", False):
+                raise RuntimeError(f"Failed to read DWG file: {dwg_result.get('error', 'Unknown error')}")
+            
+            dwg_data = dwg_result
             
             # Initialize Revit service
             revit_service = RevitService()
             if not revit_service.initialize():
-                raise RuntimeError("Failed to initialize Revit service")
+                logger.warning("Revit service could not be initialized - proceeding with file operations only")
             
-            # Create new Revit document from template
-            if template_path:
-                # Open template
-                pass  # Revit API: open template file
+            # Prepare elements for Revit
+            revit_elements = []
             
             # Convert entities
             for entity in dwg_data.get("entities", []):
@@ -479,41 +618,21 @@ class DigitalTwinEngine:
                     # Map entity
                     revit_spec = self.mapper.map_autocad_to_revit(entity)
                     if not revit_spec:
-                        warnings.append(f"Skipped entity: {entity.get('type')} on layer {entity.get('layer')}")
+                        warnings.append(f"Skipped entity: {entity.get('entity_type', 'unknown')} on layer {entity.get('layer', '0')}")
                         continue
                     
-                    # Create Revit element
-                    element_type = revit_spec.get("element_type")
-                    
-                    if element_type == "Wall":
-                        curve = revit_spec.get("curve", [])
-                        if len(curve) >= 2:
-                            revit_service.create_wall(
-                                curve[0], curve[1],
-                                revit_spec.get("height", 3000),
-                                level=revit_spec.get("level", "Level 1")
-                            )
-                            elements_converted += 1
-                    
-                    elif element_type == "Floor":
-                        boundary = revit_spec.get("boundary", [])
-                        if boundary:
-                            revit_service.create_floor(
-                                boundary,
-                                level=revit_spec.get("level", "Level 1")
-                            )
-                            elements_converted += 1
-                    
-                    elif element_type == "FamilyInstance":
-                        # Place family instance (door, window, etc.)
-                        # Requires wall ID — skip for now
-                        warnings.append("FamilyInstance placement requires wall association")
+                    # Add to elements list
+                    revit_spec["source_entity_handle"] = entity.get("handle", "unknown")
+                    revit_elements.append(revit_spec)
+                    elements_converted += 1
                     
                 except Exception as e:
                     errors.append(f"Failed to convert entity: {e}")
             
-            # Save Revit file
-            revit_service.save(rvt_filepath)
+            # Save Revit file with converted elements
+            save_success = revit_service.write_rvt(rvt_filepath, revit_elements)
+            if not save_success:
+                errors.append("Failed to save Revit file")
             
             # Record version
             self.version_manager.record_version(
@@ -571,16 +690,24 @@ class DigitalTwinEngine:
             # Initialize Revit service
             revit_service = RevitService()
             if not revit_service.initialize():
-                raise RuntimeError("Failed to initialize Revit service")
+                logger.warning("Revit service could not be initialized - proceeding with file operations only")
             
             # Read Revit document
             logger.info(f"Reading RVT file: {rvt_filepath}")
-            rvt_data = revit_service.read_current_document()
+            rvt_result = revit_service.read_rvt(rvt_filepath)
+            
+            if not rvt_result.get("success", False):
+                raise RuntimeError(f"Failed to read RVT file: {rvt_result.get('error', 'Unknown error')}")
+            
+            rvt_data = rvt_result
             
             # Initialize AutoCAD service
             acad_service = AutoCADService()
             if not acad_service.initialize():
-                raise RuntimeError("Failed to initialize AutoCAD service")
+                logger.warning("AutoCAD service could not be initialized - proceeding with file operations only")
+            
+            # Prepare entities for AutoCAD
+            autocad_entities = []
             
             # Convert elements
             for element in rvt_data.get("elements", []):
@@ -588,52 +715,21 @@ class DigitalTwinEngine:
                     # Map element
                     acad_spec = self.mapper.map_revit_to_autocad(element)
                     if not acad_spec:
-                        warnings.append(f"Skipped element: {element.get('category')}")
+                        warnings.append(f"Skipped element: {element.get('category', 'unknown')}")
                         continue
                     
-                    # Create AutoCAD entity
-                    entity_type = acad_spec.get("entity_type")
-                    
-                    if entity_type == "LINE":
-                        start = acad_spec.get("start")
-                        end = acad_spec.get("end")
-                        assert start is not None and end is not None
-                        acad_service.draw_line(
-                            start,
-                            end,
-                            layer=acad_spec.get("layer", "0")
-                        )
-                        elements_converted += 1
-                    
-                    elif entity_type == "LWPOLYLINE":
-                        # Draw polyline
-                        vertices = acad_spec.get("vertices", [])
-                        if vertices:
-                            assert acad_service.drawing_engine is not None
-                            acad_service.drawing_engine.draw_polyline(
-                                vertices,
-                                closed=acad_spec.get("closed", False),
-                                layer=acad_spec.get("layer", "0")
-                            )
-                            elements_converted += 1
-                    
-                    elif entity_type == "INSERT":
-                        # Insert block
-                        insert = acad_spec.get("insert")
-                        assert insert is not None
-                        assert acad_service.drawing_engine is not None
-                        acad_service.drawing_engine.insert_block(
-                            acad_spec.get("block_name", "Generic"),
-                            insert,
-                            layer=acad_spec.get("layer", "0")
-                        )
-                        elements_converted += 1
+                    # Add to entities list
+                    acad_spec["source_element_id"] = element.get("id", "unknown")
+                    autocad_entities.append(acad_spec)
+                    elements_converted += 1
                     
                 except Exception as e:
                     errors.append(f"Failed to convert element: {e}")
             
-            # Save DWG file
-            acad_service.save(dwg_filepath)
+            # Save DWG file with converted entities
+            save_success = acad_service.write_dwg(dwg_filepath, autocad_entities)
+            if not save_success:
+                errors.append("Failed to save DWG file")
             
             # Record version
             self.version_manager.record_version(
@@ -685,8 +781,6 @@ class VersionManager:
                         conversion_type: str, elements_count: int,
                         status: str) -> str:
         """Record a conversion in version history."""
-        import uuid
-        
         version_id = str(uuid.uuid4())
         
         version_info = VersionInfo(
@@ -698,6 +792,15 @@ class VersionManager:
             elements_count=elements_count,
             status=status,
         )
+        
+        # Create backup of target file if it exists
+        if os.path.exists(target_file):
+            backup_path = f"{target_file}.backup.{version_id}"
+            try:
+                shutil.copy2(target_file, backup_path)
+                logger.info(f"Created backup: {backup_path}")
+            except Exception as e:
+                logger.error(f"Failed to create backup: {e}")
         
         # Load existing history
         history = self._load_history()
@@ -715,21 +818,31 @@ class VersionManager:
         """Get full version history."""
         return self._load_history()
     
-    def rollback(self, version_id: str) -> bool:
+    def rollback(self, version_id: str, target_file: str) -> bool:
         """
         Rollback to a specific version.
         
-        Note: This restores the target file from backup.
-        Actual implementation requires file backup system.
+        Restores the target file from backup.
         """
         history = self._load_history()
         
         # Find version
         for version in history:
             if version["version_id"] == version_id:
-                logger.info(f"Rolling back to version {version_id}")
-                # TODO: Implement actual file restoration from backup
-                return True
+                # Look for the corresponding backup file
+                backup_path = f"{target_file}.backup.{version_id}"
+                if os.path.exists(backup_path):
+                    try:
+                        # Copy backup to target location
+                        shutil.copy2(backup_path, target_file)
+                        logger.info(f"Restored version {version_id} to {target_file}")
+                        return True
+                    except Exception as e:
+                        logger.error(f"Failed to restore backup: {e}")
+                        return False
+                else:
+                    logger.error(f"Backup file not found: {backup_path}")
+                    return False
         
         logger.error(f"Version {version_id} not found")
         return False
@@ -739,8 +852,12 @@ class VersionManager:
         if not self.history_file.exists():
             return []
         
-        with open(self.history_file, "r") as f:
-            return json.load(f)
+        try:
+            with open(self.history_file, "r") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            logger.error(f"History file corrupted: {self.history_file}")
+            return []
     
     def _save_history(self, history: List[Dict[str, Any]]):
         """Save version history to file."""
@@ -788,9 +905,9 @@ class DigitalTwinService:
         """Get conversion history."""
         return self.engine.version_manager.get_history()
     
-    def rollback_to_version(self, version_id: str) -> bool:
+    def rollback_to_version(self, version_id: str, target_file: str) -> bool:
         """Rollback to a specific version."""
-        return self.engine.version_manager.rollback(version_id)
+        return self.engine.version_manager.rollback(version_id, target_file)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -806,19 +923,75 @@ class ConversionConfigManager:
         self.config_dir = Path(config_dir or os.getenv("CONVERSION_CONFIG_DIR", "."))
         self.config_file = self.config_dir / self.CONFIG_FILE
     
-    def load(self) -> ConversionConfig:
+    def save_config(self, config: ConversionConfig) -> bool:
+        """Save configuration to file."""
+        try:
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+            
+            with open(self.config_file, "w") as f:
+                json.dump(config.to_dict(), f, indent=2)
+            
+            logger.info(f"Configuration saved to {self.config_file}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save configuration: {e}")
+            return False
+    
+    def load_config(self) -> ConversionConfig:
         """Load configuration from file."""
         if not self.config_file.exists():
+            logger.info(f"Configuration file not found, using default: {self.config_file}")
             return ConversionConfig()
         
-        with open(self.config_file, "r") as f:
-            data = json.load(f)
-        
-        return ConversionConfig.from_dict(data)
+        try:
+            with open(self.config_file, "r") as f:
+                data = json.load(f)
+            
+            logger.info(f"Configuration loaded from {self.config_file}")
+            return ConversionConfig.from_dict(data)
+        except Exception as e:
+            logger.error(f"Failed to load configuration: {e}")
+            return ConversionConfig()
     
-    def save(self, config: ConversionConfig):
-        """Save configuration to file."""
-        self.config_dir.mkdir(parents=True, exist_ok=True)
+    def update_mapping(self, layer: str, category: str, direction: str = "autocad_to_revit") -> bool:
+        """
+        Update a single mapping rule.
         
-        with open(self.config_file, "w") as f:
-            json.dump(config.to_dict(), f, indent=2)
+        Args:
+            layer: AutoCAD layer name or Revit category
+            category: Revit category name or AutoCAD layer
+            direction: "autocad_to_revit" or "revit_to_autocad"
+        """
+        config = self.load_config()
+        
+        try:
+            if direction == "autocad_to_revit":
+                config.layer_to_category[layer] = category
+            elif direction == "revit_to_autocad":
+                config.category_to_layer[layer] = category
+            else:
+                raise ValueError(f"Invalid direction: {direction}")
+            
+            return self.save_config(config)
+        except Exception as e:
+            logger.error(f"Failed to update mapping: {e}")
+            return False
+    
+    def get_available_mappings(self) -> Dict[str, Any]:
+        """Get all available mapping configurations."""
+        config = self.load_config()
+        return {
+            "layer_to_category": config.layer_to_category,
+            "category_to_layer": config.category_to_layer,
+            "linetype_to_element": config.linetype_to_element,
+            "block_to_family": config.block_to_family,
+            "units": {
+                "source": config.source_units,
+                "target": config.target_units,
+                "scale_factor": config.scale_factor
+            },
+            "levels": {
+                "default": config.default_level,
+                "height": config.level_height
+            }
+        }

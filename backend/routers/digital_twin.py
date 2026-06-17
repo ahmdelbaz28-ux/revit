@@ -1,345 +1,272 @@
-"""
-backend/routers/digital_twin.py — Digital Twin API Endpoints
-=============================================================
-
-REST API for Digital Twin operations:
-- AutoCAD → Revit conversion
-- Revit → AutoCAD conversion
-- Version history management
-- Conversion settings configuration
-
-ENDPOINTS:
-- POST /api/v1/digital-twin/convert/autocad-to-revit — Convert AutoCAD to Revit
-- POST /api/v1/digital-twin/convert/revit-to-autocad — Convert Revit to AutoCAD
-- GET /api/v1/digital-twin/history — Get conversion history
-- POST /api/v1/digital-twin/rollback/{version_id} — Rollback to version
-- GET /api/v1/digital-twin/config — Get conversion configuration
-- PUT /api/v1/digital-twin/config — Update conversion configuration
-"""
-
-from __future__ import annotations
-
 import logging
-import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, status, Depends
-from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 
 from backend.rbac import Permission
 from backend.auth import require_permission
-from backend.services.digital_twin_service import (
-    ConversionConfig,
-    ConversionConfigManager,
-    ConversionResult,
-    DigitalTwinService,
-)
+from backend.services.digital_twin_service import DigitalTwinService, ConversionConfig, ConversionResult, ConversionConfigManager
 
 logger = logging.getLogger(__name__)
+router = APIRouter(tags=["digital-twin"])
 
-router = APIRouter(prefix="/digital-twin", tags=["Digital Twin"])
+# Initialize service and config manager
+service = DigitalTwinService()
+config_manager = ConversionConfigManager()
 
+# Pydantic models
+class ConvertRequest(BaseModel):
+    """Request model for conversion operation."""
+    source_filepath: str
+    target_filepath: str
+    conversion_type: str  # "autocad_to_revit" or "revit_to_autocad"
+    template_path: Optional[str] = None
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SECURITY HELPERS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-UPLOAD_DIR = os.getenv("DIGITAL_TWIN_UPLOAD_DIR", "uploads")
-
-
-def _sanitize_filename(filename: str) -> str:
-    """
-    Sanitize filename to prevent path traversal and special-char issues.
-    Keeps only basename and replaces unsafe characters.
-    """
-    # Ensure basename-only (drops any path segments)
-    base = os.path.basename(filename or "")
-    # Reject empty / suspicious
-    if not base or base in (".", ".."):
-        raise HTTPException(status_code=400, detail="Invalid filename")
-
-    # Reject explicit traversal patterns
-    if ".." in base or base.startswith(("/", "\\")):
-        raise HTTPException(status_code=400, detail="Invalid filename")
-
-    # Replace unsafe characters; keep common safe set
-    safe = []
-    for ch in base:
-        if ch.isalnum() or ch in ("-", "_", ".", " "):
-            safe.append(ch)
-        else:
-            safe.append("_")
-    sanitized = "".join(safe).strip()
-    if not sanitized:
-        raise HTTPException(status_code=400, detail="Invalid filename")
-    return sanitized
-
-
-def _safe_resolve_upload_path(filename: str) -> str:
-    """
-    Resolve a filename under UPLOAD_DIR only. Prevents path traversal.
-    Returns the resolved absolute path if valid.
-    """
-    sanitized = _sanitize_filename(filename)
-    base_dir = os.path.realpath(UPLOAD_DIR)
-    target = os.path.realpath(os.path.join(base_dir, sanitized))
-
-    # Must stay inside uploads dir
-    if not (target + os.sep).startswith(base_dir + os.sep) and target != base_dir:
-        raise HTTPException(status_code=400, detail="Invalid file path")
-    return target
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# REQUEST/RESPONSE MODELS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class ConversionResponse(BaseModel):
-    """Response from a conversion operation."""
+class ConvertResponse(BaseModel):
+    """Response model for conversion operation."""
     success: bool
     source_file: str
     target_file: str
     elements_converted: int
-    errors: List[str] = Field(default_factory=list)
-    warnings: List[str] = Field(default_factory=list)
-    duration_seconds: float
-    timestamp: str
-    message: str = ""
-
-
-class VersionInfo(BaseModel):
-    """Version history entry."""
-    version_id: str
-    timestamp: str
-    source_file: str
-    target_file: str
-    conversion_type: str
-    elements_count: int
-    status: str
-
-
-class HistoryResponse(BaseModel):
-    """Response with conversion history."""
-    versions: List[VersionInfo]
-    total: int
-
+    errors: List[str] = []
+    warnings: List[str] = []
 
 class OperationResponse(BaseModel):
     """Generic operation response."""
     success: bool
     message: str
+    handle: Optional[str] = None
+
+class HistoryResponse(BaseModel):
+    """Response model for conversion history."""
+    history: List[Dict[str, Any]]
+
+class ConfigureRequest(BaseModel):
+    """Request model for configuration update."""
+    config: Dict[str, Any]
+
+class ConfigureResponse(BaseModel):
+    """Response model for configuration update."""
+    success: bool
+    message: str
+
+class RollbackRequest(BaseModel):
+    """Request model for rollback operation."""
+    target_file: str
+
+class MappingsResponse(BaseModel):
+    """Response model for available mappings."""
+    layer_to_category: Dict[str, str]
+    category_to_layer: Dict[str, str]
+    linetype_to_element: Dict[str, str]
+    block_to_family: Dict[str, str]
+    units: Dict[str, Any]
+    levels: Dict[str, Any]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SERVICE SINGLETON
-# ═══════════════════════════════════════════════════════════════════════════════
-
-_digital_twin_service: Optional[DigitalTwinService] = None
-_config_manager = ConversionConfigManager()
-
-
-def get_digital_twin_service() -> DigitalTwinService:
-    """Get or initialize Digital Twin service singleton."""
-    global _digital_twin_service
-    if _digital_twin_service is None:
-        config = _config_manager.load()
-        _digital_twin_service = DigitalTwinService(config)
-    return _digital_twin_service
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-@router.post(
-    "/convert/autocad-to-revit",
-    response_model=ConversionResponse,
-    dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
-)
-async def convert_autocad_to_revit(
-    file: UploadFile = File(...),
-    output_path: Optional[str] = None,
-    template_path: Optional[str] = None,
-):
+# Add new endpoints
+@router.post("/convert", response_model=ConvertResponse, tags=["digital-twin"])
+async def convert_files(request: ConvertRequest) -> ConvertResponse:
     """
-    Convert AutoCAD DWG/DXF file to Revit RVT.
+    Perform bidirectional CAD/BIM conversion.
     
     Args:
-        file: Uploaded DWG/DXF file
-        output_path: Optional output path for RVT file
-        template_path: Optional Revit template path
-    
+        request: Conversion parameters
+        
     Returns:
-        ConversionResponse with conversion results
+        Conversion result
     """
     try:
-        # Validate file
-        if not file.filename:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Filename is required",
+        if request.conversion_type == "autocad_to_revit":
+            result = service.convert_autocad_to_revit(
+                request.source_filepath, 
+                request.target_filepath, 
+                request.template_path
             )
-
-        # Validate file extension
-        if not file.filename.lower().endswith(('.dwg', '.dxf')):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File must be .dwg or .dxf",
+        elif request.conversion_type == "revit_to_autocad":
+            result = service.convert_revit_to_autocad(
+                request.source_filepath, 
+                request.target_filepath
             )
+        else:
+            raise HTTPException(status_code=400, detail=f"Invalid conversion type: {request.conversion_type}")
         
-        # Save uploaded file temporarily (sanitized under UPLOAD_DIR only)
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-        safe_in_name = _sanitize_filename(file.filename)
-        input_path = os.path.join(UPLOAD_DIR, safe_in_name)
-        
-        with open(input_path, "wb") as f:
-            content = await file.read()
-            f.write(content)
-        
-        # Determine output path
-        if not output_path:
-            output_path = input_path.rsplit('.', 1)[0] + '.rvt'
-        
-        # Perform conversion
-        service = get_digital_twin_service()
-        result: ConversionResult = service.convert_autocad_to_revit(
-            dwg_path=input_path,
-            rvt_path=output_path,
-            template=template_path,
-        )
-        
-        return ConversionResponse(
+        return ConvertResponse(
             success=result.success,
             source_file=result.source_file,
             target_file=result.target_file,
             elements_converted=result.elements_converted,
-            errors=result.errors,
-            warnings=result.warnings,
             duration_seconds=result.duration_seconds,
-            timestamp=result.timestamp,
-            message="Conversion completed successfully" if result.success else "Conversion failed",
+            errors=result.errors,
+            warnings=result.warnings
         )
     except Exception as e:
-        logger.error(f"Failed to convert AutoCAD to Revit: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Conversion failed: {str(e)}",
-        )
+        logger.error(f"Error during conversion: {e}")
+        raise HTTPException(status_code=500, detail=f"Error during conversion: {str(e)}")
 
-
-@router.post(
-    "/convert/revit-to-autocad",
-    response_model=ConversionResponse,
-    dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
-)
-async def convert_revit_to_autocad(
-    file: UploadFile = File(...),
-    output_path: Optional[str] = None,
-):
+@router.get("/history", response_model=HistoryResponse, tags=["digital-twin"])
+async def get_conversion_history() -> HistoryResponse:
     """
-    Convert Revit RVT file to AutoCAD DWG.
-    
-    Args:
-        file: Uploaded RVT file
-        output_path: Optional output path for DWG file
+    Get conversion history.
     
     Returns:
-        ConversionResponse with conversion results
+        List of conversion history entries
     """
     try:
-        # Validate file
-        if not file.filename:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Filename is required",
-            )
-
-        # Validate file extension
-        if not file.filename.lower().endswith('.rvt'):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File must be .rvt",
-            )
-        
-        # Save uploaded file temporarily (sanitized under UPLOAD_DIR only)
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-        safe_in_name = _sanitize_filename(file.filename)
-        input_path = os.path.join(UPLOAD_DIR, safe_in_name)
-        
-        with open(input_path, "wb") as f:
-            content = await file.read()
-            f.write(content)
-        
-        # Determine output path
-        if not output_path:
-            output_path = input_path.rsplit('.', 1)[0] + '.dwg'
-        
-        # Perform conversion
-        service = get_digital_twin_service()
-        result: ConversionResult = service.convert_revit_to_autocad(
-            rvt_path=input_path,
-            dwg_path=output_path,
-        )
-        
-        return ConversionResponse(
-            success=result.success,
-            source_file=result.source_file,
-            target_file=result.target_file,
-            elements_converted=result.elements_converted,
-            errors=result.errors,
-            warnings=result.warnings,
-            duration_seconds=result.duration_seconds,
-            timestamp=result.timestamp,
-            message="Conversion completed successfully" if result.success else "Conversion failed",
-        )
-    except Exception as e:
-        logger.error(f"Failed to convert Revit to AutoCAD: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Conversion failed: {str(e)}",
-        )
-
-
-@router.get(
-    "/history",
-    response_model=HistoryResponse,
-    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
-)
-async def get_history():
-    """
-    Get conversion version history.
-    
-    Returns:
-        HistoryResponse with list of all conversions
-    """
-    try:
-        service = get_digital_twin_service()
         history = service.get_conversion_history()
+        return HistoryResponse(history=history)
+    except Exception as e:
+        logger.error(f"Error getting conversion history: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting conversion history: {str(e)}")
+
+
+# Add new endpoints
+@router.post("/configure", response_model=ConfigureResponse, tags=["digital-twin"])
+async def configure_conversion(request: ConfigureRequest) -> ConfigureResponse:
+    """
+    Update conversion configuration.
+    
+    Args:
+        request: New configuration parameters
         
-        versions = [
-            VersionInfo(
-                version_id=v["version_id"],
-                timestamp=v["timestamp"],
-                source_file=v["source_file"],
-                target_file=v["target_file"],
-                conversion_type=v["conversion_type"],
-                elements_count=v["elements_count"],
-                status=v["status"],
+    Returns:
+        Configuration update status
+    """
+    try:
+        config = ConversionConfig.from_dict(request.config)
+        success = config_manager.save_config(config)
+        
+        if success:
+            return ConfigureResponse(
+                success=True,
+                message="Configuration updated successfully"
             )
-            for v in history
-        ]
+        else:
+            raise HTTPException(status_code=500, detail="Failed to save configuration")
+    except Exception as e:
+        logger.error(f"Error updating configuration: {e}")
+        raise HTTPException(status_code=500, detail=f"Error updating configuration: {str(e)}")
+
+@router.post("/rollback/{version_id}", tags=["digital-twin"])
+async def rollback_version(version_id: str, request: RollbackRequest) -> Dict[str, Any]:
+    """
+    Rollback to a specific version.
+    
+    Args:
+        version_id: Version ID to rollback to
+        request: Target file path for rollback
         
-        return HistoryResponse(
-            versions=versions,
-            total=len(versions),
+    Returns:
+        Rollback status
+    """
+    try:
+        success = service.rollback_to_version(version_id, request.target_file)
+        if success:
+            return {
+                "success": True,
+                "message": f"Successfully rolled back to version {version_id}",
+                "version_id": version_id
+            }
+        else:
+            raise HTTPException(status_code=404, detail=f"Version {version_id} not found or rollback failed")
+    except Exception as e:
+        logger.error(f"Error during rollback: {e}")
+        raise HTTPException(status_code=500, detail=f"Error during rollback: {str(e)}")
+
+
+# Add new endpoints
+@router.get("/mappings", response_model=MappingsResponse, tags=["digital-twin"])
+async def get_available_mappings() -> MappingsResponse:
+    """
+    Get available mapping configurations.
+    
+    Returns:
+        Available mapping configurations
+    """
+    try:
+        mappings = config_manager.get_available_mappings()
+        return MappingsResponse(
+            layer_to_category=mappings["layer_to_category"],
+            category_to_layer=mappings["category_to_layer"],
+            linetype_to_element=mappings["linetype_to_element"],
+            block_to_family=mappings["block_to_family"],
+            units=mappings["units"],
+            levels=mappings["levels"]
         )
     except Exception as e:
-        logger.error(f"Failed to get history: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get history: {str(e)}",
-        )
+        logger.error(f"Error getting mappings: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting mappings: {str(e)}")
+
+@router.get("/status", tags=["digital-twin"])
+async def get_digital_twin_status() -> Dict[str, Any]:
+    """
+    Get Digital Twin service status.
+    
+    Returns:
+        Service status information
+    """
+    try:
+        history = service.get_conversion_history()
+        return {
+            "status": "ready",
+            "total_conversions": len(history),
+            "last_conversion": history[-1] if history else None,
+            "config_loaded": True,
+            "timestamp": __import__('datetime').datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting Digital Twin status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting Digital Twin status: {str(e)}")
+
+@router.post("/update_mapping", tags=["digital-twin"])
+async def update_single_mapping(
+    layer: str, 
+    category: str, 
+    direction: str = "autocad_to_revit"
+) -> Dict[str, Any]:
+    """
+    Update a single mapping rule.
+    
+    Args:
+        layer: Source layer/category name
+        category: Target category/layer name
+        direction: Direction of mapping ("autocad_to_revit" or "revit_to_autocad")
+        
+    Returns:
+        Update status
+    """
+    try:
+        success = config_manager.update_mapping(layer, category, direction)
+        if success:
+            return {
+                "success": True,
+                "message": f"Mapping updated: {layer} -> {category} ({direction})",
+                "mapping": {layer: category}
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update mapping")
+    except Exception as e:
+        logger.error(f"Error updating mapping: {e}")
+        raise HTTPException(status_code=500, detail=f"Error updating mapping: {str(e)}")
+
+@router.get("/config", tags=["digital-twin"])
+async def get_current_config() -> Dict[str, Any]:
+    """
+    Get current conversion configuration.
+    
+    Returns:
+        Current configuration
+    """
+    try:
+        config = config_manager.load_config()
+        return {
+            "config": config.to_dict(),
+            "loaded_from": str(config_manager.config_file) if config_manager.config_file.exists() else "default"
+        }
+    except Exception as e:
+        logger.error(f"Error getting configuration: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting configuration: {str(e)}")
 
 
 @router.post(

@@ -167,14 +167,14 @@ export function SmartHelpDrawer({
         onClick={handleClose}
       />
 
-      <aside
+<aside
         role="dialog"
         aria-modal="true"
         aria-label={labels.title}
-        className={`fixed top-0 bottom-0 z-10 flex w-[min(58rem,94vw)] flex-col bg-slate-950 text-slate-100 shadow-2xl transition-transform duration-300 ${panelSideClasses} ${panelTransformClasses}`}
+        className={`fixed top-0 bottom-0 z-10 flex w-[min(58rem,94vw)] flex-col text-slate-100 shadow-2xl transition-transform duration-500 ease-out ${panelSideClasses} ${panelTransformClasses} bg-slate-950/90 backdrop-blur-2xl border-slate-700/50`}
       >
-        <header className="flex shrink-0 items-center gap-3 border-b border-slate-800 p-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
+        <header className="flex shrink-0 items-center gap-3 border-b border-slate-700/50 p-4 bg-slate-900/50 backdrop-blur-lg">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-400 shadow-lg shadow-red-500/10">
             <BookOpenText className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
@@ -185,7 +185,7 @@ export function SmartHelpDrawer({
             type="button"
             variant="ghost"
             size="icon"
-            className="text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+            className="text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 transition-all duration-200 hover:rotate-90"
             onClick={handleClose}
             aria-label={labels.close}
           >
@@ -255,63 +255,63 @@ export function SmartHelpDrawer({
               )}
             </div>
 
-            {results.length === 0 ? (
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-200">
-                <AlertTriangle className="mb-2 h-4 w-4" />
-                {labels.noResults}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {results.map(({ topic, matchedKeywords }) => {
-                  const text = getTopicText(topic, isRtl ? 'rtl' : 'ltr');
+{results.length === 0 ? (
+               <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-200 backdrop-blur-sm">
+                 <AlertTriangle className="mb-2 h-4 w-4" />
+                 {labels.noResults}
+               </div>
+             ) : (
+               <div className="space-y-2">
+                 {results.map(({ topic, matchedKeywords }) => {
+                   const text = getTopicText(topic, isRtl ? 'rtl' : 'ltr');
 
-                  return (
-                    <button
-                      key={topic.id}
-                      type="button"
-                      className={`w-full rounded-xl border p-3 text-left transition-colors ${
-                        displayedTopic?.id === topic.id
-                          ? 'border-red-500/60 bg-red-500/10'
-                          : 'border-slate-800 bg-slate-900/60 hover:border-slate-600 hover:bg-slate-900'
-                      }`}
-                      onClick={() => openHelp(topic.id)}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-medium text-slate-100">{text.title}</span>
-                        <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-500 rtl:rotate-180" />
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-slate-400">{text.description}</p>
-                      {matchedKeywords.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {matchedKeywords.slice(0, 3).map((keyword) => (
-                            <span
-                              key={keyword}
-                              className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300"
-                            >
-                              {keyword}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                   return (
+                     <button
+                       key={topic.id}
+                       type="button"
+                       className={`w-full rounded-xl border p-3 text-left transition-all duration-200 ${
+                         displayedTopic?.id === topic.id
+                           ? 'border-red-500/60 bg-red-500/10 shadow-md shadow-red-500/10'
+                           : 'border-slate-800/50 bg-slate-900/60 hover:border-slate-600/50 hover:bg-slate-900/80 hover:translate-x-1'
+                       }`}
+                       onClick={() => openHelp(topic.id)}
+                     >
+                       <div className="flex items-start justify-between gap-2">
+                         <span className="font-medium text-slate-100">{text.title}</span>
+                         <ChevronRight className={`mt-0.5 h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 rtl:rotate-180 ${displayedTopic?.id === topic.id ? 'text-red-400' : ''}`} />
+                       </div>
+                       <p className="mt-1 line-clamp-2 text-xs text-slate-400">{text.description}</p>
+                       {matchedKeywords.length > 0 && (
+                         <div className="mt-2 flex flex-wrap gap-1">
+                           {matchedKeywords.slice(0, 3).map((keyword) => (
+                             <span
+                               key={keyword}
+                               className="rounded-full bg-slate-800/70 px-2 py-0.5 text-[10px] text-slate-300"
+                             >
+                               {keyword}
+                             </span>
+                           ))}
+                         </div>
+                       )}
+                     </button>
+                   );
+                 })}
+               </div>
+             )}
           </nav>
 
           <section className="min-h-0 overflow-y-auto p-5">
             {displayedTopic && topicText ? (
-              <article className="space-y-5">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+              <article className="space-y-5 animate-in slide-in-from-right-4 duration-500">
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/70 p-5 shadow-xl shadow-slate-950/20">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-300">
+                        <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-300 shadow-sm shadow-red-500/10">
                           {getCategoryLabel(displayedTopic.category, isRtl ? 'rtl' : 'ltr')}
                         </span>
                         {displayedTopic.navigateTo && (
-                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 shadow-sm shadow-emerald-500/10">
                             {labels.navigationAvailable}
                           </span>
                         )}
@@ -322,7 +322,7 @@ export function SmartHelpDrawer({
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/50 p-5 shadow-lg shadow-slate-950/10">
                   <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                     {labels.steps}
@@ -340,7 +340,7 @@ export function SmartHelpDrawer({
                 </div>
 
                 {topicText.warnings.length > 0 && (
-                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5">
+                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 shadow-lg shadow-amber-950/10">
                     <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-100">
                       <AlertTriangle className="h-4 w-4" />
                       {labels.warnings}
@@ -357,7 +357,7 @@ export function SmartHelpDrawer({
                 )}
 
                 {relatedTopics.length > 0 && (
-                  <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+                  <div className="rounded-2xl border border-slate-700/50 bg-slate-900/50 p-5 shadow-lg shadow-slate-950/10">
                     <h4 className="mb-3 text-sm font-semibold">{labels.relatedTopics}</h4>
                     <div className="flex flex-wrap gap-2">
                       {relatedTopics.map((topic) => {
@@ -367,7 +367,7 @@ export function SmartHelpDrawer({
                           <button
                             key={topic.id}
                             type="button"
-                            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-left text-xs text-slate-300 hover:border-red-500/50 hover:text-slate-100"
+                            className="rounded-lg border border-slate-700/50 bg-slate-950/60 px-3 py-2 text-left text-xs text-slate-300 transition-all duration-200 hover:border-red-500/50 hover:bg-red-500/5 hover:text-slate-100 hover:scale-105"
                             onClick={() => openHelp(topic.id)}
                           >
                             {relatedText.title}
@@ -382,7 +382,7 @@ export function SmartHelpDrawer({
                   {displayedTopic.navigateTo && (
                     <Button
                       type="button"
-                      className="bg-red-600 text-white hover:bg-red-700"
+                      className="bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all duration-200 hover:shadow-red-500/30"
                       onClick={handleNavigate}
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -392,7 +392,7 @@ export function SmartHelpDrawer({
                 </div>
               </article>
             ) : (
-              <div className="flex h-full flex-col items-center justify-center text-center text-slate-400">
+              <div className="flex h-full flex-col items-center justify-center text-center text-slate-400 animate-in fade-in duration-300">
                 <BookOpenText className="mb-3 h-10 w-10 text-slate-600" />
                 <p className="text-sm">{labels.emptyState}</p>
               </div>

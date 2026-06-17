@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, Server, Database, Clock, CheckCircle2, XCircle, AlertTriangle, Calculator } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Activity, Server, Database, Clock, CheckCircle2, XCircle, AlertTriangle, Calculator, Folder } from 'lucide-react';
 import { useHealth, useProjects, useDevices } from '@/hooks/useApi';
 
 export function DashboardPage() {

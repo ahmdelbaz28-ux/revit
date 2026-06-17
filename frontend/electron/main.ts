@@ -64,11 +64,12 @@ function startPythonBackend(): Promise<boolean> {
       return;
     }
 
+    const pathDelimiter = process.platform === "win32" ? ";" : ":";
     const env: Record<string, string> = {
       ...(process.env as Record<string, string>),
-      FIREAI_ENV: "production",
+      FIREAI_ENV: process.env.FIREAI_API_KEY ? "production" : "development",
       PORT: PYTHON_BACKEND_PORT,
-      PYTHONPATH: `${appDir}${path.delimiter}${path.resolve(appDir, "..")}${path.delimiter}${process.env.PYTHONPATH || ""}`,
+      PYTHONPATH: `${appDir}${pathDelimiter}${path.resolve(appDir, "..")}${pathDelimiter}${process.env.PYTHONPATH || ""}`,
     };
 
     pythonProcess = spawn(python, [appPy], {

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -261,13 +262,17 @@ export function ProjectsPage() {
 
         {/* Empty State */}
         {!projectsLoading && (!filteredProjects || filteredProjects.length === 0) && (
-          <Card className="border-slate-700 bg-slate-800/80">
-            <CardContent className="py-12 text-center">
-              <Folder className="h-12 w-12 mx-auto text-slate-600" />
-              <h3 className="text-lg font-medium text-slate-300 mt-2">{t('projects.noProjects')}</h3>
-              <p className="text-slate-500 mt-1">{t('projects.createFirst')}</p>
-            </CardContent>
-          </Card>
+          <div className="py-12">
+            <EmptyState
+              icon={<Folder className="h-12 w-12" />}
+              title={t('projects.noProjects')}
+              description={t('projects.createFirst')}
+              action={{
+                label: t('projects.newProject'),
+                onClick: () => setShowCreateForm(true),
+              }}
+            />
+          </div>
         )}
 
         {/* Projects List */}

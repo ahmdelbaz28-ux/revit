@@ -1,112 +1,130 @@
-import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Flame, Search, Settings, CircleHelp, ShieldCheck, AlertCircle, Languages } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useHealth } from '@/hooks/useApi';
-import { useSmartHelp } from '@/hooks/useSmartHelp';
-import { NAV_ITEMS } from '@/components/layout/Sidebar';
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Search, HelpCircle, Settings, Globe, Flame } from "lucide-react";
 
-export function TopBar() {
-  const { t, i18n } = useTranslation();
+interface TopBarProps {
+  isConnected: boolean;
+  onHelpOpen: () => void;
+  currentLanguage: string;
+  onLanguageChange: (lang: string) => void;
+}
+
+const routeLabels: Record<string, string> = {
+  "/": "Dashboard",
+  "/projects": "Projects",
+  "/engineering": "Engineering",
+  "/fire-alarm-designer": "Fire Alarm Designer",
+  "/digital-twin": "Digital Twin",
+  "/reports": "Reports",
+  "/elements": "Elements",
+  "/connections": "Connections",
+  "/conflicts": "Conflicts",
+  "/settings": "Settings",
+};
+
+const TopBar: React.FC<TopBarProps> = ({
+  isConnected,
+  onHelpOpen,
+  currentLanguage,
+  onLanguageChange,
+}) => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { data: health, loading, connected, error } = useHealth();
-  const { openHelp, openSearch } = useSmartHelp();
-  const currentRoute = NAV_ITEMS.find((item) => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`));
-  const isRtl = document.documentElement.dir === 'rtl' || i18n.language.startsWith('ar');
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
 
-  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    i18n.changeLanguage(event.target.value);
-  };
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const pageName = routeLabels[location.pathname] || "FireAI";
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-slate-800 bg-slate-950/90 px-4 backdrop-blur">
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg shadow-red-950/30">
-          <Flame className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-slate-100">FireAI Digital Twin</div>
-          <div className="truncate text-[11px] text-slate-500">
-            {currentRoute ? t(currentRoute.labelKey) : t('help.unknownRoute')}
+    <header className="h-12 bg-slate-900/90 backdrop-blur-sm border-b border-slate-700/50 flex items-center px-4 gap-4 shrink-0">
+      <Flame className="h-5 w-5 text-orange-500 shrink-0 transition-transform duration-300 hover:scale-110" />
+      <span className="text-white font-semibold text-sm tracking-wide">
+        FireAI
+      </span>
+
+      <div className="h-5 w-px bg-slate-700/50" />
+
+      <span className="text-slate-300 text-sm relative pb-1">
+        {pageName}
+        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-red-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left animate-pulse" />
+      </span>
+
+      <div className="flex-1" />
+
+      <div className="flex items-center gap-1.5">
+        <span
+          className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${isConnected ? "bg-green-500 shadow-green-500/50 shadow-md animate-pulse" : "bg-red-500 shadow-red-500/50 shadow-md"}`}
+          title={isConnected ? "Connected" : "Disconnected"}
+        />
+        <span className="text-slate-400 text-xs">
+          {isConnected ? "Online" : "Offline"}
+        </span>
+      </div>
+
+      <button
+        className="p-1.5 text-slate-400 hover:text-slate-200 transition-all duration-200 hover:scale-110"
+        aria-label="Search"
+      >
+        <Search className="h-4 w-4" />
+      </button>
+
+      <button
+        onClick={onHelpOpen}
+        className="p-1.5 text-slate-400 hover:text-slate-200 transition-all duration-200 hover:scale-110"
+        aria-label="Help"
+        data-onboarding="help-button"
+      >
+        <HelpCircle className="h-4 w-4" />
+      </button>
+
+      <Link
+        to="/settings"
+        className="p-1.5 text-slate-400 hover:text-slate-200 transition-all duration-200 hover:scale-110"
+        aria-label="Settings"
+      >
+        <Settings className="h-4 w-4" />
+      </Link>
+
+      <div className="relative" ref={langRef}>
+        <button
+          onClick={() => setLangOpen(!langOpen)}
+          className="flex items-center gap-1 px-1.5 py-1 text-slate-400 hover:text-slate-200 transition-all duration-200 hover:scale-105 text-xs"
+        >
+          <Globe className="h-3.5 w-3.5" />
+          {currentLanguage.toUpperCase()}
+        </button>
+        {langOpen && (
+          <div className="absolute right-0 top-full mt-1 bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded shadow-lg z-50">
+            {["en", "ar"].map((lang) => (
+              <button
+                key={lang}
+                onClick={() => {
+                  onLanguageChange(lang);
+                  setLangOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-1.5 text-xs transition-all duration-200 ${
+                  currentLanguage === lang
+                    ? "text-orange-400 bg-orange-500/10"
+                    : "text-slate-300 hover:bg-slate-700/50"
+                }`}
+              >
+                {lang === "en" ? "English" : "العربية"}
+              </button>
+            ))}
           </div>
-        </div>
-      </div>
-
-      <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex">
-        <div className="flex min-w-0 items-center gap-2 rounded-full border border-slate-800 bg-slate-900/70 px-3 py-1.5 text-xs text-slate-400">
-          <ShieldCheck className="h-3.5 w-3.5 text-red-400" />
-          <span className="truncate">{t('topBar.contextPlaceholder')}</span>
-        </div>
-      </div>
-
-      <div className={isRtl ? 'ml-auto flex items-center gap-2' : 'ml-auto flex items-center gap-2'}>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-          title={t('help.openSearchTooltip')}
-          aria-label={t('help.openSearchTooltip')}
-          onClick={() => openSearch()}
-        >
-          <Search className="h-4 w-4" />
-        </Button>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-          title={t('help.openHelpTooltip')}
-          aria-label={t('help.openHelpTooltip')}
-          onClick={() => openHelp()}
-        >
-          <CircleHelp className="h-4 w-4" />
-        </Button>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-          title={t('common.settings')}
-          aria-label={t('common.settings')}
-          onClick={() => navigate('/settings')}
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-
-        <div className="flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/70 px-2 py-1">
-          {loading ? (
-            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-          ) : connected ? (
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          ) : (
-            <AlertCircle className="h-3.5 w-3.5 text-red-400" />
-          )}
-          <Badge
-            variant={connected ? 'default' : error || !health ? 'destructive' : 'secondary'}
-            className={connected ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}
-          >
-            {loading ? t('common.loading') : connected ? t('common.online') : t('common.offline')}
-          </Badge>
-        </div>
-
-        <div className="relative">
-          <Languages className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
-          <select
-            value={i18n.language}
-            onChange={handleLanguageChange}
-            className="h-8 rounded-full border border-slate-700 bg-slate-900 pl-7 pr-7 text-xs text-slate-200 outline-none focus:border-red-500/60"
-            aria-label={t('settings.language')}
-          >
-            <option value="en">EN</option>
-            <option value="ar">عربي</option>
-          </select>
-        </div>
+        )}
       </div>
     </header>
   );
-}
+};
+
+export default TopBar;

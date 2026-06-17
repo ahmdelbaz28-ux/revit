@@ -1,550 +1,381 @@
 """
-backend/routers/revit.py — Revit API Endpoints
-===============================================
+backend/routers/revit.py — Revit Integration Endpoints
+=====================================================
 
-REST API for Revit operations:
-- Connection management
-- RVT file reading
-- Element creation (walls, floors, doors, windows)
-- Element modification
-- Configuration management
+REST API endpoints for Revit integration operations.
+Provides connection, file operations, and element operations.
 
 ENDPOINTS:
-- GET /api/v1/revit/status — Check Revit connection status
-- POST /api/v1/revit/connect — Connect to Revit
-- POST /api/v1/revit/disconnect — Disconnect from Revit
-- GET /api/v1/revit/read — Read current Revit document
-- POST /api/v1/revit/create/wall — Create a wall
-- POST /api/v1/revit/create/floor — Create a floor
-- POST /api/v1/revit/create/door — Place a door
-- POST /api/v1/revit/create/window — Place a window
-- POST /api/v1/revit/modify — Modify element
-- DELETE /api/v1/revit/element/{element_id} — Delete element
-- GET /api/v1/revit/config — Get configuration
-- PUT /api/v1/revit/config — Update configuration
+- POST /api/revit/connect - Connect to Revit application
+- POST /api/revit/read_rvt - Read elements from RVT file
+- POST /api/revit/write_rvt - Write elements to RVT file
+- POST /api/revit/create_wall - Create wall in Revit
+- POST /api/revit/create_floor - Create floor in Revit
+- GET /api/revit/status - Get connection status
+- POST /api/revit/save - Save current document
 """
 
-from __future__ import annotations
-
+import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from pydantic import BaseModel
 
-from backend.services.revit_service import (
-    RevitConfig,
-    RevitConfigManager,
-    RevitService,
-)
+from backend.services.revit_service import RevitService
 
 logger = logging.getLogger(__name__)
+router = APIRouter()
+service = RevitService()
 
-router = APIRouter(prefix="/revit", tags=["Revit"])
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# REQUEST/RESPONSE MODELS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class ConnectionStatus(BaseModel):
-    """Revit connection status."""
-    connected: bool
-    version: Optional[str] = None
-    document: Optional[str] = None
-    message: str = ""
-
-
+# Pydantic models
 class ConnectRequest(BaseModel):
-    """Request to connect to Revit."""
-    pass
+    """Request model for Revit connection."""
+    pass  # Revit connection doesn't typically require parameters
 
-
-class CreateWallRequest(BaseModel):
-    """Request to create a wall."""
-    start_x: float
-    start_y: float
-    start_z: float = 0.0
-    end_x: float
-    end_y: float
-    end_z: float = 0.0
-    height: float
-    level: str = Field(default="Level 1")
-    wall_type: str = Field(default="Generic - 200mm")
-
-
-class CreateFloorRequest(BaseModel):
-    """Request to create a floor."""
-    boundary_points: List[Tuple[float, float, float]]
-    level: str = Field(default="Level 1")
-    floor_type: str = Field(default="Generic 150mm")
-
-
-class PlaceDoorRequest(BaseModel):
-    """Request to place a door."""
-    wall_id: int
-    location_x: float
-    location_y: float
-    location_z: float
-    door_type: str = Field(default="Single-Flush")
-
-
-class PlaceWindowRequest(BaseModel):
-    """Request to place a window."""
-    wall_id: int
-    location_x: float
-    location_y: float
-    location_z: float
-    window_type: str = Field(default="Fixed")
-
-
-class ModifyElementRequest(BaseModel):
-    """Request to modify an element."""
-    element_id: int
-    parameters: Dict[str, Any]
-
-
-class ReadDocumentResponse(BaseModel):
-    """Response from reading a Revit document."""
-    filename: str
-    elements: List[Dict[str, Any]]
-    levels: List[Dict[str, Any]]
-    views: List[Dict[str, Any]]
-    element_count: int
-
-
-class OperationResponse(BaseModel):
-    """Generic operation response."""
+class ConnectResponse(BaseModel):
+    """Response model for Revit connection."""
     success: bool
     message: str
-    element_id: Optional[int] = None
+    connected: bool
 
+class ReadRvtRequest(BaseModel):
+    """Request model for reading RVT file."""
+    filepath: str
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SERVICE SINGLETON
-# ═══════════════════════════════════════════════════════════════════════════════
+class WriteRvtRequest(BaseModel):
+    """Request model for writing RVT file."""
+    filepath: str
+    elements: List[Dict[str, Any]]
 
-_revit_service: Optional[RevitService] = None
-_config_manager = RevitConfigManager()
+class CreateWallRequest(BaseModel):
+    """Request model for creating a wall."""
+    start_point: List[float]
+    end_point: List[float]
+    height: float = 3000.0
+    level: str = "Level 1"
 
+class CreateFloorRequest(BaseModel):
+    """Request model for creating a floor."""
+    boundary: List[List[float]]
+    level: str = "Level 1"
 
-def get_revit_service() -> RevitService:
-    """Get or initialize Revit service singleton."""
-    global _revit_service
-    if _revit_service is None:
-        config = _config_manager.load()
-        _revit_service = RevitService(config)
-    return _revit_service
+class CreateColumnRequest(BaseModel):
+    """Request model for creating a column."""
+    location: List[float]
+    height: float = 3000.0
+    level: str = "Level 1"
 
+class StatusResponse(BaseModel):
+    """Response model for connection status."""
+    connected: bool
+    message: str
+    document_info: Optional[Dict[str, Any]] = None
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════════
+class SaveRequest(BaseModel):
+    """Request model for saving document."""
+    filepath: str
 
-@router.get("/status", response_model=ConnectionStatus)
-async def get_status():
+class GetElementsRequest(BaseModel):
+    """Request model for getting elements."""
+    category_filter: Optional[str] = None
+
+# Endpoints
+@router.post("/connect", response_model=ConnectResponse, tags=["revit"])
+async def connect_to_revit(request: ConnectRequest = None) -> ConnectResponse:
     """
-    Check Revit connection status.
+    Connect to Revit application.
     
+    Args:
+        request: Connection parameters (currently unused)
+        
     Returns:
-        ConnectionStatus with connected flag, version, and document info
+        Connection status response
     """
     try:
-        service = get_revit_service()
-        
-        if service.connection.is_connected:
-            return ConnectionStatus(
-                connected=True,
-                version=service.connection.doc.Application.VersionNumber if service.connection.is_connected else None,
-                document=service.connection.doc.Title if service.connection.is_connected else None,
-                message="Connected to Revit",
-            )
+        success = service.connect()
+        if success:
+            message = "Successfully connected to Revit environment"
         else:
-            return ConnectionStatus(
-                connected=False,
-                message="Not connected to Revit",
-            )
-    except Exception as e:
-        logger.error(f"Failed to get status: {e}")
-        return ConnectionStatus(
-            connected=False,
-            message=f"Error: {str(e)}",
+            message = "Failed to connect to Revit environment"
+            
+        return ConnectResponse(
+            success=success,
+            message=message,
+            connected=service.connected
         )
+    except Exception as e:
+        logger.error(f"Error connecting to Revit: {e}")
+        raise HTTPException(status_code=503, detail=f"Failed to connect to Revit: {str(e)}")
 
-
-@router.post("/connect", response_model=ConnectionStatus)
-async def connect(request: ConnectRequest):
+@router.post("/disconnect", response_model=ConnectResponse, tags=["revit"])
+async def disconnect_from_revit() -> ConnectResponse:
     """
-    Connect to Revit.
+    Disconnect from Revit application.
     
     Returns:
-        ConnectionStatus with connection details
+        Disconnection status response
     """
     try:
-        service = get_revit_service()
-        
-        if not service.initialize():
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to connect to Revit. Is Revit installed and running?",
-            )
-        
-        return ConnectionStatus(
-            connected=True,
-            version=service.connection.doc.Application.VersionNumber,
-            document=service.connection.doc.Title,
-            message="Successfully connected to Revit",
+        success = service.disconnect()
+        if success:
+            message = "Successfully disconnected from Revit"
+        else:
+            message = "Failed to disconnect from Revit"
+            
+        return ConnectResponse(
+            success=success,
+            message=message,
+            connected=service.connected
         )
     except Exception as e:
-        logger.error(f"Failed to connect: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Connection failed: {str(e)}",
-        )
+        logger.error(f"Error disconnecting from Revit: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to disconnect from Revit: {str(e)}")
 
-
-@router.post("/disconnect", response_model=OperationResponse)
-async def disconnect():
+@router.post("/read_rvt", tags=["revit"])
+async def read_rvt_file(request: ReadRvtRequest) -> Dict[str, Any]:
     """
-    Disconnect from Revit.
+    Read elements from an RVT file.
     
+    Args:
+        request: File path to read
+        
     Returns:
-        OperationResponse with success status
+        Elements data from the RVT file
     """
     try:
-        service = get_revit_service()
-        service.shutdown()
-        
-        return OperationResponse(
-            success=True,
-            message="Successfully disconnected from Revit",
-        )
+        result = service.read_rvt(request.filepath)
+        if not result.get("success", False):
+            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error reading file"))
+        return result
+    except FileNotFoundError:
+        logger.error(f"RVT file not found: {request.filepath}")
+        raise HTTPException(status_code=404, detail=f"RVT file not found: {request.filepath}")
     except Exception as e:
-        logger.error(f"Failed to disconnect: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Disconnect failed: {str(e)}",
-        )
+        logger.error(f"Error reading RVT file: {e}")
+        raise HTTPException(status_code=500, detail=f"Error reading RVT file: {str(e)}")
 
-
-@router.get("/read", response_model=ReadDocumentResponse)
-async def read_document():
+@router.post("/write_rvt", tags=["revit"])
+async def write_rvt_file(request: WriteRvtRequest) -> Dict[str, Any]:
     """
-    Read current Revit document.
+    Write elements to an RVT file.
     
+    Args:
+        request: File path and elements to write
+        
     Returns:
-        ReadDocumentResponse with elements, levels, and views
+        Success status
     """
     try:
-        service = get_revit_service()
-        
-        if not service.connection.is_connected:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not connected to Revit. Call /connect first.",
-            )
-        
-        data = service.read_current_document()
-        
-        return ReadDocumentResponse(
-            filename=data.get("filename", "Unknown"),
-            elements=data.get("elements", []),
-            levels=data.get("levels", []),
-            views=data.get("views", []),
-            element_count=len(data.get("elements", [])),
-        )
+        success = service.write_rvt(request.filepath, request.elements)
+        if success:
+            return {"success": True, "message": f"Successfully wrote to {request.filepath}"}
+        else:
+            raise HTTPException(status_code=500, detail=f"Failed to write to {request.filepath}")
     except Exception as e:
-        logger.error(f"Failed to read document: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Read failed: {str(e)}",
-        )
+        logger.error(f"Error writing RVT file: {e}")
+        raise HTTPException(status_code=500, detail=f"Error writing RVT file: {str(e)}")
 
-
-@router.post("/create/wall", response_model=OperationResponse)
-async def create_wall(request: CreateWallRequest):
+@router.post("/create_wall", tags=["revit"])
+async def create_wall(request: CreateWallRequest) -> Dict[str, Any]:
     """
     Create a wall in Revit.
     
     Args:
-        request: CreateWallRequest with start/end points, height, and type
-    
+        request: Wall creation parameters
+        
     Returns:
-        OperationResponse with element ID
+        Result of the operation
     """
     try:
-        service = get_revit_service()
-        
-        if not service.connection.is_connected:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not connected to Revit. Call /connect first.",
-            )
-        
-        element_id = service.create_wall(
-            start=(request.start_x, request.start_y, request.start_z),
-            end=(request.end_x, request.end_y, request.end_z),
+        if not service.connected:
+            raise HTTPException(status_code=503, detail="Revit not connected")
+            
+        wall_id = service.create_wall(
+            start_point=request.start_point,
+            end_point=request.end_point,
             height=request.height,
-            level=request.level,
-            wall_type=request.wall_type,
+            level=request.level
         )
         
-        return OperationResponse(
-            success=True,
-            message=f"Wall created with ID: {element_id}",
-            element_id=element_id,
-        )
+        if wall_id:
+            return {
+                "success": True, 
+                "message": "Wall created successfully",
+                "element_id": wall_id
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create wall")
     except Exception as e:
-        logger.error(f"Failed to create wall: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Create failed: {str(e)}",
-        )
+        logger.error(f"Error creating wall: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating wall: {str(e)}")
 
-
-@router.post("/create/floor", response_model=OperationResponse)
-async def create_floor(request: CreateFloorRequest):
+@router.post("/create_floor", tags=["revit"])
+async def create_floor(request: CreateFloorRequest) -> Dict[str, Any]:
     """
     Create a floor in Revit.
     
     Args:
-        request: CreateFloorRequest with boundary points, level, and type
-    
+        request: Floor creation parameters
+        
     Returns:
-        OperationResponse with element ID
+        Result of the operation
     """
     try:
-        service = get_revit_service()
-        
-        if not service.connection.is_connected:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not connected to Revit. Call /connect first.",
-            )
-        
-        element_id = service.create_floor(
-            boundary=request.boundary_points,
-            level=request.level,
-            floor_type=request.floor_type,
+        if not service.connected:
+            raise HTTPException(status_code=503, detail="Revit not connected")
+            
+        floor_id = service.create_floor(
+            boundary=request.boundary,
+            level=request.level
         )
         
-        return OperationResponse(
-            success=True,
-            message=f"Floor created with ID: {element_id}",
-            element_id=element_id,
-        )
+        if floor_id:
+            return {
+                "success": True,
+                "message": "Floor created successfully",
+                "element_id": floor_id
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create floor")
     except Exception as e:
-        logger.error(f"Failed to create floor: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Create failed: {str(e)}",
-        )
+        logger.error(f"Error creating floor: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating floor: {str(e)}")
 
-
-@router.post("/create/door", response_model=OperationResponse)
-async def create_door(request: PlaceDoorRequest):
+@router.post("/create_column", tags=["revit"])
+async def create_column(request: CreateColumnRequest) -> Dict[str, Any]:
     """
-    Place a door in Revit.
+    Create a column in Revit.
     
     Args:
-        request: PlaceDoorRequest with wall ID, location, and door type
-    
+        request: Column creation parameters
+        
     Returns:
-        OperationResponse with element ID
+        Result of the operation
     """
     try:
-        service = get_revit_service()
-        
-        if not service.connection.is_connected:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not connected to Revit. Call /connect first.",
-            )
-        
-        element_id = service.place_door(
-            wall_id=request.wall_id,
-            location=(request.location_x, request.location_y, request.location_z),
-            door_type=request.door_type,
+        if not service.connected:
+            raise HTTPException(status_code=503, detail="Revit not connected")
+            
+        column_id = service.create_column(
+            location=request.location,
+            height=request.height,
+            level=request.level
         )
         
-        return OperationResponse(
-            success=True,
-            message=f"Door placed with ID: {element_id}",
-            element_id=element_id,
+        if column_id:
+            return {
+                "success": True,
+                "message": "Column created successfully",
+                "element_id": column_id
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create column")
+    except Exception as e:
+        logger.error(f"Error creating column: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating column: {str(e)}")
+
+@router.get("/status", response_model=StatusResponse, tags=["revit"])
+async def get_revit_status() -> StatusResponse:
+    """
+    Get the current Revit connection status.
+    
+    Returns:
+        Connection status and document info
+    """
+    try:
+        doc_info = {}
+        if service.connected:
+            doc_info = service.get_document_info()
+        
+        return StatusResponse(
+            connected=service.connected,
+            message="Revit service status" if service.connected else "Revit not connected",
+            document_info=doc_info if doc_info else None
         )
     except Exception as e:
-        logger.error(f"Failed to place door: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Place failed: {str(e)}",
-        )
+        logger.error(f"Error getting Revit status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting Revit status: {str(e)}")
 
-
-@router.post("/create/window", response_model=OperationResponse)
-async def create_window(request: PlaceWindowRequest):
+@router.post("/save", tags=["revit"])
+async def save_document(request: SaveRequest) -> Dict[str, Any]:
     """
-    Place a window in Revit.
+    Save the current Revit document.
     
     Args:
-        request: PlaceWindowRequest with wall ID, location, and window type
-    
+        request: File path to save to
+        
     Returns:
-        OperationResponse with element ID
+        Success status
     """
     try:
-        service = get_revit_service()
-        
-        if not service.connection.is_connected:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not connected to Revit. Call /connect first.",
-            )
-        
-        assert service.modeling_engine is not None
-        element_id = service.modeling_engine.place_window(
-            wall_id=request.wall_id,
-            location=(request.location_x, request.location_y, request.location_z),
-            window_type=request.window_type,
-        )
-        
-        return OperationResponse(
-            success=True,
-            message=f"Window placed with ID: {element_id}",
-            element_id=element_id,
-        )
+        if not service.connected:
+            raise HTTPException(status_code=503, detail="Revit not connected")
+            
+        success = service.save(request.filepath)
+        if success:
+            return {"success": True, "message": f"Document saved to {request.filepath}"}
+        else:
+            raise HTTPException(status_code=500, detail=f"Failed to save document to {request.filepath}")
     except Exception as e:
-        logger.error(f"Failed to place window: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Place failed: {str(e)}",
-        )
+        logger.error(f"Error saving document: {e}")
+        raise HTTPException(status_code=500, detail=f"Error saving document: {str(e)}")
 
-
-@router.post("/modify", response_model=OperationResponse)
-async def modify_element(request: ModifyElementRequest):
+@router.post("/get_elements", tags=["revit"])
+async def get_elements(request: GetElementsRequest) -> Dict[str, Any]:
     """
-    Modify a Revit element.
+    Get all elements in the document, optionally filtered by category.
     
     Args:
-        request: ModifyElementRequest with element ID and parameters
-    
+        request: Category filter parameters
+        
     Returns:
-        OperationResponse with success status
+        List of elements
     """
     try:
-        service = get_revit_service()
-        
-        if not service.connection.is_connected:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not connected to Revit. Call /connect first.",
-            )
-        
-        assert service.modeling_engine is not None
-        success = service.modeling_engine.modify_element(
-            element_id=request.element_id,
-            **request.parameters,
-        )
-        
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to modify element {request.element_id}",
-            )
-        
-        return OperationResponse(
-            success=True,
-            message=f"Element {request.element_id} modified successfully",
-        )
+        if not service.connected:
+            raise HTTPException(status_code=503, detail="Revit not connected")
+            
+        elements = service.get_all_elements(request.category_filter)
+        return {
+            "success": True,
+            "elements": elements,
+            "count": len(elements)
+        }
     except Exception as e:
-        logger.error(f"Failed to modify element: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Modify failed: {str(e)}",
-        )
+        logger.error(f"Error getting elements: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting elements: {str(e)}")
 
-
-@router.delete("/element/{element_id}", response_model=OperationResponse)
-async def delete_element(element_id: int):
+@router.post("/upload_rvt", tags=["revit"])
+async def upload_and_read_rvt(file: UploadFile = File(...)) -> Dict[str, Any]:
     """
-    Delete a Revit element.
+    Upload an RVT file and read its contents.
     
     Args:
-        element_id: Element ID
-    
+        file: RVT file to upload and read
+        
     Returns:
-        OperationResponse with success status
+        Elements data from the uploaded file
     """
     try:
-        service = get_revit_service()
+        # Save uploaded file temporarily
+        temp_path = f"temp_{file.filename}"
+        with open(temp_path, "wb") as buffer:
+            buffer.write(await file.read())
         
-        if not service.connection.is_connected:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not connected to Revit. Call /connect first.",
-            )
+        # Read the file
+        result = service.read_rvt(temp_path)
         
-        assert service.modeling_engine is not None
-        success = service.modeling_engine.delete_element(element_id)
+        # Clean up temporary file
+        import os
+        os.remove(temp_path)
         
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to delete element {element_id}",
-            )
-        
-        return OperationResponse(
-            success=True,
-            message=f"Element {element_id} deleted successfully",
-        )
+        if not result.get("success", False):
+            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error reading file"))
+        return result
+    except FileNotFoundError:
+        logger.error(f"Uploaded RVT file not found: {file.filename}")
+        raise HTTPException(status_code=404, detail=f"Uploaded RVT file not found: {file.filename}")
     except Exception as e:
-        logger.error(f"Failed to delete element: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Delete failed: {str(e)}",
-        )
-
-
-@router.get("/config", response_model=RevitConfig)
-async def get_config():
-    """
-    Get Revit configuration.
-    
-    Returns:
-        RevitConfig with current settings
-    """
-    try:
-        config = _config_manager.load()
-        return config
-    except Exception as e:
-        logger.error(f"Failed to get config: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get config: {str(e)}",
-        )
-
-
-@router.put("/config", response_model=OperationResponse)
-async def update_config(config: RevitConfig):
-    """
-    Update Revit configuration.
-    
-    Args:
-        config: RevitConfig with new settings
-    
-    Returns:
-        OperationResponse with success status
-    """
-    try:
-        _config_manager.save(config)
-        
-        return OperationResponse(
-            success=True,
-            message="Configuration updated successfully",
-        )
-    except Exception as e:
-        logger.error(f"Failed to update config: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Update failed: {str(e)}",
-        )
+        logger.error(f"Error processing uploaded RVT file: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing uploaded RVT file: {str(e)}")

@@ -1,84 +1,136 @@
-import type { ElementType } from 'react';
-import { useTranslation } from 'react-i18next';
-import { NavLink } from 'react-router-dom';
+import React, { useState } from "react";
+import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   FolderKanban,
   Calculator,
-  FlameKindling,
-  Gem,
+  Flame,
+  Box,
   FileText,
-  Blocks,
-  Link2,
-  GitConflict,
-  Settings2,
-} from 'lucide-react';
+  Layers,
+  Cable,
+  AlertTriangle,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
-export interface NavItem {
+interface NavItem {
+  label: string;
+  icon: React.ElementType;
   path: string;
-  labelKey: string;
-  icon: ElementType;
+  dataOnboarding?: string;
 }
 
-export const NAV_ITEMS: NavItem[] = [
-  { path: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-  { path: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
-  { path: '/engineering', labelKey: 'nav.engineering', icon: Calculator },
-  { path: '/fire-alarm/designer', labelKey: 'nav.fireAlarmDesigner', icon: FlameKindling },
-  { path: '/digital-twin', labelKey: 'nav.digitalTwin', icon: Gem },
-  { path: '/reports', labelKey: 'nav.reports', icon: FileText },
-  { path: '/elements', labelKey: 'nav.elements', icon: Blocks },
-  { path: '/connections', labelKey: 'nav.connections', icon: Link2 },
-  { path: '/conflicts', labelKey: 'nav.conflicts', icon: GitConflict },
-  { path: '/settings', labelKey: 'nav.settings', icon: Settings2 },
+const navItems: NavItem[] = [
+  { label: "Dashboard", icon: LayoutDashboard, path: "/", dataOnboarding: "nav-dashboard" },
+  { label: "Projects", icon: FolderKanban, path: "/projects", dataOnboarding: "nav-projects" },
+  { label: "Engineering", icon: Calculator, path: "/engineering", dataOnboarding: "nav-engineering" },
+  { label: "Fire Alarm Designer", icon: Flame, path: "/fire-alarm-designer", dataOnboarding: "nav-fire-alarm-designer" },
+  { label: "Digital Twin", icon: Box, path: "/digital-twin" },
+  { label: "Reports", icon: FileText, path: "/reports", dataOnboarding: "nav-reports" },
+  { label: "Elements", icon: Layers, path: "/elements" },
+  { label: "Connections", icon: Cable, path: "/connections" },
+  { label: "Conflicts", icon: AlertTriangle, path: "/conflicts" },
+  { label: "Settings", icon: Settings, path: "/settings", dataOnboarding: "nav-settings" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  compact?: boolean;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const location = useLocation();
+  const isRTL = document.documentElement.dir === "rtl";
+
+  const width = collapsed
+    ? compact
+      ? "w-12"
+      : "w-16"
+    : compact
+      ? "w-48"
+      : "w-56";
+
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-e border-slate-800 bg-slate-950">
-      <div className="flex items-center gap-3 border-b border-slate-800 px-4 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600 text-white">
-          <FlameKindling className="h-5 w-5" />
-        </div>
-        <div>
-          <div className="text-sm font-semibold text-slate-100">FireAI</div>
-          <div className="text-[11px] text-slate-500">Engineering Shell</div>
-        </div>
+    <aside
+      className={`${width} h-full bg-slate-900/90 backdrop-blur-sm border-${
+        isRTL ? "l" : "r"
+      } border-slate-700/50 flex flex-col transition-all duration-300 ${
+        isRTL ? "order-last" : "order-first"
+      }`}
+    >
+      <div className="flex items-center gap-2 px-3 py-3 border-b border-slate-700/50">
+        <Flame className="h-6 w-6 text-orange-500 shrink-0 transition-transform duration-300 group-hover:scale-110" />
+        {!collapsed && (
+          <span className="text-white font-bold text-lg tracking-wide">
+            FireAI
+          </span>
+        )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-
+      <nav className="flex-1 py-2 overflow-y-auto">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          const isHovered = hoveredItem === item.path;
           return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path !== '/settings'}
-              className={({ isActive }) =>
-                [
-                  'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+            <div key={item.path} className="relative">
+              <Link
+                to={item.path}
+                className={`flex items-center gap-3 px-3 py-2 mx-1 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-red-600 text-white shadow-lg shadow-red-950/30'
-                    : 'text-slate-400 hover:bg-slate-900 hover:text-slate-100',
-                ].join(' ')
-              }
-            >
-              <Icon className="h-4 w-4" />
-              <span className="flex-1 text-left">Navigation Label</span>
-            </NavLink>
+                    ? "bg-slate-800/80 border-l-2 border-orange-500 text-orange-400 shadow-lg shadow-orange-500/20"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                } ${compact && !collapsed ? "py-1.5 text-sm" : ""}`}
+                onMouseEnter={() => setHoveredItem(item.path)}
+                onMouseLeave={() => setHoveredItem(null)}
+                title={collapsed ? item.label : undefined}
+                data-onboarding={item.dataOnboarding}
+              >
+                <item.icon
+                  className={`shrink-0 transition-transform duration-300 ${
+                    isActive ? "text-orange-400 scale-110" : isHovered ? "scale-105 text-orange-300" : "text-slate-500"
+                  } ${compact && !collapsed ? "h-4 w-4" : "h-5 w-5"}`}
+                />
+                {!collapsed && (
+                  <span
+                    className={`truncate transition-all duration-200 ${compact && !collapsed ? "text-xs" : "text-sm"}`}
+                  >
+                    {item.label}
+                  </span>
+                )}
+              </Link>
+              {collapsed && isHovered && (
+                <div className={`absolute top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800/90 backdrop-blur-sm text-slate-200 text-xs rounded shadow-lg z-50 whitespace-nowrap ${isRTL ? "right-full mr-2" : "left-full ml-2"}`}>
+                  {item.label}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
 
-      <div className="border-t border-slate-800 p-4">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
-          <div className="text-xs font-medium text-slate-300">Phase 1 Shell</div>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Premium dark UI with smart help and backend status.
-          </p>
-        </div>
-      </div>
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center justify-center py-2 border-t border-slate-700/50 text-slate-500 hover:text-slate-300 transition-all duration-200 hover:bg-slate-800/40"
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        data-onboarding="sidebar-toggle"
+      >
+        {collapsed ? (
+          isRTL ? (
+            <ChevronLeft className="h-4 w-4 transition-transform duration-200" />
+          ) : (
+            <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+          )
+        ) : isRTL ? (
+          <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+        ) : (
+          <ChevronLeft className="h-4 w-4 transition-transform duration-200" />
+        )}
+      </button>
     </aside>
   );
-}
+};
+
+export default Sidebar;

@@ -2,860 +2,673 @@
 backend/services/autocad_service.py — AutoCAD Integration Service
 ================================================================
 
-COMPLETE AutoCAD integration including:
-- COM connection management
-- DWG/DXF file parsing
-- Drawing commands (create elements)
-- Modification commands (edit elements)
-- Configuration management
+Complete AutoCAD integration service with COM API integration.
+Handles connections, file operations, entity manipulation, and drawing operations.
 
 ARCHITECTURE:
-- ConnectionManager: Handles AutoCAD process detection and COM connection
-- DWGReader: Reads and parses DWG/DXF files using ezdxf library
-- DrawingEngine: Creates and modifies AutoCAD drawings
-- ConfigManager: Persists AutoCAD configuration settings
-
-DEPENDENCIES:
-- ezdxf: DXF/DWG file parsing (no AutoCAD installation required)
-- pywin32: COM automation (requires AutoCAD installed)
-- comtypes: Alternative COM library
+- AutoCADService: Main service class managing connections and operations
+- Entity extraction and creation utilities
+- Error handling and logging
 
 USAGE:
     from backend.services.autocad_service import AutoCADService
     service = AutoCADService()
-    service.connect()
-    service.read_dwg("drawing.dwg")
-    service.draw_line((0, 0), (10, 10))
-    service.save()
+    
+    # Connect to AutoCAD
+    success = service.connect()
+    
+    # Read DWG file
+    entities = service.read_dwg("drawing.dwg")
+    
+    # Create new drawing with entities
+    service.write_dwg("new_drawing.dwg", entities)
 """
-
-from __future__ import annotations
 
 import logging
 import os
-import subprocess
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 
-# Try to import ezdxf for DXF/DWG parsing (works without AutoCAD)
 try:
-    import ezdxf  # type: ignore[import-untyped]
-    from ezdxf.addons import odafc  # type: ignore[import-untyped]
-    EZDXF_AVAILABLE = True
+    import win32com.client
+    import pythoncom
+    HAS_AUTOCAD_API = True
 except ImportError:
-    EZDXF_AVAILABLE = False
-    logger.warning("ezdxf not available — DXF parsing disabled")
+    logger.warning("AutoCAD COM API not available. Install pywin32.")
+    HAS_AUTOCAD_API = False
 
-# Try to import COM libraries for AutoCAD automation (requires AutoCAD)
-try:
-    import win32com.client  # type: ignore[import-untyped]
-    import pythoncom  # type: ignore[import-untyped]
-    COM_AVAILABLE = True
-except ImportError:
-    COM_AVAILABLE = False
-    logger.warning("pywin32 not available — COM automation disabled")
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# DATA MODELS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-@dataclass
-class AutoCADConfig:
-    """Configuration for AutoCAD connection and operations."""
-    
-    # Connection settings
-    acad_path: str = ""  # Path to AutoCAD executable
-    acad_version: str = ""  # e.g., "2024", "2023"
-    com_class_id: str = "AutoCAD.Application"  # COM class ID
-    
-    # File settings
-    default_template: str = ""  # Default .dwt template file
-    default_units: str = "Millimeters"  # Drawing units
-    save_format: str = "DWG"  # DWG or DXF
-    
-    # Layer standards
-    default_layer: str = "0"
-    layer_colors: Dict[str, str] = field(default_factory=lambda: {
-        "Walls": "Red",
-        "Doors": "Green",
-        "Windows": "Blue",
-        "Dimensions": "Yellow",
-        "Text": "White",
-    })
-    
-    # Plot settings
-    plot_style: str = "acad.ctb"
-    paper_size: str = "A1"
-    
-    # Working directory
-    working_dir: str = ""
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization."""
-        return {
-            "acad_path": self.acad_path,
-            "acad_version": self.acad_version,
-            "com_class_id": self.com_class_id,
-            "default_template": self.default_template,
-            "default_units": self.default_units,
-            "save_format": self.save_format,
-            "default_layer": self.default_layer,
-            "layer_colors": self.layer_colors,
-            "plot_style": self.plot_style,
-            "paper_size": self.paper_size,
-            "working_dir": self.working_dir,
-        }
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> AutoCADConfig:
-        """Create from dictionary."""
-        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
-
-
-@dataclass
-class AutoCADEntity:
-    """Represents an AutoCAD entity (line, circle, text, etc.)."""
-    
-    entity_type: str  # "LINE", "CIRCLE", "TEXT", "LWPOLYLINE", etc.
-    layer: str = "0"
-    color: int = 256  # 256 = BYLAYER
-    properties: Dict[str, Any] = field(default_factory=dict)
-    
-    # Geometry data (varies by entity type)
-    start_point: Optional[Tuple[float, float, float]] = None
-    end_point: Optional[Tuple[float, float, float]] = None
-    center: Optional[Tuple[float, float, float]] = None
-    radius: Optional[float] = None
-    text_content: Optional[str] = None
-    vertices: Optional[List[Tuple[float, float, float]]] = None
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
-        return {
-            "entity_type": self.entity_type,
-            "layer": self.layer,
-            "color": self.color,
-            "properties": self.properties,
-            "start_point": self.start_point,
-            "end_point": self.end_point,
-            "center": self.center,
-            "radius": self.radius,
-            "text_content": self.text_content,
-            "vertices": self.vertices,
-        }
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# CONNECTION MANAGER
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class AutoCADConnectionManager:
-    """
-    Manages AutoCAD COM connections.
-    
-    Supports:
-    - Multiple AutoCAD instances
-    - Version detection
-    - Reconnection on failure
-    - Process detection
-    """
-    
-    def __init__(self, config: AutoCADConfig):
-        self.config = config
-        self._acad_app: Optional[Any] = None
-        self._doc: Optional[Any] = None
-        self._connected = False
-        self._reconnect_attempts = 0
-        self._max_reconnect_attempts = 3
-        
-    def is_autocad_running(self) -> bool:
-        """Check if AutoCAD process is running."""
-        if not COM_AVAILABLE:
-            return False
-
-        try:
-            pythoncom.CoInitialize()  # type: ignore[possibly-unbound]
-            acad_app = win32com.client.GetActiveObject(self.config.com_class_id)  # type: ignore[possibly-unbound]
-            return acad_app is not None
-        except Exception:
-            return False
-        finally:
-            pythoncom.CoUninitialize()  # type: ignore[possibly-unbound]
-    
-    def find_autocad_installations(self) -> List[Dict[str, str]]:
-        """Find all AutoCAD installations on the system."""
-        installations = []
-        
-        # Common AutoCAD installation paths
-        possible_paths = [
-            r"C:\Program Files\Autodesk\AutoCAD 2024",
-            r"C:\Program Files\Autodesk\AutoCAD 2023",
-            r"C:\Program Files\Autodesk\AutoCAD 2022",
-            r"C:\Program Files\Autodesk\AutoCAD 2021",
-            r"C:\Program Files\Autodesk\AutoCAD 2020",
-        ]
-        
-        for path in possible_paths:
-            if os.path.exists(path):
-                acad_exe = os.path.join(path, "acad.exe")
-                if os.path.exists(acad_exe):
-                    # Extract version from path
-                    version = path.split()[-1]
-                    installations.append({
-                        "path": path,
-                        "version": version,
-                        "exe": acad_exe,
-                    })
-        
-        return installations
-    
-    def connect(self, force_new: bool = False) -> bool:
-        """
-        Connect to AutoCAD via COM.
-        
-        Args:
-            force_new: If True, start new AutoCAD instance even if one exists
-        
-        Returns:
-            True if connection successful, False otherwise
-        """
-        if not COM_AVAILABLE:
-            logger.error("COM automation not available (pywin32 not installed)")
-            return False
-        
-        try:
-            pythoncom.CoInitialize()  # type: ignore[possibly-unbound]
-
-            if force_new or not self.is_autocad_running():
-                # Start new AutoCAD instance
-                logger.info("Starting new AutoCAD instance...")
-                self._acad_app = win32com.client.Dispatch(self.config.com_class_id)  # type: ignore[possibly-unbound]
-                self._acad_app.Visible = True
-            else:
-                # Connect to existing instance
-                logger.info("Connecting to existing AutoCAD instance...")
-                self._acad_app = win32com.client.GetActiveObject(self.config.com_class_id)  # type: ignore[possibly-unbound]
-
-            # Get active document or create new one
-            assert self._acad_app is not None
-            if self._acad_app.Documents.Count == 0:
-                if self.config.default_template and os.path.exists(self.config.default_template):
-                    self._doc = self._acad_app.Documents.Open(self.config.default_template)
-                else:
-                    self._doc = self._acad_app.Documents.Add()
-            else:
-                self._doc = self._acad_app.ActiveDocument
-
-            self._connected = True
-            self._reconnect_attempts = 0
-            logger.info(f"Connected to AutoCAD {self._acad_app.Version}")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to connect to AutoCAD: {e}")
-            self._connected = False
-            return False
-        finally:
-            pythoncom.CoUninitialize()  # type: ignore[possibly-unbound]
-    
-    def reconnect(self) -> bool:
-        """Attempt to reconnect if connection lost."""
-        if self._reconnect_attempts >= self._max_reconnect_attempts:
-            logger.error("Max reconnection attempts reached")
-            return False
-        
-        self._reconnect_attempts += 1
-        logger.info(f"Reconnection attempt {self._reconnect_attempts}/{self._max_reconnect_attempts}")
-        
-        return self.connect(force_new=True)
-    
-    def disconnect(self):
-        """Disconnect from AutoCAD."""
-        if self._acad_app:
-            try:
-                # Save and close document
-                if self._doc:
-                    self._doc.Save()
-                
-                # Quit AutoCAD (optional — may want to keep it running)
-                # self._acad_app.Quit()
-                
-                self._connected = False
-                logger.info("Disconnected from AutoCAD")
-            except Exception as e:
-                logger.error(f"Error disconnecting: {e}")
-    
-    @property
-    def is_connected(self) -> bool:
-        """Check if connected to AutoCAD."""
-        return self._connected and self._acad_app is not None
-    
-    @property
-    def acad_app(self) -> Any:
-        """Get AutoCAD application object."""
-        if not self.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        return self._acad_app
-    
-    @property
-    def doc(self) -> Any:
-        """Get active document."""
-        if not self.is_connected or self._doc is None:
-            raise RuntimeError("No active document")
-        return self._doc
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# DWG/DXF READER
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class DWGReader:
-    """
-    Reads and parses DWG/DXF files using ezdxf library.
-    
-    Supports:
-    - DWG and DXF formats
-    - All entity types (lines, circles, text, blocks, etc.)
-    - Layer extraction
-    - Block definitions
-    - Metadata extraction
-    """
-    
-    def __init__(self):
-        if not EZDXF_AVAILABLE:
-            raise RuntimeError("ezdxf library not available — install with: pip install ezdxf")
-    
-    def read_file(self, filepath: str) -> Dict[str, Any]:
-        """
-        Read a DWG/DXF file and extract all entities.
-        
-        Args:
-            filepath: Path to DWG/DXF file
-        
-        Returns:
-            Dictionary with extracted data:
-            {
-                "metadata": {...},
-                "layers": [...],
-                "entities": [...],
-                "blocks": {...}
-            }
-        """
-        path = Path(filepath)
-        
-        if not path.exists():
-            raise FileNotFoundError(f"File not found: {path}")
-        
-        # Determine file type
-        suffix = path.suffix.lower()
-        if suffix == ".dxf":
-            doc = ezdxf.readfile(str(path))  # type: ignore[possibly-unbound,attr-defined]
-        elif suffix == ".dwg":
-            try:
-                doc = ezdxf.readfile(str(path))  # type: ignore[possibly-unbound,attr-defined]
-            except Exception:
-                if odafc.is_available():  # type: ignore[possibly-unbound,attr-defined]
-                    dxf_path = path.with_suffix(".dxf")
-                    odafc.convert(str(path), str(dxf_path))  # type: ignore[possibly-unbound,attr-defined]
-                    doc = ezdxf.readfile(str(dxf_path))  # type: ignore[possibly-unbound,attr-defined]
-                    dxf_path.unlink()
-                else:
-                    raise RuntimeError("Cannot read DWG — ODA File Converter not available")
-        else:
-            raise ValueError(f"Unsupported file format: {suffix}")
-        
-        metadata = self._extract_metadata(doc)
-        layers = self._extract_layers(doc)
-        entities = self._extract_entities(doc)
-        blocks = self._extract_blocks(doc)
-        
-        return {
-            "metadata": metadata,
-            "layers": layers,
-            "entities": entities,
-            "blocks": blocks,
-            "filepath": str(path),
-        }
-    
-    def _extract_metadata(self, doc: Any) -> Dict[str, Any]:
-        """Extract file metadata."""
-        header = doc.header
-        return {
-            "filename": doc.filename,
-            "dxfversion": header.get("$ACADVER", "Unknown"),
-            "encoding": doc.encoding,
-            "units": header.get("$INSUNITS", 0),
-        }
-    
-    def _extract_layers(self, doc: Any) -> List[Dict[str, Any]]:
-        """Extract all layers from document."""
-        layers = []
-        for layer in doc.layers:
-            layers.append({
-                "name": layer.dxf.name,
-                "color": layer.dxf.color,
-                "linetype": layer.dxf.linetype,
-                "lineweight": layer.dxf.lineweight,
-                "is_on": layer.is_on,
-                "is_frozen": layer.is_frozen,
-            })
-        return layers
-    
-    def _extract_entities(self, doc: Any) -> List[Dict[str, Any]]:
-        """Extract all entities from modelspace."""
-        entities = []
-        msp = doc.modelspace()
-        
-        for entity in msp:
-            entity_data = self._parse_entity(entity)
-            if entity_data:
-                entities.append(entity_data)
-        
-        return entities
-    
-    def _parse_entity(self, entity: Any) -> Optional[Dict[str, Any]]:
-        """Parse a single entity into dictionary."""
-        dxftype = entity.dxftype()
-        
-        base_data = {
-            "type": dxftype,
-            "layer": entity.dxf.layer,
-            "color": entity.dxf.color if hasattr(entity.dxf, "color") else 256,
-        }
-        
-        # Parse based on entity type
-        if dxftype == "LINE":
-            base_data.update({
-                "start": tuple(entity.dxf.start),
-                "end": tuple(entity.dxf.end),
-            })
-        elif dxftype == "CIRCLE":
-            base_data.update({
-                "center": tuple(entity.dxf.center),
-                "radius": entity.dxf.radius,
-            })
-        elif dxftype == "ARC":
-            base_data.update({
-                "center": tuple(entity.dxf.center),
-                "radius": entity.dxf.radius,
-                "start_angle": entity.dxf.start_angle,
-                "end_angle": entity.dxf.end_angle,
-            })
-        elif dxftype == "TEXT":
-            base_data.update({
-                "text": entity.dxf.text,
-                "insert": tuple(entity.dxf.insert),
-                "height": entity.dxf.height,
-                "rotation": entity.dxf.rotation if hasattr(entity.dxf, "rotation") else 0,
-            })
-        elif dxftype == "LWPOLYLINE":
-            points = list(entity.get_points(format="xy"))
-            base_data.update({
-                "vertices": points,
-                "closed": entity.closed,
-            })
-        elif dxftype == "INSERT":  # Block reference
-            base_data.update({
-                "block_name": entity.dxf.name,
-                "insert": tuple(entity.dxf.insert),
-                "xscale": entity.dxf.xscale if hasattr(entity.dxf, "xscale") else 1.0,
-                "yscale": entity.dxf.yscale if hasattr(entity.dxf, "yscale") else 1.0,
-                "rotation": entity.dxf.rotation if hasattr(entity.dxf, "rotation") else 0,
-            })
-        elif dxftype == "DIMENSION":
-            base_data.update({
-                "text": entity.dxf.text if hasattr(entity.dxf, "text") else "",
-                "defpoint": tuple(entity.dxf.defpoint) if hasattr(entity.dxf, "defpoint") else None,
-            })
-        else:
-            # Generic entity — store raw DXF attributes
-            base_data["raw_attributes"] = {
-                attr: str(getattr(entity.dxf, attr, None))
-                for attr in dir(entity.dxf)
-                if not attr.startswith("_")
-            }
-        
-        return base_data
-    
-    def _extract_blocks(self, doc: Any) -> Dict[str, List[Dict[str, Any]]]:
-        """Extract all block definitions."""
-        blocks = {}
-        
-        for block in doc.blocks:
-            block_entities = []
-            for entity in block:
-                entity_data = self._parse_entity(entity)
-                if entity_data:
-                    block_entities.append(entity_data)
-            
-            blocks[block.name] = block_entities
-        
-        return blocks
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# DRAWING ENGINE
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class AutoCADDrawingEngine:
-    """
-    Creates and modifies AutoCAD drawings via COM automation.
-    
-    Supports:
-    - Creating new drawings from templates
-    - Drawing primitives (lines, circles, text, etc.)
-    - Modifying existing entities
-    - Layer management
-    - Block operations
-    """
-    
-    def __init__(self, connection: AutoCADConnectionManager):
-        self.conn = connection
-    
-    def draw_line(self, start: Tuple[float, float], end: Tuple[float, float], 
-                  layer: str = "0", color: int = 256) -> str:
-        """
-        Draw a line in the active document.
-        
-        Args:
-            start: Start point (x, y)
-            end: End point (x, y)
-            layer: Layer name
-            color: Color index (256 = BYLAYER)
-        
-        Returns:
-            Handle of created entity
-        """
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        msp = doc.ModelSpace
-        
-        # Create 3D points (z=0 for 2D)
-        start_3d = self._to_3d_point(start)
-        end_3d = self._to_3d_point(end)
-        
-        # Add line
-        line = msp.AddLine(start_3d, end_3d)
-        
-        # Set properties
-        line.Layer = layer
-        if color != 256:
-            line.Color = color
-        
-        return line.Handle
-    
-    def draw_circle(self, center: Tuple[float, float], radius: float,
-                    layer: str = "0", color: int = 256) -> str:
-        """Draw a circle."""
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        msp = doc.ModelSpace
-        
-        center_3d = self._to_3d_point(center)
-        circle = msp.AddCircle(center_3d, radius)
-        
-        circle.Layer = layer
-        if color != 256:
-            circle.Color = color
-        
-        return circle.Handle
-    
-    def draw_arc(self, center: Tuple[float, float], radius: float,
-                 start_angle: float, end_angle: float,
-                 layer: str = "0", color: int = 256) -> str:
-        """Draw an arc (angles in degrees)."""
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        msp = doc.ModelSpace
-        
-        center_3d = self._to_3d_point(center)
-        
-        # Convert degrees to radians for AutoCAD
-        import math
-        start_rad = math.radians(start_angle)
-        end_rad = math.radians(end_angle)
-        
-        arc = msp.AddArc(center_3d, radius, start_rad, end_rad)
-        
-        arc.Layer = layer
-        if color != 256:
-            arc.Color = color
-        
-        return arc.Handle
-    
-    def draw_text(self, text: str, insert_point: Tuple[float, float],
-                  height: float = 2.5, rotation: float = 0,
-                  layer: str = "0", color: int = 256) -> str:
-        """Draw single-line text."""
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        msp = doc.ModelSpace
-        
-        insert_3d = self._to_3d_point(insert_point)
-        
-        # Add text
-        text_obj = msp.AddText(text, insert_3d, height)
-        text_obj.Rotation = rotation
-        text_obj.Layer = layer
-        
-        if color != 256:
-            text_obj.Color = color
-        
-        return text_obj.Handle
-    
-    def draw_polyline(self, points: List[Tuple[float, float]], closed: bool = False,
-                      layer: str = "0", color: int = 256) -> str:
-        """Draw a lightweight polyline."""
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        msp = doc.ModelSpace
-        
-        # Convert to 3D points
-        points_3d = [self._to_3d_point(p) for p in points]
-        
-        # Create polyline
-        polyline = msp.AddLightWeightPolyline(points_3d)
-        
-        if closed:
-            polyline.Closed = True
-        
-        polyline.Layer = layer
-        if color != 256:
-            polyline.Color = color
-        
-        return polyline.Handle
-    
-    def insert_block(self, block_name: str, insert_point: Tuple[float, float],
-                     xscale: float = 1.0, yscale: float = 1.0, rotation: float = 0,
-                     layer: str = "0") -> str:
-        """Insert a block reference."""
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        msp = doc.ModelSpace
-        
-        insert_3d = self._to_3d_point(insert_point)
-        
-        # Insert block
-        block_ref = msp.InsertBlock(insert_3d, block_name, xscale, yscale, 1.0, rotation)
-        block_ref.Layer = layer
-        
-        return block_ref.Handle
-    
-    def modify_entity(self, handle: str, **properties) -> bool:
-        """
-        Modify an existing entity by handle.
-        
-        Args:
-            handle: Entity handle
-            properties: Properties to modify (layer, color, etc.)
-        
-        Returns:
-            True if successful
-        """
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        
-        try:
-            entity = doc.HandleToObject(handle)
-            
-            for prop, value in properties.items():
-                if hasattr(entity, prop):
-                    setattr(entity, prop, value)
-                else:
-                    logger.warning(f"Property '{prop}' not found on entity")
-            
-            return True
-        except Exception as e:
-            logger.error(f"Failed to modify entity {handle}: {e}")
-            return False
-    
-    def delete_entity(self, handle: str) -> bool:
-        """Delete an entity by handle."""
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        
-        try:
-            entity = doc.HandleToObject(handle)
-            entity.Delete()
-            return True
-        except Exception as e:
-            logger.error(f"Failed to delete entity {handle}: {e}")
-            return False
-    
-    def add_layer(self, name: str, color: int = 7, linetype: str = "Continuous") -> bool:
-        """Add a new layer to the document."""
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        
-        try:
-            layers = doc.Layers
-            layer = layers.Add(name)
-            layer.Color = color
-            layer.Linetype = linetype
-            return True
-        except Exception as e:
-            logger.error(f"Failed to add layer {name}: {e}")
-            return False
-    
-    def _to_3d_point(self, point_2d: Tuple[float, float]) -> Tuple[float, float, float]:
-        """Convert 2D point to 3D (z=0)."""
-        return (point_2d[0], point_2d[1], 0.0)
-    
-    def save(self, filepath: Optional[str] = None):
-        """Save the active document."""
-        if not self.conn.is_connected:
-            raise RuntimeError("Not connected to AutoCAD")
-        
-        doc = self.conn.doc
-        
-        if filepath:
-            doc.SaveAs(filepath)
-        else:
-            doc.Save()
-    
-    def close(self, save: bool = True):
-        """Close the active document."""
-        if not self.conn.is_connected:
-            return
-        
-        doc = self.conn.doc
-        
-        if save:
-            doc.Save()
-        
-        doc.Close()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# MAIN SERVICE
-# ═══════════════════════════════════════════════════════════════════════════════
 
 class AutoCADService:
     """
-    Main AutoCAD service — orchestrates connection, reading, and drawing.
+    AutoCAD integration service with COM API.
     
-    Usage:
-        service = AutoCADService()
-        service.initialize()
-        
-        # Read a file
-        data = service.read_dwg("input.dwg")
-        
-        # Draw something
-        service.draw_line((0, 0), (10, 10))
-        service.draw_circle((5, 5), 3)
-        
-        # Save
-        service.save("output.dwg")
+    Handles connecting to AutoCAD, reading/writing DWG files, and drawing operations.
     """
     
-    def __init__(self, config: Optional[AutoCADConfig] = None):
-        self.config = config or AutoCADConfig()
-        self.connection = AutoCADConnectionManager(self.config)
-        self.reader = DWGReader() if EZDXF_AVAILABLE else None
-        self.drawing_engine: Optional[AutoCADDrawingEngine] = None
+    def __init__(self):
+        self.acad_app = None
+        self.acad_doc = None
+        self.acad_util = None
+        self.connected = False
+        self.active_entities = {}
+        
+    def connect(self) -> bool:
+        """
+        Connect to a running AutoCAD instance or launch a new one.
+        
+        Returns:
+            bool: True if connection successful, False otherwise
+        """
+        try:
+            if not HAS_AUTOCAD_API:
+                logger.error("AutoCAD COM API not available. Install pywin32.")
+                return False
+                
+            # Initialize COM
+            pythoncom.CoInitialize()
+            
+            # Try to connect to existing AutoCAD instance
+            try:
+                self.acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
+                logger.info("Connected to existing AutoCAD instance")
+            except:
+                # Launch new AutoCAD instance
+                try:
+                    self.acad_app = win32com.client.Dispatch("AutoCAD.Application")
+                    self.acad_app.Visible = True  # Make it visible to user
+                    logger.info("Launched new AutoCAD instance")
+                except Exception as e:
+                    logger.error(f"Could not launch AutoCAD: {e}")
+                    return False
+            
+            # Get active document
+            self.acad_doc = self.acad_app.ActiveDocument
+            if not self.acad_doc:
+                # Create a new document if none exists
+                self.acad_doc = self.acad_app.Documents.Add()
+                
+            self.acad_util = self.acad_doc.Utility
+            self.connected = True
+            logger.info("Successfully connected to AutoCAD")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error connecting to AutoCAD: {e}")
+            self.connected = False
+            return False
+    
+    def disconnect(self) -> bool:
+        """
+        Disconnect from AutoCAD application.
+        
+        Returns:
+            bool: True if disconnection successful, False otherwise
+        """
+        try:
+            if self.acad_app:
+                # Hide AutoCAD application if we launched it
+                self.acad_app.Visible = False
+                self.acad_app = None
+            
+            self.acad_doc = None
+            self.acad_util = None
+            self.connected = False
+            
+            # Uninitialize COM
+            if HAS_AUTOCAD_API:
+                pythoncom.CoUninitialize()
+            
+            logger.info("Disconnected from AutoCAD")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error disconnecting from AutoCAD: {e}")
+            return False
     
     def initialize(self) -> bool:
-        """Initialize the service — connect to AutoCAD."""
-        if not self.connection.connect():
-            return False
+        """
+        Initialize the AutoCAD service by attempting to connect.
         
-        self.drawing_engine = AutoCADDrawingEngine(self.connection)
-        return True
+        Returns:
+            bool: True if initialization successful, False otherwise
+        """
+        return self.connect()
+    
+    def _extract_entity_data(self, entity) -> Dict[str, Any]:
+        """
+        Extract detailed data from an AutoCAD entity.
+        
+        Args:
+            entity: AutoCAD entity object
+            
+        Returns:
+            Dict containing entity data
+        """
+        try:
+            entity_data = {
+                "handle": getattr(entity, 'Handle', ''),
+                "object_name": getattr(entity, 'ObjectName', ''),
+                "layer": getattr(entity, 'Layer', '0'),
+                "color": getattr(entity, 'Color', 0),
+                "linetype": getattr(entity, 'Linetype', 'ByLayer'),
+                "lineweight": getattr(entity, 'Lineweight', -1),
+                "visible": getattr(entity, 'Visible', True),
+                "entity_type": getattr(entity, 'ObjectName', '').split('.')[-1].upper().replace('ACDB', '')  # e.g., 'LINE', 'CIRCLE'
+            }
+            
+            # Extract type-specific properties
+            entity_type = entity_data['entity_type']
+            
+            if entity_type == 'LINE':
+                entity_data.update({
+                    "start_point": list(entity.StartPoint),
+                    "end_point": list(entity.EndPoint),
+                    "thickness": entity.Thickness,
+                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
+                })
+                
+            elif entity_type == 'LWPOLYLINE':
+                entity_data.update({
+                    "coordinates": [float(coord) for coord in entity.Coordinates],
+                    "elevation": entity.Elevation,
+                    "thickness": entity.Thickness,
+                    "constant_width": entity.ConstantWidth,
+                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
+                })
+                
+            elif entity_type == 'CIRCLE':
+                entity_data.update({
+                    "center": list(entity.Center),
+                    "radius": entity.Radius,
+                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
+                })
+                
+            elif entity_type == 'ARC':
+                entity_data.update({
+                    "center": list(entity.Center),
+                    "radius": entity.Radius,
+                    "start_angle": entity.StartAngle,
+                    "end_angle": entity.EndAngle,
+                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
+                })
+                
+            elif entity_type == 'TEXT':
+                entity_data.update({
+                    "text_string": entity.TextString,
+                    "insertion_point": list(entity.InsertionPoint),
+                    "height": entity.Height,
+                    "rotation": entity.Rotation,
+                    "style_name": entity.StyleName
+                })
+                
+            elif entity_type == 'MTEXT':
+                entity_data.update({
+                    "contents": entity.TextString,
+                    "insertion_point": list(entity.InsertionPoint),
+                    "height": entity.Height,
+                    "width": entity.Width,
+                    "attachment_point": entity.AttachmentPoint
+                })
+                
+            elif entity_type == 'INSERT':  # Block reference
+                entity_data.update({
+                    "name": entity.Name,
+                    "insertion_point": list(entity.InsertionPoint),
+                    "x_scale_factor": entity.XScaleFactor,
+                    "y_scale_factor": entity.YScaleFactor,
+                    "z_scale_factor": entity.ZScaleFactor,
+                    "rotation": entity.Rotation,
+                    "has_attributes": entity.HasAttributes
+                })
+                
+                # Get attributes if block has them
+                if entity.HasAttributes:
+                    attributes = []
+                    for attr in entity.GetAttributes():
+                        attributes.append({
+                            "tag": attr.TagString,
+                            "text_string": attr.TextString,
+                            "prompt": attr.Prompt
+                        })
+                    entity_data["attributes"] = attributes
+                    
+            elif entity_type == 'SPLINE':
+                entity_data.update({
+                    "degree": entity.Degree,
+                    "fit_tolerance": entity.FitTolerance,
+                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
+                })
+                
+            elif entity_type == 'HATCH':
+                entity_data.update({
+                    "pattern_name": entity.PatternName,
+                    "pattern_scale": entity.PatternScale,
+                    "associative": entity.Associative,
+                    "area": entity.Area
+                })
+                
+            elif entity_type == 'DIMENSION':
+                entity_data.update({
+                    "dimension_text": entity.TextOverride,
+                    "measurement": entity.Measurement,
+                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
+                })
+                
+            return entity_data
+            
+        except Exception as e:
+            logger.error(f"Error extracting entity data: {e}")
+            return {
+                "handle": getattr(entity, 'Handle', ''),
+                "object_name": getattr(entity, 'ObjectName', ''),
+                "error": str(e)
+            }
     
     def read_dwg(self, filepath: str) -> Dict[str, Any]:
-        """Read a DWG/DXF file and extract entities."""
-        if not self.reader:
-            raise RuntimeError("DWG reader not available (ezdxf not installed)")
+        """
+        Read entities from a DWG file.
         
-        return self.reader.read_file(filepath)
+        Args:
+            filepath: Path to the DWG file to read
+            
+        Returns:
+            Dictionary containing entities data and metadata
+        """
+        try:
+            if not os.path.exists(filepath):
+                raise FileNotFoundError(f"DWG file not found: {filepath}")
+            
+            # If we're connected to AutoCAD, open the file in the current session
+            if self.connected and self.acad_app:
+                # Save current document state
+                current_doc = self.acad_doc
+                
+                # Open the target file
+                target_doc = self.acad_app.Documents.Open(filepath)
+                
+                # Switch to the target document
+                self.acad_doc = target_doc
+                self.acad_util = target_doc.Utility
+                
+                # Extract all entities from ModelSpace
+                entities = []
+                model_space = target_doc.ModelSpace
+                for entity in model_space:
+                    try:
+                        entity_data = self._extract_entity_data(entity)
+                        entities.append(entity_data)
+                    except Exception as e:
+                        logger.warning(f"Could not extract entity: {e}")
+                        continue
+                
+                # Close the target document without saving
+                target_doc.Close(False)
+                
+                # Restore original document
+                self.acad_doc = current_doc
+                if current_doc:
+                    self.acad_util = current_doc.Utility
+                
+                return {
+                    "success": True,
+                    "entities": entities,
+                    "count": len(entities),
+                    "source_file": filepath
+                }
+            else:
+                # If not connected, we can't read the file through COM
+                # This would require alternative approach like Teigha or ODA libraries
+                logger.error("AutoCAD service not connected. Cannot read DWG file.")
+                return {
+                    "success": False,
+                    "error": "AutoCAD service not connected. Cannot read DWG file.",
+                    "entities": [],
+                    "count": 0
+                }
+                
+        except Exception as e:
+            logger.error(f"Error reading DWG file {filepath}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "entities": [],
+                "count": 0
+            }
     
-    def draw_line(self, start: Tuple[float, float], end: Tuple[float, float], **kwargs) -> str:
-        """Draw a line."""
-        if not self.drawing_engine:
-            raise RuntimeError("Drawing engine not initialized")
-        return self.drawing_engine.draw_line(start, end, **kwargs)
-    
-    def draw_circle(self, center: Tuple[float, float], radius: float, **kwargs) -> str:
-        """Draw a circle."""
-        if not self.drawing_engine:
-            raise RuntimeError("Drawing engine not initialized")
-        return self.drawing_engine.draw_circle(center, radius, **kwargs)
-    
-    def draw_text(self, text: str, insert: Tuple[float, float], **kwargs) -> str:
-        """Draw text."""
-        if not self.drawing_engine:
-            raise RuntimeError("Drawing engine not initialized")
-        return self.drawing_engine.draw_text(text, insert, **kwargs)
-    
-    def save(self, filepath: Optional[str] = None):
-        """Save the current drawing."""
-        if not self.drawing_engine:
-            raise RuntimeError("Drawing engine not initialized")
-        self.drawing_engine.save(filepath)
-    
-    def shutdown(self):
-        """Shutdown the service — disconnect from AutoCAD."""
-        if self.connection.is_connected:
-            self.connection.disconnect()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# CONFIGURATION MANAGER
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class AutoCADConfigManager:
-    """Manages AutoCAD configuration persistence."""
-    
-    CONFIG_FILE = "autocad_config.json"
-    
-    def __init__(self, config_dir: Optional[str] = None):
-        self.config_dir = Path(config_dir or os.getenv("AUTOCAD_CONFIG_DIR", "."))
-        self.config_file = self.config_dir / self.CONFIG_FILE
-    
-    def load(self) -> AutoCADConfig:
-        """Load configuration from file."""
-        if not self.config_file.exists():
-            return AutoCADConfig()
+    def write_dwg(self, filepath: str, entities: List[Dict[str, Any]]) -> bool:
+        """
+        Write entities to a DWG file.
         
-        import json
-        with open(self.config_file, "r") as f:
-            data = json.load(f)
-        
-        return AutoCADConfig.from_dict(data)
+        Args:
+            filepath: Path to save the DWG file
+            entities: List of entity dictionaries to write
+            
+        Returns:
+            bool: True if write successful, False otherwise
+        """
+        try:
+            if not self.connected or not self.acad_app:
+                logger.error("AutoCAD service not connected. Cannot write DWG file.")
+                return False
+            
+            # Create directory if it doesn't exist
+            output_dir = os.path.dirname(filepath)
+            if output_dir:
+                os.makedirs(output_dir, exist_ok=True)
+            
+            # Create a new document for writing
+            new_doc = self.acad_app.Documents.Add()
+            model_space = new_doc.ModelSpace
+            
+            created_entities = []
+            
+            for entity_data in entities:
+                try:
+                    entity_type = entity_data.get('entity_type', '').upper()
+                    
+                    if entity_type == 'LINE':
+                        start_point = entity_data.get('start_point', [0, 0, 0])
+                        end_point = entity_data.get('end_point', [1, 0, 0])
+                        
+                        line_obj = model_space.AddLine(start_point, end_point)
+                        
+                        # Apply properties
+                        if 'layer' in entity_data:
+                            line_obj.Layer = entity_data['layer']
+                        if 'color' in entity_data:
+                            line_obj.Color = entity_data['color']
+                        if 'linetype' in entity_data:
+                            line_obj.Linetype = entity_data['linetype']
+                        if 'lineweight' in entity_data:
+                            line_obj.Lineweight = entity_data['lineweight']
+                            
+                        created_entities.append(line_obj)
+                        
+                    elif entity_type == 'CIRCLE':
+                        center = entity_data.get('center', [0, 0, 0])
+                        radius = entity_data.get('radius', 1.0)
+                        
+                        circle_obj = model_space.AddCircle(center, radius)
+                        
+                        # Apply properties
+                        if 'layer' in entity_data:
+                            circle_obj.Layer = entity_data['layer']
+                        if 'color' in entity_data:
+                            circle_obj.Color = entity_data['color']
+                            
+                        created_entities.append(circle_obj)
+                        
+                    elif entity_type == 'TEXT':
+                        insertion_point = entity_data.get('insertion_point', [0, 0, 0])
+                        text_string = entity_data.get('text_string', 'Default Text')
+                        height = entity_data.get('height', 0.2)
+                        
+                        text_obj = model_space.AddText(text_string, insertion_point, height)
+                        
+                        # Apply properties
+                        if 'layer' in entity_data:
+                            text_obj.Layer = entity_data['layer']
+                        if 'color' in entity_data:
+                            text_obj.Color = entity_data['color']
+                        if 'rotation' in entity_data:
+                            text_obj.Rotation = entity_data['rotation']
+                            
+                        created_entities.append(text_obj)
+                        
+                    elif entity_type == 'LWPOLYLINE':
+                        coordinates = entity_data.get('coordinates', [0, 0, 1, 0, 1, 1, 0, 1])
+                        poly_obj = model_space.AddLightWeightPolyline(coordinates)
+                        
+                        # Apply properties
+                        if 'layer' in entity_data:
+                            poly_obj.Layer = entity_data['layer']
+                        if 'color' in entity_data:
+                            poly_obj.Color = entity_data['color']
+                            
+                        created_entities.append(poly_obj)
+                        
+                    elif entity_type == 'INSERT':
+                        insertion_point = entity_data.get('insertion_point', [0, 0, 0])
+                        name = entity_data.get('name', 'UntitledBlock')
+                        
+                        # Check if block exists, if not create a simple one
+                        try:
+                            block_obj = new_doc.Blocks.Item(name)
+                        except:
+                            # Create a simple block definition
+                            block_obj = new_doc.Blocks.Add([0, 0, 0], name)
+                            # Add a simple rectangle to the block
+                            block_obj.AddLine([0, 0, 0], [1, 0, 0])
+                            block_obj.AddLine([1, 0, 0], [1, 1, 0])
+                            block_obj.AddLine([1, 1, 0], [0, 1, 0])
+                            block_obj.AddLine([0, 1, 0], [0, 0, 0])
+                        
+                        insert_obj = model_space.InsertBlock(insertion_point, name, 
+                                                            entity_data.get('x_scale_factor', 1.0),
+                                                            entity_data.get('y_scale_factor', 1.0),
+                                                            entity_data.get('z_scale_factor', 1.0),
+                                                            entity_data.get('rotation', 0))
+                        
+                        # Apply properties
+                        if 'layer' in entity_data:
+                            insert_obj.Layer = entity_data['layer']
+                            
+                        created_entities.append(insert_obj)
+                        
+                except Exception as e:
+                    logger.warning(f"Could not create entity {entity_type}: {e}")
+                    continue
+            
+            # Save the document
+            new_doc.SaveAs(filepath)
+            new_doc.Close(False)  # Close without prompting to save again
+            
+            logger.info(f"Successfully wrote {len(created_entities)} entities to {filepath}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error writing DWG file {filepath}: {e}")
+            return False
     
-    def save(self, config: AutoCADConfig):
-        """Save configuration to file."""
-        import json
+    def draw_line(self, start_point: List[float], end_point: List[float], 
+                  layer: str = "0", color: int = 0) -> Optional[Any]:
+        """
+        Draw a line in the active AutoCAD document.
         
-        self.config_dir.mkdir(parents=True, exist_ok=True)
-        
-        with open(self.config_file, "w") as f:
-            json.dump(config.to_dict(), f, indent=2)
+        Args:
+            start_point: Starting coordinates [x, y, z]
+            end_point: Ending coordinates [x, y, z]
+            layer: Layer name for the line
+            color: Color index for the line
+            
+        Returns:
+            Created line object or None if failed
+        """
+        try:
+            if not self.connected or not self.acad_doc:
+                logger.error("AutoCAD service not connected. Cannot draw line.")
+                return None
+            
+            model_space = self.acad_doc.ModelSpace
+            line_obj = model_space.AddLine(start_point, end_point)
+            
+            # Apply properties
+            line_obj.Layer = layer
+            line_obj.Color = color
+            
+            logger.info(f"Drew line from {start_point} to {end_point}")
+            return line_obj
+            
+        except Exception as e:
+            logger.error(f"Error drawing line: {e}")
+            return None
     
-    def get_default(self) -> AutoCADConfig:
-        """Get default configuration."""
-        return AutoCADConfig()
+    def draw_polyline(self, vertices: List[List[float]], 
+                      layer: str = "0", color: int = 0, closed: bool = False) -> Optional[Any]:
+        """
+        Draw a polyline in the active AutoCAD document.
+        
+        Args:
+            vertices: List of vertex coordinates [[x, y, z], [x, y, z], ...]
+            layer: Layer name for the polyline
+            color: Color index for the polyline
+            closed: Whether the polyline should be closed
+            
+        Returns:
+            Created polyline object or None if failed
+        """
+        try:
+            if not self.connected or not self.acad_doc:
+                logger.error("AutoCAD service not connected. Cannot draw polyline.")
+                return None
+            
+            # Flatten vertices list for AutoCAD
+            flattened_vertices = []
+            for vertex in vertices:
+                flattened_vertices.extend(vertex[:2])  # Take only x, y for 2D polyline
+            
+            model_space = self.acad_doc.ModelSpace
+            polyline_obj = model_space.AddLightWeightPolyline(flattened_vertices)
+            
+            # Apply properties
+            polyline_obj.Layer = layer
+            polyline_obj.Color = color
+            if closed:
+                polyline_obj.Closed = True
+            
+            logger.info(f"Drew polyline with {len(vertices)} vertices")
+            return polyline_obj
+            
+        except Exception as e:
+            logger.error(f"Error drawing polyline: {e}")
+            return None
+    
+    def draw_circle(self, center: List[float], radius: float, 
+                    layer: str = "0", color: int = 0) -> Optional[Any]:
+        """
+        Draw a circle in the active AutoCAD document.
+        
+        Args:
+            center: Center coordinates [x, y, z]
+            radius: Circle radius
+            layer: Layer name for the circle
+            color: Color index for the circle
+            
+        Returns:
+            Created circle object or None if failed
+        """
+        try:
+            if not self.connected or not self.acad_doc:
+                logger.error("AutoCAD service not connected. Cannot draw circle.")
+                return None
+            
+            model_space = self.acad_doc.ModelSpace
+            circle_obj = model_space.AddCircle(center, radius)
+            
+            # Apply properties
+            circle_obj.Layer = layer
+            circle_obj.Color = color
+            
+            logger.info(f"Drew circle at {center} with radius {radius}")
+            return circle_obj
+            
+        except Exception as e:
+            logger.error(f"Error drawing circle: {e}")
+            return None
+    
+    def draw_text(self, text: str, insertion_point: List[float], height: float = 0.2,
+                  layer: str = "0", color: int = 0) -> Optional[Any]:
+        """
+        Draw text in the active AutoCAD document.
+        
+        Args:
+            text: Text string to draw
+            insertion_point: Insertion point [x, y, z]
+            height: Text height
+            layer: Layer name for the text
+            color: Color index for the text
+            
+        Returns:
+            Created text object or None if failed
+        """
+        try:
+            if not self.connected or not self.acad_doc:
+                logger.error("AutoCAD service not connected. Cannot draw text.")
+                return None
+            
+            model_space = self.acad_doc.ModelSpace
+            text_obj = model_space.AddText(text, insertion_point, height)
+            
+            # Apply properties
+            text_obj.Layer = layer
+            text_obj.Color = color
+            
+            logger.info(f"Drew text '{text}' at {insertion_point}")
+            return text_obj
+            
+        except Exception as e:
+            logger.error(f"Error drawing text: {e}")
+            return None
+    
+    def get_document_info(self) -> Dict[str, Any]:
+        """
+        Get information about the active AutoCAD document.
+        
+        Returns:
+            Dictionary containing document information
+        """
+        try:
+            if not self.connected or not self.acad_doc:
+                logger.error("AutoCAD service not connected. Cannot get document info.")
+                return {}
+            
+            doc = self.acad_doc
+            return {
+                "name": doc.Name,
+                "path": doc.Path,
+                "title": doc.Title,
+                "active_space": doc.ActiveSpace,
+                "limits": {
+                    "min_point": list(doc.Limits.MinPoint) if doc.Limits else None,
+                    "max_point": list(doc.Limits.MaxPoint) if doc.Limits else None
+                },
+                "variables": {
+                    "units": doc.GetVariable("INSUNITS"),
+                    "angle_units": doc.GetVariable("AUNITS"),
+                    "precision": doc.GetVariable("LUPREC")
+                }
+            }
+        except Exception as e:
+            logger.error(f"Error getting document info: {e}")
+            return {}
+    
+    def save(self, filepath: str) -> bool:
+        """
+        Save the active document to a file.
+        
+        Args:
+            filepath: Path to save the document
+            
+        Returns:
+            bool: True if save successful, False otherwise
+        """
+        try:
+            if not self.connected or not self.acad_doc:
+                logger.error("AutoCAD service not connected. Cannot save document.")
+                return False
+            
+            # Create directory if it doesn't exist
+            output_dir = os.path.dirname(filepath)
+            if output_dir:
+                os.makedirs(output_dir, exist_ok=True)
+            
+            self.acad_doc.SaveAs(filepath)
+            logger.info(f"Saved document to {filepath}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error saving document to {filepath}: {e}")
+            return False

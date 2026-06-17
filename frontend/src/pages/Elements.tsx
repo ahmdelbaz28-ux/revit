@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -145,13 +146,17 @@ function Elements() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.items.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-8 text-slate-500">
-                        No elements found
-                      </td>
-                    </tr>
-                  ) : (
+{data.items.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8">
+                          <EmptyState
+                            icon={<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-12 w-12 text-slate-600"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>}
+                            title="No elements found"
+                            description="Create your first element to get started"
+                          />
+                        </td>
+                      </tr>
+                    ) : (
                     data.items.map((element) => (
                       <tr
                         key={element.element_id}
