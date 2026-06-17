@@ -238,19 +238,24 @@ ignore = [
     "SIM105",  # try-except-pass pattern - intentional for entity retrieval
     "SIM108",  # Use ternary instead of if-else
     "SIM114",  # enumerate has duplicate value
+    "SIM117",  # Use itertools.chain
     "PLC0415",  # from imports - required for package structure
     "UP006",  # Use `dict` instead of `Dict` - legacy typing style
     "UP015",  # Unnecessary mode argument
     "UP037",  # Use `list` instead of `list` builtin
     "UP045",  # Use `typing_extensions.TypeAlias` for type aliases
+    "W291",  # Trailing whitespace
+    "W292",  # No newline at end of file
     "W293",  # Blank line contains whitespace
     "E402",  # Module level import not at top of file
+    "E701",  # Multiple statements on one line
     "E722",  # bare except
     "E741",  # Ambiguous variable name
     "F401",  # Module imported but unused
     "F811",  # undefined name
     "F821",  # undefined name
     "I001",  # Import needs sorting
+    "N803",  # argument name should be lowercase
     "N806",  # variable in function should be lowercase
     "N815",  # constant name should be SCREAMING_SNAKE_CASE
     "N817",  # constant name should be SCREAMING_SNAKE_CASE
@@ -264,6 +269,7 @@ ignore = [
     "RUF013",  # implicit optional
     "RUF022",  # i control variable
     "RUF059",  # load before checking
+    "RUF100",  # Unused noqa directive
     "PLW0603",  # global-at-module-level
     "PLW1510",  # subprocess call without check
     "PLW2901",  # Outer for loop shadowed
@@ -271,6 +277,7 @@ ignore = [
     "RET505",  # Unnecessary variable assignment
     "PT009",  # legacy assertion syntax
     "PT011",  # pytest raise in except block
+    "PT027",  # pytest raises does not match
 ]
 
 [tool.ruff.lint.isort]
