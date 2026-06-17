@@ -179,7 +179,7 @@ class ClusterCommunicator:
             for sock in self.client_sockets.values():
                 try:
                     sock.close()
-                except:
+                except Exception:
                     pass
 
             self.client_sockets.clear()
@@ -288,7 +288,7 @@ class ClusterCommunicator:
                 if "status" in node_info:
                     try:
                         node.status = NodeStatus(node_info["status"])
-                    except:
+                    except Exception:
                         pass  # Invalid status value
                 if "last_heartbeat" in node_info:
                     node.last_heartbeat = node_info["last_heartbeat"]
@@ -485,7 +485,7 @@ class ClusterCommunicator:
                     with self.lock:
                         self.stats["messages_sent"] += 1
                     return True
-                except:
+                except Exception:
                     # Connection might be broken, remove it
                     del self.client_sockets[node_id]
 

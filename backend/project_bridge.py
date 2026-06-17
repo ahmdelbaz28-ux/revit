@@ -53,9 +53,9 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
 
     try:
         from backend.database import get_db
-        from backend.db_service import DatabaseService
+        from backend.db_service import DatabaseService, get_db_service
 
-        udm = DatabaseService()
+        udm = get_db_service()
         db = get_db()
 
         # Record sync attempt as "syncing"
@@ -142,9 +142,9 @@ def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool
     """
     try:
         from backend.database import get_db
-        from backend.db_service import DatabaseService
+        from backend.db_service import DatabaseService, get_db_service
 
-        udm = DatabaseService()
+        udm = get_db_service()
         db = get_db()
 
         db.record_sync("project", project_id, _TARGET_DB, "syncing")
@@ -232,9 +232,9 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
     """
     try:
         from backend.database import get_db
-        from backend.db_service import DatabaseService
+        from backend.db_service import DatabaseService, get_db_service
 
-        udm = DatabaseService()
+        udm = get_db_service()
         db = get_db()
 
         db.record_sync("project", project_id, _TARGET_DB, "syncing")
@@ -306,9 +306,9 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
 
     try:
         from backend.database import get_db
-        from backend.db_service import DatabaseService
+        from backend.db_service import DatabaseService, get_db_service
 
-        udm = DatabaseService()
+        udm = get_db_service()
         db = get_db()
 
         db.record_sync("device", device_id, _TARGET_DB, "syncing")
@@ -425,9 +425,9 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str
     """
     try:
         from backend.database import get_db
-        from backend.db_service import DatabaseService
+        from backend.db_service import DatabaseService, get_db_service
 
-        udm = DatabaseService()
+        udm = get_db_service()
         db = get_db()
 
         db.record_sync("device", device_id, _TARGET_DB, "syncing")
@@ -536,9 +536,9 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
     """
     try:
         from backend.database import get_db
-        from backend.db_service import DatabaseService
+        from backend.db_service import DatabaseService, get_db_service
 
-        udm = DatabaseService()
+        udm = get_db_service()
         db = get_db()
 
         db.record_sync("device", device_id, _TARGET_DB, "syncing")
@@ -607,9 +607,9 @@ def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> 
 
     try:
         from backend.database import get_db
-        from backend.db_service import DatabaseService
+        from backend.db_service import DatabaseService, get_db_service
 
-        udm = DatabaseService()
+        udm = get_db_service()
         db = get_db()
 
         db.record_sync("connection", connection_id, _TARGET_DB, "syncing")
@@ -698,9 +698,9 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
     """
     try:
         from backend.database import get_db
-        from backend.db_service import DatabaseService
+        from backend.db_service import DatabaseService, get_db_service
 
-        udm = DatabaseService()
+        udm = get_db_service()
         db = get_db()
 
         db.record_sync("connection", connection_id, _TARGET_DB, "syncing")

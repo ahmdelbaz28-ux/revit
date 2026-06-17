@@ -10,9 +10,8 @@ Scans the codebase and generates a dependency graph to identify:
 
 from __future__ import annotations
 
-Run: python -m fireai.tools.dependency_indexer
-Output: fireai/DEPENDENCY_INDEX.md
-"""
+# Run: python -m fireai.tools.dependency_indexer
+# Output: fireai/DEPENDENCY_INDEX.md
 
 import re
 import subprocess

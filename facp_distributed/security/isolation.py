@@ -67,7 +67,7 @@ import resource
 try:
     # Limit virtual memory (in bytes)
     resource.setrlimit(resource.RLIMIT_AS, ({max_memory_mb * 1024 * 1024}, {max_memory_mb * 1024 * 1024}))
-except:
+except Exception:
     # On Windows or systems without resource module, skip this
     pass
 
@@ -216,7 +216,7 @@ except Exception as e:
         try:
             shutil.rmtree(self.sandbox_base_path)
             self.sandbox_base_path = tempfile.mkdtemp(prefix="facp_sandbox_")
-        except:
+        except Exception:
             pass
 
     def get_execution_stats(self) -> Dict[str, Any]:
@@ -329,7 +329,7 @@ class SandboxController:
         # Clean up sandbox directory
         try:
             shutil.rmtree(sandbox_info["sandbox_path"])
-        except:
+        except Exception:
             pass  # Directory might already be cleaned up
 
         # Remove from active sandboxes
@@ -503,6 +503,6 @@ class StatelessExecutionValidator:
                     return False, f"Potential side effect found: {indicator}"
 
             return True, "Function appears deterministic"
-        except:
+        except Exception:
             # If we can't inspect the source, assume it's potentially stateful
             return False, "Cannot validate function - source inspection failed"
