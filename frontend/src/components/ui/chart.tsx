@@ -76,7 +76,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const cssText = Object.entries(THEMES)
     .map(([theme, prefix]) => {
       const safeTheme = theme.replace(/[^a-zA-Z0-9-_]/g, '');
-      const safePrefix = prefix.replace(/[^a-zA-Z0-9-_.# \[\]=:"'*,.]/g, '');
+      const safePrefix = prefix.replace(/[^a-zA-Z0-9-_.# [\]]=:"'*,.]/g, '');
       const rules = colorConfig
         .map(([key, itemConfig]) => {
           const color = itemConfig.theme?.[safeTheme as keyof typeof itemConfig.theme] || itemConfig.color;

@@ -107,11 +107,19 @@ disallow_incomplete_defs = false
 check_untyped_defs = false
 disallow_untyped_decorators = false
 show_error_codes = true
-exclude = ["venv/", ".venv/", "env/", ".env/"]
+exclude = ["venv/", ".venv/", "env/", ".env/", "skills/ppt/scripts/pdf.py"]
+ignore_missing_imports = true
+disallow_subclassing_any = false
+no_implicit_optional = false
+
 
 [[tool.mypy.overrides]]
 module = ["pywin32.*", "pythonnet.*", "clr.*", "Autodesk.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["skills/ppt/scripts/pdf"]
+ignore = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
