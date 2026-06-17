@@ -11,6 +11,7 @@ ARCHITECTURE:
 - All CAD/BIM integration routes
 - Health check endpoints
 - Error handlers for CAD connection issues
+- Redis/Memory Cache with TTL support
 
 USAGE:
     uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
@@ -29,29 +30,15 @@ from pydantic import BaseModel
 
 # Import our CAD/BIM integration routers
 from backend.routers import autocad, revit, digital_twin
+from backend.routers.auth import router as auth_router
+from backend.routers.tasks import router as tasks_router
+from backend.websocket import router as ws_router
 
 # Import rate limiter from centralized module (avoids circular import)
 from backend.limiter import limiter, get_remote_address
 
-# Configure Redis caching (optional - gracefully handles missing Redis)
-_cache = {}
-
-def get_cache():
-    """Get cache instance. Returns in-memory dict if Redis unavailable."""
-    return _cache
-
-async def cache_get(key: str):
-    """Get value from cache."""
-    return _cache.get(key)
-
-async def cache_set(key: str, value: str, expire: int = 300):
-    """Set value in cache with expiration in seconds."""
-    import time
-    _cache[key] = {"value": value, "expire": time.time() + expire}
-
-async def cache_delete(key: str):
-    """Delete key from cache."""
-    _cache.pop(key, None)
+# Import cache layer (Redis with memory fallback)
+from backend.cache import cache
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -64,7 +51,20 @@ async def lifespan(app: FastAPI):
     Used for startup and shutdown tasks.
     """
     logger.info("Starting CAD/BIM Integration Platform...")
+    # Initialize cache (Redis with memory fallback)
+    await cache.initialize()
+    # Initialize WebSocket manager
+    from backend.websocket import ws_manager
+    await ws_manager.start()
+    # Initialize background worker
+    from backend.worker import start_worker
+    await start_worker()
     yield
+    # Shutdown gracefully
+    from backend.worker import stop_worker
+    await stop_worker()
+    await ws_manager.stop()
+    await cache.shutdown()
     logger.info("Shutting down CAD/BIM Integration Platform...")
 
 # Create FastAPI app with lifespan
@@ -122,6 +122,9 @@ app.add_middleware(
 app.include_router(autocad.router, prefix="/api/v1/autocad", tags=["AutoCAD-v1"])
 app.include_router(revit.router, prefix="/api/v1/revit", tags=["Revit-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1/digital-twin", tags=["Digital-Twin-v1"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(tasks_router, prefix="/api/v1/tasks", tags=["Tasks"])
+app.include_router(ws_router, tags=["WebSocket"])
 
 # Health endpoints (no version prefix - always available)
 # These are versioned at root level for easy monitoring
@@ -173,19 +176,13 @@ async def general_exception_handler(request, exc):
 @app.post("/api/v1/cache/clear", tags=["Cache"])
 async def clear_cache():
     """Clear all cached data."""
-    _cache.clear()
-    return {"message": "Cache cleared", "items_cleared": len(_cache)}
+    count = await cache.clear()
+    return {"message": "Cache cleared", "items_cleared": count}
 
 @app.get("/api/v1/cache/stats", tags=["Cache"])
 async def cache_stats():
     """Get cache statistics."""
-    import time
-    active_keys = sum(1 for v in _cache.values() if v.get("expire", 0) > time.time())
-    return {
-        "total_keys": len(_cache),
-        "active_keys": active_keys,
-        "cache_type": "in-memory"
-    }
+    return cache.get_stats()
 
 # Mount static files if needed
 # app.mount("/static", StaticFiles(directory="static"), name="static")
