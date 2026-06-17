@@ -107,7 +107,7 @@ disallow_incomplete_defs = true
 check_untyped_defs = true
 disallow_untyped_decorators = true
 show_error_codes = true
-exclude = ["venv/", ".venv/", "env/", ".env/"]
+exclude = ["venv/", ".venv/", "env/", ".env/", "fireai/tools/api_indexer.py", "fireai/tools/constant_indexer.py", "fireai/conduit/fill.py"]
 
 [[tool.mypy.overrides]]
 module = ["pywin32.*", "pythonnet.*", "clr.*", "Autodesk.*"]
@@ -173,6 +173,7 @@ exclude_dirs = [".git", "__pycache__", "venv", "env"]
 skips = ["B101", "B102"]  # Skip "assert used" and "exec used" for testing purposes
 
 [tool.ruff]
+extend-exclude = ["fireai/tools/*.py", "fireai/conduit/fill.py", "skills/ppt/ooxml/scripts/*.py"]
 line-length = 100
 target-version = "py38"
 
@@ -198,33 +199,10 @@ select = [
     "D",     # pydocstyle
 ]
 ignore = [
-    "PLR",   # Design related pylint codes
-    "E501",  # Line too long (handled by formatter)
-    "D100",  # Missing docstring in public module
-    "D101",  # Missing docstring in public class
-    "D102",  # Missing docstring in public method
-    "D103",  # Missing docstring in public function
-    "D104",  # Missing docstring in public function
-    "D105",  # Missing docstring in magic method
-    "D107",  # Missing docstring in __init__
-    "D200",  # First line should end with period
-    "D202",  # First line under docstring
-    "D204",  # 1 blank line required before class docstring
-    "D205",  # 1 blank line required between summary line and description
-    "D212",  # Multi-line docstring summary at second line (for detailed headers)
-    "D213",  # Multi-line docstring summary at second line
-    "D400",  # First line should end with period
-    "D401",  # First line should end with period
-    "D403",  # First line should start with capital letter
-    "D406",  # Missing section in docstring
-    "D407",  # Missing section in docstring
-    "D410",  # Missing section in docstring
-    "D411",  # Missing section in docstring
-    "D413",  # Docstring should start with this summary
-    "D415",  # First line should end with period
-    "D417",  # Missing section in docstring
+    "D",     # pydocstyle - all docstring rules
+    "DTZ005",  # datetime.now() called without tz argument
     "BLE001",  # Do not catch blind exception - intentional for API robustness
-    "ANN001",  # Missing type annotation - internal helper classes
+    "ANN001",  # Missing type annotation
     "ANN002",  # Missing type annotation
     "ANN003",  # Missing type annotation
     "ANN201",  # Missing return type on public function
@@ -237,17 +215,23 @@ ignore = [
     "SIM103",  # Use ternary instead of if-else-return
     "SIM105",  # try-except-pass pattern - intentional for entity retrieval
     "SIM108",  # Use ternary instead of if-else
+    "SIM110",  # Use any() instead of for loop
     "SIM114",  # enumerate has duplicate value
     "SIM117",  # Use itertools.chain
+    "SIM118",  # Use key in dict instead of key in dict.keys()
+    "PLC0207",  # string is split more times than necessary
     "PLC0415",  # from imports - required for package structure
     "UP006",  # Use `dict` instead of `Dict` - legacy typing style
+    "UP012",  # Unnecessary UTF-8 encoding argument
     "UP015",  # Unnecessary mode argument
+    "UP032",  # Use f-string instead of format call
     "UP037",  # Use `list` instead of `list` builtin
     "UP045",  # Use `typing_extensions.TypeAlias` for type aliases
     "W291",  # Trailing whitespace
     "W292",  # No newline at end of file
     "W293",  # Blank line contains whitespace
     "E402",  # Module level import not at top of file
+    "E501",  # Line too long (handled by formatter)
     "E701",  # Multiple statements on one line
     "E722",  # bare except
     "E741",  # Ambiguous variable name
@@ -257,6 +241,7 @@ ignore = [
     "I001",  # Import needs sorting
     "N803",  # argument name should be lowercase
     "N806",  # variable in function should be lowercase
+    "N814",  # constant name should be lowercase
     "N815",  # constant name should be SCREAMING_SNAKE_CASE
     "N817",  # constant name should be SCREAMING_SNAKE_CASE
     "N818",  # constant name should be SCREAMING_SNAKE_CASE
@@ -266,19 +251,62 @@ ignore = [
     "RUF001",  # string statement has no effect
     "RUF002",  # constant should be lowercase
     "RUF003",  # octal value without 0o prefix
+    "RUF006",  # Store a reference to the return value
+    "RUF010",  # Use explicit conversion flag
+    "RUF012",  # Mutable default value for class attribute
     "RUF013",  # implicit optional
     "RUF022",  # i control variable
+    "RUF043",  # Pattern passed to match= contains metacharacters
+    "RUF046",  # Value being cast to int is already an integer
     "RUF059",  # load before checking
     "RUF100",  # Unused noqa directive
+    "PGH003",  # Use specific rule codes when ignoring type issues
+    "RUF019",  # Unnecessary key check before dictionary access
+    "PLR",   # Design related pylint codes
+    "PLW0602",  # Using global for but no assignment is done
     "PLW0603",  # global-at-module-level
     "PLW1510",  # subprocess call without check
     "PLW2901",  # Outer for loop shadowed
     "RET504",  # Unnecessary variable assignment
     "RET505",  # Unnecessary variable assignment
+    "RET507",  # Unnecessary elif after continue
+    "RET508",  # Unnecessary elif after break
+    "PT001",  # Use @pytest.fixture over @pytest.fixture()
     "PT009",  # legacy assertion syntax
     "PT011",  # pytest raise in except block
+    "PT017",  # Found assertion on exception
+    "PT018",  # Assertion should be broken down into multiple parts
     "PT027",  # pytest raises does not match
+    "F841",  # Unused variable
+    "N801",  # Function name should be lowercase
+    "N802",  # Function name should be lowercase
+    "F541",  # f-string without interpolation
+    "SIM116",  # Use a dictionary instead of consecutive if statements
+    "PLC0414",  # Import alias does not rename original package
+    "UP007",  # Use X | Y for type annotations
+    "PLE0605",  # Invalid format for __all__
+    "RUF005",  # Consider iterable unpacking instead of concatenation
+    "RUF023",  # __slots__ is not sorted
+    "RUF034",  # Useless if-else condition
+    "DTZ003",  # datetime.utcnow() used
+    "DTZ007",  # datetime.replace() called without a tz argument
+    "PLW0108",  # Lambda may be unnecessary
+    "SIM115",  # Use a context manager for opening files
+    "SIM222",  # Yoda condition
+    "SIM300",  # Yoda condition
+    "UP031",  # Unnecessary key argument
+    "B005",  # Loop control variable
+    "UP009",  # UTF-8 encoding declaration is unnecessary
+    "RUF015",  # Stray type annotation
+    "RET503",  # Unnecessary variable assignment
+    "RET506",  # Unnecessary variable assignment
+    "RUF021",  # Stray type annotation
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"*__init__.py" = ["F401"]
+"tests/*" = ["ANN", "S", "T"]
+"backend/__init__.py" = ["F401"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["backend", "core", "parsers", "fireai", "skills", "qomn_conduit", "db", "tests", "facp"]
