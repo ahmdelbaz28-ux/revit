@@ -6,13 +6,12 @@ Scans the codebase and generates a dependency graph to identify:
 - Module layers and their dependencies
 - Circular import risks
 - Architecture violations
-"""
-
-from __future__ import annotations
 
 Run: python -m fireai.tools.dependency_indexer
 Output: fireai/DEPENDENCY_INDEX.md
 """
+
+from __future__ import annotations
 
 import re
 import subprocess
@@ -203,11 +202,11 @@ def generate_markdown(deps: dict, circular: list, violations: list) -> str:
 
 ```
 Layer 4 (Integration):    digital_twin, floor_orchestrator, analysis_pipeline
-        │
+        |
 Layer 3 (Engineering):    qomn_kernel, device_placement, density_optimizer
-        │
+        |
 Layer 2 (Standards):      nfpa72_coverage, nfpa72_engine, voltage_drop
-        │
+        |
 Layer 1 (Foundation):     contracts, nfpa72_models, nfpa72_calculations
 ```
 

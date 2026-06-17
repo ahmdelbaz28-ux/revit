@@ -4,13 +4,12 @@ FireAI — Constants Cross-Reference Index Generator
 
 Tracks where each constant is used across the codebase.
 Generates impact analysis for constant changes.
-"""
-
-from __future__ import annotations
 
 Run: python -m fireai.tools.crossref_indexer
 Output: fireai/CROSSREF_INDEX.md
 """
+
+from __future__ import annotations
 
 import logging
 import re
