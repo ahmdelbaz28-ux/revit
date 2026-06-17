@@ -1,4 +1,5 @@
-"""AutoCAD Integration Endpoints
+"""AutoCAD Integration Endpoints.
+
 ============================
 
 REST API endpoints for AutoCAD integration operations.
@@ -79,7 +80,7 @@ _autocad_service: Optional[AutoCADService] = None
 
 def get_autocad_service() -> AutoCADService:
     """Get or initialize AutoCAD service singleton."""
-    global _autocad_service
+    global _autocad_service  # noqa: PLW0603
     if _autocad_service is None:
         _autocad_service = AutoCADService()
     return _autocad_service

@@ -885,7 +885,7 @@ class AutoCADService:
             model_space = self.acad_doc.ModelSpace
             block_name = self.acad_doc.Blocks.Import(file_path, True)
             block = model_space.InsertBlock(insertion_point, block_name, scale, scale, scale, math.radians(rotation))
-            block.Layer = layer
+            block.Layer = layer  # noqa: E501
             handle = block.Handle
             self.active_entities[handle] = block
             logger.info(f"Inserted block from {file_path}")
@@ -1416,7 +1416,10 @@ class AutoCADService:
 
             if "get all entities" in command_lower or "list entities" in command_lower:
                 entities = self.get_entities()
-                return {"success": True, "action": "get_entities", "count": len(entities), "entities": entities}
+                return {
+                    "success": True, "action": "get_entities",
+                    "count": len(entities), "entities": entities
+                }
 
             if "delete entity" in command_lower or "remove entity" in command_lower:
                 handles = re.findall(r'[a-f0-9-]{8}', command_lower)
@@ -1428,7 +1431,10 @@ class AutoCADService:
 
             if "get layers" in command_lower or "list layers" in command_lower:
                 layers = self.get_layers()
-                return {"success": True, "action": "get_layers", "count": len(layers), "layers": layers}
+                return {
+                    "success": True, "action": "get_layers",
+                    "count": len(layers), "layers": layers
+                }
 
             return {
                 "success": False,
