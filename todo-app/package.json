@@ -16,7 +16,18 @@
     "lint": "npm run lint --workspaces --if-present",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:push": "npm run db:push --workspace=apps/api",
-    "db:seed": "npm run db:seed --workspace=apps/api"
+    "db:seed": "npm run db:seed --workspace=apps/api",
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix"
+  },
+  "overrides": {
+    "tar": "^7.4.0",
+    "bcrypt": "^5.1.1",
+    "express": "^4.21.0",
+    "@types/jest": "^29.5.14",
+    "node-notifier": "^10.0.1",
+    "jest": "^29.7.0",
+    "@jest/reporters": "^29.7.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
