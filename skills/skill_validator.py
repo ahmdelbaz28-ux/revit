@@ -1,224 +1,318 @@
 """
-skills/skill_validator.py — AI Agent Skill Validation System
-============================================================
+skills/skill_validator.py - AI Agent Skill Validation System
 
-Production-ready skill validation using Pydantic patterns.
-Implements robust data validation for AI agent skills with comprehensive error handling.
-
-ARCHITECTURE:
-- Pydantic BaseModel for skill data structures
-- Custom field validators for business logic
-- Serialization/deserialization patterns
-- Comprehensive error handling
-
-USAGE:
-    from skills.skill_validator import SkillDescription, ExecutionResult
-    skill = SkillDescription(name="test", description="test desc", trigger_words=["test"])
+This module provides comprehensive validation for AI Agent Skills
+using Pydantic models with strict type checking and validation.
 """
 
-from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Optional, Union, Dict, Any, List
-import re
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, Optional, TypeVar, Generic, List, Dict, Optional as Opt, Union
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
+
+
+T = TypeVar("T")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SKILL METADATA
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 class SkillMetadata(BaseModel):
-    """
-    Metadata for AI agent skills.
+    """Validated skill metadata with strict constraints."""
     
-    Contains authorship, versioning, and dependency information.
-    """
-    author: str = Field(
-        ..., 
-        description="Author of the skill", 
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        validate_assignment=True,
+        extra="forbid",
+    )
+    
+    name: str = Field(
         min_length=1,
-        max_length=100
+        max_length=100,
+        description="Skill name - unique identifier",
     )
     version: str = Field(
-        ..., 
-        description="Semantic version of the skill",
-        pattern=r"^\d+\.\d+\.\d+$"
+        pattern=r"^\d+\.\d+\.\d+$",
+        description="Semantic version (X.Y.Z)",
     )
-    requires: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Dependency requirements for the skill"
+    author: str = Field(
+        min_length=1,
+        max_length=100,
+        description="Author name or organization",
     )
-    license: Optional[str] = Field(
+    created_at: datetime = Field(
+        default_factory=datetime.now,
+        description="Creation timestamp",
+    )
+    updated_at: Opt[datetime] = Field(
         default=None,
-        description="License information for the skill"
+        description="Last update timestamp",
     )
-    tags: List[str] = Field(
-        default_factory=list,
-        description="Tags for categorizing the skill"
-    )
-
-    @field_validator('author')
+    
+    @field_validator("version")
     @classmethod
-    def validate_author(cls, v: str) -> str:
-        """Validate author field."""
-        if not v.strip():
-            raise ValueError("Author cannot be empty or whitespace")
-        return v.strip()
+    def validate_version_format(cls, v: str) -> str:
+        """Ensure version follows semantic versioning."""
+        parts = v.split(".")
+        if len(parts) != 3:
+            raise ValueError("Version must be X.Y.Z format")
+        if not all(p.isdigit() for p in parts):
+            raise ValueError("All version parts must be numeric")
+        return v
+    
+    @field_validator("name")
+    @classmethod
+    def validate_name_chars(cls, v: str) -> str:
+        """Ensure name contains only allowed characters."""
+        allowed = set("abcdefghijklmnopqrstuvwxyz0123456789-_")
+        if not all(c.lower() in allowed for c in v):
+            raise ValueError(
+                "Name must contain only lowercase letters, numbers, hyphens, underscores"
+            )
+        return v.lower()
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SKILL DESCRIPTION
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 class SkillDescription(BaseModel):
-    """
-    Description and configuration for an AI agent skill.
+    """Skill description with trigger word extraction."""
     
-    Defines the skill's purpose, triggers, and execution parameters.
-    """
-    name: str = Field(
-        ...,
-        description="Unique name of the skill",
-        min_length=1,
-        max_length=100,
-        pattern=r'^[a-zA-Z][a-zA-Z0-9_-]*$'
-    )
-    description: str = Field(
-        ...,
-        description="Detailed description of what the skill does",
+    model_config = ConfigDict(extra="forbid")
+    
+    short_description: str = Field(
         min_length=10,
-        max_length=1000
+        max_length=200,
+        description="Brief description for listings",
     )
-    trigger_words: List[str] = Field(
-        ...,
-        description="Words that trigger this skill",
-        min_length=1
+    long_description: Opt[str] = Field(
+        default=None,
+        max_length=5000,
+        description="Detailed description",
     )
-    category: str = Field(
-        default="general",
-        description="Category for organizing skills",
+    trigger_words: list[str] = Field(
         min_length=1,
-        max_length=50
+        max_length=50,
+        description="Keywords that activate this skill",
     )
-    enabled: bool = Field(
-        default=True,
-        description="Whether the skill is enabled"
-    )
-    timeout: int = Field(
-        default=30,
-        description="Timeout in seconds for skill execution",
-        ge=1,
-        le=300
-    )
-    priority: int = Field(
-        default=0,
-        description="Execution priority (lower runs first)",
-        ge=-10,
-        le=10
-    )
-
-    @field_validator('trigger_words')
-    @classmethod
-    def validate_trigger_words(cls, v: List[str]) -> List[str]:
-        """Validate trigger words."""
-        if not v:
-            raise ValueError("Must have at least one trigger word")
-        cleaned = []
-        for word in v:
-            cleaned_word = word.strip().lower()
-            if not cleaned_word:
-                raise ValueError(f"Trigger word cannot be empty: '{word}'")
-            cleaned.append(cleaned_word)
-        return list(set(cleaned))  # Remove duplicates
-
-    @field_validator('description')
-    @classmethod
-    def validate_description(cls, v: str) -> str:
-        """Validate description field."""
-        if len(v.strip()) < 10:
-            raise ValueError("Description must be at least 10 characters")
-        return v.strip()
-
-    @model_validator(mode='after')
-    def validate_triggers_coverage(self) -> 'SkillDescription':
-        """Validate that trigger words provide adequate coverage for the skill."""
-        if self.trigger_words and self.description:
-            # Ensure trigger words are reasonable for the description
-            desc_lower = self.description.lower()
-            for trigger in self.trigger_words:
-                if len(trigger) < 2:
-                    raise ValueError(f"Trigger word '{trigger}' is too short (minimum 2 characters)")
-        return self
-
-
-class ExecutionResult(BaseModel):
-    """
-    Result of executing an AI agent skill.
-    
-    Contains success status, data, and error information.
-    """
-    success: bool = Field(..., description="Whether the skill execution succeeded")
-    data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Result data from successful execution"
-    )
-    error: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Error information from failed execution"
-    )
-    execution_time: Optional[float] = Field(
-        default=None,
-        description="Time taken to execute the skill in seconds"
-    )
-    timestamp: Optional[str] = Field(
-        default=None,
-        description="Timestamp of execution"
-    )
-
-    @model_validator(mode='after')
-    def validate_result_consistency(self) -> 'ExecutionResult':
-        """Ensure result consistency."""
-        if self.success and self.error:
-            raise ValueError("Success cannot be True when error is present")
-        if not self.success and not self.error:
-            raise ValueError("Error must be present when success is False")
-        if self.success and self.data is None:
-            raise ValueError("Data must be present when success is True")
-        return self
-
-
-class SkillConfig(BaseModel):
-    """
-    Configuration for skill execution environment.
-    """
-    max_concurrent: int = Field(
-        default=5,
-        description="Maximum number of concurrent executions",
-        ge=1,
-        le=100
-    )
-    cache_enabled: bool = Field(
-        default=True,
-        description="Whether caching is enabled for this skill"
-    )
-    cache_ttl: int = Field(
-        default=3600,
-        description="Cache time-to-live in seconds",
-        ge=60,
-        le=86400
-    )
-    rate_limit: Optional[Dict[str, int]] = Field(
-        default=None,
-        description="Rate limiting configuration"
-    )
-    allowed_hosts: List[str] = Field(
+    use_cases: list[str] = Field(
         default_factory=list,
-        description="List of allowed hosts for external requests"
+        max_length=20,
+        description="Common use case descriptions",
     )
+    
+    @field_validator("trigger_words")
+    @classmethod
+    def validate_triggers(cls, v: list[str]) -> list[str]:
+        """Ensure trigger words are meaningful."""
+        if not v:
+            raise ValueError("At least one trigger word is required")
+        cleaned = [t.strip().lower() for t in v if t.strip()]
+        if len(cleaned) < len(v):
+            raise ValueError("Trigger words cannot be empty or whitespace only")
+        return list(set(cleaned))  # Deduplicate
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SKILL CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class SkillPermissions(BaseModel):
+    """Permissions required by a skill."""
+    
+    model_config = ConfigDict(extra="forbid")
+    
+    network: bool = Field(default=False, description="Requires network access")
+    filesystem_read: bool = Field(default=False, description="Requires read access")
+    filesystem_write: bool = Field(default=False, description="Requires write access")
+    subprocess: bool = Field(default=False, description="Can spawn subprocesses")
+    env_vars: list[str] = Field(default_factory=list, description="Required env vars")
+    
+    @field_validator("env_vars", mode="before")
+    @classmethod
+    def validate_env_vars(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v if isinstance(v, list) else []
+
+
+class SkillRequirements(BaseModel):
+    """Runtime requirements for a skill."""
+    
+    model_config = ConfigDict(extra="forbid")
+    
+    python_version: str = Field(
+        pattern=r"^\d+\.\d+$",
+        default="3.10",
+        description="Minimum Python version",
+    )
+    dependencies: dict[str, str] = Field(
+        default_factory=dict,
+        description="Package name to version spec",
+    )
+    permissions: SkillPermissions = Field(
+        default_factory=SkillPermissions,
+        description="Permission requirements",
+    )
+    max_execution_time: int = Field(
+        default=300,
+        ge=1,
+        le=3600,
+        description="Max execution time in seconds",
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXECUTION RESULT
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class ExecutionError(BaseModel):
+    """Standardized error response."""
+    
+    model_config = ConfigDict(extra="forbid")
+    
+    error: bool = True
+    type: str = Field(description="Error classification")
+    message: str = Field(description="Human-readable message")
+    action_required: Opt[str] = Field(
+        default=None,
+        description="How to resolve",
+    )
+    can_retry: bool = Field(default=False, description="Whether retry is safe")
+    details: Opt[dict[str, Any]] = Field(
+        default=None,
+        description="Additional context",
+    )
+
+
+class ExecutionResult(BaseModel, Generic[T]):
+    """Generic execution result with type safety."""
+    
+    model_config = ConfigDict(extra="forbid")
+    
+    success: bool = Field(description="Whether execution succeeded")
+    data: Opt[T] = Field(default=None, description="Result data")
+    error: Opt[ExecutionError] = Field(default=None, description="Error if failed")
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description="Execution timestamp",
+    )
+    duration_ms: Opt[float] = Field(
+        default=None,
+        ge=0,
+        description="Execution duration in milliseconds",
+    )
+    
+    @model_validator(mode="after")
+    def validate_mutual_exclusivity(self) -> "ExecutionResult":
+        """Ensure error and data are mutually exclusive."""
+        if self.success and self.error is not None:
+            raise ValueError("Cannot have error on successful execution")
+        if not self.success and self.data is not None:
+            raise ValueError("Cannot have data on failed execution")
+        return self
+    
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to dictionary for JSON export."""
+        return self.model_dump(mode="json")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SKILL VALIDATOR
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 class SkillManifest(BaseModel):
-    """
-    Complete manifest describing a skill and its configuration.
-    """
+    """Complete skill manifest with all validation."""
+    
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        validate_assignment=True,
+        extra="forbid",
+    )
+    
     metadata: SkillMetadata
     description: SkillDescription
-    config: SkillConfig = Field(default_factory=SkillConfig)
-    dependencies: List[str] = Field(
-        default_factory=list,
-        description="List of skill dependencies"
+    requirements: SkillRequirements = Field(default_factory=SkillRequirements)
+    version_compatibility: str = Field(
+        default="1.0",
+        pattern=r"^\d+\.\d+$",
     )
+    tags: list[str] = Field(default_factory=list, max_length=10)
+    
+    @field_validator("tags", mode="before")
+    @classmethod
+    def validate_tags(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            return [x.strip().lower() for x in v.split(",") if x.strip()]
+        return v if isinstance(v, list) else []
+    
+    @field_validator("tags")
+    @classmethod
+    def validate_tags_content(cls, v: list[str]) -> list[str]:
+        """Ensure tags are meaningful."""
+        return [t for t in v if len(t) >= 2]
+    
+    def get_trigger_pattern(self) -> str:
+        """Generate regex pattern from trigger words."""
+        import re
+        escaped = [re.escape(t) for t in self.description.trigger_words]
+        return "|".join(escaped)
 
-    def get_schema(self) -> Dict[str, Any]:
-        """Get the JSON schema for this manifest."""
-        return self.model_json_schema()
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VALIDATION FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def validate_skill_manifest(data: dict[str, Any]) -> tuple[bool, Opt[str]]:
+    """
+    Validate skill manifest data.
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    try:
+        SkillManifest(**data)
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+
+def validate_version_compatibility(
+    skill_version: str,
+    system_version: str,
+) -> bool:
+    """
+    Check if skill version is compatible with system.
+    
+    Args:
+        skill_version: Version claimed by skill (X.Y)
+        system_version: Current system version (X.Y)
+    
+    Returns:
+        True if compatible
+    """
+    skill_parts = skill_version.split(".")
+    system_parts = system_version.split(".")
+    
+    # Major version must match
+    if skill_parts[0] != system_parts[0]:
+        return False
+    
+    # Minor version must be <= system
+    return int(skill_parts[1]) <= int(system_parts[1])

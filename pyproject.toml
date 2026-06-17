@@ -28,7 +28,6 @@ classifiers = [
     "Typing :: Typed"
 ]
 keywords = ["cad", "bim", "revit", "autocad", "digital-twin", "engineering", "integration"]
-requires-python = ">=3.8"
 dependencies = [
     "fastapi>=0.100.0,<1.0.0",
     "uvicorn[standard]>=0.20.0,<1.0.0",
@@ -120,79 +119,9 @@ addopts = [
     "--strict-config",
     "-ra",
     "--tb=short",
-    "--disable-warnings"
-]
-markers = [
-    "slow: marks tests as slow",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests"
-]
-asyncio_mode = "auto"
-
-[tool.coverage.run]
-source = ["."]
-omit = [
-    "*/tests/*",
-    "*/test_*",
-    "*/__pycache__/*",
-    "*/venv/*",
-    "*/.venv/*",
-    "*/env/*",
-    "*/.env/*"
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:"
-]
-
-[tool.ruff]
-line-length = 100
-target-version = "py38"
-
-[tool.ruff.lint]
-select = [
-    "E",     # pycodestyle errors
-    "W",     # pycodestyle warnings  
-    "F",     # pyflakes
-    "I",     # isort
-    "N",     # pep8-naming
-    "UP",    # pyupgrade
-    "B",     # flake8-bugbear
-    "C4",    # flake8-comprehensions
-    "DTZ",   # flake8-datetimez
-    "SIM",   # flake8-simplify
-    "PGH",   # pygrep-hooks
-    "PL",    # pylint
-    "PT",    # flake8-pytest-style
-    "RUF",   # Ruff-specific rules
-]
-ignore = [
-    "PLR",   # Design related pylint codes
-    "E501",  # Line too long (handled by formatter)
-]
-
-[tool.ruff.lint.isort]
-known-first-party = ["backend", "core", "parsers", "fireai", "skills", "qomn_conduit", "db", "tests"]
-known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", "requests", "pyjwt", "passlib", "cryptography", "websockets", "asyncpg", "redis", "celery", "python_dateutil", "pytz", "pywin32", "pythonnet", "tenacity", "hypothesis", "pytest", "black", "flake8", "mypy", "ruff", "pre_commit", "bandit", "safety", "types_requests", "types_python_dateutil", "mkdocs", "mkdocs_material", "mkdocstrings"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-norecursedirs = [".git", "__pycache__", "venv", "env", "revit-main", "facp_distributed"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "--strict-markers",
-    "--strict-config",
-    "-ra",
+    "--disable-warnings",
     "--showlocals",
-    "--verbose",
-    "--tb=short"
+    "--verbose"
 ]
 markers = [
     "slow: marks tests as slow",
@@ -208,16 +137,21 @@ filterwarnings = [
     "ignore::UserWarning",
     "ignore::FutureWarning"
 ]
+norecursedirs = [".git", "__pycache__", "venv", "env", "revit-main", "facp_distributed"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 
 [tool.coverage.run]
-source = ["fireai"]
+source = ["."]
 omit = [
     "*/tests/*",
-    "*/test_*.py",
+    "*/test_*",
     "*/__pycache__/*",
     "*/venv/*",
+    "*/.venv/*",
     "*/env/*",
-    "setup.py"
+    "*/.env/*"
 ]
 branch = true
 
@@ -228,21 +162,8 @@ exclude_lines = [
     "def __repr__",
     "raise AssertionError",
     "raise NotImplementedError",
-    "if __name__ == .__main__.:"
+    "if __name__ == .__main__.:
 ]
-
-[tool.mypy]
-python_version = "3.12"
-warn_return_any = false
-warn_unused_configs = true
-warn_unused_ignores = false
-warn_redundant_casts = true
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-check_untyped_defs = true
-disallow_untyped_decorators = false
-namespace_packages = true
-mypy_path = ["stubs"]
 
 [tool.bandit]
 targets = ["fireai", "tests"]
@@ -251,7 +172,7 @@ skips = ["B101", "B102"]  # Skip "assert used" and "exec used" for testing purpo
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py38"
 
 [tool.ruff.lint]
 select = [
@@ -285,14 +206,5 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["fireai", "facp"]
-known-third-party = ["numpy", "scipy", "shapely", "pydantic", "fastapi", "sqlalchemy", "pytest", "requests"]
-order-by-type = true
-combine-as-imports = true
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-indent-width = 4
-line-ending = "auto"
-skip-magic-trailing-comma = false
+known-first-party = ["backend", "core", "parsers", "fireai", "skills", "qomn_conduit", "db", "tests", "facp"]
+known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", "requests", "pyjwt", "passlib", "cryptography", "websockets", "asyncpg", "redis", "celery", "python_dateutil", "pytz", "pywin32", "pythonnet", "tenacity", "hypothesis", "pytest", "black", "flake8", "mypy", "ruff", "pre_commit", "bandit", "safety", "types_requests", "types_python_dateutil", "mkdocs", "mkdocs_material", "mkdocstrings", "numpy", "scipy", "shapely"]
