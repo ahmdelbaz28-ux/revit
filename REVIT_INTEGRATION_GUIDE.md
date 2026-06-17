@@ -39,21 +39,32 @@ revit.execute_ai_command("Search api for Wall.Create")
 
 ```bash
 # Using direct API (requires Revit)
-curl -X POST "http://localhost:8000/api/v1/revit-integration/connect" \
+curl -X POST "http://localhost:8000/api/v1/revit/connect" \
   -H "Content-Type: application/json" \
   -d '{"method": "api"}'
 
+# Using Macro (free, runs inside Revit)
+curl -X POST "http://localhost:8000/api/v1/revit/connect" \
+  -H "Content-Type: application/json" \
+  -d '{"method": "macro"}'
+
 # Simulation mode (development)
-curl -X POST "http://localhost:8000/api/v1/revit-integration/connect" \
+curl -X POST "http://localhost:8000/api/v1/revit/connect" \
   -H "Content-Type: application/json" \
   -d '{"method": "simulation"}'
 ```
 
-### 2. Create Elements
+### 2. Check Status
+
+```bash
+curl "http://localhost:8000/api/v1/revit/status"
+```
+
+### 3. Create Elements
 
 ```bash
 # Create a wall
-curl -X POST "http://localhost:8000/api/v1/revit-integration/elements/create/wall" \
+curl -X POST "http://localhost:8000/api/v1/revit/elements/create/wall" \
   -H "Content-Type: application/json" \
   -d '{
     "start_point": [0, 0, 0],
@@ -62,8 +73,16 @@ curl -X POST "http://localhost:8000/api/v1/revit-integration/elements/create/wal
     "level": "Level 1"
   }'
 
+# Create a floor
+curl -X POST "http://localhost:8000/api/v1/revit/elements/create/floor" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "boundary_points": [[0,0,0], [5000,0,0], [5000,5000,0], [0,5000,0]],
+    "level": "Level 1"
+  }'
+
 # Create a door
-curl -X POST "http://localhost:8000/api/v1/revit-integration/elements/create/door" \
+curl -X POST "http://localhost:8000/api/v1/revit/elements/create/door" \
   -H "Content-Type: application/json" \
   -d '{
     "host_wall_id": "12345",
@@ -71,25 +90,55 @@ curl -X POST "http://localhost:8000/api/v1/revit-integration/elements/create/doo
     "family_type": "M_Single-Flush",
     "level": "Level 1"
   }'
+
+# Create a column
+curl -X POST "http://localhost:8000/api/v1/revit/elements/create/column" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "location_point": [2500, 2500, 0],
+    "height": 3000,
+    "level": "Level 1"
+  }'
 ```
 
-### 3. Query Elements
+### 4. Query Elements
 
 ```bash
+# Get all elements
+curl "http://localhost:8000/api/v1/revit/elements"
+
 # Get all walls
-curl "http://localhost:8000/api/v1/revit-integration/elements?category=Walls"
+curl "http://localhost:8000/api/v1/revit/elements?category=Walls"
+
+# Get all doors
+curl "http://localhost:8000/api/v1/revit/elements?category=Doors"
 
 # Get selected elements
-curl "http://localhost:8000/api/v1/revit-integration/elements/selected"
+curl "http://localhost:8000/api/v1/revit/elements/selected"
 
 # Get element by ID
-curl "http://localhost:8000/api/v1/revit-integration/elements/12345"
+curl "http://localhost:8000/api/v1/revit/elements/12345"
+
+# Get element parameters
+curl "http://localhost:8000/api/v1/revit/elements/12345/parameters"
 ```
 
-### 4. AI Command Execution
+### 5. Update/Delete Elements
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/revit-integration/execute" \
+# Update element parameters
+curl -X PUT "http://localhost:8000/api/v1/revit/elements/12345/parameters" \
+  -H "Content-Type: application/json" \
+  -d '{"parameters": {"Mark": "W-001", "Comments": "Updated"}}'
+
+# Delete element
+curl -X DELETE "http://localhost:8000/api/v1/revit/elements/12345"
+```
+
+### 6. AI Command Execution
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/revit/execute" \
   -H "Content-Type: application/json" \
   -d '{
     "command": "Create a door in the selected wall"
@@ -99,56 +148,51 @@ curl -X POST "http://localhost:8000/api/v1/revit-integration/execute" \
 ## API Endpoints
 
 ### Connection
-- `POST /api/v1/revit-integration/connect` - Connect to Revit
-- `POST /api/v1/revit-integration/disconnect` - Disconnect
-- `GET /api/v1/revit-integration/status` - Get status
+- `POST /api/v1/revit/connect` - Connect to Revit
+- `POST /api/v1/revit/disconnect` - Disconnect
+- `GET /api/v1/revit/status` - Get status
 
 ### Document
-- `POST /api/v1/revit-integration/document/open` - Open RVT file
-- `POST /api/v1/revit-integration/document/save` - Save document
-- `POST /api/v1/revit-integration/document/close` - Close document
+- `POST /api/v1/revit/document/open` - Open RVT file
+- `POST /api/v1/revit/document/save` - Save document
+- `POST /api/v1/revit/document/close` - Close document
 
 ### Elements - Create
-- `POST /api/v1/revit-integration/elements/create/wall` - Create wall
-- `POST /api/v1/revit-integration/elements/create/floor` - Create floor
-- `POST /api/v1/revit-integration/elements/create/door` - Create door
-- `POST /api/v1/revit-integration/elements/create/window` - Create window
-- `POST /api/v1/revit-integration/elements/create/column` - Create column
-- `POST /api/v1/revit-integration/elements/create/beam` - Create beam
-- `POST /api/v1/revit-integration/elements/create/family` - Create family instance
+- `POST /api/v1/revit/elements/create/wall` - Create wall
+- `POST /api/v1/revit/elements/create/floor` - Create floor
+- `POST /api/v1/revit/elements/create/door` - Create door
+- `POST /api/v1/revit/elements/create/window` - Create window
+- `POST /api/v1/revit/elements/create/column` - Create column
+- `POST /api/v1/revit/elements/create/beam` - Create beam
+- `POST /api/v1/revit/elements/create/family` - Create family instance
 
 ### Elements - Read
-- `GET /api/v1/revit-integration/elements` - Get all elements
-- `GET /api/v1/revit-integration/elements/selected` - Get selected
-- `GET /api/v1/revit-integration/elements/{id}` - Get by ID
-- `GET /api/v1/revit-integration/elements/{id}/parameters` - Get parameters
+- `GET /api/v1/revit/elements` - Get all elements
+- `GET /api/v1/revit/elements/selected` - Get selected
+- `GET /api/v1/revit/elements/{id}` - Get by ID
+- `GET /api/v1/revit/elements/{id}/parameters` - Get parameters
 
 ### Elements - Update/Delete
-- `PUT /api/v1/revit-integration/elements/{id}/parameters` - Update parameters
-- `DELETE /api/v1/revit-integration/elements/{id}` - Delete element
+- `PUT /api/v1/revit/elements/{id}/parameters` - Update parameters
+- `DELETE /api/v1/revit/elements/{id}` - Delete element
 
 ### Views & Levels
-- `GET /api/v1/revit-integration/views` - Get all views
-- `POST /api/v1/revit-integration/views` - Create view
-- `GET /api/v1/revit-integration/levels` - Get all levels
-- `POST /api/v1/revit-integration/levels` - Create level
-- `GET /api/v1/revit-integration/grids` - Get all grids
-- `GET /api/v1/revit-integration/worksets` - Get all worksets
+- `GET /api/v1/revit/views` - Get all views
+- `GET /api/v1/revit/levels` - Get all levels
+- `GET /api/v1/revit/grids` - Get all grids
+- `GET /api/v1/revit/worksets` - Get all worksets
 
 ### Families
-- `GET /api/v1/revit-integration/families/{category}/symbols` - Get family symbols
-- `POST /api/v1/revit-integration/families/load` - Load family
+- `GET /api/v1/revit/families/{category}/symbols` - Get family symbols
+- `POST /api/v1/revit/families/load` - Load family
 
 ### Search
-- `POST /api/v1/revit-integration/search/api` - Search local API data
-- `GET /api/v1/revit-integration/search/online` - Search RevitAPIDocs.com
-- `POST /api/v1/revit-integration/data/load` - Load API data file
+- `POST /api/v1/revit/search/api/load` - Load API data file
+- `POST /api/v1/revit/search/api` - Search local API data
+- `GET /api/v1/revit/search/online` - Search RevitAPIDocs.com
 
-### AI & Transactions
-- `POST /api/v1/revit-integration/execute` - Execute AI command
-- `POST /api/v1/revit-integration/transaction/start` - Start transaction
-- `POST /api/v1/revit-integration/transaction/commit` - Commit transaction
-- `POST /api/v1/revit-integration/transaction/rollback` - Rollback transaction
+### AI
+- `POST /api/v1/revit/execute` - Execute AI command
 
 ## Using RevitAPIDocGen Data
 

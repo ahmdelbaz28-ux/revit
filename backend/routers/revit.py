@@ -2,25 +2,58 @@
 backend/routers/revit.py — Revit Integration Endpoints
 =====================================================
 
-REST API endpoints for Revit integration operations.
-Provides connection, file operations, and element operations.
+REST API endpoints for Revit integration with full AI agent support.
+
+CONNECTION METHODS:
+- API: Direct Revit API (requires Revit + pythonnet)
+- MACRO: Revit Macro API (free, runs inside Revit)
+- SIMULATION: Development mode (no Revit needed)
+
+ELEMENT OPERATIONS:
+- Walls, Floors, Doors, Windows, Columns, Beams, Family Instances
+- Element CRUD (Create, Read, Update, Delete)
+- Parameter manipulation
+- View/Level/Grid operations
+
+AI FEATURES:
+- Natural language command execution
+- RevitAPIDocs.com search (local and online)
+- Family/Symbol management
 
 ENDPOINTS:
-- POST /api/revit/connect - Connect to Revit application
-- POST /api/revit/read_rvt - Read elements from RVT file
-- POST /api/revit/write_rvt - Write elements to RVT file
-- POST /api/revit/create_wall - Create wall in Revit
-- POST /api/revit/create_floor - Create floor in Revit
+- POST /api/revit/connect - Connect to Revit (method: api, macro, simulation)
 - GET /api/revit/status - Get connection status
-- POST /api/revit/save - Save current document
+- POST /api/revit/document/open - Open RVT file
+- POST /api/revit/document/save - Save document
+- POST /api/revit/document/close - Close document
+- GET /api/revit/elements - Get elements (filter by category)
+- GET /api/revit/elements/{id} - Get element by ID
+- GET /api/revit/elements/selected - Get selected elements
+- POST /api/revit/elements/create/wall - Create wall
+- POST /api/revit/elements/create/floor - Create floor
+- POST /api/revit/elements/create/door - Create door
+- POST /api/revit/elements/create/window - Create window
+- POST /api/revit/elements/create/column - Create column
+- POST /api/revit/elements/create/beam - Create beam
+- POST /api/revit/elements/create/family - Create family instance
+- PUT /api/revit/elements/{id}/parameters - Update parameters
+- DELETE /api/revit/elements/{id} - Delete element
+- GET /api/revit/views - Get all views
+- GET /api/revit/levels - Get all levels
+- GET /api/revit/grids - Get all grids
+- GET /api/revit/worksets - Get all worksets
+- GET /api/revit/families/{category}/symbols - Get family symbols
+- POST /api/revit/search/api - Search local API data
+- GET /api/revit/search/online - Search RevitAPIDocs.com
+- POST /api/revit/execute - Execute AI command
 """
 
 import asyncio
 import logging
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query
+from pydantic import BaseModel, Field
 
 from backend.services.revit_service import RevitService
 
@@ -28,261 +61,274 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 service = RevitService()
 
-# Pydantic models
+
+# =============================================================================
+# REQUEST/RESPONSE MODELS
+# =============================================================================
+
 class ConnectRequest(BaseModel):
-    """Request model for Revit connection."""
-    pass  # Revit connection doesn't typically require parameters
+    """Request model for Revit connection.
+    
+    Attributes:
+        method: Connection method - 'api' (Revit API), 'macro' (Revit Macro), 
+                'simulation' (development), or 'auto' (automatic detection)
+    """
+    method: str = Field(
+        default="auto",
+        description="Connection method: 'api', 'macro', 'simulation', or 'auto'"
+    )
 
 class ConnectResponse(BaseModel):
     """Response model for Revit connection."""
     success: bool
     message: str
     connected: bool
+    connection_method: Optional[str] = None
 
-class ReadRvtRequest(BaseModel):
-    """Request model for reading RVT file."""
-    filepath: str
-
-class WriteRvtRequest(BaseModel):
-    """Request model for writing RVT file."""
-    filepath: str
-    elements: List[Dict[str, Any]]
-
-class CreateWallRequest(BaseModel):
-    """Request model for creating a wall."""
-    start_point: List[float]
-    end_point: List[float]
-    height: float = 3000.0
-    level: str = "Level 1"
-
-class CreateFloorRequest(BaseModel):
-    """Request model for creating a floor."""
-    boundary: List[List[float]]
-    level: str = "Level 1"
-
-class CreateColumnRequest(BaseModel):
-    """Request model for creating a column."""
-    location: List[float]
-    height: float = 3000.0
-    level: str = "Level 1"
 
 class StatusResponse(BaseModel):
     """Response model for connection status."""
     connected: bool
     message: str
+    connection_method: Optional[str] = None
     document_info: Optional[Dict[str, Any]] = None
 
-class SaveRequest(BaseModel):
-    """Request model for saving document."""
-    filepath: str
 
-class GetElementsRequest(BaseModel):
-    """Request model for getting elements."""
-    category_filter: Optional[str] = None
+# =============================================================================
+# DOCUMENT MODELS
+# =============================================================================
 
-# Endpoints
+class DocumentOpenRequest(BaseModel):
+    """Request to open an RVT file."""
+    filepath: str = Field(..., description="Path to the RVT file")
+
+
+class DocumentSaveRequest(BaseModel):
+    """Request to save the document."""
+    filepath: Optional[str] = Field(None, description="Optional new path to save as")
+
+
+class DocumentCloseRequest(BaseModel):
+    """Request to close the document."""
+    save_changes: bool = Field(True, description="Whether to save changes before closing")
+
+
+# =============================================================================
+# ELEMENT CREATE MODELS
+# =============================================================================
+
+class CreateWallRequest(BaseModel):
+    """Request to create a wall.
+    
+    Attributes:
+        start_point: Start coordinates [x, y, z] in mm
+        end_point: End coordinates [x, y, z] in mm
+        height: Wall height in mm (default 3000)
+        level: Level name to place wall (default "Level 1")
+        wall_type: Wall type name (default "Basic Wall")
+    """
+    start_point: List[float] = Field(..., description="Start point [x, y, z]")
+    end_point: List[float] = Field(..., description="End point [x, y, z]")
+    height: float = Field(3000.0, description="Wall height in mm")
+    level: str = Field("Level 1", description="Level name")
+    wall_type: str = Field("Basic Wall", description="Wall type name")
+
+
+class CreateFloorRequest(BaseModel):
+    """Request to create a floor.
+    
+    Attributes:
+        boundary_points: List of [x, y, z] points forming closed boundary
+        level: Level name (default "Level 1")
+        floor_type: Floor type name (default "Floor")
+    """
+    boundary_points: List[List[float]] = Field(
+        ..., 
+        description="Boundary points [[x,y,z], ...]"
+    )
+    level: str = Field("Level 1", description="Level name")
+    floor_type: str = Field("Floor", description="Floor type name")
+
+
+class CreateDoorRequest(BaseModel):
+    """Request to create a door in a wall.
+    
+    Attributes:
+        host_wall_id: Wall element ID to place door in
+        location_point: [x, y, z] insertion point
+        family_type: Door family type (default "M_Single-Flush")
+        level: Level name (default "Level 1")
+    """
+    host_wall_id: str = Field(..., description="Host wall element ID")
+    location_point: List[float] = Field(..., description="Insertion point [x, y, z]")
+    family_type: str = Field("M_Single-Flush", description="Door family type")
+    level: str = Field("Level 1", description="Level name")
+
+
+class CreateWindowRequest(BaseModel):
+    """Request to create a window in a wall."""
+    host_wall_id: str = Field(..., description="Host wall element ID")
+    location_point: List[float] = Field(..., description="Insertion point [x, y, z]")
+    family_type: str = Field("M_Single-Flush", description="Window family type")
+    level: str = Field("Level 1", description="Level name")
+
+
+class CreateColumnRequest(BaseModel):
+    """Request to create a structural column.
+    
+    Attributes:
+        location_point: Base location [x, y, z]
+        height: Column height in mm (default 3000)
+        level: Base level name (default "Level 1")
+        column_type: Column type name (default "M_Columns")
+    """
+    location_point: List[float] = Field(..., description="Base location [x, y, z]")
+    height: float = Field(3000.0, description="Column height in mm")
+    level: str = Field("Level 1", description="Base level name")
+    column_type: str = Field("M_Columns", description="Column type name")
+
+
+class CreateBeamRequest(BaseModel):
+    """Request to create a structural beam."""
+    start_point: List[float] = Field(..., description="Start point [x, y, z]")
+    end_point: List[float] = Field(..., description="End point [x, y, z]")
+    level: str = Field("Level 1", description="Level name")
+    beam_type: str = Field("W-Wide Flange", description="Beam type name")
+
+
+class CreateFamilyRequest(BaseModel):
+    """Request to create a generic family instance.
+    
+    Attributes:
+        family_name: Family type name (e.g., "M_Single-Flush")
+        category: Category name (e.g., "Doors", "Windows", "Furniture")
+        location_point: [x, y, z] insertion point
+        level: Optional level for host-based families
+        parameters: Optional dict of parameter name/value pairs
+    """
+    family_name: str = Field(..., description="Family type name")
+    category: str = Field(..., description="Category name")
+    location_point: List[float] = Field(..., description="Insertion point [x, y, z]")
+    level: Optional[str] = Field(None, description="Level name (for hosted families)")
+    parameters: Optional[Dict[str, Any]] = Field(None, description="Parameter name/value pairs")
+
+
+class ParameterUpdateRequest(BaseModel):
+    """Request to update element parameters."""
+    parameters: Dict[str, Any] = Field(..., description="Parameter name/value pairs")
+
+
+class ElementResponse(BaseModel):
+    """Response for element operations."""
+    success: bool
+    message: str
+    element_id: Optional[str] = None
+    element: Optional[Dict[str, Any]] = None
+
+
+class ElementsResponse(BaseModel):
+    """Response containing multiple elements."""
+    success: bool
+    elements: List[Dict[str, Any]]
+    count: int
+
+
+# =============================================================================
+# SEARCH MODELS
+# =============================================================================
+
+class SearchAPIRequest(BaseModel):
+    """Request to search local API data."""
+    keyword: Optional[str] = Field(None, description="Search keyword")
+    api_name: Optional[str] = Field(None, description="Filter by API name")
+    namespace: Optional[str] = Field(None, description="Filter by namespace")
+    api_type: Optional[str] = Field(None, description="Filter by type (property, method, class)")
+
+
+class SearchOnlineRequest(BaseModel):
+    """Request to search online."""
+    query: str = Field(..., description="Search query")
+    engine: str = Field("revitapidocs", description="Search engine: revitapidocs or revitapiforum")
+
+
+class AICommandRequest(BaseModel):
+    """Request to execute an AI command."""
+    command: str = Field(..., description="Natural language command")
+    context: Optional[Dict[str, Any]] = Field(None, description="Optional context data")
+
+
+class LoadAPIDataRequest(BaseModel):
+    """Request to load Revit API data."""
+    json_path: str = Field(..., description="Path to RevitAPI.json file")
+
+
+class APIResultResponse(BaseModel):
+    """Response from API search."""
+    success: bool
+    results: List[Dict[str, Any]]
+    count: int
+
+
+class LoadFamilyRequest(BaseModel):
+    """Request to load a family (.rfa) file."""
+    family_path: str = Field(..., description="Path to family file")
+    category: Optional[str] = Field(None, description="Optional category")
+
+# =============================================================================
+# CONNECTION ENDPOINTS
+# =============================================================================
+
 @router.post("/connect", response_model=ConnectResponse, tags=["revit"])
 async def connect_to_revit(request: ConnectRequest = None) -> ConnectResponse:
     """
     Connect to Revit application.
     
+    Connection Methods:
+    - **api**: Direct Revit API via pythonnet (best performance, requires Revit)
+    - **macro**: Revit Macro API (free, runs inside Revit)
+    - **simulation**: Development mode (no Revit needed)
+    - **auto**: Automatic detection of best method
+    
     Args:
-        request: Connection parameters (currently unused)
+        request: Connection parameters with method selection
         
     Returns:
-        Connection status response
+        Connection status with method used
     """
     try:
-        success = service.connect()
-        if success:
-            message = "Successfully connected to Revit environment"
-        else:
-            message = "Failed to connect to Revit environment"
-            
+        method = request.method if request else "auto"
+        success = service.connect(method=method)
+        
         return ConnectResponse(
             success=success,
-            message=message,
-            connected=service.connected
+            message=f"Connected via {service.connection_method}" if success else "Connection failed",
+            connected=service.connected,
+            connection_method=service.connection_method
         )
     except Exception as e:
         logger.error(f"Error connecting to Revit: {e}")
         raise HTTPException(status_code=503, detail=f"Failed to connect to Revit: {str(e)}")
 
+
 @router.post("/disconnect", response_model=ConnectResponse, tags=["revit"])
 async def disconnect_from_revit() -> ConnectResponse:
-    """
-    Disconnect from Revit application.
-    
-    Returns:
-        Disconnection status response
-    """
+    """Disconnect from Revit application."""
     try:
         success = service.disconnect()
-        if success:
-            message = "Successfully disconnected from Revit"
-        else:
-            message = "Failed to disconnect from Revit"
-            
+        
         return ConnectResponse(
             success=success,
-            message=message,
+            message="Disconnected from Revit" if success else "Disconnect failed",
             connected=service.connected
         )
     except Exception as e:
         logger.error(f"Error disconnecting from Revit: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to disconnect from Revit: {str(e)}")
 
-@router.post("/read_rvt", tags=["revit"])
-async def read_rvt_file(request: ReadRvtRequest) -> Dict[str, Any]:
-    """
-    Read elements from an RVT file.
-    
-    Args:
-        request: File path to read
-        
-    Returns:
-        Elements data from the RVT file
-    """
-    try:
-        result = service.read_rvt(request.filepath)
-        if not result.get("success", False):
-            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error reading file"))
-        return result
-    except FileNotFoundError:
-        logger.error(f"RVT file not found: {request.filepath}")
-        raise HTTPException(status_code=404, detail=f"RVT file not found: {request.filepath}")
-    except Exception as e:
-        logger.error(f"Error reading RVT file: {e}")
-        raise HTTPException(status_code=500, detail=f"Error reading RVT file: {str(e)}")
-
-@router.post("/write_rvt", tags=["revit"])
-async def write_rvt_file(request: WriteRvtRequest) -> Dict[str, Any]:
-    """
-    Write elements to an RVT file.
-    
-    Args:
-        request: File path and elements to write
-        
-    Returns:
-        Success status
-    """
-    try:
-        success = service.write_rvt(request.filepath, request.elements)
-        if success:
-            return {"success": True, "message": f"Successfully wrote to {request.filepath}"}
-        else:
-            raise HTTPException(status_code=500, detail=f"Failed to write to {request.filepath}")
-    except Exception as e:
-        logger.error(f"Error writing RVT file: {e}")
-        raise HTTPException(status_code=500, detail=f"Error writing RVT file: {str(e)}")
-
-@router.post("/create_wall", tags=["revit"])
-async def create_wall(request: CreateWallRequest) -> Dict[str, Any]:
-    """
-    Create a wall in Revit.
-    
-    Args:
-        request: Wall creation parameters
-        
-    Returns:
-        Result of the operation
-    """
-    try:
-        if not service.connected:
-            raise HTTPException(status_code=503, detail="Revit not connected")
-            
-        wall_id = service.create_wall(
-            start_point=request.start_point,
-            end_point=request.end_point,
-            height=request.height,
-            level=request.level
-        )
-        
-        if wall_id:
-            return {
-                "success": True, 
-                "message": "Wall created successfully",
-                "element_id": wall_id
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to create wall")
-    except Exception as e:
-        logger.error(f"Error creating wall: {e}")
-        raise HTTPException(status_code=500, detail=f"Error creating wall: {str(e)}")
-
-@router.post("/create_floor", tags=["revit"])
-async def create_floor(request: CreateFloorRequest) -> Dict[str, Any]:
-    """
-    Create a floor in Revit.
-    
-    Args:
-        request: Floor creation parameters
-        
-    Returns:
-        Result of the operation
-    """
-    try:
-        if not service.connected:
-            raise HTTPException(status_code=503, detail="Revit not connected")
-            
-        floor_id = service.create_floor(
-            boundary=request.boundary,
-            level=request.level
-        )
-        
-        if floor_id:
-            return {
-                "success": True,
-                "message": "Floor created successfully",
-                "element_id": floor_id
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to create floor")
-    except Exception as e:
-        logger.error(f"Error creating floor: {e}")
-        raise HTTPException(status_code=500, detail=f"Error creating floor: {str(e)}")
-
-@router.post("/create_column", tags=["revit"])
-async def create_column(request: CreateColumnRequest) -> Dict[str, Any]:
-    """
-    Create a column in Revit.
-    
-    Args:
-        request: Column creation parameters
-        
-    Returns:
-        Result of the operation
-    """
-    try:
-        if not service.connected:
-            raise HTTPException(status_code=503, detail="Revit not connected")
-            
-        column_id = service.create_column(
-            location=request.location,
-            height=request.height,
-            level=request.level
-        )
-        
-        if column_id:
-            return {
-                "success": True,
-                "message": "Column created successfully",
-                "element_id": column_id
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to create column")
-    except Exception as e:
-        logger.error(f"Error creating column: {e}")
-        raise HTTPException(status_code=500, detail=f"Error creating column: {str(e)}")
 
 @router.get("/status", response_model=StatusResponse, tags=["revit"])
 async def get_revit_status() -> StatusResponse:
-    """
-    Get the current Revit connection status.
-    
-    Returns:
-        Connection status and document info
-    """
+    """Get current connection status and capabilities."""
     try:
         doc_info = {}
         if service.connected:
@@ -291,91 +337,484 @@ async def get_revit_status() -> StatusResponse:
         return StatusResponse(
             connected=service.connected,
             message="Revit service status" if service.connected else "Revit not connected",
+            connection_method=service.connection_method,
             document_info=doc_info if doc_info else None
         )
     except Exception as e:
         logger.error(f"Error getting Revit status: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting Revit status: {str(e)}")
 
-@router.post("/save", tags=["revit"])
-async def save_document(request: SaveRequest) -> Dict[str, Any]:
-    """
-    Save the current Revit document.
-    
-    Args:
-        request: File path to save to
-        
-    Returns:
-        Success status
-    """
-    try:
-        if not service.connected:
-            raise HTTPException(status_code=503, detail="Revit not connected")
-            
-        success = service.save(request.filepath)
-        if success:
-            return {"success": True, "message": f"Document saved to {request.filepath}"}
-        else:
-            raise HTTPException(status_code=500, detail=f"Failed to save document to {request.filepath}")
-    except Exception as e:
-        logger.error(f"Error saving document: {e}")
-        raise HTTPException(status_code=500, detail=f"Error saving document: {str(e)}")
 
-@router.post("/get_elements", tags=["revit"])
-async def get_elements(request: GetElementsRequest) -> Dict[str, Any]:
-    """
-    Get all elements in the document, optionally filtered by category.
+# =============================================================================
+# DOCUMENT ENDPOINTS
+# =============================================================================
+
+@router.post("/document/open", tags=["revit"])
+async def open_document(request: DocumentOpenRequest) -> Dict[str, Any]:
+    """Open an RVT file."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    Args:
-        request: Category filter parameters
-        
-    Returns:
-        List of elements
-    """
-    try:
-        if not service.connected:
-            raise HTTPException(status_code=503, detail="Revit not connected")
-            
-        elements = service.get_all_elements(request.category_filter)
-        return {
-            "success": True,
-            "elements": elements,
-            "count": len(elements)
-        }
-    except Exception as e:
-        logger.error(f"Error getting elements: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting elements: {str(e)}")
+    success = service.open_document(request.filepath)
+    if success:
+        return {"success": True, "message": f"Opened: {request.filepath}"}
+    raise HTTPException(status_code=500, detail="Failed to open document")
+
+
+@router.post("/document/save", tags=["revit"])
+async def save_document(request: DocumentSaveRequest) -> Dict[str, Any]:
+    """Save the current document."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    success = service.save_document(request.filepath)
+    if success:
+        return {"success": True, "message": "Document saved"}
+    raise HTTPException(status_code=500, detail="Failed to save document")
+
+
+@router.post("/document/close", tags=["revit"])
+async def close_document(request: DocumentCloseRequest) -> Dict[str, Any]:
+    """Close the current document."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    success = service.close_document(request.save_changes)
+    if success:
+        return {"success": True, "message": "Document closed"}
+    raise HTTPException(status_code=500, detail="Failed to close document")
+
+# =============================================================================
+# LEGACY FILE ENDPOINTS
+# =============================================================================
+
+@router.post("/read_rvt", tags=["revit"])
+async def read_rvt_file(filepath: str) -> Dict[str, Any]:
+    """Read elements from an RVT file (legacy endpoint)."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    result = service.read_rvt(filepath)
+    if not result.get("success", False):
+        raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
+    return result
+
+
+@router.post("/write_rvt", tags=["revit"])
+async def write_rvt_file(filepath: str, elements: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Write elements to an RVT file (legacy endpoint)."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    success = service.write_rvt(filepath, elements)
+    if success:
+        return {"success": True, "message": f"Wrote to {filepath}"}
+    raise HTTPException(status_code=500, detail="Failed to write file")
+
 
 @router.post("/upload_rvt", tags=["revit"])
 async def upload_and_read_rvt(file: UploadFile = File(...)) -> Dict[str, Any]:
-    """
-    Upload an RVT file and read its contents.
+    """Upload an RVT file and read its contents."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    Args:
-        file: RVT file to upload and read
-        
-    Returns:
-        Elements data from the uploaded file
+    import os
+    temp_path = f"temp_{file.filename}"
+    with open(temp_path, "wb") as buffer:
+        buffer.write(await file.read())
+    
+    result = service.read_rvt(temp_path)
+    os.remove(temp_path)
+    
+    if not result.get("success", False):
+        raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
+    return result
+
+
+# =============================================================================
+# ELEMENT READ ENDPOINTS
+# =============================================================================
+
+@router.get("/elements", response_model=ElementsResponse, tags=["revit"])
+async def get_elements(
+    category: Optional[str] = Query(None, description="Filter by category (Walls, Floors, Doors, etc.)"),
+    element_class: Optional[str] = Query(None, description="Filter by class name")
+) -> ElementsResponse:
+    """Get elements using FilteredElementCollector pattern."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    elements = service.get_elements(category=category, element_class=element_class)
+    return ElementsResponse(success=True, elements=elements, count=len(elements))
+
+
+@router.get("/elements/selected", response_model=ElementsResponse, tags=["revit"])
+async def get_selected_elements() -> ElementsResponse:
+    """Get currently selected elements in Revit UI."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    elements = service.get_selected_elements()
+    return ElementsResponse(success=True, elements=elements, count=len(elements))
+
+
+@router.get("/elements/{element_id}", tags=["revit"])
+async def get_element(element_id: str) -> Dict[str, Any]:
+    """Get a single element by ID."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    element = service.get_element_by_id(element_id)
+    if element:
+        return {"success": True, "element": element}
+    raise HTTPException(status_code=404, detail="Element not found")
+
+
+@router.get("/elements/{element_id}/parameters", tags=["revit"])
+async def get_element_parameters(element_id: str) -> Dict[str, Any]:
+    """Get all parameters of an element."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    params = service.get_element_parameters(element_id)
+    return {"success": True, "parameters": params}
+
+
+# =============================================================================
+# ELEMENT CREATE ENDPOINTS
+# =============================================================================
+
+@router.post("/elements/create/wall", response_model=ElementResponse, tags=["revit"])
+async def create_wall(request: CreateWallRequest) -> ElementResponse:
+    """Create a wall in Revit."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    element_id = service.create_wall(
+        start_point=request.start_point,
+        end_point=request.end_point,
+        height=request.height,
+        level=request.level,
+        wall_type=request.wall_type
+    )
+    
+    return ElementResponse(
+        success=element_id is not None,
+        message=f"Wall created: {element_id}" if element_id else "Failed to create wall",
+        element_id=element_id
+    )
+
+
+@router.post("/elements/create/floor", response_model=ElementResponse, tags=["revit"])
+async def create_floor(request: CreateFloorRequest) -> ElementResponse:
+    """Create a floor in Revit."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    element_id = service.create_floor(
+        boundary_points=request.boundary_points,
+        level=request.level,
+        floor_type=request.floor_type
+    )
+    
+    return ElementResponse(
+        success=element_id is not None,
+        message=f"Floor created: {element_id}" if element_id else "Failed to create floor",
+        element_id=element_id
+    )
+
+
+@router.post("/elements/create/door", response_model=ElementResponse, tags=["revit"])
+async def create_door(request: CreateDoorRequest) -> ElementResponse:
+    """Create a door in a wall."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    element_id = service.create_door(
+        host_wall_id=request.host_wall_id,
+        location_point=request.location_point,
+        family_type=request.family_type,
+        level=request.level
+    )
+    
+    return ElementResponse(
+        success=element_id is not None,
+        message=f"Door created: {element_id}" if element_id else "Failed to create door",
+        element_id=element_id
+    )
+
+
+@router.post("/elements/create/window", response_model=ElementResponse, tags=["revit"])
+async def create_window(request: CreateWindowRequest) -> ElementResponse:
+    """Create a window in a wall."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    element_id = service.create_window(
+        host_wall_id=request.host_wall_id,
+        location_point=request.location_point,
+        family_type=request.family_type,
+        level=request.level
+    )
+    
+    return ElementResponse(
+        success=element_id is not None,
+        message=f"Window created: {element_id}" if element_id else "Failed to create window",
+        element_id=element_id
+    )
+
+
+@router.post("/elements/create/column", response_model=ElementResponse, tags=["revit"])
+async def create_column(request: CreateColumnRequest) -> ElementResponse:
+    """Create a structural column."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    element_id = service.create_column(
+        location_point=request.location_point,
+        height=request.height,
+        level=request.level,
+        column_type=request.column_type
+    )
+    
+    return ElementResponse(
+        success=element_id is not None,
+        message=f"Column created: {element_id}" if element_id else "Failed to create column",
+        element_id=element_id
+    )
+
+
+@router.post("/elements/create/beam", response_model=ElementResponse, tags=["revit"])
+async def create_beam(request: CreateBeamRequest) -> ElementResponse:
+    """Create a structural beam."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    element_id = service.create_beam(
+        start_point=request.start_point,
+        end_point=request.end_point,
+        level=request.level,
+        beam_type=request.beam_type
+    )
+    
+    return ElementResponse(
+        success=element_id is not None,
+        message=f"Beam created: {element_id}" if element_id else "Failed to create beam",
+        element_id=element_id
+    )
+
+
+@router.post("/elements/create/family", response_model=ElementResponse, tags=["revit"])
+async def create_family(request: CreateFamilyRequest) -> ElementResponse:
+    """Create a generic family instance."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    element_id = service.create_family_instance(
+        family_name=request.family_name,
+        category=request.category,
+        location_point=request.location_point,
+        level=request.level,
+        parameters=request.parameters
+    )
+    
+    return ElementResponse(
+        success=element_id is not None,
+        message=f"Family instance created: {element_id}" if element_id else "Failed to create",
+        element_id=element_id
+    )
+
+
+# =============================================================================
+# ELEMENT UPDATE/DELETE ENDPOINTS
+# =============================================================================
+
+@router.put("/elements/{element_id}/parameters", tags=["revit"])
+async def update_parameters(
+    element_id: str,
+    request: ParameterUpdateRequest
+) -> Dict[str, Any]:
+    """Update element parameters."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    success = True
+    for param_name, value in request.parameters.items():
+        if not service.set_element_parameter(element_id, param_name, value):
+            success = False
+    
+    return {
+        "success": success,
+        "message": "Parameters updated" if success else "Some parameters failed"
+    }
+
+
+@router.delete("/elements/{element_id}", tags=["revit"])
+async def delete_element(element_id: str) -> Dict[str, Any]:
+    """Delete an element."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    success = service.delete_element(element_id)
+    if success:
+        return {"success": True, "message": f"Element {element_id} deleted"}
+    raise HTTPException(status_code=500, detail="Failed to delete element")
+
+
+# =============================================================================
+# VIEW/LEVEL/GRID ENDPOINTS
+# =============================================================================
+
+@router.get("/views", response_model=ElementsResponse, tags=["revit"])
+async def get_views() -> ElementsResponse:
+    """Get all views in the project."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    views = service.get_views()
+    return ElementsResponse(success=True, elements=views, count=len(views))
+
+
+@router.get("/levels", response_model=ElementsResponse, tags=["revit"])
+async def get_levels() -> ElementsResponse:
+    """Get all levels in the project."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    levels = service.get_levels()
+    return ElementsResponse(success=True, elements=levels, count=len(levels))
+
+
+@router.get("/grids", response_model=ElementsResponse, tags=["revit"])
+async def get_grids() -> ElementsResponse:
+    """Get all grids in the project."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    grids = service.get_grids()
+    return ElementsResponse(success=True, elements=grids, count=len(grids))
+
+
+@router.get("/worksets", response_model=ElementsResponse, tags=["revit"])
+async def get_worksets() -> ElementsResponse:
+    """Get all worksets in the project."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    worksets = service.get_worksets()
+    return ElementsResponse(success=True, elements=worksets, count=len(worksets))
+
+
+# =============================================================================
+# FAMILY ENDPOINTS
+# =============================================================================
+
+@router.get("/families/{category}/symbols", tags=["revit"])
+async def get_family_symbols(category: str) -> Dict[str, Any]:
+    """Get all family symbols for a category.
+    
+    Categories: Doors, Windows, Columns, Furniture, etc.
     """
-    try:
-        # Save uploaded file temporarily
-        temp_path = f"temp_{file.filename}"
-        with open(temp_path, "wb") as buffer:
-            buffer.write(await file.read())
-        
-        # Read the file
-        result = service.read_rvt(temp_path)
-        
-        # Clean up temporary file
-        import os
-        os.remove(temp_path)
-        
-        if not result.get("success", False):
-            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error reading file"))
-        return result
-    except FileNotFoundError:
-        logger.error(f"Uploaded RVT file not found: {file.filename}")
-        raise HTTPException(status_code=404, detail=f"Uploaded RVT file not found: {file.filename}")
-    except Exception as e:
-        logger.error(f"Error processing uploaded RVT file: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing uploaded RVT file: {str(e)}")
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    symbols = service.get_family_symbols(category)
+    return {"success": True, "symbols": symbols, "count": len(symbols)}
+
+
+@router.post("/families/load", tags=["revit"])
+async def load_family(request: LoadFamilyRequest) -> Dict[str, Any]:
+    """Load a family (.rfa) file into the project."""
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    success = service.load_family(request.family_path, request.category)
+    if success:
+        return {"success": True, "message": f"Family loaded: {request.family_path}"}
+    raise HTTPException(status_code=500, detail="Failed to load family")
+
+
+# =============================================================================
+# API SEARCH ENDPOINTS
+# =============================================================================
+
+@router.post("/search/api/load", tags=["revit"])
+async def load_api_data(request: LoadAPIDataRequest) -> Dict[str, Any]:
+    """Load Revit API data from JSON file.
+    
+    Load revit_data/RevitAPI2022.json or revit_data/RevitAPI2023.json first.
+    """
+    success = service.load_revit_api_data(request.json_path)
+    if success:
+        return {"success": True, "message": f"API data loaded from {request.json_path}"}
+    raise HTTPException(status_code=500, detail="Failed to load API data")
+
+
+@router.post("/search/api", response_model=APIResultResponse, tags=["revit"])
+async def search_api_data(request: SearchAPIRequest) -> APIResultResponse:
+    """Search loaded API data locally.
+    
+    Requires loading API data first via /search/api/load.
+    """
+    results = service.search_api_data(
+        keyword=request.keyword,
+        api_name=request.api_name,
+        namespace=request.namespace,
+        api_type=request.api_type
+    )
+    
+    api_results = [
+        {
+            "name": r.title,
+            "api_name": r.api_name,
+            "description": r.description,
+            "type": r.type,
+            "namespace": r.namespace,
+            "url": service.get_api_url(r)
+        }
+        for r in results
+    ]
+    
+    return APIResultResponse(success=True, results=api_results, count=len(api_results))
+
+
+@router.get("/search/online", response_model=APIResultResponse, tags=["revit"])
+async def search_online(
+    query: str = Query(..., description="Search query"),
+    engine: str = Query("revitapidocs", description="Search engine")
+) -> APIResultResponse:
+    """Search Revit API documentation online (RevitAPIDocs.com)."""
+    results = await service.search_revit_api(query, engine)
+    
+    api_results = [
+        {
+            "name": r.related_key,
+            "description": r.description,
+            "url": r.url
+        }
+        for r in results
+    ]
+    
+    return APIResultResponse(success=True, results=api_results, count=len(api_results))
+
+
+# =============================================================================
+# AI COMMAND ENDPOINT
+# =============================================================================
+
+@router.post("/execute", tags=["revit"])
+async def execute_ai_command(request: AICommandRequest) -> Dict[str, Any]:
+    """Execute a natural language command from AI agent.
+    
+    Examples:
+    - "Create a wall from 0,0,0 to 5000,0,0"
+    - "Create a door in the selected wall"
+    - "Get all walls in the project"
+    - "Delete element with id 12345"
+    - "Search api Wall.Create"
+    """
+    if not service.connected:
+        raise HTTPException(status_code=503, detail="Not connected to Revit")
+    
+    result = service.execute_ai_command(request.command, request.context)
+    return result
