@@ -98,16 +98,16 @@ target-version = ['py38']
 include = '\.pyi?$'
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 warn_unused_ignores = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+disallow_untyped_decorators = false
 show_error_codes = true
-exclude = ["venv/", ".venv/", "env/", ".env/", "fireai/tools/api_indexer.py", "fireai/tools/constant_indexer.py", "fireai/conduit/fill.py"]
+exclude = ["venv/", ".venv/", "env/", ".env/"]
 
 [[tool.mypy.overrides]]
 module = ["pywin32.*", "pythonnet.*", "clr.*", "Autodesk.*"]

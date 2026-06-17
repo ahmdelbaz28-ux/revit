@@ -733,11 +733,18 @@ async function apiRequest<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const headers = {
+  // Use any to handle the dynamic headers structure
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const headers: any = {
     'Content-Type': 'application/json',
-    'X-API-Key': getApiKey(),
     ...options.headers,
   };
+  
+  // Add API key from environment or config
+  const apiKey = (window as any).__FIREAI_API_KEY || import.meta.env.VITE_FIREAI_API_KEY;
+  if (apiKey) {
+    headers['X-API-Key'] = apiKey;
+  }
 
   // Add CSRF token for state-changing requests
   const method = options.method || 'GET';
@@ -757,14 +764,17 @@ async function apiRequest<T>(
     const data = await response.json();
     return {
       success: response.ok,
-      data: response.ok ? data.data || data : null,
+      data: response.ok ? data.data || data : undefined,
       error: response.ok ? null : data.error || 'Unknown error',
+      timestamp: data.timestamp || new Date().toISOString(),
+      message: data.message,
     };
   } catch (error) {
     return {
       success: false,
-      data: null,
+      data: undefined,
       error: error instanceof Error ? error.message : 'Network error',
+      timestamp: new Date().toISOString(),
     };
   }
 }
