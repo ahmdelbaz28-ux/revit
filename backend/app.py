@@ -7,6 +7,7 @@ Implements the complete backend for AutoCAD/Revit/Digital Twin system.
 
 ARCHITECTURE:
 - FastAPI app with CORS middleware
+- Rate limiting with SlowAPI
 - All CAD/BIM integration routes
 - Health check endpoints
 - Error handlers for CAD connection issues
@@ -15,16 +16,23 @@ USAGE:
     uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import logging
 
 from pydantic import BaseModel
 
 # Import our CAD/BIM integration routers
 from backend.routers import autocad, revit, digital_twin
+
+# Configure rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -62,8 +70,12 @@ All endpoints require API key authentication via `X-API-Key` header.
 
 ### Rate Limiting
 
-- 100 requests per minute for standard endpoints
-- 1000 requests per minute for read operations
+| Endpoint Type | Limit |
+|---------------|-------|
+| Health/Read | 1000/minute |
+| Standard | 100/minute |
+| Write/Upload | 50/minute |
+| Heavy Operations | 10/minute |
     """,
     version="1.0.0",
     lifespan=lifespan,
@@ -71,6 +83,12 @@ All endpoints require API key authentication via `X-API-Key` header.
     redoc_url="/redoc",
     openapi_url="/openapi.json"
 )
+
+# Add rate limiter state
+app.state.limiter = limiter
+
+# Add rate limit exceeded handler
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Add CORS middleware
 app.add_middleware(

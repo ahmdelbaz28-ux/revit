@@ -18,6 +18,12 @@ ENDPOINTS:
 - POST /api/autocad/upload_dwg - Upload and read DWG file
 - DELETE /api/autocad/entity/{handle} - Delete entity by handle
 - PUT /api/autocad/entity/{handle} - Update entity properties
+
+RATE LIMITS:
+- GET /status: 1000/minute
+- POST /connect, /disconnect: 50/minute
+- POST /read_dwg, /write_dwg: 50/minute
+- POST /upload_dwg: 10/minute
 """
 
 import logging
@@ -25,9 +31,10 @@ import os
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Request
 from pydantic import BaseModel
 
+from backend.app import limiter
 from backend.services.autocad_service import AutoCADService
 
 logger = logging.getLogger(__name__)
@@ -48,6 +55,32 @@ class ConnectRequest(BaseModel):
     """Request model for AutoCAD connection."""
     visible: bool = True
     force_new: bool = False
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RATE-LIMITED ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/connect", response_model=ConnectResponse)
+@limiter.limit("50/minute")
+async def connect_to_autocad(request: Request, body: ConnectRequest = ConnectRequest()):
+    """
+    Connect to AutoCAD application.
+    
+    Rate limit: 50 requests per minute
+    """
+    service = get_autocad_service()
+    try:
+        result = await service.connect(visible=body.visible, force_new=body.force_new)
+        return ConnectResponse(
+            success=True,
+            message="Connected to AutoCAD",
+            connection_id=result.get("connection_id")
+        )
+    except Exception as e:
+        logger.error(f"AutoCAD connection failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 class ConnectResponse(BaseModel):
     """Response model for AutoCAD connection."""
