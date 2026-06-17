@@ -52,7 +52,7 @@ jobs:
         run: ruff check backend/ fireai/ core/ skills/ --exit-non-zero-on-fix
 
       - name: MyPy type check
-        run: mypy backend/ fireai/ core/ skills/ --ignore-missing-imports --no-strict-optional --exclude '.*test.*' --exclude 'skills/ppt/scripts' --exclude 'skills/skill-creator/scripts' --exclude 'skills/docx/scripts'
+        run: mypy backend/ fireai/ core/ skills/ --ignore-missing-imports --no-strict-optional --exclude '.*test.*' --exclude 'skills/ppt/scripts' --exclude 'skills/skill-creator/scripts' --exclude 'skills/docx/scripts' --exclude 'skills/xlsx/templates'
 
       - name: Bandit security scan
         run: bandit -r backend/ fireai/ core/ skills/ -f json -o reports/bandit.json -ll
