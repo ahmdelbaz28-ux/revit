@@ -118,8 +118,8 @@ module = ["pywin32.*", "pythonnet.*", "clr.*", "Autodesk.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["skills/ppt/scripts/pdf"]
-ignore = true
+module = ["skills.ppt.scripts.pdf", "skills.skill_creator.scripts", "skills.docx.scripts"]
+follow_imports = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
