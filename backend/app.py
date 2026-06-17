@@ -43,9 +43,33 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app with lifespan
 app = FastAPI(
     title="CAD/BIM Integration Platform",
-    description="Complete platform for AutoCAD and Revit integration with Digital Twin capabilities",
+    description="""
+## 🚀 API Overview
+
+Complete platform for **AutoCAD** and **Revit** integration with **Digital Twin** capabilities.
+
+### Features
+
+- **AutoCAD Integration**: Connect to AutoCAD, read/write DWG files, create/draw entities
+- **Revit Integration**: Connect to Revit, read/write RVT files, create/modify elements
+- **Bidirectional Conversion**: Convert between AutoCAD and Revit formats
+- **Digital Twin Engine**: Central conversion hub with semantic mapping
+- **Version Management**: Track and rollback conversion history
+
+### Authentication
+
+All endpoints require API key authentication via `X-API-Key` header.
+
+### Rate Limiting
+
+- 100 requests per minute for standard endpoints
+- 1000 requests per minute for read operations
+    """,
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
 # Add CORS middleware
