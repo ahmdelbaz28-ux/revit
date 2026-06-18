@@ -52,21 +52,53 @@ _API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 def _get_or_create_api_key() -> str:
-    """Get API key from environment or generate one for development."""
+    """Get API key from environment, or generate one for development.
+
+    SECURITY: The generated key is NEVER written to the logs. v1 printed
+    the key in a banner to stdout — in any environment where logs are
+    aggregated (Docker, CloudWatch, Loki, Sentry), this leaked the key
+    permanently. The key is now written to a 0600-permission file at
+    $FIREAI_DEV_KEY_FILE if that env var is set, so the developer can
+    read it locally without it being captured in log shippers.
+    """
     key = os.environ.get("FIREAI_API_KEY")
     if key:
         return key
 
-    # Development: auto-generate and warn
+    # Production: refuse to start without an explicit key (fail-closed).
+    if os.getenv("FIREAI_ENV", "development").lower() in ("production", "prod"):
+        raise RuntimeError(
+            "FIREAI_API_KEY (or FIREAI_API_KEYS) environment variable is "
+            "REQUIRED in production. Generate a strong key with: "
+            "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+        )
+
+    # Development: generate ephemeral key. Do NOT log its value.
     generated = secrets.token_urlsafe(32)
     logger.warning(
-        "\n"
-        "╔══════════════════════════════════════════════════════════════╗\n"
-        "║  ⚠️  FIREAI_API_KEY not set — auto-generated for dev:      ║\n"
-        f"║  {generated:<57s}║\n"
-        "║  Set this in FIREAI_API_KEY env var for production.        ║\n"
-        "╚══════════════════════════════════════════════════════════════╝"
+        "FIREAI_API_KEY not set — generated ephemeral dev key (NOT logged). "
+        "Set FIREAI_API_KEY explicitly for repeatable runs. The dev key "
+        "is valid only for this process lifetime."
     )
+
+    # Optional: write to a 0600 file so the developer can read it locally.
+    dev_key_file = os.getenv("FIREAI_DEV_KEY_FILE")
+    if dev_key_file:
+        try:
+            with open(dev_key_file, "w", encoding="utf-8") as f:
+                f.write(generated)
+            os.chmod(dev_key_file, 0o600)
+            logger.warning(
+                "Dev key written to %s with chmod 0600. Read it with: "
+                "cat %s", dev_key_file, dev_key_file,
+            )
+        except OSError as e:
+            logger.error(
+                "Failed to write dev key to %s: %s. The key is in memory "
+                "only and will be lost when this process exits.",
+                dev_key_file, e,
+            )
+
     return generated
 
 
@@ -78,28 +110,54 @@ _EFFECTIVE_API_KEYS: set[str] = set()
 
 
 def _init_api_keys() -> None:
-    """Initialize API keys from environment variable."""
+    """Initialize API keys from environment variable.
+
+    SECURITY: Never logs the generated key. In production, missing
+    FIREAI_API_KEYS / FIREAI_API_KEY is a hard error (fail-closed).
+    """
     global _EFFECTIVE_API_KEYS
     keys_str = os.environ.get("FIREAI_API_KEYS", "")
     if keys_str:
         _EFFECTIVE_API_KEYS = {k.strip() for k in keys_str.split(",") if k.strip()}
-    else:
-        # Fallback: single key for backward compat
-        single_key = os.environ.get("FIREAI_API_KEY")
-        if single_key:
-            _EFFECTIVE_API_KEYS = {single_key}
-        else:
-            # Development: auto-generate and warn
-            generated = secrets.token_urlsafe(32)
+        return
+
+    single_key = os.environ.get("FIREAI_API_KEY")
+    if single_key:
+        _EFFECTIVE_API_KEYS = {single_key}
+        return
+
+    # Production: refuse to start without an explicit key (fail-closed).
+    if os.getenv("FIREAI_ENV", "development").lower() in ("production", "prod"):
+        raise RuntimeError(
+            "FIREAI_API_KEYS (or FIREAI_API_KEY) environment variable is "
+            "REQUIRED in production. Generate a strong key with: "
+            "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+        )
+
+    # Development: generate ephemeral key. Do NOT log its value.
+    generated = secrets.token_urlsafe(32)
+    _EFFECTIVE_API_KEYS = {generated}
+    logger.warning(
+        "FIREAI_API_KEYS not set — generated ephemeral dev key (NOT logged). "
+        "Set FIREAI_API_KEYS=key1,key2,... for production. The dev key is "
+        "valid only for this process lifetime."
+    )
+
+    # Optional: write to a 0600 file so the developer can read it locally.
+    dev_key_file = os.getenv("FIREAI_DEV_KEY_FILE")
+    if dev_key_file:
+        try:
+            with open(dev_key_file, "w", encoding="utf-8") as f:
+                f.write(generated)
+            os.chmod(dev_key_file, 0o600)
             logger.warning(
-                "\n"
-                "╔══════════════════════════════════════════════════════════════╗\n"
-                "║  FIREAI_API_KEYS not set — auto-generated for dev:         ║\n"
-                f"║  {generated:<57s}║\n"
-                "║  Set FIREAI_API_KEYS=key1,key2,... for production.         ║\n"
-                "╚══════════════════════════════════════════════════════════════╝"
+                "Dev key written to %s with chmod 0600. Read it with: "
+                "cat %s", dev_key_file, dev_key_file,
             )
-            _EFFECTIVE_API_KEYS = {generated}
+        except OSError as e:
+            logger.error(
+                "Failed to write dev key to %s: %s.", dev_key_file, e,
+            )
 
 
 _init_api_keys()
