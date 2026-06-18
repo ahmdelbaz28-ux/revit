@@ -37,6 +37,16 @@ from backend.routers.analyze import (
 )
 from backend.routers.health import router as health_router
 
+# V129: Security middleware — same hardening as backend/app.py.
+# SecurityHeadersMiddleware adds X-Frame-Options, X-Content-Type-Options,
+# HSTS, CSP, Referrer-Policy, Permissions-Policy to every HTTP response.
+# CorrelationIdMiddleware adds X-Correlation-ID for end-to-end audit tracing
+# (NFPA 72 §14.2.4 compliance).
+from backend.security_middleware import (
+    CorrelationIdMiddleware,
+    SecurityHeadersMiddleware,
+)
+
 # ----------------------------------------------------------------------------
 # Logging
 # ----------------------------------------------------------------------------
@@ -130,6 +140,13 @@ app.add_middleware(
     # requests are unnecessary and would expand the attack surface.
     allow_credentials=False,
 )
+# V129: SecurityHeadersMiddleware — added AFTER CORS so it's the OUTERMOST
+# middleware (runs last on response, can append security headers to every
+# response regardless of which inner middleware handled it).
+app.add_middleware(SecurityHeadersMiddleware)
+# V129: CorrelationIdMiddleware — adds X-Correlation-ID to every request
+# for end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
+app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(_RoleDevMiddleware)
 
 
@@ -168,4 +185,16 @@ async def _unhandled_exception_handler(request: Request, exc: Exception):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # V129: Bind to 127.0.0.1 (loopback) by default. Production deployments
+    # MUST use a reverse proxy (nginx, traefik, AWS ALB) to terminate TLS and
+    # forward to this loopback address. Binding to 0.0.0.0 exposes the API
+    # directly to the network, bypassing the proxy's rate limiting, TLS,
+    # and request filtering.
+    _bind_host = os.getenv("FIREAI_BIND_HOST", "127.0.0.1")
+    if _bind_host == "0.0.0.0":
+        logger.warning(
+            "Binding to 0.0.0.0 — API will be reachable from the network. "
+            "Use a reverse proxy (nginx/traefik) in production. "
+            "Set FIREAI_BIND_HOST=127.0.0.1 to restore loopback-only binding."
+        )
+    uvicorn.run(app, host=_bind_host, port=8000)

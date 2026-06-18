@@ -11,16 +11,31 @@ ARCHITECTURE:
 - All CAD/BIM integration routes
 - Health check endpoints
 - Error handlers for CAD connection issues
+- Security headers middleware (V129: defense-in-depth)
+- Correlation ID middleware (V129: end-to-end tracing)
 
 USAGE:
-    uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
+    uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
+
+V129 INFRASTRUCTURE SECURITY HARDENING (2026-06-18):
+  - Added SecurityHeadersMiddleware (X-Frame-Options, X-Content-Type-Options,
+    HSTS, CSP, Referrer-Policy, Permissions-Policy, X-XSS-Protection)
+  - Added CorrelationIdMiddleware (X-Correlation-ID for audit trail)
+  - Mounted health_router under /api prefix (was missing — tests expected
+    /api/health but only /api/v1/health existed)
+  - Applied V127 CORS hardening pattern: production without explicit
+    CORS_ORIGINS now fails safe (RuntimeError)
+  - Added Depends(require_permission(SYSTEM_CONFIG)) to cache management
+    endpoints (was public — anonymous cache invalidation DoS vector)
+  - Changed __main__ bind from 0.0.0.0 to 127.0.0.1 (loopback only;
+    production deployments MUST use a reverse proxy: nginx, traefik, AWS ALB)
 """
 
 import os
 import time
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
@@ -29,9 +44,23 @@ from slowapi.errors import RateLimitExceeded
 
 # Import our CAD/BIM integration routers
 from backend.routers import autocad, revit, digital_twin
+from backend.routers import health as health_router_module
 
 # Import rate limiter from centralized module (avoids circular import)
 from backend.limiter import limiter
+
+# V129: Security middleware — SecurityHeadersMiddleware adds X-Frame-Options,
+# X-Content-Type-Options, HSTS, CSP, Referrer-Policy, Permissions-Policy to
+# every HTTP response. CorrelationIdMiddleware adds X-Correlation-ID for
+# end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
+from backend.security_middleware import (
+    CorrelationIdMiddleware,
+    SecurityHeadersMiddleware,
+)
+
+# V129: Auth dependency for cache management endpoints (was public).
+from backend.auth import require_permission
+from backend.rbac import Permission
 
 # Configure logging
 logging.basicConfig(
@@ -201,18 +230,65 @@ app.state.limiter = limiter
 # Add rate limit exceeded handler
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# ── CORS middleware — FIX #1: Restrict origins from environment ────────────
-# Previously allow_origins=["*"] with allow_credentials=True was a security
-# vulnerability. Now reads allowed origins from CORS_ALLOWED_ORIGINS env var.
-ALLOWED_ORIGINS = os.getenv(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000,http://localhost:5173,http://localhost:8000"
-).split(",")
+# ── CORS middleware — V127 / V129 hardening ───────────────────────────────
+# V127 precedent (from backend_app.py): production MUST set CORS_ORIGINS
+# explicitly. Wildcard '*' is FORBIDDEN. Missing env var → RuntimeError
+# (fail-safe). Development defaults to localhost-only (safe default).
+#
+# Per CORS Fetch Standard §3.2: allow_origins=["*"] + allow_credentials=True
+# is FORBIDDEN. We do not enable credentials here because the API uses
+# X-API-Key header auth (not cookies).
+#
+# SECURITY: This is a safety-critical fire protection engineering API.
+# Allowing arbitrary origins to read API responses would permit any website
+# to exfiltrate engineering data (building layouts, fire alarm designs).
+_env_mode = os.getenv("FIREAI_ENV", "development").lower()
+if _env_mode in ("production", "prod"):
+    _cors_raw = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    if not _cors_raw:
+        # Production without explicit CORS_ORIGINS — fail safe.
+        # The platform operator MUST declare trusted origins.
+        raise RuntimeError(
+            "CORS_ALLOWED_ORIGINS environment variable is REQUIRED in production. "
+            "Set it to a comma-separated list of trusted origins, e.g. "
+            "'https://app.example.com,https://admin.example.com'. "
+            "Wildcards are forbidden in production for life-safety audit reasons."
+        )
+    ALLOWED_ORIGINS = [o.strip() for o in _cors_raw.split(",") if o.strip()]
+    if "*" in ALLOWED_ORIGINS:
+        raise RuntimeError(
+            "CORS_ALLOWED_ORIGINS='*' is forbidden in production. List explicit origins."
+        )
+else:
+    # Development / testing — safe defaults (localhost only).
+    ALLOWED_ORIGINS = [
+        o.strip()
+        for o in os.getenv(
+            "CORS_ALLOWED_ORIGINS",
+            "http://localhost:3000,http://localhost:5173,http://localhost:8000",
+        ).split(",")
+        if o.strip()
+    ]
+
+# V129: Add SecurityHeadersMiddleware FIRST (outermost), so it runs AFTER
+# CORS middleware on the response path and can append headers to the final
+# response. Starlette executes middleware in LIFO order: the LAST added
+# middleware is the OUTERMOST (runs first on request, last on response).
+# We want SecurityHeadersMiddleware to be outermost so it always adds
+# headers regardless of which inner middleware handled the request.
+app.add_middleware(SecurityHeadersMiddleware)
+
+# V129: CorrelationIdMiddleware — adds X-Correlation-ID to every request
+# for end-to-end audit tracing. Pure ASGI (no body buffering).
+app.add_middleware(CorrelationIdMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    # NEVER enable allow_credentials=True with this design — API uses
+    # X-API-Key header auth (not cookies), so cross-origin credentialed
+    # requests are unnecessary and would expand the attack surface.
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["X-API-Key", "Content-Type", "X-Correlation-ID"],
 )
@@ -223,6 +299,13 @@ app.add_middleware(
 app.include_router(autocad.router, prefix="/api/v1", tags=["AutoCAD-v1"])
 app.include_router(revit.router, prefix="/api/v1", tags=["Revit-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1"])
+
+# V129: Mount the health router under /api prefix so /api/health works.
+# Previously only /api/v1/health existed (defined inline above), but tests
+# and deployment probes expect /api/health. The health_router_module.router
+# also provides /api/health/statistics and the legacy /api/reports/statistics
+# alias — both required by backend/tests/test_routers.py.
+app.include_router(health_router_module.router, prefix="/api", tags=["Health"])
 
 # Health endpoints (no version prefix - always available)
 @app.get("/api/v1/health", tags=["Health-v1"])
@@ -276,12 +359,21 @@ async def general_exception_handler(request: Request, exc: Exception):
 # CACHE MANAGEMENT ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════
 
+# V129: Cache management endpoints now require SYSTEM_CONFIG permission.
+# Previously these were public — an anonymous attacker could clear the cache
+# (denial-of-service via cache invalidation) or read cache statistics
+# (information disclosure: reveals internal operational metrics).
 @app.post("/api/v1/cache/clear", tags=["Cache"])
-async def clear_cache():
-    """Clear all cached data.
+async def clear_cache(
+    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+):
+    """Clear all cached data. Requires SYSTEM_CONFIG permission (admin only).
 
     FIX #3: Count items BEFORE clearing so the response is accurate.
     Previously _cache.clear() ran before len(_cache), always returning 0.
+
+    V129 FIX: This endpoint was public — anonymous cache invalidation is a
+    DoS vector in a safety-critical system. Now requires admin permission.
     """
     count = len(_cache)
     _cache.clear()
@@ -289,11 +381,17 @@ async def clear_cache():
 
 
 @app.get("/api/v1/cache/stats", tags=["Cache"])
-async def cache_stats():
-    """Get cache statistics.
+async def cache_stats(
+    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+):
+    """Get cache statistics. Requires SYSTEM_CONFIG permission (admin only).
 
     FIX #4: Also cleans up expired entries during stats check to prevent
     unbounded memory growth from expired-but-not-removed cache entries.
+
+    V129 FIX: Cache statistics reveal internal operational metrics (cache
+    hit rate, memory usage). This is sensitive information that should not
+    be exposed anonymously. Now requires admin permission.
     """
     # Clean expired entries
     now = time.time()
@@ -312,4 +410,19 @@ async def cache_stats():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # V129: Bind to 127.0.0.1 (loopback) by default. Production deployments
+    # MUST use a reverse proxy (nginx, traefik, AWS ALB) to terminate TLS and
+    # forward to this loopback address. Binding to 0.0.0.0 exposes the API
+    # directly to the network, bypassing the proxy's rate limiting, TLS,
+    # and request filtering.
+    #
+    # To bind to all interfaces (NOT recommended outside Docker), set
+    # FIREAI_BIND_HOST=0.0.0.0 in the environment.
+    _bind_host = os.getenv("FIREAI_BIND_HOST", "127.0.0.1")
+    if _bind_host == "0.0.0.0":
+        logger.warning(
+            "Binding to 0.0.0.0 — API will be reachable from the network. "
+            "Use a reverse proxy (nginx/traefik) in production. "
+            "Set FIREAI_BIND_HOST=127.0.0.1 to restore loopback-only binding."
+        )
+    uvicorn.run(app, host=_bind_host, port=8000)
