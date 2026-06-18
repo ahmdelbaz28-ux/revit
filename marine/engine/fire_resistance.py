@@ -18,7 +18,31 @@ from marine.core.constants import INSULATION_THICKNESS_MM
 from marine.core.types import (
     FireClass, FireResistanceSpec, MarineZone, SpaceCategory,
 )
+from marine.core.errors import FireClassAssignmentError
 from marine.solas.chapter_ii_2 import required_fire_class_between
+
+
+# ─── Centralised insulation-material selection ───────────────────────────────
+# BUGFIX v2: previously generate_division_specs returned "intumescent_board"
+# for B-15, while select_insulation_material returned "intumescent_paint".
+# Both code paths now share this single function.
+def _pick_insulation_material(fire_class: FireClass,
+                              ambient_humidity_pct: float = 75.0) -> str | None:
+    """Pick insulation material for a fire class (single source of truth).
+
+    Marine environments are high-humidity + salty — material must be
+    moisture-resistant and non-combustible per SOLAS II-2/3.2.1.
+    """
+    if fire_class in (FireClass.A_0, FireClass.B_0, FireClass.C):
+        return None
+    if fire_class.value.startswith("A-"):
+        # A-15/A-30/A-60: ceramic wool is marine standard.
+        if ambient_humidity_pct > 90:
+            return "marine_ceramic_wool_with_vapor_barrier"
+        return "ceramic_wool"
+    if fire_class == FireClass.B_15:
+        return "intumescent_paint"
+    return None
 
 
 def generate_division_specs(
@@ -53,22 +77,26 @@ def generate_division_specs(
                 required = required_fire_class_between(
                     zone.space_category, adj.space_category
                 )
-            except Exception:
-                # Default to A-60 if matrix lookup fails.
+            except FireClassAssignmentError:
+                # BUGFIX v2: previously `except Exception` mapped EVERY error
+                # (including KeyboardInterrupt, MemoryError) to A-60 — both
+                # overly broad AND over-specifying. Now we only catch the
+                # specific error, and default to A-60 as a fail-safe for the
+                # marine domain (steel bulkhead, no insulation gap).
                 required = FireClass.A_60
 
             # Material selection: steel for A-class, non-combustible for B/C.
             if required.value.startswith("A-"):
                 material = "steel"
-                insulation = "ceramic_wool" if required != FireClass.A_0 else None
+                insulation = _pick_insulation_material(required)
                 thickness = INSULATION_THICKNESS_MM.get(required.value, 0.0)
             elif required.value.startswith("B-"):
                 material = "non_combustible_composite"
-                insulation = "intumescent_board" if required == FireClass.B_15 else None
+                insulation = _pick_insulation_material(required)
                 thickness = 12.0 if required == FireClass.B_15 else 0.0
             else:
                 material = "non_combustible"
-                insulation = None
+                insulation = _pick_insulation_material(required)
                 thickness = 0.0
 
             specs.append(FireResistanceSpec(
@@ -92,19 +120,13 @@ def select_insulation_material(
 ) -> str:
     """Select insulation material based on fire class and environment.
 
-    Marine environments are high-humidity + salty — material must be
-    moisture-resistant and non-combustible per SOLAS II-2/3.2.1.
+    Public wrapper around _pick_insulation_material that returns a friendly
+    string instead of None for the "no insulation required" case.
     """
-    if fire_class == FireClass.A_0 or fire_class == FireClass.C:
+    insulation = _pick_insulation_material(fire_class, ambient_humidity_pct)
+    if insulation is None:
         return "none_required"
-    if fire_class.value.startswith("A-"):
-        # A-15/A-30/A-60: ceramic wool is marine standard.
-        if ambient_humidity_pct > 90:
-            return "marine_ceramic_wool_with_vapor_barrier"
-        return "ceramic_wool"
-    if fire_class == FireClass.B_15:
-        return "intumescent_paint"
-    return "non_combustible_panel"
+    return insulation
 
 
 __all__ = [

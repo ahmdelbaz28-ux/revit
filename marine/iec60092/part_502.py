@@ -271,6 +271,7 @@ def place_detectors_grid(
 def validate_alarm_circuit_redundancy(
     zone: MarineZone,
     detector_count: int,
+    actual_circuits: int = 0,
 ) -> ComplianceResult:
     """Validate alarm-circuit redundancy per IEC 60092-502 §6.3.
 
@@ -280,9 +281,19 @@ def validate_alarm_circuit_redundancy(
       - Loops shall not pass through spaces of higher fire risk than those
         they serve.
 
+    BUGFIX v2: previously this function never added any finding — it only
+    wrote `required_circuits=2` into details but accepted no input for the
+    actual circuit count, so the validator could never FAIL. Misleading API.
+    Now accepts `actual_circuits` parameter and adds a finding when the
+    actual count is below the required count.
+
     Args:
         zone: Zone being validated.
         detector_count: Total detectors in this zone.
+        actual_circuits: Actual number of independent detector circuits
+            installed. If 0 (default), only the requirement is reported
+            (no finding) — preserves backwards-compatible behavior for
+            callers that haven't been updated to pass the actual count.
 
     Returns:
         ComplianceResult.
@@ -296,10 +307,19 @@ def validate_alarm_circuit_redundancy(
     if detector_count > 1:
         required_circuits = 2
         result.details["required_circuits"] = required_circuits
+        result.details["actual_circuits"] = actual_circuits
         result.details["note"] = (
             "Split detectors across 2 independent circuits so single-fault "
             "does not blind the zone."
         )
+        # If caller provided actual_circuits, validate it.
+        if actual_circuits > 0 and actual_circuits < required_circuits:
+            result.add_finding(
+                f"Zone {zone.zone_id} has only {actual_circuits} detector "
+                f"circuit(s) — IEC 60092-502 §6.3.2 requires ≥{required_circuits} "
+                f"for any zone with >1 detector. Split detectors across "
+                f"independent circuits so single-fault does not blind the zone."
+            )
 
     # SOLAS II-2/5.1.3: detection system must be powered from both main
     # and emergency switchboard (already in ShipElectricalSpec).

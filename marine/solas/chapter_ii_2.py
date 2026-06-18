@@ -28,9 +28,11 @@ from marine.core.constants import (
     INSULATION_THICKNESS_MM,
     MAX_DISTANCE_TO_STAIRWAY_M,
     MAX_MAIN_VERTICAL_ZONE_LENGTH_M,
+    MAX_PASSENGER_MVZ_LENGTH_M,
     MIN_AREA_REQUIRING_TWO_ESCAPES_M2,
     MIN_ESCAPE_ROUTE_HEIGHT_MM,
     MIN_ESCAPE_ROUTE_WIDTH_MM,
+    PASSENGER_MVZ_PAX_THRESHOLD,
     SOLAS_FIRE_DIVISION_MATRIX,
 )
 from marine.core.types import (
@@ -81,18 +83,34 @@ def validate_main_vertical_zones(
 
     # Group zones by deck section and check max span.
     # Each zone has frame_start/frame_end — we check the delta.
+    # BUGFIX v2: SOLAS II-2/2.2.1.1 mandates a STRICTER limit of 24 m for
+    # passenger ships carrying >36 passengers. The previous code applied
+    # 40 m uniformly, under-protecting large cruise ships and ferries.
+    is_large_passenger = (
+        ship.is_passenger_ship
+        and ship.passenger_capacity > PASSENGER_MVZ_PAX_THRESHOLD
+    )
+    mvz_max_m = (
+        MAX_PASSENGER_MVZ_LENGTH_M if is_large_passenger
+        else MAX_MAIN_VERTICAL_ZONE_LENGTH_M
+    )
     for zone in zones:
         zone_length_m = _frames_to_meters(zone.frame_end - zone.frame_start)
         # Tolerance of 0.5 m for frame-rounding (frame spacing ~0.6 m).
-        if zone_length_m > MAX_MAIN_VERTICAL_ZONE_LENGTH_M + 0.5:
+        if zone_length_m > mvz_max_m + 0.5:
+            rule = (
+                f"SOLAS II-2/2.2.1.1 (passenger >{PASSENGER_MVZ_PAX_THRESHOLD} pax)"
+                if is_large_passenger else "SOLAS II-2/2.2.1"
+            )
             result.add_finding(
                 f"Zone {zone.zone_id} ({zone.name}) spans {zone_length_m:.1f} m, "
-                f"exceeding SOLAS II-2/2.2.1 max of {MAX_MAIN_VERTICAL_ZONE_LENGTH_M} m. "
+                f"exceeding {rule} max of {mvz_max_m} m. "
                 f"Split into additional MVZs with A-60 bulkheads."
             )
         result.details[zone.zone_id] = {
             "length_m": round(zone_length_m, 2),
-            "within_limit": zone_length_m <= MAX_MAIN_VERTICAL_ZONE_LENGTH_M,
+            "within_limit": zone_length_m <= mvz_max_m,
+            "applied_limit_m": mvz_max_m,
         }
 
     # Passenger ships >36 passengers require MVZs by II-2/2.2.2.
@@ -387,7 +405,16 @@ def required_extinguishing_for_space(
     extinguishing_required = {
         SpaceCategory.MACHINERY_SPACE_A: ["water_mist", "co2_total"],
         SpaceCategory.MACHINERY_SPACE_OTHER: ["water_mist"],
-        SpaceCategory.CARGO_SPACE: ["co2_total"] if ship.gross_tonnage > 2000 else [],
+        # BUGFIX v2: SOLAS II-2/10.7.1.1 requires fixed extinguishing in
+        # cargo spaces of PASSENGER ships regardless of GT, and for cargo
+        # ships only when GT > 2000. The previous code applied the >2000
+        # GT rule uniformly — passenger ships with GT=0 (default!) got
+        # nothing, violating SOLAS II-2/10.7.1.1.
+        SpaceCategory.CARGO_SPACE: (
+            ["co2_total"]
+            if (ship.is_passenger_ship or ship.gross_tonnage > 2000)
+            else []
+        ),
         SpaceCategory.SERVICE_SPACE_MAJOR: ["dry_chemical"],  # Galley hood
         SpaceCategory.CONTROL_STATION: [],   # Portable only
         SpaceCategory.ESCAPE_ROUTE: [],

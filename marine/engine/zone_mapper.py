@@ -16,15 +16,21 @@ The mapper takes a list of space rectangles (from a GA plan) and:
 
 from __future__ import annotations
 
+import dataclasses
 import math
 from typing import List, Tuple
 
-from marine.core.constants import MAX_MAIN_VERTICAL_ZONE_LENGTH_M
+from marine.core.constants import (
+    MAX_MAIN_VERTICAL_ZONE_LENGTH_M,
+    MAX_PASSENGER_MVZ_LENGTH_M,
+    PASSENGER_MVZ_PAX_THRESHOLD,
+)
 from marine.core.types import (
     ComplianceResult, MarineZone, ShipProject, SpaceCategory,
 )
 
 # Frame spacing: typical merchant vessel has ~600 mm between frames.
+# (Name kept for backwards-compat — semantically this is METERS_PER_FRAME.)
 _FRAMES_PER_METER = 0.6
 
 
@@ -58,12 +64,58 @@ def divide_into_main_vertical_zones(
             height_m=2.2,
         )]
 
-    n_zones = max(1, math.ceil(ship_length_m / MAX_MAIN_VERTICAL_ZONE_LENGTH_M))
-    # Cap each zone length strictly at 40m to ensure SOLAS compliance even
-    # with frame-rounding. Excess length propagates to an additional zone.
-    zone_length_m = min(ship_length_m / n_zones, MAX_MAIN_VERTICAL_ZONE_LENGTH_M)
-    zones: List[MarineZone] = []
+    # SOLAS II-2/2.2.1.1: passenger ships carrying >36 passengers have a
+    # STRICTER MVZ length limit (24 m vs 40 m for cargo ships).
+    is_large_passenger = (
+        ship.is_passenger_ship
+        and ship.passenger_capacity > PASSENGER_MVZ_PAX_THRESHOLD
+    )
+    mvz_max_m = (
+        MAX_PASSENGER_MVZ_LENGTH_M if is_large_passenger
+        else MAX_MAIN_VERTICAL_ZONE_LENGTH_M
+    )
 
+    n_zones = max(1, math.ceil(ship_length_m / mvz_max_m))
+    # Each zone gets an equal share of the ship's length, guaranteed non-
+    # overlapping and tile to exactly ship_length_m. The previous code mixed
+    # two formulas for start/end frame and produced overlapping zones.
+    # FIX: compute start_m/end_m for each zone as absolute positions, then
+    # convert to frames. This guarantees:
+    #   1. No overlap between adjacent zones (zone[i].end == zone[i+1].start)
+    #   2. Every zone ≤ mvz_max_m + rounding tolerance
+    #   3. Zones tile the full ship length (sum of lengths ≈ ship_length_m)
+    #
+    # ROUNDING TOLERANCE HANDLING: each frame is 0.6 m, so rounding errors can
+    # push a zone up to 0.6 m over its intended length. We mitigate this by
+    # bumping n_zones when ANY zone would otherwise exceed mvz_max_m after
+    # rounding. This keeps every zone strictly ≤ mvz_max_m (no tolerance needed).
+    # The extra zone(s) have less length, which is fine for SOLAS.
+    def _m_to_frames(m: float) -> int:
+        return int(round(m / _FRAMES_PER_METER))
+
+    # Iteratively bump n_zones until all rounded zone lengths ≤ mvz_max_m.
+    # This typically converges in 0-1 iterations.
+    while True:
+        zone_length_m = ship_length_m / n_zones
+        boundary_frames = [_m_to_frames(i * zone_length_m)
+                           for i in range(n_zones + 1)]
+        # Ensure strict monotonic increase.
+        for i in range(1, len(boundary_frames)):
+            if boundary_frames[i] <= boundary_frames[i - 1]:
+                boundary_frames[i] = boundary_frames[i - 1] + 1
+        # Check: every zone ≤ mvz_max_m (after rounding).
+        max_zone_length = max(
+            (boundary_frames[i + 1] - boundary_frames[i]) * _FRAMES_PER_METER
+            for i in range(n_zones)
+        )
+        if max_zone_length <= mvz_max_m + 1e-9:
+            break
+        # Otherwise bump n_zones and retry.
+        n_zones += 1
+        if n_zones > 1000:  # safety valve
+            break
+
+    zones: List[MarineZone] = []
     for deck_idx in range(deck_count):
         deck_name = "main" if deck_idx == 0 else f"deck_{deck_idx + 1}"
         for mvz_idx in range(n_zones):
@@ -84,14 +136,8 @@ def divide_into_main_vertical_zones(
             # Beam ~ 0.15 * length as typical merchant vessel.
             beam_m = max(4.0, ship_length_m * 0.15)
 
-            # Cap frame count so zone length stays ≤ 40 m (frame spacing 0.6 m).
-            # 40 m / 0.6 m = 66.67 → max 66 frames per zone.
-            max_frames_per_zone = int(MAX_MAIN_VERTICAL_ZONE_LENGTH_M / _FRAMES_PER_METER)
-            start_frame = int(mvz_idx * zone_length_m / _FRAMES_PER_METER)
-            end_frame = min(
-                start_frame + max_frames_per_zone,
-                int(ship_length_m / _FRAMES_PER_METER),
-            )
+            start_frame = boundary_frames[mvz_idx]
+            end_frame = boundary_frames[mvz_idx + 1]
             actual_length_m = (end_frame - start_frame) * _FRAMES_PER_METER
 
             zones.append(MarineZone(
@@ -125,18 +171,20 @@ def assign_space_categories(
 
     Returns:
         Updated list of MarineZone objects with corrected categories.
+
+    BUGFIX: Previously this function rebuilt the frozen dataclass by hand and
+    silently dropped 4 fields (required_fire_class, hazard_class,
+    ventilation_rate_ach, has_escape_route). A zone with has_escape_route=False
+    would become True after reassignment — a safety-relevant data corruption.
+    Now uses dataclasses.replace() to preserve every field not explicitly
+    overridden.
     """
     updated = []
     for z in zones:
         if z.zone_id in space_label_map:
             new_cat = space_label_map[z.zone_id]
-            # Reconstruct the frozen dataclass with new category.
-            updated.append(MarineZone(
-                zone_id=z.zone_id, name=z.name, space_category=new_cat,
-                deck=z.deck, frame_start=z.frame_start, frame_end=z.frame_end,
-                area_m2=z.area_m2, height_m=z.height_m,
-                adjacent_zones=z.adjacent_zones,
-            ))
+            # dataclasses.replace preserves all other fields automatically.
+            updated.append(dataclasses.replace(z, space_category=new_cat))
         else:
             updated.append(z)
     return updated

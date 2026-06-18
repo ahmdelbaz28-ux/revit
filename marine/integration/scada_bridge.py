@@ -19,6 +19,7 @@ Supports PyScada (Python/Django), Scada-LTS (Java), and JSON-SCADA (Go).
 from __future__ import annotations
 import json
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
@@ -101,25 +102,59 @@ def build_opcua_node_ids(tags: List[SCADATag], ns: int = 2) -> List[Dict[str, An
 
 
 def build_modbus_registers(tags: List[SCADATag], start_addr: int = 40001) -> List[Dict[str, Any]]:
-    """Map tags to Modbus holding registers (FC=03)."""
+    """Map tags to Modbus holding registers (FC=03).
+
+    BUGFIX v2: previously assigned a uniform 2 registers per non-BOOL tag,
+    which is wrong for INT (1 register, 16-bit) and far too few for STRING
+    (needs ~16 registers for typical status text). Now uses correct per-type
+    widths based on Modbus Application Data Unit conventions:
+      - BOOL → 1 register (packed as bit 0; better to use coils FC=01 but
+        we keep FC=03 for consistency with mixed-type tag lists)
+      - INT  → 1 register (16-bit signed)
+      - REAL → 2 registers (32-bit IEEE 754 float, big-endian word order)
+      - STRING → 16 registers (32 chars at 2 chars/register)
+    """
+    # Per-type register width.
+    REG_WIDTH = {
+        "BOOL": 1,
+        "INT": 1,
+        "REAL": 2,
+        "STRING": 16,
+    }
+
     registers = []
     addr = start_addr
     for t in tags:
+        width = REG_WIDTH.get(t.data_type, 2)
         registers.append({
             "tag_id": t.tag_id,
             "register": addr,
             "data_type": t.data_type,
+            "width": width,
             "description": t.description,
         })
-        addr += 1 if t.data_type == "BOOL" else 2  # INT/REAL = 2 registers
+        addr += width
     return registers
 
 
-def dashboard_payload(imo: str, zones_status: Dict[str, str]) -> Dict[str, Any]:
-    """Build a JSON payload for the safety dashboard."""
+def dashboard_payload(
+    imo: str,
+    zones_status: Dict[str, str],
+    timestamp: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Build a JSON payload for the safety dashboard.
+
+    BUGFIX v2: previously hardcoded `"timestamp": "2026-06-18T00:00:00Z"`
+    with a comment "caller fills actual" but no parameter existed — every
+    payload carried the same fake timestamp. Now accepts an explicit
+    `timestamp` parameter (ISO 8601 with Z suffix), defaulting to the
+    current UTC time so payloads are always correctly time-stamped.
+    """
+    if timestamp is None:
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return {
         "ship_imo": imo,
-        "timestamp": "2026-06-18T00:00:00Z",  # caller fills actual
+        "timestamp": timestamp,
         "zones": [
             {"zone_id": zid, "status": s} for zid, s in zones_status.items()
         ],

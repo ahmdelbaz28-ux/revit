@@ -25,6 +25,13 @@ from __future__ import annotations
 # Larger zones require equivalent fire-protection measures (LR rules).
 MAX_MAIN_VERTICAL_ZONE_LENGTH_M = 40.0
 
+# SOLAS II-2/2.2.1.1: Passenger ships carrying >36 passengers have a STRICTER
+# limit of 24m for main vertical zone length. The previous code applied 40m
+# uniformly — over-specifying for cargo ships but UNDER-specifying for large
+# passenger ships (cruise, ferries). Now distinguished correctly.
+MAX_PASSENGER_MVZ_LENGTH_M = 24.0
+PASSENGER_MVZ_PAX_THRESHOLD = 36  # >36 passengers triggers the 24m rule
+
 # SOLAS II-2/13.3.2: Minimum width of escape routes.
 MIN_ESCAPE_ROUTE_WIDTH_MM = 700.0  # 700 mm
 
@@ -36,6 +43,14 @@ MAX_DISTANCE_TO_STAIRWAY_M = 15.0  # 15 m for ships >36 passengers
 
 # SOLAS II-2/13.3.2.1: Two means of escape required for spaces >50 m²
 MIN_AREA_REQUIRING_TWO_ESCAPES_M2 = 50.0
+
+# ─── Ship Geometry ───────────────────────────────────────────────────────────
+# Typical merchant-vessel frame spacing (one frame every ~600 mm).
+# Naming fix: this is METERS PER FRAME (i.e. one frame occupies 0.6 m of
+# ship length), NOT frames per meter. The legacy `_FRAMES_PER_METER = 0.6`
+# constant is preserved for backwards-compat in solas/zone_mapper but new
+# code should prefer this correctly-named constant.
+SHIP_FRAME_SPACING_M = 0.6
 
 
 # ─── Fire Division Class Requirements (SOLAS II-2 Table 9.1) ────────────────
