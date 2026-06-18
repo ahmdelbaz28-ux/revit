@@ -74,7 +74,7 @@ class Database:
 
     def _init_sqlite(self, db_path: str) -> None:
         """Initialize SQLite connection with performance pragmas."""
-        # CRITICAL FIX (Phase 9): guard makedirs for :memory: and empty paths.
+        # V127 SAFETY FIX: guard makedirs for :memory: and empty paths.
         # os.path.dirname(os.path.abspath(':memory:')) returns the CWD, which
         # would trigger an unnecessary makedirs on the project root. Skip
         # directory creation entirely for in-memory databases.

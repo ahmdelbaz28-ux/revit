@@ -43,7 +43,7 @@ class TestAutoCADServiceInitialization:
         mock_app.ActiveDocument = mock_doc
         mock_doc.Utility = mock_util
         
-        result = service.connect()  # noqa: F841  (used in assert below; ruff false-positive)
+        result = service.connect()  # noqa: F841  (verified via side effects below)
         
         # Verify the connection attempt
         assert mock_win32com.Dispatch.called
@@ -58,7 +58,7 @@ class TestAutoCADServiceInitialization:
         """Test connecting when AutoCAD API is not available."""
         service = AutoCADService()
         
-        result = service.connect()  # noqa: F841  (used in assert below; ruff false-positive)
+        result = service.connect()
         
         assert result is False
         assert service.connected is False

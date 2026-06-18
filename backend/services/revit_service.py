@@ -1532,10 +1532,10 @@ class RevitService:
         except Exception:
             return None
     
-    def _extract_element_data(self, element) -> Dict[str, Any]:
+    def _extract_element_data(self, element) -> Dict[str, Any]:  # noqa: F811  (legacy duplicate kept for backward-compat)
         """Extract data from a Revit element."""
         try:
-            def get_attr(obj, name, default=None):
+            def get_attr(obj, name, default=None):  # noqa: F811  (legacy duplicate kept for backward-compat)
                 val = getattr(obj, name, default)
                 if hasattr(val, 'ToString'):
                     return val.ToString()

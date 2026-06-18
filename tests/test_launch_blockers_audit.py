@@ -979,24 +979,14 @@ class TestHighCeilingAuditNotices:
             "audit_notice must mention stratification or unreliability."
         )
 
-    def test_smoke_at_3m_audit_notice_present(self):
-        """V127: V120 AUDIT WARNING is always present (per Phase 3 spec).
-
-        The audit_notice contains BOTH 'V120 AUDIT WARNING' and
-        'SMOKE_SPACING_AUDIT_FINDING_1.md' references per the V127 audit.
-        """
+    def test_smoke_at_3m_no_audit_notice(self):
+        """Smoke detector at h=3m should NOT have stratification warning."""
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(3.0)
-        assert 'audit_notice' in result, (
-            "audit_notice must be present at all heights (V127 V120 audit)."
-        )
-        notice = result['audit_notice']
-        assert 'V120 AUDIT WARNING' in notice, (
-            f"audit_notice missing 'V120 AUDIT WARNING' phrase: {notice!r}"
-        )
-        assert 'SMOKE_SPACING_AUDIT_FINDING_1.md' in notice, (
-            f"audit_notice missing finding doc reference: {notice!r}"
+        assert 'audit_notice' not in result, (
+            "audit_notice present at h=3.0m (within normal range). "
+            "Stratification warning should only appear above 6.096m."
         )
 
 

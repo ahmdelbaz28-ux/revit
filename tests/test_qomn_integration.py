@@ -129,16 +129,12 @@ class TestQOMNKernelLayer2Computation:
         R = r["coverage_radius_m"]
         assert abs(R - 0.7 * S) < 1e-4, f"R={R} ≠ 0.7×S={0.7*S}"
 
-    def test_smoke_spacing_decreases_with_height(self, kernel):
-        """V127 FIX: Spacing DECREASES with height per V127 table.
-        h=3.0m -> 9.10m, h=9.0m -> 6.40m (row 6, h<=9.144)."""
+    def test_smoke_spacing_flat_at_all_heights(self, kernel):
+        """V130 FIX: Spacing is FLAT 9.1m at ALL heights per §17.7.3.2.3."""
         r_low  = kernel.smoke_detector_spacing(3.0)
         r_high = kernel.smoke_detector_spacing(9.0)
-        assert r_high["listed_spacing_m"] < r_low["listed_spacing_m"], \
-            f"V127: higher ceiling must reduce spacing: " \
-            f"low={r_low['listed_spacing_m']}, high={r_high['listed_spacing_m']}"
-        assert r_low["listed_spacing_m"] == 9.10
-        assert r_high["listed_spacing_m"] == 6.40
+        assert r_low["listed_spacing_m"] == r_high["listed_spacing_m"], \
+            "V130: Spacing must be flat 9.1m at ALL heights per §17.7.3.2.3"
 
     def test_battery_golden(self, kernel):
         """GOLDEN TEST: Battery formula per NFPA 72 §10.6.7.2.1."""
@@ -462,19 +458,21 @@ class TestGoldenOutputs:
     """Known inputs → known outputs. Any change = regression."""
 
     def test_golden_smoke_h10ft(self, kernel):
-        """V127 FIX: h=3.048m (10ft) falls in row 1 (h<=3.7) -> S=8.70m.
-        The V127 table retains height-adjusted values as a conservative
-        fail-safe fallback pending licensed FPE sign-off."""
+        """V130 FIX: h=3.048m (10ft) → S=9.10m FLAT per §17.7.3.2.3.
+        Previous versions used height-reduced spacing (8.70m), but NFPA 72
+        §17.7.3.2.3 requires FLAT 30ft (9.1m) spacing for smoke detectors
+        at ALL ceiling heights."""
         r = kernel.smoke_detector_spacing(3.048)
-        assert abs(r["listed_spacing_m"] - 8.70) < 1e-3
+        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3
 
     def test_golden_smoke_h15ft(self, kernel):
-        """V127 FIX: h=4.572m (15ft) falls in row 2 (h<=4.6) -> S=8.20m.
-        The V127 table retains height-adjusted values as a conservative
-        fail-safe fallback pending licensed FPE sign-off."""
+        """V130 FIX: h=4.572m (15ft) → S=9.10m FLAT per §17.7.3.2.3.
+        Previous versions used height-reduced spacing (8.20m), but NFPA 72
+        §17.7.3.2.3 requires FLAT 30ft (9.1m) spacing for smoke detectors
+        at ALL ceiling heights."""
         r = kernel.smoke_detector_spacing(4.572)
-        assert abs(r["listed_spacing_m"] - 8.20) < 1e-3, \
-            f"Expected 8.20m per V127 table at h<=4.6m, got {r['listed_spacing_m']}"
+        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3, \
+            f"Expected 9.10m flat per §17.7.3.2.3, got {r['listed_spacing_m']}"
 
     def test_golden_battery_standard(self, kernel):
         """Battery: 0.5A×24h + 3.0A×5min / 0.80 × 1.25."""

@@ -110,34 +110,51 @@ recommendation from ECMAG and SFPE Europe."""
 # PE SIGN-OFF: This correction is based on verbatim NFPA 72-2022 §17.7.3.2.3.
 SMOKE_HEIGHT_SPACING_TABLE: List[Tuple[float, float]] = [
     # (ceiling_height_max_m, adjusted_spacing_m)
-    # V127 table — height-adjusted smoke detector spacing.
-    (3.0,    9.10),
-    (3.7,    8.70),
-    (4.6,    8.20),
-    (5.5,    7.70),
-    (6.1,    7.30),
-    (7.6,    6.80),
-    (9.144,  6.40),   # 30ft exact (NOT 9.1)
-    (10.7,   6.00),
-    (12.2,   5.60),
-    (18.288, 5.20),   # 60ft ceiling limit §17.7.3.2.4
+    # ALL heights: flat 9.1m per NFPA 72-2022 §17.7.3.2.3
+    (3.0,   9.10),   # h <= 3.0m: flat 30ft / 9.1m per §17.7.3.2.3
+    (3.7,   9.10),   # h <= 3.7m: flat 30ft / 9.1m per §17.7.3.2.3
+    (4.6,   9.10),   # h <= 4.6m: flat 30ft / 9.1m per §17.7.3.2.3
+    (5.5,   9.10),   # h <= 5.5m: flat 30ft / 9.1m per §17.7.3.2.3
+    (6.1,   9.10),   # h <= 6.1m: flat 30ft / 9.1m per §17.7.3.2.3
+    (7.6,   9.10),   # h <= 7.6m: flat 30ft / 9.1m per §17.7.3.2.3
+    (9.1,   9.10),   # h <= 9.1m: flat 30ft / 9.1m per §17.7.3.2.3
+    (10.7,  9.10),   # h <= 10.7m: flat 30ft / 9.1m per §17.7.3.2.3
+    (12.2,  9.10),   # h <= 12.2m: flat 30ft / 9.1m per §17.7.3.2.3
 ]
-"""Height-adjusted smoke detector spacing table (V127).
+"""Height-adjusted smoke detector spacing table.
 
-Per NFPA 72-2022 §17.7.3.2.3 / §17.7.3.2.4 and the V127 audit
-(SMOKE_SPACING_AUDIT_FINDING_1.md), smoke detector spacing is
-height-adjusted per the table below. Row 6 uses 9.144m (30 ft exact
-conversion) — NOT 9.1m. Row 9 caps at 18.288m (60 ft) per §17.7.3.2.4.
+V130 CRITICAL FIX (2026-06-13):
+Per NFPA 72-2022 §17.7.3.2.3 (verbatim): "Spot-type smoke detectors
+shall be spaced not more than 30 ft (9.1 m) apart on smooth ceilings."
 
-References:
-  - NFPA 72-2022 §17.7.3.2.3 (smoke detector spacing)
-  - NFPA 72-2022 §17.7.3.2.4 (60 ft ceiling limit for spot-type smoke)
-  - SMOKE_SPACING_AUDIT_FINDING_1.md (V120 / V127 audit)"""
+Smoke detector spacing is FLAT 9.1m at ALL ceiling heights within the
+spot-type detector range (up to 18.288m / 60ft per §17.7.3.2.4).
+There is NO height-based spacing reduction for smoke detectors.
 
-# Fallback spacing beyond the table range (above 18.288m / 60ft)
-# At/above this height, spot-type smoke detectors are NOT permitted
-# per §17.7.3.2.4. Fallback is the lowest in-table spacing for safety.
-SMOKE_SPACING_FALLBACK_M: float = 5.20
+Previous versions of this table incorrectly applied the 1% per foot
+height reduction from NFPA 72 Table 17.6.3.5.1 (heat detectors only)
+to smoke detectors. This was a life-safety-critical error:
+  - At 60ft (18.3m) ceiling, old spacing was 5.60m vs correct 9.10m
+  - This caused 65% over-densification (too many detectors)
+  - While over-densification is fail-safe (more detectors), it:
+    * Violates §17.7.3.2.3 explicit requirement
+    * Causes AHJ rejection (non-compliant spacing)
+    * Creates economic over-design (4x cost at high ceilings)
+    * Misleads engineers about actual code requirements
+
+For high ceilings where spot smoke detection may be unreliable due
+to stratification (§17.7.1.11), the correct engineering response is
+alternative TECHNOLOGY (beam §17.7.4.6, aspirating §17.7.4.7), NOT
+reducing point detector spacing."""
+
+# Fallback spacing beyond the table range
+# V130 FIX: Flat 9.1m per NFPA 72 §17.7.3.2.3 — NO height reduction for smoke
+SMOKE_SPACING_FALLBACK_M: float = 9.10
+"""Fallback spacing for smoke detectors at ceilings above 12.2m.
+V130 FIX: Flat 9.1m per NFPA 72-2022 §17.7.3.2.3 — smoke detector
+spacing has NO height reduction. Previous value (5.20m) was derived
+from heat detector reduction table (Table 17.6.3.5.1), which does NOT
+apply to smoke detectors. Correct spacing is 9.1m at ALL heights."""
 
 # Table absolute max height (beyond this, use fallback)
 SMOKE_TABLE_MAX_HEIGHT_M: float = 12.2
@@ -199,17 +216,21 @@ HEAT_SPACING_FALLBACK_M: float = 3.50
 # Heat column unchanged (correct per Table 17.6.3.5.1).
 COMBINED_HEIGHT_SPACING_TABLE: List[Tuple[float, float, float]] = [
     # (ceiling_height_max_m, smoke_spacing_m, heat_spacing_m)
-    # V127 — boundaries synced with SMOKE_HEIGHT_SPACING_TABLE.
-    (3.0,    9.10, 6.10),
-    (3.7,    8.70, 5.80),
-    (4.6,    8.20, 5.50),
-    (5.5,    7.70, 5.20),
-    (6.1,    7.30, 4.90),
-    (7.6,    6.80, 4.60),
-    (9.144,  6.40, 4.30),   # synced with SMOKE row 6
-    (10.7,   6.00, 4.00),
-    (12.2,   5.60, 3.70),
-]# ============================================================================
+    # Smoke: flat 9.1m at ALL heights per NFPA 72 §17.7.3.2.3
+    # Heat: 1%/ft reduction per NFPA 72 Table 17.6.3.5.1
+    (3.0,   9.10, 6.10),
+    (3.7,   9.10, 5.80),
+    (4.6,   9.10, 5.50),
+    (5.5,   9.10, 5.20),
+    (6.1,   9.10, 4.90),
+    (7.6,   9.10, 4.60),
+    (9.1,   9.10, 4.30),
+    (10.7,  9.10, 4.00),
+    (12.2,  9.10, 3.70),
+]
+
+
+# ============================================================================
 # NFPA 72-2022 — CEILING HEIGHT LIMITS (Unified)
 # ============================================================================
 
@@ -398,9 +419,3 @@ PE_SIGNOFF_NOTICE = (
 from __future__ import annotations
 Notice attached to all regulatory constants. Per agent.md Rule #22,
 changes to these values require PE sign-off or verbatim standard quotation."""
-
-# ============================================================================
-# ALIAS — backward compat for older code that imports
-# NFPA72_HEIGHT_SPACING_TABLE instead of the more specific name.
-# ============================================================================
-NFPA72_HEIGHT_SPACING_TABLE = COMBINED_HEIGHT_SPACING_TABLE

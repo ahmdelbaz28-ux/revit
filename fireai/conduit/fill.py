@@ -293,7 +293,7 @@ def calculate_fill(
             ),
             code_reference=nec_ref,
             remediation=(
-                f"Increase conduit to {recommended.value if recommended else 'larger than 2 in'}", 
+                f"""Increase conduit to {recommended.value if recommended else 'larger than 2"'}, """
                 "reduce conductor count, or split conductors into two conduits."
             ),
             severity=Severity.FATAL,

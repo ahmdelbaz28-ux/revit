@@ -59,28 +59,15 @@ class TestConstants:
         assert _BEAM_SPACING_M == pytest.approx(18.3, abs=0.1)
 
     def test_smoke_spacing_table_entries(self):
-        """V127: SMOKE_HEIGHT_SPACING_TABLE has 10 rows."""
-        assert len(_NFPA72_SMOKE_SPACING_TABLE) == 10
+        """NFPA 72 Table 17.6.3.1.1 has 9 height/spacing pairs."""
+        assert len(_NFPA72_SMOKE_SPACING_TABLE) == 9
 
-    def test_smoke_spacing_table_monotonically_decreasing(self):
-        """V127: Smoke spacing monotonically decreases with ceiling height."""
-        spacings = [s for _, s in _NFPA72_SMOKE_SPACING_TABLE]
-        for i in range(1, len(spacings)):
-            assert spacings[i] <= spacings[i-1], (
-                f"Row {i} spacing {spacings[i]} > row {i-1} {spacings[i-1]}"
+    def test_smoke_spacing_table_flat_spacing(self):
+        """V130 FIX: Smoke spacing table has flat 9.1m at ALL heights per §17.7.3.2.3."""
+        for _, spacing in _NFPA72_SMOKE_SPACING_TABLE:
+            assert spacing == 9.10, (
+                f"Smoke spacing must be 9.1m (flat) per §17.7.3.2.3, got {spacing}m"
             )
-
-    def test_smoke_spacing_table_row_6(self):
-        """V127: row 6 uses 9.144m (30 ft exact) — NOT 9.1m."""
-        max_h, spacing = _NFPA72_SMOKE_SPACING_TABLE[6]
-        assert max_h == pytest.approx(9.144, abs=1e-3)
-        assert spacing == pytest.approx(6.40, abs=1e-3)
-
-    def test_smoke_spacing_table_last_row(self):
-        """V127: last row is (18.288, 5.20) — 60 ft ceiling cap."""
-        max_h, spacing = _NFPA72_SMOKE_SPACING_TABLE[-1]
-        assert max_h == pytest.approx(18.288, abs=1e-3)
-        assert spacing == pytest.approx(5.20, abs=1e-3)
 
     def test_standard_spacing_at_3m(self):
         """Standard 30ft (9.1m) spacing at h ≤ 3.0m."""
@@ -156,11 +143,11 @@ class TestSelectTechnology:
         assert d.spacing_m == pytest.approx(9.10, abs=0.01)
         assert d.ridge_zone_required is False
 
-    def test_medium_ceiling_point_smoke_height_adjusted_spacing(self):
-        """V127 FIX: h=6.1m -> POINT_SMOKE with 7.30m spacing (V127 table row 4)."""
+    def test_medium_ceiling_point_smoke_flat_spacing(self):
+        """V130 FIX: h=6.1m → POINT_SMOKE with FLAT 9.1m spacing per §17.7.3.2.3."""
         d = EliteTechnologyDispatcher.select_technology(6.1)
         assert d.technology == DetectorTechnology.POINT_SMOKE
-        assert d.spacing_m == pytest.approx(7.30, abs=0.01)
+        assert d.spacing_m == pytest.approx(9.10, abs=0.01)
 
     def test_high_ceiling_within_table_point_smoke(self):
         """V130 FIX: h=9.2m → POINT_SMOKE with FLAT 9.1m spacing + stratification advisory."""
@@ -171,10 +158,10 @@ class TestSelectTechnology:
         assert any("STRATIFICATION" in w or "ECONOMIC" in w for w in d.warnings)
 
     def test_max_point_height_point_smoke(self):
-        """V127 FIX: h=12.2m -> POINT_SMOKE with 5.60m spacing (table row 8)."""
+        """V130 FIX: h=12.2m (max) → POINT_SMOKE with FLAT 9.1m spacing."""
         d = EliteTechnologyDispatcher.select_technology(12.2)
         assert d.technology == DetectorTechnology.POINT_SMOKE
-        assert d.spacing_m == pytest.approx(5.60, abs=0.01)
+        assert d.spacing_m == pytest.approx(9.10, abs=0.01)
 
     def test_just_above_point_max_beam_smoke(self):
         """h=12.3m (>12.2m) → BEAM_SMOKE."""
@@ -256,19 +243,19 @@ class TestGetSmokeSpacing:
         assert spacing == pytest.approx(9.10, abs=0.01)
 
     def test_mid_range(self):
-        """V127: h=5.0m falls in row 3 (h<=5.5) -> 7.70m spacing."""
+        """V130 FIX: Flat 9.1m spacing at all heights per §17.7.3.2.3."""
         spacing = EliteTechnologyDispatcher._get_smoke_spacing(5.0)
-        assert spacing == pytest.approx(7.70, abs=0.01)
+        assert spacing == pytest.approx(9.10, abs=0.01)
 
     def test_max_table_height(self):
-        """V127: h=12.2m falls in row 8 (h<=12.2) -> 5.60m spacing."""
+        """V130 FIX: Flat 9.1m spacing at max table height per §17.7.3.2.3."""
         spacing = EliteTechnologyDispatcher._get_smoke_spacing(12.2)
-        assert spacing == pytest.approx(5.60, abs=0.01)
+        assert spacing == pytest.approx(9.10, abs=0.01)
 
     def test_beyond_table_returns_last(self):
-        """V127: h=15.0m falls in row 9 (h<=18.288) -> 5.20m spacing."""
+        """V130 FIX: Beyond NFPA table → still 9.1m (flat per §17.7.3.2.3)."""
         spacing = EliteTechnologyDispatcher._get_smoke_spacing(15.0)
-        assert spacing == pytest.approx(5.20, abs=0.01)
+        assert spacing == pytest.approx(9.10, abs=0.01)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

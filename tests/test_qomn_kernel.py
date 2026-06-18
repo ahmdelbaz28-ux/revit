@@ -310,33 +310,20 @@ class TestNFPA72Constants:
     # reduction (1%/ft) to smoke detectors — a known misapplication.
     # New table has 9 rows (conservative height-adjusted values).
     def test_smoke_spacing_table_entries(self):
-        # V127 FIX: table now has 10 rows (row 6 uses 9.144m / 30 ft exact,
-        # row 9 caps at 18.288m / 60 ft per §17.7.3.2.4).
-        assert len(NFPA72_SMOKE_SPACING_TABLE) == 10
+        assert len(NFPA72_SMOKE_SPACING_TABLE) == 9
 
     def test_smoke_spacing_first_row(self):
         """≤3.0m → 9.1m (30ft listed spacing)."""
         assert NFPA72_SMOKE_SPACING_TABLE[0] == (3.0, 9.10)
 
     def test_smoke_spacing_last_row(self):
-        """V127 FIX: last row is (18.288, 5.20) — 60 ft ceiling cap per §17.7.3.2.4."""
-        assert NFPA72_SMOKE_SPACING_TABLE[-1] == (18.288, 5.20)
+        """V130 FIX: ≤12.2m → FLAT 9.1m per §17.7.3.2.3 (no height reduction)."""
+        assert NFPA72_SMOKE_SPACING_TABLE[-1] == (12.2, 9.10)
 
-    def test_spacing_table_is_monotonically_decreasing(self):
-        """V127 FIX: Spacing monotonically decreases with ceiling height."""
-        spacings = [s for _, s in NFPA72_SMOKE_SPACING_TABLE]
-        for i in range(1, len(spacings)):
-            assert spacings[i] <= spacings[i - 1], (
-                f"Row {i} spacing {spacings[i]} > row {i-1} {spacings[i-1]}"
-            )
-
-    def test_spacing_first_row(self):
-        """V127: First row is (3.0, 9.10) — 10 ft / 30 ft listed spacing."""
-        assert NFPA72_SMOKE_SPACING_TABLE[0] == (3.0, 9.10)
-
-    def test_spacing_row_6_is_9p144m(self):
-        """V127: Row 6 uses 9.144m (30 ft exact) — NOT 9.1m."""
-        assert NFPA72_SMOKE_SPACING_TABLE[6][0] == pytest.approx(9.144, abs=1e-3)
+    def test_spacing_flat_at_all_heights(self):
+        """V130 FIX: Smoke spacing is FLAT 9.1m at ALL heights per §17.7.3.2.3."""
+        for _, spacing in NFPA72_SMOKE_SPACING_TABLE:
+            assert spacing == 9.10, f"Expected 9.1m flat spacing, got {spacing}m"
 
     def test_coverage_radius_factor(self):
         """R = 0.7 × S per NFPA 72 §17.7.4.2.3.1."""
@@ -492,21 +479,15 @@ class TestComputeSmokeDetectorSpacing:
     # The V121 flat-only override was removed in favor of the canonical
     # height-adjusted spacing table from fireai/constants/__init__.py.
     def test_medium_ceiling(self):
-        """V127 FIX: h=4.0m falls in row 2 (h<=4.6) → 8.20m (NOT 9.1)."""
+        """V130 FIX: h=4.0m → FLAT 9.1m spacing per §17.7.3.2.3."""
         result = compute_smoke_detector_spacing(4.0)
-        assert result["listed_spacing_m"] == pytest.approx(8.20, abs=1e-3)
+        assert result["listed_spacing_m"] == pytest.approx(9.10, abs=1e-3)
 
-    def test_high_ceiling_does_not_reduce_spacing(self):
-        """V127 FIX: Higher ceiling DOES reduce spacing per V127 table.
-        h=3.0m → 9.10m, h=6.0m → 7.30m (row 4, h<=6.1)."""
+    def test_high_ceiling_flat_spacing(self):
+        """V130 FIX: Spacing is FLAT 9.1m at ALL heights per §17.7.3.2.3."""
         r_low = compute_smoke_detector_spacing(3.0)
         r_high = compute_smoke_detector_spacing(6.0)
-        assert r_high["listed_spacing_m"] < r_low["listed_spacing_m"], (
-            f"Higher ceiling must reduce spacing: low={r_low['listed_spacing_m']}, "
-            f"high={r_high['listed_spacing_m']}"
-        )
-        assert r_low["listed_spacing_m"] == pytest.approx(9.10, abs=1e-3)
-        assert r_high["listed_spacing_m"] == pytest.approx(7.30, abs=1e-3)
+        assert r_high["listed_spacing_m"] == r_low["listed_spacing_m"]  # Both 9.1m
 
     def test_coverage_radius_is_07_times_spacing(self):
         """NFPA 72 §17.7.4.2.3.1: R = 0.7 × S."""

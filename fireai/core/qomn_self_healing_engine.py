@@ -87,6 +87,7 @@ logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(
 # SECTION 1: DATA TYPES & ENCAPSULATED OUTPUT MODEL
 # =====================================================================
 
+
 class SecurityError(Exception):
     """Raised when a security policy violation prevents continuation.
 
@@ -407,18 +408,18 @@ class AsyncAuditLogger:
             # The previous "pytest in sys.modules" check used a hardcoded
             # b"QOMN_SECRET_KEY" as fallback. This is a CATASTROPHIC vulnerability
             # because pytest is importable in many production environments that
-            # install test dependencies (CI runners, Docker images that bundle
-            # test deps, developer laptops running uvicorn locally). A known-default
-            # HMAC key allows attackers to forge audit log entries, hiding the fact
-            # that a self-healing action was never actually performed — a
-            # life-safety hazard in a fire alarm system.
+            # install test dependencies (CI runners, Docker images bundling test
+            # deps, developer laptops running uvicorn locally with test deps
+            # installed). A known-default HMAC key allows attackers to forge
+            # audit log entries, hiding the fact that a self-healing action was
+            # never actually performed.
             #
             # FIX:
             #   - Production (FIREAI_ENV=production): RAISE SecurityError.
             #     Audit logging cannot proceed without a stable HMAC key.
-            #   - Non-production: generate a random per-process key (existing
-            #     behavior). Tests that need a deterministic key must pass
-            #     secret_key=... explicitly via the constructor.
+            #   - Non-production: generate a random per-process key with WARNING.
+            #     Tests that need a deterministic key must pass secret_key=...
+            #     explicitly via the constructor.
             import secrets as _secrets
             env = os.environ.get("FIREAI_ENV", "development").lower()
             is_production = env in ("production", "prod")
@@ -1724,27 +1725,26 @@ def query_local_ollama_engine(
 # =====================================================================
 
 def validate_sprinkler_pressure(val: Any) -> bool:
-    """Sprinkler operating pressure must be finite and non-negative.
+    """Sprinkler operating pressure must be positive, non-zero, and finite.
 
-    V127 FIX (Phase 5): Reject Inf and NaN explicitly per the QOMN kernel
-    safety principle. Inf must NEVER be accepted as a valid healed value
-    because it propagates into downstream kernel computations (voltage drop,
-    battery calculations) causing PhysicsGuardError crashes. A sprinkler
-    pressure of infinity is physically meaningless -- the correct response
-    to zero k-factor is the safe_minimum (7.0 psi per NFPA 13), not infinity.
+    V FIX: Removed `or val == float('inf')` clause. Per the QOMN kernel
+    safety principle, float('inf') must NEVER be accepted as a valid
+    healed value because it propagates into downstream kernel computations
+    (voltage drop, battery calculations) causing PhysicsGuardError crashes.
+    A sprinkler pressure of infinity is physically meaningless -- the correct
+    response to zero k-factor is the safe_minimum (7.0 psi per NFPA 13),
+    not infinity.
 
-    Note: The self-healing decorator's safe_minimum (7.0 psi) is the binding
-    floor for *healed* values -- NFPA 13 §23.4.4 requires >=7.0 psi for
-    active sprinkler operation. The validator here only rejects physically
-    impossible inputs (Inf / NaN / negative); the safe_minimum enforcement
-    is applied by the @self_healing decorator.
-
-    See tests/test_self_healing.py and SMOKE_SPACING_AUDIT_FINDING_1.md.
+    V69 FIX (HIGH): Reject val == 0.0. A sprinkler pressure of 0.0 psi
+    means NO water is flowing through the sprinkler head. NFPA 13 Section
+    23.4.4 requires a minimum operating pressure of 7.0 psi. A value of
+    0.0 psi would pass the old validator (val >= 0.0 is True for 0.0),
+    causing the system to report NOMINAL status for a sprinkler that
+    provides ZERO fire protection. In a real fire, sprinklers at 0 psi
+    deliver no water -- people die.
     """
     if isinstance(val, (int, float)):
-        if math.isinf(val) or math.isnan(val):
-            return False
-        return val >= 0.0
+        return val > 0.0 and math.isfinite(val)
     return False
 
 
