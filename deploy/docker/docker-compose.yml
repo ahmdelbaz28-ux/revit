@@ -94,6 +94,15 @@ services:
       dockerfile: deploy/docker/Dockerfile.api
     image: fireai/api:${FIREAI_VERSION:-latest}
     container_name: fireai-api
+    # v2 NOTE: replicas=2 below is only safe if ALL in-memory state has been
+    # moved out of the API process. Known in-memory state that breaks under
+    # replicas > 1:
+    #   - fireai/core/fireai_api.py: _task_store dict (per-process task tracking)
+    #   - backend/app.py: _cache dict (response cache)
+    #   - fireai/core/api_server.py: RateLimiter._clients dict (per-IP rate limit)
+    # Until these are migrated to Redis (which is already in this compose file),
+    # set replicas=1 OR set up sticky sessions at the nginx layer. Otherwise a
+    # client that creates a task on replica A and polls replica B gets a 404.
     environment:
       FIREAI_ENV: production
       FIREAI_API_KEY: ${FIREAI_API_KEY:?FIREAI_API_KEY required}
@@ -110,9 +119,10 @@ services:
     <<: *default-security
     logging: *default-logging
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      # v2: use curl instead of python -c — lighter, clearer exit code
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/api/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
       start_period: 40s
     restart: unless-stopped
@@ -196,8 +206,19 @@ services:
     image: fireai/nginx:${FIREAI_VERSION:-latest}
     container_name: fireai-nginx
     ports:
+      # v2 FIX: previously both 80 and 443 were mapped to nginx's port 8080,
+      # but nginx.conf only listens on 8080 with NO TLS. That meant HTTPS
+      # traffic on port 443 arrived at nginx as plain HTTP — no TLS
+      # termination was happening. Two valid fixes (choose ONE):
+      #
+      # Option A (recommended): terminate TLS at an external LB (AWS ALB,
+      # Cloudflare, Traefik). Keep only port 80 here for the LB → nginx hop.
       - "80:8080"
-      - "443:8080"
+      #
+      # Option B: terminate TLS at nginx itself. Uncomment 443:443 below,
+      # add `listen 443 ssl;` and `ssl_certificate`/`ssl_certificate_key`
+      # directives to nginx.conf, and mount the cert files as volumes.
+      # - "443:443"
     <<: *default-security
     logging: *default-logging
     healthcheck:

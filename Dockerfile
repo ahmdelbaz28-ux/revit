@@ -29,8 +29,10 @@ LABEL maintainer="FireAI Engineering Team"
 LABEL description="Safety-Critical Fire Protection Digital Twin — NFPA 72-2022"
 LABEL version="1.0.0"
 
-RUN groupadd -r fireai && \
-    useradd -r -g fireai -d /app -s /sbin/nologin -c "FireAI Service" fireai
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r fireai \
+    && useradd -r -g fireai -d /app -s /sbin/nologin -c "FireAI Service" fireai
 
 WORKDIR /app
 
@@ -59,16 +61,29 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     FIREAI_ENV=production \
     LOG_LEVEL=WARNING \
     DIGITAL_TWIN_DB_PATH=/app/data/digital_twin.db \
-    UDM_DB_PATH=/app/data/udm_elements.db
+    UDM_DB_PATH=/app/data/udm_elements.db \
+    UVICORN_LIMIT_MAX_REQUESTS=1000 \
+    UVICORN_TIMEOUT_KEEP_ALIVE=5
 
 USER fireai
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')" || exit 1
+# v2: use curl instead of `python -c "import urllib..."` — lighter on CPU
+# and memory, and gives a clearer exit code on connection failure.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -sf http://localhost:8000/api/health || exit 1
 
 # C-2 FIX: Default to 1 worker for SQLite (WAL mode allows concurrent reads
 # but concurrent writes from multiple processes risk SQLITE_BUSY/data corruption).
 # For multi-worker deployments, use PostgreSQL via deploy/docker/docker-compose.yml
-CMD uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${UVICORN_WORKERS:-1}
+#
+# v2: --limit-max-requests recycles each worker after N requests, mitigating
+# memory leaks in long-running processes (FastAPI/SQLAlchemy). Default 1000.
+# --timeout-keep-alive=5 closes idle connections promptly.
+CMD uvicorn backend.app:app \
+    --host 0.0.0.0 \
+    --port ${PORT:-8000} \
+    --workers ${UVICORN_WORKERS:-1} \
+    --limit-max-requests ${UVICORN_LIMIT_MAX_REQUESTS:-1000} \
+    --timeout-keep-alive ${UVICORN_TIMEOUT_KEEP_ALIVE:-5}
