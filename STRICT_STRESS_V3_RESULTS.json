@@ -1,0 +1,177 @@
+[
+  {
+    "test": "timing_valid_key",
+    "status": "INFO",
+    "details": "Avg valid: 247.56ms"
+  },
+  {
+    "test": "timing_invalid_key",
+    "status": "INFO",
+    "details": "Avg invalid: 296.63ms"
+  },
+  {
+    "test": "timing_oracle_exists",
+    "status": "PASS",
+    "details": "No timing oracle detected"
+  },
+  {
+    "test": "prefix_bypass",
+    "status": "PASS",
+    "details": "No prefix bypass detected in _is_public_path"
+  },
+  {
+    "test": "cache_large_value_accepted",
+    "status": "PASS",
+    "details": "Cache rejected 1048577 byte value (cap = 1048576)"
+  },
+  {
+    "test": "cache_expired_retention",
+    "status": "PASS",
+    "details": "Background reaper cleaned all 50 expired entries"
+  },
+  {
+    "test": "ws_handshake_checked",
+    "status": "INFO",
+    "details": "HTTP handshake (incl. WS upgrade) goes through auth"
+  },
+  {
+    "test": "ws_sync_public",
+    "status": "PASS",
+    "details": "/sync is NOT in public paths — WS handshake requires auth"
+  },
+  {
+    "test": "options_preflight_ok",
+    "status": "PASS",
+    "details": "CORS preflight → 200 (allowed)"
+  },
+  {
+    "test": "head_auth_required",
+    "status": "PASS",
+    "details": "HEAD requires auth"
+  },
+  {
+    "test": "concurrent_add_errors",
+    "status": "PASS",
+    "details": "No errors in 5 threads × 10 adds of same key"
+  },
+  {
+    "test": "concurrent_add_single_entry",
+    "status": "PASS",
+    "details": "Only one entry for race_key_same"
+  },
+  {
+    "test": "empty_key_rejected",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "test": "long_key_rejected_fast",
+    "status": "PASS",
+    "details": "10KB key rejected in 249ms (slow due to timing equalization — CORRECT)"
+  },
+  {
+    "test": "key_at_cap_accepted",
+    "status": "PASS",
+    "details": "Key at cap (1024 bytes) accepted"
+  },
+  {
+    "test": "key_over_cap_rejected",
+    "status": "PASS",
+    "details": "Key over cap (1025 bytes) rejected"
+  },
+  {
+    "test": "unicode_key_works",
+    "status": "PASS",
+    "details": "Unicode key preserved"
+  },
+  {
+    "test": "unicode_no_collision",
+    "status": "PASS",
+    "details": "ﬁ and fi treated as different keys (no normalization)"
+  },
+  {
+    "test": "state_visible_to_dep",
+    "status": "PASS",
+    "details": "require_permission() sees fireai_role set by middleware"
+  },
+  {
+    "test": "dwg_no_auth_rejected",
+    "status": "PASS",
+    "details": "POST /parse-dwg without auth → 401"
+  },
+  {
+    "test": "dwg_viewer_rejected",
+    "status": "PASS",
+    "details": "Viewer → 403 (lacks PROJECT_CREATE)"
+  },
+  {
+    "test": "secret_excl",
+    "status": "PASS",
+    "details": "Uses O_CREAT|O_EXCL (no TOCTOU)"
+  },
+  {
+    "test": "keys_file_perms",
+    "status": "PASS",
+    "details": "Keys file created with 0o600 permissions"
+  },
+  {
+    "test": "cache_lock_starvation",
+    "status": "PASS",
+    "details": "Max read latency: 0.0ms (no starvation)"
+  },
+  {
+    "test": "traversal_/api/v1/cache/stats/../../heal",
+    "status": "PASS",
+    "details": "no-auth→200, with-auth→200"
+  },
+  {
+    "test": "traversal_/api/v1/cache/stats%2F..%2F..%",
+    "status": "PASS",
+    "details": "no-auth→401, with-auth→404"
+  },
+  {
+    "test": "traversal_/api//v1//cache//stats",
+    "status": "PASS",
+    "details": "no-auth→401, with-auth→404"
+  },
+  {
+    "test": "traversal_/api/v1/cache/stats/",
+    "status": "PASS",
+    "details": "no-auth→401, with-auth→200"
+  },
+  {
+    "test": "traversal_/api/v1/cache/stats/.",
+    "status": "PASS",
+    "details": "no-auth→401, with-auth→200"
+  },
+  {
+    "test": "dwg_size_constant",
+    "status": "PASS",
+    "details": "Size limit = 52428800 (50 MB)"
+  },
+  {
+    "test": "mw_no_body_buffer",
+    "status": "PASS",
+    "details": "Middleware never reads body (StreamingResponse-safe)"
+  },
+  {
+    "test": "http_timing_covered",
+    "status": "INFO",
+    "details": "Covered by TEST 1 (timing_attack_validate). Fix: add deliberate bcrypt-equivalent delay on 401."
+  },
+  {
+    "test": "cache_value_limit_exists",
+    "status": "PASS",
+    "details": "Cache value size limit (_CACHE_MAX_VALUE_SIZE) defined"
+  },
+  {
+    "test": "key_length_cap_exists",
+    "status": "PASS",
+    "details": "API key length cap (_MAX_KEY_LENGTH) defined"
+  },
+  {
+    "test": "no_data_loss",
+    "status": "PASS",
+    "details": "All 100 concurrent adds persisted and validate"
+  }
+]

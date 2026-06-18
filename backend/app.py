@@ -164,11 +164,24 @@ def _build_csp() -> str:
 #   - Uses a threading.Lock for multi-step operations (read-modify-write
 #     sequences like the cleanup loop in cache_stats).
 #   - Skips eviction for entries that are already expired (cleans them first).
+# STRICT FIX C: Added per-value size cap (1 MB default) to prevent a single
+#              entry from consuming excessive memory.
+# STRICT FIX H: Added a background reaper thread that periodically cleans
+#              expired entries (every 60 seconds), so memory is reclaimed
+#              even if cache_stats is never called.
 from collections import OrderedDict as _OrderedDict
 
 _CACHE_MAX_ENTRIES = int(os.getenv("FIREAI_CACHE_MAX_ENTRIES", "10000"))
+# STRICT FIX C: Max size of a single cached value (1 MB default).
+# Prevents a single entry from consuming excessive memory.
+_CACHE_MAX_VALUE_SIZE = int(os.getenv("FIREAI_CACHE_MAX_VALUE_SIZE", str(1024 * 1024)))
 _cache: _OrderedDict[str, dict] = _OrderedDict()
 _cache_lock = threading.Lock()
+
+# STRICT FIX H: Background reaper configuration
+_CACHE_REAPER_INTERVAL = int(os.getenv("FIREAI_CACHE_REAPER_INTERVAL", "60"))
+_cache_reaper_started = False
+_cache_reaper_lock = threading.Lock()
 
 
 def _evict_expired_locked() -> int:
@@ -193,6 +206,31 @@ def _evict_oldest_locked(n: int = 1) -> None:
             _cache.popitem(last=False)
         except KeyError:
             return
+
+
+def _ensure_cache_reaper_started() -> None:
+    """Start the background cache reaper thread (once, idempotent)."""
+    global _cache_reaper_started
+    if _cache_reaper_started:
+        return
+    with _cache_reaper_lock:
+        if _cache_reaper_started:
+            return
+        _cache_reaper_started = True
+
+        def _reaper_loop():
+            while True:
+                try:
+                    time.sleep(_CACHE_REAPER_INTERVAL)
+                    with _cache_lock:
+                        _evict_expired_locked()
+                except Exception:
+                    # Don't let the reaper crash the app
+                    pass
+
+        t = threading.Thread(target=_reaper_loop, daemon=True, name="cache-reaper")
+        t.start()
+        logger.info("Cache reaper thread started (interval=%ds)", _CACHE_REAPER_INTERVAL)
 
 
 def get_cache():
@@ -220,7 +258,21 @@ async def cache_set(key: str, value: str, expire: int = 300):
     STRESS-TEST FIX #3: If cache is at capacity, expired entries are
     evicted first; if still at capacity, the oldest entry is evicted
     (LRU policy — least recently used).
+
+    STRICT FIX C: Reject values larger than _CACHE_MAX_VALUE_SIZE
+    to prevent a single entry from consuming excessive memory.
     """
+    # STRICT FIX C: Check value size BEFORE acquiring the lock
+    if not isinstance(value, str):
+        # Coerce to str for size check (cache stores str per signature)
+        value = str(value)
+    if len(value) > _CACHE_MAX_VALUE_SIZE:
+        logger.warning(
+            "Cache value too large (%d bytes, max %d) — rejecting",
+            len(value), _CACHE_MAX_VALUE_SIZE,
+        )
+        return
+
     with _cache_lock:
         # If this is a new key and we're at capacity, make room.
         if key not in _cache:
@@ -234,6 +286,9 @@ async def cache_set(key: str, value: str, expire: int = 300):
             # Existing key — move to end (most recently used)
             _cache.move_to_end(key)
         _cache[key] = {"value": value, "expire": time.time() + expire}
+
+    # STRICT FIX H: Start the reaper on first cache_set
+    _ensure_cache_reaper_started()
 
 
 async def cache_delete(key: str):

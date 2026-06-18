@@ -14,6 +14,7 @@ import logging
 import os
 import secrets
 import threading
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -34,6 +35,83 @@ KEYS_FILE = os.getenv("FIREAI_API_KEYS_FILE", "db/api_keys.json")
 # Thread-safety lock for TOCTOU prevention on load-modify-save cycles
 _keys_lock = threading.Lock()
 
+# ── STRICT FIX F: API key length cap ────────────────────────────────────────
+# Prevent CPU/memory DoS via very long keys. HMAC-SHA256 is fast but a 10MB
+# key would still waste CPU. 1KB is more than enough for any reasonable key
+# (our generated keys are ~43 chars; even 256-char keys are rare).
+# Also: bcrypt has a 72-byte limit on input. We pre-hash long keys with
+# SHA-256 (32 bytes) before bcrypt to support keys longer than 72 bytes
+# while still benefiting from bcrypt's slow KDF.
+_MAX_KEY_LENGTH = 1024  # bytes
+_BCRYPT_MAX_INPUT = 72  # bcrypt's hard limit
+
+
+def _normalize_key_for_bcrypt(key: str) -> bytes:
+    """Normalize a key for bcrypt input.
+
+    bcrypt has a 72-byte limit. If the key is longer, we pre-hash it with
+    SHA-256 (32 bytes) and use the hex digest as bcrypt input. This is
+    safe because:
+      1. SHA-256 is collision-resistant — different keys → different hashes.
+      2. We only use this for the bcrypt verification path, not for the
+         HMAC lookup (which handles arbitrary lengths).
+      3. The HMAC lookup is the primary auth gate; bcrypt is defense-in-depth.
+    """
+    key_bytes = key.encode("utf-8")
+    if len(key_bytes) > _BCRYPT_MAX_INPUT:
+        # Pre-hash with SHA-256 and use hex digest (64 bytes, fits in bcrypt)
+        return hashlib.sha256(key_bytes).hexdigest().encode("utf-8")
+    return key_bytes
+
+# ── STRICT FIX A: Timing oracle mitigation ──────────────────────────────────
+# validate_api_key returns immediately for invalid keys (~0ms) but takes
+# ~250ms for valid keys (bcrypt.checkpw). An attacker can measure response
+# time to enumerate valid keys. We mitigate by running a dummy bcrypt
+# verification on invalid lookups, so all responses take ~250ms regardless.
+# This is the standard mitigation for timing attacks on auth endpoints.
+_DUMMY_BCRYPT_HASH = b"$2b$12$" + b"x" * 53  # invalid-format hash; checkpw returns False fast
+# Better: pre-compute a real bcrypt hash of a random string at startup
+# so the dummy verification takes the full ~250ms.
+_DUMMY_BCRYPT_HASH_REAL: str = ""
+
+
+def _get_dummy_bcrypt_hash() -> str:
+    """Get (or lazily create) a real bcrypt hash for timing equalization.
+
+    We hash a random string once at first use, then reuse the hash for all
+    dummy verifications. bcrypt.checkpw is constant-time for the same hash.
+    """
+    global _DUMMY_BCRYPT_HASH_REAL
+    if _DUMMY_BCRYPT_HASH_REAL:
+        return _DUMMY_BCRYPT_HASH_REAL
+    if HAS_BCRYPT:
+        # Cost factor 12 — matches the cost used by _hash_key
+        _DUMMY_BCRYPT_HASH_REAL = bcrypt.hashpw(
+            b"dummy_value_for_timing_equalization_only",
+            bcrypt.gensalt(rounds=12),
+        ).decode("utf-8")
+    return _DUMMY_BCRYPT_HASH_REAL
+
+
+def _timing_safe_dummy_verify(key: str) -> None:
+    """Run a dummy bcrypt verification to equalize response timing.
+
+    Called when validate_api_key would otherwise return None immediately.
+    This makes valid and invalid key responses take the same time (~250ms),
+    preventing timing-based enumeration of valid keys.
+
+    STRICT FIX F: Uses _normalize_key_for_bcrypt for keys >72 bytes.
+    """
+    if not HAS_BCRYPT:
+        # Without bcrypt, HMAC is fast and constant-time already.
+        # Add a tiny delay to avoid trivial timing differences.
+        time.sleep(0.001)
+        return
+    dummy = _get_dummy_bcrypt_hash()
+    # This will return False but take ~250ms, matching the valid-key path
+    normalized = _normalize_key_for_bcrypt(key)
+    bcrypt.checkpw(normalized, dummy.encode())
+
 # ── STRESS-TEST FIX #1: fast O(1) lookup index ─────────────────────────────
 # A deterministic HMAC-SHA256 over (server_secret, key) is used as the dict
 # key. This makes validate_api_key O(1) (vs the original O(N) bcrypt.checkpw
@@ -52,7 +130,13 @@ _SERVER_SECRET: bytes = b""
 
 
 def _load_server_secret() -> bytes:
-    """Load or create the per-server HMAC secret used for fast key lookup."""
+    """Load or create the per-server HMAC secret used for fast key lookup.
+
+    STRICT FIX D: Use O_CREAT|O_EXCL to prevent TOCTOU race on first run.
+    If two processes start simultaneously and both try to create the secret
+    file, the second one's open() will fail with EEXIST. We then re-read
+    the existing file.
+    """
     global _SERVER_SECRET
     if _SERVER_SECRET:
         return _SERVER_SECRET
@@ -65,13 +149,25 @@ def _load_server_secret() -> bytes:
         # Generate a new 32-byte secret
         path.parent.mkdir(parents=True, exist_ok=True)
         _SERVER_SECRET = secrets.token_bytes(32)
-        # Write with restrictive permissions (0o600)
-        fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        # STRICT FIX D: O_CREAT|O_EXCL — atomic create-or-fail
         try:
-            os.write(fd, _SERVER_SECRET)
-        finally:
-            os.close(fd)
-        logger.info("Generated new API-key lookup secret at %s", path)
+            fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            try:
+                os.write(fd, _SERVER_SECRET)
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+            logger.info("Generated new API-key lookup secret at %s", path)
+        except FileExistsError:
+            # Another process created the file between our check and open.
+            # Re-read the existing file.
+            _SERVER_SECRET = path.read_bytes().strip()
+            if len(_SERVER_SECRET) < 32:
+                raise RuntimeError(
+                    f"Server secret file {path} exists but is invalid. "
+                    f"Delete it and restart to regenerate."
+                )
+            logger.info("Reused existing API-key lookup secret (race avoided)")
     except OSError as e:
         # If we can't persist a secret, generate an ephemeral one. Keys won't
         # survive restart but the system remains functional.
@@ -102,9 +198,13 @@ def _hash_key(key: str) -> str:
     Validation MUST use _verify_key() with the stored hash, NOT re-hash
     the input and compare. The previous validate_api_key did exactly that,
     making authentication fail 100% of the time when bcrypt was enabled.
+
+    STRICT FIX F: Uses _normalize_key_for_bcrypt to handle keys >72 bytes
+    (bcrypt's hard limit). Long keys are pre-hashed with SHA-256.
     """
     if HAS_BCRYPT:
-        return bcrypt.hashpw(key.encode(), bcrypt.gensalt()).decode('utf-8')
+        normalized = _normalize_key_for_bcrypt(key)
+        return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode('utf-8')
     else:
         # Fallback: HMAC-SHA256 with random salt
         salt = secrets.token_hex(16)
@@ -118,12 +218,15 @@ def _verify_key(key: str, hashed_key: str) -> bool:
     STRESS-TEST FIX #1: This is the ONLY correct way to verify a key against
     a stored bcrypt hash. Re-hashing the input (as the old validate_api_key
     did) will NEVER match because bcrypt uses a random salt per call.
+
+    STRICT FIX F: Uses _normalize_key_for_bcrypt for keys >72 bytes.
     """
     if not hashed_key:
         return False
     try:
         if HAS_BCRYPT and hashed_key.startswith('$2'):
-            return bcrypt.checkpw(key.encode(), hashed_key.encode())
+            normalized = _normalize_key_for_bcrypt(key)
+            return bcrypt.checkpw(normalized, hashed_key.encode())
         elif hashed_key.startswith("hmac-sha256$"):
             # FIX #30: Verify HMAC-SHA256 with salt
             try:
@@ -258,25 +361,49 @@ def validate_api_key(key: str) -> Optional[APIKeyInfo]:
     then verifies the candidate key against the stored bcrypt hash. If the
     bcrypt hash is missing (legacy entry), we fall back to trusting the
     lookup match (still cryptographically bound to the server secret).
+
+    STRICT FIX A (timing oracle): If the lookup misses, we run a dummy
+    bcrypt.checkpw against a pre-computed hash so the response takes the
+    same ~250ms as a successful validation. This prevents an attacker from
+    enumerating valid keys by measuring response time.
+
+    STRICT FIX F (length cap): Keys longer than _MAX_KEY_LENGTH are rejected
+    immediately (before HMAC computation) to prevent CPU DoS.
     """
-    if not key:
+    # STRICT FIX F: length cap BEFORE any computation
+    if not key or len(key) > _MAX_KEY_LENGTH:
+        # Run dummy verify to equalize timing (don't reveal that we
+        # rejected for length vs. invalid key)
+        if key:
+            _timing_safe_dummy_verify(key[:_MAX_KEY_LENGTH])
         return None
+
     lookup = _lookup_key(key)
     with _keys_lock:
         keys = _load_keys()
         info = keys.get(lookup)
         if not info:
-            return None
-        # Copy out the fields we need under the lock, then release.
-        stored_hash = info.get("bcrypt_hash") or info.get("key_hash", "")
-        role_str = info.get("role", Role.VIEWER.value)
-        description = info.get("description", "")
+            # STRICT FIX A: Run dummy bcrypt verification OUTSIDE the lock
+            # to equalize timing. We release the lock first.
+            pass
+        else:
+            # Copy out the fields we need under the lock, then release.
+            stored_hash = info.get("bcrypt_hash") or info.get("key_hash", "")
+            role_str = info.get("role", Role.VIEWER.value)
+            description = info.get("description", "")
+
+    if not info:
+        # Lookup miss — run dummy verify to match successful-path timing
+        _timing_safe_dummy_verify(key)
+        return None
+
     # Verify the key against the stored bcrypt hash OUTSIDE the lock
     # (bcrypt.checkpw is slow — don't hold the lock during it).
     if stored_hash:
         if not _verify_key(key, stored_hash):
             # Lookup matched but bcrypt verification failed — possible
-            # HMAC collision or tampering. Reject.
+            # HMAC collision or tampering. Reject. Timing is already
+            # ~equal to success path because we did the checkpw above.
             logger.warning("API key HMAC lookup matched but bcrypt verify failed")
             return None
     return APIKeyInfo(

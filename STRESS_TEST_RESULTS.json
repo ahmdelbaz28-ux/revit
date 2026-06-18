@@ -162,17 +162,17 @@
   {
     "test": "cache_race_no_crash",
     "status": "PASS",
-    "details": "Concurrent operations completed without crash (final={'value': 'v5', 'expire': 1781803662.0206387})"
+    "details": "Concurrent operations completed without crash (final={'value': 'v5', 'expire': 1781806187.89672})"
   },
   {
     "test": "valid_key_time",
     "status": "INFO",
-    "details": "Valid key validation: 247.7ms (should be ~1 bcrypt check ≈ 250ms)"
+    "details": "Valid key validation: 247.2ms (should be ~1 bcrypt check ≈ 250ms)"
   },
   {
     "test": "invalid_key_time",
     "status": "PASS",
-    "details": "Invalid key validation: 0.3ms (should be <50ms — O(1) HMAC lookup, no bcrypt)"
+    "details": "Invalid key validation: 247.3ms (timing-equalized — prevents enumeration)"
   },
   {
     "test": "o1_lookup_correct",

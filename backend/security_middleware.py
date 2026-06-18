@@ -276,16 +276,59 @@ from backend.api_keys import validate_api_key as _validate_api_key
 # STRESS-TEST FIX #2: Added /api/reports/statistics as a public path —
 # it's a documented legacy alias for /api/health/statistics and is used
 # by deployment probes (same purpose as /api/health).
-_PUBLIC_PATH_PREFIXES = (
+# STRICT FIX B/E: Use exact-match set, NOT startswith, to prevent bypass
+# via paths like /healthx, /health/../api/v1/cache/stats, /health?x=1, etc.
+# ASGI scope['path'] is already URL-decoded and normalized (no /../, no //),
+# but trailing slashes are preserved. We normalize by stripping trailing
+# slash (except for root).
+_PUBLIC_PATHS_EXACT = frozenset({
     "/docs",
     "/redoc",
     "/openapi.json",
     "/api/v1/health",
     "/api/v2/health",
     "/api/health",
+    "/api/health/statistics",
     "/api/reports/statistics",
     "/health",
+})
+
+# Path prefixes that are public (for routes with path params, e.g. /docs/*)
+# Used ONLY for documented sub-paths, NOT for security bypass.
+_PUBLIC_PATH_PREFIXES = (
+    "/docs/",
+    "/redoc/",
 )
+
+
+def _is_public_path(path: str) -> bool:
+    """Check if a path is public (no auth required).
+
+    STRICT FIX B/E: Use exact-match for known public endpoints, plus a
+    small prefix list for documented sub-paths (e.g. /docs/static/*).
+    This prevents bypasses like:
+      - /healthx (startswith /health)
+      - /health/../api/v1/cache/stats (startswith /health)
+      - /Health (case-insensitive)
+    ASGI normalizes /../ and //, so we don't need to handle those.
+
+    NOTE: We do NOT normalize trailing slashes here. /health and /health/
+    are DIFFERENT paths in FastAPI (the router defines /health, so
+    /health/ returns 404 unless redirect_slashes=True). Treating /health/
+    as public would let an attacker bypass auth on a 404 response, which
+    is harmless (no data leaked), but it's cleaner to only mark the exact
+    paths the router actually serves as public.
+    """
+    if not path:
+        return False
+    # Exact match only — no trailing-slash normalization, no case folding.
+    if path in _PUBLIC_PATHS_EXACT:
+        return True
+    # Prefix match for documented sub-paths (e.g. /docs/static/*)
+    for prefix in _PUBLIC_PATH_PREFIXES:
+        if path.startswith(prefix):
+            return True
+    return False
 
 
 class ApiKeyMiddleware:
@@ -323,7 +366,8 @@ class ApiKeyMiddleware:
 
         path = scope.get("path", "")
         # Skip auth for public endpoints (health, docs)
-        if not path.startswith(_PUBLIC_PATH_PREFIXES):
+        # STRICT FIX B/E: Use exact-match, not startswith
+        if not _is_public_path(path):
             # Extract X-API-Key header
             headers = scope.get("headers", [])
             api_key: str | None = None

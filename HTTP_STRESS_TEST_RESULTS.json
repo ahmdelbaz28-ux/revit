@@ -77,7 +77,7 @@
   {
     "test": "cid_auto_generated",
     "status": "PASS",
-    "details": "Auto-generated CID: fe810ac6-475d-4e..."
+    "details": "Auto-generated CID: c2f5c960-48c8-49..."
   },
   {
     "test": "cid_client_provided",
@@ -157,11 +157,11 @@
   {
     "test": "api_key_perf",
     "status": "PASS",
-    "details": "20 requests in 5.03s (avg 251ms/req)"
+    "details": "20 requests in 5.05s (avg 252ms/req)"
   },
   {
     "test": "invalid_key_perf",
     "status": "PASS",
-    "details": "Invalid key: 1.1ms/req (O(1) lookup, no bcrypt)"
+    "details": "Invalid key: 250.3ms/req (timing-equalized — prevents enumeration)"
   }
 ]
