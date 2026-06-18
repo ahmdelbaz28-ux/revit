@@ -36,10 +36,18 @@ import threading
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Request
 from pydantic import BaseModel
 
 from backend.services.autocad_service import AutoCADService
+# V130 SECURITY FIX: Add auth dependencies for AutoCAD write/upload endpoints.
+# Previously every endpoint in this router was unauthenticated — any network
+# caller could read/write DWG files on the server. Write/upload operations now
+# require ENGINEER+ permission; read operations require VIEWER+.
+from backend.auth import require_permission
+from backend.rbac import Permission
+# V130: Rate limiter for upload endpoints — prevents DoS via large/cadenced uploads.
+from backend.limiter import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
@@ -213,7 +221,7 @@ async def disconnect_from_autocad() -> ConnectResponse:
         raise _safe_error(500, "Failed to disconnect from AutoCAD", e)
 
 
-@router.post("/read_dwg", response_model=ReadFileResponse)
+@router.post("/read_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
     """Read entities from a DWG file."""
     try:
@@ -249,7 +257,7 @@ async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
         raise _safe_error(500, "Error reading DWG file", e)
 
 
-@router.post("/write_dwg", response_model=OperationResponse)
+@router.post("/write_dwg", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
     """Write entities to a DWG file."""
     try:
@@ -462,8 +470,9 @@ async def save_document(request: SaveRequest) -> OperationResponse:
 _MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 
 
-@router.post("/upload_dwg", response_model=ReadFileResponse)
-async def upload_and_read_dwg(file: UploadFile = File(...)) -> ReadFileResponse:
+@router.post("/upload_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@limiter.limit("10/minute")
+async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) -> ReadFileResponse:
     """Upload a DWG file and read its contents.
 
     FIX #5: Path traversal prevention — uses tempfile + uuid for safe paths

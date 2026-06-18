@@ -114,7 +114,21 @@ module = ["pywin32.*", "pythonnet.*", "clr.*", "Autodesk.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+# V130 FIX: Expanded testpaths from ["tests"] to include ALL test directories.
+# Previously, 95 of 144 test_*.py files were silently skipped by default pytest
+# invocation — including the entire safety-critical fireai/core/tests/ kernel
+# (1131+ tests covering NFPA 72, voltage drop, battery sizing, audit chain).
+testpaths = [
+    "tests",
+    "backend/tests",
+    "fireai/conduit/tests",
+    "fireai/core/tests",
+    "parsers/tests",
+    "qomn_conduit/tests",
+    "qomn_fire/tests",
+    "core/tests",
+    "facp_distributed/tests",
+]
 addopts = [
     "--strict-markers",
     "--strict-config",
@@ -166,6 +180,10 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == '__main__':"
 ]
+# V130 FIX: Enforce minimum coverage on critical paths so coverage cannot
+# drop silently. 70% is a conservative floor — raise to 80% after the
+# remediation plan in the audit report is completed.
+fail_under = 70
 
 [tool.bandit]
 targets = ["fireai", "tests"]

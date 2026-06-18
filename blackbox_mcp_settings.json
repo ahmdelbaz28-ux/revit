@@ -21,7 +21,7 @@
           "@testsprite/testsprite-mcp@latest"
         ],
         "env": {
-          "API_KEY": "sk-user-yzgoyjQR2p9whikAhJVlSil2Vn94qdE7ISwCxt3-TpXfkPKAC-eB6M3ZQzeY37CZYxBdlZj-N65d-R5XmOt1asGJX-GHDBiOxrA6JhIAgufaFE0vVPLhmxV4A4V6lFu5HtY"
+          "API_KEY": "${input:testsprite_api_key}"
         }
       }
     }
@@ -31,6 +31,12 @@
       "type": "promptString",
       "id": "github_mcp_pat",
       "description": "GitHub Personal Access Token",
+      "password": true
+    },
+    {
+      "type": "promptString",
+      "id": "testsprite_api_key",
+      "description": "TestSprite API Key (rotate the previously leaked key immediately)",
       "password": true
     }
   ]

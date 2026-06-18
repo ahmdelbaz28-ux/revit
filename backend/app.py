@@ -189,6 +189,15 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down CAD/BIM Integration Platform...")
 
 # Create FastAPI app with lifespan
+# V130 SECURITY FIX: docs/redoc/openapi are now gated by FIREAI_ENV.
+# In production, the entire API surface (including internal RBAC permission
+# names) MUST NOT be exposed to anonymous attackers. Set docs_url=None to
+# fully disable. Development keeps the docs available for DX.
+_is_prod = os.getenv("FIREAI_ENV", "development").lower() in ("production", "prod")
+_docs_url = None if _is_prod else "/docs"
+_redoc_url = None if _is_prod else "/redoc"
+_openapi_url = None if _is_prod else "/openapi.json"
+
 app = FastAPI(
     title="CAD/BIM Integration Platform",
     description="""
@@ -219,9 +228,9 @@ All endpoints require API key authentication via `X-API-Key` header.
     """,
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    docs_url=_docs_url,
+    redoc_url=_redoc_url,
+    openapi_url=_openapi_url
 )
 
 # Add rate limiter state
@@ -299,6 +308,15 @@ app.add_middleware(
 app.include_router(autocad.router, prefix="/api/v1", tags=["AutoCAD-v1"])
 app.include_router(revit.router, prefix="/api/v1", tags=["Revit-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1"])
+
+# V130 FIX: Mount the monitor router so Prometheus can scrape /api/v1/monitor/metrics.
+# Previously monitor.router was defined but NEVER registered via include_router,
+# so every Prometheus scrape returned 404 and all dashboards/alerts had no data.
+# Auth is enforced INSIDE the router via require_permission(Permission.MONITOR_READ).
+# For unauthenticated /metrics scraping, deploy a sidecar that injects a
+# service-account API key, or expose /metrics via a separate internal port.
+from backend.routers import monitor as monitor_router_module  # noqa: E402
+app.include_router(monitor_router_module.router, prefix="/api/v1", tags=["Monitor"])
 
 # V129: Mount the health router under /api prefix so /api/health works.
 # Previously only /api/v1/health existed (defined inline above), but tests

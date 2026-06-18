@@ -11,11 +11,12 @@ alerting:
         - targets: ['alertmanager:9093']
 
 rule_files:
-  - 'alertmanager.yml'
+  - 'prometheus-alert-rules.yml'
 
 scrape_configs:
   - job_name: 'fireai-engine'
     scrape_interval: 10s
+    scrape_timeout: 5s
     metrics_path: /metrics
     static_configs:
       - targets: ['engine:8000']
@@ -24,7 +25,8 @@ scrape_configs:
 
   - job_name: 'fireai-api'
     scrape_interval: 5s
-    metrics_path: /metrics
+    scrape_timeout: 3s
+    metrics_path: /api/v1/monitor/metrics
     static_configs:
       - targets: ['api:8000']
         labels:

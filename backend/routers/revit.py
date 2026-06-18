@@ -56,7 +56,7 @@ import threading
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query, Depends, Request
 from pydantic import BaseModel, Field
 
 from backend.services.revit_service import RevitService
@@ -79,31 +79,63 @@ def get_revit_service() -> RevitService:
     return _service
 
 
-# ── Path validation helper (FIX: Path Traversal prevention) ──────────────
-# Prevents reading/writing arbitrary files on the server by restricting
-# file operations to designated data directories.
-_ALLOWED_DIRS = os.environ.get(
-    "FIREAI_DATA_DIRS",
-    "/tmp/fireai-data:./data:./uploads"
-).split(":")
+# ── Path validation helper (FIX V130: Path Traversal prevention) ────────
+# V130 SECURITY FIX (2026-06-18 audit): Replaced broken str.startswith()
+# check (bypassable: "/tmp/fireai-data-evil/payload.rvt" matched "/tmp/fireai-data")
+# with the centralised parsers._path_security.validate_input_path() helper.
+# This is the same hardened implementation already used by every parser in
+# parsers/ and qomn_fire/parsers/ — single source of truth, no drift.
+#
+# Hardening:
+#   - TOCTOU-safe Path.resolve() (follows symlinks)
+#   - Path.relative_to() check (true containment, not prefix match)
+#   - Null-byte rejection (defends C-string truncation in downstream libs)
+#   - Leading-"-" rejection (defends argument injection)
+#   - Optional extension allow-list
+from parsers._path_security import validate_input_path, UnsafePathError
+
+# V130 SECURITY FIX: Auth + rate-limiter dependencies.
+# The /execute endpoint runs arbitrary natural-language commands against the
+# live Revit session (create walls, delete elements, search API, etc.).
+# Leaving it unauthenticated meant ANY network caller could execute AI-driven
+# mutations against the building model. Now requires ENGINEER+ permission.
+# Upload endpoints are also rate-limited to prevent DoS via cadenced uploads.
+from backend.auth import require_permission
+from backend.rbac import Permission
+from backend.limiter import limiter
+
+# Re-export the validated path as a string for legacy callers.
+_ALLOWED_EXTENSIONS = frozenset({".rvt", ".rfa", ".ifc", ".dwg", ".dxf"})
 
 
 def _validate_file_path(filepath: str) -> str:
     """Validate that a file path is within allowed directories.
 
-    Prevents path traversal attacks (e.g., ../../etc/passwd).
-    Raises HTTPException if the path is outside allowed directories.
+    Prevents path traversal attacks (e.g., ../../etc/passwd) and
+    argument-injection attacks (e.g. leading "-"). Uses the shared
+    parsers._path_security.validate_input_path() helper so the security
+    contract is identical across routers and parsers.
+
+    Raises HTTPException(400) if the path is outside allowed directories,
+    contains a null byte, starts with "-", or has a disallowed extension.
     """
-    resolved = os.path.abspath(filepath)
-    for allowed_dir in _ALLOWED_DIRS:
-        allowed_abs = os.path.abspath(allowed_dir)
-        if resolved.startswith(allowed_abs):
-            return resolved
-    logger.warning("Path traversal blocked: %s", filepath)
-    raise HTTPException(
-        status_code=400,
-        detail="File path is outside allowed directories. Contact administrator.",
-    )
+    try:
+        safe_path = validate_input_path(
+            filepath,
+            allowed_extensions=_ALLOWED_EXTENSIONS,
+            parser_name="revit_router",
+        )
+    except FileNotFoundError as exc:
+        # Benign missing-file case — return 404.
+        raise HTTPException(status_code=404, detail="File not found.") from exc
+    except UnsafePathError as exc:
+        # Hard security rejection — log details, return generic 400.
+        logger.warning("Path traversal blocked: %s", exc)
+        raise HTTPException(
+            status_code=400,
+            detail="File path is outside allowed directories. Contact administrator.",
+        ) from exc
+    return str(safe_path)
 
 
 # ── Safe error helper ────────────────────────────────────────────────────
@@ -459,7 +491,7 @@ async def close_document(request: DocumentCloseRequest) -> Dict[str, Any]:
 # LEGACY FILE ENDPOINTS
 # =============================================================================
 
-@router.post("/read_rvt", tags=["revit"])
+@router.post("/read_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def read_rvt_file(filepath: str) -> Dict[str, Any]:
     """Read elements from an RVT file (legacy endpoint)."""
     svc = get_revit_service()
@@ -475,7 +507,7 @@ async def read_rvt_file(filepath: str) -> Dict[str, Any]:
     return result
 
 
-@router.post("/write_rvt", tags=["revit"])
+@router.post("/write_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def write_rvt_file(filepath: str, elements: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Write elements to an RVT file (legacy endpoint)."""
     svc = get_revit_service()
@@ -491,8 +523,9 @@ async def write_rvt_file(filepath: str, elements: List[Dict[str, Any]]) -> Dict[
     raise HTTPException(status_code=500, detail="Failed to write file")
 
 
-@router.post("/upload_rvt", tags=["revit"])
-async def upload_and_read_rvt(file: UploadFile = File(...)) -> Dict[str, Any]:
+@router.post("/upload_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@limiter.limit("10/minute")
+async def upload_and_read_rvt(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
     """Upload an RVT file and read its contents.
 
     FIX: Path traversal prevention, upload size limit, guaranteed cleanup.
@@ -923,7 +956,7 @@ async def search_online(
 # AI COMMAND ENDPOINT
 # =============================================================================
 
-@router.post("/execute", tags=["revit"])
+@router.post("/execute", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def execute_ai_command(request: AICommandRequest) -> Dict[str, Any]:
     """Execute a natural language command from AI agent.
     
