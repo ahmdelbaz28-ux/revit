@@ -156,16 +156,25 @@ class TestAPIKeyManagement:
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_add_and_validate_key(self):
-        """Adding a key should make it validatable."""
+        """Adding a key should make it validatable.
+
+        STRESS-TEST FIX #1: The key_hash returned by add_api_key is the
+        bcrypt hash (used for verification). The key_hash returned by
+        validate_api_key is now the HMAC lookup key (used as the dict
+        key for O(1) lookup). They are DIFFERENT identifiers — the test
+        is updated to verify the round-trip works (validate returns
+        non-None with correct role), not that the two identifiers match.
+        """
         from backend.api_keys import add_api_key, validate_api_key
         from backend.rbac import Role
 
-        key_hash = add_api_key("test-key-123", Role.ENGINEER, "Test engineer key")
+        add_api_key("test-key-123", Role.ENGINEER, "Test engineer key")
         info = validate_api_key("test-key-123")
         assert info is not None
         assert info.role == Role.ENGINEER
         assert info.description == "Test engineer key"
-        assert info.key_hash == key_hash
+        # info.key_hash is now the HMAC lookup key (starts with "hk$")
+        assert info.key_hash.startswith("hk$")
 
     def test_invalid_key_returns_none(self):
         """Validating an invalid key should return None."""
@@ -231,18 +240,31 @@ class TestAPIKeyManagement:
         assert deleted is False
 
     def test_key_stored_as_hash(self):
-        """Keys should be stored as SHA-256 hashes, never plaintext."""
-        from backend.api_keys import _load_keys, add_api_key
+        """Keys should be stored as hashes, never plaintext.
+
+        STRESS-TEST FIX #1: The dict key is now the HMAC lookup key
+        (deterministic, used for O(1) finding). The value contains a
+        bcrypt_hash field which is the verification hash. Neither the
+        plaintext key nor a plain SHA-256 of it should appear.
+        """
+        from backend.api_keys import _load_keys, add_api_key, _lookup_key
         from backend.rbac import Role
 
         add_api_key("plaintext-key", Role.ADMIN, "Hash test")
 
         keys = _load_keys()
-        expected_hash = hashlib.sha256("plaintext-key".encode()).hexdigest()
-        assert expected_hash in keys
+        # The HMAC lookup key should be present
+        expected_lookup = _lookup_key("plaintext-key")
+        assert expected_lookup in keys
         # The plaintext key should NOT appear in the stored data
         stored_data = json.dumps(keys)
         assert "plaintext-key" not in stored_data
+        # The plain SHA-256 (no salt, vulnerable to rainbow tables) should NOT appear
+        plain_sha256 = hashlib.sha256("plaintext-key".encode()).hexdigest()
+        assert plain_sha256 not in stored_data
+        # The entry should contain a bcrypt_hash field
+        entry = keys[expected_lookup]
+        assert "bcrypt_hash" in entry
 
     def test_update_api_key_role(self):
         """Updating a key's role should change its role."""

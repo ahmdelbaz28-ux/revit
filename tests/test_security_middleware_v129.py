@@ -164,9 +164,20 @@ class TestSecurityHeadersMiddleware:
         assert response.headers.get("x-correlation-id") == custom_cid
 
     def test_headers_on_error_responses(self, dev_client):
-        """Security headers must be present even on 404 responses."""
+        """Security headers must be present even on error responses.
+
+        STRESS-TEST FIX #2: With ApiKeyMiddleware now installed, anonymous
+        requests to non-public endpoints return 401 (must authenticate).
+        The test was written for the old behavior (404 for nonexistent
+        endpoints). The security goal — security headers present on error
+        responses — applies to ANY error status (401, 403, 404, 500).
+        """
         response = dev_client.get("/api/v1/nonexistent-endpoint")
-        assert response.status_code == 404
+        # Anonymous request → 401 (must authenticate) — this is the safer
+        # behavior because it doesn't reveal whether the endpoint exists.
+        assert response.status_code in (401, 403, 404), (
+            f"Expected an error status, got {response.status_code}"
+        )
         # Security headers must still be present
         assert response.headers.get("x-frame-options") == "DENY"
         assert response.headers.get("x-content-type-options") == "nosniff"
@@ -279,21 +290,29 @@ class TestCacheEndpointAuth:
     """V129: Cache management endpoints must require SYSTEM_CONFIG permission."""
 
     def test_cache_clear_requires_auth(self, dev_client):
-        """POST /api/v1/cache/clear without auth → 403 (not 200)."""
+        """POST /api/v1/cache/clear without auth → 401 (must authenticate).
+
+        STRESS-TEST FIX #2: With ApiKeyMiddleware now installed, anonymous
+        requests to non-public endpoints return 401 (must authenticate).
+        Previously, anonymous requests defaulted to VIEWER role, which
+        lacked SYSTEM_CONFIG permission → 403. The 401 behavior is stricter
+        and more correct for a safety-critical system.
+        """
         response = dev_client.post("/api/v1/cache/clear")
-        # Without an API key, the auth dependency defaults to VIEWER role,
-        # which lacks SYSTEM_CONFIG permission → 403 Forbidden.
-        assert response.status_code == 403, (
-            f"Cache clear must require SYSTEM_CONFIG permission. "
-            f"Got {response.status_code} instead of 403."
+        assert response.status_code in (401, 403), (
+            f"Cache clear must require authentication. "
+            f"Got {response.status_code} instead of 401/403."
         )
 
     def test_cache_stats_requires_auth(self, dev_client):
-        """GET /api/v1/cache/stats without auth → 403 (not 200)."""
+        """GET /api/v1/cache/stats without auth → 401 (must authenticate).
+
+        STRESS-TEST FIX #2: See test_cache_clear_requires_auth for rationale.
+        """
         response = dev_client.get("/api/v1/cache/stats")
-        assert response.status_code == 403, (
-            f"Cache stats must require SYSTEM_CONFIG permission. "
-            f"Got {response.status_code} instead of 403."
+        assert response.status_code in (401, 403), (
+            f"Cache stats must require authentication. "
+            f"Got {response.status_code} instead of 401/403."
         )
 
 

@@ -34,6 +34,7 @@ V129 INFRASTRUCTURE SECURITY HARDENING (2026-06-18):
 import os
 import time
 import logging
+import threading
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,6 +55,7 @@ from backend.limiter import limiter
 # every HTTP response. CorrelationIdMiddleware adds X-Correlation-ID for
 # end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
 from backend.security_middleware import (
+    ApiKeyMiddleware,
     CorrelationIdMiddleware,
     SecurityHeadersMiddleware,
 )
@@ -149,7 +151,48 @@ def _build_csp() -> str:
     return "; ".join(parts)
 
 # ── In-memory cache with expiration support ────────────────────────────────
-_cache: dict[str, dict] = {}
+# STRESS-TEST FIX #3: Bounded cache with LRU eviction and thread-safe lock.
+# Previously the cache was an unbounded dict — an attacker could pollute it
+# with millions of entries, exhausting server memory.
+#
+# The new implementation:
+#   - Enforces a maximum number of entries (default 10,000).
+#   - When full, evicts the oldest entry (FIFO — Python dicts preserve
+#     insertion order since 3.7; we use next(iter(_cache)) to get the
+#     oldest key because dict.popitem() does NOT accept last=False in
+#     CPython — that's OrderedDict only).
+#   - Uses a threading.Lock for multi-step operations (read-modify-write
+#     sequences like the cleanup loop in cache_stats).
+#   - Skips eviction for entries that are already expired (cleans them first).
+from collections import OrderedDict as _OrderedDict
+
+_CACHE_MAX_ENTRIES = int(os.getenv("FIREAI_CACHE_MAX_ENTRIES", "10000"))
+_cache: _OrderedDict[str, dict] = _OrderedDict()
+_cache_lock = threading.Lock()
+
+
+def _evict_expired_locked() -> int:
+    """Remove all expired entries. MUST be called with _cache_lock held."""
+    now = time.time()
+    expired = [k for k, v in _cache.items() if v.get("expire", 0) <= now]
+    for k in expired:
+        _cache.pop(k, None)
+    return len(expired)
+
+
+def _evict_oldest_locked(n: int = 1) -> None:
+    """Evict the n oldest entries. MUST be called with _cache_lock held.
+
+    Uses OrderedDict.popitem(last=False) which IS supported (unlike
+    regular dict.popitem() in CPython).
+    """
+    for _ in range(n):
+        if not _cache:
+            return
+        try:
+            _cache.popitem(last=False)
+        except KeyError:
+            return
 
 
 def get_cache():
@@ -159,23 +202,44 @@ def get_cache():
 
 async def cache_get(key: str):
     """Get value from cache. Returns None if expired or missing."""
-    entry = _cache.get(key)
-    if entry is None:
-        return None
-    if time.time() > entry.get("expire", 0):
-        _cache.pop(key, None)  # Remove expired entry
-        return None
-    return entry["value"]
+    with _cache_lock:
+        entry = _cache.get(key)
+        if entry is None:
+            return None
+        if time.time() > entry.get("expire", 0):
+            _cache.pop(key, None)  # Remove expired entry
+            return None
+        # Move to end so recently-accessed entries survive eviction longer.
+        _cache.move_to_end(key)
+        return entry["value"]
 
 
 async def cache_set(key: str, value: str, expire: int = 300):
-    """Set value in cache with expiration in seconds."""
-    _cache[key] = {"value": value, "expire": time.time() + expire}
+    """Set value in cache with expiration in seconds.
+
+    STRESS-TEST FIX #3: If cache is at capacity, expired entries are
+    evicted first; if still at capacity, the oldest entry is evicted
+    (LRU policy — least recently used).
+    """
+    with _cache_lock:
+        # If this is a new key and we're at capacity, make room.
+        if key not in _cache:
+            if len(_cache) >= _CACHE_MAX_ENTRIES:
+                # First pass: evict expired entries (cheap)
+                _evict_expired_locked()
+                # Second pass: if still at capacity, evict oldest (LRU)
+                while len(_cache) >= _CACHE_MAX_ENTRIES:
+                    _evict_oldest_locked(1)
+        else:
+            # Existing key — move to end (most recently used)
+            _cache.move_to_end(key)
+        _cache[key] = {"value": value, "expire": time.time() + expire}
 
 
 async def cache_delete(key: str):
     """Delete key from cache."""
-    _cache.pop(key, None)
+    with _cache_lock:
+        _cache.pop(key, None)
 
 
 @asynccontextmanager
@@ -291,6 +355,14 @@ app.add_middleware(SecurityHeadersMiddleware)
 # for end-to-end audit tracing. Pure ASGI (no body buffering).
 app.add_middleware(CorrelationIdMiddleware)
 
+# STRESS-TEST FIX #2: ApiKeyMiddleware validates X-API-Key on every request
+# and sets request.state.fireai_role / scope["fireai_role"] for downstream
+# require_permission() checks. Without this, all RBAC checks fell through
+# to Role.VIEWER, making admin endpoints unreachable and viewer-level
+# endpoints effectively public. Added AFTER CORS so CORS preflight requests
+# (OPTIONS) are not blocked by auth.
+app.add_middleware(ApiKeyMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -308,6 +380,55 @@ app.add_middleware(
 app.include_router(autocad.router, prefix="/api/v1", tags=["AutoCAD-v1"])
 app.include_router(revit.router, prefix="/api/v1", tags=["Revit-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1"])
+
+# ── STRESS-TEST FIX #8: Register ALL backend routers ───────────────────────
+# Previously only autocad/revit/digital_twin/marine/monitor/health were
+# registered. The vast majority of the API surface (projects, devices,
+# connections, elements, conflicts, reports, exports, sync, memory,
+# workflow, environment, dwg, qomn, facp, api_keys) was UNREACHABLE.
+# This is the critical bug found by HTTP-level stress testing.
+# We use _lazy_import to register each router defensively — if a router
+# has an unmet optional dependency (e.g. shapely, ezdxf), it's skipped
+# with a warning instead of crashing the whole app.
+def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "") -> None:
+    """Import a router module and register it. Skip silently if unavailable."""
+    try:
+        import importlib
+        mod = importlib.import_module(f"backend.routers.{module_name}")
+        if hasattr(mod, "router"):
+            app.include_router(mod.router, prefix=prefix, tags=[tag or module_name.title()])
+            logger.debug("Registered router: %s", module_name)
+        # Some routers define additional routers (e.g. analyze.project_router)
+        if hasattr(mod, "project_router"):
+            app.include_router(mod.project_router, prefix=prefix, tags=[tag or module_name.title()])
+            logger.debug("Registered project_router from: %s", module_name)
+    except ImportError as e:
+        logger.warning("Router '%s' skipped (optional dependency missing): %s", module_name, e)
+    except Exception as e:
+        logger.warning("Router '%s' registration failed: %s", module_name, e)
+
+# Register the missing routers. Order matters for route precedence, but
+# FastAPI raises on conflict, so duplicates are caught at startup.
+for _router_name in (
+    "projects",
+    "devices",
+    "connections",
+    "connections_v2",
+    "elements",
+    "conflicts",
+    "reports",
+    "exports",
+    "sync",
+    "memory",
+    "workflow",
+    "environment",
+    "dwg",
+    "qomn",
+    "facp",
+    "api_keys",
+    "analyze",
+):
+    _safe_include_router(_router_name)
 
 # V130 MARINE MODULE: Mount the marine fire-safety router.
 # Provides endpoints for IMO SOLAS II-2, IEC 60092-502, ship zone division,
@@ -399,9 +520,13 @@ async def clear_cache(
 
     V129 FIX: This endpoint was public — anonymous cache invalidation is a
     DoS vector in a safety-critical system. Now requires admin permission.
+
+    STRESS-TEST FIX #3: Acquire the lock before clearing to prevent
+    concurrent cache_set from interleting the clear operation.
     """
-    count = len(_cache)
-    _cache.clear()
+    with _cache_lock:
+        count = len(_cache)
+        _cache.clear()
     return {"message": "Cache cleared", "items_cleared": count}
 
 
@@ -417,19 +542,21 @@ async def cache_stats(
     V129 FIX: Cache statistics reveal internal operational metrics (cache
     hit rate, memory usage). This is sensitive information that should not
     be exposed anonymously. Now requires admin permission.
-    """
-    # Clean expired entries
-    now = time.time()
-    expired_keys = [k for k, v in _cache.items() if v.get("expire", 0) <= now]
-    for k in expired_keys:
-        _cache.pop(k, None)
 
-    active_keys = sum(1 for v in _cache.values() if v.get("expire", 0) > now)
+    STRESS-TEST FIX #3: Now uses _cache_lock for the cleanup loop (was a
+    read-modify-write race with concurrent cache_set calls).
+    """
+    # Clean expired entries under the lock
+    with _cache_lock:
+        expired_count = _evict_expired_locked()
+        active_keys = sum(1 for v in _cache.values() if v.get("expire", 0) > time.time())
+        total = len(_cache)
     return {
-        "total_keys": len(_cache),
+        "total_keys": total,
         "active_keys": active_keys,
-        "expired_keys_cleaned": len(expired_keys),
-        "cache_type": "in-memory"
+        "expired_keys_cleaned": expired_count,
+        "cache_type": "in-memory",
+        "max_entries": _CACHE_MAX_ENTRIES,
     }
 
 

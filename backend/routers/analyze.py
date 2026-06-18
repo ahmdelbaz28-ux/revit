@@ -32,6 +32,27 @@ from fireai.core.pipeline import analyze_room
 logger = logging.getLogger(__name__)
 
 # ----------------------------------------------------------------------------
+# Safe error helper for PhysicsGuardError
+# ----------------------------------------------------------------------------
+# STRESS-TEST FIX #7: PhysicsGuardError messages interpolate user-supplied
+# values via {value!r}. While Pydantic should reject non-numeric inputs
+# before they reach the kernel, defense-in-depth requires that we never
+# trust str(exc) in an HTTP response. We extract the structured fields
+# (field, reason, code_ref) and return them as a JSON object instead.
+def _physics_guard_detail(exc: Exception) -> dict:
+    """Build a safe JSON-serializable detail dict from a PhysicsGuardError."""
+    if hasattr(exc, "field") and hasattr(exc, "reason") and hasattr(exc, "code_ref"):
+        return {
+            "error_type": "physics_guard_violation",
+            "field": str(getattr(exc, "field", ""))[:64],  # cap length
+            "reason": str(getattr(exc, "reason", ""))[:256],
+            "code_ref": str(getattr(exc, "code_ref", ""))[:64],
+            "hint": "Review input and consult licensed PE before resubmitting.",
+        }
+    # Fallback — never leak raw str(exc)
+    return {"error_type": "physics_guard_violation", "hint": "Input rejected by physics guard."}
+
+# ----------------------------------------------------------------------------
 # Routers
 # ----------------------------------------------------------------------------
 router = APIRouter(tags=["analyze"])
@@ -117,7 +138,7 @@ async def analyze_battery(req: BatteryRequest) -> Dict[str, Any]:
             "nfpa_section": "NFPA 72-2022 §10.6.7.2.1",
         }
     except PhysicsGuardError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=_physics_guard_detail(e))
     except Exception:
         logger.exception("battery calculation failed")
         raise HTTPException(status_code=500, detail="Internal calculation error")
@@ -147,7 +168,7 @@ async def analyze_voltage(req: VoltageRequest) -> Dict[str, Any]:
             "nfpa_section": "NEC 2023 Chapter 9 Table 8",
         }
     except PhysicsGuardError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=_physics_guard_detail(e))
     except Exception:
         logger.exception("voltage drop calculation failed")
         raise HTTPException(status_code=500, detail="Internal calculation error")
@@ -184,7 +205,7 @@ async def analyze_project_room(project_id: str, req: RoomAnalyzeRequest) -> Dict
         data["project_id"] = project_id
         return {"success": result.success, "data": data}
     except PhysicsGuardError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=_physics_guard_detail(e))
     except Exception:
         logger.exception("room analysis failed for project %s", project_id)
         raise HTTPException(status_code=500, detail="Internal pipeline error")
