@@ -12728,3 +12728,97 @@ Rewrote to describe actual project layout (`fireai/`, `backend/`, `frontend/`, `
 2. **Thinking:** Did I rationalize? NO — the NFPA 72 standard is clear: §17.7.3.2.4 = 60ft for smoke, §17.6.3.1 = 50ft for heat. The old 15.24m limit was the heat detector max incorrectly applied to smoke.
 3. **Method:** Was my approach flawed? I followed agent.md Rule #17 (root-cause fix, not half-solution). The root cause was 5 parallel constant definitions. I unified them into one SSoT.
 4. **Commitment:** Would I stake my reputation on this? YES. The changes are verified, testable, and traceable to specific NFPA 72 sections.
+
+---
+
+## V129 Infrastructure Security Hardening (2026-06-18)
+
+### Commit Information
+- **Commit:** `fbda5f39`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/fbda5f39
+- **Push:** https://github.com/ahmdelbaz28-ux/revit.git (branch: main)
+
+### Findings (verified line-by-line per Rule 14)
+
+#### F-1 CRITICAL: SecurityHeadersMiddleware MISSING in backend/app.py
+**Discovery:** `grep -r "class SecurityHeadersMiddleware"` returned 0 matches. `backend/app.py:212` only registered CORSMiddleware. Tests in `backend/tests/test_health.py:72-78` expected `x-frame-options`, `x-content-type-options`, `content-security-policy`, `strict-transport-security` — all missing.
+**Impact:** Clickjacking (no X-Frame-Options), MIME sniffing attacks (no X-Content-Type-Options), XSS amplification (no CSP), HTTPS downgrade (no HSTS) — all UNPROTECTED on the AutoCAD/Revit/DigitalTwin API.
+**Root Cause:** SecurityHeadersMiddleware class never existed in the codebase despite being referenced in agent.md history (V22 era). The middleware was discussed but never implemented as a reusable module.
+**Fix:** Created `backend/security_middleware.py` with `SecurityHeadersMiddleware` — pure ASGI middleware (no body buffering, does not break StreamingResponse per BUG-34). Adds 7 OWASP-recommended headers to every HTTP response. Environment-aware CSP (production locked down, dev allows unsafe-eval + localhost for Vite HMR).
+
+#### F-2 CRITICAL: Health router NOT mounted in backend/app.py
+**Discovery:** `backend/app.py:223-225` only mounts 3 routers (autocad, revit, digital_twin) under `/api/v1`. `backend/routers/health.py` exists with `/health` and `/health/statistics` endpoints but was never `include_router()`'d.
+**Impact:** No liveness probe for Docker/K8s deployment. Operators cannot detect degraded state. Tests in `backend/tests/test_health.py` (10 tests) and `backend/tests/test_routers.py` (health tests) all returned 404.
+**Fix:** Added `app.include_router(health_router_module.router, prefix="/api", tags=["Health"])` in backend/app.py.
+
+#### F-3 HIGH: No CorrelationIdMiddleware in backend/app.py
+**Discovery:** `backend/request_context.py` defines the middleware; `grep` showed it was referenced only in docs and never `add_middleware()`'d.
+**Impact:** No end-to-end request tracing. In a life-safety system, debugging an audit-trail failure becomes impossible. Violates NFPA 72 §14.2.4 documentation integrity.
+**Fix:** Added `app.add_middleware(CorrelationIdMiddleware)` in both backend/app.py and backend_app.py.
+
+#### F-4 HIGH: backend/app.py CORS allows localhost in production
+**Discovery:** `backend/app.py:207-210` defaulted to `"http://localhost:3000,http://localhost:5173,http://localhost:8000"` regardless of `FIREAI_ENV`. Unlike `backend_app.py:99-110` (V127 hardening), this file did NOT raise RuntimeError for production without explicit origins.
+**Impact:** Production deployments silently allow localhost origins — a misconfiguration that should fail-safe per V127 precedent.
+**Fix:** Applied V127 CORS hardening pattern to backend/app.py. Production without CORS_ORIGINS → RuntimeError. Wildcard '*' → RuntimeError. Also set `allow_credentials=False` (API uses X-API-Key header, not cookies).
+
+#### F-5 HIGH: Rate limiter registered but never used (dead code) — DEFERRED
+**Discovery:** `backend/app.py:199-202` registers the limiter but never uses `@limiter.limit(...)` decorators on any route.
+**Impact:** DoS attacks on AutoCAD/Revit/DigitalTwin endpoints go unmitigated.
+**Status:** Deferred to next phase — applying rate limits requires touching every route in 3 routers (autocad, revit, digital_twin). Out of scope for "infrastructure security middleware" phase.
+
+#### F-6 MEDIUM: Cache management endpoints were public
+**Discovery:** `backend/app.py:279-310` — both `/api/v1/cache/clear` and `/api/v1/cache/stats` endpoints had no auth dependency.
+**Impact:** Anonymous cache invalidation (DoS vector) + cache stats leak internal operational metrics (info disclosure).
+**Fix:** Added `Depends(require_permission(Permission.SYSTEM_CONFIG))` to both endpoints. Now admin-only.
+
+#### F-7 MEDIUM: __main__ binds to 0.0.0.0
+**Discovery:** `backend/app.py:315`, `backend_app.py:171`, and `fireai/core/api_server.py` (already correct) — two of three bound to `0.0.0.0`.
+**Impact:** If run directly (not behind nginx/traefik), the API binds to all interfaces — exposing it to the network, bypassing proxy rate limiting, TLS, and request filtering.
+**Fix:** Changed `__main__` bind to `127.0.0.1` (loopback). Operator can override with `FIREAI_BIND_HOST=0.0.0.0` env var (with warning log). Production MUST use a reverse proxy.
+
+### Files Changed
+- `backend/security_middleware.py` — NEW (248 lines). SecurityHeadersMiddleware + re-exports CorrelationIdMiddleware.
+- `backend/app.py` — V129 hardening: wired in middleware, mounted health router, V127 CORS pattern, auth on cache endpoints, 127.0.0.1 bind. (+143, -16 lines)
+- `backend_app.py` — V129 hardening: added SecurityHeadersMiddleware + CorrelationIdMiddleware, 127.0.0.1 bind. (+31 lines)
+- `tests/test_security_middleware_v129.py` — NEW (357 lines, 21 tests covering all V129 changes).
+
+### Verification Evidence
+
+| Gate | Test Suite | Result |
+|------|-----------|--------|
+| 3 | tests/test_security_middleware_v129.py (NEW) | **21/21 PASS** |
+| 3 | tests/test_backend_app_security.py | **6/6 PASS** |
+| 3 | tests/test_csp_security.py | **28/28 PASS** |
+| 3 | tests/test_mandatory_security.py | **17/17 PASS** |
+| 3 | backend/tests/test_health.py | **10/10 PASS** (was 7/10 before V129) |
+| 3/4 | Full backend/tests/ regression | **174 pass, 247 fail** (was 150 pass, 271 fail — net +24 fixed, 0 new failures) |
+| 4 | Pre-existing failure check (git stash) | Verified: 247 remaining failures are pre-existing (missing routers, sync_websocket), NOT introduced by V129 |
+
+### Adversarial Audit Finding (caught during Phase 5 self-critique)
+Initially I only added SecurityHeadersMiddleware to `backend/app.py`. During Phase 5 (Rule 21 Layer 3 — criticize the method), I realized `backend_app.py` is the PRODUCTION QOMN-FIRE API and needs the same defense-in-depth. Added the middleware to `backend_app.py` as well, with a new test (`TestBackendAppAlsoHasSecurityHeaders`) verifying compliance.
+
+### Self-Criticism (Rule 21 — 4 Layers)
+
+1. **Output:** Is this correct? YES — verified by 21 new V129 tests + 71 security-related tests + 24 net-fixed pre-existing tests. Headers verified present on real HTTP responses (not mocks), including 404 error responses.
+
+2. **Thinking:** Did I rationalize? Initially I dismissed the HSTS-on-localhost concern without research. The test failure forced me to investigate. I found that modern browsers (Chrome v79+ Dec 2019, Firefox v75+ Apr 2020) explicitly ignore HSTS on localhost. Updated the code to always emit HSTS with documentation of the rationale. This is the right process — tests guided me to the correct behavior.
+
+3. **Method:** Was my approach flawed? The pure ASGI middleware pattern was copied from the existing `CorrelationIdMiddleware` (BUG-34 fix). I caught dead code (`_is_https` helper, `Callable`/`Awaitable` imports) during self-critique and removed it. I caught the backend_app.py gap during adversarial audit and fixed it BEFORE commit.
+
+4. **Commitment:** Would I stake my professional reputation on this? YES. The middleware is well-tested, the headers are correct per OWASP Secure Headers Project, the CSP is environment-aware, the HSTS rationale is documented with browser version citations, the CORS hardening follows the V127 precedent. If a building burned because someone compromised the engineering UI via XSS, my work would have prevented the XSS amplification via CSP. This is the difference between a system that protects lives and one that kills while pretending to protect.
+
+### Phase Status Report (Rule 11)
+- **(a) Current status:** V129 INFRASTRUCTURE SECURITY HARDENING COMPLETE. All 7 findings addressed (F-5 deferred with justification). 21 new tests pass. 24 pre-existing tests now pass. 0 new test failures.
+- **(b) Required to advance:** Operator must define next phase objectives. Suggested follow-ups:
+  - F-5: Apply `@limiter.limit()` decorators to AutoCAD/Revit/DigitalTwin routers (deferred — touches every route in 3 routers).
+  - Mount remaining routers in backend/app.py (projects, devices, connections, reports, exports, etc.) — would fix ~247 pre-existing test failures. NOT security-related.
+  - Fix sync_websocket tests (pre-existing failures, not security-related).
+
+### Confidence Level: HIGH
+- All security middleware verified present and functional in both backend/app.py and backend_app.py.
+- All 7 OWASP-recommended security headers verified on every HTTP response (including errors).
+- CSP environment-awareness tested in both dev and prod modes.
+- CORS fail-safe behavior tested (RuntimeError on missing env var, wildcard rejected).
+- Cache endpoints verified admin-only (403 without auth).
+- All changes pushed to GitHub: https://github.com/ahmdelbaz28-ux/revit/commit/fbda5f39
+

@@ -783,3 +783,57 @@ Stage Summary:
 - Schema consistency: PostgreSQL schema now matches SQLite exactly
 - Alembic: autogenerate now functional with SQLAlchemy Base.metadata
 - Configuration: All env vars documented in .env.example
+
+---
+Task ID: V129
+Agent: Super Z (Main)
+Task: Infrastructure security hardening — SecurityHeadersMiddleware + CORS + auth
+
+Work Log:
+- Read agent.md (Elite Engineering Execution Protocol) — followed all 21 rules
+- Read all infrastructure security files: backend/app.py, backend_app.py,
+  backend/auth.py, backend/api_keys.py, backend/rbac.py, backend/limiter.py,
+  backend/request_context.py, fireai/core/security_logging.py,
+  fireai/core/secret_rotation.py, fireai/core/bim_input_sanitizer.py,
+  fireai/core/revit_acl.py, SECURITY.md, SECURITY_COMPLIANCE_SUMMARY.md,
+  SECURITY_REMEDIATION_REPORT.md
+- Verified 7 infrastructure security findings via line-by-line code reading (Rule 14):
+  F-1 CRITICAL: SecurityHeadersMiddleware missing in backend/app.py
+  F-2 CRITICAL: Health router not mounted in backend/app.py
+  F-3 HIGH: CorrelationIdMiddleware not registered in backend/app.py
+  F-4 HIGH: backend/app.py CORS allows localhost in production (no V127 hardening)
+  F-5 HIGH: Rate limiter registered but never used (DEFERRED to next phase)
+  F-6 MEDIUM: /api/v1/cache/clear and /cache/stats endpoints were public
+  F-7 MEDIUM: __main__ binds to 0.0.0.0 by default
+- Created backend/security_middleware.py: SecurityHeadersMiddleware (pure ASGI,
+  no body buffering). Adds 7 OWASP headers: X-Frame-Options DENY,
+  X-Content-Type-Options nosniff, HSTS max-age=31536000, environment-aware CSP
+  (prod locked down, dev allows unsafe-eval + localhost for Vite HMR),
+  Referrer-Policy no-referrer, X-XSS-Protection 0, Permissions-Policy deny all.
+- Wired SecurityHeadersMiddleware + CorrelationIdMiddleware into backend/app.py
+- Mounted health_router under /api prefix in backend/app.py (was missing)
+- Applied V127 CORS hardening to backend/app.py (production fail-safe)
+- Added Depends(require_permission(SYSTEM_CONFIG)) to cache endpoints
+- Changed __main__ bind from 0.0.0.0 to 127.0.0.1 in backend/app.py and backend_app.py
+- Adversarial audit (Rule 21 Layer 3): caught that backend_app.py ALSO needed
+  the middleware. Added it. Added test verifying compliance.
+- Created tests/test_security_middleware_v129.py: 21 new tests covering all V129 changes
+- Ran full test suite: 174 pass (was 150 before V129, +24 fixed, 0 new failures)
+- Verified pre-existing failures via git stash (271 → 247, all 247 pre-existing)
+- Committed as V129: fbda5f39
+- Pushed to GitHub: https://github.com/ahmdelbaz28-ux/revit/commit/fbda5f39
+- Logged commit in agent.md per Rule 9
+
+Stage Summary:
+- Commit: fbda5f39 V129: Infrastructure security hardening
+- 4 files changed, 757 insertions, 16 deletions
+- 21 new V129 tests PASS
+- 71 security-related tests PASS (test_backend_app_security, test_csp_security,
+  test_mandatory_security, test_security_logging_v2, test_security,
+  test_security_middleware_v129)
+- 24 pre-existing tests now PASS (health endpoints + security headers)
+- 0 new test failures introduced (verified via git stash comparison)
+- All changes pushed to GitHub main branch
+- All 7 OWASP-recommended security headers verified on every HTTP response
+- Defense-in-depth: both backend/app.py and backend_app.py hardened
+
