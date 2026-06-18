@@ -82,12 +82,53 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS (permissive in dev, locked-down in production via env vars)
+# CORS — environment-aware (V127 SAFETY HARDENING).
+# Production: CORS_ORIGINS env var is REQUIRED (comma-separated list of
+#             trusted origins). Missing env var → security hardening fail.
+# Development/testing: defaults to localhost only (safe default).
+#
+# PER CORS SPEC (Fetch Standard §3.2):
+#   - allow_origins=["*"] + allow_credentials=True is FORBIDDEN.
+#   - We never set allow_credentials=True here (the API uses X-API-Key
+#     header auth, not cookies, so cross-origin credentialed requests
+#     are not needed).
+#   - Even without credentials, a wildcard origin in production allows
+#     ANY website to read API responses (data exfiltration vector).
+#   - The default below is restricted to localhost dev ports; production
+#     deployments MUST set CORS_ORIGINS explicitly.
+_env = os.getenv("FIREAI_ENV", "development").lower()
+if _env in ("production", "prod"):
+    _cors_raw = os.getenv("CORS_ORIGINS", "")
+    if not _cors_raw:
+        # Production without explicit CORS_ORIGINS — fail safe.
+        # The platform operator must declare trusted origins.
+        raise RuntimeError(
+            "CORS_ORIGINS environment variable is REQUIRED in production. "
+            "Set it to a comma-separated list of trusted origins, e.g. "
+            "'https://app.example.com,https://admin.example.com'. "
+            "Wildcards are forbidden in production for life-safety audit reasons."
+        )
+    _cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()]
+    if "*" in _cors_origins:
+        raise RuntimeError(
+            "CORS_ORIGINS='*' is forbidden in production. List explicit origins."
+        )
+else:
+    # Development / testing — safe defaults (localhost only).
+    _cors_origins = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://localhost:5173,http://localhost:8000",
+    ).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
+    allow_origins=_cors_origins,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["X-API-Key", "Content-Type", "X-Correlation-ID"],
+    # NEVER enable allow_credentials=True with this design — API uses
+    # X-API-Key header auth (not cookies), so cross-origin credentialed
+    # requests are unnecessary and would expand the attack surface.
+    allow_credentials=False,
 )
 app.add_middleware(_RoleDevMiddleware)
 
