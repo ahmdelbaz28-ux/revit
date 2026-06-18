@@ -309,6 +309,13 @@ app.include_router(autocad.router, prefix="/api/v1", tags=["AutoCAD-v1"])
 app.include_router(revit.router, prefix="/api/v1", tags=["Revit-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1"])
 
+# V130 MARINE MODULE: Mount the marine fire-safety router.
+# Provides endpoints for IMO SOLAS II-2, IEC 60092-502, ship zone division,
+# detector selection, extinguishing sizing, alarm-logic generation, and
+# SCADA/ETAP/Revit/AutoCAD integrations for marine projects.
+from backend.routers import marine as marine_router_module  # noqa: E402
+app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"])
+
 # V130 FIX: Mount the monitor router so Prometheus can scrape /api/v1/monitor/metrics.
 # Previously monitor.router was defined but NEVER registered via include_router,
 # so every Prometheus scrape returned 404 and all dashboards/alerts had no data.
