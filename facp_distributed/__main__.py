@@ -17,7 +17,7 @@ from .l2_orchestrator.agent_registry import DistributedAgentRegistry
 from .l2_orchestrator.task_scheduler import DistributedTaskScheduler
 from .l2_orchestrator.load_balancer import AdaptiveLoadBalancer
 from .l3_engine_workers.engine_controller import DistributedEngineController
-from .security.auth import AuthProvider, DistributedTokenManager
+from .security.auth import AuthProvider, DistributedTokenManager, TokenManager
 from .security.validation_gate import ValidationFirewall
 from .security.rbac import RBACEngine, PermissionChecker
 from .security.audit import AuditLogger
@@ -45,7 +45,17 @@ def create_distributed_system(config: Dict[str, Any] = None) -> Dict[str, Any]:
     config = config or {}
 
     # Set up security components
-    auth_provider = AuthProvider(config.get("auth_secret", "default_secret_for_dev"))
+    # SECURITY FIX (2026-06-18): previously defaulted to the hardcoded
+    # weak secret "default_secret_for_dev" when config was missing.
+    # Now the caller MUST supply a strong secret — fail closed.
+    auth_secret = config.get("auth_secret")
+    if not auth_secret:
+        raise ValueError(
+            "config['auth_secret'] is REQUIRED. Generate a strong key with: "
+            "python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+        )
+    token_manager = TokenManager(auth_secret)
+    auth_provider = AuthProvider(token_manager)
     rbac_engine = RBACEngine()
     permission_checker = PermissionChecker(rbac_engine)
     audit_logger = AuditLogger()

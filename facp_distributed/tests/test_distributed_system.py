@@ -22,9 +22,14 @@ from ..l2_orchestrator.task_scheduler import TaskScheduler
 from ..l3_engine_workers.engine_controller import EngineController
 from ..protocol.message_schema import FACPMessageValidator, FACPRequest
 from ..security.audit import AuditLogger
-from ..security.auth import AuthProvider
+from ..security.auth import AuthProvider, TokenManager
 from ..security.rbac import PermissionChecker, RBACEngine
 from ..security.validation_gate import ValidationFirewall
+
+# Strong test secrets (>= 32 chars) so they pass _validate_secret_key.
+# These are test-only secrets — never reuse in production.
+_TEST_SECRET_A = "a" * 64
+_TEST_SECRET_B = "b" * 64
 
 
 class TestDistributedFACP(unittest.TestCase):
@@ -35,7 +40,7 @@ class TestDistributedFACP(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Create security components
-        self.auth_provider = AuthProvider("test_secret")
+        self.auth_provider = AuthProvider(TokenManager(_TEST_SECRET_A))
         self.rbac_engine = RBACEngine()
         self.permission_checker = PermissionChecker(self.rbac_engine)
         self.audit_logger = AuditLogger()
@@ -603,7 +608,7 @@ class TestDistributedSecurity(unittest.TestCase):
 
     def setUp(self):
         """Set up security test fixtures"""
-        self.auth_provider = AuthProvider("security_test_secret")
+        self.auth_provider = AuthProvider(TokenManager(_TEST_SECRET_B))
         self.rbac_engine = RBACEngine()
         self.validation_firewall = ValidationFirewall(self.auth_provider)
 
