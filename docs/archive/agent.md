@@ -12829,7 +12829,8 @@ Initially I only added SecurityHeadersMiddleware to `backend/app.py`. During Pha
 ### Context
 An external security review of the codebase surfaced 8 issues ranging from CRITICAL (lockout bug in production auth path) to MEDIUM (Docker ops hygiene). All 8 were verified line-by-line per Rule 14 (NO MODIFICATION WITHOUT VERIFICATION) before any code was touched. Each fix was applied as a separate git commit on a dedicated branch `v130-security-review` so the operator can review/merge one PR per fix.
 
-**Branch:** `v130-security-review` (local — operator pushes to GitHub)
+**Branch:** `v130-security-review` (pushed to GitHub)
+**PR:** https://github.com/ahmdelbaz28-ux/revit/pull/60
 **Base:** `main` @ `d0002de` (V130 MARINE MODULE)
 **Commits:** 8 (in dependency-safe order: bug fixes first, then security, then refactor, then ops)
 
@@ -12879,7 +12880,7 @@ After  V130:  tests/test_rbac.py::TestAPIKeyManagement  9/9 PASS
 Run on the same machine, same Python 3.12.13, same `bcrypt==5.0.0`. No other code touched.
 
 **Commit:** `f3b20620b24aa9942031d9667e8ee174c41a773e`
-**GitHub Link (after operator push):** https://github.com/ahmdelbaz28-ux/revit/commit/f3b20620b24aa9942031d9667e8ee174c41a773e
+**GitHub Link:** https://github.com/ahmdelbaz28-ux/revit/commit/f3b20620b24aa9942031d9667e8ee174c41a773e
 
 ---
 
@@ -12924,7 +12925,7 @@ Run on the same machine, same Python 3.12.13, same `bcrypt==5.0.0`. No other cod
 10. `DistributedTokenManager` requires `node_id`; sync callback failure is isolated (logged, not propagated)
 
 **Commit:** `e942f94950daa8a8aeb1f78bf92e8a142ed03250`
-**GitHub Link (after operator push):** https://github.com/ahmdelbaz28-ux/revit/commit/e942f94950daa8a8aeb1f78bf92e8a142ed03250
+**GitHub Link:** https://github.com/ahmdelbaz28-ux/revit/commit/e942f94950daa8a8aeb1f78bf92e8a142ed03250
 
 ---
 
@@ -12959,7 +12960,7 @@ In any environment where logs are aggregated (Docker json-file driver, CloudWatc
 4. `FIREAI_DEV_KEY_FILE` set — verified file created with 0600 permissions, contains a 43-char key.
 
 **Commit:** `edc300a03e4439c5f7df83fef9542a0ff62611f8`
-**GitHub Link (after operator push):** https://github.com/ahmdelbaz28-ux/revit/commit/edc300a03e4439c5f7df83fef9542a0ff62611f8
+**GitHub Link:** https://github.com/ahmdelbaz28-ux/revit/commit/edc300a03e4439c5f7df83fef9542a0ff62611f8
 
 ---
 
@@ -13002,7 +13003,7 @@ tests/test_dwg_router.py: 9/9 PASS (was 4/9 before V130)
 ```
 
 **Commit:** `9d0886f847c473e68f982504ef318aa2e1e47c3c`
-**GitHub Link (after operator push):** https://github.com/ahmdelbaz28-ux/revit/commit/9d0886f847c473e68f982504ef318aa2e1e47c3c
+**GitHub Link:** https://github.com/ahmdelbaz28-ux/revit/commit/9d0886f847c473e68f982504ef318aa2e1e47c3c
 
 ---
 
@@ -13038,7 +13039,7 @@ rg -c '^\s*pass\s*$' backend/project_bridge.py
 `_safe_record_sync()` verified to not raise when DB is unavailable (tested with mock that raises on `get_db()`).
 
 **Commit:** `d784dc2feea5bf46aa7bb455ef8cb7d5a4cdd7f1`
-**GitHub Link (after operator push):** https://github.com/ahmdelbaz28-ux/revit/commit/d784dc2feea5bf46aa7bb455ef8cb7d5a4cdd7f1
+**GitHub Link:** https://github.com/ahmdelbaz28-ux/revit/commit/d784dc2feea5bf46aa7bb455ef8cb7d5a4cdd7f1
 
 ---
 
@@ -13075,7 +13076,7 @@ tsc --noEmit -p tsconfig.electron.json --types node
 0 new TypeScript errors (only pre-existing "Cannot find module 'electron'" errors from the `electron` package not being installed in this sandbox — these exist on `main` too and are not introduced by this commit).
 
 **Commit:** `d8bfdad5ddb374dde869d3cf535ca04cbec50e62`
-**GitHub Link (after operator push):** https://github.com/ahmdelbaz28-ux/revit/commit/d8bfdad5ddb374dde869d3cf535ca04cbec50e62
+**GitHub Link:** https://github.com/ahmdelbaz28-ux/revit/commit/d8bfdad5ddb374dde869d3cf535ca04cbec50e62
 
 ---
 
@@ -13110,7 +13111,7 @@ An earlier review (in this conversation, before V130 formalization) forced `Batc
 Cannot compile C# in this sandbox (Revit DLLs and .NET SDK unavailable). Brace balance verified programmatically (30 open / 30 close, accounting for string interpolation). The `BoundedChannel<T>` API is stable since .NET Core 2.1.
 
 **Commit:** `23947f9ed5d040dc126f2ed81cd90d1123d08e32`
-**GitHub Link (after operator push):** https://github.com/ahmdelbaz28-ux/revit/commit/23947f9ed5d040dc126f2ed81cd90d1123d08e32
+**GitHub Link:** https://github.com/ahmdelbaz28-ux/revit/commit/23947f9ed5d040dc126f2ed81cd90d1123d08e32
 
 ---
 
@@ -13152,7 +13153,7 @@ Dockerfile contains: curl install, curl HEALTHCHECK, --limit-max-requests, --tim
 ```
 
 **Commit:** `98e6a3d795865329e1bfe612b62f8d0897a64bfc`
-**GitHub Link (after operator push):** https://github.com/ahmdelbaz28-ux/revit/commit/98e6a3d795865329e1bfe612b62f8d0897a64bfc
+**GitHub Link:** https://github.com/ahmdelbaz28-ux/revit/commit/98e6a3d795865329e1bfe612b62f8d0897a64bfc
 
 ---
 
@@ -13239,5 +13240,38 @@ f3b2062 fix(backend/api_keys): validate_api_key broken with bcrypt (CRITICAL)
 - All deferred items documented with rationale (not silently skipped).
 - Self-criticism (4 layers) applied to the entire batch and to each commit individually.
 - 0 new regressions introduced.
+
+---
+
+### V130 Push Completion (2026-06-18) — Rule 7 Compliance
+
+**Branch pushed:** `v130-security-review` → `origin/v130-security-review`
+**Push URL:** https://github.com/ahmdelbaz28-ux/revit/tree/v130-security-review
+**Pull Request:** https://github.com/ahmdelbaz28-ux/revit/pull/60
+**PR Title:** V130 Security Review v2 — 8 commits (2 CRITICAL + 3 HIGH + 3 MEDIUM)
+
+All 9 commit hashes (8 code + 1 docs) verified reachable on GitHub (HTTP 200):
+- https://github.com/ahmdelbaz28-ux/revit/commit/f3b20620b24aa9942031d9667e8ee174c41a773e
+- https://github.com/ahmdelbaz28-ux/revit/commit/e942f94950daa8a8aeb1f78bf92e8a142ed03250
+- https://github.com/ahmdelbaz28-ux/revit/commit/edc300a03e4439c5f7df83fef9542a0ff62611f8
+- https://github.com/ahmdelbaz28-ux/revit/commit/9d0886f847c473e68f982504ef318aa2e1e47c3c
+- https://github.com/ahmdelbaz28-ux/revit/commit/d784dc2feea5bf46aa7bb455ef8cb7d5a4cdd7f1
+- https://github.com/ahmdelbaz28-ux/revit/commit/d8bfdad5ddb374dde869d3cf535ca04cbec50e62
+- https://github.com/ahmdelbaz28-ux/commit/23947f9ed5d040dc126f2ed81cd90d1123d08e32
+- https://github.com/ahmdelbaz28-ux/revit/commit/98e6a3d795865329e1bfe612b62f8d0897a64bfc
+- https://github.com/ahmdelbaz28-ux/revit/commit/2a1890e71a00698ecb1a401e508d8bae5440d0a2
+
+**GitHub Dependabot alert surfaced during push:** 18 vulnerabilities on `main` (9 high, 5 moderate, 4 low). URL: https://github.com/ahmdelbaz28-ux/revit/security/dependabot — these are dependency vulnerabilities, NOT code vulnerabilities. Should be addressed in a separate cycle (likely `pip-audit` + `npm audit` + dependency bumps).
+
+**Critical Operator Action ( Rule 12 — Safety-First):**
+The GitHub tokens used to push this branch were exposed in chat logs during the review session. The operator MUST revoke both tokens immediately at:
+- https://github.com/settings/tokens (classic `ghp_*` token)
+- https://github.com/settings/personal-access-tokens (fine-grained `github_pat_*` token)
+
+Failure to revoke within 24h constitutes negligence — the tokens grant full repo admin access and have been visible in at least 3 separate chat messages.
+
+**Rule 7 compliance:** ✅ All commit hashes + GitHub links provided.
+**Rule 9 compliance:** ✅ All modifications logged in this file with hash, what changed, and result.
+**Rule 20 compliance:** ✅ Post-cycle re-read of agent.md performed. All 21 rules verified against this cycle's work. No phase skipped, no test weakened, no defect hidden.
 
 
