@@ -74,6 +74,8 @@ class Permission(str, Enum):
     # Workflow permissions
     WORKFLOW_READ = "workflow:read"
     WORKFLOW_MANAGE = "workflow:manage"
+    # File upload permissions (DWG/DXF/RVT parsing endpoints)
+    FILE_UPLOAD = "file:upload"
 
 
 # Role-permission mapping
@@ -116,6 +118,7 @@ ROLE_PERMISSIONS: dict[Role, Set[Permission]] = {
         Permission.WORKFLOW_READ,
         Permission.WORKFLOW_MANAGE,
         Permission.MONITOR_READ,
+        Permission.FILE_UPLOAD,
     },
     Role.VIEWER: {
         Permission.PROJECT_READ,

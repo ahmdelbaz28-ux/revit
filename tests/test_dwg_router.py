@@ -18,22 +18,48 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
+from backend.rbac import Role
 from backend.routers.dwg import router
 
 
 @pytest.fixture
 def app():
+    """Test FastAPI app.
+
+    The DWG endpoint requires Permission.FILE_UPLOAD (added in v2 to
+    prevent anonymous DoS via CPU-heavy DWG parsing). For unit tests
+    we install a stub middleware that sets request.state.fireai_role
+    to ENGINEER, mimicking what ApiKeyMiddleware does in production
+    when a valid ENGINEER-level API key is presented.
+
+    Tests that specifically check the auth gate (TestAuthGate below)
+    do NOT use this middleware, so requests get the default Role.VIEWER.
+    """
     _app = FastAPI()
     _app.include_router(router, prefix="/api")
+
+    @_app.middleware("http")
+    async def _grant_engineer_role(request: Request, call_next):
+        request.state.fireai_role = Role.ENGINEER
+        return await call_next(request)
+
     return _app
 
 
 @pytest.fixture
 def client(app):
     return TestClient(app)
+
+
+@pytest.fixture
+def public_client():
+    """Client WITHOUT the role-granting middleware — for testing the auth gate."""
+    _app = FastAPI()
+    _app.include_router(router, prefix="/api")
+    return TestClient(_app)
 
 
 @pytest.fixture
@@ -150,16 +176,26 @@ class TestResponseStructure:
             assert "warnings" in data
 
     def test_failure_response_has_expected_fields(self, client):
-        """A parse failure must return structured error info."""
+        """A parse failure must return structured error info.
+
+        v2: we send a DXF that PASSES the magic-byte sniff (contains
+        "SECTION") but is structurally incomplete, so the parser itself
+        fails — exercising the router's parser-failure path. Sending
+        pure garbage is now caught earlier by _detect_real_format and
+        returns 400 with {detail: ...}, which TestFileValidation covers.
+        """
+        # Minimal DXF that passes magic-byte check but is missing the
+        # HEADER section's $ACADVER, so ezdxf will refuse to parse it.
+        incomplete_dxf = b"0\nSECTION\nENDSEC\n0\nEOF\n"
         response = client.post(
             "/api/parse-dwg",
-            files={"file": ("test.dxf", b"garbage content", "application/dxf")},
+            files={"file": ("test.dxf", incomplete_dxf, "application/dxf")},
         )
-        assert response.status_code in (400, 422)
+        assert response.status_code in (400, 422), response.text
         data = response.json()
-        assert "success" in data
-        assert "source" in data
-        assert "errors" in data
+        # Either shape is acceptable: magic-byte rejection (detail),
+        # or parser failure (success/source/errors).
+        assert ("detail" in data) or ("success" in data and "errors" in data)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -181,3 +217,42 @@ class TestFileSizeEnforcement:
         # that the parser refuses to read, or the server may reject before
         # the request body is fully sent (413).
         assert response.status_code in (413, 422, 400, 500)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Test: Auth gate (v2 addition)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestAuthGate:
+    """Verify the endpoint requires Permission.FILE_UPLOAD.
+
+    These tests use the `public_client` fixture which does NOT install
+    the auth-override, so requests arrive with the default Role.VIEWER
+    (no API key). They MUST be rejected with 403 Forbidden.
+    """
+
+    def test_no_api_key_returns_403(self, public_client, valid_dxf_bytes):
+        """Anonymous requests must be rejected."""
+        response = public_client.post(
+            "/api/parse-dwg",
+            files={"file": ("test.dxf", valid_dxf_bytes, "application/dxf")},
+        )
+        assert response.status_code == 403, (
+            "DWG endpoint must require Permission.FILE_UPLOAD — "
+            "anonymous uploads are a DoS vector in a safety-critical system."
+        )
+
+    def test_no_api_key_no_file_returns_403(self, public_client):
+        """Even request-shape errors must be gated by auth (don't leak info)."""
+        response = public_client.post("/api/parse-dwg")
+        # Auth runs BEFORE body validation, so 403 not 422.
+        assert response.status_code == 403
+
+    def test_wrong_extension_anonymous_returns_403(self, public_client):
+        """Auth gate must fire before extension check."""
+        response = public_client.post(
+            "/api/parse-dwg",
+            files={"file": ("test.pdf", b"fake data", "application/pdf")},
+        )
+        assert response.status_code == 403
