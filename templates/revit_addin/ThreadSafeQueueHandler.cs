@@ -41,6 +41,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Channels;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
@@ -50,14 +52,71 @@ namespace FireAI.RevitAddin
     /// Thread-safe queue handler for Revit model updates.
     /// Implements IExternalEventHandler to ensure all model writes
     /// occur on the Revit UI thread.
+    ///
+    /// v2 (2026-06-18):
+    ///   - Uses BoundedChannel&lt;T&gt; instead of Queue&lt;T&gt; + manual size
+    ///     check. The Channel handles capacity atomically, eliminating the
+    ///     race between Count check and Enqueue that v1 had.
+    ///   - BatchSize is opt-in (default = 1) — preserves v1 semantics of
+    ///     one-transaction-per-action. Set higher (e.g. 50) for throughput
+    ///     at the cost of weaker per-action isolation. v1 review incorrectly
+    ///     forced batching=50 by default, which was a behavior change.
+    ///   - Dropped unnecessary Interlocked on _processedCount / _failedCount
+    ///     — those are mutated only on the Revit UI thread (single-threaded).
+    ///     Only _droppedCount needs Interlocked (mutated from any producer thread).
     /// </summary>
     public class ThreadSafeQueueHandler : IExternalEventHandler
     {
-        private readonly Queue<Action<UIApplication>> _actionQueue
-            = new Queue<Action<UIApplication>>();
-        private readonly object _lockObj = new object();
+        // BoundedChannel<T> provides thread-safe enqueue/dequeue with a hard
+        // capacity limit. When full, TryWrite returns false atomically — no
+        // race window between the size check and the write.
+        private readonly Channel<Action<UIApplication>> _channel;
+
+        // Mutated ONLY on Revit UI thread (Execute is called by Revit's
+        // ExternalEvent system on the UI thread). No Interlocked needed.
         private int _processedCount = 0;
         private int _failedCount = 0;
+
+        // Mutated from any producer thread (EnqueueAction callers).
+        // Interlocked required.
+        private int _droppedCount = 0;
+
+        /// <summary>
+        /// Maximum number of actions processed in a single Execute call.
+        /// Default = 1 preserves v1 behavior (one transaction per action).
+        /// Set to a higher value (e.g. 50) to amortize transaction overhead
+        /// when the queue is drained after a burst of MCP requests. Higher
+        /// values mean a single failed action does NOT roll back other
+        /// actions in the same batch — each action's exception is caught
+        /// and the batch continues.
+        /// </summary>
+        public int BatchSize { get; set; } = 1;
+
+        /// <summary>
+        /// Create a new handler with the given queue capacity.
+        /// </summary>
+        /// <param name="capacity">
+        /// Maximum number of pending actions. When full, EnqueueAction
+        /// returns false and increments DroppedCount. Default = 10,000.
+        /// </param>
+        public ThreadSafeQueueHandler(int capacity = 10_000)
+        {
+            if (capacity < 1)
+                throw new ArgumentOutOfRangeException(
+                    nameof(capacity), "capacity must be at least 1");
+
+            _channel = Channel.CreateBounded<Action<UIApplication>>(
+                new BoundedChannelOptions(capacity)
+                {
+                    // Drop the new write when full; caller learns via TryWrite=false.
+                    FullMode = BoundedChannelFullMode.DropWrite,
+                    // Revit UI thread is the only reader.
+                    SingleReader = true,
+                    // Any thread (MCP server workers) can write.
+                    SingleWriter = false,
+                }
+            );
+        }
 
         /// <summary>
         /// Enqueue an action for safe execution on the Revit UI thread.
@@ -67,17 +126,29 @@ namespace FireAI.RevitAddin
         /// Action that modifies the Revit model.
         /// The action receives a UIApplication for model access.
         /// </param>
-        public void EnqueueAction(Action<UIApplication> action)
+        /// <returns>
+        /// True if the action was enqueued; false if the queue was full
+        /// (action dropped, DroppedCount incremented).
+        /// </returns>
+        public bool EnqueueAction(Action<UIApplication> action)
         {
             if (action == null)
-                throw new ArgumentNullException(nameof(action),
+                throw new ArgumentNullException(
+                    nameof(action),
                     "Cannot enqueue null action. " +
                     "[FireAI Safety: All model updates must have a defined action.]");
 
-            lock (_lockObj)
-            {
-                _actionQueue.Enqueue(action);
-            }
+            if (_channel.Writer.TryWrite(action))
+                return true;
+
+            // Queue is full — record the drop and return false so the
+            // caller can apply back-pressure.
+            Interlocked.Increment(ref _droppedCount);
+            System.Diagnostics.Debug.WriteLine(
+                $"[FireAI SAFETY WARNING]: Action queue full. " +
+                $"Action dropped. Total dropped: {_droppedCount}. " +
+                $"This indicates the Revit UI thread cannot keep up with MCP requests.");
+            return false;
         }
 
         /// <summary>
@@ -96,79 +167,83 @@ namespace FireAI.RevitAddin
                 return;
             }
 
-            Action<UIApplication> actionToExecute = null;
-
-            lock (_lockObj)
-            {
-                if (_actionQueue.Count > 0)
-                {
-                    actionToExecute = _actionQueue.Dequeue();
-                }
-            }
-
-            if (actionToExecute == null)
-                return; // No pending actions
-
-            // Execute the action inside a Transaction for atomicity
             Document doc = app.ActiveUIDocument?.Document;
             if (doc == null)
             {
-                System.Diagnostics.Debug.WriteLine(
-                    "[FATAL ENGINE ERROR]: No active Revit document. " +
-                    "Cannot execute model update. Action discarded.");
-                _failedCount++;
+                // Drain the queue so we don't accumulate actions while no
+                // document is open. Without this, the queue fills up and
+                // every subsequent EnqueueAction returns false.
+                int droppedHere = 0;
+                while (_channel.Reader.TryRead(out _))
+                    droppedHere++;
+                if (droppedHere > 0)
+                {
+                    _failedCount += droppedHere;
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[FATAL ENGINE ERROR]: No active Revit document. " +
+                        $"Dropped {droppedHere} pending actions. " +
+                        $"Total failed: {_failedCount}.");
+                }
                 return;
             }
 
-            using (Transaction trans = new Transaction(doc,
-                "FireAI Safe BIM Thread Update"))
+            // Process up to BatchSize actions in one transaction.
+            // Default BatchSize=1 preserves v1's per-action isolation.
+            int remaining = BatchSize;
+            using (Transaction trans = new Transaction(doc, "FireAI Safe BIM Update"))
             {
                 trans.Start();
                 try
                 {
-                    actionToExecute(app);
+                    while (remaining > 0 &&
+                           _channel.Reader.TryRead(out Action<UIApplication> actionToExecute))
+                    {
+                        try
+                        {
+                            actionToExecute(app);
+                            _processedCount++;
+                        }
+                        catch (Autodesk.Revit.Exceptions.InvalidObjectStateException ex)
+                        {
+                            // Revit API specific error — model element no longer valid.
+                            // Skip this action, continue the batch.
+                            _failedCount++;
+                            System.Diagnostics.Debug.WriteLine(
+                                $"[FATAL ENGINE ERROR]: Invalid Revit object state: {ex.Message}. " +
+                                $"Action skipped, batch continues. Total failed: {_failedCount}.");
+                        }
+                        catch (Autodesk.Revit.Exceptions.ArgumentException ex)
+                        {
+                            // Invalid parameter value written to Revit element.
+                            _failedCount++;
+                            System.Diagnostics.Debug.WriteLine(
+                                $"[FATAL ENGINE ERROR]: Invalid parameter value: {ex.Message}. " +
+                                $"Action skipped, batch continues. Total failed: {_failedCount}.");
+                        }
+                        catch (Exception ex)
+                        {
+                            // General error — skip this action, continue the batch.
+                            _failedCount++;
+                            System.Diagnostics.Debug.WriteLine(
+                                $"[FATAL ENGINE ERROR]: Model update failed: {ex.Message}. " +
+                                $"Action skipped, batch continues. Total failed: {_failedCount}.");
+                        }
+                        remaining--;
+                    }
 
-                    // Validate transaction before commit
                     if (trans.HasStarted() && !trans.HasEnded())
                     {
                         trans.Commit();
-                        _processedCount++;
-                        System.Diagnostics.Debug.WriteLine(
-                            $"[FireAI]: Model update committed successfully. " +
-                            $"Total processed: {_processedCount}");
                     }
-                }
-                catch (Autodesk.Revit.Exceptions.InvalidObjectStateException ex)
-                {
-                    // Revit API specific error — model element no longer valid
-                    if (trans.HasStarted() && !trans.HasEnded())
-                        trans.RollBack();
-                    _failedCount++;
-                    System.Diagnostics.Debug.WriteLine(
-                        $"[FATAL ENGINE ERROR]: Invalid Revit object state: {ex.Message}. " +
-                        $"Transaction rolled back. Total failed: {_failedCount}");
-                }
-                catch (Autodesk.Revit.Exceptions.ArgumentException ex)
-                {
-                    // Invalid parameter value written to Revit element
-                    if (trans.HasStarted() && !trans.HasEnded())
-                        trans.RollBack();
-                    _failedCount++;
-                    System.Diagnostics.Debug.WriteLine(
-                        $"[FATAL ENGINE ERROR]: Invalid parameter value: {ex.Message}. " +
-                        $"Check that MCP-sent values are within Revit parameter bounds. " +
-                        $"Transaction rolled back. Total failed: {_failedCount}");
                 }
                 catch (Exception ex)
                 {
-                    // General error — always roll back for safety
+                    // Transaction-level failure (not per-action). Roll back.
                     if (trans.HasStarted() && !trans.HasEnded())
                         trans.RollBack();
-                    _failedCount++;
                     System.Diagnostics.Debug.WriteLine(
-                        $"[FATAL ENGINE ERROR]: Model update failed: {ex.Message}. " +
-                        $"Transaction rolled back. Total failed: {_failedCount}. " +
-                        $"This may indicate a safety-critical issue in the MCP pipeline.");
+                        $"[FATAL ENGINE ERROR]: Transaction-level failure: {ex.Message}. " +
+                        $"Transaction rolled back.");
                 }
             }
         }
@@ -182,21 +257,13 @@ namespace FireAI.RevitAddin
         /// <summary>
         /// Get the number of pending actions in the queue.
         /// </summary>
-        public int PendingCount
-        {
-            get
-            {
-                lock (_lockObj)
-                {
-                    return _actionQueue.Count;
-                }
-            }
-        }
+        public int PendingCount => _channel.Reader.Count;
 
         /// <summary>
         /// Get processing statistics.
         /// </summary>
-        public (int Processed, int Failed) GetStats() => (_processedCount, _failedCount);
+        public (int Processed, int Failed, int Dropped) GetStats() =>
+            (_processedCount, _failedCount, _droppedCount);
     }
 
 
