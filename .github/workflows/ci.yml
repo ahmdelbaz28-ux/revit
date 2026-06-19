@@ -78,7 +78,12 @@ jobs:
         run: mypy backend/ fireai/ core/ --ignore-missing-imports --no-strict-optional --exclude '.*test.*' || true
 
       - name: Bandit security scan
-        run: bandit -r backend/ fireai/ core/ skills/ backend_app.py -f json -o reports/bandit.json -ll
+        # ponytail: --exit-zero so bandit generates the JSON report even
+        # when it finds LOW/MEDIUM issues. The severity gate step below
+        # is the actual gate — it fails only on HIGH severity findings.
+        # Without --exit-zero, bandit returns exit code 1 on ANY finding
+        # and the severity gate never runs.
+        run: bandit -r backend/ fireai/ core/ skills/ backend_app.py -f json -o reports/bandit.json -ll --exit-zero
 
       - name: Bandit severity gate
         run: |
