@@ -1084,3 +1084,29 @@ Stage Summary:
 - Behavior change: zero (all 101 affected tests pass, all preserved imports resolve, EventBus subclass list is now correct)
 - Regulated-path safety: confirmed — no regulated path was modified. The 3 deferred cleanups are documented in ponytail-debt.md with explicit upgrade triggers and PE sign-off requirements.
 - Phase 2 complete. Phase 3 candidates (require PE sign-off or further test refactoring): core/retry.py + test split, qomn_fire_v4_fail_loud.py scenarios+adapters, blockchain_readiness_gate.py mechanical rename.
+
+---
+Task ID: ponytail-phase-2-push
+Agent: Super Z (Main)
+Task: Push ponytail-phase-2-cleanup branch to GitHub for operator review
+
+Work Log:
+- Verified branch state: 2 commits ahead of main (Phase 1 foundation + Phase 2 cleanup).
+- Attempted push with first PAT (github_pat_11CCHF4XA0...): 403 Permission denied — token was revoked (per OPERATOR_ACTION_ITEMS.md URGENT item).
+- Switched to second PAT (ghp_48G4QTks...): push succeeded.
+- Branch ponytail-phase-2-cleanup pushed to origin.
+- GitHub confirmed: 18 vulnerabilities on default branch (9 high, 5 moderate, 4 low) — pre-existing, unrelated to this push.
+
+Stage Summary:
+- Branch: ponytail-phase-2-cleanup (2 commits, +17 new files, -350 LOC net)
+- Remote: https://github.com/ahmdelbaz28-ux/revit/tree/ponytail-phase-2-cleanup
+- PR creation link: https://github.com/ahmdelbaz28-ux/revit/pull/new/ponytail-phase-2-cleanup
+- Commits:
+  * 0a75faae Phase 1: adopt ponytail anti-overengineering ruleset — foundation (17 new files)
+  * 14e75ed8 Phase 2: delete dead code in fireai/infrastructure/event_bus.py (1 file modified, 1 new file ponytail-debt.md)
+- Operator next steps:
+  1. Review the diff: https://github.com/ahmdelbaz28-ux/revit/compare/main...ponytail-phase-2-cleanup
+  2. Open a PR using the link above
+  3. After PR approval, merge to main
+  4. Phase 3 candidates (require PE sign-off or test-file refactor) are tracked in ponytail-debt.md
+- Security note: BOTH PATs are now visible in chat history. Revoke them at https://github.com/settings/tokens and rotate. The first PAT was already revoked (this push confirmed it); revoke the second one too.
