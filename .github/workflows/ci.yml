@@ -10,6 +10,15 @@
 #   3. Frontend Build (TypeScript, lint, build)
 #   4. Dependency Audit (pip-audit)
 #   5. Docker Build & Test
+#
+# 2026-06-19 repo-cleanup: removed `|| true` from every gate so failures
+# actually fail the pipeline. The previous `success` job printed "✅ All
+# Gates Passed" even when every gate failed (it used `if: always()` without
+# checking conclusions) — that误导 operators. The new `success` job runs
+# only if all 6 gates actually passed. Coverage floor raised from 5%
+# (cosmetic) to 25% (enforced) — current actual coverage is ~39%, so this
+# is a real floor, not a paper tiger. Property tests and pip-audit no
+# longer swallow failures.
 # ═══════════════════════════════════════════════════════════════════════════
 
 name: CI/CD Pipeline
@@ -100,14 +109,19 @@ jobs:
           pip install pytest pytest-cov pytest-asyncio hypothesis
 
       - name: Run test suite with coverage
+        # ponytail: kept `-x` (stop on first failure) for fast feedback.
+        # Removed `|| true` — previous workflow swallowed every test failure.
+        # Coverage floor is 25% (current actual is ~39%, see COVERAGE_REPORT.md).
+        # To raise the floor further, update COVERAGE_REPORT.md first then bump
+        # this number. Do NOT lower it without operator sign-off.
         run: |
           pytest tests/ backend/tests/ -v \
             --tb=short \
             --cov=backend --cov=fireai --cov=core \
             --cov-report=html:reports/coverage_html \
             --cov-report=term-missing \
-            --cov-fail-under=5 \
-            -x || true
+            --cov-fail-under=25 \
+            -x
 
       - name: Upload coverage report
         if: always()
@@ -137,8 +151,11 @@ jobs:
           pip install pytest pytest-asyncio hypothesis
 
       - name: Run property-based tests
+        # ponytail: removed `|| true` — property-test failures must fail CI.
+        # If a property test is flaky, mark it with @pytest.mark.flaky or skip
+        # it explicitly; do not blanket-suppress the whole gate.
         run: |
-          pytest tests/property_based/ -v --tb=short || true
+          pytest tests/property_based/ -v --tb=short
           echo "Property-based tests completed"
 
   # ── Gate 4: Frontend Build ────────────────────────────────────────────────
@@ -227,9 +244,10 @@ jobs:
           pip-audit --desc --progress-spinner off
 
       - name: Audit frontend dependencies
+        # ponytail: removed `|| true`. npm audit now fails CI on HIGH+.
         run: |
           cd frontend
-          npm audit --audit-level=high || true
+          npm audit --audit-level=high
 
   # ── Gate 6: Docker Build ──────────────────────────────────────────────────
   docker-build:
@@ -277,13 +295,19 @@ jobs:
           docker stop test-app
 
   # ── Success Summary ────────────────────────────────────────────────────────
+  # 2026-06-19 repo-cleanup: the old success job used `if: always()` and
+  # printed "✅ All Gates Passed" regardless of whether any gate actually
+  # passed. That误导 operators into thinking CI was green when it was red.
+  # The new success job runs only if every gate explicitly succeeded,
+  # using `needs` + `if: success()` (the default). A red gate now produces
+  # a skipped success job — visually obvious in the GitHub UI.
   success:
     name: "✅ All Gates Passed"
     runs-on: ubuntu-latest
     needs: [static-analysis, test-suite, property-tests, frontend-build, dependency-audit, docker-build]
-    if: always()
+    if: success()
     steps:
-      - name: Check all gates
+      - name: Confirm all gates passed
         run: |
           echo "CI/CD Pipeline Summary:"
           echo "======================="
@@ -294,4 +318,4 @@ jobs:
           echo "✅ Gate 5: Dependency Audit"
           echo "✅ Gate 6: Docker Build & Test"
           echo ""
-          echo "Pipeline completed successfully!"
+          echo "Pipeline completed successfully."
