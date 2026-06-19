@@ -312,9 +312,13 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Test Docker container
+        # ponytail: use a single tag (:latest) instead of
+        # steps.meta.outputs.tags (which is newline-separated and causes
+        # the second tag to be interpreted as a new command, exit 127).
+        # Also increased sleep from 5 to 10 seconds for slower CI runners.
         run: |
-          docker run -d --name test-app -p 8888:8000 ${{ steps.meta.outputs.tags }}
-          sleep 5
+          docker run -d --name test-app -p 8888:8000 ghcr.io/${{ github.repository }}:latest
+          sleep 10
           curl -f http://localhost:8888/health || exit 1
           docker stop test-app
 
