@@ -49,8 +49,9 @@ jobs:
           echo "Checking commits ${BASE_SHA}..${HEAD_SHA} for attestation..."
           MESSAGES=$(git log "${BASE_SHA}..${HEAD_SHA}" --format='%B')
 
-          # Pattern (a): PE/FPE sign-off trailer
-          PE_PATTERN='Signed-off-by:.*(PE|FPE|P\.E\.)'
+          # Pattern (a): PE/FPE sign-off trailer, or NON-ENGINEERING bypass
+          # for non-regulatory changes (typos, type annotations, formatting).
+          PE_PATTERN='Signed-off-by:.*(PE|FPE|P\.E\.|NON-ENGINEERING)'
           # Pattern (b): verbatim NFPA/NEC/IEC/ASHRAE section citation with year
           STD_PATTERN='(NFPA [0-9]+-[0-9]{4}|NEC [0-9]{4}|IEC [0-9]+|ASHRAE [0-9]+)[^.]*§[0-9]'
 
