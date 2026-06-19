@@ -11,6 +11,8 @@
  * Supports retry logic, timeouts, and WebSocket real-time subscription
  */
 
+import { getApiKey } from './api';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 3;
@@ -733,10 +735,13 @@ async function apiRequest<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const headers = {
+  // ponytail: typed as Record<string, string> so the X-CSRF-Token key
+  // assignment below type-checks. The previous inferred type only allowed
+  // 'Content-Type' | 'X-API-Key' and rejected the CSRF key (TS7053).
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-API-Key': getApiKey(),
-    ...options.headers,
+    'X-API-Key': getApiKey() ?? '',
+    ...((options.headers as Record<string, string>) ?? {}),
   };
 
   // Add CSRF token for state-changing requests
@@ -755,16 +760,21 @@ async function apiRequest<T>(
     });
 
     const data = await response.json();
+    // ponytail: ApiResponse<T> requires `timestamp: string` and `data?: T`
+    // (not `data: null`). Use `undefined` for missing data and stamp
+    // `timestamp` so the type contract holds (TS2741 + TS2322).
     return {
       success: response.ok,
-      data: response.ok ? data.data || data : null,
-      error: response.ok ? null : data.error || 'Unknown error',
+      data: response.ok ? (data.data ?? data) : undefined,
+      error: response.ok ? undefined : data.error || 'Unknown error',
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
     return {
       success: false,
-      data: null,
+      data: undefined,
       error: error instanceof Error ? error.message : 'Network error',
+      timestamp: new Date().toISOString(),
     };
   }
 }

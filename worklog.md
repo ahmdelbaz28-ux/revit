@@ -1050,3 +1050,71 @@ Stage Summary:
 - Source code touched: ZERO
 - Expected post-merge: Gate 5 will either PASS (if no HIGH/CRITICAL vulnerabilities in the installed env) or FAIL with a real vulnerability report (instead of crashing on numpy build). Either outcome is correct.
 - Note: this PR only fixes the pip-audit step. The other `|| true` instances in ci.yml (test suite, property tests, npm audit, success job) are addressed in PR #63 and remain out of scope here.
+
+---
+Task ID: fix-typescript-errors
+Agent: Super Z (Main)
+Task: Fix 6 TypeScript errors in frontend (Gate 4) — operator authorized touching source code
+
+Work Log:
+- Operator authorized touching frontend source code for this PR (the hard constraint is lifted for TypeScript fixes only).
+- Analyzed each of the 6 TypeScript errors from PR #63/#64 CI runs:
+  1. TS2305: 'CircleHelp' not exported from lucide-react (ContextPanel.tsx:2 + ContextHelpButton.tsx:1)
+  2. TS2304: Cannot find name 'getApiKey' (digitalTwinApi.ts:738)
+  3. TS7053: 'X-CSRF-Token' can't index headers type (digitalTwinApi.ts:747)
+  4. TS2741: 'timestamp' missing in ApiResponse (digitalTwinApi.ts:758)
+  5. TS2322: 'null' not assignable to 'T | undefined' (digitalTwinApi.ts:766)
+- Verified lucide-react 0.344.0 has `HelpCircle` (not `CircleHelp`) via `grep "HelpCircle" node_modules/lucide-react/dist/lucide-react.d.ts` → `declare const HelpCircle: LucideIcon`. `CircleHelp` was renamed/removed.
+- Applied fixes:
+  * ContextPanel.tsx: 3 substitutions (import + 2 usages) of CircleHelp → HelpCircle. Same icon, just renamed.
+  * ContextHelpButton.tsx: 2 substitutions (import + 1 usage) of CircleHelp → HelpCircle.
+  * api.ts: added `export` to `function getApiKey()` (was unexported — bug fix, digitalTwinApi.ts was calling it without import, would have thrown ReferenceError at runtime).
+  * digitalTwinApi.ts: added `import { getApiKey } from './api';`.
+  * digitalTwinApi.ts: changed `headers` type from inferred to `Record<string, string>` so X-CSRF-Token key assignment type-checks.
+  * digitalTwinApi.ts: added `?? ''` to `getApiKey()` call (returns string|null, headers requires string).
+  * digitalTwinApi.ts: cast `options.headers` to `Record<string, string>` for spread.
+  * digitalTwinApi.ts: added `timestamp: new Date().toISOString()` to both return paths (ApiResponse requires it).
+  * digitalTwinApi.ts: changed `data: null` → `data: undefined` and `error: null` → `error: undefined` (ApiResponse type allows T | undefined, not T | null).
+  * digitalTwinApi.ts: changed `data.data || data` → `data.data ?? data` (modern nullish-coalescing, more correct for falsy-but-valid values).
+- Added `ponytail:` comments explaining each non-trivial change.
+- Verified locally:
+  * `cd frontend && npm ci` → 760 packages installed, 0 errors.
+  * `npm run typecheck` → EXIT_CODE=0, no TypeScript errors.
+- Files modified: 4 (ContextPanel.tsx, ContextHelpButton.tsx, api.ts, digitalTwinApi.ts). +22/-12 lines.
+- Note: this PR touches frontend source code per operator authorization. The hard constraint (no source code changes) is suspended for this specific scope only.
+
+Stage Summary:
+- Branch: fix-typescript-errors (off main c1d7fb42)
+- Files modified: 4 frontend source files
+- TypeScript errors fixed: 6/6
+- Local typecheck: PASS (EXIT_CODE=0)
+- Expected post-merge: Gate 4 (Frontend Build) turns GREEN.
+- Bug fix included: getApiKey was not exported — digitalTwinApi.ts would have thrown ReferenceError at runtime when apiRequest was called. This was a real bug, not just a type error.
+
+---
+Task ID: fix-typescript-errors-amend
+Agent: Super Z (Main)
+Task: Fix 2 additional eslint errors that surfaced after TypeScript fix (Gate 4)
+
+Work Log:
+- PR #66 CI run showed Gate 4 still RED, but the failing step changed from "TypeScript type check" (now ✅) to "Lint check" (❌).
+- Root cause: the 6 TypeScript errors were masking 2 eslint errors in the same gate. Once TypeScript passed, eslint became the failing step.
+- The CI script `OUTPUT=$(npm run lint 2>&1); ERROR_COUNT=$(echo "$OUTPUT" | grep -oP '\d+(?= error)' | head -1)` found `2 errors` in the output.
+- Ran `npm run lint` locally: identified the 2 errors:
+  1. `frontend/src/components/ui/chart.tsx:79:58` - `no-useless-escape` - `\[` escape unnecessary inside character class.
+  2. `frontend/src/engine/BatteryCalculator.ts:71:7` - `prefer-const` - `let recommendedBattery` never reassigned (only properties mutated, not the variable itself).
+- Applied fixes:
+  * chart.tsx: removed the `\` before `[` in the regex character class (kept `]` escaped since it needs escaping inside `[]`).
+  * BatteryCalculator.ts: `let recommendedBattery` → `const recommendedBattery` (verified via grep that the variable itself is never reassigned, only its properties are mutated at lines 79-83).
+- Verified locally:
+  * `npm run lint` → `261 problems (0 errors, 261 warnings)` EXIT=0 ✅
+  * `npm run typecheck` → EXIT=0 ✅
+- Files modified: 2 (chart.tsx, BatteryCalculator.ts). +2/-2 lines.
+- Note: still within operator's authorization for frontend source code fixes to unblock Gate 4.
+
+Stage Summary:
+- Branch: fix-typescript-errors (amended with 2 more files)
+- Total files in PR #66 now: 6 (ContextPanel.tsx, ContextHelpButton.tsx, api.ts, digitalTwinApi.ts, chart.tsx, BatteryCalculator.ts)
+- TypeScript errors: 0 (was 6)
+- eslint errors: 0 (was 2)
+- Expected post-merge: Gate 4 (Frontend Build) turns GREEN.

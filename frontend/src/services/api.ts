@@ -24,7 +24,7 @@ const API_BASE = '/api/v1';
  * In production, the backend requires X-API-Key for all mutating requests.
  * The key is read from: VITE_FIREAI_API_KEY env var > localStorage settings > prompt.
  */
-function getApiKey(): string | null {
+export function getApiKey(): string | null {
   // 1. Check Vite env variable (set at build time or in .env)
   const envKey = import.meta.env.VITE_FIREAI_API_KEY;
   if (envKey) return envKey;
