@@ -23,13 +23,6 @@ Tags:
 
 ### Deferred to Phase 3 (regulated-path or shared-test cleanup)
 
-- `core/retry.py:1-362` — 362-LOC thin wrapper around `tenacity` (already a
-  project dependency). ceiling: zero production callers; only
-  `tests/test_skill_integration.py` and `skills/README.md` reference it.
-  upgrade: split `test_skill_integration.py` into `test_skill_validator.py`
-  (keep) + `test_retry.py` (delete with `core/retry.py`). Not done in Phase 2
-  because the test file mixes both concerns and needs surgical separation.
-
 - `fireai/core/qomn_fire_v4_fail_loud.py:816-1140` — 8 adapter classes
   (`AamksAdapter`, `Evac4BimAdapter`, `OpenFireAdapter`,
   `EmergencyEvacuationAdapter`, `SafeGuardAiAdapter`, `DisasterEvacuationAdapter`,
@@ -53,7 +46,13 @@ Tags:
 
 ## Resolved debt
 
-(none yet)
+- 2026-06-19 Phase 3: `core/retry.py` deleted (361 LOC). The 4 retry-system
+  tests in `tests/test_skill_integration.py` (lines 300-368) were removed;
+  the file was renamed to `tests/test_skill_validator.py` to reflect its
+  remaining content. `skills/README.md` updated to point users at `tenacity`
+  directly. Ceiling: zero production callers. Upgrade path: any future retry
+  need uses `from tenacity import retry, stop_after_attempt, wait_exponential`
+  directly — no wrapper, no abstraction layer.
 
 ## Audit history
 
@@ -61,3 +60,8 @@ Tags:
   (event_bus Redis+Kafka), deferred 3 (retry needs test-file split, fail_loud
   adapters are regulated, blockchain rename needs PE sign-off for the audit
   trail path). Net: -356 LOC, 0 behavior change, 101/101 tests pass.
+- 2026-06-19 Phase 3: resolved the retry deferral. Deleted core/retry.py
+  (361 LOC) + 3 retry tests, renamed test_skill_integration.py ->
+  test_skill_validator.py, updated skills/README.md. Net: -361 LOC, 0
+  behavior change. Remaining Phase 3 candidates (fail_loud adapters,
+  blockchain rename) still require PE sign-off — see deferred entries above.

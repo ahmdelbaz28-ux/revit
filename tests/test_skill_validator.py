@@ -1,21 +1,21 @@
-"""Integration tests for the AI agent skill validator and retry system."""
+"""Integration tests for the AI agent skill validator.
+
+Ponytail Phase 3 (2026-06-19): this file was split out of
+test_skill_integration.py. The retry-system tests that used to live here
+were removed together with core/retry.py — that module was a 361-LOC thin
+wrapper around `tenacity` (already a project dependency) with zero
+production callers. Use `tenacity` directly if you need retry decorators.
+"""
 
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import patch
 
 import pytest
 from hypothesis import Phase, given, settings, strategies as st
 from hypothesis.stateful import RuleBasedStateMachine, invariant, rule
 from pydantic import ValidationError
 
-from core.retry import (
-    async_network_retry,
-    conditional_retry,
-    network_retry,
-    skill_retry,
-)
 from skills.skill_validator import (
     ExecutionError,
     ExecutionResult,
@@ -26,10 +26,6 @@ from skills.skill_validator import (
     validate_skill_manifest,
     validate_version_compatibility,
 )
-
-
-class RetryTestError(ImportError):
-    pass
 
 
 valid_name_strategy = st.text(
@@ -295,77 +291,6 @@ def test_invalid_manifest_data_is_rejected():
 
     assert is_valid is False
     assert error_message
-
-
-def test_retry_mechanisms_sync():
-    network_call_count = 0
-
-    @network_retry(
-        max_attempts=3,
-        max_delay=1,
-        multiplier=0,
-        exceptions=(RetryTestError,),
-    )
-    def network_failing_function():
-        nonlocal network_call_count
-        network_call_count += 1
-        if network_call_count < 3:
-            raise RetryTestError(f"Attempt {network_call_count} failed")
-        return "network success"
-
-    skill_call_count = 0
-
-    @skill_retry(
-        max_attempts=2,
-        max_delay=1,
-        multiplier=0,
-        exceptions=(RetryTestError,),
-    )
-    def always_failing_skill_function():
-        nonlocal skill_call_count
-        skill_call_count += 1
-        raise RetryTestError(f"Attempt {skill_call_count} failed")
-
-    with patch("tenacity.nap.sleep"):
-        assert network_failing_function() == "network success"
-        with pytest.raises(RetryTestError):
-            always_failing_skill_function()
-
-    assert network_call_count == 3
-    assert skill_call_count == 2
-
-
-@pytest.mark.asyncio
-async def test_retry_mechanisms_async():
-    call_count = 0
-
-    @async_network_retry(max_attempts=2, max_delay=0, multiplier=0)
-    async def async_failing_function():
-        nonlocal call_count
-        call_count += 1
-        if call_count < 2:
-            raise ConnectionError(f"Attempt {call_count} failed")
-        return "async success"
-
-    result = await async_failing_function()
-
-    assert result == "async success"
-    assert call_count == 2
-
-
-def test_conditional_retry_sync():
-    call_count = 0
-
-    @conditional_retry(lambda value: value is False, max_attempts=3, max_delay=1)
-    def eventually_true():
-        nonlocal call_count
-        call_count += 1
-        return call_count == 3
-
-    with patch("tenacity.nap.sleep"):
-        assert eventually_true() is True
-
-    assert call_count == 3
 
 
 @settings(max_examples=50, deadline=1000, phases=[Phase.generate, Phase.shrink])

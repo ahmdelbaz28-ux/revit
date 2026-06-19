@@ -6,7 +6,6 @@ Production-ready AI agent skill system with integrated validation, retry mechani
 
 This system implements best practices from leading Python libraries:
 - **Pydantic** - Robust data validation and serialization
-- **Tenacity** - Sophisticated retry and fault tolerance
 - **Hypothesis** - Property-based testing for reliability
 - **Ruff** - Fast linting and code quality
 - **Pre-commit** - Automated quality gates
@@ -48,27 +47,7 @@ result = ExecutionResult(
 )
 ```
 
-#### 2. Retry System (`core/retry.py`)
-- **@retry decorator** patterns with configurable strategies
-- **Wait strategies** (exponential, fixed, random)
-- **Stop strategies** (timeout, max attempts)
-- **Specific exception handling**
-
-```python
-from core.retry import network_retry, skill_retry
-
-@network_retry(max_attempts=5)
-async def fetch_skill_content(url: str):
-    # Network operation with exponential backoff
-    pass
-
-@skill_retry(max_attempts=3)
-def load_skill_module(path: str):
-    # Skill loading with retry on import errors
-    pass
-```
-
-#### 3. Property-Based Testing (`tests/property_based/`)
+#### 2. Property-Based Testing (`tests/property_based/`)
 - **@given decorator** patterns for input generation
 - **Strategies** for generating comprehensive test data
 - **Phase settings** for optimization and shrinking
@@ -83,8 +62,7 @@ def load_skill_module(path: str):
 - Flexible field constraints
 
 ### Fault Tolerance
-- Configurable retry strategies
-- Circuit breaker patterns
+- Use `tenacity` directly for retry strategies (the project already depends on it)
 - Timeout management
 - Graceful degradation
 
@@ -162,7 +140,7 @@ Located in `.pre-commit-config.yaml`, includes:
 
 ### For Skill Development
 1. Always use validated models for data
-2. Implement appropriate retry strategies
+2. For retry, use `tenacity` directly — `from tenacity import retry, stop_after_attempt, wait_exponential`
 3. Test with property-based testing
 4. Follow code quality guidelines
 5. Validate inputs and outputs
@@ -180,13 +158,13 @@ Located in `.pre-commit-config.yaml`, includes:
 - **Testing**: Property-based tests with 100+ examples
 - **Code Quality**: Ruff compliance with 0 violations
 - **Security**: Bandit scanning integrated
-- **Reliability**: Circuit breaker and retry patterns
+- **Reliability**: Use `tenacity` for retry; circuit-breaker libs for breaker patterns
 
 ## Maintenance
 
 ### Adding New Skills
 1. Create skill with validated models
-2. Implement appropriate retry logic
+2. For retry, decorate with `tenacity.retry` directly
 3. Add property-based tests
 4. Update pre-commit hooks if needed
 
