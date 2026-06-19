@@ -1110,3 +1110,48 @@ Stage Summary:
   3. After PR approval, merge to main
   4. Phase 3 candidates (require PE sign-off or test-file refactor) are tracked in ponytail-debt.md
 - Security note: BOTH PATs are now visible in chat history. Revoke them at https://github.com/settings/tokens and rotate. The first PAT was already revoked (this push confirmed it); revoke the second one too.
+
+---
+Task ID: ponytail-phase-3
+Agent: Super Z (Main)
+Task: Execute Phase 3 — resolve the first PE-sign-off-free deferral (core/retry.py)
+
+Work Log:
+- Read tests/test_skill_integration.py (562 LOC) in full to map test boundaries:
+  * Lines 1-298: skill_validator tests (KEEP)
+  * Lines 300-368: 3 retry tests (DELETE with core/retry.py)
+  * Lines 371-562: property-based + state machine + schema serialization (KEEP)
+- Confirmed `patch` from unittest.mock and `RetryTestError` class are only used by the retry tests (safe to remove together).
+- Confirmed `pytest.mark.asyncio` is only used by `test_retry_mechanisms_async` (safe to remove with it).
+- Created /home/z/my-project/scripts/phase3_delete_retry.py with surgical mutations:
+  1. Write tests/test_skill_validator.py (486 LOC) — all skill_validator tests verbatim, retry tests + RetryTestError + retry imports + patch import removed, module docstring updated.
+  2. Delete tests/test_skill_integration.py.
+  3. Delete core/retry.py (361 LOC).
+  4. Update skills/README.md: drop "Retry System" section (lines 51-69), drop Tenacity feature bullet, update Fault Tolerance section to "use tenacity directly", update Best Practices + Maintenance sections.
+  5. Update ponytail-debt.md: move core/retry.py entry from "Deferred to Phase 3" to "Resolved debt", update audit history.
+- Installed hypothesis + tenacity into the venv (both were missing — pre-existing env gap, not related to this work).
+- Ran tests:
+  * pytest tests/test_skill_validator.py → 15/15 PASSED
+  * pytest tests/test_skill_validator.py tests/test_event_bus.py tests/test_qomn_integration.py → 116/116 PASSED
+- Verified:
+  * python -c 'from skills.skill_validator import SkillManifest' → OK
+  * python -c 'from tenacity import retry, stop_after_attempt, wait_exponential' → OK
+  * grep -rn 'core\.retry' (excluding worklog/debt/agent.md prose) → zero hits
+- Committed: a0b7a7e4 "Phase 3: delete core/retry.py (361 LOC dead wrapper) — first PE-sign-off-free deferral resolved"
+  * 4 files changed, 25 insertions, 480 deletions
+  * Rename: tests/test_skill_integration.py → tests/test_skill_validator.py (87% similarity)
+- Pushed to origin/ponytail-phase-2-cleanup.
+- Wrote PR_DESCRIPTION.md at repo root — ready to copy-paste into the GitHub PR creation form.
+
+Stage Summary:
+- Branch: ponytail-phase-2-cleanup (now 3 commits ahead of main)
+- Cumulative across Phase 1 + 2 + 3:
+  * 17 new rule/skill/command files (Phase 1)
+  * -350 LOC in fireai/infrastructure/event_bus.py (Phase 2)
+  * -437 LOC from core/retry.py deletion + test rename (Phase 3)
+  * Net: -787 LOC of dead code removed, 0 behavior change
+- Test status: 116/116 PASSED on the three targeted suites; all preserved imports resolve.
+- Remaining deferred (require PE sign-off, see ponytail-debt.md):
+  * qomn_fire_v4_fail_loud.py 8 adapters (regulated: fail_loud_v4 trust boundary)
+  * blockchain_readiness_gate.py → merkle_integrity_gate.py rename (regulated: audit trail)
+- PR description ready at: PR_DESCRIPTION.md (repo root) or https://github.com/ahmdelbaz28-ux/revit/compare/main...ponytail-phase-2-cleanup
