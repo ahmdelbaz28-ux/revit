@@ -1057,3 +1057,70 @@ Stage Summary:
 - الفرع جاهز لفتح Pull Request لمراجعة الفريق
 - توصية أمنية للـ user: التوكنات المُشاركة في الـ chat يجب اعتبارها مُكشوفة
   ويجب إلغاؤها فوراً من GitHub Settings → Tokens، وإنشاء tokens جديدة
+
+---
+Task ID: feature-input-normalization-v1
+Agent: Super Z (Main)
+Task: تنفيذ ميزة تطبيع المدخلات (Input Normalization) — استرجاع النص الإنجليزي المكتوب بخطأ على لوحة مفاتيح عربية
+
+Work Log:
+- قرأت تقرير المعمارية المُقدَّم من Explore agent عن بنية المشروع
+- حددت أن الميزة greenfield على backend (لا يوجد i18n في Python حالياً)
+- صممت الـ architecture على 3 طبقات (Pydantic validators + MCP handler + ASGI observability)
+- أنشأت fireai/core/keyboard_layouts.py — جداول QWERTY↔Arabic-101 + Unicode ranges (pure data، zero deps)
+- أنشأت fireai/core/input_normalizer.py — منطق detection + transform:
+  * NormalizationContext enum (IDENTIFIER / FREE_TEXT / COMMAND) لـ safety policy
+  * NormalizationResult frozen dataclass (original / normalized / transform / confidence / needs_confirmation / detected_language)
+  * detect_language() heuristic: 5 signals (spaces / common Arabic words / Arabic ratio / alef variants / ال prefix)
+  * _transliterate_arabic_to_qwerty() deterministic mapping
+  * _normalize_arabic_digits_only() (Arabic-Indic + Persian digits → ASCII)
+  * DENYLIST_FIELD_NAMES (password, api_key, imo_number, etc.) — لا تُطبَّع أبداً
+  * is_sensitive_field_name() helper للـ callers
+- أضفت config flags إلى fireai/env_config.py:
+  * FIREAI_INPUT_NORMALIZATION_ENABLED (default: False — Safety > Convenience per agent.md)
+  * FIREAI_INPUT_NORMALIZATION_LOG_ONLY (لمستقبل log-only mode)
+- أنشأت tests/test_input_normalizer.py — 98 اختبار في 9 classes:
+  * TestKeyboardLayoutMistype (correctness)
+  * TestRealArabicDetection (verification)
+  * TestSafetyCritical (safety: identifiers, sensitive fields, command confirmation)
+  * TestPropertyBased (hypothesis property tests — skipped if not installed)
+  * TestDigitNormalization (correctness)
+  * TestLanguageDetection (unit)
+  * TestKeyboardLayouts (smoke)
+  * TestNormalizationResult (value-object semantics)
+  * TestRealisticScenarios (end-to-end)
+- النتيجة: 98 passed, 3 skipped (hypothesis not installed)
+- المرحلة 2 — التكامل:
+  * backend/schemas.py: أضفت _normalize_free_text_field() helper + field_validator
+    على free-text fields في ProjectCreate, ProjectUpdate, SemanticPropertiesCreate, SemanticPropertiesUpdate
+    (name, description, material, fire_rating, layer, revit_category)
+  * fireai/mcp_server/sanitized_handler.py: أضفت Gate 0 (input normalization)
+    قبل Gate 1 (tool whitelist) — يسترجع tool_name و parameter values
+  * backend/security_middleware.py: أضفت InputNormalizationObservabilityMiddleware
+    (pure ASGI — يحترم BUG-34 من agent.md، يضيف X-Input-Normalization: enabled header)
+  * backend/services/memory_service.py: أضفت field_validator على
+    MemoryAddRequest.messages و MemorySearchRequest.query (يسترجع Arabic mistype
+    قبل الـ vector search — مهم جداً وإلا كانت الـ query تُرجع 0 results)
+- اختبارات التكامل:
+  * 405 اختبار نجحوا (شملت tests/test_input_normalizer.py, tests/test_bim_input_sanitizer.py,
+    tests/test_rbac.py, tests/test_audit_log.py, marine/tests/)
+  * 1 فشل (test_security::TestPerPathRateLimitPathMatching) — موجود سابقاً، ليس بسبب تعديلاتي
+  * smoke test شامل: 7/7 سيناريوهات end-to-end نجحوا (Pydantic + MCP + disabled mode)
+
+Stage Summary:
+- 5 ملفات جديدة/معدَّلة:
+  * fireai/core/keyboard_layouts.py (جديد، 198 سطر)
+  * fireai/core/input_normalizer.py (جديد، 380 سطر)
+  * tests/test_input_normalizer.py (جديد، 530 سطر)
+  * fireai/env_config.py (معدَّل: +2 config flags)
+  * backend/schemas.py (معدَّل: +helper +6 validators)
+  * fireai/mcp_server/sanitized_handler.py (معدَّل: +Gate 0)
+  * backend/security_middleware.py (معدَّل: +1 middleware class)
+  * backend/services/memory_service.py (معدَّل: +helper +2 validators)
+- 98 اختبار جديد (3 skipped بسبب hypothesis غير مثبت)
+- Zero dependencies جديدة (لا langdetect، لا transliterate — كله pure Python)
+- الميزة OFF افتراضياً (Safety > Convenience per agent.md)
+- تتوافق مع كل أنماط الكود: frozen dataclasses, type hints صارمة, pure ASGI middleware,
+  Pydantic v2 field_validators, lazy imports, defense-in-depth
+- جاهزة للتجربة: FIREAI_INPUT_NORMALIZATION_ENABLED=true
+- Phase 3 (LLM translation لـ real Arabic) مؤجلة — تحتاج قرار تصميمي منفصل

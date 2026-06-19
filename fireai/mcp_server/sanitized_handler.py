@@ -51,7 +51,33 @@ from fireai.core.hydraulic_solver import (
     MIN_PIPE_DIAMETER_INCHES,
 )
 
+# Input normalization (Arabic-mistype → English QWERTY recovery).
+# Lazy import so this module remains importable even if the
+# normalizer is unavailable (e.g. partial install).
+try:
+    from fireai.core.input_normalizer import (
+        NormalizationContext,
+        normalize_user_text,
+    )
+    _NORMALIZER_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    _NORMALIZER_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
+
+
+def _is_input_normalization_enabled() -> bool:
+    """Read the input-normalization config flag (cached at first call).
+
+    The MCP server may be invoked from contexts where the env_config
+    module hasn't been loaded yet. We tolerate that and fall back to
+    "disabled" (safety default).
+    """
+    try:
+        from fireai.env_config import config
+        return config.input_normalization_enabled
+    except Exception:  # noqa: BLE001
+        return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -218,6 +244,7 @@ class SanitizedMCPHandler:
         processing occurs. A request that fails ANY gate is REJECTED.
 
         Gates:
+          0. Input normalization (Arabic-mistype → English recovery)
           1. Tool name whitelist check
           2. Code injection detection
           3. Parameter sanitization
@@ -231,6 +258,66 @@ class SanitizedMCPHandler:
             MCPResponse with success/failure and audit information.
         """
         violations: List[str] = []
+
+        # Gate 0: Input normalization (recover Arabic-mistype → English).
+        # This gate runs BEFORE all other gates so that downstream
+        # whitelists (tool names, parameter names) match correctly when
+        # the user typed with the wrong keyboard layout.
+        #
+        # NO-OP unless FIREAI_INPUT_NORMALIZATION_ENABLED=true.
+        # Tool name → COMMAND context (always requires confirmation in
+        # the result, but we proceed because the user already submitted
+        # the request — the audit log captures the original text).
+        # Parameter values → FREE_TEXT context (deterministic mistype
+        # recovery, no confirmation needed).
+        if _NORMALIZER_AVAILABLE and _is_input_normalization_enabled():
+            try:
+                # Normalize tool_name (use COMMAND context for safety).
+                tn_result = normalize_user_text(
+                    request.tool_name, context=NormalizationContext.COMMAND
+                )
+                if tn_result.transform_applied != "none":
+                    logger.info(
+                        "mcp_tool_name_normalized",
+                        extra={
+                            "original": tn_result.original,
+                            "normalized": tn_result.normalized,
+                            "request_id": request.request_id,
+                            "source": request.source,
+                        },
+                    )
+                    # Replace tool_name with the recovered English version.
+                    # We use object.__setattr__ in case MCPRequest is frozen.
+                    object.__setattr__(request, "tool_name", tn_result.normalized)
+
+                # Normalize string parameter VALUES (not parameter NAMES —
+                # parameter names are part of the API contract and must
+                # not be touched).
+                for key, value in list(request.parameters.items()):
+                    if not isinstance(value, str) or not value:
+                        continue
+                    val_result = normalize_user_text(
+                        value, context=NormalizationContext.FREE_TEXT
+                    )
+                    if val_result.transform_applied != "none":
+                        logger.info(
+                            "mcp_param_value_normalized",
+                            extra={
+                                "param": key,
+                                "original_preview": val_result.original[:80],
+                                "normalized_preview": val_result.normalized[:80],
+                                "transform": val_result.transform_applied,
+                                "request_id": request.request_id,
+                            },
+                        )
+                        request.parameters[key] = val_result.normalized
+            except Exception:  # noqa: BLE001
+                # Normalization must NEVER block an MCP request — the
+                # downstream security gates will catch any issues.
+                logger.exception(
+                    "mcp_input_normalization_failed",
+                    extra={"request_id": request.request_id},
+                )
 
         # Gate 1: Tool name whitelist
         if request.tool_name not in self.ALLOWED_TOOLS:

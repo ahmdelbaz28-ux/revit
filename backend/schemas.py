@@ -6,10 +6,110 @@ Maps to core/models.py dataclasses for REST API request/response validation.
 
 from __future__ import annotations
 
+import logging
 from enum import Enum
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+logger = logging.getLogger(__name__)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# INPUT NORMALIZATION HELPER (Arabic-mistype → English QWERTY recovery)
+# ════════════════════════════════════════════════════════════════════════════
+#
+# When a user types English text with their OS keyboard layout set to
+# Arabic, every keystroke produces an Arabic glyph instead of the
+# intended Latin one. This helper recovers the intended English text.
+#
+# OFF by default (per agent.md "Safety > Convenience"). Enabled when
+# FIREAI_INPUT_NORMALIZATION_ENABLED=true. See fireai/core/input_normalizer.py
+# for the full pipeline and fireai/env_config.py for the config flag.
+#
+# Sensitive fields (password, api_key, imo_number, etc.) are NEVER
+# normalized — see DENYLIST_FIELD_NAMES in fireai/core/input_normalizer.py.
+
+_NORMALIZER_CONFIG_CACHE: Optional[bool] = None
+
+
+def _is_input_normalization_enabled() -> bool:
+    """Read the input-normalization config flag (cached at first call).
+
+    The config object is created at fireai.env_config module import
+    time, so we import lazily here to avoid circular imports during
+    backend startup.
+    """
+    global _NORMALIZER_CONFIG_CACHE
+    if _NORMALIZER_CONFIG_CACHE is not None:
+        return _NORMALIZER_CONFIG_CACHE
+    try:
+        from fireai.env_config import config
+        _NORMALIZER_CONFIG_CACHE = config.input_normalization_enabled
+    except Exception:  # noqa: BLE001
+        # If config fails to load, NEVER normalize (safety default).
+        _NORMALIZER_CONFIG_CACHE = False
+    return _NORMALIZER_CONFIG_CACHE
+
+
+def _normalize_free_text_field(value: Optional[str], field_name: str) -> Optional[str]:
+    """Apply input normalization to a free-text field, gated by config.
+
+    Called by Pydantic field_validators on free-text fields like
+    ``name``, ``description``, ``material``, ``fire_rating``, etc.
+
+    Safety:
+      - Returns ``value`` unchanged if:
+        * value is None or not a string
+        * the config flag is OFF
+        * the field name is in DENYLIST_FIELD_NAMES (defensive — these
+          fields should not have a validator calling this helper at
+          all, but we double-check)
+      - Otherwise, calls ``normalize_user_text(value, context="free_text")``
+        and returns the ``normalized`` text. Logs the transform at INFO
+        level for audit trail.
+
+    Args:
+        value: The raw input value (may be None).
+        field_name: The Pydantic field name (e.g. "name", "description").
+
+    Returns:
+        The normalized text, or the original value if normalization is
+        disabled or not applicable.
+    """
+    if value is None or not isinstance(value, str) or not value:
+        return value
+    if not _is_input_normalization_enabled():
+        return value
+    # Defensive: never touch sensitive fields even if a validator is
+    # accidentally attached to one.
+    try:
+        from fireai.core.input_normalizer import (
+            is_sensitive_field_name, normalize_user_text,
+        )
+    except ImportError:
+        # If the normalizer module is unavailable (e.g. broken install),
+        # fall back to passthrough rather than crash the request.
+        return value
+    if is_sensitive_field_name(field_name):
+        return value
+    try:
+        result = normalize_user_text(value, context="free_text")
+        if result.transform_applied != "none":
+            logger.info(
+                "pydantic_field_normalized",
+                extra={
+                    "field": field_name,
+                    "transform": result.transform_applied,
+                    "confidence": result.confidence,
+                    "detected_language": result.detected_language,
+                },
+            )
+        return result.normalized
+    except Exception:  # noqa: BLE001
+        # Normalization must NEVER break request validation.
+        logger.exception("input_normalization_failed", extra={"field": field_name})
+        return value
 
 
 def _validate_json_size_and_depth(
@@ -156,6 +256,16 @@ class SemanticPropertiesCreate(BaseModel):
     layer: Optional[str] = Field(None, max_length=255)
     revit_category: Optional[str] = Field(None, max_length=255)
 
+    @field_validator("name", "description", "material", "fire_rating", "layer", "revit_category")
+    @classmethod
+    def normalize_free_text_fields(cls, v, info):
+        """Recover Arabic-mistype input to its intended English QWERTY text.
+
+        No-op unless FIREAI_INPUT_NORMALIZATION_ENABLED=true. See the
+        docstring of ``_normalize_free_text_field`` for details.
+        """
+        return _normalize_free_text_field(v, info.field_name)
+
 
 class SemanticPropertiesUpdate(BaseModel):
     element_type: Optional[ElementType] = None
@@ -168,6 +278,12 @@ class SemanticPropertiesUpdate(BaseModel):
     load_bearing: Optional[bool] = None
     layer: Optional[str] = Field(None, max_length=255)
     revit_category: Optional[str] = Field(None, max_length=255)
+
+    @field_validator("name", "description", "material", "fire_rating", "layer", "revit_category")
+    @classmethod
+    def normalize_free_text_fields(cls, v, info):
+        """Recover Arabic-mistype input to its intended English QWERTY text."""
+        return _normalize_free_text_field(v, info.field_name)
 
 
 class SemanticPropertiesResponse(CamelModel):
@@ -253,6 +369,15 @@ class ProjectCreate(BaseModel):
     status: ProjectStatus = ProjectStatus.DRAFT
     metadata: Optional[Dict[str, Any]] = None
 
+    @field_validator("name", "description")
+    @classmethod
+    def normalize_free_text_fields(cls, v, info):
+        """Recover Arabic-mistype input to its intended English QWERTY text.
+
+        No-op unless FIREAI_INPUT_NORMALIZATION_ENABLED=true.
+        """
+        return _normalize_free_text_field(v, info.field_name)
+
     @field_validator("metadata")
     @classmethod
     def validate_metadata_size(cls, v):
@@ -268,6 +393,12 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[ProjectStatus] = None
     metadata: Optional[Dict[str, Any]] = None
+
+    @field_validator("name", "description")
+    @classmethod
+    def normalize_free_text_fields(cls, v, info):
+        """Recover Arabic-mistype input to its intended English QWERTY text."""
+        return _normalize_free_text_field(v, info.field_name)
 
     @field_validator("metadata")
     @classmethod
