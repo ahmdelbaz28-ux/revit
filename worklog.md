@@ -1005,3 +1005,82 @@ Stage Summary:
 - PR link: https://github.com/ahmdelbaz28-ux/revit/pull/new/marine-v2-improvements
 - ملاحظة: GitHub يُبلغ عن 18 vulnerabilities في الـ default branch (9 high, 5 moderate, 4 low) — تحتاج معالجة لاحقة
 - توصية: فتح Pull Request على GitHub لمراجعة الفريق قبل الدمج
+
+---
+Task ID: ponytail-phase-1
+Agent: Super Z (Main)
+Task: Adopt ponytail anti-overengineering ruleset — Phase 1 foundation (zero-risk)
+
+Work Log:
+- Cloned ponytail repo (github.com/DietrichGebert/ponytail) to /home/z/my-project/repos/ponytail
+- Performed deep-read of ponytail: AGENTS.md, 6 skills, 6 commands, hooks/, scripts/, tests/, benchmarks/
+- Performed deep-read of revit's AI-workflow surface: docs/archive/agent.md (12,824 LOC), skills/ (59 skills), blackbox_mcp_settings.json, fireai/mcp_server/, fireai/agents/, audit reports
+- Identified cultural conflict: ponytail = "deletion over addition" vs agent.md Rule 17 = "NO HALF-SOLUTIONS — root-cause fixes mandatory"
+- Resolution: split by path. Regulated paths (NFPA/NEC/SOLAS/IEC constants, deterministic math, security boundaries, hardware calibration) keep Rule 17; everything else (skills, tooling, mocks, docs, non-regulated utilities) follows ponytail ladder.
+- Created AGENTS.md at repo root (5,037 bytes, ~110 LOC):
+  * Lists 14 regulated-path globs explicitly (fireai/core/nfpa72_*, voltage_drop.py, battery_aging_derating.py, qomn_kernel.py, marine/, qomn_conduit/, facp_system/, fireai/mcp_server/, backend/api_keys.py + security_middleware.py + rbac.py + auth.py, routers/dwg.py + sync.py + analyze.py, templates/revit_addin/)
+  * Embeds full ponytail ladder (6 rungs) + 7 rules + 8 safety carve-outs (input validation at trust boundaries, prevents data loss, security, accessibility, hardware calibration, ONE runnable check)
+  * Commands table (6 ponytail commands)
+  * Resolution order: regulated → Rule 17; else → ladder; conflict → Rule 17 wins
+  * Mode default: full. PONYTAIL_DEFAULT_MODE env var or ~/.config/ponytail/config.json
+  * "ultra refuses to fire on regulated paths" — non-negotiable
+- Created 6 AI-agent adapter files (all synced from AGENTS.md):
+  * .cursor/rules/ponytail.mdc (with Cursor frontmatter: alwaysApply: true)
+  * .windsurf/rules/ponytail.md
+  * .clinerules/ponytail.md
+  * .agents/rules/ponytail.md
+  * .github/copilot-instructions.md
+  * .kiro/steering/ponytail.md
+- Copied 6 ponytail skills into skills/: ponytail, ponytail-review, ponytail-audit, ponytail-debt, ponytail-gain, ponytail-help
+- Patched skills/ponytail/SKILL.md, skills/ponytail-review/SKILL.md, skills/ponytail-audit/SKILL.md with FireAI scope rule: skip regulated paths, never tag their code delete/shrink/yagni automatically, log every ultra-refusal to worklog
+- Copied 6 ponytail commands into commands/ (ponytail.toml, ponytail-review.toml, ponytail-audit.toml, ponytail-debt.toml, ponytail-gain.toml, ponytail-help.toml)
+- Created scripts/sync-agent-rules.sh: regenerates all 6 adapters from AGENTS.md, strips ponytail signature line, preserves Cursor frontmatter
+- Created scripts/check-rule-copies.js: CI-checkable sync verifier
+  * Asserts byte-equality of 6 adapter bodies with AGENTS.md
+  * Asserts 8 invariant phrases present in BOTH AGENTS.md and skills/ponytail/SKILL.md: "naive heuristic", "ONE runnable check", "flimsier algorithm", "input validation at trust boundaries", "prevents data loss", "security", "accessibility", "Lazy code without its check is unfinished"
+  * Exit 1 on drift, 0 on match
+- Ran check-rule-copies.js: PASS. All 6 adapters match AGENTS.md. All 8 invariants present.
+
+Stage Summary:
+- 17 new files created (1 AGENTS.md + 6 adapters + 6 skills + 6 commands + 2 scripts under scripts/), zero existing files modified
+- Zero risk to safety-critical paths — regulated paths explicitly excluded from ponytail scope
+- Multi-agent workflow enabled: Claude Code/Codex/Cursor/Windsurf/Cline/Copilot/Kiro now auto-read identical rules from their expected file locations
+- Drift-prevention: sync-agent-rules.sh + check-rule-copies.js (wire into CI in Phase 3)
+- Phase 1 complete. Phase 2 (run /ponytail-audit + delete dead code in core/retry.py, RedisEventBus, 8 adapters, blockchain_readiness_gate rename) pending user go-ahead.
+
+---
+Task ID: ponytail-phase-2
+Agent: Super Z (Main)
+Task: Execute Phase 2 — safe dead-code deletion guided by ponytail-audit findings
+
+Work Log:
+- Created safe branch ponytail-phase-2-cleanup (off main).
+- Performed grep-verified caller analysis on 4 candidate files before any deletion:
+  1. core/retry.py (363 LOC): only callers are tests/test_skill_integration.py (mixed with skill_validator tests) and skills/README.md (doc only). NOT deleted — needs surgical test-file split first.
+  2. fireai/infrastructure/event_bus.py RedisEventBus+KafkaEventBus (~356 LOC): zero callers outside the file itself. stream_processor.py imports Event (preserved). DELETED.
+  3. fireai/core/qomn_fire_v4_fail_loud.py 8 adapter classes (~500 LOC): callers exist INSIDE the file (execute_hospital_scenario, execute_high_rise_scenario, execute_bank_scenario, execute_school_scenario, execute_home_scenario + 20+ tests in same file). NOT deleted — this is a regulated path (fail_loud_v4 decorator + SafetyResult/SystemStatus are trust-boundary code). Per AGENTS.md, regulated paths require PE sign-off.
+  4. fireai/core/blockchain_readiness_gate.py rename: caller in as_built_reconciliator.py + test suite. NOT renamed — this is a regulated path (audit-trail trust boundary). Defer to Phase 3 with PE sign-off.
+- Created /home/z/my-project/scripts/phase2_delete_eventbus_dead_code.py with:
+  * Pre-mutation assertions on boundary lines (RedisEventBus at L430, KafkaEventBus at L601, EventBusMiddleware divider at L786)
+  * Mechanical splice: lines[:427] + replacement marker + lines[784:]
+  * ponytail: comment in the replacement explaining the deletion, ceiling (zero callers), and upgrade path (re-introduce via real integration tests)
+- Executed: deleted lines 428-783 (356 LOC). File went 913 → 563 LOC.
+- Verified post-deletion:
+  * python -c "from fireai.infrastructure.event_bus import Event, EventBus, InMemoryEventBus, EventBusMiddleware, DeadLetterQueue, EventSchemaRegistry, RetryPolicy, DeadLetterRecord, register_default_schemas" → all imports OK
+  * EventBus.__subclasses__() returns only ['InMemoryEventBus'] (was ['InMemoryEventBus', 'RedisEventBus', 'KafkaEventBus'] before)
+  * python -c "from fireai.infrastructure.stream_processor import *" → OK (Event import preserved)
+  * pytest tests/test_event_bus.py → 52/52 PASSED
+  * pytest tests/test_event_bus.py tests/test_workflow_service.py tests/test_qomn_integration.py → 101 PASSED, 1 SKIPPED (pre-existing skip, unrelated)
+- Created ponytail-debt.md ledger at repo root with:
+  * Active debt entry for the event_bus deletion (with ceiling + upgrade path)
+  * 3 deferred-to-Phase-3 entries (retry.py, fail_loud adapters, blockchain rename) — each tagged with the reason for deferral and the required upgrade trigger
+  * Audit history entry documenting Phase 2 results
+
+Stage Summary:
+- Branch: ponytail-phase-2-cleanup
+- Files modified: 1 (fireai/infrastructure/event_bus.py, -356 LOC, +6 LOC marker = net -350 LOC)
+- Files created: 2 (ponytail-debt.md, scripts/phase2_delete_eventbus_dead_code.py)
+- Net LOC change in repo: -350 lines
+- Behavior change: zero (all 101 affected tests pass, all preserved imports resolve, EventBus subclass list is now correct)
+- Regulated-path safety: confirmed — no regulated path was modified. The 3 deferred cleanups are documented in ponytail-debt.md with explicit upgrade triggers and PE sign-off requirements.
+- Phase 2 complete. Phase 3 candidates (require PE sign-off or further test refactoring): core/retry.py + test split, qomn_fire_v4_fail_loud.py scenarios+adapters, blockchain_readiness_gate.py mechanical rename.
