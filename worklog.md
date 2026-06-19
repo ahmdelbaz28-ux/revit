@@ -1005,3 +1005,28 @@ Stage Summary:
 - PR link: https://github.com/ahmdelbaz28-ux/revit/pull/new/marine-v2-improvements
 - ملاحظة: GitHub يُبلغ عن 18 vulnerabilities في الـ default branch (9 high, 5 moderate, 4 low) — تحتاج معالجة لاحقة
 - توصية: فتح Pull Request على GitHub لمراجعة الفريق قبل الدمج
+
+---
+Task ID: fix-pip-audit-workflow
+Agent: Super Z (Main)
+Task: Fix Gate 5 (pip-audit) CI workflow — was crashing on numpy 1.24.3 build under Python 3.12
+
+Work Log:
+- Analyzed Gate 5 failure from PR #63 CI run (job 82283172873):
+  * Error: `AttributeError: module 'pkgutil' has no attribute 'ImpImporter'`
+  * Root cause: `pip-audit -r requirements.txt` re-resolves and re-builds every dep in a fresh venv. `requirements.txt` pins `numpy==1.24.3` which uses `pkgutil.ImpImporter`, removed in Python 3.12.
+  * Result: pip-audit crashed before reporting a single vulnerability.
+- Verified `requirements.txt` is a stale partial list (only 11 packages) while `pyproject.toml` contains the real runtime deps. The CI workflow installs from `pyproject.toml` via `pip install -e .` then tries to re-audit from the stale `requirements.txt` — semantic mismatch.
+- Fix: changed `pip-audit -r requirements.txt --desc --progress-spinner off || true` to `pip-audit --desc --progress-spinner off`. No `-r` means pip-audit scans the currently-installed environment (built from pyproject.toml). This is the correct semantic — audit what actually ships.
+- Also removed `|| true` from the pip-audit line (was hiding every vulnerability finding). Did NOT remove `|| true` from the `npm audit` line — that is the scope of PR #63, not this PR.
+- Added `ponytail:` comment block explaining both bugs and the new approach.
+- Verified YAML parses; verified only `.github/workflows/ci.yml` changed (zero source code touched).
+- Created branch fix-pip-audit-workflow off latest main.
+- Will create PR after push.
+
+Stage Summary:
+- Branch: fix-pip-audit-workflow (off main c1d7fb42)
+- Files modified: 1 (.github/workflows/ci.yml, +17/-1 lines)
+- Source code touched: ZERO
+- Expected post-merge: Gate 5 will either PASS (if no HIGH/CRITICAL vulnerabilities in the installed env) or FAIL with a real vulnerability report (instead of crashing on numpy build). Either outcome is correct.
+- Note: this PR only fixes the pip-audit step. The other `|| true` instances in ci.yml (test suite, property tests, npm audit, success job) are addressed in PR #63 and remain out of scope here.
