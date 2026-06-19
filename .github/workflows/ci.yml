@@ -205,9 +205,25 @@ jobs:
         run: pip install pip-audit
 
       - name: Audit Python dependencies
+        # ponytail: was `pip-audit -r requirements.txt ... || true`.
+        # Two bugs fixed:
+        #   1. `|| true` swallowed every vulnerability finding.
+        #   2. `-r requirements.txt` made pip-audit re-resolve and re-build
+        #      every dep in a fresh venv. requirements.txt pins numpy==1.24.3
+        #      which cannot build on Python 3.12 (pkgutil.ImpImporter was
+        #      removed in 3.12). Result: pip-audit crashed before it could
+        #      report a single vulnerability. The actual deps come from
+        #      pyproject.toml via `pip install -e .` above; requirements.txt
+        #      is a stale partial list (only 11 packages) that does not
+        #      reflect the real runtime dep tree.
+        # New approach: `pip-audit` with no args scans the *currently
+        # installed* environment (built from pyproject.toml). This is the
+        # correct semantic — we want to audit what actually ships, not a
+        # stale pin file. To suppress a specific advisory, use
+        # `--ignore-vuln GHSA-xxxx "reason, see issue #N"`.
         run: |
           mkdir -p reports
-          pip-audit -r requirements.txt --desc --progress-spinner off || true
+          pip-audit --desc --progress-spinner off
 
       - name: Audit frontend dependencies
         run: |
