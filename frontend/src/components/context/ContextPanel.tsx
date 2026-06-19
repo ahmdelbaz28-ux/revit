@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, CircleHelp, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, HelpCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSmartHelp } from '@/hooks/useSmartHelp';
@@ -172,7 +172,7 @@ export function ContextPanel({
           <div className="space-y-4 p-4">
             {!selected ? (
               <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/50 p-5 text-center text-slate-400">
-                <CircleHelp className="mx-auto mb-3 h-8 w-8 text-slate-600" />
+                <HelpCircle className="mx-auto mb-3 h-8 w-8 text-slate-600" />
                 <p className="text-sm">Select a device or project element to inspect its engineering context.</p>
               </div>
             ) : (
@@ -235,7 +235,7 @@ export function ContextPanel({
                     className="w-full bg-red-600 text-white hover:bg-red-700"
                     onClick={() => openHelp(helpContextId)}
                   >
-                    <CircleHelp className="h-4 w-4" />
+                    <HelpCircle className="h-4 w-4" />
                     Open related help
                   </Button>
                 </section>

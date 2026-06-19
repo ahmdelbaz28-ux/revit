@@ -164,6 +164,7 @@ jobs:
         working-directory: frontend
 
       - name: Lint check
+        working-directory: frontend
         run: |
           OUTPUT=$(npm run lint 2>&1)
           ERROR_COUNT=$(echo "$OUTPUT" | grep -oP '\d+(?= error)' | head -1 || echo "0")
