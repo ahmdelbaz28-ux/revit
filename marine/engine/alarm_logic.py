@@ -111,12 +111,13 @@ def generate_logic_tree(
         node_id = f"LOGIC-{zone.zone_id}-{i:03d}"
 
         # Determine alarm level by detector type + zone category.
+        outputs: tuple[str, ...]
         if cat == SpaceCategory.MACHINERY_SPACE_A:
             if dp.detector_type.value.startswith("flame"):
-                level = AlarmLevel.ACTION  # Flame → immediate release
-                outputs = [release_output, "hvac_shutdown", "fuel_pump_off"]
+                level = AlarmLevel.ACTION
+                outputs = (release_output, "hvac_shutdown", "fuel_pump_off")
                 if not release_output:
-                    outputs = ["hvac_shutdown", "fuel_pump_off"]
+                    outputs = ("hvac_shutdown", "fuel_pump_off")
                 delay = 0.0
             elif dp.detector_type.value in ("heat_fixed", "heat_ror", "linear_heat"):
                 # BUGFIX v2: linear-heat detectors were falling through to
@@ -131,12 +132,11 @@ def generate_logic_tree(
                 delay = 0.0
         elif cat == SpaceCategory.ACCOMMODATION:
             level = AlarmLevel.ALARM
-            # If the ship has a sprinkler system selected for this zone,
-            # use that output; otherwise omit.
-            outputs = ["public_address", "door_release"]
-            if extinguishing_system == ExtinguishingSystem.SPRINKLER:
-                outputs.append("sprinkler_zone_on")
-            outputs = tuple(outputs)
+            outputs = (
+                ("public_address", "door_release", "sprinkler_zone_on")
+                if extinguishing_system == ExtinguishingSystem.SPRINKLER
+                else ("public_address", "door_release")
+            )
             delay = 0.0
         elif cat == SpaceCategory.ESCAPE_ROUTE:
             level = AlarmLevel.ALARM
@@ -156,7 +156,7 @@ def generate_logic_tree(
             trigger_detector=dp.detector_id,
             zone_id=zone.zone_id,
             alarm_level=level,
-            action_outputs=tuple(outputs) if isinstance(outputs, list) else outputs,
+            action_outputs=outputs,
             delay_s=delay,
             interlocks=("verify_two_detectors",) if level == AlarmLevel.ACTION else (),
             standard_reference="SOLAS II-2/5.6 + IEC 60092-502",

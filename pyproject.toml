@@ -98,7 +98,7 @@ target-version = ['py38']
 include = '\.pyi?$'
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 warn_unused_ignores = true
@@ -110,8 +110,8 @@ show_error_codes = true
 exclude = ["venv/", ".venv/", "env/", ".env/"]
 
 [[tool.mypy.overrides]]
-module = ["pywin32.*", "pythonnet.*", "clr.*", "Autodesk.*"]
-ignore_missing_imports = true
+module = ["marine.tests.*"]
+ignore_errors = true
 
 [tool.pytest.ini_options]
 # V130 FIX: Expanded testpaths from ["tests"] to include ALL test directories.

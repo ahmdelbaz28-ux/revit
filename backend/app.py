@@ -32,6 +32,7 @@ V129 INFRASTRUCTURE SECURITY HARDENING (2026-06-18):
 """
 
 import os
+import sys
 import time
 import logging
 import threading
@@ -223,10 +224,14 @@ def _ensure_cache_reaper_started() -> None:
                 try:
                     time.sleep(_CACHE_REAPER_INTERVAL)
                     with _cache_lock:
-                        _evict_expired_locked()
-                except Exception:
-                    # Don't let the reaper crash the app
-                    pass
+                        removed = _evict_expired_locked()
+                    if removed > 0:
+                        logger.debug("Cache reaper removed %d expired entries", removed)
+                except Exception as exc:
+                    # F5 FIX: Log reaper errors instead of silently swallowing
+                    # them. In a safety-critical system, silent failures are
+                    # more dangerous than noisy ones.
+                    logger.error("Cache reaper error: %s", exc)
 
         t = threading.Thread(target=_reaper_loop, daemon=True, name="cache-reaper")
         t.start()
@@ -263,8 +268,17 @@ async def cache_set(key: str, value: str, expire: int = 300):
     to prevent a single entry from consuming excessive memory.
     """
     # STRICT FIX C: Check value size BEFORE acquiring the lock
+    # F4 FIX: Check raw object size before string coercion to avoid
+    # allocating a potentially huge string just to reject it.
     if not isinstance(value, str):
-        # Coerce to str for size check (cache stores str per signature)
+        raw_size = sys.getsizeof(value)
+        if raw_size > _CACHE_MAX_VALUE_SIZE:
+            logger.warning(
+                "Cache value too large before coercion (%d bytes raw, max %d) -- rejecting",
+                raw_size, _CACHE_MAX_VALUE_SIZE,
+            )
+            return
+        # Coerce to str for cache storage (cache stores str per signature)
         value = str(value)
     if len(value) > _CACHE_MAX_VALUE_SIZE:
         logger.warning(

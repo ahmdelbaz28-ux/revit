@@ -5,7 +5,7 @@ alarm, and extinguishing systems after installation on board.
 """
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from marine.core.types import DetectorType, ExtinguishingSystem
 
@@ -57,8 +57,8 @@ COMMISSIONING_ITEMS: List[Dict[str, str]] = [
 
 
 def generate_commissioning_checklist(
-    detector_types: List[DetectorType] = None,
-    extinguishing_systems: List[ExtinguishingSystem] = None,
+    detector_types: Optional[List[DetectorType]] = None,
+    extinguishing_systems: Optional[List[ExtinguishingSystem]] = None,
 ) -> List[Dict[str, str]]:
     """Return a commissioning checklist, optionally tailored to the systems."""
     checklist = list(COMMISSIONING_ITEMS)

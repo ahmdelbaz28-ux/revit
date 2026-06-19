@@ -242,6 +242,14 @@ try:
     from fireai.core.spatial_engine.density_optimizer import DensityOptimizer  # type: ignore
 except Exception:  # pragma: no cover
     DensityOptimizer = None  # type: ignore
+
+# Fail-safe guard: DensityOptimizer must not be None
+if DensityOptimizer is None:
+    raise ImportError(
+        "DensityOptimizer failed to import and resolved to None. "
+        "This module is REQUIRED for NFPA 72 detector placement optimization. "
+        "Ensure fireai.core.spatial_engine.density_optimizer is installed correctly."
+    )
 from fireai.core.spatial_engine.proof_certificate import (
     ProofCertificate,
     ProofCertificateGenerator,

@@ -12,6 +12,7 @@ import json
 import logging
 import math
 import os
+import io
 import pickle
 import random
 import sqlite3
@@ -102,6 +103,56 @@ class EvaluationReport:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str, indent=2)
+
+
+# ── Restricted unpickler — F3 FIX: prevents RCE via pickle.loads ──────────
+# Pickle is arbitrary code execution by design. An attacker who gains
+# write access to the SQLite model registry could inject a malicious
+# pickle payload. This restricted unpickler ONLY allows deserialization
+# of the specific ML model classes defined in this module plus built-in
+# Python types.  Any other class is rejected with a clear error.
+
+# F3 FIX: Prefix-based allowlist — more robust than hardcoded class paths
+# which break across sklearn/numpy version upgrades. These prefixes are
+# safe: they only cover ML model serialization libraries, not os/subprocess/etc.
+_SAFE_MODULE_PREFIXES = (
+    "fireai.analytics.ml_pipeline.",  # this module's fallback models
+    "sklearn.",                       # scikit-learn models
+    "numpy.",                         # numpy arrays used by sklearn
+)
+
+
+logger = logging.getLogger(__name__)
+
+
+class _SafeUnpickler(pickle.Unpickler):
+    """Restricted unpickler that only allows whitelisted class modules.
+
+    Per Gate 5 (Adversarial Audit) F3: pickle.loads() on data from
+    the SQLite model registry is an RCE vector. This class replaces
+    bare pickle.loads() with a prefix-based restricted version.
+    """
+
+    def find_class(self, module: str, name: str) -> Any:
+        # Allow whitelisted module prefixes (sklearn, numpy, this module)
+        if any(module.startswith(prefix) for prefix in _SAFE_MODULE_PREFIXES):
+            return super().find_class(module, name)
+        # Allow builtins (int, float, str, list, dict, etc.)
+        if module == "builtins" and name in (
+            "int", "float", "str", "list", "dict", "tuple", "set",
+            "frozenset", "bytes", "bool", "NoneType", "complex",
+        ):
+            return super().find_class(module, name)
+        full_name = f"{module}.{name}"
+        raise pickle.UnpicklingError(
+            f"Restricted unpickler rejected class: {full_name}. "
+            f"Only whitelisted ML model libraries are allowed."
+        )
+
+
+def _safe_pickle_loads(data: bytes) -> Any:
+    """Deserialize pickle data through the restricted unpickler."""
+    return _SafeUnpickler(io.BytesIO(data)).load()
 
 
 # ── Pure-Python ML implementations (fallback when sklearn unavailable) ──────
@@ -519,7 +570,7 @@ class MLPipeline:
     def evaluate(self, model: ModelArtifact, test_features: FeatureSet) -> EvaluationReport:
         if not model.model_data:
             return EvaluationReport()
-        model_obj = pickle.loads(model.model_data)
+        model_obj = _safe_pickle_loads(model.model_data)
         X_test = test_features.features
         y_test = test_features.target if test_features.target else []
         if not X_test or not y_test:
