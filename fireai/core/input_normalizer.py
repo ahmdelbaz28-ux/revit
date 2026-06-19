@@ -95,8 +95,13 @@ class NormalizationResult:
         normalized: The text to use going forward. Equals ``original``
             when no transform was applied.
         transform_applied: Which transform (if any) was performed.
+            - "none": passthrough
+            - "keyboard_layout": deterministic Arabic-mistype → QWERTY recovery
+            - "digit_normalize": Arabic-Indic / Persian digits → ASCII
+            - "llm_translation": genuine Arabic → English via LLM (Phase 3)
         confidence: Heuristic confidence in the transform, in [0.0, 1.0].
-            1.0 = deterministic mistype recovery. 0.0 = no transform.
+            1.0 = deterministic mistype recovery. 0.7 = LLM translation.
+            0.0 = no transform.
         needs_confirmation: True if the caller should ask the user to
             confirm the normalized text before acting on it (always
             True for COMMAND context and for any LLM-based transform).
@@ -107,7 +112,9 @@ class NormalizationResult:
 
     original: str
     normalized: str
-    transform_applied: Literal["none", "keyboard_layout", "digit_normalize"]
+    transform_applied: Literal[
+        "none", "keyboard_layout", "digit_normalize", "llm_translation"
+    ]
     confidence: float
     needs_confirmation: bool
     detected_language: Literal[
@@ -458,22 +465,71 @@ def normalize_user_text(
     # Stage 4: genuine Arabic detected (would need LLM translation).
     if detected == "arabic_real":
         if enable_llm_translation:
-            # Phase 3 placeholder — log the request for now.
-            logger.info(
-                "llm_translation_requested_but_unimplemented",
-                extra={"text_preview": text[:80], "context": context.value},
-            )
+            # Phase 3: invoke the LLM translator (reuses mem0_setup.py
+            # 6-strategy failover chain). Lazy import so the translator
+            # module is not loaded unless actually needed.
+            try:
+                from fireai.infrastructure.llm_translator import (
+                    translate_arabic_to_english,
+                )
+                tr = translate_arabic_to_english(digit_normalized)
+                if tr.success:
+                    logger.info(
+                        "input_translated_via_llm",
+                        extra={
+                            "provider": tr.provider,
+                            "model": tr.model,
+                            "latency_ms": tr.latency_ms,
+                            "cached": tr.cached,
+                            "context": context.value,
+                        },
+                    )
+                    transform: Literal[
+                        "none", "keyboard_layout", "digit_normalize", "llm_translation"
+                    ] = "llm_translation"
+                    # LLM translations ALWAYS require user confirmation —
+                    # LLMs can hallucinate, and we never silently execute
+                    # a translated command.
+                    return NormalizationResult(
+                        original=text,
+                        normalized=tr.translated,
+                        transform_applied=transform,
+                        confidence=0.7,  # LLM translations are not 100% certain
+                        needs_confirmation=True,  # ALWAYS
+                        detected_language=detected,
+                    )
+                else:
+                    logger.info(
+                        "llm_translation_failed_preserving_original",
+                        extra={
+                            "error": tr.error,
+                            "provider": tr.provider,
+                            "context": context.value,
+                        },
+                    )
+            except ImportError:
+                logger.warning(
+                    "llm_translator_unavailable_preserving_original",
+                    extra={"context": context.value},
+                )
+            except Exception:  # noqa: BLE001
+                logger.exception(
+                    "llm_translation_unexpected_error_preserving_original",
+                    extra={"context": context.value},
+                )
         else:
             logger.info(
                 "real_arabic_input_preserved",
                 extra={"text_preview": text[:80], "context": context.value},
             )
         # Pass through unchanged.
-        transform = "digit_normalize" if digit_changed else "none"
+        transform2: Literal[
+            "none", "keyboard_layout", "digit_normalize", "llm_translation"
+        ] = "digit_normalize" if digit_changed else "none"
         return NormalizationResult(
             original=text,
             normalized=digit_normalized,
-            transform_applied=transform,
+            transform_applied=transform2,
             confidence=0.0,
             needs_confirmation=context is NormalizationContext.COMMAND,
             detected_language=detected,

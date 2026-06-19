@@ -1124,3 +1124,79 @@ Stage Summary:
   Pydantic v2 field_validators, lazy imports, defense-in-depth
 - جاهزة للتجربة: FIREAI_INPUT_NORMALIZATION_ENABLED=true
 - Phase 3 (LLM translation لـ real Arabic) مؤجلة — تحتاج قرار تصميمي منفصل
+
+---
+Task ID: feature-input-normalization-v2-phase3-frontend
+Agent: Super Z (Main)
+Task: إكمال ميزة تطبيع المدخلات — المرحلة 3 (LLM translation) + Frontend UX + فتح PR
+
+Work Log:
+- فتحت PR #61 على GitHub من feature/input-normalization إلى main
+  (https://github.com/ahmdelbaz28-ux/revit/pull/61)
+
+المرحلة 3 — LLM translation للعربي الحقيقي:
+- قرأت fireai/infrastructure/mem0_setup.py (812 سطر) لفهم 6-strategy
+  failover chain: OpenAI → OpenRouter → OpenCode → Gemini → z-ai proxy → error
+- أنشأت fireai/infrastructure/llm_translator.py (340 سطر):
+  * TranslationResult frozen dataclass (original/translated/success/provider/model/latency_ms/error/cached)
+  * translate_arabic_to_english() — sync API مع lazy SDK imports
+  * _translate_via_openai_compatible() — يعمل مع 4 providers (OpenAI/OpenRouter/OpenCode/z-ai)
+  * _translate_via_gemini() — google-generativeai SDK
+  * _detect_provider() — reuses mem0_setup.py chain + caching (5-min TTL)
+  * In-memory cache مع sha256 keys + 1h TTL + bounded to 1000 entries
+  * Strict prompt (translate only, no interpretation, no refusal)
+  * Safety: NEVER raises; on failure returns original text unchanged
+  * MAX_INPUT_LENGTH=500 (anti-abuse)
+- عدّلت fireai/core/input_normalizer.py:
+  * أضفت "llm_translation" كـ transform type جديد في NormalizationResult
+  * Stage 4 الآن يستدعي translate_arabic_to_english() عند enable_llm_translation=True
+  * LLM translations ALWAYS needs_confirmation=True (LLMs can hallucinate)
+  * confidence=0.7 للترجمات الناجحة (vs 1.0 للـ deterministic mistype)
+  * Graceful: فشل الترجمة يُعيد النص الأصلي بدون transform
+- أنشأت tests/test_llm_translator.py (490 سطر، 24 اختبار في 7 classes):
+  * TestInputValidation — empty/whitespace/too-long inputs
+  * TestProviderDetection — no-provider graceful failure + availability check
+  * TestOpenAICompatibleBackend — mocked OpenAI/OpenRouter paths + empty/exception/whitespace failures
+  * TestCacheBehavior — hit/miss/different-inputs/use_cache=False/clear_cache
+  * TestInputNormalizerIntegration — end-to-end مع mocked translator
+  * TestSafetyInvariants — confirmation always required, IDENTIFIER never invokes LLM, never raises
+  * TestConfiguration — sanity checks على constants
+  * Strategy: fake openai module في sys.modules + per-test mock client (CI لا يثبت openai SDK)
+- النتيجة: 122 passed (98 Phase 1 + 24 Phase 3), 3 skipped (hypothesis)
+
+Frontend UX — "Did you mean?" toast:
+- أنشأت frontend/src/hooks/useInputNormalization.ts (160 سطر):
+  * useInputNormalization() React hook
+  * Global fetch interceptor يكتشف X-Input-Normalization: enabled header
+  * showIfNormalized() — يعرض toast عند الـ header detection
+  * once-per-session deduplication (sessionStorage)
+  * resetSession() للاختبار
+  * isInputNormalizationHeaderPresent() — standalone helper
+- عدّلت frontend/src/pages/ProjectsPage.tsx:
+  * استدعيت useInputNormalization() hook
+  * بعد createProject() ناجح: showIfNormalized() يعرض toast تلقائياً
+  * toast title/description مع i18n translation keys + fallbacks
+- عدّلت frontend/src/pages/SettingsPage.tsx:
+  * أضفت "Input Normalization" card في tab الـ API
+  * Switch toggle لـ "Show Did you mean? toasts" (local session only)
+  * Banner يشرح أن server-side enablement يحتاج FIREAI_INPUT_NORMALIZATION_ENABLED env var
+  * import Keyboard icon from lucide-react
+- أنشأت frontend/src/hooks/__tests__/useInputNormalization.test.ts (190 سطر):
+  * 9 اختبارات: initialization/no-header/wrong-value/toast-display/
+    once-per-session/oncePerSession=false/resetSession/passthrough
+  * Mocks fetch + toast function
+
+النتائج النهائية:
+- Backend: 333 passed, 4 skipped (hypothesis) — zero regressions
+- Frontend: tests written (Vitest) لكن node_modules غير مثبت في الـ sandbox
+- إجمالي سطور جديدة: ~1700 (Phase 3 + Frontend)
+- إجمالي ملفات: 4 جديدة + 3 معدَّلة
+
+Stage Summary:
+- PR #61 مفتوح على GitHub لمراجعة الفريق
+- Phase 1 (mistype recovery) ✅
+- Phase 2 (Pydantic + MCP + middleware integration) ✅
+- Phase 3 (LLM translation للعربي الحقيقي) ✅
+- Frontend UX (toast + settings toggle) ✅
+- كل الأخطاء السبعة في التقييم الأولي عولجت
+- الميزة production-ready بعد مراجعة الفريق

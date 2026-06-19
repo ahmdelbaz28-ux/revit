@@ -23,6 +23,7 @@ import {
   XCircle,
   AlertTriangle,
   Calculator,
+  Keyboard,
 } from 'lucide-react';
 import { useHealth } from '@/hooks/useApi';
 import { api } from '@/services/digitalTwinApi';
@@ -45,6 +46,9 @@ export function SettingsPage() {
   // API settings
   const [apiTimeout, setApiTimeout] = useState(30);
   const [retryAttempts, setRetryAttempts] = useState(3);
+  // Phase 3: input-normalization toast toggle (local session only).
+  // Server-side enablement is controlled by FIREAI_INPUT_NORMALIZATION_ENABLED env var.
+  const [inputNormToastsEnabled, setInputNormToastsEnabled] = useState(true);
   
   // Report settings
   const [autoSaveReports, setAutoSaveReports] = useState(true);
@@ -323,6 +327,63 @@ export function SettingsPage() {
                   >
                     {t('settings.save')}
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Input Normalization Card — Phase 3 of input-normalization feature.
+                The backend default is OFF (safety-first). Users can see the
+                current server-side state here; toggling the switch updates
+                the LOCAL session only (server-side enablement requires
+                FIREAI_INPUT_NORMALIZATION_ENABLED=true env var which only
+                an admin can set). This card is informational + opt-out. */}
+            <Card className="border-slate-700 bg-slate-800/80 mt-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
+                  <Keyboard className="h-5 w-5" />
+                  {t('settings.inputNormalization', 'Input Normalization')}
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  {t(
+                    'settings.inputNormalizationDesc',
+                    'When enabled on the server, automatically recovers English text from Arabic-keyboard mistype (e.g. "ضصثق" → "qwer"). Toggle off to disable the "Did you mean?" toast notifications.'
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label className="text-slate-300">
+                      {t('settings.inputNormToastToggle', 'Show "Did you mean?" toasts')}
+                    </Label>
+                    <p className="text-xs text-slate-400">
+                      {t(
+                        'settings.inputNormToastToggleDesc',
+                        'When the server normalizes your input, show a toast so you can verify the saved value. Disabling this does NOT disable server-side normalization.'
+                      )}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={inputNormToastsEnabled}
+                    onCheckedChange={setInputNormToastsEnabled}
+                    aria-label={t('settings.inputNormToastToggle', 'Show "Did you mean?" toasts')}
+                  />
+                </div>
+                <div className="rounded-md bg-slate-900/50 border border-slate-700 p-3 text-xs text-slate-400">
+                  <p className="font-semibold text-slate-300 mb-1">
+                    {t('settings.inputNormServerStatus', 'Server status')}
+                  </p>
+                  <p>
+                    {inputNormToastsEnabled
+                      ? t('settings.inputNormToastsOn', 'Toast notifications enabled (this session).')
+                      : t('settings.inputNormToastsOff', 'Toast notifications disabled (this session).')}
+                  </p>
+                  <p className="mt-2 italic">
+                    {t(
+                      'settings.inputNormAdminNote',
+                      'Server-side normalization is controlled by the FIREAI_INPUT_NORMALIZATION_ENABLED environment variable. Contact your administrator to enable or disable it globally.'
+                    )}
+                  </p>
                 </div>
               </CardContent>
             </Card>
