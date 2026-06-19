@@ -1,14 +1,21 @@
 # Requirements for CAD/BIM integration system
+# 2026-06-19: updated to Python 3.12-compatible versions.
+# The old pins (numpy==1.24.3 etc.) cannot build on Python 3.12
+# (pkgutil.ImpImporter was removed in 3.12).
+# The canonical dependency list is in pyproject.toml.
+# This file is kept for Docker builds and tools that read requirements.txt.
 
 # Core dependencies
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-python-multipart==0.0.6
-psutil==5.9.6
-numpy==1.24.3
-pandas==2.1.3
-matplotlib==3.8.2
-scipy==1.11.4
-lxml==4.9.3
-beautifulsoup4==4.12.2
+fastapi>=0.100.0,<1.0.0
+uvicorn[standard]>=0.20.0,<1.0.0
+pydantic>=2.0.0,<3.0.0
+python-multipart>=0.0.6,<1.0.0
+psutil>=5.9.0,<7.0.0
+numpy>=1.26.0,<3.0.0
+pandas>=2.1.0,<3.0.0
+matplotlib>=3.8.0,<4.0.0
+scipy>=1.11.0,<2.0.0
+lxml>=6.1.0,<7.0.0
+beautifulsoup4>=4.12.0,<5.0.0
+shapely>=2.0.0,<3.0.0
+setuptools>=68.0.0

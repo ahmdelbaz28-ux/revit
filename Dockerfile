@@ -20,7 +20,8 @@ FROM python:3.12-slim AS python-builder
 WORKDIR /build
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
 FROM python:3.12-slim
