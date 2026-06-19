@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Quick validation script for skills - minimal version
-"""
+"""Quick validation script for skills - minimal version."""
 
 import re
 import sys
@@ -11,7 +9,7 @@ import yaml
 
 
 def validate_skill(skill_path):
-    """Basic validation of a skill"""
+    """Basic validation of a skill."""
     skill_path = Path(skill_path)
 
     # Check SKILL.md exists

@@ -1,5 +1,4 @@
-"""
-test_monte_carlo_pipeline.py — Comprehensive tests for the Monte Carlo pipeline.
+"""test_monte_carlo_pipeline.py — Comprehensive tests for the Monte Carlo pipeline.
 
 Covers:
   1. DetectorFailureModel dataclass (defaults, custom values, field access)
@@ -180,7 +179,7 @@ def mock_floor_report_no_detectors():
 class TestDetectorFailureModel:
     """Tests for the DetectorFailureModel dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         """All defaults should match NFPA 72 typical values."""
         fm = DetectorFailureModel(detector_id="D1")
         assert fm.detector_id == "D1"
@@ -191,7 +190,7 @@ class TestDetectorFailureModel:
         assert fm.p_stuck_alarm == 0.0005
         assert fm.p_blind == 0.003
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         """Custom values should be stored correctly."""
         fm = DetectorFailureModel(
             detector_id="custom",
@@ -210,7 +209,7 @@ class TestDetectorFailureModel:
         assert fm.p_stuck_alarm == 0.005
         assert fm.p_blind == 0.02
 
-    def test_is_dataclass(self):
+    def test_is_dataclass(self) -> None:
         """DetectorFailureModel should be a dataclass with 7 fields."""
         field_names = {f.name for f in fields(DetectorFailureModel)}
         expected = {
@@ -224,25 +223,25 @@ class TestDetectorFailureModel:
         }
         assert field_names == expected
 
-    def test_equality(self):
+    def test_equality(self) -> None:
         """Two instances with same values should be equal (dataclass)."""
         fm1 = DetectorFailureModel(detector_id="X")
         fm2 = DetectorFailureModel(detector_id="X")
         assert fm1 == fm2
 
-    def test_inequality(self):
+    def test_inequality(self) -> None:
         """Instances with different values should not be equal."""
         fm1 = DetectorFailureModel(detector_id="A")
         fm2 = DetectorFailureModel(detector_id="B")
         assert fm1 != fm2
 
-    def test_zero_failure_rate(self, zero_failure_model):
+    def test_zero_failure_rate(self, zero_failure_model) -> None:
         """Zero failure rate model should have zero rates."""
         assert zero_failure_model.annual_failure_rate == 0.0
         assert zero_failure_model.common_cause_beta == 0.0
         assert zero_failure_model.p_blind == 0.0
 
-    def test_high_failure_rate(self, high_failure_model):
+    def test_high_failure_rate(self, high_failure_model) -> None:
         """High failure rate model for stress testing."""
         assert high_failure_model.annual_failure_rate == 0.95
         assert high_failure_model.p_blind == 0.95
@@ -256,19 +255,19 @@ class TestDetectorFailureModel:
 class TestSimulatorInit:
     """Tests for DetectorReliabilitySimulator construction."""
 
-    def test_default_init(self):
+    def test_default_init(self) -> None:
         """Default constructor stores n_trials=10000, seed=None, n_workers=1."""
         sim = DetectorReliabilitySimulator()
         assert sim.n_trials == 10_000
         assert sim.n_workers == 1
 
-    def test_custom_init(self):
+    def test_custom_init(self) -> None:
         """Custom parameters are stored."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=99, n_workers=4)
         assert sim.n_trials == 500
         assert sim.n_workers == 4
 
-    def test_rng_is_seeded(self):
+    def test_rng_is_seeded(self) -> None:
         """Providing a seed makes the RNG deterministic."""
         sim1 = DetectorReliabilitySimulator(n_trials=10, seed=42)
         sim2 = DetectorReliabilitySimulator(n_trials=10, seed=42)
@@ -277,7 +276,7 @@ class TestSimulatorInit:
         vals2 = [sim2._rng.random() for _ in range(5)]
         assert vals1 == vals2
 
-    def test_rng_different_seeds(self):
+    def test_rng_different_seeds(self) -> None:
         """Different seeds produce different sequences."""
         sim1 = DetectorReliabilitySimulator(n_trials=10, seed=1)
         sim2 = DetectorReliabilitySimulator(n_trials=10, seed=2)
@@ -285,7 +284,7 @@ class TestSimulatorInit:
         vals2 = [sim2._rng.random() for _ in range(5)]
         assert vals1 != vals2
 
-    def test_has_lock(self):
+    def test_has_lock(self) -> None:
         """Simulator should have a threading lock attribute."""
         sim = DetectorReliabilitySimulator()
         import threading
@@ -300,7 +299,7 @@ class TestSimulatorInit:
 class TestSimulatorHelpers:
     """Tests for _empty_result and _frange static methods."""
 
-    def test_empty_result_structure(self):
+    def test_empty_result_structure(self) -> None:
         """_empty_result returns dict with expected keys and zero/falsy values."""
         result = DetectorReliabilitySimulator._empty_result()
         assert result["n_trials"] == 0
@@ -310,29 +309,29 @@ class TestSimulatorHelpers:
         assert result["worst_coverage_pct"] == 0.0
         assert result["is_reliable"] is False
 
-    def test_empty_result_is_dict(self):
+    def test_empty_result_is_dict(self) -> None:
         """_empty_result should return a dict."""
         result = DetectorReliabilitySimulator._empty_result()
         assert isinstance(result, dict)
 
-    def test_frange_basic(self):
+    def test_frange_basic(self) -> None:
         """_frange yields float values from start to stop by step."""
         vals = list(DetectorReliabilitySimulator._frange(0.0, 1.0, 0.5))
         assert vals == [0.0, 0.5, 1.0]
 
-    def test_frange_single_value(self):
+    def test_frange_single_value(self) -> None:
         """_frange with start==stop yields that value."""
         vals = list(DetectorReliabilitySimulator._frange(0.5, 0.5, 0.1))
         assert vals == [0.5]
 
-    def test_frange_small_step(self):
+    def test_frange_small_step(self) -> None:
         """_frange with small step yields many values."""
         vals = list(DetectorReliabilitySimulator._frange(0.0, 0.1, 0.05))
         assert len(vals) == 3  # 0.0, 0.05, 0.1
         assert vals[0] == pytest.approx(0.0)
         assert vals[-1] == pytest.approx(0.1, abs=0.01)
 
-    def test_frange_zero_step_infinite(self):
+    def test_frange_zero_step_infinite(self) -> None:
         """_frange with zero step would infinite loop — caller must avoid this."""
         # We just test that it yields the start value at least
         gen = DetectorReliabilitySimulator._frange(1.0, 2.0, 0.0)
@@ -352,7 +351,7 @@ class TestSimulateRoomReliability:
 
     # --- Empty / edge-case inputs ---
 
-    def test_empty_detectors_returns_empty_result(self, simulator_fast):
+    def test_empty_detectors_returns_empty_result(self, simulator_fast) -> None:
         """No detectors should return _empty_result()."""
         result = simulator_fast.simulate_room_reliability(
             detectors=[], room_width=10.0, room_length=8.0,
@@ -363,7 +362,7 @@ class TestSimulateRoomReliability:
 
     # --- Result structure ---
 
-    def test_result_has_all_keys(self, simulator_fast, single_detector):
+    def test_result_has_all_keys(self, simulator_fast, single_detector) -> None:
         """Result dict should contain all expected keys."""
         result = simulator_fast.simulate_room_reliability(
             detectors=single_detector, room_width=10.0, room_length=8.0,
@@ -375,28 +374,28 @@ class TestSimulateRoomReliability:
         }
         assert expected_keys.issubset(result.keys())
 
-    def test_n_trials_matches_config(self, simulator_fast, single_detector):
+    def test_n_trials_matches_config(self, simulator_fast, single_detector) -> None:
         """Result n_trials should match the simulator's n_trials."""
         result = simulator_fast.simulate_room_reliability(
             detectors=single_detector, room_width=10.0, room_length=8.0,
         )
         assert result["n_trials"] == 200
 
-    def test_detector_count_stored(self, simulator_fast, two_detectors):
+    def test_detector_count_stored(self, simulator_fast, two_detectors) -> None:
         """Result detector_count should match input detector list length."""
         result = simulator_fast.simulate_room_reliability(
             detectors=two_detectors, room_width=10.0, room_length=8.0,
         )
         assert result["detector_count"] == 2
 
-    def test_nfpa_reference_present(self, simulator_fast, single_detector):
+    def test_nfpa_reference_present(self, simulator_fast, single_detector) -> None:
         """Result should include NFPA reference string."""
         result = simulator_fast.simulate_room_reliability(
             detectors=single_detector, room_width=10.0, room_length=8.0,
         )
         assert "NFPA 72" in result["nfpa_reference"]
 
-    def test_time_horizon_stored(self, simulator_fast, single_detector):
+    def test_time_horizon_stored(self, simulator_fast, single_detector) -> None:
         """Result should record the time horizon used."""
         result = simulator_fast.simulate_room_reliability(
             detectors=single_detector, room_width=10.0, room_length=8.0,
@@ -406,7 +405,7 @@ class TestSimulateRoomReliability:
 
     # --- Coverage bounds ---
 
-    def test_coverage_between_zero_and_hundred(self, simulator_fast, two_detectors):
+    def test_coverage_between_zero_and_hundred(self, simulator_fast, two_detectors) -> None:
         """Mean and worst coverage should be in [0, 100]."""
         result = simulator_fast.simulate_room_reliability(
             detectors=two_detectors, room_width=10.0, room_length=8.0,
@@ -415,7 +414,7 @@ class TestSimulateRoomReliability:
         assert 0.0 <= result["worst_coverage_pct"] <= 100.0
         assert 0.0 <= result["best_coverage_pct"] <= 100.0
 
-    def test_p_full_coverage_between_zero_and_one(self, simulator_fast, two_detectors):
+    def test_p_full_coverage_between_zero_and_one(self, simulator_fast, two_detectors) -> None:
         """P(full coverage) should be in [0, 1]."""
         result = simulator_fast.simulate_room_reliability(
             detectors=two_detectors, room_width=10.0, room_length=8.0,
@@ -424,7 +423,7 @@ class TestSimulateRoomReliability:
 
     # --- Deterministic seed ---
 
-    def test_deterministic_with_same_seed(self, single_detector):
+    def test_deterministic_with_same_seed(self, single_detector) -> None:
         """Same seed should produce identical results."""
         sim1 = DetectorReliabilitySimulator(n_trials=200, seed=42)
         sim2 = DetectorReliabilitySimulator(n_trials=200, seed=42)
@@ -437,7 +436,7 @@ class TestSimulateRoomReliability:
         assert r1["mean_coverage_pct"] == r2["mean_coverage_pct"]
         assert r1["p_full_coverage"] == r2["p_full_coverage"]
 
-    def test_different_seeds_may_differ(self, single_detector):
+    def test_different_seeds_may_differ(self, single_detector) -> None:
         """Different seeds may produce different results (probabilistic)."""
         sim1 = DetectorReliabilitySimulator(n_trials=500, seed=1)
         sim2 = DetectorReliabilitySimulator(n_trials=500, seed=999)
@@ -454,7 +453,7 @@ class TestSimulateRoomReliability:
 
     # --- Zero failure model (detectors never fail) ---
 
-    def test_zero_failure_high_coverage(self, single_detector):
+    def test_zero_failure_high_coverage(self, single_detector) -> None:
         """With zero failure rate, detectors always survive => high coverage."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
@@ -470,7 +469,7 @@ class TestSimulateRoomReliability:
         assert result["mean_coverage_pct"] > 80.0
         assert result["p_full_coverage"] > 0.5
 
-    def test_zero_failure_is_reliable(self, many_detectors):
+    def test_zero_failure_is_reliable(self, many_detectors) -> None:
         """With many detectors and zero failures, should be reliable."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
@@ -485,7 +484,7 @@ class TestSimulateRoomReliability:
 
     # --- High failure model ---
 
-    def test_high_failure_low_coverage(self, single_detector):
+    def test_high_failure_low_coverage(self, single_detector) -> None:
         """With very high failure rate, coverage should be very low."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         fm = DetectorFailureModel(
@@ -499,7 +498,7 @@ class TestSimulateRoomReliability:
         # With 99% failure rate, most trials have no active detectors
         assert result["mean_coverage_pct"] < 20.0
 
-    def test_high_failure_not_reliable(self, single_detector):
+    def test_high_failure_not_reliable(self, single_detector) -> None:
         """With high failure rate, should not be reliable."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         fm = DetectorFailureModel(
@@ -514,7 +513,7 @@ class TestSimulateRoomReliability:
 
     # --- Common-cause failure (beta=1.0 guarantees all fail) ---
 
-    def test_guaranteed_common_cause_zero_coverage(self, many_detectors, guaranteed_common_cause_model):
+    def test_guaranteed_common_cause_zero_coverage(self, many_detectors, guaranteed_common_cause_model) -> None:
         """With beta=1.0, every trial has common-cause failure => 0% coverage."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         result = sim.simulate_room_reliability(
@@ -528,7 +527,7 @@ class TestSimulateRoomReliability:
 
     # --- Redundancy helps ---
 
-    def test_more_detectors_higher_reliability(self):
+    def test_more_detectors_higher_reliability(self) -> None:
         """More detectors should improve reliability (with typical failure rates)."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         # Single detector
@@ -547,7 +546,7 @@ class TestSimulateRoomReliability:
 
     # --- Custom coverage radius ---
 
-    def test_large_coverage_radius_improves_coverage(self, single_detector):
+    def test_large_coverage_radius_improves_coverage(self, single_detector) -> None:
         """Larger coverage radius should improve coverage."""
         sim1 = DetectorReliabilitySimulator(n_trials=200, seed=42)
         r_small = sim1.simulate_room_reliability(
@@ -563,7 +562,7 @@ class TestSimulateRoomReliability:
 
     # --- Time horizon ---
 
-    def test_longer_time_horizon_more_failures(self, single_detector):
+    def test_longer_time_horizon_more_failures(self, single_detector) -> None:
         """Longer time horizon => higher effective failure probability => lower coverage."""
         sim1 = DetectorReliabilitySimulator(n_trials=500, seed=42)
         r_short = sim1.simulate_room_reliability(
@@ -579,7 +578,7 @@ class TestSimulateRoomReliability:
         # Long horizon has high failure probability
         assert r_short["mean_coverage_pct"] >= r_long["mean_coverage_pct"]
 
-    def test_default_time_horizon_is_one_year(self, simulator_fast, single_detector):
+    def test_default_time_horizon_is_one_year(self, simulator_fast, single_detector) -> None:
         """Default time_horizon_yr should be 1.0."""
         result = simulator_fast.simulate_room_reliability(
             detectors=single_detector, room_width=10.0, room_length=8.0,
@@ -588,7 +587,7 @@ class TestSimulateRoomReliability:
 
     # --- Custom failure model parameter ---
 
-    def test_custom_failure_model_used(self, single_detector):
+    def test_custom_failure_model_used(self, single_detector) -> None:
         """Passing a custom failure_model should use its rates."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
@@ -602,7 +601,7 @@ class TestSimulateRoomReliability:
         # With zero failure, should have high coverage
         assert result["mean_coverage_pct"] > 50.0
 
-    def test_default_failure_model_when_none(self, simulator_fast, single_detector):
+    def test_default_failure_model_when_none(self, simulator_fast, single_detector) -> None:
         """Passing failure_model=None should use default DetectorFailureModel."""
         result = simulator_fast.simulate_room_reliability(
             detectors=single_detector, room_width=10.0, room_length=8.0,
@@ -614,7 +613,7 @@ class TestSimulateRoomReliability:
 
     # --- Statistical output fields ---
 
-    def test_cvar_5pct_is_fifth_percentile(self):
+    def test_cvar_5pct_is_fifth_percentile(self) -> None:
         """cvar_5pct should be less than or equal to best coverage."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         result = sim.simulate_room_reliability(
@@ -626,7 +625,7 @@ class TestSimulateRoomReliability:
         assert result["cvar_5pct"] <= result["best_coverage_pct"]
         assert 0.0 <= result["cvar_5pct"] <= 100.0
 
-    def test_worst_leq_mean_leq_best(self, two_detectors):
+    def test_worst_leq_mean_leq_best(self, two_detectors) -> None:
         """worst_coverage_pct <= mean_coverage_pct <= best_coverage_pct."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         result = sim.simulate_room_reliability(
@@ -635,7 +634,7 @@ class TestSimulateRoomReliability:
         assert result["worst_coverage_pct"] <= result["mean_coverage_pct"]
         assert result["mean_coverage_pct"] <= result["best_coverage_pct"]
 
-    def test_std_dev_non_negative(self, simulator_fast, two_detectors):
+    def test_std_dev_non_negative(self, simulator_fast, two_detectors) -> None:
         """Standard deviation should be non-negative."""
         result = simulator_fast.simulate_room_reliability(
             detectors=two_detectors, room_width=10.0, room_length=8.0,
@@ -644,7 +643,7 @@ class TestSimulateRoomReliability:
 
     # --- is_reliable flag ---
 
-    def test_is_reliable_true_when_p_full_gte_95(self, many_detectors):
+    def test_is_reliable_true_when_p_full_gte_95(self, many_detectors) -> None:
         """is_reliable should be True when p_full_coverage >= 0.95."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         fm = DetectorFailureModel(
@@ -659,7 +658,7 @@ class TestSimulateRoomReliability:
         if result["p_full_coverage"] >= 0.95:
             assert result["is_reliable"] is True
 
-    def test_is_reliable_false_when_p_full_lt_95(self, single_detector):
+    def test_is_reliable_false_when_p_full_lt_95(self, single_detector) -> None:
         """is_reliable should be False when p_full_coverage < 0.95."""
         sim = DetectorReliabilitySimulator(n_trials=500, seed=42)
         fm = DetectorFailureModel(
@@ -675,7 +674,7 @@ class TestSimulateRoomReliability:
 
     # --- Room geometry variations ---
 
-    def test_small_room(self, single_detector):
+    def test_small_room(self, single_detector) -> None:
         """A small room should be well-covered by a single detector."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
@@ -688,7 +687,7 @@ class TestSimulateRoomReliability:
         )
         assert result["mean_coverage_pct"] > 90.0
 
-    def test_very_large_room_single_detector(self, single_detector):
+    def test_very_large_room_single_detector(self, single_detector) -> None:
         """A very large room with one detector should have lower coverage."""
         sim = DetectorReliabilitySimulator(n_trials=200, seed=42)
         fm = DetectorFailureModel(
@@ -711,13 +710,13 @@ class TestSimulateRoomReliability:
 class TestMCPipelineAdapterInit:
     """Tests for MCPipelineAdapter construction."""
 
-    def test_default_init(self):
+    def test_default_init(self) -> None:
         """Default constructor should create a simulator with n_trials=1000."""
         adapter = MCPipelineAdapter()
         assert adapter._sim.n_trials == 1_000
         assert adapter._threshold == 0.95
 
-    def test_custom_init(self):
+    def test_custom_init(self) -> None:
         """Custom parameters should be forwarded correctly."""
         adapter = MCPipelineAdapter(
             n_trials=5000, reliability_threshold=0.99, seed=7,
@@ -725,7 +724,7 @@ class TestMCPipelineAdapterInit:
         assert adapter._sim.n_trials == 5_000
         assert adapter._threshold == 0.99
 
-    def test_simulator_is_created(self):
+    def test_simulator_is_created(self) -> None:
         """Adapter should create a DetectorReliabilitySimulator instance."""
         adapter = MCPipelineAdapter()
         assert isinstance(adapter._sim, DetectorReliabilitySimulator)
@@ -739,14 +738,14 @@ class TestMCPipelineAdapterInit:
 class TestEnrichLayout:
     """Tests for MCPipelineAdapter.enrich_layout."""
 
-    def test_returns_mc_result_dict(self, adapter_fast, mock_layout, mock_room):
+    def test_returns_mc_result_dict(self, adapter_fast, mock_layout, mock_room) -> None:
         """enrich_layout should return the MC result dict."""
         result = adapter_fast.enrich_layout(mock_layout, mock_room)
         assert isinstance(result, dict)
         assert "mean_coverage_pct" in result
         assert "p_full_coverage" in result
 
-    def test_passes_room_dimensions(self, adapter_fast, mock_room):
+    def test_passes_room_dimensions(self, adapter_fast, mock_room) -> None:
         """enrich_layout should use room.width and room.length."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -757,7 +756,7 @@ class TestEnrichLayout:
         result = adapter_fast.enrich_layout(layout, mock_room)
         assert isinstance(result, dict)
 
-    def test_falls_back_to_layout_dimensions(self, adapter_fast):
+    def test_falls_back_to_layout_dimensions(self, adapter_fast) -> None:
         """When room has no width/length, falls back to layout attributes."""
         room = MagicMock(spec=[])  # No attributes
         layout = MagicMock()
@@ -771,7 +770,7 @@ class TestEnrichLayout:
         result = adapter_fast.enrich_layout(layout, room)
         assert isinstance(result, dict)
 
-    def test_warning_added_when_not_reliable(self, adapter_fast):
+    def test_warning_added_when_not_reliable(self, adapter_fast) -> None:
         """When MC shows is_reliable=False, a warning should be appended."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -810,7 +809,7 @@ class TestEnrichLayout:
         warning_texts = layout.warnings
         assert any("MC RELIABILITY WARNING" in w for w in warning_texts)
 
-    def test_proof_invalidated_when_p_full_below_90(self, adapter_fast):
+    def test_proof_invalidated_when_p_full_below_90(self, adapter_fast) -> None:
         """When p_full_coverage < 0.90, proof_valid should be set to False."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -841,7 +840,7 @@ class TestEnrichLayout:
         assert layout.proof_valid is False
         assert any("MC PROOF INVALIDATED" in w for w in layout.warnings)
 
-    def test_proof_not_invalidated_when_p_full_gte_90(self, adapter_fast):
+    def test_proof_not_invalidated_when_p_full_gte_90(self, adapter_fast) -> None:
         """When p_full_coverage >= 0.90, proof_valid should remain True."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -871,7 +870,7 @@ class TestEnrichLayout:
 
         assert layout.proof_valid is True
 
-    def test_frozen_layout_handles_attribute_error(self, adapter_fast):
+    def test_frozen_layout_handles_attribute_error(self, adapter_fast) -> None:
         """If layout.proof_valid can't be set (frozen), no exception raised."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -904,7 +903,7 @@ class TestEnrichLayout:
         # Clean up the PropertyMock to avoid affecting other tests
         del type(layout).proof_valid
 
-    def test_warnings_attribute_error_handled(self, adapter_fast):
+    def test_warnings_attribute_error_handled(self, adapter_fast) -> None:
         """If layout.warnings can't be set, no exception raised."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -935,7 +934,7 @@ class TestEnrichLayout:
 
         del type(layout).warnings
 
-    def test_layout_with_no_detectors(self, adapter_fast, mock_room):
+    def test_layout_with_no_detectors(self, adapter_fast, mock_room) -> None:
         """Layout with empty detectors list — MC returns empty result."""
         layout = MagicMock()
         layout.detectors = []
@@ -949,7 +948,7 @@ class TestEnrichLayout:
         # Empty result from simulate_room_reliability
         assert result["n_trials"] == 0
 
-    def test_enrich_layout_uses_coverage_radius_from_layout(self, adapter_fast):
+    def test_enrich_layout_uses_coverage_radius_from_layout(self, adapter_fast) -> None:
         """enrich_layout should pass layout.coverage_radius to simulation."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -978,7 +977,7 @@ class TestEnrichLayout:
             _, kwargs = mock_sim.call_args
             assert kwargs["coverage_radius"] == 3.0
 
-    def test_warning_contains_threshold(self, adapter_fast):
+    def test_warning_contains_threshold(self, adapter_fast) -> None:
         """Warning message should contain the threshold value."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -1009,7 +1008,7 @@ class TestEnrichLayout:
         # The warning should contain "95%" (the default threshold)
         assert any("95%" in w for w in layout.warnings)
 
-    def test_existing_warnings_preserved(self, adapter_fast):
+    def test_existing_warnings_preserved(self, adapter_fast) -> None:
         """enrich_layout should append to existing warnings, not replace."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -1039,7 +1038,7 @@ class TestEnrichLayout:
 
         assert "Existing warning" in layout.warnings
 
-    def test_reliable_result_no_reliability_warning(self, adapter_fast):
+    def test_reliable_result_no_reliability_warning(self, adapter_fast) -> None:
         """When is_reliable=True, no MC RELIABILITY WARNING should be added."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -1071,7 +1070,7 @@ class TestEnrichLayout:
 
     # --- Fail-safe: missing keys in result dict ---
 
-    def test_missing_is_reliable_key_treated_as_unreliable(self, adapter_fast):
+    def test_missing_is_reliable_key_treated_as_unreliable(self, adapter_fast) -> None:
         """V111 FIX: missing 'is_reliable' key => treated as unreliable => warning."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -1095,7 +1094,7 @@ class TestEnrichLayout:
 
         assert any("MC RELIABILITY WARNING" in w for w in layout.warnings)
 
-    def test_missing_p_full_coverage_key_treated_as_zero(self, adapter_fast):
+    def test_missing_p_full_coverage_key_treated_as_zero(self, adapter_fast) -> None:
         """V112 FIX: missing 'p_full_coverage' key => treated as 0% => proof invalidated."""
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
@@ -1128,7 +1127,7 @@ class TestEnrichLayout:
 class TestAnalyseFloor:
     """Tests for MCPipelineAdapter.analyse_floor."""
 
-    def test_basic_floor_analysis(self, adapter_fast, mock_floor_report):
+    def test_basic_floor_analysis(self, adapter_fast, mock_floor_report) -> None:
         """analyse_floor should return a dict with floor-level results."""
         result = adapter_fast.analyse_floor(mock_floor_report)
         assert isinstance(result, dict)
@@ -1138,42 +1137,42 @@ class TestAnalyseFloor:
         assert "n_rooms" in result
         assert "n_reliable" in result
 
-    def test_floor_id_from_report(self, adapter_fast, mock_floor_report):
+    def test_floor_id_from_report(self, adapter_fast, mock_floor_report) -> None:
         """Result should carry the floor_id from the report."""
         result = adapter_fast.analyse_floor(mock_floor_report)
         assert result["floor_id"] == "F1"
 
-    def test_n_rooms_matches_rooms_with_detectors(self, adapter_fast, mock_floor_report):
+    def test_n_rooms_matches_rooms_with_detectors(self, adapter_fast, mock_floor_report) -> None:
         """n_rooms should count only rooms that have detectors."""
         result = adapter_fast.analyse_floor(mock_floor_report)
         assert result["n_rooms"] == 2
 
-    def test_room_results_keys_are_room_ids(self, adapter_fast, mock_floor_report):
+    def test_room_results_keys_are_room_ids(self, adapter_fast, mock_floor_report) -> None:
         """room_results should be keyed by room_id."""
         result = adapter_fast.analyse_floor(mock_floor_report)
         assert "R1" in result["room_results"]
         assert "R2" in result["room_results"]
 
-    def test_room_results_are_mc_dicts(self, adapter_fast, mock_floor_report):
+    def test_room_results_are_mc_dicts(self, adapter_fast, mock_floor_report) -> None:
         """Each room result should be a MC simulation result dict."""
         result = adapter_fast.analyse_floor(mock_floor_report)
         for _room_id, mc in result["room_results"].items():
             assert "mean_coverage_pct" in mc
             assert "p_full_coverage" in mc
 
-    def test_empty_floor_report(self, adapter_fast, mock_floor_report_empty):
+    def test_empty_floor_report(self, adapter_fast, mock_floor_report_empty) -> None:
         """Floor report with no rooms should return empty results."""
         result = adapter_fast.analyse_floor(mock_floor_report_empty)
         assert result["room_results"] == {}
         assert result["n_rooms"] == 0
         assert result["n_reliable"] == 0
 
-    def test_rooms_without_detectors_skipped(self, adapter_fast, mock_floor_report_no_detectors):
+    def test_rooms_without_detectors_skipped(self, adapter_fast, mock_floor_report_no_detectors) -> None:
         """Rooms with no detectors should be skipped."""
         result = adapter_fast.analyse_floor(mock_floor_report_no_detectors)
         assert result["n_rooms"] == 0
 
-    def test_floor_reliable_true_when_all_rooms_reliable(self, adapter_fast):
+    def test_floor_reliable_true_when_all_rooms_reliable(self, adapter_fast) -> None:
         """floor_reliable=True when every room has is_reliable=True."""
         report = MagicMock()
         report.floor_id = "F_ok"
@@ -1196,7 +1195,7 @@ class TestAnalyseFloor:
         # (deterministic due to seed=42)
         assert isinstance(result["floor_reliable"], bool)
 
-    def test_floor_reliable_false_when_any_room_unreliable(self, adapter_fast):
+    def test_floor_reliable_false_when_any_room_unreliable(self, adapter_fast) -> None:
         """floor_reliable=False if any room has is_reliable=False."""
         report = MagicMock()
         report.floor_id = "F_mixed"
@@ -1232,7 +1231,7 @@ class TestAnalyseFloor:
         assert result["floor_reliable"] is False
         assert result["n_reliable"] == 0
 
-    def test_n_reliable_counts_reliable_rooms(self, adapter_fast):
+    def test_n_reliable_counts_reliable_rooms(self, adapter_fast) -> None:
         """n_reliable should count rooms where is_reliable=True."""
         report = MagicMock()
         report.floor_id = "F_count"
@@ -1265,15 +1264,14 @@ class TestAnalyseFloor:
                     "nfpa_reference": "NFPA 72-2022",
                     "time_horizon_yr": 1.0, "detector_count": 1,
                 }
-            else:
-                return {
-                    "n_trials": 200, "mean_coverage_pct": 5.0,
-                    "p_full_coverage": 0.01, "cvar_5pct": 0.0,
-                    "worst_coverage_pct": 0.0, "best_coverage_pct": 10.0,
-                    "std_dev_pct": 3.0, "is_reliable": False,
-                    "nfpa_reference": "NFPA 72-2022",
-                    "time_horizon_yr": 1.0, "detector_count": 1,
-                }
+            return {
+                "n_trials": 200, "mean_coverage_pct": 5.0,
+                "p_full_coverage": 0.01, "cvar_5pct": 0.0,
+                "worst_coverage_pct": 0.0, "best_coverage_pct": 10.0,
+                "std_dev_pct": 3.0, "is_reliable": False,
+                "nfpa_reference": "NFPA 72-2022",
+                "time_horizon_yr": 1.0, "detector_count": 1,
+            }
 
         with patch.object(
             adapter_fast._sim, "simulate_room_reliability",
@@ -1285,14 +1283,14 @@ class TestAnalyseFloor:
         assert result["n_reliable"] == 1
         assert result["floor_reliable"] is False
 
-    def test_missing_floor_id_defaults_to_empty(self, adapter_fast):
+    def test_missing_floor_id_defaults_to_empty(self, adapter_fast) -> None:
         """Floor report without floor_id should default to empty string."""
         report = MagicMock(spec=[])  # No attributes
         report.room_summaries = []
         result = adapter_fast.analyse_floor(report)
         assert result["floor_id"] == ""
 
-    def test_room_with_missing_width_defaults(self, adapter_fast):
+    def test_room_with_missing_width_defaults(self, adapter_fast) -> None:
         """Room without width/length should use default 10.0 / 8.0."""
         report = MagicMock()
         report.floor_id = "F1"
@@ -1306,7 +1304,7 @@ class TestAnalyseFloor:
         result = adapter_fast.analyse_floor(report)
         assert result["n_rooms"] == 1
 
-    def test_missing_is_reliable_in_room_result_treated_as_unreliable(self, adapter_fast):
+    def test_missing_is_reliable_in_room_result_treated_as_unreliable(self, adapter_fast) -> None:
         """V111 FIX: missing is_reliable in room result => treated as False."""
         report = MagicMock()
         report.floor_id = "F1"
@@ -1342,7 +1340,7 @@ class TestAnalyseFloor:
 class TestIntegration:
     """End-to-end tests combining multiple classes."""
 
-    def test_full_pipeline_reliable_scenario(self):
+    def test_full_pipeline_reliable_scenario(self) -> None:
         """Full pipeline with zero-failure model and good detector placement."""
         MCPipelineAdapter(n_trials=300, seed=42)
         layout = MagicMock()
@@ -1375,7 +1373,7 @@ class TestIntegration:
         assert mc_result["is_reliable"] is True
         assert mc_result["mean_coverage_pct"] > 90.0
 
-    def test_full_pipeline_unreliable_scenario(self):
+    def test_full_pipeline_unreliable_scenario(self) -> None:
         """Full pipeline with high-failure model shows unreliable results."""
         MCPipelineAdapter(n_trials=300, seed=42)
         layout = MagicMock()
@@ -1407,7 +1405,7 @@ class TestIntegration:
         assert mc_result["is_reliable"] is False
         assert mc_result["mean_coverage_pct"] < 50.0
 
-    def test_adapter_enrich_then_analyse_floor(self, adapter_fast):
+    def test_adapter_enrich_then_analyse_floor(self, adapter_fast) -> None:
         """Run enrich_layout then analyse_floor in sequence."""
         # First enrich a layout
         layout = MagicMock()
@@ -1441,7 +1439,7 @@ class TestIntegration:
         floor_result = adapter_fast.analyse_floor(report)
         assert "floor_id" in floor_result
 
-    def test_failure_model_probabilities_are_exponential(self):
+    def test_failure_model_probabilities_are_exponential(self) -> None:
         """Verify p_fail = 1 - exp(-rate * horizon) matches code logic."""
         DetectorFailureModel(detector_id="test", annual_failure_rate=0.01)
         expected_p_fail = 1.0 - math.exp(-0.01 * 1.0)
@@ -1451,7 +1449,7 @@ class TestIntegration:
         assert abs(expected_p_fail - 0.00995) < 0.0001
         assert abs(expected_p_blind - 0.002996) < 0.0001
 
-    def test_common_cause_mechanism(self):
+    def test_common_cause_mechanism(self) -> None:
         """Common cause failure (beta) should zero out all active detectors."""
         # With beta=1.0, every trial should trigger CCF => all detectors removed
         sim = DetectorReliabilitySimulator(n_trials=100, seed=42)
@@ -1469,7 +1467,7 @@ class TestIntegration:
         # Every trial: active starts with all detectors, then CCF zeroes them
         assert result["mean_coverage_pct"] == 0.0
 
-    def test_frange_generates_coverage_grid(self):
+    def test_frange_generates_coverage_grid(self) -> None:
         """The _frange function should generate grid points for the room."""
         sim = DetectorReliabilitySimulator(n_trials=10, seed=42)
         # Grid step is 0.5, from 0.1 to room_dim-0.1

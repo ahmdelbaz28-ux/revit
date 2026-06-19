@@ -1,5 +1,4 @@
-"""
-backend/services/hazmat_service.py — Hazardous materials data for FireAI.
+"""backend/services/hazmat_service.py — Hazardous materials data for FireAI.
 
 Provides hazardous material classification and properties from the
 US EPA and public chemical databases. Used for:
@@ -25,6 +24,7 @@ References:
   - IEC 60079-10-1:2015 (hazardous area classification)
   - NFPA 497-2024 (classification of combustible liquids)
   - NFPA 30-2024 (flammable liquids code)
+
 """
 
 from __future__ import annotations
@@ -32,8 +32,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -41,8 +40,9 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 logger = logging.getLogger(__name__)
 
 
-class MaterialGroup(str, Enum):
+class MaterialGroup(StrEnum):
     """IEC 60079-0 gas/dust groups for equipment selection."""
+
     IIA = "IIA"    # Propane group (least restrictive)
     IIB = "IIB"    # Ethylene group
     IIC = "IIC"    # Hydrogen/acetylene (most restrictive)
@@ -52,8 +52,9 @@ class MaterialGroup(str, Enum):
     UNKNOWN = "unknown"
 
 
-class TemperatureClass(str, Enum):
+class TemperatureClass(StrEnum):
     """IEC 60079-0 temperature classes based on auto-ignition temperature."""
+
     T1 = "T1"    # > 450°C
     T2 = "T2"    # > 300°C
     T3 = "T3"    # > 200°C
@@ -72,8 +73,7 @@ DEFAULT_AUTO_IGNITION_C = 200.0  # Low AIT = T3 = more restrictive equipment
 
 @dataclass(frozen=True)
 class HazardousMaterialData:
-    """
-    Immutable hazardous material properties for engineering calculations.
+    """Immutable hazardous material properties for engineering calculations.
 
     Attributes:
         name: Material name (e.g., "Methane", "Propane")
@@ -87,7 +87,9 @@ class HazardousMaterialData:
         molecular_weight: Molecular weight in g/mol
         vapor_density: Vapor density relative to air (>1 = heavier)
         source: Data provenance ("pubchem" | "internal_db" | "default")
+
     """
+
     name: str
     cas_number: str = ""
     lfl_vol_pct: float = DEFAULT_LFL_VOL_PCT
@@ -119,18 +121,17 @@ def auto_ignition_to_temp_class(ait_c: float) -> TemperatureClass:
     """Convert auto-ignition temperature to IEC temperature class."""
     if ait_c > 450:
         return TemperatureClass.T1
-    elif ait_c > 300:
+    if ait_c > 300:
         return TemperatureClass.T2
-    elif ait_c > 200:
+    if ait_c > 200:
         return TemperatureClass.T3
-    elif ait_c > 135:
+    if ait_c > 135:
         return TemperatureClass.T4
-    elif ait_c > 100:
+    if ait_c > 100:
         return TemperatureClass.T5
-    elif ait_c > 85:
+    if ait_c > 85:
         return TemperatureClass.T6
-    else:
-        return TemperatureClass.T6  # Below 85°C — most restrictive
+    return TemperatureClass.T6  # Below 85°C — most restrictive
 
 
 # Internal database of common hazardous materials
@@ -200,8 +201,7 @@ _INTERNAL_HAZMAT_DB: dict[str, dict] = {
 
 
 class HazmatService:
-    """
-    Async hazardous material data provider.
+    """Async hazardous material data provider.
 
     Uses internal database first (fast, reliable, no API dependency).
     Falls back to PubChem API for materials not in the internal DB.
@@ -218,11 +218,11 @@ class HazmatService:
 
     PUBCHEM_URL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound"
 
-    def __init__(self, cache_ttl: float = 604800.0, request_timeout: float = 15.0):
+    def __init__(self, cache_ttl: float = 604800.0, request_timeout: float = 15.0) -> None:
         self._cache: dict[str, tuple[HazardousMaterialData, float]] = {}
         self._cache_ttl = cache_ttl
         self._request_timeout = request_timeout
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -240,7 +240,7 @@ class HazmatService:
             await self._client.aclose()
             self._client = None
 
-    def _get_cached(self, material_name: str) -> Optional[HazardousMaterialData]:
+    def _get_cached(self, material_name: str) -> HazardousMaterialData | None:
         """Get cached material data."""
         key = material_name.strip().lower()
         entry = self._cache.get(key)
@@ -256,9 +256,8 @@ class HazmatService:
         key = material_name.strip().lower()
         self._cache[key] = (data, time.time())
 
-    def _lookup_internal_db(self, material_name: str) -> Optional[HazardousMaterialData]:
-        """
-        Look up material in the internal database.
+    def _lookup_internal_db(self, material_name: str) -> HazardousMaterialData | None:
+        """Look up material in the internal database.
 
         The internal DB contains the 12 most common hazardous materials
         encountered in fire alarm engineering. Data sourced from IEC
@@ -310,13 +309,13 @@ class HazmatService:
         reraise=True,
     )
     async def _fetch_pubchem(self, material_name: str) -> HazardousMaterialData:
-        """
-        Fetch material properties from PubChem API.
+        """Fetch material properties from PubChem API.
 
         API: https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{name}/property/.../JSON
 
         Returns:
             HazardousMaterialData with source="pubchem"
+
         """
         client = await self._get_client()
         # FIX: URL-encode user-supplied material_name to prevent URL injection
@@ -356,8 +355,7 @@ class HazmatService:
         return data
 
     def _get_default(self, material_name: str) -> HazardousMaterialData:
-        """
-        Return conservative default hazardous material data.
+        """Return conservative default hazardous material data.
 
         These defaults are the MOST RESTRICTIVE:
         - Very low LFL (0.5%) = large zone extent = conservative
@@ -381,8 +379,7 @@ class HazmatService:
         )
 
     async def get_material_data(self, material_name: str) -> HazardousMaterialData:
-        """
-        Get hazardous material data for engineering calculations.
+        """Get hazardous material data for engineering calculations.
 
         Strategy:
           1. Check cache
@@ -395,6 +392,7 @@ class HazmatService:
 
         Returns:
             HazardousMaterialData (always succeeds, never raises)
+
         """
         if not material_name or not material_name.strip():
             return self._get_default("unknown")
@@ -437,7 +435,7 @@ class HazmatService:
 
 
 # Singleton
-_hazmat_service: Optional[HazmatService] = None
+_hazmat_service: HazmatService | None = None
 
 
 def get_hazmat_service() -> HazmatService:

@@ -1,0 +1,105 @@
+# Dependabot configuration — FireAI
+# 2026-06-19 repo-cleanup: previously absent. Dependabot was running with
+# default settings, producing 20+ open vulnerability alerts and ~50 closed
+# PRs (many not merged because there was no auto-merge path that respected
+# CI). This file scopes dependabot to the ecosystems actually in use,
+# limits PR rate to avoid flooding the PR queue, and groups minor/patch
+# bumps so a single weekly PR can update them together.
+#
+# Operator TODO: enable "Allow GitHub Actions to create and approve pull
+# requests" in Settings → Actions → General → Workflow permissions. The
+# dependabot-auto-merge.yml workflow needs that to auto-merge.
+
+version: 2
+
+updates:
+  # Python backend — pyproject.toml + requirements*.txt
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Africa/Cairo
+    open-pull-requests-limit: 5
+    # Group minor + patch bumps together. Major bumps stay separate so the
+    # auto-merge workflow can refuse them (see dependabot-auto-merge.yml).
+    groups:
+      python-minor:
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "deps(python)"
+      prefix-development: "deps(dev)"
+      include: scope
+    labels:
+      - "dependencies"
+      - "python"
+
+  # npm frontend
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Africa/Cairo
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor:
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "deps(npm)"
+      include: scope
+    labels:
+      - "dependencies"
+      - "npm"
+    ignore:
+      # Ponytail: pin three.js to current major; 0.16x series has had API
+      # churn that broke our 3D viewer twice in 2026. Upgrade deliberately.
+      - dependency-name: "three"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@react-three/fiber"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@react-three/drei"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions — keep workflow actions current (security-relevant)
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Africa/Cairo
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "deps(actions)"
+      include: scope
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Docker base images — Dockerfile
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: monthly
+      day: monday
+      time: "07:00"
+      timezone: Africa/Cairo
+    open-pull-requests-limit: 1
+    commit-message:
+      prefix: "deps(docker)"
+      include: scope
+    labels:
+      - "dependencies"
+      - "docker"

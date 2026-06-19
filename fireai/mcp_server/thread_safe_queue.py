@@ -1,5 +1,4 @@
-"""
-thread_safe_queue.py — Thread-Safe Model Update Queue for Revit API
+"""thread_safe_queue.py — Thread-Safe Model Update Queue for Revit API.
 ===================================================================
 LIFE-SAFETY CRITICAL: The Revit API is SINGLE-THREADED — all model
 modifications MUST occur on the Revit UI thread. Any attempt to modify
@@ -39,8 +38,8 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from enum import StrEnum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +48,13 @@ logger = logging.getLogger(__name__)
 # ACTION TYPES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class ModelUpdateType(str, Enum):
+class ModelUpdateType(StrEnum):
     """Types of model updates that can be queued.
 
     SAFETY: Each type maps to a specific Revit API operation.
     Unknown types are REJECTED — no dynamic dispatch.
     """
+
     SET_PARAMETER = "set_parameter"
     SET_ROOM_NAME = "set_room_name"
     SET_HAZARD_CLASS = "set_hazard_class"
@@ -66,8 +66,9 @@ class ModelUpdateType(str, Enum):
     UPDATE_ANNOTATION = "update_annotation"
 
 
-class ModelUpdateStatus(str, Enum):
+class ModelUpdateStatus(StrEnum):
     """Status of a model update action."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMPLETED = "completed"
@@ -97,7 +98,9 @@ class ModelUpdateAction:
         timestamp: When this action was created.
         priority: Execution priority (lower = higher priority).
         nfpa_reference: Engineering code reference for audit trail.
+
     """
+
     action_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     action_type: ModelUpdateType = ModelUpdateType.SET_PARAMETER
     element_id: str = ""
@@ -131,7 +134,9 @@ class ModelUpdateResult:
         execution_time_ms: How long the Revit Transaction took.
         audit_trail_id: Reference to the audit log entry.
         completed_at: Timestamp when the result was reported (epoch seconds).
+
     """
+
     action_id: str = ""
     status: ModelUpdateStatus = ModelUpdateStatus.PENDING
     error_message: str = ""
@@ -183,12 +188,13 @@ class ThreadSafeModelUpdateQueue:
         Args:
             max_size: Maximum number of pending actions. Prevents
                 memory exhaustion from runaway MCP clients.
+
         """
         self._queue: queue.PriorityQueue = queue.PriorityQueue(maxsize=max_size)
-        self._results: Dict[str, ModelUpdateResult] = {}
+        self._results: dict[str, ModelUpdateResult] = {}
         self._results_lock = threading.Lock()
-        self._results_events: Dict[str, threading.Event] = {}
-        self._action_log: List[Dict[str, Any]] = []
+        self._results_events: dict[str, threading.Event] = {}
+        self._action_log: list[dict[str, Any]] = []
         self._log_lock = threading.Lock()
         self._stats = {
             "enqueued": 0,
@@ -213,6 +219,7 @@ class ThreadSafeModelUpdateQueue:
         Raises:
             ValueError: If action is invalid or missing required fields.
             queue.Full: If the queue is at capacity.
+
         """
         # Validate required fields
         if not action.action_id:
@@ -272,7 +279,7 @@ class ThreadSafeModelUpdateQueue:
 
         return action.action_id
 
-    def dequeue(self, timeout: float = 1.0) -> Optional[ModelUpdateAction]:
+    def dequeue(self, timeout: float = 1.0) -> ModelUpdateAction | None:
         """Dequeue the next action for execution.
 
         SAFETY: This should ONLY be called by the C# IExternalEventHandler
@@ -283,9 +290,10 @@ class ThreadSafeModelUpdateQueue:
 
         Returns:
             The next ModelUpdateAction, or None if queue is empty.
+
         """
         try:
-            priority, action = self._queue.get(block=True, timeout=timeout)
+            _priority, action = self._queue.get(block=True, timeout=timeout)
             return action
         except queue.Empty:
             return None
@@ -297,6 +305,7 @@ class ThreadSafeModelUpdateQueue:
 
         Args:
             result: The execution result.
+
         """
         # Stamp completion time for cleanup_old_results age-based filtering
         result.completed_at = time.time()
@@ -338,6 +347,7 @@ class ThreadSafeModelUpdateQueue:
 
         Returns:
             The ModelUpdateResult.
+
         """
         with self._results_lock:
             event = self._results_events.get(action_id)
@@ -373,12 +383,12 @@ class ThreadSafeModelUpdateQueue:
         """Return the number of pending actions in the queue."""
         return self._queue.qsize()
 
-    def get_stats(self) -> Dict[str, int]:
+    def get_stats(self) -> dict[str, int]:
         """Return queue statistics."""
         with self._stats_lock:
             return dict(self._stats)
 
-    def get_audit_log(self, last_n: int = 100) -> List[Dict[str, Any]]:
+    def get_audit_log(self, last_n: int = 100) -> list[dict[str, Any]]:
         """Return the last N audit log entries."""
         with self._log_lock:
             return list(self._action_log[-last_n:])
@@ -391,6 +401,7 @@ class ThreadSafeModelUpdateQueue:
 
         Returns:
             Number of results removed.
+
         """
         cutoff = time.time() - max_age_seconds
         removed = 0

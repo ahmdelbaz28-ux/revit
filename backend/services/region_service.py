@@ -1,5 +1,4 @@
-"""
-backend/services/region_service.py — Regulatory region detection for FireAI.
+"""backend/services/region_service.py — Regulatory region detection for FireAI.
 
 Determines applicable fire/electrical codes based on country/location.
 Uses REST Countries API (free, no auth) for country metadata.
@@ -23,6 +22,7 @@ References:
   - NFPA 72-2022
   - IEC 60079-10-1:2015
   - Saudi HCIS regulations
+
 """
 
 from __future__ import annotations
@@ -30,16 +30,16 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
 
-class RegulatoryFramework(str, Enum):
+class RegulatoryFramework(StrEnum):
     """International regulatory frameworks supported by FireAI."""
+
     NFPA = "nfpa"            # US: NFPA 72, NEC
     ATEX_IEC = "atex_iec"    # EU: ATEX 2014/34/EU, IEC 60079
     BS = "bs"                # UK: BS 5839-1, BS 7671
@@ -52,8 +52,9 @@ class RegulatoryFramework(str, Enum):
     STANDARD_IEC = "standard_iec"  # Default: IEC standards
 
 
-class ElectricalCode(str, Enum):
+class ElectricalCode(StrEnum):
     """Electrical code standards."""
+
     NEC = "nec"      # US: National Electrical Code (NFPA 70)
     IEC = "iec"      # International: IEC 60364
     BS7671 = "bs7671"  # UK: BS 7671 (IET Wiring Regulations)
@@ -61,8 +62,7 @@ class ElectricalCode(str, Enum):
 
 @dataclass(frozen=True)
 class RegionContext:
-    """
-    Immutable regulatory region context for engineering calculations.
+    """Immutable regulatory region context for engineering calculations.
 
     Attributes:
         country_code: ISO 3166-1 alpha-2 (e.g., "US", "EG", "SA")
@@ -71,7 +71,9 @@ class RegionContext:
         electrical_code: Applicable electrical code
         region_name: Geographic region (e.g., "Middle East", "Europe")
         source: Data provenance ("rest-countries" | "inferred" | "default")
+
     """
+
     country_code: str
     country_name: str
     regulatory_framework: RegulatoryFramework
@@ -160,8 +162,7 @@ _REGION_INFERRED_FRAMEWORK: dict[str, RegulatoryFramework] = {
 
 
 class RegionService:
-    """
-    Async regulatory region detection service.
+    """Async regulatory region detection service.
 
     Uses REST Countries API for country metadata, then maps to
     applicable fire/electrical codes using the internal database.
@@ -172,8 +173,8 @@ class RegionService:
         "https://restcountries.com/v3.1/alpha"
     )
 
-    def __init__(self):
-        self._client: Optional[httpx.AsyncClient] = None
+    def __init__(self) -> None:
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -194,8 +195,7 @@ class RegionService:
     async def get_region_context(
         self, country_code: str
     ) -> RegionContext:
-        """
-        Get regulatory region context for a country.
+        """Get regulatory region context for a country.
 
         Strategy:
           1. Look up country in internal framework map
@@ -208,6 +208,7 @@ class RegionService:
 
         Returns:
             RegionContext (always succeeds with a valid default)
+
         """
         cc = country_code.strip().upper()
 
@@ -279,7 +280,7 @@ class RegionService:
             source="default",
         )
 
-    async def _fetch_country_info(self, country_code: str) -> Optional[dict]:
+    async def _fetch_country_info(self, country_code: str) -> dict | None:
         """Fetch country information from REST Countries API."""
         client = await self._get_client()
         response = await client.get(f"{self.REST_COUNTRIES_URL}/{country_code}")
@@ -292,7 +293,7 @@ class RegionService:
 
 # ── Singleton ──────────────────────────────────────────────────────────────
 
-_region_service: Optional[RegionService] = None
+_region_service: RegionService | None = None
 
 
 def get_region_service() -> RegionService:

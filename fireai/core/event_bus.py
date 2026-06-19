@@ -1,5 +1,4 @@
-"""
-event_bus.py - FireAI Event Bus (Digital Twin Foundation)
+"""event_bus.py - FireAI Event Bus (Digital Twin Foundation).
 =========================================================
 
 Central pub/sub event bus for the FireAI engineering system.
@@ -37,9 +36,10 @@ import threading
 import time
 import uuid
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any, NoReturn
 
 # ===========================================================================
 # Event Data Model
@@ -60,19 +60,19 @@ class Event:
     """
 
     event_type: str
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     source: str = ""
     correlation_id: str = ""
     timestamp: float = field(default_factory=time.monotonic)
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    _wall_clock_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    _wall_clock_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @property
     def datetime_utc(self) -> str:
         """ISO 8601 UTC timestamp captured at event creation time."""
         return self._wall_clock_at
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for audit storage."""
         return {
             "event_id": self.event_id,
@@ -153,10 +153,10 @@ EventCallback = Callable[[Event], None]
 
 __all__ = [
     "Event",
-    "Events",
+    "EventBus",
     "EventCallback",
     "EventRecorder",
-    "EventBus",
+    "Events",
 ]
 
 
@@ -176,7 +176,7 @@ class EventRecorder:
     go through AuditStore with hash chain + HMAC.
     """
 
-    def __init__(self, max_events: int = 10_000):
+    def __init__(self, max_events: int = 10_000) -> None:
         self._lock = threading.Lock()
         self._events: deque[Event] = deque(maxlen=max_events)
         self._max_events = max_events
@@ -192,11 +192,11 @@ class EventRecorder:
 
     def get_events(
         self,
-        event_type: Optional[str] = None,
-        source: Optional[str] = None,
-        correlation_id: Optional[str] = None,
+        event_type: str | None = None,
+        source: str | None = None,
+        correlation_id: str | None = None,
         limit: int = 100,
-    ) -> List[Event]:
+    ) -> list[Event]:
         """Query recorded events with optional filters."""
         with self._lock:
             events = list(self._events)
@@ -262,17 +262,17 @@ class EventBus:
         bus = EventBus.instance()
     """
 
-    _instance: Optional["EventBus"] = None
+    _instance: EventBus | None = None
     _instance_lock = threading.Lock()
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._listeners: Dict[str, List[EventCallback]] = {}
+        self._listeners: dict[str, list[EventCallback]] = {}
         self._recorder = EventRecorder()
         self._error_count = 0
 
     @classmethod
-    def instance(cls) -> "EventBus":
+    def instance(cls) -> EventBus:
         """Get or create the singleton EventBus.
 
         Use this in production — ensures all modules share the same bus.
@@ -307,6 +307,7 @@ class EventBus:
         SAFETY: If the same callback is registered twice for the same
         event type, it will be called twice. This is intentional —
         it's the caller's responsibility to manage subscriptions.
+
         """
         if not callable(callback):
             raise TypeError(f"callback must be callable, got {type(callback).__name__}")
@@ -318,6 +319,7 @@ class EventBus:
 
         Returns:
             True if the callback was found and removed, False otherwise.
+
         """
         with self._lock:
             cbs = self._listeners.get(event_type, [])
@@ -331,7 +333,7 @@ class EventBus:
     def publish(
         self,
         event_type: str,
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
         source: str = "",
         correlation_id: str = "",
     ) -> Event:
@@ -351,6 +353,7 @@ class EventBus:
             - Exceptions in callbacks are caught and counted —
               the bus NEVER crashes due to a bad callback.
             - Dispatch order: specific subscribers first, then "*" subscribers.
+
         """
         event = Event(
             event_type=event_type,
@@ -400,7 +403,7 @@ class EventBus:
         """Number of callback errors since creation."""
         return self._error_count
 
-    def subscriber_count(self, event_type: Optional[str] = None) -> int:
+    def subscriber_count(self, event_type: str | None = None) -> int:
         """Count subscribers for an event type, or total if None."""
         with self._lock:
             if event_type is None:
@@ -420,7 +423,7 @@ if __name__ == "__main__":
     # Test 1: Basic pub/sub
     bus = EventBus()
     received: list[Any] = []
-    bus.subscribe(Events.ROOM_ANALYSIS_START, lambda e: received.append(e))
+    bus.subscribe(Events.ROOM_ANALYSIS_START, received.append)
     bus.publish(Events.ROOM_ANALYSIS_START, {"room_id": "R-01"})
     assert len(received) == 1, f"Expected 1 event, got {len(received)}"
     assert received[0].data["room_id"] == "R-01"
@@ -428,14 +431,14 @@ if __name__ == "__main__":
 
     # Test 2: Wildcard subscription
     all_events: list[Any] = []
-    bus.subscribe("*", lambda e: all_events.append(e))
+    bus.subscribe("*", all_events.append)
     bus.publish(Events.DETECTOR_PLACED, {"count": 5})
     bus.publish(Events.NFPA_COMPLIANT, {"ref": "NFPA 72"})
     assert len(all_events) == 2, f"Expected 2 wildcard events, got {len(all_events)}"
     print("  [PASS] Test 2: Wildcard subscription")
 
     # Test 3: Exception safety
-    def bad_callback(e):
+    def bad_callback(e) -> NoReturn:
         raise RuntimeError("Deliberate error for testing")
 
     bus.subscribe(Events.NFPA_VIOLATION, bad_callback)
@@ -460,7 +463,7 @@ if __name__ == "__main__":
     bus3 = EventBus()
     errors: list[Any] = []
 
-    def publish_many():
+    def publish_many() -> None:
         try:
             for i in range(50):
                 bus3.publish(Events.ROOM_ANALYSIS_START, {"i": i})

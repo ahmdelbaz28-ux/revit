@@ -1,5 +1,4 @@
-"""
-fireai/bridges — BIM Integration Bridges for FireAI
+"""fireai/bridges — BIM Integration Bridges for FireAI.
 =====================================================
 Headless bridges for reading/writing building data without
 requiring active GUI applications (Revit, AutoCAD, etc.).
@@ -26,19 +25,19 @@ from fireai.bridges.revit_bim_sync import (
 )
 
 __all__ = [
-    "HeadlessIFCBridge",
+    "AcousticConfig",
+    "BIMRoom",
+    "BIMSyncOrchestrator",
+    "CableRoutingResult",
     "EnterpriseOrchestrator",
+    "FloorData",
+    "HeadlessIFCBridge",
     "IfcFirePipeline",
     "IfcPipelineConfig",
     # V25 — Integration + BIM
     "IntegrationBridge",
     "IntegrationConfig",
     "IntegrationResult",
-    "FloorData",
-    "AcousticConfig",
-    "CableRoutingResult",
-    "BIMSyncOrchestrator",
     "RevitAPIBridge",
-    "BIMRoom",
     "generate_dynamo_script",
 ]

@@ -1,5 +1,4 @@
-"""
-safety_audit_engine.py – FireAI V21.2 Automated Safety Audit Engine
+"""safety_audit_engine.py – FireAI V21.2 Automated Safety Audit Engine.
 ====================================================================
 Post-calculation compliance validation engine. Runs as the final step
 after all 5 layers complete. Validates design outputs against IEC/NFPA
@@ -29,7 +28,6 @@ Standards:
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -119,12 +117,12 @@ class AuditInput(BaseModel):
     jurisdiction: Jurisdiction = Field(
         default=Jurisdiction.GLOBAL_IEC, description="Regulatory jurisdiction for audit rules"
     )
-    hazard_type: Optional[HazardType] = Field(
+    hazard_type: HazardType | None = Field(
         default=None,
         description="Hazard type for zone mapping validation (GAS, DUST, HYBRID). "
         "If not provided, inferred from zone classification.",
     )
-    region: Optional[RegionProfile] = Field(
+    region: RegionProfile | None = Field(
         default=None,
         description="Environmental region preset for MENA advisory checks. "
         "If not provided, inferred from jurisdiction.",
@@ -156,7 +154,7 @@ class AuditResult(BaseModel):
             raise ValueError(f"Invalid status '{v}'. Must be 'PASS' or 'FAIL'.")
         return v
 
-    violations: List[AuditViolation] = Field(default_factory=list)
+    violations: list[AuditViolation] = Field(default_factory=list)
     total_checks: int = Field(ge=0, description="Total number of audit checks performed")
     passed_checks: int = Field(ge=0, description="Number of checks that passed")
 
@@ -183,8 +181,7 @@ class AuditResult(BaseModel):
 
 
 def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 6.0) -> ElevationTier:
-    """
-    Infer the elevation tier of a detector from its Z position.
+    """Infer the elevation tier of a detector from its Z position.
 
     This is a heuristic mapping. In practice, the engineer should specify
     the intended elevation tier directly. This function provides a reasonable
@@ -196,6 +193,7 @@ def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 
 
     Returns:
         ElevationTier based on detector height relative to ceiling
+
     """
     # V57 FIX: NaN z_position silently falls through to BREATHING_ZONE.
     # NaN >= X is False, NaN <= X is False → BREATHING_ZONE (middle tier).
@@ -205,10 +203,9 @@ def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 
         # for NaN and emit CRITICAL violation via ZAX-002/ZAX-003
     if z_position >= ceiling_height_m * 0.75:
         return ElevationTier.HIGH
-    elif z_position <= ceiling_height_m * 0.25:
+    if z_position <= ceiling_height_m * 0.25:
         return ElevationTier.LOW
-    else:
-        return ElevationTier.BREATHING_ZONE
+    return ElevationTier.BREATHING_ZONE
 
 
 # ---------------------------------------------------------------------------
@@ -219,7 +216,7 @@ def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 
 # Source: HCIS SAF Directive 2021, Section 4.3
 # Applies to "critical process installations" — defined as installations
 # where a fire could cause cascade failure of process equipment.
-_HCIS_MIN_REDUNDANCY: Dict[ZoneType, int] = {
+_HCIS_MIN_REDUNDANCY: dict[ZoneType, int] = {
     ZoneType.ZONE_0: 3,  # 2oo3 (same as IEC)
     ZoneType.ZONE_1: 2,  # 1oo2 (same as IEC)
     ZoneType.ZONE_2: 2,  # 1oo2 MINIMUM (stricter than IEC which allows 1)
@@ -234,8 +231,7 @@ def _get_required_redundancy(
     zone: ZoneType,
     jurisdiction: Jurisdiction,
 ) -> int:
-    """
-    Get minimum required detector redundancy per zone and jurisdiction.
+    """Get minimum required detector redundancy per zone and jurisdiction.
 
     For GLOBAL_IEC / EGYPTIAN_FIRE_CODE / USA_NFPA: uses MIN_REDUNDANCY_BY_ZONE
     These jurisdictions follow base IEC/NFPA standards which allow
@@ -250,6 +246,7 @@ def _get_required_redundancy(
 
     Returns:
         Minimum number of independent detectors required per point
+
     """
     # V43 FIX: If zone is None or unrecognized, return a conservative default
     # (2 detectors) instead of 1. A single detector in an unknown zone is a
@@ -270,8 +267,7 @@ def _get_required_redundancy(
 
 
 class SafetyAuditEngine:
-    """
-    Automated safety audit engine for FireAI design outputs.
+    """Automated safety audit engine for FireAI design outputs.
 
     Runs as the FINAL step in the design pipeline (after Layer 5).
     Validates design outputs against IEC/NFPA rules and jurisdiction-specific
@@ -312,15 +308,14 @@ class SafetyAuditEngine:
         zone=None,
         hazard_type=None,
         min_redundancy: int = 0,
-        min_transmittance: Optional[float] = None,
-        env_context: Optional[EnvironmentalContext] = None,
-        substance: Optional[SubstanceProperties] = None,
-        detector_z_positions: Optional[List[float]] = None,
+        min_transmittance: float | None = None,
+        env_context: EnvironmentalContext | None = None,
+        substance: SubstanceProperties | None = None,
+        detector_z_positions: list[float] | None = None,
         ceiling_height_m: float = 6.0,
-        audit_input: Optional[AuditInput] = None,
+        audit_input: AuditInput | None = None,
     ) -> AuditResult:
-        """
-        Run all audit gates and return combined AuditResult.
+        """Run all audit gates and return combined AuditResult.
 
         Args:
             zone: Zone classification from Layer 2
@@ -334,13 +329,14 @@ class SafetyAuditEngine:
 
         Returns:
             AuditResult with PASS/FAIL status and list of violations
+
         """
         # ── Handle AuditInput (simplified API) ──
         if audit_input is not None:
             return self._run_audit_from_input(audit_input)
 
         env_context = env_context or EnvironmentalContext()
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 
@@ -456,8 +452,7 @@ class SafetyAuditEngine:
         )
 
     def _run_audit_from_input(self, audit_input: AuditInput) -> AuditResult:
-        """
-        Run audit from a structured AuditInput object.
+        """Run audit from a structured AuditInput object.
 
         This method uses the simplified AuditInput API where the caller
         provides a single immutable object with all audit parameters.
@@ -474,7 +469,7 @@ class SafetyAuditEngine:
           Gate 4: Elevation Mismatch (via vapor_density_tier)
           Gate 5: MENA Region
         """
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 
@@ -577,8 +572,7 @@ class SafetyAuditEngine:
         self,
         audit_input: AuditInput,
     ) -> tuple:
-        """
-        Check detector elevation vs gas buoyancy using ratio-based classification.
+        """Check detector elevation vs gas buoyancy using ratio-based classification.
 
         Uses vapor_density_tier() from models_v21 for precise density-ratio
         classification (0.97/1.03 of AIR_MW thresholds).
@@ -592,8 +586,9 @@ class SafetyAuditEngine:
 
         Returns:
             Tuple of (violations, total_checks, passed_checks)
+
         """
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 1
         passed_checks = 0
 
@@ -647,7 +642,7 @@ class SafetyAuditEngine:
         env_context: EnvironmentalContext,
     ) -> tuple:
         """Check zone-based minimum detector redundancy."""
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 1
         passed_checks = 0
 
@@ -687,11 +682,11 @@ class SafetyAuditEngine:
 
     def _check_fouling(
         self,
-        min_transmittance: Optional[float],
+        min_transmittance: float | None,
         env_context: EnvironmentalContext,
     ) -> tuple:
         """Check optical transmittance degradation from fouling."""
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 
@@ -881,7 +876,7 @@ class SafetyAuditEngine:
         hazard_type: HazardType,
     ) -> tuple:
         """Check zone/hazard_type consistency per IEC 60079-10-1 §1.3."""
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 1
         passed_checks = 0
 
@@ -982,12 +977,11 @@ class SafetyAuditEngine:
 
     def _check_z_axis(
         self,
-        substance: Optional[SubstanceProperties],
-        detector_z_positions: Optional[List[float]],
+        substance: SubstanceProperties | None,
+        detector_z_positions: list[float] | None,
         ceiling_height_m: float,
     ) -> tuple:
-        """
-        Check detector elevation against gas buoyancy behavior.
+        """Check detector elevation against gas buoyancy behavior.
 
         Gas buoyancy determines WHERE a gas accumulates, classified by
         density ratio (MW_gas / MW_air) using ±3% band:
@@ -1009,7 +1003,7 @@ class SafetyAuditEngine:
           - The engineer must explicitly document and justify any
             intentional deviation from the recommended elevation
         """
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 
@@ -1145,14 +1139,13 @@ class SafetyAuditEngine:
         zone: ZoneType,
         env_context: EnvironmentalContext,
     ) -> tuple:
-        """
-        Check MENA region-specific advisory rules.
+        """Check MENA region-specific advisory rules.
 
         These are advisory (WARNING/INFO) — NOT forced. The engineer
         always has the final say. The audit merely highlights conditions
         that may need attention in MENA environments.
         """
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 

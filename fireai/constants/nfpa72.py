@@ -1,5 +1,4 @@
-"""
-FireAI — NFPA 72 Centralized Constants (Single Source of Truth)
+"""FireAI — NFPA 72 Centralized Constants (Single Source of Truth).
 
 CANONICAL SOURCE for all NFPA 72-2022 constants used across the codebase.
 No other module may define duplicate NFPA 72 constants — all must import from here.
@@ -30,7 +29,6 @@ Current Values Status:
   pending licensed FPE sign-off, but a WARNING is emitted when they are used.
 """
 
-from typing import List, Tuple
 
 # ============================================================================
 # NFPA 72-2022 — SMOKE DETECTOR SPACING (Chapter 17)
@@ -108,7 +106,7 @@ recommendation from ECMAG and SFPE Europe."""
 # NOT artificially reducing point detector spacing.
 #
 # PE SIGN-OFF: This correction is based on verbatim NFPA 72-2022 §17.7.3.2.3.
-SMOKE_HEIGHT_SPACING_TABLE: List[Tuple[float, float]] = [
+SMOKE_HEIGHT_SPACING_TABLE: list[tuple[float, float]] = [
     # (ceiling_height_max_m, adjusted_spacing_m)
     # ALL heights: flat 9.1m per NFPA 72-2022 §17.7.3.2.3
     (3.0,   9.10),   # h <= 3.0m: flat 30ft / 9.1m per §17.7.3.2.3
@@ -191,7 +189,7 @@ Per NFPA 72-2022 §17.6.3.1: 50 ft (15.24 m)."""
 # Height-adjusted heat detector spacing table
 # Source: NFPA 72-2022 Table 17.6.3.5.1
 # This is the CORRECT table for heat detector height reduction.
-HEAT_HEIGHT_SPACING_TABLE: List[Tuple[float, float]] = [
+HEAT_HEIGHT_SPACING_TABLE: list[tuple[float, float]] = [
     # (ceiling_height_max_m, adjusted_spacing_m)
     (3.0,   6.10),   # 20 ft listed
     (3.7,   5.80),   # 19 ft
@@ -214,7 +212,7 @@ HEAT_SPACING_FALLBACK_M: float = 3.50
 # For backward compatibility with modules that use 3-tuple format
 # V130 FIX: Smoke column corrected to flat 9.1m per §17.7.3.2.3.
 # Heat column unchanged (correct per Table 17.6.3.5.1).
-COMBINED_HEIGHT_SPACING_TABLE: List[Tuple[float, float, float]] = [
+COMBINED_HEIGHT_SPACING_TABLE: list[tuple[float, float, float]] = [
     # (ceiling_height_max_m, smoke_spacing_m, heat_spacing_m)
     # Smoke: flat 9.1m at ALL heights per NFPA 72 §17.7.3.2.3
     # Heat: 1%/ft reduction per NFPA 72 Table 17.6.3.5.1

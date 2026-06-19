@@ -1,5 +1,4 @@
-"""
-D6: Dependency Analyzer — Circular Imports + Dead Code Detection
+"""D6: Dependency Analyzer — Circular Imports + Dead Code Detection.
 ================================================================
 Static analysis tool that scans the FireAI codebase for:
   1. Circular import dependencies
@@ -27,7 +26,6 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Data Classes
@@ -48,7 +46,7 @@ class ImportInfo:
 class CircularImport:
     """A circular import chain."""
 
-    cycle: List[str]
+    cycle: list[str]
     severity: str  # "CRITICAL" (import-time side effects) or "WARNING"
 
 
@@ -69,10 +67,10 @@ class DependencyReport:
 
     n_modules: int = 0
     n_imports: int = 0
-    circular_imports: List[CircularImport] = field(default_factory=list)
-    dead_code_issues: List[DeadCodeIssue] = field(default_factory=list)
-    dependency_graph: Dict[str, Set[str]] = field(default_factory=lambda: defaultdict(set))
-    unused_public_modules: List[str] = field(default_factory=list)
+    circular_imports: list[CircularImport] = field(default_factory=list)
+    dead_code_issues: list[DeadCodeIssue] = field(default_factory=list)
+    dependency_graph: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
+    unused_public_modules: list[str] = field(default_factory=list)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -86,10 +84,10 @@ class ImportCollector(ast.NodeVisitor):
     def __init__(self, filepath: Path, project_root: Path) -> None:
         self.filepath = filepath
         self.project_root = project_root
-        self.imports: List[ImportInfo] = []
-        self.defined_names: Set[str] = set()
-        self.used_names: Set[str] = set()
-        self._scope_stack: List[Set[str]] = [set()]
+        self.imports: list[ImportInfo] = []
+        self.defined_names: set[str] = set()
+        self.used_names: set[str] = set()
+        self._scope_stack: list[set[str]] = [set()]
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -181,7 +179,7 @@ def _find_root(start: Path) -> Path:
     return cwd
 
 
-def _gather_py_files(root: Path) -> List[Path]:
+def _gather_py_files(root: Path) -> list[Path]:
     """Gather all Python files in the project."""
     skip_dirs = {
         ".git",
@@ -196,7 +194,7 @@ def _gather_py_files(root: Path) -> List[Path]:
         "elite_drawing_analyzer",
         "fire-alarm-db",
     }
-    files: List[Path] = []
+    files: list[Path] = []
     for p in root.rglob("*.py"):
         if any(part in skip_dirs for part in p.parts):
             continue
@@ -219,12 +217,12 @@ def _file_to_module(filepath: Path, root: Path) -> str:
 
 
 def _build_dependency_graph(
-    py_files: List[Path],
+    py_files: list[Path],
     root: Path,
-) -> Tuple[Dict[str, Set[str]], List[ImportCollector]]:
+) -> tuple[dict[str, set[str]], list[ImportCollector]]:
     """Build a module dependency graph from import analysis."""
-    graph: Dict[str, Set[str]] = defaultdict(set)
-    collectors: List[ImportCollector] = []
+    graph: dict[str, set[str]] = defaultdict(set)
+    collectors: list[ImportCollector] = []
 
     for filepath in py_files:
         try:
@@ -246,13 +244,13 @@ def _build_dependency_graph(
     return graph, collectors
 
 
-def _find_circular_imports(graph: Dict[str, Set[str]]) -> List[CircularImport]:
+def _find_circular_imports(graph: dict[str, set[str]]) -> list[CircularImport]:
     """Find all circular import chains using DFS."""
-    cycles: List[CircularImport] = []
-    visited: Set[str] = set()
-    path: List[str] = []
-    path_set: Set[str] = set()
-    found_cycles: Set[Tuple[str, ...]] = set()
+    cycles: list[CircularImport] = []
+    visited: set[str] = set()
+    path: list[str] = []
+    path_set: set[str] = set()
+    found_cycles: set[tuple[str, ...]] = set()
 
     def dfs(node: str) -> None:
         if node in path_set:
@@ -292,11 +290,11 @@ def _find_circular_imports(graph: Dict[str, Set[str]]) -> List[CircularImport]:
 
 
 def _find_dead_code(
-    collectors: List[ImportCollector],
+    collectors: list[ImportCollector],
     root: Path,
-) -> List[DeadCodeIssue]:
+) -> list[DeadCodeIssue]:
     """Find dead code issues: unused imports and unreachable code."""
-    issues: List[DeadCodeIssue] = []
+    issues: list[DeadCodeIssue] = []
 
     for collector in collectors:
         filepath = collector.filepath
@@ -326,12 +324,12 @@ def _find_dead_code(
 
 
 def _find_unused_public_modules(
-    graph: Dict[str, Set[str]],
+    graph: dict[str, set[str]],
     root: Path,
-) -> List[str]:
+) -> list[str]:
     """Find modules that are never imported by any other module."""
     all_modules = set(graph.keys())
-    all_targets: Set[str] = set()
+    all_targets: set[str] = set()
     for targets in graph.values():
         all_targets.update(targets)
 
@@ -374,12 +372,12 @@ def _print_report(report: DependencyReport, root: Path) -> int:
         warnings = [c for c in report.circular_imports if c.severity == "WARNING"]
         print(f"\n[CRITICAL] Circular import chains ({len(critical)}):")
         for ci in critical:
-            cycle_str = " → ".join(ci.cycle + [ci.cycle[0]])
+            cycle_str = " → ".join([*ci.cycle, ci.cycle[0]])
             print(f"  X {cycle_str}")
         if warnings:
             print(f"\n[WARN] Potential circular import chains ({len(warnings)}):")
             for ci in warnings:
-                cycle_str = " → ".join(ci.cycle + [ci.cycle[0]])
+                cycle_str = " → ".join([*ci.cycle, ci.cycle[0]])
                 print(f"  ⚠ {cycle_str}")
     else:
         print("\n[PASS] No circular import chains detected.")
@@ -427,7 +425,7 @@ def _print_report(report: DependencyReport, root: Path) -> int:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def main(root: Optional[Path] = None) -> int:
+def main(root: Path | None = None) -> int:
     """Run the dependency analysis."""
     if root is None:
         root = _find_root(Path(__file__))

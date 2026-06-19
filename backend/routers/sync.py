@@ -1,5 +1,4 @@
-"""
-backend/routers/sync.py — Project synchronization and WebSocket endpoint.
+"""backend/routers/sync.py — Project synchronization and WebSocket endpoint.
 
 Provides:
   - POST /api/projects/:id/sync  — trigger project sync
@@ -22,7 +21,7 @@ import hmac as _hmac
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
@@ -179,7 +178,7 @@ async def sync_project(project_id: str):
     # Set status to syncing
     db.set_sync_status(project_id, {
         "status": "syncing",
-        "lastSync": datetime.now(timezone.utc).isoformat(),
+        "lastSync": datetime.now(UTC).isoformat(),
         "pendingChanges": 0,
     })
 
@@ -187,7 +186,7 @@ async def sync_project(project_id: str):
     await asyncio.sleep(0.1)
 
     # Mark as synced
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     db.set_sync_status(project_id, {
         "status": "synced",
         "lastSync": now,
@@ -282,7 +281,7 @@ def _validate_ws_api_key(websocket: WebSocket) -> bool:
 
 
 @ws_router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for real-time project updates.
 
     SECURITY:
@@ -362,7 +361,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 })
                 await websocket.close(code=4003, reason="Authentication failed")
                 return
-        except (asyncio.TimeoutError, json.JSONDecodeError):
+        except (TimeoutError, json.JSONDecodeError):
             await websocket.send_json({
                 "channel": "system",
                 "type": "auth_timeout",
@@ -404,7 +403,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({
                     "channel": "system",
                     "type": "pong",
-                    "data": {"timestamp": datetime.now(timezone.utc).isoformat()},
+                    "data": {"timestamp": datetime.now(UTC).isoformat()},
                 })
             elif action == "subscribe":
                 project_id = message.get("projectId", "")

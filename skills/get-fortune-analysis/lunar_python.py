@@ -1,12 +1,12 @@
 import datetime
+
 from lunar_python import Lunar, Solar
 
+
 def get_cyber_divination_data(birth_year, birth_month, birth_day, birth_hour=0, birth_minute=0):
+    """赛博算命核心算法 v2.1
+    - 输出适配 HTML 前端渲染.
     """
-    赛博算命核心算法 v2.1
-    - 输出适配 HTML 前端渲染
-    """
-    
     # --- 基础配置 (简化版) ---
     GAN_WU_XING = {"甲": "木", "乙": "木", "丙": "火", "丁": "火", "戊": "土", "己": "土", "庚": "金", "辛": "金", "壬": "水", "癸": "水"}
     ZHI_WU_XING = {"子": "水", "丑": "土", "寅": "木", "卯": "木", "辰": "土", "巳": "火", "午": "火", "未": "土", "申": "金", "酉": "金", "戌": "土", "亥": "水"}
@@ -38,7 +38,7 @@ def get_cyber_divination_data(birth_year, birth_month, birth_day, birth_hour=0, 
         if not target_gan: return ""
         target_element = GAN_WU_XING.get(target_gan) or ZHI_WU_XING.get(target_gan)
         rel = RELATIONSHIP[dm_element].get(target_element, "同")
-        
+
         # 简化阴阳判定
         target_yy = "阳" if target_gan in ["甲", "丙", "戊", "庚", "壬", "寅", "申", "巳", "亥"] else "阴"
         is_same = (dm_yin_yang == target_yy)
@@ -49,16 +49,15 @@ def get_cyber_divination_data(birth_year, birth_month, birth_day, birth_hour=0, 
     score = 0
     month_zhi = ba_zi.getMonthZhi()
     m_ele = ZHI_WU_XING[month_zhi]
-    
+
     # 得令 (+40)
     if RELATIONSHIP[dm_element][m_ele] in ["同", "被生"]: score += 40
     elif RELATIONSHIP[dm_element][m_ele] == "被克": score -= 20
-    
+
     # 得地 (+15/each)
     for zhi in [ba_zi.getYearZhi(), ba_zi.getDayZhi(), ba_zi.getTimeZhi()]:
         if ZHI_WU_XING[zhi] == dm_element: score += 15
-        
-    body_strength = "身强 (Strong)" if score >= 40 else "身弱 (Weak)"
+
     strength_cn = "身强" if score >= 40 else "身弱"
 
     # --- 4. 流年 ---
@@ -68,7 +67,7 @@ def get_cyber_divination_data(birth_year, birth_month, birth_day, birth_hour=0, 
     current_lunar = Lunar.fromYmd(current_year, 6, 1)
     annual_gan = current_lunar.getYearGan()
     annual_zhi = current_lunar.getYearZhi()
-    
+
     annual_god = get_ten_god(annual_gan)
 
     return {

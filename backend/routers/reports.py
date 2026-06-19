@@ -1,5 +1,4 @@
-"""
-backend/routers/reports.py — Report generation and export endpoints.
+"""backend/routers/reports.py — Report generation and export endpoints.
 
 Reports can be:
   - voltage_drop: IEC 60364 / NFPA 72 voltage drop analysis
@@ -23,7 +22,7 @@ import io
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -57,7 +56,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
     devices = db.get_all_devices_for_project(project_id)
     connections = db.get_all_connections_for_project(project_id)
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     if report_type == "voltage_drop":
         # Aggregate voltage drop data from device connections
@@ -85,7 +84,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             "circuits": circuits,
         }
 
-    elif report_type == "nfpa72_coverage":
+    if report_type == "nfpa72_coverage":
         return {
             "type": "nfpa72_coverage",
             "standard": "NFPA 72-2022",
@@ -98,7 +97,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             ],
         }
 
-    elif report_type == "nfpa72_battery":
+    if report_type == "nfpa72_battery":
         # NFPA 72-2022 §27.6.2 Battery Calculation
         # Load values are stored in Amperes (A) in the database.
         # The devices.py router converts mA/W to A before storage on CREATE.
@@ -174,7 +173,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             ),
         }
 
-    elif report_type == "cable_sizing":
+    if report_type == "cable_sizing":
         return {
             "type": "cable_sizing",
             "standard": "IEC 60364 / NFPA 70",
@@ -191,16 +190,15 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             ],
         }
 
-    else:
-        # Generic report with project summary
-        return {
-            "type": report_type,
-            "standard": "General Engineering Analysis",
-            "generatedAt": now,
-            "totalDevices": len(devices),
-            "totalConnections": len(connections),
-            "devicesByCategory": _count_by_category(devices),
-        }
+    # Generic report with project summary
+    return {
+        "type": report_type,
+        "standard": "General Engineering Analysis",
+        "generatedAt": now,
+        "totalDevices": len(devices),
+        "totalConnections": len(connections),
+        "devicesByCategory": _count_by_category(devices),
+    }
 
 
 def _count_by_category(devices: list) -> dict:
@@ -264,7 +262,7 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
     # Generate report content (synchronously for simplicity)
     try:
         content = _generate_report_content(input_data.type, project_id)
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         db.update_report(
             project_id,
             report["id"],
@@ -337,7 +335,7 @@ async def export_report(
                 "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.json\""
             },
         )
-    elif format == "pdf":
+    if format == "pdf":
         # PDF generation using reportlab
         try:
             from reportlab.lib.pagesizes import A4
@@ -362,7 +360,7 @@ async def export_report(
             params = report.get("parameters", {})
             content_data = params.get("content", {})
 
-            def _add_data(data, prefix="", depth=0):
+            def _add_data(data, prefix="", depth=0) -> None:
                 """Recursively add data to PDF, limiting depth.
 
                 BUG-M1 FIX: Escape XML entities in values to prevent

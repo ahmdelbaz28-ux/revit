@@ -1,5 +1,4 @@
-"""
-fireai.core.constraint_engine — Code-Based Routing Constraints
+"""fireai.core.constraint_engine — Code-Based Routing Constraints.
 ==============================================================
 
 Deterministic constraint engine for fire alarm cable routing.
@@ -30,7 +29,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Tuple
 
 # Reuse wire gauge and resistance data
 from fireai.core.cable_routing_engine import WireGauge
@@ -159,6 +157,7 @@ class ConstraintResult:
         severity: 'CRITICAL', 'HIGH', 'MEDIUM', or 'LOW'.
         remediation: What to do if the constraint is violated.
         formula: The formula used for the check, with values.
+
     """
 
     constraint_name: str
@@ -181,9 +180,10 @@ class RoutingConstraintSet:
         all_satisfied: True if ALL constraints are satisfied.
         critical_violations: Count of CRITICAL severity violations.
         total_violations: Count of all violations.
+
     """
 
-    results: Tuple[ConstraintResult, ...]
+    results: tuple[ConstraintResult, ...]
     # V114 FIX: Fail-safe — all_satisfied must be PROVEN, not assumed
     all_satisfied: bool = False
     critical_violations: int = 0
@@ -228,7 +228,7 @@ class ConstraintEngine:
         max_fastening_interval_mm: float = MAX_CABLE_FASTENING_INTERVAL_MM,
         bend_penalty_m: float = BEND_PENALTY_M,
         elevation_penalty_m: float = ELEVATION_PENALTY_M,
-    ):
+    ) -> None:
         """Initialize the constraint engine with project specifications.
 
         Args:
@@ -238,6 +238,7 @@ class ConstraintEngine:
             max_fastening_interval_mm: Maximum cable fastening interval (default 457mm).
             bend_penalty_m: Bend penalty in equivalent meters (default 0.5m).
             elevation_penalty_m: Elevation change penalty (default 2.0m).
+
         """
         self._min_conduit_inches = min_conduit_inches
         self._bend_radius_factor = bend_radius_factor
@@ -270,6 +271,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with pass/fail status.
+
         """
         max_length = _NAC_MAX_LENGTHS_M.get(wire_gauge, 229.0)  # type: ignore[call-overload]
 
@@ -346,6 +348,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with voltage drop analysis.
+
         """
         # Compute voltage drop with DC return path (×2)
         # V60 FIX: Use temperature-corrected resistance per NEC practice
@@ -425,6 +428,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with separation check result.
+
         """
         is_satisfied = actual_separation_mm >= self._min_electrical_separation_mm
 
@@ -476,6 +480,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with bend radius check.
+
         """
         max_bend_radius = self._bend_radius_factor * conduit_diameter_mm
 
@@ -544,6 +549,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with conduit size check.
+
         """
         is_satisfied = conduit_inches >= self._min_conduit_inches
 
@@ -577,6 +583,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with fastening check.
+
         """
         max_interval_mm = self._max_fastening_interval_mm
 
@@ -647,8 +654,8 @@ class ConstraintEngine:
 
     def check_class_a_separation(
         self,
-        outgoing_path: List[Tuple[float, float, float]],
-        return_path: List[Tuple[float, float, float]],
+        outgoing_path: list[tuple[float, float, float]],
+        return_path: list[tuple[float, float, float]],
         min_separation_m: float = 0.3,
     ) -> ConstraintResult:
         """Check Class A circuit outgoing/return path separation.
@@ -667,6 +674,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with separation check.
+
         """
         min_distance = float("inf")
 
@@ -731,6 +739,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with ampacity analysis.
+
         """
         amp_result = check_ampacity(
             alarm_current_a=alarm_current_a,
@@ -781,6 +790,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with derating information.
+
         """
         factor = get_ambient_derating_factor(ambient_temp_c, conductor_temp_rating_c)
         is_satisfied = factor >= 0.80  # Flag if derating is severe
@@ -821,6 +831,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with derating information.
+
         """
         factor = get_conductor_count_derating(num_current_carrying)
         is_satisfied = num_current_carrying <= 3
@@ -864,6 +875,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with fill percentage.
+
         """
         if conduit_inner_diameter_mm <= 0:
             return ConstraintResult(
@@ -922,13 +934,13 @@ class ConstraintEngine:
         num_fasteners: int = 0,
         circuit_type: str = "NAC",
         is_class_a: bool = False,
-        outgoing_path: Optional[List[Tuple[float, float, float]]] = None,
-        return_path: Optional[List[Tuple[float, float, float]]] = None,
+        outgoing_path: list[tuple[float, float, float]] | None = None,
+        return_path: list[tuple[float, float, float]] | None = None,
         ambient_temp_c: float = 30.0,
-        conductor_operating_temp_c: Optional[float] = None,
+        conductor_operating_temp_c: float | None = None,
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
-        conduit_size_inches: Optional[float] = None,
+        conduit_size_inches: float | None = None,
     ) -> RoutingConstraintSet:
         """Run ALL constraint checks and return combined result.
 
@@ -985,6 +997,7 @@ class ConstraintEngine:
 
         Returns:
             RoutingConstraintSet with all check results.
+
         """
         results = []
 
@@ -1110,8 +1123,8 @@ class ConstraintEngine:
 
     def compute_move_cost(
         self,
-        from_cell: Tuple[int, int, int],
-        to_cell: Tuple[int, int, int],
+        from_cell: tuple[int, int, int],
+        to_cell: tuple[int, int, int],
         is_near_electrical: bool = False,
         grid_resolution: float = 0.1,
     ) -> float:
@@ -1135,6 +1148,7 @@ class ConstraintEngine:
 
         Returns:
             Movement cost in equivalent meters.
+
         """
         dz = to_cell[2] - from_cell[2]
 
@@ -1162,8 +1176,8 @@ class ConstraintEngine:
 
     @staticmethod
     def compute_bend_cost(
-        prev_dir: Optional[Tuple[int, int, int]],
-        curr_dir: Tuple[int, int, int],
+        prev_dir: tuple[int, int, int] | None,
+        curr_dir: tuple[int, int, int],
     ) -> float:
         """Compute the cost of a direction change (bend).
 
@@ -1181,6 +1195,7 @@ class ConstraintEngine:
 
         Returns:
             Bend cost in equivalent meters (0.0 for straight, 0.5 for 90°).
+
         """
         if prev_dir is None:
             return 0.0  # First move has no bend
@@ -1194,8 +1209,8 @@ class ConstraintEngine:
 
     @staticmethod
     def manhattan_heuristic(
-        current: Tuple[int, int, int],
-        goal: Tuple[int, int, int],
+        current: tuple[int, int, int],
+        goal: tuple[int, int, int],
         grid_resolution: float = 0.1,
     ) -> float:
         """Manhattan distance heuristic for A* pathfinding.
@@ -1218,6 +1233,7 @@ class ConstraintEngine:
 
         Returns:
             Estimated minimum cost from current to goal.
+
         """
         dx = abs(goal[0] - current[0])
         dy = abs(goal[1] - current[1])

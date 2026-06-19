@@ -1,5 +1,4 @@
-"""
-fireai/core/bps_allocator.py
+"""fireai/core/bps_allocator.py.
 =============================
 NAC Booster Power Supply (BPS) Auto-Allocator for Fire Alarm Systems.
 
@@ -59,7 +58,7 @@ import logging
 import math
 import struct
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
@@ -104,6 +103,7 @@ def _guard_finite(value: float, field_name: str) -> float:
 
     Raises:
         ValueError: If value is NaN or Inf.
+
     """
     if not isinstance(value, (int, float)):
         raise ValueError(
@@ -133,6 +133,7 @@ def _guard_positive_finite(value: float, field_name: str) -> float:
 
     Raises:
         ValueError: If value is NaN, Inf, zero, or negative.
+
     """
     v = _guard_finite(value, field_name)
     if v <= 0:
@@ -152,6 +153,7 @@ def _guard_non_negative_finite(value: float, field_name: str) -> float:
 
     Raises:
         ValueError: If value is NaN, Inf, or negative.
+
     """
     v = _guard_finite(value, field_name)
     if v < 0:
@@ -186,7 +188,7 @@ MAX_VOLTAGE_DROP_FRACTION: float = 0.20
 # as compliant could actually exceed the voltage drop limit at operating temp,
 # causing horns/strobes at end-of-line to fail during a fire.
 # Source: NEC Chapter 9, Table 8 — "Direct-Current Resistance at 75°C" column.
-WIRE_RESISTANCE_OHM_PER_1000FT: Dict[int, float] = {
+WIRE_RESISTANCE_OHM_PER_1000FT: dict[int, float] = {
     18: 7.770,  # AWG 18 — 7.770 Ω/1000ft at 75°C (was 6.51 at 20°C)
     16: 4.890,  # AWG 16 — 4.890 Ω/1000ft at 75°C (was 4.09 at 20°C)
     14: 3.070,  # AWG 14 — 3.070 Ω/1000ft at 75°C (was 2.58 at 20°C)
@@ -196,11 +198,11 @@ WIRE_RESISTANCE_OHM_PER_1000FT: Dict[int, float] = {
 
 # --- Wire Resistance in ohm/ft (derived for per-segment calculations) ---
 # V_drop = 2 × I × R_per_ft × L_ft (NEC 760 DC return path factor)
-WIRE_RESISTANCE_OHM_PER_FT: Dict[int, float] = {awg: r / 1000.0 for awg, r in WIRE_RESISTANCE_OHM_PER_1000FT.items()}
+WIRE_RESISTANCE_OHM_PER_FT: dict[int, float] = {awg: r / 1000.0 for awg, r in WIRE_RESISTANCE_OHM_PER_1000FT.items()}
 
 # --- Standard NAC Panel Ratings (amps) ---
 # Typical NAC circuit ratings per UL 864 10th Edition
-STANDARD_NAC_RATINGS_A: List[float] = [1.0, 2.0, 3.0, 4.0, 6.0, 8.0]
+STANDARD_NAC_RATINGS_A: list[float] = [1.0, 2.0, 3.0, 4.0, 6.0, 8.0]
 
 # --- Default FACP NAC Current Limit ---
 # Per NFPA 72 §10.6, FACP NAC circuits are typically rated at 2A or 3A
@@ -244,7 +246,7 @@ TYPICAL_HORN_CURRENT_A: float = 0.050
 STROBE_CURRENT_PER_CANDELA_A: float = 0.00567
 
 # Pre-calculated strobe currents for common ratings
-STROBE_CURRENT_TABLE_A: Dict[float, float] = {
+STROBE_CURRENT_TABLE_A: dict[float, float] = {
     15.0: 0.085,  # 15 candela — small rooms, corridors
     30.0: 0.095,  # 30 candela
     75.0: 0.115,  # 75 candela — standard room coverage
@@ -318,6 +320,7 @@ def calculate_strobe_current(candela: float) -> float:
 
     Raises:
         ValueError: If candela is NaN, Inf, or negative.
+
     """
     c = _guard_non_negative_finite(candela, "candela")
     if c == 0.0:
@@ -334,8 +337,8 @@ def calculate_strobe_current(candela: float) -> float:
 
 def calculate_device_current(
     device_type: str,
-    candela: Optional[float] = None,
-    horn_current_a: Optional[float] = None,
+    candela: float | None = None,
+    horn_current_a: float | None = None,
 ) -> float:
     """Calculate total current draw for a notification appliance.
 
@@ -352,6 +355,7 @@ def calculate_device_current(
 
     Raises:
         ValueError: If inputs are NaN/Inf or device_type is unknown.
+
     """
     dt = device_type.lower().strip()
 
@@ -385,7 +389,7 @@ def calculate_device_current(
     return 0.040
 
 
-def calculate_nac_circuit_current(devices: List[Dict[str, Any]]) -> float:
+def calculate_nac_circuit_current(devices: list[dict[str, Any]]) -> float:
     """Calculate total NAC circuit current for a list of notification devices.
 
     Per NFPA 72 §10.6.4.2 and NEC 760, the total alarm current on a NAC
@@ -404,6 +408,7 @@ def calculate_nac_circuit_current(devices: List[Dict[str, Any]]) -> float:
 
     Raises:
         ValueError: If any device current input is NaN/Inf.
+
     """
     total = 0.0
     for i, dev in enumerate(devices):
@@ -453,6 +458,7 @@ def calculate_voltage_drop_vdc(
 
     Raises:
         ValueError: If inputs are NaN/Inf or AWG is unknown.
+
     """
     i = _guard_non_negative_finite(total_current_a, "total_current_a")
     l = _guard_non_negative_finite(one_way_length_ft, "one_way_length_ft")
@@ -495,6 +501,7 @@ def calculate_eol_voltage(
 
     Raises:
         ValueError: If inputs are NaN/Inf.
+
     """
     v_nom = _guard_positive_finite(nominal_voltage_vdc, "nominal_voltage_vdc")
     v_drop = calculate_voltage_drop_vdc(total_current_a, one_way_length_ft, awg, v_nom)
@@ -541,6 +548,7 @@ def select_minimum_wire_gauge(
 
     Raises:
         ValueError: If inputs are NaN/Inf.
+
     """
     i = _guard_non_negative_finite(total_current_a, "total_current_a")
     l = _guard_non_negative_finite(one_way_length_ft, "one_way_length_ft")
@@ -593,6 +601,7 @@ def calculate_max_circuit_length_ft(
 
     Raises:
         ValueError: If inputs are NaN/Inf or AWG is unknown.
+
     """
     i = _guard_non_negative_finite(total_current_a, "total_current_a")
     _guard_positive_finite(nominal_voltage_vdc, "nominal_voltage_vdc")
@@ -634,7 +643,7 @@ class NACDeviceSegment:
     device_id: str
     device_type: str
     current_a: float
-    candela: Optional[float]
+    candela: float | None
     x_ft: float
     y_ft: float
     segment_length_ft: float  # Wire length from previous device to this one
@@ -663,8 +672,8 @@ class NACCircuitResult:
     is_voltage_compliant: bool
     selected_awg: int
     total_wire_length_ft: float
-    devices: Tuple[NACDeviceSegment, ...]
-    violations: Tuple[str, ...]
+    devices: tuple[NACDeviceSegment, ...]
+    violations: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -678,10 +687,10 @@ class BPSPlacement:
     booster_id: str
     x_ft: float
     y_ft: float
-    nac_circuits: Tuple[str, ...]
+    nac_circuits: tuple[str, ...]
     total_current_a: float
     nac_circuits_available: int
-    floors_covered: Tuple[str, ...]
+    floors_covered: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -690,7 +699,7 @@ class FloorNACProfile:
 
     floor_name: str
     nac_current: float
-    centroid_location: Tuple[float, float] = (0.0, 0.0)
+    centroid_location: tuple[float, float] = (0.0, 0.0)
     level_z: float = 0.0
 
 
@@ -701,7 +710,7 @@ class BoosterAllocation:
     booster_id: str
     x: float
     y: float
-    floors_covered: List[str]
+    floors_covered: list[str]
     peak_load: float
 
 
@@ -717,13 +726,13 @@ class AllocationResult:
     facp_native_load_a: float
     facp_nac_rating_a: float
     num_boosters: int
-    booster_placements: Tuple[BPSPlacement, ...]
-    nac_circuits: Tuple[NACCircuitResult, ...]
+    booster_placements: tuple[BPSPlacement, ...]
+    nac_circuits: tuple[NACCircuitResult, ...]
     sync_required: bool
     is_compliant: bool
-    violations: Tuple[str, ...]
+    violations: tuple[str, ...]
     computation_hash: str
-    nfpa_references: Tuple[str, ...]
+    nfpa_references: tuple[str, ...]
     algorithm_version: str
 
 
@@ -745,6 +754,7 @@ def _validate_nac_circuit_result(result: NACCircuitResult) -> NACCircuitResult:
 
     Raises:
         ValueError: If any computed value is NaN/Inf (computation error).
+
     """
     # Check for NaN/Inf in computed results
     for attr_name in ("total_current_a", "eol_voltage_vdc", "current_headroom_a", "total_wire_length_ft"):
@@ -851,6 +861,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If any numeric parameter is NaN/Inf or out of bounds.
+
         """
         # LAYER 0: Input sanitization
         self.facp_nac_rating = _guard_positive_finite(facp_nac_rating_a, "facp_nac_rating_a")
@@ -901,7 +912,7 @@ class NACBoosterAllocator:
 
     def allocate_boosters_across_floors(
         self,
-        floor_data: List[Dict[str, Any]],
+        floor_data: list[dict[str, Any]],
     ) -> Any:
         """Distribute NAC load across FACP and auto-deployed BPS panels.
 
@@ -927,12 +938,13 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If any numeric input is NaN/Inf.
+
         """
         # L0: Validate floor data inputs
         self._validate_floor_data(floor_data)
 
         violations: list = []
-        panel_allocation: List[Dict[str, Any]] = []
+        panel_allocation: list[dict[str, Any]] = []
         cumulative_load: float = 0.0
         active_booster_id: int = 1
         current_load: float = 0.0
@@ -978,7 +990,7 @@ class NACBoosterAllocator:
 
             if current_load + f_current > zone_capacity:
                 pos = f_centroid if isinstance(f_centroid, tuple) else (0.0, 0.0)
-                new_booster: Dict[str, Any] = {
+                new_booster: dict[str, Any] = {
                     "type": "NAC_BOOSTER_BPS",
                     "id": f"BPS-0{active_booster_id}",
                     "x": pos[0] + self.bps_offset_x_ft,
@@ -999,7 +1011,7 @@ class NACBoosterAllocator:
 
         # SYNC_MODULE for multi-BPS (NFPA 72 §18.5.5)
         if len(panel_allocation) > 0:
-            sync_module: Dict[str, Any] = {
+            sync_module: dict[str, Any] = {
                 "type": "SYNC_MODULE",
                 "description": (
                     f"Mandatory Global Notification Synchronization "
@@ -1016,7 +1028,7 @@ class NACBoosterAllocator:
 
         # --- PASS 2: Voltage drop validation ---
         voltage_result = None
-        all_devices_line: List[Dict[str, Any]] = []
+        all_devices_line: list[dict[str, Any]] = []
         for f_info in sorted_floors:
             dev_line = f_info.get("devices_line")
             if dev_line and isinstance(dev_line, list):
@@ -1113,7 +1125,7 @@ class NACBoosterAllocator:
             except Exception as exc:
                 logger.error("Failed to record distributed power routing decision audit: %s", exc)
 
-        result_dict: Dict[str, Any] = {
+        result_dict: dict[str, Any] = {
             "decision_type": "distributed_power_routing",
             "value": {
                 "boosters": panel_allocation,
@@ -1139,10 +1151,10 @@ class NACBoosterAllocator:
 
     def validate_voltage_drop(
         self,
-        devices_line: List[Dict[str, Any]],
+        devices_line: list[dict[str, Any]],
         awg: int = DEFAULT_AWG,
         max_cable_length_ft: float = 1000.0,
-        source_location: Optional[Tuple[float, float]] = None,
+        source_location: tuple[float, float] | None = None,
     ) -> Any:
         """Pass 2: Iterative segment-by-segment voltage drop validation.
 
@@ -1180,6 +1192,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If any numeric input is NaN/Inf.
+
         """
         # L0: Validate inputs
         _guard_finite(max_cable_length_ft, "max_cable_length_ft")
@@ -1188,7 +1201,7 @@ class NACBoosterAllocator:
             _guard_finite(source_location[1], "source_location[1]")
 
         violations: list = []
-        booster_placements: List[Dict[str, Any]] = []
+        booster_placements: list[dict[str, Any]] = []
 
         # L0: Validate device inputs — reject NaN/Inf with ValueError
         for idx, dev in enumerate(devices_line):
@@ -1230,7 +1243,7 @@ class NACBoosterAllocator:
         running_length = 0.0
 
         # FACP-to-first-device voltage drop
-        last_pt: Optional[Tuple[float, float]] = source_location
+        last_pt: tuple[float, float] | None = source_location
 
         for i, dev in enumerate(devices_line):
             # V59 FIX: Guard device coordinates against NaN/Inf. Non-finite
@@ -1409,8 +1422,8 @@ class NACBoosterAllocator:
     def analyze_nac_circuit(
         self,
         circuit_id: str,
-        devices: List[Dict[str, Any]],
-        nac_rating_a: Optional[float] = None,
+        devices: list[dict[str, Any]],
+        nac_rating_a: float | None = None,
         awg: int = DEFAULT_AWG,
     ) -> NACCircuitResult:
         """Analyze a single NAC circuit for current and voltage compliance.
@@ -1439,6 +1452,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If inputs are NaN/Inf.
+
         """
         # L0: Input validation
         _guard_finite(nac_rating_a or self.facp_nac_rating, "nac_rating_a")
@@ -1462,8 +1476,8 @@ class NACBoosterAllocator:
         running_current_tail = total_current
         running_length = 0.0
 
-        violation_strs: List[str] = []
-        device_segments: List[NACDeviceSegment] = []
+        violation_strs: list[str] = []
+        device_segments: list[NACDeviceSegment] = []
 
         for i, dev in enumerate(devices):
             curr_pt = (
@@ -1565,7 +1579,7 @@ class NACBoosterAllocator:
         self,
         total_current_a: float,
         one_way_length_ft: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recommend minimum wire gauge for acceptable voltage drop.
 
         Per NFPA 72 §10.6.4 and NEC 760, the wire gauge must maintain
@@ -1580,6 +1594,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If inputs are NaN/Inf.
+
         """
         i = _guard_non_negative_finite(total_current_a, "total_current_a")
         l = _guard_non_negative_finite(one_way_length_ft, "one_way_length_ft")
@@ -1640,6 +1655,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If inputs are NaN/Inf or AWG is unknown.
+
         """
         return calculate_max_circuit_length_ft(
             total_current_a,
@@ -1652,7 +1668,7 @@ class NACBoosterAllocator:
     # Internal Helpers
     # ------------------------------------------------------------------
 
-    def _validate_floor_data(self, floor_data: List[Dict[str, Any]]) -> None:
+    def _validate_floor_data(self, floor_data: list[dict[str, Any]]) -> None:
         """Validate floor data inputs per QOMN-FIRE Layer 0.
 
         Args:
@@ -1660,6 +1676,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If any numeric value is NaN/Inf.
+
         """
         for idx, f_info in enumerate(floor_data):
             nac_current = f_info.get("nac_current")
@@ -1702,6 +1719,7 @@ class NACBoosterAllocator:
             severity: "CRITICAL", "HIGH", "MEDIUM", or "LOW".
             citation: NFPA/NEC code reference.
             description: Human-readable violation description.
+
         """
         # Map "WARNING" to "HIGH" for provenance Violation compatibility
         mapped_severity = severity
@@ -1735,7 +1753,7 @@ def quick_voltage_check(
     total_current_a: float,
     one_way_length_ft: float,
     awg: int = DEFAULT_AWG,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Quick voltage drop check for a NAC circuit.
 
     Convenience function that creates a NACBoosterAllocator with defaults
@@ -1751,6 +1769,7 @@ def quick_voltage_check(
 
     Raises:
         ValueError: If inputs are NaN/Inf.
+
     """
     i = _guard_non_negative_finite(total_current_a, "total_current_a")
     l = _guard_non_negative_finite(one_way_length_ft, "one_way_length_ft")
@@ -1788,9 +1807,9 @@ def quick_voltage_check(
 
 
 def quick_nac_load_check(
-    devices: List[Dict[str, Any]],
+    devices: list[dict[str, Any]],
     nac_rating_a: float = DEFAULT_FACP_NAC_RATING_A,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Quick NAC circuit loading check.
 
     Convenience function to verify NAC circuit current does not exceed
@@ -1805,6 +1824,7 @@ def quick_nac_load_check(
 
     Raises:
         ValueError: If inputs are NaN/Inf.
+
     """
     rating = _guard_positive_finite(nac_rating_a, "nac_rating_a")
     total = calculate_nac_circuit_current(devices)
@@ -1824,45 +1844,45 @@ def quick_nac_load_check(
 
 
 __all__ = [
-    # Main class
-    "NACBoosterAllocator",
-    # Frozen dataclasses
-    "NACDeviceSegment",
-    "NACCircuitResult",
-    "BPSPlacement",
-    "FloorNACProfile",
-    "BoosterAllocation",
-    "AllocationResult",
-    # Constants — Voltage
-    "NOMINAL_VOLTAGE_VDC",
-    "MIN_EOL_VOLTAGE_VDC",
-    "MAX_VOLTAGE_DROP_FRACTION",
-    # Constants — Wire
-    "WIRE_RESISTANCE_OHM_PER_1000FT",
-    "WIRE_RESISTANCE_OHM_PER_FT",
     "DEFAULT_AWG",
-    # Constants — NAC Ratings
-    "STANDARD_NAC_RATINGS_A",
-    "DEFAULT_FACP_NAC_RATING_A",
     "DEFAULT_BOOSTER_CAPACITY_A",
     "DEFAULT_BPS_NAC_RATING_A",
+    "DEFAULT_FACP_NAC_RATING_A",
     "DEFAULT_NAC_CIRCUITS_PER_BPS",
-    # Constants — Device Currents
-    "TYPICAL_HORN_CURRENT_A",
+    "MAX_VOLTAGE_DROP_FRACTION",
+    "MIN_EOL_VOLTAGE_VDC",
+    # Constants — Voltage
+    "NOMINAL_VOLTAGE_VDC",
+    # Constants — NAC Ratings
+    "STANDARD_NAC_RATINGS_A",
     "STROBE_CURRENT_PER_CANDELA_A",
     "STROBE_CURRENT_TABLE_A",
+    # Constants — Device Currents
+    "TYPICAL_HORN_CURRENT_A",
     "TYPICAL_HORN_STROBE_15CD_CURRENT_A",
     "TYPICAL_HORN_STROBE_75CD_CURRENT_A",
     "TYPICAL_HORN_STROBE_110CD_CURRENT_A",
+    # Constants — Wire
+    "WIRE_RESISTANCE_OHM_PER_1000FT",
+    "WIRE_RESISTANCE_OHM_PER_FT",
+    "AllocationResult",
+    "BPSPlacement",
+    "BoosterAllocation",
+    "FloorNACProfile",
+    # Main class
+    "NACBoosterAllocator",
+    "NACCircuitResult",
+    # Frozen dataclasses
+    "NACDeviceSegment",
+    "calculate_device_current",
+    "calculate_eol_voltage",
+    "calculate_max_circuit_length_ft",
+    "calculate_nac_circuit_current",
     # Functions — Computation
     "calculate_strobe_current",
-    "calculate_device_current",
-    "calculate_nac_circuit_current",
     "calculate_voltage_drop_vdc",
-    "calculate_eol_voltage",
-    "select_minimum_wire_gauge",
-    "calculate_max_circuit_length_ft",
+    "quick_nac_load_check",
     # Functions — Quick Checks
     "quick_voltage_check",
-    "quick_nac_load_check",
+    "select_minimum_wire_gauge",
 ]

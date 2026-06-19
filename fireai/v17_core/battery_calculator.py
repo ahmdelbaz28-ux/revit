@@ -1,5 +1,4 @@
-"""
-v17_core/battery_calculator.py — NFPA 72 §10.6.7 Battery Aging & Temperature Derating
+"""v17_core/battery_calculator.py — NFPA 72 §10.6.7 Battery Aging & Temperature Derating.
 ======================================================================================
 CRITICAL LIFE-SAFETY MODULE — Part of the V17 Critical Trilogy
 
@@ -44,7 +43,7 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 # Import the correct provenance shim (not the consultant's fireai.v8_core path)
 try:
@@ -120,6 +119,7 @@ class StrictBatterySizer:
                 Default: 5 years (VRLA in fire alarm applications).
             safety_margin_pct: Additional safety margin percentage.
                 IEEE 485 recommends 10-25% for critical applications.
+
         """
         self.req_standby_h = standby_hours
         self.req_alarm_h = alarm_minutes / 60.0
@@ -131,7 +131,7 @@ class StrictBatterySizer:
         quiescent_ma: float,
         alarm_ma: float,
         panel_ambient_temp_c: float = 25.0,
-        installed_battery_ah: Optional[float] = None,
+        installed_battery_ah: float | None = None,
         battery_cells: int = 6,
     ) -> Any:
         """Calculate minimum required battery capacity with full derating.
@@ -162,6 +162,7 @@ class StrictBatterySizer:
         Returns:
             DecisionProvenance with battery sizing result and audit trail,
             or dict if provenance is unavailable.
+
         """
         # Convert mA to A (consultant's interface uses mA)
         quiescent_a = quiescent_ma / 1000.0
@@ -235,7 +236,7 @@ class StrictBatterySizer:
                 overall=conf_level,
             )
 
-            value_dict: Dict[str, Any] = {
+            value_dict: dict[str, Any] = {
                 "min_required_ah": result.required_ah,
                 "base_ah": result.total_load_ah,
                 "thermal_derate": result.temperature_derating,
@@ -309,6 +310,7 @@ class StrictBatterySizer:
 
         Returns:
             DecisionProvenance or dict with audit result.
+
         """
         return self.calculate_minimum_ah(
             quiescent_ma=quiescent_ma,

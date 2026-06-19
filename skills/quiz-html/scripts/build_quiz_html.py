@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-build_quiz_html.py - 把题目 JSON 注入到模板 HTML，生成可独立运行的练习网页。
+"""build_quiz_html.py - 把题目 JSON 注入到模板 HTML，生成可独立运行的练习网页。.
 
 用法：
     python3 build_quiz_html.py <questions_json> [options]
@@ -51,7 +50,7 @@ VALID_TYPES = {"single_choice", "true_false", "fill_blank", "short_answer"}
 
 
 def load_questions(path: Path) -> list[dict[str, Any]]:
-    """加载题目 JSON，做基本格式校验。"""
+    """加载题目 JSON，做基本格式校验。."""
     try:
         raw = path.read_text(encoding="utf-8")
     except OSError as e:
@@ -103,7 +102,7 @@ def load_questions(path: Path) -> list[dict[str, Any]]:
 
 
 def auto_subtitle(questions: list[dict[str, Any]]) -> str:
-    """根据题目自动生成副标题：题量 + 涉及分类。"""
+    """根据题目自动生成副标题：题量 + 涉及分类。."""
     cats = sorted({(q.get("category") or "").strip() for q in questions if q.get("category")})
     type_count: dict[str, int] = {}
     for q in questions:
@@ -128,7 +127,7 @@ def auto_subtitle(questions: list[dict[str, Any]]) -> str:
 
 
 def render(questions: list[dict[str, Any]], title: str, subtitle: str, qid: str) -> str:
-    """把题目数据注入模板。"""
+    """把题目数据注入模板。."""
     if not TEMPLATE_PATH.exists():
         print(f"❌ 模板文件不存在：{TEMPLATE_PATH}", file=sys.stderr)
         sys.exit(1)
@@ -143,12 +142,11 @@ def render(questions: list[dict[str, Any]], title: str, subtitle: str, qid: str)
     html = html.replace("{{TITLE}}", _safe(title))
     html = html.replace("{{SUBTITLE}}", _safe(subtitle))
     html = html.replace("{{QUIZ_DATA}}", quiz_json)
-    html = html.replace("{{META}}", meta_json)
-    return html
+    return html.replace("{{META}}", meta_json)
 
 
 def _safe(s: str) -> str:
-    """HTML 安全转义（仅用于 title/subtitle 这种纯文本占位符）。"""
+    """HTML 安全转义（仅用于 title/subtitle 这种纯文本占位符）。."""
     return (
         s.replace("&", "&amp;")
         .replace("<", "&lt;")
@@ -158,7 +156,7 @@ def _safe(s: str) -> str:
 
 
 def _slug(s: str) -> str:
-    """生成文件名安全的 slug。"""
+    """生成文件名安全的 slug。."""
     s = re.sub(r"[^\w\u4e00-\u9fa5-]+", "_", s).strip("_")
     return s[:40] or "quiz"
 

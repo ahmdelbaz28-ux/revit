@@ -194,6 +194,7 @@ def parse_file(file_path: str) -> str:
     Raises:
         FileNotFoundError: If file does not exist.
         ValueError: If file extension is not supported or extraction fails.
+
     """
     path = Path(file_path)
 
@@ -210,11 +211,11 @@ def parse_file(file_path: str) -> str:
 
     if suffix == ".docx":
         return _parse_docx(path)
-    elif suffix == ".pdf":
+    if suffix == ".pdf":
         return _parse_pdf(path)
-    elif suffix == ".pptx":
+    if suffix == ".pptx":
         return _parse_pptx(path)
-    elif suffix == ".ppt":
+    if suffix == ".ppt":
         return _parse_ppt(path)
 
     return path.read_text(encoding="utf-8")
@@ -228,6 +229,7 @@ def build_extraction_prompt(content: str) -> dict:
 
     Returns:
         dict with 'system_prompt' and 'user_prompt' keys.
+
     """
     system_prompt = (
         "你是一个专业的知识点提取助手。从用户提供的学习资料中提取核心知识点。\n"

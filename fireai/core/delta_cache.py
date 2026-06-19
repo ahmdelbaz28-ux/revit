@@ -1,5 +1,4 @@
-"""
-delta_cache.py — DeltaCache: Incremental Change Detection & Recomputation
+"""delta_cache.py — DeltaCache: Incremental Change Detection & Recomputation.
 ==========================================================================
 Solves Section 11.2: "When a single room changes, recompute only that room
 + affected cable routes (not the entire building)."
@@ -50,8 +49,9 @@ import sqlite3
 import threading
 import time
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +62,7 @@ logger = logging.getLogger(__name__)
 
 
 def _content_hash(obj: Any) -> str:
-    """
-    SHA-256 of serialised content. Used for change detection.
+    """SHA-256 of serialised content. Used for change detection.
     Consistent: same logical content → same hash (sorted keys).
     """
     try:
@@ -105,8 +104,7 @@ class DependencyEdge:
 
 
 class _LRUCache:
-    """
-    Thread-safe LRU cache with optional TTL.
+    """Thread-safe LRU cache with optional TTL.
     Backed by OrderedDict for O(1) access + eviction.
     """
 
@@ -118,7 +116,7 @@ class _LRUCache:
         self.hits = 0
         self.misses = 0
 
-    def get(self, key: str) -> Optional[CacheEntry]:
+    def get(self, key: str) -> CacheEntry | None:
         with self._lock:
             entry = self._data.get(key)
             if entry is None:
@@ -169,7 +167,7 @@ class _LRUCache:
         total = self.hits + self.misses
         return self.hits / total if total > 0 else 0.0
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         return {
             "size": self.size,
             "maxsize": self._maxsize,
@@ -185,17 +183,16 @@ class _LRUCache:
 
 
 class _DependencyGraph:
-    """
-    Directed graph: room_id → {cable_route_ids, floor_ids, report_ids}.
+    """Directed graph: room_id → {cable_route_ids, floor_ids, report_ids}.
     On invalidation of a node, all its dependents are also invalidated.
     Thread-safe.
     """
 
     def __init__(self) -> None:
         # node → set of nodes that depend ON it (reverse adjacency)
-        self._dependents: Dict[str, Set[str]] = {}
+        self._dependents: dict[str, set[str]] = {}
         # node → set of nodes it depends on
-        self._dependencies: Dict[str, Set[str]] = {}
+        self._dependencies: dict[str, set[str]] = {}
         self._lock = threading.Lock()
 
     def add_dependency(self, source_id: str, target_id: str) -> None:
@@ -216,13 +213,12 @@ class _DependencyGraph:
             self._dependencies.pop(node_id, None)
             self._dependents.pop(node_id, None)
 
-    def get_all_dependents(self, node_id: str) -> FrozenSet[str]:
-        """
-        BFS: all nodes that transitively depend on node_id.
+    def get_all_dependents(self, node_id: str) -> frozenset[str]:
+        """BFS: all nodes that transitively depend on node_id.
         These must all be invalidated when node_id changes.
         """
-        visited: Set[str] = set()
-        queue: List[str] = [node_id]
+        visited: set[str] = set()
+        queue: list[str] = [node_id]
         with self._lock:
             while queue:
                 current = queue.pop()
@@ -232,7 +228,7 @@ class _DependencyGraph:
                         queue.append(dep)
         return frozenset(visited)
 
-    def stats(self) -> Dict[str, int]:
+    def stats(self) -> dict[str, int]:
         with self._lock:
             return {
                 "nodes": len(self._dependents) + len(self._dependencies),
@@ -255,8 +251,7 @@ _ALGORITHM_VERSION = "v30.0"
 
 
 class DeltaCache:
-    """
-    Incremental recomputation cache for FireAI.
+    """Incremental recomputation cache for FireAI.
 
     Solves Section 11.2: single-room change → recompute only that room
     + its affected cable routes/floors/reports.
@@ -284,9 +279,9 @@ class DeltaCache:
         self,
         maxsize: int = 50_000,
         ttl_s: float = 0.0,  # 0 = no TTL
-        hash_fn: Optional[Callable] = None,
+        hash_fn: Callable | None = None,
         # Legacy parameters (backward compatible with BuildingEngine)
-        db_path: Optional[str] = None,
+        db_path: str | None = None,
         algorithm_version: str = _ALGORITHM_VERSION,
     ) -> None:
         self._cache = _LRUCache(maxsize=maxsize, ttl_s=ttl_s)
@@ -317,10 +312,9 @@ class DeltaCache:
         node_id: str,
         content: Any,
         compute_fn: Callable[[], Any],
-        depends_on: Optional[List[str]] = None,
+        depends_on: list[str] | None = None,
     ) -> Any:
-        """
-        Return cached result if content unchanged, else recompute.
+        """Return cached result if content unchanged, else recompute.
 
         node_id:    Unique identifier (room_id, route_id, etc.)
         content:    The input data whose hash determines staleness
@@ -366,9 +360,8 @@ class DeltaCache:
         self,
         node_id: str,
         cascade: bool = True,
-    ) -> FrozenSet[str]:
-        """
-        Invalidate node_id and (optionally) all its dependents.
+    ) -> frozenset[str]:
+        """Invalidate node_id and (optionally) all its dependents.
 
         Returns frozenset of all invalidated node_ids.
         cascade=True: also invalidates transitively dependent nodes.
@@ -377,7 +370,7 @@ class DeltaCache:
         Section 11.2: When a room changes, also invalidates all cable
         routes and floor reports that depend on it.
         """
-        all_invalidated: Set[str] = {node_id}
+        all_invalidated: set[str] = {node_id}
 
         if cascade:
             dependents = self._graph.get_all_dependents(node_id)
@@ -393,11 +386,11 @@ class DeltaCache:
 
     def invalidate_batch(
         self,
-        node_ids: List[str],
+        node_ids: list[str],
         cascade: bool = True,
-    ) -> FrozenSet[str]:
+    ) -> frozenset[str]:
         """Invalidate multiple nodes. Returns union of all invalidated ids."""
-        all_invalidated: Set[str] = set()
+        all_invalidated: set[str] = set()
         for nid in node_ids:
             all_invalidated |= self.invalidate(nid, cascade=cascade)
         return frozenset(all_invalidated)
@@ -437,7 +430,7 @@ class DeltaCache:
             ),
         )
 
-    def get(self, node_id: str, content: Any) -> Optional[Any]:
+    def get(self, node_id: str, content: Any) -> Any | None:
         """Direct cache lookup without compute fallback."""
         cache_key = f"{node_id}:{self._hash(content)}"
         entry = self._cache.get(cache_key)
@@ -472,7 +465,7 @@ class DeltaCache:
         self._legacy_stats["misses"] += 1
         return False
 
-    def put_room(self, room_dict: dict, result: Dict[str, Any]) -> None:
+    def put_room(self, room_dict: dict, result: dict[str, Any]) -> None:
         """Cache an analysis result for a room. Legacy API."""
         room_id = room_dict.get("room_id", room_dict.get("id", ""))
         content = self._room_dict_to_content(room_dict)
@@ -496,10 +489,10 @@ class DeltaCache:
 
     def process_incremental(
         self,
-        rooms: List[dict],
+        rooms: list[dict],
         analysis_func,
-        changed_room_ids: Optional[List[str]] = None,
-    ) -> Tuple[List[dict], List[dict]]:
+        changed_room_ids: list[str] | None = None,
+    ) -> tuple[list[dict], list[dict]]:
         """Process rooms incrementally using cached results.
 
         Legacy API: For rooms that haven't changed, return cached results.
@@ -508,8 +501,9 @@ class DeltaCache:
         Returns:
             Tuple of (results, stats) where results is list of result
             dicts and stats contains cache performance metrics.
+
         """
-        results: List[dict] = []
+        results: list[dict] = []
         t0 = time.time()
         time_saved = 0.0
 
@@ -638,7 +632,7 @@ class DeltaCache:
     # Statistics (Section 11.2 API)
     # ------------------------------------------------------------------
 
-    def stats_summary(self) -> Dict[str, Any]:
+    def stats_summary(self) -> dict[str, Any]:
         """Detailed statistics (Section 11.2 API)."""
         return {
             "cache": self._cache.stats(),
@@ -650,7 +644,7 @@ class DeltaCache:
         }
 
     # Alias: test calls cache.stats() expecting the dict return
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Statistics for both new and legacy APIs."""
         return self.stats_summary()
 
@@ -712,7 +706,7 @@ class DeltaCache:
             rows = cursor.fetchall()
 
             for row in rows:
-                (room_id, geo_hash, algo_ver, ceiling_h, det_type, result_json, ts, hit_count) = row
+                (room_id, geo_hash, algo_ver, _ceiling_h, _det_type, result_json, ts, hit_count) = row
                 try:
                     result = json.loads(result_json)
                 except json.JSONDecodeError:

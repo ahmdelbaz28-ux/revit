@@ -19,7 +19,7 @@ from .repository import JsonRepository
 
 
 class QuizMasteryService:
-    def __init__(self, base_dir: str | Path):
+    def __init__(self, base_dir: str | Path) -> None:
         self.repo = JsonRepository(base_dir)
         self.generator = QuizGenerator()
         self.evaluator = Evaluator()
@@ -59,6 +59,7 @@ class QuizMasteryService:
             document_id: Document identifier.
             knowledge_points_data: List of dicts, each with id, title,
                 definition, description, tags.
+
         """
         payload = {"knowledge_points": knowledge_points_data}
         self.repo.save_json(
@@ -233,6 +234,7 @@ class QuizMasteryService:
 
         Returns:
             dict with session_id and questions.
+
         """
         questions: list[Question] = []
         for item in questions_data:

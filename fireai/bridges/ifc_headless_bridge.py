@@ -1,5 +1,4 @@
-"""
-fireai/bridges/ifc_headless_bridge.py
+"""fireai/bridges/ifc_headless_bridge.py.
 =======================================
 ELITE IFC4 Headless BIM Integration (No COM, No active Revit required)
 Replaces unreliable COM/Windows bindings with pure, standard OpenBIM logic.
@@ -39,7 +38,7 @@ Standards:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 try:
     import ifcopenshell
@@ -63,7 +62,7 @@ logger = logging.getLogger(__name__)
 # ── Geometry helpers (for extract_obstructions / extract_spaces_enhanced) ──
 
 
-def _convex_hull_2d(pts: List[Tuple[float, float, float]]) -> List[Tuple[float, float, float]]:
+def _convex_hull_2d(pts: list[tuple[float, float, float]]) -> list[tuple[float, float, float]]:
     """Andrew's monotone chain convex hull on XY plane."""
 
     def cross(o, a, b):
@@ -85,7 +84,7 @@ def _convex_hull_2d(pts: List[Tuple[float, float, float]]) -> List[Tuple[float, 
     return lower[:-1] + upper[:-1]
 
 
-def _polygon_area_2d(pts: List[Tuple[float, float, float]]) -> float:
+def _polygon_area_2d(pts: list[tuple[float, float, float]]) -> float:
     """Shoelace formula for polygon area on XY plane."""
     n = len(pts)
     if n < 3:
@@ -99,20 +98,22 @@ def _polygon_area_2d(pts: List[Tuple[float, float, float]]) -> float:
 
 
 class HeadlessIFCBridge:
-    """
-    Pure-Python IFC4 bridge for reading building geometry and writing
+    """Pure-Python IFC4 bridge for reading building geometry and writing
     fire alarm devices back to the IFC model.
 
     This bridge operates entirely through ifcopenshell, without requiring
     a running Revit instance or Windows COM bindings. It can be used in
     server-side processing, CI/CD pipelines, and batch operations.
 
-    Parameters:
+    Parameters
+    ----------
         ifc_path: Path to the IFC4 file to read.
 
-    Raises:
+    Raises
+    ------
         ImportError: If ifcopenshell is not installed.
         ValueError: If the IFC file cannot be opened.
+
     """
 
     # IFC types that are structural obstructions for ray-tracing
@@ -131,7 +132,7 @@ class HeadlessIFCBridge:
         "IfcSlab",  # intermediate floors
     )
 
-    def __init__(self, ifc_path: str):
+    def __init__(self, ifc_path: str) -> None:
         if not ifcopenshell:
             raise ImportError("CRITICAL: ifcopenshell library missing. Install via pip install ifcopenshell")
         self.ifc_path = ifc_path
@@ -146,9 +147,8 @@ class HeadlessIFCBridge:
     # ORIGINAL API (preserved for backward compatibility)
     # ══════════════════════════════════════════════════════════════
 
-    def extract_spaces(self) -> List[Dict[str, Any]]:
-        """
-        Extract Room geometry for the engine using IfcSpace.
+    def extract_spaces(self) -> list[dict[str, Any]]:
+        """Extract Room geometry for the engine using IfcSpace.
 
         Reads all IfcSpace elements from the IFC model and resolves
         their hierarchical placement chains to get absolute (x, y, z)
@@ -160,6 +160,7 @@ class HeadlessIFCBridge:
                 - guid: IfcSpace GlobalId
                 - name: Space name (LongName > Name > UNNAMED_SPACE)
                 - x, y, z: Absolute placement coordinates
+
         """
         rooms = []
         for space in self.model.by_type("IfcSpace"):
@@ -179,9 +180,8 @@ class HeadlessIFCBridge:
                 logger.warning("Error processing space %s: %s", space.GlobalId, e)
         return rooms
 
-    def push_fire_alarm_design(self, devices: List[Dict[str, Any]], output_path: str) -> bool:
-        """
-        Write optimal Fire Alarm devices natively back into the IFC building.
+    def push_fire_alarm_design(self, devices: list[dict[str, Any]], output_path: str) -> bool:
+        """Write optimal Fire Alarm devices natively back into the IFC building.
 
         Creates `IfcSensor` elements representing the engineered fire alarm
         topology, with 3D placement and custom property sets for compliance
@@ -193,7 +193,8 @@ class HeadlessIFCBridge:
           3. Spatial containment assignment to the first IfcBuildingStorey
           4. Pset_FireAI_Compliance property set with engineering metadata
 
-        Parameters:
+        Parameters
+        ----------
             devices: List of device dicts with keys:
                 - device_id: Unique device identifier
                 - type: Device type string (SMOKE, HEAT, etc.)
@@ -203,8 +204,10 @@ class HeadlessIFCBridge:
                 - checksum: Validation hash
             output_path: Path to write the modified IFC file.
 
-        Returns:
+        Returns
+        -------
             True if export succeeded.
+
         """
         # Fetch storeys and sort by elevation for correct device placement
         # V78 FIX: Previously ALL devices were placed on the first storey regardless
@@ -225,15 +228,7 @@ class HeadlessIFCBridge:
             # SMOKE was mapped to HEATSENSOR, losing UGLD, FLAME, and combo types.
             # This affects maintenance scheduling and ATEX marking per NFPA 72 §14.3.
             type_upper = dev.get("type", "").upper()
-            if "SMOKE" in type_upper:
-                pass
-            elif "FLAME" in type_upper:
-                pass
-            elif "UGLD" in type_upper or "ULTRASONIC" in type_upper:
-                pass
-            elif "HEAT" in type_upper:
-                pass
-            elif "COMBO" in type_upper or "MULTI" in type_upper:
+            if "SMOKE" in type_upper or "FLAME" in type_upper or "UGLD" in type_upper or "ULTRASONIC" in type_upper or "HEAT" in type_upper or "COMBO" in type_upper or "MULTI" in type_upper:
                 pass
             else:
                 logger.warning("Unknown device type '%s' mapped to HEATSENSOR for device %s", type_upper, dev.get('device_id'))
@@ -292,9 +287,8 @@ class HeadlessIFCBridge:
     # V24 GAP-1 NEW METHODS (additive — no breaking changes)
     # ══════════════════════════════════════════════════════════════
 
-    def extract_storeys(self) -> List[Dict[str, Any]]:
-        """
-        Extract all IfcBuildingStorey entities with resolved absolute elevation.
+    def extract_storeys(self) -> list[dict[str, Any]]:
+        """Extract all IfcBuildingStorey entities with resolved absolute elevation.
 
         Returns list of dicts sorted by elevation (ascending) with keys:
             - guid: IfcBuildingStorey GlobalId
@@ -317,9 +311,8 @@ class HeadlessIFCBridge:
         result.sort(key=lambda s: s["elevation"])
         return result
 
-    def extract_spaces_enhanced(self) -> List[Dict[str, Any]]:
-        """
-        Extract IfcSpace entities with full geometry (polygon, volume, area).
+    def extract_spaces_enhanced(self) -> list[dict[str, Any]]:
+        """Extract IfcSpace entities with full geometry (polygon, volume, area).
 
         Enhanced version of extract_spaces() that provides:
           - Floor polygon boundary (convex hull of floor-level vertices)
@@ -353,9 +346,8 @@ class HeadlessIFCBridge:
         result.sort(key=lambda s: (s.get("storey_elevation", 0.0), s.get("name", "")))
         return result
 
-    def extract_obstructions(self) -> List[Dict[str, Any]]:
-        """
-        Extract walls, beams, columns, ducts as AABB obstructions.
+    def extract_obstructions(self) -> list[dict[str, Any]]:
+        """Extract walls, beams, columns, ducts as AABB obstructions.
 
         Each AABB is in world (absolute) coordinates and can be consumed
         directly by the FlameDetectorAOCRayTrace engine as
@@ -388,8 +380,7 @@ class HeadlessIFCBridge:
     # ══════════════════════════════════════════════════════════════
 
     def _resolve_local_placement(self, placement) -> tuple:
-        """
-        Traverse hierarchical IFC coordinate placement to get Absolute XYZ.
+        """Traverse hierarchical IFC coordinate placement to get Absolute XYZ.
 
         V15 FIX: Previously only read the FIRST level of RelativePlacement,
         returning relative coordinates for nested placements. Now walks the
@@ -426,7 +417,7 @@ class HeadlessIFCBridge:
         except Exception:
             return 0.0
 
-    def _get_parent_storey(self, entity) -> Optional[Any]:
+    def _get_parent_storey(self, entity) -> Any | None:
         """Walk ContainedInStructure to find IfcBuildingStorey."""
         try:
             for rel in entity.ContainedInStructure:
@@ -454,8 +445,8 @@ class HeadlessIFCBridge:
     def _extract_one_space_enhanced(
         self,
         space,
-        storey_map: Dict[str, Dict],
-    ) -> Optional[Dict[str, Any]]:
+        storey_map: dict[str, dict],
+    ) -> dict[str, Any] | None:
         """Extract one IfcSpace with full geometry."""
         name = space.Name or space.GlobalId
         long_name = space.LongName or ""
@@ -502,9 +493,8 @@ class HeadlessIFCBridge:
             "volume_m3": volume,
         }
 
-    def _tessellate_space(self, space) -> Tuple:
-        """
-        Use ifcopenshell.geom to get tessellated mesh of a space.
+    def _tessellate_space(self, space) -> tuple:
+        """Use ifcopenshell.geom to get tessellated mesh of a space.
         Returns (polygon_verts, center, height, area_m2, volume_m3).
         Falls back to (None, center, 3.0, 0.0, 0.0) on failure.
         """
@@ -541,7 +531,7 @@ class HeadlessIFCBridge:
 
         return polygon, center, height, round(area, 3), round(volume, 3)
 
-    def _extract_aabb(self, entity, ifc_type: str) -> Optional[Dict[str, Any]]:
+    def _extract_aabb(self, entity, ifc_type: str) -> dict[str, Any] | None:
         """Extract AABB from an IFC entity via tessellation or placement."""
         settings = self._get_geom_settings()
 

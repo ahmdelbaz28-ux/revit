@@ -1,5 +1,4 @@
-"""
-fireai/core/project_learner.py  V1.0
+"""fireai/core/project_learner.py  V1.0.
 =====================================
 Standalone ProjectLearner -- pure Python, no external deps.
 Designed to be imported by BuildingEngine and its output
@@ -45,7 +44,6 @@ import json
 import os
 from collections import Counter
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Optional, Tuple
 
 # ── data classes ─────────────────────────────────────────────
 
@@ -68,7 +66,7 @@ class RoomCluster:
     cluster_id: int
     centroid_w: float
     centroid_l: float
-    member_names: List[str]
+    member_names: list[str]
     dominant_strategy: str
     avg_efficiency: float
     aspect_min: float
@@ -78,17 +76,16 @@ class RoomCluster:
 
 @dataclass
 class BuildingProjectProfile:
-    """
-    Attached as BuildingReport.project_profile after BuildingEngine finishes.
+    """Attached as BuildingReport.project_profile after BuildingEngine finishes.
     Purely statistical -- no design decisions are made from this data.
     """
 
     building_id: str
     total_rooms: int
     n_clusters: int
-    clusters: List[RoomCluster]
+    clusters: list[RoomCluster]
     global_dominant_strategy: str
-    strategy_distribution: Dict[str, float]  # strategy -> win %
+    strategy_distribution: dict[str, float]  # strategy -> win %
     avg_efficiency: float
     generated_at: str  # ISO UTC
 
@@ -97,8 +94,7 @@ class BuildingProjectProfile:
 
 
 class ProjectLearner:
-    """
-    Learns room-pattern clusters for one building.
+    """Learns room-pattern clusters for one building.
 
     Algorithm: k-means++ on (width, length) space.
     k chosen automatically via elbow method (max k=5).
@@ -108,11 +104,11 @@ class ProjectLearner:
     def __init__(
         self,
         building_id: str = "default",
-        persist_path: Optional[str] = None,
-    ):
+        persist_path: str | None = None,
+    ) -> None:
         self.building_id = building_id
         self.persist_path = persist_path
-        self._records: List[RoomRecord] = []
+        self._records: list[RoomRecord] = []
 
         if persist_path and os.path.exists(persist_path):
             self._load()
@@ -141,15 +137,13 @@ class ProjectLearner:
             self._save()
 
     def profile(self) -> BuildingProjectProfile:
-        """
-        Compute and return the building profile.
+        """Compute and return the building profile.
         Always recomputed from raw records -- no stale state.
         """
         return self._build_profile()
 
-    def hint_for(self, width: float, length: float) -> Optional[str]:
-        """
-        Return the dominant strategy of the nearest cluster.
+    def hint_for(self, width: float, length: float) -> str | None:
+        """Return the dominant strategy of the nearest cluster.
         Returns None if fewer than 3 rooms recorded.
         For engineer information only -- not called during automated design.
         """
@@ -198,14 +192,14 @@ class ProjectLearner:
                 global_dominant_strategy="unknown",
                 strategy_distribution={},
                 avg_efficiency=0.0,
-                generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                generated_at=datetime.datetime.now(datetime.UTC).isoformat(),
             )
 
         pts = [(r.width, r.length) for r in records]
         k = self._elbow_k(pts, max_k=min(5, len(records)))
         labels, centroids = self._kmeans(pts, k)
 
-        clusters: List[RoomCluster] = []
+        clusters: list[RoomCluster] = []
         for cid in range(k):
             idxs = [i for i, lbl in enumerate(labels) if lbl == cid]
             if not idxs:
@@ -247,17 +241,17 @@ class ProjectLearner:
             global_dominant_strategy=global_dom,
             strategy_distribution=strategy_dist,
             avg_efficiency=round(avg_eff, 4),
-            generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            generated_at=datetime.datetime.now(datetime.UTC).isoformat(),
         )
 
     # ── k-means++ ─────────────────────────────────────────────
 
     def _kmeans(
         self,
-        pts: List[Tuple[float, float]],
+        pts: list[tuple[float, float]],
         k: int,
         max_iter: int = 150,
-    ) -> Tuple[List[int], List[Tuple[float, float]]]:
+    ) -> tuple[list[int], list[tuple[float, float]]]:
         import random
 
         random.seed(42)
@@ -300,7 +294,7 @@ class ProjectLearner:
 
     def _elbow_k(
         self,
-        pts: List[Tuple[float, float]],
+        pts: list[tuple[float, float]],
         max_k: int,
     ) -> int:
         """Choose k via elbow method (max second derivative of inertia)."""
@@ -308,7 +302,7 @@ class ProjectLearner:
             return 1
         inertias = []
         for k in range(1, max_k + 1):
-            labels, centroids = self._kmeans(pts, k)
+            _labels, centroids = self._kmeans(pts, k)
             inertia = sum(
                 min((p[0] - centroids[c][0]) ** 2 + (p[1] - centroids[c][1]) ** 2 for c in range(k)) for p in pts
             )

@@ -1,6 +1,4 @@
-"""
-fireai/analytics — Predictive Analytics and Machine Learning Pipeline
-"""
+"""fireai/analytics — Predictive Analytics and Machine Learning Pipeline."""
 
 from fireai.analytics.ml_pipeline import (
     DesignData,
@@ -23,19 +21,19 @@ from fireai.analytics.predictive_analytics import (
 )
 
 __all__ = [
-    "PredictiveAnalyticsEngine",
-    "DeviceEvent",
-    "FailurePrediction",
-    "CoverageForecast",
-    "LoadProfile",
-    "CapacityPrediction",
     "BuildingData",
-    "RiskScore",
-    "MLPipeline",
+    "CapacityPrediction",
+    "CoverageForecast",
     "DesignData",
-    "RoomDesignData",
-    "FeatureSet",
-    "ModelMetadata",
-    "ModelArtifact",
+    "DeviceEvent",
     "EvaluationReport",
+    "FailurePrediction",
+    "FeatureSet",
+    "LoadProfile",
+    "MLPipeline",
+    "ModelArtifact",
+    "ModelMetadata",
+    "PredictiveAnalyticsEngine",
+    "RiskScore",
+    "RoomDesignData",
 ]

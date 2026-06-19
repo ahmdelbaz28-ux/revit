@@ -1,5 +1,4 @@
-"""
-digital_twin_interface.py — FireAI Digital Twin Interface
+"""digital_twin_interface.py — FireAI Digital Twin Interface.
 =========================================================
 Bidirectional synchronization layer between the FireAI placement
 engine and Building Information Models (BIM).  Prepares the system
@@ -61,9 +60,9 @@ import logging
 import threading
 import uuid
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from .digital_twin import NFPA72_DEFAULT_CEILING_M, NFPA72_SMOKE_RADIUS_M
 from .event_bus import EventBus, Events
@@ -121,16 +120,17 @@ class TwinModelVersion:
             this version — enables AHJ audit reconstruction.
         checksum: SHA-256 hash of all detector positions concatenated,
             providing a tamper-evident fingerprint of the layout.
+
     """
 
     version_id: str
     timestamp: str
     room_count: int
     detector_count: int
-    proof_certificates: List[str]
+    proof_certificates: list[str]
     checksum: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to a plain dictionary."""
         return asdict(self)
 
@@ -160,19 +160,20 @@ class ChangeRecord:
         author: Who made the change — "system", "pe" (professional
             engineer), or "ahj" (authority having jurisdiction).
         reason: Human-readable reason for the change.
+
     """
 
     change_id: str
     timestamp: str
     change_type: str  # Literal["added", "removed", "modified", "repositioned"]
     room_id: str
-    detector_index: Optional[int]
-    old_value: Optional[Dict[str, Any]]
-    new_value: Optional[Dict[str, Any]]
+    detector_index: int | None
+    old_value: dict[str, Any] | None
+    new_value: dict[str, Any] | None
     author: str  # Literal["system", "pe", "ahj"]
     reason: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to a plain dictionary."""
         return asdict(self)
 
@@ -221,20 +222,22 @@ class DigitalTwinInterface:
         version = twin.snapshot(room_results)
         changes = twin.detect_changes(old_version, version)
         ifc = twin.export_ifc_payload(room_results)
+
     """
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         """Initialize the Digital Twin Interface.
 
         Args:
             event_bus: Optional EventBus instance. If not provided,
                 the singleton EventBus is used.
+
         """
         self._lock = threading.Lock()
         self._state: DigitalTwinState = DigitalTwinState.DISCONNECTED
-        self._version_history: List[TwinModelVersion] = []
-        self._change_log: List[ChangeRecord] = []
-        self._current_room_results: List[Dict[str, Any]] = []
+        self._version_history: list[TwinModelVersion] = []
+        self._change_log: list[ChangeRecord] = []
+        self._current_room_results: list[dict[str, Any]] = []
         self._bus = event_bus or EventBus()
 
     # ── Properties ───────────────────────────────────────────────────
@@ -254,6 +257,7 @@ class DigitalTwinInterface:
 
         Raises:
             TypeError: If new_state is not a DigitalTwinState enum.
+
         """
         if not isinstance(new_state, DigitalTwinState):
             raise TypeError(f"state must be DigitalTwinState, got {type(new_state).__name__}")
@@ -268,7 +272,7 @@ class DigitalTwinInterface:
 
     # ── Snapshot ─────────────────────────────────────────────────────
 
-    def snapshot(self, room_results: List[Dict[str, Any]]) -> TwinModelVersion:
+    def snapshot(self, room_results: list[dict[str, Any]]) -> TwinModelVersion:
         """Capture a versioned snapshot of the current detector model.
 
         Creates a TwinModelVersion with a SHA-256 checksum of all
@@ -289,13 +293,14 @@ class DigitalTwinInterface:
 
         Raises:
             ValueError: If room_results is empty.
+
         """
         if not room_results:
             raise ValueError("room_results must not be empty for snapshot")
 
         # Collect detector positions and proof certificates
-        detector_positions: List[Tuple[float, ...]] = []
-        proof_certs: List[str] = []
+        detector_positions: list[tuple[float, ...]] = []
+        proof_certs: list[str] = []
         room_count = len(room_results)
         detector_count = 0
 
@@ -319,7 +324,7 @@ class DigitalTwinInterface:
         checksum = self.compute_checksum(detector_positions)
 
         # Build version
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         version = TwinModelVersion(
             version_id=str(uuid.uuid4()),
             timestamp=now,
@@ -362,7 +367,7 @@ class DigitalTwinInterface:
         self,
         old_version: TwinModelVersion,
         new_version: TwinModelVersion,
-    ) -> List[ChangeRecord]:
+    ) -> list[ChangeRecord]:
         """Detect changes between two model versions.
 
         Compares detector positions and room counts between the old
@@ -379,14 +384,15 @@ class DigitalTwinInterface:
 
         Returns:
             List of ChangeRecord objects describing detected changes.
+
         """
         # Quick path: identical checksums means no changes
         if old_version.checksum == new_version.checksum:
             logger.debug("No changes detected — checksums match")
             return []
 
-        changes: List[ChangeRecord] = []
-        now = datetime.now(timezone.utc).isoformat()
+        changes: list[ChangeRecord] = []
+        now = datetime.now(UTC).isoformat()
 
         # Room count changes
         if old_version.room_count != new_version.room_count:
@@ -550,7 +556,7 @@ class DigitalTwinInterface:
 
     # ── IFC Export ───────────────────────────────────────────────────
 
-    def export_ifc_payload(self, room_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def export_ifc_payload(self, room_results: list[dict[str, Any]]) -> dict[str, Any]:
         """Export detector placements as an IFC4-compatible payload.
 
         This does NOT generate a full IFC file — it produces a
@@ -568,12 +574,13 @@ class DigitalTwinInterface:
 
         Returns:
             Dictionary with "schema", "entities", and "property_sets".
+
         """
-        entities: List[Dict[str, Any]] = []
-        property_sets: List[Dict[str, Any]] = []
+        entities: list[dict[str, Any]] = []
+        property_sets: list[dict[str, Any]] = []
 
         # Group rooms by floor
-        floors: Dict[str, List[Dict[str, Any]]] = {}
+        floors: dict[str, list[dict[str, Any]]] = {}
         for room in room_results:
             floor_name = room.get("floor_name", "Level 1")
             if floor_name not in floors:
@@ -581,7 +588,7 @@ class DigitalTwinInterface:
             floors[floor_name].append(room)
 
         # Generate IFCBUILDINGSTOREY entities
-        floor_guids: Dict[str, str] = {}
+        floor_guids: dict[str, str] = {}
         for floor_name in floors:
             storey_guid = _generate_ifc_guid()
             floor_guids[floor_name] = storey_guid
@@ -713,7 +720,7 @@ class DigitalTwinInterface:
 
     # ── gBXML Export ─────────────────────────────────────────────────
 
-    def export_gbxml_payload(self, room_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def export_gbxml_payload(self, room_results: list[dict[str, Any]]) -> dict[str, Any]:
         """Export detector placements as a gBXML-compatible payload.
 
         Produces a structured dictionary that maps to the Green
@@ -730,12 +737,13 @@ class DigitalTwinInterface:
 
         Returns:
             Dictionary with "schema", "campus", and "sensors" keys.
+
         """
-        spaces: List[Dict[str, Any]] = []
-        sensors: List[Dict[str, Any]] = []
+        spaces: list[dict[str, Any]] = []
+        sensors: list[dict[str, Any]] = []
 
         # Group by floor for building storey mapping
-        floors: Dict[str, List[Dict[str, Any]]] = {}
+        floors: dict[str, list[dict[str, Any]]] = {}
         for room in room_results:
             floor_name = room.get("floor_name", "Level 1")
             if floor_name not in floors:
@@ -743,10 +751,10 @@ class DigitalTwinInterface:
             floors[floor_name].append(room)
 
         building_id = f"Building_{uuid.uuid4().hex[:8]}"
-        storeys: List[Dict[str, Any]] = []
+        storeys: list[dict[str, Any]] = []
 
         for floor_name, rooms in floors.items():
-            floor_spaces: List[str] = []
+            floor_spaces: list[str] = []
 
             for room in rooms:
                 room_id = room.get("room_id", "unknown")
@@ -762,7 +770,7 @@ class DigitalTwinInterface:
                 area = width * depth
                 volume = area * height
 
-                space: Dict[str, Any] = {
+                space: dict[str, Any] = {
                     "id": space_id,
                     "name": room_name,
                     "description": f"Room {room_id} — {room.get('occupancy_type', 'office')}",
@@ -843,22 +851,24 @@ class DigitalTwinInterface:
 
     # ── Query Methods ────────────────────────────────────────────────
 
-    def get_current_version(self) -> Optional[TwinModelVersion]:
+    def get_current_version(self) -> TwinModelVersion | None:
         """Return the most recent version from the version history.
 
         Returns:
             The latest TwinModelVersion, or None if no snapshots exist.
+
         """
         with self._lock:
             if self._version_history:
                 return self._version_history[-1]
             return None
 
-    def get_change_history(self) -> List[ChangeRecord]:
+    def get_change_history(self) -> list[ChangeRecord]:
         """Return a copy of the full change log.
 
         Returns:
             List of all ChangeRecord objects accumulated over time.
+
         """
         with self._lock:
             return list(self._change_log)
@@ -866,7 +876,7 @@ class DigitalTwinInterface:
     # ── Checksum ─────────────────────────────────────────────────────
 
     @staticmethod
-    def compute_checksum(detector_positions: List[Tuple[float, ...]]) -> str:
+    def compute_checksum(detector_positions: list[tuple[float, ...]]) -> str:
         """Compute a SHA-256 checksum over all detector positions.
 
         The checksum is computed by serializing the detector positions
@@ -880,6 +890,7 @@ class DigitalTwinInterface:
 
         Returns:
             Hex-encoded SHA-256 digest string.
+
         """
         if not detector_positions:
             return hashlib.sha256(b"no_detectors").hexdigest()
@@ -901,6 +912,7 @@ class DigitalTwinInterface:
         Returns:
             True if the current room results match the latest snapshot,
             False otherwise (or if no snapshot exists).
+
         """
         current_version = self.get_current_version()
         if current_version is None:
@@ -911,7 +923,7 @@ class DigitalTwinInterface:
             room_results = list(self._current_room_results)
 
         # Reconstruct detector positions from current room results
-        detector_positions: List[Tuple[float, ...]] = []
+        detector_positions: list[tuple[float, ...]] = []
         for room in room_results:
             for det in room.get("detectors", []):
                 pos = (
@@ -937,16 +949,17 @@ class DigitalTwinInterface:
 
     # ── Version History Access ───────────────────────────────────────
 
-    def get_version_history(self) -> List[TwinModelVersion]:
+    def get_version_history(self) -> list[TwinModelVersion]:
         """Return a copy of the full version history.
 
         Returns:
             List of all TwinModelVersion objects in chronological order.
+
         """
         with self._lock:
             return list(self._version_history)
 
-    def get_version_by_id(self, version_id: str) -> Optional[TwinModelVersion]:
+    def get_version_by_id(self, version_id: str) -> TwinModelVersion | None:
         """Look up a version by its UUID.
 
         Args:
@@ -954,6 +967,7 @@ class DigitalTwinInterface:
 
         Returns:
             The matching TwinModelVersion, or None if not found.
+
         """
         with self._lock:
             for v in self._version_history:
@@ -966,8 +980,8 @@ class DigitalTwinInterface:
     def _reconstruct_detector_map(
         self,
         version: TwinModelVersion,
-        room_results: List[Dict[str, Any]],
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        room_results: list[dict[str, Any]],
+    ) -> dict[str, list[dict[str, Any]]]:
         """Reconstruct a room→detectors map for a given version.
 
         Since TwinModelVersion only stores aggregate counts and a
@@ -981,8 +995,9 @@ class DigitalTwinInterface:
 
         Returns:
             Dictionary mapping room_id → list of detector dicts.
+
         """
-        result: Dict[str, List[Dict[str, Any]]] = {}
+        result: dict[str, list[dict[str, Any]]] = {}
         for room in room_results:
             room_id = room.get("room_id", "unknown")
             detectors = room.get("detectors", [])
@@ -1002,8 +1017,8 @@ class DigitalTwinInterface:
         change_type: str,
         room_id: str,
         detector_index: int,
-        old_det: Optional[Dict[str, Any]],
-        new_det: Optional[Dict[str, Any]],
+        old_det: dict[str, Any] | None,
+        new_det: dict[str, Any] | None,
         timestamp: str,
     ) -> ChangeRecord:
         """Create a ChangeRecord from detector state transition.
@@ -1018,6 +1033,7 @@ class DigitalTwinInterface:
 
         Returns:
             A ChangeRecord instance.
+
         """
         return ChangeRecord(
             change_id=str(uuid.uuid4()),
@@ -1042,6 +1058,7 @@ def _describe_change(change_type: str, room_id: str, detector_index: int) -> str
 
     Returns:
         A descriptive reason string.
+
     """
     descriptions = {
         "added": f"Detector {detector_index + 1} added in room {room_id}",
@@ -1060,10 +1077,10 @@ def _describe_change(change_type: str, room_id: str, detector_index: int) -> str
 # ═══════════════════════════════════════════════════════════════════════
 
 __all__ = [
-    "DigitalTwinState",
-    "TwinModelVersion",
     "ChangeRecord",
     "DigitalTwinInterface",
+    "DigitalTwinState",
+    "TwinModelVersion",
 ]
 
 

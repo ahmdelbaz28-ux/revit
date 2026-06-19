@@ -1,5 +1,4 @@
-"""
-fireai.core.cable_router — Deterministic Orthogonal A* Cable Router
+"""fireai.core.cable_router — Deterministic Orthogonal A* Cable Router.
 ====================================================================
 
 Cable routing engine for Fire Alarm systems using Orthogonal A*
@@ -40,7 +39,7 @@ import hashlib
 import heapq
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 # V63 FIX: Use math.floor instead of int() for grid coordinate
 # conversion. int() truncates toward zero, which maps negative
@@ -96,6 +95,7 @@ class RouteWaypoint:
         is_bend: True if this is a direction change point.
         direction_change: Direction tuple at this waypoint, or None.
         code_reference: NEC/NFPA reference for why this waypoint exists.
+
     """
 
     x: float
@@ -105,7 +105,7 @@ class RouteWaypoint:
     grid_iy: int
     grid_iz: int
     is_bend: bool = False
-    direction_change: Optional[Tuple[int, int, int]] = None
+    direction_change: tuple[int, int, int] | None = None
     code_reference: str = ""
 
 
@@ -132,12 +132,13 @@ class CableRoute:
         constraint_results: Full constraint check results.
         computation_hash: SHA-256 hash for deterministic verification.
         decision_log: List of (description, code_reference) tuples.
+
     """
 
     route_id: str
-    start: Tuple[float, float, float]
-    end: Tuple[float, float, float]
-    waypoints: Tuple[RouteWaypoint, ...]
+    start: tuple[float, float, float]
+    end: tuple[float, float, float]
+    waypoints: tuple[RouteWaypoint, ...]
     total_length_m: float
     straight_length_m: float
     num_bends: int
@@ -146,9 +147,9 @@ class CableRoute:
     voltage_drop_v: float
     voltage_drop_pct: float
     is_compliant: bool
-    constraint_results: Optional[RoutingConstraintSet] = None
+    constraint_results: RoutingConstraintSet | None = None
     computation_hash: str = ""
-    decision_log: Tuple[Tuple[str, str], ...] = ()
+    decision_log: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self):
         if self.computation_hash == "":
@@ -189,10 +190,11 @@ class RoutingSchedule:
         max_circuit_length_m: Longest single circuit.
         compliance_summary: Overall compliance status.
         computation_hash: SHA-256 for verification.
+
     """
 
     project_name: str
-    routes: Tuple[CableRoute, ...]
+    routes: tuple[CableRoute, ...]
     total_cable_length_m: float
     total_bends: int
     max_circuit_length_m: float
@@ -229,17 +231,17 @@ class _AStarNode:
     Tie-breaking by (f, h, counter) ensures deterministic ordering.
     """
 
-    __slots__ = ("cell", "g", "h", "f", "parent", "direction", "counter")
+    __slots__ = ("cell", "counter", "direction", "f", "g", "h", "parent")
 
     def __init__(
         self,
-        cell: Tuple[int, int, int],
+        cell: tuple[int, int, int],
         g: float,
         h: float,
-        parent: Optional["_AStarNode"],
-        direction: Tuple[int, int, int],
+        parent: _AStarNode | None,
+        direction: tuple[int, int, int],
         counter: int,
-    ):
+    ) -> None:
         self.cell = cell
         self.g = g
         self.h = h
@@ -248,7 +250,7 @@ class _AStarNode:
         self.direction = direction
         self.counter = counter
 
-    def __lt__(self, other: "_AStarNode") -> bool:
+    def __lt__(self, other: _AStarNode) -> bool:
         """Priority queue ordering: lower f wins, then lower h, then earlier counter."""
         if self.f != other.f:
             return self.f < other.f
@@ -297,8 +299,8 @@ class CableRouter:
     def __init__(
         self,
         model: BuildingModel,
-        constraint_engine: Optional[ConstraintEngine] = None,
-    ):
+        constraint_engine: ConstraintEngine | None = None,
+    ) -> None:
         """Initialize the cable router.
 
         Args:
@@ -307,6 +309,7 @@ class CableRouter:
 
         Raises:
             ValueError: If model has no valid grid.
+
         """
         if model.grid_size == (0, 0, 0):
             raise ValueError(
@@ -318,7 +321,7 @@ class CableRouter:
         self._counter = 0  # For deterministic A* tie-breaking
 
         # Pre-compute electrical zones for separation check
-        self._electrical_cells: Set[Tuple[int, int, int]] = set()
+        self._electrical_cells: set[tuple[int, int, int]] = set()
         self._precompute_electrical_zones()
 
     def _precompute_electrical_zones(self) -> None:
@@ -346,7 +349,7 @@ class CableRouter:
         res = self._model.grid_resolution
 
         # Separation distance in grid cells (300mm / resolution)
-        int(math.ceil(0.3 / res))
+        math.ceil(0.3 / res)
 
         # IFC class keywords that indicate electrical systems
         _ELECTRICAL_IFC_KEYWORDS = {
@@ -419,15 +422,15 @@ class CableRouter:
 
     def route(
         self,
-        start: Tuple[float, float, float],
-        end: Tuple[float, float, float],
+        start: tuple[float, float, float],
+        end: tuple[float, float, float],
         wire_gauge: str = "14",  # V108: Wire gauge as string key
         ps_voltage: float = 24.0,
         alarm_current_a: float = 0.0,
         route_id: str = "",
         verify_constraints: bool = True,
         ambient_temp_c: float = 20.0,
-        conductor_operating_temp_c: Optional[float] = None,
+        conductor_operating_temp_c: float | None = None,
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
     ) -> CableRoute:
@@ -476,6 +479,7 @@ class CableRouter:
         Raises:
             ContractViolation: If inputs are invalid (NaN/Inf).
             ValueError: If start/end are outside the building grid.
+
         """
         # ── Input Validation (QOMN-FIRE Layer 0) ─────────────────────────
         for label, point in [("start", start), ("end", end)]:
@@ -554,7 +558,7 @@ class CableRouter:
         waypoints = self._build_waypoints(path)
 
         # ── Calculate Route Metrics ──────────────────────────────────────
-        total_length, straight_length, num_bends, num_elev = self._calculate_metrics(waypoints)
+        _total_length, straight_length, num_bends, num_elev = self._calculate_metrics(waypoints)
 
         # ── Voltage Drop ─────────────────────────────────────────────────
         # V61 FIX: Use physical_length (not penalty-inflated) for voltage
@@ -651,9 +655,9 @@ class CableRouter:
 
     def _astar(
         self,
-        start: Tuple[int, int, int],
-        goal: Tuple[int, int, int],
-    ) -> Tuple[Optional[List[Tuple[int, int, int]]], List[Tuple[str, str]]]:
+        start: tuple[int, int, int],
+        goal: tuple[int, int, int],
+    ) -> tuple[list[tuple[int, int, int]] | None, list[tuple[str, str]]]:
         """Orthogonal A* pathfinding on the 3D occupancy grid.
 
         6-directional movement only: X±, Y±, Z±.
@@ -667,8 +671,9 @@ class CableRouter:
 
         Returns:
             (path, decision_log) tuple. Path is None if no route found.
+
         """
-        decision_log: List[Tuple[str, str]] = []
+        decision_log: list[tuple[str, str]] = []
         decision_log.append((f"A* search: {start} → {goal}", "Orthogonal 6-dir, Manhattan heuristic"))
 
         # Early exit: start == goal
@@ -677,11 +682,11 @@ class CableRouter:
 
         # Initialize
         self._counter = 0
-        open_set: List[_AStarNode] = []
-        closed_set: Set[Tuple[int, int, int]] = set()
+        open_set: list[_AStarNode] = []
+        closed_set: set[tuple[int, int, int]] = set()
 
         # Track best g-cost for each cell
-        g_costs: Dict[Tuple[int, int, int], float] = {}
+        g_costs: dict[tuple[int, int, int], float] = {}
 
         # Start node
         h = self._constraint_engine.manhattan_heuristic(start, goal, self._model.grid_resolution)
@@ -787,7 +792,7 @@ class CableRouter:
         decision_log.append((f"No path found after {iterations} iterations", "A* exhausted search space"))
         return None, decision_log
 
-    def _get_grid_cell(self, cell: Tuple[int, int, int]) -> CellState:
+    def _get_grid_cell(self, cell: tuple[int, int, int]) -> CellState:
         """Get cell state from grid indices.
 
         Args:
@@ -795,6 +800,7 @@ class CableRouter:
 
         Returns:
             CellState at the given cell.
+
         """
         ix, iy, iz = cell
         nx, ny, nz = self._model.grid_size
@@ -809,7 +815,7 @@ class CableRouter:
         return CellState(self._model.grid_data[idx])
 
     @staticmethod
-    def _reconstruct_path(node: _AStarNode) -> List[Tuple[int, int, int]]:
+    def _reconstruct_path(node: _AStarNode) -> list[tuple[int, int, int]]:
         """Reconstruct path from A* goal node to start.
 
         Args:
@@ -817,6 +823,7 @@ class CableRouter:
 
         Returns:
             List of (ix, iy, iz) cells from start to goal.
+
         """
         path = []
         current = node
@@ -828,8 +835,8 @@ class CableRouter:
 
     def _build_waypoints(
         self,
-        path: List[Tuple[int, int, int]],
-    ) -> List[RouteWaypoint]:
+        path: list[tuple[int, int, int]],
+    ) -> list[RouteWaypoint]:
         """Build waypoints from A* path, detecting bends.
 
         Bends are points where the movement direction changes.
@@ -841,12 +848,13 @@ class CableRouter:
 
         Returns:
             List of RouteWaypoint objects at key points.
+
         """
         if not path:
             return []
 
         waypoints = []
-        prev_dir: Optional[Tuple[int, int, int]] = None
+        prev_dir: tuple[int, int, int] | None = None
 
         for i, cell in enumerate(path):
             # Calculate direction from previous cell
@@ -891,8 +899,8 @@ class CableRouter:
 
     @staticmethod
     def _calculate_metrics(
-        waypoints: List[RouteWaypoint],
-    ) -> Tuple[float, float, int, int]:
+        waypoints: list[RouteWaypoint],
+    ) -> tuple[float, float, int, int]:
         """Calculate route metrics from waypoints.
 
         Args:
@@ -900,6 +908,7 @@ class CableRouter:
 
         Returns:
             (total_length, straight_length, num_bends, num_elevation_changes)
+
         """
         if len(waypoints) < 2:
             return 0.0, 0.0, 0, 0
@@ -947,14 +956,14 @@ class CableRouter:
 
     def route_all(
         self,
-        connections: List[Dict[str, Any]],
+        connections: list[dict[str, Any]],
         wire_gauge: str = "14",  # V108: Wire gauge as string key
         ps_voltage: float = 24.0,
         project_name: str = "Fire Alarm System",
         ambient_temp_c: float = 20.0,
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
-        conductor_operating_temp_c: Optional[float] = None,
+        conductor_operating_temp_c: float | None = None,
     ) -> RoutingSchedule:
         """Route all cable connections and produce a complete schedule.
 
@@ -987,6 +996,7 @@ class CableRouter:
 
         Returns:
             RoutingSchedule with all routes and compliance summary.
+
         """
         routes = []
         total_length = 0.0

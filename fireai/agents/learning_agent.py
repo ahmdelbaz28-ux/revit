@@ -1,5 +1,4 @@
-"""
-fireai/agents/learning_agent.py — Knowledge Accumulation Agent
+"""fireai/agents/learning_agent.py — Knowledge Accumulation Agent.
 =================================================================
 Persistent memory store using SQLite. Stores design experiences,
 discovers and registers design patterns, retrieves similar scenarios
@@ -13,8 +12,8 @@ import logging
 import sqlite3
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +27,11 @@ class DesignExperience:
     detector_count: int = 0
     coverage_pct: float = 0.0
     compliance_passed: bool = False
-    patterns_used: List[str] = field(default_factory=list)
+    patterns_used: list[str] = field(default_factory=list)
     outcome: str = ""  # "success", "partial", "failure"
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -43,19 +42,19 @@ class DesignExperience:
 class DesignPattern:
     pattern_id: str = ""
     room_type: str = ""
-    constraints: Dict[str, Any] = field(default_factory=dict)
+    constraints: dict[str, Any] = field(default_factory=dict)
     solution_summary: str = ""
     effectiveness_score: float = 0.0
     usage_count: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 # ── similarity matching ─────────────────────────────────────────────────────
 
 
-def _extract_features_from_config(config_json: str) -> Dict[str, float]:
+def _extract_features_from_config(config_json: str) -> dict[str, float]:
     try:
         config = json.loads(config_json) if isinstance(config_json, str) else {}
     except (json.JSONDecodeError, TypeError):
@@ -72,7 +71,7 @@ def _extract_features_from_config(config_json: str) -> Dict[str, float]:
     }
 
 
-def _extract_room_features(design: Any) -> Dict[str, float]:
+def _extract_room_features(design: Any) -> dict[str, float]:
     if isinstance(design, dict):
         return {
             "room_area": float(design.get("area", design.get("room_area", 0))),
@@ -92,7 +91,7 @@ def _extract_room_features(design: Any) -> Dict[str, float]:
     }
 
 
-def _compute_similarity(a: Dict[str, float], b: Dict[str, float]) -> float:
+def _compute_similarity(a: dict[str, float], b: dict[str, float]) -> float:
     weights = {
         "room_area": 0.25,
         "ceiling_height": 0.20,
@@ -122,15 +121,14 @@ def _compute_similarity(a: Dict[str, float], b: Dict[str, float]) -> float:
 
 
 class LearningAgent:
-    """
-    Agent that accumulates knowledge across sessions:
+    """Agent that accumulates knowledge across sessions:
     - Persistent memory store (SQLite)
     - Experience storage (design decisions, outcomes)
     - Knowledge accumulation pattern library
-    - Experience retrieval for similar scenarios
+    - Experience retrieval for similar scenarios.
     """
 
-    def __init__(self, db_path: str = "fireai_learning.sqlite3"):
+    def __init__(self, db_path: str = "fireai_learning.sqlite3") -> None:
         self.db_path = db_path
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
@@ -199,21 +197,21 @@ class LearningAgent:
         logger.info("Stored experience %s", exp_id)
         return exp_id
 
-    def retrieve_similar(self, design: Any, top_k: int = 5) -> List[DesignExperience]:
+    def retrieve_similar(self, design: Any, top_k: int = 5) -> list[DesignExperience]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM experiences ORDER BY timestamp DESC")
         rows = cursor.fetchall()
 
         query_features = _extract_room_features(design)
 
-        scored: List[tuple] = []
+        scored: list[tuple] = []
         for row in rows:
             exp_features = _extract_features_from_config(row["room_config"])
             sim = _compute_similarity(query_features, exp_features)
             scored.append((sim, row))
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        results: List[DesignExperience] = []
+        results: list[DesignExperience] = []
         for _sim, row in scored[:top_k]:
             results.append(
                 DesignExperience(
@@ -229,7 +227,7 @@ class LearningAgent:
             )
         return results
 
-    def get_pattern(self, pattern_id: str) -> Optional[DesignPattern]:
+    def get_pattern(self, pattern_id: str) -> DesignPattern | None:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM patterns WHERE pattern_id = ?", (pattern_id,))
         row = cursor.fetchone()
@@ -267,7 +265,7 @@ class LearningAgent:
         logger.info("Registered pattern %s (type=%s, score=%.3f)", pid, pattern.room_type, pattern.effectiveness_score)
         return pid
 
-    def suggest_patterns(self, design: Any) -> List[DesignPattern]:
+    def suggest_patterns(self, design: Any) -> list[DesignPattern]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM patterns ORDER BY effectiveness_score DESC, usage_count DESC")
         rows = cursor.fetchall()
@@ -276,7 +274,7 @@ class LearningAgent:
 
         query_features = _extract_room_features(design)
 
-        scored: List[tuple] = []
+        scored: list[tuple] = []
         for row in rows:
             constraints = json.loads(row["constraints"]) if isinstance(row["constraints"], str) else row["constraints"]
             pat_features = {
@@ -295,7 +293,7 @@ class LearningAgent:
             scored.append((combined, row))
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        results: List[DesignPattern] = []
+        results: list[DesignPattern] = []
         for _score, row in scored[:5]:
             results.append(
                 DesignPattern(

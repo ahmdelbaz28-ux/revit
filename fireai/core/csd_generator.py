@@ -1,5 +1,4 @@
-"""
-CSD (Control Station Device) Generation Module.
+"""CSD (Control Station Device) Generation Module.
 This module defines the necessary enums, dataclasses, and generator class for
 CSD representation and compliance reporting.
 """
@@ -10,11 +9,11 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
 
 
 class CSDDeviceType(Enum):
     """Supported types of Control Station Devices."""
+
     MAIN_CONTROL_STATION = "MAIN_CONTROL_STATION"
     REMOTE_CONTROL_STATION = "REMOTE_CONTROL_STATION"
     MONITORING_STATION = "MONITORING_STATION"
@@ -23,6 +22,7 @@ class CSDDeviceType(Enum):
 
 class CSDDeviceStatus(Enum):
     """Operational status of a CSD."""
+
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
     MAINTENANCE = "MAINTENANCE"
@@ -32,6 +32,7 @@ class CSDDeviceStatus(Enum):
 @dataclass
 class CSDDevice:
     """Represents a Control Station Device."""
+
     device_id: str
     name: str
     device_type: CSDDeviceType
@@ -43,13 +44,14 @@ class CSDDevice:
 @dataclass
 class CSDComplianceReport:
     """Holds compliance report details for a set of CSDs."""
+
     report_id: str
     timestamp: datetime
     total_devices: int
     compliant_devices: int
     non_compliant_devices: int
     compliance_rate: float
-    issues: List[str] = field(default_factory=list)
+    issues: list[str] = field(default_factory=list)
 
 
 class CSDGenerator:
@@ -62,11 +64,9 @@ class CSDGenerator:
         location: str,
         zone: int,
         status: CSDDeviceStatus = CSDDeviceStatus.ACTIVE,
-        device_id: Optional[str] = None
+        device_id: str | None = None
     ) -> CSDDevice:
-        """
-        Generates a new CSDDevice with a unique ID if not provided.
-        """
+        """Generates a new CSDDevice with a unique ID if not provided."""
         if not device_id:
             device_id = f"CSD-{uuid.uuid4().hex[:8].upper()}"
         return CSDDevice(
@@ -78,9 +78,8 @@ class CSDGenerator:
             zone=zone
         )
 
-    def generate_compliance_report(self, devices: List[CSDDevice]) -> CSDComplianceReport:
-        """
-        Generates a compliance report for the provided list of CSD devices.
+    def generate_compliance_report(self, devices: list[CSDDevice]) -> CSDComplianceReport:
+        """Generates a compliance report for the provided list of CSD devices.
         A device is non-compliant if it is in FAULT or INACTIVE state.
         """
         report_id = f"REP-{uuid.uuid4().hex[:8].upper()}"

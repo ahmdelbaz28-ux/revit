@@ -1,5 +1,4 @@
-"""
-fire_zone_engine.py — NFPA 72 Fire Zone Clustering Engine
+"""fire_zone_engine.py — NFPA 72 Fire Zone Clustering Engine.
 =========================================================
 
 Groups rooms into fire alarm zones per NFPA 72 §21.3.3 and
@@ -41,7 +40,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +75,7 @@ class ZoneConstraints:
             validation warnings when zone assignments exceed loop capacity.
             (Consultant #7 — concept accepted, threshold corrected: 250 is
             the SLC loop limit, NOT the zone limit. Zone default remains 100.)
+
     """
 
     max_area_sqm: float = 1858.0  # NFPA 72 §21.3.4 limit ≈ 20,000 sq ft = 1,858 sqm
@@ -104,13 +103,14 @@ class FireZone:
         occupancy_types: Set of occupancy types in this zone.
         floor_id: Floor identifier this zone belongs to.
         zone_type: "alarm", "supervisory", or "trouble".
+
     """
 
     zone_id: str
-    rooms: List[str] = field(default_factory=list)
+    rooms: list[str] = field(default_factory=list)
     total_area_sqm: float = 0.0
     total_detectors: int = 0
-    occupancy_types: Set[str] = field(default_factory=set)
+    occupancy_types: set[str] = field(default_factory=set)
     floor_id: str = ""
     zone_type: str = "alarm"
 
@@ -132,15 +132,16 @@ class ZoneReport:
         total_detectors: Total detectors across all zones.
         warnings: List of advisory warnings.
         unzoned_rooms: Room IDs that couldn't be assigned (overflow).
+
     """
 
     floor_id: str
-    zones: List[FireZone] = field(default_factory=list)
+    zones: list[FireZone] = field(default_factory=list)
     total_zones: int = 0
     total_area_sqm: float = 0.0
     total_detectors: int = 0
-    warnings: List[str] = field(default_factory=list)
-    unzoned_rooms: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    unzoned_rooms: list[str] = field(default_factory=list)
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -177,14 +178,14 @@ class FireZoneEngine:
             print(f"Zone {zone.zone_id}: {zone.rooms} ({zone.total_area_sqm} sqm)")
     """
 
-    def __init__(self, constraints: Optional[ZoneConstraints] = None):
+    def __init__(self, constraints: ZoneConstraints | None = None) -> None:
         self.constraints = constraints or ZoneConstraints()
 
     def cluster_floor(
         self,
         floor_id: str,
-        rooms: List[dict],
-        adjacency: Optional[Dict[str, Set[str]]] = None,
+        rooms: list[dict],
+        adjacency: dict[str, set[str]] | None = None,
     ) -> ZoneReport:
         """Cluster rooms into fire zones for a single floor.
 
@@ -203,6 +204,7 @@ class FireZoneEngine:
 
         Returns:
             ZoneReport with zone assignments.
+
         """
         report = ZoneReport(floor_id=floor_id)
 
@@ -230,7 +232,7 @@ class FireZoneEngine:
 
         # Step 1: Group by occupancy type (if required)
         if self.constraints.separate_occupancy_types:
-            occupancy_groups: Dict[str, List[dict]] = {}
+            occupancy_groups: dict[str, list[dict]] = {}
             for r in normalized:
                 occ = r["occupancy"]
                 if occ not in occupancy_groups:
@@ -311,9 +313,9 @@ class FireZoneEngine:
 
     def _cluster_adjacent(
         self,
-        rooms: List[dict],
-        adjacency: Dict[str, Set[str]],
-    ) -> List[List[dict]]:
+        rooms: list[dict],
+        adjacency: dict[str, set[str]],
+    ) -> list[list[dict]]:
         """Cluster rooms using adjacency information (BFS-based).
 
         Groups connected rooms (sharing walls/corridors) together,
@@ -325,10 +327,11 @@ class FireZoneEngine:
 
         Returns:
             List of clusters (each cluster is a list of room dicts).
+
         """
         room_map = {r["id"]: r for r in rooms}
-        visited: Set[str] = set()
-        clusters: List[List[dict]] = []
+        visited: set[str] = set()
+        clusters: list[list[dict]] = []
 
         for room in rooms:
             room_id = room["id"]
@@ -336,7 +339,7 @@ class FireZoneEngine:
                 continue
 
             # BFS from this room
-            cluster: List[dict] = []
+            cluster: list[dict] = []
             queue = [room_id]
             while queue:
                 current = queue.pop(0)
@@ -356,7 +359,7 @@ class FireZoneEngine:
 
         return clusters
 
-    def _cluster_by_area(self, rooms: List[dict]) -> List[List[dict]]:
+    def _cluster_by_area(self, rooms: list[dict]) -> list[list[dict]]:
         """Fallback: group rooms by area (largest first).
 
         This is the consultant's approach (greedy bin packing).
@@ -367,6 +370,7 @@ class FireZoneEngine:
 
         Returns:
             List of clusters (each a list of room dicts).
+
         """
         sorted_rooms = sorted(rooms, key=lambda r: r["area"], reverse=True)
         # Put all rooms in one cluster; constraints will split later
@@ -374,10 +378,10 @@ class FireZoneEngine:
 
     def _apply_constraints(
         self,
-        cluster: List[dict],
+        cluster: list[dict],
         zone_counter: int,
         floor_id: str = "",
-    ) -> List[FireZone]:
+    ) -> list[FireZone]:
         """Split a cluster into zones respecting constraints.
 
         Args:
@@ -387,18 +391,19 @@ class FireZoneEngine:
 
         Returns:
             List of FireZone objects.
+
         """
         max_area = self.constraints.max_area_sqm
         max_det = self.constraints.max_detectors_per_zone
         max_rooms = self.constraints.max_rooms_per_zone
 
-        zones: List[FireZone] = []
+        zones: list[FireZone] = []
         _zid = f"{floor_id}-Z{zone_counter + 1:02d}" if floor_id else f"Z-{zone_counter + 1:03d}"
         current = FireZone(
             zone_id=_zid,
             floor_id=floor_id,
         )
-        occupancy_types: Set[str] = set()
+        occupancy_types: set[str] = set()
 
         for room in cluster:
             room_area = room["area"]
@@ -436,7 +441,7 @@ class FireZoneEngine:
 
         return zones
 
-    def build_zone_map(self, report: ZoneReport) -> Dict[str, str]:
+    def build_zone_map(self, report: ZoneReport) -> dict[str, str]:
         """Build a zone_map dict from a ZoneReport for fault isolator injection.
 
         The returned dict maps room_id -> zone_id, suitable for passing to
@@ -455,8 +460,9 @@ class FireZoneEngine:
 
         Returns:
             Dict mapping room_id -> zone_id (both strings).
+
         """
-        zone_map: Dict[str, str] = {}
+        zone_map: dict[str, str] = {}
         for zone in report.zones:
             for room_id in zone.rooms:
                 zone_map[room_id] = zone.zone_id

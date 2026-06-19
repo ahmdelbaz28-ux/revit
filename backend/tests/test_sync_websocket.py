@@ -1,5 +1,4 @@
-"""
-test_sync_websocket.py — WebSocket integration tests for the sync endpoint.
+"""test_sync_websocket.py — WebSocket integration tests for the sync endpoint.
 
 Covers the WebSocket /ws endpoint that existing tests don't exercise:
   - WebSocket connection and ping/pong
@@ -18,7 +17,7 @@ from fastapi.testclient import TestClient
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
-def _setup_env():
+def _setup_env() -> None:
     """Set development environment for testing."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = ""
@@ -51,7 +50,7 @@ def test_project(client):
 class TestSyncRestEndpoints:
     """Additional tests for sync REST endpoints."""
 
-    def test_sync_and_verify_status(self, client, test_project):
+    def test_sync_and_verify_status(self, client, test_project) -> None:
         """After syncing, the status should reflect 'synced' or 'syncing'."""
         pid = test_project
         # Trigger sync
@@ -62,17 +61,17 @@ class TestSyncRestEndpoints:
         data = resp.json().get("data", {})
         assert data.get("status") in ("synced", "syncing", None)
 
-    def test_sync_nonexistent_project(self, client):
+    def test_sync_nonexistent_project(self, client) -> None:
         """Syncing nonexistent project must return 404."""
         resp = client.post("/api/projects/nonexistent-proj/sync")
         assert resp.status_code == 404
 
-    def test_get_sync_status_nonexistent(self, client):
+    def test_get_sync_status_nonexistent(self, client) -> None:
         """Getting sync status for nonexistent project must return 404."""
         resp = client.get("/api/projects/nonexistent-proj/sync")
         assert resp.status_code == 404
 
-    def test_sync_then_get_status_data_structure(self, client, test_project):
+    def test_sync_then_get_status_data_structure(self, client, test_project) -> None:
         """Sync status response must have expected fields."""
         pid = test_project
         client.post(f"/api/projects/{pid}/sync")
@@ -90,13 +89,13 @@ class TestSyncRestEndpoints:
 class TestWebSocket:
     """Tests for WebSocket /ws endpoint."""
 
-    def test_websocket_connect(self, client):
+    def test_websocket_connect(self, client) -> None:
         """WebSocket connection must be accepted."""
         with client.websocket_connect("/ws"):
             # Connection should succeed
             pass  # Just connecting and disconnecting is a valid test
 
-    def test_websocket_ping_pong(self, client):
+    def test_websocket_ping_pong(self, client) -> None:
         """WebSocket ping action must return pong."""
         with client.websocket_connect("/ws") as ws:
             ws.send_json({"action": "ping"})
@@ -104,7 +103,7 @@ class TestWebSocket:
             assert response.get("type") == "pong"
             assert response.get("channel") == "system"
 
-    def test_websocket_subscribe(self, client):
+    def test_websocket_subscribe(self, client) -> None:
         """WebSocket subscribe action must confirm subscription."""
         with client.websocket_connect("/ws") as ws:
             ws.send_json({"action": "subscribe", "projectId": "test-project-123"})
@@ -112,14 +111,14 @@ class TestWebSocket:
             assert response.get("type") == "subscribed"
             assert response.get("data", {}).get("projectId") == "test-project-123"
 
-    def test_websocket_invalid_json(self, client):
+    def test_websocket_invalid_json(self, client) -> None:
         """WebSocket must handle invalid JSON gracefully."""
         with client.websocket_connect("/ws") as ws:
             ws.send_text("not valid json {{{")
             response = ws.receive_json()
             assert response.get("channel") == "error" or response.get("type") == "invalid_message"
 
-    def test_websocket_get_status(self, client, test_project):
+    def test_websocket_get_status(self, client, test_project) -> None:
         """WebSocket get_status action must return sync status."""
         pid = test_project
         with client.websocket_connect("/ws") as ws:
@@ -127,7 +126,7 @@ class TestWebSocket:
             response = ws.receive_json()
             assert response.get("channel") == "sync" or response.get("type") == "status"
 
-    def test_websocket_multiple_actions(self, client):
+    def test_websocket_multiple_actions(self, client) -> None:
         """WebSocket must handle multiple sequential actions."""
         with client.websocket_connect("/ws") as ws:
             # First ping

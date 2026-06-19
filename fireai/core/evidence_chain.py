@@ -1,5 +1,4 @@
-"""
-evidence_chain.py — Chained Evidence Envelopes for FireAI
+r"""evidence_chain.py — Chained Evidence Envelopes for FireAI.
 ==========================================================
 Adapted from Elite Platform V2 evidence_chain.py.
 
@@ -44,8 +43,8 @@ import hashlib
 import hmac
 import json
 import math
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 
 def _float_round_default(obj: Any) -> Any:
@@ -73,7 +72,7 @@ def _float_round_default(obj: Any) -> Any:
         # If normalization didn't help (e.g. 0.3), use explicit rounding
         if repr(rounded) != repr(obj):
             # Fall back to 12-digit rounding for determinism
-            rounded = round(obj, 12 - 1 - int(math.floor(math.log10(abs(obj)))) if abs(obj) >= 1 else 12)
+            rounded = round(obj, 12 - 1 - math.floor(math.log10(abs(obj))) if abs(obj) >= 1 else 12)
         return rounded
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
@@ -137,6 +136,7 @@ class EvidenceChain:
         secret_key:  Secret key for HMAC signing. Must be kept secure.
         signer_id:   Identifier for the signing entity (e.g. "fireai-v1").
         namespace:   Project namespace for HMAC domain separation (e.g. "fireai-project-42").
+
     """
 
     # V113: Known-weak secret keys that MUST be rejected.
@@ -158,7 +158,7 @@ class EvidenceChain:
         }
     )
 
-    def __init__(self, secret_key: str, signer_id: str, namespace: str = "fireai"):
+    def __init__(self, secret_key: str, signer_id: str, namespace: str = "fireai") -> None:
         if not secret_key:
             raise ValueError("secret_key must not be empty")
         if not signer_id:
@@ -202,10 +202,10 @@ class EvidenceChain:
 
     def build_envelope(
         self,
-        snapshot_payload: Dict[str, Any],
-        analysis_payload: Dict[str, Any],
-        previous_envelope: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        snapshot_payload: dict[str, Any],
+        analysis_payload: dict[str, Any],
+        previous_envelope: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Build a signed evidence envelope linking input to output.
 
         Args:
@@ -215,10 +215,11 @@ class EvidenceChain:
 
         Returns:
             Signed envelope dictionary with hashes and HMAC signature.
+
         """
         body = {
             "schema_version": "evidence-envelope/1",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "namespace": self._namespace,  # V59 FIX (Finding 4): Include namespace for domain separation
             "signer_id": self._signer_id,
             "snapshot_hash": _sha256_payload(snapshot_payload),
@@ -233,10 +234,10 @@ class EvidenceChain:
 
     def verify_envelope(
         self,
-        envelope: Dict[str, Any],
-        snapshot_payload: Dict[str, Any],
-        analysis_payload: Dict[str, Any],
-        previous_envelope: Optional[Dict[str, Any]] = None,
+        envelope: dict[str, Any],
+        snapshot_payload: dict[str, Any],
+        analysis_payload: dict[str, Any],
+        previous_envelope: dict[str, Any] | None = None,
     ) -> bool:
         """Verify an evidence envelope against its source data.
 
@@ -262,6 +263,7 @@ class EvidenceChain:
 
         Raises:
             EvidenceChainError: If any check fails, with the specific reason.
+
         """
         expected = dict(envelope)
         signature = expected.pop("signature")
@@ -309,10 +311,10 @@ class EvidenceChain:
 
     def verify_chain(
         self,
-        envelopes: List[Dict[str, Any]],
-        snapshot_payloads: List[Dict[str, Any]],
-        analysis_payloads: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        envelopes: list[dict[str, Any]],
+        snapshot_payloads: list[dict[str, Any]],
+        analysis_payloads: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Verify an entire chain of evidence envelopes.
 
         This detects:
@@ -336,6 +338,7 @@ class EvidenceChain:
               - envelope_count: int — Number of envelopes checked
               - errors: List[str] — Specific failures (empty if valid)
               - first_break: Optional[int] — Index of first invalid envelope
+
         """
         if len(envelopes) != len(snapshot_payloads) or len(envelopes) != len(analysis_payloads):
             return {
@@ -349,9 +352,9 @@ class EvidenceChain:
                 "first_break": None,
             }
 
-        errors: List[str] = []
-        first_break: Optional[int] = None
-        prev_timestamp: Optional[str] = None
+        errors: list[str] = []
+        first_break: int | None = None
+        prev_timestamp: str | None = None
 
         for i, envelope in enumerate(envelopes):
             prev_env = envelopes[i - 1] if i > 0 else None
@@ -395,7 +398,7 @@ class EvidenceChain:
         # Format: namespace || envelope_hash ensures that signatures from
         # different projects (different namespaces) are always different,
         # even for identical envelope content.
-        message = f"{self._namespace}:{envelope_hash}".encode("utf-8")
+        message = f"{self._namespace}:{envelope_hash}".encode()
         return hmac.new(
             self._secret_key,
             message,

@@ -12,7 +12,7 @@ unless "paragraphs" is specified in the replacements for that shape.
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from inventory import InventoryData, extract_text_inventory
 from pptx import Presentation
@@ -44,7 +44,7 @@ def _clear_paragraph_bullets(paragraph):
     return pPr
 
 
-def _apply_paragraph_properties(paragraph, para_data: Dict[str, Any]):
+def _apply_paragraph_properties(paragraph, para_data: dict[str, Any]) -> None:
     text = para_data.get("text", "")
     pPr = _clear_paragraph_bullets(paragraph)
 
@@ -78,7 +78,7 @@ def _apply_paragraph_properties(paragraph, para_data: Dict[str, Any]):
     _apply_font_properties(run, para_data)
 
 
-def _apply_font_properties(run, para_data: Dict[str, Any]):
+def _apply_font_properties(run, para_data: dict[str, Any]) -> None:
     for attr in ("bold", "italic", "underline"):
         if attr in para_data:
             setattr(run.font, attr, para_data[attr])
@@ -106,7 +106,7 @@ def _check_duplicate_keys(pairs):
     return result
 
 
-def _validate_replacements(inventory: InventoryData, replacements: Dict) -> List[str]:
+def _validate_replacements(inventory: InventoryData, replacements: dict) -> list[str]:
     errors = []
     for slide_key, shapes_data in replacements.items():
         if not slide_key.startswith("slide-"):
@@ -124,12 +124,12 @@ def _validate_replacements(inventory: InventoryData, replacements: Dict) -> List
     return errors
 
 
-def apply_replacements(pptx_file: str, json_file: str, output_file: str):
+def apply_replacements(pptx_file: str, json_file: str, output_file: str) -> None:
     prs = Presentation(pptx_file)
     inventory = extract_text_inventory(Path(pptx_file), prs)
 
     # Snapshot original overflow so we can detect if replacements make it worse
-    original_overflow: Dict[str, Dict[str, float]] = {
+    original_overflow: dict[str, dict[str, float]] = {
         slide_key: {
             shape_key: sd.frame_overflow_bottom
             for shape_key, sd in shapes.items()
@@ -178,8 +178,8 @@ def apply_replacements(pptx_file: str, json_file: str, output_file: str):
     # while reading font colors — these are harmless and ignored by PowerPoint.
     updated_inventory = extract_text_inventory(Path(pptx_file), prs)
 
-    overflow_errors: List[str] = []
-    warnings: List[str] = []
+    overflow_errors: list[str] = []
+    warnings: list[str] = []
     for slide_key, shapes_dict in updated_inventory.items():
         for shape_key, sd in shapes_dict.items():
             for w in sd.warnings:
@@ -205,7 +205,7 @@ def apply_replacements(pptx_file: str, json_file: str, output_file: str):
     print(f"  Shapes cleared: {shapes_cleared}, replaced: {shapes_replaced}")
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 4:
         print(__doc__)
         sys.exit(1)

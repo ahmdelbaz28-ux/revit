@@ -1,5 +1,4 @@
-"""
-fireai.core.revit_exporter — IFC & Revit Output Generation
+"""fireai.core.revit_exporter — IFC & Revit Output Generation.
 ===========================================================
 
 Generates output files from cable routing results:
@@ -40,7 +39,7 @@ import io
 import json
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from fireai.core.cable_router import RoutingSchedule
 
@@ -64,6 +63,7 @@ class ScheduleRow:
         num_bends: Number of 90° bends.
         is_compliant: Whether this route meets all constraints.
         code_reference: Applicable code sections.
+
     """
 
     device_id: str
@@ -92,14 +92,15 @@ class IFCElement:
         length_m: Element length in meters.
         workset: Dedicated workset name ("FA-CABLES").
         route_id: Parent route identifier.
+
     """
 
     global_id: str
     ifc_class: str
     name: str
     description: str
-    start_point: Tuple[float, float, float]
-    end_point: Tuple[float, float, float]
+    start_point: tuple[float, float, float]
+    end_point: tuple[float, float, float]
     length_m: float
     workset: str = "FA-CABLES"
     route_id: str = ""
@@ -121,6 +122,7 @@ class ReportSummary:
         constraint_violations: Number of constraint violations.
         code_references: All code sections referenced.
         computation_hash: SHA-256 hash for verification.
+
     """
 
     project_name: str
@@ -132,7 +134,7 @@ class ReportSummary:
     max_voltage_drop_pct: float
     compliance_status: str
     constraint_violations: int
-    code_references: Tuple[str, ...] = (
+    code_references: tuple[str, ...] = (
         "NFPA 72 §10.6.4",
         "NFPA 72 §23.6.2",
         "NEC 760.24",
@@ -179,11 +181,12 @@ class RevitExporter:
         """Public workset name. System req 4: always FA-CABLES."""
         return self._workset
 
-    def __init__(self, workset: str = FA_WORKSET):
+    def __init__(self, workset: str = FA_WORKSET) -> None:
         """Initialize the exporter.
 
         Args:
             workset: Dedicated workset name for fire alarm cables.
+
         """
         self._workset = workset
 
@@ -192,7 +195,7 @@ class RevitExporter:
     def generate_schedule(
         self,
         schedule: RoutingSchedule,
-    ) -> List[ScheduleRow]:
+    ) -> list[ScheduleRow]:
         """Generate cable schedule from routing results.
 
         Schedule format per specification:
@@ -203,6 +206,7 @@ class RevitExporter:
 
         Returns:
             List of ScheduleRow objects.
+
         """
         rows = []
 
@@ -246,6 +250,7 @@ class RevitExporter:
 
         Returns:
             CSV-formatted string.
+
         """
         rows = self.generate_schedule(schedule)
         output = io.StringIO()
@@ -291,7 +296,7 @@ class RevitExporter:
     def generate_ifc_elements(
         self,
         schedule: RoutingSchedule,
-    ) -> List[IFCElement]:
+    ) -> list[IFCElement]:
         """Generate IFC elements from cable routes.
 
         Output format per specification:
@@ -304,6 +309,7 @@ class RevitExporter:
 
         Returns:
             List of IFCElement objects.
+
         """
         elements = []
 
@@ -390,6 +396,7 @@ class RevitExporter:
 
         Returns:
             JSON string with IFC element data.
+
         """
         elements = self.generate_ifc_elements(schedule)
 
@@ -421,7 +428,7 @@ class RevitExporter:
     def generate_revit_model_lines(
         self,
         schedule: RoutingSchedule,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate Revit Model Line definitions.
 
         Model Lines are placed on the dedicated workset "FA-CABLES".
@@ -432,6 +439,7 @@ class RevitExporter:
 
         Returns:
             List of model line definition dicts.
+
         """
         lines = []
 
@@ -485,6 +493,7 @@ class RevitExporter:
 
         Returns:
             ReportSummary with all metrics.
+
         """
         total_violations = 0
         max_vdrop = 0.0
@@ -540,6 +549,7 @@ class RevitExporter:
 
         Returns:
             Formatted text report string.
+
         """
         report = self.generate_report(schedule, project_name)
 

@@ -1,5 +1,4 @@
-"""
-backend/routers/analyze.py - Project-level analyze endpoints
+"""backend/routers/analyze.py - Project-level analyze endpoints.
 =============================================================
 Endpoints for running NFPA 72 / NEC calculations in the context of a
 project / room:
@@ -16,18 +15,18 @@ can choose between (a) low-level kernel calls (/api/qomn/...) or
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
 from backend.rbac import Permission
-from fireai.core.qomn_kernel import (
-    QOMNKernel,
-    PhysicsGuardError,
-)
 from fireai.core.pipeline import analyze_room
+from fireai.core.qomn_kernel import (
+    PhysicsGuardError,
+    QOMNKernel,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +68,7 @@ class BatteryRequest(BaseModel):
         Ah = (I_standby * T_standby + I_alarm * T_alarm_min/60)
              / discharge_efficiency * safety_factor
     """
+
     standby_load_a: float = Field(..., gt=0, description="Standby current draw (A)")
     alarm_load_a: float = Field(..., ge=0, description="Alarm current draw (A)")
     standby_hours: float = Field(24.0, gt=0, description="Standby duration (h)")
@@ -85,6 +85,7 @@ class VoltageRequest(BaseModel):
     NEC Chapter 9 Table 8:
         V_drop = 2 * I * L * R_per_m
     """
+
     current_a: float = Field(..., gt=0, description="Circuit current (A)")
     length_m: float = Field(..., gt=0, description="One-way circuit length (m)")
     awg_gauge: str = Field("14", description="AWG gauge (e.g., 14, 12, 10)")
@@ -93,10 +94,11 @@ class VoltageRequest(BaseModel):
 
 class RoomAnalyzeRequest(BaseModel):
     """Full room analysis request body for /api/projects/{project_id}/analyze/room."""
+
     room_id: str = Field(
         ..., description="Room identifier (must match {project_id} or be scoped to it)"
     )
-    room_polygon: List[List[float]] = Field(
+    room_polygon: list[list[float]] = Field(
         ..., description="Room polygon as [[x,y], ...] list of vertices"
     )
     ceiling_height_m: float = Field(
@@ -116,11 +118,12 @@ class RoomAnalyzeRequest(BaseModel):
     "/analyze/battery",
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
-async def analyze_battery(req: BatteryRequest) -> Dict[str, Any]:
+async def analyze_battery(req: BatteryRequest) -> dict[str, Any]:
     """Compute NFPA 72 battery capacity.
 
     Returns:
         Dict with required_ah, installed_ah, formula, computation_hash.
+
     """
     try:
         kernel = QOMNKernel()
@@ -148,11 +151,12 @@ async def analyze_battery(req: BatteryRequest) -> Dict[str, Any]:
     "/analyze/voltage",
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
-async def analyze_voltage(req: VoltageRequest) -> Dict[str, Any]:
+async def analyze_voltage(req: VoltageRequest) -> dict[str, Any]:
     """Compute NEC voltage drop.
 
     Returns:
         Dict with voltage_drop_v, actual_value, percentage_drop, compliant.
+
     """
     try:
         kernel = QOMNKernel()
@@ -178,7 +182,7 @@ async def analyze_voltage(req: VoltageRequest) -> Dict[str, Any]:
     "/projects/{project_id}/analyze/room",
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
-async def analyze_project_room(project_id: str, req: RoomAnalyzeRequest) -> Dict[str, Any]:
+async def analyze_project_room(project_id: str, req: RoomAnalyzeRequest) -> dict[str, Any]:
     """Run the full FireAI pipeline for a room in a project.
 
     Returns the full PipelineResult.to_dict() output, augmented with

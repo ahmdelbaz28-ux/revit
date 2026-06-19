@@ -14,6 +14,7 @@ Tests cover:
   - Digital twin sync stage
 """
 import json
+from typing import NoReturn
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -114,7 +115,7 @@ def fresh_bus():
 class TestPipelineStage:
     """Tests for the PipelineStage enum."""
 
-    def test_all_stage_values(self):
+    def test_all_stage_values(self) -> None:
         """PipelineStage must have exactly 7 stages with correct string values."""
         expected = {
             "OPTIMIZATION": "optimization",
@@ -128,21 +129,21 @@ class TestPipelineStage:
         for name, value in expected.items():
             assert PipelineStage[name].value == value
 
-    def test_stage_count(self):
+    def test_stage_count(self) -> None:
         """There should be exactly 7 pipeline stages."""
         assert len(PipelineStage) == 7
 
-    def test_stage_is_enum(self):
+    def test_stage_is_enum(self) -> None:
         """PipelineStage members are proper Enum instances."""
         assert isinstance(PipelineStage.OPTIMIZATION, PipelineStage)
         assert isinstance(PipelineStage.COMPLETE, PipelineStage)
 
-    def test_stage_string_comparison(self):
+    def test_stage_string_comparison(self) -> None:
         """Stage values compare as strings."""
         assert PipelineStage.OPTIMIZATION.value == "optimization"
         assert PipelineStage.COMPLETE.value == "complete"
 
-    def test_all_stages_accessible(self):
+    def test_all_stages_accessible(self) -> None:
         """Every stage is accessible by name."""
         stages = [
             PipelineStage.OPTIMIZATION,
@@ -166,7 +167,7 @@ class TestPipelineStage:
 class TestPipelineResult:
     """Tests for the PipelineResult dataclass."""
 
-    def test_minimal_creation(self):
+    def test_minimal_creation(self) -> None:
         """PipelineResult can be created with only required fields."""
         result = PipelineResult(
             room_id="test-room",
@@ -186,7 +187,7 @@ class TestPipelineResult:
         assert result.twin_version_id is None
         assert result.twin_checksum is None
 
-    def test_full_creation(self):
+    def test_full_creation(self) -> None:
         """PipelineResult can be created with all fields populated."""
         room = Room(name="R1", width=10.0, length=10.0)
         layout = DetectorLayout(room=room, detectors=[(5.0, 5.0)])
@@ -222,7 +223,7 @@ class TestPipelineResult:
         assert result.twin_version_id == "v1"
         assert result.twin_checksum == "abc123"
 
-    def test_defaults_are_independent(self):
+    def test_defaults_are_independent(self) -> None:
         """Two PipelineResult instances have independent default lists."""
         r1 = PipelineResult(room_id="a", stage_reached=PipelineStage.OPTIMIZATION, success=False)
         r2 = PipelineResult(room_id="b", stage_reached=PipelineStage.OPTIMIZATION, success=False)
@@ -230,7 +231,7 @@ class TestPipelineResult:
         assert r1.errors == ["error1"]
         assert r2.errors == []
 
-    def test_to_dict_minimal(self):
+    def test_to_dict_minimal(self) -> None:
         """to_dict() on a minimal result contains all required keys."""
         result = PipelineResult(
             room_id="test",
@@ -252,7 +253,7 @@ class TestPipelineResult:
         assert "consensus" not in d
         assert "certificate" not in d
 
-    def test_to_dict_with_layout(self):
+    def test_to_dict_with_layout(self) -> None:
         """to_dict() serializes DetectorLayout when present.
 
         Note: DetectorLayout.count is a @property, so dataclasses.asdict()
@@ -280,7 +281,7 @@ class TestPipelineResult:
         assert d["layout"]["nfpa_valid"] is True
         assert d["layout"]["method"] == "hexG_x"
 
-    def test_to_dict_with_consensus(self):
+    def test_to_dict_with_consensus(self) -> None:
         """to_dict() serializes ConsensusResult, converting enums to values."""
         from fireai.core.spatial_engine.consensus_engine import EngineName
 
@@ -307,7 +308,7 @@ class TestPipelineResult:
         assert d["consensus"]["n_pass"] == 3
         assert d["consensus"]["n_total"] == 3
 
-    def test_to_dict_with_certificate(self):
+    def test_to_dict_with_certificate(self) -> None:
         """to_dict() serializes ProofCertificate when present."""
         cert = ProofCertificate(
             room_id="R1",
@@ -332,7 +333,7 @@ class TestPipelineResult:
         assert d["certificate"]["room_id"] == "R1"
         assert d["certificate"]["coverage_guaranteed"] is True
 
-    def test_to_json_returns_valid_json(self):
+    def test_to_json_returns_valid_json(self) -> None:
         """to_json() returns a valid JSON string."""
         result = PipelineResult(
             room_id="test",
@@ -346,7 +347,7 @@ class TestPipelineResult:
         assert parsed["stage_reached"] == "complete"
         assert parsed["success"] is True
 
-    def test_to_json_custom_indent(self):
+    def test_to_json_custom_indent(self) -> None:
         """to_json() respects the indent parameter."""
         result = PipelineResult(
             room_id="test",
@@ -358,7 +359,7 @@ class TestPipelineResult:
         # Indent=4 produces more whitespace
         assert len(json_4) > len(json_2)
 
-    def test_to_json_roundtrip(self):
+    def test_to_json_roundtrip(self) -> None:
         """to_dict() and to_json() produce consistent data."""
         result = PipelineResult(
             room_id="roundtrip",
@@ -387,7 +388,7 @@ class TestPipelineResult:
 class TestAnalysisPipelineInit:
     """Tests for AnalysisPipeline.__init__()."""
 
-    def test_default_parameters(self):
+    def test_default_parameters(self) -> None:
         """Default init uses NFPA 72 standard values."""
         p = AnalysisPipeline()
         assert p.coverage_radius == DETECTOR_RADIUS
@@ -397,7 +398,7 @@ class TestAnalysisPipelineInit:
         assert p.generate_certificate is True
         assert p.require_consensus is True
 
-    def test_custom_parameters(self):
+    def test_custom_parameters(self) -> None:
         """Custom parameters are stored correctly."""
         p = AnalysisPipeline(
             coverage_radius=5.0,
@@ -414,26 +415,26 @@ class TestAnalysisPipelineInit:
         assert p.generate_certificate is False
         assert p.require_consensus is False
 
-    def test_sub_components_initialized(self):
+    def test_sub_components_initialized(self) -> None:
         """Internal sub-components are initialized."""
         p = AnalysisPipeline()
         assert isinstance(p._optimizer, DensityOptimizer)
         assert isinstance(p._consensus, ConsensusEngine)
         assert isinstance(p._cert_gen, ProofCertificateGenerator)
 
-    def test_event_bus_initialized(self):
+    def test_event_bus_initialized(self) -> None:
         """Pipeline uses the EventBus singleton."""
         p = AnalysisPipeline()
         assert p._bus is not None
         assert isinstance(p._bus, EventBus)
 
-    def test_twin_property(self):
+    def test_twin_property(self) -> None:
         """The twin property returns a DigitalTwin instance."""
         p = AnalysisPipeline()
         from fireai.core.digital_twin import DigitalTwin
         assert isinstance(p.twin, DigitalTwin)
 
-    def test_audit_store_flag(self):
+    def test_audit_store_flag(self) -> None:
         """_audit_available is a boolean indicating AuditStore availability."""
         p = AnalysisPipeline()
         assert isinstance(p._audit_available, bool)
@@ -447,7 +448,7 @@ class TestAnalysisPipelineInit:
 class TestAnalyzeRoomHappyPath:
     """Tests for analyze_room() with valid inputs."""
 
-    def test_simple_room_succeeds(self, pipeline, simple_room):
+    def test_simple_room_succeeds(self, pipeline, simple_room) -> None:
         """A standard office room should produce a successful result."""
         result = pipeline.analyze_room(room=simple_room, room_id="office-101", ceiling_height=3.0)
         assert isinstance(result, PipelineResult)
@@ -459,17 +460,17 @@ class TestAnalyzeRoomHappyPath:
         assert result.layout.coverage_pct > 0
         assert len(result.errors) == 0
 
-    def test_room_id_defaults_to_name(self, pipeline, simple_room):
+    def test_room_id_defaults_to_name(self, pipeline, simple_room) -> None:
         """When room_id is empty, room.name is used."""
         result = pipeline.analyze_room(room=simple_room, room_id="", ceiling_height=3.0)
         assert result.room_id == simple_room.name
 
-    def test_room_id_defaults_to_name_when_omitted(self, pipeline, simple_room):
+    def test_room_id_defaults_to_name_when_omitted(self, pipeline, simple_room) -> None:
         """When room_id is not provided, room.name is used (default='')."""
         result = pipeline.analyze_room(room=simple_room, ceiling_height=3.0)
         assert result.room_id == simple_room.name
 
-    def test_result_contains_metadata(self, pipeline, simple_room):
+    def test_result_contains_metadata(self, pipeline, simple_room) -> None:
         """Result metadata contains pipeline configuration info."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.5)
         assert "correlation_id" in result.metadata
@@ -479,7 +480,7 @@ class TestAnalyzeRoomHappyPath:
         assert result.metadata["ceiling_height"] == 3.5
         assert result.metadata["pipeline_version"] == "1.0.0"
 
-    def test_result_timing_populated(self, pipeline, simple_room):
+    def test_result_timing_populated(self, pipeline, simple_room) -> None:
         """Result timing dict is populated for each completed stage."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert "optimization" in result.timing
@@ -490,21 +491,21 @@ class TestAnalyzeRoomHappyPath:
         assert "total" in result.timing
         assert result.timing["total"] > 0
 
-    def test_layout_has_detectors(self, pipeline, simple_room):
+    def test_layout_has_detectors(self, pipeline, simple_room) -> None:
         """Result layout contains placed detectors."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.layout is not None
         assert len(result.layout.detectors) > 0
         assert all(isinstance(d, tuple) and len(d) == 2 for d in result.layout.detectors)
 
-    def test_consensus_present(self, pipeline, simple_room):
+    def test_consensus_present(self, pipeline, simple_room) -> None:
         """Consensus result is present when require_consensus=True."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.consensus is not None
         assert isinstance(result.consensus, ConsensusResult)
         assert result.consensus.n_total == 3  # Triple consensus
 
-    def test_certificate_present(self, pipeline, simple_room):
+    def test_certificate_present(self, pipeline, simple_room) -> None:
         """Proof certificate is present when generate_certificate=True."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.certificate is not None
@@ -513,19 +514,19 @@ class TestAnalyzeRoomHappyPath:
         assert result.certificate.proof_hash != ""
         assert result.certificate.timestamp != ""
 
-    def test_small_room_one_detector(self, pipeline, small_room):
+    def test_small_room_one_detector(self, pipeline, small_room) -> None:
         """A tiny room should need only 1 detector."""
         result = pipeline.analyze_room(room=small_room, room_id="closet", ceiling_height=3.0)
         assert result.success is True
         assert result.layout.count >= 1
 
-    def test_large_room_many_detectors(self, pipeline, large_room):
+    def test_large_room_many_detectors(self, pipeline, large_room) -> None:
         """A large warehouse should need many detectors."""
         result = pipeline.analyze_room(room=large_room, room_id="warehouse", ceiling_height=4.5)
         assert result.success is True
         assert result.layout.count > 4  # 30x20m definitely needs more than 4
 
-    def test_custom_ceiling_height(self, pipeline, simple_room):
+    def test_custom_ceiling_height(self, pipeline, simple_room) -> None:
         """Custom ceiling_height overrides room default."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=6.0)
         assert result.metadata["ceiling_height"] == 6.0
@@ -539,37 +540,37 @@ class TestAnalyzeRoomHappyPath:
 class TestAnalyzeRoomStages:
     """Tests for pipeline stage transitions in analyze_room()."""
 
-    def test_full_pipeline_reaches_complete(self, pipeline, simple_room):
+    def test_full_pipeline_reaches_complete(self, pipeline, simple_room) -> None:
         """A successful pipeline reaches the COMPLETE stage."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.stage_reached == PipelineStage.COMPLETE
 
-    def test_optimization_stage_timing(self, pipeline, simple_room):
+    def test_optimization_stage_timing(self, pipeline, simple_room) -> None:
         """Optimization stage has non-negative timing."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.timing["optimization"] >= 0
 
-    def test_verification_stage_timing(self, pipeline, simple_room):
+    def test_verification_stage_timing(self, pipeline, simple_room) -> None:
         """Verification stage has non-negative timing."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.timing["verification"] >= 0
 
-    def test_certification_stage_timing(self, pipeline, simple_room):
+    def test_certification_stage_timing(self, pipeline, simple_room) -> None:
         """Certification stage has non-negative timing."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.timing["certification"] >= 0
 
-    def test_signing_stage_timing(self, pipeline, simple_room):
+    def test_signing_stage_timing(self, pipeline, simple_room) -> None:
         """Signing stage has non-negative timing."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.timing["signing"] >= 0
 
-    def test_storage_stage_timing(self, pipeline, simple_room):
+    def test_storage_stage_timing(self, pipeline, simple_room) -> None:
         """Storage stage has non-negative timing."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.timing["storage"] >= 0
 
-    def test_optimization_failure_stops_pipeline(self, pipeline):
+    def test_optimization_failure_stops_pipeline(self, pipeline) -> None:
         """If optimization fails, pipeline stops at OPTIMIZATION stage."""
         # Create a room that will cause the optimizer to fail by mocking it
         room = Room(name="bad-room", width=10.0, length=10.0)
@@ -579,7 +580,7 @@ class TestAnalyzeRoomStages:
         assert result.success is False
         assert any("OPTIMIZATION FAILED" in e for e in result.errors)
 
-    def test_verification_failure_continues_pipeline(self, pipeline, simple_room):
+    def test_verification_failure_continues_pipeline(self, pipeline, simple_room) -> None:
         """Verification failure is not fatal — pipeline continues."""
         with patch.object(pipeline._consensus, "verify", side_effect=RuntimeError("verify crash")):
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
@@ -589,7 +590,7 @@ class TestAnalyzeRoomStages:
         # Consensus is None since it failed
         assert result.consensus is None
 
-    def test_certification_failure_continues_pipeline(self, pipeline, simple_room):
+    def test_certification_failure_continues_pipeline(self, pipeline, simple_room) -> None:
         """Certification failure is not fatal — pipeline continues."""
         with patch.object(pipeline._cert_gen, "generate", side_effect=RuntimeError("cert crash")):
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
@@ -598,13 +599,11 @@ class TestAnalyzeRoomStages:
         # Certificate is None since it failed
         assert result.certificate is None
 
-    def test_signing_failure_continues_pipeline(self, pipeline, simple_room):
+    def test_signing_failure_continues_pipeline(self, pipeline, simple_room) -> None:
         """Signing failure is not fatal — pipeline continues."""
-
-
         # We'll mock certificate.seal to fail, but we need to capture the cert first
         class FailSeal:
-            def seal(self):
+            def seal(self) -> NoReturn:
                 raise RuntimeError("seal crash")
 
         with patch.object(pipeline, "_cert_gen") as mock_gen:
@@ -628,12 +627,12 @@ class TestAnalyzeRoomStages:
         assert result.stage_reached == PipelineStage.COMPLETE
         assert any("SIGNING FAILED" in e for e in result.errors)
 
-    def test_skipped_consensus_sets_timing_zero(self, pipeline_no_consensus, simple_room):
+    def test_skipped_consensus_sets_timing_zero(self, pipeline_no_consensus, simple_room) -> None:
         """When consensus is skipped, verification timing is 0."""
         result = pipeline_no_consensus.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.timing["verification"] == 0.0
 
-    def test_skipped_certificate_sets_timing_zero(self, pipeline_no_cert, simple_room):
+    def test_skipped_certificate_sets_timing_zero(self, pipeline_no_cert, simple_room) -> None:
         """When certificate is skipped, certification timing is 0."""
         result = pipeline_no_cert.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.timing["certification"] == 0.0
@@ -647,7 +646,7 @@ class TestAnalyzeRoomStages:
 class TestAnalyzeRoomErrorHandling:
     """Tests for error handling in analyze_room()."""
 
-    def test_nan_width_rejected(self, pipeline):
+    def test_nan_width_rejected(self, pipeline) -> None:
         """NaN width is rejected before optimization."""
         room = Room(name="nan-room", width=10.0, length=10.0)
         room.width = float("nan")
@@ -656,7 +655,7 @@ class TestAnalyzeRoomErrorHandling:
         assert result.stage_reached == PipelineStage.OPTIMIZATION
         assert any("GEOMETRY INVALID" in e for e in result.errors)
 
-    def test_nan_length_rejected(self, pipeline):
+    def test_nan_length_rejected(self, pipeline) -> None:
         """NaN length is rejected before optimization."""
         room = Room(name="nan-room", width=10.0, length=10.0)
         room.length = float("nan")
@@ -664,7 +663,7 @@ class TestAnalyzeRoomErrorHandling:
         assert result.success is False
         assert any("GEOMETRY INVALID" in e for e in result.errors)
 
-    def test_inf_width_rejected(self, pipeline):
+    def test_inf_width_rejected(self, pipeline) -> None:
         """Infinite width is rejected before optimization."""
         room = Room(name="inf-room", width=10.0, length=10.0)
         room.width = float("inf")
@@ -672,28 +671,28 @@ class TestAnalyzeRoomErrorHandling:
         assert result.success is False
         assert any("GEOMETRY INVALID" in e for e in result.errors)
 
-    def test_inf_ceiling_height_rejected(self, pipeline):
+    def test_inf_ceiling_height_rejected(self, pipeline) -> None:
         """Infinite ceiling_height is rejected before optimization."""
         room = Room(name="inf-h", width=10.0, length=10.0)
         result = pipeline.analyze_room(room=room, room_id="inf-h", ceiling_height=float("inf"))
         assert result.success is False
         assert any("GEOMETRY INVALID" in e for e in result.errors)
 
-    def test_negative_ceiling_height_rejected(self, pipeline):
+    def test_negative_ceiling_height_rejected(self, pipeline) -> None:
         """Negative ceiling height is rejected before optimization."""
         room = Room(name="neg-h", width=10.0, length=10.0)
         result = pipeline.analyze_room(room=room, room_id="neg-h", ceiling_height=-3.0)
         assert result.success is False
         assert any("GEOMETRY INVALID" in e for e in result.errors)
 
-    def test_zero_ceiling_height_rejected(self, pipeline):
+    def test_zero_ceiling_height_rejected(self, pipeline) -> None:
         """Zero ceiling height is rejected before optimization."""
         room = Room(name="zero-h", width=10.0, length=10.0)
         result = pipeline.analyze_room(room=room, room_id="zero-h", ceiling_height=0.0)
         assert result.success is False
         assert any("GEOMETRY INVALID" in e for e in result.errors)
 
-    def test_string_dimension_crashes_format(self, pipeline):
+    def test_string_dimension_crashes_format(self, pipeline) -> None:
         """String dimension causes ValueError in the logging format string.
 
         The pipeline logs room dimensions with f-string formatting before
@@ -709,21 +708,21 @@ class TestAnalyzeRoomErrorHandling:
         with pytest.raises(ValueError, match="Unknown format code"):
             pipeline.analyze_room(room=room, room_id="str-dim", ceiling_height=3.0)
 
-    def test_invalid_geometry_no_layout(self, pipeline):
+    def test_invalid_geometry_no_layout(self, pipeline) -> None:
         """Invalid geometry produces no layout."""
         room = Room(name="bad", width=10.0, length=10.0)
         room.width = float("nan")
         result = pipeline.analyze_room(room=room, room_id="bad", ceiling_height=3.0)
         assert result.layout is None
 
-    def test_invalid_geometry_no_consensus(self, pipeline):
+    def test_invalid_geometry_no_consensus(self, pipeline) -> None:
         """Invalid geometry produces no consensus."""
         room = Room(name="bad", width=10.0, length=10.0)
         room.width = float("nan")
         result = pipeline.analyze_room(room=room, room_id="bad", ceiling_height=3.0)
         assert result.consensus is None
 
-    def test_invalid_geometry_no_certificate(self, pipeline):
+    def test_invalid_geometry_no_certificate(self, pipeline) -> None:
         """Invalid geometry produces no certificate."""
         room = Room(name="bad", width=10.0, length=10.0)
         room.width = float("nan")
@@ -739,18 +738,18 @@ class TestAnalyzeRoomErrorHandling:
 class TestAnalyzeRoomFlags:
     """Tests for analyze_room() with different flag combinations."""
 
-    def test_no_consensus_has_no_consensus_result(self, pipeline_no_consensus, simple_room):
+    def test_no_consensus_has_no_consensus_result(self, pipeline_no_consensus, simple_room) -> None:
         """require_consensus=False means no ConsensusResult."""
         result = pipeline_no_consensus.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.consensus is None
         assert any("VERIFICATION SKIPPED" in w for w in result.warnings)
 
-    def test_no_certificate_has_no_certificate(self, pipeline_no_cert, simple_room):
+    def test_no_certificate_has_no_certificate(self, pipeline_no_cert, simple_room) -> None:
         """generate_certificate=False means no ProofCertificate."""
         result = pipeline_no_cert.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.certificate is None
 
-    def test_fast_mode_no_consensus_no_cert(self, pipeline_fast, simple_room):
+    def test_fast_mode_no_consensus_no_cert(self, pipeline_fast, simple_room) -> None:
         """Fast mode (no consensus, no cert) produces minimal result."""
         result = pipeline_fast.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.consensus is None
@@ -758,31 +757,31 @@ class TestAnalyzeRoomFlags:
         # But still has layout
         assert result.layout is not None
 
-    def test_fast_mode_still_reaches_complete(self, pipeline_fast, simple_room):
+    def test_fast_mode_still_reaches_complete(self, pipeline_fast, simple_room) -> None:
         """Fast mode still reaches COMPLETE stage."""
         result = pipeline_fast.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.stage_reached == PipelineStage.COMPLETE
 
-    def test_no_cert_pipeline_hash(self, pipeline_no_cert, simple_room):
+    def test_no_cert_pipeline_hash(self, pipeline_no_cert, simple_room) -> None:
         """When no certificate, signing creates a pipeline-level hash."""
         result = pipeline_no_cert.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert "pipeline_hash" in result.metadata
         assert "pipeline_timestamp" in result.metadata
 
-    def test_custom_radius_pipeline(self, pipeline_custom_radius, simple_room):
+    def test_custom_radius_pipeline(self, pipeline_custom_radius, simple_room) -> None:
         """Pipeline with custom coverage radius works correctly."""
         result = pipeline_custom_radius.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.layout is not None
         assert result.metadata["coverage_radius"] == 5.0
 
-    def test_success_requires_no_errors(self, pipeline, simple_room):
+    def test_success_requires_no_errors(self, pipeline, simple_room) -> None:
         """Success is False when errors are present."""
         with patch.object(pipeline._consensus, "verify", side_effect=RuntimeError("fail")):
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.success is False
         assert len(result.errors) > 0
 
-    def test_success_requires_proof_valid(self, pipeline, simple_room):
+    def test_success_requires_proof_valid(self, pipeline, simple_room) -> None:
         """Success is False when layout.proof_valid is False."""
         with patch.object(pipeline._optimizer, "optimize") as mock_opt:
             layout = DetectorLayout(
@@ -797,7 +796,7 @@ class TestAnalyzeRoomFlags:
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.success is False
 
-    def test_success_requires_consensus_safe_when_required(self, pipeline, simple_room):
+    def test_success_requires_consensus_safe_when_required(self, pipeline, simple_room) -> None:
         """Success requires consensus.is_safe when require_consensus=True."""
         with patch.object(pipeline._consensus, "verify") as mock_verify:
             consensus = ConsensusResult(
@@ -822,7 +821,7 @@ class TestAnalyzeRoomFlags:
 class TestAnalyzeRoomWarnings:
     """Tests for warning collection in analyze_room()."""
 
-    def test_consensus_warning_level(self, pipeline, simple_room):
+    def test_consensus_warning_level(self, pipeline, simple_room) -> None:
         """Consensus WARNING level adds a warning to the result."""
         with patch.object(pipeline._consensus, "verify") as mock_verify:
             consensus = ConsensusResult(
@@ -838,7 +837,7 @@ class TestAnalyzeRoomWarnings:
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert any("Consensus WARNING" in w for w in result.warnings)
 
-    def test_consensus_fail_level(self, pipeline, simple_room):
+    def test_consensus_fail_level(self, pipeline, simple_room) -> None:
         """Consensus FAIL level adds a warning to the result."""
         with patch.object(pipeline._consensus, "verify") as mock_verify:
             consensus = ConsensusResult(
@@ -854,7 +853,7 @@ class TestAnalyzeRoomWarnings:
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert any("Consensus FAIL" in w for w in result.warnings)
 
-    def test_layout_warnings_propagated(self, pipeline, simple_room):
+    def test_layout_warnings_propagated(self, pipeline, simple_room) -> None:
         """Warnings from the layout are propagated to the result."""
         with patch.object(pipeline._optimizer, "optimize") as mock_opt:
             layout = DetectorLayout(
@@ -870,7 +869,7 @@ class TestAnalyzeRoomWarnings:
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert "unusual geometry" in result.warnings
 
-    def test_layout_fallback_warning(self, pipeline, simple_room):
+    def test_layout_fallback_warning(self, pipeline, simple_room) -> None:
         """Fallback-used flag adds a warning."""
         with patch.object(pipeline._optimizer, "optimize") as mock_opt:
             layout = DetectorLayout(
@@ -886,7 +885,7 @@ class TestAnalyzeRoomWarnings:
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert any("Fallback placement used" in w for w in result.warnings)
 
-    def test_layout_violations_propagated(self, pipeline, simple_room):
+    def test_layout_violations_propagated(self, pipeline, simple_room) -> None:
         """Violations from the layout are propagated as warnings."""
         with patch.object(pipeline._optimizer, "optimize") as mock_opt:
             layout = DetectorLayout(
@@ -902,7 +901,7 @@ class TestAnalyzeRoomWarnings:
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert "spacing exceeds 9.1m" in result.warnings
 
-    def test_consensus_skipped_warning(self, pipeline_no_consensus, simple_room):
+    def test_consensus_skipped_warning(self, pipeline_no_consensus, simple_room) -> None:
         """Skipping consensus adds a specific warning."""
         result = pipeline_no_consensus.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert any("VERIFICATION SKIPPED" in w for w in result.warnings)
@@ -916,7 +915,7 @@ class TestAnalyzeRoomWarnings:
 class TestAnalyzeBuilding:
     """Tests for analyze_building() with multiple rooms."""
 
-    def test_multiple_rooms(self, pipeline):
+    def test_multiple_rooms(self, pipeline) -> None:
         """analyze_building processes all rooms and returns a result per room."""
         rooms = [
             (Room(name="R1", width=10.0, length=10.0), "room-1", 3.0),
@@ -927,7 +926,7 @@ class TestAnalyzeBuilding:
         assert len(results) == 3
         assert all(isinstance(r, PipelineResult) for r in results)
 
-    def test_room_ids_correct(self, pipeline):
+    def test_room_ids_correct(self, pipeline) -> None:
         """Each result has the correct room_id."""
         rooms = [
             (Room(name="R1", width=10.0, length=10.0), "office-A", 3.0),
@@ -937,7 +936,7 @@ class TestAnalyzeBuilding:
         assert results[0].room_id == "office-A"
         assert results[1].room_id == "office-B"
 
-    def test_partial_failure_continues(self, pipeline):
+    def test_partial_failure_continues(self, pipeline) -> None:
         """If one room fails, other rooms continue to be analyzed."""
         rooms = [
             (Room(name="Good", width=10.0, length=10.0), "good-room", 3.0),
@@ -972,12 +971,12 @@ class TestAnalyzeBuilding:
         # Third room should succeed
         assert results[2].success is True
 
-    def test_empty_building(self, pipeline):
+    def test_empty_building(self, pipeline) -> None:
         """Empty room list returns empty result list."""
         results = pipeline.analyze_building(rooms=[])
         assert results == []
 
-    def test_single_room_building(self, pipeline):
+    def test_single_room_building(self, pipeline) -> None:
         """Single room building returns single result."""
         rooms = [
             (Room(name="Only", width=10.0, length=10.0), "only-room", 3.0),
@@ -986,7 +985,7 @@ class TestAnalyzeBuilding:
         assert len(results) == 1
         assert results[0].room_id == "only-room"
 
-    def test_memory_error_propagates(self, pipeline, simple_room):
+    def test_memory_error_propagates(self, pipeline, simple_room) -> None:
         """MemoryError in analyze_building propagates (critical error)."""
         with patch.object(pipeline, "analyze_room", side_effect=MemoryError("OOM")):
             rooms = [
@@ -996,7 +995,7 @@ class TestAnalyzeBuilding:
             with pytest.raises(MemoryError):
                 pipeline.analyze_building(rooms=rooms)
 
-    def test_system_error_propagates(self, pipeline, simple_room):
+    def test_system_error_propagates(self, pipeline, simple_room) -> None:
         """SystemError in analyze_building propagates (critical error)."""
         with patch.object(pipeline, "analyze_room", side_effect=SystemError("corrupt")):
             rooms = [
@@ -1006,7 +1005,7 @@ class TestAnalyzeBuilding:
             with pytest.raises(SystemError):
                 pipeline.analyze_building(rooms=rooms)
 
-    def test_generic_exception_continues(self, pipeline, simple_room):
+    def test_generic_exception_continues(self, pipeline, simple_room) -> None:
         """Non-critical exceptions in one room don't stop others."""
         call_count = 0
 
@@ -1029,7 +1028,7 @@ class TestAnalyzeBuilding:
         assert "RuntimeError" in results[0].errors[0]
         assert results[1].success is True
 
-    def test_building_level_timing(self, pipeline):
+    def test_building_level_timing(self, pipeline) -> None:
         """Building analysis includes total time in results."""
         rooms = [
             (Room(name="R1", width=10.0, length=10.0), "R1", 3.0),
@@ -1048,21 +1047,21 @@ class TestAnalyzeBuilding:
 class TestEventPublishing:
     """Tests for EventBus event publishing during pipeline execution."""
 
-    def test_room_analysis_start_event(self, pipeline, simple_room, fresh_bus):
+    def test_room_analysis_start_event(self, pipeline, simple_room, fresh_bus) -> None:
         """room.analysis.start event is published."""
         events = []
         fresh_bus.subscribe(Events.ROOM_ANALYSIS_START, events.append)
         pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert len(events) == 1
 
-    def test_room_analysis_complete_event(self, pipeline, simple_room, fresh_bus):
+    def test_room_analysis_complete_event(self, pipeline, simple_room, fresh_bus) -> None:
         """room.analysis.complete event is published."""
         events = []
         fresh_bus.subscribe(Events.ROOM_ANALYSIS_COMPLETE, events.append)
         pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert len(events) == 1
 
-    def test_detector_placed_event(self, pipeline, simple_room, fresh_bus):
+    def test_detector_placed_event(self, pipeline, simple_room, fresh_bus) -> None:
         """detector.placed event is published after optimization.
 
         Note: The DigitalTwin also publishes detector.placed events for each
@@ -1076,14 +1075,14 @@ class TestEventPublishing:
         assert len(pipeline_events) == 1
         assert pipeline_events[0].data["room_id"] == "R1"
 
-    def test_consensus_result_event(self, pipeline, simple_room, fresh_bus):
+    def test_consensus_result_event(self, pipeline, simple_room, fresh_bus) -> None:
         """consensus.result event is published after verification."""
         events = []
         fresh_bus.subscribe(Events.CONSENSUS_RESULT, events.append)
         pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert len(events) == 1
 
-    def test_coverage_verified_event_on_success(self, pipeline, simple_room, fresh_bus):
+    def test_coverage_verified_event_on_success(self, pipeline, simple_room, fresh_bus) -> None:
         """coverage.verified event is published when coverage passes."""
         events = []
         fresh_bus.subscribe(Events.COVERAGE_VERIFIED, events.append)
@@ -1091,7 +1090,7 @@ class TestEventPublishing:
         # A standard room should pass coverage
         assert len(events) >= 1
 
-    def test_nfpa_compliant_event(self, pipeline, simple_room, fresh_bus):
+    def test_nfpa_compliant_event(self, pipeline, simple_room, fresh_bus) -> None:
         """nfpa.compliant event is published when NFPA 72 is met."""
         events = []
         fresh_bus.subscribe(Events.NFPA_COMPLIANT, events.append)
@@ -1099,14 +1098,14 @@ class TestEventPublishing:
         # Standard room with default params should be compliant
         assert len(events) >= 1
 
-    def test_proof_certificate_generated_event(self, pipeline, simple_room, fresh_bus):
+    def test_proof_certificate_generated_event(self, pipeline, simple_room, fresh_bus) -> None:
         """proof.certificate.generated event is published when certificate is generated."""
         events = []
         fresh_bus.subscribe(Events.PROOF_CERTIFICATE_GENERATED, events.append)
         pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert len(events) == 1
 
-    def test_building_analysis_start_event(self, pipeline, fresh_bus):
+    def test_building_analysis_start_event(self, pipeline, fresh_bus) -> None:
         """building.analysis.start event is published at building level."""
         events = []
         fresh_bus.subscribe(Events.BUILDING_ANALYSIS_START, events.append)
@@ -1114,7 +1113,7 @@ class TestEventPublishing:
         pipeline.analyze_building(rooms=rooms)
         assert len(events) == 1
 
-    def test_building_analysis_complete_event(self, pipeline, fresh_bus):
+    def test_building_analysis_complete_event(self, pipeline, fresh_bus) -> None:
         """building.analysis.complete event is published at building level."""
         events = []
         fresh_bus.subscribe(Events.BUILDING_ANALYSIS_COMPLETE, events.append)
@@ -1122,14 +1121,14 @@ class TestEventPublishing:
         pipeline.analyze_building(rooms=rooms)
         assert len(events) == 1
 
-    def test_no_consensus_skips_consensus_event(self, pipeline_no_consensus, simple_room, fresh_bus):
+    def test_no_consensus_skips_consensus_event(self, pipeline_no_consensus, simple_room, fresh_bus) -> None:
         """When consensus is skipped, no consensus.result event is published."""
         events = []
         fresh_bus.subscribe(Events.CONSENSUS_RESULT, events.append)
         pipeline_no_consensus.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert len(events) == 0
 
-    def test_no_cert_skips_certificate_event(self, pipeline_no_cert, simple_room, fresh_bus):
+    def test_no_cert_skips_certificate_event(self, pipeline_no_cert, simple_room, fresh_bus) -> None:
         """When certificate is skipped, no proof.certificate.generated event."""
         events = []
         fresh_bus.subscribe(Events.PROOF_CERTIFICATE_GENERATED, events.append)
@@ -1145,7 +1144,7 @@ class TestEventPublishing:
 class TestSerializationRoundTrip:
     """Tests for serialization of pipeline results."""
 
-    def test_result_to_dict_roundtrip(self, pipeline, simple_room):
+    def test_result_to_dict_roundtrip(self, pipeline, simple_room) -> None:
         """PipelineResult.to_dict() produces a serializable dict."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         d = result.to_dict()
@@ -1155,7 +1154,7 @@ class TestSerializationRoundTrip:
         assert parsed["room_id"] == "R1"
         assert parsed["stage_reached"] == "complete"
 
-    def test_result_to_json_roundtrip(self, pipeline, simple_room):
+    def test_result_to_json_roundtrip(self, pipeline, simple_room) -> None:
         """PipelineResult.to_json() produces valid JSON that can be parsed."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         json_str = result.to_json()
@@ -1163,14 +1162,14 @@ class TestSerializationRoundTrip:
         assert parsed["room_id"] == "R1"
         assert parsed["success"] is True
 
-    def test_certificate_sealed_in_result(self, pipeline, simple_room):
+    def test_certificate_sealed_in_result(self, pipeline, simple_room) -> None:
         """Certificate in result is sealed (has hash and timestamp)."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         if result.certificate is not None:
             assert result.certificate.proof_hash != ""
             assert result.certificate.timestamp != ""
 
-    def test_result_with_errors_serializes(self, pipeline):
+    def test_result_with_errors_serializes(self, pipeline) -> None:
         """PipelineResult with errors serializes correctly."""
         room = Room(name="bad", width=10.0, length=10.0)
         room.width = float("nan")
@@ -1190,7 +1189,7 @@ class TestSerializationRoundTrip:
 class TestDigitalTwinIntegration:
     """Tests for Digital Twin sync stage in the pipeline."""
 
-    def test_twin_sync_produces_checksum(self, pipeline, simple_room):
+    def test_twin_sync_produces_checksum(self, pipeline, simple_room) -> None:
         """TWIN_SYNC stage populates twin_checksum in result."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         # Twin checksum may or may not be populated depending on DigitalTwin impl
@@ -1199,12 +1198,12 @@ class TestDigitalTwinIntegration:
         # The twin property should be accessible
         assert pipeline.twin is not None
 
-    def test_twin_sync_timing(self, pipeline, simple_room):
+    def test_twin_sync_timing(self, pipeline, simple_room) -> None:
         """TWIN_SYNC stage has timing info."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert "twin_sync" in result.timing
 
-    def test_twin_sync_failure_not_fatal(self, pipeline, simple_room):
+    def test_twin_sync_failure_not_fatal(self, pipeline, simple_room) -> None:
         """TWIN_SYNC failure does not cause pipeline failure."""
         with patch.object(pipeline._twin, "from_building_report", side_effect=RuntimeError("twin error")):
             result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
@@ -1213,7 +1212,7 @@ class TestDigitalTwinIntegration:
         # But there should be a warning about twin sync
         assert any("Twin sync failed" in w for w in result.warnings)
 
-    def test_twin_sync_disabled(self, pipeline, simple_room):
+    def test_twin_sync_disabled(self, pipeline, simple_room) -> None:
         """When twin sync is disabled, it's skipped gracefully."""
         pipeline._enable_twin_sync = False
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
@@ -1228,33 +1227,33 @@ class TestDigitalTwinIntegration:
 class TestEdgeCases:
     """Edge case and integration tests."""
 
-    def test_very_narrow_room(self, pipeline):
+    def test_very_narrow_room(self, pipeline) -> None:
         """A very narrow room (corridor) should still produce a result."""
         room = Room(name="Corridor", width=1.5, length=20.0)
         result = pipeline.analyze_room(room=room, room_id="corridor", ceiling_height=3.0)
         assert result.layout is not None
         assert result.layout.count >= 1
 
-    def test_square_room(self, pipeline):
+    def test_square_room(self, pipeline) -> None:
         """A perfectly square room."""
         room = Room(name="Square", width=9.1, length=9.1)
         result = pipeline.analyze_room(room=room, room_id="square", ceiling_height=3.0)
         assert result.success is True
         assert result.layout is not None
 
-    def test_room_exactly_one_detector_radius(self, pipeline):
+    def test_room_exactly_one_detector_radius(self, pipeline) -> None:
         """Room small enough for exactly one detector."""
         room = Room(name="Tiny", width=5.0, length=5.0)
         result = pipeline.analyze_room(room=room, room_id="tiny", ceiling_height=3.0)
         assert result.layout.count >= 1
 
-    def test_high_ceiling_room(self, pipeline):
+    def test_high_ceiling_room(self, pipeline) -> None:
         """Room with very high ceiling."""
         room = Room(name="Atrium", width=15.0, length=15.0)
         result = pipeline.analyze_room(room=room, room_id="atrium", ceiling_height=12.0)
         assert result.metadata["ceiling_height"] == 12.0
 
-    def test_multiple_analyses_same_pipeline(self, pipeline):
+    def test_multiple_analyses_same_pipeline(self, pipeline) -> None:
         """Same pipeline can analyze multiple rooms sequentially."""
         room1 = Room(name="R1", width=10.0, length=10.0)
         room2 = Room(name="R2", width=8.0, length=6.0)
@@ -1265,7 +1264,7 @@ class TestEdgeCases:
         assert result1.success is True
         assert result2.success is True
 
-    def test_result_to_dict_after_real_analysis(self, pipeline, simple_room):
+    def test_result_to_dict_after_real_analysis(self, pipeline, simple_room) -> None:
         """to_dict() works on results from real analysis."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         d = result.to_dict()
@@ -1277,12 +1276,12 @@ class TestEdgeCases:
         if result.certificate is not None:
             assert "certificate" in d
 
-    def test_coverage_percentage_reasonable(self, pipeline, simple_room):
+    def test_coverage_percentage_reasonable(self, pipeline, simple_room) -> None:
         """Coverage percentage is within reasonable bounds."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert 0 <= result.layout.coverage_pct <= 100.0
 
-    def test_correlation_id_is_uuid(self, pipeline, simple_room):
+    def test_correlation_id_is_uuid(self, pipeline, simple_room) -> None:
         """Metadata correlation_id is a valid UUID format."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         cid = result.metadata["correlation_id"]
@@ -1291,12 +1290,12 @@ class TestEdgeCases:
         parsed = uuid.UUID(cid)
         assert parsed.version == 4
 
-    def test_nfpa_table_ref_in_layout(self, pipeline, simple_room):
+    def test_nfpa_table_ref_in_layout(self, pipeline, simple_room) -> None:
         """Layout from optimization includes NFPA table reference."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         assert result.layout.nfpa_table_ref == "NFPA 72-2022 Table 17.6.3.1.1"
 
-    def test_detector_positions_within_room(self, pipeline, simple_room):
+    def test_detector_positions_within_room(self, pipeline, simple_room) -> None:
         """All detector positions should be within room bounds."""
         result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         w, l = simple_room.width, simple_room.length
@@ -1304,7 +1303,7 @@ class TestEdgeCases:
             assert 0 <= x <= w, f"Detector x={x} outside room width={w}"
             assert 0 <= y <= l, f"Detector y={y} outside room length={l}"
 
-    def test_building_mixed_valid_invalid_rooms(self, pipeline):
+    def test_building_mixed_valid_invalid_rooms(self, pipeline) -> None:
         """Building analysis with mix of valid and invalid rooms."""
         good_room = Room(name="Good", width=10.0, length=10.0)
         bad_room = Room(name="Bad", width=10.0, length=10.0)

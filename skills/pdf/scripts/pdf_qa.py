@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-PDF Quality Assurance Checker
+"""PDF Quality Assurance Checker.
 =============================
 Automatically detects common typesetting issues in PDFs.
 
@@ -62,26 +61,26 @@ LAST_PAGE_MIN_FILL = 0.40
 # ============================================================
 
 class QAResult:
-    def __init__(self):
+    def __init__(self) -> None:
         self.issues = []     # (severity, category, message)
         self.passes = []     # passed checks
         self.info = []       # informational
 
-    def error(self, cat, msg):
+    def error(self, cat, msg) -> None:
         self.issues.append(('ERROR', cat, msg))
 
-    def warn(self, cat, msg):
+    def warn(self, cat, msg) -> None:
         self.issues.append(('WARN', cat, msg))
 
-    def ok(self, msg):
+    def ok(self, msg) -> None:
         self.passes.append(msg)
 
-    def add_info(self, msg):
+    def add_info(self, msg) -> None:
         self.info.append(msg)
 
 
-def check_last_page_fill(doc, result):
-    """Check content fill ratio of the last page"""
+def check_last_page_fill(doc, result) -> None:
+    """Check content fill ratio of the last page."""
     if len(doc) < 2:
         result.ok("Single-page document, no last-page blank check needed")
         return
@@ -121,8 +120,8 @@ def check_last_page_fill(doc, result):
         result.ok(f"Last page fill ratio {fill_ratio:.0%} ✓")
 
 
-def check_punctuation(doc, result):
-    """Check CJK punctuation placement rules"""
+def check_punctuation(doc, result) -> None:
+    """Check CJK punctuation placement rules."""
     violations = []
 
     for page_num in range(len(doc)):
@@ -163,8 +162,8 @@ def check_punctuation(doc, result):
         result.ok("Punctuation placement check passed ✓")
 
 
-def check_blank_pages(doc, result):
-    """Check for completely blank pages"""
+def check_blank_pages(doc, result) -> None:
+    """Check for completely blank pages."""
     blank_pages = []
     for i in range(len(doc)):
         page = doc[i]
@@ -182,8 +181,8 @@ def check_blank_pages(doc, result):
         result.ok("No blank pages ✓")
 
 
-def check_colors(doc, result):
-    """Analyze colors used in the document (informational only, no pass/fail)"""
+def check_colors(doc, result) -> None:
+    """Analyze colors used in the document (informational only, no pass/fail)."""
     colors = set()
 
     for page_num in range(len(doc)):
@@ -233,8 +232,8 @@ def check_colors(doc, result):
         result.add_info(f"Chromatic colors: {', '.join(sorted(distinct_colors)[:10])}")
 
 
-def check_page_size_consistency(doc, result):
-    """Check whether all page sizes are consistent"""
+def check_page_size_consistency(doc, result) -> None:
+    """Check whether all page sizes are consistent."""
     if len(doc) < 2:
         result.ok("Single-page document, size consistent ✓")
         return
@@ -249,7 +248,7 @@ def check_page_size_consistency(doc, result):
     if len(sizes) > 1:
         result.warn("Page size", f"Inconsistent page sizes: {sizes}")
     else:
-        size = list(sizes)[0]
+        size = next(iter(sizes))
         # Convert to mm
         w_mm = size[0] * 25.4 / 72
         h_mm = size[1] * 25.4 / 72
@@ -257,8 +256,8 @@ def check_page_size_consistency(doc, result):
         result.ok("Page size consistent ✓")
 
 
-def check_text_overflow(doc, result):
-    """Check whether text overflows page boundaries"""
+def check_text_overflow(doc, result) -> None:
+    """Check whether text overflows page boundaries."""
     overflow_pages = []
 
     for i in range(len(doc)):
@@ -281,7 +280,7 @@ def check_text_overflow(doc, result):
         result.ok("No content overflow ✓")
 
 
-def check_content_fill_ratio(doc, result):
+def check_content_fill_ratio(doc, result) -> None:
     """Check content fill ratio per page — warns when content is crammed at top leaving large void below.
 
     Rules:
@@ -349,7 +348,7 @@ def check_content_fill_ratio(doc, result):
         result.ok("Content fill ratio adequate on all pages ✓")
 
 
-def check_cover_bleed(doc, result, poster=False):
+def check_cover_bleed(doc, result, poster=False) -> None:
     """Check if the cover page (page 1) fills the entire page area (full-bleed).
 
     A properly designed cover should have background color/graphics extending
@@ -442,7 +441,7 @@ def check_cover_bleed(doc, result, poster=False):
             )
 
 
-def check_margin_symmetry(doc, result, skip_cover=False):
+def check_margin_symmetry(doc, result, skip_cover=False) -> None:
     """Check left/right margin symmetry using text block bounds."""
     warn_pages = []
 
@@ -475,9 +474,9 @@ def check_margin_symmetry(doc, result, skip_cover=False):
         result.ok("Left/right margins appear symmetric \u2713")
 
 
-def check_table_centering(doc, result):
+def check_table_centering(doc, result) -> None:
     """Check if detected table regions are centered."""
-    def _bbox_intersects(a, b, tol=6):
+    def _bbox_intersects(a, b, tol=6) -> bool:
         return not (a[2] < b[0] - tol or a[0] > b[2] + tol or
                     a[3] < b[1] - tol or a[1] > b[3] + tol)
 
@@ -566,7 +565,7 @@ def check_table_centering(doc, result):
         result.ok("Table centering check complete \u2713")
 
 
-def check_font_embedding(doc, result):
+def check_font_embedding(doc, result) -> None:
     """Check font embedding status using PyMuPDF font list."""
     fonts_used = set()
     non_embedded = set()
@@ -595,7 +594,7 @@ def check_font_embedding(doc, result):
         result.ok("All fonts are embedded \u2713")
 
 
-def check_helvetica_in_cjk(doc, result):
+def check_helvetica_in_cjk(doc, result) -> None:
     """Detect Helvetica rendering visible text in documents containing CJK text.
 
     Helvetica is a Latin-only built-in PDF font. When it appears rendering
@@ -655,16 +654,14 @@ def check_helvetica_in_cjk(doc, result):
         )
 
 
-def check_metadata(doc, result):
+def check_metadata(doc, result) -> None:
     """Check PDF metadata presence for title, author, creator."""
     meta = doc.metadata or {}
 
-    def _missing(v):
+    def _missing(v) -> bool:
         if v is None:
             return True
-        if not str(v).strip():
-            return True
-        return False
+        return bool(not str(v).strip())
 
     title = meta.get("title")
     author = meta.get("author")
@@ -686,7 +683,7 @@ def check_metadata(doc, result):
         result.ok("Creator metadata present \u2713")
 
 
-def check_toc_without_cover(doc, result):
+def check_toc_without_cover(doc, result) -> None:
     """Detect TOC on page 1 without a preceding cover page.
 
     If the first page contains Table of Contents / 目录, it means the document
@@ -719,7 +716,7 @@ def check_toc_without_cover(doc, result):
         )
 
 
-def check_formula_overflow(doc, result):
+def check_formula_overflow(doc, result) -> None:
     """Detect likely formula overflow past right content margin."""
     math_re = re.compile(r"[=+\-*/<>\u2264\u2265\u2211\u222b\u221a\u03c0\u00b5\u221e\u2202\u2206\u2248\u2260\u00b1\u00d7\u00f7]")
 

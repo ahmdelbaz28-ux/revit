@@ -1,5 +1,4 @@
-"""
-backend/services/ — External API integration services for FireAI.
+"""backend/services/ — External API integration services for FireAI.
 
 These services provide real-world environmental data (weather, geolocation,
 regulatory context, elevation, air quality, severe weather, hazardous materials)
@@ -98,21 +97,40 @@ except ImportError:
     close_memory_service = None  # type: ignore[misc,assignment]
 
 __all__ = [
-    # Phase 1
-    "WeatherService", "WeatherData",
-    "GeocodingService", "GeocodingResult",
-    "RegionService", "RegionContext",
+    "AirQualityData",
+    "AirQualityService",
+    "ElevationData",
     # Phase 2
-    "ElevationService", "ElevationData",
-    "AirQualityService", "AirQualityData",
-    "SevereWeatherService", "SevereWeatherData", "WeatherAlert",
-    "HazmatService", "HazardousMaterialData", "MaterialGroup", "TemperatureClass",
-    # Phase 3 — Workflow Engine (optional)
-    "WorkflowService", "PipelineState", "WorkflowStatus",
-    "get_workflow_service", "close_workflow_service",
+    "ElevationService",
+    "GeocodingResult",
+    "GeocodingService",
+    "HazardousMaterialData",
+    "HazmatService",
+    "MaterialGroup",
+    "MemoryAddRequest",
+    "MemoryCategory",
+    "MemoryResult",
+    "MemoryScope",
+    "MemorySearchRequest",
+    "MemorySearchResponse",
     # Phase 4 — Memory Layer (optional)
-    "MemoryService", "MemoryAddRequest", "MemorySearchRequest",
-    "MemorySearchResponse", "MemoryResult", "MemoryServiceStatus",
-    "MemoryScope", "MemoryCategory",
-    "get_memory_service", "close_memory_service",
+    "MemoryService",
+    "MemoryServiceStatus",
+    "PipelineState",
+    "RegionContext",
+    "RegionService",
+    "SevereWeatherData",
+    "SevereWeatherService",
+    "TemperatureClass",
+    "WeatherAlert",
+    "WeatherData",
+    # Phase 1
+    "WeatherService",
+    # Phase 3 — Workflow Engine (optional)
+    "WorkflowService",
+    "WorkflowStatus",
+    "close_memory_service",
+    "close_workflow_service",
+    "get_memory_service",
+    "get_workflow_service",
 ]

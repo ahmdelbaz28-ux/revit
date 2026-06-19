@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从题目文件导入题目。
+"""从题目文件导入题目。.
 
 用法：python3 import_quiz.py <file_path> <document_id> <user_id>
 

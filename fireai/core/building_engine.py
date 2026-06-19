@@ -1,5 +1,4 @@
-"""
-fireai/core/building_engine.py  V0.2
+"""fireai/core/building_engine.py  V0.2.
 =====================================
 Building-level fire alarm design analyser.
 
@@ -48,7 +47,6 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 # ── V0.3 SAFETY GUARD: ProcessPoolExecutor prohibition ────────────────
 # CBC (PuLP solver) is a C-level library that does NOT release the GIL.
@@ -90,8 +88,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BuildingReport:
-    """
-    Complete analysis report for an entire building.
+    """Complete analysis report for an entire building.
 
     Attributes:
         building_id: Unique building identifier (e.g. "BLDG-001").
@@ -116,26 +113,27 @@ class BuildingReport:
             Any unsafe floor causes the building's safe_to_submit to be False.
         building_warnings: Building-level advisory messages.
         analysis_time_s: Total wall-clock analysis time in seconds.
+
     """
 
     building_id: str
-    floor_reports: List[FloorReport] = field(default_factory=list)
+    floor_reports: list[FloorReport] = field(default_factory=list)
     total_detectors: int = 0
     total_theoretical_lower_bound: int = 0
     total_duct_devices: int = 0
     total_floors: int = 0
     fully_compliant: bool = False
     safe_to_submit: bool = False
-    non_compliant_floors: List[str] = field(default_factory=list)
-    unsafe_floors: List[str] = field(default_factory=list)
-    building_warnings: List[str] = field(default_factory=list)
+    non_compliant_floors: list[str] = field(default_factory=list)
+    unsafe_floors: list[str] = field(default_factory=list)
+    building_warnings: list[str] = field(default_factory=list)
     analysis_time_s: float = 0.0
     # V5.0: Project learning profile (populated after all floors analysed)
-    project_profile: Optional[BuildingProjectProfile] = None
+    project_profile: BuildingProjectProfile | None = None
     # V0.2: Fire zone assignments per floor (Consultant #6 Criticism #2)
-    zone_reports: Dict[str, ZoneReport] = field(default_factory=dict)
+    zone_reports: dict[str, ZoneReport] = field(default_factory=dict)
     # V0.2: DeltaCache statistics (Consultant #6 Criticism #3)
-    cache_stats: Optional[Dict] = None
+    cache_stats: dict | None = None
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -144,8 +142,7 @@ class BuildingReport:
 
 
 class BuildingEngine:
-    """
-    Building-level fire alarm design analyser.
+    """Building-level fire alarm design analyser.
 
     Uses FloorAnalyser V2.1 as a component (composition, not reimplementation).
     Each floor is analysed by an independent FloorAnalyser instance.
@@ -196,16 +193,17 @@ class BuildingEngine:
         >>> report = engine.analyse(floors)
         >>> print(report.safe_to_submit)
         True
+
     """
 
     def __init__(
         self,
         building_id: str,
         optimizer: DensityOptimizer,
-        audit_trail: Optional[object] = None,
-        audit_store: Optional[object] = None,
-        zone_constraints: Optional[ZoneConstraints] = None,
-        delta_cache_path: Optional[str] = None,
+        audit_trail: object | None = None,
+        audit_store: object | None = None,
+        zone_constraints: ZoneConstraints | None = None,
+        delta_cache_path: str | None = None,
     ) -> None:
         self.building_id = building_id
         self.opt = optimizer  # V7.3 as-is, shared read-only
@@ -218,9 +216,8 @@ class BuildingEngine:
 
     # ─── public ──────────────────────────────────────────────────────
 
-    def analyse(self, floors: Dict[str, list]) -> BuildingReport:
-        """
-        Analyse all floors in the building and return a BuildingReport.
+    def analyse(self, floors: dict[str, list]) -> BuildingReport:
+        """Analyse all floors in the building and return a BuildingReport.
 
         Each floor is processed sequentially by an independent FloorAnalyser.
         The same audit_trail and audit_store are passed to each FloorAnalyser
@@ -250,6 +247,7 @@ class BuildingEngine:
             - Logs each floor result via Python logging
             - Records events in AuditTrail and AuditStore (if provided)
             - Persists DeltaCache to SQLite (if path provided)
+
         """
         t0 = time.time()
         report = BuildingReport(building_id=self.building_id)

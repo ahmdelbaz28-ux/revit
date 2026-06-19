@@ -1,5 +1,4 @@
-"""
-pipeline.py — FireAI Main Analysis Pipeline
+"""pipeline.py — FireAI Main Analysis Pipeline.
 =============================================
 THE MISSING GLUE. Connects every module into one executable workflow.
 
@@ -41,8 +40,8 @@ import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from typing import Any
 
 # V61: Late import for cable routing (optional, may not be available)
 try:
@@ -95,15 +94,14 @@ class StageResult:
     stage_name: str
     success: bool
     duration_ms: float
-    data: Dict[str, Any] = field(default_factory=dict)
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    data: dict[str, Any] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
 class PipelineResult:
-    """
-    Complete result from the FireAI analysis pipeline.
+    """Complete result from the FireAI analysis pipeline.
 
     All fields have safe defaults — never raises on access.
     Caller checks result.success and result.release_status before using values.
@@ -118,23 +116,23 @@ class PipelineResult:
     detector_count: int
     detector_radius_m: float
     max_spacing_m: float
-    detector_positions: List[Tuple[float, float]]
+    detector_positions: list[tuple[float, float]]
     wall_violations: int
-    battery: Optional[Dict]
-    voltage_drop: Optional[Dict]
-    fault_isolation: Optional[Dict]
-    stages: List[StageResult]
-    release_gates: Dict[str, Any]
+    battery: dict | None
+    voltage_drop: dict | None
+    fault_isolation: dict | None
+    stages: list[StageResult]
+    release_gates: dict[str, Any]
     evidence_hash: str
     total_ms: float
-    errors: List[str]
-    warnings: List[str]
-    nfpa_references: List[str]
+    errors: list[str]
+    warnings: list[str]
+    nfpa_references: list[str]
     timestamp: str
-    cable_routing: Optional[Dict] = None  # V61: Cable routing schedule summary
-    qomn_audit: Optional[Dict] = None  # QOMN Layer 4 audit log (tamper-evident)
+    cable_routing: dict | None = None  # V61: Cable routing schedule summary
+    qomn_audit: dict | None = None  # QOMN Layer 4 audit log (tamper-evident)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "run_id": self.run_id,
             "room_id": self.room_id,
@@ -214,7 +212,7 @@ def _run_stage(name: str, fn, *args, **kwargs) -> StageResult:
 # ─── Stage Implementations ───────────────────────────────────────────────────
 
 
-def _stage0_contract(payload: Dict) -> Dict:
+def _stage0_contract(payload: dict) -> dict:
     """Validate input payload. Raises ContractViolation on failure."""
     validated = validate_room_input(payload)
     return {
@@ -233,12 +231,12 @@ def _stage05_qomn_physics_guard(
     ceiling_height_m: float,
     area_m2: float,
     detector_type: str,
-    standby_current_a: Optional[float] = None,
-    alarm_current_a: Optional[float] = None,
-    circuit_length_m: Optional[float] = None,
+    standby_current_a: float | None = None,
+    alarm_current_a: float | None = None,
+    circuit_length_m: float | None = None,
     awg_gauge: str = "14",
     supply_voltage_v: float = 24.0,
-) -> Dict:
+) -> dict:
     """Stage 0.5 — QOMN-FIRE deterministic physics guard + Layer 1/2/3/4 pipeline.
 
     Runs BEFORE Stage 1 (nfpa_spacing) to:
@@ -254,6 +252,7 @@ def _stage05_qomn_physics_guard(
     Returns:
         dict with qomn_spacing, qomn_radius, audit_entries, chain_valid,
         cross_check_passed, physics_guard_passed.
+
     """
     try:
         from fireai.core.qomn_kernel import PhysicsGuardError, QOMNKernel
@@ -262,7 +261,7 @@ def _stage05_qomn_physics_guard(
 
         # Run QOMN physics guard + computation
         physics_guard_passed = True
-        guard_errors: List[str] = []
+        guard_errors: list[str] = []
 
         # Guard: ceiling height
         try:
@@ -351,7 +350,7 @@ def _stage1_nfpa_spacing(
     ceiling_height_m: float,
     detector_type: str,
     room_area_m2: float,
-) -> Dict:
+) -> dict:
     """Compute NFPA 72 spacing and estimate detector count.
 
     M-3 FIX: Checks for error in estimate_detector_count result before
@@ -394,11 +393,10 @@ def _stage1_nfpa_spacing(
 
 
 def _stage2_placement(
-    validated_payload: Dict,
+    validated_payload: dict,
     coverage_radius_m: float,
-) -> Dict:
-    """
-    Run detector placement optimizer.
+) -> dict:
+    """Run detector placement optimizer.
 
     Attempts to import DensityOptimizer from the existing codebase.
     Falls back to geometric estimate if optimizer is not available.
@@ -415,7 +413,7 @@ def _stage2_placement(
         class _RoomSpec:
             """Minimal room spec compatible with DensityOptimizer."""
 
-            def __init__(self, payload, radius):
+            def __init__(self, payload, radius) -> None:
                 self.room_id = payload["room_id"]
                 self.polygon = polygon
                 self.area_m2 = area_m2
@@ -463,11 +461,10 @@ def _stage2_placement(
 
 
 def _hex_grid_placement(
-    polygon: List[Tuple[float, float]],
+    polygon: list[tuple[float, float]],
     radius_m: float,
-) -> List[Tuple[float, float]]:
-    """
-    Place detectors on a hexagonal grid inside polygon.
+) -> list[tuple[float, float]]:
+    """Place detectors on a hexagonal grid inside polygon.
 
     Conservative: uses 0.9×radius spacing (not full 1.0×) to ensure
     overlap at grid boundaries. Never violates 0.1m wall minimum.
@@ -492,7 +489,7 @@ def _hex_grid_placement(
     row_h = S * (3**0.5) / 2.0  # Vertical distance between hex rows
     wall = 0.1  # NFPA 72 §17.7.4.2.3.1 wall min
 
-    positions: List[Tuple[float, float]] = []
+    positions: list[tuple[float, float]] = []
     row = 0
     y = min_y + wall
     while y <= max_y - wall:
@@ -514,7 +511,7 @@ def _hex_grid_placement(
     return positions
 
 
-def _point_in_polygon(x: float, y: float, polygon: List[Tuple[float, float]]) -> bool:
+def _point_in_polygon(x: float, y: float, polygon: list[tuple[float, float]]) -> bool:
     """Ray-casting point-in-polygon. O(n).
 
     FIX: Removed the 1e-12 epsilon from the denominator. The old epsilon
@@ -537,13 +534,12 @@ def _point_in_polygon(x: float, y: float, polygon: List[Tuple[float, float]]) ->
 
 
 def _estimate_coverage(
-    positions: List[Tuple[float, float]],
-    polygon: List[Tuple[float, float]],
+    positions: list[tuple[float, float]],
+    polygon: list[tuple[float, float]],
     radius_m: float,
     step: float = 0.0,
 ) -> float:
-    """
-    Fast coverage estimate using grid sampling.
+    """Fast coverage estimate using grid sampling.
     Returns percentage 0.0–100.0. Used when Shapely is not available.
 
     PERFORMANCE FIX (CRITICAL-1): Adaptive grid step based on polygon
@@ -578,7 +574,7 @@ def _estimate_coverage(
     # Build a set of grid buckets for O(1) nearest-detector lookup.
     # Bucket size = radius_m so each grid point only checks 9 buckets.
     bucket_size = radius_m
-    detector_buckets: Dict[Tuple[int, int], List[Tuple[float, float]]] = {}
+    detector_buckets: dict[tuple[int, int], list[tuple[float, float]]] = {}
     for dx, dy in positions:
         bk = (int(dx // bucket_size), int(dy // bucket_size))
         if bk not in detector_buckets:
@@ -619,11 +615,11 @@ def _estimate_coverage(
 
 
 def _stage3_verify_coverage(
-    detector_positions: List[Tuple[float, float]],
-    polygon: List[Tuple[float, float]],
+    detector_positions: list[tuple[float, float]],
+    polygon: list[tuple[float, float]],
     coverage_radius_m: float,
     room_id: str,
-) -> Dict:
+) -> dict:
     """Verify coverage using the best available engine."""
     # Try ExactCoverageEngine first (Shapely-based, rigorous)
     try:
@@ -657,14 +653,14 @@ def _stage3_verify_coverage(
 
 
 def _stage35_rules_compliance(
-    validated_payload: Dict,
-    detector_positions: List[Tuple[float, float]],
+    validated_payload: dict,
+    detector_positions: list[tuple[float, float]],
     coverage_radius_m: float,
     spacing_m: float,
-    battery_dict: Optional[Dict] = None,
-    voltage_dict: Optional[Dict] = None,
-    fault_isolation_dict: Optional[Dict] = None,
-) -> Dict:
+    battery_dict: dict | None = None,
+    voltage_dict: dict | None = None,
+    fault_isolation_dict: dict | None = None,
+) -> dict:
     """Run declarative NFPA 72 rules engine compliance check.
 
     This runs the Rete-inspired forward-chaining rules engine against
@@ -775,7 +771,7 @@ def _stage4_safety_classify(
     proof_valid: bool,
     fallback_used: bool,
     wall_violations: int,
-) -> Dict:
+) -> dict:
     """Classify safety tier."""
     tier = classify_safety_tier(
         coverage_pct=coverage_pct,
@@ -791,15 +787,15 @@ def _stage4_safety_classify(
 
 
 def _stage5_release_gates(
-    validated_payload: Dict,
-    nfpa_result: Dict,
+    validated_payload: dict,
+    nfpa_result: dict,
     coverage_pct: float,
     proof_valid: bool,
     safety_tier: str,
     wall_violations: int,
-    battery_result: Optional[BatteryResult] = None,
-    loop_data: Optional[Dict] = None,
-) -> Dict:
+    battery_result: BatteryResult | None = None,
+    loop_data: dict | None = None,
+) -> dict:
     """Evaluate all 8 release gates."""
     nfpa_gate_result = {
         "is_compliant": nfpa_result.get("is_compliant", False),
@@ -819,9 +815,9 @@ def _stage5_release_gates(
         }
 
     # Simple drift check: no IFC sync in this flow = no drift data
-    drift_records: List[Dict] = []
+    drift_records: list[dict] = []
 
-    gate_result = verify_and_evaluate(
+    return verify_and_evaluate(
         input_payload=validated_payload,
         nfpa_results=nfpa_gate_result,
         evidence_envelope=None,  # Built in stage 6
@@ -833,20 +829,19 @@ def _stage5_release_gates(
         evidence_secret_key=None,  # No HMAC key in basic pipeline
     )
 
-    return gate_result
 
 
 def _stage6_evidence(
     run_id: str,
-    validated_payload: Dict,
-    detector_positions: List[Tuple[float, float]],
+    validated_payload: dict,
+    detector_positions: list[tuple[float, float]],
     coverage_pct: float,
     proof_valid: bool,
     safety_tier: str,
-    spacing_result: Dict,
+    spacing_result: dict,
     wall_violations: int,
     compliance_status: str,
-) -> Dict:
+) -> dict:
     """Build and hash the engineering evidence package."""
     nfpa_refs = [
         "NFPA 72-2022 §17.6.3.1.1",
@@ -888,19 +883,18 @@ def _stage6_evidence(
 
 
 def analyze_room(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     *,
-    standby_current_a: Optional[float] = None,
-    alarm_current_a: Optional[float] = None,
-    circuit_length_m: Optional[float] = None,
+    standby_current_a: float | None = None,
+    alarm_current_a: float | None = None,
+    circuit_length_m: float | None = None,
     awg_gauge: str = "14",
-    loop_data: Optional[Dict] = None,
+    loop_data: dict | None = None,
     ambient_temperature_c: float = 20.0,
-    cable_connections: Optional[List[Dict[str, Any]]] = None,
-    building_model: Optional[Any] = None,
+    cable_connections: list[dict[str, Any]] | None = None,
+    building_model: Any | None = None,
 ) -> PipelineResult:
-    """
-    Run the complete FireAI analysis pipeline for one room.
+    """Run the complete FireAI analysis pipeline for one room.
 
     Args:
         payload:           Room input dict (room_polygon, ceiling_height_m, etc.)
@@ -916,6 +910,7 @@ def analyze_room(
 
     Returns:
         PipelineResult — never raises, all errors captured inside result.
+
     """
     t_total = time.perf_counter()
     # V61 FIX: Deterministic run_id from input content hash.
@@ -929,9 +924,9 @@ def analyze_room(
         f"{_content_hash[:8]}-{_content_hash[8:12]}-{_content_hash[12:16]}-"
         f"{_content_hash[16:20]}-{_content_hash[20:32]}"
     )
-    stages: List[StageResult] = []
-    errors: List[str] = []
-    warnings: List[str] = []
+    stages: list[StageResult] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     # ── Stage 0: Contract Validation ─────────────────────────────────────────
     s0 = _run_stage("S0_contract", _stage0_contract, payload)
@@ -1043,8 +1038,8 @@ def analyze_room(
     safety_tier = s4.data.get("safety_tier", SafetyTier.REJECTED.value) if s4.success else SafetyTier.REJECTED.value
 
     # ── Optional: Battery Calculation ─────────────────────────────────────────
-    battery_result: Optional[BatteryResult] = None
-    battery_dict: Optional[Dict] = None
+    battery_result: BatteryResult | None = None
+    battery_dict: dict | None = None
     if standby_current_a is not None and alarm_current_a is not None:
         sb = _run_stage(
             "S_battery",
@@ -1064,7 +1059,7 @@ def analyze_room(
             }
 
     # ── Optional: Voltage Drop ────────────────────────────────────────────────
-    voltage_dict: Optional[Dict] = None
+    voltage_dict: dict | None = None
     if circuit_length_m is not None and alarm_current_a is not None:
         sv = _run_stage(
             "S_voltage_drop",
@@ -1091,7 +1086,7 @@ def analyze_room(
                 )
 
     # ── Optional: Fault Isolation ─────────────────────────────────────────────
-    fault_isolation_dict: Optional[Dict] = None
+    fault_isolation_dict: dict | None = None
     if loop_data is not None:
         devices = loop_data.get("devices", [])
         sf = _run_stage(
@@ -1106,7 +1101,7 @@ def analyze_room(
                 warnings.append(f"SLC fault isolation violations: {sf.data.get('violations', [])}")
 
     # ── Optional: Cable Routing (V61) ──────────────────────────────────────
-    cable_routing_dict: Optional[Dict] = None
+    cable_routing_dict: dict | None = None
     if cable_connections and building_model and _CABLE_ROUTER_AVAILABLE:
         try:
             constraint_engine = None
@@ -1302,17 +1297,16 @@ def analyze_room(
         errors=errors,
         warnings=warnings,
         nfpa_references=nfpa_refs,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
 def _stage7_cable_routing(
-    validated: Dict,
-    positions: List[Tuple[float, float]],
+    validated: dict,
+    positions: list[tuple[float, float]],
     room_z_m: float = 0.0,
-) -> Dict:
-    """
-    Stage 7: Cable routing between detector positions.
+) -> dict:
+    """Stage 7: Cable routing between detector positions.
 
     Uses CableRoutingEngine to route NAC/SLC circuits between
     detector positions. Returns routing schedule with voltage drop
@@ -1325,6 +1319,7 @@ def _stage7_cable_routing(
       - NFPA 72 §23.6.2: NAC circuit max length
       - NEC 760.24(A): cable support spacing
       - System Req §4: cable schedule output
+
     """
     try:
         from fireai.core.cable_router import (  # type: ignore[attr-defined]
@@ -1491,7 +1486,7 @@ def _stage7_cable_routing(
         facp_xyz_safe = ensure_clearance(*facp_xyz, room_cx, room_cy)
         det_xyzs_safe = [ensure_clearance(*pt, room_cx, room_cy) for pt in det_xyzs]
 
-        all_points = [facp_xyz_safe] + det_xyzs_safe
+        all_points = [facp_xyz_safe, *det_xyzs_safe]
         connections = [
             {
                 "start": all_points[i],
@@ -1664,8 +1659,8 @@ def _stage8_conduit_fittings(
 
 
 def _count_wall_violations(
-    positions: List[Tuple[float, float]],
-    polygon: List[Tuple[float, float]],
+    positions: list[tuple[float, float]],
+    polygon: list[tuple[float, float]],
     min_dist_m: float = 0.1,
 ) -> int:
     """Count detectors closer than 0.1m to any wall segment."""
@@ -1695,10 +1690,10 @@ def _count_wall_violations(
 
 def _failed_result(
     run_id: str,
-    payload: Dict,
-    stages: List[StageResult],
-    errors: List[str],
-    warnings: List[str],
+    payload: dict,
+    stages: list[StageResult],
+    errors: list[str],
+    warnings: list[str],
     t_total: float,
     room_id: str = "",
 ) -> PipelineResult:
@@ -1726,7 +1721,7 @@ def _failed_result(
         errors=errors,
         warnings=warnings,
         nfpa_references=[],
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -1734,13 +1729,12 @@ def _failed_result(
 
 
 def analyze_building(
-    rooms: List[Dict[str, Any]],
+    rooms: list[dict[str, Any]],
     *,
     max_workers: int = 4,
     **kwargs,
-) -> Dict[str, Any]:
-    """
-    Analyze all rooms in a building concurrently.
+) -> dict[str, Any]:
+    """Analyze all rooms in a building concurrently.
 
     Args:
         rooms:       List of room payload dicts.
@@ -1749,6 +1743,7 @@ def analyze_building(
 
     Returns:
         Building-level summary with per-room results.
+
     """
     t0 = time.perf_counter()
 
@@ -1760,9 +1755,9 @@ def analyze_building(
             "total_ms": 0,
         }
 
-    results: List[Optional[PipelineResult]] = [None] * len(rooms)
+    results: list[PipelineResult | None] = [None] * len(rooms)
 
-    def _process(idx: int, room: Dict) -> Tuple[int, PipelineResult]:
+    def _process(idx: int, room: dict) -> tuple[int, PipelineResult]:
         return idx, analyze_room(room, **kwargs)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -1789,13 +1784,13 @@ def analyze_building(
         },
         "total_ms": round(total_ms, 2),
         "total_detectors": sum(r.detector_count for r in results if r),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
 __all__ = [
-    "analyze_room",
-    "analyze_building",
     "PipelineResult",
     "StageResult",
+    "analyze_building",
+    "analyze_room",
 ]

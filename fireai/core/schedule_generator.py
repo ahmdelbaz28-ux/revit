@@ -1,5 +1,4 @@
-"""
-fireai/core/schedule_generator.py
+"""fireai/core/schedule_generator.py.
 ===================================
 Cable schedule and compliance report generator.
 
@@ -12,10 +11,11 @@ Integrates with:
   - fireai/core/cable_routing_engine.py (RouteResult, VoltageDropSegment)
   - fireai/core/revit_exporter.py     (ScheduleRow, ReportSummary)
 
-REFERENCES:
+References:
   - System Requirement §4: Output format (schedule + report)
   - NFPA 72 §23.6.2: NAC circuit max length per gauge
   - NEC 760.24(A): 18" (457mm) support spacing
+
 """
 
 from __future__ import annotations
@@ -25,13 +25,13 @@ import io
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Wire gauge → max circuit length (NFPA 72 §23.6.2)
-_NFPA72_23_6_2_MAX_LEN_M: Dict[str, float] = {
+_NFPA72_23_6_2_MAX_LEN_M: dict[str, float] = {
     "12 AWG": 2286.0,
     "14 AWG": 1524.0,
     "16 AWG": 914.0,
@@ -67,14 +67,13 @@ class ScheduleReport:
     all_compliant: bool
     route_count: int
     violations_count: int
-    nfpa72_limits: Dict[str, float]
-    code_refs: List[str]
-    routes: List[Dict[str, Any]] = field(default_factory=list)
+    nfpa72_limits: dict[str, float]
+    code_refs: list[str]
+    routes: list[dict[str, Any]] = field(default_factory=list)
 
 
 class ScheduleGenerator:
-    """
-    Generates cable schedules and compliance reports from routing results.
+    """Generates cable schedules and compliance reports from routing results.
 
     Accepts results from either:
       - CableRouter.route_all() → RoutingSchedule
@@ -83,9 +82,8 @@ class ScheduleGenerator:
     Output formats: CSV, JSON, plain text.
     """
 
-    def from_routing_schedule(self, schedule, ps_voltage: float = 0.0) -> List[ScheduleRow]:
-        """
-        Convert a RoutingSchedule (from CableRouter.route_all) to ScheduleRow list.
+    def from_routing_schedule(self, schedule, ps_voltage: float = 0.0) -> list[ScheduleRow]:
+        """Convert a RoutingSchedule (from CableRouter.route_all) to ScheduleRow list.
 
         V113 FIX: Added ps_voltage parameter with fail-safe default of 0.0.
         Previously, this method hardcoded ps_voltage=24.0, which is WRONG for:
@@ -161,7 +159,7 @@ class ScheduleGenerator:
             )
         return rows
 
-    def from_route_results(self, results: List[Any], ps_voltage: float = 0.0) -> List[ScheduleRow]:
+    def from_route_results(self, results: list[Any], ps_voltage: float = 0.0) -> list[ScheduleRow]:
         """Convert RouteResult list (from CableRoutingEngine) to ScheduleRow list.
 
         V113 FIX: Added ps_voltage parameter (same as from_routing_schedule).
@@ -196,10 +194,9 @@ class ScheduleGenerator:
             )
         return rows
 
-    def to_csv(self, rows: List[ScheduleRow]) -> str:
-        """
-        Generate CSV cable schedule (system requirement §4).
-        Columns: Device_ID, From_Location, To_Location, Length, Type, Voltage_Drop
+    def to_csv(self, rows: list[ScheduleRow]) -> str:
+        """Generate CSV cable schedule (system requirement §4).
+        Columns: Device_ID, From_Location, To_Location, Length, Type, Voltage_Drop.
         """
         buf = io.StringIO()
         writer = csv.writer(buf)
@@ -234,9 +231,8 @@ class ScheduleGenerator:
             )
         return buf.getvalue()
 
-    def to_report(self, rows: List[ScheduleRow]) -> ScheduleReport:
-        """
-        Generate compliance summary report (system requirement §4).
+    def to_report(self, rows: list[ScheduleRow]) -> ScheduleReport:
+        """Generate compliance summary report (system requirement §4).
         Includes: total cable length, bends, max circuit length.
         """
         if not rows:
@@ -246,7 +242,7 @@ class ScheduleGenerator:
             # a half-solution (empty=True) is worse than no solution because
             # it creates a false sense of security.
             return ScheduleReport(
-                generated=datetime.now(timezone.utc).isoformat(),
+                generated=datetime.now(UTC).isoformat(),
                 total_cable_length_m=0.0,
                 total_bends=0,
                 max_circuit_length_m=0.0,
@@ -259,7 +255,7 @@ class ScheduleGenerator:
             )
 
         return ScheduleReport(
-            generated=datetime.now(timezone.utc).isoformat(),
+            generated=datetime.now(UTC).isoformat(),
             total_cable_length_m=round(sum(r.length_m for r in rows), 3),
             total_bends=sum(r.bend_count for r in rows),
             max_circuit_length_m=round(max(r.length_m for r in rows), 3),
@@ -287,7 +283,7 @@ class ScheduleGenerator:
             ],
         )
 
-    def to_json(self, rows: List[ScheduleRow]) -> str:
+    def to_json(self, rows: list[ScheduleRow]) -> str:
         """Export schedule + report as JSON."""
         report = self.to_report(rows)
         return json.dumps(
@@ -298,7 +294,7 @@ class ScheduleGenerator:
             indent=2,
         )
 
-    def to_text_report(self, rows: List[ScheduleRow]) -> str:
+    def to_text_report(self, rows: list[ScheduleRow]) -> str:
         """Plain-text compliance report for field use."""
         rep = self.to_report(rows)
         lines = [

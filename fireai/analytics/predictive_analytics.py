@@ -1,5 +1,4 @@
-"""
-fireai/analytics/predictive_analytics.py — Forecasting Engine
+"""fireai/analytics/predictive_analytics.py — Forecasting Engine.
 ================================================================
 Holt-Winters exponential smoothing for time-series forecasting with
 moving-average fallback. Produces JSON-serialisable forecast reports
@@ -12,8 +11,8 @@ import json
 import logging
 import math
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +25,8 @@ class DeviceEvent:
     device_id: str
     event_type: str  # "alarm", "trouble", "maintenance", "test", "failure"
     timestamp: datetime
-    value: Optional[float] = None
-    location: Optional[str] = None
+    value: float | None = None
+    location: str | None = None
 
 
 @dataclass
@@ -38,10 +37,10 @@ class FailurePrediction:
     confidence_upper: float
     probability: float
     failure_mode: str
-    features_used: List[str]
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    features_used: list[str]
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -52,14 +51,14 @@ class FailurePrediction:
 class CoverageForecast:
     room_id: str
     days: int
-    daily_coverage_pct: List[float]
+    daily_coverage_pct: list[float]
     trend: str  # "improving", "stable", "degrading"
     degradation_rate: float
-    confidence_lower: List[float]
-    confidence_upper: List[float]
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    confidence_lower: list[float]
+    confidence_upper: list[float]
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -69,8 +68,8 @@ class CoverageForecast:
 @dataclass
 class LoadProfile:
     system_id: str
-    timestamps: List[datetime]
-    loads: List[float]
+    timestamps: list[datetime]
+    loads: list[float]
 
 
 @dataclass
@@ -83,9 +82,9 @@ class CapacityPrediction:
     risk: str  # "low", "medium", "high", "critical"
     confidence_lower: float
     confidence_upper: float
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -95,7 +94,7 @@ class CapacityPrediction:
 @dataclass
 class BuildingData:
     building_id: str
-    rooms: List[str]
+    rooms: list[str]
     age_years: float
     env_factor: float = 1.0  # 1.0 = nominal, >1.0 = harsh environment
 
@@ -109,10 +108,10 @@ class RiskScore:
     age_factor: float
     env_factor: float
     risk_level: str  # "low", "moderate", "high", "critical"
-    recommendations: List[str]
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    recommendations: list[str]
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -123,13 +122,13 @@ class RiskScore:
 
 
 def _holt_winters_forecast(
-    series: List[float],
+    series: list[float],
     horizon: int,
     alpha: float = 0.3,
     beta: float = 0.1,
     gamma: float = 0.1,
     season_period: int = 7,
-) -> Dict[str, List[float]]:
+) -> dict[str, list[float]]:
     n = len(series)
     if n < 2:
         m = sum(series) / max(len(series), 1)
@@ -164,9 +163,9 @@ def _holt_winters_forecast(
         trend = beta * (level - prev_level) + (1 - beta) * trend
         seasonal[season_idx] = gamma * (obs / max(level, 1e-9)) + (1 - gamma) * seasonal[season_idx]
 
-    forecast: List[float] = []
-    lower: List[float] = []
-    upper: List[float] = []
+    forecast: list[float] = []
+    lower: list[float] = []
+    upper: list[float] = []
     residuals = _compute_residuals(series, level, trend, seasonal)
     std_err = max(_std_dev(residuals), 1e-9)
 
@@ -182,8 +181,8 @@ def _holt_winters_forecast(
 
 
 def _moving_average_forecast(
-    series: List[float], horizon: int, window: int = 5
-) -> Dict[str, List[float]]:
+    series: list[float], horizon: int, window: int = 5
+) -> dict[str, list[float]]:
     n = len(series)
     if n == 0:
         return {"forecast": [0.0] * horizon, "lower": [0.0] * horizon, "upper": [0.0] * horizon}
@@ -198,9 +197,9 @@ def _moving_average_forecast(
 
 
 def _compute_residuals(
-    series: List[float], level: float, trend: float, seasonal: List[float]
-) -> List[float]:
-    residuals: List[float] = []
+    series: list[float], level: float, trend: float, seasonal: list[float]
+) -> list[float]:
+    residuals: list[float] = []
     for i in range(len(seasonal), len(series)):
         season_idx = i % len(seasonal)
         fitted = (level + (i - len(seasonal) + 1) * trend) * seasonal[season_idx]
@@ -208,7 +207,7 @@ def _compute_residuals(
     return residuals if residuals else [0.0]
 
 
-def _std_dev(values: List[float]) -> float:
+def _std_dev(values: list[float]) -> float:
     n = len(values)
     if n < 2:
         return 0.0
@@ -217,7 +216,7 @@ def _std_dev(values: List[float]) -> float:
     return math.sqrt(max(var, 0.0))
 
 
-def _trend_from_forecast(forecast: List[float]) -> str:
+def _trend_from_forecast(forecast: list[float]) -> str:
     if len(forecast) < 2:
         return "stable"
     first = sum(forecast[:len(forecast) // 3]) / max(len(forecast[:len(forecast) // 3]), 1)
@@ -234,12 +233,11 @@ def _trend_from_forecast(forecast: List[float]) -> str:
 
 
 class PredictiveAnalyticsEngine:
-    """
-    Forecasting engine for:
+    """Forecasting engine for:
     - Detector failure prediction (time-to-failure estimation)
     - Coverage degradation prediction
     - Capacity prediction (battery, circuit load)
-    - Risk scoring per room/building
+    - Risk scoring per room/building.
     """
 
     def __init__(
@@ -248,13 +246,13 @@ class PredictiveAnalyticsEngine:
         beta: float = 0.1,
         gamma: float = 0.1,
         season_period: int = 7,
-    ):
+    ) -> None:
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
         self.season_period = season_period
 
-    def predict_failure(self, device_history: List[DeviceEvent]) -> FailurePrediction:
+    def predict_failure(self, device_history: list[DeviceEvent]) -> FailurePrediction:
         if not device_history:
             return FailurePrediction(
                 device_id="unknown",
@@ -268,9 +266,9 @@ class PredictiveAnalyticsEngine:
 
         device_id = device_history[0].device_id
         events_sorted = sorted(device_history, key=lambda e: e.timestamp)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
-        age_hours: List[float] = []
+        age_hours: list[float] = []
         for evt in events_sorted:
             delta = (now - evt.timestamp).total_seconds() / 3600.0
             age_hours.append(max(delta, 0.0))
@@ -325,7 +323,7 @@ class PredictiveAnalyticsEngine:
         )
 
     def predict_coverage_degradation(self, room_id: str, days: int) -> CoverageForecast:
-        datetime.now(timezone.utc)
+        datetime.now(UTC)
         n = max(days, 1)
         coverage_series = self._simulate_recent_coverage(room_id)
         horizon = n
@@ -352,7 +350,7 @@ class PredictiveAnalyticsEngine:
             confidence_upper=[round(v, 4) for v in upper_values],
         )
 
-    def _simulate_recent_coverage(self, room_id: str) -> List[float]:
+    def _simulate_recent_coverage(self, room_id: str) -> list[float]:
         return [0.95, 0.94, 0.93, 0.91, 0.90, 0.89, 0.88, 0.86, 0.85, 0.83]
 
     def predict_capacity(self, system_id: str, load_profile: LoadProfile) -> CapacityPrediction:
@@ -422,7 +420,7 @@ class PredictiveAnalyticsEngine:
         else:
             risk_level = "critical"
 
-        recommendations: List[str] = []
+        recommendations: list[str] = []
         if failure_prob > 0.1:
             recommendations.append("Schedule proactive maintenance for aging detectors")
         if coverage_gap > 0.05:

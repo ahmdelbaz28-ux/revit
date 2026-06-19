@@ -7,7 +7,8 @@ from .models import KnowledgePoint, MasteryRecord
 
 class Planner:
     """Recommends knowledge points for review based on Ebbinghaus
-    forgetting curve and weak-point tracking."""
+    forgetting curve and weak-point tracking.
+    """
 
     def recommend_review(
         self,
@@ -24,6 +25,7 @@ class Planner:
         Returns:
             List of dicts with 'knowledge_point_id', 'title', 'reason',
             'current_level', 'is_weak'.
+
         """
         today = datetime.strptime(today_str, "%Y-%m-%d")
         three_days_ago_str = (today - timedelta(days=3)).strftime("%Y-%m-%d")

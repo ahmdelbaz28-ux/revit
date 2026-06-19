@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Market Research Report Visual Generator
+"""Market Research Report Visual Generator.
 
 Batch generates visuals for a market research report using
 scientific-schematics and generate-image skills.
@@ -313,10 +312,9 @@ def get_script_path(tool: str) -> Path:
 
     if tool == "scientific-schematics":
         return base_path / "scientific-schematics" / "scripts" / "generate_schematic.py"
-    elif tool == "generate-image":
+    if tool == "generate-image":
         return base_path / "generate-image" / "scripts" / "generate_image.py"
-    else:
-        raise ValueError(f"Unknown tool: {tool}")
+    raise ValueError(f"Unknown tool: {tool}")
 
 
 def generate_visual(
@@ -381,21 +379,20 @@ def generate_visual(
             if verbose:
                 print(f"  [OK] {filename} generated successfully")
             return True
-        else:
-            print(f"  [ERROR] {filename} failed:")
-            if result.stderr:
-                print(f"         {result.stderr[:200]}")
-            return False
+        print(f"  [ERROR] {filename} failed:")
+        if result.stderr:
+            print(f"         {result.stderr[:200]}")
+        return False
 
     except subprocess.TimeoutExpired:
         print(f"  [TIMEOUT] {filename} generation timed out")
         return False
     except Exception as e:
-        print(f"  [ERROR] {filename}: {str(e)}")
+        print(f"  [ERROR] {filename}: {e!s}")
         return False
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate visuals for a market research report (default: 5-6 core visuals)"
     )

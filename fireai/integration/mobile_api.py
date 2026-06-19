@@ -1,5 +1,4 @@
-"""
-fireai/integration/mobile_api.py
+"""fireai/integration/mobile_api.py.
 ==================================
 Mobile Platform — Secure API layer for iOS/Android field applications.
 
@@ -14,9 +13,9 @@ import logging
 import secrets
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum
+from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -34,7 +33,7 @@ class _RateLimiter:
     def __init__(self, max_requests: int = 60, window_seconds: int = 60) -> None:
         self._max = max_requests
         self._window = window_seconds
-        self._buckets: Dict[str, List[float]] = {}
+        self._buckets: dict[str, list[float]] = {}
 
     def allow(self, user_id: str) -> bool:
         now = time.monotonic()
@@ -52,7 +51,7 @@ class _RateLimiter:
 # ===========================================================================
 
 
-class TaskType(str, Enum):
+class TaskType(StrEnum):
     INSPECTION = "INSPECTION"
     SURVEY = "SURVEY"
     PUNCH_ITEM = "PUNCH_ITEM"
@@ -60,7 +59,7 @@ class TaskType(str, Enum):
     COMMISSIONING = "COMMISSIONING"
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -68,7 +67,7 @@ class TaskStatus(str, Enum):
     CANCELLED = "CANCELLED"
 
 
-class AuthScheme(str, Enum):
+class AuthScheme(StrEnum):
     BEARER = "BEARER"
     API_KEY = "API_KEY"  # Auth scheme name, not an actual key value
 
@@ -101,11 +100,11 @@ class AuthToken:
     refresh_token: str
     expires_at: datetime
     user_id: str
-    scope: List[str] = field(default_factory=lambda: ["read"])
+    scope: list[str] = field(default_factory=lambda: ["read"])
 
     @property
     def is_expired(self) -> bool:
-        return datetime.now(timezone.utc) >= self.expires_at
+        return datetime.now(UTC) >= self.expires_at
 
 
 @dataclass(frozen=True)
@@ -140,7 +139,7 @@ class FieldReport:
     user_id: str
     findings: str
     submitted_at: datetime
-    photos: List[str] = field(default_factory=list)
+    photos: list[str] = field(default_factory=list)
     status: str = "SUBMITTED"
 
 
@@ -155,10 +154,10 @@ class ReportResult:
 class SyncPackage:
     user_id: str
     generated_at: datetime
-    projects: List[ProjectSummary] = field(default_factory=list)
-    tasks: List[FieldTask] = field(default_factory=list)
-    inspections: List[Dict[str, Any]] = field(default_factory=list)
-    reference_data: Dict[str, Any] = field(default_factory=dict)
+    projects: list[ProjectSummary] = field(default_factory=list)
+    tasks: list[FieldTask] = field(default_factory=list)
+    inspections: list[dict[str, Any]] = field(default_factory=list)
+    reference_data: dict[str, Any] = field(default_factory=dict)
     checksum: str = ""
 
 
@@ -168,8 +167,7 @@ class SyncPackage:
 
 
 class MobileAPI:
-    """
-    Secure API layer for iOS/Android field applications.
+    """Secure API layer for iOS/Android field applications.
 
     Features:
       - Token-based authentication with refresh token rotation
@@ -179,14 +177,14 @@ class MobileAPI:
       - Offline sync package generation
     """
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
         self._rate_limiter = _RateLimiter()
-        self._tokens: Dict[str, AuthToken] = {}
-        self._users: Dict[str, Dict[str, Any]] = {}
-        self._projects: Dict[str, ProjectSummary] = {}
-        self._tasks: Dict[str, FieldTask] = {}
-        self._reports: Dict[str, FieldReport] = {}
+        self._tokens: dict[str, AuthToken] = {}
+        self._users: dict[str, dict[str, Any]] = {}
+        self._projects: dict[str, ProjectSummary] = {}
+        self._tasks: dict[str, FieldTask] = {}
+        self._reports: dict[str, FieldReport] = {}
 
     # ── Authentication ──────────────────────────────────────────────────
 
@@ -208,7 +206,7 @@ class MobileAPI:
 
         token_str = self._generate_token()
         refresh_str = self._generate_token()
-        expires = datetime.now(timezone.utc) + timedelta(hours=24)
+        expires = datetime.now(UTC) + timedelta(hours=24)
 
         auth_token = AuthToken(
             token=token_str,
@@ -234,7 +232,7 @@ class MobileAPI:
             if stored.refresh_token == refresh_token:
                 new_token = self._generate_token()
                 new_refresh = self._generate_token()
-                new_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+                new_expires = datetime.now(UTC) + timedelta(hours=24)
 
                 auth_token = AuthToken(
                     token=new_token,
@@ -249,7 +247,7 @@ class MobileAPI:
 
         raise PermissionError("Invalid refresh token")
 
-    def validate_token(self, token: str) -> Optional[AuthToken]:
+    def validate_token(self, token: str) -> AuthToken | None:
         auth_token = self._tokens.get(token)
         if auth_token is None:
             return None
@@ -260,7 +258,7 @@ class MobileAPI:
 
     # ── Projects ────────────────────────────────────────────────────────
 
-    def get_projects(self, user_id: str) -> List[ProjectSummary]:
+    def get_projects(self, user_id: str) -> list[ProjectSummary]:
         return list(self._projects.values())
 
     def add_project(self, project: ProjectSummary) -> None:
@@ -268,7 +266,7 @@ class MobileAPI:
 
     # ── Field Tasks ─────────────────────────────────────────────────────
 
-    def get_field_tasks(self, user_id: str) -> List[FieldTask]:
+    def get_field_tasks(self, user_id: str) -> list[FieldTask]:
         return [
             task
             for task in self._tasks.values()
@@ -351,7 +349,7 @@ class MobileAPI:
 
             sync_data = SyncPackage(
                 user_id=user_id,
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
                 projects=projects,
                 tasks=updated_tasks,
                 inspections=list(self._reports.values()),  # type: ignore[arg-type]
@@ -368,7 +366,7 @@ class MobileAPI:
                 + str(sync_data.tasks)
                 + str(sync_data.generated_at.isoformat())
             )
-            sync_data = SyncPackage(
+            return SyncPackage(
                 user_id=sync_data.user_id,
                 generated_at=sync_data.generated_at,
                 projects=sync_data.projects,
@@ -380,7 +378,6 @@ class MobileAPI:
                 ).hexdigest()[:16],
             )
 
-            return sync_data
         except Exception as exc:
             logger.error("Offline sync failed for user %s: %s", user_id, exc)
             raise
@@ -391,7 +388,7 @@ class MobileAPI:
         self,
         username: str,
         password: str,
-        scope: Optional[List[str]] = None,
+        scope: list[str] | None = None,
     ) -> None:
         if username in self._users:
             raise ValueError(f"User {username} already exists")
@@ -436,7 +433,7 @@ if __name__ == "__main__":
             name="Hospital Tower B",
             building_count=3,
             status="ACTIVE",
-            last_updated=datetime.now(timezone.utc),
+            last_updated=datetime.now(UTC),
             role="editor",
         )
     )
@@ -448,13 +445,13 @@ if __name__ == "__main__":
         task_id="TASK-001",
         user_id="field_engineer",
         findings="All detectors operational",
-        submitted_at=datetime.now(timezone.utc),
+        submitted_at=datetime.now(UTC),
     )
     result = api.submit_field_report(report)
     print(f"Report accepted: {result.accepted}")
 
     sync = api.get_offline_sync(
         "field_engineer",
-        datetime(2020, 1, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 1, tzinfo=UTC),
     )
     print(f"Sync package: {len(sync.tasks)} tasks, checksum={sync.checksum}")

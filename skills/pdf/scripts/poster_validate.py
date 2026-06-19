@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-poster_validate.py — Pre- and post-generation quality checks for poster/creative PDFs.
+"""poster_validate.py — Pre- and post-generation quality checks for poster/creative PDFs.
 
 Usage:
     # Check HTML before PDF generation
@@ -22,6 +21,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -239,10 +239,8 @@ class _TextExtractor(HTMLParser):
 
 def _html_visible_text(html: str) -> str:
     ext = _TextExtractor()
-    try:
+    with contextlib.suppress(Exception):
         ext.feed(html)
-    except Exception:
-        pass
     return ext.get_text()
 
 
@@ -252,7 +250,6 @@ def _html_visible_text(html: str) -> str:
 
 def check_html(html_path: str, *, fix: bool = False, output_path: str | None = None) -> dict:
     """Run all HTML pre-checks. Return the JSON-serialisable report dict."""
-
     path = Path(html_path)
     if not path.is_file():
         return {"pass": False, "source": html_path, "check_type": "html",
@@ -835,7 +832,6 @@ def check_html(html_path: str, *, fix: bool = False, output_path: str | None = N
 
 def check_pdf(pdf_path: str, *, source_html: str | None = None, poster: bool = False) -> dict:
     """Run all PDF post-checks. Return the JSON-serialisable report dict."""
-
     path = Path(pdf_path)
     errors: list[dict] = []
     warnings: list[dict] = []
@@ -980,7 +976,7 @@ def check_tex(tex_path: str) -> dict:
         return {"pass": False, "source": tex_path, "check_type": "tex",
                 "errors": [_issue("FILE_NOT_FOUND", f"File not found: {tex_path}")], "warnings": [], "info": []}
 
-    with open(tex_path, "r", encoding="utf-8", errors="replace") as f:
+    with open(tex_path, encoding="utf-8", errors="replace") as f:
         content = f.read()
 
     lines = content.split("\n")
@@ -1306,7 +1302,7 @@ def main() -> int:
 
             return 0 if report["pass"] else 1
 
-        elif args.command == "check-pdf":
+        if args.command == "check-pdf":
             report = check_pdf(
                 args.pdf_file,
                 source_html=args.source_html,
@@ -1315,7 +1311,7 @@ def main() -> int:
             print(json.dumps(report, indent=2, ensure_ascii=False))
             return 0 if report["pass"] else 1
 
-        elif args.command == "check-tex":
+        if args.command == "check-tex":
             report = check_tex(args.tex_file)
             print(json.dumps(report, indent=2, ensure_ascii=False))
             return 0 if report["pass"] else 1

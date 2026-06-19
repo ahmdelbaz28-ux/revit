@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Command line tool to validate Office document XML files against XSD schemas and tracked changes.
+"""Command line tool to validate Office document XML files against XSD schemas and tracked changes.
 
 Usage:
     python validate.py <dir> --original <original_file>
@@ -13,7 +12,7 @@ from pathlib import Path
 from validation import DOCXSchemaValidator, PPTXSchemaValidator, RedliningValidator
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Validate Office document XML files")
     parser.add_argument(
         "unpacked_dir",

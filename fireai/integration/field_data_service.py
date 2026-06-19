@@ -1,5 +1,4 @@
-"""
-fireai/integration/field_data_service.py
+"""fireai/integration/field_data_service.py.
 ==========================================
 Field Data Integration — Mobile data capture, inspection feedback,
 and asset synchronization with conflict detection.
@@ -7,15 +6,15 @@ and asset synchronization with conflict detection.
 References:
   - NFPA 72-2022 §14.4 — Inspection, testing and maintenance
   - NFPA 72-2022 §7.5 — Records and recordkeeping
+
 """
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Dict, List, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class FindingCategory(str, Enum):
+class FindingCategory(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -35,7 +34,7 @@ class FindingCategory(str, Enum):
     INFO = "INFO"
 
 
-class InspectionStatus(str, Enum):
+class InspectionStatus(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -43,7 +42,7 @@ class InspectionStatus(str, Enum):
     REJECTED = "REJECTED"
 
 
-class SyncStatus(str, Enum):
+class SyncStatus(StrEnum):
     SYNCED = "SYNCED"
     CONFLICT = "CONFLICT"
     PENDING = "PENDING"
@@ -61,7 +60,7 @@ class Finding:
     description: str
     location: str
     recommendation: str = ""
-    photo_urls: List[str] = field(default_factory=list)
+    photo_urls: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not self.description.strip():
@@ -76,10 +75,10 @@ class FieldInspection:
     inspector_id: str
     building_id: str
     asset_id: str
-    findings: List[Finding]
+    findings: list[Finding]
     timestamp: datetime
     status: InspectionStatus = InspectionStatus.PENDING
-    photos: List[str] = field(default_factory=list)
+    photos: list[str] = field(default_factory=list)
     notes: str = ""
 
     def __post_init__(self) -> None:
@@ -91,7 +90,7 @@ class FieldInspection:
             raise ValueError("building_id must not be empty")
         if not self.asset_id.strip():
             raise ValueError("asset_id must not be empty")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if self.timestamp > now:
             raise ValueError("Inspection timestamp cannot be in the future")
 
@@ -102,7 +101,7 @@ class InspectionResult:
     accepted: bool
     findings_count: int
     critical_findings: int
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -111,7 +110,7 @@ class FieldUpdate:
     building_id: str
     asset_id: str
     field_name: str
-    old_value: Optional[str]
+    old_value: str | None
     new_value: str
     updated_by: str
     updated_at: datetime
@@ -137,7 +136,7 @@ class SyncResult:
     conflict: bool
     local_version: int
     remote_version: int
-    resolved_value: Optional[str] = None
+    resolved_value: str | None = None
 
 
 # ===========================================================================
@@ -146,8 +145,7 @@ class SyncResult:
 
 
 class FieldDataService:
-    """
-    Mobile data capture, inspection feedback, and asset synchronization.
+    """Mobile data capture, inspection feedback, and asset synchronization.
 
     Features:
       - Inspection submission with validation
@@ -156,12 +154,12 @@ class FieldDataService:
       - Outstanding inspection task management
     """
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
-        self._inspections: Dict[str, FieldInspection] = {}
-        self._field_updates: List[FieldUpdate] = []
-        self._tasks: Dict[str, InspectionTask] = {}
-        self._asset_versions: Dict[str, int] = {}
+        self._inspections: dict[str, FieldInspection] = {}
+        self._field_updates: list[FieldUpdate] = []
+        self._tasks: dict[str, InspectionTask] = {}
+        self._asset_versions: dict[str, int] = {}
 
     # ── Inspection Submission ───────────────────────────────────────────
 
@@ -175,7 +173,7 @@ class FieldDataService:
             for f in inspection.findings
             if f.category == FindingCategory.CRITICAL
         ]
-        warnings: List[str] = []
+        warnings: list[str] = []
 
         if critical:
             warnings.append(
@@ -232,7 +230,7 @@ class FieldDataService:
 
     def get_field_updates(
         self, since: datetime
-    ) -> List[FieldUpdate]:
+    ) -> list[FieldUpdate]:
         if not isinstance(since, datetime):
             raise TypeError("since must be a datetime object")
 
@@ -259,8 +257,8 @@ class FieldDataService:
 
     def sync_asset(
         self,
-        asset: "AssetData",  # noqa: F821
-        remote_version: Optional[int] = None,
+        asset: AssetData,
+        remote_version: int | None = None,
     ) -> SyncResult:
         asset_id = asset.asset_id
         local_version = self._asset_versions.get(asset_id, 0)
@@ -305,7 +303,7 @@ class FieldDataService:
 
     def get_outstanding_inspections(
         self, building_id: str
-    ) -> List[InspectionTask]:
+    ) -> list[InspectionTask]:
         if not building_id.strip():
             raise ValueError("building_id must not be empty")
 
@@ -359,7 +357,7 @@ class FieldDataService:
             raise ValueError(
                 "timestamp must be timezone-aware"
             )
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if inspection.timestamp > now:
             raise ValueError(
                 f"Inspection timestamp {inspection.timestamp} "
@@ -369,8 +367,7 @@ class FieldDataService:
     def _resolve_conflict(
         self, asset_id: str, local_ver: int, remote_ver: int
     ) -> str:
-        """
-        Last-write-wins conflict resolution.
+        """Last-write-wins conflict resolution.
 
         The higher version number wins. If versions are equal,
         the remote version is preferred (field data is considered
@@ -406,7 +403,7 @@ if __name__ == "__main__":
         building_id="BLDG-A",
         asset_id="DET-SMK-201",
         findings=[finding],
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     result = service.submit_inspection(inspection)
@@ -414,7 +411,7 @@ if __name__ == "__main__":
     print(f"Critical findings: {result.critical_findings}")
 
     updates = service.get_field_updates(
-        datetime(2020, 1, 1, tzinfo=timezone.utc)
+        datetime(2020, 1, 1, tzinfo=UTC)
     )
     print(f"Field updates: {len(updates)}")
 
@@ -426,7 +423,7 @@ if __name__ == "__main__":
     asset = AssetData(
         asset_id="DET-SMK-201",
         asset_type=AssetType.DETECTOR_SMOKE,
-        installation_date=datetime(2019, 1, 1, tzinfo=timezone.utc),
+        installation_date=datetime(2019, 1, 1, tzinfo=UTC),
     )
     sync = service.sync_asset(asset)
     print(f"Sync OK: {sync.synced}, conflict: {sync.conflict}")

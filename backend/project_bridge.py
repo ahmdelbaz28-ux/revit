@@ -1,5 +1,4 @@
-"""
-backend/project_bridge.py — Cross-database project & device synchronization bridge.
+"""backend/project_bridge.py — Cross-database project & device synchronization bridge.
 
 Ensures that project creation, update, and deletion in System A
 (digital_twin.db) is reflected in System B (udm_elements.db).
@@ -31,17 +30,18 @@ Device mapping between System A and System B:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 _TARGET_DB = "udm_elements"
 
 
-def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
+def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
     """Sync a project from System A to System B after creation.
 
     Maps System A fields to System B fields and creates the project
@@ -71,7 +71,7 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
         # Create in UDM — use the SAME ID from System A.
         # DatabaseService.create_project() generates its own UUID,
         # so we directly insert with the System A ID.
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         name = project_data.get("name", "Untitled")
         description = project_data.get("description", "")
@@ -133,7 +133,7 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
         return False
 
 
-def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool:
+def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool:
     """Sync a project update from System A to System B.
 
     Records the sync status in sync_operations.
@@ -171,7 +171,7 @@ def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool
                 set_clauses.append("status = ?")
                 values.append(updates["status"])
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             set_clauses.append("last_modified_timestamp = ?")
             values.append(now)
 
@@ -293,7 +293,7 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
 #   - Redundant devices that waste budget without adding coverage
 
 
-def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
+def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
     """Sync a device from System A to System B after creation.
 
     Maps System A device fields to System B element fields so that
@@ -375,7 +375,7 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
             udm.bridge_sql("CREATE INDEX IF NOT EXISTS idx_ep_project ON element_projects(project_id)")
             udm.bridge_sql("CREATE INDEX IF NOT EXISTS idx_elements_type ON elements(element_type)")
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             udm.bridge_insert(
                 "INSERT OR REPLACE INTO elements "
                 "(element_id, element_type, name, position, properties, "
@@ -416,7 +416,7 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
         return False
 
 
-def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str, Any]) -> bool:
+def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str, Any]) -> bool:
     """Sync a device update from System A to System B.
 
     Records the sync status in sync_operations.
@@ -491,13 +491,13 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str
                         current_props["rotation"] = safe_property_updates["rotation"]
                     if "category" in safe_property_updates:
                         current_props["device_category"] = safe_property_updates["category"]
-                    if "properties" in safe_property_updates and safe_property_updates["properties"]:
+                    if safe_property_updates.get("properties"):
                         current_props.update(safe_property_updates["properties"])
                     set_clauses.append("properties = ?")
                     values.append(json.dumps(current_props))
 
             if set_clauses:
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
                 set_clauses.append("last_modified_timestamp = ?")
                 values.append(now)
                 values.append(device_id)
@@ -544,7 +544,7 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
         db.record_sync("device", device_id, _TARGET_DB, "syncing")
 
         try:
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             udm.bridge_sql(
                 "UPDATE elements SET is_deleted = 1, last_modified_timestamp = ? "
                 "WHERE element_id = ?",
@@ -594,7 +594,7 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
 #     System A connection fields     → System B relationship `metadata` (JSON)
 
 
-def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> bool:
+def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> bool:
     """Sync a connection from System A to System B after creation.
 
     Maps System A connection fields to System B relationship fields so that
@@ -645,12 +645,10 @@ def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> 
                 "ADD COLUMN is_deleted INTEGER DEFAULT 0",
                 "ADD COLUMN last_modified_timestamp TEXT",
             ]:
-                try:
+                with contextlib.suppress(Exception):
                     udm.bridge_sql(f"ALTER TABLE relationships {col}")
-                except Exception:
-                    pass
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             udm.bridge_insert(
                 "INSERT OR REPLACE INTO relationships "
                 "(relationship_id, from_element_id, to_element_id, "
@@ -710,12 +708,10 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
                 "ADD COLUMN is_deleted INTEGER DEFAULT 0",
                 "ADD COLUMN last_modified_timestamp TEXT",
             ]:
-                try:
+                with contextlib.suppress(Exception):
                     udm.bridge_sql(f"ALTER TABLE relationships {col}")
-                except Exception:
-                    pass
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             udm.bridge_sql(
                 "UPDATE relationships SET is_deleted = 1, last_modified_timestamp = ? "
                 "WHERE relationship_id = ?",

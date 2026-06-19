@@ -19,51 +19,53 @@ def _lazy_import(name: str):
 
 
 __all__ = [
-    "health",
-    "projects",
-    "devices",
-    "connections",
-    "connections_v2",
-    "elements",
-    "conflicts",
-    "reports",
-    "exports",
-    "sync",
-    "monitor",
-    "memory",
-    "workflow",
-    "environment",
-    "dwg",
-    "qomn",
-    "facp",
     "api_keys",
     "autocad",
-    "revit",
+    "conflicts",
+    "connections",
+    "connections_v2",
+    "devices",
     "digital_twin",
+    "dwg",
+    "elements",
+    "environment",
+    "exports",
+    "facp",
+    "health",
+    "memory",
+    "monitor",
+    "projects",
+    "qomn",
+    "reports",
+    "revit",
+    "sync",
+    "workflow",
 ]
 
 if TYPE_CHECKING:
-    from . import health
-    from . import projects
-    from . import devices
-    from . import connections
-    from . import connections_v2
-    from . import elements
-    from . import conflicts
-    from . import reports
-    from . import exports
-    from . import sync
-    from . import monitor
-    from . import memory
-    from . import workflow
-    from . import environment
-    from . import dwg
-    from . import qomn
-    from . import facp
-    from . import api_keys
-    from . import autocad
-    from . import revit
-    from . import digital_twin
+    from . import (
+        api_keys,
+        autocad,
+        conflicts,
+        connections,
+        connections_v2,
+        devices,
+        digital_twin,
+        dwg,
+        elements,
+        environment,
+        exports,
+        facp,
+        health,
+        memory,
+        monitor,
+        projects,
+        qomn,
+        reports,
+        revit,
+        sync,
+        workflow,
+    )
 
 # Lazily import all routers in __all__ so they are present in the module namespace
 for _name in __all__:

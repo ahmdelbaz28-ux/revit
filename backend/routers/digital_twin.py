@@ -1,5 +1,4 @@
-"""
-backend/routers/digital_twin.py — Digital Twin Conversion Endpoints
+"""backend/routers/digital_twin.py — Digital Twin Conversion Endpoints.
 ===================================================================
 
 Provides endpoints for bidirectional CAD/BIM conversion,
@@ -18,17 +17,17 @@ FIXES APPLIED:
 - FIX #33: Proper multi-line imports
 """
 
-import os
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+import os
+from datetime import UTC, datetime
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from backend.rbac import Permission
 from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.services.digital_twin_service import (
     ConversionConfig,
     ConversionConfigManager,
@@ -73,13 +72,14 @@ def _safe_resolve_upload_path(filename: str) -> str:
 
 class ConvertRequest(BaseModel):
     """Request model for conversion operation."""
+
     source_filepath: str = Field(min_length=1, max_length=500)
     target_filepath: str = Field(min_length=1, max_length=500)
     conversion_type: str = Field(
         pattern=r"^(autocad_to_revit|revit_to_autocad)$",
         description="Conversion direction: autocad_to_revit or revit_to_autocad",
     )
-    template_path: Optional[str] = None
+    template_path: str | None = None
 
 
 class ConvertResponse(BaseModel):
@@ -88,40 +88,46 @@ class ConvertResponse(BaseModel):
     FIX #8: Added duration_seconds field which was previously missing,
     causing Pydantic ValidationError at runtime.
     """
+
     success: bool
     source_file: str
     target_file: str
     elements_converted: int
-    duration_seconds: Optional[float] = None
-    errors: List[str] = []
-    warnings: List[str] = []
+    duration_seconds: float | None = None
+    errors: list[str] = []
+    warnings: list[str] = []
 
 
 class OperationResponse(BaseModel):
     """Generic operation response."""
+
     success: bool
     message: str
-    handle: Optional[str] = None
+    handle: str | None = None
 
 
 class HistoryResponse(BaseModel):
     """Response model for conversion history."""
-    history: List[Dict[str, Any]]
+
+    history: list[dict[str, Any]]
 
 
 class ConfigureRequest(BaseModel):
     """Request model for configuration update."""
-    config: Dict[str, Any]
+
+    config: dict[str, Any]
 
 
 class ConfigureResponse(BaseModel):
     """Response model for configuration update."""
+
     success: bool
     message: str
 
 
 class RollbackRequest(BaseModel):
     """Request model for rollback operation."""
+
     target_file: str = Field(min_length=1, max_length=500)
 
 
@@ -130,6 +136,7 @@ class UpdateMappingRequest(BaseModel):
 
     Uses request body instead of query parameters for a POST operation.
     """
+
     layer: str = Field(min_length=1, max_length=255)
     category: str = Field(min_length=1, max_length=255)
     direction: str = Field(
@@ -140,12 +147,13 @@ class UpdateMappingRequest(BaseModel):
 
 class MappingsResponse(BaseModel):
     """Response model for available mappings."""
-    layer_to_category: Dict[str, str]
-    category_to_layer: Dict[str, str]
-    linetype_to_element: Dict[str, str]
-    block_to_family: Dict[str, str]
-    units: Dict[str, Any]
-    levels: Dict[str, Any]
+
+    layer_to_category: dict[str, str]
+    category_to_layer: dict[str, str]
+    linetype_to_element: dict[str, str]
+    block_to_family: dict[str, str]
+    units: dict[str, Any]
+    levels: dict[str, Any]
 
 
 # ── Safe error helper (FIX #20) ────────────────────────────────────────────
@@ -223,8 +231,7 @@ async def configure_conversion(
                 success=True,
                 message="Configuration updated successfully",
             )
-        else:
-            raise HTTPException(status_code=500, detail="Failed to save configuration")
+        raise HTTPException(status_code=500, detail="Failed to save configuration")
     except HTTPException:
         raise
     except Exception as e:
@@ -287,7 +294,7 @@ async def get_available_mappings(
 @router.get("/status")
 async def get_digital_twin_status(
     service: DigitalTwinService = Depends(get_digital_twin_service),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get Digital Twin service status.
 
     FIX #11: Replaced __import__('datetime').datetime.now() with proper
@@ -300,7 +307,7 @@ async def get_digital_twin_status(
             "total_conversions": len(history),
             "last_conversion": history[-1] if history else None,
             "config_loaded": True,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
     except Exception as e:
         raise _safe_error(500, "Error getting Digital Twin status", e)
@@ -310,7 +317,7 @@ async def get_digital_twin_status(
 async def update_single_mapping(
     request: UpdateMappingRequest,
     config_mgr: ConversionConfigManager = Depends(get_config_manager),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Update a single mapping rule.
 
     FIX #25: Uses request body (UpdateMappingRequest) instead of query
@@ -324,8 +331,7 @@ async def update_single_mapping(
                 "message": f"Mapping updated: {request.layer} -> {request.category} ({request.direction})",
                 "mapping": {request.layer: request.category},
             }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to update mapping")
+        raise HTTPException(status_code=500, detail="Failed to update mapping")
     except HTTPException:
         raise
     except Exception as e:
@@ -338,7 +344,7 @@ async def update_single_mapping(
 )
 async def get_config(
     config_mgr: ConversionConfigManager = Depends(get_config_manager),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get current conversion configuration.
 
     FIX #10: Removed the duplicate /config GET route that lacked RBAC

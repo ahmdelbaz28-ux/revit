@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-jd_gap.py — 把 parse_jd.py 的 JSON 与简历文本做 gap 分析
+"""jd_gap.py — 把 parse_jd.py 的 JSON 与简历文本做 gap 分析.
 
 用法：
     python jd_gap.py --jd jd_parsed.json --resume resume.md --out gap.md
@@ -37,19 +36,18 @@ def load_resume_text(path: Path) -> str:
 
 
 def find_evidence(resume_text: str, keyword: str, window: int = 30) -> str | None:
-    """在简历里找关键词，返回上下文片段；找不到返回 None。"""
+    """在简历里找关键词，返回上下文片段；找不到返回 None。."""
     pattern = re.escape(keyword)
     m = re.search(pattern, resume_text, flags=re.IGNORECASE)
     if not m:
         return None
     start = max(0, m.start() - window)
     end = min(len(resume_text), m.end() + window)
-    snippet = resume_text[start:end].replace("\n", " ").strip()
-    return snippet
+    return resume_text[start:end].replace("\n", " ").strip()
 
 
 def fuzzy_hit(resume_text: str, keyword: str) -> str | None:
-    """模糊命中：取关键词的中文 / 英文核心，做包含匹配。"""
+    """模糊命中：取关键词的中文 / 英文核心，做包含匹配。."""
     # 拿前 2 个字 / 前 5 个字符
     candidates = []
     if re.search(r"[一-龥]", keyword):
@@ -94,7 +92,7 @@ def analyze(jd: dict, resume_text: str) -> dict:
     return {"perfect": perfect, "implicit": implicit, "missing": missing}
 
 
-def process_one(keyword, resume_text, perfect, implicit, missing):
+def process_one(keyword, resume_text, perfect, implicit, missing) -> None:
     ev = find_evidence(resume_text, keyword)
     if ev:
         perfect.append({"keyword": keyword, "evidence": ev})

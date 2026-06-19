@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-FireAI — Module Dependency Index Generator
+"""FireAI — Module Dependency Index Generator.
 
 Scans the codebase and generates a dependency graph to identify:
 - Module layers and their dependencies
@@ -12,7 +11,6 @@ from __future__ import annotations
 
 # Run: python -m fireai.tools.dependency_indexer
 # Output: fireai/DEPENDENCY_INDEX.md
-
 import re
 import subprocess
 from collections import defaultdict
@@ -62,11 +60,11 @@ def get_module_layer(module_name: str) -> int:
     """Get the layer number for a module."""
     if module_name in LAYER_1_MODULES:
         return 1
-    elif module_name in LAYER_2_MODULES:
+    if module_name in LAYER_2_MODULES:
         return 2
-    elif module_name in LAYER_3_MODULES:
+    if module_name in LAYER_3_MODULES:
         return 3
-    elif module_name in LAYER_4_MODULES:
+    if module_name in LAYER_4_MODULES:
         return 4
     return 0  # Unknown layer
 
@@ -111,7 +109,7 @@ def detect_circular_imports(deps: dict) -> list[list[str]]:
     def has_cycle(node: str, visited: set, path: list) -> bool:
         if node in path:
             cycle_start = path.index(node)
-            cycle = path[cycle_start:] + [node]
+            cycle = [*path[cycle_start:], node]
             # Skip self-loops (module importing itself via lazy import)
             if len(cycle) == 2 and cycle[0] == cycle[1]:
                 return False
@@ -168,7 +166,6 @@ def check_layer_violations(deps: dict) -> list[dict]:
 
 def generate_markdown(deps: dict, circular: list, violations: list) -> str:
     """Generate Markdown documentation."""
-
     total_modules = len(deps)
     layer_counts = {
         1: len([m for m in deps if get_module_layer(m) == 1]),
@@ -256,7 +253,7 @@ Layer 1 (Foundation):     contracts, nfpa72_models, nfpa72_calculations
     return md
 
 
-def main():
+def main() -> int:
     root = Path(__file__).parent.parent.parent
     output_file = root / "fireai" / "DEPENDENCY_INDEX.md"
 

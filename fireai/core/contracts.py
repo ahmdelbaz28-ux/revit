@@ -1,5 +1,4 @@
-"""
-FireAI Service Contracts — Versioned JSON Schemas
+"""FireAI Service Contracts — Versioned JSON Schemas.
 ==================================================
 Defines the data contracts between services.
 
@@ -13,10 +12,10 @@ useful even in monolithic mode for type safety and documentation.
 from __future__ import annotations
 
 import math
-from dataclasses import asdict, dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional
 import os
+from dataclasses import asdict, dataclass, field
+from enum import StrEnum
+from typing import Any
 
 # ============================================================================
 # CONTRACT v1 — Shared Data Models
@@ -25,7 +24,7 @@ import os
 CONTRACT_VERSION = "v1"
 
 
-class CeilingType(str, Enum):
+class CeilingType(StrEnum):
     """NFPA 72 ceiling classifications.
 
     CONSOLIDATED: This enum is the canonical source. nfpa72_models.py
@@ -47,7 +46,7 @@ class CeilingType(str, Enum):
     COMBUSTIBLE = "COMBUSTIBLE"
 
 
-class ConfidenceLevel(str, Enum):
+class ConfidenceLevel(StrEnum):
     """Confidence levels for analysis results."""
 
     HIGH = "HIGH"
@@ -56,7 +55,7 @@ class ConfidenceLevel(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class DetectorType(str, Enum):
+class DetectorType(StrEnum):
     """NFPA 72 detector types.
 
     CONSOLIDATED: Includes all types from both contracts.py and
@@ -85,7 +84,7 @@ class DetectorType(str, Enum):
 
 @dataclass(frozen=True)
 class ParsedDrawingContract:
-    """Contract: Parser → Analyzer
+    """Contract: Parser → Analyzer.
 
     The parser service produces this from DXF/DWG/PDF/IFC files.
     The analyzer service consumes this as input.
@@ -95,12 +94,12 @@ class ParsedDrawingContract:
     source_file: str = ""
     source_sha256: str = ""
     file_type: str = ""
-    rooms: List[Dict[str, Any]] = field(default_factory=list)
-    layers: List[Dict[str, Any]] = field(default_factory=list)
-    entities: List[Dict[str, Any]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    rooms: list[dict[str, Any]] = field(default_factory=list)
+    layers: list[dict[str, Any]] = field(default_factory=list)
+    entities: list[dict[str, Any]] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -120,7 +119,7 @@ class CeilingSpecContract:
 
 @dataclass(frozen=True)
 class RoomSpecificationContract:
-    """Contract: Analyzer Input
+    """Contract: Analyzer Input.
 
     The analyzer service receives this specification
     and produces a DetectorPlacementContract.
@@ -131,11 +130,11 @@ class RoomSpecificationContract:
     width_m: float = 0.0
     depth_m: float = 0.0
     occupancy_type: str = "office"
-    ceiling_spec: Optional[CeilingSpecContract] = None
-    polygon: List[tuple] = field(default_factory=list)
+    ceiling_spec: CeilingSpecContract | None = None
+    polygon: list[tuple] = field(default_factory=list)
     detector_type: DetectorType = DetectorType.SMOKE_PHOTOELECTRIC
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         if self.ceiling_spec:
             d["ceiling_spec"] = asdict(self.ceiling_spec)
@@ -149,7 +148,7 @@ class RoomSpecificationContract:
 
 @dataclass(frozen=True)
 class DetectorPlacementContract:
-    """Contract: Analyzer → Compliance
+    """Contract: Analyzer → Compliance.
 
     The analyzer produces detector positions.
     The compliance service verifies they meet NFPA 72.
@@ -157,17 +156,17 @@ class DetectorPlacementContract:
 
     contract_version: str = CONTRACT_VERSION
     room_id: str = ""
-    detector_positions: List[tuple] = field(default_factory=list)
+    detector_positions: list[tuple] = field(default_factory=list)
     detector_type: DetectorType = DetectorType.SMOKE_PHOTOELECTRIC
     coverage_fraction: float = 0.0
     compliant: bool = False
     confidence: ConfidenceLevel = ConfidenceLevel.UNKNOWN
     confidence_score: float = 0.0
-    wall_violations: List[Dict[str, Any]] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    wall_violations: list[dict[str, Any]] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -178,7 +177,7 @@ class DetectorPlacementContract:
 
 @dataclass(frozen=True)
 class ComplianceReportContract:
-    """Contract: Compliance → Reporting
+    """Contract: Compliance → Reporting.
 
     The compliance service verifies detector placements
     and produces a compliance report.
@@ -192,11 +191,11 @@ class ComplianceReportContract:
     coverage_compliant: bool = False
     wall_distance_compliant: bool = False
     coverage_fraction: float = 0.0
-    violations: List[Dict[str, Any]] = field(default_factory=list)
-    proof_certificate_hash: Optional[str] = None
-    audit_event_hash: Optional[str] = None
+    violations: list[dict[str, Any]] = field(default_factory=list)
+    proof_certificate_hash: str | None = None
+    audit_event_hash: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -207,7 +206,7 @@ class ComplianceReportContract:
 
 @dataclass(frozen=True)
 class AuditEventContract:
-    """Contract: Any Service → Audit
+    """Contract: Any Service → Audit.
 
     Every significant action across all services
     must emit an audit event.
@@ -217,13 +216,13 @@ class AuditEventContract:
     event_type: str = ""
     source_service: str = ""
     room_id: str = ""
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     timestamp_utc: str = ""
     previous_hash: str = "GENESIS"
     current_hash: str = ""
     signature: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -232,7 +231,7 @@ class AuditEventContract:
 # ============================================================================
 
 
-class PathwaySurvivabilityLevel(str, Enum):
+class PathwaySurvivabilityLevel(StrEnum):
     """NFPA 72-2022 §12.4 — Pathway Survivability Levels.
 
     Determines the minimum fire-resistance rating for fire alarm wiring
@@ -254,7 +253,7 @@ class PathwaySurvivabilityLevel(str, Enum):
     LEVEL_3 = "LEVEL_3"
 
 
-class CableType(str, Enum):
+class CableType(StrEnum):
     """NEC Article 760 — Fire alarm cable ratings.
 
     FPL:  Fire Power Limited — general use, no fire rating.
@@ -269,7 +268,7 @@ class CableType(str, Enum):
     CI = "CI"
 
 
-class OccupancyCategory(str, Enum):
+class OccupancyCategory(StrEnum):
     """Building occupancy classification for pathway survivability determination.
 
     Derived from NFPA 101 Life Safety Code and IBC occupancy groups.
@@ -288,7 +287,7 @@ class OccupancyCategory(str, Enum):
     DETENTION = "DETENTION"  # IBC Group I-3 — prisons
 
 
-class FeatureFlag(str, Enum):
+class FeatureFlag(StrEnum):
     """Feature flags for toggling functionality per service.
 
     Read from config service (or environment variables in monolithic mode).
@@ -311,7 +310,7 @@ class FeatureFlag(str, Enum):
 
 
 # Default feature flag states
-DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
+DEFAULT_FEATURE_FLAGS: dict[str, bool] = {
     FeatureFlag.SMOKE_SIMULATION: False,  # Disabled by V8
     FeatureFlag.DIGITAL_TWIN_SYNC: True,
     FeatureFlag.SELF_LEARNING: False,  # Disabled by V8
@@ -324,7 +323,7 @@ DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
 }
 
 
-def get_feature_flags() -> Dict[str, bool]:
+def get_feature_flags() -> dict[str, bool]:
     """Get current feature flag states.
 
     Reads from FIREAI_FEATURE_FLAGS env var (JSON) or uses defaults.
@@ -394,7 +393,7 @@ class ContractViolation(ValueError):
     pass
 
 
-def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
+def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:
     """Validate a room input payload before it enters the calculation pipeline.
 
     Checks:
@@ -410,6 +409,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     Raises:
         ContractViolation: If any contract rule is violated.
+
     """
     if not isinstance(payload, dict):
         raise ContractViolation("Room input must be a dictionary")
@@ -556,7 +556,7 @@ FORBIDDEN_LOOP_DERIVED_FIELDS: tuple = (
 )
 
 
-def validate_loop_input(payload: Dict[str, Any]) -> Dict[str, Any]:
+def validate_loop_input(payload: dict[str, Any]) -> dict[str, Any]:
     """Validate an SLC loop input payload before design.
 
     Checks:
@@ -574,6 +574,7 @@ def validate_loop_input(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     Raises:
         ContractViolation: If any contract rule is violated.
+
     """
     if not isinstance(payload, dict):
         raise ContractViolation("Loop input must be a dictionary")
@@ -630,26 +631,26 @@ def validate_loop_input(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 __all__ = [
     "CONTRACT_VERSION",
-    "CeilingType",
-    "ConfidenceLevel",
-    "DetectorType",
-    "PathwaySurvivabilityLevel",
-    "CableType",
-    "OccupancyCategory",
-    "FeatureFlag",
     "DEFAULT_FEATURE_FLAGS",
-    "ParsedDrawingContract",
-    "CeilingSpecContract",
-    "RoomSpecificationContract",
-    "DetectorPlacementContract",
-    "ComplianceReportContract",
-    "AuditEventContract",
-    "get_feature_flags",
-    "is_feature_enabled",
-    # STRICT_ENGINEERING: Input validation
-    "ContractViolation",
     "FORBIDDEN_DERIVED_FIELDS",
     "FORBIDDEN_LOOP_DERIVED_FIELDS",
-    "validate_room_input",
+    "AuditEventContract",
+    "CableType",
+    "CeilingSpecContract",
+    "CeilingType",
+    "ComplianceReportContract",
+    "ConfidenceLevel",
+    # STRICT_ENGINEERING: Input validation
+    "ContractViolation",
+    "DetectorPlacementContract",
+    "DetectorType",
+    "FeatureFlag",
+    "OccupancyCategory",
+    "ParsedDrawingContract",
+    "PathwaySurvivabilityLevel",
+    "RoomSpecificationContract",
+    "get_feature_flags",
+    "is_feature_enabled",
     "validate_loop_input",
+    "validate_room_input",
 ]

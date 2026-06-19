@@ -1,5 +1,4 @@
-"""
-fireai.core.building_systems_integration — Building Systems Fire Integration
+"""fireai.core.building_systems_integration — Building Systems Fire Integration.
 =============================================================================
 
 Implements fire alarm integration with building systems per NFPA 72:
@@ -27,15 +26,14 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import List
+from enum import StrEnum
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ELEVATOR RECALL — NFPA 72 §21.3
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-class ElevatorRecallPhase(str, Enum):
+class ElevatorRecallPhase(StrEnum):
     """Elevator recall phases per NFPA 72 §21.3.
 
     Phase I: Recall to designated floor (away from fire)
@@ -104,6 +102,7 @@ def evaluate_elevator_recall(
 
     Returns:
         ElevatorRecallResult with compliance assessment.
+
     """
     violations = []
     recall_required = True  # Always required for fire alarm activation
@@ -204,6 +203,7 @@ def evaluate_hvac_shutdown(
 
     Returns:
         HVACShutdownResult with compliance assessment.
+
     """
     violations = []
 
@@ -294,6 +294,7 @@ def evaluate_smoke_control(
 
     Raises:
         ValueError: If design_pressure_pa is NaN/Inf, negative, or method is invalid.
+
     """
     violations = []
 
@@ -421,6 +422,7 @@ def evaluate_fire_pump(
 
     Returns:
         FirePumpResult with compliance assessment.
+
     """
     violations = []
 
@@ -459,13 +461,13 @@ class BuildingSystemsAssessment:
     result that can be used by the release gate system.
     """
 
-    elevator_results: List[ElevatorRecallResult] = field(default_factory=list)
-    hvac_results: List[HVACShutdownResult] = field(default_factory=list)
-    smoke_control_results: List[SmokeControlResult] = field(default_factory=list)
-    fire_pump_results: List[FirePumpResult] = field(default_factory=list)
+    elevator_results: list[ElevatorRecallResult] = field(default_factory=list)
+    hvac_results: list[HVACShutdownResult] = field(default_factory=list)
+    smoke_control_results: list[SmokeControlResult] = field(default_factory=list)
+    fire_pump_results: list[FirePumpResult] = field(default_factory=list)
     is_compliant: bool = False  # V96 FIX: Fail-safe default — unevaluated must NOT claim compliance
-    violations: List[str] = field(default_factory=list)
-    nfpa_references: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
+    nfpa_references: list[str] = field(default_factory=list)
 
     def evaluate(self) -> None:
         """Aggregate all sub-assessments.

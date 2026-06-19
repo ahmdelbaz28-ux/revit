@@ -1,5 +1,4 @@
-"""
-fireai/core/polygon_optimizer.py  V1.0
+"""fireai/core/polygon_optimizer.py  V1.0.
 ======================================
 True polygon support for non-rectangular rooms.
 
@@ -26,7 +25,7 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Tuple
+from typing import Literal
 
 from fireai.core.geometry_utils import (
     bounding_rect_dimensions,
@@ -49,8 +48,7 @@ from fireai.core.spatial_engine.density_optimizer import (
 
 @dataclass
 class PolygonRoom:
-    """
-    Room model for polygon-based rooms (including rectangular).
+    """Room model for polygon-based rooms (including rectangular).
 
     Attributes:
         room_id:        Unique room identifier.
@@ -59,13 +57,14 @@ class PolygonRoom:
         detector_type:  Detector type string (default "smoke").
         ducts:          Optional list of duct specification dicts.
         name:           Display name (default same as room_id).
+
     """
 
     room_id: str
-    polygon: List[Tuple[float, float]]
+    polygon: list[tuple[float, float]]
     ceiling_height: float = 3.0
     detector_type: str = "smoke"
-    ducts: List[dict] = field(default_factory=list)
+    ducts: list[dict] = field(default_factory=list)
     name: str = ""
 
     def __post_init__(self):
@@ -78,10 +77,10 @@ class PolygonRoom:
         room_id: str,
         width: float,
         length: float,
-        origin: Tuple[float, float] = (0.0, 0.0),
+        origin: tuple[float, float] = (0.0, 0.0),
         ceiling_height: float = 3.0,
         detector_type: str = "smoke",
-    ) -> "PolygonRoom":
+    ) -> PolygonRoom:
         """Create a rectangular PolygonRoom from dimensions."""
         ox, oy = origin
         return cls(
@@ -100,10 +99,10 @@ class PolygonRoom:
         cutout_width: float,
         cutout_length: float,
         cutout_corner: str = "NE",
-        origin: Tuple[float, float] = (0.0, 0.0),
+        origin: tuple[float, float] = (0.0, 0.0),
         ceiling_height: float = 3.0,
         detector_type: str = "smoke",
-    ) -> "PolygonRoom":
+    ) -> PolygonRoom:
         """Create an L-shaped PolygonRoom from dimensions and cutout."""
         ox, oy = origin
         tw, tl = total_width, total_length
@@ -149,8 +148,7 @@ class PolygonRoom:
 
 @dataclass
 class PolygonRoomSummary:
-    """
-    Result summary for a polygon room analysis.
+    """Result summary for a polygon room analysis.
 
     Attributes:
         room_id:        Room identifier.
@@ -171,42 +169,43 @@ class PolygonRoomSummary:
         analysis_ms:    Wall-clock analysis time in milliseconds.
         duct_devices:   List of duct detector results.
         duct_warnings:  List of duct analysis warnings.
+
     """
 
     room_id: str
     detector_type: str
-    polygon: List[Tuple[float, float]]
-    detectors: List[Tuple[float, float]]
+    polygon: list[tuple[float, float]]
+    detectors: list[tuple[float, float]]
     count: int
     coverage_pct: float
     proof_valid: bool
     nfpa_valid: bool
     wall_violations: int
     method: str
-    spacing_violations: List[str] = field(default_factory=list)
+    spacing_violations: list[str] = field(default_factory=list)
     coverage_radius: float = DETECTOR_RADIUS
-    ceiling_height: Optional[float] = None
+    ceiling_height: float | None = None
     nfpa_table_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
-    radius_warning: Optional[str] = None
+    radius_warning: str | None = None
     analysis_ms: float = 0.0
-    duct_devices: List = field(default_factory=list)
-    duct_warnings: List[str] = field(default_factory=list)
+    duct_devices: list = field(default_factory=list)
+    duct_warnings: list[str] = field(default_factory=list)
 
 
 # ── Internal helpers ─────────────────────────────────────────
 
 
 def _generate_interior_grid(
-    polygon: List[Tuple[float, float]],
+    polygon: list[tuple[float, float]],
     spacing: float,
-) -> List[Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     """Return all grid points that lie strictly inside *polygon*."""
     xs = [p[0] for p in polygon]
     ys = [p[1] for p in polygon]
     min_x, max_x = min(xs), max(xs)
     min_y, max_y = min(ys), max(ys)
 
-    points: List[Tuple[float, float]] = []
+    points: list[tuple[float, float]] = []
     x = min_x + spacing / 2.0
     while x < max_x:
         y = min_y + spacing / 2.0
@@ -220,12 +219,11 @@ def _generate_interior_grid(
 
 
 def _greedy_set_cover(
-    interior_points: List[Tuple[float, float]],
-    polygon: List[Tuple[float, float]],
+    interior_points: list[tuple[float, float]],
+    polygon: list[tuple[float, float]],
     radius: float,
-) -> List[Tuple[float, float]]:
-    """
-    Greedy Set Cover placement on polygon interior.
+) -> list[tuple[float, float]]:
+    """Greedy Set Cover placement on polygon interior.
 
     Candidate positions = interior_points.
     Each candidate covers all interior_points within *radius*.
@@ -239,13 +237,13 @@ def _greedy_set_cover(
 
     # Pre-compute coverage sets (index-based for speed)
     n = len(interior_points)
-    coverage: List[List[int]] = []
+    coverage: list[list[int]] = []
     for _ci, cand in enumerate(interior_points):
         covered = [i for i, pt in enumerate(interior_points) if (pt[0] - cand[0]) ** 2 + (pt[1] - cand[1]) ** 2 <= r2]
         coverage.append(covered)
 
     uncovered = set(range(n))
-    chosen: List[Tuple[float, float]] = []
+    chosen: list[tuple[float, float]] = []
 
     while uncovered:
         # Pick candidate with maximum overlap with uncovered set
@@ -260,8 +258,8 @@ def _greedy_set_cover(
 
 
 def _coverage_percentage(
-    detectors: List[Tuple[float, float]],
-    interior_points: List[Tuple[float, float]],
+    detectors: list[tuple[float, float]],
+    interior_points: list[tuple[float, float]],
     radius: float,
 ) -> float:
     """Compute coverage percentage of detectors on interior grid points."""
@@ -275,19 +273,18 @@ def _coverage_percentage(
 
 
 def _count_wall_violations(
-    detectors: List[Tuple[float, float]],
-    polygon: List[Tuple[float, float]],
+    detectors: list[tuple[float, float]],
+    polygon: list[tuple[float, float]],
 ) -> int:
     """Count detectors that fall outside the polygon."""
     return sum(1 for d in detectors if not point_in_polygon(d, polygon))
 
 
 def _audit_nfpa_spacing(
-    detectors: List[Tuple[float, float]],
+    detectors: list[tuple[float, float]],
     max_spacing: float = MAX_SPACING_M,
-) -> List[str]:
-    """
-    Check NFPA 72 spacing between adjacent detectors.
+) -> list[str]:
+    """Check NFPA 72 spacing between adjacent detectors.
 
     For each detector, verify that the nearest neighbor is within
     max_spacing. Returns list of violation descriptions.
@@ -297,7 +294,7 @@ def _audit_nfpa_spacing(
     if len(detectors) <= 1:
         return []
 
-    violations: List[str] = []
+    violations: list[str] = []
     max_gap = 0.0
     for i, (x1, y1) in enumerate(detectors):
         min_dist = float("inf")
@@ -316,8 +313,7 @@ def _audit_nfpa_spacing(
 
 
 class PolygonDensityOptimizer:
-    """
-    Polygon-aware detector placement optimizer.
+    """Polygon-aware detector placement optimizer.
 
     Strategy:
         - Rectangular polygon -> delegate to DensityOptimizer V7.3 (proven).
@@ -355,14 +351,14 @@ class PolygonDensityOptimizer:
     # ------------------------------------------------------------------
 
     def optimize_polygon(self, room: PolygonRoom) -> PolygonRoomSummary:
-        """
-        Optimise detector placement for a polygon room.
+        """Optimise detector placement for a polygon room.
 
         Args:
             room: PolygonRoom with polygon, ceiling_height, detector_type.
 
         Returns:
             PolygonRoomSummary with detectors, coverage, compliance info.
+
         """
         t0 = time.time()
 
@@ -436,8 +432,7 @@ class PolygonDensityOptimizer:
         radius: float,
         spec: CoverageSpec,
     ) -> PolygonRoomSummary:
-        """
-        Greedy Set Cover placement for non-rectangular polygons.
+        """Greedy Set Cover placement for non-rectangular polygons.
 
         1. Generate interior grid points within the polygon
         2. Run greedy set cover to select detector positions
@@ -484,8 +479,7 @@ class PolygonDensityOptimizer:
         room: PolygonRoom,
         summary: PolygonRoomSummary,
     ) -> None:
-        """
-        Run duct detector analysis using the existing duct_detector module.
+        """Run duct detector analysis using the existing duct_detector module.
 
         Uses the correct API: analyse_ducts(ducts: List[DuctSpec]).
         Converts dict entries to DuctSpec if needed.

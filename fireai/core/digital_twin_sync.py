@@ -1,5 +1,4 @@
-"""
-digital_twin_sync.py — Digital Twin Synchronization Module for FireAI
+"""digital_twin_sync.py — Digital Twin Synchronization Module for FireAI.
 ======================================================================
 
 Synchronizes the design model with the digital twin, ensuring that the
@@ -92,8 +91,8 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set
+from datetime import UTC, datetime
+from typing import Any
 
 from .digital_twin import (
     DetectorState,
@@ -115,11 +114,11 @@ logger = logging.getLogger(__name__)
 
 
 __all__ = [
-    "SyncResult",
-    "DriftReport",
     "CoverageValidationResult",
-    "SyncReport",
     "DigitalTwinSync",
+    "DriftReport",
+    "SyncReport",
+    "SyncResult",
 ]
 
 
@@ -143,21 +142,22 @@ class SyncResult:
         timestamp: ISO 8601 UTC timestamp of when the sync completed.
         building_id: Building identifier from the twin.
         correlation_id: Correlation ID linking all events from this sync.
+
     """
 
     operation: str
     synced_count: int
     skipped_count: int
     error_count: int
-    errors: List[tuple] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[tuple] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     timestamp: str = ""
     building_id: str = ""
     correlation_id: str = ""
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
         if not self.correlation_id:
             self.correlation_id = str(uuid.uuid4())
 
@@ -166,7 +166,7 @@ class SyncResult:
         """True if no errors occurred during the sync."""
         return self.error_count == 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for audit and reporting."""
         return {
             "operation": self.operation,
@@ -208,10 +208,11 @@ class DriftReport:
         type_mismatch_count: Number of type mismatch drifts.
         timestamp: ISO 8601 UTC timestamp.
         correlation_id: Links drift events together.
+
     """
 
     building_id: str
-    drift_records: List[DriftRecord] = field(default_factory=list)
+    drift_records: list[DriftRecord] = field(default_factory=list)
     total_drifts: int = 0
     critical_count: int = 0
     high_count: int = 0
@@ -227,7 +228,7 @@ class DriftReport:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
         if not self.correlation_id:
             self.correlation_id = str(uuid.uuid4())
         self._recompute_counts()
@@ -260,7 +261,7 @@ class DriftReport:
         """
         return self.critical_count > 0 or self.high_count > 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for audit and reporting."""
         return {
             "building_id": self.building_id,
@@ -303,6 +304,7 @@ class CoverageValidationResult:
         critical_gaps: List of room_ids with zero OK detectors.
         timestamp: ISO 8601 UTC timestamp.
         correlation_id: Links validation events together.
+
     """
 
     building_id: str
@@ -313,17 +315,17 @@ class CoverageValidationResult:
     rooms_planned_only: int
     rooms_empty: int
     coverage_pct: float
-    critical_gaps: List[str] = field(default_factory=list)
+    critical_gaps: list[str] = field(default_factory=list)
     timestamp: str = ""
     correlation_id: str = ""
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
         if not self.correlation_id:
             self.correlation_id = str(uuid.uuid4())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for audit and reporting."""
         return {
             "building_id": self.building_id,
@@ -365,13 +367,14 @@ class SyncReport:
             "CRITICAL_GAPS".
         timestamp: ISO 8601 UTC timestamp.
         correlation_id: Links all sub-reports together.
+
     """
 
     building_id: str
-    design_sync: Optional[SyncResult] = None
-    as_built_sync: Optional[SyncResult] = None
-    drift_report: Optional[DriftReport] = None
-    coverage_validation: Optional[CoverageValidationResult] = None
+    design_sync: SyncResult | None = None
+    as_built_sync: SyncResult | None = None
+    drift_report: DriftReport | None = None
+    coverage_validation: CoverageValidationResult | None = None
     health_score: float = 0.0
     overall_status: str = "UNKNOWN"
     timestamp: str = ""
@@ -379,7 +382,7 @@ class SyncReport:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
         if not self.correlation_id:
             self.correlation_id = str(uuid.uuid4())
         self._compute_overall_status()
@@ -419,7 +422,7 @@ class SyncReport:
 
         self.overall_status = "COMPLIANT"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for audit and reporting."""
         return {
             "building_id": self.building_id,
@@ -490,6 +493,7 @@ class DigitalTwinSync:
 
         # Full report
         report = sync.generate_sync_report()
+
     """
 
     # Valid detector types per NFPA 72-2022
@@ -508,7 +512,7 @@ class DigitalTwinSync:
     def __init__(
         self,
         twin: DigitalTwin,
-        audit_store: Optional[Any] = None,
+        audit_store: Any | None = None,
     ) -> None:
         """Initialize the sync module.
 
@@ -520,6 +524,7 @@ class DigitalTwinSync:
 
         Raises:
             TypeError: If twin is not a DigitalTwin instance.
+
         """
         if not isinstance(twin, DigitalTwin):
             raise TypeError(f"twin must be a DigitalTwin instance, got {type(twin).__name__}")
@@ -538,7 +543,7 @@ class DigitalTwinSync:
 
     def sync_design_to_twin(
         self,
-        design_detectors: List[Dict[str, Any]],
+        design_detectors: list[dict[str, Any]],
         detector_type: str = "smoke",
         overwrite: bool = False,
     ) -> SyncResult:
@@ -571,6 +576,7 @@ class DigitalTwinSync:
         Raises:
             TypeError: If design_detectors is not a list.
             ValueError: If detector_type is not a valid type.
+
         """
         # ── Input validation ──
         if not isinstance(design_detectors, list):
@@ -583,8 +589,8 @@ class DigitalTwinSync:
         correlation_id = str(uuid.uuid4())
         synced = 0
         skipped = 0
-        errors: List[tuple] = []
-        warnings: List[str] = []
+        errors: list[tuple] = []
+        warnings: list[str] = []
 
         for idx, det_data in enumerate(design_detectors):
             if not isinstance(det_data, dict):
@@ -751,7 +757,7 @@ class DigitalTwinSync:
 
     def sync_as_built_to_twin(
         self,
-        as_built_detectors: List[Dict[str, Any]],
+        as_built_detectors: list[dict[str, Any]],
     ) -> SyncResult:
         """Push as-built detector data to the digital twin (OK status).
 
@@ -780,6 +786,7 @@ class DigitalTwinSync:
 
         Raises:
             TypeError: If as_built_detectors is not a list.
+
         """
         # ── Input validation ──
         if not isinstance(as_built_detectors, list):
@@ -788,8 +795,8 @@ class DigitalTwinSync:
         correlation_id = str(uuid.uuid4())
         synced = 0
         skipped = 0
-        errors: List[tuple] = []
-        warnings: List[str] = []
+        errors: list[tuple] = []
+        warnings: list[str] = []
 
         for idx, det_data in enumerate(as_built_detectors):
             if not isinstance(det_data, dict):
@@ -961,7 +968,7 @@ class DigitalTwinSync:
 
     def detect_drift(
         self,
-        design_detectors: Optional[List[Dict[str, Any]]] = None,
+        design_detectors: list[dict[str, Any]] | None = None,
     ) -> DriftReport:
         """Compare design model vs. twin state and return drift records.
 
@@ -992,6 +999,7 @@ class DigitalTwinSync:
 
         Returns:
             DriftReport with all detected drifts and severity counts.
+
         """
         correlation_id = str(uuid.uuid4())
 
@@ -1001,7 +1009,7 @@ class DigitalTwinSync:
         internal_drifts = self._twin.detect_drift()
 
         # ── If design_detectors provided, check for missing/extra/type mismatch ──
-        cross_drifts: List[DriftRecord] = []
+        cross_drifts: list[DriftRecord] = []
         if design_detectors is not None:
             cross_drifts = self._detect_cross_drift(design_detectors, correlation_id)
 
@@ -1081,21 +1089,22 @@ class DigitalTwinSync:
 
         Returns:
             CoverageValidationResult with room-level coverage details.
+
         """
         correlation_id = str(uuid.uuid4())
 
         # Get all rooms from the twin
         with self._twin._lock:
-            all_room_ids: Set[str] = set(self._twin._room_ids)
+            all_room_ids: set[str] = set(self._twin._room_ids)
             detectors = dict(self._twin._detectors)
 
         # Classify rooms by coverage status
-        rooms_with_ok: Set[str] = set()
-        rooms_planned_only: Set[str] = set()
-        rooms_with_detectors: Set[str] = set()
+        rooms_with_ok: set[str] = set()
+        rooms_planned_only: set[str] = set()
+        rooms_with_detectors: set[str] = set()
 
         # Group detectors by room
-        room_detectors: Dict[str, List[DetectorState]] = {}
+        room_detectors: dict[str, list[DetectorState]] = {}
         for det in detectors.values():
             room_detectors.setdefault(det.room_id, []).append(det)
             rooms_with_detectors.add(det.room_id)
@@ -1192,8 +1201,8 @@ class DigitalTwinSync:
 
     def generate_sync_report(
         self,
-        design_detectors: Optional[List[Dict[str, Any]]] = None,
-        as_built_detectors: Optional[List[Dict[str, Any]]] = None,
+        design_detectors: list[dict[str, Any]] | None = None,
+        as_built_detectors: list[dict[str, Any]] | None = None,
     ) -> SyncReport:
         """Produce a comprehensive sync report combining all analyses.
 
@@ -1219,16 +1228,17 @@ class DigitalTwinSync:
 
         Returns:
             SyncReport with all sub-reports and overall status.
+
         """
         correlation_id = str(uuid.uuid4())
 
         # ── Optional design sync ──
-        design_result: Optional[SyncResult] = None
+        design_result: SyncResult | None = None
         if design_detectors is not None:
             design_result = self.sync_design_to_twin(design_detectors)
 
         # ── Optional as-built sync ──
-        as_built_result: Optional[SyncResult] = None
+        as_built_result: SyncResult | None = None
         if as_built_detectors is not None:
             as_built_result = self.sync_as_built_to_twin(as_built_detectors)
 
@@ -1283,9 +1293,9 @@ class DigitalTwinSync:
 
     def _detect_cross_drift(
         self,
-        design_detectors: List[Dict[str, Any]],
+        design_detectors: list[dict[str, Any]],
         correlation_id: str,
-    ) -> List[DriftRecord]:
+    ) -> list[DriftRecord]:
         """Detect missing, extra, and type-mismatch drifts by comparing
         the design detector list against the twin's current inventory.
 
@@ -1296,12 +1306,13 @@ class DigitalTwinSync:
         Returns:
             List of DriftRecord for missing, extra, and type-mismatch
             drifts.
+
         """
-        drifts: List[DriftRecord] = []
-        now = datetime.now(timezone.utc).isoformat()
+        drifts: list[DriftRecord] = []
+        now = datetime.now(UTC).isoformat()
 
         # Build index of design detectors by ID
-        design_by_id: Dict[str, Dict[str, Any]] = {}
+        design_by_id: dict[str, dict[str, Any]] = {}
         for det_data in design_detectors:
             det_id = det_data.get("detector_id")
             if det_id is not None:
@@ -1309,7 +1320,7 @@ class DigitalTwinSync:
 
         # Build index of twin detectors by ID
         with self._twin._lock:
-            twin_by_id: Dict[str, DetectorState] = dict(self._twin._detectors)
+            twin_by_id: dict[str, DetectorState] = dict(self._twin._detectors)
 
         # ── Missing detectors: in design but NOT in twin ──
         for det_id, det_data in design_by_id.items():
@@ -1367,8 +1378,8 @@ class DigitalTwinSync:
     @staticmethod
     def _maybe_update_position(
         detector: DetectorState,
-        as_built_data: Dict[str, Any],
-        warnings: List[str],
+        as_built_data: dict[str, Any],
+        warnings: list[str],
     ) -> None:
         """Optionally update detector position from as-built data.
 
@@ -1386,6 +1397,7 @@ class DigitalTwinSync:
             detector: Current detector state from the twin.
             as_built_data: As-built data dict with optional x/y/z.
             warnings: List to append position drift warnings to.
+
         """
         ab_x = as_built_data.get("x")
         ab_y = as_built_data.get("y")
@@ -1417,7 +1429,7 @@ class DigitalTwinSync:
         self,
         event_type: str,
         room_id: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
     ) -> None:
         """Log an event to AuditStore if available. Never crashes.
 
@@ -1429,6 +1441,7 @@ class DigitalTwinSync:
             event_type: Type of event to log.
             room_id: Room identifier (empty string if not room-specific).
             details: Event details dictionary.
+
         """
         if self._audit_store is None:
             return

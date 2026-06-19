@@ -1,5 +1,4 @@
-"""
-fireai/infrastructure/stream_processor.py — Stream Processor with
+"""fireai/infrastructure/stream_processor.py — Stream Processor with
 Transform/Filter/Sink Pipeline, Windowed Aggregations (1min, 5min, 1h),
 and Throttled Output (max 1 event per window per key).
 
@@ -17,9 +16,10 @@ import logging
 import threading
 import time
 from collections import defaultdict
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from fireai.infrastructure.event_bus import Event
 
@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class WindowSpec:
     """Specification for a sliding time window."""
+
     duration: timedelta
     slide: timedelta
     name: str
@@ -69,19 +70,19 @@ class WindowedAggregation:
     Each window tracks events by a grouping key.
     """
 
-    def __init__(self, window_spec: WindowSpec):
+    def __init__(self, window_spec: WindowSpec) -> None:
         self._window_spec = window_spec
-        self._windows: Dict[str, List[Tuple[datetime, float]]] = defaultdict(list)
+        self._windows: dict[str, list[tuple[datetime, float]]] = defaultdict(list)
         self._lock = threading.Lock()
 
-    def add(self, key: str, value: float, timestamp: Optional[datetime] = None) -> None:
-        ts = timestamp or datetime.now(timezone.utc)
+    def add(self, key: str, value: float, timestamp: datetime | None = None) -> None:
+        ts = timestamp or datetime.now(UTC)
         with self._lock:
             self._windows[key].append((ts, value))
             self._prune(key)
 
     def _prune(self, key: str) -> None:
-        cutoff = datetime.now(timezone.utc) - self._window_spec.duration
+        cutoff = datetime.now(UTC) - self._window_spec.duration
         self._windows[key] = [
             (ts, v) for ts, v in self._windows[key] if ts >= cutoff
         ]
@@ -114,7 +115,7 @@ class WindowedAggregation:
             values = [v for _, v in self._windows[key]]
             return max(values) if values else 0.0
 
-    def snapshot(self, key: str) -> Dict[str, Any]:
+    def snapshot(self, key: str) -> dict[str, Any]:
         """Return a snapshot of all aggregations for a key."""
         return {
             "window": self._window_spec.name,
@@ -127,7 +128,7 @@ class WindowedAggregation:
             "max": round(self.max(key), 4),
         }
 
-    def all_keys(self) -> List[str]:
+    def all_keys(self) -> list[str]:
         with self._lock:
             return list(self._windows.keys())
 
@@ -151,11 +152,11 @@ class ThrottledOutput:
     high-frequency events that all aggregate to the same key.
     """
 
-    def __init__(self):
-        self._last_emitted: Dict[str, Dict[str, float]] = defaultdict(dict)
+    def __init__(self) -> None:
+        self._last_emitted: dict[str, dict[str, float]] = defaultdict(dict)
         self._lock = threading.Lock()
 
-    def should_emit(self, key: str, window_name: str, now: Optional[float] = None) -> bool:
+    def should_emit(self, key: str, window_name: str, now: float | None = None) -> bool:
         """Check if an event for this key+window should be emitted."""
         now = now or time.time()
         with self._lock:
@@ -194,24 +195,24 @@ class StreamProcessor:
       - Throttled output (max 1 event per window per key)
     """
 
-    def __init__(self, name: str = "default"):
+    def __init__(self, name: str = "default") -> None:
         self._name = name
-        self._transforms: List[Tuple[str, Callable[[Event], Optional[Event]]]] = []
-        self._filters: List[Tuple[str, Callable[[Event], bool]]] = []
-        self._sinks: List[Tuple[str, Callable[[Event], Awaitable[None]]]] = []
-        self._aggregators: Dict[str, WindowedAggregation] = {}
+        self._transforms: list[tuple[str, Callable[[Event], Event | None]]] = []
+        self._filters: list[tuple[str, Callable[[Event], bool]]] = []
+        self._sinks: list[tuple[str, Callable[[Event], Awaitable[None]]]] = []
+        self._aggregators: dict[str, WindowedAggregation] = {}
         self._throttle = ThrottledOutput()
         self._metrics_lock = threading.Lock()
         self._events_processed: int = 0
         self._events_dropped: int = 0
         self._events_errored: int = 0
-        self._last_error: Optional[str] = None
+        self._last_error: str | None = None
         self._lock = asyncio.Lock()
 
     # ── Pipeline configuration ──────────────────────────────────────────────
 
     def add_transform(
-        self, name: str, fn: Callable[[Event], Optional[Event]]
+        self, name: str, fn: Callable[[Event], Event | None]
     ) -> StreamProcessor:
         """Add a transform function to the pipeline.
 
@@ -362,7 +363,7 @@ class StreamProcessor:
                 self._last_error = str(e)
 
     @staticmethod
-    def _extract_numeric_value(event: Event) -> Optional[float]:
+    def _extract_numeric_value(event: Event) -> float | None:
         """Try to extract a numeric value from event data for aggregation.
 
         Looks for common numeric fields in the event data.
@@ -378,7 +379,7 @@ class StreamProcessor:
 
     # ── Metrics ─────────────────────────────────────────────────────────────
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Return current processing metrics."""
         with self._metrics_lock:
             return {
@@ -393,9 +394,9 @@ class StreamProcessor:
                 "aggregator_count": len(self._aggregators),
             }
 
-    def get_aggregator_snapshots(self, key: Optional[str] = None) -> Dict[str, Any]:
+    def get_aggregator_snapshots(self, key: str | None = None) -> dict[str, Any]:
         """Return snapshots from all windowed aggregators."""
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         for name, agg in self._aggregators.items():
             keys = [key] if key else agg.all_keys()
             results[name] = {

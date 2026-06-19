@@ -1,5 +1,4 @@
-"""
-hydraulic_solver.py — Hazen-Williams Friction Loss & Hydraulic Calculation Engine
+"""hydraulic_solver.py — Hazen-Williams Friction Loss & Hydraulic Calculation Engine.
 =================================================================================
 LIFE-SAFETY CRITICAL: Incorrect hydraulic calculations cause undersized fire
 suppression piping. If friction loss is underestimated, the residual pressure
@@ -49,7 +48,6 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +69,7 @@ HW_COEFFICIENT = 4.52
 DIAMETER_EXPONENT = 4.87
 
 # Valid C-factor ranges by pipe material (NFPA 13 Table)
-C_FACTOR_RANGES: Dict[str, Tuple[float, float]] = {
+C_FACTOR_RANGES: dict[str, tuple[float, float]] = {
     "wet_steel":          (100.0, 140.0),   # Typical: 120
     "dry_steel":          (80.0,  120.0),   # Typical: 100
     "wet_copper":         (130.0, 150.0),   # Typical: 140
@@ -92,7 +90,7 @@ MAX_C_FACTOR = 200.0
 MIN_C_FACTOR = 1.0
 
 # Standard sprinkler K-factors (NFPA 13)
-STANDARD_K_FACTORS: Dict[str, float] = {
+STANDARD_K_FACTORS: dict[str, float] = {
     "standard_spray":     5.6,
     "residential":        4.2,
     "early_suppression":  14.0,
@@ -102,7 +100,7 @@ STANDARD_K_FACTORS: Dict[str, float] = {
 }
 
 # Schedule 40 internal diameters (inches) — most commonly used in fire protection
-SCHEDULE_40_INTERNAL_DIAMETERS: Dict[str, float] = {
+SCHEDULE_40_INTERNAL_DIAMETERS: dict[str, float] = {
     "1/2":   0.622,
     "3/4":   0.824,
     "1":     1.049,
@@ -163,6 +161,7 @@ def calculate_friction_loss(
         → denominator = 120^1.85 × 2.067^4.87 = 7051.758 × 34.004 = 239789.289
         → p = 22653.662 / 239789.289 = 0.094473 psi/ft
         → Total = 0.094473 × 100 = 9.4473 psi
+
     """
     # Input validation — NaN/Inf guard
     for name, val in [
@@ -284,6 +283,7 @@ def calculate_sprinkler_discharge(
 
     Hand-Verification:
         K=5.6, P=7.0 → Q = 5.6 × √7.0 = 5.6 × 2.64575 = 14.8162 gpm
+
     """
     if not (math.isfinite(k_factor) and math.isfinite(pressure_psi)):
         raise ValueError(
@@ -320,7 +320,7 @@ def calculate_sprinkler_discharge(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Hazard classification design requirements (NFPA 13-2022 Chapter 11)
-HAZARD_DESIGN_REQUIREMENTS: Dict[str, Dict[str, float]] = {
+HAZARD_DESIGN_REQUIREMENTS: dict[str, dict[str, float]] = {
     "light_hazard": {
         "min_density_gpm_sqft": 0.10,
         "max_area_per_sprinkler_sqft": 225.0,
@@ -357,11 +357,12 @@ HAZARD_DESIGN_REQUIREMENTS: Dict[str, Dict[str, float]] = {
 @dataclass
 class SprinklerComplianceResult:
     """Result of sprinkler compliance validation against NFPA 13 / SBC 801."""
+
     is_compliant: bool
     hazard_class: str
     head_pressure_psi: float
     density_gpm_sqft: float
-    violations: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
     nfpa_reference: str = "NFPA 13-2022 §23.4.4 / SBC 801 Ch.9"
     sbc_reference: str = "SBC 801-2022 Chapter 9"
 
@@ -370,7 +371,7 @@ def validate_sprinkler_compliance(
     head_pressure_psi: float,
     density_gpm_sqft: float,
     hazard_class: str,
-    sprinkler_area_sqft: Optional[float] = None,
+    sprinkler_area_sqft: float | None = None,
 ) -> SprinklerComplianceResult:
     """Validate sprinkler design against NFPA 13 / SBC 801 limits.
 
@@ -399,8 +400,9 @@ def validate_sprinkler_compliance(
         False
         >>> result.violations[0]
         'Residual pressure 6.5 psi is below mandatory NFPA 13 limit of 7.0 psi.'
+
     """
-    violations: List[str] = []
+    violations: list[str] = []
     normalized_hazard = hazard_class.strip().lower().replace(" ", "_")
 
     # Validate hazard classification exists
@@ -492,6 +494,7 @@ def validate_roughness_factor(
         120.0
         >>> validate_roughness_factor("wet_steel", 500.0)
         ValueError: Friction factor C=500.0 exceeds maximum 140.0 for wet_steel
+
     """
     if not math.isfinite(c_factor):
         raise ValueError(
@@ -533,14 +536,14 @@ def validate_roughness_factor(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 __all__ = [
-    "calculate_friction_loss",
-    "calculate_sprinkler_discharge",
-    "validate_sprinkler_compliance",
-    "validate_roughness_factor",
-    "MIN_SPRINKLER_PRESSURE_PSI",
-    "HAZARD_DESIGN_REQUIREMENTS",
     "C_FACTOR_RANGES",
+    "HAZARD_DESIGN_REQUIREMENTS",
+    "MIN_SPRINKLER_PRESSURE_PSI",
     "SCHEDULE_40_INTERNAL_DIAMETERS",
     "STANDARD_K_FACTORS",
     "SprinklerComplianceResult",
+    "calculate_friction_loss",
+    "calculate_sprinkler_discharge",
+    "validate_roughness_factor",
+    "validate_sprinkler_compliance",
 ]

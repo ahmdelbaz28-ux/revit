@@ -1,5 +1,4 @@
-"""
-test_api_endpoints.py — API endpoint integration tests covering edge cases,
+"""test_api_endpoints.py — API endpoint integration tests covering edge cases,
 validation, security, and cross-router workflows.
 
 Tests focus on:
@@ -21,7 +20,7 @@ from fastapi.testclient import TestClient
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
-def _setup_env():
+def _setup_env() -> None:
     """Set development environment for testing."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = ""
@@ -76,17 +75,17 @@ def full_project(client):
 class TestInputValidation:
     """Tests for input validation across all routers."""
 
-    def test_create_project_missing_name(self, client):
+    def test_create_project_missing_name(self, client) -> None:
         """POST /api/projects without name must return 422."""
         response = client.post("/api/projects", json={"description": "No name"})
         assert response.status_code == 422
 
-    def test_create_project_name_too_long(self, client):
+    def test_create_project_name_too_long(self, client) -> None:
         """POST /api/projects with name > 255 chars must return 422."""
         response = client.post("/api/projects", json={"name": "x" * 256})
         assert response.status_code == 422
 
-    def test_create_project_description_too_long(self, client):
+    def test_create_project_description_too_long(self, client) -> None:
         """POST /api/projects with description > 5000 chars must return 422."""
         response = client.post(
             "/api/projects",
@@ -94,13 +93,13 @@ class TestInputValidation:
         )
         assert response.status_code == 422
 
-    def test_create_device_missing_required_fields(self, client, full_project):
+    def test_create_device_missing_required_fields(self, client, full_project) -> None:
         """POST device without required fields must return 422."""
         pid, _ = full_project
         response = client.post(f"/api/projects/{pid}/devices", json={})
         assert response.status_code == 422
 
-    def test_create_device_negative_voltage(self, client, full_project):
+    def test_create_device_negative_voltage(self, client, full_project) -> None:
         """POST device with negative voltage must return 422."""
         pid, _ = full_project
         response = client.post(
@@ -112,7 +111,7 @@ class TestInputValidation:
         )
         assert response.status_code == 422
 
-    def test_create_device_negative_load(self, client, full_project):
+    def test_create_device_negative_load(self, client, full_project) -> None:
         """POST device with negative load must return 422."""
         pid, _ = full_project
         response = client.post(
@@ -124,7 +123,7 @@ class TestInputValidation:
         )
         assert response.status_code == 422
 
-    def test_create_connection_self_reference(self, client, full_project):
+    def test_create_connection_self_reference(self, client, full_project) -> None:
         """POST connection with fromId == toId must return 422."""
         pid, devices = full_project
         dev_id = devices[0].get("id") or devices[0].get("device_id")
@@ -136,7 +135,7 @@ class TestInputValidation:
         )
         assert response.status_code == 422
 
-    def test_create_connection_missing_from_id(self, client, full_project):
+    def test_create_connection_missing_from_id(self, client, full_project) -> None:
         """POST connection without fromId must return 422."""
         pid, _ = full_project
         response = client.post(
@@ -145,18 +144,18 @@ class TestInputValidation:
         )
         assert response.status_code == 422
 
-    def test_create_report_missing_type(self, client, full_project):
+    def test_create_report_missing_type(self, client, full_project) -> None:
         """POST report without type must return 422."""
         pid, _ = full_project
         response = client.post(f"/api/projects/{pid}/reports", json={})
         assert response.status_code == 422
 
-    def test_environment_weather_invalid_lat(self, client):
+    def test_environment_weather_invalid_lat(self, client) -> None:
         """GET /api/environment/weather with lat > 90 must return 422."""
         response = client.get("/api/environment/weather?lat=100&lon=0")
         assert response.status_code == 422
 
-    def test_environment_weather_invalid_lon(self, client):
+    def test_environment_weather_invalid_lon(self, client) -> None:
         """GET /api/environment/weather with lon > 180 must return 422."""
         response = client.get("/api/environment/weather?lat=0&lon=200")
         assert response.status_code == 422
@@ -169,7 +168,7 @@ class TestInputValidation:
 class TestCrossRouterWorkflows:
     """End-to-end workflow tests spanning multiple routers."""
 
-    def test_full_crud_lifecycle(self, client):
+    def test_full_crud_lifecycle(self, client) -> None:
         """Test the full project → device → connection → report lifecycle."""
         # 1. Create project
         proj_resp = client.post(
@@ -274,7 +273,7 @@ class TestCrossRouterWorkflows:
         verify_resp = client.get(f"/api/projects/{pid}")
         assert verify_resp.status_code == 404
 
-    def test_project_update_then_verify(self, client):
+    def test_project_update_then_verify(self, client) -> None:
         """Test updating a project and verifying changes."""
         # Create
         create_resp = client.post(
@@ -297,7 +296,7 @@ class TestCrossRouterWorkflows:
         body = get_resp.json().get("data", get_resp.json())
         assert body.get("name") == "Updated Name" or body.get("name") == "Updated Name"
 
-    def test_device_update_with_position_change(self, client):
+    def test_device_update_with_position_change(self, client) -> None:
         """Test updating device position coordinates."""
         # Create project and device
         proj_resp = client.post(
@@ -331,32 +330,32 @@ class TestCrossRouterWorkflows:
 class TestPagination:
     """Tests for pagination parameters across list endpoints."""
 
-    def test_project_pagination_page_1(self, client):
+    def test_project_pagination_page_1(self, client) -> None:
         """GET /api/projects?page=1 must work."""
         response = client.get("/api/projects?page=1&limit=5")
         assert response.status_code == 200
 
-    def test_project_pagination_limit_range(self, client):
+    def test_project_pagination_limit_range(self, client) -> None:
         """GET /api/projects with limit=1 must work."""
         response = client.get("/api/projects?limit=1")
         assert response.status_code == 200
 
-    def test_project_pagination_max_limit(self, client):
+    def test_project_pagination_max_limit(self, client) -> None:
         """GET /api/projects with limit=100 (max) must work."""
         response = client.get("/api/projects?limit=100")
         assert response.status_code == 200
 
-    def test_project_pagination_limit_exceeds_max(self, client):
+    def test_project_pagination_limit_exceeds_max(self, client) -> None:
         """GET /api/projects with limit > 100 must return 422."""
         response = client.get("/api/projects?limit=101")
         assert response.status_code == 422
 
-    def test_project_pagination_page_zero_fails(self, client):
+    def test_project_pagination_page_zero_fails(self, client) -> None:
         """GET /api/projects?page=0 must return 422."""
         response = client.get("/api/projects?page=0")
         assert response.status_code == 422
 
-    def test_project_sort_order(self, client):
+    def test_project_sort_order(self, client) -> None:
         """GET /api/projects with sort and order params must work."""
         response = client.get("/api/projects?sort=createdAt&order=asc")
         assert response.status_code == 200
@@ -369,7 +368,7 @@ class TestPagination:
 class TestSecurityEdgeCases:
     """Tests for security-related edge cases."""
 
-    def test_health_security_headers_on_all_responses(self, client):
+    def test_health_security_headers_on_all_responses(self, client) -> None:
         """Security headers must be present on API responses."""
         response = client.get("/api/health")
         assert "x-frame-options" in response.headers
@@ -377,7 +376,7 @@ class TestSecurityEdgeCases:
         assert "content-security-policy" in response.headers
         assert "strict-transport-security" in response.headers
 
-    def test_cors_headers_present(self, client):
+    def test_cors_headers_present(self, client) -> None:
         """CORS headers must be present for allowed origins."""
         response = client.options(
             "/api/health",
@@ -389,7 +388,7 @@ class TestSecurityEdgeCases:
         # In dev mode, localhost should be allowed
         assert response.status_code in (200, 204, 405)
 
-    def test_project_name_with_special_chars(self, client):
+    def test_project_name_with_special_chars(self, client) -> None:
         """Project name with special characters should be stored as-is (no server-side sanitization needed)."""
         response = client.post(
             "/api/projects",
@@ -401,7 +400,7 @@ class TestSecurityEdgeCases:
         data = response.json().get("data", response.json())
         assert "name" in data
 
-    def test_connection_validates_different_endpoints(self, client):
+    def test_connection_validates_different_endpoints(self, client) -> None:
         """Connection with fromId == toId must be rejected."""
         # This is tested more thoroughly in test_routers.py but repeated
         # here as it's a safety-critical validation
@@ -427,7 +426,7 @@ class TestSecurityEdgeCases:
         )
         assert conn_resp.status_code == 422
 
-    def test_device_negative_electrical_values_rejected(self, client):
+    def test_device_negative_electrical_values_rejected(self, client) -> None:
         """Devices with negative voltage/current/load must be rejected."""
         proj_resp = client.post(
             "/api/projects",
@@ -465,7 +464,7 @@ class TestSecurityEdgeCases:
 class TestAPIContractConformance:
     """Tests that API responses conform to the expected contract."""
 
-    def test_project_response_has_required_fields(self, client):
+    def test_project_response_has_required_fields(self, client) -> None:
         """Project response must include id, name, status."""
         proj_resp = client.post(
             "/api/projects",
@@ -476,7 +475,7 @@ class TestAPIContractConformance:
         assert "name" in data
         assert "status" in data
 
-    def test_device_response_has_required_fields(self, client):
+    def test_device_response_has_required_fields(self, client) -> None:
         """Device response must include id, type, name."""
         proj_resp = client.post(
             "/api/projects",
@@ -494,7 +493,7 @@ class TestAPIContractConformance:
         assert "type" in data or "device_type" in data
         assert "name" in data
 
-    def test_health_response_contract(self, client):
+    def test_health_response_contract(self, client) -> None:
         """Health response must conform to the HealthStatus contract."""
         response = client.get("/api/health")
         data = response.json().get("data", response.json())
@@ -503,7 +502,7 @@ class TestAPIContractConformance:
         assert "version" in data
         assert "timestamp" in data
 
-    def test_statistics_response_contract(self, client):
+    def test_statistics_response_contract(self, client) -> None:
         """Statistics response must include all required fields."""
         response = client.get("/api/health/statistics")
         data = response.json().get("data", response.json())
@@ -512,7 +511,7 @@ class TestAPIContractConformance:
         assert isinstance(data.get("active_projects"), int)
         assert isinstance(data.get("total_connections"), int)
 
-    def test_successful_response_has_success_flag(self, client):
+    def test_successful_response_has_success_flag(self, client) -> None:
         """Successful responses must include a success flag."""
         response = client.get("/api/projects")
         body = response.json()
@@ -520,7 +519,7 @@ class TestAPIContractConformance:
         if "success" in body:
             assert body["success"] is True
 
-    def test_error_response_has_error_flag(self, client):
+    def test_error_response_has_error_flag(self, client) -> None:
         """Error responses must include error information."""
         response = client.get("/api/projects/nonexistent-id-12345")
         assert response.status_code == 404
@@ -528,7 +527,7 @@ class TestAPIContractConformance:
         # Must have some form of error indication
         assert "error" in body or "detail" in body or "success" in body
 
-    def test_paginated_list_has_pagination_fields(self, client):
+    def test_paginated_list_has_pagination_fields(self, client) -> None:
         """Paginated list responses must include pagination metadata."""
         response = client.get("/api/projects")
         body = response.json()
@@ -545,7 +544,7 @@ class TestAPIContractConformance:
 class TestNFPA72Calculations:
     """Tests for NFPA 72 safety-critical calculation endpoints."""
 
-    def test_battery_calc_with_alarm_and_standby(self, client):
+    def test_battery_calc_with_alarm_and_standby(self, client) -> None:
         """Battery calculation must include both alarm and standby loads."""
         # Create project with alarm + standby devices
         proj_resp = client.post(
@@ -591,7 +590,7 @@ class TestNFPA72Calculations:
                 if content.get("standbyLoadA", 0) > 0 or content.get("alarmLoadA", 0) > 0:
                     assert required_ah > 0, "Battery Ah must be positive when loads exist"
 
-    def test_voltage_drop_report_with_connections(self, client):
+    def test_voltage_drop_report_with_connections(self, client) -> None:
         """Voltage drop report must include circuit data from connections."""
         proj_resp = client.post(
             "/api/projects",
@@ -635,7 +634,7 @@ class TestNFPA72Calculations:
         )
         assert report_resp.status_code == 201
 
-    def test_load_unit_conversion_traceability(self, client):
+    def test_load_unit_conversion_traceability(self, client) -> None:
         """Device created with mA must store traceability info in properties."""
         proj_resp = client.post(
             "/api/projects",
@@ -666,32 +665,32 @@ class TestNFPA72Calculations:
 class TestMonitorEndpoints:
     """Tests for backend/routers/monitor.py — 6 endpoints."""
 
-    def test_monitor_health(self, client):
+    def test_monitor_health(self, client) -> None:
         """GET /api/monitor/health must return 200 or 404."""
         response = client.get("/api/monitor/health")
         assert response.status_code in (200, 404)
 
-    def test_monitor_metrics(self, client):
+    def test_monitor_metrics(self, client) -> None:
         """GET /api/monitor/metrics must return 200 or 404."""
         response = client.get("/api/monitor/metrics")
         assert response.status_code in (200, 404)
 
-    def test_monitor_engine_status(self, client):
+    def test_monitor_engine_status(self, client) -> None:
         """GET /api/monitor/engine-status must return 200 or 404."""
         response = client.get("/api/monitor/engine-status")
         assert response.status_code in (200, 404)
 
-    def test_monitor_agent_activity(self, client):
+    def test_monitor_agent_activity(self, client) -> None:
         """GET /api/monitor/agent-activity must return 200 or 404."""
         response = client.get("/api/monitor/agent-activity")
         assert response.status_code in (200, 404)
 
-    def test_monitor_security_alerts(self, client):
+    def test_monitor_security_alerts(self, client) -> None:
         """GET /api/monitor/security-alerts must return 200 or 404."""
         response = client.get("/api/monitor/security-alerts")
         assert response.status_code in (200, 404)
 
-    def test_monitor_alerts(self, client):
+    def test_monitor_alerts(self, client) -> None:
         """GET /api/monitor/alerts must return 200 or 404."""
         response = client.get("/api/monitor/alerts")
         assert response.status_code in (200, 404)

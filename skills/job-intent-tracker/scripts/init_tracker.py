@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-init_tracker.py — 初始化求职投递追踪表
+"""init_tracker.py — 初始化求职投递追踪表.
 
 用法：
     python init_tracker.py --format xlsx --output tracker.xlsx

@@ -1,5 +1,4 @@
-"""
-fireai/integration/autocad_bridge.py
+"""fireai/integration/autocad_bridge.py.
 ======================================
 AutoCAD Integration — DWG/DXF processing and AutoCAD APS/Forge compatibility.
 
@@ -15,17 +14,19 @@ Layer conventions extracted:
 References:
   - AutoCAD DXF Reference (Autodesk)
   - ezdxf library documentation (https://ezdxf.mozman.at)
+
 """
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class LayerCategory(str, Enum):
+class LayerCategory(StrEnum):
     ARCH_WALL = "ARCH-WALL"
     ARCH_DOOR = "ARCH-DOOR"
     ARCH_WINDOW = "ARCH-WINDOW"
@@ -57,7 +58,7 @@ class LayerCategory(str, Enum):
     ELEC_PANEL = "ELEC-PANEL"
 
 
-LAYER_MAP: Dict[str, LayerCategory] = {
+LAYER_MAP: dict[str, LayerCategory] = {
     "arch-wall": LayerCategory.ARCH_WALL,
     "arch-walls": LayerCategory.ARCH_WALL,
     "a-wall": LayerCategory.ARCH_WALL,
@@ -101,7 +102,7 @@ LAYER_MAP: Dict[str, LayerCategory] = {
 class LayerData:
     name: str
     category: LayerCategory
-    entities: List[Dict[str, Any]] = field(default_factory=list)
+    entities: list[dict[str, Any]] = field(default_factory=list)
     color: int = 7  # AutoCAD color index (default = white)
     linetype: str = "CONTINUOUS"
     is_frozen: bool = False
@@ -113,17 +114,17 @@ class DWGEntity:
     handle: str
     dxf_type: str
     layer: str
-    coordinates: List[Tuple[float, float, float]]
-    properties: Dict[str, Any] = field(default_factory=dict)
+    coordinates: list[tuple[float, float, float]]
+    properties: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class DesignData:
     source_file: str = ""
     file_hash: str = ""
-    layers: List[LayerData] = field(default_factory=list)
-    entities: List[DWGEntity] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    layers: list[LayerData] = field(default_factory=list)
+    entities: list[DWGEntity] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     imported_at: str = ""
 
 
@@ -133,8 +134,7 @@ class DesignData:
 
 
 class _DXFTextParser:
-    """
-    Minimal DXF text parser for when ezdxf is unavailable.
+    """Minimal DXF text parser for when ezdxf is unavailable.
 
     Parses basic DXF entities (LINE, LWPOLYLINE, CIRCLE, INSERT)
     and groups them by layer. Does not support blocks, xdata, or
@@ -142,13 +142,13 @@ class _DXFTextParser:
     """
 
     def __init__(self) -> None:
-        self._layers: Dict[str, List[Dict[str, Any]]] = {}
+        self._layers: dict[str, list[dict[str, Any]]] = {}
         self._current_section: str = ""
-        self._current_entity: Optional[Dict[str, Any]] = None
-        self._current_code: Optional[int] = None
-        self._header: Dict[str, Any] = {}
+        self._current_entity: dict[str, Any] | None = None
+        self._current_code: int | None = None
+        self._header: dict[str, Any] = {}
 
-    def parse(self, content: str) -> Dict[str, Any]:
+    def parse(self, content: str) -> dict[str, Any]:
         self._layers = {}
         self._current_section = ""
         self._current_entity = None
@@ -206,12 +206,10 @@ class _DXFTextParser:
                     ] = value_line
             elif code == 62:
                 if self._current_entity is not None:
-                    try:
+                    with contextlib.suppress(ValueError):
                         self._current_entity.setdefault(
                             "properties", {}
                         )["color"] = int(value_line)
-                    except ValueError:
-                        pass
             elif code == 6:
                 if self._current_entity is not None:
                     self._current_entity.setdefault("properties", {})[
@@ -259,8 +257,7 @@ class _DXFTextParser:
 
 
 class AutoCADBridge:
-    """
-    DWG/DXF processing and AutoCAD APS/Forge compatibility.
+    """DWG/DXF processing and AutoCAD APS/Forge compatibility.
 
     Handles:
       - DXF import (via ezdxf when available, fallback text parser)
@@ -294,16 +291,15 @@ class AutoCADBridge:
         LayerCategory.ARCH_COLUMN,
     }
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
         self._has_ezdxf: bool = self._check_ezdxf()
-        self._last_design: Optional[DesignData] = None
+        self._last_design: DesignData | None = None
 
     # ── Import ──────────────────────────────────────────────────────────
 
     def import_dwg(self, path: str) -> DesignData:
-        """
-        Import a DWG file.
+        """Import a DWG file.
 
         Production Note:
           Full DWG support requires the Open Design Alliance (ODA/Teigha)
@@ -315,6 +311,7 @@ class AutoCADBridge:
 
         Returns:
             DesignData with extracted entities (or error metadata).
+
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"DWG file not found: {path}")
@@ -328,7 +325,7 @@ class AutoCADBridge:
         design = DesignData(
             source_file=path,
             file_hash=file_hash,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "DWG",
                 "file_size_bytes": file_size,
@@ -351,19 +348,19 @@ class AutoCADBridge:
         return design
 
     def import_dxf(self, path: str) -> DesignData:
-        """
-        Import a DXF file using ezdxf (preferred) or fallback text parser.
+        """Import a DXF file using ezdxf (preferred) or fallback text parser.
 
         Args:
             path: Path to the DXF file.
 
         Returns:
             DesignData with extracted layers and entities.
+
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"DXF file not found: {path}")
 
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
+        with open(path, encoding="utf-8", errors="replace") as f:
             content = f.read()
 
         file_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -379,7 +376,7 @@ class AutoCADBridge:
             source_file=path,
             file_hash=file_hash,
             layers=classified_layers,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "DXF",
                 "parser": "ezdxf" if self._has_ezdxf else "text_fallback",
@@ -407,8 +404,7 @@ class AutoCADBridge:
     # ── Export ──────────────────────────────────────────────────────────
 
     def export_dwg(self, design: DesignData, path: str) -> str:
-        """
-        Export design data to DWG format.
+        """Export design data to DWG format.
 
         Production Note:
           DWG export requires the ODA/Teigha SDK or AutoCAD API.
@@ -420,6 +416,7 @@ class AutoCADBridge:
 
         Returns:
             Path to the exported file.
+
         """
         output_dir = os.path.dirname(path)
         if output_dir and not os.path.exists(output_dir):
@@ -449,8 +446,7 @@ class AutoCADBridge:
         return path
 
     def export_dxf(self, design: DesignData, path: str) -> str:
-        """
-        Export design data to DXF format.
+        """Export design data to DXF format.
 
         Preserves all layers and entities from the design data,
         enabling round-trip: import DXF -> process -> export DXF.
@@ -461,12 +457,13 @@ class AutoCADBridge:
 
         Returns:
             Path to the exported file.
+
         """
         output_dir = os.path.dirname(path)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
 
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append("0")
         lines.append("SECTION")
         lines.append("2")
@@ -564,7 +561,7 @@ class AutoCADBridge:
 
     def get_fire_layers(
         self, design: DesignData
-    ) -> List[LayerData]:
+    ) -> list[LayerData]:
         return [
             l
             for l in design.layers
@@ -573,7 +570,7 @@ class AutoCADBridge:
 
     def get_arch_layers(
         self, design: DesignData
-    ) -> List[LayerData]:
+    ) -> list[LayerData]:
         return [
             l
             for l in design.layers
@@ -593,12 +590,12 @@ class AutoCADBridge:
             )
             return False
 
-    def _parse_dxf_ezdxf(self, content: str) -> Dict[str, List[Dict[str, Any]]]:
+    def _parse_dxf_ezdxf(self, content: str) -> dict[str, list[dict[str, Any]]]:
         import io
 
         import ezdxf
 
-        layers: Dict[str, List[Dict[str, Any]]] = {}
+        layers: dict[str, list[dict[str, Any]]] = {}
 
         try:
             doc = ezdxf.readfile(
@@ -646,8 +643,8 @@ class AutoCADBridge:
 
     def _extract_ezdxf_coords(
         self, entity: Any
-    ) -> List[List[float]]:
-        coords: List[List[float]] = []
+    ) -> list[list[float]]:
+        coords: list[list[float]] = []
         dxf_type = entity.dxftype()
 
         if dxf_type == "LINE":
@@ -664,23 +661,7 @@ class AutoCADBridge:
             coords.append(
                 [entity.dxf.center.x, entity.dxf.center.y, entity.dxf.center.z]
             )
-        elif dxf_type == "INSERT":
-            coords.append(
-                [
-                    entity.dxf.insert.x,
-                    entity.dxf.insert.y,
-                    entity.dxf.insert.z,
-                ]
-            )
-        elif dxf_type == "TEXT":
-            coords.append(
-                [
-                    entity.dxf.insert.x,
-                    entity.dxf.insert.y,
-                    entity.dxf.insert.z,
-                ]
-            )
-        elif dxf_type == "MTEXT":
+        elif dxf_type == "INSERT" or dxf_type == "TEXT" or dxf_type == "MTEXT":
             coords.append(
                 [
                     entity.dxf.insert.x,
@@ -693,15 +674,15 @@ class AutoCADBridge:
 
     def _parse_dxf_text(
         self, content: str
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> dict[str, list[dict[str, Any]]]:
         parser = _DXFTextParser()
         return parser.parse(content)["layers"]
 
     def _classify_layers(
         self,
-        raw_layers: Dict[str, List[Dict[str, Any]]],
-    ) -> List[LayerData]:
-        classified: List[LayerData] = []
+        raw_layers: dict[str, list[dict[str, Any]]],
+    ) -> list[LayerData]:
+        classified: list[LayerData] = []
 
         for raw_name, entities in sorted(raw_layers.items()):
             lower_name = raw_name.lower().strip()
@@ -730,7 +711,7 @@ if __name__ == "__main__":
     # Create a sample DXF for round-trip testing
     sample = DesignData(
         source_file="test.dxf",
-        imported_at=datetime.now(timezone.utc).isoformat(),
+        imported_at=datetime.now(UTC).isoformat(),
         layers=[
             LayerData(
                 name="ARCH-WALL",

@@ -68,7 +68,7 @@ export function calculateBatteryRequirements(input: BatteryCalcInput): BatteryCa
   const requiredCapacity = baseCapacity * input.safetyFactor;
   
   // Recommend battery based on calculated capacity
-  let recommendedBattery = {
+  const recommendedBattery = {
     voltage: 24, // Default to 24V for larger systems
     capacity: Math.ceil(requiredCapacity / 2) * 2, // Round to nearest even number
     type: "Lead Acid Sealed AGM"

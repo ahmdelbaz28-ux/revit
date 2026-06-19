@@ -1,5 +1,4 @@
-"""
-test_reports_advanced.py — Advanced report integration tests covering
+"""test_reports_advanced.py — Advanced report integration tests covering
 report export paths, pending status handling, pagination, and NFPA 72
 battery calculation correctness.
 
@@ -24,7 +23,7 @@ from fastapi.testclient import TestClient
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
-def _setup_env():
+def _setup_env() -> None:
     """Set development environment for testing."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = ""
@@ -135,7 +134,7 @@ def project_with_connected_devices(client):
 class TestReportGeneration:
     """Tests for report generation with various types."""
 
-    def test_generate_nfpa72_battery_with_alarm_devices(self, client, project_with_alarm_devices):
+    def test_generate_nfpa72_battery_with_alarm_devices(self, client, project_with_alarm_devices) -> None:
         """NFPA 72 battery report must classify alarm vs standby devices correctly."""
         pid = project_with_alarm_devices
         resp = client.post(
@@ -153,7 +152,7 @@ class TestReportGeneration:
             if content:
                 assert "standbyLoadA" in content or "requiredAh" in content
 
-    def test_generate_voltage_drop_with_connections(self, client, project_with_connected_devices):
+    def test_generate_voltage_drop_with_connections(self, client, project_with_connected_devices) -> None:
         """Voltage drop report must include circuit data from connections."""
         pid = project_with_connected_devices
         resp = client.post(
@@ -169,7 +168,7 @@ class TestReportGeneration:
             if content:
                 assert "circuits" in content or "totalCircuits" in content
 
-    def test_generate_cable_sizing_report(self, client, project_with_connected_devices):
+    def test_generate_cable_sizing_report(self, client, project_with_connected_devices) -> None:
         """Cable sizing report must include connection data."""
         pid = project_with_connected_devices
         resp = client.post(
@@ -178,7 +177,7 @@ class TestReportGeneration:
         )
         assert resp.status_code == 201
 
-    def test_generate_nfpa72_coverage_report(self, client, project_with_alarm_devices):
+    def test_generate_nfpa72_coverage_report(self, client, project_with_alarm_devices) -> None:
         """NFPA 72 coverage report must include device category breakdown."""
         pid = project_with_alarm_devices
         resp = client.post(
@@ -193,7 +192,7 @@ class TestReportGeneration:
             if content:
                 assert "totalDevices" in content or "devicesByCategory" in content
 
-    def test_generate_report_with_parameters(self, client, project_with_alarm_devices):
+    def test_generate_report_with_parameters(self, client, project_with_alarm_devices) -> None:
         """Report generation with custom parameters must succeed."""
         pid = project_with_alarm_devices
         resp = client.post(
@@ -206,7 +205,7 @@ class TestReportGeneration:
         )
         assert resp.status_code == 201
 
-    def test_generate_report_in_nonexistent_project(self, client):
+    def test_generate_report_in_nonexistent_project(self, client) -> None:
         """Report generation in nonexistent project must return 404."""
         resp = client.post(
             "/api/projects/nonexistent-proj/reports",
@@ -223,7 +222,7 @@ class TestReportGeneration:
 class TestReportExport:
     """Tests for report export paths including edge cases."""
 
-    def test_export_completed_report_json(self, client, project_with_alarm_devices):
+    def test_export_completed_report_json(self, client, project_with_alarm_devices) -> None:
         """Exporting a completed report as JSON must succeed."""
         pid = project_with_alarm_devices
         # Create and complete a report
@@ -239,18 +238,18 @@ class TestReportExport:
         resp = client.get(f"/api/projects/{pid}/reports/{report_id}/export?format=json")
         assert resp.status_code in (200, 400)  # 400 if report not completed yet
 
-    def test_export_report_nonexistent_project(self, client):
+    def test_export_report_nonexistent_project(self, client) -> None:
         """Exporting a report for nonexistent project must return 404."""
         resp = client.get("/api/projects/nonexistent-proj/reports/some-id/export?format=json")
         assert resp.status_code == 404
 
-    def test_export_report_nonexistent_report(self, client, project_with_alarm_devices):
+    def test_export_report_nonexistent_report(self, client, project_with_alarm_devices) -> None:
         """Exporting a nonexistent report must return 404."""
         pid = project_with_alarm_devices
         resp = client.get(f"/api/projects/{pid}/reports/nonexistent-report/export?format=json")
         assert resp.status_code == 404
 
-    def test_export_report_invalid_format(self, client, project_with_alarm_devices):
+    def test_export_report_invalid_format(self, client, project_with_alarm_devices) -> None:
         """Exporting with invalid format must return 422."""
         pid = project_with_alarm_devices
         resp = client.get(f"/api/projects/{pid}/reports/nonexistent-report/export?format=exe")
@@ -265,25 +264,25 @@ class TestReportExport:
 class TestReportListing:
     """Tests for report listing with pagination and sort."""
 
-    def test_list_reports_with_pagination(self, client, project_with_alarm_devices):
+    def test_list_reports_with_pagination(self, client, project_with_alarm_devices) -> None:
         """Listing reports with pagination must succeed."""
         pid = project_with_alarm_devices
         resp = client.get(f"/api/projects/{pid}/reports?page=1&limit=5")
         assert resp.status_code == 200
 
-    def test_list_reports_with_sort(self, client, project_with_alarm_devices):
+    def test_list_reports_with_sort(self, client, project_with_alarm_devices) -> None:
         """Listing reports with sort parameter must succeed."""
         pid = project_with_alarm_devices
         resp = client.get(f"/api/projects/{pid}/reports?sort=type&order=asc")
         assert resp.status_code == 200
 
-    def test_list_reports_with_sort_by_status(self, client, project_with_alarm_devices):
+    def test_list_reports_with_sort_by_status(self, client, project_with_alarm_devices) -> None:
         """Listing reports sorted by status must succeed."""
         pid = project_with_alarm_devices
         resp = client.get(f"/api/projects/{pid}/reports?sort=status&order=desc")
         assert resp.status_code == 200
 
-    def test_list_reports_nonexistent_project_404(self, client):
+    def test_list_reports_nonexistent_project_404(self, client) -> None:
         """Listing reports for nonexistent project must return 404."""
         resp = client.get("/api/projects/nonexistent-proj/reports")
         assert resp.status_code == 404
@@ -297,7 +296,7 @@ class TestReportListing:
 class TestReportGetById:
     """Tests for getting a specific report by ID."""
 
-    def test_get_report_by_id_after_creation(self, client, project_with_alarm_devices):
+    def test_get_report_by_id_after_creation(self, client, project_with_alarm_devices) -> None:
         """Getting a report by ID after creation must return 200."""
         pid = project_with_alarm_devices
         create_resp = client.post(
@@ -313,12 +312,12 @@ class TestReportGetById:
         report_data = resp.json().get("data", resp.json())
         assert report_data.get("id") == report_id or report_data.get("type") == "voltage_drop"
 
-    def test_get_report_nonexistent_project(self, client):
+    def test_get_report_nonexistent_project(self, client) -> None:
         """Getting a report in nonexistent project must return 404."""
         resp = client.get("/api/projects/nonexistent-proj/reports/some-report")
         assert resp.status_code == 404
 
-    def test_get_report_has_status_field(self, client, project_with_alarm_devices):
+    def test_get_report_has_status_field(self, client, project_with_alarm_devices) -> None:
         """Retrieved report must have a status field."""
         pid = project_with_alarm_devices
         create_resp = client.post(

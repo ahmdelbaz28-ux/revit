@@ -12,8 +12,7 @@ confidence estimation based on real-world analysis results.
 
 import logging
 import sqlite3
-from datetime import datetime, timezone
-from typing import Optional, Tuple
+from datetime import UTC, datetime
 
 # Constants from V10 (never go below these)
 _CONFIDENCE_HIGH_THRESHOLD: float = 0.90  # ≥ 90 % → HIGH
@@ -23,19 +22,18 @@ logger = logging.getLogger(__name__)
 
 
 class LearningStore:
-    """
-    Experience-based learning store with adaptive threshold calibration.
+    """Experience-based learning store with adaptive threshold calibration.
 
     Stores analysis experiences and recalibrates confidence thresholds
     based on actual compliant results.
     """
 
-    def __init__(self, db_path: str = "fireai_learning.sqlite3"):
-        """
-        Initialize LearningStore with SQLite database.
+    def __init__(self, db_path: str = "fireai_learning.sqlite3") -> None:
+        """Initialize LearningStore with SQLite database.
 
         Args:
             db_path: Path to SQLite database file
+
         """
         # Use check_same_thread=False for single-process access
         self.db_path = db_path
@@ -44,7 +42,7 @@ class LearningStore:
         self._create_tables()
         logger.info("LearningStore initialized: %s", db_path)
 
-    def _create_tables(self):
+    def _create_tables(self) -> None:
         """Create learning and calibration tables."""
         cursor = self.conn.cursor()
 
@@ -98,15 +96,14 @@ class LearningStore:
         coverage_pct: float,
         confidence_score: float,
         confidence_level: str,
-        resilience_pass_rate: Optional[float],
+        resilience_pass_rate: float | None,
         wall_violation_count: int,
         greedy_retries: int,
         proof_valid: bool,
         compliant: bool,
         timestamp_utc: str,
     ) -> bool:
-        """
-        Store a single analysis experience.
+        """Store a single analysis experience.
 
         Args:
             project_id: Project identifier
@@ -128,6 +125,7 @@ class LearningStore:
 
         Returns:
             True if stored successfully, False otherwise
+
         """
         try:
             cursor = self.conn.cursor()
@@ -166,13 +164,13 @@ class LearningStore:
             logger.warning("Failed to store experience: %s", e)
             return False
 
-    def get_calibrated_thresholds(self) -> Tuple[float, float]:
-        """
-        Get calibrated confidence thresholds.
+    def get_calibrated_thresholds(self) -> tuple[float, float]:
+        """Get calibrated confidence thresholds.
 
         Returns:
             Tuple of (high_threshold, medium_threshold)
             Never returns below V10 constants.
+
         """
         cursor = self.conn.cursor()
         cursor.execute("""
@@ -190,14 +188,14 @@ class LearningStore:
         return (_CONFIDENCE_HIGH_THRESHOLD, _CONFIDENCE_MEDIUM_THRESHOLD)
 
     def maybe_recalibrate(self, force: bool = False) -> bool:
-        """
-        Recalibrate thresholds if enough new records exist.
+        """Recalibrate thresholds if enough new records exist.
 
         Args:
             force: Force recalibration regardless of record count
 
         Returns:
             True if recalibrated, False otherwise
+
         """
         cursor = self.conn.cursor()
 
@@ -218,14 +216,14 @@ class LearningStore:
         return False
 
     def recalibrate(self) -> bool:
-        """
-        Recalibrate thresholds based on compliant experiences.
+        """Recalibrate thresholds based on compliant experiences.
 
         Uses 10th percentile of confidence scores from compliant results.
         Never sets thresholds below V10 constants.
 
         Returns:
             True if recalibrated, False otherwise
+
         """
         cursor = self.conn.cursor()
 
@@ -266,7 +264,7 @@ class LearningStore:
             (
                 high,
                 medium,
-                datetime.now(timezone.utc).isoformat(),  # V54 FIX (AUDIT-012): timezone-aware UTC
+                datetime.now(UTC).isoformat(),  # V54 FIX (AUDIT-012): timezone-aware UTC
                 count,
             ),
         )
@@ -275,7 +273,7 @@ class LearningStore:
         logger.info("Recalibrated: high=%s, medium=%s, records=%s", high, medium, count)
         return True
 
-    def close(self):
+    def close(self) -> None:
         """Close database connection."""
         if self.conn:
             self.conn.close()

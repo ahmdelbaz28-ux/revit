@@ -1,5 +1,4 @@
-"""
-acoustic_calculator.py — NFPA 72 Audible Notification Compliance
+"""acoustic_calculator.py — NFPA 72 Audible Notification Compliance.
 =================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -44,7 +43,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # ============================================================================
 # NFPA 72 Audible Requirements
@@ -113,7 +112,7 @@ class AudibilityResult:
     mode: str  # "public", "private", "sleeping"
     nfpa_section: str  # Applicable NFPA 72 section
     ambient_dba: float  # Ambient noise level used
-    violations: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -128,7 +127,7 @@ class SpeakerPlacementResult:
     speaker_spacing_m: float
     source_dba: float
     coverage_verified: bool
-    violations: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
 
 
 # ============================================================================
@@ -140,8 +139,8 @@ def calculate_spl_at_distance(
     source_dba: float,
     target_distance_m: float,
     ref_distance_m: float = DEFAULT_REF_DISTANCE_M,
-    room_absorption_m2: Optional[float] = None,
-    room_volume_m3: Optional[float] = None,
+    room_absorption_m2: float | None = None,
+    room_volume_m3: float | None = None,
     include_reverberant_field: bool = True,
 ) -> SPLResult:
     """Calculate Sound Pressure Level at a given distance from a source.
@@ -171,6 +170,7 @@ def calculate_spl_at_distance(
 
     Returns:
         SPLResult with calculated SPL and breakdown.
+
     """
     # V65 SAFETY: Reject NaN/Inf inputs — these are life-safety calculations.
     # NaN SPL values silently bypass compliance checks (NaN < threshold is False,
@@ -252,8 +252,8 @@ def check_audibility_compliance(
     ambient_dba: float,
     mode: str = "public",
     ref_distance_m: float = DEFAULT_REF_DISTANCE_M,
-    room_absorption_m2: Optional[float] = None,
-    room_volume_m3: Optional[float] = None,
+    room_absorption_m2: float | None = None,
+    room_volume_m3: float | None = None,
 ) -> AudibilityResult:
     """Check if a speaker/horn provides adequate audibility per NFPA 72.
 
@@ -268,6 +268,7 @@ def check_audibility_compliance(
 
     Returns:
         AudibilityResult with PASS/FAIL and details.
+
     """
     if mode not in AUDIBLE_REQUIREMENTS:
         mode = "public"  # Safe default
@@ -328,7 +329,7 @@ def calculate_min_speakers_for_room(
     ambient_dba: float,
     mode: str = "public",
     ref_distance_m: float = DEFAULT_REF_DISTANCE_M,
-    room_absorption_m2: Optional[float] = None,
+    room_absorption_m2: float | None = None,
 ) -> SpeakerPlacementResult:
     """Calculate minimum number of speakers needed for a rectangular room.
 
@@ -348,6 +349,7 @@ def calculate_min_speakers_for_room(
 
     Returns:
         SpeakerPlacementResult with speaker count and spacing.
+
     """
     room_area = room_length_m * room_width_m
 
@@ -441,7 +443,7 @@ def get_speaker_coverage_radius(
     ambient_dba: float = 55.0,
     mode: str = "public",
     room_height_m: float = 3.0,
-    room_absorption_m2: Optional[float] = None,
+    room_absorption_m2: float | None = None,
 ) -> float:
     """Compute the effective speaker coverage radius per NFPA 72 §18.4/§18.5.
 
@@ -472,6 +474,7 @@ def get_speaker_coverage_radius(
     Returns:
         Maximum coverage radius in metres where audibility is compliant.
         If no distance is compliant (speaker too quiet), returns 0.0.
+
     """
     if room_absorption_m2 is None:
         # Estimate: typical room 10m×10m, α≈0.25, surface ≈ 300m²
@@ -530,6 +533,7 @@ class CheckPoint:
         y: Y coordinate in metres.
         z: Z coordinate in metres (height above floor).
         label: Optional label for identification.
+
     """
 
     x: float
@@ -549,6 +553,7 @@ class Speaker:
         rating_dba: Speaker output in dBA at the reference distance.
         ref_distance_m: Reference distance for the speaker spec (default 3m).
         speaker_id: Optional identifier.
+
     """
 
     x: float
@@ -568,10 +573,11 @@ class Barrier:
             Or a custom dBA value can be specified.
         attenuation_dba: Custom attenuation in dBA (overrides barrier_type).
         label: Optional label for identification.
+
     """
 
     barrier_type: str = "standard_door"
-    attenuation_dba: Optional[float] = None
+    attenuation_dba: float | None = None
     label: str = ""
 
     @property
@@ -595,6 +601,7 @@ class RoomAcousticResult:
         margin_dba: Worst margin (effective - required).
         violations: List of violation dicts for non-compliant points.
         point_results: Detailed results for each check point.
+
     """
 
     room_id: str
@@ -603,8 +610,8 @@ class RoomAcousticResult:
     worst_point_label: str
     required_dba: float
     margin_dba: float
-    violations: List[Dict[str, Any]] = field(default_factory=list)
-    point_results: List[Dict[str, Any]] = field(default_factory=list)
+    violations: list[dict[str, Any]] = field(default_factory=list)
+    point_results: list[dict[str, Any]] = field(default_factory=list)
 
 
 class AcousticSPLCalculator:
@@ -642,13 +649,14 @@ class AcousticSPLCalculator:
 
     def __init__(
         self,
-        room_ambient_noise: Optional[Dict[str, float]] = None,
+        room_ambient_noise: dict[str, float] | None = None,
     ) -> None:
         """Initialize the acoustic calculator.
 
         Args:
             room_ambient_noise: Dict mapping occupancy types to ambient noise
                 levels in dBA. If None, uses AMBIENT_NOISE_LEVELS defaults.
+
         """
         self.ambient_levels = room_ambient_noise or dict(AMBIENT_NOISE_LEVELS)
 
@@ -673,11 +681,11 @@ class AcousticSPLCalculator:
         self,
         room_id: str,
         occ_type: str,
-        speakers: List[Speaker],
-        check_points: List[CheckPoint],
-        barriers: Optional[List[Barrier]] = None,
+        speakers: list[Speaker],
+        check_points: list[CheckPoint],
+        barriers: list[Barrier] | None = None,
         mode: str = "public",
-        room_absorption_m2: Optional[float] = None,
+        room_absorption_m2: float | None = None,
     ) -> RoomAcousticResult:
         """Calculate SPL at all check points from all speakers in a room.
 
@@ -704,6 +712,7 @@ class AcousticSPLCalculator:
 
         Returns:
             RoomAcousticResult with compliance status for all check points.
+
         """
         ambient_dba = self._get_ambient_for_occ(occ_type)
 
@@ -719,8 +728,8 @@ class AcousticSPLCalculator:
             for b in barriers:
                 total_barrier_dba += b.effective_attenuation_dba
 
-        violations: List[Dict[str, Any]] = []
-        point_results: List[Dict[str, Any]] = []
+        violations: list[dict[str, Any]] = []
+        point_results: list[dict[str, Any]] = []
         worst_spl = 200.0  # Track worst (lowest) SPL
         worst_label = ""
 
@@ -789,7 +798,7 @@ class AcousticSPLCalculator:
             margin = total_pt_spl - required_dba
             pt_compliant = margin >= 0
 
-            pt_result: Dict[str, Any] = {
+            pt_result: dict[str, Any] = {
                 "point": point.label or f"({point.x:.1f},{point.y:.1f},{point.z:.1f})",
                 "spl_dba": round(total_pt_spl, 1),
                 "required_dba": round(required_dba, 1),
@@ -847,21 +856,21 @@ class AcousticSPLCalculator:
 
 
 __all__ = [
-    "AUDIBLE_REQUIREMENTS",
     "AMBIENT_NOISE_LEVELS",
-    "MAX_SOUND_LEVEL_DBA",
-    "DEFAULT_REF_DISTANCE_M",
+    "AUDIBLE_REQUIREMENTS",
     "BARRIER_ATTENUATION_DB",
-    "SPLResult",
-    "AudibilityResult",
-    "SpeakerPlacementResult",
-    "CheckPoint",
-    "Speaker",
-    "Barrier",
-    "RoomAcousticResult",
+    "DEFAULT_REF_DISTANCE_M",
+    "MAX_SOUND_LEVEL_DBA",
     "AcousticSPLCalculator",
+    "AudibilityResult",
+    "Barrier",
+    "CheckPoint",
+    "RoomAcousticResult",
+    "SPLResult",
+    "Speaker",
+    "SpeakerPlacementResult",
+    "calculate_min_speakers_for_room",
     "calculate_spl_at_distance",
     "check_audibility_compliance",
-    "calculate_min_speakers_for_room",
     "get_speaker_coverage_radius",
 ]

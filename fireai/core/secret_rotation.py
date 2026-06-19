@@ -1,5 +1,4 @@
-"""
-fireai.core.secret_rotation — Secret Rotation & Key Management
+"""fireai.core.secret_rotation — Secret Rotation & Key Management.
 ===============================================================
 
 Provides a mechanism for rotating security-sensitive keys without
@@ -39,7 +38,6 @@ import secrets
 import threading
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 from fireai.core.security_logging import SecurityEventType, security_audit
 
@@ -69,10 +67,11 @@ class KeyRotator:
             default_grace_period_s: Default grace period in seconds
                 (5 minutes). During this period, both old and new keys
                 are accepted.
+
         """
         self._default_grace_period_s = default_grace_period_s
-        self._current: Dict[str, str] = {}  # key_name → current_key_value
-        self._previous: Dict[str, _KeyRecord] = {}  # key_name → old_key_record
+        self._current: dict[str, str] = {}  # key_name → current_key_value
+        self._previous: dict[str, _KeyRecord] = {}  # key_name → old_key_record
         self._lock = threading.Lock()
 
     @staticmethod
@@ -93,6 +92,7 @@ class KeyRotator:
         Args:
             key_name: The name of the key (e.g., "FIREAI_API_KEY").
             key_value: The current key value.
+
         """
         with self._lock:
             self._current[key_name] = key_value
@@ -102,8 +102,8 @@ class KeyRotator:
         key_name: str,
         old_key: str,
         new_key: str,
-        grace_period_s: Optional[float] = None,
-    ) -> Tuple[bool, str]:
+        grace_period_s: float | None = None,
+    ) -> tuple[bool, str]:
         """Rotate a security key.
 
         The old key must match the current key for rotation to succeed.
@@ -118,6 +118,7 @@ class KeyRotator:
 
         Returns:
             Tuple of (success: bool, message: str).
+
         """
         # Validate new key strength
         if len(new_key) < 16:
@@ -173,6 +174,7 @@ class KeyRotator:
 
         Returns:
             True if the key is valid (current or within grace period).
+
         """
         with self._lock:
             current = self._current.get(key_name)
@@ -198,12 +200,11 @@ class KeyRotator:
                             remaining_grace_s=round(prev.grace_period_s - elapsed, 1),
                         )
                         return True
-                    else:
-                        security_audit.log_event(
-                            SecurityEventType.AUTH_FAILURE,
-                            key_name=key_name,
-                            note="grace_period_expired",
-                        )
+                    security_audit.log_event(
+                        SecurityEventType.AUTH_FAILURE,
+                        key_name=key_name,
+                        note="grace_period_expired",
+                    )
 
             return False
 
@@ -216,11 +217,12 @@ class KeyRotator:
 
         Returns:
             URL-safe base64-encoded key string.
+
         """
         return secrets.token_urlsafe(length)
 
     @staticmethod
-    def validate_key_strength(key: str, min_length: int = 16) -> Tuple[bool, List[str]]:
+    def validate_key_strength(key: str, min_length: int = 16) -> tuple[bool, list[str]]:
         """Validate that a key meets minimum security requirements.
 
         Args:
@@ -229,6 +231,7 @@ class KeyRotator:
 
         Returns:
             Tuple of (is_valid: bool, issues: list of problem descriptions).
+
         """
         issues = []
 

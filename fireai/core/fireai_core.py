@@ -24,9 +24,9 @@ CRITICAL FIX (2026-05-20):
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from fireai.core.audit_store import AuditStore, SecurityError
 from fireai.core.learning_store import LearningStore
@@ -87,15 +87,15 @@ class EnhancedRoomResult:
     """
 
     room_id: str = ""
-    detector_positions: List[Tuple[float, float]] = field(default_factory=list)
+    detector_positions: list[tuple[float, float]] = field(default_factory=list)
     detector_type: Any = DetectorType.SMOKE
     confidence: ConfidenceLevel = ConfidenceLevel.MEDIUM
     confidence_score: float = 0.0
-    wall_violations: List = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    placement_proof: Optional[PlacementProof] = None
-    resilience: Optional[ResilienceResult] = None
+    wall_violations: list = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    placement_proof: PlacementProof | None = None
+    resilience: ResilienceResult | None = None
     compliant: bool = False
     safe_to_submit: bool = False
     occupancy_class: Any = None
@@ -121,7 +121,7 @@ class EnhancedRoomResult:
         return not self.compliant and len(self.errors) > 0
 
 
-def _resolve_db_path(db_path: Optional[str] = None) -> str:
+def _resolve_db_path(db_path: str | None = None) -> str:
     """Resolve the database path from argument, environment, or sensible default.
 
     Priority:
@@ -131,6 +131,7 @@ def _resolve_db_path(db_path: Optional[str] = None) -> str:
 
     Returns:
         Resolved absolute path for the audit database.
+
     """
     if db_path:
         if db_path == ":memory:":
@@ -150,8 +151,7 @@ def _resolve_db_path(db_path: Optional[str] = None) -> str:
 
 @dataclass
 class FireAISystem:
-    """
-    Central orchestrator that combines analysis with audit logging
+    """Central orchestrator that combines analysis with audit logging
     and adaptive learning.
 
     CRITICAL FIX: Now uses the actual FireExpertSystem instead of
@@ -161,12 +161,13 @@ class FireAISystem:
         db_path: Path to the audit database. If None, uses FIREAI_DB_PATH
             env var or './data/fireai_audit.db'. If ':memory:', uses
             in-memory SQLite (testing only).
+
     """
 
     db_path: str
 
-    _expert: Optional[Any] = field(default=None, init=False)
-    learning: Optional[LearningStore] = field(default=None, init=False)
+    _expert: Any | None = field(default=None, init=False)
+    learning: LearningStore | None = field(default=None, init=False)
 
     def __post_init__(self):
         """Initialize internal components."""
@@ -225,8 +226,7 @@ class FireAISystem:
         user_id: str = "system",
         run_resilience: bool = True,
     ) -> EnhancedRoomResult:
-        """
-        Analyze a single room and log to audit trail.
+        """Analyze a single room and log to audit trail.
 
         CRITICAL FIX: Uses actual FireExpertSystem instead of the
         non-existent `analyse_room_enhanced` function.
@@ -238,6 +238,7 @@ class FireAISystem:
 
         Returns:
             EnhancedRoomResult with full analysis results
+
         """
         if not room_spec or not hasattr(room_spec, "room_id"):
             raise ValueError("room_spec must have a room_id attribute")
@@ -430,7 +431,7 @@ class FireAISystem:
                     greedy_retries=0,
                     proof_valid=proof_valid,
                     compliant=result.compliant,
-                    timestamp_utc=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    timestamp_utc=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                 )
                 self.learning.maybe_recalibrate()
             except Exception as e:
@@ -440,12 +441,11 @@ class FireAISystem:
 
     def analyse_floor(
         self,
-        rooms: List[RoomSpec],
+        rooms: list[RoomSpec],
         user_id: str = "system",
         run_resilience: bool = True,
-    ) -> List[EnhancedRoomResult]:
-        """
-        Analyze multiple rooms as a floor and log to audit trail.
+    ) -> list[EnhancedRoomResult]:
+        """Analyze multiple rooms as a floor and log to audit trail.
 
         Args:
             rooms: List of RoomSpec to analyze as a floor
@@ -454,6 +454,7 @@ class FireAISystem:
 
         Returns:
             List of EnhancedRoomResult, one per room
+
         """
         if not rooms:
             raise ValueError("rooms list must not be empty")
@@ -503,7 +504,7 @@ class FireAISystem:
 
         return results
 
-    def get_audit_trail(self) -> List[Dict[str, Any]]:
+    def get_audit_trail(self) -> list[dict[str, Any]]:
         """Get the complete audit trail."""
         return AuditStore.get_events()
 
@@ -512,7 +513,7 @@ class FireAISystem:
         is_valid, _ = AuditStore.verify_chain()
         return is_valid
 
-    def get_memory_summary(self) -> Dict[str, Any]:
+    def get_memory_summary(self) -> dict[str, Any]:
         """Get learning store summary."""
         if not self.learning:
             return {"error": "Learning store not initialized"}
@@ -529,20 +530,19 @@ class FireAISystem:
     def run_integration(
         self,
         building_id: str,
-        floors: Optional[List[Dict[str, Any]]] = None,
-        panel_positions: Optional[List[Tuple[float, float, float]]] = None,
-        obstacle_polygons: Optional[List[List[Tuple[float, float]]]] = None,
-        acoustic_config: Optional[Dict[str, Any]] = None,
+        floors: list[dict[str, Any]] | None = None,
+        panel_positions: list[tuple[float, float, float]] | None = None,
+        obstacle_polygons: list[list[tuple[float, float]]] | None = None,
+        acoustic_config: dict[str, Any] | None = None,
         nfpa_year: int = 2022,
         enable_kernel_v30: bool = True,
         enable_hash_chain_audit: bool = True,
         enable_monte_carlo: bool = True,
         enable_bim_sync: bool = True,
-        bim_source: Optional[str] = None,
+        bim_source: str | None = None,
         user_id: str = "system",
-    ) -> Dict[str, Any]:
-        """
-        Run the FULL integration pipeline wiring all 8 subsystems.
+    ) -> dict[str, Any]:
+        """Run the FULL integration pipeline wiring all 8 subsystems.
 
         This is the main entry point that connects the entire FireAI
         platform: the 4 core subsystems (cable routing, digital twin
@@ -578,6 +578,7 @@ class FireAISystem:
 
         Reference:
             NFPA 72-2022 §10.14, §12.2, §18.4, §21
+
         """
         from fireai.bridges.integration_bridge import (
             AcousticConfig,
@@ -840,11 +841,11 @@ class FireAISystem:
 
 
 __all__ = [
-    "FireAISystem",
-    "SecurityError",
-    "_resolve_db_path",
-    "EnhancedRoomResult",
     "ConfidenceLevel",
+    "EnhancedRoomResult",
+    "FireAISystem",
     "PlacementProof",
     "ResilienceResult",
+    "SecurityError",
+    "_resolve_db_path",
 ]

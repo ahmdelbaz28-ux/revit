@@ -1,5 +1,4 @@
-"""
-ConstraintSolver — Area-Based Greedy Fallback Coverage Solver
+"""ConstraintSolver — Area-Based Greedy Fallback Coverage Solver.
 =============================================================
 When DensityOptimizer fails to achieve 99.9% coverage (typically for
 non-rectangular rooms — L-shape, U-shape, rooms with cutouts), this
@@ -53,7 +52,6 @@ import logging
 import math
 import time
 from dataclasses import dataclass, field
-from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -93,14 +91,15 @@ class ConstraintSolverResult:
         warnings: List of warnings generated during solving.
         solve_time_seconds: Wall-clock time for the solve.
         method: Description of the method used.
+
     """
 
     coverage_percent: float = 0.0
     num_devices: int = 0
-    positions: List[Tuple[float, float]] = field(default_factory=list)
+    positions: list[tuple[float, float]] = field(default_factory=list)
     coverage_threshold_met: bool = False
     solver_used: str = "constraint_solver_greedy"
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     solve_time_seconds: float = 0.0
     method: str = "greedy_area_set_cover"
 
@@ -131,11 +130,11 @@ class ConstraintSolver:
 
     def __init__(
         self,
-        room_polygon: "Polygon",
+        room_polygon: Polygon,
         device_radius: float,
         coverage_safety_factor: float = COVERAGE_SAFETY_FACTOR,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
-    ):
+    ) -> None:
         """Initialize ConstraintSolver.
 
         Args:
@@ -149,6 +148,7 @@ class ConstraintSolver:
         Raises:
             ValueError: If device_radius is not positive.
             ImportError: If Shapely is not available.
+
         """
         if not HAS_SHAPELY:
             raise ImportError(
@@ -207,9 +207,10 @@ class ConstraintSolver:
 
         Returns:
             ConstraintSolverResult with placement and coverage information.
+
         """
         start_time = time.monotonic()
-        warnings: List[str] = []
+        warnings: list[str] = []
 
         # Generate candidate placement positions
         candidates = self._generate_candidates()
@@ -238,7 +239,7 @@ class ConstraintSolver:
             )
 
         # Greedy set-cover placement
-        placed: List[Tuple[float, float]] = []
+        placed: list[tuple[float, float]] = []
         uncovered = self.room_polygon  # Start with entire room uncovered
         coverage_circle_cache: dict = {}  # Cache coverage circles for performance
 
@@ -362,7 +363,7 @@ class ConstraintSolver:
             solve_time_seconds=round(elapsed, 3),
         )
 
-    def _generate_candidates(self) -> List[Tuple[float, float]]:
+    def _generate_candidates(self) -> list[tuple[float, float]]:
         """Generate candidate placement positions on a grid within room bounds.
 
         The grid step is adaptive based on room dimensions:
@@ -372,6 +373,7 @@ class ConstraintSolver:
 
         Returns:
             List of (x, y) candidate positions within room bounding box.
+
         """
         minx, miny, maxx, maxy = self.room_polygon.bounds
         width = maxx - minx
@@ -402,13 +404,14 @@ class ConstraintSolver:
 
         return candidates
 
-    def _emergency_candidates(self) -> List[Tuple[float, float]]:
+    def _emergency_candidates(self) -> list[tuple[float, float]]:
         """Generate emergency candidate positions when grid fails.
 
         Uses polygon centroid and boundary sample points as last resort.
 
         Returns:
             List of (x, y) positions including centroid and boundary points.
+
         """
         candidates = []
 

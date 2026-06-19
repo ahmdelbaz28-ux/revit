@@ -1,5 +1,4 @@
-"""
-backend/services/geocoding_service.py — Geocoding service for FireAI.
+"""backend/services/geocoding_service.py — Geocoding service for FireAI.
 
 Provides forward geocoding (address → lat/lon) using Nominatim
 (OpenStreetMap) — a free, no-auth API.
@@ -17,6 +16,7 @@ LIFE-SAFETY NOTE:
 References:
   - Nominatim API: https://nominatim.org/release-docs/latest/api/Search/
   - Usage policy: Max 1 request/second, User-Agent required
+
 """
 
 from __future__ import annotations
@@ -24,7 +24,6 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -34,8 +33,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class GeocodingResult:
-    """
-    Immutable geocoding result for engineering use.
+    """Immutable geocoding result for engineering use.
 
     Attributes:
         latitude: Latitude in decimal degrees
@@ -43,7 +41,9 @@ class GeocodingResult:
         display_name: Human-readable address
         country_code: ISO 3166-1 alpha-2 country code (e.g., "EG", "US", "SA")
         source: Data provenance ("nominatim" | "manual" | "default")
+
     """
+
     latitude: float
     longitude: float
     display_name: str = ""
@@ -57,8 +57,7 @@ class GeocodingResult:
 
 
 class GeocodingService:
-    """
-    Async geocoding service using Nominatim (OpenStreetMap).
+    """Async geocoding service using Nominatim (OpenStreetMap).
 
     Rate Limiting:
         Nominatim requires max 1 request/second. This service enforces
@@ -71,12 +70,12 @@ class GeocodingService:
 
     NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
-    def __init__(self, cache_ttl: float = 86400.0):
+    def __init__(self, cache_ttl: float = 86400.0) -> None:
         self._cache: dict[str, tuple[GeocodingResult, float]] = {}
         self._cache_ttl = cache_ttl
         self._last_request_time: float = 0.0
         self._min_interval: float = 1.1  # Nominatim rate limit
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -98,7 +97,7 @@ class GeocodingService:
         """Normalize address for caching."""
         return address.strip().lower()
 
-    def _get_cached(self, address: str) -> Optional[GeocodingResult]:
+    def _get_cached(self, address: str) -> GeocodingResult | None:
         """Get cached result if fresh."""
         key = self._cache_key(address)
         entry = self._cache.get(key)
@@ -167,9 +166,8 @@ class GeocodingService:
         )
         return result
 
-    async def geocode(self, address: str) -> Optional[GeocodingResult]:
-        """
-        Geocode an address to coordinates.
+    async def geocode(self, address: str) -> GeocodingResult | None:
+        """Geocode an address to coordinates.
 
         Strategy:
           1. Check cache
@@ -181,6 +179,7 @@ class GeocodingService:
 
         Returns:
             GeocodingResult or None if geocoding fails
+
         """
         if not address or not address.strip():
             return None
@@ -210,9 +209,8 @@ class GeocodingService:
 
     async def reverse_geocode(
         self, latitude: float, longitude: float
-    ) -> Optional[GeocodingResult]:
-        """
-        Reverse geocode coordinates to address.
+    ) -> GeocodingResult | None:
+        """Reverse geocode coordinates to address.
 
         Args:
             latitude: Latitude in decimal degrees
@@ -220,6 +218,7 @@ class GeocodingService:
 
         Returns:
             GeocodingResult or None if reverse geocoding fails
+
         """
         await self._enforce_rate_limit()
         client = await self._get_client()
@@ -256,7 +255,7 @@ class GeocodingService:
 
 # ── Singleton ──────────────────────────────────────────────────────────────
 
-_geocoding_service: Optional[GeocodingService] = None
+_geocoding_service: GeocodingService | None = None
 
 
 def get_geocoding_service() -> GeocodingService:

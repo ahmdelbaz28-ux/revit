@@ -1,5 +1,4 @@
-"""
-test_devices.py — Devices CRUD integration tests.
+"""test_devices.py — Devices CRUD integration tests.
 
 Verifies device creation, retrieval, listing, and deletion
 under project-scoped endpoints.
@@ -52,13 +51,13 @@ def project_with_device(client):
 class TestDevicesCreate:
     """Tests for POST /api/projects/{id}/devices."""
 
-    def test_create_device_success(self, client, project_with_device):
+    def test_create_device_success(self, client, project_with_device) -> None:
         """Creating a device with valid data must succeed."""
-        pid, dev_resp = project_with_device
+        _pid, dev_resp = project_with_device
         # Device creation may return 201 or 200 depending on the route
         assert dev_resp.status_code in (200, 201), f"Device creation failed: {dev_resp.text}"
 
-    def test_create_device_in_nonexistent_project(self, client):
+    def test_create_device_in_nonexistent_project(self, client) -> None:
         """Creating a device in a nonexistent project must return 404."""
         response = client.post(
             "/api/projects/nonexistent-id/devices",
@@ -70,7 +69,7 @@ class TestDevicesCreate:
 class TestDevicesList:
     """Tests for GET /api/projects/{id}/devices."""
 
-    def test_list_devices_returns_200(self, client, project_with_device):
+    def test_list_devices_returns_200(self, client, project_with_device) -> None:
         """Listing devices must return HTTP 200."""
         pid, _ = project_with_device
         response = client.get(f"/api/projects/{pid}/devices")
@@ -80,7 +79,7 @@ class TestDevicesList:
 class TestDevicesGet:
     """Tests for GET /api/projects/{id}/devices/{device_id}."""
 
-    def test_get_device(self, client, project_with_device):
+    def test_get_device(self, client, project_with_device) -> None:
         """Getting a device by ID must succeed."""
         pid, dev_resp = project_with_device
         if dev_resp.status_code not in (200, 201):
@@ -98,9 +97,9 @@ class TestDevicesGet:
 class TestDeviceCoverage:
     """Tests for device coverage calculation (NFPA 72 compliance)."""
 
-    def test_device_has_coverage_radius(self, client, project_with_device):
+    def test_device_has_coverage_radius(self, client, project_with_device) -> None:
         """Device should have a coverage radius for NFPA 72 spacing checks."""
-        pid, dev_resp = project_with_device
+        _pid, dev_resp = project_with_device
         if dev_resp.status_code not in (200, 201):
             pytest.skip("Device creation failed")
         dev_data = dev_resp.json()

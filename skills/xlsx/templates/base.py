@@ -1,5 +1,4 @@
-"""
-xlsx skill — Base Template
+"""xlsx skill — Base Template.
 ===========================
 Single source of truth for design tokens, font resolution, and style factories.
 All scene/engine code MUST import from here. Never hardcode colors, fonts, or styles.
@@ -115,9 +114,8 @@ _ACTIVE_STYLE = "professional"
 # §2.1  Palette Integration
 # ============================================================
 
-def use_palette(prompt: str):
-    """
-    Auto-detect style from user prompt and switch all color tokens.
+def use_palette(prompt: str) -> None:
+    """Auto-detect style from user prompt and switch all color tokens.
     Call this BEFORE creating any styles/cells.
 
     Three-step matching:
@@ -128,20 +126,21 @@ def use_palette(prompt: str):
     Example:
         use_palette("帮我做一个温暖的销售月报")  # Chinese prompt example
         # → 'warm' palette applied
+
     """
     from templates.palettes import resolve_palette_with_info
     palette, style = resolve_palette_with_info(prompt)
     _apply(palette, style)
 
 
-def use_palette_explicit(style: str = "professional"):
-    """
-    Manually select a palette by style name.
+def use_palette_explicit(style: str = "professional") -> None:
+    """Manually select a palette by style name.
     Available: professional, warm, elegant, creative, muji, aesop,
-               kinfolk, celine, bottega, chanel, bloomberg, original_blue
+               kinfolk, celine, bottega, chanel, bloomberg, original_blue.
 
     Example:
         use_palette_explicit("warm")
+
     """
     from templates.palettes import get_palette
     palette = get_palette(style)
@@ -153,7 +152,7 @@ def get_active_style() -> str:
     return _ACTIVE_STYLE
 
 
-def _apply(palette: dict, style: str):
+def _apply(palette: dict, style: str) -> None:
     """Internal: apply a palette dict to all module-level color tokens."""
     global PRIMARY, PRIMARY_LIGHT, SECONDARY
     global ACCENT_POSITIVE, ACCENT_NEGATIVE, ACCENT_WARNING
@@ -256,8 +255,7 @@ def font_kpi_label():
 
 
 def make_chart_title(text, size_pt=12, bold=True, axis=False, max_line_chars=6):
-    """
-    Build a chart Title with font baked into <tx><rich><defRPr>/<rPr>.
+    r"""Build a chart Title with font baked into <tx><rich><defRPr>/<rPr>.
     Ensures WPS and Office render identical font name and size.
     Uses FONT_NAME and HEADER_BOLD from §1 — no hardcoded font names.
 
@@ -273,6 +271,7 @@ def make_chart_title(text, size_pt=12, bold=True, axis=False, max_line_chars=6):
     them as stacked overlapping text boxes. Instead, we use a SINGLE <r> run
     with \\n line breaks inside the text, which both Office and WPS render
     as line breaks within the same text box.
+
     """
     import re
     from copy import deepcopy
@@ -298,12 +297,11 @@ def make_chart_title(text, size_pt=12, bold=True, axis=False, max_line_chars=6):
     )
 
     def _insert_breaks(text, max_chars):
-        """Insert \\n before parentheses when text exceeds max_chars."""
+        r"""Insert \\n before parentheses when text exceeds max_chars."""
         if not max_chars or len(text) <= max_chars:
             return text
         # Insert \n before '(' or '（'
-        result = re.sub(r'(?=[（(])', '\n', text, count=1)
-        return result
+        return re.sub(r'(?=[（(])', '\n', text, count=1)
 
     # For axis titles, insert line breaks to prevent overlap
     display_text = text
@@ -385,13 +383,12 @@ ROW_HEIGHTS = {
 }
 
 
-def setup_sheet(ws, title: str = None, last_col: int = None):
-    """
-    Apply standard sheet setup:
-      - hide grid lines
-      - set margin column A width
-      - set row 1/2/3 heights
-      - optionally write & style title at B2
+def setup_sheet(ws, title: str | None = None, last_col: int | None = None) -> None:
+    """Apply standard sheet setup:
+    - hide grid lines
+    - set margin column A width
+    - set row 1/2/3 heights
+    - optionally write & style title at B2.
     """
     ws.sheet_view.showGridLines = False
     ws.column_dimensions["A"].width = COLUMN_WIDTHS["margin"]
@@ -406,7 +403,7 @@ def setup_sheet(ws, title: str = None, last_col: int = None):
         cell.alignment = align_title()
 
 
-def style_header_row(ws, row_num: int, col_start: int, col_end: int):
+def style_header_row(ws, row_num: int, col_start: int, col_end: int) -> None:
     """Apply header style to a row range."""
     for col in range(col_start, col_end + 1):
         cell = ws.cell(row=row_num, column=col)
@@ -417,7 +414,7 @@ def style_header_row(ws, row_num: int, col_start: int, col_end: int):
     ws.row_dimensions[row_num].height = ROW_HEIGHTS["header"]
 
 
-def style_data_row(ws, row_num: int, col_start: int, col_end: int, row_index: int):
+def style_data_row(ws, row_num: int, col_start: int, col_end: int, row_index: int) -> None:
     """Apply data row style (alternating fill)."""
     fill = fill_data_row(row_index)
     for col in range(col_start, col_end + 1):
@@ -427,7 +424,7 @@ def style_data_row(ws, row_num: int, col_start: int, col_end: int, row_index: in
     ws.row_dimensions[row_num].height = ROW_HEIGHTS["data"]
 
 
-def style_total_row(ws, row_num: int, col_start: int, col_end: int):
+def style_total_row(ws, row_num: int, col_start: int, col_end: int) -> None:
     """Apply totals row style."""
     for col in range(col_start, col_end + 1):
         cell = ws.cell(row=row_num, column=col)
@@ -443,8 +440,7 @@ def style_total_row(ws, row_num: int, col_start: int, col_end: int):
 
 def create_bar_chart(chart_type="col", grouping="clustered", gap_width=80,
                      overlap=100, style=10, width=18, height=10, **kwargs):
-    """
-    Create a BarChart with sane defaults that prevent the "thin bar" / offset bug.
+    """Create a BarChart with sane defaults that prevent the "thin bar" / offset bug.
 
     Key fixes baked in:
       - gapWidth=80 (default 150 → bars too thin)
@@ -485,9 +481,8 @@ def create_pie_chart(style=10, width=14, height=10, **kwargs):
 
 
 def setup_chart_titles(chart, title=None, y_title=None, x_title=None,
-                       title_size=12, axis_size=10):
-    """
-    Set chart title and axis titles using make_chart_title() for
+                       title_size=12, axis_size=10) -> None:
+    """Set chart title and axis titles using make_chart_title() for
     cross-platform font consistency (Office + WPS).
 
     This is the ONLY correct way to set chart titles. Never do:
@@ -501,6 +496,7 @@ def setup_chart_titles(chart, title=None, y_title=None, x_title=None,
         x_title: X-axis title (optional)
         title_size: font size for main title (default 12)
         axis_size: font size for axis titles (default 10)
+
     """
     if title is not None:
         chart.title = make_chart_title(title, size_pt=title_size, bold=True)
@@ -510,14 +506,14 @@ def setup_chart_titles(chart, title=None, y_title=None, x_title=None,
         chart.x_axis.title = make_chart_title(x_title, size_pt=axis_size, bold=False)
 
 
-def apply_chart_colors(chart, colors=None):
-    """
-    Apply palette colors to all series in a chart.
+def apply_chart_colors(chart, colors=None) -> None:
+    """Apply palette colors to all series in a chart.
     Call AFTER add_data().
 
     Args:
         chart: openpyxl chart object (BarChart, LineChart, etc.)
         colors: list of hex color strings (default: CHART_COLORS)
+
     """
     if colors is None:
         colors = CHART_COLORS
@@ -529,15 +525,15 @@ def apply_chart_colors(chart, colors=None):
             series.graphicalProperties.line.solidFill = color_hex
 
 
-def apply_pie_colors(chart, count, colors=None):
-    """
-    Apply palette colors to pie chart data points.
+def apply_pie_colors(chart, count, colors=None) -> None:
+    """Apply palette colors to pie chart data points.
     Call AFTER add_data().
 
     Args:
         chart: openpyxl PieChart
         count: number of data points (slices)
         colors: list of hex color strings (default: CHART_COLORS)
+
     """
     from openpyxl.chart.series import DataPoint
     if colors is None:
@@ -563,7 +559,7 @@ def normalize_cell_value(value):
     return value
 
 
-def copy_style(source_cell, target_cell):
+def copy_style(source_cell, target_cell) -> None:
     """Copy all styling from source to target cell."""
     target_cell.font = copy(source_cell.font)
     target_cell.fill = copy(source_cell.fill)
@@ -572,9 +568,8 @@ def copy_style(source_cell, target_cell):
     target_cell.number_format = source_cell.number_format
 
 
-def auto_fit_columns(ws, min_width=8, max_width=28, header_row=None, data_start_row=None):
-    """
-    Auto-fit column widths based on DATA content (not header).
+def auto_fit_columns(ws, min_width=8, max_width=28, header_row=None, data_start_row=None) -> None:
+    """Auto-fit column widths based on DATA content (not header).
     Headers that exceed the computed width get wrap_text=True instead of stretching the column.
 
     Args:
@@ -583,6 +578,7 @@ def auto_fit_columns(ws, min_width=8, max_width=28, header_row=None, data_start_
         max_width: maximum column width (default 28)
         header_row: row number of the header (auto-detected if None)
         data_start_row: first data row (auto-detected as header_row + 1 if None)
+
     """
     import unicodedata
 

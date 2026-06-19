@@ -1,5 +1,4 @@
-"""
-version.py — Single Source of Truth for FireAI Version
+"""version.py — Single Source of Truth for FireAI Version.
 =======================================================
 ALL audit reports, database records, and API responses MUST import
 version metadata from here. Never hardcode version strings elsewhere.
@@ -16,7 +15,6 @@ from __future__ import annotations
 
 import platform
 import sys
-from typing import Dict
 
 # ─── EDIT ONLY THESE THREE LINES PER RELEASE ─────────────────────────────────
 MAJOR = 55
@@ -41,9 +39,8 @@ NEC_EDITION = "NFPA 70-2023"
 ATEX_EDITION = "ATEX 2014/34/EU"
 
 
-def build_version_header() -> Dict[str, str]:
-    """
-    Return a dict suitable for embedding in audit reports and API responses.
+def build_version_header() -> dict[str, str]:
+    """Return a dict suitable for embedding in audit reports and API responses.
 
     Every audit JSON MUST include this header to ensure traceability.
     """
@@ -59,11 +56,10 @@ def build_version_header() -> Dict[str, str]:
 
 
 def assert_version_consistency() -> None:
-    """
-    Runtime check: raise if any imported submodule declares a different version.
+    """Runtime check: raise if any imported submodule declares a different version.
     Call once at application startup.
     """
-    declared_versions: Dict[str, str] = {
+    declared_versions: dict[str, str] = {
         "fireai.version": FIREAI_VERSION,
     }
     inconsistent = {mod: ver for mod, ver in declared_versions.items() if ver != FIREAI_VERSION}

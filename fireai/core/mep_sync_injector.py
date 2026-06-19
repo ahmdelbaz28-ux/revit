@@ -1,5 +1,4 @@
-"""
-mep_sync_injector.py — MEP Interface Module Synchronizer for Fire Alarm Integration
+"""mep_sync_injector.py — MEP Interface Module Synchronizer for Fire Alarm Integration.
 ====================================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -43,8 +42,8 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Dict, List, Tuple
+from enum import StrEnum
+from typing import Any
 
 # ============================================================================
 # Constants — NFPA 72 / NFPA 90A
@@ -55,7 +54,7 @@ AHU_CFM_THRESHOLD: float = 2000.0
 automatic smoke detection and shutdown capability."""
 
 # Unit costs for BOQ integration (USD, 2024 market)
-MEP_UNIT_COSTS: Dict[str, float] = {
+MEP_UNIT_COSTS: dict[str, float] = {
     "elevator_recall_module": 285.0,
     "hvac_shutdown_module": 195.0,
     "suppression_monitor_module": 165.0,
@@ -70,7 +69,7 @@ MEP_UNIT_COSTS: Dict[str, float] = {
 # ============================================================================
 
 
-class ModuleType(str, Enum):
+class ModuleType(StrEnum):
     """Types of MEP interface modules per NFPA 72 Chapter 21."""
 
     ELEVATOR_RECALL = "ELEVATOR_RECALL"
@@ -80,7 +79,7 @@ class ModuleType(str, Enum):
     SUPERVISORY = "SUPERVISORY"
 
 
-class MEPElementType(str, Enum):
+class MEPElementType(StrEnum):
     """Types of MEP elements found in building models."""
 
     AHU = "AHU"  # Air Handling Unit
@@ -93,14 +92,14 @@ class MEPElementType(str, Enum):
     DUCT = "DUCT"
 
 
-class AddressType(str, Enum):
+class AddressType(StrEnum):
     """Addressing mode for MEP interface modules."""
 
     ANALOG = "ANALOG"
     ADDRESSABLE = "ADDRESSABLE"
 
 
-class ElevatorPhase(str, Enum):
+class ElevatorPhase(StrEnum):
     """Elevator recall phases per NFPA 72 §21.3 / ASME A17.1."""
 
     PHASE_I = "PHASE_I"  # Automatic recall to designated/alternate floor
@@ -129,11 +128,12 @@ class MEPElement:
         sprinkler_system_id: For SPRINKLER_SYSTEM — system identifier.
         is_fire_rated: For EGRESS_DOOR — whether door is fire-rated.
         nfpa_reference: Applicable NFPA code reference.
+
     """
 
     element_id: str
     element_type: MEPElementType
-    location: Tuple[float, float] = (0.0, 0.0)
+    location: tuple[float, float] = (0.0, 0.0)
     floor_id: str = ""
     zone_id: str = ""
     capacity_cfm: float = 0.0
@@ -160,6 +160,7 @@ class ElevatorRecallSpec:
         phase_ii_enabled: Whether Phase II is verified by PE. Default False.
         phase_i_nfpa_ref: NFPA reference for Phase I.
         phase_ii_nfpa_ref: NFPA reference for Phase II.
+
     """
 
     elevator_bank: str
@@ -181,6 +182,7 @@ class HVACShutdownSpec:
         requires_duct_detector: True if duct smoke detection needed.
         shutdown_nfpa_ref: NFPA reference for shutdown requirement.
         duct_detector_nfpa_ref: NFPA reference for duct detection.
+
     """
 
     ahu_id: str
@@ -207,6 +209,7 @@ class MEPInterfaceModule:
         zone_id: Fire zone assignment.
         floor_id: Floor assignment.
         description: Human-readable description.
+
     """
 
     module_id: str
@@ -218,12 +221,13 @@ class MEPInterfaceModule:
     floor_id: str = ""
     description: str = ""
 
-    def as_loop_device_dict(self) -> Dict[str, Any]:
+    def as_loop_device_dict(self) -> dict[str, Any]:
         """Convert to device dict compatible with fault_isolator_injector.
 
         Returns:
             Dictionary with device_type, device_idx, position, zone_id
             keys compatible with the fault isolator injection algorithm.
+
         """
         return {
             "device_type": f"MEP_{self.module_type.value}",
@@ -249,13 +253,14 @@ class MEPSyncResult:
         total_modules: Count of interface modules generated.
         total_elevator_banks: Count of elevator banks processed.
         total_ahu_shutdowns: Count of AHUs requiring shutdown.
+
     """
 
-    interface_modules: Tuple[MEPInterfaceModule, ...]
-    elevator_specs: Tuple[ElevatorRecallSpec, ...]
-    hvac_specs: Tuple[HVACShutdownSpec, ...]
-    warnings: Tuple[str, ...]
-    errors: Tuple[str, ...]
+    interface_modules: tuple[MEPInterfaceModule, ...]
+    elevator_specs: tuple[ElevatorRecallSpec, ...]
+    hvac_specs: tuple[HVACShutdownSpec, ...]
+    warnings: tuple[str, ...]
+    errors: tuple[str, ...]
     total_modules: int = 0
     total_elevator_banks: int = 0
     total_ahu_shutdowns: int = 0
@@ -266,7 +271,7 @@ class MEPSyncResult:
 # ============================================================================
 
 
-def validate_mep_elements(elements: List[MEPElement]) -> List[str]:
+def validate_mep_elements(elements: list[MEPElement]) -> list[str]:
     """Validate MEP elements before synchronisation.
 
     Checks:
@@ -280,8 +285,9 @@ def validate_mep_elements(elements: List[MEPElement]) -> List[str]:
 
     Returns:
         List of error strings (empty if all valid).
+
     """
-    errors: List[str] = []
+    errors: list[str] = []
     seen_ids: set = set()
 
     for elem in elements:
@@ -313,12 +319,11 @@ def validate_mep_elements(elements: List[MEPElement]) -> List[str]:
             # FCU below threshold does NOT require shutdown per NFPA 90A §6.4.1
 
         # 4. Elevator designated_floor check
-        if elem.element_type == MEPElementType.ELEVATOR:
-            if not elem.designated_floor:
-                errors.append(
-                    f"Elevator '{elem.element_id}': designated_floor is empty. "
-                    f"Per NFPA 72 §21.3.4, a designated recall level is required."
-                )
+        if elem.element_type == MEPElementType.ELEVATOR and not elem.designated_floor:
+            errors.append(
+                f"Elevator '{elem.element_id}': designated_floor is empty. "
+                f"Per NFPA 72 §21.3.4, a designated recall level is required."
+            )
 
     return errors
 
@@ -330,7 +335,7 @@ def validate_mep_elements(elements: List[MEPElement]) -> List[str]:
 
 def extend_boq_with_mep_modules(
     mep_result: MEPSyncResult,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Generate BOQ line items for MEP interface modules.
 
     Creates costed BOQ entries for each interface module generated during
@@ -342,10 +347,11 @@ def extend_boq_with_mep_modules(
     Returns:
         List of BOQ item dicts with item_type, description, quantity,
         unit, unit_cost_usd, total_cost_usd, nfpa_reference.
+
     """
     # Aggregate by module type
-    type_counts: Dict[str, int] = {}
-    type_refs: Dict[str, str] = {}
+    type_counts: dict[str, int] = {}
+    type_refs: dict[str, str] = {}
 
     for mod in mep_result.interface_modules:
         key = mod.module_type.value
@@ -353,7 +359,7 @@ def extend_boq_with_mep_modules(
         if key not in type_refs and mod.nfpa_reference:
             type_refs[key] = mod.nfpa_reference
 
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for mtype, count in sorted(type_counts.items()):
         cost_key = mtype.lower()
         unit_cost = MEP_UNIT_COSTS.get(cost_key, 100.0)
@@ -407,11 +413,12 @@ class MEPSyncInjector:
     Args:
         mep_elements: List of MEPElement from building model.
         default_address_type: Default addressing for interface modules.
+
     """
 
     def __init__(
         self,
-        mep_elements: List[MEPElement],
+        mep_elements: list[MEPElement],
         default_address_type: AddressType = AddressType.ADDRESSABLE,
     ) -> None:
         self._elements = mep_elements
@@ -422,6 +429,7 @@ class MEPSyncInjector:
 
         Returns:
             MEPSyncResult with all interface modules, specs, warnings, errors.
+
         """
         # Validate inputs
         validation_errors = validate_mep_elements(self._elements)
@@ -434,10 +442,10 @@ class MEPSyncInjector:
                 errors=tuple(validation_errors),
             )
 
-        modules: List[MEPInterfaceModule] = []
-        elevator_specs: List[ElevatorRecallSpec] = []
-        hvac_specs: List[HVACShutdownSpec] = []
-        warnings: List[str] = []
+        modules: list[MEPInterfaceModule] = []
+        elevator_specs: list[ElevatorRecallSpec] = []
+        hvac_specs: list[HVACShutdownSpec] = []
+        warnings: list[str] = []
 
         for elem in self._elements:
             if elem.element_type == MEPElementType.ELEVATOR:
@@ -482,8 +490,8 @@ class MEPSyncInjector:
     def _process_elevator(
         self,
         elem: MEPElement,
-        warnings: List[str],
-    ) -> Tuple[List[MEPInterfaceModule], ElevatorRecallSpec]:
+        warnings: list[str],
+    ) -> tuple[list[MEPInterfaceModule], ElevatorRecallSpec]:
         """Process elevator element per NFPA 72 §21.3.
 
         Generates:
@@ -528,8 +536,8 @@ class MEPSyncInjector:
     def _process_hvac(
         self,
         elem: MEPElement,
-        warnings: List[str],
-    ) -> Tuple[List[MEPInterfaceModule], HVACShutdownSpec]:
+        warnings: list[str],
+    ) -> tuple[list[MEPInterfaceModule], HVACShutdownSpec]:
         """Process HVAC (AHU/FCU) element per NFPA 72 §21.7 / NFPA 90A §6.4.
 
         AHUs above AHU_CFM_THRESHOLD (2000 CFM) require:
@@ -541,7 +549,7 @@ class MEPSyncInjector:
         requires_shutdown = elem.capacity_cfm > AHU_CFM_THRESHOLD
         requires_duct_detector = requires_shutdown
 
-        modules: List[MEPInterfaceModule] = []
+        modules: list[MEPInterfaceModule] = []
 
         if requires_shutdown:
             shutdown_module = MEPInterfaceModule(
@@ -595,8 +603,8 @@ class MEPSyncInjector:
     def _process_suppression(
         self,
         elem: MEPElement,
-        warnings: List[str],
-    ) -> List[MEPInterfaceModule]:
+        warnings: list[str],
+    ) -> list[MEPInterfaceModule]:
         """Process sprinkler/suppression system per NFPA 72 §21.4."""
         module = MEPInterfaceModule(
             module_id=f"SUPP-MON-{elem.element_id}",
@@ -616,8 +624,8 @@ class MEPSyncInjector:
     def _process_egress(
         self,
         elem: MEPElement,
-        warnings: List[str],
-    ) -> List[MEPInterfaceModule]:
+        warnings: list[str],
+    ) -> list[MEPInterfaceModule]:
         """Process egress door per NFPA 101 §7.2.1."""
         if not elem.is_fire_rated:
             warnings.append(
@@ -644,8 +652,8 @@ class MEPSyncInjector:
     def _process_damper(
         self,
         elem: MEPElement,
-        warnings: List[str],
-    ) -> List[MEPInterfaceModule]:
+        warnings: list[str],
+    ) -> list[MEPInterfaceModule]:
         """Process smoke/fire damper per NFPA 72 §21.7."""
         module = MEPInterfaceModule(
             module_id=f"DAMPER-CTL-{elem.element_id}",
@@ -665,8 +673,8 @@ class MEPSyncInjector:
     def _process_duct(
         self,
         elem: MEPElement,
-        warnings: List[str],
-    ) -> List[MEPInterfaceModule]:
+        warnings: list[str],
+    ) -> list[MEPInterfaceModule]:
         """Process duct element per NFPA 90A §5.3."""
         module = MEPInterfaceModule(
             module_id=f"DUCT-DET-{elem.element_id}",
@@ -688,16 +696,16 @@ class MEPSyncInjector:
 __all__ = [
     "AHU_CFM_THRESHOLD",
     "MEP_UNIT_COSTS",
-    "ModuleType",
-    "MEPElementType",
     "AddressType",
     "ElevatorPhase",
-    "MEPElement",
     "ElevatorRecallSpec",
     "HVACShutdownSpec",
+    "MEPElement",
+    "MEPElementType",
     "MEPInterfaceModule",
-    "MEPSyncResult",
-    "validate_mep_elements",
-    "extend_boq_with_mep_modules",
     "MEPSyncInjector",
+    "MEPSyncResult",
+    "ModuleType",
+    "extend_boq_with_mep_modules",
+    "validate_mep_elements",
 ]

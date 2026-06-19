@@ -61,7 +61,7 @@ class CorrelationIdMiddleware:
             start_time = time.time()
 
             # Intercept send to add correlation ID header and log timing
-            async def send_with_correlation_id(message):
+            async def send_with_correlation_id(message) -> None:
                 if message["type"] == "http.response.start":
                     # Add correlation ID header
                     headers = list(message.get("headers", []))

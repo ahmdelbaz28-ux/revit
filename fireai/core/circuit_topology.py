@@ -1,5 +1,4 @@
-"""
-fireai.core.circuit_topology — NFPA 72 Circuit Topology Classes
+"""fireai.core.circuit_topology — NFPA 72 Circuit Topology Classes.
 ===============================================================
 
 Implements circuit topology models for fire alarm system wiring:
@@ -31,7 +30,7 @@ from __future__ import annotations
 import enum
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CIRCUIT CLASS DESIGNATION — NFPA 72 §12.2
@@ -118,6 +117,7 @@ class CircuitDevice:
         position_z: Z coordinate in meters (floor/ceiling height).
         current_a: Current draw in alarm condition (amperes).
         zone_id: Optional zone identifier for NFPA 72 zone mapping.
+
     """
 
     device_id: str
@@ -126,7 +126,7 @@ class CircuitDevice:
     position_y: float = 0.0
     position_z: float = 0.0
     current_a: float = 0.0
-    zone_id: Optional[str] = None
+    zone_id: str | None = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -164,15 +164,16 @@ class CircuitTopology:
                          For Class B, this must be 0.0.
         panel_position: (x, y, z) coordinates of the fire alarm panel
                         or NAC power source.
+
     """
 
     circuit_id: str
     circuit_class: CircuitClass = CircuitClass.CLASS_B
     circuit_type: CircuitType = CircuitType.SLC
-    devices: List[CircuitDevice] = field(default_factory=list)
+    devices: list[CircuitDevice] = field(default_factory=list)
     cable_length_m: float = 0.0
     return_length_m: float = 0.0
-    panel_position: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    panel_position: tuple[float, float, float] = (0.0, 0.0, 0.0)
 
     # ─── Device management ─────────────────────────────────────────────────
 
@@ -184,6 +185,7 @@ class CircuitTopology:
 
         Raises:
             ValueError: If device coordinates contain NaN/Inf values.
+
         """
         self._validate_device_coordinates(device)
         self.devices.append(device)
@@ -196,6 +198,7 @@ class CircuitTopology:
 
         Returns:
             True if device was found and removed, False otherwise.
+
         """
         for i, dev in enumerate(self.devices):
             if dev.device_id == device_id:
@@ -203,7 +206,7 @@ class CircuitTopology:
                 return True
         return False
 
-    def get_isolator_indices(self) -> List[int]:
+    def get_isolator_indices(self) -> list[int]:
         """Return indices of fault isolator devices in the device list.
 
         Per NFPA 72 §12.3, fault isolators must be placed on SLC circuits
@@ -211,10 +214,11 @@ class CircuitTopology:
 
         Returns:
             List of indices where devices have 'isolator' in their type.
+
         """
         return [i for i, dev in enumerate(self.devices) if "isolator" in dev.device_type.lower()]
 
-    def get_device_count_between_isolators(self) -> List[int]:
+    def get_device_count_between_isolators(self) -> list[int]:
         """Calculate device counts between consecutive isolators.
 
         NFPA 72 §12.3.1: No more than 32 addressable devices shall be
@@ -223,6 +227,7 @@ class CircuitTopology:
         Returns:
             List of device counts for each segment between isolators.
             Includes segment before first isolator and after last isolator.
+
         """
         if not self.devices:
             return []
@@ -268,6 +273,7 @@ class CircuitTopology:
 
         Returns:
             Total cable length in meters.
+
         """
         if self.circuit_class == CircuitClass.CLASS_A:
             return self.cable_length_m + self.return_length_m
@@ -275,7 +281,7 @@ class CircuitTopology:
 
     # ─── Validation ────────────────────────────────────────────────────────
 
-    def validate(self) -> Dict[str, Any]:
+    def validate(self) -> dict[str, Any]:
         """Validate this circuit topology against NFPA 72 requirements.
 
         Checks:
@@ -288,6 +294,7 @@ class CircuitTopology:
         Returns:
             Dict with 'compliant' (bool), 'violations' (list),
             'warnings' (list), and NFPA section references.
+
         """
         violations = []
         warnings = []
@@ -494,6 +501,7 @@ class CircuitTopology:
 
         Raises:
             ValueError: If any coordinate is NaN or Inf.
+
         """
         for name, value in [
             ("position_x", device.position_x),

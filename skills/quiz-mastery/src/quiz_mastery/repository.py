@@ -6,7 +6,7 @@ from typing import Any
 
 
 class JsonRepository:
-    def __init__(self, base_dir: str | Path):
+    def __init__(self, base_dir: str | Path) -> None:
         self.base_dir = Path(base_dir)
         self.kp_dir = self.base_dir / "knowledge_points"
         self.progress_dir = self.base_dir / "user_progress"

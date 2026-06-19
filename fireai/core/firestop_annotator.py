@@ -1,5 +1,4 @@
-"""
-fireai/core/firestop_annotator.py
+"""fireai/core/firestop_annotator.py.
 =================================
 Checks spatial overlap of routing topologies against 2D wall objects,
 identifying fire-rated boundary penetrations per IBC Section 714.
@@ -24,7 +23,7 @@ Safety:
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any
 
 try:
     from shapely.geometry import LineString
@@ -35,8 +34,7 @@ except ImportError:
 
 
 class FirestoppingAnnotator:
-    """
-    Detects and annotates fire-rated wall penetrations in cable routes.
+    """Detects and annotates fire-rated wall penetrations in cable routes.
 
     Given a set of fire-rated wall line segments and a cable route,
     this class finds all intersection points and generates DXF callouts
@@ -44,28 +42,32 @@ class FirestoppingAnnotator:
     and include both a visual marker (circle + X cross) and a text
     annotation referencing IBC S714.
 
-    Parameters:
+    Parameters
+    ----------
         fire_rated_walls_lines: List of ((x1,y1), (x2,y2)) tuples
             representing fire-rated wall centerlines.
+
     """
 
-    def __init__(self, fire_rated_walls_lines: List[Tuple[Tuple[float, float], Tuple[float, float]]]):
+    def __init__(self, fire_rated_walls_lines: list[tuple[tuple[float, float], tuple[float, float]]]) -> None:
         # In real integration, wall line strings or full polygon footprints can be stored here
         self.fire_lines = [LineString(fw) for fw in fire_rated_walls_lines] if SHAPELY_AVAILABLE else []
 
-    def locate_penetrations(self, cable_route: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-        """
-        Find all points where a cable route crosses fire-rated walls.
+    def locate_penetrations(self, cable_route: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        """Find all points where a cable route crosses fire-rated walls.
 
         Uses Shapely LineString intersection testing for exact coordinate
         computation. Returns both single-point and multi-point intersections.
 
-        Parameters:
+        Parameters
+        ----------
             cable_route: Ordered list of (x, y) waypoints forming the cable path.
 
-        Returns:
+        Returns
+        -------
             List of (x, y) coordinates where the cable penetrates a fire-rated wall.
             Empty list if no penetrations found or Shapely unavailable.
+
         """
         if len(cable_route) < 2 or not self.fire_lines:
             return []
@@ -84,9 +86,8 @@ class FirestoppingAnnotator:
 
         return penetration_coords
 
-    def draft_callouts_to_dxf(self, msp: Any, cable_route: List[Tuple[float, float]]) -> int:
-        """
-        Generate firestopping callouts on a DXF modelspace.
+    def draft_callouts_to_dxf(self, msp: Any, cable_route: list[tuple[float, float]]) -> int:
+        """Generate firestopping callouts on a DXF modelspace.
 
         For each penetration point found, draws:
           1. A circle marker (radius 0.4 drawing units)
@@ -95,12 +96,15 @@ class FirestoppingAnnotator:
 
         All entities are placed on the FA-FIRESTOP layer with color 1 (red).
 
-        Parameters:
+        Parameters
+        ----------
             msp: ezdxf Modelspace object to draw into.
             cable_route: Ordered list of (x, y) waypoints.
 
-        Returns:
+        Returns
+        -------
             Number of penetration callouts generated (0 if none found).
+
         """
         penetrations = self.locate_penetrations(cable_route)
         if not penetrations:

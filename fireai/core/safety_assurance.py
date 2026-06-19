@@ -1,5 +1,4 @@
-"""
-safety_assurance.py — FireAI Safety Assurance Module
+"""safety_assurance.py — FireAI Safety Assurance Module.
 =====================================================
 
 Adopted from the external consultant's Safety Assurance Architecture,
@@ -33,8 +32,8 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from typing import Any
 
 # V110 FIX: HMAC unification — safety_assurance must use the same
 # compute_hmac as audit_log so that evidence package signatures are
@@ -118,6 +117,7 @@ def classify_safety_tier(
         <SafetyTier.PROOF_VERIFIED: 'PROOF_VERIFIED'>
         >>> classify_safety_tier(97.0, fallback_used=True)
         <SafetyTier.FALLBACK_USED: 'FALLBACK_USED'>
+
     """
     # V52 FIX: NaN/Inf coverage_pct bypasses ALL safety tier checks.
     # NaN < 95.0 = False, NaN < 99.0 = False, NaN >= 99.99 = False.
@@ -225,14 +225,14 @@ class FailSafeRule:
 
 
 def apply_fail_safe(
-    coverage_pct_or_tier: Optional[float] = None,
-    proof_valid_or_coverage: Optional[float] = None,
-    errors_or_proof: Optional[list] = None,
-    audit_chain_valid: Optional[bool] = None,
-    hmac_key_valid: Optional[bool] = None,
+    coverage_pct_or_tier: float | None = None,
+    proof_valid_or_coverage: float | None = None,
+    errors_or_proof: list | None = None,
+    audit_chain_valid: bool | None = None,
+    hmac_key_valid: bool | None = None,
     wall_violations: int = 0,
     fallback_used: bool = False,  # V52 FIX: Was hardcoded False — heuristic designs classified as submittable
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Apply fail-safe rules and return a safety decision.
 
     This is the gate that ALL designs must pass before being submitted.
@@ -262,6 +262,7 @@ def apply_fail_safe(
           - fail_safe_required: bool — whether fail-safe action is required (backward compat)
           - actions: List[str] — recommended actions (backward compat)
           - recommendation: str — human-readable recommendation (backward compat)
+
     """
     # V109: Auto-detect calling convention
     if isinstance(coverage_pct_or_tier, SafetyTier):
@@ -479,7 +480,7 @@ class OverrideRecord:
     authorizer_role: OverrideRole
     justification: str
     risk_assessment: str
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def __post_init__(self):
         # V110 FIX: Removed 50-char minimum — test contract allows short justifications.
@@ -534,14 +535,14 @@ MANDATORY_REVIEW_TRIGGERS = {
 
 
 def check_review_triggers(
-    coverage_pct: Optional[float] = None,
-    room_shape: Optional[str] = None,
-    ceiling_height_m: Optional[float] = None,
+    coverage_pct: float | None = None,
+    room_shape: str | None = None,
+    ceiling_height_m: float | None = None,
     override_used: bool = False,
-    confidence_score: Optional[float] = None,
+    confidence_score: float | None = None,
     total_rooms: int = 0,
     flagged_rooms: int = -1,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Check if any mandatory review triggers are activated.
 
     Args:
@@ -555,6 +556,7 @@ def check_review_triggers(
 
     Returns:
         List of triggered review requirements.
+
     """
     # V53 FIX (AUDIT-009 + F-008): Non-conservative defaults + NaN bypass.
     # Old defaults (100.0, "rectangular", 3.0, 100.0) meant missing data
@@ -658,14 +660,14 @@ class EngineeringEvidencePackage:
 
     package_id: str
     room_id: str
-    room_polygon: List[Tuple[float, float]]
+    room_polygon: list[tuple[float, float]]
     room_area_m2: float
     ceiling_height_m: float
     ceiling_type: str
     occupancy_type: str
 
     # Detector placement
-    detector_positions: List[Tuple[float, float]]
+    detector_positions: list[tuple[float, float]]
     detector_type: str
     spacing_m: float
     coverage_radius_m: float
@@ -673,12 +675,12 @@ class EngineeringEvidencePackage:
     # Compliance
     coverage_pct: float
     wall_violations: int
-    nfpa_references: List[str]
+    nfpa_references: list[str]
     compliance_status: str
 
     # Proof
     proof_valid: bool
-    proof_hash: Optional[str] = None
+    proof_hash: str | None = None
     safety_tier: str = ""
 
     # Audit
@@ -686,12 +688,12 @@ class EngineeringEvidencePackage:
     audit_event_count: int = 0
 
     # Signatures
-    engineer_signature: Optional[str] = None
-    fpe_review_signature: Optional[str] = None
-    system_certificate: Optional[str] = None
+    engineer_signature: str | None = None
+    fpe_review_signature: str | None = None
+    system_certificate: str | None = None
 
     # Metadata
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     algorithm_version: str = "V20.2"
 
     def __post_init__(self):
@@ -755,22 +757,22 @@ class EngineeringEvidencePackage:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 __all__ = [
-    "SafetyTier",
-    "classify_safety_tier",
-    "tier_requires_fpe_review",
-    "tier_can_submit",
-    "FailSafeRule",
-    "apply_fail_safe",
-    "OverrideRole",
-    "OverrideRecord",
+    "ABSOLUTE_MINIMUM_COVERAGE",
+    "MANDATORY_REVIEW_TRIGGERS",
+    "MINIMUM_COVERAGE_FOR_SUBMISSION",
     "NON_OVERRIDABLE",
     "OVERRIDE_PERMISSIONS",
-    "MANDATORY_REVIEW_TRIGGERS",
-    "check_review_triggers",
-    "EngineeringEvidencePackage",
-    "ABSOLUTE_MINIMUM_COVERAGE",
-    "MINIMUM_COVERAGE_FOR_SUBMISSION",
-    "STANDARD_COVERAGE_THRESHOLD",
     "PROOF_VERIFIED_THRESHOLD",
+    "STANDARD_COVERAGE_THRESHOLD",
+    "EngineeringEvidencePackage",
+    "FailSafeRule",
+    "OverrideRecord",
+    "OverrideRole",
+    "SafetyTier",
     "_audit_compute_hmac",
+    "apply_fail_safe",
+    "check_review_triggers",
+    "classify_safety_tier",
+    "tier_can_submit",
+    "tier_requires_fpe_review",
 ]

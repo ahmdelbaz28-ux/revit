@@ -1,5 +1,4 @@
-"""
-test_devices_advanced.py — Advanced device CRUD integration tests covering
+"""test_devices_advanced.py — Advanced device CRUD integration tests covering
 load unit conversion, watt conversion edge cases, device update paths,
 and device deletion with audit trail.
 
@@ -26,7 +25,7 @@ from fastapi.testclient import TestClient
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
-def _setup_env():
+def _setup_env() -> None:
     """Set development environment for testing."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = ""
@@ -84,7 +83,7 @@ def device_in_project(client, test_project):
 class TestDeviceLoadUnitConversion:
     """Tests for load_unit conversion during device creation."""
 
-    def test_create_device_ma_stores_amperes(self, client, test_project):
+    def test_create_device_ma_stores_amperes(self, client, test_project) -> None:
         """Device with load_unit='mA' must store load converted to Amperes."""
         pid = test_project
         resp = client.post(
@@ -104,7 +103,7 @@ class TestDeviceLoadUnitConversion:
         # 500mA = 0.5A
         assert abs(data.get("load", 0) - 0.5) < 0.01
 
-    def test_create_device_ma_stores_original_unit_in_properties(self, client, test_project):
+    def test_create_device_ma_stores_original_unit_in_properties(self, client, test_project) -> None:
         """Device with load_unit='mA' must store traceability info in properties."""
         pid = test_project
         resp = client.post(
@@ -125,7 +124,7 @@ class TestDeviceLoadUnitConversion:
         assert props.get("load_original_value") == 300.0
         assert props.get("load_original_unit") == "mA"
 
-    def test_create_device_watts_stores_amperes(self, client, test_project):
+    def test_create_device_watts_stores_amperes(self, client, test_project) -> None:
         """Device with load_unit='W' must convert via voltage to Amperes."""
         pid = test_project
         resp = client.post(
@@ -145,7 +144,7 @@ class TestDeviceLoadUnitConversion:
         # 12W / 24V = 0.5A
         assert abs(data.get("load", 0) - 0.5) < 0.01
 
-    def test_create_device_watts_stores_traceability(self, client, test_project):
+    def test_create_device_watts_stores_traceability(self, client, test_project) -> None:
         """Device with load_unit='W' must store original value and unit."""
         pid = test_project
         resp = client.post(
@@ -166,7 +165,7 @@ class TestDeviceLoadUnitConversion:
         assert props.get("load_original_value") == 24.0
         assert props.get("load_original_unit") == "W"
 
-    def test_create_device_watts_zero_voltage_fails(self, client, test_project):
+    def test_create_device_watts_zero_voltage_fails(self, client, test_project) -> None:
         """Device with load_unit='W' and voltage=0 must return 400."""
         pid = test_project
         resp = client.post(
@@ -183,7 +182,7 @@ class TestDeviceLoadUnitConversion:
         )
         assert resp.status_code == 400
 
-    def test_create_device_watts_negative_voltage_fails(self, client, test_project):
+    def test_create_device_watts_negative_voltage_fails(self, client, test_project) -> None:
         """Device with load_unit='W' and negative voltage must return 400 or 422."""
         pid = test_project
         resp = client.post(
@@ -200,7 +199,7 @@ class TestDeviceLoadUnitConversion:
         )
         assert resp.status_code in (400, 422)
 
-    def test_create_device_default_load_unit_is_amperes(self, client, test_project):
+    def test_create_device_default_load_unit_is_amperes(self, client, test_project) -> None:
         """Device without load_unit must store load as Amperes (no conversion)."""
         pid = test_project
         resp = client.post(
@@ -217,7 +216,7 @@ class TestDeviceLoadUnitConversion:
         data = resp.json().get("data", resp.json())
         assert abs(data.get("load", 0) - 0.3) < 0.01
 
-    def test_create_device_zero_load_ma_no_conversion(self, client, test_project):
+    def test_create_device_zero_load_ma_no_conversion(self, client, test_project) -> None:
         """Device with load=0 and load_unit='mA' should store 0 (no conversion needed)."""
         pid = test_project
         resp = client.post(
@@ -244,7 +243,7 @@ class TestDeviceLoadUnitConversion:
 class TestDeviceUpdateLoadUnit:
     """Tests for load_unit conversion during device update."""
 
-    def test_update_device_watts_uses_existing_voltage(self, client, device_in_project):
+    def test_update_device_watts_uses_existing_voltage(self, client, device_in_project) -> None:
         """Updating device with load_unit='W' must use existing device voltage."""
         pid, dev = device_in_project
         dev_id = dev.get("id") or dev.get("device_id")
@@ -258,7 +257,7 @@ class TestDeviceUpdateLoadUnit:
         # 24W / 24V = 1.0A
         assert abs(data.get("load", 0) - 1.0) < 0.01
 
-    def test_update_device_watts_with_zero_existing_voltage_fails(self, client, test_project):
+    def test_update_device_watts_with_zero_existing_voltage_fails(self, client, test_project) -> None:
         """Updating device with load_unit='W' when device voltage is 0 must fail."""
         pid = test_project
         # Create device with voltage=0
@@ -282,7 +281,7 @@ class TestDeviceUpdateLoadUnit:
         )
         assert resp.status_code == 400
 
-    def test_update_device_ma_conversion(self, client, device_in_project):
+    def test_update_device_ma_conversion(self, client, device_in_project) -> None:
         """Updating device with load_unit='mA' must convert to Amperes."""
         pid, dev = device_in_project
         dev_id = dev.get("id") or dev.get("device_id")
@@ -294,7 +293,7 @@ class TestDeviceUpdateLoadUnit:
         data = resp.json().get("data", resp.json())
         assert abs(data.get("load", 0) - 0.25) < 0.01
 
-    def test_update_device_watts_with_voltage_in_same_update(self, client, test_project):
+    def test_update_device_watts_with_voltage_in_same_update(self, client, test_project) -> None:
         """Updating device with load_unit='W' and voltage in same update must work."""
         pid = test_project
         # Create device
@@ -321,7 +320,7 @@ class TestDeviceUpdateLoadUnit:
         # 12W / 24V = 0.5A
         assert abs(data.get("load", 0) - 0.5) < 0.01
 
-    def test_update_device_with_properties(self, client, device_in_project):
+    def test_update_device_with_properties(self, client, device_in_project) -> None:
         """Updating device properties must merge with existing properties."""
         pid, dev = device_in_project
         dev_id = dev.get("id") or dev.get("device_id")
@@ -333,7 +332,7 @@ class TestDeviceUpdateLoadUnit:
         data = resp.json().get("data", resp.json())
         assert data.get("properties", {}).get("custom_field") == "test_value"
 
-    def test_update_device_position(self, client, device_in_project):
+    def test_update_device_position(self, client, device_in_project) -> None:
         """Updating device position (x, y, z) must succeed."""
         pid, dev = device_in_project
         dev_id = dev.get("id") or dev.get("device_id")
@@ -356,7 +355,7 @@ class TestDeviceUpdateLoadUnit:
 class TestDeviceDeletion:
     """Tests for device deletion paths."""
 
-    def test_delete_device_success(self, client, test_project):
+    def test_delete_device_success(self, client, test_project) -> None:
         """Deleting an existing device must return 200."""
         pid = test_project
         create_resp = client.post(
@@ -368,12 +367,12 @@ class TestDeviceDeletion:
         resp = client.delete(f"/api/projects/{pid}/devices/{dev_id}")
         assert resp.status_code == 200
 
-    def test_delete_device_nonexistent_project_404(self, client):
+    def test_delete_device_nonexistent_project_404(self, client) -> None:
         """Deleting a device in a nonexistent project must return 404."""
         resp = client.delete("/api/projects/nonexistent-proj/devices/some-device")
         assert resp.status_code == 404
 
-    def test_delete_device_twice_second_404(self, client, test_project):
+    def test_delete_device_twice_second_404(self, client, test_project) -> None:
         """Deleting the same device twice must return 404 on second attempt."""
         pid = test_project
         create_resp = client.post(
@@ -389,7 +388,7 @@ class TestDeviceDeletion:
         resp2 = client.delete(f"/api/projects/{pid}/devices/{dev_id}")
         assert resp2.status_code == 404
 
-    def test_delete_device_then_get_404(self, client, test_project):
+    def test_delete_device_then_get_404(self, client, test_project) -> None:
         """After deletion, getting the device must return 404."""
         pid = test_project
         create_resp = client.post(
@@ -411,37 +410,37 @@ class TestDeviceDeletion:
 class TestDeviceListSortAndPagination:
     """Tests for device listing with sort, order, and pagination parameters."""
 
-    def test_list_devices_sort_by_name(self, client, test_project):
+    def test_list_devices_sort_by_name(self, client, test_project) -> None:
         """Listing devices sorted by name must succeed."""
         pid = test_project
         resp = client.get(f"/api/projects/{pid}/devices?sort=name&order=asc")
         assert resp.status_code == 200
 
-    def test_list_devices_sort_by_type(self, client, test_project):
+    def test_list_devices_sort_by_type(self, client, test_project) -> None:
         """Listing devices sorted by type must succeed."""
         pid = test_project
         resp = client.get(f"/api/projects/{pid}/devices?sort=type&order=desc")
         assert resp.status_code == 200
 
-    def test_list_devices_sort_by_category(self, client, test_project):
+    def test_list_devices_sort_by_category(self, client, test_project) -> None:
         """Listing devices sorted by category must succeed."""
         pid = test_project
         resp = client.get(f"/api/projects/{pid}/devices?sort=category&order=asc")
         assert resp.status_code == 200
 
-    def test_list_devices_sort_by_voltage(self, client, test_project):
+    def test_list_devices_sort_by_voltage(self, client, test_project) -> None:
         """Listing devices sorted by voltage must succeed."""
         pid = test_project
         resp = client.get(f"/api/projects/{pid}/devices?sort=voltage&order=asc")
         assert resp.status_code == 200
 
-    def test_list_devices_invalid_sort_defaults(self, client, test_project):
+    def test_list_devices_invalid_sort_defaults(self, client, test_project) -> None:
         """Listing devices with unknown sort field must not crash (defaults)."""
         pid = test_project
         resp = client.get(f"/api/projects/{pid}/devices?sort=unknown_field")
         assert resp.status_code == 200
 
-    def test_list_devices_pagination_page_2(self, client, test_project):
+    def test_list_devices_pagination_page_2(self, client, test_project) -> None:
         """Listing devices page 2 with limit 1 must succeed."""
         pid = test_project
         # Create at least 2 devices
@@ -465,7 +464,7 @@ class TestDeviceListSortAndPagination:
 class TestDeviceCreationFullFields:
     """Tests for device creation with all optional fields specified."""
 
-    def test_create_device_with_all_fields(self, client, test_project):
+    def test_create_device_with_all_fields(self, client, test_project) -> None:
         """Creating a device with all fields must succeed and return them."""
         pid = test_project
         resp = client.post(
@@ -492,7 +491,7 @@ class TestDeviceCreationFullFields:
         assert abs(data.get("voltage", 0) - 24.0) < 0.01
         assert data.get("properties", {}).get("manufacturer") == "Notifier"
 
-    def test_create_device_with_custom_properties(self, client, test_project):
+    def test_create_device_with_custom_properties(self, client, test_project) -> None:
         """Device properties dict must be stored and returned."""
         pid = test_project
         resp = client.post(

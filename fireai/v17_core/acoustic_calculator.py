@@ -1,5 +1,4 @@
-"""
-v17_core/acoustic_calculator.py — NFPA 72 §18.4 Audible Notification Compliance
+"""v17_core/acoustic_calculator.py — NFPA 72 §18.4 Audible Notification Compliance.
 =================================================================================
 CRITICAL LIFE-SAFETY MODULE — Part of the V17 Critical Trilogy
 
@@ -39,7 +38,7 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Import the correct provenance shim (not the consultant's fireai.v8_core path)
 try:
@@ -94,7 +93,7 @@ class AcousticSPLCalculator:
 
     def __init__(
         self,
-        room_ambient_noise: Optional[Dict[str, float]] = None,
+        room_ambient_noise: dict[str, float] | None = None,
     ) -> None:
         """Initialize with ambient noise levels per occupancy type.
 
@@ -102,9 +101,10 @@ class AcousticSPLCalculator:
             room_ambient_noise: Dict mapping occupancy types to ambient
                 noise levels in dBA. Merged with defaults from
                 NFPA 72 Table A.18.4.3.
+
         """
         # Start with NFPA 72 Table A.18.4.3 defaults
-        self.ambient_levels: Dict[str, float] = dict(AMBIENT_NOISE_LEVELS)
+        self.ambient_levels: dict[str, float] = dict(AMBIENT_NOISE_LEVELS)
         if room_ambient_noise:
             self.ambient_levels.update(room_ambient_noise)
 
@@ -118,7 +118,7 @@ class AcousticSPLCalculator:
         }
         self.ambient_levels.update(self._simple_ambient)
 
-    def _convert_speakers(self, speakers: List[dict]) -> List[Speaker]:
+    def _convert_speakers(self, speakers: list[dict]) -> list[Speaker]:
         """Convert dict-based speaker specs to Speaker objects.
 
         The consultant's interface used dicts with keys like:
@@ -142,7 +142,7 @@ class AcousticSPLCalculator:
             )
         return result
 
-    def _convert_check_points(self, check_points: List[dict]) -> List[CheckPoint]:
+    def _convert_check_points(self, check_points: list[dict]) -> list[CheckPoint]:
         """Convert dict-based check points to CheckPoint objects.
 
         The consultant's interface used dicts with keys like:
@@ -162,8 +162,8 @@ class AcousticSPLCalculator:
 
     def _convert_barriers(
         self,
-        speakers: List[dict],
-    ) -> List[Barrier]:
+        speakers: list[dict],
+    ) -> list[Barrier]:
         """Extract barrier information from consultant-style speaker dicts.
 
         The consultant used 'behind_closed_door' flag on speakers.
@@ -184,11 +184,11 @@ class AcousticSPLCalculator:
         self,
         room_id: str,
         occ_type: str,
-        speakers: List[dict],
-        check_points: List[dict],
-        barriers: Optional[List[dict]] = None,
+        speakers: list[dict],
+        check_points: list[dict],
+        barriers: list[dict] | None = None,
         mode: str = "public",
-        room_absorption_m2: Optional[float] = None,
+        room_absorption_m2: float | None = None,
     ) -> Any:
         """Calculate SPL at all check points from all speakers in a room.
 
@@ -219,6 +219,7 @@ class AcousticSPLCalculator:
         Returns:
             DecisionProvenance with compliance status, or dict if
             provenance is unavailable.
+
         """
         # Convert consultant-style dicts to proper objects
         speaker_objs = self._convert_speakers(speakers)

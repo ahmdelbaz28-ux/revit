@@ -151,7 +151,7 @@ def run_loop(
             live_report_path.write_text(generate_html(partial_output, auto_refresh=True, skill_name=name))
 
         if verbose:
-            def print_eval_stats(label, results, elapsed):
+            def print_eval_stats(label, results, elapsed) -> None:
                 pos = [r for r in results if r["should_trigger"]]
                 neg = [r for r in results if not r["should_trigger"]]
                 tp = sum(r["triggers"] for r in pos)
@@ -241,7 +241,7 @@ def run_loop(
     }
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Run eval + improve loop")
     parser.add_argument("--eval-set", required=True, help="Path to eval set JSON file")
     parser.add_argument("--skill-path", required=True, help="Path to skill directory")

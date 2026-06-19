@@ -246,7 +246,7 @@ def generate_html(data: dict, auto_refresh: bool = False, skill_name: str = "") 
                 ratio = correct / total
                 if ratio >= 0.8:
                     return "score-good"
-                elif ratio >= 0.5:
+                if ratio >= 0.5:
                     return "score-ok"
             return "score-bad"
 
@@ -301,17 +301,14 @@ def generate_html(data: dict, auto_refresh: bool = False, skill_name: str = "") 
     return "".join(html_parts)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Generate HTML report from run_loop output")
     parser.add_argument("input", help="Path to JSON output from run_loop.py (or - for stdin)")
     parser.add_argument("-o", "--output", default=None, help="Output HTML file (default: stdout)")
     parser.add_argument("--skill-name", default="", help="Skill name to include in the report title")
     args = parser.parse_args()
 
-    if args.input == "-":
-        data = json.load(sys.stdin)
-    else:
-        data = json.loads(Path(args.input).read_text())
+    data = json.load(sys.stdin) if args.input == "-" else json.loads(Path(args.input).read_text())
 
     html_output = generate_html(data, skill_name=args.skill_name)
 

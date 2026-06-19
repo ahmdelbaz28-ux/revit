@@ -1,5 +1,4 @@
-"""
-sensor_physics_advisor.py — Advisory Layer for 3D Ceiling/Slope Effects
+"""sensor_physics_advisor.py — Advisory Layer for 3D Ceiling/Slope Effects.
 ========================================================================
 
 VERIFICATION-ONLY advisory module. Does NOT modify coverage calculations.
@@ -39,7 +38,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +65,7 @@ class SensorAdvisory:
         nfpa_references: List of NFPA 72 section references.
         beam_detector_recommended: True if beam detectors should be considered.
         performance_based_design: True if PE performance-based design required.
+
     """
 
     room_id: str
@@ -74,8 +73,8 @@ class SensorAdvisory:
     slope_degrees: float = 0.0
     detector_type: str = "smoke"
     severity: str = "INFO"
-    recommendations: List[str] = field(default_factory=list)
-    nfpa_references: List[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
+    nfpa_references: list[str] = field(default_factory=list)
     beam_detector_recommended: bool = False
     performance_based_design: bool = False
 
@@ -145,9 +144,10 @@ class SensorPhysicsAdvisor:
 
         Returns:
             SensorAdvisory with recommendations.
+
         """
-        recommendations: List[str] = []
-        nfpa_refs: List[str] = []
+        recommendations: list[str] = []
+        nfpa_refs: list[str] = []
         severity = "INFO"
         beam_recommended = False
         perf_based = False
@@ -249,6 +249,7 @@ class SensorPhysicsAdvisor:
 
         Returns:
             SensorAdvisory with recommendations.
+
         """
         ceiling_h = room_dict.get("ceiling_height", 3.0) or 3.0
         slope = room_dict.get("ceiling_slope_degrees", 0.0) or 0.0

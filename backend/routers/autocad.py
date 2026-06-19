@@ -1,5 +1,4 @@
-"""
-backend/routers/autocad.py — AutoCAD Integration Endpoints
+"""backend/routers/autocad.py — AutoCAD Integration Endpoints.
 ==========================================================
 
 REST API endpoints for AutoCAD integration operations.
@@ -34,20 +33,21 @@ import re
 import tempfile
 import threading
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
-from backend.services.autocad_service import AutoCADService
 # V130 SECURITY FIX: Add auth dependencies for AutoCAD write/upload endpoints.
 # Previously every endpoint in this router was unauthenticated — any network
 # caller could read/write DWG files on the server. Write/upload operations now
 # require ENGINEER+ permission; read operations require VIEWER+.
 from backend.auth import require_permission
-from backend.rbac import Permission
+
 # V130: Rate limiter for upload endpoints — prevents DoS via large/cadenced uploads.
 from backend.limiter import limiter
+from backend.rbac import Permission
+from backend.services.autocad_service import AutoCADService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
@@ -55,7 +55,7 @@ router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
 # ── Thread-safe service singleton (FIX #18) ────────────────────────────────
 # Previously the singleton had a TOCTOU race condition — two threads could
 # both see _autocad_service as None and create separate instances.
-_autocad_service: Optional[AutoCADService] = None
+_autocad_service: AutoCADService | None = None
 _service_lock = threading.Lock()
 
 
@@ -83,40 +83,46 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 
 class ConnectRequest(BaseModel):
     """Request model for AutoCAD connection."""
+
     visible: bool = True
     force_new: bool = False
 
 
 class ConnectResponse(BaseModel):
     """Response model for AutoCAD connection."""
+
     success: bool
     message: str
     connected: bool
-    handle: Optional[str] = None
+    handle: str | None = None
 
 
 class ReadDwgRequest(BaseModel):
     """Request model for reading DWG file."""
+
     filepath: str
 
 
 class WriteDwgRequest(BaseModel):
     """Request model for writing DWG file."""
+
     filepath: str
-    entities: List[Dict[str, Any]]
+    entities: list[dict[str, Any]]
 
 
 class DrawLineRequest(BaseModel):
     """Request model for drawing a line."""
-    start_point: List[float]
-    end_point: List[float]
+
+    start_point: list[float]
+    end_point: list[float]
     layer: str = "0"
     color: int = 0
 
 
 class DrawPolylineRequest(BaseModel):
     """Request model for drawing a polyline."""
-    vertices: List[List[float]]
+
+    vertices: list[list[float]]
     layer: str = "0"
     color: int = 0
     closed: bool = False
@@ -124,7 +130,8 @@ class DrawPolylineRequest(BaseModel):
 
 class DrawCircleRequest(BaseModel):
     """Request model for drawing a circle."""
-    center: List[float]
+
+    center: list[float]
     radius: float
     layer: str = "0"
     color: int = 0
@@ -132,8 +139,9 @@ class DrawCircleRequest(BaseModel):
 
 class DrawTextRequest(BaseModel):
     """Request model for drawing text."""
+
     text: str
-    insertion_point: List[float]
+    insertion_point: list[float]
     height: float = 0.2
     layer: str = "0"
     color: int = 0
@@ -141,43 +149,49 @@ class DrawTextRequest(BaseModel):
 
 class StatusResponse(BaseModel):
     """Response model for connection status."""
+
     connected: bool
     message: str
-    document_info: Optional[Dict[str, Any]] = None
+    document_info: dict[str, Any] | None = None
 
 
 class SaveRequest(BaseModel):
     """Request model for saving document."""
+
     filepath: str
 
 
 class ModifyEntityRequest(BaseModel):
     """Request model for modifying an entity."""
+
     handle: str
-    properties: Dict[str, Any]
+    properties: dict[str, Any]
 
 
 class DeleteEntityResponse(BaseModel):
     """Response model for entity deletion."""
+
     success: bool
     message: str
 
 
 class ReadFileResponse(BaseModel):
     """Response from reading a DWG/DXF file."""
+
     filepath: str
-    metadata: Dict[str, Any]
-    layers: List[Dict[str, Any]]
-    entities: List[Dict[str, Any]]
-    blocks: Dict[str, List[Dict[str, Any]]]
+    metadata: dict[str, Any]
+    layers: list[dict[str, Any]]
+    entities: list[dict[str, Any]]
+    blocks: dict[str, list[dict[str, Any]]]
     entity_count: int
 
 
 class OperationResponse(BaseModel):
     """Generic operation response."""
+
     success: bool
     message: str
-    handle: Optional[str] = None
+    handle: str | None = None
 
 
 # ── Endpoints ───────────────────────────────────────────────────────────────

@@ -1,6 +1,4 @@
-"""
-Validator for Word document XML files against XSD schemas.
-"""
+"""Validator for Word document XML files against XSD schemas."""
 
 import re
 import tempfile
@@ -69,10 +67,8 @@ class DOCXSchemaValidator(BaseSchemaValidator):
 
         return all_valid
 
-    def validate_whitespace_preservation(self):
-        """
-        Validate that w:t elements with whitespace have xml:space='preserve'.
-        """
+    def validate_whitespace_preservation(self) -> bool:
+        """Validate that w:t elements with whitespace have xml:space='preserve'."""
         errors = []
 
         for xml_file in self.xml_files:
@@ -116,14 +112,12 @@ class DOCXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All whitespace is properly preserved")
-            return True
+        if self.verbose:
+            print("PASSED - All whitespace is properly preserved")
+        return True
 
-    def validate_deletions(self):
-        """
-        Validate that w:t elements are not within w:del elements.
+    def validate_deletions(self) -> bool:
+        """Validate that w:t elements are not within w:del elements.
         For some reason, XSD validation does not catch this, so we do it manually.
         """
         errors = []
@@ -165,10 +159,9 @@ class DOCXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - No w:t elements found within w:del elements")
-            return True
+        if self.verbose:
+            print("PASSED - No w:t elements found within w:del elements")
+        return True
 
     def count_paragraphs_in_unpacked(self):
         """Count the number of paragraphs in the unpacked document."""
@@ -213,9 +206,8 @@ class DOCXSchemaValidator(BaseSchemaValidator):
 
         return count
 
-    def validate_insertions(self):
-        """
-        Validate that w:delText elements are not within w:ins elements.
+    def validate_insertions(self) -> bool:
+        """Validate that w:delText elements are not within w:ins elements.
         w:delText is only allowed in w:ins if nested within a w:del.
         """
         errors = []
@@ -255,12 +247,11 @@ class DOCXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - No w:delText elements within w:ins elements")
-            return True
+        if self.verbose:
+            print("PASSED - No w:delText elements within w:ins elements")
+        return True
 
-    def compare_paragraph_counts(self):
+    def compare_paragraph_counts(self) -> None:
         """Compare paragraph counts between original and new document."""
         original_count = self.count_paragraphs_in_original()
         new_count = self.count_paragraphs_in_unpacked()

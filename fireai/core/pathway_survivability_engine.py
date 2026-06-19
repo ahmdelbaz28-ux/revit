@@ -1,4 +1,4 @@
-"""pathway_survivability_engine.py — NFPA 72-2022 §12.4 Pathway Survivability
+"""pathway_survivability_engine.py — NFPA 72-2022 §12.4 Pathway Survivability.
 
 CRITICAL LIFE-SAFETY MODULE
 ============================
@@ -35,7 +35,6 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import List
 
 from fireai.core.contracts import (
     CableType,
@@ -47,9 +46,9 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "BuildingSpec",
-    "SurvivabilityResult",
     "CableRequirement",
     "PathwaySurvivabilityEngine",
+    "SurvivabilityResult",
 ]
 
 
@@ -73,6 +72,7 @@ class BuildingSpec:
         is_high_rise:    Building exceeds 23 m (75 ft) per IBC §403.
         has_detention:   Detention/correctional occupancy.
         zone_count:      Number of alarm zones.
+
     """
 
     occupancy: OccupancyCategory = OccupancyCategory.BUSINESS
@@ -119,6 +119,7 @@ class CableRequirement:
         enclosure_rating_hr: Fire-resistance rating of enclosure (hours).
         nfpa_reference:  Applicable NFPA 72 section.
         notes:           Additional engineering notes.
+
     """
 
     route_type: str = "general"
@@ -142,16 +143,17 @@ class SurvivabilityResult:
         compliant:        True if all requirements are satisfiable.
         nfpa_version:     NFPA edition applied.
         classification_rationale: Step-by-step reasoning for audit trail.
+
     """
 
     building_level: PathwaySurvivabilityLevel = PathwaySurvivabilityLevel.LEVEL_1
-    cable_requirements: List[CableRequirement] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    cable_requirements: list[CableRequirement] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     # V114 FIX: Fail-safe — compliance must be PROVEN, not assumed
     compliant: bool = False
     nfpa_version: str = "NFPA 72-2022"
-    classification_rationale: List[str] = field(default_factory=list)
+    classification_rationale: list[str] = field(default_factory=list)
 
 
 # ============================================================================
@@ -193,6 +195,7 @@ class PathwaySurvivabilityEngine:
 
         Returns:
             SurvivabilityResult with classification and cable requirements.
+
         """
         result = SurvivabilityResult()
         rationale = result.classification_rationale
@@ -345,13 +348,13 @@ class PathwaySurvivabilityEngine:
         self,
         spec: BuildingSpec,
         level: PathwaySurvivabilityLevel,
-    ) -> List[CableRequirement]:
+    ) -> list[CableRequirement]:
         """Generate per-route-type cable requirements based on survivability level.
 
         Maps the survivability level to specific cable types and enclosure
         requirements for each route type (riser, horizontal, plenum, general).
         """
-        requirements: List[CableRequirement] = []
+        requirements: list[CableRequirement] = []
 
         # ── Riser cables (vertical shafts between floors) ────────────────
 
@@ -523,6 +526,7 @@ class PathwaySurvivabilityEngine:
 
         Returns:
             CableType enum value.
+
         """
         result = self.classify(spec)
         for req in result.cable_requirements:

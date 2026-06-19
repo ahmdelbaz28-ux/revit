@@ -1,5 +1,4 @@
-"""
-geometry_utils.py — Computational Geometry for FireAI
+"""geometry_utils.py — Computational Geometry for FireAI.
 =====================================================
 Point-in-polygon, polygon area, centroid, bounds, convex hull,
 grid generation, and polygon constructors.
@@ -15,11 +14,11 @@ NFPA 72 References:
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import List, Optional, Sequence, Tuple
 
-Point = Tuple[float, float]
-Polygon = List[Point]
+Point = tuple[float, float]
+Polygon = list[Point]
 
 
 # ─────────────────────────────────────────────
@@ -30,13 +29,12 @@ Polygon = List[Point]
 def _ensure_closed(poly: Polygon) -> Polygon:
     """Return polygon with first vertex appended as last (if not already closed)."""
     if poly[0] != poly[-1]:
-        return poly + [poly[0]]
+        return [*poly, poly[0]]
     return poly
 
 
 def shoelace_area(poly: Polygon) -> float:
-    """
-    Signed area via Shoelace formula.
+    """Signed area via Shoelace formula.
     Positive -> CCW, Negative -> CW.
     """
     n = len(poly)
@@ -56,8 +54,7 @@ def polygon_area(poly: Polygon) -> float:
 
 
 def polygon_centroid(poly: Polygon) -> Point:
-    """
-    True geometric centroid via Shoelace.
+    """True geometric centroid via Shoelace.
     Falls back to arithmetic mean for degenerate polygons.
     """
     n = len(poly)
@@ -85,7 +82,7 @@ def polygon_centroid(poly: Polygon) -> Point:
     return (cx * factor, cy * factor)
 
 
-def polygon_bounds(poly: Polygon) -> Tuple[float, float, float, float]:
+def polygon_bounds(poly: Polygon) -> tuple[float, float, float, float]:
     """Returns (min_x, min_y, max_x, max_y)."""
     xs = [p[0] for p in poly]
     ys = [p[1] for p in poly]
@@ -114,8 +111,7 @@ def point_in_polygon(
     include_boundary: bool = True,
     tolerance: float = 1e-9,
 ) -> bool:
-    """
-    Ray casting algorithm with robust boundary handling.
+    """Ray casting algorithm with robust boundary handling.
 
     Args:
         point:            (x, y) to test.
@@ -125,6 +121,7 @@ def point_in_polygon(
 
     Returns:
         True if point is inside or on boundary (per include_boundary).
+
     """
     px, py = point
     poly = _ensure_closed(poly)
@@ -177,19 +174,15 @@ def _point_on_segment(
         return False
 
     # Dot product — within segment bounds
-    if not (min(ax, bx) - tol <= px <= max(ax, bx) + tol and min(ay, by) - tol <= py <= max(ay, by) + tol):
-        return False
-
-    return True
+    return min(ax, bx) - tol <= px <= max(ax, bx) + tol and min(ay, by) - tol <= py <= max(ay, by) + tol
 
 
 def points_in_polygon(
     points: Sequence[Point],
     poly: Polygon,
     include_boundary: bool = True,
-) -> List[bool]:
-    """
-    Test multiple points against the same polygon.
+) -> list[bool]:
+    """Test multiple points against the same polygon.
     Batch wrapper — not a NumPy-vectorised implementation.
     """
     closed = _ensure_closed(poly)
@@ -205,21 +198,20 @@ def points_in_polygon(
 @dataclass
 class ValidationResult:
     valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
-    """
-    Validate polygon integrity: minimum vertices, no duplicates,
+    """Validate polygon integrity: minimum vertices, no duplicates,
     no self-intersection, minimum area.
 
     V11 Enhancement (Consultant #5 Criticism #4 - partially accepted):
       - Added non-consecutive duplicate vertex detection (not just consecutive)
       - Added near-duplicate vertex warning (within 0.05m)
     """
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     if len(poly) < 3:
         errors.append(f"Polygon has {len(poly)} vertices - minimum is 3.")
@@ -334,10 +326,7 @@ def _segments_intersect(p1: Point, p2: Point, p3: Point, p4: Point) -> bool:
         return True
     if abs(d3) < 1e-10 and _point_on_segment(p3, p1, p2):
         return True
-    if abs(d4) < 1e-10 and _point_on_segment(p4, p1, p2):
-        return True
-
-    return False
+    return bool(abs(d4) < 1e-10 and _point_on_segment(p4, p1, p2))
 
 
 # ─────────────────────────────────────────────
@@ -363,8 +352,7 @@ def ensure_ccw(poly: Polygon) -> Polygon:
 
 
 def rect_polygon(width: float, height: float, origin: Point = (0, 0)) -> Polygon:
-    """
-    Create a rectangular polygon (CCW order).
+    """Create a rectangular polygon (CCW order).
 
     Args:
         width:  Rectangle width (x-axis).
@@ -376,6 +364,7 @@ def rect_polygon(width: float, height: float, origin: Point = (0, 0)) -> Polygon
 
     Raises:
         ValueError: If width or height is not positive.
+
     """
     if width <= 0:
         raise ValueError(f"Width must be positive, got {width}")
@@ -391,8 +380,7 @@ def rect_polygon(width: float, height: float, origin: Point = (0, 0)) -> Polygon
 
 
 def l_shape_polygon(width: float, height: float, cut_w: float, cut_h: float) -> Polygon:
-    """
-    Create an L-shaped polygon (CCW order).
+    """Create an L-shaped polygon (CCW order).
     Cutout is from the top-right corner.
 
     Args:
@@ -410,6 +398,7 @@ def l_shape_polygon(width: float, height: float, cut_w: float, cut_h: float) -> 
     Examples:
         >>> l_shape_polygon(6, 4, 2, 2)
         [(0,0), (6,0), (6,2), (4,2), (4,4), (0,4)]
+
     """
     if cut_w > width:
         raise ValueError(f"Cutout width {cut_w} exceeds total width {width}")
@@ -434,9 +423,8 @@ def grid_points_in_polygon(
     poly: Polygon,
     step: float = 0.5,
     margin: float = 0.0,
-) -> List[Point]:
-    """
-    Generate a regular grid of points inside the polygon, useful for
+) -> list[Point]:
+    """Generate a regular grid of points inside the polygon, useful for
     coverage verification and detector candidate generation.
 
     The grid starts at (min_x + margin, min_y + margin) and steps
@@ -454,6 +442,7 @@ def grid_points_in_polygon(
 
     Raises:
         ValueError: If step <= 0 or margin < 0.
+
     """
     if step <= 0:
         raise ValueError(f"Step must be positive, got {step}")
@@ -471,7 +460,7 @@ def grid_points_in_polygon(
     if x_start >= x_end or y_start >= y_end:
         return []  # Margin too large — no valid grid points
 
-    points: List[Point] = []
+    points: list[Point] = []
     x = x_start
     while x <= x_end + 1e-9:
         y = y_start
@@ -491,8 +480,7 @@ def grid_points_in_polygon(
 
 
 def is_rectangular(poly: Polygon, tolerance: float = 0.05) -> bool:
-    """
-    Check if a polygon is effectively rectangular (axis-aligned).
+    """Check if a polygon is effectively rectangular (axis-aligned).
 
     A polygon is rectangular if:
       - It has exactly 4 vertices.
@@ -515,6 +503,7 @@ def is_rectangular(poly: Polygon, tolerance: float = 0.05) -> bool:
         True
         >>> is_rectangular([(0,0), (6,0), (6,2), (4,2), (4,4), (0,4)])
         False
+
     """
     # Strip closing vertex if duplicated
     clean = list(poly)
@@ -549,9 +538,8 @@ def is_rectangular(poly: Polygon, tolerance: float = 0.05) -> bool:
     return True
 
 
-def bounding_rect_dimensions(poly: Polygon) -> Tuple[float, float, float, float]:
-    """
-    Compute bounding rectangle dimensions and origin from a polygon.
+def bounding_rect_dimensions(poly: Polygon) -> tuple[float, float, float, float]:
+    """Compute bounding rectangle dimensions and origin from a polygon.
 
     Returns the width, length (height), and origin (bottom-left corner)
     of the axis-aligned bounding rectangle that encloses the polygon.
@@ -569,6 +557,7 @@ def bounding_rect_dimensions(poly: Polygon) -> Tuple[float, float, float, float]
     Examples:
         >>> bounding_rect_dimensions([(0,0), (6,0), (6,2), (4,2), (4,4), (0,4)])
         (6.0, 4.0, 0.0, 0.0)
+
     """
     min_x, min_y, max_x, max_y = polygon_bounds(poly)
     return (max_x - min_x, max_y - min_y, min_x, min_y)
@@ -580,8 +569,7 @@ def bounding_rect_dimensions(poly: Polygon) -> Tuple[float, float, float, float]
 
 
 def convex_hull_2d(points: Sequence[Point]) -> Polygon:
-    """
-    Compute the convex hull of a set of 2D points.
+    """Compute the convex hull of a set of 2D points.
     Uses Andrew's Monotone Chain algorithm. O(n log n).
 
     Useful for:
@@ -597,6 +585,7 @@ def convex_hull_2d(points: Sequence[Point]) -> Polygon:
 
     Raises:
         ValueError: If fewer than 3 non-collinear points are provided.
+
     """
     pts = sorted(set(points))  # Remove duplicates and sort by (x, y)
     if len(pts) <= 1:
@@ -607,14 +596,14 @@ def convex_hull_2d(points: Sequence[Point]) -> Polygon:
         return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
     # Build lower hull
-    lower: List[Point] = []
+    lower: list[Point] = []
     for p in pts:
         while len(lower) >= 2 and _cross(lower[-2], lower[-1], p) <= 0:
             lower.pop()
         lower.append(p)
 
     # Build upper hull
-    upper: List[Point] = []
+    upper: list[Point] = []
     for p in reversed(pts):
         while len(upper) >= 2 and _cross(upper[-2], upper[-1], p) <= 0:
             upper.pop()
@@ -638,14 +627,14 @@ def convex_hull_2d(points: Sequence[Point]) -> Polygon:
 class SanitizeResult:
     """Result from room geometry sanitization."""
 
-    coords: List[Point]
+    coords: list[Point]
     was_modified: bool = False
-    modifications: List[str] = field(default_factory=list)
+    modifications: list[str] = field(default_factory=list)
     rejected: bool = False
-    rejection_reason: Optional[str] = None
+    rejection_reason: str | None = None
 
 
-def sanitize_room_geometry(coords: List[Point], min_area: float = 1.0) -> SanitizeResult:
+def sanitize_room_geometry(coords: list[Point], min_area: float = 1.0) -> SanitizeResult:
     """Sanitize room geometry from Revit before processing.
 
     Revit models frequently contain geometry errors that, if passed
@@ -684,8 +673,9 @@ def sanitize_room_geometry(coords: List[Point], min_area: float = 1.0) -> Saniti
         False
         >>> result.coords
         [(0,0), (10,0), (10,8), (0,8)]
+
     """
-    modifications: List[str] = []
+    modifications: list[str] = []
     was_modified = False
 
     # Basic input validation

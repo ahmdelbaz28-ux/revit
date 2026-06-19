@@ -1,5 +1,4 @@
-"""
-fireai/core/network_topology.py
+"""fireai/core/network_topology.py.
 =================================
 Master Network Backbone Topology & Class X Redundancy Router.
 
@@ -49,7 +48,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
@@ -94,11 +93,12 @@ class PanelNode:
         building_id: Building identifier (e.g. "BLDG-A").
         location: (x, y) coordinate for routing.
         is_master: Whether this is the master (central) panel.
+
     """
 
     panel_id: str
     building_id: str
-    location: Tuple[float, float] = (0.0, 0.0)
+    location: tuple[float, float] = (0.0, 0.0)
     is_master: bool = False
 
 
@@ -113,6 +113,7 @@ class NetworkLink:
         link_type: "copper", "fiber_single", "fiber_dual".
         is_class_x: Whether this link has redundant path (Class X).
         length_m: Physical cable length in metres.
+
     """
 
     link_id: str
@@ -147,8 +148,8 @@ class NetworkTopologyAuditor:
 
     def audit_network_topology(
         self,
-        panels: List[Dict[str, Any]],
-        links: List[Dict[str, Any]],
+        panels: list[dict[str, Any]],
+        links: list[dict[str, Any]],
     ) -> Any:
         """Audit the network topology for Class X compliance.
 
@@ -167,9 +168,10 @@ class NetworkTopologyAuditor:
 
         Returns:
             ``DecisionProvenance`` or plain dict.
+
         """
         violations: list = []
-        fiber_recommendations: List[Dict[str, Any]] = []
+        fiber_recommendations: list[dict[str, Any]] = []
 
         # Build adjacency graph
         panel_ids = set()
@@ -236,8 +238,8 @@ class NetworkTopologyAuditor:
             logger.warning(desc)
 
         # Build adjacency list (undirected)
-        adj: Dict[str, List[str]] = {pid: [] for pid in panel_ids}
-        link_details: Dict[str, Dict[str, Any]] = {}
+        adj: dict[str, list[str]] = {pid: [] for pid in panel_ids}
+        link_details: dict[str, dict[str, Any]] = {}
 
         for link in links:
             lid = link.get("link_id", "UNKNOWN")
@@ -500,7 +502,7 @@ class NetworkTopologyAuditor:
 
     def _classify_topology(
         self,
-        adj: Dict[str, List[str]],
+        adj: dict[str, list[str]],
         panel_ids: set,
     ) -> str:
         """Classify the network topology type.
@@ -508,6 +510,7 @@ class NetworkTopologyAuditor:
         Returns:
             "star", "daisy_chain", "ring", "disconnected_rings", "mesh",
             or "unknown".
+
         """
         if len(panel_ids) <= 1:
             return "single_panel"
@@ -544,13 +547,14 @@ class NetworkTopologyAuditor:
 
     @staticmethod
     def _is_connected(
-        adj: Dict[str, List[str]],
+        adj: dict[str, list[str]],
         panel_ids: set,
     ) -> bool:
         """Check whether the graph is fully connected using BFS.
 
         Returns:
             True if all panels are reachable from any starting panel.
+
         """
         if not panel_ids:
             return True
@@ -568,9 +572,9 @@ class NetworkTopologyAuditor:
 
     @staticmethod
     def _find_bridges(
-        adj: Dict[str, List[str]],
+        adj: dict[str, list[str]],
         panel_ids: set,
-    ) -> List[Tuple[str, str]]:
+    ) -> list[tuple[str, str]]:
         """Find all bridge edges using Tarjan's algorithm.
 
         A bridge is an edge whose removal increases the number of
@@ -579,6 +583,7 @@ class NetworkTopologyAuditor:
 
         Returns:
             List of (from_panel, to_panel) tuples that are bridge edges.
+
         """
         # Tarjan's bridge-finding: O(V + E)
         visited = set()
@@ -588,7 +593,7 @@ class NetworkTopologyAuditor:
         bridges = []
         timer = [0]  # mutable counter
 
-        def dfs(u):
+        def dfs(u) -> None:
             visited.add(u)
             disc[u] = low[u] = timer[0]
             timer[0] += 1
@@ -612,8 +617,8 @@ class NetworkTopologyAuditor:
 
 
 __all__ = [
+    "REQUIRED_TOPOLOGY",
+    "NetworkLink",
     "NetworkTopologyAuditor",
     "PanelNode",
-    "NetworkLink",
-    "REQUIRED_TOPOLOGY",
 ]

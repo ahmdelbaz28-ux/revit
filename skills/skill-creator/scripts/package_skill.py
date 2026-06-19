@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Skill Packager - Creates a distributable .skill file of a skill folder
+"""Skill Packager - Creates a distributable .skill file of a skill folder.
 
 Usage:
     python utils/package_skill.py <path/to/skill-folder> [output-directory]
@@ -8,6 +7,7 @@ Usage:
 Example:
     python utils/package_skill.py skills/public/my-skill
     python utils/package_skill.py skills/public/my-skill ./dist
+
 """
 
 import fnmatch
@@ -41,8 +41,7 @@ def should_exclude(rel_path: Path) -> bool:
 
 
 def package_skill(skill_path, output_dir=None):
-    """
-    Package a skill folder into a .skill file.
+    """Package a skill folder into a .skill file.
 
     Args:
         skill_path: Path to the skill folder
@@ -50,6 +49,7 @@ def package_skill(skill_path, output_dir=None):
 
     Returns:
         Path to the created .skill file, or None if error
+
     """
     skill_path = Path(skill_path).resolve()
 
@@ -109,7 +109,7 @@ def package_skill(skill_path, output_dir=None):
         return None
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python utils/package_skill.py <path/to/skill-folder> [output-directory]")
         print("\nExample:")

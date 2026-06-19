@@ -1,6 +1,4 @@
-"""
-fireai/validation — Design validation and compliance checking
-"""
+"""fireai/validation — Design validation and compliance checking."""
 
 from fireai.validation.compliance_engine import ComplianceEngine
 from fireai.validation.multi_standard_validator import MultiStandardValidator

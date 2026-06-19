@@ -32,8 +32,7 @@ import hashlib
 import json
 import math
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import List, Tuple
+from datetime import UTC, datetime
 
 from .density_optimizer import DETECTOR_RADIUS
 
@@ -60,7 +59,7 @@ class ProofCertificate:
 
     # ── Detector Information ──────────────────────────────────────────
     n_detectors: int
-    detector_positions: List[Tuple[float, float]]
+    detector_positions: list[tuple[float, float]]
     detector_type: str = "smoke"
     detector_radius_m: float = 0.0  # Coverage radius R
 
@@ -95,7 +94,7 @@ class ProofCertificate:
     # ── Additional Metadata ───────────────────────────────────────────
     fireai_version: str = "1.0.0"
     certificate_version: str = "1.0"
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def compute_hash(self) -> str:
         """Compute SHA-256 hash of all proof parameters.
@@ -132,7 +131,7 @@ class ProofCertificate:
     def seal(self) -> None:
         """Seal the certificate by computing hash and timestamp."""
         self.proof_hash = self.compute_hash()
-        self.timestamp = datetime.now(timezone.utc).isoformat()
+        self.timestamp = datetime.now(UTC).isoformat()
 
     def verify_hash(self) -> bool:
         """Verify the certificate hash matches the current data."""
@@ -143,7 +142,7 @@ class ProofCertificate:
         return json.dumps(asdict(self), indent=indent, ensure_ascii=False)
 
     @classmethod
-    def from_json(cls, json_str: str) -> "ProofCertificate":
+    def from_json(cls, json_str: str) -> ProofCertificate:
         """Deserialize certificate from JSON."""
         data = json.loads(json_str)
         return cls(**data)
@@ -177,7 +176,7 @@ class ProofCertificateGenerator:
         coverage_radius: float = DETECTOR_RADIUS,
         max_spacing: float = 9.1,
         wall_min: float = 0.10,
-    ):
+    ) -> None:
         self.delta = grid_step
         self.R = coverage_radius
         self.S = max_spacing
@@ -191,7 +190,7 @@ class ProofCertificateGenerator:
         width: float,
         length: float,
         ceiling_height: float,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
         detector_type: str = "smoke",
         nfpa_compliant: bool = False,
         wall_coverage_complete: bool = False,
@@ -212,6 +211,7 @@ class ProofCertificateGenerator:
 
         Returns:
             ProofCertificate with mathematical proof.
+
         """
         delta = self.delta
         R = self.R

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-xlsx.py — Unified Excel Quality Assurance & Manipulation Tool
+"""xlsx.py — Unified Excel Quality Assurance & Manipulation Tool.
 
 Commands:
   recalc       <xlsx> [timeout]       Recalculate formulas via LibreOffice + error scan
@@ -19,6 +18,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import platform
@@ -28,8 +28,9 @@ import subprocess
 import sys
 import zipfile
 from collections import defaultdict
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 try:
     from openpyxl import Workbook, load_workbook  # noqa: F401
@@ -44,7 +45,7 @@ except ImportError:
 #  Section 0: Command registry + shared constants & helpers
 # ═══════════════════════════════════════════════════════════════
 
-_COMMANDS: Dict[str, Callable] = {}
+_COMMANDS: dict[str, Callable] = {}
 
 
 def cmd(name: str):
@@ -102,7 +103,7 @@ def is_formula(value) -> bool:
     return isinstance(value, str) and value.startswith("=")
 
 
-def parse_range(range_str: str) -> Tuple[Optional[str], int, int, int, int]:
+def parse_range(range_str: str) -> tuple[str | None, int, int, int, int]:
     """Parse 'Sheet!A1:F100' into (sheet, min_col, min_row, max_col, max_row)."""
     if "!" in range_str:
         sheet, rng = range_str.rsplit("!", 1)
@@ -115,16 +116,15 @@ def parse_range(range_str: str) -> Tuple[Optional[str], int, int, int, int]:
         c1, r1 = coordinate_from_string(parts[0])
         c2, r2 = coordinate_from_string(parts[1])
         return sheet, column_index_from_string(c1), r1, column_index_from_string(c2), r2
-    else:
-        c1, r1 = coordinate_from_string(parts[0])
-        return sheet, column_index_from_string(c1), r1, column_index_from_string(c1), r1
+    c1, r1 = coordinate_from_string(parts[0])
+    return sheet, column_index_from_string(c1), r1, column_index_from_string(c1), r1
 
 
 # ═══════════════════════════════════════════════════════════════
 #  Section 1: recalc — LibreOffice recalculation + error scan
 # ═══════════════════════════════════════════════════════════════
 
-def _find_soffice() -> Optional[str]:
+def _find_soffice() -> str | None:
     """Locate soffice binary across macOS / Linux / Windows.
 
     Search order:
@@ -183,7 +183,7 @@ def _setup_libreoffice_macro() -> bool:
     macro_file = os.path.join(macro_dir, "Module1.xba")
 
     if os.path.exists(macro_file):
-        with open(macro_file, "r") as f:
+        with open(macro_file) as f:
             if "RecalculateAndSave" in f.read():
                 return True
 
@@ -214,9 +214,8 @@ def _setup_libreoffice_macro() -> bool:
         return False
 
 
-def _libreoffice_recalc(filename: str, timeout: int = 30) -> Dict[str, Any]:
-    """
-    Recalculate formulas in an Excel file via LibreOffice,
+def _libreoffice_recalc(filename: str, timeout: int = 30) -> dict[str, Any]:
+    """Recalculate formulas in an Excel file via LibreOffice,
     then scan ALL cells for errors.
 
     Returns a dict with status, error counts, and locations.
@@ -234,7 +233,7 @@ def _libreoffice_recalc(filename: str, timeout: int = 30) -> Dict[str, Any]:
     if not soffice_bin:
         return {"error": "LibreOffice not found. Install it and ensure soffice is in PATH."}
 
-    lo_cmd: List[str] = [
+    lo_cmd: list[str] = [
         soffice_bin, "--headless", "--norestore",
         "vnd.sun.star.script:Standard.Module1.RecalculateAndSave"
         "?language=Basic&location=application",
@@ -243,7 +242,7 @@ def _libreoffice_recalc(filename: str, timeout: int = 30) -> Dict[str, Any]:
 
     # Wrap with a timeout binary when available
     if platform.system() != "Windows":
-        timeout_bin: Optional[str] = None
+        timeout_bin: str | None = None
         if platform.system() == "Linux":
             timeout_bin = "timeout"
         elif platform.system() == "Darwin":
@@ -256,7 +255,7 @@ def _libreoffice_recalc(filename: str, timeout: int = 30) -> Dict[str, Any]:
             except (FileNotFoundError, subprocess.TimeoutExpired):
                 pass
         if timeout_bin:
-            lo_cmd = [timeout_bin, str(timeout)] + lo_cmd
+            lo_cmd = [timeout_bin, str(timeout), *lo_cmd]
 
     result = subprocess.run(lo_cmd, capture_output=True, text=True)
 
@@ -264,8 +263,7 @@ def _libreoffice_recalc(filename: str, timeout: int = 30) -> Dict[str, Any]:
         error_msg = result.stderr or "Unknown error during recalculation"
         if "Module1" in error_msg or "RecalculateAndSave" not in error_msg:
             return {"error": "LibreOffice macro not configured properly"}
-        else:
-            return {"error": error_msg}
+        return {"error": error_msg}
 
     # Scan recalculated file for Excel errors
     try:
@@ -274,7 +272,7 @@ def _libreoffice_recalc(filename: str, timeout: int = 30) -> Dict[str, Any]:
         excel_errors_list = [
             "#VALUE!", "#DIV/0!", "#REF!", "#NAME?", "#NULL!", "#NUM!", "#N/A"
         ]
-        error_details: Dict[str, List[str]] = {err: [] for err in excel_errors_list}
+        error_details: dict[str, list[str]] = {err: [] for err in excel_errors_list}
         total_errors = 0
 
         for sheet_name in wb.sheetnames:
@@ -290,7 +288,7 @@ def _libreoffice_recalc(filename: str, timeout: int = 30) -> Dict[str, Any]:
                                 break
         wb.close()
 
-        out: Dict[str, Any] = {
+        out: dict[str, Any] = {
             "status": "success" if total_errors == 0 else "errors_found",
             "total_errors": total_errors,
             "error_summary": {},
@@ -344,10 +342,8 @@ def cmd_recalc(argv: Sequence[str]) -> int:
 
 def _run_libreoffice_recalc_best_effort(filepath: str) -> None:
     """Attempt LibreOffice recalc (best-effort, swallow errors)."""
-    try:
+    with contextlib.suppress(Exception):
         _libreoffice_recalc(filepath, timeout=30)
-    except Exception:
-        pass
 
 
 @cmd("audit")
@@ -369,9 +365,9 @@ def cmd_audit(argv: Sequence[str]) -> int:
     wb_data = load_workbook(str(path), data_only=True)
     wb_form = load_workbook(str(path), data_only=False)
 
-    errors: List[Dict[str, Any]] = []
-    zero_values: List[Dict[str, str]] = []
-    implicit_arrays: List[Dict[str, str]] = []
+    errors: list[dict[str, Any]] = []
+    zero_values: list[dict[str, str]] = []
+    implicit_arrays: list[dict[str, str]] = []
     total_formulas = 0
 
     for sname in wb_form.sheetnames:
@@ -417,7 +413,7 @@ def cmd_audit(argv: Sequence[str]) -> int:
     wb_data.close()
     wb_form.close()
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "total_formulas": total_formulas,
         "error_count": len(errors),
         "zero_value_count": len(zero_values),
@@ -452,11 +448,11 @@ def cmd_scan(argv: Sequence[str]) -> int:
         return 1
 
     wb = load_workbook(str(path), data_only=False)
-    findings: List[Dict[str, str]] = []
+    findings: list[dict[str, str]] = []
 
     # Pre-collect max_row for every sheet (used for cross-sheet ref check)
-    sheet_max_rows: Dict[str, int] = {}
-    sheet_max_cols: Dict[str, int] = {}
+    sheet_max_rows: dict[str, int] = {}
+    sheet_max_cols: dict[str, int] = {}
     for sn in wb.sheetnames:
         sw = wb[sn]
         sheet_max_rows[sn] = sw.max_row or 1
@@ -468,7 +464,7 @@ def cmd_scan(argv: Sequence[str]) -> int:
         max_data_col = sheet_max_cols[sname]
 
         # Collect formulas by column for pattern analysis
-        col_formulas: Dict[Tuple[str, str], List[Tuple[int, str]]] = defaultdict(list)
+        col_formulas: dict[tuple[str, str], list[tuple[int, str]]] = defaultdict(list)
 
         for row in ws.iter_rows(min_row=1, max_row=max_data_row,
                                 min_col=1, max_col=max_data_col):
@@ -541,7 +537,7 @@ def cmd_scan(argv: Sequence[str]) -> int:
         for (sh, col), entries in col_formulas.items():
             if len(entries) < 3:
                 continue
-            patterns: Dict[str, List[int]] = defaultdict(list)
+            patterns: dict[str, list[int]] = defaultdict(list)
             for row_num, fstr in entries:
                 norm = re.sub(r'(\$?[A-Z]{1,3}\$?)\d+', r'\1#', fstr)
                 patterns[norm].append(row_num)
@@ -567,7 +563,7 @@ def cmd_scan(argv: Sequence[str]) -> int:
 
     wb.close()
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "total_findings": len(findings),
         "by_type": {},
     }
@@ -602,7 +598,7 @@ def cmd_inspect(argv: Sequence[str]) -> int:
         return 1
 
     wb = load_workbook(str(path), data_only=False, read_only=False)
-    sheets_info: List[Dict[str, Any]] = []
+    sheets_info: list[dict[str, Any]] = []
 
     for sname in wb.sheetnames:
         ws = wb[sname]
@@ -610,7 +606,7 @@ def cmd_inspect(argv: Sequence[str]) -> int:
         max_col = ws.max_column or 0
 
         # Extract headers (first row)
-        headers: List[Optional[str]] = []
+        headers: list[str | None] = []
         if max_row > 0 and max_col > 0:
             for cell in ws[1]:
                 if cell.value is not None:
@@ -642,7 +638,7 @@ def cmd_inspect(argv: Sequence[str]) -> int:
         if hasattr(ws, "_charts"):
             chart_count = len(ws._charts)
 
-        sheet_info: Dict[str, Any] = {
+        sheet_info: dict[str, Any] = {
             "name": sname,
             "dataRange": data_range,
             "rows": max_row,
@@ -668,19 +664,19 @@ def cmd_inspect(argv: Sequence[str]) -> int:
 #  Section 5: pivot — PivotTable with optional chart
 # ═══════════════════════════════════════════════════════════════
 
-def _aggregate(values: List[float], method: str) -> float:
+def _aggregate(values: list[float], method: str) -> float:
     """Compute aggregation on a list of numbers."""
     if not values:
         return 0.0
     if method == "sum":
         return sum(values)
-    elif method == "count":
+    if method == "count":
         return float(len(values))
-    elif method == "average":
+    if method == "average":
         return sum(values) / len(values)
-    elif method == "max":
+    if method == "max":
         return max(values)
-    elif method == "min":
+    if method == "min":
         return min(values)
     return sum(values)
 
@@ -722,7 +718,7 @@ def cmd_pivot(argv: Sequence[str]) -> int:
     loc_start_row = loc[2]
 
     # Parse value fields
-    value_fields: List[Tuple[str, str]] = []
+    value_fields: list[tuple[str, str]] = []
     for vspec in args.values.split(","):
         vspec = vspec.strip()
         if ":" in vspec:
@@ -748,7 +744,7 @@ def cmd_pivot(argv: Sequence[str]) -> int:
     ws_src = wb[src_sheet]
 
     # Read headers from first row of source
-    headers: List[str] = []
+    headers: list[str] = []
     for col_idx in range(src_min_col, src_max_col + 1):
         val = ws_src.cell(row=src_min_row, column=col_idx).value
         headers.append(str(val) if val is not None else f"Col{col_idx}")
@@ -764,9 +760,9 @@ def cmd_pivot(argv: Sequence[str]) -> int:
             return 1
 
     # Read data rows
-    data_rows: List[Dict[str, Any]] = []
+    data_rows: list[dict[str, Any]] = []
     for row_idx in range(src_min_row + 1, src_max_row + 1):
-        row_data: Dict[str, Any] = {}
+        row_data: dict[str, Any] = {}
         for col_idx in range(src_min_col, src_max_col + 1):
             h = headers[col_idx - src_min_col]
             row_data[h] = ws_src.cell(row=row_idx, column=col_idx).value
@@ -774,11 +770,11 @@ def cmd_pivot(argv: Sequence[str]) -> int:
             data_rows.append(row_data)
 
     # Aggregate data
-    def make_key(row: Dict[str, Any], fields: List[str]) -> Tuple[str, ...]:
+    def make_key(row: dict[str, Any], fields: list[str]) -> tuple[str, ...]:
         return tuple(str(row.get(f, "")) for f in fields)
 
     group_fields = row_fields + col_fields
-    groups: Dict[Tuple[str, ...], Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
+    groups: dict[tuple[str, ...], dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
 
     for row in data_rows:
         key = make_key(row, group_fields)
@@ -833,7 +829,7 @@ def cmd_pivot(argv: Sequence[str]) -> int:
     if use_cross_matrix:
         # ── Cross-matrix mode: row_fields as rows, col_fields expanded as columns ──
         # Collect unique column dimension values
-        col_dim_values: List[str] = []
+        col_dim_values: list[str] = []
         seen_col_vals: set = set()
         for row in data_rows:
             cv = str(row.get(col_fields[0], ""))
@@ -843,7 +839,7 @@ def cmd_pivot(argv: Sequence[str]) -> int:
         col_dim_values.sort()
 
         # Build cross-matrix groups: key = row_fields only, sub-key = col_dim value
-        cross_groups: Dict[Tuple[str, ...], Dict[str, Dict[str, List[float]]]] = defaultdict(
+        cross_groups: dict[tuple[str, ...], dict[str, dict[str, list[float]]]] = defaultdict(
             lambda: defaultdict(lambda: defaultdict(list))
         )
         for row in data_rows:
@@ -855,7 +851,7 @@ def cmd_pivot(argv: Sequence[str]) -> int:
                     cross_groups[rkey][cval][vname].append(float(val))
 
         # Build output headers: row_fields + (col_val - agg_name) for each combination
-        out_headers: List[str] = list(row_fields)
+        out_headers: list[str] = list(row_fields)
         for cv in col_dim_values:
             for vname, agg in value_fields:
                 if len(value_fields) == 1:
@@ -903,7 +899,7 @@ def cmd_pivot(argv: Sequence[str]) -> int:
 
     else:
         # ── Flat mode: no --cols, original behavior ──
-        out_headers: List[str] = list(row_fields)
+        out_headers: list[str] = list(row_fields)
         for vname, agg in value_fields:
             out_headers.append(f"{vname} ({agg})")
 
@@ -1019,10 +1015,8 @@ def cmd_pivot(argv: Sequence[str]) -> int:
 
     # [Fix ③] Auto-recalc after pivot if chart was created, so chart data cache is populated
     if has_chart:
-        try:
+        with contextlib.suppress(Exception):
             _run_libreoffice_recalc_best_effort(str(output_path))
-        except Exception:
-            pass
 
     print(json.dumps({
         "status": "success",
@@ -1043,11 +1037,11 @@ def cmd_pivot(argv: Sequence[str]) -> int:
 #  Section 6: chart-verify — Verify chart data content
 # ═══════════════════════════════════════════════════════════════
 
-def _check_charts(filepath: str) -> Tuple[List[Dict], List[Dict]]:
+def _check_charts(filepath: str) -> tuple[list[dict], list[dict]]:
     """Core chart verification logic. Returns (ok_charts, empty_charts)."""
     wb = load_workbook(filepath)
-    ok_charts: List[Dict[str, str]] = []
-    empty_charts: List[Dict[str, str]] = []
+    ok_charts: list[dict[str, str]] = []
+    empty_charts: list[dict[str, str]] = []
 
     for sname in wb.sheetnames:
         ws = wb[sname]
@@ -1119,7 +1113,7 @@ def cmd_chart_verify(argv: Sequence[str]) -> int:
 
     total_charts = len(ok_charts) + len(empty_charts)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "total_charts": total_charts,
         "charts_with_data": len(ok_charts),
         "empty_charts": len(empty_charts),
@@ -1157,7 +1151,7 @@ def cmd_validate(argv: Sequence[str]) -> int:
         return 1
 
     wb = load_workbook(str(path), data_only=False)
-    issues: List[Dict[str, str]] = []
+    issues: list[dict[str, str]] = []
 
     for sname in wb.sheetnames:
         ws = wb[sname]
@@ -1239,11 +1233,11 @@ def cmd_validate(argv: Sequence[str]) -> int:
 
     wb.close()
 
-    by_type: Dict[str, int] = defaultdict(int)
+    by_type: dict[str, int] = defaultdict(int)
     for iss in issues:
         by_type[iss["type"]] += 1
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "status": "passed" if not issues else "failed",
         "total_issues": len(issues),
         "by_type": dict(by_type),

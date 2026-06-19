@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-PDF Processing Toolkit — All-in-One CLI
+"""PDF Processing Toolkit — All-in-One CLI.
 
 Usage:
     python3 pdf.py <command> [args...]
@@ -40,6 +39,7 @@ Commands:
 
 from __future__ import annotations
 
+import contextlib
 import html
 import json
 import os
@@ -47,10 +47,11 @@ import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from typing import NoReturn
 
 # ═══════════════════════════════════════════════════════════════
 #  Section 0: Framework — Output, @cmd registry, CLI parser
@@ -60,13 +61,13 @@ class Output:
     """Structured JSON output for all subcommands."""
 
     @staticmethod
-    def success(data: dict):
+    def success(data: dict) -> NoReturn:
         payload = {"status": "success", "data": data}
         sys.stdout.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
         raise SystemExit(0)
 
     @staticmethod
-    def error(error: str, message: str, hint: Optional[str] = None, code: int = 1):
+    def error(error: str, message: str, hint: str | None = None, code: int = 1) -> NoReturn:
         payload = {"status": "error", "error": error, "message": message}
         if hint is not None:
             payload["hint"] = hint
@@ -82,7 +83,7 @@ class Output:
 
 
 # Command registry
-_COMMANDS: Dict[str, Callable] = {}
+_COMMANDS: dict[str, Callable] = {}
 
 
 def cmd(name: str):
@@ -126,11 +127,11 @@ def _load_json_arg(argv: list) -> dict:
     Output.error("MissingData", "Requires --data or --file argument")
 
 
-def _resolve_page_indices(range_spec: Optional[str], page_count: int) -> List[int]:
+def _resolve_page_indices(range_spec: str | None, page_count: int) -> list[int]:
     """Turn a human-friendly range string (1-indexed) into a sorted list of 0-based indices."""
     if not range_spec:
         return list(range(page_count))
-    indices: Set[int] = set()
+    indices: set[int] = set()
     for segment in range_spec.split(","):
         segment = segment.strip()
         if "-" in segment:
@@ -151,7 +152,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 #  Section 1: env — environment diagnostics and auto-fix
 # ═══════════════════════════════════════════════════════════════
 
-def _probe_cmd(name: str, version_args: Optional[List[str]] = None) -> Tuple[str, str]:
+def _probe_cmd(name: str, version_args: list[str] | None = None) -> tuple[str, str]:
     """Check if a command exists and optionally get its version. Returns (status, detail)."""
     path = shutil.which(name)
     if path is None:
@@ -160,7 +161,7 @@ def _probe_cmd(name: str, version_args: Optional[List[str]] = None) -> Tuple[str
         return ("ok", "")
     try:
         result = subprocess.run(
-            [path] + version_args,
+            [path, *version_args],
             capture_output=True, text=True, timeout=10
         )
         ver = result.stdout.strip() or result.stderr.strip()
@@ -169,7 +170,7 @@ def _probe_cmd(name: str, version_args: Optional[List[str]] = None) -> Tuple[str
         return ("ok", "")
 
 
-def _probe_python_module(mod_name: str) -> Tuple[str, str]:
+def _probe_python_module(mod_name: str) -> tuple[str, str]:
     """Check if a Python module is importable and get its version."""
     try:
         result = subprocess.run(
@@ -183,14 +184,14 @@ def _probe_python_module(mod_name: str) -> Tuple[str, str]:
         return ("missing", "")
 
 
-def _probe_node() -> Tuple[str, str]:
+def _probe_node() -> tuple[str, str]:
     s, d = _probe_cmd("node", ["--version"])
     if s == "ok" and d:
         d = d.lstrip("v")
     return (s, d)
 
 
-def _probe_python() -> Tuple[str, str]:
+def _probe_python() -> tuple[str, str]:
     try:
         import platform
         return ("ok", platform.python_version())
@@ -198,7 +199,7 @@ def _probe_python() -> Tuple[str, str]:
         return ("ok", "")
 
 
-def _probe_libreoffice() -> Tuple[str, str]:
+def _probe_libreoffice() -> tuple[str, str]:
     candidates = [
         "/Applications/LibreOffice.app/Contents/MacOS/soffice",
         os.path.expanduser("~/Applications/LibreOffice.app/Contents/MacOS/soffice"),
@@ -217,7 +218,7 @@ def _probe_libreoffice() -> Tuple[str, str]:
     return ("missing", "")
 
 
-def _probe_tectonic() -> Tuple[str, str]:
+def _probe_tectonic() -> tuple[str, str]:
     home_bin = Path.home() / "tectonic"
     if home_bin.exists() and os.access(home_bin, os.X_OK):
         return ("ok", "")
@@ -229,7 +230,7 @@ def _probe_tectonic() -> Tuple[str, str]:
     return ("missing", "")
 
 
-def _probe_playwright_npm() -> Tuple[str, str]:
+def _probe_playwright_npm() -> tuple[str, str]:
     """Check if playwright npm package is installed."""
     try:
         result = subprocess.run(
@@ -255,7 +256,7 @@ def _probe_playwright_npm() -> Tuple[str, str]:
     return ("missing", "")
 
 
-def _probe_chromium() -> Tuple[str, str]:
+def _probe_chromium() -> tuple[str, str]:
     """Check if Playwright Chromium browser is installed."""
     import platform as _platform
     home = Path.home()
@@ -271,7 +272,7 @@ def _probe_chromium() -> Tuple[str, str]:
 
 
 @cmd("env.check")
-def env_check(argv: list):
+def env_check(argv: list) -> NoReturn:
     """Check environment dependencies."""
     use_json = _pop_flag(argv, "-j", "--json", needs_value=False)
 
@@ -315,7 +316,7 @@ def env_check(argv: list):
     # Human-readable output
     rc = 0
 
-    def show(name: str, status: Tuple[str, str], optional: bool = False):
+    def show(name: str, status: tuple[str, str], optional: bool = False) -> None:
         nonlocal rc
         s, d = status
         if s == "ok":
@@ -355,7 +356,7 @@ def env_check(argv: list):
 
 
 @cmd("env.fix")
-def env_fix(argv: list):
+def env_fix(argv: list) -> NoReturn:
     """Auto-install missing Python dependencies."""
     modules = {
         "pikepdf": "pikepdf",
@@ -393,7 +394,7 @@ def env_fix(argv: list):
 # ═══════════════════════════════════════════════════════════════
 
 @cmd("extract.text")
-def extract_text(argv: list):
+def extract_text(argv: list) -> None:
     """Pull plain text from selected pages."""
     if not argv:
         Output.error("MissingArg", "pdf path required")
@@ -427,7 +428,7 @@ def extract_text(argv: list):
 
 
 @cmd("extract.table")
-def extract_table(argv: list):
+def extract_table(argv: list) -> None:
     """Locate and return every table on selected pages."""
     if not argv:
         Output.error("MissingArg", "pdf path required")
@@ -471,7 +472,7 @@ def extract_table(argv: list):
 
 
 @cmd("extract.image")
-def extract_image(argv: list):
+def extract_image(argv: list) -> None:
     """Save every embedded raster image to output dir."""
     if not argv:
         Output.error("MissingArg", "pdf path required")
@@ -529,7 +530,7 @@ def extract_image(argv: list):
 # ═══════════════════════════════════════════════════════════════
 
 @cmd("pages.merge")
-def pages_merge(argv: list):
+def pages_merge(argv: list) -> None:
     """Concatenate several PDF files into one."""
     out_path = _pop_flag(argv, "-o", "--output")
     if out_path is None:
@@ -557,16 +558,14 @@ def pages_merge(argv: list):
         Output.error("MergeError", f"Merge failed: {exc}", code=4)
     finally:
         for h in handles:
-            try:
+            with contextlib.suppress(Exception):
                 h.close()
-            except Exception:
-                pass
 
     Output.success({"output": out_path, "total_pages": total, "sources": descriptions})
 
 
 @cmd("pages.split")
-def pages_split(argv: list):
+def pages_split(argv: list) -> None:
     """Write each page as a separate single-page PDF."""
     if not argv:
         Output.error("MissingArg", "pdf path required")
@@ -601,7 +600,7 @@ def pages_split(argv: list):
 
 
 @cmd("pages.rotate")
-def pages_rotate(argv: list):
+def pages_rotate(argv: list) -> None:
     """Rotate selected pages by 90/180/270 degrees."""
     if len(argv) < 2:
         Output.error("MissingArg", "pdf path and degrees required")
@@ -636,7 +635,7 @@ def pages_rotate(argv: list):
 
 
 @cmd("pages.crop")
-def pages_crop(argv: list):
+def pages_crop(argv: list) -> None:
     """Set the media/crop box on selected pages. box = 'left,bottom,right,top' in pt."""
     if len(argv) < 2:
         Output.error("MissingArg", "pdf path and crop box required")
@@ -696,7 +695,7 @@ _ACCEPTED_KEYS = set(_XMP_MAPPING.keys())
 
 
 @cmd("meta.get")
-def meta_get(argv: list):
+def meta_get(argv: list) -> None:
     """Read document information and metadata."""
     if not argv:
         Output.error("MissingArg", "pdf path required")
@@ -723,11 +722,9 @@ def meta_get(argv: list):
 
     kv_pairs = {}
     if doc.docinfo:
-        for k in doc.docinfo.keys():
-            try:
+        for k in doc.docinfo:
+            with contextlib.suppress(Exception):
                 kv_pairs[str(k).lstrip("/")] = str(doc.docinfo[k])
-            except Exception:
-                pass
     record["metadata"] = kv_pairs
     record["encrypted"] = doc.is_encrypted
     record["has_form"] = "/AcroForm" in doc.Root
@@ -738,7 +735,7 @@ def meta_get(argv: list):
 
 
 @cmd("meta.set")
-def meta_set(argv: list):
+def meta_set(argv: list) -> None:
     """Update XMP + legacy docinfo metadata fields."""
     if not argv:
         Output.error("MissingArg", "pdf path required")
@@ -762,10 +759,8 @@ def meta_set(argv: list):
             xmp_key = _XMP_MAPPING.get(norm)
             if xmp_key is None:
                 continue
-            try:
+            with contextlib.suppress(Exception):
                 xmp[xmp_key] = str(raw_val)
-            except Exception:
-                pass
 
     # Legacy docinfo layer
     if not doc.docinfo:
@@ -789,7 +784,7 @@ def meta_set(argv: list):
 
 
 @cmd("meta.brand")
-def meta_brand(argv: list):
+def meta_brand(argv: list) -> NoReturn:
     """Add Z.ai branding metadata to PDF documents."""
     output_path = _pop_flag(argv, "-o", "--output")
     custom_title = _pop_flag(argv, "-t", "--title")
@@ -888,7 +883,7 @@ def _extra_props(node, kind: str) -> dict:
     if kind == "checkbox":
         ap = node.get("/AP")
         if ap and "/N" in ap:
-            states = [str(s) for s in ap["/N"].keys()]
+            states = [str(s) for s in ap["/N"]]
             props["states"] = states
             props["checked_value"] = next((s for s in states if s != "/Off"), states[0] if states else None)
     elif kind in ("dropdown", "listbox"):
@@ -906,7 +901,7 @@ def _extra_props(node, kind: str) -> dict:
             for child in kids:
                 ap = child.get("/AP")
                 if ap and "/N" in ap:
-                    radio_vals.extend(str(k) for k in ap["/N"].keys() if str(k) != "/Off")
+                    radio_vals.extend(str(k) for k in ap["/N"] if str(k) != "/Off")
             if radio_vals:
                 props["options"] = radio_vals
     return props
@@ -962,7 +957,7 @@ def _gather_fields(doc) -> list:
 
 
 @cmd("form.info")
-def form_info(argv: list):
+def form_info(argv: list) -> None:
     """Return structured JSON describing every form field (pikepdf + check_fillable)."""
     if not argv:
         Output.error("MissingArg", "pdf path required")
@@ -981,7 +976,7 @@ def form_info(argv: list):
 
 
 @cmd("form.fill")
-def form_fill(argv: list):
+def form_fill(argv: list) -> None:
     """Write values into a fillable PDF (pikepdf version)."""
     if not argv:
         Output.error("MissingArg", "pdf path required")
@@ -1025,7 +1020,7 @@ def form_fill(argv: list):
     # Fill
     written = 0
 
-    def _apply(node, parent_path=""):
+    def _apply(node, parent_path="") -> None:
         nonlocal written
         name = str(node.get("/T", ""))
         full = f"{parent_path}.{name}" if parent_path else name
@@ -1042,7 +1037,7 @@ def form_fill(argv: list):
             if val in ("true", "True", "1", True):
                 ap = node.get("/AP")
                 if ap and "/N" in ap:
-                    checked_name = next((str(k) for k in ap["/N"].keys() if str(k) != "/Off"), "/Yes")
+                    checked_name = next((str(k) for k in ap["/N"] if str(k) != "/Off"), "/Yes")
                     if not checked_name.startswith("/"):
                         checked_name = f"/{checked_name}"
                     node["/V"] = pikepdf.Name(checked_name)
@@ -1115,7 +1110,7 @@ def _get_field_info(reader) -> list:
     fields = reader.get_fields()
 
     field_info_by_id = {}
-    possible_radio_names: Set[str] = set()
+    possible_radio_names: set[str] = set()
 
     for field_id, field in fields.items():
         if field.get("/Kids"):
@@ -1124,7 +1119,7 @@ def _get_field_info(reader) -> list:
             continue
         field_info_by_id[field_id] = _make_field_dict(field, field_id)
 
-    radio_fields_by_id: Dict[str, dict] = {}
+    radio_fields_by_id: dict[str, dict] = {}
 
     for page_index, page in enumerate(reader.pages):
         annotations = page.get('/Annots', [])
@@ -1176,7 +1171,7 @@ def _get_field_info(reader) -> list:
 
 
 @cmd("form.detail")
-def form_detail(argv: list):
+def form_detail(argv: list) -> NoReturn:
     """Extract detailed field info (pypdf version) to JSON."""
     if len(argv) < 2:
         Output.error("MissingArg", "Usage: form.detail <pdf> <output.json>")
@@ -1194,7 +1189,7 @@ def form_detail(argv: list):
 
 # --- form.fill-legacy (pypdf version with monkeypatch) ---
 
-def _validation_error_for_field_value(field_info, field_value):
+def _validation_error_for_field_value(field_info, field_value) -> str | None:
     field_type = field_info["type"]
     field_id = field_info["field_id"]
     if field_type == "checkbox":
@@ -1213,9 +1208,8 @@ def _validation_error_for_field_value(field_info, field_value):
     return None
 
 
-def _monkeypatch_pypdf_method():
-    """
-    Workaround for pypdf bug with selection list fields.
+def _monkeypatch_pypdf_method() -> None:
+    """Workaround for pypdf bug with selection list fields.
     pypdf's get_inherited returns a list of two-element lists for /Opt fields
     in selection lists, causing join() to throw TypeError. We patch it to
     return just the value strings.
@@ -1236,7 +1230,7 @@ def _monkeypatch_pypdf_method():
 
 
 @cmd("form.fill-legacy")
-def form_fill_legacy(argv: list):
+def form_fill_legacy(argv: list) -> NoReturn:
     """Fill fillable form fields (pypdf version with monkeypatch)."""
     if len(argv) < 3:
         Output.error("MissingArg", "Usage: form.fill-legacy <pdf> <fields.json> <output.pdf>")
@@ -1252,7 +1246,7 @@ def form_fill_legacy(argv: list):
         fields = json.load(f)
 
     # Group by page number
-    fields_by_page: Dict[int, dict] = {}
+    fields_by_page: dict[int, dict] = {}
     for field in fields:
         if "value" in field:
             field_id = field["field_id"]
@@ -1364,7 +1358,7 @@ def _normalise_fields_json(raw: dict) -> dict:
 
 
 @cmd("form.annotate")
-def form_annotate(argv: list):
+def form_annotate(argv: list) -> NoReturn:
     """Fill a PDF by adding text annotations (FreeText) defined in fields.json."""
     if len(argv) < 3:
         Output.error("MissingArg", "Usage: form.annotate <pdf> <fields.json> <output.pdf>")
@@ -1375,7 +1369,7 @@ def form_annotate(argv: list):
     from pypdf import PdfReader, PdfWriter
     from pypdf.annotations import FreeText
 
-    with open(fields_json_path, "r") as f:
+    with open(fields_json_path) as f:
         fields_data = _normalise_fields_json(json.load(f))
 
     reader = PdfReader(input_pdf)
@@ -1433,7 +1427,7 @@ def form_annotate(argv: list):
 # --- form.render (PDF to PNG images) ---
 
 @cmd("form.render")
-def form_render(argv: list):
+def form_render(argv: list) -> NoReturn:
     """Convert each page of a PDF to a PNG image."""
     if len(argv) < 2:
         Output.error("MissingArg", "Usage: form.render <pdf> <output_dir> [--max-dim N]")
@@ -1466,7 +1460,7 @@ def form_render(argv: list):
 # --- form.validate (bounding box validation image) ---
 
 @cmd("form.validate")
-def form_validate(argv: list):
+def form_validate(argv: list) -> NoReturn:
     """Create validation images with bounding box rectangles."""
     if len(argv) < 4:
         Output.error("MissingArg", "Usage: form.validate <page> <fields.json> <input_img> <output_img>")
@@ -1477,7 +1471,7 @@ def form_validate(argv: list):
 
     from PIL import Image, ImageDraw
 
-    with open(fields_json_path, 'r') as f:
+    with open(fields_json_path) as f:
         data = _normalise_fields_json(json.load(f))
 
     img = Image.open(input_path)
@@ -1508,7 +1502,7 @@ class _RectAndField:
     field: dict
 
 
-def get_bounding_box_messages(fields_json_stream) -> List[str]:
+def get_bounding_box_messages(fields_json_stream) -> list[str]:
     """Check for overlapping bounding boxes. Returns list of messages (max 20)."""
     messages = []
     raw = json.load(fields_json_stream)
@@ -1517,7 +1511,7 @@ def get_bounding_box_messages(fields_json_stream) -> List[str]:
     total_regions = sum(len(pe["regions"]) for pe in data["sheet"])
     messages.append(f"Read {total_regions} regions across {len(data['sheet'])} page(s)")
 
-    def rects_intersect(r1, r2):
+    def rects_intersect(r1, r2) -> bool:
         disjoint_horizontal = r1[0] >= r2[2] or r1[2] <= r2[0]
         disjoint_vertical = r1[1] >= r2[3] or r1[3] <= r2[1]
         return not (disjoint_horizontal or disjoint_vertical)
@@ -1567,7 +1561,7 @@ def get_bounding_box_messages(fields_json_stream) -> List[str]:
 
 
 @cmd("form.check-bbox")
-def form_check_bbox(argv: list):
+def form_check_bbox(argv: list) -> NoReturn:
     """Check bounding boxes in fields.json for overlaps."""
     if not argv:
         Output.error("MissingArg", "Usage: form.check-bbox <fields.json>")
@@ -1600,7 +1594,7 @@ _SOFFICE_CANDIDATES = [
 ]
 
 
-def _locate_soffice() -> Optional[str]:
+def _locate_soffice() -> str | None:
     """Search for a working soffice binary."""
     for candidate in _SOFFICE_CANDIDATES:
         if Path(candidate).is_file():
@@ -1613,7 +1607,7 @@ def _locate_soffice() -> Optional[str]:
 
 
 @cmd("convert.office")
-def convert_office(argv: list):
+def convert_office(argv: list) -> None:
     """Convert an office document to PDF via LibreOffice."""
     if not argv:
         Output.error("MissingArg", "input file required")
@@ -1665,7 +1659,7 @@ def convert_office(argv: list):
 
 
 @cmd("convert.html")
-def convert_html(argv: list):
+def convert_html(argv: list) -> None:
     """Convert HTML to PDF via node html2pdf.js."""
     if not argv:
         Output.error("MissingArg", "input file required")
@@ -1678,7 +1672,7 @@ def convert_html(argv: list):
     if not node_path:
         Output.error("DependencyMissing", "node not found in PATH")
 
-    cmd_list = [node_path, str(js_path)] + argv
+    cmd_list = [node_path, str(js_path), *argv]
     try:
         proc = subprocess.run(cmd_list, timeout=180)
         raise SystemExit(proc.returncode)
@@ -1704,7 +1698,7 @@ _NOISE_RE = re.compile(
 )
 
 
-def _find_tectonic() -> Optional[str]:
+def _find_tectonic() -> str | None:
     """Locate the tectonic binary: script_dir first, ~/tectonic, then PATH."""
     local_bin = _SCRIPT_DIR / "tectonic"
     if local_bin.exists() and os.access(local_bin, os.X_OK):
@@ -1712,8 +1706,7 @@ def _find_tectonic() -> Optional[str]:
     home_bin = Path.home() / "tectonic"
     if home_bin.exists() and os.access(home_bin, os.X_OK):
         return str(home_bin)
-    system_bin = shutil.which("tectonic")
-    return system_bin
+    return shutil.which("tectonic")
 
 
 def _human_size(nbytes: int) -> str:
@@ -1778,13 +1771,13 @@ def _classify_lines(lines):
     return errors, warnings, layout, pdf_note
 
 
-def _parse_writing_note(note: Optional[str]):
+def _parse_writing_note(note: str | None):
     m = re.search(r"Writing `(.+?)` \((.+?)\)", note or "")
     return (m.group(1), m.group(2)) if m else (None, None)
 
 
 @cmd("convert.latex")
-def convert_latex(argv: list):
+def convert_latex(argv: list) -> NoReturn:
     """Compile LaTeX file via tectonic, filter logs, report PDF stats."""
     if not argv:
         Output.error("MissingArg", "tex file required")
@@ -1913,14 +1906,14 @@ def _restore_escapes(s: str) -> str:
 
 
 # --- Step 1: superscripts/subscripts -> <super>/<sub> ---
-_SUPERSCRIPT_MAP: Dict[str, str] = {
+_SUPERSCRIPT_MAP: dict[str, str] = {
     "\u2070": "0", "\u00b9": "1", "\u00b2": "2", "\u00b3": "3", "\u2074": "4",
     "\u2075": "5", "\u2076": "6", "\u2077": "7", "\u2078": "8", "\u2079": "9",
     "\u207a": "+", "\u207b": "-", "\u207c": "=", "\u207d": "(", "\u207e": ")",
     "\u207f": "n", "\u1da6": "i",
 }
 
-_SUBSCRIPT_MAP: Dict[str, str] = {
+_SUBSCRIPT_MAP: dict[str, str] = {
     "\u2080": "0", "\u2081": "1", "\u2082": "2", "\u2083": "3", "\u2084": "4",
     "\u2085": "5", "\u2086": "6", "\u2087": "7", "\u2088": "8", "\u2089": "9",
     "\u208a": "+", "\u208b": "-", "\u208c": "=", "\u208d": "(", "\u208e": ")",
@@ -1944,14 +1937,14 @@ def _replace_super_sub(s: str) -> str:
 
 
 # --- Step 2: symbol fallback for SimHei (protect tags, then replace) ---
-_SYMBOL_FALLBACK: Dict[str, str] = {
+_SYMBOL_FALLBACK: dict[str, str] = {
     # Currently empty - enable entries as needed for fonts missing specific glyphs
 }
 
 
 def _fallback_symbols(s: str) -> str:
     # Protect <super>/<sub> tags from being modified
-    placeholders: Dict[str, str] = {}
+    placeholders: dict[str, str] = {}
 
     def _protect_tag(m: re.Match) -> str:
         key = f"@@TAG{len(placeholders)}@@"
@@ -1971,25 +1964,23 @@ def _fallback_symbols(s: str) -> str:
 
 
 def sanitize_code(text: str) -> str:
-    """
-    Full sanitization pipeline for PDF generation code.
+    """Full sanitization pipeline for PDF generation code.
     - Restore unicode escapes/entities to real characters
     - Replace superscript/subscript unicode with <super>/<sub>
-    - Replace other risky symbols with ASCII/text fallbacks
+    - Replace other risky symbols with ASCII/text fallbacks.
     """
     s = _restore_escapes(text)
     s = _replace_super_sub(s)
-    s = _fallback_symbols(s)
-    return s
+    return _fallback_symbols(s)
 
 
 @cmd("code.sanitize")
-def code_sanitize(argv: list):
+def code_sanitize(argv: list) -> NoReturn:
     """Sanitize Unicode in a Python script for PDF generation."""
     if not argv:
         Output.error("MissingArg", "Usage: code.sanitize <target_script.py>")
     target = argv[0]
-    with open(target, "r", encoding="utf-8") as f:
+    with open(target, encoding="utf-8") as f:
         code = f.read()
     sanitized = sanitize_code(code)
     with open(target, "w", encoding="utf-8") as f:
@@ -2002,12 +1993,12 @@ def code_sanitize(argv: list):
 #  Section 8: CLI dispatcher
 # ═══════════════════════════════════════════════════════════════
 
-def _usage():
+def _usage() -> NoReturn:
     sys.stdout.write(__doc__.strip() + "\n")
     raise SystemExit(0)
 
 
-def main():
+def main() -> None:
     tokens = sys.argv[1:]
     if not tokens or tokens[0] in ("-h", "--help"):
         _usage()

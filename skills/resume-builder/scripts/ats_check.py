@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-ats_check.py — 简历 ATS（Applicant Tracking System）友好度检查 + 关键词覆盖率
+"""ats_check.py — 简历 ATS（Applicant Tracking System）友好度检查 + 关键词覆盖率.
 
 用法：
     python ats_check.py --resume resume.md --industry internet
@@ -68,7 +67,7 @@ def coverage(resume_text: str, keywords: list[str]) -> dict:
 
 
 def jd_extract_keywords(jd_text: str) -> list[str]:
-    """从 JD 文本里抽取候选关键词。简易版：取常见技能/工具/动词。"""
+    """从 JD 文本里抽取候选关键词。简易版：取常见技能/工具/动词。."""
     # 抓中文 2~10 字、英文 2~30 字的"实词"
     candidates = re.findall(
         r"[A-Za-z][A-Za-z0-9+/.\-_]{1,29}|[一-龥]{2,10}",
@@ -93,7 +92,7 @@ def jd_extract_keywords(jd_text: str) -> list[str]:
 
 
 def ats_friendliness(text: str, source_path: Path) -> tuple[int, list[str]]:
-    """评估 ATS 友好度，返回 (分数 / 10, 警告列表)。"""
+    """评估 ATS 友好度，返回 (分数 / 10, 警告列表)。."""
     score = 10
     warnings = []
 

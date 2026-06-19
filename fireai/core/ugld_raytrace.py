@@ -1,5 +1,4 @@
-"""
-ugld_raytrace.py — UGLD Acoustic Ray Tracing Engine (Phase 2)
+"""ugld_raytrace.py — UGLD Acoustic Ray Tracing Engine (Phase 2).
 ==============================================================
 V23 Phase 2 — 3D Obstacle Shadow & Maekawa Barrier Diffraction
 
@@ -82,7 +81,6 @@ Usage:
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -113,7 +111,7 @@ from fireai.core.ugld_acoustics import (
 #
 # Reference: Beranek & Ver (1992), ISO 9613-2:1996 §7
 
-_SURFACE_ABSORPTION: Dict[str, float] = {
+_SURFACE_ABSORPTION: dict[str, float] = {
     # surface_type: absorption_coefficient (0=perfect reflector, 1=perfect absorber)
     # At ultrasonic frequencies, most surfaces are highly reflective
     "steel_plate": 0.01,  # Polished steel — almost perfect reflector
@@ -138,8 +136,7 @@ def maekawa_insertion_loss(
     center_frequency_hz: float,
     temp_c: float = 40.0,
 ) -> float:
-    """
-    Calculate barrier insertion loss using Maekawa's diffraction model.
+    """Calculate barrier insertion loss using Maekawa's diffraction model.
 
     Maekawa's empirical formula (ISO 9613-2:1996 Annex A):
         IL = 10 * log10(3 + 20*N)  for N > 0
@@ -172,6 +169,7 @@ def maekawa_insertion_loss(
 
     Reference: Z. Maekawa (1968), ISO 9613-2:1996 Annex A,
                Beranek & Ver (1992) Chapter 7
+
     """
     if path_difference_m <= 0.0:
         return 0.0
@@ -192,13 +190,12 @@ def maekawa_insertion_loss(
 
 
 def compute_path_difference(
-    leak_point: Tuple[float, float, float],
-    sensor_point: Tuple[float, float, float],
-    obstacle_min: Tuple[float, float, float],
-    obstacle_max: Tuple[float, float, float],
+    leak_point: tuple[float, float, float],
+    sensor_point: tuple[float, float, float],
+    obstacle_min: tuple[float, float, float],
+    obstacle_max: tuple[float, float, float],
 ) -> float:
-    """
-    Compute the path length difference for barrier diffraction.
+    """Compute the path length difference for barrier diffraction.
 
     The path difference δ is the difference between the shortest
     diffraction path (source → barrier edge → receiver) and the
@@ -232,10 +229,11 @@ def compute_path_difference(
 
     Returns:
         Path length difference δ in meters. >= 0.
+
     """
     sx, sy, sz = leak_point
     rx, ry, rz = sensor_point
-    ox_min, oy_min, oz_min = obstacle_min
+    ox_min, oy_min, _oz_min = obstacle_min
     ox_max, oy_max, oz_max = obstacle_max
 
     # Direct distance
@@ -273,8 +271,7 @@ def compute_path_difference(
         if top_z <= higher_z:
             # Obstacle top is below the higher point — minimal diffraction
             # But the ray still passes through the AABB, so use a small δ
-            delta = max(0.0, (top_z - min(sz, rz)) * 0.1)
-            return delta
+            return max(0.0, (top_z - min(sz, rz)) * 0.1)
 
         # Path over the top
         a = math.sqrt((sx - sx) ** 2 + (sy - sy) ** 2 + (top_z - sz) ** 2)
@@ -343,13 +340,12 @@ def compute_path_difference(
 
 
 def _ray_intersects_aabb(
-    origin: Tuple[float, float, float],
-    end: Tuple[float, float, float],
-    box_min: Tuple[float, float, float],
-    box_max: Tuple[float, float, float],
+    origin: tuple[float, float, float],
+    end: tuple[float, float, float],
+    box_min: tuple[float, float, float],
+    box_max: tuple[float, float, float],
 ) -> bool:
-    """
-    Test if a line segment from origin to end intersects an AABB.
+    """Test if a line segment from origin to end intersects an AABB.
 
     Uses the slab method (same algorithm as Layer 5's _ray_intersects_box).
     Ray parameter t is in [0, 1] (parametric from origin to end).
@@ -362,6 +358,7 @@ def _ray_intersects_aabb(
 
     Returns:
         True if the ray segment intersects the AABB.
+
     """
     t_min = 0.0
     t_max = 1.0
@@ -390,8 +387,7 @@ def _ray_intersects_aabb(
 
 
 class AcousticObstacle(BaseModel):
-    """
-    An obstacle in the UGLD acoustic propagation path.
+    """An obstacle in the UGLD acoustic propagation path.
 
     Uses the same AABB vertex pattern as Layer 5's Obstruction model.
     At ultrasonic frequencies, sound does NOT pass through solid obstacles
@@ -411,7 +407,7 @@ class AcousticObstacle(BaseModel):
         ...,
         description="Unique obstacle identifier for audit trail.",
     )
-    vertices: List[List[float]] = Field(
+    vertices: list[list[float]] = Field(
         ...,
         min_length=2,
         description=(
@@ -430,7 +426,7 @@ class AcousticObstacle(BaseModel):
     )
 
     @property
-    def box_min(self) -> Tuple[float, float, float]:
+    def box_min(self) -> tuple[float, float, float]:
         """AABB minimum corner computed from vertices."""
         xs = [v[0] for v in self.vertices]
         ys = [v[1] for v in self.vertices]
@@ -438,7 +434,7 @@ class AcousticObstacle(BaseModel):
         return (min(xs), min(ys), min(zs))
 
     @property
-    def box_max(self) -> Tuple[float, float, float]:
+    def box_max(self) -> tuple[float, float, float]:
         """AABB maximum corner computed from vertices."""
         xs = [v[0] for v in self.vertices]
         ys = [v[1] for v in self.vertices]
@@ -452,9 +448,7 @@ class AcousticObstacle(BaseModel):
 
 
 class ObstacleHit(BaseModel):
-    """
-    Record of a single obstacle intersection with computed Maekawa IL.
-    """
+    """Record of a single obstacle intersection with computed Maekawa IL."""
 
     model_config = ConfigDict(frozen=True, strict=True)
 
@@ -468,8 +462,7 @@ class ObstacleHit(BaseModel):
 
 
 class AcousticRayResult(BaseModel):
-    """
-    Result of UGLD acoustic ray tracing with obstacle interaction.
+    """Result of UGLD acoustic ray tracing with obstacle interaction.
 
     Composes with UGLDTriggerResult from Phase 1 for full audit trail.
     Provides:
@@ -494,7 +487,7 @@ class AcousticRayResult(BaseModel):
         default=0.0,
         description="Sum of Maekawa IL from all intersected obstacles (dB).",
     )
-    obstacle_hits: List[ObstacleHit] = Field(
+    obstacle_hits: list[ObstacleHit] = Field(
         default_factory=list,
         description="Per-obstacle hit details with Maekawa IL values.",
     )
@@ -525,17 +518,16 @@ class AcousticRayResult(BaseModel):
 
 
 def trace_acoustic_ray(
-    leak_point: Tuple[float, float, float],
-    sensor_point: Tuple[float, float, float],
-    obstacles: List[AcousticObstacle],
+    leak_point: tuple[float, float, float],
+    sensor_point: tuple[float, float, float],
+    obstacles: list[AcousticObstacle],
     sensor: UltrasonicSensor,
     leak_spl_at_1m: float,
     center_frequency_hz: float = 40_000.0,
     temp_c: float = 40.0,
     relative_humidity_pct: float = 50.0,
 ) -> AcousticRayResult:
-    """
-    Trace an acoustic ray from leak source to UGLD sensor through obstacles.
+    """Trace an acoustic ray from leak source to UGLD sensor through obstacles.
 
     Algorithm:
       1. Calculate direct distance and Phase 1 free-field SPL
@@ -568,6 +560,7 @@ def trace_acoustic_ray(
 
     Reference: ISO 9613-2:1996 Annex A, Maekawa (1968),
                ISA-TR 84.00.07 §4.3
+
     """
     # 1. Compute direct distance
     dx = sensor_point[0] - leak_point[0]
@@ -578,7 +571,7 @@ def trace_acoustic_ray(
     if distance < 1e-9:
         # Zero distance — sensor at leak point
         base_spl = leak_spl_at_1m
-        obstacle_hits: List[ObstacleHit] = []
+        obstacle_hits: list[ObstacleHit] = []
         total_il = 0.0
         has_los = True
     else:
@@ -712,14 +705,14 @@ def trace_acoustic_ray(
 
 
 __all__ = [
-    # Models
-    "AcousticObstacle",
-    "ObstacleHit",
-    "AcousticRayResult",
-    # Functions
-    "trace_acoustic_ray",
-    "maekawa_insertion_loss",
-    "compute_path_difference",
     # Constants
     "_SURFACE_ABSORPTION",
+    # Models
+    "AcousticObstacle",
+    "AcousticRayResult",
+    "ObstacleHit",
+    "compute_path_difference",
+    "maekawa_insertion_loss",
+    # Functions
+    "trace_acoustic_ray",
 ]

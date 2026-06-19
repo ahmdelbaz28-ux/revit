@@ -1,5 +1,4 @@
-"""
-backend/tests/test_integration_enhanced.py — Enhanced integration tests for
+"""backend/tests/test_integration_enhanced.py — Enhanced integration tests for
 low-coverage API routes via TestClient.
 
 Covers: sync, reports, qomn, elements, exports, environment, connections_v2,
@@ -17,7 +16,7 @@ from fastapi.testclient import TestClient
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
-def _setup_env():
+def _setup_env() -> None:
     """Set development environment for testing."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = ""
@@ -39,8 +38,7 @@ def sample_project(client):
         json={"name": "Integration Test Project", "description": "For enhanced tests", "author": "pytest"},
     )
     data = resp.json().get("data", resp.json())
-    pid = data.get("id") or data.get("project_id")
-    return pid
+    return data.get("id") or data.get("project_id")
 
 
 @pytest.fixture
@@ -73,14 +71,14 @@ def sample_project_with_devices(client, sample_project):
 class TestSyncProject:
     """Tests for POST /api/projects/{project_id}/sync."""
 
-    def test_sync_existing_project(self, client, sample_project):
+    def test_sync_existing_project(self, client, sample_project) -> None:
         """Test syncing an existing project."""
         resp = client.post(f"/api/projects/{sample_project}/sync")
         assert resp.status_code == 200
         data = resp.json()
         assert data.get("success") is True
 
-    def test_sync_nonexistent_project(self, client):
+    def test_sync_nonexistent_project(self, client) -> None:
         """Test syncing a non-existent project returns 404."""
         resp = client.post("/api/projects/nonexistent-proj/sync")
         assert resp.status_code == 404
@@ -89,19 +87,19 @@ class TestSyncProject:
 class TestSyncStatus:
     """Tests for GET /api/projects/{project_id}/sync."""
 
-    def test_get_sync_status(self, client, sample_project):
+    def test_get_sync_status(self, client, sample_project) -> None:
         """Test getting sync status for existing project."""
         resp = client.get(f"/api/projects/{sample_project}/sync")
         assert resp.status_code == 200
         data = resp.json()
         assert data.get("success") is True
 
-    def test_get_sync_status_nonexistent(self, client):
+    def test_get_sync_status_nonexistent(self, client) -> None:
         """Test getting sync status for non-existent project."""
         resp = client.get("/api/projects/nonexistent-proj/sync")
         assert resp.status_code == 404
 
-    def test_sync_then_check_status(self, client, sample_project):
+    def test_sync_then_check_status(self, client, sample_project) -> None:
         """Test that syncing updates the sync status."""
         client.post(f"/api/projects/{sample_project}/sync")
         resp = client.get(f"/api/projects/{sample_project}/sync")
@@ -118,12 +116,12 @@ class TestSyncStatus:
 class TestReportsGeneration:
     """Tests for report generation endpoints."""
 
-    def test_list_reports(self, client, sample_project):
+    def test_list_reports(self, client, sample_project) -> None:
         """Test listing reports for a project."""
         resp = client.get(f"/api/projects/{sample_project}/reports")
         assert resp.status_code == 200
 
-    def test_generate_nfpa72_battery_report(self, client, sample_project_with_devices):
+    def test_generate_nfpa72_battery_report(self, client, sample_project_with_devices) -> None:
         """Test generating an NFPA 72 battery calculation report."""
         pid, _ = sample_project_with_devices
         resp = client.post(
@@ -132,7 +130,7 @@ class TestReportsGeneration:
         )
         assert resp.status_code in (200, 201)
 
-    def test_generate_voltage_drop_report(self, client, sample_project_with_devices):
+    def test_generate_voltage_drop_report(self, client, sample_project_with_devices) -> None:
         """Test generating a voltage drop report."""
         pid, _ = sample_project_with_devices
         resp = client.post(
@@ -141,22 +139,22 @@ class TestReportsGeneration:
         )
         assert resp.status_code in (200, 201)
 
-    def test_generate_report_with_pagination(self, client, sample_project):
+    def test_generate_report_with_pagination(self, client, sample_project) -> None:
         """Test report listing with pagination."""
         resp = client.get(f"/api/projects/{sample_project}/reports?page=1&limit=5")
         assert resp.status_code == 200
 
-    def test_export_nonexistent_report(self, client, sample_project):
+    def test_export_nonexistent_report(self, client, sample_project) -> None:
         """Test exporting a non-existent report returns 404."""
         resp = client.get(f"/api/projects/{sample_project}/reports/nonexistent/export?format=json")
         assert resp.status_code == 404
 
-    def test_export_format_validation(self, client, sample_project):
+    def test_export_format_validation(self, client, sample_project) -> None:
         """Test that only valid export formats are accepted."""
         resp = client.get(f"/api/projects/{sample_project}/reports/nonexistent/export?format=exe")
         assert resp.status_code == 422
 
-    def test_get_nonexistent_report(self, client, sample_project):
+    def test_get_nonexistent_report(self, client, sample_project) -> None:
         """Test getting a non-existent report returns 404."""
         resp = client.get(f"/api/projects/{sample_project}/reports/nonexistent-report")
         assert resp.status_code == 404
@@ -170,22 +168,22 @@ class TestReportsGeneration:
 class TestQomnSmokeSpacing:
     """Tests for POST /api/qomn/smoke-spacing."""
 
-    def test_smoke_spacing_normal(self, client):
+    def test_smoke_spacing_normal(self, client) -> None:
         """Test smoke detector spacing for normal ceiling height."""
         resp = client.post("/api/qomn/smoke-spacing", json={"ceiling_height_m": 3.0})
         assert resp.status_code == 200
 
-    def test_smoke_spacing_high_ceiling(self, client):
+    def test_smoke_spacing_high_ceiling(self, client) -> None:
         """Test smoke detector spacing for high ceiling."""
         resp = client.post("/api/qomn/smoke-spacing", json={"ceiling_height_m": 10.0})
         assert resp.status_code == 200
 
-    def test_smoke_spacing_max_ceiling(self, client):
+    def test_smoke_spacing_max_ceiling(self, client) -> None:
         """Test at maximum allowed ceiling height."""
         resp = client.post("/api/qomn/smoke-spacing", json={"ceiling_height_m": 18.288})
         assert resp.status_code == 200
 
-    def test_smoke_spacing_above_max_rejected(self, client):
+    def test_smoke_spacing_above_max_rejected(self, client) -> None:
         """Test that ceiling height above 18.288m is rejected."""
         resp = client.post("/api/qomn/smoke-spacing", json={"ceiling_height_m": 19.0})
         assert resp.status_code == 422
@@ -194,7 +192,7 @@ class TestQomnSmokeSpacing:
 class TestQomnHeatSpacing:
     """Tests for POST /api/qomn/heat-spacing."""
 
-    def test_heat_spacing(self, client):
+    def test_heat_spacing(self, client) -> None:
         """Test heat detector spacing calculation."""
         resp = client.post("/api/qomn/heat-spacing", json={
             "ceiling_height_m": 3.0,
@@ -206,7 +204,7 @@ class TestQomnHeatSpacing:
 class TestQomnBattery:
     """Tests for POST /api/qomn/battery."""
 
-    def test_battery_calculation(self, client):
+    def test_battery_calculation(self, client) -> None:
         """Test NFPA 72 battery capacity calculation."""
         resp = client.post("/api/qomn/battery", json={
             "standby_load_a": 0.5,
@@ -218,7 +216,7 @@ class TestQomnBattery:
 class TestQomnVoltageDrop:
     """Tests for POST /api/qomn/voltage-drop."""
 
-    def test_voltage_drop_calculation(self, client):
+    def test_voltage_drop_calculation(self, client) -> None:
         """Test voltage drop calculation."""
         resp = client.post("/api/qomn/voltage-drop", json={
             "current_a": 0.5,
@@ -230,22 +228,22 @@ class TestQomnVoltageDrop:
 class TestQomnReadEndpoints:
     """Tests for GET /api/qomn endpoints."""
 
-    def test_get_audit_log(self, client):
+    def test_get_audit_log(self, client) -> None:
         """Test getting QOMN audit log."""
         resp = client.get("/api/qomn/audit")
         assert resp.status_code == 200
 
-    def test_get_physics_guards(self, client):
+    def test_get_physics_guards(self, client) -> None:
         """Test getting physics guards."""
         resp = client.get("/api/qomn/physics-guards")
         assert resp.status_code == 200
 
-    def test_get_constants(self, client):
+    def test_get_constants(self, client) -> None:
         """Test getting QOMN constants."""
         resp = client.get("/api/qomn/constants")
         assert resp.status_code == 200
 
-    def test_run_golden_tests(self, client):
+    def test_run_golden_tests(self, client) -> None:
         """Test running golden tests."""
         resp = client.post("/api/qomn/golden-tests")
         assert resp.status_code in (200, 503)
@@ -259,22 +257,22 @@ class TestQomnReadEndpoints:
 class TestElementsCRUD:
     """Tests for /api/elements CRUD operations."""
 
-    def test_list_elements(self, client):
+    def test_list_elements(self, client) -> None:
         """Test listing elements."""
         resp = client.get("/api/elements")
         assert resp.status_code == 200
 
-    def test_list_elements_with_type_filter(self, client):
+    def test_list_elements_with_type_filter(self, client) -> None:
         """Test listing elements with type filter."""
         resp = client.get("/api/elements?element_type=wall")
         assert resp.status_code == 200
 
-    def test_list_elements_with_pagination(self, client):
+    def test_list_elements_with_pagination(self, client) -> None:
         """Test listing elements with pagination."""
         resp = client.get("/api/elements?page=1&page_size=10")
         assert resp.status_code == 200
 
-    def test_create_element_with_properties(self, client):
+    def test_create_element_with_properties(self, client) -> None:
         """Test creating a new element with required properties field."""
         resp = client.post("/api/elements", json={
             "element_id": "elem-test-001",
@@ -286,12 +284,12 @@ class TestElementsCRUD:
         # May return 500 if db_service has issues, but should not be 422 (validation)
         assert resp.status_code in (200, 201, 500)
 
-    def test_get_nonexistent_element(self, client):
+    def test_get_nonexistent_element(self, client) -> None:
         """Test getting a non-existent element returns 404."""
         resp = client.get("/api/elements/nonexistent-elem")
         assert resp.status_code == 404
 
-    def test_delete_nonexistent_element(self, client):
+    def test_delete_nonexistent_element(self, client) -> None:
         """Test deleting a non-existent element returns 404."""
         resp = client.delete("/api/elements/nonexistent-elem")
         assert resp.status_code == 404
@@ -305,27 +303,27 @@ class TestElementsCRUD:
 class TestExports:
     """Tests for /api/projects/{project_id}/export endpoints."""
 
-    def test_export_dxf(self, client, sample_project):
+    def test_export_dxf(self, client, sample_project) -> None:
         """Test DXF export."""
         resp = client.get(f"/api/projects/{sample_project}/export/dxf")
         assert resp.status_code == 200
 
-    def test_export_revit(self, client, sample_project):
+    def test_export_revit(self, client, sample_project) -> None:
         """Test Revit JSON export."""
         resp = client.get(f"/api/projects/{sample_project}/export/revit")
         assert resp.status_code == 200
 
-    def test_export_ifc_default(self, client, sample_project):
+    def test_export_ifc_default(self, client, sample_project) -> None:
         """Test IFC export with default version."""
         resp = client.get(f"/api/projects/{sample_project}/export/ifc")
         assert resp.status_code == 200
 
-    def test_export_ifc_ifc2x3(self, client, sample_project):
+    def test_export_ifc_ifc2x3(self, client, sample_project) -> None:
         """Test IFC export with IFC2X3 version."""
         resp = client.get(f"/api/projects/{sample_project}/export/ifc?version=IFC2X3")
         assert resp.status_code == 200
 
-    def test_export_ifc_invalid_version(self, client, sample_project):
+    def test_export_ifc_invalid_version(self, client, sample_project) -> None:
         """Test IFC export with invalid version."""
         resp = client.get(f"/api/projects/{sample_project}/export/ifc?version=INVALID")
         assert resp.status_code == 422
@@ -339,57 +337,57 @@ class TestExports:
 class TestEnvironmentEndpoints:
     """Tests for /api/environment endpoints."""
 
-    def test_weather(self, client):
+    def test_weather(self, client) -> None:
         """Test weather endpoint."""
         resp = client.get("/api/environment/weather?lat=40.7&lon=-74.0")
         assert resp.status_code == 200
 
-    def test_geocode(self, client):
+    def test_geocode(self, client) -> None:
         """Test geocode endpoint."""
         resp = client.get("/api/environment/geocode?address=New+York")
         assert resp.status_code == 200
 
-    def test_region(self, client):
+    def test_region(self, client) -> None:
         """Test region endpoint."""
         resp = client.get("/api/environment/region?country_code=US")
         assert resp.status_code == 200
 
-    def test_elevation(self, client):
+    def test_elevation(self, client) -> None:
         """Test elevation endpoint."""
         resp = client.get("/api/environment/elevation?lat=40.7&lon=-74.0")
         assert resp.status_code == 200
 
-    def test_air_quality(self, client):
+    def test_air_quality(self, client) -> None:
         """Test air quality endpoint."""
         resp = client.get("/api/environment/air-quality?lat=40.7&lon=-74.0")
         assert resp.status_code == 200
 
-    def test_severe_weather(self, client):
+    def test_severe_weather(self, client) -> None:
         """Test severe weather endpoint."""
         resp = client.get("/api/environment/severe-weather?lat=40.7&lon=-74.0")
         assert resp.status_code == 200
 
-    def test_hazmat(self, client):
+    def test_hazmat(self, client) -> None:
         """Test hazmat endpoint."""
         resp = client.get("/api/environment/hazmat?material=gasoline")
         assert resp.status_code == 200
 
-    def test_hazmat_known(self, client):
+    def test_hazmat_known(self, client) -> None:
         """Test known materials listing."""
         resp = client.get("/api/environment/hazmat/known")
         assert resp.status_code == 200
 
-    def test_context(self, client):
+    def test_context(self, client) -> None:
         """Test full environmental context."""
         resp = client.get("/api/environment/context?lat=40.7&lon=-74.0")
         assert resp.status_code == 200
 
-    def test_full_context(self, client):
+    def test_full_context(self, client) -> None:
         """Test full Phase 2 context."""
         resp = client.get("/api/environment/full-context?lat=40.7&lon=-74.0&material=gasoline")
         assert resp.status_code == 200
 
-    def test_countries(self, client):
+    def test_countries(self, client) -> None:
         """Test countries listing."""
         resp = client.get("/api/environment/countries")
         assert resp.status_code == 200
@@ -403,17 +401,17 @@ class TestEnvironmentEndpoints:
 class TestConnectionsV2:
     """Tests for /api/connections endpoints."""
 
-    def test_list_connections(self, client):
+    def test_list_connections(self, client) -> None:
         """Test listing connections."""
         resp = client.get("/api/connections")
         assert resp.status_code == 200
 
-    def test_list_connections_with_filters(self, client):
+    def test_list_connections_with_filters(self, client) -> None:
         """Test listing connections with filters."""
         resp = client.get("/api/connections?project_id=test&page=1&page_size=10")
         assert resp.status_code == 200
 
-    def test_create_connection(self, client):
+    def test_create_connection(self, client) -> None:
         """Test creating a connection."""
         resp = client.post("/api/connections", json={
             "from_element_id": "elem-a",
@@ -422,7 +420,7 @@ class TestConnectionsV2:
         })
         assert resp.status_code in (200, 201, 400, 404, 422)
 
-    def test_delete_nonexistent_connection(self, client):
+    def test_delete_nonexistent_connection(self, client) -> None:
         """Test deleting a non-existent connection."""
         resp = client.delete("/api/connections/nonexistent-conn")
         assert resp.status_code in (200, 404)
@@ -436,7 +434,7 @@ class TestConnectionsV2:
 class TestDWGUpload:
     """Tests for POST /api/parse-dwg file upload."""
 
-    def test_parse_dxf_file(self, client):
+    def test_parse_dxf_file(self, client) -> None:
         """Test parsing a DXF file."""
         dxf_content = "0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nEOF\n"
         resp = client.post(
@@ -445,7 +443,7 @@ class TestDWGUpload:
         )
         assert resp.status_code in (200, 400, 422, 503)
 
-    def test_parse_empty_file_rejected(self, client):
+    def test_parse_empty_file_rejected(self, client) -> None:
         """Test that empty files are rejected."""
         resp = client.post(
             "/api/parse-dwg",
@@ -453,7 +451,7 @@ class TestDWGUpload:
         )
         assert resp.status_code == 422
 
-    def test_parse_wrong_extension(self, client):
+    def test_parse_wrong_extension(self, client) -> None:
         """Test that files with wrong extensions are rejected."""
         resp = client.post(
             "/api/parse-dwg",
@@ -461,7 +459,7 @@ class TestDWGUpload:
         )
         assert resp.status_code in (400, 422)
 
-    def test_parse_no_file(self, client):
+    def test_parse_no_file(self, client) -> None:
         """Test that missing file upload returns error."""
         resp = client.post("/api/parse-dwg")
         assert resp.status_code == 422
@@ -475,12 +473,12 @@ class TestDWGUpload:
 class TestMemoryRouter:
     """Tests for memory endpoints."""
 
-    def test_memory_status(self, client):
+    def test_memory_status(self, client) -> None:
         """Test memory service status."""
         resp = client.get("/api/memory/status")
         assert resp.status_code == 200
 
-    def test_memory_get_all(self, client):
+    def test_memory_get_all(self, client) -> None:
         """Test getting all memory entries."""
         resp = client.get("/api/memory/all")
         assert resp.status_code == 200
@@ -494,12 +492,12 @@ class TestMemoryRouter:
 class TestFACPRouter:
     """Tests for FACP endpoints."""
 
-    def test_facp_panels(self, client):
+    def test_facp_panels(self, client) -> None:
         """Test getting FACP panels."""
         resp = client.get("/api/facp/panels")
         assert resp.status_code == 200
 
-    def test_facp_select(self, client):
+    def test_facp_select(self, client) -> None:
         """Test FACP panel selection."""
         resp = client.post("/api/facp/select", json={
             "num_devices": 50,
@@ -507,7 +505,7 @@ class TestFACPRouter:
         })
         assert resp.status_code in (200, 400, 422)
 
-    def test_facp_verify(self, client):
+    def test_facp_verify(self, client) -> None:
         """Test FACP verification."""
         resp = client.post("/api/facp/verify", json={
             "panel_model": "Notifier NFS2-3030",
@@ -515,14 +513,14 @@ class TestFACPRouter:
         })
         assert resp.status_code in (200, 400, 422)
 
-    def test_facp_spec(self, client):
+    def test_facp_spec(self, client) -> None:
         """Test FACP specification."""
         resp = client.post("/api/facp/spec", json={
             "panel_model": "Notifier NFS2-3030",
         })
         assert resp.status_code in (200, 400, 422)
 
-    def test_facp_schedule(self, client):
+    def test_facp_schedule(self, client) -> None:
         """Test FACP schedule generation."""
         resp = client.post("/api/facp/schedule", json={
             "project_id": "test-project",
@@ -538,12 +536,12 @@ class TestFACPRouter:
 class TestHealthAdditional:
     """Additional tests for health endpoint."""
 
-    def test_health_statistics(self, client):
+    def test_health_statistics(self, client) -> None:
         """Test the health statistics endpoint."""
         resp = client.get("/api/health/statistics")
         assert resp.status_code == 200
 
-    def test_reports_statistics(self, client):
+    def test_reports_statistics(self, client) -> None:
         """Test the reports statistics endpoint."""
         resp = client.get("/api/reports/statistics")
         assert resp.status_code == 200

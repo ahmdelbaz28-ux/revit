@@ -1,5 +1,4 @@
-"""
-fireai/core/floor_analyser.py  V3.0
+"""fireai/core/floor_analyser.py  V3.0.
 ====================================
 Safe, sequential floor-level fire alarm design analyser.
 
@@ -103,7 +102,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional
+from typing import Literal
 
 from fireai.core.geometry_utils import (
     grid_points_in_polygon,
@@ -137,8 +136,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RoomSummary:
-    """
-    Compact per-room summary for floor report.
+    """Compact per-room summary for floor report.
 
     Attributes:
         room_id:        Unique room identifier from input dict.
@@ -176,6 +174,7 @@ class RoomSummary:
         scenario_blind_spots: Total blind spots across all scenarios.
         scenario_battery_ms: Wall-clock time for scenario verification in ms.
                             0.0 if not run.
+
     """
 
     room_id: str
@@ -189,49 +188,48 @@ class RoomSummary:
     method: str = ""
     compliant: bool = False
     safe_to_submit: bool = False
-    violations: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     theoretical_lower_bound: int = 0
     efficiency_ratio: float = 0.0
     duct_devices: int = 0
     refused: bool = False
-    refusal_reason: Optional[str] = None
+    refusal_reason: str | None = None
     used_mip: bool = False
-    mip_proven_optimal_count: Optional[int] = None
-    mip_solve_time_s: Optional[float] = None
-    mip_status: Optional[str] = None
+    mip_proven_optimal_count: int | None = None
+    mip_solve_time_s: float | None = None
+    mip_status: str | None = None
     analysis_ms: float = 0.0
     # Phase 7: Variable Coverage Radius tracking fields
     coverage_radius_used: float = DETECTOR_RADIUS  # V20.2 FIX: was stale 6.40; correct R=0.7×9.1=6.37 at h≤3.0m
-    ceiling_height: Optional[float] = None
-    radius_warning: Optional[str] = None
+    ceiling_height: float | None = None
+    radius_warning: str | None = None
     nfpa_table_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
     # V3.0: Scenario verification fields
-    scenario_pass: Optional[bool] = None
+    scenario_pass: bool | None = None
     scenario_fail_count: int = 0
-    scenario_worst_time_s: Optional[float] = None
+    scenario_worst_time_s: float | None = None
     scenario_blind_spots: int = 0
     scenario_battery_ms: float = 0.0
     # V3.1: Duct detector fields
-    duct_results: List = field(default_factory=list)
-    duct_warnings: List[str] = field(default_factory=list)
+    duct_results: list = field(default_factory=list)
+    duct_warnings: list[str] = field(default_factory=list)
     # V4.0: Non-rectangular room support
     shape_type: str = "rectangular"  # "rectangular", "l_shape", "polygon"
-    polygon_coords: Optional[List] = None  # original polygon for non-rectangular rooms
+    polygon_coords: list | None = None  # original polygon for non-rectangular rooms
     # V5.0: Room dimensions for project learning (bounding rectangle)
     width: float = 0.0  # bounding rectangle width (metres)
     length: float = 0.0  # bounding rectangle length (metres)
     # V6.0: Polygon verifier (Greedy Set Cover) — verification only
-    polygon_verifier_count: Optional[int] = None  # detectors from Greedy Set Cover on actual polygon
-    polygon_verifier_method: Optional[str] = None  # "greedy_polygon" or None
+    polygon_verifier_count: int | None = None  # detectors from Greedy Set Cover on actual polygon
+    polygon_verifier_method: str | None = None  # "greedy_polygon" or None
     polygon_verifier_ms: float = 0.0  # verifier runtime in ms
     polygon_optimality_gap: bool = False  # True if greedy polygon proves fewer detectors
 
 
 @dataclass
 class FloorReport:
-    """
-    Complete analysis report for one floor.
+    """Complete analysis report for one floor.
 
     Attributes:
         floor_id:            Floor identifier.
@@ -244,20 +242,21 @@ class FloorReport:
         unsafe_rooms:        IDs of rooms that failed the triple check.
         floor_warnings:      Floor-level advisory messages.
         analysis_time_s:     Total wall-clock time (seconds).
+
     """
 
     floor_id: str
-    room_summaries: List[RoomSummary] = field(default_factory=list)
+    room_summaries: list[RoomSummary] = field(default_factory=list)
     total_detectors: int = 0
     total_theoretical_lower_bound: int = 0
     fully_compliant: bool = False
     safe_to_submit: bool = False
-    non_compliant_rooms: List[str] = field(default_factory=list)
-    unsafe_rooms: List[str] = field(default_factory=list)
-    floor_warnings: List[str] = field(default_factory=list)
+    non_compliant_rooms: list[str] = field(default_factory=list)
+    unsafe_rooms: list[str] = field(default_factory=list)
+    floor_warnings: list[str] = field(default_factory=list)
     analysis_time_s: float = 0.0
     # V3.0: Scenario verification aggregation
-    scenario_non_compliant_rooms: List[str] = field(default_factory=list)
+    scenario_non_compliant_rooms: list[str] = field(default_factory=list)
     # V114 FIX: Fail-safe — must be consistent with safe_to_submit=False
     scenario_safe_to_submit: bool = False
     # V3.1: Duct detector aggregation
@@ -268,8 +267,7 @@ class FloorReport:
 
 
 class FloorAnalyser:
-    """
-    Safe, sequential full-floor fire alarm design analyser.
+    """Safe, sequential full-floor fire alarm design analyser.
 
     Uses the V7.3 DensityOptimizer directly - no ExpertSystem.
     Optional MIP verification (use_mip=True) proves optimality after greedy.
@@ -326,14 +324,15 @@ class FloorAnalyser:
         >>> report = analyser.analyse(rooms)
         >>> print(report.safe_to_submit)
         True
+
     """
 
     def __init__(
         self,
         floor_id: str,
         optimizer: DensityOptimizer,
-        audit_trail: Optional[object] = None,
-        audit_store: Optional[object] = None,
+        audit_trail: object | None = None,
+        audit_store: object | None = None,
         use_mip: bool = False,
         mip_candidate_step: float = 1.0,
         mip_time_limit: float = 10.0,
@@ -367,9 +366,8 @@ class FloorAnalyser:
 
     # ─── public ──────────────────────────────────────────────────────
 
-    def analyse(self, rooms: List[dict]) -> FloorReport:
-        """
-        Analyse all rooms on the floor and return a FloorReport.
+    def analyse(self, rooms: list[dict]) -> FloorReport:
+        """Analyse all rooms on the floor and return a FloorReport.
 
         Processes rooms sequentially (no parallelism) and applies the
         triple-check gate to each room independently.
@@ -392,6 +390,7 @@ class FloorAnalyser:
             - Logs each room result via Python logging
             - Records decisions in AuditTrail (if provided)
             - No external I/O or database writes
+
         """
         t0 = time.time()
         report = FloorReport(floor_id=self.floor_id)
@@ -435,7 +434,7 @@ class FloorAnalyser:
                     report.room_summaries.append(summary)
                     report.unsafe_rooms.append(room_dict.get("room_id", room_name))
                     continue
-                elif sanitize_result.was_modified:
+                if sanitize_result.was_modified:
                     # Use cleaned coordinates
                     room_dict = dict(room_dict)  # copy to avoid mutating original
                     room_dict["polygon_coords"] = sanitize_result.coords
@@ -838,8 +837,7 @@ class FloorAnalyser:
         layout: DetectorLayout,
         summary: RoomSummary,
     ) -> None:
-        """
-        Run MIP Set Covering ILP as verification after greedy placement.
+        """Run MIP Set Covering ILP as verification after greedy placement.
 
         MIP proves the minimum detector count on a candidate grid.
         This is VERIFICATION ONLY — greedy placement is always used.
@@ -855,6 +853,7 @@ class FloorAnalyser:
             room:    Room object with width, length, ceiling_height.
             layout:  DetectorLayout from greedy (DensityOptimizer V7.3).
             summary: RoomSummary to update with MIP verification results.
+
         """
         try:
             from fireai.core.spatial_engine.mip_solver import (
@@ -931,8 +930,7 @@ class FloorAnalyser:
         polygon_coords: list,
         radius: float,
     ) -> int:
-        """
-        Filter detectors that fall outside a non-rectangular polygon (V4.0).
+        """Filter detectors that fall outside a non-rectangular polygon (V4.0).
 
         DensityOptimizer places detectors on the bounding rectangle. For
         L-shaped or other non-rectangular rooms, some detectors may land
@@ -951,6 +949,7 @@ class FloorAnalyser:
 
         Returns:
             Number of detectors filtered (removed from cutout region).
+
         """
         original_count = len(layout.detectors)
 
@@ -985,8 +984,7 @@ class FloorAnalyser:
         layout: DetectorLayout,
         summary: RoomSummary,
     ) -> None:
-        """
-        Run Greedy Set Cover verifier on a non-rectangular polygon (V6.0).
+        """Run Greedy Set Cover verifier on a non-rectangular polygon (V6.0).
 
         This is VERIFICATION ONLY — it never replaces the actual placement.
         The verifier proves how many detectors suffice on the actual polygon
@@ -1075,8 +1073,7 @@ class FloorAnalyser:
         room_dict: dict,
         summary: RoomSummary,
     ) -> None:
-        """
-        Run duct detector analysis for a room (V3.1).
+        """Run duct detector analysis for a room (V3.1).
 
         If the room_dict contains a 'ducts' key with a list of duct
         specifications, this method analyses each duct per NFPA 72 §17.7.5
@@ -1088,6 +1085,7 @@ class FloorAnalyser:
         Args:
             room_dict: Room dictionary (must have optional 'ducts' key).
             summary:   RoomSummary to update with duct results.
+
         """
         try:
             from fireai.core.duct_detector import (
@@ -1170,8 +1168,7 @@ class FloorAnalyser:
         ceiling_h: float,
         det_type_str: str,
     ) -> None:
-        """
-        Run fire scenario verification after detector placement (V3.0).
+        """Run fire scenario verification after detector placement (V3.0).
 
         Tests the placed detector layout against standard NFPA 72 §17.7.3
         fire scenarios. This is VERIFICATION ONLY — it does not modify
@@ -1192,6 +1189,7 @@ class FloorAnalyser:
             summary:      RoomSummary to update with scenario results.
             ceiling_h:    Ceiling height in metres.
             det_type_str: Detector type string (e.g. "smoke_photoelectric").
+
         """
         try:
             from fireai.core.scenario_engine import (
@@ -1301,8 +1299,7 @@ class FloorAnalyser:
 
     @staticmethod
     def _check_safety_refusal(room_type: str, detector_type: str) -> tuple:
-        """
-        Validate room_type + detector_type combination against NFPA 72 safety rules.
+        """Validate room_type + detector_type combination against NFPA 72 safety rules.
 
         This is a simple rule-based check — NOT an ExpertSystem.
         It enforces clear NFPA 72 prohibitions that must not be violated
@@ -1321,6 +1318,7 @@ class FloorAnalyser:
             Tuple of (is_refused: bool, reason: str).
             If is_refused is True, reason contains the NFPA reference.
             If is_refused is False, reason is empty string.
+
         """
         # NFPA 72 §17.6.4: Smoke detectors shall not be installed in kitchens
         room_lower = room_type.lower().strip()
@@ -1338,8 +1336,7 @@ class FloorAnalyser:
 
     @staticmethod
     def _build_room(room_dict: dict) -> Room:
-        """
-        Build a Room object from a dictionary.
+        """Build a Room object from a dictionary.
 
         Calculates width/length from the bounding box of polygon_coords.
         This means L-shaped rooms are treated as their bounding rectangle
@@ -1354,6 +1351,7 @@ class FloorAnalyser:
 
         Returns:
             Room object with computed width, length, and ceiling_height.
+
         """
         coords = room_dict["polygon_coords"]
         xs = [p[0] for p in coords]
@@ -1489,5 +1487,5 @@ if __name__ == "__main__":
     for s in report.room_summaries:
         status = "PASS" if s.compliant else "FAIL"
         print(
-            f"{s.name:<25} {s.detector_count:<5} {s.theoretical_lower_bound:<4} {s.efficiency_ratio:<6.2f} {s.coverage_pct:<8.2f} {str(s.nfpa_valid):<5} {str(s.proof_valid):<5} {str(s.fallback_used):<8} {s.method:<15} {status:<10}"
+            f"{s.name:<25} {s.detector_count:<5} {s.theoretical_lower_bound:<4} {s.efficiency_ratio:<6.2f} {s.coverage_pct:<8.2f} {s.nfpa_valid!s:<5} {s.proof_valid!s:<5} {s.fallback_used!s:<8} {s.method:<15} {status:<10}"
         )

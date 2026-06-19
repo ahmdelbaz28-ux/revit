@@ -1,6 +1,4 @@
-"""
-fireai/agents — Intelligent Agents for FireAI Platform
-"""
+"""fireai/agents — Intelligent Agents for FireAI Platform."""
 
 from fireai.agents.learning_agent import (
     DesignExperience,
@@ -30,22 +28,22 @@ from fireai.agents.tool_selector import (
 )
 
 __all__ = [
-    "LearningAgent",
+    "Capability",
+    "Context",
+    "DesignChange",
     "DesignExperience",
     "DesignPattern",
-    "SelfImprovementEngine",
+    "FutureState",
     "ImprovementFeedback",
-    "ImprovementReport",
     "ImprovementRecord",
+    "ImprovementReport",
+    "LearningAgent",
     "ParameterSuggestion",
+    "PlacementSuggestion",
     "PredictiveAgent",
     "RoomData",
-    "PlacementSuggestion",
-    "DesignChange",
-    "FutureState",
-    "WhatIfResult",
-    "ToolSelector",
-    "Capability",
+    "SelfImprovementEngine",
     "Task",
-    "Context",
+    "ToolSelector",
+    "WhatIfResult",
 ]

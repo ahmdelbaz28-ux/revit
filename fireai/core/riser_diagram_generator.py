@@ -1,4 +1,4 @@
-"""riser_diagram_generator.py — NFPA 72 §7.4.5 System Riser Diagram Generator
+"""riser_diagram_generator.py — NFPA 72 §7.4.5 System Riser Diagram Generator.
 ===============================================================================
 
 Generates a fire alarm system riser diagram (one-line schematic) showing
@@ -28,9 +28,10 @@ Thread-safety: zero module-level mutable state.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 try:
     import ezdxf
@@ -42,13 +43,13 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "RiserPanel",
+    "RiserDiagramGenerator",
+    "RiserDiagramResult",
+    "RiserDiagramSpec",
     "RiserLoop",
     "RiserNACCircuit",
     "RiserNetworkLink",
-    "RiserDiagramSpec",
-    "RiserDiagramResult",
-    "RiserDiagramGenerator",
+    "RiserPanel",
 ]
 
 
@@ -67,6 +68,7 @@ class RiserPanel:
         floor_id:   Floor where panel is located.
         loop_count: Number of SLC loops on this panel.
         nac_count:  Number of NAC circuits on this panel.
+
     """
 
     panel_id: str
@@ -89,13 +91,14 @@ class RiserLoop:
         cable_type:        Cable type (FPL/FPLR/FPLP/CI).
         cable_length_m:    Estimated cable length.
         class_type:        "A" or "B" (Class A or Class B wiring).
+
     """
 
     loop_id: str
     panel_id: str
     device_count: int = 0
     isolator_count: int = 0
-    floors_served: Tuple[str, ...] = ()
+    floors_served: tuple[str, ...] = ()
     cable_type: str = "FPL"
     cable_length_m: float = 0.0
     class_type: str = "B"
@@ -112,11 +115,12 @@ class RiserNACCircuit:
         device_count:   Number of notification appliances.
         floor_id:       Floor served.
         cable_type:     Cable type for NAC wiring.
+
     """
 
     nac_id: str
     panel_id: str
-    device_types: Tuple[str, ...] = ("horn_strobe_15cd",)
+    device_types: tuple[str, ...] = ("horn_strobe_15cd",)
     device_count: int = 0
     floor_id: str = "GF"
     cable_type: str = "FPL"
@@ -131,6 +135,7 @@ class RiserNetworkLink:
         to_panel:   Destination panel ID.
         link_type:  "NETWORK" (panel-to-panel) or "RISER" (vertical cable).
         cable_type: Cable type for the network link.
+
     """
 
     from_panel: str
@@ -151,13 +156,14 @@ class RiserDiagramSpec:
         network_links:   Network connections between panels.
         survivability_level: Pathway survivability level (from engine).
         nfpa_version:    NFPA edition applied.
+
     """
 
     project_name: str = "FIRE ALARM SYSTEM"
-    panels: List[RiserPanel] = field(default_factory=list)
-    loops: List[RiserLoop] = field(default_factory=list)
-    nac_circuits: List[RiserNACCircuit] = field(default_factory=list)
-    network_links: List[RiserNetworkLink] = field(default_factory=list)
+    panels: list[RiserPanel] = field(default_factory=list)
+    loops: list[RiserLoop] = field(default_factory=list)
+    nac_circuits: list[RiserNACCircuit] = field(default_factory=list)
+    network_links: list[RiserNetworkLink] = field(default_factory=list)
     survivability_level: str = "LEVEL_1"
     nfpa_version: str = "NFPA 72-2022"
 
@@ -173,14 +179,15 @@ class RiserDiagramResult:
         nac_count:   Number of NAC circuits drawn.
         warnings:    Non-fatal advisories.
         errors:      Fatal issues.
+
     """
 
     output_path: str = ""
     panel_count: int = 0
     loop_count: int = 0
     nac_count: int = 0
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 # ============================================================================
@@ -235,6 +242,7 @@ class RiserDiagramGenerator:
 
         Returns:
             RiserDiagramResult with generation statistics.
+
         """
         result = RiserDiagramResult()
 
@@ -257,7 +265,7 @@ class RiserDiagramGenerator:
             self._setup_layers(doc)
 
             # Layout: sort panels by floor
-            panel_positions: Dict[str, Tuple[float, float]] = {}
+            panel_positions: dict[str, tuple[float, float]] = {}
             sorted_panels = sorted(spec.panels, key=lambda p: p.floor_id)
 
             # Draw panels
@@ -348,10 +356,8 @@ class RiserDiagramGenerator:
                 pass
 
         # Add DASHED linetype
-        try:
+        with contextlib.suppress(Exception):
             doc.linetypes.add("DASHED", [0.6, 0.4, -0.2], description="__ __ __")
-        except Exception:
-            pass
 
     def _draw_panel(
         self,
@@ -567,8 +573,8 @@ class RiserDiagramGenerator:
     def _draw_network_link(
         self,
         msp: Any,
-        pos_a: Tuple[float, float],
-        pos_b: Tuple[float, float],
+        pos_a: tuple[float, float],
+        pos_b: tuple[float, float],
         link: RiserNetworkLink,
     ) -> None:
         """Draw a network connection between two panels."""

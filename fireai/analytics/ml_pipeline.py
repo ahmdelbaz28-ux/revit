@@ -1,5 +1,4 @@
-"""
-fireai/analytics/ml_pipeline.py — End-to-End ML Pipeline
+"""fireai/analytics/ml_pipeline.py — End-to-End ML Pipeline.
 ============================================================
 Feature engineering, model registry, training with cross-validation,
 and evaluation framework for fire alarm design data.
@@ -8,18 +7,18 @@ and evaluation framework for fire alarm design data.
 from __future__ import annotations
 
 import copy
+import io
 import json
 import logging
 import math
 import os
-import io
 import pickle
 import random
 import sqlite3
 import uuid
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +41,16 @@ class RoomDesignData:
 @dataclass
 class DesignData:
     building_id: str
-    rooms: List[RoomDesignData]
+    rooms: list[RoomDesignData]
 
 
 @dataclass
 class FeatureSet:
-    features: List[List[float]]
-    feature_names: List[str]
-    target: Optional[List[float]] = None
+    features: list[list[float]]
+    feature_names: list[str]
+    target: list[float] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -62,14 +61,14 @@ class FeatureSet:
 class ModelMetadata:
     version_id: str
     created_at: str
-    metrics: Dict[str, float]
-    hyperparameters: Dict[str, Any]
-    feature_names: List[str]
+    metrics: dict[str, float]
+    hyperparameters: dict[str, Any]
+    feature_names: list[str]
     target: str
     model_type: str
     artifact_path: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -81,7 +80,7 @@ class ModelArtifact:
     metadata: ModelMetadata
     model_data: bytes  # serialised model binary
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "metadata": asdict(self.metadata),
             "model_data_size": len(self.model_data),
@@ -90,15 +89,15 @@ class ModelArtifact:
 
 @dataclass
 class EvaluationReport:
-    accuracy: Optional[float] = None
-    precision: Optional[float] = None
-    recall: Optional[float] = None
-    f1: Optional[float] = None
-    mae: Optional[float] = None
-    rmse: Optional[float] = None
-    r2: Optional[float] = None
+    accuracy: float | None = None
+    precision: float | None = None
+    recall: float | None = None
+    f1: float | None = None
+    mae: float | None = None
+    rmse: float | None = None
+    r2: float | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {k: v for k, v in asdict(self).items() if v is not None}
 
     def to_json(self) -> str:
@@ -159,11 +158,11 @@ def _safe_pickle_loads(data: bytes) -> Any:
 
 
 class _LinearRegression:
-    def __init__(self):
-        self.coef_: List[float] = []
+    def __init__(self) -> None:
+        self.coef_: list[float] = []
         self.intercept_: float = 0.0
 
-    def fit(self, X: List[List[float]], y: List[float]) -> None:
+    def fit(self, X: list[list[float]], y: list[float]) -> None:
         n = len(X)
         m = len(X[0]) if X else 0
         if n == 0 or m == 0:
@@ -173,7 +172,7 @@ class _LinearRegression:
         Xt = list(zip(*X, strict=False))
         x_means = [sum(col) / n for col in Xt]
         y_mean = sum(y) / n
-        coef: List[float] = []
+        coef: list[float] = []
         for j in range(m):
             num = sum((X[i][j] - x_means[j]) * (y[i] - y_mean) for i in range(n))
             den = sum((X[i][j] - x_means[j]) ** 2 for i in range(n))
@@ -181,18 +180,18 @@ class _LinearRegression:
         self.coef_ = coef
         self.intercept_ = y_mean - sum(c * xm for c, xm in zip(coef, x_means, strict=False))
 
-    def predict(self, X: List[List[float]]) -> List[float]:
+    def predict(self, X: list[list[float]]) -> list[float]:
         return [self.intercept_ + sum(c * x[j] for j, c in enumerate(self.coef_)) for x in X]
 
 
 class _RandomForestClassifier:
-    def __init__(self, n_estimators: int = 10, max_depth: int = 5, random_state: int = 42):
+    def __init__(self, n_estimators: int = 10, max_depth: int = 5, random_state: int = 42) -> None:
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.random_state = random_state
-        self.trees: List[dict] = []
+        self.trees: list[dict] = []
 
-    def fit(self, X: List[List[float]], y: List[float]) -> None:
+    def fit(self, X: list[list[float]], y: list[float]) -> None:
         random.seed(self.random_state)
         self.trees = []
         n = len(X)
@@ -204,7 +203,7 @@ class _RandomForestClassifier:
             tree = self._build_tree(X_boot, y_boot, depth=0)
             self.trees.append(tree)
 
-    def _build_tree(self, X: List[List[float]], y: List[float], depth: int) -> dict:
+    def _build_tree(self, X: list[list[float]], y: list[float], depth: int) -> dict:
         if depth >= self.max_depth or len(set(y)) <= 1 or len(X) <= 2:
             return {"leaf": True, "value": sum(y) / max(len(y), 1) if y else 0.0}
         m = len(X[0]) if X else 0
@@ -237,22 +236,22 @@ class _RandomForestClassifier:
             "right": self._build_tree(right_X, right_y, depth + 1),
         }
 
-    def _gini(self, y: List[float]) -> float:
+    def _gini(self, y: list[float]) -> float:
         if not y:
             return 0.0
         p = sum(y) / len(y)
         return 1.0 - p ** 2 - (1 - p) ** 2
 
-    def predict(self, X: List[List[float]]) -> List[float]:
-        results: List[float] = []
+    def predict(self, X: list[list[float]]) -> list[float]:
+        results: list[float] = []
         for x in X:
-            votes: List[float] = []
+            votes: list[float] = []
             for tree in self.trees:
                 votes.append(self._predict_tree(tree, x))
             results.append(1.0 if sum(votes) / max(len(votes), 1) > 0.5 else 0.0)
         return results
 
-    def _predict_tree(self, node: dict, x: List[float]) -> float:
+    def _predict_tree(self, node: dict, x: list[float]) -> float:
         if node.get("leaf"):
             return node["value"]
         if x[node["feature"]] <= node["threshold"]:
@@ -261,13 +260,13 @@ class _RandomForestClassifier:
 
 
 class _RandomForestRegressor:
-    def __init__(self, n_estimators: int = 10, max_depth: int = 5, random_state: int = 42):
+    def __init__(self, n_estimators: int = 10, max_depth: int = 5, random_state: int = 42) -> None:
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.random_state = random_state
-        self.trees: List[dict] = []
+        self.trees: list[dict] = []
 
-    def fit(self, X: List[List[float]], y: List[float]) -> None:
+    def fit(self, X: list[list[float]], y: list[float]) -> None:
         random.seed(self.random_state)
         self.trees = []
         n = len(X)
@@ -278,7 +277,7 @@ class _RandomForestRegressor:
             tree = self._build_tree(X_boot, y_boot, depth=0)
             self.trees.append(tree)
 
-    def _build_tree(self, X: List[List[float]], y: List[float], depth: int) -> dict:
+    def _build_tree(self, X: list[list[float]], y: list[float], depth: int) -> dict:
         if depth >= self.max_depth or len(X) <= 2:
             return {"leaf": True, "value": sum(y) / max(len(y), 1) if y else 0.0}
         m = len(X[0]) if X else 0
@@ -311,20 +310,20 @@ class _RandomForestRegressor:
             "right": self._build_tree(right_X, right_y, depth + 1),
         }
 
-    def _mse(self, y: List[float]) -> float:
+    def _mse(self, y: list[float]) -> float:
         if not y:
             return 0.0
         mean = sum(y) / len(y)
         return sum((v - mean) ** 2 for v in y) / len(y)
 
-    def predict(self, X: List[List[float]]) -> List[float]:
-        results: List[float] = []
+    def predict(self, X: list[list[float]]) -> list[float]:
+        results: list[float] = []
         for x in X:
             preds = [self._predict_tree(tree, x) for tree in self.trees]
             results.append(sum(preds) / max(len(preds), 1))
         return results
 
-    def _predict_tree(self, node: dict, x: List[float]) -> float:
+    def _predict_tree(self, node: dict, x: list[float]) -> float:
         if node.get("leaf"):
             return node["value"]
         if x[node["feature"]] <= node["threshold"]:
@@ -335,7 +334,7 @@ class _RandomForestRegressor:
 # ── sklearn wrapper ─────────────────────────────────────────────────────────
 
 
-def _get_sklearn_model(model_type: str, hyperparameters: Dict[str, Any]) -> Any:
+def _get_sklearn_model(model_type: str, hyperparameters: dict[str, Any]) -> Any:
     try:
         from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
         from sklearn.linear_model import LinearRegression
@@ -353,7 +352,7 @@ def _get_sklearn_model(model_type: str, hyperparameters: Dict[str, Any]) -> Any:
     raise ValueError(f"Unknown model_type: {model_type}")
 
 
-def _get_fallback_model(model_type: str, hyperparameters: Dict[str, Any]) -> Any:
+def _get_fallback_model(model_type: str, hyperparameters: dict[str, Any]) -> Any:
     if model_type == "linear_regression":
         return _LinearRegression()
     if model_type == "random_forest_classifier":
@@ -375,15 +374,14 @@ def _get_fallback_model(model_type: str, hyperparameters: Dict[str, Any]) -> Any
 
 
 class MLPipeline:
-    """
-    End-to-end ML pipeline:
+    """End-to-end ML pipeline:
     - Feature engineering from fire alarm design data
     - Model registry (versioned, metadata-tagged)
     - Training pipeline with cross-validation
-    - Evaluation framework with metrics
+    - Evaluation framework with metrics.
     """
 
-    def __init__(self, registry_path: str = "fireai_ml_registry.sqlite3", artifacts_dir: str = "/tmp/fireai_models"):
+    def __init__(self, registry_path: str = "fireai_ml_registry.sqlite3", artifacts_dir: str = "/tmp/fireai_models") -> None:
         self.registry_path = registry_path
         self.artifacts_dir = artifacts_dir
         os.makedirs(artifacts_dir, exist_ok=True)
@@ -408,7 +406,7 @@ class MLPipeline:
         self._conn.commit()
 
     def engineer_features(self, design: DesignData) -> FeatureSet:
-        features: List[List[float]] = []
+        features: list[list[float]] = []
         feature_names = [
             "room_area",
             "ceiling_height",
@@ -438,7 +436,7 @@ class MLPipeline:
         features: FeatureSet,
         target: str = "coverage_pct",
         model_type: str = "linear_regression",
-        hyperparameters: Optional[Dict[str, Any]] = None,
+        hyperparameters: dict[str, Any] | None = None,
         test_split: float = 0.2,
         cv_folds: int = 0,
     ) -> ModelArtifact:
@@ -474,7 +472,7 @@ class MLPipeline:
         model.predict(X_test) if hasattr(model, "predict") else []
         eval_report = self._evaluate_model(model, model_type, X_test, y_test)
 
-        cv_scores: List[float] = []
+        cv_scores: list[float] = []
         if cv_folds > 1 and n >= cv_folds * 2:
             fold_size = n // cv_folds
             for fold in range(cv_folds):
@@ -498,7 +496,7 @@ class MLPipeline:
                 eval_report.mae = sum(cv_scores) / len(cv_scores)
 
         version_id = str(uuid.uuid4())
-        created_at = datetime.now(timezone.utc).isoformat()
+        created_at = datetime.now(UTC).isoformat()
         artifact_path = os.path.join(self.artifacts_dir, f"{version_id}.pkl")
         model_data = pickle.dumps(model)
 
@@ -540,7 +538,7 @@ class MLPipeline:
         logger.info("Trained model %s (type=%s, target=%s)", version_id, model_type, target)
         return ModelArtifact(metadata=metadata, model_data=model_data)
 
-    def _evaluate_model(self, model_obj: Any, model_type: str, X_test: List[List[float]], y_test: List[float]) -> EvaluationReport:
+    def _evaluate_model(self, model_obj: Any, model_type: str, X_test: list[list[float]], y_test: list[float]) -> EvaluationReport:
         y_pred = model_obj.predict(X_test) if hasattr(model_obj, "predict") else []
         if not y_pred:
             return EvaluationReport()
@@ -577,11 +575,11 @@ class MLPipeline:
             return EvaluationReport()
         return self._evaluate_model(model_obj, model.metadata.model_type, X_test, y_test)
 
-    def registry_list(self) -> List[ModelMetadata]:
+    def registry_list(self) -> list[ModelMetadata]:
         cursor = self._conn.cursor()
         cursor.execute("SELECT * FROM model_registry ORDER BY created_at DESC")
         rows = cursor.fetchall()
-        result: List[ModelMetadata] = []
+        result: list[ModelMetadata] = []
         for row in rows:
             result.append(
                 ModelMetadata(
@@ -597,7 +595,7 @@ class MLPipeline:
             )
         return result
 
-    def registry_get(self, model_id: str) -> Optional[ModelArtifact]:
+    def registry_get(self, model_id: str) -> ModelArtifact | None:
         cursor = self._conn.cursor()
         cursor.execute("SELECT * FROM model_registry WHERE version_id = ?", (model_id,))
         row = cursor.fetchone()

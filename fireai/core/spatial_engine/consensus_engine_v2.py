@@ -44,7 +44,6 @@ D3 DELIVERABLE: Closes the single-engine vulnerability for complex rooms.
 import enum
 import logging
 import math
-from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,7 @@ class EngineNameV2(enum.Enum):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def is_rectangular_polygon(coords: List[Tuple[float, float]], tolerance: float = 0.01) -> bool:
+def is_rectangular_polygon(coords: list[tuple[float, float]], tolerance: float = 0.01) -> bool:
     """Check if a polygon is effectively a rectangle.
 
     A polygon is rectangular if:
@@ -89,6 +88,7 @@ def is_rectangular_polygon(coords: List[Tuple[float, float]], tolerance: float =
 
     Returns:
         True if the polygon is effectively rectangular.
+
     """
     if not coords or len(coords) < 3:
         return False
@@ -129,14 +129,14 @@ def is_rectangular_polygon(coords: List[Tuple[float, float]], tolerance: float =
     return True
 
 
-def polygon_bounds(coords: List[Tuple[float, float]]) -> Tuple[float, float, float, float]:
+def polygon_bounds(coords: list[tuple[float, float]]) -> tuple[float, float, float, float]:
     """Get bounding box of a polygon: (min_x, min_y, max_x, max_y)."""
     xs = [c[0] for c in coords]
     ys = [c[1] for c in coords]
     return min(xs), min(ys), max(xs), max(ys)
 
 
-def polygon_width_length(coords: List[Tuple[float, float]]) -> Tuple[float, float]:
+def polygon_width_length(coords: list[tuple[float, float]]) -> tuple[float, float]:
     """Extract width and length from an axis-aligned rectangular polygon."""
     min_x, min_y, max_x, max_y = polygon_bounds(coords)
     return max_x - min_x, max_y - min_y
@@ -148,11 +148,11 @@ def polygon_width_length(coords: List[Tuple[float, float]]) -> Tuple[float, floa
 
 
 def grid_polygon_verify(
-    room_coords: List[Tuple[float, float]],
-    detectors: List[Tuple[float, float]],
+    room_coords: list[tuple[float, float]],
+    detectors: list[tuple[float, float]],
     coverage_radius: float,
     step: float = 0.20,
-) -> Tuple[bool, float]:
+) -> tuple[bool, float]:
     """Grid verification restricted to a polygon boundary.
 
     Generates a grid of points within the bounding box, then filters
@@ -167,6 +167,7 @@ def grid_polygon_verify(
 
     Returns:
         (proof_valid, coverage_pct)
+
     """
     if not HAS_SHAPELY:
         return False, 0.0
@@ -255,7 +256,7 @@ class ConsensusEngineV2:
     SAFETY: Same conservative rules as v1 — is_safe only if VERIFIED (3/3).
     """
 
-    def __init__(self, coverage_radius: float, wall_min: float = 0.10):
+    def __init__(self, coverage_radius: float, wall_min: float = 0.10) -> None:
         self.R = coverage_radius
         self.wm = wall_min
         # v1 engine for rectangular rooms
@@ -272,9 +273,9 @@ class ConsensusEngineV2:
         self,
         width: float,
         length: float,
-        detectors: List[tuple],
-        grid_proof_valid: Optional[bool] = None,
-        grid_coverage_pct: Optional[float] = None,
+        detectors: list[tuple],
+        grid_proof_valid: bool | None = None,
+        grid_coverage_pct: float | None = None,
     ) -> ConsensusResult:
         """Verify a rectangular room using v1 consensus engine.
 
@@ -293,9 +294,9 @@ class ConsensusEngineV2:
 
     def verify_polygon(
         self,
-        room_coords: List[Tuple[float, float]],
-        detectors: List[Tuple[float, float]],
-        obstacles: Optional[List[List[Tuple[float, float]]]] = None,
+        room_coords: list[tuple[float, float]],
+        detectors: list[tuple[float, float]],
+        obstacles: list[list[tuple[float, float]]] | None = None,
     ) -> ConsensusResult:
         """Verify a non-rectangular room using polygon-aware triple verification.
 
@@ -311,8 +312,9 @@ class ConsensusEngineV2:
 
         Returns:
             ConsensusResult with combined verdict.
+
         """
-        verdicts: List[EngineVerdict] = []
+        verdicts: list[EngineVerdict] = []
 
         # Engine A: ExactCoverage
         if self._exact_engine is not None:
@@ -454,13 +456,13 @@ class ConsensusEngineV2:
 
     def verify(
         self,
-        room_coords: Optional[List[Tuple[float, float]]] = None,
-        width: Optional[float] = None,
-        length: Optional[float] = None,
-        detectors: List[tuple] = None,
-        grid_proof_valid: Optional[bool] = None,
-        grid_coverage_pct: Optional[float] = None,
-        obstacles: Optional[List[List[Tuple[float, float]]]] = None,
+        room_coords: list[tuple[float, float]] | None = None,
+        width: float | None = None,
+        length: float | None = None,
+        detectors: list[tuple] | None = None,
+        grid_proof_valid: bool | None = None,
+        grid_coverage_pct: float | None = None,
+        obstacles: list[list[tuple[float, float]]] | None = None,
     ) -> ConsensusResult:
         """Auto-detect room type and run appropriate verification.
 
@@ -480,6 +482,7 @@ class ConsensusEngineV2:
 
         Returns:
             ConsensusResult with combined verdict.
+
         """
         if detectors is None:
             detectors = []
@@ -520,7 +523,7 @@ class ConsensusEngineV2:
     # ── Consensus computation (shared with v1) ─────────────────────────────
 
     @staticmethod
-    def _compute_consensus(verdicts: List[EngineVerdict]) -> ConsensusResult:
+    def _compute_consensus(verdicts: list[EngineVerdict]) -> ConsensusResult:
         """Compute consensus from a list of engine verdicts.
 
         Same logic as v1 ConsensusEngine but reusable for both paths.

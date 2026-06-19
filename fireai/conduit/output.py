@@ -1,5 +1,4 @@
-"""
-fireai.conduit.output — Revit, AutoCAD, and Schedule Output Generators
+"""fireai.conduit.output — Revit, AutoCAD, and Schedule Output Generators.
 =======================================================================
 
 Converts a completed ConduitRun into:
@@ -24,7 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from typing import Any, Dict, List
+from typing import Any
 
 from fireai.conduit.types import (
     ConduitRun,
@@ -57,9 +56,8 @@ _REVIT_FAMILY: dict[ConduitType, str] = {
 _M_TO_FT: float = 1.0 / 0.3048
 
 
-def generate_revit_conduit(run: ConduitRun) -> Dict[str, Any]:
-    """
-    Generate Revit-compatible JSON for a complete ConduitRun.
+def generate_revit_conduit(run: ConduitRun) -> dict[str, Any]:
+    """Generate Revit-compatible JSON for a complete ConduitRun.
 
     Produces a structure importable by Dynamo or the Revit API Python shell
     to create Conduit and ConduitFitting elements in a Revit model.
@@ -79,8 +77,9 @@ def generate_revit_conduit(run: ConduitRun) -> Dict[str, Any]:
           sha256 (deterministic hash for audit trail).
 
     Reference: Autodesk Revit MEP API — Conduit.Create(), ConduitFitting.Create().
+
     """
-    segments_out: List[Dict[str, Any]] = []
+    segments_out: list[dict[str, Any]] = []
     for seg in run.segments:
         segments_out.append({
             "start_ft": _pt_to_ft(seg.start),
@@ -91,7 +90,7 @@ def generate_revit_conduit(run: ConduitRun) -> Dict[str, Any]:
             "trade_size":   seg.trade_size.value,
         })
 
-    fittings_out: List[Dict[str, Any]] = []
+    fittings_out: list[dict[str, Any]] = []
     for fit in run.fittings:
         fittings_out.append({
             "fitting_type":    fit.fitting_type.name,
@@ -106,7 +105,7 @@ def generate_revit_conduit(run: ConduitRun) -> Dict[str, Any]:
 
     summary = _build_summary(run)
 
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "schema_version":  "fireai-conduit-v1",
         "run_id":          run.run_id,
         "conduit_type":    run.conduit_type.value,
@@ -124,9 +123,8 @@ def generate_revit_conduit(run: ConduitRun) -> Dict[str, Any]:
     return payload
 
 
-def generate_autocad_entities(run: ConduitRun) -> List[Dict[str, Any]]:
-    """
-    Generate DXF entity descriptions for a ConduitRun.
+def generate_autocad_entities(run: ConduitRun) -> list[dict[str, Any]]:
+    """Generate DXF entity descriptions for a ConduitRun.
 
     Each straight segment becomes a LINE entity.
     Each elbow becomes an ARC entity.
@@ -142,10 +140,11 @@ def generate_autocad_entities(run: ConduitRun) -> List[Dict[str, Any]]:
           entity_type, layer, color_index, [geometry keys per type].
 
     Reference: AutoCAD DXF R2018 specification — LINE, ARC, POINT entities.
+
     """
     layer = _DXF_LAYER.get(run.conduit_type, "FA-CONDUIT")
     color = _dxf_color(run.conduit_type)
-    entities: List[Dict[str, Any]] = []
+    entities: list[dict[str, Any]] = []
 
     # Straight segments → LINE entities
     for seg in run.segments:
@@ -168,7 +167,7 @@ def generate_autocad_entities(run: ConduitRun) -> List[Dict[str, Any]]:
             FittingType.ELBOW_90, FittingType.ELBOW_45
         ) else "POINT"
 
-        ent: Dict[str, Any] = {
+        ent: dict[str, Any] = {
             "entity_type":   etype,
             "layer":         layer + "-FITTINGS",
             "color_index":   color,
@@ -190,9 +189,8 @@ def generate_autocad_entities(run: ConduitRun) -> List[Dict[str, Any]]:
     return entities
 
 
-def generate_schedules(run: ConduitRun) -> Dict[str, Any]:
-    """
-    Generate material, fitting, and summary schedules for procurement.
+def generate_schedules(run: ConduitRun) -> dict[str, Any]:
+    """Generate material, fitting, and summary schedules for procurement.
 
     Produces three sub-schedules:
       conduit_schedule:  Trade size, type, total metres/feet, stick count.
@@ -208,6 +206,7 @@ def generate_schedules(run: ConduitRun) -> Dict[str, Any]:
         dict with keys: conduit_schedule, fitting_schedule, summary.
 
     Reference: NEC 358.120 (EMT stick length); NFPA 72 design documents.
+
     """
     # ── Conduit schedule ─────────────────────────────────────────────────────
 
@@ -228,7 +227,7 @@ def generate_schedules(run: ConduitRun) -> Dict[str, Any]:
     # ── Fitting schedule ─────────────────────────────────────────────────────
 
     # Aggregate by catalog_number
-    fitting_qty: Dict[str, Dict[str, Any]] = {}
+    fitting_qty: dict[str, dict[str, Any]] = {}
     for fit in run.fittings:
         cn = fit.catalog_number
         if cn not in fitting_qty:
@@ -261,7 +260,7 @@ def generate_schedules(run: ConduitRun) -> Dict[str, Any]:
 # Internal helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _build_summary(run: ConduitRun) -> Dict[str, Any]:
+def _build_summary(run: ConduitRun) -> dict[str, Any]:
     """Build summary statistics for a ConduitRun."""
     elbow_count   = sum(1 for f in run.fittings if f.fitting_type == FittingType.ELBOW_90)
     coupling_count = sum(1 for f in run.fittings if f.fitting_type == FittingType.COUPLING)
@@ -283,7 +282,7 @@ def _build_summary(run: ConduitRun) -> Dict[str, Any]:
     }
 
 
-def _pt_to_ft(p: Point3D) -> Dict[str, float]:
+def _pt_to_ft(p: Point3D) -> dict[str, float]:
     """Convert Point3D (metres) to Revit decimal feet dict."""
     return {
         "x": round(p.x * _M_TO_FT, 6),
@@ -292,12 +291,12 @@ def _pt_to_ft(p: Point3D) -> Dict[str, float]:
     }
 
 
-def _pt_to_m(p: Point3D) -> Dict[str, float]:
+def _pt_to_m(p: Point3D) -> dict[str, float]:
     """Convert Point3D to metres dict."""
     return {"x": round(p.x, 6), "y": round(p.y, 6), "z": round(p.z, 6)}
 
 
-def _pt_to_mm(p: Point3D) -> Dict[str, float]:
+def _pt_to_mm(p: Point3D) -> dict[str, float]:
     """Convert Point3D (metres) to millimetres dict."""
     return {
         "x": round(p.x * 1000.0, 3),
@@ -316,9 +315,8 @@ def _dxf_color(ct: ConduitType) -> int:
     }.get(ct, 7)  # 7 = white (default)
 
 
-def _sha256(payload: Dict[str, Any]) -> str:
-    """
-    Compute deterministic SHA-256 of a JSON-serialisable payload.
+def _sha256(payload: dict[str, Any]) -> str:
+    """Compute deterministic SHA-256 of a JSON-serialisable payload.
 
     Keys sorted, floats rounded to 9 dp for cross-platform stability.
     Excludes the 'sha256' key itself to avoid circular dependency.

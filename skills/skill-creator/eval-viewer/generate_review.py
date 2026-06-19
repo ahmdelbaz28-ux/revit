@@ -14,6 +14,7 @@ No dependencies beyond the Python stdlib are required.
 
 import argparse
 import base64
+import contextlib
 import json
 import mimetypes
 import os
@@ -130,10 +131,8 @@ def build_run(root: Path, run_dir: Path) -> dict | None:
     grading = None
     for candidate in [run_dir / "grading.json", run_dir.parent / "grading.json"]:
         if candidate.exists():
-            try:
+            with contextlib.suppress(json.JSONDecodeError, OSError):
                 grading = json.loads(candidate.read_text())
-            except (json.JSONDecodeError, OSError):
-                pass
             if grading:
                 break
 
@@ -161,7 +160,7 @@ def embed_file(path: Path) -> dict:
             "type": "text",
             "content": content,
         }
-    elif ext in IMAGE_EXTENSIONS:
+    if ext in IMAGE_EXTENSIONS:
         try:
             raw = path.read_bytes()
             b64 = base64.b64encode(raw).decode("ascii")
@@ -173,7 +172,7 @@ def embed_file(path: Path) -> dict:
             "mime": mime,
             "data_uri": f"data:{mime};base64,{b64}",
         }
-    elif ext == ".pdf":
+    if ext == ".pdf":
         try:
             raw = path.read_bytes()
             b64 = base64.b64encode(raw).decode("ascii")
@@ -184,7 +183,7 @@ def embed_file(path: Path) -> dict:
             "type": "pdf",
             "data_uri": f"data:{mime};base64,{b64}",
         }
-    elif ext == ".xlsx":
+    if ext == ".xlsx":
         try:
             raw = path.read_bytes()
             b64 = base64.b64encode(raw).decode("ascii")
@@ -195,19 +194,18 @@ def embed_file(path: Path) -> dict:
             "type": "xlsx",
             "data_b64": b64,
         }
-    else:
-        # Binary / unknown — base64 download link
-        try:
-            raw = path.read_bytes()
-            b64 = base64.b64encode(raw).decode("ascii")
-        except OSError:
-            return {"name": path.name, "type": "error", "content": "(Error reading file)"}
-        return {
-            "name": path.name,
-            "type": "binary",
-            "mime": mime,
-            "data_uri": f"data:{mime};base64,{b64}",
-        }
+    # Binary / unknown — base64 download link
+    try:
+        raw = path.read_bytes()
+        b64 = base64.b64encode(raw).decode("ascii")
+    except OSError:
+        return {"name": path.name, "type": "error", "content": "(Error reading file)"}
+    return {
+        "name": path.name,
+        "type": "binary",
+        "mime": mime,
+        "data_uri": f"data:{mime};base64,{b64}",
+    }
 
 
 def load_previous_iteration(workspace: Path) -> dict[str, dict]:
@@ -294,10 +292,8 @@ def _kill_port(port: int) -> None:
         )
         for pid_str in result.stdout.strip().split("\n"):
             if pid_str.strip():
-                try:
+                with contextlib.suppress(ProcessLookupError, ValueError):
                     os.kill(int(pid_str.strip()), signal.SIGTERM)
-                except (ProcessLookupError, ValueError):
-                    pass
         if result.stdout.strip():
             time.sleep(0.5)
     except subprocess.TimeoutExpired:
@@ -321,7 +317,7 @@ class ReviewHandler(BaseHTTPRequestHandler):
         benchmark_path: Path | None,
         *args,
         **kwargs,
-    ):
+    ) -> None:
         self.workspace = workspace
         self.skill_name = skill_name
         self.feedback_path = feedback_path
@@ -335,10 +331,8 @@ class ReviewHandler(BaseHTTPRequestHandler):
             runs = find_runs(self.workspace)
             benchmark = None
             if self.benchmark_path and self.benchmark_path.exists():
-                try:
+                with contextlib.suppress(json.JSONDecodeError, OSError):
                     benchmark = json.loads(self.benchmark_path.read_text())
-                except (json.JSONDecodeError, OSError):
-                    pass
             html = generate_html(runs, self.skill_name, self.previous, benchmark)
             content = html.encode("utf-8")
             self.send_response(200)
@@ -423,10 +417,8 @@ def main() -> None:
     benchmark_path = args.benchmark.resolve() if args.benchmark else None
     benchmark = None
     if benchmark_path and benchmark_path.exists():
-        try:
+        with contextlib.suppress(json.JSONDecodeError, OSError):
             benchmark = json.loads(benchmark_path.read_text())
-        except (json.JSONDecodeError, OSError):
-            pass
 
     if args.static:
         html = generate_html(runs, skill_name, previous, benchmark)

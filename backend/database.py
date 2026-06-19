@@ -1,5 +1,4 @@
-"""
-backend/database.py — Lightweight database layer for the Digital Twin API.
+"""backend/database.py — Lightweight database layer for the Digital Twin API.
 
 Supports two backends:
   - SQLite (default) — for single-instance development/deployment
@@ -26,9 +25,9 @@ import os
 import sqlite3
 import threading
 import uuid
-from contextlib import contextmanager
-from datetime import datetime, timezone
-from typing import Any, Optional
+from contextlib import contextmanager, suppress
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +42,7 @@ _USE_POSTGRES = _DATABASE_URL.startswith(("postgres://", "postgresql://"))
 
 
 class Database:
-    """
-    Thread-safe database for the Digital Twin REST API.
+    """Thread-safe database for the Digital Twin REST API.
 
     Supports two backends:
       - SQLite (default) — for single-instance development/deployment
@@ -148,7 +146,7 @@ class Database:
     @contextmanager
     def _transaction(self):
         """Yield a cursor inside a locked, auto-committing transaction.
-        
+
         Returns a SQLite cursor or PostgreSQL cursor depending on the backend.
         """
         if self._is_postgres:
@@ -400,7 +398,7 @@ class Database:
 
     def create_project(self, project_data: dict) -> dict:
         """Insert a new project and return it."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         project_data.setdefault("id", str(uuid.uuid4()))
         project_data["createdAt"] = now
         project_data["updatedAt"] = now
@@ -425,7 +423,7 @@ class Database:
 
         return self.get_project(project_data["id"])
 
-    def get_project(self, project_id: str) -> Optional[dict]:
+    def get_project(self, project_id: str) -> dict | None:
         """Get a project by ID, with device and connection counts — single query."""
         with self._transaction() as cur:
             cur.execute(
@@ -467,10 +465,7 @@ class Database:
         _ALLOWED_PROJECT_SORTS = {"id", "name", "created_at", "updated_at", "status", "author"}
         if sort not in _ALLOWED_PROJECT_SORTS:
             sort = "created_at"
-        if order.upper() not in ("ASC", "DESC"):
-            order = "DESC"
-        else:
-            order = order.upper()
+        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
 
         with self._transaction() as cur:
             # Get total count
@@ -498,7 +493,7 @@ class Database:
                 ) c ON p.id = c.project_id
                 ORDER BY p.{sort} {order}
                 LIMIT {self._ph()} OFFSET {self._ph()}
-                """,  # noqa: S608 — sort/order whitelisted above
+                """,
                 (limit, offset),
             )
             rows = cur.fetchall()
@@ -517,13 +512,13 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_project(self, project_id: str, updates: dict) -> Optional[dict]:
+    def update_project(self, project_id: str, updates: dict) -> dict | None:
         """Update a project. Returns updated project or None if not found."""
         existing = self.get_project(project_id)
         if not existing:
             return None
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         set_clauses = [f"updated_at = {self._ph()}"]
         values = [now]
 
@@ -542,7 +537,7 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE projects SET {', '.join(set_clauses)} WHERE id = {self._ph()}",  # noqa: S608 — set_clauses built from whitelisted field_map keys
+                f"UPDATE projects SET {', '.join(set_clauses)} WHERE id = {self._ph()}",
                 values,
             )
 
@@ -583,7 +578,7 @@ class Database:
 
     def create_device(self, project_id: str, device_data: dict) -> dict:
         """Insert a new device and return it."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         device_data.setdefault("id", str(uuid.uuid4()))
         device_data["projectId"] = project_id
         device_data["createdAt"] = now
@@ -624,7 +619,7 @@ class Database:
 
         return self.get_device(project_id, device_data["id"])
 
-    def get_device(self, project_id: str, device_id: str) -> Optional[dict]:
+    def get_device(self, project_id: str, device_id: str) -> dict | None:
         """Get a device by ID within a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -659,10 +654,7 @@ class Database:
         }
         if sort not in _ALLOWED_DEVICE_SORTS:
             sort = "created_at"
-        if order.upper() not in ("ASC", "DESC"):
-            order = "DESC"
-        else:
-            order = order.upper()
+        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
 
         with self._transaction() as cur:
             cur.execute(
@@ -673,7 +665,7 @@ class Database:
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM devices WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",  # noqa: S608 — sort/order whitelisted above
+                f"SELECT * FROM devices WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -688,13 +680,13 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_device(self, project_id: str, device_id: str, updates: dict) -> Optional[dict]:
+    def update_device(self, project_id: str, device_id: str, updates: dict) -> dict | None:
         """Update a device. Returns updated device or None if not found."""
         existing = self.get_device(project_id, device_id)
         if not existing:
             return None
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         set_clauses = [f"updated_at = {self._ph()}"]
         values = [now]
 
@@ -723,7 +715,7 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE devices SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
+                f"UPDATE devices SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 values,
             )
 
@@ -776,7 +768,7 @@ class Database:
         non-existent devices would corrupt voltage drop calculations, UI
         display, and BIM exports.
         """
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         conn_data.setdefault("id", str(uuid.uuid4()))
         conn_data["projectId"] = project_id
         conn_data["createdAt"] = now
@@ -821,7 +813,7 @@ class Database:
 
         return self.get_connection(project_id, conn_data["id"])
 
-    def get_connection(self, project_id: str, connection_id: str) -> Optional[dict]:
+    def get_connection(self, project_id: str, connection_id: str) -> dict | None:
         """Get a connection by ID within a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -846,10 +838,7 @@ class Database:
         _ALLOWED_CONNECTION_SORTS = {"id", "created_at", "type", "length", "cable_size"}
         if sort not in _ALLOWED_CONNECTION_SORTS:
             sort = "created_at"
-        if order.upper() not in ("ASC", "DESC"):
-            order = "DESC"
-        else:
-            order = order.upper()
+        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
 
         with self._transaction() as cur:
             cur.execute(
@@ -860,7 +849,7 @@ class Database:
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM connections WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",  # noqa: S608 — sort/order whitelisted above
+                f"SELECT * FROM connections WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -894,6 +883,7 @@ class Database:
 
         Returns:
             Updated connection dict, or None if not found.
+
         """
         # First verify the connection exists
         connection = self.get_connection(project_id, connection_id)
@@ -947,7 +937,7 @@ class Database:
 
     def create_report(self, project_id: str, report_data: dict) -> dict:
         """Insert a new report and return it."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         report_data.setdefault("id", str(uuid.uuid4()))
         report_data["projectId"] = project_id
         report_data["createdAt"] = now
@@ -977,7 +967,7 @@ class Database:
 
         return self.get_report(project_id, report_data["id"])
 
-    def get_report(self, project_id: str, report_id: str) -> Optional[dict]:
+    def get_report(self, project_id: str, report_id: str) -> dict | None:
         """Get a report by ID within a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -1002,10 +992,7 @@ class Database:
         _ALLOWED_REPORT_SORTS = {"id", "created_at", "type", "status", "name"}
         if sort not in _ALLOWED_REPORT_SORTS:
             sort = "created_at"
-        if order.upper() not in ("ASC", "DESC"):
-            order = "DESC"
-        else:
-            order = order.upper()
+        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
 
         with self._transaction() as cur:
             cur.execute(
@@ -1016,7 +1003,7 @@ class Database:
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM reports WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",  # noqa: S608 — sort/order whitelisted above
+                f"SELECT * FROM reports WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -1031,7 +1018,7 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_report(self, project_id: str, report_id: str, updates: dict) -> Optional[dict]:
+    def update_report(self, project_id: str, report_id: str, updates: dict) -> dict | None:
         """Update a report. Returns updated report or None if not found."""
         set_clauses = []
         values = []
@@ -1056,7 +1043,7 @@ class Database:
         values.extend([report_id, project_id])
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
+                f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 values,
             )
 
@@ -1066,7 +1053,7 @@ class Database:
     # Sync Status
     # ========================================================================
 
-    def get_sync_status(self, project_id: str) -> Optional[dict]:
+    def get_sync_status(self, project_id: str) -> dict | None:
         """Get sync status for a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -1079,7 +1066,7 @@ class Database:
                 return {
                     "projectId": project_id,
                     "status": "synced",
-                    "lastSync": datetime.now(timezone.utc).isoformat(),
+                    "lastSync": datetime.now(UTC).isoformat(),
                     "pendingChanges": 0,
                     "error": None,
                 }
@@ -1102,7 +1089,7 @@ class Database:
                     (
                         project_id,
                         status.get("status", "syncing"),
-                        status.get("lastSync", datetime.now(timezone.utc).isoformat()),
+                        status.get("lastSync", datetime.now(UTC).isoformat()),
                         status.get("pendingChanges", 0),
                         status.get("error"),
                     ),
@@ -1115,7 +1102,7 @@ class Database:
                     (
                         project_id,
                         status.get("status", "syncing"),
-                        status.get("lastSync", datetime.now(timezone.utc).isoformat()),
+                        status.get("lastSync", datetime.now(UTC).isoformat()),
                         status.get("pendingChanges", 0),
                         status.get("error"),
                     ),
@@ -1149,8 +1136,9 @@ class Database:
 
         Returns:
             The row ID of the inserted/updated sync operation.
+
         """
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         with self._transaction() as cur:
             # Check for an existing pending/syncing record for this entity
@@ -1318,10 +1306,8 @@ class Database:
                 self._pg_pool.closeall()
                 logger.info("PostgreSQL connection pool closed")
         else:
-            try:
+            with suppress(Exception):
                 self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-            except Exception:
-                pass
             self._conn.close()
 
     def __del__(self) -> None:
@@ -1335,7 +1321,7 @@ class Database:
 # Singleton instance — imported by routers
 # ============================================================================
 
-_db: Optional[Database] = None
+_db: Database | None = None
 
 
 _db_lock = threading.Lock()

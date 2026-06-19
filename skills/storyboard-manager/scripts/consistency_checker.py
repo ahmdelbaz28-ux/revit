@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Consistency Checker for Storyboard Manager
+"""Consistency Checker for Storyboard Manager.
 
 This script analyzes markdown files in a storyboard project to detect inconsistencies
 in character details, plot elements, and world-building across the story.
@@ -11,21 +10,20 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 
 class ConsistencyIssue:
-    """Represents a consistency issue found in the story"""
+    """Represents a consistency issue found in the story."""
 
     def __init__(self, issue_type: str, severity: str, description: str,
-                 locations: List[str], details: Dict = None):
+                 locations: list[str], details: dict | None = None) -> None:
         self.issue_type = issue_type  # character, plot, world, timeline
         self.severity = severity  # critical, warning, info
         self.description = description
         self.locations = locations
         self.details = details or {}
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"ConsistencyIssue({self.severity}: {self.description})"
 
     def to_dict(self):
@@ -39,26 +37,26 @@ class ConsistencyIssue:
 
 
 class CharacterProfile:
-    """Stores character information from profile files"""
+    """Stores character information from profile files."""
 
-    def __init__(self, name: str, file_path: str):
+    def __init__(self, name: str, file_path: str) -> None:
         self.name = name
         self.file_path = file_path
         self.attributes = {}
         self.aliases = []
         self.relationships = {}
 
-    def add_attribute(self, key: str, value: str):
-        """Add a character attribute"""
+    def add_attribute(self, key: str, value: str) -> None:
+        """Add a character attribute."""
         self.attributes[key.lower()] = value
 
-    def get_attribute(self, key: str) -> Optional[str]:
-        """Get a character attribute"""
+    def get_attribute(self, key: str) -> str | None:
+        """Get a character attribute."""
         return self.attributes.get(key.lower())
 
 
 class ConsistencyChecker:
-    """Main consistency checking class"""
+    """Main consistency checking class."""
 
     # Patterns to extract character attributes
     ATTRIBUTE_PATTERNS = {
@@ -70,14 +68,14 @@ class ConsistencyChecker:
         'role': r'\*\*Role:\*\*\s*(.+?)(?:\n|$)',
     }
 
-    def __init__(self, project_root: str):
+    def __init__(self, project_root: str) -> None:
         self.project_root = Path(project_root)
-        self.characters: Dict[str, CharacterProfile] = {}
-        self.issues: List[ConsistencyIssue] = []
-        self.world_facts: Dict[str, Tuple[str, str]] = {}  # fact -> (value, location)
+        self.characters: dict[str, CharacterProfile] = {}
+        self.issues: list[ConsistencyIssue] = []
+        self.world_facts: dict[str, tuple[str, str]] = {}  # fact -> (value, location)
 
-    def scan_directory(self, directory: Path) -> List[Path]:
-        """Recursively find all markdown files in directory"""
+    def scan_directory(self, directory: Path) -> list[Path]:
+        """Recursively find all markdown files in directory."""
         md_files = []
         if not directory.exists():
             return md_files
@@ -90,8 +88,8 @@ class ConsistencyChecker:
 
         return md_files
 
-    def load_character_profile(self, file_path: Path) -> Optional[CharacterProfile]:
-        """Load character information from a profile file"""
+    def load_character_profile(self, file_path: Path) -> CharacterProfile | None:
+        """Load character information from a profile file."""
         try:
             content = file_path.read_text(encoding='utf-8')
 
@@ -125,8 +123,8 @@ class ConsistencyChecker:
                   file=sys.stderr)
             return None
 
-    def load_all_characters(self):
-        """Load all character profiles from the project"""
+    def load_all_characters(self) -> None:
+        """Load all character profiles from the project."""
         char_dirs = ['characters', 'Characters', 'cast', 'Cast']
 
         for dirname in char_dirs:
@@ -137,8 +135,8 @@ class ConsistencyChecker:
                     if profile:
                         self.characters[profile.name] = profile
 
-    def check_character_mentions(self, file_path: Path):
-        """Check character mentions in content for inconsistencies"""
+    def check_character_mentions(self, file_path: Path) -> None:
+        """Check character mentions in content for inconsistencies."""
         try:
             content = file_path.read_text(encoding='utf-8')
             location = str(file_path.relative_to(self.project_root))
@@ -200,8 +198,8 @@ class ConsistencyChecker:
         except Exception as e:
             print(f"Warning: Error checking {file_path}: {e}", file=sys.stderr)
 
-    def check_character_relationships(self):
-        """Check for inconsistent character relationships"""
+    def check_character_relationships(self) -> None:
+        """Check for inconsistent character relationships."""
         # This is a placeholder for more sophisticated relationship checking
         # Would analyze relationship declarations in character files and compare
         # with how relationships are portrayed in chapters
@@ -213,8 +211,8 @@ class ConsistencyChecker:
             # Flag inconsistencies
             pass
 
-    def check_world_building(self, file_path: Path):
-        """Check for world-building inconsistencies"""
+    def check_world_building(self, file_path: Path) -> None:
+        """Check for world-building inconsistencies."""
         try:
             content = file_path.read_text(encoding='utf-8')
             location = str(file_path.relative_to(self.project_root))
@@ -229,7 +227,7 @@ class ConsistencyChecker:
 
                 if loc_name in self.world_facts:
                     # Check if description is consistent
-                    prev_value, prev_location = self.world_facts[loc_name]
+                    _prev_value, _prev_location = self.world_facts[loc_name]
                     # In a real implementation, would do semantic comparison
                 else:
                     self.world_facts[loc_name] = (match.group(0), location)
@@ -238,8 +236,8 @@ class ConsistencyChecker:
             print(f"Warning: Error checking world-building in {file_path}: {e}",
                   file=sys.stderr)
 
-    def check_plot_consistency(self):
-        """Check for plot inconsistencies"""
+    def check_plot_consistency(self) -> None:
+        """Check for plot inconsistencies."""
         # Placeholder for plot consistency checking
         # Would track plot points, events, and check for contradictions
 
@@ -250,8 +248,8 @@ class ConsistencyChecker:
         # - Locations visited before discovery
         pass
 
-    def check_name_variations(self, file_path: Path):
-        """Check for inconsistent name usage"""
+    def check_name_variations(self, file_path: Path) -> None:
+        """Check for inconsistent name usage."""
         try:
             content = file_path.read_text(encoding='utf-8')
             location = str(file_path.relative_to(self.project_root))
@@ -286,9 +284,8 @@ class ConsistencyChecker:
         except Exception as e:
             print(f"Warning: Error checking names in {file_path}: {e}", file=sys.stderr)
 
-    def analyze_project(self) -> Dict:
-        """Run all consistency checks on the project"""
-
+    def analyze_project(self) -> dict:
+        """Run all consistency checks on the project."""
         # Load character profiles
         self.load_all_characters()
 
@@ -316,7 +313,7 @@ class ConsistencyChecker:
         for issue in self.issues:
             issues_by_severity[issue.severity].append(issue.to_dict())
 
-        analysis = {
+        return {
             'total_issues': len(self.issues),
             'critical_issues': len(issues_by_severity['critical']),
             'warnings': len(issues_by_severity['warning']),
@@ -326,12 +323,10 @@ class ConsistencyChecker:
             'all_issues': [issue.to_dict() for issue in self.issues]
         }
 
-        return analysis
 
 
-def main():
-    """Main entry point for consistency checker"""
-
+def main() -> None:
+    """Main entry point for consistency checker."""
     if len(sys.argv) < 2:
         print("Usage: consistency_checker.py <project_directory> [--output json|markdown]")
         sys.exit(1)

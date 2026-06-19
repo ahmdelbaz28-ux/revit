@@ -1,5 +1,4 @@
-"""
-fireai.core.provenance — Decision Provenance & Audit Trail
+"""fireai.core.provenance — Decision Provenance & Audit Trail.
 ===========================================================
 
 Provides structured audit provenance for engineering decisions in the
@@ -23,7 +22,7 @@ import json
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIDENCE LEVELS
@@ -66,6 +65,7 @@ class ConfidenceScore:
         rule_coverage: Fraction of applicable rules that were verified (0.0 to 1.0).
         geometry_certainty: Certainty of geometric inputs (0.0 to 1.0).
         overall: Overall confidence level (alias for level).
+
     """
 
     level: ConfidenceLevel = ConfidenceLevel.MEDIUM
@@ -96,6 +96,7 @@ class RuleApplied:
         unit: Unit of measurement for value_used (e.g., 'm', 'ft', 'VDC').
         constant_id: Identifier for the engineering constant referenced.
         citation: Full citation string for the rule source.
+
     """
 
     rule_id: str = ""
@@ -103,7 +104,7 @@ class RuleApplied:
     standard: str = ""
     section: str = ""
     result: str = ""
-    value_used: Optional[Any] = None
+    value_used: Any | None = None
     unit: str = ""
     constant_id: str = ""
     citation: str = ""
@@ -125,6 +126,7 @@ class Violation:
         remediation: Suggested fix.
         citation: Full citation string for the violated rule.
         location: Location identifier where the violation was found.
+
     """
 
     rule_id: str = ""
@@ -170,29 +172,30 @@ class DecisionProvenance:
         alternatives_top_3: Top 3 alternative decisions considered.
         warnings: Warnings generated during decision-making.
         violations_detected: Violations detected during decision-making.
+
     """
 
     decision_id: str = ""
     decision_type: str = ""
     description: str = ""
     confidence: ConfidenceScore = field(default_factory=ConfidenceScore)
-    rules_applied: Tuple[RuleApplied, ...] = ()
-    violations: Tuple[Violation, ...] = ()
-    evidence: Dict[str, Any] = field(default_factory=dict)
+    rules_applied: tuple[RuleApplied, ...] = ()
+    violations: tuple[Violation, ...] = ()
+    evidence: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
-    parent_id: Optional[str] = None
+    parent_id: str | None = None
     computation_hash: str = ""
     value: Any = None
-    inputs: Dict[str, Any] = field(default_factory=dict)
-    algorithm: Dict[str, Any] = field(default_factory=dict)
+    inputs: dict[str, Any] = field(default_factory=dict)
+    algorithm: dict[str, Any] = field(default_factory=dict)
     feasible_alternatives_considered: int = 0
     selected_because: str = ""
-    alternatives_top_3: List[Any] = field(default_factory=list)
-    warnings: List[Any] = field(default_factory=list)
-    violations_detected: Optional[List[Any]] = None
+    alternatives_top_3: list[Any] = field(default_factory=list)
+    warnings: list[Any] = field(default_factory=list)
+    violations_detected: list[Any] | None = None
 
     @classmethod
-    def new(cls, **kwargs: Any) -> "DecisionProvenance":
+    def new(cls, **kwargs: Any) -> DecisionProvenance:
         """Factory method to create a DecisionProvenance with auto-generated ID.
 
         Accepts the same keyword arguments as the constructor, plus
@@ -204,8 +207,7 @@ class DecisionProvenance:
             )
         if "timestamp" not in kwargs:
             kwargs["timestamp"] = time.time()
-        obj = cls(**kwargs)
-        return obj
+        return cls(**kwargs)
 
     def compute_hash(self) -> str:
         """Compute SHA-256 hash of the decision for tamper detection."""
@@ -242,9 +244,9 @@ class ProvenanceStore:
     decision_type, and parent_id for hierarchical traversal.
     """
 
-    def __init__(self):
-        self._records: Dict[str, DecisionProvenance] = {}
-        self._by_type: Dict[str, List[str]] = {}
+    def __init__(self) -> None:
+        self._records: dict[str, DecisionProvenance] = {}
+        self._by_type: dict[str, list[str]] = {}
 
     def add(self, provenance: DecisionProvenance) -> None:
         """Add a provenance record to the store."""
@@ -253,24 +255,24 @@ class ProvenanceStore:
             self._by_type[provenance.decision_type] = []
         self._by_type[provenance.decision_type].append(provenance.decision_id)
 
-    def get(self, decision_id: str) -> Optional[DecisionProvenance]:
+    def get(self, decision_id: str) -> DecisionProvenance | None:
         """Get a provenance record by ID."""
         return self._records.get(decision_id)
 
-    def get_by_type(self, decision_type: str) -> List[DecisionProvenance]:
+    def get_by_type(self, decision_type: str) -> list[DecisionProvenance]:
         """Get all provenance records of a given type."""
         ids = self._by_type.get(decision_type, [])
         return [self._records[i] for i in ids if i in self._records]
 
-    def get_children(self, parent_id: str) -> List[DecisionProvenance]:
+    def get_children(self, parent_id: str) -> list[DecisionProvenance]:
         """Get all child decisions of a parent."""
         return [p for p in self._records.values() if p.parent_id == parent_id]
 
-    def all_records(self) -> List[DecisionProvenance]:
+    def all_records(self) -> list[DecisionProvenance]:
         """Get all stored records."""
         return list(self._records.values())
 
-    def verify_integrity(self) -> Tuple[int, int]:
+    def verify_integrity(self) -> tuple[int, int]:
         """Verify all computation hashes. Returns (valid_count, tampered_count)."""
         valid = 0
         tampered = 0
@@ -282,7 +284,7 @@ class ProvenanceStore:
                 tampered += 1
         return valid, tampered
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Generate a summary of the provenance store."""
         return {
             "total_decisions": len(self._records),

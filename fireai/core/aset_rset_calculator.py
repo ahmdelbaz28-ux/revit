@@ -1,5 +1,4 @@
-"""
-aset_rset_calculator.py — ASET vs RSET Life-Safety Analysis
+"""aset_rset_calculator.py — ASET vs RSET Life-Safety Analysis.
 ============================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -42,13 +41,14 @@ Usage:
     aset = calculate_aset(smoke_layer_height_time_series, room_height=4.0)
     rset = calculate_rset(travel_distance_m=45.0, occupancy_type="business")
     result = validate_aset_vs_rset(aset, rset)
+
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ============================================================================
 # Tenability Criteria — SFPE / NFPA / BS 7974
@@ -151,9 +151,9 @@ class ASETResult:
     aset_seconds: float
     limiting_factor: str  # What made conditions untenable
     aset_method: str  # "tenability_check" or "smoke_fill_estimate"
-    smoke_layer_at_aset_m: Optional[float] = None
-    temperature_at_aset_c: Optional[float] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    smoke_layer_at_aset_m: float | None = None
+    temperature_at_aset_c: float | None = None
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -183,7 +183,7 @@ class AsetRsetValidation:
     limiting_factor: str  # What limits ASET
     occupancy_type: str
     verdict: str  # Human-readable PASS/FAIL
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -192,15 +192,15 @@ class AsetRsetValidation:
 
 
 def calculate_aset(
-    smoke_layer_height_series: Optional[List[Tuple[float, float]]] = None,
-    temperature_series: Optional[List[Tuple[float, float]]] = None,
-    co_ppm_series: Optional[List[Tuple[float, float]]] = None,
+    smoke_layer_height_series: list[tuple[float, float]] | None = None,
+    temperature_series: list[tuple[float, float]] | None = None,
+    co_ppm_series: list[tuple[float, float]] | None = None,
     room_height_m: float = 3.0,
     # Simplified inputs when no time-series data available
-    smoke_fill_time_s: Optional[float] = None,
-    fire_growth_rate: Optional[str] = None,
-    fire_heat_release_kw: Optional[float] = None,
-    room_volume_m3: Optional[float] = None,
+    smoke_fill_time_s: float | None = None,
+    fire_growth_rate: str | None = None,
+    fire_heat_release_kw: float | None = None,
+    room_volume_m3: float | None = None,
 ) -> ASETResult:
     """Calculate Available Safe Egress Time (ASET).
 
@@ -229,6 +229,7 @@ def calculate_aset(
 
     Returns:
         ASETResult with calculated ASET and limiting factor.
+
     """
     thresholds = TENABILITY_THRESHOLDS
     min_height = thresholds["min_smoke_layer_height_m"]
@@ -407,12 +408,12 @@ def calculate_aset(
 def calculate_rset(
     travel_distance_m: float,
     occupancy_type: str = "business",
-    premovement_delay_s: Optional[float] = None,
-    walking_speed_mps: Optional[float] = None,
-    safety_factor: Optional[float] = None,
+    premovement_delay_s: float | None = None,
+    walking_speed_mps: float | None = None,
+    safety_factor: float | None = None,
     is_sprinklered: bool = True,
-    population_density: Optional[float] = None,
-    detection_time_s: Optional[float] = None,
+    population_density: float | None = None,
+    detection_time_s: float | None = None,
 ) -> RSETResult:
     """Calculate Required Safe Egress Time (RSET).
 
@@ -434,6 +435,7 @@ def calculate_rset(
 
     Returns:
         RSETResult with breakdown of all components.
+
     """
     occ = occupancy_type.lower()
     if occ not in PREMOVEMENT_DELAYS:
@@ -599,7 +601,7 @@ def calculate_rset(
 def validate_aset_vs_rset(
     aset_result: ASETResult,
     rset_result: RSETResult,
-    override_safety_factor: Optional[float] = None,
+    override_safety_factor: float | None = None,
 ) -> AsetRsetValidation:
     """Validate that ASET exceeds RSET with safety margin.
 
@@ -616,6 +618,7 @@ def validate_aset_vs_rset(
 
     Returns:
         AsetRsetValidation with PASS/FAIL verdict and margin.
+
     """
     aset = aset_result.aset_seconds
     rset = rset_result.rset_seconds
@@ -685,10 +688,10 @@ def perform_aset_rset_analysis(
     fire_growth_rate: str = "medium",
     fire_load_MJ: float = 500.0,
     is_sprinklered: bool = True,
-    safety_factor_override: Optional[float] = None,
+    safety_factor_override: float | None = None,
     ventilation_opening_m2: float = 2.0,
     ceiling_type: str = "FLAT",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Perform a complete ASET vs RSET analysis using semi_cfast_engine physics.
 
     This is the integration function that connects the physics-based
@@ -733,6 +736,7 @@ def perform_aset_rset_analysis(
           - occupancy_type: Occupancy classification
           - verdict: Human-readable PASS/FAIL
           - details: Full analysis details
+
     """
     try:
         from fireai.core.semi_cfast_engine import (
@@ -905,16 +909,16 @@ def perform_aset_rset_analysis(
 
 
 __all__ = [
-    "TENABILITY_THRESHOLDS",
     "PREMOVEMENT_DELAYS",
-    "WALKING_SPEEDS",
-    "SAFETY_FACTORS",
     "RISK_CATEGORIES",
+    "SAFETY_FACTORS",
+    "TENABILITY_THRESHOLDS",
+    "WALKING_SPEEDS",
     "ASETResult",
-    "RSETResult",
     "AsetRsetValidation",
+    "RSETResult",
     "calculate_aset",
     "calculate_rset",
-    "validate_aset_vs_rset",
     "perform_aset_rset_analysis",
+    "validate_aset_vs_rset",
 ]

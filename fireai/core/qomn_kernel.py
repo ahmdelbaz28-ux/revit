@@ -1,6 +1,5 @@
-"""
-fireai/core/qomn_kernel.py — QOMN-FIRE Deterministic Engineering Kernel
-QOMN-FIRE: Zero-Defect Fire Alarm & Light Current Engineering Kernel
+"""fireai/core/qomn_kernel.py — QOMN-FIRE Deterministic Engineering Kernel
+QOMN-FIRE: Zero-Defect Fire Alarm & Light Current Engineering Kernel.
 
 ARCHITECTURE: Five strict layers per QOMN specification:
   Layer 0 — Input Sanitization (physics guards)
@@ -38,7 +37,7 @@ import struct
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LAYER 0 — INPUT SANITIZATION (Physics Guards)
@@ -212,7 +211,7 @@ def guard_efficiency(eff: float) -> float:
 # All NFPA 72 constants are now in fireai/constants/nfpa72.py (Single Source of Truth).
 # The old table applied heat detector reduction (1%/ft) to smoke detectors —
 # a known misapplication of NFPA 72 Table 17.6.3.5.1.
-from fireai.constants.nfpa72 import (  # noqa: E402,I001
+from fireai.constants.nfpa72 import (  # noqa: I001
     BATTERY_ALARM_MINUTES as NFPA72_ALARM_MINUTES,
     BATTERY_DISCHARGE_EFFICIENCY as NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
     BATTERY_SAFETY_FACTOR as NFPA72_BATTERY_SAFETY_FACTOR,
@@ -226,7 +225,7 @@ from fireai.constants.nfpa72 import (  # noqa: E402,I001
     SMOKE_HEIGHT_SPACING_TABLE as NFPA72_SMOKE_SPACING_TABLE,  # noqa: F401
     SMOKE_MAX_SPACING_M as NFPA72_SMOKE_MAX_SPACING_M,
     SMOKE_PRACTICAL_CEILING_HEIGHT_M as _SMOKE_PRACTICAL_CEILING_HEIGHT_M,
-    WALL_MIN_DISTANCE_M as NFPA72_WALL_MIN_DISTANCE_M,  # noqa: F401
+    WALL_MIN_DISTANCE_M as NFPA72_WALL_MIN_DISTANCE_M,
 )
 
 # Coverage radius = 0.7 × listed_spacing
@@ -302,7 +301,7 @@ from fireai.constants.nec import (
 )
 
 # NEC wire ampacity at 60°C insulation — NEC 2023 §310.16
-NEC_AMPACITY_60C: Dict[str, float] = {
+NEC_AMPACITY_60C: dict[str, float] = {
     "18": 7.0,
     "16": 13.0,
     "14": 15.0,
@@ -326,7 +325,7 @@ TIA568_TOTAL_CHANNEL_MAX_M = 100.0  # 100m total including patch cords
 
 # ── CCTV Lens Coverage Angles (standard lenses) ──────────────────────────
 # Source: Manufacturer specifications + geometric optics
-CCTV_LENS_FOV_DEG: Dict[str, float] = {
+CCTV_LENS_FOV_DEG: dict[str, float] = {
     "3.6mm": 90.0,
     "6mm": 60.0,
     "8mm": 45.0,
@@ -336,7 +335,7 @@ CCTV_LENS_FOV_DEG: Dict[str, float] = {
 }
 
 # Access control reader height — ADA + NFPA 101 §7.2.1.6
-ACCESS_CONTROL_READER_HEIGHT_M: Tuple[float, float] = (1.067, 1.219)  # 42"–48"
+ACCESS_CONTROL_READER_HEIGHT_M: tuple[float, float] = (1.067, 1.219)  # 42"–48"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -359,7 +358,7 @@ def _f64_hash(value: float) -> str:
     return hashlib.sha256(bits).hexdigest()[:16]
 
 
-def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
+def compute_smoke_detector_spacing(ceiling_height_m: float) -> dict[str, Any]:
     """Compute smoke detector spacing per NFPA 72-2022 §17.7.3.2.3.
 
     V121 FIX: Flat spacing per NFPA 72-2022 §17.7.3.2.3
@@ -395,6 +394,7 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
 
     Raises:
         PhysicsGuardError: If ceiling_height_m is outside bounds.
+
     """
     h = guard_ceiling_height_m(ceiling_height_m)
 
@@ -424,7 +424,7 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
     # At heights where spot smoke detection is unreliable, the engineering
     # solution is alternative TECHNOLOGY (beam §17.7.4.6, ASD §17.7.4.7),
     # NOT reducing point detector spacing.
-    audit_notice: Optional[str] = None
+    audit_notice: str | None = None
     if h > _SPOT_SMOKE_HIGH_CEILING_M:
         audit_notice = (
             f"⚠️ V130 ADVISORY: ceiling {h:.2f} m > "
@@ -469,7 +469,7 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
 def compute_heat_detector_spacing(
     ceiling_height_m: float,
     area_per_detector_m2: float,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compute heat detector spacing per NFPA 72 §17.6.
 
     Formula: S = 0.7 × √A  [NFPA 72 §17.6.3.1]
@@ -481,6 +481,7 @@ def compute_heat_detector_spacing(
 
     Returns:
         dict with spacing_m, coverage_radius_m, compliance status.
+
     """
     guard_ceiling_height_m(ceiling_height_m)
     a = _guard_finite(area_per_detector_m2, "area_per_detector_m2")
@@ -557,7 +558,7 @@ def compute_battery_capacity_ah(
     alarm_minutes: float = NFPA72_ALARM_MINUTES,
     safety_factor: float = NFPA72_BATTERY_SAFETY_FACTOR,
     discharge_efficiency: float = NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compute battery capacity per NFPA 72 §10.6.7.2.1.
 
     Formula:
@@ -578,6 +579,7 @@ def compute_battery_capacity_ah(
 
     Returns:
         dict with required_ah, formula, and computation_hash.
+
     """
     i_sb = _guard_finite(standby_load_a, "standby_load_a")
     i_al = _guard_finite(alarm_load_a, "alarm_load_a")
@@ -627,7 +629,7 @@ def compute_voltage_drop(
     awg_gauge: str,
     supply_voltage_v: float = 24.0,
     max_drop_pct: float = 10.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compute circuit voltage drop per NEC Chapter 9, Table 8.
 
     Formula: V_drop = 2 × I × L × R_per_m
@@ -648,6 +650,7 @@ def compute_voltage_drop(
     Raises:
         PhysicsGuardError: If inputs violate physical/code bounds.
         ValueError: If AWG gauge not found in NEC Table 8.
+
     """
     i = _guard_finite(current_a, "current_a")
     L = _guard_finite(length_m, "length_m")
@@ -711,7 +714,7 @@ def compute_voltage_drop(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def validate_smoke_spacing_result(result: Dict) -> Dict:
+def validate_smoke_spacing_result(result: dict) -> dict:
     """Validate computed smoke spacing against code limits.
 
     Source: NFPA 72-2022 §17.7.3.2.1
@@ -731,7 +734,7 @@ def validate_smoke_spacing_result(result: Dict) -> Dict:
     return result
 
 
-def validate_battery_result(result: Dict) -> Dict:
+def validate_battery_result(result: dict) -> dict:
     """Validate battery calculation result.
 
     Source: NFPA 72-2022 §10.6.7.2.1
@@ -746,7 +749,7 @@ def validate_battery_result(result: Dict) -> Dict:
     return result
 
 
-def validate_voltage_drop_result(result: Dict) -> Dict:
+def validate_voltage_drop_result(result: dict) -> dict:
     """Validate voltage drop result against physical and code limits.
 
     Source: NEC 2023 Chapter 9
@@ -760,7 +763,7 @@ def validate_voltage_drop_result(result: Dict) -> Dict:
     return result
 
 
-def validate_heat_spacing_result(result: Dict) -> Dict:
+def validate_heat_spacing_result(result: dict) -> dict:
     """Validate computed heat detector spacing against code limits.
 
     V58 FIX (BUG #3): This function was completely missing — heat detector
@@ -804,9 +807,9 @@ class AuditEntry:
 
     timestamp_utc: str
     computation_type: str
-    input_data: Dict[str, Any]
+    input_data: dict[str, Any]
     formula_ref: str
-    output_data: Dict[str, Any]
+    output_data: dict[str, Any]
     result_hash: str
     layer3_passed: bool
 
@@ -822,7 +825,7 @@ class QOMNAuditLog:
     """
 
     def __init__(self) -> None:
-        self._entries: List[AuditEntry] = []
+        self._entries: list[AuditEntry] = []
         # V114 FIX: Use HMAC-SHA256 for chain integrity (matching V105 fix
         # for security_logging.py). Plain SHA-256 is tamper-evident but NOT
         # tamper-proof — any attacker with source access can recompute chains.
@@ -839,9 +842,9 @@ class QOMNAuditLog:
     def record(
         self,
         computation_type: str,
-        input_data: Dict,
+        input_data: dict,
         formula_ref: str,
-        output_data: Dict,
+        output_data: dict,
         layer3_passed: bool = False,  # V112: FAIL-SAFE — layer3 not passed until verified
     ) -> AuditEntry:
         """Record a computation to the immutable audit log."""
@@ -866,7 +869,7 @@ class QOMNAuditLog:
             self._entries.append(entry)
         return entry
 
-    def export_json(self) -> Dict[str, Any]:
+    def export_json(self) -> dict[str, Any]:
         """Export full audit log as AHJ-accessible JSON."""
         return {
             "qomn_version": "1.0.0",
@@ -930,7 +933,7 @@ class QOMNKernel:
     def __init__(self) -> None:
         self.audit = QOMNAuditLog()
 
-    def smoke_detector_spacing(self, ceiling_height_m: float) -> Dict[str, Any]:
+    def smoke_detector_spacing(self, ceiling_height_m: float) -> dict[str, Any]:
         """Compute smoke detector spacing. Full L0→L1→L2→L3→L4 pipeline."""
         # L2 computation
         result = compute_smoke_detector_spacing(ceiling_height_m)
@@ -948,7 +951,7 @@ class QOMNKernel:
         )
         return result
 
-    def heat_detector_spacing(self, ceiling_height_m: float, area_per_detector_m2: float) -> Dict[str, Any]:
+    def heat_detector_spacing(self, ceiling_height_m: float, area_per_detector_m2: float) -> dict[str, Any]:
         """Compute heat detector spacing. Full L0→L4 pipeline.
 
         V58 FIX (BUG #3): Now includes L3 validation before audit record.
@@ -974,7 +977,7 @@ class QOMNKernel:
         standby_load_a: float,
         alarm_load_a: float,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compute battery capacity. Full L0→L4 pipeline."""
         result = compute_battery_capacity_ah(standby_load_a, alarm_load_a, **kwargs)
         result = validate_battery_result(result)
@@ -995,7 +998,7 @@ class QOMNKernel:
         awg_gauge: str,
         supply_voltage_v: float = 24.0,
         max_drop_pct: float = 10.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compute voltage drop. Full L0→L4 pipeline."""
         result = compute_voltage_drop(current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct)
         result = validate_voltage_drop_result(result)
@@ -1009,7 +1012,7 @@ class QOMNKernel:
         )
         return result
 
-    def get_audit_log(self) -> Dict[str, Any]:
+    def get_audit_log(self) -> dict[str, Any]:
         """Export full audit log for AHJ review."""
         return self.audit.export_json()
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Example helper script for dream-interpreter
+"""Example helper script for dream-interpreter.
 
 DISABLED: This script is a placeholder and has not been implemented.
 It exists to document the expected interface for future development.
@@ -14,7 +13,8 @@ Expected functionality:
 
 import sys
 
-def main():
+
+def main() -> None:
     print("ERROR: dream-interpreter example script is not implemented.", file=sys.stderr)
     print("This is a placeholder script. The skill has not been developed yet.", file=sys.stderr)
     sys.exit(1)

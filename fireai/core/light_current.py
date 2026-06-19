@@ -1,5 +1,4 @@
-"""
-fireai.core.light_current — QOMN-FIRE Light Current System Design
+"""fireai.core.light_current — QOMN-FIRE Light Current System Design.
 =================================================================
 
 Deterministic engineering calculations for light current systems.
@@ -27,7 +26,7 @@ import hashlib
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Tuple
+from typing import Any
 
 # ─── Contract Violation (reuse from contracts_validation if available) ────────
 
@@ -35,7 +34,7 @@ from typing import Any, Tuple
 class ContractViolation(Exception):
     """Raised when input data violates the engineering contract."""
 
-    def __init__(self, message: str, code_ref: str = ""):
+    def __init__(self, message: str, code_ref: str = "") -> None:
         super().__init__(message)
         self.code_ref = code_ref
 
@@ -172,7 +171,7 @@ class StructuredCablingResult:
     separation_mm: float
     cable_type: str
     is_compliant: bool
-    violations: Tuple[str, ...] = ()
+    violations: tuple[str, ...] = ()
     standard_ref: str = "TIA-568.2-D"
     computation_hash: str = ""
 
@@ -194,7 +193,7 @@ class FiberOpticResult:
     color_code: str
     is_compliant: bool
     total_attenuation_db: float = 0.0
-    violations: Tuple[str, ...] = ()
+    violations: tuple[str, ...] = ()
     standard_ref: str = "TIA-598 / TIA-568.3-D"
     computation_hash: str = ""
 
@@ -214,7 +213,7 @@ class CCTVResult:
     height_m: float
     overlap_pct: float
     is_compliant: bool
-    violations: Tuple[str, ...] = ()
+    violations: tuple[str, ...] = ()
     standard_ref: str = "Project Specification / IEC 62676"
     computation_hash: str = ""
 
@@ -233,7 +232,7 @@ class AccessControlResult:
     has_door_switch: bool
     has_rte: bool
     is_compliant: bool
-    violations: Tuple[str, ...] = ()
+    violations: tuple[str, ...] = ()
     standard_ref: str = "NFPA 101 §7.2.1.6 / ADA"
     computation_hash: str = ""
 
@@ -291,6 +290,7 @@ def validate_horizontal_cable(
 
     Raises:
         ContractViolation: If inputs are invalid (NaN/Inf, negative).
+
     """
     _validate_positive(length_m, "length_m", "TIA-568.2-D")
     _validate_positive(patch_cord_m, "patch_cord_m", "TIA-568.2-D")
@@ -353,6 +353,7 @@ def validate_fiber_link(
 
     Raises:
         ContractViolation: If inputs are invalid (NaN/Inf, negative).
+
     """
     _validate_positive(length_m, "length_m", "TIA-598")
     _validate_finite(attenuation_margin_db, "attenuation_margin_db")
@@ -427,6 +428,7 @@ def calculate_cctv_coverage(
 
     Raises:
         ContractViolation: If inputs are invalid.
+
     """
     _validate_positive(room_length_m, "room_length_m", "IEC 62676")
     _validate_positive(room_width_m, "room_width_m", "IEC 62676")
@@ -510,6 +512,7 @@ def validate_access_control(
 
     Raises:
         ContractViolation: If inputs are invalid.
+
     """
     _validate_finite(reader_height_m, "reader_height_m")
 

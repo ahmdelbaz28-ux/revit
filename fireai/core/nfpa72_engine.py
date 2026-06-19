@@ -1,5 +1,4 @@
-"""
-fireai.core.nfpa72_engine — Core NFPA 72 Engineering Calculations
+"""fireai.core.nfpa72_engine — Core NFPA 72 Engineering Calculations.
 =================================================================
 
 Implements the fundamental NFPA 72 fire alarm engineering calculations:
@@ -41,7 +40,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 from fireai.constants.nec import (
     COPPER_TEMP_COEFFICIENT,
@@ -315,6 +314,7 @@ def get_detector_spacing(
 
     Returns:
         SpacingResult with max spacing, coverage radius, and NFPA reference.
+
     """
     # V96 FIX: Invalid ceiling height must raise ValueError, not return
     # a valid-looking SpacingResult. The old code returned max_spacing_m=3.00
@@ -354,7 +354,7 @@ def estimate_detector_count(
     room_area_m2: float,
     ceiling_height_m: float,
     detector_type: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Estimate minimum number of detectors for a room.
 
     Reference: NFPA 72 §17.6.3.1, §17.7.4.2.3.1
@@ -369,6 +369,7 @@ def estimate_detector_count(
 
     Returns:
         Dict with min_detector_count, area_per_detector_m2, spacing info.
+
     """
     spacing_result = get_detector_spacing(ceiling_height_m, detector_type)
     radius_m = spacing_result.coverage_radius_m
@@ -483,6 +484,7 @@ def calculate_battery(
 
     Returns:
         BatteryResult with required Ah, installed Ah, and compliance.
+
     """
     # Input validation — safety first
     if not math.isfinite(standby_current_a) or standby_current_a < 0:
@@ -585,6 +587,7 @@ def temperature_corrected_resistance(
 
     Raises:
         ValueError: If inputs are invalid.
+
     """
     if not math.isfinite(r_at_20c) or r_at_20c < 0:
         raise ValueError(f"r_at_20c must be non-negative finite, got {r_at_20c}")
@@ -653,6 +656,7 @@ def calculate_voltage_drop(
 
     Returns:
         VoltageDropResult with drop, percentage, max length, compliance.
+
     """
     # Input validation
     if not math.isfinite(alarm_current_a) or alarm_current_a < 0:
@@ -756,6 +760,7 @@ def get_ambient_derating_factor(
 
     Raises:
         ValueError: If inputs are invalid.
+
     """
     if not math.isfinite(ambient_temp_c):
         raise ValueError(f"ambient_temp_c must be finite, got {ambient_temp_c}")
@@ -779,8 +784,7 @@ def get_ambient_derating_factor(
 
     for temp in sorted_temps:
         if temp >= ambient_temp_c:
-            factor = AMBIENT_TEMP_CORRECTION_FACTORS[temp][col_idx]
-            return factor
+            return AMBIENT_TEMP_CORRECTION_FACTORS[temp][col_idx]
 
     # Above highest table entry — use linear extrapolation (conservative)
     highest_temp = sorted_temps[-1]
@@ -818,6 +822,7 @@ def get_conductor_count_derating(
 
     Raises:
         ValueError: If num_current_carrying < 1.
+
     """
     if not isinstance(num_current_carrying, int) or num_current_carrying < 1:
         raise ValueError(f"num_current_carrying must be a positive integer, got {num_current_carrying}")
@@ -828,16 +833,15 @@ def get_conductor_count_derating(
     # Find the appropriate derating factor
     if num_current_carrying <= 6:
         return CONDUCTOR_COUNT_DERATING[4]  # 0.80
-    elif num_current_carrying <= 9:
+    if num_current_carrying <= 9:
         return CONDUCTOR_COUNT_DERATING[7]  # 0.70
-    elif num_current_carrying <= 20:
+    if num_current_carrying <= 20:
         return CONDUCTOR_COUNT_DERATING[10]  # 0.50
-    elif num_current_carrying <= 30:
+    if num_current_carrying <= 30:
         return CONDUCTOR_COUNT_DERATING[21]  # 0.45
-    elif num_current_carrying <= 40:
+    if num_current_carrying <= 40:
         return CONDUCTOR_COUNT_DERATING[31]  # 0.40
-    else:
-        return CONDUCTOR_COUNT_DERATING[41]  # 0.35
+    return CONDUCTOR_COUNT_DERATING[41]  # 0.35
 
 
 def check_ampacity(
@@ -880,6 +884,7 @@ def check_ampacity(
 
     Raises:
         ValueError: If inputs are invalid or gauge not found.
+
     """
     # Input validation
     if not math.isfinite(alarm_current_a) or alarm_current_a < 0:
@@ -965,7 +970,7 @@ def check_ampacity(
 _MAX_DEVICES_BETWEEN_ISOLATORS = 32
 
 
-def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, Any]:
+def verify_fault_isolator_placement(devices: list[dict[str, Any]]) -> dict[str, Any]:
     """Verify fault isolator placement on SLC circuits.
 
     NFPA 72 §12.3 requires that a single fault (short or open) on a
@@ -987,6 +992,7 @@ def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, 
     Returns:
         Dict with compliant (bool), violations (list), device_count,
         isolator_count, nfpa_section.
+
     """
     if not devices:
         # V69-4 FIX: Empty device list is NOT compliant — fail-safe

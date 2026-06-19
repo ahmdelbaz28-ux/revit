@@ -1,5 +1,4 @@
-"""
-fireai/integration/bentley_bridge.py
+"""fireai/integration/bentley_bridge.py.
 ======================================
 Bentley Systems Integration — OpenBuildings/STAAD integration via Bentley APIs.
 
@@ -11,6 +10,7 @@ References:
   - Bentley STAAD.Pro API
   - Bentley iTwin Platform
   - IFC for data exchange when direct API is unavailable
+
 """
 
 from __future__ import annotations
@@ -19,9 +19,9 @@ import hashlib
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class BentleyProduct(str, Enum):
+class BentleyProduct(StrEnum):
     OPENBUILDINGS = "OPENBUILDINGS"
     STAAD_PRO = "STAAD_PRO"
     AECOsim = "AECOSIM"
@@ -42,13 +42,13 @@ class BentleyProduct(str, Enum):
     iTWIN = "iTWIN"
 
 
-class SyncDirection(str, Enum):
+class SyncDirection(StrEnum):
     IMPORT = "IMPORT"
     EXPORT = "EXPORT"
     BIDIRECTIONAL = "BIDIRECTIONAL"
 
 
-class SyncState(str, Enum):
+class SyncState(StrEnum):
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -56,7 +56,7 @@ class SyncState(str, Enum):
     CONFLICT = "CONFLICT"
 
 
-class BentleyElementType(str, Enum):
+class BentleyElementType(StrEnum):
     BEAM = "BEAM"
     COLUMN = "COLUMN"
     SLAB = "SLAB"
@@ -81,11 +81,11 @@ class BentleyAsset:
     element_type: BentleyElementType
     name: str
     level: str
-    properties: Dict[str, Any] = field(default_factory=dict)
-    coordinates: List[float] = field(default_factory=list)
+    properties: dict[str, Any] = field(default_factory=dict)
+    coordinates: list[float] = field(default_factory=list)
     material: str = ""
     fire_rating: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.asset_id.strip():
@@ -100,19 +100,19 @@ class SyncStatus:
     state: SyncState
     direction: SyncDirection
     elements_synced: int = 0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     started_at: str = ""
     completed_at: str = ""
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class DesignData:
     source_file: str = ""
     file_hash: str = ""
-    layers: List[Dict[str, Any]] = field(default_factory=list)
-    entities: List[Dict[str, Any]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    layers: list[dict[str, Any]] = field(default_factory=list)
+    entities: list[dict[str, Any]] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     imported_at: str = ""
 
 
@@ -122,8 +122,7 @@ class DesignData:
 
 
 class BentleyBridge:
-    """
-    OpenBuildings/STAAD integration via Bentley APIs.
+    """OpenBuildings/STAAD integration via Bentley APIs.
 
     Provides:
       - Import of Bentley models (OpenBuildings, STAAD, iTwin)
@@ -152,17 +151,16 @@ class BentleyBridge:
         BentleyElementType.OPENING,
     }
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
-        self._assets_cache: Dict[str, List[BentleyAsset]] = {}
-        self._sync_history: Dict[str, SyncStatus] = {}
+        self._assets_cache: dict[str, list[BentleyAsset]] = {}
+        self._sync_history: dict[str, SyncStatus] = {}
         self._api_connected: bool = False
 
     # ── Import ──────────────────────────────────────────────────────────
 
     def import_bentley(self, path: str) -> DesignData:
-        """
-        Import a Bentley model from file.
+        """Import a Bentley model from file.
 
         Supports:
           - IFC files (recommended interchange format)
@@ -174,6 +172,7 @@ class BentleyBridge:
 
         Returns:
             DesignData with extracted building entities.
+
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"Bentley file not found: {path}")
@@ -213,8 +212,7 @@ class BentleyBridge:
     # ── Synchronization ─────────────────────────────────────────────────
 
     def sync_design(self, design: DesignData) -> SyncStatus:
-        """
-        Synchronize a FireAI design with the Bentley model.
+        """Synchronize a FireAI design with the Bentley model.
 
         Two-way sync: updates from Bentley are incorporated into the
         FireAI design, and FireAI annotations (detector placements,
@@ -225,11 +223,12 @@ class BentleyBridge:
 
         Returns:
             SyncStatus with results of the synchronization.
+
         """
         project_id = design.metadata.get(
             "bentley_project_id", "unknown"
         )
-        started = datetime.now(timezone.utc).isoformat()
+        started = datetime.now(UTC).isoformat()
 
         try:
             design_layers = design.layers
@@ -250,7 +249,7 @@ class BentleyBridge:
                 direction=SyncDirection.BIDIRECTIONAL,
                 elements_synced=len(design_entities) + len(design_layers),
                 started_at=started,
-                completed_at=datetime.now(timezone.utc).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
                 details={
                     "layers": len(design_layers),
                     "entities": len(design_entities),
@@ -282,7 +281,7 @@ class BentleyBridge:
                 direction=SyncDirection.BIDIRECTIONAL,
                 errors=[str(exc)],
                 started_at=started,
-                completed_at=datetime.now(timezone.utc).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
             )
             self._sync_history[project_id] = status
             logger.error("Bentley sync failed: %s", exc)
@@ -292,23 +291,22 @@ class BentleyBridge:
 
     def get_bentley_assets(
         self, project_id: str
-    ) -> List[BentleyAsset]:
-        """
-        Retrieve Bentley assets for a project.
+    ) -> list[BentleyAsset]:
+        """Retrieve Bentley assets for a project.
 
         Args:
             project_id: Bentley project identifier.
 
         Returns:
             List of BentleyAsset objects classified by element type.
+
         """
         return self._assets_cache.get(project_id, [])
 
     def get_fire_relevant_assets(
         self, project_id: str
-    ) -> List[BentleyAsset]:
-        """
-        Get assets relevant to fire alarm design.
+    ) -> list[BentleyAsset]:
+        """Get assets relevant to fire alarm design.
 
         Filters to structural elements that affect detector placement
         and cable routing (walls, floors, ducts, openings, etc.).
@@ -318,6 +316,7 @@ class BentleyBridge:
 
         Returns:
             List of fire-relevant BentleyAsset objects.
+
         """
         all_assets = self._assets_cache.get(project_id, [])
         return [
@@ -328,9 +327,8 @@ class BentleyBridge:
 
     # ── Connection Management ───────────────────────────────────────────
 
-    def connect_api(self, credentials: Dict[str, str]) -> bool:
-        """
-        Connect to the Bentley iTwin API.
+    def connect_api(self, credentials: dict[str, str]) -> bool:
+        """Connect to the Bentley iTwin API.
 
         Args:
             credentials: Dict with 'client_id', 'client_secret',
@@ -338,6 +336,7 @@ class BentleyBridge:
 
         Returns:
             True if connection succeeded.
+
         """
         required = {"client_id", "client_secret", "subscription_id"}
         if not required.issubset(credentials.keys()):
@@ -367,8 +366,7 @@ class BentleyBridge:
         raw: bytes,
         file_hash: str,
     ) -> DesignData:
-        """
-        Import an IFC file exported from Bentley.
+        """Import an IFC file exported from Bentley.
 
         Delegates to fireai/bridges/ifc_headless_bridge.py when available.
         """
@@ -390,7 +388,7 @@ class BentleyBridge:
         return DesignData(
             source_file=path,
             file_hash=file_hash,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "IFC (Bentley)",
                 "note": "Full IFC parsing requires HeadlessIFCBridge. "
@@ -404,8 +402,7 @@ class BentleyBridge:
         raw: bytes,
         file_hash: str,
     ) -> DesignData:
-        """
-        Import a Bentley DGN file.
+        """Import a Bentley DGN file.
 
         Production Note:
           DGN is a proprietary Bentley format. Full parsing requires
@@ -415,7 +412,7 @@ class BentleyBridge:
         return DesignData(
             source_file=path,
             file_hash=file_hash,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "DGN",
                 "file_size_bytes": len(raw),
@@ -430,8 +427,7 @@ class BentleyBridge:
         raw: bytes,
         file_hash: str,
     ) -> DesignData:
-        """
-        Import a Bentley iModel snapshot.
+        """Import a Bentley iModel snapshot.
 
         Production Note:
           iModel parsing requires the Bentley iTwin SDK.
@@ -439,7 +435,7 @@ class BentleyBridge:
         return DesignData(
             source_file=path,
             file_hash=file_hash,
-            imported_at=datetime.now(timezone.utc).isoformat(),
+            imported_at=datetime.now(UTC).isoformat(),
             metadata={
                 "format": "iModel",
                 "file_size_bytes": len(raw),
@@ -458,7 +454,7 @@ if __name__ == "__main__":
 
     design = DesignData(
         source_file="sample.ifc",
-        imported_at=datetime.now(timezone.utc).isoformat(),
+        imported_at=datetime.now(UTC).isoformat(),
         metadata={"bentley_project_id": "PRJ-B-001"},
         layers=[
             {

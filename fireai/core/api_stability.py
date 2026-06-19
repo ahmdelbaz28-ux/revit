@@ -1,5 +1,4 @@
-"""
-api_stability.py — FireAI Public API Stability Layer
+"""api_stability.py — FireAI Public API Stability Layer.
 =====================================================
 Section 11.4: "Freeze the public API so Revit plugin development can proceed."
 
@@ -19,9 +18,10 @@ from __future__ import annotations
 import functools
 import logging
 import warnings
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +42,7 @@ MIN_PLUGIN_VERSION = "28.0.0"  # Oldest plugin version supported
 
 @dataclass(frozen=True)
 class PluginRoom:
-    """
-    Stable room representation for plugin API.
+    """Stable room representation for plugin API.
     Fields will not be removed in MINOR versions.
     New optional fields may be added without breaking existing plugins.
     """
@@ -53,7 +52,7 @@ class PluginRoom:
     length_m: float
     ceiling_height_m: float
     area_m2: float
-    polygon: Tuple[Tuple[float, float], ...]  # (x,y) vertices
+    polygon: tuple[tuple[float, float], ...]  # (x,y) vertices
     floor_id: str = ""
     name: str = ""
     detector_type: str = "smoke"
@@ -64,14 +63,14 @@ class PluginDetectorLayout:
     """Stable detector layout for plugin API."""
 
     room_id: str
-    detectors: Tuple[Tuple[float, float], ...]  # (x,y) positions
+    detectors: tuple[tuple[float, float], ...]  # (x,y) positions
     count: int
     coverage_pct: float
     proof_valid: bool
     method: str
     # V114 FIX: Fail-safe default — no compliance until proven
     nfpa_compliant: bool = False
-    warnings: Tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -82,7 +81,7 @@ class PluginBuildingResult:
     total_detectors: int
     total_rooms: int
     compliant_rooms: int
-    non_compliant: Tuple[str, ...]
+    non_compliant: tuple[str, ...]
     safe_to_submit: bool
     api_version: str = API_VERSION
 
@@ -94,7 +93,7 @@ class PluginCableRoute:
     route_id: str
     from_device: str
     to_device: str
-    waypoints: Tuple[Tuple[float, float], ...]
+    waypoints: tuple[tuple[float, float], ...]
     length_m: float
     cable_type: str
     circuit_class: str  # "A" or "B"
@@ -110,8 +109,7 @@ def deprecated(
     since: str = API_VERSION,
     removed_in: str = "",
 ) -> Callable:
-    """
-    Mark a public API function as deprecated.
+    """Mark a public API function as deprecated.
     Emits DeprecationWarning on first call (not every call — uses set).
     """
     _warned: set = set()
@@ -140,8 +138,7 @@ def deprecated(
 
 
 class FireAIPluginAPI:
-    """
-    Versioned, stable public API for Revit plugin integration.
+    """Versioned, stable public API for Revit plugin integration.
 
     Section 11.4: This class is the ONLY interface plugins should use.
     Internal modules may change; this class provides a stable adapter.
@@ -153,9 +150,9 @@ class FireAIPluginAPI:
     """
 
     def __init__(self, building_engine: Any = None) -> None:
-        """
-        Args:
-            building_engine: BuildingEngine instance (optional — auto-created)
+        """Args:
+        building_engine: BuildingEngine instance (optional — auto-created).
+
         """
         self._engine = building_engine
         self._version = API_VERSION
@@ -166,12 +163,11 @@ class FireAIPluginAPI:
         return self._version
 
     @property
-    def version_tuple(self) -> Tuple[int, int, int]:
+    def version_tuple(self) -> tuple[int, int, int]:
         return API_VERSION_TUPLE
 
     def is_compatible_with(self, plugin_version: str) -> bool:
-        """
-        Check if this API is compatible with a plugin built for plugin_version.
+        """Check if this API is compatible with a plugin built for plugin_version.
         MAJOR version must match exactly.
         """
         try:
@@ -184,10 +180,9 @@ class FireAIPluginAPI:
         self,
         room: PluginRoom,
         *,
-        coverage_radius: Optional[float] = None,
+        coverage_radius: float | None = None,
     ) -> PluginDetectorLayout:
-        """
-        Analyse a single room and return detector placement.
+        """Analyse a single room and return detector placement.
 
         Stable API: signature guaranteed not to change in v29.x.x.
         New optional parameters may be added as keyword-only with defaults.
@@ -229,13 +224,12 @@ class FireAIPluginAPI:
 
     def analyse_rooms_batch(
         self,
-        rooms: List[PluginRoom],
+        rooms: list[PluginRoom],
         *,
-        coverage_radius: Optional[float] = None,
+        coverage_radius: float | None = None,
         n_workers: int = 0,
-    ) -> List[PluginDetectorLayout]:
-        """
-        Analyse multiple rooms. Parallelised internally when n_workers > 1.
+    ) -> list[PluginDetectorLayout]:
+        """Analyse multiple rooms. Parallelised internally when n_workers > 1.
 
         Stable API: always returns list of same length as input.
         Order preserved. Failed rooms return PluginDetectorLayout with proof_valid=False.
@@ -273,9 +267,9 @@ class FireAIPluginAPI:
         # ThreadPoolExecutor is safe here because _fallback_analyse_room
         # only reads self-level constants and creates new objects per call.
         max_workers = max(1, min(n_workers, len(rooms)))
-        indexed_results: List[Optional[PluginDetectorLayout]] = [None] * len(rooms)
+        indexed_results: list[PluginDetectorLayout | None] = [None] * len(rooms)
 
-        def _analyse_indexed(idx: int, room: PluginRoom) -> Tuple[int, PluginDetectorLayout]:
+        def _analyse_indexed(idx: int, room: PluginRoom) -> tuple[int, PluginDetectorLayout]:
             result = self.analyse_room(room, coverage_radius=coverage_radius)
             return (idx, result)
 
@@ -291,7 +285,7 @@ class FireAIPluginAPI:
     def analyse_building(
         self,
         building_id: str,
-        rooms: List[PluginRoom],
+        rooms: list[PluginRoom],
         *,
         generate_pdf: bool = False,
     ) -> PluginBuildingResult:
@@ -327,10 +321,9 @@ class FireAIPluginAPI:
     def _fallback_analyse_room(
         self,
         room: PluginRoom,
-        coverage_radius: Optional[float],
+        coverage_radius: float | None,
     ) -> PluginDetectorLayout:
-        """
-        Conservative fallback: place detectors on a grid when no engine available.
+        """Conservative fallback: place detectors on a grid when no engine available.
         Always places MORE detectors than needed (safety rule).
         """
         R = coverage_radius or 6.37
@@ -364,8 +357,7 @@ class FireAIPluginAPI:
 
 
 def check_api_compatibility(plugin_requires: str) -> None:
-    """
-    Call at plugin startup to verify API compatibility.
+    """Call at plugin startup to verify API compatibility.
     Raises RuntimeError if MAJOR version mismatch.
 
     Usage in plugin:

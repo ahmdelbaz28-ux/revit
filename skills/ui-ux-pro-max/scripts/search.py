@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-UI/UX Pro Max Search - BM25 search engine for UI/UX style guides
+"""UI/UX Pro Max Search - BM25 search engine for UI/UX style guides
 Usage: python search.py "<query>" [--domain <domain>] [--stack <stack>] [--max-results 3]
        python search.py "<query>" --design-system [-p "Project Name"]
-       python search.py "<query>" --design-system --persist [-p "Project Name"] [--page "dashboard"]
+       python search.py "<query>" --design-system --persist [-p "Project Name"] [--page "dashboard"].
 
 Domains: style, prompt, color, chart, landing, product, ux, typography
 Stacks: html-tailwind, react, nextjs
@@ -27,7 +25,7 @@ except ImportError:  # pragma: no cover
 
 
 def format_output(result):
-    """Format results for Claude consumption (token-optimized)"""
+    """Format results for Claude consumption (token-optimized)."""
     if "error" in result:
         return f"Error: {result['error']}"
 

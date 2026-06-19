@@ -1,13 +1,12 @@
-"""
-FireAI Digital Twin - Pydantic V2 API Schemas
+"""FireAI Digital Twin - Pydantic V2 API Schemas.
 =============================================
 Maps to core/models.py dataclasses for REST API request/response validation.
 """
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import Any, Dict, Generic, List, Optional, TypeVar
+from enum import StrEnum
+from typing import Any, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -41,7 +40,7 @@ def _validate_json_size_and_depth(
             if not obj:
                 return current
             return max(_get_depth(v, current + 1) for v in obj.values())
-        elif isinstance(obj, list):
+        if isinstance(obj, list):
             if not obj:
                 return current
             return max(_get_depth(item, current + 1) for item in obj)
@@ -71,6 +70,7 @@ def _to_camel(field_name: str) -> str:
 # also accept camelCase input via populate_by_name=True.
 class CamelModel(BaseModel):
     """Base model that serializes snake_case fields as camelCase."""
+
     model_config = ConfigDict(
         alias_generator=_to_camel,
         populate_by_name=True,  # Accept both snake_case and camelCase input
@@ -81,7 +81,7 @@ class CamelModel(BaseModel):
 # ENUMERATIONS (mirroring core/models.py)
 # ════════════════════════════════════════════════════════════════════════════
 
-class ElementType(str, Enum):
+class ElementType(StrEnum):
     WALL = "wall"
     DOOR = "door"
     WINDOW = "window"
@@ -92,21 +92,21 @@ class ElementType(str, Enum):
     UNKNOWN = "unknown"
 
 
-class ChangeSource(str, Enum):
+class ChangeSource(StrEnum):
     AUTOCAD = "autocad"
     REVIT = "revit"
     MANUAL = "manual"
     SYSTEM = "system"
 
 
-class ConflictType(str, Enum):
+class ConflictType(StrEnum):
     GEOMETRY_MISMATCH = "geometry_mismatch"
     PROPERTY_CONFLICT = "property_conflict"
     DELETION_CONFLICT = "deletion_conflict"
     TIMING_CONFLICT = "timing_conflict"
 
 
-class ProjectStatus(str, Enum):
+class ProjectStatus(StrEnum):
     DRAFT = "draft"
     ACTIVE = "active"
     ARCHIVED = "archived"
@@ -129,12 +129,12 @@ class Point3DResponse(CamelModel):
 
 
 class GeometryCreate(BaseModel):
-    points: List[Point3DCreate]
+    points: list[Point3DCreate]
     polyline_closed: bool = False
 
 
 class GeometryResponse(CamelModel):
-    points: List[Point3DResponse]
+    points: list[Point3DResponse]
     polyline_closed: bool = False
     area: float = 0.0
     perimeter: float = 0.0
@@ -147,40 +147,40 @@ class GeometryResponse(CamelModel):
 class SemanticPropertiesCreate(BaseModel):
     element_type: ElementType
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=5000)
-    material: Optional[str] = Field(None, max_length=255)
-    fire_rating: Optional[str] = Field(None, max_length=255)
-    height: Optional[float] = None
-    width: Optional[float] = None
+    description: str | None = Field(None, max_length=5000)
+    material: str | None = Field(None, max_length=255)
+    fire_rating: str | None = Field(None, max_length=255)
+    height: float | None = None
+    width: float | None = None
     load_bearing: bool = False
-    layer: Optional[str] = Field(None, max_length=255)
-    revit_category: Optional[str] = Field(None, max_length=255)
+    layer: str | None = Field(None, max_length=255)
+    revit_category: str | None = Field(None, max_length=255)
 
 
 class SemanticPropertiesUpdate(BaseModel):
-    element_type: Optional[ElementType] = None
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=5000)
-    material: Optional[str] = Field(None, max_length=255)
-    fire_rating: Optional[str] = Field(None, max_length=255)
-    height: Optional[float] = None
-    width: Optional[float] = None
-    load_bearing: Optional[bool] = None
-    layer: Optional[str] = Field(None, max_length=255)
-    revit_category: Optional[str] = Field(None, max_length=255)
+    element_type: ElementType | None = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=5000)
+    material: str | None = Field(None, max_length=255)
+    fire_rating: str | None = Field(None, max_length=255)
+    height: float | None = None
+    width: float | None = None
+    load_bearing: bool | None = None
+    layer: str | None = Field(None, max_length=255)
+    revit_category: str | None = Field(None, max_length=255)
 
 
 class SemanticPropertiesResponse(CamelModel):
     element_type: str
     name: str
-    description: Optional[str] = None
-    material: Optional[str] = None
-    fire_rating: Optional[str] = None
-    height: Optional[float] = None
-    width: Optional[float] = None
+    description: str | None = None
+    material: str | None = None
+    fire_rating: str | None = None
+    height: float | None = None
+    width: float | None = None
     load_bearing: bool = False
-    layer: Optional[str] = None
-    revit_category: Optional[str] = None
+    layer: str | None = None
+    revit_category: str | None = None
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -189,53 +189,57 @@ class SemanticPropertiesResponse(CamelModel):
 
 class ElementCreate(BaseModel):
     """Schema for creating a new element."""
+
     # SECURITY FIX (BUG-35): Changed extra from "allow" to "forbid".
     # In a safety-critical system, extra fields could indicate a client bug
     # or injection attempt. They should be rejected with a 422 error.
     model_config = ConfigDict(extra="forbid")
 
-    element_id: Optional[str] = None
+    element_id: str | None = None
     properties: SemanticPropertiesCreate
-    geometry: Optional[GeometryCreate] = None
-    source_file: Optional[str] = None
-    last_modified_by: Optional[str] = None
-    autocad_handle: Optional[str] = None
-    revit_element_id: Optional[int] = None
-    project_id: Optional[str] = None
+    geometry: GeometryCreate | None = None
+    source_file: str | None = None
+    last_modified_by: str | None = None
+    autocad_handle: str | None = None
+    revit_element_id: int | None = None
+    project_id: str | None = None
 
 
 class ElementUpdate(BaseModel):
     """Schema for updating an existing element."""
+
     # SECURITY FIX (BUG-35): Changed extra from "allow" to "forbid".
     model_config = ConfigDict(extra="forbid")
 
-    properties: Optional[SemanticPropertiesUpdate] = None
-    geometry: Optional[GeometryCreate] = None
-    source_file: Optional[str] = None
-    last_modified_by: Optional[str] = None
-    is_deleted: Optional[bool] = None
+    properties: SemanticPropertiesUpdate | None = None
+    geometry: GeometryCreate | None = None
+    source_file: str | None = None
+    last_modified_by: str | None = None
+    is_deleted: bool | None = None
 
 
 class ElementResponse(CamelModel):
     """Full element response."""
+
     element_id: str
-    properties: Optional[SemanticPropertiesResponse] = None
-    geometry: Optional[GeometryResponse] = None
-    relationships: List[Dict[str, Any]] = Field(default_factory=list)
-    created_timestamp: Optional[str] = None
-    last_modified_timestamp: Optional[str] = None
-    last_modified_by: Optional[str] = None
-    source_file: Optional[str] = None
+    properties: SemanticPropertiesResponse | None = None
+    geometry: GeometryResponse | None = None
+    relationships: list[dict[str, Any]] = Field(default_factory=list)
+    created_timestamp: str | None = None
+    last_modified_timestamp: str | None = None
+    last_modified_by: str | None = None
+    source_file: str | None = None
     version: int = 0
     is_deleted: bool = False
-    autocad_handle: Optional[str] = None
-    revit_element_id: Optional[int] = None
-    project_id: Optional[str] = None
+    autocad_handle: str | None = None
+    revit_element_id: int | None = None
+    project_id: str | None = None
 
 
 class ElementListResponse(CamelModel):
     """Paginated element list response."""
-    items: List[ElementResponse]
+
+    items: list[ElementResponse]
     total: int
     page: int
     page_size: int
@@ -248,10 +252,11 @@ class ElementListResponse(CamelModel):
 
 class ProjectCreate(BaseModel):
     """Schema for creating a new project."""
+
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: str | None = None
     status: ProjectStatus = ProjectStatus.DRAFT
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
     @field_validator("metadata")
     @classmethod
@@ -264,10 +269,11 @@ class ProjectCreate(BaseModel):
 
 class ProjectUpdate(BaseModel):
     """Schema for updating a project."""
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    status: Optional[ProjectStatus] = None
-    metadata: Optional[Dict[str, Any]] = None
+
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    status: ProjectStatus | None = None
+    metadata: dict[str, Any] | None = None
 
     @field_validator("metadata")
     @classmethod
@@ -280,19 +286,21 @@ class ProjectUpdate(BaseModel):
 
 class ProjectResponse(CamelModel):
     """Full project response."""
+
     project_id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     status: str = "draft"
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
     element_count: int = 0
-    created_timestamp: Optional[str] = None
-    last_modified_timestamp: Optional[str] = None
+    created_timestamp: str | None = None
+    last_modified_timestamp: str | None = None
 
 
 class ProjectListResponse(CamelModel):
     """Paginated project list response."""
-    items: List[ProjectResponse]
+
+    items: list[ProjectResponse]
     total: int
     page: int
     page_size: int
@@ -305,15 +313,16 @@ class ProjectListResponse(CamelModel):
 
 class DeviceCreate(BaseModel):
     """Schema for creating a device (element with electrical/equipment type)."""
+
     device_type: str = Field(..., min_length=1, max_length=255)
     name: str = Field(..., min_length=1, max_length=255)
-    position: Optional[Dict[str, float]] = None  # {x, y, z}
-    room_id: Optional[str] = None
-    project_id: Optional[str] = None
+    position: dict[str, float] | None = None  # {x, y, z}
+    room_id: str | None = None
+    project_id: str | None = None
     z_height: float = 2.4
     coverage_radius: float = 6.37
-    properties: Optional[SemanticPropertiesCreate] = None
-    geometry: Optional[GeometryCreate] = None
+    properties: SemanticPropertiesCreate | None = None
+    geometry: GeometryCreate | None = None
 
     @field_validator("properties")
     @classmethod
@@ -329,17 +338,18 @@ class DeviceCreate(BaseModel):
 
 class DeviceResponse(CamelModel):
     """Device response."""
+
     device_id: str
     device_type: str
     name: str
-    position: Optional[Dict[str, float]] = None
-    room_id: Optional[str] = None
-    project_id: Optional[str] = None
+    position: dict[str, float] | None = None
+    room_id: str | None = None
+    project_id: str | None = None
     z_height: float = 2.4
     coverage_radius: float = 6.37
     element_id: str
-    created_timestamp: Optional[str] = None
-    last_modified_timestamp: Optional[str] = None
+    created_timestamp: str | None = None
+    last_modified_timestamp: str | None = None
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -348,11 +358,12 @@ class DeviceResponse(CamelModel):
 
 class ConnectionCreate(BaseModel):
     """Schema for creating a connection (relationship)."""
+
     from_element_id: str
     to_element_id: str
     relationship_type: str = Field(..., min_length=1, max_length=255)
     is_parametric: bool = False
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
     @field_validator("to_element_id")
     @classmethod
@@ -371,17 +382,19 @@ class ConnectionCreate(BaseModel):
 
 class ConnectionResponse(CamelModel):
     """Connection response."""
+
     connection_id: str
     from_element_id: str
     to_element_id: str
     relationship_type: str
     is_parametric: bool = False
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class ConnectionListResponse(CamelModel):
     """Paginated connection list response."""
-    items: List[ConnectionResponse]
+
+    items: list[ConnectionResponse]
     total: int
     page: int
     page_size: int
@@ -394,27 +407,30 @@ class ConnectionListResponse(CamelModel):
 
 class ConflictResolveRequest(BaseModel):
     """Schema for resolving a conflict."""
+
     strategy: str = Field(default="SEMANTIC_MERGE", pattern="^(LAST_WRITE_WINS|SEMANTIC_MERGE)$")
-    resolution: Optional[Dict[str, Any]] = None
+    resolution: dict[str, Any] | None = None
 
 
 class ConflictResponse(CamelModel):
     """Conflict response."""
+
     conflict_id: str
     element_id: str = ""
     conflict_type: str
-    timestamp: Optional[str] = None
-    source_a: Optional[str] = None
-    source_b: Optional[str] = None
-    change_a: Optional[Dict[str, Any]] = None
-    change_b: Optional[Dict[str, Any]] = None
-    resolution: Optional[Dict[str, Any]] = None
+    timestamp: str | None = None
+    source_a: str | None = None
+    source_b: str | None = None
+    change_a: dict[str, Any] | None = None
+    change_b: dict[str, Any] | None = None
+    resolution: dict[str, Any] | None = None
     resolved: bool = False
 
 
 class ConflictListResponse(CamelModel):
     """Paginated conflict list response."""
-    items: List[ConflictResponse]
+
+    items: list[ConflictResponse]
     total: int
     page: int
     page_size: int
@@ -427,6 +443,7 @@ class ConflictListResponse(CamelModel):
 
 class StatisticsResponse(CamelModel):
     """Database statistics response."""
+
     total_elements: int = 0
     deleted_elements: int = 0
     active_elements: int = 0
@@ -438,7 +455,7 @@ class StatisticsResponse(CamelModel):
     pending_autocad_to_revit: int = 0
     pending_revit_to_autocad: int = 0
     database_version: int = 0
-    last_sync: Optional[str] = None
+    last_sync: str | None = None
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -448,16 +465,18 @@ class StatisticsResponse(CamelModel):
 T = TypeVar("T")
 
 
-class ApiResponse(CamelModel, Generic[T]):
+class ApiResponse[T](CamelModel):
     """Universal response wrapper for all API endpoints."""
+
     success: bool
-    data: Optional[T] = None
-    message: Optional[str] = None
+    data: T | None = None
+    message: str | None = None
 
 
-class PaginatedData(CamelModel, Generic[T]):
+class PaginatedData[T](CamelModel):
     """Wrapper for paginated data inside ApiResponse."""
-    items: List[T]
+
+    items: list[T]
     total: int
     page: int
     page_size: int
@@ -466,14 +485,16 @@ class PaginatedData(CamelModel, Generic[T]):
 
 class ExportRequest(BaseModel):
     """Request body for data export."""
-    project_id: Optional[str] = None
-    element_types: Optional[List[str]] = None
+
+    project_id: str | None = None
+    element_types: list[str] | None = None
     include_deleted: bool = False
     format: str = "json"
 
 
 class ConnectionUpdate(BaseModel):
     """Schema for updating an existing connection."""
-    cable_size: Optional[str] = Field(None, max_length=255)
-    length: Optional[float] = Field(None, ge=0)
-    type: Optional[str] = Field(None, max_length=255)
+
+    cable_size: str | None = Field(None, max_length=255)
+    length: float | None = Field(None, ge=0)
+    type: str | None = Field(None, max_length=255)

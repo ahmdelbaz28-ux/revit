@@ -1,5 +1,4 @@
-"""
-core/tests/test_utilities.py — Comprehensive unit tests for core/models.py
+"""core/tests/test_utilities.py — Comprehensive unit tests for core/models.py.
 
 Tests the core utility and model classes covering:
 - Point3D: creation, validation, immutability
@@ -13,7 +12,7 @@ Tests the core utility and model classes covering:
 """
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -37,94 +36,94 @@ from core.models import (
 class TestPoint3D:
     """Tests for the Point3D frozen dataclass."""
 
-    def test_create_point_with_xyz(self):
+    def test_create_point_with_xyz(self) -> None:
         """Test creating a Point3D with explicit x, y, z."""
         p = Point3D(x=1.0, y=2.0, z=3.0)
         assert p.x == 1.0
         assert p.y == 2.0
         assert p.z == 3.0
 
-    def test_create_point_z_default_zero(self):
+    def test_create_point_z_default_zero(self) -> None:
         """Test that z defaults to 0.0 when not provided."""
         p = Point3D(x=1.0, y=2.0)
         assert p.z == 0.0
 
-    def test_create_point_at_origin(self):
+    def test_create_point_at_origin(self) -> None:
         """Test creating a point at the origin."""
         p = Point3D(x=0.0, y=0.0, z=0.0)
         assert p.x == 0.0
         assert p.y == 0.0
         assert p.z == 0.0
 
-    def test_create_point_negative_coordinates(self):
+    def test_create_point_negative_coordinates(self) -> None:
         """Test that negative coordinates are allowed (valid in BIM)."""
         p = Point3D(x=-1.5, y=-2.0, z=-3.0)
         assert p.x == -1.5
         assert p.y == -2.0
         assert p.z == -3.0
 
-    def test_reject_nan_x(self):
+    def test_reject_nan_x(self) -> None:
         """Test that NaN in x coordinate raises ValueError."""
         with pytest.raises(ValueError, match="must be finite"):
             Point3D(x=float("nan"), y=0.0, z=0.0)
 
-    def test_reject_nan_y(self):
+    def test_reject_nan_y(self) -> None:
         """Test that NaN in y coordinate raises ValueError."""
         with pytest.raises(ValueError, match="must be finite"):
             Point3D(x=0.0, y=float("nan"), z=0.0)
 
-    def test_reject_nan_z(self):
+    def test_reject_nan_z(self) -> None:
         """Test that NaN in z coordinate raises ValueError."""
         with pytest.raises(ValueError, match="must be finite"):
             Point3D(x=0.0, y=0.0, z=float("nan"))
 
-    def test_reject_inf_x(self):
+    def test_reject_inf_x(self) -> None:
         """Test that +Inf in x coordinate raises ValueError."""
         with pytest.raises(ValueError, match="must be finite"):
             Point3D(x=float("inf"), y=0.0, z=0.0)
 
-    def test_reject_negative_inf_y(self):
+    def test_reject_negative_inf_y(self) -> None:
         """Test that -Inf in y coordinate raises ValueError."""
         with pytest.raises(ValueError, match="must be finite"):
             Point3D(x=0.0, y=float("-inf"), z=0.0)
 
-    def test_frozen_immutability(self):
+    def test_frozen_immutability(self) -> None:
         """Test that Point3D is frozen (immutable)."""
         p = Point3D(x=1.0, y=2.0, z=3.0)
         with pytest.raises(AttributeError):
             p.x = 10.0  # type: ignore[misc]
 
-    def test_frozen_cannot_add_attribute(self):
+    def test_frozen_cannot_add_attribute(self) -> None:
         """Test that new attributes cannot be added to frozen Point3D."""
         p = Point3D(x=1.0, y=2.0, z=3.0)
         with pytest.raises(AttributeError):
             p.new_field = 42  # type: ignore[attr-defined]
 
-    def test_equality(self):
+    def test_equality(self) -> None:
         """Test Point3D equality comparison."""
         p1 = Point3D(x=1.0, y=2.0, z=3.0)
         p2 = Point3D(x=1.0, y=2.0, z=3.0)
         assert p1 == p2
 
-    def test_inequality(self):
+    def test_inequality(self) -> None:
         """Test Point3D inequality comparison."""
         p1 = Point3D(x=1.0, y=2.0, z=3.0)
         p2 = Point3D(x=1.0, y=2.0, z=4.0)
         assert p1 != p2
 
-    def test_hash_consistency(self):
+    def test_hash_consistency(self) -> None:
         """Test that equal Point3D objects have the same hash."""
         p1 = Point3D(x=1.0, y=2.0, z=3.0)
         p2 = Point3D(x=1.0, y=2.0, z=3.0)
         assert hash(p1) == hash(p2)
 
-    def test_large_coordinates(self):
+    def test_large_coordinates(self) -> None:
         """Test Point3D with very large but finite coordinates."""
         p = Point3D(x=1e10, y=-1e10, z=0.0)
         assert p.x == 1e10
         assert p.y == -1e10
 
-    def test_very_small_coordinates(self):
+    def test_very_small_coordinates(self) -> None:
         """Test Point3D with very small (epsilon) coordinates."""
         p = Point3D(x=1e-15, y=1e-15, z=1e-15)
         assert p.x == 1e-15
@@ -139,7 +138,7 @@ class TestPoint3D:
 class TestGeometry:
     """Tests for the Geometry frozen dataclass with cached area/perimeter."""
 
-    def test_empty_geometry(self):
+    def test_empty_geometry(self) -> None:
         """Test creating an empty Geometry."""
         g = Geometry()
         assert g.points == ()
@@ -147,14 +146,14 @@ class TestGeometry:
         assert g.area == 0.0
         assert g.perimeter == 0.0
 
-    def test_single_point_geometry(self):
+    def test_single_point_geometry(self) -> None:
         """Test geometry with a single point — no area or perimeter."""
         g = Geometry(points=(Point3D(x=1.0, y=2.0, z=0.0),))
         assert len(g.points) == 1
         assert g.area == 0.0
         assert g.perimeter == 0.0
 
-    def test_two_point_open_polyline(self):
+    def test_two_point_open_polyline(self) -> None:
         """Test open polyline with two points — perimeter only."""
         g = Geometry(
             points=(Point3D(x=0.0, y=0.0), Point3D(x=3.0, y=4.0)),
@@ -163,7 +162,7 @@ class TestGeometry:
         assert g.area == 0.0
         assert abs(g.perimeter - 5.0) < 1e-9  # 3-4-5 triangle distance
 
-    def test_two_point_closed_polyline(self):
+    def test_two_point_closed_polyline(self) -> None:
         """Test closed polyline with two points — round-trip perimeter (V83 fix)."""
         g = Geometry(
             points=(Point3D(x=0.0, y=0.0), Point3D(x=3.0, y=0.0)),
@@ -172,7 +171,7 @@ class TestGeometry:
         assert g.area == 0.0  # Need >= 3 points for area
         assert abs(g.perimeter - 6.0) < 1e-9  # 3.0 + 3.0 (round-trip)
 
-    def test_triangle_area_shoelace(self):
+    def test_triangle_area_shoelace(self) -> None:
         """Test area calculation using Shoelace formula for a right triangle."""
         # Right triangle: (0,0), (4,0), (0,3) — area = 0.5 * 4 * 3 = 6
         g = Geometry(
@@ -185,7 +184,7 @@ class TestGeometry:
         )
         assert abs(g.area - 6.0) < 1e-9
 
-    def test_square_area(self):
+    def test_square_area(self) -> None:
         """Test area calculation for a unit square."""
         g = Geometry(
             points=(
@@ -198,7 +197,7 @@ class TestGeometry:
         )
         assert abs(g.area - 1.0) < 1e-9
 
-    def test_rectangle_area(self):
+    def test_rectangle_area(self) -> None:
         """Test area calculation for a 5x3 rectangle."""
         g = Geometry(
             points=(
@@ -211,7 +210,7 @@ class TestGeometry:
         )
         assert abs(g.area - 15.0) < 1e-9
 
-    def test_open_polyline_zero_area(self):
+    def test_open_polyline_zero_area(self) -> None:
         """Test that open polylines always have area 0.0."""
         g = Geometry(
             points=(
@@ -223,7 +222,7 @@ class TestGeometry:
         )
         assert g.area == 0.0
 
-    def test_perimeter_open_polyline(self):
+    def test_perimeter_open_polyline(self) -> None:
         """Test perimeter for an open polyline (sum of edge lengths)."""
         g = Geometry(
             points=(
@@ -236,7 +235,7 @@ class TestGeometry:
         # Edge 1: 0→3 = 3.0, Edge 2: 3→5 = 4.0 (3-4-5 triangle vertical)
         assert abs(g.perimeter - 7.0) < 1e-9
 
-    def test_perimeter_closed_polygon(self):
+    def test_perimeter_closed_polygon(self) -> None:
         """Test perimeter for a closed polygon (includes closing edge)."""
         g = Geometry(
             points=(
@@ -249,7 +248,7 @@ class TestGeometry:
         # 3.0 + 4.0 + 5.0 (closing edge: 3-4-5 triangle)
         assert abs(g.perimeter - 12.0) < 1e-9
 
-    def test_perimeter_with_z_elevation(self):
+    def test_perimeter_with_z_elevation(self) -> None:
         """Test perimeter includes z-component in 3D distance."""
         g = Geometry(
             points=(
@@ -261,18 +260,18 @@ class TestGeometry:
         # 3D distance = sqrt(9 + 0 + 16) = 5.0
         assert abs(g.perimeter - 5.0) < 1e-9
 
-    def test_frozen_immutability(self):
+    def test_frozen_immutability(self) -> None:
         """Test that Geometry is frozen (immutable)."""
         g = Geometry(points=(Point3D(x=1.0, y=2.0),))
         with pytest.raises(AttributeError):
             g.area = 999.0  # type: ignore[misc]
 
-    def test_points_is_tuple(self):
+    def test_points_is_tuple(self) -> None:
         """Test that points is a tuple, not a list (V83 fix)."""
         g = Geometry(points=(Point3D(x=0.0, y=0.0), Point3D(x=1.0, y=1.0)))
         assert isinstance(g.points, tuple)
 
-    def test_calculate_area_directly(self):
+    def test_calculate_area_directly(self) -> None:
         """Test calling calculate_area() directly on a geometry instance."""
         g = Geometry(
             points=(
@@ -285,7 +284,7 @@ class TestGeometry:
         )
         assert abs(g.calculate_area() - 100.0) < 1e-9
 
-    def test_calculate_perimeter_directly(self):
+    def test_calculate_perimeter_directly(self) -> None:
         """Test calling calculate_perimeter() directly on a geometry instance."""
         g = Geometry(
             points=(
@@ -307,7 +306,7 @@ class TestGeometry:
 class TestSemanticProperties:
     """Tests for the SemanticProperties frozen dataclass."""
 
-    def test_create_with_all_fields(self):
+    def test_create_with_all_fields(self) -> None:
         """Test creating SemanticProperties with all fields populated."""
         sp = SemanticProperties(
             element_type=ElementType.WALL,
@@ -332,7 +331,7 @@ class TestSemanticProperties:
         assert sp.layer == "A-WALL"
         assert sp.revit_category == "Walls"
 
-    def test_create_with_defaults(self):
+    def test_create_with_defaults(self) -> None:
         """Test creating SemanticProperties with only mandatory field."""
         sp = SemanticProperties(element_type=ElementType.WALL)
         assert sp.name == ""
@@ -345,53 +344,53 @@ class TestSemanticProperties:
         assert sp.layer is None
         assert sp.revit_category is None
 
-    def test_element_type_as_string(self):
+    def test_element_type_as_string(self) -> None:
         """Test that element_type can be a string (Union[ElementType, str])."""
         sp = SemanticProperties(element_type="custom_type")
         assert sp.element_type == "custom_type"
 
-    def test_reject_nan_height(self):
+    def test_reject_nan_height(self) -> None:
         """Test that NaN height raises ValueError."""
         with pytest.raises(ValueError, match="must be finite"):
             SemanticProperties(element_type=ElementType.WALL, height=float("nan"))
 
-    def test_reject_inf_height(self):
+    def test_reject_inf_height(self) -> None:
         """Test that Inf height raises ValueError."""
         with pytest.raises(ValueError, match="must be finite"):
             SemanticProperties(element_type=ElementType.WALL, height=float("inf"))
 
-    def test_reject_negative_height(self):
+    def test_reject_negative_height(self) -> None:
         """Test that negative height raises ValueError."""
         with pytest.raises(ValueError, match="non-negative"):
             SemanticProperties(element_type=ElementType.WALL, height=-1.0)
 
-    def test_reject_nan_width(self):
+    def test_reject_nan_width(self) -> None:
         """Test that NaN width raises ValueError."""
         with pytest.raises(ValueError, match="must be finite"):
             SemanticProperties(element_type=ElementType.WALL, width=float("nan"))
 
-    def test_reject_negative_width(self):
+    def test_reject_negative_width(self) -> None:
         """Test that negative width raises ValueError."""
         with pytest.raises(ValueError, match="non-negative"):
             SemanticProperties(element_type=ElementType.WALL, width=-0.1)
 
-    def test_zero_height_allowed(self):
+    def test_zero_height_allowed(self) -> None:
         """Test that zero height is allowed (non-negative)."""
         sp = SemanticProperties(element_type=ElementType.WALL, height=0.0)
         assert sp.height == 0.0
 
-    def test_zero_width_allowed(self):
+    def test_zero_width_allowed(self) -> None:
         """Test that zero width is allowed (non-negative)."""
         sp = SemanticProperties(element_type=ElementType.WALL, width=0.0)
         assert sp.width == 0.0
 
-    def test_frozen_immutability(self):
+    def test_frozen_immutability(self) -> None:
         """Test that SemanticProperties is frozen (immutable)."""
         sp = SemanticProperties(element_type=ElementType.WALL, name="Test")
         with pytest.raises(AttributeError):
             sp.name = "Modified"  # type: ignore[misc]
 
-    def test_to_dict_with_enum(self):
+    def test_to_dict_with_enum(self) -> None:
         """Test to_dict serializes ElementType enum to its value."""
         sp = SemanticProperties(
             element_type=ElementType.DOOR,
@@ -405,13 +404,13 @@ class TestSemanticProperties:
         assert d["height"] == 2.1
         assert d["width"] == 0.9
 
-    def test_to_dict_with_string_type(self):
+    def test_to_dict_with_string_type(self) -> None:
         """Test to_dict serializes string element_type as-is."""
         sp = SemanticProperties(element_type="custom", name="Custom Element")
         d = sp.to_dict()
         assert d["element_type"] == "custom"
 
-    def test_to_dict_includes_all_fields(self):
+    def test_to_dict_includes_all_fields(self) -> None:
         """Test that to_dict includes all field values."""
         sp = SemanticProperties(
             element_type=ElementType.WALL,
@@ -442,7 +441,7 @@ class TestSemanticProperties:
 class TestRelationship:
     """Tests for the Relationship frozen dataclass."""
 
-    def test_create_with_defaults(self):
+    def test_create_with_defaults(self) -> None:
         """Test creating a Relationship with default values."""
         r = Relationship()
         assert r.from_element_id == ""
@@ -452,7 +451,7 @@ class TestRelationship:
         assert r.metadata is None
         assert r.connection_id is None
 
-    def test_create_with_all_fields(self):
+    def test_create_with_all_fields(self) -> None:
         """Test creating a Relationship with all fields."""
         r = Relationship(
             from_element_id="elem-001",
@@ -469,13 +468,13 @@ class TestRelationship:
         assert r.metadata == {"distance": 0.5}
         assert r.connection_id == "conn-001"
 
-    def test_frozen_immutability(self):
+    def test_frozen_immutability(self) -> None:
         """Test that Relationship is frozen (immutable)."""
         r = Relationship(from_element_id="a", to_element_id="b")
         with pytest.raises(AttributeError):
             r.relationship_type = "modified"  # type: ignore[misc]
 
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         """Test to_dict serialization includes all fields including connection_id."""
         r = Relationship(
             from_element_id="elem-001",
@@ -493,7 +492,7 @@ class TestRelationship:
         assert d["metadata"] == {"key": "value"}
         assert d["connection_id"] == "conn-abc"
 
-    def test_to_dict_includes_connection_id(self):
+    def test_to_dict_includes_connection_id(self) -> None:
         """V83 FIX: connection_id was missing from to_dict — verify it's present."""
         r = Relationship(connection_id="conn-xyz")
         d = r.to_dict()
@@ -509,7 +508,7 @@ class TestRelationship:
 class TestConflict:
     """Tests for the Conflict frozen dataclass."""
 
-    def test_create_with_defaults(self):
+    def test_create_with_defaults(self) -> None:
         """Test creating a Conflict with default values."""
         c = Conflict()
         assert c.conflict_id == ""
@@ -523,9 +522,9 @@ class TestConflict:
         assert c.resolved is False
         assert c.timestamp is None
 
-    def test_create_with_all_fields(self):
+    def test_create_with_all_fields(self) -> None:
         """Test creating a Conflict with all fields."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         c = Conflict(
             conflict_id="conflict-001",
             element_id="elem-001",
@@ -546,13 +545,13 @@ class TestConflict:
         assert c.resolved is True
         assert c.timestamp == now
 
-    def test_frozen_immutability(self):
+    def test_frozen_immutability(self) -> None:
         """Test that Conflict is frozen (immutable)."""
         c = Conflict(conflict_id="test")
         with pytest.raises(AttributeError):
             c.resolved = True  # type: ignore[misc]
 
-    def test_conflict_type_enum_values(self):
+    def test_conflict_type_enum_values(self) -> None:
         """Test all ConflictType enum values are accessible."""
         assert ConflictType.GEOMETRY_MISMATCH.value == "geometry_mismatch"
         assert ConflictType.PROPERTY_CONFLICT.value == "property_conflict"
@@ -568,29 +567,29 @@ class TestConflict:
 class TestUniversalElement:
     """Tests for the UniversalElement frozen dataclass."""
 
-    def test_create_with_mandatory_id(self):
+    def test_create_with_mandatory_id(self) -> None:
         """Test creating a UniversalElement with mandatory element_id."""
         elem = UniversalElement(element_id="test-001")
         assert elem.element_id == "test-001"
 
-    def test_reject_empty_element_id(self):
+    def test_reject_empty_element_id(self) -> None:
         """Test that empty element_id raises ValueError (V83 fix)."""
         with pytest.raises(ValueError, match="MANDATORY"):
             UniversalElement(element_id="")
 
-    def test_reject_missing_element_id(self):
+    def test_reject_missing_element_id(self) -> None:
         """Test that missing element_id (defaults to '') raises ValueError."""
         with pytest.raises(ValueError, match="MANDATORY"):
             UniversalElement()
 
-    def test_create_with_properties(self):
+    def test_create_with_properties(self) -> None:
         """Test creating an element with SemanticProperties."""
         props = SemanticProperties(element_type=ElementType.WALL, name="Test Wall")
         elem = UniversalElement(element_id="wall-001", properties=props)
         assert elem.properties is not None
         assert elem.properties.name == "Test Wall"
 
-    def test_create_with_geometry(self):
+    def test_create_with_geometry(self) -> None:
         """Test creating an element with Geometry."""
         geom = Geometry(
             points=(Point3D(x=0.0, y=0.0), Point3D(x=1.0, y=1.0)),
@@ -600,7 +599,7 @@ class TestUniversalElement:
         assert elem.geometry is not None
         assert len(elem.geometry.points) == 2
 
-    def test_create_with_relationships(self):
+    def test_create_with_relationships(self) -> None:
         """Test creating an element with Relationships."""
         rels = (
             Relationship(from_element_id="a", to_element_id="b", relationship_type="adjacent"),
@@ -609,7 +608,7 @@ class TestUniversalElement:
         elem = UniversalElement(element_id="rel-001", relationships=rels)
         assert len(elem.relationships) == 2
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         """Test default field values for UniversalElement."""
         elem = UniversalElement(element_id="defaults-001")
         assert elem.properties is None
@@ -625,13 +624,13 @@ class TestUniversalElement:
         assert elem.is_deleted is False
         assert elem.project_id is None
 
-    def test_frozen_immutability(self):
+    def test_frozen_immutability(self) -> None:
         """Test that UniversalElement is frozen (immutable)."""
         elem = UniversalElement(element_id="frozen-001")
         with pytest.raises(AttributeError):
             elem.version = 5  # type: ignore[misc]
 
-    def test_to_dict_minimal(self):
+    def test_to_dict_minimal(self) -> None:
         """Test to_dict with minimal element (only element_id)."""
         elem = UniversalElement(element_id="min-001")
         d = elem.to_dict()
@@ -640,7 +639,7 @@ class TestUniversalElement:
         assert "geometry" not in d  # None geometry not included
         assert d["relationships"] == []
 
-    def test_to_dict_with_properties(self):
+    def test_to_dict_with_properties(self) -> None:
         """Test to_dict includes serialized properties."""
         props = SemanticProperties(element_type=ElementType.DOOR, name="Door 1", height=2.1)
         elem = UniversalElement(element_id="prop-001", properties=props)
@@ -650,7 +649,7 @@ class TestUniversalElement:
         assert d["properties"]["name"] == "Door 1"
         assert d["properties"]["height"] == 2.1
 
-    def test_to_dict_with_geometry(self):
+    def test_to_dict_with_geometry(self) -> None:
         """Test to_dict includes serialized geometry."""
         geom = Geometry(
             points=(Point3D(x=1.0, y=2.0, z=3.0),),
@@ -662,7 +661,7 @@ class TestUniversalElement:
         assert d["geometry"]["points"][0] == {"x": 1.0, "y": 2.0, "z": 3.0}
         assert d["geometry"]["polyline_closed"] is False
 
-    def test_to_dict_with_relationships(self):
+    def test_to_dict_with_relationships(self) -> None:
         """Test to_dict includes serialized relationships."""
         rels = (
             Relationship(from_element_id="a", to_element_id="b", relationship_type="adj"),
@@ -672,9 +671,9 @@ class TestUniversalElement:
         assert len(d["relationships"]) == 1
         assert d["relationships"][0]["from_element_id"] == "a"
 
-    def test_to_dict_with_timestamps(self):
+    def test_to_dict_with_timestamps(self) -> None:
         """Test to_dict serializes timestamps as ISO format strings."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         elem = UniversalElement(
             element_id="ts-001",
             created_timestamp=now,
@@ -684,16 +683,16 @@ class TestUniversalElement:
         assert d["created_timestamp"] == now.isoformat()
         assert d["last_modified_timestamp"] == now.isoformat()
 
-    def test_to_dict_null_timestamps(self):
+    def test_to_dict_null_timestamps(self) -> None:
         """Test to_dict serializes None timestamps as null."""
         elem = UniversalElement(element_id="nts-001")
         d = elem.to_dict()
         assert d["created_timestamp"] is None
         assert d["last_modified_timestamp"] is None
 
-    def test_to_dict_all_fields(self):
+    def test_to_dict_all_fields(self) -> None:
         """Test to_dict with all fields populated."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         elem = UniversalElement(
             element_id="full-001",
             properties=SemanticProperties(element_type=ElementType.WALL, name="Full"),
@@ -726,18 +725,18 @@ class TestUniversalElement:
 class TestElementType:
     """Tests for the ElementType enumeration."""
 
-    def test_all_values(self):
+    def test_all_values(self) -> None:
         """Test all ElementType enum values exist."""
         expected = {"wall", "door", "window", "room", "equipment", "mechanical", "electrical", "unknown"}
         actual = {e.value for e in ElementType}
         assert actual == expected
 
-    def test_string_enum(self):
+    def test_string_enum(self) -> None:
         """Test that ElementType is a string enum."""
         assert isinstance(ElementType.WALL, str)
         assert ElementType.WALL == "wall"
 
-    def test_from_value(self):
+    def test_from_value(self) -> None:
         """Test creating ElementType from its string value."""
         assert ElementType("door") == ElementType.DOOR
         assert ElementType("window") == ElementType.WINDOW
@@ -746,13 +745,13 @@ class TestElementType:
 class TestChangeSource:
     """Tests for the ChangeSource enumeration."""
 
-    def test_all_values(self):
+    def test_all_values(self) -> None:
         """Test all ChangeSource enum values exist."""
         expected = {"autocad", "revit", "manual", "system"}
         actual = {e.value for e in ChangeSource}
         assert actual == expected
 
-    def test_string_enum(self):
+    def test_string_enum(self) -> None:
         """Test that ChangeSource is a string enum."""
         assert isinstance(ChangeSource.REVIT, str)
         assert ChangeSource.REVIT == "revit"
@@ -761,17 +760,17 @@ class TestChangeSource:
 class TestConflictType:
     """Tests for the ConflictType enumeration."""
 
-    def test_all_values(self):
+    def test_all_values(self) -> None:
         """Test all ConflictType enum values exist."""
         expected = {"geometry_mismatch", "property_conflict", "deletion_conflict", "timing_conflict"}
         actual = {e.value for e in ConflictType}
         assert actual == expected
 
-    def test_string_enum(self):
+    def test_string_enum(self) -> None:
         """Test that ConflictType is a string enum."""
         assert isinstance(ConflictType.GEOMETRY_MISMATCH, str)
 
-    def test_from_value(self):
+    def test_from_value(self) -> None:
         """Test creating ConflictType from its string value."""
         assert ConflictType("property_conflict") == ConflictType.PROPERTY_CONFLICT
 
@@ -784,52 +783,52 @@ class TestConflictType:
 class TestModuleReExports:
     """Tests that core/__init__.py correctly re-exports all public symbols."""
 
-    def test_import_point3d(self):
+    def test_import_point3d(self) -> None:
         """Test that Point3D is importable from core."""
         from core import Point3D as P
         assert P is Point3D
 
-    def test_import_geometry(self):
+    def test_import_geometry(self) -> None:
         """Test that Geometry is importable from core."""
         from core import Geometry as G
         assert G is Geometry
 
-    def test_import_universal_element(self):
+    def test_import_universal_element(self) -> None:
         """Test that UniversalElement is importable from core."""
         from core import UniversalElement as UE
         assert UE is UniversalElement
 
-    def test_import_semantic_properties(self):
+    def test_import_semantic_properties(self) -> None:
         """Test that SemanticProperties is importable from core."""
         from core import SemanticProperties as SP
         assert SP is SemanticProperties
 
-    def test_import_relationship(self):
+    def test_import_relationship(self) -> None:
         """Test that Relationship is importable from core."""
         from core import Relationship as R
         assert R is Relationship
 
-    def test_import_conflict(self):
+    def test_import_conflict(self) -> None:
         """Test that Conflict is importable from core."""
         from core import Conflict as C
         assert C is Conflict
 
-    def test_import_element_type(self):
+    def test_import_element_type(self) -> None:
         """Test that ElementType is importable from core."""
         from core import ElementType as ET
         assert ET is ElementType
 
-    def test_import_change_source(self):
+    def test_import_change_source(self) -> None:
         """Test that ChangeSource is importable from core."""
         from core import ChangeSource as CS
         assert CS is ChangeSource
 
-    def test_import_conflict_type(self):
+    def test_import_conflict_type(self) -> None:
         """Test that ConflictType is importable from core."""
         from core import ConflictType as CT
         assert CT is ConflictType
 
-    def test_import_universal_data_model(self):
+    def test_import_universal_data_model(self) -> None:
         """Test that UniversalDataModel is importable from core."""
         from core import UniversalDataModel as UDM
         from core.database import UniversalDataModel

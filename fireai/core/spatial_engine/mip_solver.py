@@ -1,5 +1,4 @@
-"""
-MIP Solver for FireAI — Set Covering Formulation
+"""MIP Solver for FireAI — Set Covering Formulation.
 =================================================
 Wraps PuLP with graceful fallback to greedy if unavailable or timeout.
 
@@ -31,7 +30,6 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
 
 from .density_optimizer import DETECTOR_RADIUS
 
@@ -56,15 +54,16 @@ class MIPResult:
         used_mip:            True if MIP solver was actually used.
         fallback_reason:     Reason for fallback, or None if successful.
         candidate_step:      Grid spacing used for candidate positions (meters).
+
     """
 
     success: bool
-    detector_positions: List[Tuple[float, float]] = field(default_factory=list)
-    theoretical_minimum: Optional[int] = None
+    detector_positions: list[tuple[float, float]] = field(default_factory=list)
+    theoretical_minimum: int | None = None
     solver_status: str = "not_run"
     solve_time_seconds: float = 0.0
     used_mip: bool = False
-    fallback_reason: Optional[str] = None
+    fallback_reason: str | None = None
     candidate_step: float = 1.0
 
 
@@ -75,8 +74,7 @@ def solve_set_covering_mip(
     candidate_step: float = 1.0,
     time_limit_seconds: float = 10.0,
 ) -> MIPResult:
-    """
-    Solves the minimum detector placement problem as a Set Covering ILP.
+    """Solves the minimum detector placement problem as a Set Covering ILP.
 
     Variables:
         x_j ∈ {0,1}  — place detector at candidate position j
@@ -106,7 +104,7 @@ def solve_set_covering_mip(
     start = time.perf_counter()
 
     # --- Build candidate detector positions (grid over room) ---
-    candidates: List[Tuple[float, float]] = []
+    candidates: list[tuple[float, float]] = []
     cx = candidate_step / 2
     while cx <= room_width:
         cy = candidate_step / 2
@@ -117,7 +115,7 @@ def solve_set_covering_mip(
 
     # --- Build coverage target points (finer grid) ---
     target_step = candidate_step / 2
-    targets: List[Tuple[float, float]] = []
+    targets: list[tuple[float, float]] = []
     tx = target_step / 2
     while tx <= room_width:
         ty = target_step / 2
@@ -136,7 +134,7 @@ def solve_set_covering_mip(
 
     # --- Coverage map: for each target, which candidates cover it ---
     R2 = coverage_radius**2
-    coverage: List[List[int]] = []  # coverage[i] = list of candidate indices
+    coverage: list[list[int]] = []  # coverage[i] = list of candidate indices
     for tx, ty in targets:
         covers = [j for j, (cx, cy) in enumerate(candidates) if (tx - cx) ** 2 + (ty - cy) ** 2 <= R2]
         coverage.append(covers)

@@ -1,5 +1,4 @@
-"""
-FireAI Rules Engine — Truth Maintenance System (TMS)
+"""FireAI Rules Engine — Truth Maintenance System (TMS).
 =====================================================
 
 Ensures that when a base fact is retracted, ALL conclusions derived
@@ -28,8 +27,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Dict, List, Set
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -48,11 +46,11 @@ class DependencyRecord:
     """
 
     derived_fact_id: str
-    supporting_fact_ids: List[str]
+    supporting_fact_ids: list[str]
     producing_rule_id: str
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def is_still_valid(self, existing_fact_ids: Set[str]) -> bool:
+    def is_still_valid(self, existing_fact_ids: set[str]) -> bool:
         """Check if all supporting facts still exist."""
         return all(fid in existing_fact_ids for fid in self.supporting_fact_ids)
 
@@ -72,23 +70,23 @@ class TruthMaintenanceSystem:
 
     def __init__(self) -> None:
         # derived_fact_id → DependencyRecord
-        self._dependencies: Dict[str, DependencyRecord] = {}
+        self._dependencies: dict[str, DependencyRecord] = {}
 
         # supporting_fact_id → Set[derived_fact_ids]
-        self._support_index: Dict[str, Set[str]] = {}
+        self._support_index: dict[str, set[str]] = {}
 
         # Track retraction history for audit
-        self._retraction_log: List[Dict] = []
+        self._retraction_log: list[dict] = []
 
         # FIX: Cascade-local visited set — replaces the historical-log
         # guard which incorrectly skipped re-derived facts.
         # Reset at the start of each top-level retract_support() call.
-        self._cascade_visited: Set[str] = set()
+        self._cascade_visited: set[str] = set()
 
     def record_dependency(
         self,
         derived_fact_id: str,
-        supporting_fact_ids: List[str],
+        supporting_fact_ids: list[str],
         producing_rule_id: str,
     ) -> None:
         """Record that a derived fact depends on supporting facts.
@@ -112,7 +110,7 @@ class TruthMaintenanceSystem:
             f"TMS: Recorded dependency: {derived_fact_id} depends on {supporting_fact_ids} via rule {producing_rule_id}"
         )
 
-    def retract_support(self, retracted_fact_id: str) -> List[str]:
+    def retract_support(self, retracted_fact_id: str) -> list[str]:
         """Process the retraction of a supporting fact.
 
         Returns a list of derived fact IDs that must also be retracted
@@ -143,9 +141,9 @@ class TruthMaintenanceSystem:
 
         return retracted_ids
 
-    def _retract_support_inner(self, retracted_fact_id: str) -> List[str]:
+    def _retract_support_inner(self, retracted_fact_id: str) -> list[str]:
         """Internal implementation of retract_support (without visited-set management)."""
-        retracted_ids: List[str] = []
+        retracted_ids: list[str] = []
 
         if retracted_fact_id not in self._support_index:
             return retracted_ids
@@ -167,7 +165,7 @@ class TruthMaintenanceSystem:
                     "fact_id": affected_id,
                     "retracted_because": retracted_fact_id,
                     "producing_rule": dep.producing_rule_id if dep else "unknown",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "reason": reason,
                 }
             )
@@ -201,18 +199,18 @@ class TruthMaintenanceSystem:
 
         return retracted_ids
 
-    def get_derived_facts_for(self, supporting_fact_id: str) -> List[str]:
+    def get_derived_facts_for(self, supporting_fact_id: str) -> list[str]:
         """Get all facts derived from a given supporting fact."""
         return list(self._support_index.get(supporting_fact_id, set()))
 
-    def get_dependency_chain(self, fact_id: str) -> List[DependencyRecord]:
+    def get_dependency_chain(self, fact_id: str) -> list[DependencyRecord]:
         """Get the full dependency chain for a fact.
 
         Returns the direct dependency record plus all transitive
         dependencies (dependencies of dependencies).
         """
-        chain: List[DependencyRecord] = []
-        visited: Set[str] = set()
+        chain: list[DependencyRecord] = []
+        visited: set[str] = set()
 
         def _trace(fid: str) -> None:
             if fid in visited:
@@ -227,7 +225,7 @@ class TruthMaintenanceSystem:
         _trace(fact_id)
         return chain
 
-    def explain_derivation(self, fact_id: str) -> Dict:
+    def explain_derivation(self, fact_id: str) -> dict:
         """Explain how a derived fact was produced.
 
         Returns a structured explanation suitable for engineering reports
@@ -260,7 +258,7 @@ class TruthMaintenanceSystem:
             "retraction_history": [r for r in self._retraction_log if r["fact_id"] == fact_id],
         }
 
-    def validate_consistency(self, existing_fact_ids: Set[str]) -> List[str]:
+    def validate_consistency(self, existing_fact_ids: set[str]) -> list[str]:
         """Check for stale dependencies — derived facts whose supports
         no longer exist but weren't properly retracted.
 
@@ -289,7 +287,7 @@ class TruthMaintenanceSystem:
 
         return stale
 
-    def get_retraction_log(self) -> List[Dict]:
+    def get_retraction_log(self) -> list[dict]:
         """Get the full retraction history for audit purposes."""
         return list(self._retraction_log)
 

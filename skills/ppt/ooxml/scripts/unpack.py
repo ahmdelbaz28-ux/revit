@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unpack and format XML contents of Office files (.docx, .pptx, .xlsx)"""
+"""Unpack and format XML contents of Office files (.docx, .pptx, .xlsx)."""
 
 import argparse
 import random
@@ -9,7 +9,7 @@ from pathlib import Path
 import defusedxml.minidom
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Unpack an Office file into a directory")
     parser.add_argument("office_file", help="Office file (.docx/.pptx/.xlsx)")
     parser.add_argument("output_dir", help="Output directory")
@@ -17,7 +17,7 @@ def main():
     unpack_document(args.office_file, args.output_dir)
 
 
-def unpack_document(input_file, output_dir):
+def unpack_document(input_file, output_dir) -> None:
     """Unpack an Office file into a directory and pretty-print all XML files."""
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -35,7 +35,7 @@ def unpack_document(input_file, output_dir):
         print(f"Suggested RSID for edit session: {suggested_rsid}")
 
 
-def pretty_print_xml(xml_file):
+def pretty_print_xml(xml_file) -> None:
     """Pretty-print a single XML file in place."""
     content = xml_file.read_text(encoding="utf-8")
     dom = defusedxml.minidom.parseString(content)

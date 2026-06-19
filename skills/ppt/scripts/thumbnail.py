@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Create thumbnail grids from PowerPoint presentation slides.
+"""Create thumbnail grids from PowerPoint presentation slides.
 
 Creates a grid layout of slide thumbnails with configurable columns (max 6).
 Each grid contains up to cols×(cols+1) images. For presentations with more
@@ -38,6 +37,7 @@ Examples:
 
     python thumbnail.py template.pptx analysis --outline-placeholders
     # Creates thumbnail grids with red outlines around text placeholders
+
 """
 
 import argparse
@@ -64,7 +64,7 @@ FONT_SIZE_RATIO = 0.12  # Font size as fraction of thumbnail width
 LABEL_PADDING_RATIO = 0.4  # Label padding as fraction of font size
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Create thumbnail grids from PowerPoint slides."
     )

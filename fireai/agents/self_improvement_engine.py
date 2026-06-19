@@ -1,5 +1,4 @@
-"""
-fireai/agents/self_improvement_engine.py — Continuous Improvement Engine
+"""fireai/agents/self_improvement_engine.py — Continuous Improvement Engine.
 ==========================================================================
 Ingests feedback from validation results, analyzes performance trends,
 optimizes algorithm parameters via grid search, and tracks improvements
@@ -13,8 +12,8 @@ import logging
 import sqlite3
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Tuple
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +29,9 @@ class ImprovementFeedback:
     expected_value: float = 0.0
     severity: str = "medium"  # "low", "medium", "high", "critical"
     context: str = ""  # JSON context string
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -45,9 +44,9 @@ class ImprovementRecord:
     new_value: float = 0.0
     change_pct: float = 0.0
     action_taken: str = ""
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -59,7 +58,7 @@ class ParameterSuggestion:
     confidence: float = 0.5
     rationale: str = "default parameters"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -73,12 +72,12 @@ class ComponentTrend:
 
 @dataclass
 class ImprovementReport:
-    trends: List[ComponentTrend] = field(default_factory=list)
-    top_improvements: List[ImprovementRecord] = field(default_factory=list)
-    regression_warnings: List[str] = field(default_factory=list)
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    trends: list[ComponentTrend] = field(default_factory=list)
+    top_improvements: list[ImprovementRecord] = field(default_factory=list)
+    regression_warnings: list[str] = field(default_factory=list)
+    generated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "trends": [asdict(t) for t in self.trends],
             "top_improvements": [asdict(r) for r in self.top_improvements],
@@ -100,15 +99,14 @@ _GRID_SEARCH_PARAMS = {
 
 
 class SelfImprovementEngine:
-    """
-    Continuous improvement through feedback processing:
+    """Continuous improvement through feedback processing:
     - Feedback ingestion from validation results
     - Performance optimization recommendations
     - Model refinement triggers
-    - Improvement tracking over time
+    - Improvement tracking over time.
     """
 
-    def __init__(self, db_path: str = "fireai_learning.sqlite3"):
+    def __init__(self, db_path: str = "fireai_learning.sqlite3") -> None:
         self.db_path = db_path
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
@@ -213,7 +211,7 @@ class SelfImprovementEngine:
                 new_value,
                 round(change_pct, 4),
                 action_taken,
-                datetime.now(timezone.utc).isoformat(),
+                datetime.now(UTC).isoformat(),
             ),
         )
         self.conn.commit()
@@ -231,8 +229,8 @@ class SelfImprovementEngine:
         """)
         trend_rows = cursor.fetchall()
 
-        trends: List[ComponentTrend] = []
-        regression_warnings: List[str] = []
+        trends: list[ComponentTrend] = []
+        regression_warnings: list[str] = []
         for row in trend_rows:
             avg = row["avg_change"] if row["avg_change"] is not None else 0.0
             if avg > 2.0:
@@ -260,7 +258,7 @@ class SelfImprovementEngine:
             LIMIT 10
         """)
         top_rows = cursor.fetchall()
-        top_improvements: List[ImprovementRecord] = []
+        top_improvements: list[ImprovementRecord] = []
         for row in top_rows:
             top_improvements.append(
                 ImprovementRecord(
@@ -318,9 +316,9 @@ class SelfImprovementEngine:
             GROUP BY component
         """)
         gap_rows = cursor.fetchall()
-        gaps: Dict[str, float] = {r["component"]: r["avg_gap"] if r["avg_gap"] is not None else 0.0 for r in gap_rows}
+        gaps: dict[str, float] = {r["component"]: r["avg_gap"] if r["avg_gap"] is not None else 0.0 for r in gap_rows}
 
-        suggestions: Dict[str, List[Tuple[float, float]]] = {
+        suggestions: dict[str, list[tuple[float, float]]] = {
             "spacing_factor": [],
             "margin": [],
             "threshold": [],
@@ -358,22 +356,21 @@ class SelfImprovementEngine:
                 best.margin,
                 best.threshold,
                 best.confidence,
-                datetime.now(timezone.utc).isoformat(),
+                datetime.now(UTC).isoformat(),
             ),
         )
         self.conn.commit()
 
         return best
 
-    def _evaluate_param(self, design: Any, param: str, value: float, gaps: Dict[str, float]) -> float:
+    def _evaluate_param(self, design: Any, param: str, value: float, gaps: dict[str, float]) -> float:
         gap = abs(gaps.get(param, 0))
         if gap < 0.01:
             return 0.5
-        correction = 1.0 - min(gap / 0.5, 1.0)
-        return correction
+        return 1.0 - min(gap / 0.5, 1.0)
 
-    def _score_combination(self, sp: float, ma: float, th: float, gaps: Dict[str, float]) -> float:
-        base_scores: List[float] = []
+    def _score_combination(self, sp: float, ma: float, th: float, gaps: dict[str, float]) -> float:
+        base_scores: list[float] = []
         for param, val, expected in [
             ("spacing_factor", sp, 0.7),
             ("margin", ma, 0.1),
@@ -389,7 +386,7 @@ class SelfImprovementEngine:
             base_scores.append(score)
         return sum(base_scores) / max(len(base_scores), 1)
 
-    def get_improvement_history(self, days: int = 30) -> List[ImprovementRecord]:
+    def get_improvement_history(self, days: int = 30) -> list[ImprovementRecord]:
         cursor = self.conn.cursor()
         cursor.execute(
             """
@@ -400,7 +397,7 @@ class SelfImprovementEngine:
             (f"-{days}",),
         )
         rows = cursor.fetchall()
-        results: List[ImprovementRecord] = []
+        results: list[ImprovementRecord] = []
         for row in rows:
             results.append(
                 ImprovementRecord(

@@ -1,5 +1,4 @@
-"""
-fireai/core/facp_capacity_auditor.py
+"""fireai/core/facp_capacity_auditor.py.
 ====================================
 FACP (Fire Alarm Control Panel) Global Capacity Auditor.
 
@@ -28,7 +27,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
@@ -108,6 +107,7 @@ class FACP_Profile:
         max_amps_per_nac:      Per-circuit NAC current limit (A).
         slc_max_current_ma:    Maximum quiescent current per SLC loop (mA).
             Exceeding this can burn the SLC card's output circuit.
+
     """
 
     manufacturer: str
@@ -122,7 +122,7 @@ class FACP_Profile:
 # ============================================================================
 # Pre-defined manufacturer profiles
 # ============================================================================
-_MANUFACTURER_PROFILES: Dict[str, FACP_Profile] = {
+_MANUFACTURER_PROFILES: dict[str, FACP_Profile] = {
     "notifier": FACP_Profile(
         manufacturer="Notifier FlashScan",
         max_detectors_per_slc=159,
@@ -165,6 +165,7 @@ def get_default_profile(manufacturer: str) -> FACP_Profile:
 
     Raises:
         ValueError: If the manufacturer is not in the pre-defined set.
+
     """
     key = manufacturer.strip().lower()
     if key not in _MANUFACTURER_PROFILES:
@@ -180,7 +181,7 @@ def _build_violation(
     code: str,
     message: str,
     severity: str = "CRITICAL",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Return a violation record as a plain dict.
 
     If the ``Violation`` provenance class is available the dict also
@@ -190,7 +191,7 @@ def _build_violation(
     Provenance ``Violation`` fields: ``severity``, ``citation``, ``description``.
     The *code* argument maps to ``citation``; *message* maps to ``description``.
     """
-    entry: Dict[str, Any] = {
+    entry: dict[str, Any] = {
         "code": code,
         "message": message,
         "severity": severity,
@@ -212,13 +213,13 @@ def _build_violation(
 def _build_rule_applied(
     rule_id: str,
     description: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Return a rule-applied record as a plain dict.
 
     Provenance ``RuleApplied`` fields: ``citation``, ``constant_id``,
     ``value_used``, ``unit``.
     """
-    entry: Dict[str, Any] = {
+    entry: dict[str, Any] = {
         "rule_id": rule_id,
         "description": description,
     }
@@ -254,6 +255,7 @@ def _classify_device(device_type: str) -> str:
 
     Returns:
         ``"detector"`` or ``"module"``.
+
     """
     if device_type in DETECTOR_DEVICE_TYPES:
         return "detector"
@@ -288,7 +290,7 @@ class FACPCapacityAuditor:
     # ------------------------------------------------------------------
     # Audit 1: Global inrush / NAC current
     # ------------------------------------------------------------------
-    def audit_global_inrush(self, nac_circuits: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def audit_global_inrush(self, nac_circuits: list[dict[str, Any]]) -> dict[str, Any]:
         """Audit all NAC circuits for per-circuit and aggregate current limits.
 
         Each element of *nac_circuits* must be a dict with at minimum:
@@ -314,9 +316,10 @@ class FACPCapacityAuditor:
             - ``rules_applied`` (list[dict]): Rules evaluated during the audit.
             - ``provenance``: A ``DecisionProvenance`` object if available,
               otherwise ``None``.
+
         """
-        violations: List[Dict[str, Any]] = []
-        rules_applied: List[Dict[str, Any]] = []
+        violations: list[dict[str, Any]] = []
+        rules_applied: list[dict[str, Any]] = []
         total_inrush: float = 0.0
 
         # --- Per-NAC check ---
@@ -378,7 +381,7 @@ class FACPCapacityAuditor:
 
         status = "CATASTROPHIC_OVERLOAD" if violations else "SAFE"
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "total_inrush_a": round(total_inrush, 4),
             "status": status,
             "violations": violations,
@@ -418,8 +421,8 @@ class FACPCapacityAuditor:
     # ------------------------------------------------------------------
     def audit_slc_protocol_limits(
         self,
-        slc_loops: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        slc_loops: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Audit each SLC loop for detector and module address limits.
 
         Each element of *slc_loops* must be a dict with:
@@ -447,14 +450,15 @@ class FACPCapacityAuditor:
             - ``all_pass`` (bool): True only if every loop passes.
             - ``violations`` (list[dict]): Violation records.
             - ``provenance``: ``DecisionProvenance`` if available, else ``None``.
+
         """
-        loops_passing: List[Dict[str, Any]] = []
-        loops_failing: List[Dict[str, Any]] = []
-        violations: List[Dict[str, Any]] = []
+        loops_passing: list[dict[str, Any]] = []
+        loops_failing: list[dict[str, Any]] = []
+        violations: list[dict[str, Any]] = []
 
         for loop in slc_loops:
             loop_id = loop.get("loop_id", "UNKNOWN")
-            devices: List[Dict[str, Any]] = loop.get("devices", [])
+            devices: list[dict[str, Any]] = loop.get("devices", [])
 
             detector_count = 0
             module_count = 0
@@ -474,7 +478,7 @@ class FACPCapacityAuditor:
             for dev in devices:
                 quiescent_current_ma += float(dev.get("quiescent_ma", 0.8))
 
-            loop_summary: Dict[str, Any] = {
+            loop_summary: dict[str, Any] = {
                 "loop_id": loop_id,
                 "detector_count": detector_count,
                 "module_count": module_count,
@@ -565,7 +569,7 @@ class FACPCapacityAuditor:
 
         all_pass = len(loops_failing) == 0
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "loops_passing": loops_passing,
             "loops_failing": loops_failing,
             "all_pass": all_pass,
@@ -607,8 +611,8 @@ class FACPCapacityAuditor:
 # Module exports
 # ============================================================================
 __all__ = [
-    "FACP_Profile",
-    "FACPCapacityAuditor",
     "DETECTOR_DEVICE_TYPES",
+    "FACPCapacityAuditor",
+    "FACP_Profile",
     "get_default_profile",
 ]

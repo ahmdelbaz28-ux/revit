@@ -1,11 +1,8 @@
-"""
-Room Validator - Strict validation for FireAI V10
+"""Room Validator - Strict validation for FireAI V10
 Validates RoomSpec before analysis to prevent crashes and ensure data integrity.
 """
 
 from __future__ import annotations
-
-from typing import Set
 
 from .nfpa72_models import RoomSpec
 
@@ -15,7 +12,7 @@ from .nfpa72_models import RoomSpec
 # created an inconsistency: room_validator accepted them but RoomSpec
 # construction would reject them. Kitchen requires heat detectors (not smoke)
 # per NFPA 72 §17.6.4. Assembly requires special occupant load calculations.
-VALID_OCCUPANCY_TYPES: Set[str] = {
+VALID_OCCUPANCY_TYPES: set[str] = {
     "business",
     "educational",
     "factory",
@@ -40,12 +37,13 @@ VALID_OCCUPANCY_TYPES: Set[str] = {
 
 
 def validate_room_spec(room_spec: RoomSpec) -> None:
-    """
-    Validate RoomSpec before analysis.
+    """Validate RoomSpec before analysis.
+
     Args:
         room_spec: RoomSpec to validate
     Raises:
         ValueError: If validation fails
+
     """
     errors = []
 

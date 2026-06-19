@@ -1,5 +1,4 @@
-"""
-backend/services/elevation_service.py — Elevation data for FireAI.
+"""backend/services/elevation_service.py — Elevation data for FireAI.
 
 Provides terrain elevation from Open Topo Data API (free, no auth).
 Elevation is critical for:
@@ -22,6 +21,7 @@ References:
   - NFPA 72-2022 §10.14 (battery derating)
   - NFPA 92-2024 §6.4.2 (smoke control design)
   - IEC 60079-10-1:2015 Annex B (atmospheric pressure correction)
+
 """
 
 from __future__ import annotations
@@ -30,7 +30,6 @@ import logging
 import math
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -47,8 +46,7 @@ UNIVERSAL_GAS_CONSTANT = 8.31447  # J/(mol·K)
 
 @dataclass(frozen=True)
 class ElevationData:
-    """
-    Immutable elevation snapshot for engineering calculations.
+    """Immutable elevation snapshot for engineering calculations.
 
     Attributes:
         elevation_m: Terrain elevation above sea level in meters
@@ -57,13 +55,15 @@ class ElevationData:
         source: Data provenance ("open-topo-data" | "default")
         latitude: Latitude of the elevation observation
         longitude: Longitude of the elevation observation
+
     """
+
     elevation_m: float
     atmospheric_pressure_pa: float
     pressure_correction_factor: float
     source: str
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
 
     @property
     def is_default(self) -> bool:
@@ -72,8 +72,7 @@ class ElevationData:
 
 
 def calculate_atmospheric_pressure(elevation_m: float, temperature_k: float = 288.15) -> float:
-    """
-    Calculate atmospheric pressure at a given elevation using the barometric formula.
+    """Calculate atmospheric pressure at a given elevation using the barometric formula.
 
     P = P0 * exp(-M*g*h / (R*T))
 
@@ -94,6 +93,7 @@ def calculate_atmospheric_pressure(elevation_m: float, temperature_k: float = 28
 
     Returns:
         Atmospheric pressure in Pascals
+
     """
     exponent = -(MOLAR_MASS_AIR * GRAVITY_M_S2 * elevation_m) / (
         UNIVERSAL_GAS_CONSTANT * temperature_k
@@ -102,8 +102,7 @@ def calculate_atmospheric_pressure(elevation_m: float, temperature_k: float = 28
 
 
 class ElevationService:
-    """
-    Async elevation data provider using Open Topo Data API.
+    """Async elevation data provider using Open Topo Data API.
 
     API: https://api.opentopodata.org/v1/aster30m?locations=lat,lon
 
@@ -118,11 +117,11 @@ class ElevationService:
 
     OPENTOPO_URL = "https://api.opentopodata.org/v1/aster30m"
 
-    def __init__(self, cache_ttl: float = 86400.0, request_timeout: float = 10.0):
+    def __init__(self, cache_ttl: float = 86400.0, request_timeout: float = 10.0) -> None:
         self._cache: dict[str, tuple[ElevationData, float]] = {}
         self._cache_ttl = cache_ttl
         self._request_timeout = request_timeout
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -144,7 +143,7 @@ class ElevationService:
         """Generate cache key from coordinates (0.01° ≈ 1.1 km)."""
         return f"{latitude:.2f},{longitude:.2f}"
 
-    def _get_cached(self, latitude: float, longitude: float) -> Optional[ElevationData]:
+    def _get_cached(self, latitude: float, longitude: float) -> ElevationData | None:
         """Get cached elevation data if fresh."""
         key = self._cache_key(latitude, longitude)
         entry = self._cache.get(key)
@@ -168,14 +167,14 @@ class ElevationService:
     async def _fetch_open_topo_data(
         self, latitude: float, longitude: float
     ) -> ElevationData:
-        """
-        Fetch elevation from Open Topo Data API.
+        """Fetch elevation from Open Topo Data API.
 
         API: https://api.opentopodata.org/v1/aster30m?locations=lat,lon
         Uses ASTER GDEM 30m resolution global DEM.
 
         Returns:
             ElevationData with source="open-topo-data"
+
         """
         client = await self._get_client()
         response = await client.get(
@@ -214,8 +213,7 @@ class ElevationService:
         return data
 
     def _get_default(self, latitude: float, longitude: float) -> ElevationData:
-        """
-        Return conservative default elevation data (sea level).
+        """Return conservative default elevation data (sea level).
 
         Sea level = standard atmospheric pressure = safest for calculations.
         """
@@ -238,8 +236,7 @@ class ElevationService:
         latitude: float,
         longitude: float,
     ) -> ElevationData:
-        """
-        Fetch elevation for engineering calculations.
+        """Fetch elevation for engineering calculations.
 
         Strategy:
           1. Check cache — return if fresh (< 24h TTL)
@@ -252,6 +249,7 @@ class ElevationService:
 
         Returns:
             ElevationData (always succeeds, never raises)
+
         """
         if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
             logger.warning(
@@ -286,7 +284,7 @@ class ElevationService:
 
 
 # Singleton
-_elevation_service: Optional[ElevationService] = None
+_elevation_service: ElevationService | None = None
 
 
 def get_elevation_service() -> ElevationService:

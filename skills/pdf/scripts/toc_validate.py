@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-toc_validate.py - Table of Contents Validation for DOCX and PDF files.
+"""toc_validate.py - Table of Contents Validation for DOCX and PDF files.
 
 Checks DOCX and PDF files for TOC quality issues including missing TOC fields,
 empty placeholders, heading style mismatches, page break issues, and more.
@@ -33,6 +32,7 @@ Dependencies:
     - pikepdf (optional, for link annotation checks)
 """
 
+import contextlib
 import json
 import os
 import re
@@ -40,7 +40,7 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 import zipfile
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # XML namespace constants
@@ -82,13 +82,13 @@ GRAY_COLORS = {'808080', '999999', 'a0a0a0', 'a5a5a5', 'b0b0b0', 'c0c0c0',
 # ---------------------------------------------------------------------------
 # Result helpers
 # ---------------------------------------------------------------------------
-def make_item(code: str, message: str, severity: str) -> Dict[str, str]:
+def make_item(code: str, message: str, severity: str) -> dict[str, str]:
     """Create a single result item."""
     return {"code": code, "message": message, "severity": severity}
 
 
-def make_result(source: str, check_type: str, errors: List, warnings: List,
-                info: List) -> Dict[str, Any]:
+def make_result(source: str, check_type: str, errors: list, warnings: list,
+                info: list) -> dict[str, Any]:
     """Build the final result dict."""
     return {
         "pass": len(errors) == 0,
@@ -103,20 +103,19 @@ def make_result(source: str, check_type: str, errors: List, warnings: List,
 # ---------------------------------------------------------------------------
 # DOCX XML parsing helpers
 # ---------------------------------------------------------------------------
-def parse_docx_xml(docx_path: str) -> Optional[ET.Element]:
+def parse_docx_xml(docx_path: str) -> ET.Element | None:
     """Extract and parse document.xml from a .docx file.
 
     Returns the root Element or None if extraction fails.
     """
     try:
-        with zipfile.ZipFile(docx_path, 'r') as z:
-            with z.open('word/document.xml') as f:
-                return ET.parse(f).getroot()
+        with zipfile.ZipFile(docx_path, 'r') as z, z.open('word/document.xml') as f:
+            return ET.parse(f).getroot()
     except (zipfile.BadZipFile, KeyError, ET.ParseError):
         return None
 
 
-def get_all_paragraphs(root: ET.Element) -> List[ET.Element]:
+def get_all_paragraphs(root: ET.Element) -> list[ET.Element]:
     """Return all w:p elements in document order."""
     return root.findall('.//' + _w('p'))
 
@@ -135,7 +134,7 @@ def get_paragraph_text(para: ET.Element) -> str:
     return ''.join(texts)
 
 
-def get_paragraph_style(para: ET.Element) -> Optional[str]:
+def get_paragraph_style(para: ET.Element) -> str | None:
     """Get the pStyle val from a paragraph, or None."""
     pPr = para.find(_w('pPr'))
     if pPr is None:
@@ -146,7 +145,7 @@ def get_paragraph_style(para: ET.Element) -> Optional[str]:
     return pStyle.get(_w('val'))
 
 
-def is_heading_style(style_val: Optional[str]) -> bool:
+def is_heading_style(style_val: str | None) -> bool:
     """Check if a style value is a standard heading style."""
     if style_val is None:
         return False
@@ -158,12 +157,10 @@ def is_heading_style(style_val: Optional[str]) -> bool:
     if lower.startswith('heading'):
         return True
     # Numeric style IDs sometimes used for headings
-    if lower in ('1', '2', '3', '4'):
-        return True
-    return False
+    return lower in ('1', '2', '3', '4')
 
 
-def is_any_heading_style(style_val: Optional[str]) -> bool:
+def is_any_heading_style(style_val: str | None) -> bool:
     """Check if a style looks like any heading (standard or custom with 'heading')."""
     if style_val is None:
         return False
@@ -171,7 +168,7 @@ def is_any_heading_style(style_val: Optional[str]) -> bool:
     return lower.startswith('heading') or lower in ('1', '2', '3', '4')
 
 
-def is_standard_heading_style(style_val: Optional[str]) -> bool:
+def is_standard_heading_style(style_val: str | None) -> bool:
     """Check if a style is specifically a standard Heading1-4."""
     if style_val is None:
         return False
@@ -250,7 +247,7 @@ def docx_has_toc_field(root: ET.Element) -> bool:
     return False
 
 
-def find_toc_field_boundaries(root: ET.Element) -> Tuple[Optional[ET.Element], Optional[ET.Element], Optional[ET.Element]]:
+def find_toc_field_boundaries(root: ET.Element) -> tuple[ET.Element | None, ET.Element | None, ET.Element | None]:
     """Find the TOC field begin/separate/end fldChar elements.
 
     Returns (begin_elem, separate_elem, end_elem) — any may be None.
@@ -302,7 +299,7 @@ def find_toc_field_boundaries(root: ET.Element) -> Tuple[Optional[ET.Element], O
     return toc_begin_para_idx, toc_separate_para_idx, toc_end_para_idx
 
 
-def find_toc_field_boundaries_v2(root: ET.Element) -> Dict[str, Any]:
+def find_toc_field_boundaries_v2(root: ET.Element) -> dict[str, Any]:
     """Enhanced TOC boundary finder that works with nested fields.
 
     Returns dict with:
@@ -380,8 +377,8 @@ def find_toc_field_boundaries_v2(root: ET.Element) -> Dict[str, Any]:
     }
 
 
-def check_toc_has_content(root: ET.Element, separate_para_idx: Optional[int],
-                          end_para_idx: Optional[int]) -> bool:
+def check_toc_has_content(root: ET.Element, separate_para_idx: int | None,
+                          end_para_idx: int | None) -> bool:
     """Check if there are w:t elements between the separate and end markers.
 
     Looks at all paragraphs between the separate and end field char markers.
@@ -441,7 +438,7 @@ def _detect_language(texts: list) -> str:
     return 'zh' if chinese_count > total / 2 else 'en'
 
 
-def _get_heading_level(style_val: Optional[str]) -> int:
+def _get_heading_level(style_val: str | None) -> int:
     """Extract heading level (1-9) from a style value. Returns 0 if not a heading."""
     if style_val is None:
         return 0
@@ -456,7 +453,7 @@ def _get_heading_level(style_val: Optional[str]) -> int:
     return 0
 
 
-def check_run_hint_style(run: ET.Element) -> Tuple[bool, bool]:
+def check_run_hint_style(run: ET.Element) -> tuple[bool, bool]:
     """Check if a run has gray color and small font size.
 
     Returns (has_gray_color, has_small_font).
@@ -501,14 +498,14 @@ def check_run_hint_style(run: ET.Element) -> Tuple[bool, bool]:
 # ---------------------------------------------------------------------------
 # check-docx implementation
 # ---------------------------------------------------------------------------
-def check_docx(docx_path: str) -> Dict[str, Any]:
+def check_docx(docx_path: str) -> dict[str, Any]:
     """Run all DOCX TOC validation checks.
 
     Returns the result dict.
     """
-    errors: List[Dict] = []
-    warnings: List[Dict] = []
-    info: List[Dict] = []
+    errors: list[dict] = []
+    warnings: list[dict] = []
+    info: list[dict] = []
     source = os.path.basename(docx_path)
 
     # Parse document.xml
@@ -546,9 +543,8 @@ def check_docx(docx_path: str) -> Dict[str, Any]:
                 break
 
     # Also check for SDT-wrapped TOC (e.g. generated by fix-docx)
-    if not has_toc:
-        if docx_has_toc_field(root):
-            has_toc = True
+    if not has_toc and docx_has_toc_field(root):
+        has_toc = True
 
     # Count headings (all paragraphs with heading styles)
     all_heading_paras = []
@@ -684,14 +680,14 @@ def check_docx(docx_path: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # check-pdf implementation
 # ---------------------------------------------------------------------------
-def check_pdf(pdf_path: str) -> Dict[str, Any]:
+def check_pdf(pdf_path: str) -> dict[str, Any]:
     """Run all PDF TOC validation checks.
 
     Returns the result dict.
     """
-    errors: List[Dict] = []
-    warnings: List[Dict] = []
-    info: List[Dict] = []
+    errors: list[dict] = []
+    warnings: list[dict] = []
+    info: list[dict] = []
     source = os.path.basename(pdf_path)
 
     try:
@@ -863,14 +859,14 @@ def check_pdf(pdf_path: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # check-conversion implementation
 # ---------------------------------------------------------------------------
-def check_conversion(docx_path: str, pdf_path: str) -> Dict[str, Any]:
+def check_conversion(docx_path: str, pdf_path: str) -> dict[str, Any]:
     """Run DOCX→PDF conversion TOC consistency checks.
 
     Returns the result dict.
     """
-    errors: List[Dict] = []
-    warnings: List[Dict] = []
-    info: List[Dict] = []
+    errors: list[dict] = []
+    warnings: list[dict] = []
+    info: list[dict] = []
     source = f"{os.path.basename(docx_path)} → {os.path.basename(pdf_path)}"
 
     # Parse DOCX
@@ -1000,7 +996,7 @@ def check_conversion(docx_path: str, pdf_path: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # fix-docx implementation
 # ---------------------------------------------------------------------------
-def _find_toc_sdt_indices(body_elem) -> List[int]:
+def _find_toc_sdt_indices(body_elem) -> list[int]:
     """Find indices of SDT elements in body that contain TOC.
 
     Returns list of indices into body's direct children.
@@ -1029,7 +1025,7 @@ def _find_toc_sdt_indices(body_elem) -> List[int]:
     return indices
 
 
-def _find_toc_field_para_range(body_elem) -> Tuple[Optional[int], Optional[int]]:
+def _find_toc_field_para_range(body_elem) -> tuple[int | None, int | None]:
     """Find the range of paragraph indices that make up a TOC field code block.
 
     Returns (start_idx, end_idx) inclusive, or (None, None) if not found.
@@ -1077,7 +1073,7 @@ def _find_toc_field_para_range(body_elem) -> Tuple[Optional[int], Optional[int]]
     return start_idx, end_idx
 
 
-def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any]:
+def fix_docx(docx_path: str, output_path: str | None = None) -> dict[str, Any]:
     """Detect TOC issues in a DOCX and fix them, outputting a new DOCX file.
 
     Returns the result dict.
@@ -1086,7 +1082,7 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
 
-    info_list: List[Dict] = []
+    info_list: list[dict] = []
     source = os.path.basename(docx_path)
 
     if output_path is None:
@@ -1177,11 +1173,10 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
                 "errors": [], "warnings": [],
                 "info": [f"Document has {heading_count} headings (< 3), no TOC needed"]
             }
-        else:
-            # Need to generate TOC
-            info_list.append(f"No TOC found, generating new TOC with {heading_count} entries")
-            need_fix = True
-            fix_reason = "no_toc"
+        # Need to generate TOC
+        info_list.append(f"No TOC found, generating new TOC with {heading_count} entries")
+        need_fix = True
+        fix_reason = "no_toc"
     else:
         # Case 2 & 3: TOC exists, check if it's stale/placeholder
         need_fix = False
@@ -1356,10 +1351,8 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
         if toc_paras_to_remove:
             insert_before_idx = list(doc_body).index(toc_paras_to_remove[0])
             for p in toc_paras_to_remove:
-                try:
+                with contextlib.suppress(ValueError):
                     doc_body.remove(p)
-                except ValueError:
-                    pass
 
     # Step 2: Determine insertion point
     if insert_before_idx is None:
@@ -1376,10 +1369,7 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
                         if is_any_heading_style(sv):
                             first_heading_idx = ci
                             break
-        if first_heading_idx is not None:
-            insert_before_idx = first_heading_idx
-        else:
-            insert_before_idx = 0
+        insert_before_idx = first_heading_idx if first_heading_idx is not None else 0
 
     # Step 3: Build TOC paragraphs as OxmlElements and insert them
 
@@ -1767,7 +1757,7 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
 # ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
-def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_path: Optional[str] = None) -> Dict[str, Any]:
+def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_path: str | None = None) -> dict[str, Any]:
     """Update TOC page numbers in a fix-docx output using actual page positions from a PDF.
 
     Two-pass approach:
@@ -1778,6 +1768,7 @@ def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_pa
         fixed_docx_path: Path to the DOCX after fix-docx (has PAGEREF fields with estimated pages)
         pass1_pdf_path: Path to a PDF converted from the ORIGINAL docx (without TOC)
         output_path: Where to save the updated DOCX (defaults to overwrite fixed_docx_path)
+
     """
     import zipfile as zf_mod
 
@@ -1826,7 +1817,7 @@ def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_pa
     for i in range(total_pdf_pages):
         page_texts.append(pdf.pages[i].extract_text() or '')
 
-    heading_pages_pass1: Dict[str, int] = {}
+    heading_pages_pass1: dict[str, int] = {}
     for h in headings:
         for page_num, pt in enumerate(page_texts):
             if h['text'] in pt:
@@ -1855,7 +1846,7 @@ def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_pa
         # Pass1 already has some TOC pages, smaller offset needed
         offset = max(0, toc_pages - (first_heading_page - 2))
 
-    heading_page_map: Dict[str, int] = {}
+    heading_page_map: dict[str, int] = {}
     for h_text, orig_page in heading_pages_pass1.items():
         heading_page_map[h_text] = orig_page + offset
 
@@ -1931,7 +1922,7 @@ def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_pa
     }
 
 
-def print_usage():
+def print_usage() -> None:
     """Print usage information to stderr."""
     print("Usage:", file=sys.stderr)
     print("  toc_validate.py check-docx <file.docx>", file=sys.stderr)
@@ -1947,7 +1938,7 @@ def print_usage():
     print("           from the ORIGINAL docx (without TOC) as reference.", file=sys.stderr)
 
 
-def main():
+def main() -> None:
     """CLI entry point."""
     if len(sys.argv) < 2:
         print_usage()

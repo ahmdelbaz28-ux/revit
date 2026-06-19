@@ -1,6 +1,4 @@
-"""
-Validator for PowerPoint presentation XML files against XSD schemas.
-"""
+"""Validator for PowerPoint presentation XML files against XSD schemas."""
 
 import re
 
@@ -76,7 +74,7 @@ class PPTXSchemaValidator(BaseSchemaValidator):
 
         return all_valid
 
-    def validate_uuid_ids(self):
+    def validate_uuid_ids(self) -> bool:
         """Validate that ID attributes that look like UUIDs contain only hex values."""
         errors = []
         # UUID pattern: 8-4-4-4-12 hex digits with optional braces/hyphens
@@ -113,10 +111,9 @@ class PPTXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All UUID-like IDs contain valid hex values")
-            return True
+        if self.verbose:
+            print("PASSED - All UUID-like IDs contain valid hex values")
+        return True
 
     def _looks_like_uuid(self, value):
         """Check if a value has the general structure of a UUID."""
@@ -125,7 +122,7 @@ class PPTXSchemaValidator(BaseSchemaValidator):
         # Check if it's 32 hex-like characters (could include invalid hex chars)
         return len(clean_value) == 32 and all(c.isalnum() for c in clean_value)
 
-    def validate_slide_layout_ids(self):
+    def validate_slide_layout_ids(self) -> bool:
         """Validate that sldLayoutId elements in slide masters reference valid slide layouts."""
         errors = []
 
@@ -193,12 +190,11 @@ class PPTXSchemaValidator(BaseSchemaValidator):
                 "Remove invalid references or add missing slide layouts to the relationships file."
             )
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All slide layout IDs reference valid slide layouts")
-            return True
+        if self.verbose:
+            print("PASSED - All slide layout IDs reference valid slide layouts")
+        return True
 
-    def validate_no_duplicate_slide_layouts(self):
+    def validate_no_duplicate_slide_layouts(self) -> bool:
         """Validate that each slide has exactly one slideLayout reference."""
         errors = []
         slide_rels_files = list(self.unpacked_dir.glob("ppt/slides/_rels/*.xml.rels"))
@@ -231,12 +227,11 @@ class PPTXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All slides have exactly one slideLayout reference")
-            return True
+        if self.verbose:
+            print("PASSED - All slides have exactly one slideLayout reference")
+        return True
 
-    def validate_notes_slide_references(self):
+    def validate_notes_slide_references(self) -> bool:
         """Validate that each notesSlide file is referenced by only one slide."""
         errors = []
         notes_slide_references = {}  # Track which slides reference each notesSlide
@@ -299,10 +294,9 @@ class PPTXSchemaValidator(BaseSchemaValidator):
                 print(error)
             print("Each slide may optionally have its own slide file.")
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All notes slide references are unique")
-            return True
+        if self.verbose:
+            print("PASSED - All notes slide references are unique")
+        return True
 
 
 if __name__ == "__main__":

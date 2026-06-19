@@ -8,10 +8,7 @@ import urllib.request
 
 
 def generate_gift_card(product_name, price, evaluation, thank_you_json, return_gift_json, vibe_code, image_url, output_path="gift_card_result.html"):
-    """
-    生成现代风格的交互式礼品鉴定卡片。
-    """
-
+    """生成现代风格的交互式礼品鉴定卡片。."""
     # --- 图片转 Base64 逻辑 (保持上一步功能) ---
     final_image_src = image_url
     try:
@@ -239,7 +236,7 @@ def generate_gift_card(product_name, price, evaluation, thank_you_json, return_g
             f.write(html_content)
         return os.path.abspath(output_path)
     except Exception as e:
-        return f"Error saving HTML file: {str(e)}"
+        return f"Error saving HTML file: {e!s}"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate Gift Card HTML")

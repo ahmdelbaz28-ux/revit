@@ -1,5 +1,4 @@
-"""
-fireai.core.notification_appliance — NFPA 72 Notification Appliance Calculations
+"""fireai.core.notification_appliance — NFPA 72 Notification Appliance Calculations.
 =================================================================================
 
 Implements NFPA 72 Chapter 18 notification appliance engineering:
@@ -33,7 +32,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -91,12 +90,12 @@ class NotificationDevice:
     device_id: str
     device_type: str  # "horn", "strobe", "horn_strobe", "speaker"
     current_a: float  # Current draw in amperes
-    candela: Optional[float] = None  # For strobes
-    wattage: Optional[float] = None  # For speakers
+    candela: float | None = None  # For strobes
+    wattage: float | None = None  # For speakers
 
 
 def calculate_nac_load(
-    devices: List[NotificationDevice],
+    devices: list[NotificationDevice],
     nac_rating_a: float = 2.0,
 ) -> NACLoadResult:
     """Calculate total NAC circuit load and verify compliance.
@@ -116,6 +115,7 @@ def calculate_nac_load(
 
     Returns:
         NACLoadResult with total current, max allowed, compliance.
+
     """
     # Input validation — safety first
     if not math.isfinite(nac_rating_a) or nac_rating_a <= 0:
@@ -226,6 +226,7 @@ def calculate_spl(
 
     Returns:
         SPLResult with calculated SPL, compliance, and NFPA reference.
+
     """
     # Input validation
     if not math.isfinite(horn_rating_dba):
@@ -282,7 +283,7 @@ def min_horn_rating_for_room(
     room_dimension_m: float,
     ambient_dba: float = 45.0,
     is_mechanical_room: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculate minimum horn rating needed to cover a room.
 
     Uses the worst-case distance (room diagonal from corner to horn
@@ -295,6 +296,7 @@ def min_horn_rating_for_room(
 
     Returns:
         Dict with min_horn_rating_dba, coverage_distance, compliance info.
+
     """
     # V96 FIX: Invalid room dimension must return a clearly invalid horn rating,
     # not 0.0 dBA (which looks like a valid value and could lead to specifying
@@ -379,10 +381,11 @@ class StrobeResult:
       For multiple strobes, the candela per strobe may be reduced
       per NFPA 72 §18.5.5.2 — but never below 15 cd.
 
-    WARNING:
+    Warning:
       Strobe placement is critical. A strobe in a corridor must be
       visible from the entire corridor length. A strobe behind a
       partition may not be visible to occupants on the other side.
+
     """
 
     required_candela: float
@@ -401,7 +404,7 @@ def calculate_strobe_candela(
     room_area_m2: float,
     ceiling_height_m: float = 3.0,
     strobe_count: int = 1,
-    installed_candela: Optional[float] = None,
+    installed_candela: float | None = None,
 ) -> StrobeResult:
     """Calculate required strobe candela per NFPA 72 §18.5.5.
 
@@ -424,6 +427,7 @@ def calculate_strobe_candela(
 
     Returns:
         StrobeResult with required candela, per-strobe rating, compliance.
+
     """
     # Input validation
     if not math.isfinite(room_area_m2) or room_area_m2 <= 0:
@@ -529,13 +533,13 @@ class CorridorStrobeResult:
     end_distance_m: float
     is_compliant: bool
     min_candela_per: float
-    violations: List[str]
+    violations: list[str]
     nfpa_section: str
 
 
 def calculate_corridor_strobes(
     corridor_length_m: float,
-    strobe_count: Optional[int] = None,
+    strobe_count: int | None = None,
 ) -> CorridorStrobeResult:
     """Calculate strobe placement in a corridor.
 
@@ -553,6 +557,7 @@ def calculate_corridor_strobes(
 
     Returns:
         CorridorStrobeResult with count, spacing, compliance.
+
     """
     if not math.isfinite(corridor_length_m) or corridor_length_m <= 0:
         raise ValueError(f"corridor_length_m must be positive finite, got {corridor_length_m}")
@@ -630,13 +635,13 @@ class NotificationAssessment:
     """
 
     room_id: str
-    nac_result: Optional[NACLoadResult] = None
-    spl_result: Optional[SPLResult] = None
-    strobe_result: Optional[StrobeResult] = None
-    corridor_strobe: Optional[CorridorStrobeResult] = None
+    nac_result: NACLoadResult | None = None
+    spl_result: SPLResult | None = None
+    strobe_result: StrobeResult | None = None
+    corridor_strobe: CorridorStrobeResult | None = None
     is_compliant: bool = False  # V96 FIX: Fail-safe default — unevaluated must NOT claim compliance
-    violations: List[str] = field(default_factory=list)
-    nfpa_references: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
+    nfpa_references: list[str] = field(default_factory=list)
 
     def evaluate(self) -> None:
         """Run all compliance checks and aggregate results."""

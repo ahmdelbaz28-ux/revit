@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从学习资料生成知识点提取 prompt。
+"""从学习资料生成知识点提取 prompt。.
 
 用法：python3 generate_from_material.py <file_path> <document_id>
 

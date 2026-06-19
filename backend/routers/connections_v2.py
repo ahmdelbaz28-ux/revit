@@ -1,5 +1,4 @@
-"""
-FireAI Digital Twin - Connections V2 Router
+"""FireAI Digital Twin - Connections V2 Router.
 ============================================
 Relationship-based connections for the UniversalDataModel.
 Separate from the project-scoped cable connections router.
@@ -16,7 +15,6 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -35,9 +33,9 @@ router = APIRouter(prefix="/api/v1/connections", tags=["connections-v2"])
 
 @router.get("", response_model=ApiResponse[PaginatedData[ConnectionResponse]])
 async def list_connections(
-    project_id: Optional[str] = Query(None, description="Filter by project ID"),
-    element_id: Optional[str] = Query(None, description="Filter by element ID"),
-    relationship_type: Optional[str] = Query(None, description="Filter by relationship type"),
+    project_id: str | None = Query(None, description="Filter by project ID"),
+    element_id: str | None = Query(None, description="Filter by element ID"),
+    relationship_type: str | None = Query(None, description="Filter by relationship type"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     db: DatabaseService = Depends(get_db_service),

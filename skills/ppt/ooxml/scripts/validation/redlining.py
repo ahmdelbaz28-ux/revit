@@ -1,6 +1,4 @@
-"""
-Validator for tracked changes in Word documents.
-"""
+"""Validator for tracked changes in Word documents."""
 
 import subprocess
 import tempfile
@@ -11,7 +9,7 @@ from pathlib import Path
 class RedliningValidator:
     """Validator for tracked changes in Word documents."""
 
-    def __init__(self, unpacked_dir, original_docx, verbose=False):
+    def __init__(self, unpacked_dir, original_docx, verbose=False) -> None:
         self.unpacked_dir = Path(unpacked_dir)
         self.original_docx = Path(original_docx)
         self.verbose = verbose
@@ -19,7 +17,7 @@ class RedliningValidator:
             "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
         }
 
-    def validate(self):
+    def validate(self) -> bool:
         """Main validation method that returns True if valid, False otherwise."""
         # Verify unpacked directory exists and has correct structure
         modified_file = self.unpacked_dir / "word" / "document.xml"
@@ -214,7 +212,7 @@ class RedliningValidator:
 
         return None
 
-    def _remove_zai_tracked_changes(self, root):
+    def _remove_zai_tracked_changes(self, root) -> None:
         """Remove tracked changes authored by Z.AI from the XML root."""
         ins_tag = f"{{{self.namespaces['w']}}}ins"
         del_tag = f"{{{self.namespaces['w']}}}del"

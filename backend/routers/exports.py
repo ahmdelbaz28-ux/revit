@@ -1,5 +1,4 @@
-"""
-backend/routers/exports.py — DXF, Revit JSON, and IFC export endpoints.
+"""backend/routers/exports.py — DXF, Revit JSON, and IFC export endpoints.
 
 These endpoints export the full project data in standard BIM/CAD formats:
   - DXF: Using ezdxf for AutoCAD-compatible output
@@ -12,10 +11,11 @@ metadata about the project, export timestamp, and software version.
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -68,7 +68,7 @@ async def export_dxf(project_id: str):
         dxfattribs={"height": 1.0, "insert": (0, 50)},
     )
     msp.add_text(
-        f"Author: {project['author']} | Exported: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
+        f"Author: {project['author']} | Exported: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}",
         dxfattribs={"height": 0.5, "insert": (0, 48)},
     )
 
@@ -153,7 +153,7 @@ async def export_revit(project_id: str):
     revit_data = {
         "version": "1.0.0",
         "source": "FireAI Digital Twin",
-        "exportDate": datetime.now(timezone.utc).isoformat(),
+        "exportDate": datetime.now(UTC).isoformat(),
         "project": {
             "name": project["name"],
             "author": project["author"],
@@ -229,7 +229,7 @@ async def export_ifc(
             "note": "ifcopenshell not available. Returning IFC-structured JSON.",
             "version": version,
             "source": "FireAI Digital Twin",
-            "exportDate": datetime.now(timezone.utc).isoformat(),
+            "exportDate": datetime.now(UTC).isoformat(),
             "project": {
                 "name": project["name"],
                 "author": project["author"],
@@ -316,10 +316,8 @@ async def export_ifc(
                 ifc_bytes = f.read()
         finally:
             import os as _os
-            try:
+            with contextlib.suppress(OSError):
                 _os.unlink(tmp_path)
-            except OSError:
-                pass
 
         return StreamingResponse(
             io.BytesIO(ifc_bytes),

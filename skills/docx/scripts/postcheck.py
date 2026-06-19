@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-postcheck.py — Document business rule self-check script
+"""postcheck.py — Document business rule self-check script.
 
 Unlike traditional OpenXML Schema validation, this script does not check XML legality.
 Instead, it checks document "visual quality" and "typesetting correctness" — issues visible to the human eye.
@@ -43,7 +42,7 @@ NS = {
 
 
 class CheckResult:
-    def __init__(self, name: str, passed: bool, message: str, severity: str = "warning"):
+    def __init__(self, name: str, passed: bool, message: str, severity: str = "warning") -> None:
         self.name = name
         self.passed = passed
         self.message = message
@@ -57,19 +56,19 @@ class CheckResult:
             "severity": self.severity,
         }
 
-    def __str__(self):
+    def __str__(self) -> str:
         icon = "✅" if self.passed else ("❌" if self.severity == "error" else "⚠️")
         return f"{icon} [{self.name}] {self.message}"
 
 
 def read_document_xml(docx_path: str) -> ET.Element:
-    """Read document.xml and return the root element"""
+    """Read document.xml and return the root element."""
     with zipfile.ZipFile(docx_path, "r") as z:
         return ET.fromstring(z.read("word/document.xml"))
 
 
 def get_sections(root: ET.Element) -> list:
-    """Extract all sections (located via sectPr)"""
+    """Extract all sections (located via sectPr)."""
     body = root.find(".//w:body", NS)
     if body is None:
         return []
@@ -101,7 +100,7 @@ def get_sections(root: ET.Element) -> list:
 
 
 def check_blank_pages(root: ET.Element) -> CheckResult:
-    """Detect excess blank pages — multi-pattern detection"""
+    """Detect excess blank pages — multi-pattern detection."""
     body = root.find(".//w:body", NS)
     paragraphs = body.findall("w:p", NS)
     issues = []
@@ -215,7 +214,7 @@ def check_blank_pages(root: ET.Element) -> CheckResult:
 
 
 def check_line_spacing(root: ET.Element) -> CheckResult:
-    """Check body paragraph line spacing consistency"""
+    """Check body paragraph line spacing consistency."""
     body = root.find(".//w:body", NS)
     paragraphs = body.findall(".//w:p", NS)
 
@@ -248,7 +247,7 @@ def check_line_spacing(root: ET.Element) -> CheckResult:
         return CheckResult("line-spacing", True, "No body paragraphs")
 
     if len(spacing_values) <= 1:
-        dominant = list(spacing_values.keys())[0] if spacing_values else "default"
+        dominant = next(iter(spacing_values.keys())) if spacing_values else "default"
         return CheckResult("line-spacing", True, f"Line spacing uniform (line={dominant})")
 
     # Find the most common line spacing
@@ -268,7 +267,7 @@ def check_line_spacing(root: ET.Element) -> CheckResult:
 
 
 def check_image_overflow(root: ET.Element) -> CheckResult:
-    """Check whether image width may exceed page bounds"""
+    """Check whether image width may exceed page bounds."""
     # Get page width
     sect_pr = root.find(".//w:body/w:sectPr", NS)
     page_width = 11906  # A4 default
@@ -415,7 +414,7 @@ def check_image_aspect_ratio(docx_path: str, root: ET.Element) -> CheckResult:
 
 
 def check_font_fallback(root: ET.Element) -> CheckResult:
-    """Check whether potentially missing fonts are used"""
+    """Check whether potentially missing fonts are used."""
     SAFE_FONTS = {
         # Chinese
         "宋体", "SimSun", "黑体", "SimHei", "微软雅黑", "Microsoft YaHei",
@@ -450,7 +449,7 @@ def check_font_fallback(root: ET.Element) -> CheckResult:
 
 
 def check_heading_levels(root: ET.Element) -> CheckResult:
-    """Check whether headings skip levels"""
+    """Check whether headings skip levels."""
     body = root.find(".//w:body", NS)
     heading_levels = []
 
@@ -489,7 +488,7 @@ def check_heading_levels(root: ET.Element) -> CheckResult:
 
 
 def check_shading_type(root: ET.Element) -> CheckResult:
-    """Check whether ShadingType.SOLID is misused"""
+    """Check whether ShadingType.SOLID is misused."""
     shadings = root.findall(".//w:shd", NS)
     solid_count = 0
 
@@ -608,9 +607,9 @@ def check_toc(root: ET.Element, docx_path: str = "") -> CheckResult:
 
                     if missing_outline:
                         issues.append(
-                            "TOC_OUTLINE_MISSING: %s style(s) missing outlineLvl — "
+                            "TOC_OUTLINE_MISSING: {} style(s) missing outlineLvl — "
                             "Word TOC update won't find these headings. "
-                            "Run add_toc_placeholders.py to fix" % ", ".join(missing_outline)
+                            "Run add_toc_placeholders.py to fix".format(", ".join(missing_outline))
                         )
 
                 # Check 4: updateFields not set to true
@@ -633,8 +632,7 @@ def check_toc(root: ET.Element, docx_path: str = "") -> CheckResult:
     if not issues:
         if has_toc:
             return CheckResult("toc", True, "TOC field present and update-ready")
-        else:
-            return CheckResult("toc", True, "No TOC needed")
+        return CheckResult("toc", True, "No TOC needed")
 
     severity = "error" if any(k in i for i in issues for k in ("FIELD_MISSING", "NO_HEADINGS", "OUTLINE_MISSING")) else "warning"
     return CheckResult("toc", False, "; ".join(issues[:5]), severity)
@@ -723,7 +721,7 @@ def check_cover_overflow(root: ET.Element) -> CheckResult:
 
 
 def run_all_checks(docx_path: str) -> list[CheckResult]:
-    """Run all checks"""
+    """Run all checks."""
     root = read_document_xml(docx_path)
 
     checks = [
@@ -763,7 +761,7 @@ def run_all_checks(docx_path: str) -> list[CheckResult]:
     return results
 
 
-def main():
+def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="docx business rule self-check")
     parser.add_argument("docx_path", help="Path to the .docx file to check")

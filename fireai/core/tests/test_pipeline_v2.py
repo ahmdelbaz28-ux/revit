@@ -1,5 +1,4 @@
-"""
-test_pipeline_v2.py — Comprehensive tests for fireai.core.pipeline
+"""test_pipeline_v2.py — Comprehensive tests for fireai.core.pipeline.
 ===================================================================
 
 Focus areas for coverage improvement (71% → 80%):
@@ -27,6 +26,7 @@ those optional modules to be installed.
 from __future__ import annotations
 
 import json
+from typing import NoReturn
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -99,13 +99,13 @@ def long_polygon():
 
 
 class TestStageResult:
-    def test_defaults(self):
+    def test_defaults(self) -> None:
         sr = StageResult(stage_name="S0", success=True, duration_ms=1.5)
         assert sr.data == {}
         assert sr.errors == []
         assert sr.warnings == []
 
-    def test_with_data(self):
+    def test_with_data(self) -> None:
         sr = StageResult(
             stage_name="S1",
             success=True,
@@ -120,7 +120,7 @@ class TestStageResult:
 
 
 class TestPipelineResult:
-    def test_to_dict(self, valid_payload):
+    def test_to_dict(self, valid_payload) -> None:
         result = analyze_room(valid_payload)
         d = result.to_dict()
         assert isinstance(d, dict)
@@ -134,20 +134,20 @@ class TestPipelineResult:
             assert "stage" in d["stages"][0]
             assert "success" in d["stages"][0]
 
-    def test_to_json(self, valid_payload):
+    def test_to_json(self, valid_payload) -> None:
         result = analyze_room(valid_payload)
         j = result.to_json()
         parsed = json.loads(j)
         assert isinstance(parsed, dict)
         assert parsed["room_id"] == "R-101"
 
-    def test_to_json_custom_indent(self, valid_payload):
+    def test_to_json_custom_indent(self, valid_payload) -> None:
         result = analyze_room(valid_payload)
         j = result.to_json(indent=4)
         # 4-space indent means lines start with 4 spaces for first nested level
         assert "    " in j
 
-    def test_cable_routing_default_none(self):
+    def test_cable_routing_default_none(self) -> None:
         pr = PipelineResult(
             run_id="test", room_id="R-1", success=True,
             release_status="green", safety_tier="PROOF_VERIFIED",
@@ -171,7 +171,7 @@ class TestPipelineResult:
 
 
 class TestRunStage:
-    def test_success(self):
+    def test_success(self) -> None:
         def fn():
             return {"a": 1}
 
@@ -181,29 +181,29 @@ class TestRunStage:
         assert sr.stage_name == "test"
         assert sr.duration_ms >= 0
 
-    def test_success_non_dict_return(self):
+    def test_success_non_dict_return(self) -> None:
         """Non-dict result gets wrapped in {'result': ...}."""
         sr = _run_stage("test", lambda: 42)
         assert sr.success is True
         assert sr.data == {"result": 42}
 
-    def test_contract_violation(self):
-        def fn():
+    def test_contract_violation(self) -> None:
+        def fn() -> NoReturn:
             raise ContractViolation("bad input", field="x", value=0)
 
         sr = _run_stage("test", fn)
         assert sr.success is False
         assert any("CONTRACT_VIOLATION" in e for e in sr.errors)
 
-    def test_generic_exception(self):
-        def fn():
+    def test_generic_exception(self) -> None:
+        def fn() -> NoReturn:
             raise RuntimeError("boom")
 
         sr = _run_stage("test", fn)
         assert sr.success is False
         assert any("RuntimeError" in e for e in sr.errors)
 
-    def test_passes_args_kwargs(self):
+    def test_passes_args_kwargs(self) -> None:
         def fn(a, b=0):
             return {"sum": a + b}
 
@@ -217,18 +217,18 @@ class TestRunStage:
 
 
 class TestStage0Contract:
-    def test_valid_payload(self, valid_payload):
+    def test_valid_payload(self, valid_payload) -> None:
         result = _stage0_contract(valid_payload)
         assert result["validated_room_id"] == "R-101"
         assert result["ceiling_height_m"] == 3.0
         assert result["detector_type"] == "smoke"
         assert "validated_payload" in result
 
-    def test_invalid_missing_field(self):
+    def test_invalid_missing_field(self) -> None:
         with pytest.raises(ContractViolation):
             _stage0_contract({"room_id": "R-1"})
 
-    def test_nan_in_payload(self):
+    def test_nan_in_payload(self) -> None:
         with pytest.raises(ContractViolation):
             _stage0_contract({
                 "room_id": "R-1",
@@ -237,7 +237,7 @@ class TestStage0Contract:
                 "detector_type": "smoke",
             })
 
-    def test_empty_room_id(self):
+    def test_empty_room_id(self) -> None:
         with pytest.raises(ContractViolation):
             _stage0_contract({
                 "room_id": "  ",
@@ -253,26 +253,26 @@ class TestStage0Contract:
 
 
 class TestStage1NfpaSpacing:
-    def test_smoke_detector(self):
+    def test_smoke_detector(self) -> None:
         result = _stage1_nfpa_spacing(3.0, "smoke", 80.0)
         assert result["max_spacing_m"] > 0
         assert result["coverage_radius_m"] > 0
         assert result["estimated_min_count"] >= 1
         assert result["area_per_detector_m2"] is not None
 
-    def test_heat_detector(self):
+    def test_heat_detector(self) -> None:
         result = _stage1_nfpa_spacing(3.0, "heat", 80.0)
         assert result["max_spacing_m"] > 0
         assert result["coverage_radius_m"] > 0
 
-    def test_estimate_error_propagation(self):
+    def test_estimate_error_propagation(self) -> None:
         """M-3 FIX: Invalid room area should produce error in result."""
         result = _stage1_nfpa_spacing(3.0, "smoke", 0.0)
         assert "error" in result
         assert result["estimated_min_count"] == 0
         assert result["area_per_detector_m2"] is None
 
-    def test_negative_area(self):
+    def test_negative_area(self) -> None:
         result = _stage1_nfpa_spacing(3.0, "smoke", -5.0)
         assert "error" in result
 
@@ -283,7 +283,7 @@ class TestStage1NfpaSpacing:
 
 
 class TestStage2Placement:
-    def test_geometric_fallback(self, validated_payload):
+    def test_geometric_fallback(self, validated_payload) -> None:
         """When DensityOptimizer import fails, hex fallback is used."""
         with patch.dict("sys.modules", {"fireai.core.spatial_engine.density_optimizer": None}):
             result = _stage2_placement(validated_payload, 6.3)
@@ -292,7 +292,7 @@ class TestStage2Placement:
         assert result["detector_count"] >= 1
         assert result["coverage_pct"] > 0.0
 
-    def test_fallback_reason(self, validated_payload):
+    def test_fallback_reason(self, validated_payload) -> None:
         with patch.dict("sys.modules", {"fireai.core.spatial_engine.density_optimizer": None}):
             result = _stage2_placement(validated_payload, 6.3)
         assert "fallback_reason" in result
@@ -304,32 +304,32 @@ class TestStage2Placement:
 
 
 class TestHexGridPlacement:
-    def test_empty_polygon(self):
+    def test_empty_polygon(self) -> None:
         assert _hex_grid_placement([], 6.3) == []
 
-    def test_zero_radius(self):
+    def test_zero_radius(self) -> None:
         assert _hex_grid_placement(RECT_POLYGON, 0) == []
 
-    def test_negative_radius(self):
+    def test_negative_radius(self) -> None:
         assert _hex_grid_placement(RECT_POLYGON, -1) == []
 
-    def test_returns_positions(self):
+    def test_returns_positions(self) -> None:
         positions = _hex_grid_placement(RECT_POLYGON, 6.3)
         assert len(positions) >= 1
         for x, y in positions:
             assert isinstance(x, float)
             assert isinstance(y, float)
 
-    def test_positions_inside_polygon(self):
+    def test_positions_inside_polygon(self) -> None:
         positions = _hex_grid_placement(RECT_POLYGON, 6.3)
         for x, y in positions:
             assert _point_in_polygon(x, y, RECT_POLYGON), f"({x},{y}) not in polygon"
 
-    def test_small_room_gives_at_least_one(self, small_polygon):
+    def test_small_room_gives_at_least_one(self, small_polygon) -> None:
         positions = _hex_grid_placement(small_polygon, 6.3)
         assert len(positions) >= 1
 
-    def test_large_radius_fewer_detectors(self):
+    def test_large_radius_fewer_detectors(self) -> None:
         p1 = _hex_grid_placement(RECT_POLYGON, 6.3)
         p2 = _hex_grid_placement(RECT_POLYGON, 20.0)
         assert len(p2) <= len(p1)
@@ -341,24 +341,24 @@ class TestHexGridPlacement:
 
 
 class TestPointInPolygon:
-    def test_inside(self):
+    def test_inside(self) -> None:
         assert _point_in_polygon(5, 4, RECT_POLYGON) is True
 
-    def test_outside(self):
+    def test_outside(self) -> None:
         assert _point_in_polygon(15, 4, RECT_POLYGON) is False
 
-    def test_on_edge(self):
+    def test_on_edge(self) -> None:
         """Point on the boundary may be inside or outside (ray-casting)."""
         # This tests the ray-casting algorithm's boundary behavior
         result = _point_in_polygon(0, 0, RECT_POLYGON)
         assert isinstance(result, bool)
 
-    def test_triangle(self):
+    def test_triangle(self) -> None:
         tri = [(0, 0), (10, 0), (5, 10)]
         assert _point_in_polygon(5, 3, tri) is True
         assert _point_in_polygon(5, 15, tri) is False
 
-    def test_concave_polygon(self):
+    def test_concave_polygon(self) -> None:
         """L-shaped polygon — the inner corner is OUTSIDE."""
         poly = [(0, 0), (6, 0), (6, 3), (3, 3), (3, 6), (0, 6)]
         assert _point_in_polygon(1, 1, poly) is True   # inside lower-left
@@ -373,37 +373,37 @@ class TestPointInPolygon:
 
 
 class TestEstimateCoverage:
-    def test_no_positions(self):
+    def test_no_positions(self) -> None:
         assert _estimate_coverage([], RECT_POLYGON, 6.3) == 0.0
 
-    def test_no_polygon(self):
+    def test_no_polygon(self) -> None:
         assert _estimate_coverage([(5, 4)], [], 6.3) == 0.0
 
-    def test_full_coverage(self):
+    def test_full_coverage(self) -> None:
         # Single detector in the center of a small room
         positions = [(5, 4)]
         pct = _estimate_coverage(positions, RECT_POLYGON, 20.0)
         assert pct == 100.0  # Radius 20 > room diagonal
 
-    def test_partial_coverage(self):
+    def test_partial_coverage(self) -> None:
         positions = [(2, 2)]
         pct = _estimate_coverage(positions, RECT_POLYGON, 6.3)
         assert 0.0 < pct < 100.0
 
-    def test_clamp_to_100(self):
+    def test_clamp_to_100(self) -> None:
         """V96 FIX: Coverage must not exceed 100.0."""
         positions = [(5, 4), (5, 4)]  # Overlapping detectors
         pct = _estimate_coverage(positions, RECT_POLYGON, 20.0)
         assert pct <= 100.0
 
-    def test_custom_step(self):
+    def test_custom_step(self) -> None:
         pct1 = _estimate_coverage([(5, 4)], RECT_POLYGON, 6.3, step=0.5)
         pct2 = _estimate_coverage([(5, 4)], RECT_POLYGON, 6.3, step=1.0)
         # Both should be valid coverage estimates
         assert 0.0 <= pct1 <= 100.0
         assert 0.0 <= pct2 <= 100.0
 
-    def test_large_room_adaptive_step(self):
+    def test_large_room_adaptive_step(self) -> None:
         """Large rooms use coarser grid step for performance."""
         big_poly = [(0, 0), (20, 0), (20, 20), (0, 20)]
         positions = [(10, 10)]
@@ -417,7 +417,7 @@ class TestEstimateCoverage:
 
 
 class TestStage3VerifyCoverage:
-    def test_fallback_grid_estimate(self):
+    def test_fallback_grid_estimate(self) -> None:
         """When ExactCoverageEngine is unavailable, uses grid estimate."""
         with patch.dict("sys.modules", {"fireai.core.spatial_engine.exact_coverage": None}):
             result = _stage3_verify_coverage(
@@ -427,7 +427,7 @@ class TestStage3VerifyCoverage:
         assert "coverage_pct" in result
         assert 0.0 <= result["coverage_pct"] <= 100.0
 
-    def test_is_compliant_flag(self):
+    def test_is_compliant_flag(self) -> None:
         with patch.dict("sys.modules", {"fireai.core.spatial_engine.exact_coverage": None}):
             result = _stage3_verify_coverage(
                 [(5, 4)], RECT_POLYGON, 6.3, "R-101"
@@ -442,17 +442,17 @@ class TestStage3VerifyCoverage:
 
 
 class TestStage4SafetyClassify:
-    def test_perfect_coverage(self):
+    def test_perfect_coverage(self) -> None:
         result = _stage4_safety_classify(100.0, True, False, 0)
         assert result["safety_tier"] is not None
         assert result["can_submit"] is True
 
-    def test_low_coverage(self):
+    def test_low_coverage(self) -> None:
         result = _stage4_safety_classify(50.0, False, True, 2)
         assert result["safety_tier"] is not None
         assert result["requires_fpe_review"] is True or result["can_submit"] is False
 
-    def test_with_wall_violations(self):
+    def test_with_wall_violations(self) -> None:
         result = _stage4_safety_classify(99.5, True, False, 1)
         assert result["safety_tier"] is not None
 
@@ -463,21 +463,21 @@ class TestStage4SafetyClassify:
 
 
 class TestStage5ReleaseGates:
-    def test_basic_call(self, validated_payload):
+    def test_basic_call(self, validated_payload) -> None:
         nfpa_result = {"is_compliant": True, "violations": []}
         result = _stage5_release_gates(
             validated_payload, nfpa_result, 100.0, True, "PROOF_VERIFIED", 0
         )
         assert "release_status" in result
 
-    def test_with_violations(self, validated_payload):
+    def test_with_violations(self, validated_payload) -> None:
         nfpa_result = {"is_compliant": False, "violations": ["Coverage too low"]}
         result = _stage5_release_gates(
             validated_payload, nfpa_result, 85.0, False, "FALLBACK_USED", 1
         )
         assert result.get("release_status") in ("green", "blocked")
 
-    def test_with_battery_result(self, validated_payload):
+    def test_with_battery_result(self, validated_payload) -> None:
         from fireai.core.nfpa72_engine import BatteryResult
 
         battery = BatteryResult(
@@ -494,7 +494,7 @@ class TestStage5ReleaseGates:
         )
         assert "release_status" in result
 
-    def test_with_loop_data(self, validated_payload):
+    def test_with_loop_data(self, validated_payload) -> None:
         nfpa_result = {"is_compliant": True, "violations": []}
         result = _stage5_release_gates(
             validated_payload, nfpa_result, 100.0, True, "PROOF_VERIFIED", 0,
@@ -509,7 +509,7 @@ class TestStage5ReleaseGates:
 
 
 class TestStage6Evidence:
-    def test_basic(self, validated_payload):
+    def test_basic(self, validated_payload) -> None:
         spacing_result = {
             "max_spacing_m": 9.1,
             "coverage_radius_m": 6.3,
@@ -524,7 +524,7 @@ class TestStage6Evidence:
         assert "nfpa_references" in result
         assert len(result["nfpa_references"]) >= 2
 
-    def test_wall_violation_adds_reference(self, validated_payload):
+    def test_wall_violation_adds_reference(self, validated_payload) -> None:
         spacing_result = {
             "max_spacing_m": 9.1,
             "coverage_radius_m": 6.3,
@@ -546,14 +546,14 @@ class TestStage6Evidence:
 class TestStage7CableRouting:
     """Tests for _stage7_cable_routing covering all major branches."""
 
-    def test_import_unavailable(self, validated_payload):
+    def test_import_unavailable(self, validated_payload) -> None:
         """When cable_router import fails, returns 'unavailable' status."""
         with patch.dict("sys.modules", {"fireai.core.cable_router": None}):
             result = _stage7_cable_routing(validated_payload, [(5, 4), (8, 6)])
         assert result["status"] == "unavailable"
         assert "reason" in result
 
-    def test_fewer_than_2_positions(self, validated_payload):
+    def test_fewer_than_2_positions(self, validated_payload) -> None:
         """Fewer than 2 positions → skipped, no routing needed."""
         result = _stage7_cable_routing(validated_payload, [(5, 4)])
         # This may hit the import error first if modules are unavailable
@@ -577,7 +577,7 @@ class TestStage7CableRouting:
         assert result["reason"] == "fewer than 2 detector positions — no routing needed"
         assert result["routes"] == []
 
-    def test_no_positions(self, validated_payload):
+    def test_no_positions(self, validated_payload) -> None:
         """Empty positions list → skipped."""
         with patch.dict("sys.modules", {
             "fireai.core.cable_router": MagicMock(),
@@ -587,7 +587,7 @@ class TestStage7CableRouting:
             result = _stage7_cable_routing(validated_payload, [])
         assert result["status"] == "skipped"
 
-    def test_building_model_construction_fails(self, validated_payload):
+    def test_building_model_construction_fails(self, validated_payload) -> None:
         """When build_abstract_model() raises, cable routing returns 'failed'."""
         mock_cable_router_mod = MagicMock()
         mock_cable_router_mod.build_abstract_model.side_effect = RuntimeError("model failed")
@@ -609,7 +609,7 @@ class TestStage7CableRouting:
         if result["status"] == "failed":
             assert result.get("safety_block") is True
 
-    def test_no_building_model_available(self, validated_payload):
+    def test_no_building_model_available(self, validated_payload) -> None:
         """When build_abstract_model returns None, routing returns 'failed' with safety_block."""
         mock_cable_router_mod = MagicMock()
         mock_cable_router_mod.build_abstract_model.return_value = None
@@ -629,7 +629,7 @@ class TestStage7CableRouting:
             assert result.get("safety_block") is True
             assert "routes" in result
 
-    def test_generic_exception(self, validated_payload):
+    def test_generic_exception(self, validated_payload) -> None:
         """Any generic exception during routing → status 'failed' with safety_block."""
         mock_cable_router_mod = MagicMock()
         # Make CableRouter constructor raise
@@ -652,7 +652,7 @@ class TestStage7CableRouting:
         if result["status"] == "failed":
             assert result.get("safety_block") is True
 
-    def test_no_polygon_uses_area_for_bbox(self):
+    def test_no_polygon_uses_area_for_bbox(self) -> None:
         """When polygon is empty, bounding box is derived from area."""
         payload = {
             "room_id": "R-200",
@@ -669,7 +669,7 @@ class TestStage7CableRouting:
         # Should be some status — not crash
         assert "status" in result
 
-    def test_custom_room_z(self, validated_payload):
+    def test_custom_room_z(self, validated_payload) -> None:
         """Custom room_z_m parameter is accepted."""
         result = _stage7_cable_routing(
             validated_payload, [(5, 4)], room_z_m=1.0
@@ -686,7 +686,7 @@ class TestStage7CableRouting:
 class TestStage8ConduitFittings:
     """Tests for _stage8_conduit_fittings covering all branches."""
 
-    def test_import_unavailable(self, validated_payload):
+    def test_import_unavailable(self, validated_payload) -> None:
         """When conduit module is not available, returns 'unavailable'."""
         with patch.dict("sys.modules", {"fireai.conduit": None}):
             result = _stage8_conduit_fittings(
@@ -695,7 +695,7 @@ class TestStage8ConduitFittings:
         assert result["status"] == "unavailable"
         assert "reason" in result
 
-    def test_fewer_than_2_positions(self, validated_payload):
+    def test_fewer_than_2_positions(self, validated_payload) -> None:
         """< 2 positions → skipped."""
         mock_conduit = MagicMock()
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
@@ -705,7 +705,7 @@ class TestStage8ConduitFittings:
         assert result["status"] == "skipped"
         assert "runs" in result
 
-    def test_empty_positions(self, validated_payload):
+    def test_empty_positions(self, validated_payload) -> None:
         """Empty positions → skipped."""
         mock_conduit = MagicMock()
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
@@ -714,7 +714,7 @@ class TestStage8ConduitFittings:
             )
         assert result["status"] == "skipped"
 
-    def test_fill_error_upsizes_trade(self, validated_payload):
+    def test_fill_error_upsizes_trade(self, validated_payload) -> None:
         """When calculate_fill returns error, trade size is increased to THREE_QTR."""
         mock_conduit = MagicMock()
 
@@ -745,7 +745,7 @@ class TestStage8ConduitFittings:
         assert len(result["runs"]) == 1
         assert result["runs"][0]["status"] == "routing_failed"
 
-    def test_routing_failure(self, validated_payload):
+    def test_routing_failure(self, validated_payload) -> None:
         """When orthogonal_astar returns error, segment is marked routing_failed."""
         mock_conduit = MagicMock()
 
@@ -773,7 +773,7 @@ class TestStage8ConduitFittings:
         assert result["runs"][0]["status"] == "routing_failed"
         assert result["runs"][0]["reason"] == "blocked path"
 
-    def test_fitting_failure(self, validated_payload):
+    def test_fitting_failure(self, validated_payload) -> None:
         """When place_fittings returns error, segment is marked fitting_failed."""
         mock_conduit = MagicMock()
 
@@ -805,7 +805,7 @@ class TestStage8ConduitFittings:
         assert result["status"] == "completed"
         assert result["runs"][0]["status"] == "fitting_failed"
 
-    def test_compliant_run(self, validated_payload):
+    def test_compliant_run(self, validated_payload) -> None:
         """When run is compliant, all_compliant stays True."""
         mock_conduit = MagicMock()
 
@@ -849,7 +849,7 @@ class TestStage8ConduitFittings:
         assert result["runs"][0]["status"] == "completed"
         assert result["runs"][0]["is_compliant"] is True
 
-    def test_non_compliant_run(self, validated_payload):
+    def test_non_compliant_run(self, validated_payload) -> None:
         """When run is not compliant, all_compliant becomes False."""
         mock_conduit = MagicMock()
 
@@ -892,7 +892,7 @@ class TestStage8ConduitFittings:
         assert result["total_violations"] > 0
         assert result["runs"][0]["is_compliant"] is False
 
-    def test_multiple_segments(self, validated_payload):
+    def test_multiple_segments(self, validated_payload) -> None:
         """Multiple detector pairs produce multiple run segments."""
         mock_conduit = MagicMock()
 
@@ -930,7 +930,7 @@ class TestStage8ConduitFittings:
             )
         assert len(result["runs"]) == 2  # 3 positions → 2 segments
 
-    def test_cable_od_from_cable_routing_data(self, validated_payload):
+    def test_cable_od_from_cable_routing_data(self, validated_payload) -> None:
         """cable_routing_data can provide cable_od_in."""
         mock_conduit = MagicMock()
 
@@ -977,34 +977,34 @@ class TestStage8ConduitFittings:
 
 
 class TestCountWallViolations:
-    def test_no_positions(self):
+    def test_no_positions(self) -> None:
         assert _count_wall_violations([], RECT_POLYGON) == 0
 
-    def test_no_polygon(self):
+    def test_no_polygon(self) -> None:
         assert _count_wall_violations([(5, 4)], []) == 0
 
-    def test_center_position_no_violation(self):
+    def test_center_position_no_violation(self) -> None:
         # Position well inside polygon, > 0.1m from any wall
         violations = _count_wall_violations([(5, 4)], RECT_POLYGON)
         assert violations == 0
 
-    def test_close_to_wall_violation(self):
+    def test_close_to_wall_violation(self) -> None:
         # Position very close to wall edge (0.05m < 0.1m)
         violations = _count_wall_violations([(0.05, 4)], RECT_POLYGON)
         assert violations >= 1
 
-    def test_custom_min_dist(self):
+    def test_custom_min_dist(self) -> None:
         # With larger min_dist, more positions may violate
         v1 = _count_wall_violations([(1, 4)], RECT_POLYGON, min_dist_m=0.5)
         v2 = _count_wall_violations([(1, 4)], RECT_POLYGON, min_dist_m=2.0)
         assert v2 >= v1
 
-    def test_multiple_positions(self):
+    def test_multiple_positions(self) -> None:
         positions = [(5, 4), (0.05, 4)]  # One OK, one violation
         violations = _count_wall_violations(positions, RECT_POLYGON)
         assert violations >= 1
 
-    def test_degenerate_segment(self):
+    def test_degenerate_segment(self) -> None:
         """Zero-length polygon edge (same start/end point)."""
         degenerate_poly = [(5, 5), (5, 5), (10, 5), (10, 10)]
         # Should not crash
@@ -1018,7 +1018,7 @@ class TestCountWallViolations:
 
 
 class TestFailedResult:
-    def test_basic(self):
+    def test_basic(self) -> None:
         import time
         pr = _failed_result("run-1", {"room_id": "R-1"}, [], ["err1"], [], time.perf_counter())
         assert pr.success is False
@@ -1028,23 +1028,23 @@ class TestFailedResult:
         assert pr.detector_count == 0
         assert pr.errors == ["err1"]
 
-    def test_default_room_id(self):
+    def test_default_room_id(self) -> None:
         import time
         pr = _failed_result("run-2", {}, [], [], [], time.perf_counter())
         assert pr.room_id == "UNKNOWN"
 
-    def test_explicit_room_id(self):
+    def test_explicit_room_id(self) -> None:
         import time
         pr = _failed_result("run-3", {"room_id": "R-99"}, [], [], [], time.perf_counter(), room_id="R-99")
         assert pr.room_id == "R-99"
 
-    def test_with_stages(self):
+    def test_with_stages(self) -> None:
         import time
         stages = [StageResult("S0", True, 1.0)]
         pr = _failed_result("run-4", {}, stages, ["err"], ["warn"], time.perf_counter())
         assert len(pr.stages) == 1
 
-    def test_non_dict_payload(self):
+    def test_non_dict_payload(self) -> None:
         import time
         pr = _failed_result("run-5", "not_a_dict", [], [], [], time.perf_counter())
         assert pr.room_id == "UNKNOWN"
@@ -1056,7 +1056,7 @@ class TestFailedResult:
 
 
 class TestAnalyzeRoom:
-    def test_basic_smoke(self, valid_payload):
+    def test_basic_smoke(self, valid_payload) -> None:
         result = analyze_room(valid_payload)
         assert isinstance(result, PipelineResult)
         assert result.room_id == "R-101"
@@ -1064,7 +1064,7 @@ class TestAnalyzeRoom:
         assert result.coverage_pct > 0.0
         assert result.total_ms > 0
 
-    def test_heat_detector(self):
+    def test_heat_detector(self) -> None:
         payload = {
             "room_id": "R-H1",
             "room_polygon": list(RECT_POLYGON),
@@ -1075,13 +1075,13 @@ class TestAnalyzeRoom:
         result = analyze_room(payload)
         assert result.detector_count >= 1
 
-    def test_deterministic_run_id(self, valid_payload):
+    def test_deterministic_run_id(self, valid_payload) -> None:
         """Same input → same run_id (V61 FIX)."""
         r1 = analyze_room(valid_payload)
         r2 = analyze_room(valid_payload)
         assert r1.run_id == r2.run_id
 
-    def test_different_input_different_run_id(self):
+    def test_different_input_different_run_id(self) -> None:
         p1 = {"room_id": "R-A", "room_polygon": list(RECT_POLYGON),
                "ceiling_height_m": 3.0, "detector_type": "smoke", "area_m2": 80.0}
         p2 = {"room_id": "R-B", "room_polygon": list(RECT_POLYGON),
@@ -1090,13 +1090,13 @@ class TestAnalyzeRoom:
         r2 = analyze_room(p2)
         assert r1.run_id != r2.run_id
 
-    def test_contract_failure_returns_failed_result(self):
+    def test_contract_failure_returns_failed_result(self) -> None:
         """Invalid payload → success=False, blocked."""
         result = analyze_room({"room_id": ""})
         assert result.success is False
         assert result.release_status == "blocked"
 
-    def test_with_battery_params(self, valid_payload):
+    def test_with_battery_params(self, valid_payload) -> None:
         result = analyze_room(
             valid_payload,
             standby_current_a=0.05,
@@ -1104,7 +1104,7 @@ class TestAnalyzeRoom:
         )
         assert result.battery is not None
 
-    def test_with_voltage_drop_params(self, valid_payload):
+    def test_with_voltage_drop_params(self, valid_payload) -> None:
         result = analyze_room(
             valid_payload,
             alarm_current_a=0.5,
@@ -1112,7 +1112,7 @@ class TestAnalyzeRoom:
         )
         assert result.voltage_drop is not None
 
-    def test_with_fault_isolation(self, valid_payload):
+    def test_with_fault_isolation(self, valid_payload) -> None:
         loop_data = {
             "devices": [
                 {"device_id": "D1", "type": "smoke", "isolator_before": True},
@@ -1122,7 +1122,7 @@ class TestAnalyzeRoom:
         result = analyze_room(valid_payload, loop_data=loop_data)
         assert result.fault_isolation is not None
 
-    def test_voltage_drop_non_compliant_warning(self, valid_payload):
+    def test_voltage_drop_non_compliant_warning(self, valid_payload) -> None:
         """Very long circuit should produce a voltage drop warning."""
         result = analyze_room(
             valid_payload,
@@ -1132,18 +1132,18 @@ class TestAnalyzeRoom:
         if result.voltage_drop and not result.voltage_drop.get("is_compliant", True):
             assert any("Voltage drop" in w for w in result.warnings)
 
-    def test_stages_list_populated(self, valid_payload):
+    def test_stages_list_populated(self, valid_payload) -> None:
         result = analyze_room(valid_payload)
         assert len(result.stages) >= 5  # S0, S0.5, S1, S2, S3, S4, S5, S6, S7, S8
         stage_names = [s.stage_name for s in result.stages]
         assert "S0_contract" in stage_names
         assert "S1_nfpa_spacing" in stage_names
 
-    def test_coverage_between_0_and_100(self, valid_payload):
+    def test_coverage_between_0_and_100(self, valid_payload) -> None:
         result = analyze_room(valid_payload)
         assert 0.0 <= result.coverage_pct <= 100.0
 
-    def test_nan_in_input_fails(self):
+    def test_nan_in_input_fails(self) -> None:
         payload = {
             "room_id": "R-NaN",
             "room_polygon": [(0, 0), (1, float("nan")), (1, 1)],
@@ -1153,7 +1153,7 @@ class TestAnalyzeRoom:
         result = analyze_room(payload)
         assert result.success is False
 
-    def test_inf_in_input_fails(self):
+    def test_inf_in_input_fails(self) -> None:
         payload = {
             "room_id": "R-Inf",
             "room_polygon": [(0, 0), (float("inf"), 0), (1, 1)],
@@ -1163,12 +1163,12 @@ class TestAnalyzeRoom:
         result = analyze_room(payload)
         assert result.success is False
 
-    def test_ambient_temperature_param(self, valid_payload):
+    def test_ambient_temperature_param(self, valid_payload) -> None:
         """Custom ambient temperature is accepted."""
         result = analyze_room(valid_payload, ambient_temperature_c=75.0)
         assert isinstance(result, PipelineResult)
 
-    def test_stage7_and_stage8_always_run(self, valid_payload):
+    def test_stage7_and_stage8_always_run(self, valid_payload) -> None:
         """Stages 7 and 8 should appear in the stages list even on failure."""
         result = analyze_room(valid_payload)
         stage_names = [s.stage_name for s in result.stages]
@@ -1182,45 +1182,45 @@ class TestAnalyzeRoom:
 
 
 class TestAnalyzeBuilding:
-    def test_empty_rooms(self):
+    def test_empty_rooms(self) -> None:
         result = analyze_building([])
         assert result["total_rooms"] == 0
         assert result["results"] == []
         assert result["summary"]["passed"] == 0
 
-    def test_single_room(self, valid_payload):
+    def test_single_room(self, valid_payload) -> None:
         result = analyze_building([valid_payload])
         assert result["total_rooms"] == 1
         assert len(result["results"]) == 1
         assert "summary" in result
         assert "total_ms" in result
 
-    def test_multiple_rooms(self, valid_payload):
+    def test_multiple_rooms(self, valid_payload) -> None:
         rooms = [dict(valid_payload, room_id=f"R-{i}") for i in range(3)]
         result = analyze_building(rooms)
         assert result["total_rooms"] == 3
         assert len(result["results"]) == 3
         assert result["summary"]["total"] == 3
 
-    def test_mixed_valid_invalid(self, valid_payload):
+    def test_mixed_valid_invalid(self, valid_payload) -> None:
         invalid = {"room_id": ""}  # Will fail contract
         result = analyze_building([valid_payload, invalid])
         assert result["total_rooms"] == 2
         assert result["summary"]["errors"] >= 1
 
-    def test_pass_rate_calculation(self, valid_payload):
+    def test_pass_rate_calculation(self, valid_payload) -> None:
         result = analyze_building([valid_payload])
         assert 0.0 <= result["summary"]["pass_rate_pct"] <= 100.0
 
-    def test_total_detectors(self, valid_payload):
+    def test_total_detectors(self, valid_payload) -> None:
         result = analyze_building([valid_payload])
         assert result["total_detectors"] >= 1
 
-    def test_max_workers_param(self, valid_payload):
+    def test_max_workers_param(self, valid_payload) -> None:
         result = analyze_building([valid_payload], max_workers=1)
         assert result["total_rooms"] == 1
 
-    def test_kwargs_passed_through(self, valid_payload):
+    def test_kwargs_passed_through(self, valid_payload) -> None:
         """Battery/voltage kwargs are forwarded to analyze_room."""
         result = analyze_building(
             [valid_payload],
@@ -1229,12 +1229,12 @@ class TestAnalyzeBuilding:
         )
         assert result["total_rooms"] == 1
 
-    def test_timestamp_present(self, valid_payload):
+    def test_timestamp_present(self, valid_payload) -> None:
         result = analyze_building([valid_payload])
         assert "timestamp" in result
         assert result["timestamp"] != ""
 
-    def test_concurrent_execution(self, valid_payload):
+    def test_concurrent_execution(self, valid_payload) -> None:
         """Multiple rooms can be processed concurrently."""
         rooms = [dict(valid_payload, room_id=f"R-{i}") for i in range(5)]
         result = analyze_building(rooms, max_workers=3)
@@ -1250,14 +1250,14 @@ class TestAnalyzeBuilding:
 class TestCableRoutingPathA:
     """Tests for cable routing via analyze_room cable_connections parameter."""
 
-    def test_cable_connections_without_building_model(self, valid_payload):
+    def test_cable_connections_without_building_model(self, valid_payload) -> None:
         """cable_connections without building_model → no cable routing via Path A."""
         result = analyze_room(valid_payload, cable_connections=[{"from": "A", "to": "B"}])
         # Path A requires both cable_connections AND building_model
         # Cable routing should still attempt via Stage 7
         assert isinstance(result, PipelineResult)
 
-    def test_cable_router_unavailable(self, valid_payload):
+    def test_cable_router_unavailable(self, valid_payload) -> None:
         """When _CABLE_ROUTER_AVAILABLE is False, cable routing via Path A is skipped."""
         with patch("fireai.core.pipeline._CABLE_ROUTER_AVAILABLE", False):
             result = analyze_room(
@@ -1269,7 +1269,7 @@ class TestCableRoutingPathA:
         # cable_routing should be None since Path A was skipped and Stage 7
         # may also fail without the cable_router module
 
-    def test_cable_routing_dict_from_stage7(self, valid_payload):
+    def test_cable_routing_dict_from_stage7(self, valid_payload) -> None:
         """When Stage 7 succeeds, cable_routing_dict is populated from it."""
         # Mock the internal stage7 to return completed status
         stage7_data = {
@@ -1292,7 +1292,7 @@ class TestCableRoutingPathA:
             assert result.cable_routing["total_cable_length_m"] == 25.0
             assert result.cable_routing["all_compliant"] is True
 
-    def test_cable_routing_non_compliant_warning(self, valid_payload):
+    def test_cable_routing_non_compliant_warning(self, valid_payload) -> None:
         """When Stage 7 has violations, a warning is added."""
         stage7_data = {
             "status": "completed",
@@ -1318,14 +1318,14 @@ class TestCableRoutingPathA:
 
 
 class TestEdgeCases:
-    def test_stage0_failure_stops_pipeline(self):
+    def test_stage0_failure_stops_pipeline(self) -> None:
         """Contract failure at Stage 0 should stop the pipeline early."""
         result = analyze_room({"room_id": ""})  # Empty room_id → contract violation
         assert result.success is False
         # Should have very few stages (just S0)
         assert len(result.stages) >= 1
 
-    def test_stage1_failure_returns_failed_result(self):
+    def test_stage1_failure_returns_failed_result(self) -> None:
         """If stage1 somehow fails, pipeline returns a failed result."""
         with patch("fireai.core.pipeline._stage1_nfpa_spacing", side_effect=RuntimeError("spacing error")):
             result = analyze_room({
@@ -1338,7 +1338,7 @@ class TestEdgeCases:
         # Pipeline should handle stage1 failure gracefully
         assert isinstance(result, PipelineResult)
 
-    def test_stage2_failure_uses_estimate(self):
+    def test_stage2_failure_uses_estimate(self) -> None:
         """When placement fails entirely, pipeline continues with estimates."""
         with patch("fireai.core.pipeline._stage2_placement", side_effect=RuntimeError("placement crash")):
             result = analyze_room({
@@ -1350,26 +1350,26 @@ class TestEdgeCases:
             })
         assert isinstance(result, PipelineResult)
 
-    def test_stage3_failure_uses_optimizer_estimate(self, valid_payload):
+    def test_stage3_failure_uses_optimizer_estimate(self, valid_payload) -> None:
         """When coverage verification fails, optimizer estimate is used."""
         with patch("fireai.core.pipeline._stage3_verify_coverage", side_effect=RuntimeError("coverage crash")):
             result = analyze_room(valid_payload)
         assert isinstance(result, PipelineResult)
 
-    def test_stage5_failure_defaults_to_blocked(self, valid_payload):
+    def test_stage5_failure_defaults_to_blocked(self, valid_payload) -> None:
         """When release gates fail, default is 'blocked'."""
         with patch("fireai.core.pipeline._stage5_release_gates", side_effect=RuntimeError("gates crash")):
             result = analyze_room(valid_payload)
         assert result.release_status == "blocked"
 
-    def test_stage6_failure_empty_hash(self, valid_payload):
+    def test_stage6_failure_empty_hash(self, valid_payload) -> None:
         """When evidence packaging fails, hash is empty string."""
         with patch("fireai.core.pipeline._stage6_evidence", side_effect=RuntimeError("evidence crash")):
             result = analyze_room(valid_payload)
         assert result.evidence_hash == ""
         assert result.nfpa_references == []
 
-    def test_small_room_single_detector(self, small_polygon):
+    def test_small_room_single_detector(self, small_polygon) -> None:
         """Very small room should produce at least 1 detector."""
         payload = {
             "room_id": "R-tiny",
@@ -1381,7 +1381,7 @@ class TestEdgeCases:
         result = analyze_room(payload)
         assert result.detector_count >= 1
 
-    def test_high_ceiling(self):
+    def test_high_ceiling(self) -> None:
         """High ceiling should still produce a result (with warnings)."""
         payload = {
             "room_id": "R-tall",
@@ -1393,7 +1393,7 @@ class TestEdgeCases:
         result = analyze_room(payload)
         assert isinstance(result, PipelineResult)
 
-    def test_pipeline_result_timestamp_format(self, valid_payload):
+    def test_pipeline_result_timestamp_format(self, valid_payload) -> None:
         result = analyze_room(valid_payload)
         # Should be ISO format
         assert "T" in result.timestamp
@@ -1406,7 +1406,7 @@ class TestEdgeCases:
 
 
 class TestQomnPhysicsGuard:
-    def test_qomn_unavailable(self, valid_payload):
+    def test_qomn_unavailable(self, valid_payload) -> None:
         """When QOMN kernel is not available, physics_guard_passed is False."""
         with patch.dict("sys.modules", {"fireai.core.qomn_kernel": None}):
             result = analyze_room(valid_payload)
@@ -1417,7 +1417,7 @@ class TestQomnPhysicsGuard:
         if s05 and s05.success:
             assert s05.data.get("physics_guard_passed") is False
 
-    def test_qomn_adds_warnings_on_guard_failure(self, valid_payload):
+    def test_qomn_adds_warnings_on_guard_failure(self, valid_payload) -> None:
         """Physics guard failures should add warnings."""
         mock_qomn = MagicMock()
         mock_qomn.QOMNKernel.side_effect = ImportError("no QOMN")
@@ -1434,14 +1434,14 @@ class TestQomnPhysicsGuard:
 
 
 class TestRulesCompliance:
-    def test_rules_engine_failure_is_non_blocking(self, valid_payload):
+    def test_rules_engine_failure_is_non_blocking(self, valid_payload) -> None:
         """When Rules Engine fails, pipeline still completes."""
         with patch("fireai.core.pipeline._stage35_rules_compliance", side_effect=RuntimeError("rules crash")):
             result = analyze_room(valid_payload)
         assert isinstance(result, PipelineResult)
         assert any("Rules Engine" in w for w in result.warnings)
 
-    def test_rules_engine_unsafe_adds_warnings(self, valid_payload):
+    def test_rules_engine_unsafe_adds_warnings(self, valid_payload) -> None:
         """When rules engine reports is_safe=False, critical/violation warnings are added."""
         rules_data = {
             "engine": "NFPA72ComplianceChecker",
@@ -1455,7 +1455,7 @@ class TestRulesCompliance:
             result = analyze_room(valid_payload)
         assert any("RULES_ENGINE CRITICAL" in w for w in result.warnings)
 
-    def test_rules_engine_violation_details(self, valid_payload):
+    def test_rules_engine_violation_details(self, valid_payload) -> None:
         """Violation details from rules engine are added as warnings."""
         rules_data = {
             "engine": "NFPA72ComplianceChecker",

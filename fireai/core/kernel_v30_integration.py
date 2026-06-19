@@ -1,5 +1,4 @@
-"""
-kernel_v30_integration.py — V30 Real Integration Engine
+"""kernel_v30_integration.py — V30 Real Integration Engine.
 ========================================================
 SURGICAL FIX: fireai_kernel_v30.py exists as reference design only.
 SIMD/lock-free/mmap were theoretical. This file wires them INTO the pipeline.
@@ -30,8 +29,9 @@ import struct
 import tempfile
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ try:
             _ = np.dot(a, a)  # triggers BLAS/vectorised path
             if platform.machine() in ("x86_64", "AMD64"):
                 return "AVX2"
-            elif platform.machine() in ("arm64", "aarch64"):
+            if platform.machine() in ("arm64", "aarch64"):
                 return "NEON"
         except Exception as e:
             logger.debug("V112: _detect_simd: AVX2/NEON detection failed, falling back to SCALAR: %s", e)
@@ -81,8 +81,7 @@ def _compute_coverage_mask_avx2(
     det_y: Any,  # np.ndarray float32
     r_sq: float,
 ) -> Any:  # np.ndarray bool
-    """
-    Vectorised coverage mask: which grid points are covered by any detector.
+    """Vectorised coverage mask: which grid points are covered by any detector.
     Uses NumPy broadcasting — numpy internally uses SIMD (AVX2/SSE4/NEON).
 
     Real implementation that was missing from V30 reference design.
@@ -96,10 +95,10 @@ def _compute_coverage_mask_avx2(
 
 
 def _compute_coverage_mask_scalar(
-    grid_pts: List[Tuple[float, float]],
-    detectors: List[Tuple[float, float]],
+    grid_pts: list[tuple[float, float]],
+    detectors: list[tuple[float, float]],
     r_sq: float,
-) -> List[bool]:
+) -> list[bool]:
     """Pure Python fallback for SCALAR path."""
     result = []
     for gx, gy in grid_pts:
@@ -116,7 +115,7 @@ def _compute_coverage_mask_scalar(
 @dataclass
 class _WorkItem:
     room_id: str
-    room_data: Dict[str, Any]
+    room_data: dict[str, Any]
     callback: Callable
     submit_ts: float = field(default_factory=time.perf_counter)
 
@@ -125,13 +124,12 @@ class _WorkItem:
 class _WorkResult:
     room_id: str
     result: Any
-    error: Optional[str]
+    error: str | None
     latency_s: float
 
 
 class MPSCWorkerPool:
-    """
-    Real multi-producer single-consumer worker pool.
+    """Real multi-producer single-consumer worker pool.
 
     V30 defined this class but never called start() from the pipeline.
     This implementation:
@@ -144,16 +142,16 @@ class MPSCWorkerPool:
     def __init__(
         self,
         n_workers: int = 0,
-        optimize_fn: Optional[Callable] = None,
+        optimize_fn: Callable | None = None,
     ) -> None:
         self.n_workers = n_workers or max(1, (os.cpu_count() or 4) - 1)
         self.optimize_fn = optimize_fn or self._default_optimize
-        self._inbox: queue.Queue[Optional[_WorkItem]] = queue.Queue()
+        self._inbox: queue.Queue[_WorkItem | None] = queue.Queue()
         self._outbox: queue.Queue[_WorkResult] = queue.Queue()
-        self._workers: List[threading.Thread] = []
+        self._workers: list[threading.Thread] = []
         self._running = threading.Event()
         self._running.set()
-        self._pending: Dict[str, _WorkItem] = {}
+        self._pending: dict[str, _WorkItem] = {}
         self._lock = threading.Lock()
         self._start_workers()
 
@@ -192,7 +190,7 @@ class MPSCWorkerPool:
             except queue.Empty:
                 continue
 
-    def submit(self, room_id: str, room_data: Dict[str, Any], callback: Callable = None) -> None:
+    def submit(self, room_id: str, room_data: dict[str, Any], callback: Callable | None = None) -> None:
         item = _WorkItem(
             room_id=room_id,
             room_data=room_data,
@@ -202,7 +200,7 @@ class MPSCWorkerPool:
             self._pending[room_id] = item
         self._inbox.put(item)
 
-    def get_result(self, timeout: float = 5.0) -> Optional[_WorkResult]:
+    def get_result(self, timeout: float = 5.0) -> _WorkResult | None:
         try:
             result = self._outbox.get(timeout=timeout)
             with self._lock:
@@ -213,9 +211,9 @@ class MPSCWorkerPool:
 
     def submit_batch(
         self,
-        rooms: List[Dict[str, Any]],
+        rooms: list[dict[str, Any]],
         timeout_per_room: float = 10.0,
-    ) -> List[_WorkResult]:
+    ) -> list[_WorkResult]:
         """Submit all rooms, collect all results."""
         for room in rooms:
             self.submit(room.get("room_id", str(id(room))), room)
@@ -235,7 +233,7 @@ class MPSCWorkerPool:
                 t.join(timeout=2.0)
 
     @staticmethod
-    def _default_optimize(room_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _default_optimize(room_data: dict[str, Any]) -> dict[str, Any]:
         """Fallback optimizer when none provided."""
         w = room_data.get("width", 10.0)
         l = room_data.get("length", 8.0)
@@ -264,8 +262,7 @@ class MPSCWorkerPool:
 
 
 class MmapResultCache:
-    """
-    Memory-mapped shared result cache.
+    """Memory-mapped shared result cache.
 
     V30 opened mmap but never wrote to/read from it systematically.
 
@@ -298,7 +295,7 @@ class MmapResultCache:
         self._filepath = filepath
         self._size = size_mb * 1024 * 1024
         self._lock = threading.Lock()
-        self._mmap: Optional[mmap.mmap] = None
+        self._mmap: mmap.mmap | None = None
         self._file: Any = None
         self._data_ptr = self.HEADER_SZ  # next write position in data region
         self._open()
@@ -376,7 +373,7 @@ class MmapResultCache:
                 logger.warning("V112: MmapResultCache.put: failed to write room_id=%s to mmap cache: %s", room_id, e)
                 return False
 
-    def get(self, room_id: str) -> Optional[str]:
+    def get(self, room_id: str) -> str | None:
         """Lookup result from mmap cache. Thread-safe."""
         if self._mmap is None:
             return None
@@ -432,8 +429,7 @@ class MmapResultCache:
 
 
 class KernelV30Dispatcher:
-    """
-    V30 kernel dispatcher that actually integrates into the pipeline.
+    """V30 kernel dispatcher that actually integrates into the pipeline.
 
     V30 reference design existed as fireai_kernel_v30.py but was never
     connected to DensityOptimizer, FloorAnalyser, or BuildingEngine.
@@ -464,7 +460,7 @@ class KernelV30Dispatcher:
             n_workers=n_workers,
             optimize_fn=self._optimize_worker,
         )
-        self._cache: Optional[MmapResultCache] = None
+        self._cache: MmapResultCache | None = None
         if enable_mmap_cache:
             try:
                 self._cache = MmapResultCache()
@@ -487,9 +483,8 @@ class KernelV30Dispatcher:
                 pass
         return self._fallback
 
-    def optimize(self, room: Any, coverage_radius: Optional[float] = None) -> Any:
-        """
-        Drop-in replacement for DensityOptimizer.optimize().
+    def optimize(self, room: Any, coverage_radius: float | None = None) -> Any:
+        """Drop-in replacement for DensityOptimizer.optimize().
 
         Route:
           1. Check mmap cache (fastest: O(1))
@@ -544,11 +539,10 @@ class KernelV30Dispatcher:
 
     def optimize_batch_async(
         self,
-        rooms: List[Any],
+        rooms: list[Any],
         timeout: float = 30.0,
-    ) -> List[Any]:
-        """
-        Async batch processing via MPSC worker pool.
+    ) -> list[Any]:
+        """Async batch processing via MPSC worker pool.
         Submits all rooms, collects results.
         """
         room_dicts = []
@@ -588,8 +582,7 @@ class KernelV30Dispatcher:
         return layouts
 
     def _optimize_simd(self, room: Any, R: float) -> Any:
-        """
-        SIMD-accelerated placement using NumPy broadcasting.
+        """SIMD-accelerated placement using NumPy broadcasting.
         Uses the same multi-strategy approach as DensityOptimizer:
         hexagonal grid with correct spacing + SIMD verification.
 
@@ -716,7 +709,7 @@ class KernelV30Dispatcher:
             nfpa_table_ref="NFPA 72-2022 Table 17.6.3.1.1",
         )
 
-    def _optimize_worker(self, room_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _optimize_worker(self, room_data: dict[str, Any]) -> dict[str, Any]:
         """Worker function for MPSC pool."""
         w = room_data.get("width", 10.0)
         l = room_data.get("length", 8.0)
@@ -746,7 +739,7 @@ class KernelV30Dispatcher:
             "coverage_radius": R,
         }
 
-    def _layout_to_dict(self, layout: Any) -> Dict[str, Any]:
+    def _layout_to_dict(self, layout: Any) -> dict[str, Any]:
         """Convert DetectorLayout to dict for caching."""
         return {
             "detectors": list(getattr(layout, "detectors", [])),
@@ -760,7 +753,7 @@ class KernelV30Dispatcher:
             "detector_type_simple": getattr(layout, "detector_type_simple", "smoke"),
         }
 
-    def _dict_to_layout(self, data: Dict[str, Any], room: Any) -> Any:
+    def _dict_to_layout(self, data: dict[str, Any], room: Any) -> Any:
         """Convert cached dict back to DetectorLayout."""
         try:
             from fireai.core.spatial_engine.density_optimizer import DetectorLayout

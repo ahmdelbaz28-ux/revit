@@ -1,6 +1,4 @@
-"""
-fireai/integration — External system integration bridges
-"""
+"""fireai/integration — External system integration bridges."""
 
 from fireai.integration.autocad_bridge import AutoCADBridge
 from fireai.integration.bentley_bridge import BentleyBridge
@@ -9,9 +7,9 @@ from fireai.integration.iot_pipeline import IoTPipeline
 from fireai.integration.mobile_api import MobileAPI
 
 __all__ = [
-    "FieldDataService",
-    "MobileAPI",
     "AutoCADBridge",
     "BentleyBridge",
+    "FieldDataService",
     "IoTPipeline",
+    "MobileAPI",
 ]

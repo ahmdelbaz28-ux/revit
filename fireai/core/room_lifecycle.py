@@ -1,5 +1,4 @@
-"""
-room_lifecycle.py — FireAI Room Lifecycle State Machine
+"""room_lifecycle.py — FireAI Room Lifecycle State Machine.
 ========================================================
 NFPA 72-2022 compliant state machine that transforms the fire safety
 system from a stateless "calculator" into a proper engineering system
@@ -48,8 +47,8 @@ import enum
 import logging
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from .event_bus import EventBus
 
@@ -97,7 +96,7 @@ class RoomState(enum.Enum):
 # Legal Transition Map
 # ═══════════════════════════════════════════════════════════════════════
 
-LEGAL_TRANSITIONS: Dict[RoomState, set] = {
+LEGAL_TRANSITIONS: dict[RoomState, set] = {
     RoomState.PENDING: {RoomState.ANALYZING, RoomState.FAILED},
     RoomState.ANALYZING: {RoomState.OPTIMIZED, RoomState.FAILED},
     RoomState.OPTIMIZED: {RoomState.VERIFYING, RoomState.FAILED},
@@ -133,6 +132,7 @@ class RoomTransition:
             Engineer), or "ahj" (Authority Having Jurisdiction).
         metadata: Optional dict for extra information (e.g. engine results,
             error details, detector counts, coverage percentages).
+
     """
 
     from_state: RoomState
@@ -140,9 +140,9 @@ class RoomTransition:
     timestamp: str
     reason: str
     actor: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize transition to a plain dictionary."""
         return {
             "from_state": self.from_state.value,
@@ -183,23 +183,25 @@ class RoomLifecycle:
         assert lc.state == RoomState.OPTIMIZED
         assert lc.can_transition_to(RoomState.VERIFYING)
         assert not lc.can_transition_to(RoomState.CERTIFIED)
+
     """
 
     def __init__(
         self,
         room_id: str,
-        bus: Optional[EventBus] = None,
+        bus: EventBus | None = None,
     ) -> None:
         """Initialize a new room lifecycle in PENDING state.
 
         Args:
             room_id: Unique identifier for this room (e.g. "R-101").
             bus: Optional EventBus instance. If None, uses the singleton.
+
         """
         self._room_id = room_id
         self._state = RoomState.PENDING
-        self._transitions: List[RoomTransition] = []
-        self._state_entered_at: str = datetime.now(timezone.utc).isoformat()
+        self._transitions: list[RoomTransition] = []
+        self._state_entered_at: str = datetime.now(UTC).isoformat()
         # ✅ FIX: Use RLock to prevent deadlock — RoomLifecycle.to_dict()
         # calls methods that also acquire the lock.
         self._lock = threading.RLock()
@@ -219,7 +221,7 @@ class RoomLifecycle:
             return self._state
 
     @property
-    def history(self) -> List[RoomTransition]:
+    def history(self) -> list[RoomTransition]:
         """Full transition history (returns a copy for thread safety)."""
         with self._lock:
             return list(self._transitions)
@@ -243,6 +245,7 @@ class RoomLifecycle:
 
         Note:
             This method is thread-safe and does NOT modify state.
+
         """
         with self._lock:
             allowed = LEGAL_TRANSITIONS.get(self._state, set())
@@ -255,7 +258,7 @@ class RoomLifecycle:
         new_state: RoomState,
         reason: str,
         actor: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> RoomTransition:
         """Execute a validated state transition and record it.
 
@@ -283,6 +286,7 @@ class RoomLifecycle:
                 actor="system",
                 metadata={"engines": ["analytical", "voronoi", "grid"]},
             )
+
         """
         with self._lock:
             allowed = LEGAL_TRANSITIONS.get(self._state, set())
@@ -294,7 +298,7 @@ class RoomLifecycle:
                     f"{sorted(s.value for s in allowed)}"
                 )
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             transition = RoomTransition(
                 from_state=self._state,
                 to_state=new_state,
@@ -339,6 +343,7 @@ class RoomLifecycle:
             to_state: State after transition.
             reason: Transition reason.
             actor: Who initiated the transition.
+
         """
         try:
             # FIX-3: Always use the singleton EventBus to ensure all
@@ -379,12 +384,13 @@ class RoomLifecycle:
             lc.transition_to(RoomState.ANALYZING, "Start", "system")
             time.sleep(2.5)
             assert lc.duration_in_state() >= 2.0
+
         """
         with self._lock:
             entered = self._state_entered_at
 
         entered_dt = datetime.fromisoformat(entered)
-        now_dt = datetime.now(timezone.utc)
+        now_dt = datetime.now(UTC)
         delta = now_dt - entered_dt
         return delta.total_seconds()
 
@@ -399,6 +405,7 @@ class RoomLifecycle:
 
         Returns:
             True if the room is in a terminal state.
+
         """
         with self._lock:
             return self._state in {RoomState.CERTIFIED, RoomState.REJECTED}
@@ -408,16 +415,18 @@ class RoomLifecycle:
 
         Returns:
             True if the room is in FAILED state.
+
         """
         with self._lock:
             return self._state == RoomState.FAILED
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the lifecycle state and history to a dictionary.
 
         Returns:
             Dictionary containing room_id, current state, transition count,
             state entered timestamp, and full transition history.
+
         """
         with self._lock:
             return {
@@ -464,16 +473,18 @@ class RoomLifecycleManager:
         # {"PENDING": 1, "ANALYZING": 1, ...}
 
         assert not manager.all_certified()
+
     """
 
-    def __init__(self, bus: Optional[EventBus] = None) -> None:
+    def __init__(self, bus: EventBus | None = None) -> None:
         """Initialize the lifecycle manager.
 
         Args:
             bus: Optional EventBus instance. If None, the singleton
                 is used for each room's lifecycle.
+
         """
-        self._rooms: Dict[str, RoomLifecycle] = {}
+        self._rooms: dict[str, RoomLifecycle] = {}
         # ✅ FIX: Use RLock instead of Lock to prevent deadlock.
         # RoomLifecycleManager.to_dict() calls certification_progress()
         # and building_status() while holding the lock. With Lock (non-reentrant),
@@ -498,6 +509,7 @@ class RoomLifecycleManager:
 
         Raises:
             TypeError: If room_id is not a string.
+
         """
         if not isinstance(room_id, str):
             raise TypeError(f"room_id must be str, got {type(room_id).__name__}")
@@ -512,7 +524,7 @@ class RoomLifecycleManager:
             logger.info("Registered room %s with lifecycle manager", room_id)
             return lifecycle
 
-    def get_room(self, room_id: str) -> Optional[RoomLifecycle]:
+    def get_room(self, room_id: str) -> RoomLifecycle | None:
         """Get the lifecycle for a specific room.
 
         Args:
@@ -520,6 +532,7 @@ class RoomLifecycleManager:
 
         Returns:
             The RoomLifecycle for the room, or None if not registered.
+
         """
         with self._lock:
             return self._rooms.get(room_id)
@@ -532,15 +545,17 @@ class RoomLifecycleManager:
 
         Returns:
             True if the room is registered.
+
         """
         with self._lock:
             return room_id in self._rooms
 
-    def room_ids(self) -> List[str]:
+    def room_ids(self) -> list[str]:
         """Return a list of all registered room IDs.
 
         Returns:
             List of room ID strings.
+
         """
         with self._lock:
             return list(self._rooms.keys())
@@ -552,7 +567,7 @@ class RoomLifecycleManager:
 
     # ── Building-Level Status ─────────────────────────────────────────
 
-    def building_status(self) -> Dict[RoomState, int]:
+    def building_status(self) -> dict[RoomState, int]:
         """Aggregate room states across the entire building.
 
         Returns a count of rooms in each lifecycle state. States with
@@ -571,10 +586,11 @@ class RoomLifecycleManager:
             #     RoomState.CERTIFIED: 5,
             #     ...
             # }
+
         """
         with self._lock:
             # Initialize all states to zero
-            status: Dict[RoomState, int] = dict.fromkeys(RoomState, 0)
+            status: dict[RoomState, int] = dict.fromkeys(RoomState, 0)
             for lifecycle in self._rooms.values():
                 # Access state directly (we already hold our own lock,
                 # but RoomLifecycle.state also acquires its internal lock)
@@ -592,6 +608,7 @@ class RoomLifecycleManager:
             True if ALL rooms are in CERTIFIED state.
             False if any room is in any other state, or if no rooms
             are registered.
+
         """
         with self._lock:
             if not self._rooms:
@@ -603,6 +620,7 @@ class RoomLifecycleManager:
 
         Returns:
             True if at least one room is FAILED.
+
         """
         with self._lock:
             return any(lc.state == RoomState.FAILED for lc in self._rooms.values())
@@ -612,6 +630,7 @@ class RoomLifecycleManager:
 
         Returns:
             True if at least one room is in WARNING state.
+
         """
         with self._lock:
             return any(lc.state == RoomState.WARNING for lc in self._rooms.values())
@@ -627,6 +646,7 @@ class RoomLifecycleManager:
         Returns:
             Percentage of rooms that are CERTIFIED.
             Returns 0.0 if no rooms are registered.
+
         """
         with self._lock:
             if not self._rooms:
@@ -647,6 +667,7 @@ class RoomLifecycleManager:
 
         Raises:
             KeyError: If the room is not registered.
+
         """
         with self._lock:
             if room_id not in self._rooms:
@@ -655,12 +676,13 @@ class RoomLifecycleManager:
             self._rooms[room_id] = RoomLifecycle(room_id=room_id, bus=self._bus)
         logger.info("Reset lifecycle for room %s", room_id)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the manager state to a dictionary.
 
         Returns:
             Dictionary containing room count, certification progress,
             building status, and per-room lifecycle summaries.
+
         """
         with self._lock:
             return {
@@ -680,11 +702,11 @@ class RoomLifecycleManager:
 # ═══════════════════════════════════════════════════════════════════════
 
 __all__ = [
-    "RoomState",
-    "RoomTransition",
+    "LEGAL_TRANSITIONS",
     "RoomLifecycle",
     "RoomLifecycleManager",
-    "LEGAL_TRANSITIONS",
+    "RoomState",
+    "RoomTransition",
 ]
 
 
@@ -885,7 +907,7 @@ if __name__ == "__main__":
     bus = EventBus()
     received_events = []
 
-    def on_lifecycle_change(event):
+    def on_lifecycle_change(event) -> None:
         received_events.append(event)
 
     bus.subscribe("room.lifecycle.changed", on_lifecycle_change)
@@ -925,7 +947,7 @@ if __name__ == "__main__":
     lc_ts = RoomLifecycle(room_id="R-THREAD")
     errors = []
 
-    def transition_worker(start_state_label, target_state, reason):
+    def transition_worker(start_state_label, target_state, reason) -> None:
         try:
             # Small delay to increase chance of concurrent access
             time.sleep(0.001)

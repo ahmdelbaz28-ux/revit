@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Timeline Tracker for Storyboard Manager
+"""Timeline Tracker for Storyboard Manager.
 
 This script analyzes markdown files in a storyboard project to extract and organize
 timeline events, helping writers maintain chronological consistency.
@@ -11,26 +10,25 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 
 class TimelineEvent:
-    """Represents a single event in the story timeline"""
+    """Represents a single event in the story timeline."""
 
-    def __init__(self, content: str, location: str, chapter: str = None,
-                 timepoint: str = None, characters: List[str] = None):
+    def __init__(self, content: str, location: str, chapter: str | None = None,
+                 timepoint: str | None = None, characters: list[str] | None = None) -> None:
         self.content = content
         self.location = location  # File path where event was found
         self.chapter = chapter
         self.timepoint = timepoint  # Relative time (e.g., "Day 1", "3 weeks later")
         self.characters = characters or []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"TimelineEvent({self.timepoint}: {self.content[:50]}...)"
 
 
 class TimelineTracker:
-    """Main timeline tracking and analysis class"""
+    """Main timeline tracking and analysis class."""
 
     # Patterns to detect time markers in text
     TIME_PATTERNS = [
@@ -48,13 +46,13 @@ class TimelineTracker:
         r'\*\*(?:POV|Perspective):\*\*\s*(.+?)(?:\n|$)',
     ]
 
-    def __init__(self, project_root: str):
+    def __init__(self, project_root: str) -> None:
         self.project_root = Path(project_root)
-        self.events: List[TimelineEvent] = []
+        self.events: list[TimelineEvent] = []
         self.characters: set = set()
 
-    def scan_directory(self, directory: Path) -> List[Path]:
-        """Recursively find all markdown files in directory"""
+    def scan_directory(self, directory: Path) -> list[Path]:
+        """Recursively find all markdown files in directory."""
         md_files = []
         if not directory.exists():
             return md_files
@@ -67,8 +65,8 @@ class TimelineTracker:
 
         return md_files
 
-    def extract_characters_from_file(self, file_path: Path) -> List[str]:
-        """Extract character names from character profile files"""
+    def extract_characters_from_file(self, file_path: Path) -> list[str]:
+        """Extract character names from character profile files."""
         try:
             content = file_path.read_text(encoding='utf-8')
 
@@ -87,8 +85,8 @@ class TimelineTracker:
 
         return []
 
-    def extract_timeline_markers(self, content: str) -> List[Tuple[str, int]]:
-        """Extract time markers from content, return list of (timepoint, position)"""
+    def extract_timeline_markers(self, content: str) -> list[tuple[str, int]]:
+        """Extract time markers from content, return list of (timepoint, position)."""
         markers = []
 
         for pattern in self.TIME_PATTERNS:
@@ -98,8 +96,8 @@ class TimelineTracker:
 
         return sorted(markers, key=lambda x: x[1])
 
-    def extract_character_mentions(self, content: str) -> List[str]:
-        """Extract character names from explicit character markers"""
+    def extract_character_mentions(self, content: str) -> list[str]:
+        """Extract character names from explicit character markers."""
         characters = []
 
         for pattern in self.CHARACTER_PATTERNS:
@@ -112,8 +110,8 @@ class TimelineTracker:
 
         return characters
 
-    def find_character_references(self, content: str, known_characters: set) -> List[str]:
-        """Find mentions of known characters in content"""
+    def find_character_references(self, content: str, known_characters: set) -> list[str]:
+        """Find mentions of known characters in content."""
         found = []
         for character in known_characters:
             # Simple word boundary check
@@ -121,8 +119,8 @@ class TimelineTracker:
                 found.append(character)
         return found
 
-    def parse_chapter_file(self, file_path: Path) -> List[TimelineEvent]:
-        """Parse a chapter/scene file for timeline events"""
+    def parse_chapter_file(self, file_path: Path) -> list[TimelineEvent]:
+        """Parse a chapter/scene file for timeline events."""
         events = []
 
         try:
@@ -179,9 +177,8 @@ class TimelineTracker:
 
         return events
 
-    def analyze_project(self) -> Dict:
-        """Analyze entire project and build timeline"""
-
+    def analyze_project(self) -> dict:
+        """Analyze entire project and build timeline."""
         # First, find all characters
         char_dirs = ['characters', 'Characters', 'cast']
         for dirname in char_dirs:
@@ -201,7 +198,7 @@ class TimelineTracker:
                     self.events.extend(events)
 
         # Build analysis
-        analysis = {
+        return {
             'total_events': len(self.events),
             'total_characters': len(self.characters),
             'characters': sorted(self.characters),
@@ -212,10 +209,9 @@ class TimelineTracker:
             'warnings': self._check_consistency()
         }
 
-        return analysis
 
-    def _group_events_by_time(self) -> Dict[str, List[Dict]]:
-        """Group events by their timepoint"""
+    def _group_events_by_time(self) -> dict[str, list[dict]]:
+        """Group events by their timepoint."""
         grouped = defaultdict(list)
 
         for event in self.events:
@@ -229,8 +225,8 @@ class TimelineTracker:
 
         return dict(grouped)
 
-    def _group_events_by_character(self) -> Dict[str, List[Dict]]:
-        """Group events by character appearance"""
+    def _group_events_by_character(self) -> dict[str, list[dict]]:
+        """Group events by character appearance."""
         grouped = defaultdict(list)
 
         for event in self.events:
@@ -244,8 +240,8 @@ class TimelineTracker:
 
         return dict(grouped)
 
-    def _group_events_by_chapter(self) -> Dict[str, List[Dict]]:
-        """Group events by chapter"""
+    def _group_events_by_chapter(self) -> dict[str, list[dict]]:
+        """Group events by chapter."""
         grouped = defaultdict(list)
 
         for event in self.events:
@@ -259,8 +255,8 @@ class TimelineTracker:
 
         return dict(grouped)
 
-    def _build_timeline(self) -> List[Dict]:
-        """Build chronological timeline of events"""
+    def _build_timeline(self) -> list[dict]:
+        """Build chronological timeline of events."""
         # Sort events by timepoint (this is simplified, real implementation
         # would need more sophisticated time parsing)
         timeline = []
@@ -276,8 +272,8 @@ class TimelineTracker:
 
         return timeline
 
-    def _check_consistency(self) -> List[str]:
-        """Check for potential timeline inconsistencies"""
+    def _check_consistency(self) -> list[str]:
+        """Check for potential timeline inconsistencies."""
         warnings = []
 
         # Check for events without time markers
@@ -301,9 +297,8 @@ class TimelineTracker:
         return warnings
 
 
-def main():
-    """Main entry point for timeline tracker"""
-
+def main() -> None:
+    """Main entry point for timeline tracker."""
     if len(sys.argv) < 2:
         print("Usage: timeline_tracker.py <project_directory> [--output json|markdown]")
         sys.exit(1)

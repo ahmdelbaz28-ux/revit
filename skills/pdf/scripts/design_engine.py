@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-design_engine.py — Aesthetic computation engine for art-direction-first PDF production.
+"""design_engine.py — Aesthetic computation engine for art-direction-first PDF production.
 
 Philosophy: The LLM handles narrative and composition; this script handles the math
 that models get wrong — precise color harmony, algorithmic SVG, and spatial tension.
@@ -97,8 +96,7 @@ THEME_KEYWORDS = {
 
 
 def derive_intent(text):
-    """
-    Auto-derive design intent from document title/description.
+    """Auto-derive design intent from document title/description.
     Scans for theme keywords and returns the best-matching intent.
     Falls back to 'neutral' if no keywords match.
 
@@ -138,7 +136,7 @@ INTENT_HARMONY_MAP = {
     "minimalism": "monochrome",
 }
 
-def _hsl_to_hex(h, s, l):
+def _hsl_to_hex(h, s, l) -> str:
     """Convert HSL (h: 0-360, s: 0-1, l: 0-1) to hex string."""
     r, g, b = colorsys.hls_to_rgb(h / 360.0, l, s)
     return f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
@@ -164,7 +162,7 @@ def _sanitize_accent_hue(hue):
             return nudge_low if hue < mid else nudge_high
     return hue
 
-def _hex_to_rgb(hex_str):
+def _hex_to_rgb(hex_str) -> str:
     """Convert hex to 'r,g,b' string for rgba() usage."""
     hex_str = hex_str.lstrip('#')
     return f"{int(hex_str[0:2], 16)},{int(hex_str[2:4], 16)},{int(hex_str[4:6], 16)}"
@@ -185,8 +183,7 @@ def _contrast_ratio(hex1, hex2):
     return (lighter + 0.05) / (darker + 0.05)
 
 def generate_color_palette(intent="neutral", mode="minimal", harmony=None, seed=None):
-    """
-    Generative Color Harmony Engine — geometric accent computation + 5 aesthetic modes.
+    """Generative Color Harmony Engine — geometric accent computation + 5 aesthetic modes.
 
     LLM is FORBIDDEN from specifying HEX/RGB. It only selects:
       - intent   → base hue (from INTENT_HUES)
@@ -313,7 +310,7 @@ def generate_color_palette(intent="neutral", mode="minimal", harmony=None, seed=
         }
     }
 
-def palette_to_css(palette):
+def palette_to_css(palette) -> str:
     """Convert palette dict to CSS custom properties."""
     return f""":root {{
   /* 60% ground */
@@ -360,8 +357,7 @@ CASCADE_TIER_CAPS = {
 
 
 def generate_cascade_palette(intent="neutral", mode="minimal", harmony=None, seed=None):
-    """
-    Generate a role-based palette cascade where every color is derived from one
+    """Generate a role-based palette cascade where every color is derived from one
     base hue and saturation is inversely proportional to usage area.
 
     Returns a dict with:
@@ -712,10 +708,10 @@ def audit_cascade_palette(roles, semantic):
 #
 # All SVG is inline-ready (no external files needed).
 
-def _svg_open(w, h):
+def _svg_open(w, h) -> str:
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">'
 
-def _random_bezier_path(w, h):
+def _random_bezier_path(w, h) -> str:
     """Generate a single flowing bézier curve across the canvas."""
     # Start from a random edge point
     x0 = random.uniform(-w * 0.2, w * 0.3)
@@ -731,8 +727,7 @@ def _random_bezier_path(w, h):
     return f"M{x0:.0f},{y0:.0f} C{cx1:.0f},{cy1:.0f} {cx2:.0f},{cy2:.0f} {x3:.0f},{y3:.0f}"
 
 def generate_flow_svg(w, h, color="#8a8a8a", curves=4, stroke_width=80, opacity=0.05):
-    """
-    Flow mode: ultra-wide, ultra-faint bézier curves.
+    """Flow mode: ultra-wide, ultra-faint bézier curves.
     Creates atmospheric depth without competing with content.
     """
     random.seed(42)
@@ -755,8 +750,7 @@ def generate_flow_svg(w, h, color="#8a8a8a", curves=4, stroke_width=80, opacity=
     return svg
 
 def generate_grid_svg(w, h, color="#888888", spacing=60, line_width=0.5, opacity=0.04):
-    """
-    Grid mode: architectural reference grid.
+    """Grid mode: architectural reference grid.
     Ultra-faint 1px lines creating underlying structure.
     """
     svg = _svg_open(w, h)
@@ -772,8 +766,7 @@ def generate_grid_svg(w, h, color="#888888", spacing=60, line_width=0.5, opacity
     return svg
 
 def generate_noise_svg(w, h, frequency=0.8, octaves=4, opacity=0.035):
-    """
-    Noise mode: feTurbulence grain texture.
+    """Noise mode: feTurbulence grain texture.
     Adds tactile paper-like quality.
     """
     svg = _svg_open(w, h)
@@ -790,8 +783,7 @@ def generate_noise_svg(w, h, frequency=0.8, octaves=4, opacity=0.035):
     return svg
 
 def _generate_data_driven_svg(data_points, w=720, h=960, color="#8a8a8a"):
-    """
-    Content-Aware SVG: Transform business data arrays into Bézier background curves.
+    """Content-Aware SVG: Transform business data arrays into Bézier background curves.
     The background subtly echoes the data's shape — a cross-modal design metaphor.
     """
     if not data_points or len(data_points) < 2:
@@ -827,7 +819,7 @@ def _generate_data_driven_svg(data_points, w=720, h=960, color="#8a8a8a"):
     ]):
         pts = [(px, py + y_offset) for px, py in points]
         # Pad start/end for Catmull-Rom
-        padded = [pts[0]] + pts + [pts[-1]]
+        padded = [pts[0], *pts, pts[-1]]
         d = f"M {padded[1][0]:.1f},{padded[1][1]:.1f} "
         for i in range(1, len(padded) - 2):
             cp1, cp2 = catmull_to_bezier(padded[i-1], padded[i], padded[i+1], padded[i+2])
@@ -843,8 +835,7 @@ def _generate_data_driven_svg(data_points, w=720, h=960, color="#8a8a8a"):
 
 
 def generate_supergraphic_svg(w, h, color="#8a8a8a", seed=42):
-    """
-    Supergraphic mode: oversized geometric shapes (circles, rectangles, polygons)
+    """Supergraphic mode: oversized geometric shapes (circles, rectangles, polygons)
     cropped by the canvas edge, rendered at 3-5% opacity.
     Creates "blueprint of a larger world" feeling — McKinsey / Pentagram style.
     Shapes deliberately overflow the viewport so only partial arcs/edges are visible.
@@ -891,8 +882,7 @@ def generate_supergraphic_svg(w, h, color="#8a8a8a", seed=42):
 
 
 def generate_ordered_texture_svg(w, h, color="#8a8a8a", seed=42):
-    """
-    Ordered Texture mode: precision dot-matrix, coordinate grids, and contour lines
+    """Ordered Texture mode: precision dot-matrix, coordinate grids, and contour lines
     placed in specific corners/edges of the canvas (not full coverage).
     Creates "engineered precision" feeling — ideal for tech, finance, data reports.
     """
@@ -970,23 +960,20 @@ def generate_generative_svg(svg_type="flow", w=720, h=960, color="#8a8a8a"):
     """Route to the appropriate SVG generator."""
     if svg_type == "flow":
         return generate_flow_svg(w, h, color)
-    elif svg_type == "grid":
+    if svg_type == "grid":
         return generate_grid_svg(w, h, color)
-    elif svg_type == "noise":
+    if svg_type == "noise":
         return generate_noise_svg(w, h)
-    elif svg_type == "supergraphic":
+    if svg_type == "supergraphic":
         return generate_supergraphic_svg(w, h, color)
-    elif svg_type == "ordered_texture":
+    if svg_type == "ordered_texture":
         return generate_ordered_texture_svg(w, h, color)
-    else:
-        # Default: flow + noise layered
-        flow = generate_flow_svg(w, h, color)
-        return flow
+    # Default: flow + noise layered
+    return generate_flow_svg(w, h, color)
 
 
 def generate_continuous_flow_svg(w, h, total_pages, color="#8a8a8a", curves=4, stroke_width=80, opacity=0.05):
-    """
-    Continuous Flow mode: generates ONE large SVG spanning all pages.
+    """Continuous Flow mode: generates ONE large SVG spanning all pages.
     Returns a list of per-page SVG strings, each using viewBox to slice the master.
 
     The bezier curves are constrained to have anchor points every ~480px vertically,
@@ -1045,8 +1032,7 @@ def generate_continuous_flow_svg(w, h, total_pages, color="#8a8a8a", curves=4, s
 
 
 def generate_unified_svg(w, h, total_pages, svg_type, color="#8a8a8a", curves=4, stroke_width=80, opacity=0.05):
-    """
-    Generate a single SVG that spans the full continuous canvas (w x h*total_pages).
+    """Generate a single SVG that spans the full continuous canvas (w x h*total_pages).
     Unlike generate_continuous_flow_svg which returns per-page slices,
     this returns ONE svg string for the entire document.
     Used by the continuous-canvas rendering mode.
@@ -1092,7 +1078,7 @@ def generate_unified_svg(w, h, total_pages, svg_type, color="#8a8a8a", curves=4,
         svg += '\n</svg>'
         return svg
 
-    elif svg_type == "grid":
+    if svg_type == "grid":
         # Grid pattern spanning full height
         svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" width="{w}" height="{total_h}">'
         spacing = 60
@@ -1103,7 +1089,7 @@ def generate_unified_svg(w, h, total_pages, svg_type, color="#8a8a8a", curves=4,
         svg += '\n</svg>'
         return svg
 
-    elif svg_type == "noise":
+    if svg_type == "noise":
         # Noise dots spanning full height
         svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" width="{w}" height="{total_h}">'
         num_dots = int(200 * total_pages)
@@ -1130,8 +1116,7 @@ def generate_unified_svg(w, h, total_pages, svg_type, color="#8a8a8a", curves=4,
 BREATHING_MARGIN = 0.12  # 12% of canvas on each edge (was 15%, too tight for content-dense pages)
 
 def calculate_layout(elements, w=720, h=960, style="offset"):
-    """
-    Calculate positioned layout for named elements.
+    """Calculate positioned layout for named elements.
 
     Args:
         elements: list of element names (e.g. ["hero", "body", "meta", "footer"])
@@ -1139,6 +1124,7 @@ def calculate_layout(elements, w=720, h=960, style="offset"):
 
     Returns:
         dict mapping element names to {x, y, w, h, rotation} in pixels
+
     """
     # Safe area (15% breathing margin on all sides)
     safe_x = w * BREATHING_MARGIN
@@ -1219,8 +1205,7 @@ def _divide_vertical(x, y, w, h, n):
 # ═══════════════════════════════════════════════════════════════════════
 
 def audit_palette(palette):
-    """
-    Strict audit: mode-specific S/L bounds + WCAG contrast checks.
+    """Strict audit: mode-specific S/L bounds + WCAG contrast checks.
     Returns list of violations (empty = clean).
     """
     violations = []
@@ -1231,7 +1216,7 @@ def audit_palette(palette):
         if not hex_val.startswith("#"):
             continue
         r, g, b = (int(hex_val[i:i+2], 16) / 255.0 for i in (1, 3, 5))
-        h, l, s = colorsys.rgb_to_hls(r, g, b)
+        _h, l, s = colorsys.rgb_to_hls(r, g, b)
 
         # Tight bg/mid saturation limits per mode
         if key in ("bg", "mid"):
@@ -1280,7 +1265,7 @@ def audit_palette(palette):
 # CLI
 # ═══════════════════════════════════════════════════════════════════════
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Design Engine — aesthetic computation for art-direction-first PDF",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1482,7 +1467,7 @@ Examples:
                 for v in violations: print(f"   - {v}")
 
         except Exception as e:
-            print(f"❌ Failed to compile blueprint: {str(e)}")
+            print(f"❌ Failed to compile blueprint: {e!s}")
             sys.exit(1)
     else:
         parser.print_help()
@@ -1917,8 +1902,7 @@ p, .glass-canvas, .shaped-content, li {
 
 
 def _prevent_orphan_chars(text):
-    """
-    Prevent orphan characters at end of paragraphs.
+    """Prevent orphan characters at end of paragraphs.
     Replace the last space/breakable point between the final two CJK chars
     (or words) with &nbsp; so the browser never wraps a single trailing char
     onto its own line.
@@ -1927,8 +1911,7 @@ def _prevent_orphan_chars(text):
     # Match: (CJK char)(optional space)(CJK char) at end of string (before tags)
     text = re.sub(r'([\u4e00-\u9fff\u3400-\u4dbf])[\s]+([\u4e00-\u9fff\u3400-\u4dbf])(?=\s*(?:<[^>]*>)*\s*$)', '\\g<1>\u2060\\g<2>', text)
     # Latin orphan: bind last two words
-    text = re.sub(r'(\S+)\s+(\S+)\s*$', r'\1&nbsp;\2', text)
-    return text
+    return re.sub(r'(\S+)\s+(\S+)\s*$', r'\1&nbsp;\2', text)
 
 
 def simple_markdown_to_html(md_text):
@@ -1941,7 +1924,7 @@ def simple_markdown_to_html(md_text):
     in_list = False
     paragraph_buffer = []
 
-    def flush_paragraph():
+    def flush_paragraph() -> None:
         nonlocal paragraph_buffer
         if paragraph_buffer:
             text = ' '.join(paragraph_buffer)
@@ -1958,8 +1941,7 @@ def simple_markdown_to_html(md_text):
         """Apply bold, italic, inline code."""
         text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
         text = re.sub(r'\*(.*?)\*', r'<em>\1</em>', text)
-        text = re.sub(r'`(.*?)`', r'<code style="background:var(--c-surface);padding:2px 6px;border-radius:3px;font-size:max(12px, 0.9em)">\1</code>', text)
-        return text
+        return re.sub(r'`(.*?)`', r'<code style="background:var(--c-surface);padding:2px 6px;border-radius:3px;font-size:max(12px, 0.9em)">\1</code>', text)
 
     for line in lines:
         stripped = line.strip()
@@ -2026,9 +2008,8 @@ def simple_markdown_to_html(md_text):
     return '\n'.join(html_parts)
 
 
-def _parse_grid_area(comp):
-    """
-    Parse grid_area from component JSON.
+def _parse_grid_area(comp) -> str | None:
+    """Parse grid_area from component JSON.
     Accepts two formats:
       - Array:  [row_start, col_start, row_end, col_end] — 1-based, max 13.
       - String: "row_start / col_start / row_end / col_end" — 1-based, max 13.
@@ -2064,8 +2045,7 @@ def _parse_grid_area(comp):
 
 
 def _parse_align(comp):
-    """
-    Parse align from component JSON.
+    """Parse align from component JSON.
     Format: "vertical / horizontal" where each is start|center|end.
     Returns (align-items, justify-content) tuple.
     """
@@ -2080,8 +2060,7 @@ def _parse_align(comp):
 
 
 def _estimate_content_weight(comp):
-    """
-    Estimate the visual weight (space needed) of a component based on its content.
+    """Estimate the visual weight (space needed) of a component based on its content.
     Returns a numeric weight proportional to how many grid rows it should occupy.
 
     Text-heavy components (Glass_Canvas, Shaped_Canvas) get weight proportional to
@@ -2127,7 +2106,7 @@ def _estimate_content_weight(comp):
     return 2.0
 
 
-def _assign_floating_meta(comp):
+def _assign_floating_meta(comp) -> None:
     """Assign grid_area to a Floating_Meta component based on its position."""
     pos = comp.get("position", "top-right")
     if "top" in pos and "left" in pos:
@@ -2140,9 +2119,8 @@ def _assign_floating_meta(comp):
         comp["grid_area"] = "12 / 7 / 13 / 13"
 
 
-def _distribute_rows_by_weight(content_comps, start_row=1, end_row=13, full_width=True):
-    """
-    Distribute grid rows among content components proportionally to their content weight.
+def _distribute_rows_by_weight(content_comps, start_row=1, end_row=13, full_width=True) -> None:
+    """Distribute grid rows among content components proportionally to their content weight.
     Each component gets at least 2 rows. Components fill start_row to end_row seamlessly.
     """
     nn = len(content_comps)
@@ -2190,9 +2168,8 @@ def _distribute_rows_by_weight(content_comps, start_row=1, end_row=13, full_widt
         current_row = re
 
 
-def _auto_assign_grid_areas(archetype, components):
-    """
-    Auto-assign grid_area to components that don't have one,
+def _auto_assign_grid_areas(archetype, components) -> None:
+    """Auto-assign grid_area to components that don't have one,
     based on the archetype and number of components.
     Mutates components in-place.
     Skips Page_Ghost_Number (uses absolute positioning, not grid).
@@ -2344,7 +2321,7 @@ def _auto_assign_grid_areas(archetype, components):
             _distribute_rows_by_weight(non_meta, start_row=1, end_row=13, full_width=True)
 
 
-def _wrap_grid_item(comp, inner_html):
+def _wrap_grid_item(comp, inner_html) -> str:
     """Wrap a rendered component in a .grid-item div with grid positioning."""
     grid_area_css = _parse_grid_area(comp)
     v_align, h_align = _parse_align(comp)
@@ -2522,9 +2499,8 @@ def render_component(comp):
         body = comp.get("body", "") or comp.get("markdown_content", "")
         html_body = simple_markdown_to_html(body)
         label_html = f'<span class="sidenote-label">{label}</span>' if label else ""
-        inner = f'<div class="sidenote">{label_html}{html_body}</div>\n'
+        return f'<div class="sidenote">{label_html}{html_body}</div>\n'
         # Sidenotes bypass grid-item wrapping for Tufte layout — returned raw
-        return inner
 
     elif ctype == "Delta_Widget":
         metric = comp.get("metric", "")
@@ -2557,8 +2533,8 @@ def render_component(comp):
 
 
 def compile_blueprint(json_path, output_html_path):
-    """Reads the LLM JSON blueprint and generates the final poster.html"""
-    with open(json_path, 'r', encoding='utf-8') as f:
+    """Reads the LLM JSON blueprint and generates the final poster.html."""
+    with open(json_path, encoding='utf-8') as f:
         blueprint = json.load(f)
 
     art = blueprint.get("art_direction", {})

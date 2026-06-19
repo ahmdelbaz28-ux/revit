@@ -14,7 +14,8 @@ import pathlib
 import sys
 import urllib.error
 import urllib.request
-from typing import Any, Callable, Tuple
+from collections.abc import Callable
+from typing import Any
 
 REQUEST_TIMEOUT = 60
 CONFIG_PATHS = [
@@ -36,7 +37,7 @@ CONFIG_PATHS = [
 # so the model only has to read one structure to learn the whole surface.
 # ---------------------------------------------------------------------------
 
-_Arg = Tuple[str, str, str, str]  # (flag, dest, kind, help)
+_Arg = tuple[str, str, str, str]  # (flag, dest, kind, help)
 
 ACTIONS: dict[str, dict[str, Any]] = {
     # ── Paper ────────────────────────────────────────────────────────────
@@ -338,7 +339,7 @@ def _cast(kind: str) -> Callable[[str], Any]:
     if kind == "float":
         return float
     if kind == "json":
-        return lambda s: json.loads(s)
+        return json.loads
     return str
 
 

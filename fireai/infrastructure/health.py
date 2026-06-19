@@ -4,8 +4,9 @@ import dataclasses
 import os
 import shutil
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 START_TIME = time.monotonic()
 
@@ -13,11 +14,11 @@ START_TIME = time.monotonic()
 @dataclass
 class HealthStatus:
     status: Literal['healthy', 'degraded', 'unhealthy']
-    checks: Dict[str, Dict[str, Any]]
+    checks: dict[str, dict[str, Any]]
     version: str
     uptime_seconds: float
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return dataclasses.asdict(self)
 
     def to_json(self) -> str:
@@ -25,12 +26,12 @@ class HealthStatus:
         return json.dumps(self.to_dict(), indent=2)
 
 
-CheckFn = Callable[[], Dict[str, Any]]
+CheckFn = Callable[[], dict[str, Any]]
 
 
 class HealthRegistry:
-    def __init__(self, version: str = '1.0.0'):
-        self._checks: List[Dict[str, Any]] = []
+    def __init__(self, version: str = '1.0.0') -> None:
+        self._checks: list[dict[str, Any]] = []
         self._version = version
 
     def register(self, name: str, check: CheckFn, critical: bool = True) -> None:
@@ -41,7 +42,7 @@ class HealthRegistry:
         })
 
     def check_all(self) -> HealthStatus:
-        results: Dict[str, Dict[str, Any]] = {}
+        results: dict[str, dict[str, Any]] = {}
         has_critical_failure = False
         has_degraded = False
 
@@ -81,7 +82,7 @@ class HealthRegistry:
         )
 
 
-def check_redis(host: str = 'localhost', port: int = 6379, password: Optional[str] = None) -> Dict[str, Any]:
+def check_redis(host: str = 'localhost', port: int = 6379, password: str | None = None) -> dict[str, Any]:
     try:
         import redis as redis_mod
         r = redis_mod.Redis(host=host, port=port, password=password, socket_timeout=5)
@@ -98,7 +99,7 @@ def check_redis(host: str = 'localhost', port: int = 6379, password: Optional[st
         return {'ok': False, 'error': type(exc).__name__, 'message': str(exc)}
 
 
-def check_database(dsn: Optional[str] = None) -> Dict[str, Any]:
+def check_database(dsn: str | None = None) -> dict[str, Any]:
     try:
         from sqlalchemy import create_engine, text
         dsn = dsn or os.getenv('DATABASE_URL', 'sqlite:///data/fireai.db')
@@ -113,7 +114,7 @@ def check_database(dsn: Optional[str] = None) -> Dict[str, Any]:
         return {'ok': False, 'error': type(exc).__name__, 'message': str(exc)}
 
 
-def check_disk_space(path: Optional[str] = None, threshold_pct: float = 90.0) -> Dict[str, Any]:
+def check_disk_space(path: str | None = None, threshold_pct: float = 90.0) -> dict[str, Any]:
     path = path or os.path.dirname(os.path.abspath(__file__))
     try:
         usage = shutil.disk_usage(path)
@@ -130,7 +131,7 @@ def check_disk_space(path: Optional[str] = None, threshold_pct: float = 90.0) ->
         return {'ok': False, 'error': type(exc).__name__, 'message': str(exc)}
 
 
-def check_memory(threshold_pct: float = 90.0) -> Dict[str, Any]:
+def check_memory(threshold_pct: float = 90.0) -> dict[str, Any]:
     try:
         import psutil
         mem = psutil.virtual_memory()
@@ -147,7 +148,7 @@ def check_memory(threshold_pct: float = 90.0) -> Dict[str, Any]:
         return {'ok': False, 'error': type(exc).__name__, 'message': str(exc)}
 
 
-def check_api_reachability(url: str, timeout: int = 10) -> Dict[str, Any]:
+def check_api_reachability(url: str, timeout: int = 10) -> dict[str, Any]:
     try:
         import requests
         resp = requests.get(url, timeout=timeout)
@@ -162,7 +163,7 @@ def check_api_reachability(url: str, timeout: int = 10) -> Dict[str, Any]:
         return {'ok': False, 'error': type(exc).__name__, 'message': str(exc)}
 
 
-_default_registry: Optional[HealthRegistry] = None
+_default_registry: HealthRegistry | None = None
 
 
 def get_default_registry(version: str = '1.0.0') -> HealthRegistry:

@@ -1,5 +1,4 @@
-"""
-fireai.conduit.fitting_engine — NEC Fitting Placement Engine
+"""fireai.conduit.fitting_engine — NEC Fitting Placement Engine.
 =============================================================
 
 Transforms a routed waypoint path into a complete ConduitRun with all
@@ -29,7 +28,6 @@ from __future__ import annotations
 
 import math
 import uuid
-from typing import Optional, Tuple
 
 from fireai.conduit.bend import (
     MAX_CUMULATIVE_BEND_DEG,
@@ -103,10 +101,9 @@ def place_fittings(
     path: RoutePath,
     conduit_type: ConduitType,
     trade_size: TradeSize,
-    run_id: Optional[str] = None,
-) -> "Result[ConduitRun, PhysicsError | CodeViolationError]":
-    """
-    Place fittings along a routed path to produce a complete ConduitRun.
+    run_id: str | None = None,
+) -> Result[ConduitRun, PhysicsError | CodeViolationError]:
+    """Place fittings along a routed path to produce a complete ConduitRun.
 
     Input is a RoutePath (waypoints list). Output is a ConduitRun with:
       - ConduitSegment for every straight stick
@@ -129,6 +126,7 @@ def place_fittings(
         Result.err(PhysicsError) — non-finite waypoint coordinates.
 
     Reference: NEC 358.26 / 352.26 / 344.26; NEC 358.120; NEC 110.3(B).
+
     """
     # ── Validate input path ───────────────────────────────────────────────────
 
@@ -233,14 +231,13 @@ def place_fittings(
 def _is_direction_change(
     prev: Point3D, curr: Point3D, nxt: Point3D
 ) -> bool:
-    """
-    True if the path changes direction at curr.
+    """True if the path changes direction at curr.
 
     Direction is the unit vector from one point to the next,
     quantised to the dominant axis (orthogonal routing guarantees
     only one axis changes at a time).
     """
-    def dom_dir(a: Point3D, b: Point3D) -> Tuple[int, int, int]:
+    def dom_dir(a: Point3D, b: Point3D) -> tuple[int, int, int]:
         dx, dy, dz = b.x - a.x, b.y - a.y, b.z - a.z
         return (
             (1 if dx > 0 else -1 if dx < 0 else 0),
@@ -257,9 +254,8 @@ def _place_elbow(
     position: Point3D,
     conduit_type: ConduitType,
     trade_size: TradeSize,
-) -> "Result[PlacedFitting, CodeViolationError]":
-    """
-    Look up and construct a PlacedFitting for a 90° elbow.
+) -> Result[PlacedFitting, CodeViolationError]:
+    """Look up and construct a PlacedFitting for a 90° elbow.
 
     Reference: NEC 110.3(B) — only listed fittings.
     """
@@ -292,8 +288,7 @@ def _make_pull_box(
     conduit_type: ConduitType,
     trade_size: TradeSize,
 ) -> PlacedFitting:
-    """
-    Construct a pull box PlacedFitting.
+    """Construct a pull box PlacedFitting.
 
     Pull boxes are not catalogued as fittings but are tracked in the
     ConduitRun to ensure they appear in the material schedule and BOM.
@@ -321,8 +316,7 @@ def _place_segment_with_couplings(
     trade_size: TradeSize,
     stick_len: float,
 ) -> None:
-    """
-    Add straight ConduitSegment(s) and COUPLING fittings every stick_len.
+    """Add straight ConduitSegment(s) and COUPLING fittings every stick_len.
 
     For a segment of length L:
       - If L ≤ stick_len: single segment, no coupling needed

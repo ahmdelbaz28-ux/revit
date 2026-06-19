@@ -1,5 +1,4 @@
-"""
-Comprehensive tests for the fireai_core module.
+"""Comprehensive tests for the fireai_core module.
 
 Tests cover:
   - ConfidenceLevel enum: all members, value access
@@ -78,8 +77,7 @@ def tmp_db(tmp_path):
 def fireai_system(tmp_path):
     """Create a FireAISystem with a temp database for isolation."""
     db_path = str(tmp_path / "test_fireai.db")
-    system = FireAISystem(db_path=db_path)
-    return system
+    return FireAISystem(db_path=db_path)
 
 
 @pytest.fixture
@@ -144,25 +142,25 @@ def high_ceiling_room_spec():
 class TestConfidenceLevel:
     """Tests for the ConfidenceLevel enum."""
 
-    def test_all_members_exist(self):
+    def test_all_members_exist(self) -> None:
         """ConfidenceLevel should have HIGH, MEDIUM, LOW, UNSAFE."""
         assert ConfidenceLevel.HIGH.value == "HIGH"
         assert ConfidenceLevel.MEDIUM.value == "MEDIUM"
         assert ConfidenceLevel.LOW.value == "LOW"
         assert ConfidenceLevel.UNSAFE.value == "UNSAFE"
 
-    def test_member_count(self):
+    def test_member_count(self) -> None:
         """ConfidenceLevel should have exactly 4 members."""
         assert len(ConfidenceLevel) == 4
 
-    def test_from_value(self):
+    def test_from_value(self) -> None:
         """ConfidenceLevel should be constructable from string value."""
         assert ConfidenceLevel("HIGH") is ConfidenceLevel.HIGH
         assert ConfidenceLevel("MEDIUM") is ConfidenceLevel.MEDIUM
         assert ConfidenceLevel("LOW") is ConfidenceLevel.LOW
         assert ConfidenceLevel("UNSAFE") is ConfidenceLevel.UNSAFE
 
-    def test_invalid_value_raises(self):
+    def test_invalid_value_raises(self) -> None:
         """ConfidenceLevel should raise ValueError for invalid value."""
         with pytest.raises(ValueError):
             ConfidenceLevel("INVALID")
@@ -176,14 +174,14 @@ class TestConfidenceLevel:
 class TestPlacementProof:
     """Tests for the PlacementProof dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         """PlacementProof should have sensible defaults."""
         proof = PlacementProof()
         assert proof.coverage_fraction == 0.0
         assert proof.proof_valid is False
         assert proof.max_gap_m == 0.0
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         """PlacementProof should accept custom values."""
         proof = PlacementProof(
             coverage_fraction=0.95,
@@ -194,13 +192,13 @@ class TestPlacementProof:
         assert proof.proof_valid is True
         assert proof.max_gap_m == 1.2
 
-    def test_zero_coverage(self):
+    def test_zero_coverage(self) -> None:
         """PlacementProof can represent zero coverage."""
         proof = PlacementProof(coverage_fraction=0.0, proof_valid=False)
         assert proof.coverage_fraction == 0.0
         assert proof.proof_valid is False
 
-    def test_full_coverage(self):
+    def test_full_coverage(self) -> None:
         """PlacementProof can represent full coverage."""
         proof = PlacementProof(coverage_fraction=1.0, proof_valid=True)
         assert proof.coverage_fraction == 1.0
@@ -215,7 +213,7 @@ class TestPlacementProof:
 class TestResilienceResult:
     """Tests for the ResilienceResult dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         """ResilienceResult should have sensible defaults."""
         result = ResilienceResult()
         assert result.resilient is False
@@ -223,7 +221,7 @@ class TestResilienceResult:
         assert result.failure_detail == ""
         assert result.min_coverage_seen == 0.0
 
-    def test_resilient_result(self):
+    def test_resilient_result(self) -> None:
         """ResilienceResult should capture a passing resilience check."""
         result = ResilienceResult(
             resilient=True,
@@ -235,7 +233,7 @@ class TestResilienceResult:
         assert result.pass_rate == 0.95
         assert result.min_coverage_seen == 0.90
 
-    def test_failed_result_with_detail(self):
+    def test_failed_result_with_detail(self) -> None:
         """ResilienceResult should capture a failed resilience check."""
         result = ResilienceResult(
             resilient=False,
@@ -255,7 +253,7 @@ class TestResilienceResult:
 class TestEnhancedRoomResult:
     """Tests for the EnhancedRoomResult dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         """EnhancedRoomResult should have sensible defaults."""
         result = EnhancedRoomResult()
         assert result.room_id == ""
@@ -272,32 +270,32 @@ class TestEnhancedRoomResult:
         assert result.safe_to_submit is False
         assert result.occupancy_class is None
 
-    def test_status_pass(self):
-        """status property should return 'PASS' when compliant."""
+    def test_status_pass(self) -> None:
+        """Status property should return 'PASS' when compliant."""
         result = EnhancedRoomResult(compliant=True)
         assert result.status == "PASS"
 
-    def test_status_fail(self):
-        """status property should return 'FAIL' when not compliant."""
+    def test_status_fail(self) -> None:
+        """Status property should return 'FAIL' when not compliant."""
         result = EnhancedRoomResult(compliant=False)
         assert result.status == "FAIL"
 
-    def test_refused_true(self):
-        """refused property should be True when non-compliant with errors."""
+    def test_refused_true(self) -> None:
+        """Refused property should be True when non-compliant with errors."""
         result = EnhancedRoomResult(compliant=False, errors=["Analysis engine error"])
         assert result.refused is True
 
-    def test_refused_false_compliant(self):
-        """refused property should be False when compliant (even with errors)."""
+    def test_refused_false_compliant(self) -> None:
+        """Refused property should be False when compliant (even with errors)."""
         result = EnhancedRoomResult(compliant=True, errors=["some warning"])
         assert result.refused is False
 
-    def test_refused_false_no_errors(self):
-        """refused property should be False when there are no errors."""
+    def test_refused_false_no_errors(self) -> None:
+        """Refused property should be False when there are no errors."""
         result = EnhancedRoomResult(compliant=False, errors=[])
         assert result.refused is False
 
-    def test_coverage_result_with_proof(self):
+    def test_coverage_result_with_proof(self) -> None:
         """coverage_result property should return CoverageResult from placement_proof."""
         proof = PlacementProof(coverage_fraction=0.95, proof_valid=True)
         result = EnhancedRoomResult(compliant=True, placement_proof=proof)
@@ -306,7 +304,7 @@ class TestEnhancedRoomResult:
         assert cr.is_covered is True
         assert abs(cr.coverage_percentage - 95.0) < 0.01
 
-    def test_coverage_result_without_proof(self):
+    def test_coverage_result_without_proof(self) -> None:
         """coverage_result property should return zero coverage when no proof."""
         result = EnhancedRoomResult(compliant=False, placement_proof=None)
         cr = result.coverage_result
@@ -314,7 +312,7 @@ class TestEnhancedRoomResult:
         assert cr.is_covered is False
         assert cr.coverage_percentage == 0.0
 
-    def test_safe_to_submit_true(self):
+    def test_safe_to_submit_true(self) -> None:
         """safe_to_submit should be True when compliant and not UNSAFE."""
         result = EnhancedRoomResult(
             compliant=True,
@@ -323,7 +321,7 @@ class TestEnhancedRoomResult:
         )
         assert result.safe_to_submit is True
 
-    def test_safe_to_submit_false_unsafe(self):
+    def test_safe_to_submit_false_unsafe(self) -> None:
         """safe_to_submit should be False when confidence is UNSAFE."""
         result = EnhancedRoomResult(
             compliant=True,
@@ -332,7 +330,7 @@ class TestEnhancedRoomResult:
         )
         assert result.safe_to_submit is False
 
-    def test_custom_detector_positions(self):
+    def test_custom_detector_positions(self) -> None:
         """EnhancedRoomResult should store detector positions."""
         positions = [(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)]
         result = EnhancedRoomResult(detector_positions=positions)
@@ -348,19 +346,19 @@ class TestEnhancedRoomResult:
 class TestResolveDbPath:
     """Tests for the _resolve_db_path helper function."""
 
-    def test_explicit_path(self, tmp_path):
+    def test_explicit_path(self, tmp_path) -> None:
         """Should return absolute path when db_path is explicit."""
         explicit = str(tmp_path / "my_audit.db")
         result = _resolve_db_path(explicit)
         assert os.path.isabs(result)
         assert result == os.path.abspath(explicit)
 
-    def test_memory_path(self):
+    def test_memory_path(self) -> None:
         """Should return ':memory:' as-is for in-memory databases."""
         result = _resolve_db_path(":memory:")
         assert result == ":memory:"
 
-    def test_env_var_path(self, tmp_path, monkeypatch):
+    def test_env_var_path(self, tmp_path, monkeypatch) -> None:
         """Should use FIREAI_DB_PATH env var when db_path is None."""
         env_path = str(tmp_path / "env_audit.db")
         monkeypatch.setenv("FIREAI_DB_PATH", env_path)
@@ -368,14 +366,14 @@ class TestResolveDbPath:
         assert os.path.isabs(result)
         assert result == os.path.abspath(env_path)
 
-    def test_default_path(self, monkeypatch):
+    def test_default_path(self, monkeypatch) -> None:
         """Should use default path relative to module when nothing specified."""
         monkeypatch.delenv("FIREAI_DB_PATH", raising=False)
         result = _resolve_db_path(None)
         assert os.path.isabs(result)
         assert result.endswith("fireai_audit.db")
 
-    def test_empty_string_treated_as_none(self, monkeypatch):
+    def test_empty_string_treated_as_none(self, monkeypatch) -> None:
         """Empty string db_path should fall through to env/default."""
         monkeypatch.delenv("FIREAI_DB_PATH", raising=False)
         result = _resolve_db_path("")
@@ -391,26 +389,26 @@ class TestResolveDbPath:
 class TestFireAISystemInit:
     """Tests for FireAISystem initialization."""
 
-    def test_initializes_with_valid_db_path(self, tmp_path):
+    def test_initializes_with_valid_db_path(self, tmp_path) -> None:
         """FireAISystem should initialize with a valid database path."""
         db_path = str(tmp_path / "test_init.db")
         system = FireAISystem(db_path=db_path)
         assert system._resolved_db_path is not None
 
-    def test_initializes_with_memory_db(self):
+    def test_initializes_with_memory_db(self) -> None:
         """FireAISystem should initialize with ':memory:' database."""
         system = FireAISystem(db_path=":memory:")
         assert system._resolved_db_path == ":memory:"
 
-    def test_learning_store_initialized(self, fireai_system):
+    def test_learning_store_initialized(self, fireai_system) -> None:
         """FireAISystem should initialize LearningStore."""
         assert fireai_system.learning is not None
 
-    def test_expert_not_initialized_at_start(self, fireai_system):
+    def test_expert_not_initialized_at_start(self, fireai_system) -> None:
         """FireAISystem should lazy-initialize the expert engine."""
         assert fireai_system._expert is None
 
-    def test_resolves_db_path(self, tmp_path):
+    def test_resolves_db_path(self, tmp_path) -> None:
         """FireAISystem should resolve the database path on init."""
         db_path = str(tmp_path / "resolved.db")
         system = FireAISystem(db_path=db_path)
@@ -425,20 +423,20 @@ class TestFireAISystemInit:
 class TestGetExpert:
     """Tests for FireAISystem._get_expert lazy initialization."""
 
-    def test_lazy_init_returns_expert(self, fireai_system):
+    def test_lazy_init_returns_expert(self, fireai_system) -> None:
         """_get_expert should return a FireExpertSystem instance."""
         from fireai.core.fire_expert_system import FireExpertSystem
 
         expert = fireai_system._get_expert()
         assert isinstance(expert, FireExpertSystem)
 
-    def test_lazy_init_singleton(self, fireai_system):
+    def test_lazy_init_singleton(self, fireai_system) -> None:
         """_get_expert should return the same instance on repeated calls."""
         expert1 = fireai_system._get_expert()
         expert2 = fireai_system._get_expert()
         assert expert1 is expert2
 
-    def test_expert_cached_after_first_call(self, fireai_system):
+    def test_expert_cached_after_first_call(self, fireai_system) -> None:
         """_get_expert should cache the expert after first call."""
         assert fireai_system._expert is None
         fireai_system._get_expert()
@@ -453,88 +451,88 @@ class TestGetExpert:
 class TestAnalyseRoom:
     """Tests for FireAISystem.analyse_room."""
 
-    def test_valid_room_returns_enhanced_result(self, fireai_system, sample_room_spec):
+    def test_valid_room_returns_enhanced_result(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should return EnhancedRoomResult for valid input."""
         result = fireai_system.analyse_room(sample_room_spec)
         assert isinstance(result, EnhancedRoomResult)
         assert result.room_id == "test_room_01"
 
-    def test_invalid_room_spec_none(self, fireai_system):
+    def test_invalid_room_spec_none(self, fireai_system) -> None:
         """analyse_room should raise ValueError for None room_spec."""
         with pytest.raises(ValueError, match="room_id"):
             fireai_system.analyse_room(None)
 
-    def test_invalid_room_spec_no_room_id(self, fireai_system):
+    def test_invalid_room_spec_no_room_id(self, fireai_system) -> None:
         """analyse_room should raise ValueError for room_spec without room_id."""
         fake_spec = MagicMock()
         del fake_spec.room_id  # Remove room_id attribute
         with pytest.raises(ValueError, match="room_id"):
             fireai_system.analyse_room(fake_spec)
 
-    def test_invalid_user_id_empty(self, fireai_system, sample_room_spec):
+    def test_invalid_user_id_empty(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should raise ValueError for empty user_id."""
         with pytest.raises(ValueError, match="user_id"):
             fireai_system.analyse_room(sample_room_spec, user_id="")
 
-    def test_invalid_user_id_none(self, fireai_system, sample_room_spec):
+    def test_invalid_user_id_none(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should raise ValueError for None user_id."""
         with pytest.raises(ValueError, match="user_id"):
             fireai_system.analyse_room(sample_room_spec, user_id=None)
 
-    def test_invalid_user_id_non_string(self, fireai_system, sample_room_spec):
+    def test_invalid_user_id_non_string(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should raise ValueError for non-string user_id."""
         with pytest.raises(ValueError, match="user_id"):
             fireai_system.analyse_room(sample_room_spec, user_id=123)
 
-    def test_result_has_detector_positions(self, fireai_system, sample_room_spec):
+    def test_result_has_detector_positions(self, fireai_system, sample_room_spec) -> None:
         """analyse_room result should have detector_positions list."""
         result = fireai_system.analyse_room(sample_room_spec)
         assert isinstance(result.detector_positions, list)
 
-    def test_result_has_confidence_level(self, fireai_system, sample_room_spec):
+    def test_result_has_confidence_level(self, fireai_system, sample_room_spec) -> None:
         """analyse_room result should have a ConfidenceLevel."""
         result = fireai_system.analyse_room(sample_room_spec)
         assert isinstance(result.confidence, ConfidenceLevel)
 
-    def test_result_has_placement_proof(self, fireai_system, sample_room_spec):
+    def test_result_has_placement_proof(self, fireai_system, sample_room_spec) -> None:
         """analyse_room result should have a PlacementProof."""
         result = fireai_system.analyse_room(sample_room_spec)
         assert isinstance(result.placement_proof, PlacementProof)
 
-    def test_result_detector_type(self, fireai_system, sample_room_spec):
+    def test_result_detector_type(self, fireai_system, sample_room_spec) -> None:
         """analyse_room result should preserve detector type from spec."""
         result = fireai_system.analyse_room(sample_room_spec)
         assert result.detector_type == DetectorType.SMOKE
 
-    def test_result_confidence_score_non_negative(self, fireai_system, sample_room_spec):
+    def test_result_confidence_score_non_negative(self, fireai_system, sample_room_spec) -> None:
         """analyse_room result confidence_score should be non-negative."""
         result = fireai_system.analyse_room(sample_room_spec)
         assert result.confidence_score >= 0.0
 
-    def test_compliant_room_has_high_or_medium_confidence(self, fireai_system, sample_room_spec):
+    def test_compliant_room_has_high_or_medium_confidence(self, fireai_system, sample_room_spec) -> None:
         """A compliant room should have HIGH or MEDIUM confidence."""
         result = fireai_system.analyse_room(sample_room_spec)
         if result.compliant:
             assert result.confidence in (ConfidenceLevel.HIGH, ConfidenceLevel.MEDIUM)
 
-    def test_compliant_room_safe_to_submit(self, fireai_system, sample_room_spec):
+    def test_compliant_room_safe_to_submit(self, fireai_system, sample_room_spec) -> None:
         """A compliant room with non-UNSAFE confidence should be safe_to_submit."""
         result = fireai_system.analyse_room(sample_room_spec)
         if result.compliant and result.confidence != ConfidenceLevel.UNSAFE:
             assert result.safe_to_submit is True
 
-    def test_large_room_has_detectors(self, fireai_system, large_room_spec):
+    def test_large_room_has_detectors(self, fireai_system, large_room_spec) -> None:
         """A large room should require multiple detectors."""
         result = fireai_system.analyse_room(large_room_spec)
         assert len(result.detector_positions) > 0
 
-    def test_high_ceiling_room(self, fireai_system, high_ceiling_room_spec):
+    def test_high_ceiling_room(self, fireai_system, high_ceiling_room_spec) -> None:
         """A high ceiling room should produce a valid analysis result."""
         result = fireai_system.analyse_room(high_ceiling_room_spec)
         assert isinstance(result, EnhancedRoomResult)
         assert result.room_id == "high_atrium"
 
-    def test_audit_trail_logged(self, fireai_system, sample_room_spec):
+    def test_audit_trail_logged(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should log an audit event."""
         fireai_system.analyse_room(sample_room_spec)
         events = fireai_system.get_audit_trail()
@@ -545,7 +543,7 @@ class TestAnalyseRoom:
         assert last_event["room_id"] == "test_room_01"
         assert "detector_count" in last_event["details"]
 
-    def test_audit_event_contains_user_id(self, fireai_system, sample_room_spec):
+    def test_audit_event_contains_user_id(self, fireai_system, sample_room_spec) -> None:
         """Audit event should contain the user_id."""
         fireai_system.analyse_room(sample_room_spec, user_id="engineer_alice")
         events = fireai_system.get_audit_trail()
@@ -553,21 +551,21 @@ class TestAnalyseRoom:
         assert len(analysis_events) >= 1
         assert analysis_events[-1]["details"]["user_id"] == "engineer_alice"
 
-    def test_resilience_run_by_default(self, fireai_system, sample_room_spec):
+    def test_resilience_run_by_default(self, fireai_system, sample_room_spec) -> None:
         """Resilience check should run by default (run_resilience=True)."""
         result = fireai_system.analyse_room(sample_room_spec)
         # Even if it falls back, resilience should be set if detectors exist
         if len(result.detector_positions) > 0:
             assert result.resilience is not None
 
-    def test_resilience_disabled(self, fireai_system, sample_room_spec):
+    def test_resilience_disabled(self, fireai_system, sample_room_spec) -> None:
         """Resilience should be None when run_resilience=False."""
         result = fireai_system.analyse_room(
             sample_room_spec, run_resilience=False
         )
         assert result.resilience is None
 
-    def test_resilience_result_structure(self, fireai_system, sample_room_spec):
+    def test_resilience_result_structure(self, fireai_system, sample_room_spec) -> None:
         """ResilienceResult should have expected attributes."""
         result = fireai_system.analyse_room(sample_room_spec, run_resilience=True)
         if result.resilience is not None:
@@ -575,7 +573,7 @@ class TestAnalyseRoom:
             assert isinstance(result.resilience.resilient, bool)
             assert isinstance(result.resilience.pass_rate, float)
 
-    def test_analysis_engine_error_returns_unsafe(self, fireai_system, sample_room_spec):
+    def test_analysis_engine_error_returns_unsafe(self, fireai_system, sample_room_spec) -> None:
         """If the analysis engine fails, result should have UNSAFE confidence."""
         with patch.object(
             fireai_system, "_get_expert"
@@ -589,7 +587,7 @@ class TestAnalyseRoom:
             assert len(result.errors) > 0
             assert "Engine crashed" in result.errors[0]
 
-    def test_no_resilience_with_no_detectors(self, fireai_system):
+    def test_no_resilience_with_no_detectors(self, fireai_system) -> None:
         """Resilience should be None when there are no detector positions."""
         room_spec = MagicMock()
         room_spec.room_id = "empty_room"
@@ -635,7 +633,7 @@ class TestConfidenceLevelBranches:
         mock.wall_violations = wall_violations
         return mock
 
-    def test_high_confidence_compliant_99plus_coverage(self, fireai_system, sample_room_spec):
+    def test_high_confidence_compliant_99plus_coverage(self, fireai_system, sample_room_spec) -> None:
         """Compliant room with >=99% coverage should get HIGH confidence."""
         mock_analysis = self._make_mock_analysis(passed=True, coverage_pct=99.5)
 
@@ -648,7 +646,7 @@ class TestConfidenceLevelBranches:
             assert result.confidence == ConfidenceLevel.HIGH
             assert result.compliant is True
 
-    def test_medium_confidence_compliant_below_99(self, fireai_system, sample_room_spec):
+    def test_medium_confidence_compliant_below_99(self, fireai_system, sample_room_spec) -> None:
         """Compliant room with <99% coverage should get MEDIUM confidence."""
         mock_analysis = self._make_mock_analysis(passed=True, coverage_pct=95.0)
 
@@ -661,7 +659,7 @@ class TestConfidenceLevelBranches:
             assert result.confidence == ConfidenceLevel.MEDIUM
             assert result.compliant is True
 
-    def test_low_confidence_noncompliant_90plus_coverage(self, fireai_system, sample_room_spec):
+    def test_low_confidence_noncompliant_90plus_coverage(self, fireai_system, sample_room_spec) -> None:
         """Non-compliant room with >=90% coverage should get LOW confidence."""
         mock_analysis = self._make_mock_analysis(passed=False, coverage_pct=92.0)
 
@@ -674,7 +672,7 @@ class TestConfidenceLevelBranches:
             assert result.confidence == ConfidenceLevel.LOW
             assert result.compliant is False
 
-    def test_unsafe_confidence_noncompliant_low_coverage(self, fireai_system, sample_room_spec):
+    def test_unsafe_confidence_noncompliant_low_coverage(self, fireai_system, sample_room_spec) -> None:
         """Non-compliant room with <90% coverage should get UNSAFE confidence."""
         mock_analysis = self._make_mock_analysis(passed=False, coverage_pct=50.0)
 
@@ -687,7 +685,7 @@ class TestConfidenceLevelBranches:
             assert result.confidence == ConfidenceLevel.UNSAFE
             assert result.compliant is False
 
-    def test_unsafe_confidence_not_safe_to_submit(self, fireai_system, sample_room_spec):
+    def test_unsafe_confidence_not_safe_to_submit(self, fireai_system, sample_room_spec) -> None:
         """UNSAFE confidence should make safe_to_submit=False."""
         mock_analysis = self._make_mock_analysis(passed=False, coverage_pct=50.0)
 
@@ -708,7 +706,7 @@ class TestConfidenceLevelBranches:
 class TestResilienceFallback:
     """Tests for resilience checking (MC and fallback paths)."""
 
-    def test_mc_fallback_single_detector(self, fireai_system, sample_room_spec):
+    def test_mc_fallback_single_detector(self, fireai_system, sample_room_spec) -> None:
         """When MC import fails, fallback should mark single detector as not resilient."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = [(5.0, 4.0)]  # single detector
@@ -737,7 +735,7 @@ class TestResilienceFallback:
                     # With only 1 detector, fallback should be not resilient
                     assert result.resilience.resilient is False
 
-    def test_mc_fallback_multiple_detectors(self, fireai_system, sample_room_spec):
+    def test_mc_fallback_multiple_detectors(self, fireai_system, sample_room_spec) -> None:
         """When MC fails, fallback with multiple detectors should be resilient."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = [(2.0, 2.0), (8.0, 6.0)]  # 2 detectors
@@ -765,33 +763,33 @@ class TestResilienceFallback:
 class TestAnalyseFloor:
     """Tests for FireAISystem.analyse_floor."""
 
-    def test_valid_floor_returns_results(self, fireai_system, sample_room_spec):
+    def test_valid_floor_returns_results(self, fireai_system, sample_room_spec) -> None:
         """analyse_floor should return list of EnhancedRoomResult."""
         results = fireai_system.analyse_floor([sample_room_spec])
         assert isinstance(results, list)
         assert len(results) == 1
         assert isinstance(results[0], EnhancedRoomResult)
 
-    def test_multiple_rooms(self, fireai_system, sample_room_spec, large_room_spec):
+    def test_multiple_rooms(self, fireai_system, sample_room_spec, large_room_spec) -> None:
         """analyse_floor should handle multiple rooms."""
         results = fireai_system.analyse_floor([sample_room_spec, large_room_spec])
         assert len(results) == 2
         assert results[0].room_id == "test_room_01"
         assert results[1].room_id == "large_warehouse"
 
-    def test_empty_rooms_list_raises(self, fireai_system):
+    def test_empty_rooms_list_raises(self, fireai_system) -> None:
         """analyse_floor should raise ValueError for empty rooms list."""
         with pytest.raises(ValueError, match="must not be empty"):
             fireai_system.analyse_floor([])
 
-    def test_too_many_rooms_raises(self, fireai_system):
+    def test_too_many_rooms_raises(self, fireai_system) -> None:
         """analyse_floor should raise ValueError for >500 rooms."""
         # Create a mock RoomSpec list of 501 items
         rooms = [MagicMock(room_id=f"room_{i}", spec=True) for i in range(501)]
         with pytest.raises(ValueError, match="Maximum 500"):
             fireai_system.analyse_floor(rooms)
 
-    def test_floor_audit_event_logged(self, fireai_system, sample_room_spec):
+    def test_floor_audit_event_logged(self, fireai_system, sample_room_spec) -> None:
         """analyse_floor should log a floor_analysis audit event."""
         fireai_system.analyse_floor([sample_room_spec])
         events = fireai_system.get_audit_trail()
@@ -799,7 +797,7 @@ class TestAnalyseFloor:
         assert len(floor_events) >= 1
         assert floor_events[-1]["details"]["room_count"] == 1
 
-    def test_floor_audit_includes_room_ids(self, fireai_system, sample_room_spec):
+    def test_floor_audit_includes_room_ids(self, fireai_system, sample_room_spec) -> None:
         """Floor audit event should include room IDs."""
         fireai_system.analyse_floor([sample_room_spec], user_id="engineer_bob")
         events = fireai_system.get_audit_trail()
@@ -807,7 +805,7 @@ class TestAnalyseFloor:
         assert len(floor_events) >= 1
         assert "test_room_01" in floor_events[-1]["details"]["rooms"]
 
-    def test_floor_500_rooms_accepted(self, fireai_system):
+    def test_floor_500_rooms_accepted(self, fireai_system) -> None:
         """analyse_floor should accept exactly 500 rooms (boundary test)."""
         # We use mocks to avoid actually running 500 analyses
         mock_spec = MagicMock()
@@ -836,7 +834,7 @@ class TestAnalyseFloor:
 class TestGetAuditTrail:
     """Tests for FireAISystem.get_audit_trail."""
 
-    def test_empty_trail(self, tmp_path):
+    def test_empty_trail(self, tmp_path) -> None:
         """get_audit_trail should return empty list for new system."""
         db_path = str(tmp_path / "empty_audit.db")
         system = FireAISystem(db_path=db_path)
@@ -844,7 +842,7 @@ class TestGetAuditTrail:
         events = system.get_audit_trail()
         assert isinstance(events, list)
 
-    def test_trail_after_analysis(self, fireai_system, sample_room_spec):
+    def test_trail_after_analysis(self, fireai_system, sample_room_spec) -> None:
         """get_audit_trail should contain events after analysis."""
         fireai_system.analyse_room(sample_room_spec)
         events = fireai_system.get_audit_trail()
@@ -853,7 +851,7 @@ class TestGetAuditTrail:
         event_types = [e["event_type"] for e in events]
         assert "room_analysis" in event_types
 
-    def test_trail_events_have_required_fields(self, fireai_system, sample_room_spec):
+    def test_trail_events_have_required_fields(self, fireai_system, sample_room_spec) -> None:
         """Audit trail events should have required fields."""
         fireai_system.analyse_room(sample_room_spec)
         events = fireai_system.get_audit_trail()
@@ -874,7 +872,7 @@ class TestGetAuditTrail:
 class TestVerifyAuditIntegrity:
     """Tests for FireAISystem.verify_audit_integrity."""
 
-    def test_fresh_system_integrity_valid(self, tmp_path):
+    def test_fresh_system_integrity_valid(self, tmp_path) -> None:
         """Audit integrity should be valid for a fresh system."""
         db_path = str(tmp_path / "integrity_test.db")
         system = FireAISystem(db_path=db_path)
@@ -882,7 +880,7 @@ class TestVerifyAuditIntegrity:
         is_valid = system.verify_audit_integrity()
         assert isinstance(is_valid, bool)
 
-    def test_integrity_after_analysis(self, fireai_system, sample_room_spec):
+    def test_integrity_after_analysis(self, fireai_system, sample_room_spec) -> None:
         """Audit integrity should be valid after normal analysis."""
         fireai_system.analyse_room(sample_room_spec)
         is_valid = fireai_system.verify_audit_integrity()
@@ -897,7 +895,7 @@ class TestVerifyAuditIntegrity:
 class TestGetMemorySummary:
     """Tests for FireAISystem.get_memory_summary."""
 
-    def test_with_learning_store(self, fireai_system, sample_room_spec):
+    def test_with_learning_store(self, fireai_system, sample_room_spec) -> None:
         """get_memory_summary should return a dict when learning store exists."""
         # First, store some data by running an analysis
         fireai_system.analyse_room(sample_room_spec)
@@ -907,7 +905,7 @@ class TestGetMemorySummary:
         # This tests the error handling path
         assert "error" in summary or isinstance(summary, dict)
 
-    def test_without_learning_store(self, fireai_system):
+    def test_without_learning_store(self, fireai_system) -> None:
         """get_memory_summary should return error dict when learning is None."""
         fireai_system.learning = None
         summary = fireai_system.get_memory_summary()
@@ -945,7 +943,7 @@ class TestRunIntegration:
         return mock_result
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_basic_integration_run(self, mock_audit, fireai_system):
+    def test_basic_integration_run(self, mock_audit, fireai_system) -> None:
         """run_integration should return a result dict with building_id."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -964,7 +962,7 @@ class TestRunIntegration:
             assert result["nfpa_year"] == 2022
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_integration_with_floor_data(self, mock_audit, fireai_system):
+    def test_integration_with_floor_data(self, mock_audit, fireai_system) -> None:
         """run_integration should handle floor data dicts."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -988,7 +986,7 @@ class TestRunIntegration:
             assert result["building_id"] == "BLDG-002"
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_integration_with_acoustic_config(self, mock_audit, fireai_system):
+    def test_integration_with_acoustic_config(self, mock_audit, fireai_system) -> None:
         """run_integration should handle acoustic_config dict."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1010,7 +1008,7 @@ class TestRunIntegration:
             assert result["building_id"] == "BLDG-003"
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_integration_disables_subsystems(self, mock_audit, fireai_system):
+    def test_integration_disables_subsystems(self, mock_audit, fireai_system) -> None:
         """run_integration should respect enable flags."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1030,7 +1028,7 @@ class TestRunIntegration:
             assert result["advanced_subsystems"]["bim_sync"] is None
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_integration_logs_audit_event(self, mock_audit, fireai_system):
+    def test_integration_logs_audit_event(self, mock_audit, fireai_system) -> None:
         """run_integration should log an integration_pipeline_run audit event."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1054,7 +1052,7 @@ class TestRunIntegration:
             assert len(integration_calls) >= 1
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_integration_custom_nfpa_year(self, mock_audit, fireai_system):
+    def test_integration_custom_nfpa_year(self, mock_audit, fireai_system) -> None:
         """run_integration should accept custom nfpa_year."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1071,7 +1069,7 @@ class TestRunIntegration:
             assert result["nfpa_year"] == 2019
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_integration_result_structure(self, mock_audit, fireai_system):
+    def test_integration_result_structure(self, mock_audit, fireai_system) -> None:
         """run_integration result should have expected top-level keys."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1094,7 +1092,7 @@ class TestRunIntegration:
             assert "warnings" in result
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_integration_core_subsystem_structure(self, mock_audit, fireai_system):
+    def test_integration_core_subsystem_structure(self, mock_audit, fireai_system) -> None:
         """run_integration core_subsystems should have expected keys."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1122,7 +1120,7 @@ class TestRunIntegration:
 class TestEndToEnd:
     """End-to-end integration tests."""
 
-    def test_full_analysis_workflow(self, fireai_system, sample_room_spec):
+    def test_full_analysis_workflow(self, fireai_system, sample_room_spec) -> None:
         """Full workflow: analyse_room -> audit trail -> verify integrity."""
         result = fireai_system.analyse_room(sample_room_spec, user_id="test_user")
         assert isinstance(result, EnhancedRoomResult)
@@ -1135,7 +1133,7 @@ class TestEndToEnd:
         is_valid = fireai_system.verify_audit_integrity()
         assert is_valid is True
 
-    def test_floor_then_audit(self, fireai_system, sample_room_spec, large_room_spec):
+    def test_floor_then_audit(self, fireai_system, sample_room_spec, large_room_spec) -> None:
         """Floor analysis should produce both room and floor audit events."""
         fireai_system.analyse_floor([sample_room_spec, large_room_spec], user_id="floor_user")
         events = fireai_system.get_audit_trail()
@@ -1143,14 +1141,14 @@ class TestEndToEnd:
         assert "room_analysis" in event_types
         assert "floor_analysis" in event_types
 
-    def test_multiple_analyses_independent(self, fireai_system, sample_room_spec, large_room_spec):
+    def test_multiple_analyses_independent(self, fireai_system, sample_room_spec, large_room_spec) -> None:
         """Multiple analyses should produce independent results."""
         result1 = fireai_system.analyse_room(sample_room_spec)
         result2 = fireai_system.analyse_room(large_room_spec)
         assert result1.room_id == "test_room_01"
         assert result2.room_id == "large_warehouse"
 
-    def test_coverage_fraction_computation(self, fireai_system, sample_room_spec):
+    def test_coverage_fraction_computation(self, fireai_system, sample_room_spec) -> None:
         """Coverage fraction should be properly computed from percentage."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = [(2.5, 2.0), (7.5, 6.0)]
@@ -1169,7 +1167,7 @@ class TestEndToEnd:
             assert result.placement_proof is not None
             assert abs(result.placement_proof.coverage_fraction - 0.995) < 0.01
 
-    def test_learning_store_receives_experience(self, fireai_system, sample_room_spec):
+    def test_learning_store_receives_experience(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should store experience in LearningStore."""
         mock_learning = MagicMock()
         mock_learning.store.return_value = True
@@ -1185,7 +1183,7 @@ class TestEndToEnd:
         assert call_kwargs[1]["solver_used"] == "fireai_core"
         mock_learning.maybe_recalibrate.assert_called_once()
 
-    def test_learning_store_failure_does_not_crash(self, fireai_system, sample_room_spec):
+    def test_learning_store_failure_does_not_crash(self, fireai_system, sample_room_spec) -> None:
         """If learning.store fails, analyse_room should still return a result."""
         mock_learning = MagicMock()
         mock_learning.store.side_effect = Exception("DB locked")
@@ -1194,7 +1192,7 @@ class TestEndToEnd:
         result = fireai_system.analyse_room(sample_room_spec)
         assert isinstance(result, EnhancedRoomResult)
 
-    def test_hash_chain_audit_non_blocking(self, fireai_system, sample_room_spec):
+    def test_hash_chain_audit_non_blocking(self, fireai_system, sample_room_spec) -> None:
         """Hash chain audit logging failure should not block analysis."""
         result = fireai_system.analyse_room(sample_room_spec)
         # Should still get a result even if hash chain audit fails
@@ -1209,7 +1207,7 @@ class TestEndToEnd:
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
-    def test_room_spec_with_default_ceiling(self, fireai_system):
+    def test_room_spec_with_default_ceiling(self, fireai_system) -> None:
         """RoomSpec with default ceiling should work."""
         room_spec = RoomSpec(
             room_id="default_ceiling",
@@ -1221,7 +1219,7 @@ class TestEdgeCases:
         assert isinstance(result, EnhancedRoomResult)
         assert result.room_id == "default_ceiling"
 
-    def test_analysis_with_heat_detector_type(self, fireai_system):
+    def test_analysis_with_heat_detector_type(self, fireai_system) -> None:
         """analyse_room should work with heat detector type."""
         room_spec = RoomSpec(
             room_id="heat_room",
@@ -1240,7 +1238,7 @@ class TestEdgeCases:
         assert isinstance(result, EnhancedRoomResult)
         assert result.detector_type == DetectorType.HEAT
 
-    def test_analyse_room_with_wall_violations(self, fireai_system, sample_room_spec):
+    def test_analyse_room_with_wall_violations(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should handle wall violations in analysis result."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = [(0.01, 0.01)]  # Too close to wall
@@ -1258,7 +1256,7 @@ class TestEdgeCases:
             assert len(result.wall_violations) == 2
             assert result.compliant is False
 
-    def test_confidence_level_from_coverage_fraction_edge(self, fireai_system, sample_room_spec):
+    def test_confidence_level_from_coverage_fraction_edge(self, fireai_system, sample_room_spec) -> None:
         """Test edge case: coverage_fraction exactly at 0.90 threshold."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = [(5.0, 4.0)]
@@ -1276,7 +1274,7 @@ class TestEdgeCases:
             # coverage_pct=90.0, coverage_fraction=0.90, >=0.90 threshold -> LOW
             assert result.confidence == ConfidenceLevel.LOW
 
-    def test_analyse_room_preserves_occupancy_type(self, fireai_system):
+    def test_analyse_room_preserves_occupancy_type(self, fireai_system) -> None:
         """analyse_room should preserve occupancy_type in learning store."""
         room_spec = RoomSpec(
             room_id="biz_room",
@@ -1302,13 +1300,13 @@ class TestEdgeCases:
         call_kwargs = mock_learning.store.call_args
         assert call_kwargs[1]["occupancy"] == "business"
 
-    def test_resolve_db_path_none_with_no_env(self, monkeypatch):
+    def test_resolve_db_path_none_with_no_env(self, monkeypatch) -> None:
         """_resolve_db_path(None) with no env var should use default path."""
         monkeypatch.delenv("FIREAI_DB_PATH", raising=False)
         result = _resolve_db_path(None)
         assert result.endswith("fireai_audit.db")
 
-    def test_enhanced_result_coverage_fraction_already_fraction(self, fireai_system, sample_room_spec):
+    def test_enhanced_result_coverage_fraction_already_fraction(self, fireai_system, sample_room_spec) -> None:
         """When coverage is already a fraction (<1), it should be used as-is."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = [(5.0, 4.0)]
@@ -1335,14 +1333,14 @@ class TestEdgeCases:
 class TestPostInitAuditChain:
     """Tests for __post_init__ audit chain verification branches."""
 
-    def test_init_with_valid_chain(self, tmp_path, monkeypatch):
+    def test_init_with_valid_chain(self, tmp_path, monkeypatch) -> None:
         """Init should succeed when audit chain is valid."""
         monkeypatch.delenv("FIREAI_DB_PATH", raising=False)
         db_path = str(tmp_path / "valid_chain.db")
         system = FireAISystem(db_path=db_path)
         assert system._resolved_db_path is not None
 
-    def test_init_dev_mode_key_mismatch_warning(self, tmp_path, monkeypatch):
+    def test_init_dev_mode_key_mismatch_warning(self, tmp_path, monkeypatch) -> None:
         """Init should warn (not crash) when audit chain fails in dev mode."""
         monkeypatch.delenv("AUDIT_HMAC_KEY", raising=False)
         monkeypatch.delenv("FIREAI_ENV", raising=False)
@@ -1354,7 +1352,7 @@ class TestPostInitAuditChain:
         system = FireAISystem(db_path=db_path)
         assert system._resolved_db_path is not None
 
-    def test_init_with_empty_db(self, tmp_path):
+    def test_init_with_empty_db(self, tmp_path) -> None:
         """Init should succeed with a fresh empty database."""
         db_path = str(tmp_path / "fresh.db")
         system = FireAISystem(db_path=db_path)
@@ -1369,7 +1367,7 @@ class TestPostInitAuditChain:
 class TestHashChainAudit:
     """Tests for the hash chain audit logging in analyse_room."""
 
-    def test_hash_chain_audit_succeeds(self, fireai_system, sample_room_spec):
+    def test_hash_chain_audit_succeeds(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should log to hash chain audit if available."""
         mock_hash_chain = MagicMock()
         fireai_system._hash_chain = mock_hash_chain
@@ -1382,7 +1380,7 @@ class TestHashChainAudit:
         assert call_kwargs[1]["event_type"] == "room_analysis"
         assert call_kwargs[1]["actor"] == "system"
 
-    def test_hash_chain_audit_creates_store_on_first_use(self, fireai_system, sample_room_spec):
+    def test_hash_chain_audit_creates_store_on_first_use(self, fireai_system, sample_room_spec) -> None:
         """First call to analyse_room should create _hash_chain if importable."""
         # Ensure _hash_chain doesn't exist yet
         if hasattr(fireai_system, "_hash_chain"):
@@ -1391,7 +1389,7 @@ class TestHashChainAudit:
         fireai_system.analyse_room(sample_room_spec, run_resilience=False)
         # Should not crash regardless of whether hash chain was created
 
-    def test_hash_chain_audit_failure_non_blocking(self, fireai_system, sample_room_spec):
+    def test_hash_chain_audit_failure_non_blocking(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should not crash if hash chain audit fails."""
         mock_hash_chain = MagicMock()
         mock_hash_chain.log.side_effect = Exception("Hash chain DB locked")
@@ -1409,7 +1407,7 @@ class TestHashChainAudit:
 class TestMonteCarloResilience:
     """Tests for the Monte Carlo resilience simulation paths in analyse_room."""
 
-    def test_mc_resilience_succeeds(self, fireai_system, sample_room_spec):
+    def test_mc_resilience_succeeds(self, fireai_system, sample_room_spec) -> None:
         """analyse_room should run MC resilience when available."""
         result = fireai_system.analyse_room(sample_room_spec, run_resilience=True)
         # Result should be valid regardless of MC success/failure
@@ -1419,7 +1417,7 @@ class TestMonteCarloResilience:
             # MC results should have pass_rate between 0 and 1
             assert 0.0 <= result.resilience.pass_rate <= 1.0
 
-    def test_mc_resilience_with_large_room(self, fireai_system, large_room_spec):
+    def test_mc_resilience_with_large_room(self, fireai_system, large_room_spec) -> None:
         """MC resilience should work with large rooms that have many detectors."""
         result = fireai_system.analyse_room(large_room_spec, run_resilience=True)
         assert isinstance(result, EnhancedRoomResult)
@@ -1451,7 +1449,7 @@ class TestRunIntegrationAdvancedSubsystems:
         return mock_result
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_kernel_v30_subsystem_enabled(self, mock_audit, fireai_system):
+    def test_kernel_v30_subsystem_enabled(self, mock_audit, fireai_system) -> None:
         """run_integration should run kernel V30 when enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1477,7 +1475,7 @@ class TestRunIntegrationAdvancedSubsystems:
             assert result["advanced_subsystems"]["kernel_v30"]["status"] == "completed"
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_kernel_v30_subsystem_failure(self, mock_audit, fireai_system):
+    def test_kernel_v30_subsystem_failure(self, mock_audit, fireai_system) -> None:
         """run_integration should handle kernel V30 failure gracefully."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1495,7 +1493,7 @@ class TestRunIntegrationAdvancedSubsystems:
             assert result["advanced_subsystems"]["kernel_v30"]["status"] == "failed"
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_hash_chain_audit_subsystem_enabled(self, mock_audit, fireai_system):
+    def test_hash_chain_audit_subsystem_enabled(self, mock_audit, fireai_system) -> None:
         """run_integration should run hash chain audit when enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1519,7 +1517,7 @@ class TestRunIntegrationAdvancedSubsystems:
             assert result["advanced_subsystems"]["hash_chain_audit"]["chain_valid"] is True
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_hash_chain_audit_subsystem_failure(self, mock_audit, fireai_system):
+    def test_hash_chain_audit_subsystem_failure(self, mock_audit, fireai_system) -> None:
         """run_integration should handle hash chain audit failure gracefully."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1537,7 +1535,7 @@ class TestRunIntegrationAdvancedSubsystems:
             assert result["advanced_subsystems"]["hash_chain_audit"]["status"] == "failed"
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_monte_carlo_subsystem_enabled(self, mock_audit, fireai_system):
+    def test_monte_carlo_subsystem_enabled(self, mock_audit, fireai_system) -> None:
         """run_integration should run Monte Carlo when enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1586,7 +1584,7 @@ class TestRunIntegrationAdvancedSubsystems:
             assert mc_result is not None
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_monte_carlo_subsystem_failure(self, mock_audit, fireai_system):
+    def test_monte_carlo_subsystem_failure(self, mock_audit, fireai_system) -> None:
         """run_integration should handle Monte Carlo failure gracefully."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1604,7 +1602,7 @@ class TestRunIntegrationAdvancedSubsystems:
             assert result["advanced_subsystems"]["monte_carlo"]["status"] == "failed"
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_bim_sync_subsystem_enabled(self, mock_audit, fireai_system):
+    def test_bim_sync_subsystem_enabled(self, mock_audit, fireai_system) -> None:
         """run_integration should run BIM sync when enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1627,7 +1625,7 @@ class TestRunIntegrationAdvancedSubsystems:
             assert result["advanced_subsystems"]["bim_sync"]["status"] == "available"
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_bim_sync_subsystem_failure(self, mock_audit, fireai_system):
+    def test_bim_sync_subsystem_failure(self, mock_audit, fireai_system) -> None:
         """run_integration should handle BIM sync failure gracefully."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1645,7 +1643,7 @@ class TestRunIntegrationAdvancedSubsystems:
             assert result["advanced_subsystems"]["bim_sync"]["status"] == "failed"
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_all_subsystems_enabled(self, mock_audit, fireai_system):
+    def test_all_subsystems_enabled(self, mock_audit, fireai_system) -> None:
         """run_integration should work with all subsystems enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1690,7 +1688,7 @@ class TestRunIntegrationAdvancedSubsystems:
             # but they should at least be attempted
 
     @patch("fireai.core.fireai_core.AuditStore.add_event")
-    def test_integration_with_floor_data_having_room_specs(self, mock_audit, fireai_system):
+    def test_integration_with_floor_data_having_room_specs(self, mock_audit, fireai_system) -> None:
         """run_integration should handle floor data with room_specs containing dicts."""
         mock_bridge_result = self._make_mock_integration_result()
 
@@ -1733,14 +1731,14 @@ class TestRunIntegrationAdvancedSubsystems:
 class TestAnalyseFloorIntegration:
     """Tests for the integration path in analyse_floor when compliant rooms exist."""
 
-    def test_floor_with_compliant_rooms(self, fireai_system, sample_room_spec):
+    def test_floor_with_compliant_rooms(self, fireai_system, sample_room_spec) -> None:
         """analyse_floor should handle compliant rooms without error."""
         # This triggers the `if any(r.compliant for r in results)` path
         results = fireai_system.analyse_floor([sample_room_spec])
         assert isinstance(results, list)
         assert len(results) == 1
 
-    def test_floor_with_non_compliant_rooms(self, fireai_system):
+    def test_floor_with_non_compliant_rooms(self, fireai_system) -> None:
         """analyse_floor should handle non-compliant rooms without error."""
         # Create a mock that returns non-compliant results
         mock_result = EnhancedRoomResult(
@@ -1766,7 +1764,7 @@ class TestAnalyseFloorIntegration:
 class TestCoverageFractionEdgeCases:
     """Tests for coverage fraction computation edge cases."""
 
-    def test_coverage_exactly_100_percent(self, fireai_system, sample_room_spec):
+    def test_coverage_exactly_100_percent(self, fireai_system, sample_room_spec) -> None:
         """Coverage of exactly 100% should be treated as 1.0 fraction."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = [(5.0, 4.0)]
@@ -1784,7 +1782,7 @@ class TestCoverageFractionEdgeCases:
             assert result.placement_proof.coverage_fraction == 1.0
             assert result.confidence == ConfidenceLevel.HIGH
 
-    def test_coverage_zero(self, fireai_system, sample_room_spec):
+    def test_coverage_zero(self, fireai_system, sample_room_spec) -> None:
         """Coverage of 0% should result in UNSAFE confidence."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = []
@@ -1802,7 +1800,7 @@ class TestCoverageFractionEdgeCases:
             assert result.placement_proof.coverage_fraction == 0.0
             assert result.confidence == ConfidenceLevel.UNSAFE
 
-    def test_analysis_without_layout(self, fireai_system, sample_room_spec):
+    def test_analysis_without_layout(self, fireai_system, sample_room_spec) -> None:
         """If analysis has no layout, detector_positions should be empty."""
         mock_analysis = MagicMock(spec=[])  # Empty spec = no attributes
 
@@ -1814,7 +1812,7 @@ class TestCoverageFractionEdgeCases:
             result = fireai_system.analyse_room(sample_room_spec, run_resilience=False)
             assert isinstance(result, EnhancedRoomResult)
 
-    def test_analysis_without_passed_attribute(self, fireai_system, sample_room_spec):
+    def test_analysis_without_passed_attribute(self, fireai_system, sample_room_spec) -> None:
         """If analysis lacks 'passed', should use proof_valid for compliance."""
         mock_analysis = MagicMock(spec=["layout", "coverage", "proof_valid", "wall_violations"])
         mock_analysis.layout.detectors = [(5.0, 4.0)]

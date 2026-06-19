@@ -33,20 +33,21 @@ import os
 import sys
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 
 # =====================================================================
 # CONFIGURATION: آمن — يرفض العمل بدون مفتاح في الإنتاج
 # =====================================================================
 class Config:
-    """
-    كل القيم قابلة للتعديل بدون تغيير الكود.
+    """كل القيم قابلة للتعديل بدون تغيير الكود.
     في الإنتاج: يرفض العمل بدون QOMN_AUDIT_SECRET.
     """
+
     SECRET_KEY: bytes = os.environ.get('QOMN_AUDIT_SECRET', '').encode()
     CB_LIMIT: int = int(os.getenv('QOMN_CB_LIMIT', '15'))
     CB_WINDOW: float = float(os.getenv('QOMN_CB_WINDOW', '60.0'))
@@ -63,8 +64,7 @@ class Config:
 
     @classmethod
     def verify_ready(cls) -> None:
-        """
-        يرفض العمل إذا كان المفتاح السري مفقوداً و REFUSE_ON_MISSING_SECRET=True.
+        """يرفض العمل إذا كان المفتاح السري مفقوداً و REFUSE_ON_MISSING_SECRET=True.
         هذا يمنع تشغيل النظام بدون توقيعات HMAC في الإنتاج.
         """
         if cls.REFUSE_ON_MISSING_SECRET and not cls.SECRET_KEY:
@@ -88,17 +88,17 @@ class SystemStatus(Enum):
 
 @dataclass(frozen=True)
 class SafetyResult:
-    """
-    نتيجة آمنة — لا قيمة بدون حالة.
+    """نتيجة آمنة — لا قيمة بدون حالة.
     كل قيمة "مُعالجة" تحتاج مراجعة بشرية.
     كل قيمة "مرفوضة" تُوقف الـ pipeline.
     """
+
     value: Any
     status: SystemStatus
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    audit_ref: Optional[str] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    audit_ref: str | None = None
     human_review_required: bool = False  # [v4.0 NEW] هل يحتاج مراجعة بشرية؟
-    rejection_reason: Optional[str] = None  # [v4.0 NEW] سبب الرفض إن وُجد
+    rejection_reason: str | None = None  # [v4.0 NEW] سبب الرفض إن وُجد
 
     def is_healed(self) -> bool:
         return self.status == SystemStatus.HEALED
@@ -113,8 +113,7 @@ class SafetyResult:
         return self.status == SystemStatus.REJECTED
 
     def is_safe_to_use(self) -> bool:
-        """
-        القيمة آمنة للاستخدام فقط إذا:
+        """القيمة آمنة للاستخدام فقط إذا:
         - NOMINAL (حساب حقيقي)
         - HEALED (استُبدلت لكن ما زالت فيزيائياً صحيحة)
         لا تعني أن القيمة صحيحة — تعني فقط أنها ليست مستحيلة فيزيائياً.
@@ -132,7 +131,7 @@ class SafetyResult:
 # FATAL vs RECOVERABLE ERROR CLASSIFICATION
 # =====================================================================
 # أخطاء قاتلة = لا يمكن "شفاءها" بأمان = يجب رفضها
-FATAL_ERRORS: Tuple[type, ...] = (
+FATAL_ERRORS: tuple[type, ...] = (
     ZeroDivisionError,  # قسمة على صفر = فيزياء مستحيلة
     MemoryError,        # لا ذاكرة = لا يمكن الوثوق بأي نتيجة
     OSError,            # فشل I/O = البيانات قد تكون تالفة
@@ -142,7 +141,7 @@ FATAL_ERRORS: Tuple[type, ...] = (
 )
 
 # أخطاء قابلة للشفاء = يمكن استبدالها بقيمة آمنة مع إنذار
-RECOVERABLE_ERRORS: Tuple[type, ...] = (
+RECOVERABLE_ERRORS: tuple[type, ...] = (
     IndexError,      # فهرس خارج النطاق = يمكن استخدام آخر عنصر
     TimeoutError,    # انتهت المهلة = يمكن استخدام قيمة دنيا
     ValueError,      # قيمة خاطئة = يمكن استخدام safe_minimum
@@ -152,8 +151,7 @@ RECOVERABLE_ERRORS: Tuple[type, ...] = (
 
 
 def classify_error(exc: Exception) -> str:
-    """
-    يُصنّف الخطأ: FATAL أو RECOVERABLE أو UNKNOWN.
+    """يُصنّف الخطأ: FATAL أو RECOVERABLE أو UNKNOWN.
     هذا القرار يحدد مصير الحساب بأكمله.
     """
     for fatal_type in FATAL_ERRORS:
@@ -169,24 +167,24 @@ def classify_error(exc: Exception) -> str:
 # AUDIT LOGGER: Singleton + Thread-Safe + HMAC + Rotation
 # =====================================================================
 class AsyncAuditLogger:
-    """
-    Non-blocking audit logger.
+    """Non-blocking audit logger.
     SINGLETON: مثيل واحد فقط — لا تسرب خيوط.
     Thread-safe: كل الوصول محمي بأقفال.
     HMAC: كل سجل موقّع.
     في الإنتاج: يرفض العمل بدون مفتاح سري.
     """
-    _instance: Optional['AsyncAuditLogger'] = None
+
+    _instance: AsyncAuditLogger | None = None
     _init_lock = threading.Lock()
 
-    def __new__(cls, filepath: Optional[str] = None):
+    def __new__(cls, filepath: str | None = None):
         with cls._init_lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
                 cls._instance._initialized = False  # type: ignore[as-type, has-type]
             return cls._instance
 
-    def __init__(self, filepath: Optional[str] = None):
+    def __init__(self, filepath: str | None = None) -> None:
         if self._initialized:  # type: ignore[has-type]
             return
         self._initialized = True
@@ -202,11 +200,11 @@ class AsyncAuditLogger:
         self._shutdown_event = threading.Event()
         self._writer_thread = threading.Thread(target=self._writer_loop, daemon=True)
         self._writer_thread.start()
-        self._last_ref: Optional[str] = None
+        self._last_ref: str | None = None
         self._pending_count: int = 0  # [v4.0 NEW] تتبع الإدخالات غير المكتوبة
 
     @classmethod
-    def reset_instance(cls):
+    def reset_instance(cls) -> None:
         """لاستخدام الاختبارات فقط — يعيد تعيين الـ Singleton."""
         with cls._init_lock:
             if cls._instance is not None:
@@ -215,8 +213,8 @@ class AsyncAuditLogger:
                 time.sleep(0.1)
             cls._instance = None
 
-    def log_event(self, event_data: Dict[str, Any]) -> str:
-        event_data["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
+    def log_event(self, event_data: dict[str, Any]) -> str:
+        event_data["timestamp_utc"] = datetime.now(UTC).isoformat()
         event_data["event_id"] = hashlib.sha256(
             f"{time.time()}{id(self)}{json.dumps(event_data, sort_keys=True, default=str)}".encode()
         ).hexdigest()[:12]
@@ -242,12 +240,12 @@ class AsyncAuditLogger:
         return self._last_ref
 
     @property
-    def last_entry_id(self) -> Optional[str]:
+    def last_entry_id(self) -> str | None:
         """Thread-safe قراءة آخر مرجع."""
         with self._lock:
             return self._last_ref
 
-    def _writer_loop(self):
+    def _writer_loop(self) -> None:
         while not self._shutdown_event.is_set():
             batch = []
             with self._lock:
@@ -270,7 +268,7 @@ class AsyncAuditLogger:
         if batch:
             self._write_batch(batch)
 
-    def _write_batch(self, lines: List[str]):
+    def _write_batch(self, lines: list[str]) -> None:
         try:
             with open(self.filepath, "a", encoding="utf-8") as f:
                 f.write("\n".join(lines) + "\n")
@@ -280,8 +278,7 @@ class AsyncAuditLogger:
             sys.stderr.write(f"[AUDIT-CRITICAL] {len(lines)} audit entries LOST!\n")
 
     def flush(self, timeout: float = 2.0) -> bool:
-        """
-        ينتظر حتى تُكتب كل الإدخالات أو تنتهي المهلة.
+        """ينتظر حتى تُكتب كل الإدخالات أو تنتهي المهلة.
         يُرجع True إذا نجح، False إذا انتهت المهلة.
         """
         self._flush_event.set()
@@ -293,7 +290,7 @@ class AsyncAuditLogger:
             time.sleep(0.05)
         return False  # انتهت المهلة — إدخالات غير مكتوبة
 
-    def verify_signature(self, entry: Dict[str, Any]) -> bool:
+    def verify_signature(self, entry: dict[str, Any]) -> bool:
         payload = entry.get("payload", {})
         sig = entry.get("signature", "")
         serialized = json.dumps(payload, sort_keys=True, default=str).encode()
@@ -305,18 +302,18 @@ class AsyncAuditLogger:
 # CIRCUIT BREAKER: Weighted + Half-Open + Error History Retention
 # =====================================================================
 class WeightedCircuitBreaker:
-    """
-    Thread-safe circuit breaker with weighted errors.
+    """Thread-safe circuit breaker with weighted errors.
     v4.0 CHANGES:
     - يحتفظ بتاريخ الأخطاء حتى بعد العودة من Half-Open
     - يُعلم عن كل انتقال حالة
-    - لا يسمح بالانتقال من OPEN إلى CLOSED مباشرة
+    - لا يسمح بالانتقال من OPEN إلى CLOSED مباشرة.
     """
+
     def __init__(self, limit: int = Config.CB_LIMIT,
                  window: float = Config.CB_WINDOW,
                  cooldown: float = Config.CB_COOLDOWN,
                  half_open_max: int = Config.CB_HALF_OPEN_MAX,
-                 name: str = "unnamed"):
+                 name: str = "unnamed") -> None:
         self.limit = limit
         self.window = window
         self.cooldown = cooldown
@@ -349,7 +346,7 @@ class WeightedCircuitBreaker:
                 return False
             return True
 
-    def record_success(self):
+    def record_success(self) -> None:
         with self._lock:
             if self._state == "HALF_OPEN":
                 self._half_open_successes += 1
@@ -380,7 +377,7 @@ class WeightedCircuitBreaker:
         with self._lock:
             return self._total_errors
 
-    def reset(self):
+    def reset(self) -> None:
         """للاختبارات فقط — لا يُستخدم في الإنتاج."""
         with self._lock:
             self._state = "CLOSED"
@@ -395,7 +392,7 @@ class WeightedCircuitBreaker:
 # كل decorator يشارك نفس الـ AuditLogger (Singleton)
 # لكن لكل واحد Circuit Breaker مستقل
 
-_circuit_breakers: Dict[str, WeightedCircuitBreaker] = {}
+_circuit_breakers: dict[str, WeightedCircuitBreaker] = {}
 _cb_lock = threading.Lock()
 
 
@@ -408,15 +405,14 @@ def _get_circuit_breaker(name: str) -> WeightedCircuitBreaker:
 
 
 def fail_loud_v4(
-    safe_minimum: Optional[float] = None,
+    safe_minimum: float | None = None,
     default_value: Any = None,
-    physics_validator: Optional[Callable[[Any], bool]] = None,
+    physics_validator: Callable[[Any], bool] | None = None,
     nfpa_reference: str = "",  # [v4.0 NEW] مرجع NFPA للحساب
     unit: str = "",  # [v4.0 NEW] وحدة القياس
     allow_healing: bool = True,  # [v4.0 NEW] هل يُسمح بالشفاء أصلاً؟
 ):
-    """
-    Fail-Loud Self-Healing Decorator v4.0.
+    """Fail-Loud Self-Healing Decorator v4.0.
 
     الفلسفة:
     - أخطاء قاتلة (FATAL) → REJECTED → توقف الـ pipeline فوراً
@@ -744,25 +740,22 @@ def _validate_fallback(value: Any, name: str) -> None:
 
 def _is_physically_invalid(value: Any) -> bool:
     """يتحقق من أن القيمة ليست مستحيلة فيزيائياً."""
-    if isinstance(value, float):
-        if math.isnan(value) or math.isinf(value):
-            return True
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return True
     if isinstance(value, (list, tuple)):
         for v in value:
-            if isinstance(v, float):
-                if math.isnan(v) or math.isinf(v):
-                    return True
+            if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+                return True
     return False
 
 
 def _compute_healed_value(
     err_type: str,
     args: tuple,
-    safe_minimum: Optional[float],
+    safe_minimum: float | None,
     default_value: Any,
 ) -> Any:
-    """
-    يحسب القيمة المُعالجة بناءً على نوع الخطأ.
+    """يحسب القيمة المُعالجة بناءً على نوع الخطأ.
     فقط للأخطاء القابلة للشفاء (RECOVERABLE).
     """
     if err_type == "IndexError":
@@ -843,7 +836,7 @@ class AamksAdapter:
 # 2. Evac4Bim: IFC Parser
 class Evac4BimAdapter:
     @staticmethod
-    def validate_coords(coords: List[float]) -> bool:
+    def validate_coords(coords: list[float]) -> bool:
         """لا نقبل NaN أو Inf في الإحداثيات — مستحيل فيزيائياً."""
         if not isinstance(coords, (list, tuple)):
             return False
@@ -864,7 +857,7 @@ class Evac4BimAdapter:
         nfpa_reference="IFC4 — Building element placement",
         unit="meters",
     )
-    def parse_ifc_coordinates(raw_coords: List[float]) -> List[float]:
+    def parse_ifc_coordinates(raw_coords: list[float]) -> list[float]:
         if not raw_coords:
             raise IndexError("Empty coordinate list")
         for c in raw_coords:
@@ -887,7 +880,7 @@ def _validate_openfire_height(h: float) -> bool:
     )
 
 class OpenFireAdapter:
-    """حساب ارتفاع طبقة الدخان — NFPA 92"""
+    """حساب ارتفاع طبقة الدخان — NFPA 92."""
 
     MIN_SMOKE_LAYER_HEIGHT = _OPENFIRE_MIN_HEIGHT
     MAX_SMOKE_LAYER_HEIGHT = _OPENFIRE_MAX_HEIGHT
@@ -903,9 +896,8 @@ class OpenFireAdapter:
         unit="meters",
     )
     def calculate_smoke_layer_height(temp_k: float, mass_flow: float) -> float:
-        """
-        حساب مبسط لارتفاع طبقة الدخان.
-        الـ ZeroDivisionError هنا = فيزياء مستحيلة = FATAL = REJECTED
+        """حساب مبسط لارتفاع طبقة الدخان.
+        الـ ZeroDivisionError هنا = فيزياء مستحيلة = FATAL = REJECTED.
         """
         if temp_k <= 0.0 or mass_flow <= 0.0:
             # في v3.1 كان هذا ZeroDivisionError → healed إلى inf
@@ -926,7 +918,7 @@ class OpenFireAdapter:
 # 4. Emergency Evacuation: Pathfinding
 class EmergencyEvacuationAdapter:
     @staticmethod
-    def validate_path(path: List[str]) -> bool:
+    def validate_path(path: list[str]) -> bool:
         return isinstance(path, list) and len(path) > 0 and all(isinstance(p, str) and p for p in path)
 
     @staticmethod
@@ -937,7 +929,7 @@ class EmergencyEvacuationAdapter:
         nfpa_reference="NFPA 101 §7.2 — Means of egress",
         unit="path_nodes",
     )
-    def solve_evacuation_route(graph_nodes: List[str], target_node: str) -> List[str]:
+    def solve_evacuation_route(graph_nodes: list[str], target_node: str) -> list[str]:
         if not graph_nodes:
             raise IndexError("Empty graph — no evacuation nodes available")
         if not target_node:
@@ -951,8 +943,7 @@ class EmergencyEvacuationAdapter:
 
 # 5. SafeGuard AI: Edge Inference — FAIL-SAFE = False (لا إنذار خاطئ)
 class SafeGuardAiAdapter:
-    """
-    في نظام إنذار الحرائق:
+    """في نظام إنذار الحرائق:
     - إنذار خاطئ (False Positive) = إزعاج لكنه آمن
     - تفويت إنذار (False Negative) = كارثة
     لذلك في حالة الفشل، نُعيد False (لا إنذار) بدلاً من True (إنذار خاطئ)
@@ -972,7 +963,7 @@ class SafeGuardAiAdapter:
         nfpa_reference="NFPA 72 §17.7 — Smoke detection",
         unit="boolean",
     )
-    def classify_smoke_features(features: List[float]) -> bool:
+    def classify_smoke_features(features: list[float]) -> bool:
         if not features:
             raise ValueError("Empty feature list — cannot classify")
         if len(features) > 100:
@@ -1040,7 +1031,7 @@ def _validate_epyt_pressure(val: float) -> bool:
     )
 
 class EpytAdapter:
-    """حساب ضغط تدفق المياه — NFPA 13/20"""
+    """حساب ضغط تدفق المياه — NFPA 13/20."""
 
     MIN_PRESSURE_PSI = _EPYT_MIN_PSI
     MAX_PRESSURE_PSI = _EPYT_MAX_PSI
@@ -1090,8 +1081,7 @@ def _validate_spray_flow(val: float) -> bool:
     return val >= _SPRAY_MIN_PSI
 
 class SprayHydraulicAdapter:
-    """
-    حساب ضغط رأس الرشاش — NFPA 13.
+    """حساب ضغط رأس الرشاش — NFPA 13.
     في v3.1 كان default_value=float('inf') = كارثة.
     في v4.0: أعلى ضغط واقعي أو REJECTED.
     """
@@ -1112,8 +1102,7 @@ class SprayHydraulicAdapter:
         allow_healing=False,  # [v4.0] حساب الرشاش حرج — لا شفاء، بيانات خاطئة = إيقاف
     )
     def calculate_discharge_pressure(flow_gpm: float, k_factor: float) -> float:
-        """
-        P = (Q/K)^2 — NFPA 13 sprinkler discharge formula.
+        """P = (Q/K)^2 — NFPA 13 sprinkler discharge formula.
         إذا K=0، الرشاش لا يعمل = REJECTED وليس inf.
         """
         if k_factor == 0.0:
@@ -1140,9 +1129,8 @@ class SprayHydraulicAdapter:
 # SCENARIOS — FAIL-LOUD: REJECTED = STOP PIPELINE
 # =====================================================================
 
-def execute_hospital_scenario(sim_runs: int, node_elevation: float, water_demand: float) -> Dict[str, Any]:
-    """
-    سيناريو المستشفى.
+def execute_hospital_scenario(sim_runs: int, node_elevation: float, water_demand: float) -> dict[str, Any]:
+    """سيناريو المستشفى.
     إذا فشل أي حساب حرج، الـ pipeline يتوقف بالكامل.
     """
     sim_res = AamksAdapter.run_monte_carlo(sim_runs)
@@ -1187,7 +1175,7 @@ def execute_hospital_scenario(sim_runs: int, node_elevation: float, water_demand
     }
 
 
-def execute_high_rise_scenario(raw_coords: List[float], escape_nodes: List[str]) -> Dict[str, Any]:
+def execute_high_rise_scenario(raw_coords: list[float], escape_nodes: list[str]) -> dict[str, Any]:
     """سيناريو البرج العالي."""
     coords_res = Evac4BimAdapter.parse_ifc_coordinates(raw_coords)
     if coords_res.is_rejected():
@@ -1221,7 +1209,7 @@ def execute_high_rise_scenario(raw_coords: List[float], escape_nodes: List[str])
     }
 
 
-def execute_bank_scenario(sensor_features: List[float]) -> Dict[str, Any]:
+def execute_bank_scenario(sensor_features: list[float]) -> dict[str, Any]:
     """سيناريو البنك."""
     inference_res = SafeGuardAiAdapter.classify_smoke_features(sensor_features)
     if inference_res.is_rejected():
@@ -1245,7 +1233,7 @@ def execute_bank_scenario(sensor_features: List[float]) -> Dict[str, Any]:
     }
 
 
-def execute_school_scenario(students_count: int, door_width_m: float) -> Dict[str, Any]:
+def execute_school_scenario(students_count: int, door_width_m: float) -> dict[str, Any]:
     """سيناريو المدرسة."""
     throughput_res = DisasterEvacuationAdapter.simulate_crowd_throughput(students_count, door_width_m)
     if throughput_res.is_rejected():
@@ -1266,7 +1254,7 @@ def execute_school_scenario(students_count: int, door_width_m: float) -> Dict[st
     }
 
 
-def execute_home_scenario(flow_rate_gpm: float, k_factor_coefficient: float) -> Dict[str, Any]:
+def execute_home_scenario(flow_rate_gpm: float, k_factor_coefficient: float) -> dict[str, Any]:
     """سيناريو المنزل."""
     pressure_res = SprayHydraulicAdapter.calculate_discharge_pressure(flow_rate_gpm, k_factor_coefficient)
     if pressure_res.is_rejected():
@@ -1293,11 +1281,13 @@ def execute_home_scenario(flow_rate_gpm: float, k_factor_coefficient: float) -> 
 # =====================================================================
 import unittest
 
+import pytest
+
 
 class TestQomnFireV4FailLoud(unittest.TestCase):
     """اختبارات شاملة لفلسفة Fail-Loud."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         # Reset circuit breakers for test isolation
         _circuit_breakers.clear()
         # Reset audit logger singleton for test isolation
@@ -1307,283 +1297,283 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
     # ----------------------------------------------------------
     # SprayHydraulic Tests — NO MORE INFINITY
     # ----------------------------------------------------------
-    def test_spray_zero_k_factor_is_rejected_not_inf(self):
+    def test_spray_zero_k_factor_is_rejected_not_inf(self) -> None:
         """K=0 = رشاش لا يعمل = REJECTED وليس inf."""
         res = SprayHydraulicAdapter.calculate_discharge_pressure(100.0, 0.0)
-        self.assertTrue(res.is_rejected(), f"K=0 should be REJECTED, got {res.status}")
-        self.assertIsNone(res.value, "REJECTED should have no value")
-        self.assertNotEqual(res.value, float('inf'), "Must NOT return infinity")
+        assert res.is_rejected(), f"K=0 should be REJECTED, got {res.status}"
+        assert res.value is None, "REJECTED should have no value"
+        assert res.value != float('inf'), "Must NOT return infinity"
 
-    def test_spray_negative_k_factor_is_rejected(self):
+    def test_spray_negative_k_factor_is_rejected(self) -> None:
         """K سلبي = بيانات خاطئة = REJECTED."""
         res = SprayHydraulicAdapter.calculate_discharge_pressure(100.0, -5.0)
-        self.assertTrue(res.is_rejected())
+        assert res.is_rejected()
 
-    def test_spray_negative_flow_is_rejected(self):
+    def test_spray_negative_flow_is_rejected(self) -> None:
         """تدفق سالب = مستحيل فيزيائياً = REJECTED."""
         res = SprayHydraulicAdapter.calculate_discharge_pressure(-10.0, 5.6)
-        self.assertTrue(res.is_rejected())
+        assert res.is_rejected()
 
-    def test_spray_valid_calculation_is_nominal(self):
+    def test_spray_valid_calculation_is_nominal(self) -> None:
         """حساب صحيح = NOMINAL."""
         res = SprayHydraulicAdapter.calculate_discharge_pressure(100.0, 5.6)
-        self.assertTrue(res.is_nominal())
+        assert res.is_nominal()
         self.assertAlmostEqual(res.value, (100.0 / 5.6) ** 2, places=2)
 
     # ----------------------------------------------------------
     # OpenFire Tests — ZeroDivisionError = FATAL = REJECTED
     # ----------------------------------------------------------
-    def test_smoke_zero_temp_is_rejected(self):
+    def test_smoke_zero_temp_is_rejected(self) -> None:
         """درجة حرارة صفر = فيزياء مستحيلة = REJECTED."""
         res = OpenFireAdapter.calculate_smoke_layer_height(0.0, 1.0)
-        self.assertTrue(res.is_rejected())
+        assert res.is_rejected()
 
-    def test_smoke_negative_mass_flow_is_rejected(self):
+    def test_smoke_negative_mass_flow_is_rejected(self) -> None:
         """تدفق كتلة سالب = مستحيل = REJECTED."""
         res = OpenFireAdapter.calculate_smoke_layer_height(300.0, -1.0)
-        self.assertTrue(res.is_rejected())
+        assert res.is_rejected()
 
-    def test_smoke_valid_calculation_is_nominal(self):
+    def test_smoke_valid_calculation_is_nominal(self) -> None:
         """حساب صحيح = NOMINAL."""
         res = OpenFireAdapter.calculate_smoke_layer_height(300.0, 0.02)
-        self.assertTrue(res.is_nominal())
+        assert res.is_nominal()
 
     # ----------------------------------------------------------
     # Evac4Bim Tests — NaN Coordinates = REJECTED
     # ----------------------------------------------------------
-    def test_nan_coords_are_healed(self):
+    def test_nan_coords_are_healed(self) -> None:
         """إحداثيات NaN = تالفة = ValueError (RECOVERABLE) → HEALED مع default_value."""
         res = Evac4BimAdapter.parse_ifc_coordinates([0.0, float('nan'), 10.0])
         # ValueError is RECOVERABLE → HEALED with default_value
-        self.assertTrue(res.is_healed())
-        self.assertEqual(res.value, [0.0, 0.0, 0.0])  # default fallback
-        self.assertTrue(res.requires_human_review())
+        assert res.is_healed()
+        assert res.value == [0.0, 0.0, 0.0]  # default fallback
+        assert res.requires_human_review()
 
-    def test_valid_coords_are_nominal(self):
+    def test_valid_coords_are_nominal(self) -> None:
         """إحداثيات صحيحة = NOMINAL."""
         res = Evac4BimAdapter.parse_ifc_coordinates([1.0, 2.0, 3.0])
-        self.assertTrue(res.is_nominal())
-        self.assertEqual(res.value, [1.0, 2.0, 3.0])
+        assert res.is_nominal()
+        assert res.value == [1.0, 2.0, 3.0]
 
-    def test_empty_coords_are_rejected(self):
+    def test_empty_coords_are_rejected(self) -> None:
         """إحداثيات فارغة = IndexError = HEALED."""
         res = Evac4BimAdapter.parse_ifc_coordinates([])
-        self.assertTrue(res.is_healed())
+        assert res.is_healed()
 
     # ----------------------------------------------------------
     # SafeGuard AI Tests — Fail-Safe = False
     # ----------------------------------------------------------
-    def test_sram_limit_heals_to_false(self):
+    def test_sram_limit_heals_to_false(self) -> None:
         """SRAM limit exceeded = ValueError (domain limit) → HEALED to False (لا إنذار خاطئ)."""
         res = SafeGuardAiAdapter.classify_smoke_features([1.0] * 500)
-        self.assertTrue(res.is_healed())
-        self.assertEqual(res.value, False)  # Fail-safe = لا إنذار
-        self.assertTrue(res.requires_human_review())
+        assert res.is_healed()
+        assert not res.value  # Fail-safe = لا إنذار
+        assert res.requires_human_review()
 
-    def test_empty_features_are_healed_to_false(self):
+    def test_empty_features_are_healed_to_false(self) -> None:
         """قائمة ميزات فارغة = ValueError = HEALED to False."""
         res = SafeGuardAiAdapter.classify_smoke_features([])
-        self.assertTrue(res.is_healed())
-        self.assertEqual(res.value, False)
+        assert res.is_healed()
+        assert not res.value
 
-    def test_valid_detection_is_nominal(self):
+    def test_valid_detection_is_nominal(self) -> None:
         """تصنيف صحيح = NOMINAL."""
         res = SafeGuardAiAdapter.classify_smoke_features([30.0] * 3)
-        self.assertTrue(res.is_nominal())
+        assert res.is_nominal()
 
     # ----------------------------------------------------------
     # Disaster Evacuation Tests — Zero Exit Width = FATAL
     # ----------------------------------------------------------
-    def test_zero_exit_width_is_rejected(self):
+    def test_zero_exit_width_is_rejected(self) -> None:
         """مخرج بعرض صفر = لا إخلاء ممكن = REJECTED (FATAL ZeroDivisionError)."""
         res = DisasterEvacuationAdapter.simulate_crowd_throughput(100, 0.0)
-        self.assertTrue(res.is_rejected())
-        self.assertIsNone(res.value)
+        assert res.is_rejected()
+        assert res.value is None
 
-    def test_negative_agents_is_rejected(self):
+    def test_negative_agents_is_rejected(self) -> None:
         """عدد أشخاص سالب = مستحيل = REJECTED (ValueError is RECOVERABLE → HEALED)."""
         res = DisasterEvacuationAdapter.simulate_crowd_throughput(-10, 1.0)
         # ValueError is RECOVERABLE → HEALED
-        self.assertTrue(res.is_healed())
+        assert res.is_healed()
 
-    def test_valid_throughput_is_nominal(self):
+    def test_valid_throughput_is_nominal(self) -> None:
         """حساب صحيح = NOMINAL."""
         res = DisasterEvacuationAdapter.simulate_crowd_throughput(50, 2.0)
-        self.assertTrue(res.is_nominal())
+        assert res.is_nominal()
         self.assertAlmostEqual(res.value, 25.0)
 
     # ----------------------------------------------------------
     # EPyT Hydraulic Tests
     # ----------------------------------------------------------
-    def test_zero_demand_is_rejected(self):
+    def test_zero_demand_is_rejected(self) -> None:
         """طلب صفر = لا ضغط = REJECTED (FATAL ZeroDivisionError)."""
         res = EpytAdapter.calculate_epanet_flow_pressure(50.0, 0.0)
-        self.assertTrue(res.is_rejected())
+        assert res.is_rejected()
 
-    def test_negative_elevation_is_rejected(self):
+    def test_negative_elevation_is_rejected(self) -> None:
         """ارتفاع سالب = HEALED (RECOVERABLE ValueError)."""
         res = EpytAdapter.calculate_epanet_flow_pressure(-5.0, 10.0)
-        self.assertTrue(res.is_healed())
+        assert res.is_healed()
 
-    def test_valid_pressure_is_nominal(self):
+    def test_valid_pressure_is_nominal(self) -> None:
         """ضغط صحيح = NOMINAL."""
         res = EpytAdapter.calculate_epanet_flow_pressure(100.0, 1.0)
-        self.assertTrue(res.is_nominal())
+        assert res.is_nominal()
         self.assertAlmostEqual(res.value, 100.0)
 
     # ----------------------------------------------------------
     # AAMKS Monte Carlo Tests
     # ----------------------------------------------------------
-    def test_zero_sim_count_is_rejected(self):
+    def test_zero_sim_count_is_rejected(self) -> None:
         """عدد محاكاة صفر = HEALED (RECOVERABLE ValueError)."""
         res = AamksAdapter.run_monte_carlo(0)
-        self.assertTrue(res.is_healed())
+        assert res.is_healed()
 
-    def test_excessive_sim_count_is_rejected(self):
+    def test_excessive_sim_count_is_rejected(self) -> None:
         """عدد محاكاة زائد = FATAL (MemoryError) = REJECTED."""
         res = AamksAdapter.run_monte_carlo(20000)
-        self.assertTrue(res.is_rejected())
+        assert res.is_rejected()
 
-    def test_valid_sim_count_is_nominal(self):
+    def test_valid_sim_count_is_nominal(self) -> None:
         """عدد محاكاة صحيح = NOMINAL."""
         res = AamksAdapter.run_monte_carlo(500)
-        self.assertTrue(res.is_nominal())
+        assert res.is_nominal()
 
     # ----------------------------------------------------------
     # Emergency Evacuation Tests
     # ----------------------------------------------------------
-    def test_empty_graph_is_healed(self):
+    def test_empty_graph_is_healed(self) -> None:
         """رسم بياني فارغ = IndexError = HEALED."""
         res = EmergencyEvacuationAdapter.solve_evacuation_route([], "EXIT")
-        self.assertTrue(res.is_healed())
+        assert res.is_healed()
 
-    def test_missing_target_is_healed(self):
+    def test_missing_target_is_healed(self) -> None:
         """مخرج غير موجود = KeyError = HEALED."""
         res = EmergencyEvacuationAdapter.solve_evacuation_route(["A", "B"], "Z")
-        self.assertTrue(res.is_healed())
+        assert res.is_healed()
 
-    def test_valid_route_is_nominal(self):
+    def test_valid_route_is_nominal(self) -> None:
         """مسار صحيح = NOMINAL."""
         res = EmergencyEvacuationAdapter.solve_evacuation_route(["LOBBY", "STAIR_A", "EXIT"], "EXIT")
-        self.assertTrue(res.is_nominal())
-        self.assertEqual(res.value, ["LOBBY", "EXIT"])
+        assert res.is_nominal()
+        assert res.value == ["LOBBY", "EXIT"]
 
     # ----------------------------------------------------------
     # Scenario Tests — Pipeline Stop on REJECTED
     # ----------------------------------------------------------
-    def test_hospital_scenario_rejected_on_bad_pressure(self):
+    def test_hospital_scenario_rejected_on_bad_pressure(self) -> None:
         """سيناريو المستشفى مع ضغط خاطئ = REJECTED."""
         result = execute_hospital_scenario(500, 100.0, 0.0)  # demand=0 → ZeroDivision
-        self.assertEqual(result["resilience_status"], "REJECTED")
-        self.assertIn("rejection_reason", result)
-        self.assertIn("human_action_required", result)
+        assert result["resilience_status"] == "REJECTED"
+        assert "rejection_reason" in result
+        assert "human_action_required" in result
 
-    def test_home_scenario_rejected_on_zero_k_factor(self):
+    def test_home_scenario_rejected_on_zero_k_factor(self) -> None:
         """سيناريو المنزل مع K=0 = REJECTED."""
         result = execute_home_scenario(100.0, 0.0)
-        self.assertEqual(result["resilience_status"], "REJECTED")
-        self.assertIn("human_action_required", result)
+        assert result["resilience_status"] == "REJECTED"
+        assert "human_action_required" in result
 
-    def test_school_scenario_rejected_on_zero_exit(self):
+    def test_school_scenario_rejected_on_zero_exit(self) -> None:
         """سيناريو المدرسة مع مخرج صفر = REJECTED."""
         result = execute_school_scenario(200, 0.0)
-        self.assertEqual(result["resilience_status"], "REJECTED")
+        assert result["resilience_status"] == "REJECTED"
 
-    def test_valid_hospital_scenario_is_nominal(self):
+    def test_valid_hospital_scenario_is_nominal(self) -> None:
         """سيناريو مستشفى صحيح = NOMINAL."""
         result = execute_hospital_scenario(500, 100.0, 1.0)
-        self.assertIn(result["resilience_status"], ["NOMINAL", "HEALED_REVIEW_REQUIRED"])
+        assert result["resilience_status"] in ["NOMINAL", "HEALED_REVIEW_REQUIRED"]
 
     # ----------------------------------------------------------
     # SafetyResult Tests
     # ----------------------------------------------------------
-    def test_rejected_result_is_not_safe_to_use(self):
+    def test_rejected_result_is_not_safe_to_use(self) -> None:
         """REJECTED = ليس آمناً للاستخدام."""
         res = SafetyResult(
             value=None,
             status=SystemStatus.REJECTED,
             rejection_reason="test"
         )
-        self.assertFalse(res.is_safe_to_use())
-        self.assertTrue(res.is_rejected())
-        self.assertTrue(res.requires_human_review())
+        assert not res.is_safe_to_use()
+        assert res.is_rejected()
+        assert res.requires_human_review()
 
-    def test_healed_result_requires_human_review(self):
+    def test_healed_result_requires_human_review(self) -> None:
         """HEALED = يحتاج مراجعة بشرية."""
         res = SafetyResult(
             value=7.0,
             status=SystemStatus.HEALED,
             human_review_required=True
         )
-        self.assertTrue(res.requires_human_review())
-        self.assertTrue(res.is_safe_to_use())
+        assert res.requires_human_review()
+        assert res.is_safe_to_use()
 
-    def test_nominal_result_does_not_require_review(self):
+    def test_nominal_result_does_not_require_review(self) -> None:
         """NOMINAL = لا يحتاج مراجعة."""
         res = SafetyResult(
             value=100.0,
             status=SystemStatus.NOMINAL
         )
-        self.assertFalse(res.requires_human_review())
+        assert not res.requires_human_review()
 
     # ----------------------------------------------------------
     # Error Classification Tests
     # ----------------------------------------------------------
-    def test_zero_division_is_fatal(self):
+    def test_zero_division_is_fatal(self) -> None:
         """ZeroDivisionError = FATAL."""
-        self.assertEqual(classify_error(ZeroDivisionError("test")), "FATAL")
+        assert classify_error(ZeroDivisionError("test")) == "FATAL"
 
-    def test_memory_error_is_fatal(self):
+    def test_memory_error_is_fatal(self) -> None:
         """MemoryError = FATAL."""
-        self.assertEqual(classify_error(MemoryError("test")), "FATAL")
+        assert classify_error(MemoryError("test")) == "FATAL"
 
-    def test_value_error_is_recoverable(self):
+    def test_value_error_is_recoverable(self) -> None:
         """ValueError = RECOVERABLE."""
-        self.assertEqual(classify_error(ValueError("test")), "RECOVERABLE")
+        assert classify_error(ValueError("test")) == "RECOVERABLE"
 
-    def test_index_error_is_recoverable(self):
+    def test_index_error_is_recoverable(self) -> None:
         """IndexError = RECOVERABLE."""
-        self.assertEqual(classify_error(IndexError("test")), "RECOVERABLE")
+        assert classify_error(IndexError("test")) == "RECOVERABLE"
 
-    def test_runtime_error_is_fatal(self):
+    def test_runtime_error_is_fatal(self) -> None:
         """RuntimeError = FATAL (لا نعرف ما حدث)."""
-        self.assertEqual(classify_error(RuntimeError("test")), "FATAL")
+        assert classify_error(RuntimeError("test")) == "FATAL"
 
-    def test_custom_error_is_unknown(self):
+    def test_custom_error_is_unknown(self) -> None:
         """خطأ مخصص = UNKNOWN = FATAL في نظام سلامة."""
         class CustomError(Exception):
             pass
-        self.assertEqual(classify_error(CustomError("test")), "UNKNOWN")
+        assert classify_error(CustomError("test")) == "UNKNOWN"
 
     # ----------------------------------------------------------
     # Fallback Validation Tests
     # ----------------------------------------------------------
-    def test_nan_fallback_is_rejected(self):
+    def test_nan_fallback_is_rejected(self) -> None:
         """NaN كقيمة افتراضية = ValueError."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _validate_fallback(float('nan'), "test")
 
-    def test_inf_fallback_is_rejected(self):
+    def test_inf_fallback_is_rejected(self) -> None:
         """Infinity كقيمة افتراضية = ValueError."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _validate_fallback(float('inf'), "test")
 
-    def test_negative_inf_fallback_is_rejected(self):
+    def test_negative_inf_fallback_is_rejected(self) -> None:
         """Negative infinity كقيمة افتراضية = ValueError."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _validate_fallback(float('-inf'), "test")
 
-    def test_list_with_nan_fallback_is_rejected(self):
+    def test_list_with_nan_fallback_is_rejected(self) -> None:
         """قائمة تحتوي NaN = ValueError."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _validate_fallback([1.0, float('nan'), 3.0], "test")
 
     # ----------------------------------------------------------
     # Decorator Configuration Tests
     # ----------------------------------------------------------
-    def test_decorator_without_safe_minimum_and_default_rejects(self):
+    def test_decorator_without_safe_minimum_and_default_rejects(self) -> None:
         """Decorator بدون safe_minimum ولا default_value = ValueError."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             @fail_loud_v4()
             def bad_func(x):
                 return x

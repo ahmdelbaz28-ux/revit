@@ -1,5 +1,4 @@
-"""
-backend/services/workflow_service.py — LangGraph-based Workflow Engine for FireAI.
+"""backend/services/workflow_service.py — LangGraph-based Workflow Engine for FireAI.
 
 PROFESSIONAL NOTE:
   This module implements a deterministic State Machine for the FireAI pipeline
@@ -42,24 +41,24 @@ import hashlib
 import json
 import logging
 import math
+import os
 import time
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional, TypedDict
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any, TypedDict
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, StateGraph
-import os
 
 logger = logging.getLogger(__name__)
 
 try:
     from fireai.infrastructure.stuck_detector import (  # noqa: F401
-        EscalationLevel,  # noqa: F401
-        NodeTimeoutConfig,  # noqa: F401
-        StuckDetector,  # noqa: F401
+        EscalationLevel,
+        NodeTimeoutConfig,
+        StuckDetector,
         get_stuck_detector,
-        reset_stuck_detector,  # noqa: F401
+        reset_stuck_detector,
         with_stuck_detection,
     )
     STUCK_DETECTION_AVAILABLE = True
@@ -84,8 +83,9 @@ except ImportError:
 
 # ── Workflow State Definition ────────────────────────────────────────────────
 
-class WorkflowStatus(str, Enum):
+class WorkflowStatus(StrEnum):
     """Workflow execution status — matches agent.md V13 status terminology + V77 STUCK."""
+
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     AWAITING_REVIEW = "AWAITING_REVIEW"
@@ -98,8 +98,7 @@ class WorkflowStatus(str, Enum):
 
 
 class PipelineState(TypedDict, total=False):
-    """
-    State for the FireAI analysis pipeline.
+    """State for the FireAI analysis pipeline.
 
     This TypedDict represents ALL data that flows through the pipeline.
     Each LangGraph node reads from and writes to this state.
@@ -108,57 +107,58 @@ class PipelineState(TypedDict, total=False):
     No field is ever overwritten — new values are appended to lists,
     and status changes are recorded in transition_log.
     """
+
     # ── Input ────────────────────────────────────────────────────────
     file_path: str                              # Source DWG/PDF path
     file_sha256: str                            # File integrity hash
     file_type: str                              # "dxf", "dwg", "pdf", "ifc"
 
     # ── Parse Output ─────────────────────────────────────────────────
-    rooms: List[Dict[str, Any]]                 # Extracted rooms
-    parse_warnings: List[str]                   # Parser warnings
+    rooms: list[dict[str, Any]]                 # Extracted rooms
+    parse_warnings: list[str]                   # Parser warnings
     parse_success: bool                         # Parse completed?
 
     # ── Validation Output ────────────────────────────────────────────
-    validation_result: Dict[str, Any]           # Validation findings
+    validation_result: dict[str, Any]           # Validation findings
     validation_passed: bool                     # All gates passed?
-    validation_evidence: List[Dict[str, Any]]   # Evidence per gate
+    validation_evidence: list[dict[str, Any]]   # Evidence per gate
 
     # ── Environmental Context ────────────────────────────────────────
-    latitude: Optional[float]                   # Building latitude
-    longitude: Optional[float]                  # Building longitude
-    environmental_context: Dict[str, Any]       # Weather, region, elevation, etc.
+    latitude: float | None                   # Building latitude
+    longitude: float | None                  # Building longitude
+    environmental_context: dict[str, Any]       # Weather, region, elevation, etc.
 
     # ── NFPA Analysis Output ─────────────────────────────────────────
-    nfpa_results: List[Dict[str, Any]]          # Per-room NFPA compliance
+    nfpa_results: list[dict[str, Any]]          # Per-room NFPA compliance
     total_detectors: int                        # Total detector count
     coverage_pct: float                         # Overall coverage percentage
     nfpa_compliant: bool                        # NFPA 72 compliant?
 
     # ── Conflict Detection Output ────────────────────────────────────
-    conflicts: List[Dict[str, Any]]             # Detected conflicts
+    conflicts: list[dict[str, Any]]             # Detected conflicts
     conflict_count: int                         # Number of conflicts
     has_critical_conflicts: bool                # Any CRITICAL conflicts?
 
     # ── Memory Context (V73: Mem0 Integration) ───────────────────────
-    memory_context: Dict[str, Any]              # Advisory hints from Mem0
+    memory_context: dict[str, Any]              # Advisory hints from Mem0
     memory_enrichment_time_ms: float            # Time spent on memory enrichment
 
     # ── Human Review Gate ────────────────────────────────────────────
     review_required: bool                       # Does this need human review?
-    review_items: List[Dict[str, Any]]          # Items needing review
-    reviewer_decision: Optional[str]            # "approved" | "rejected" | None
-    reviewer_comments: Optional[str]            # Reviewer notes
-    reviewer_timestamp: Optional[str]           # ISO 8601 timestamp (V82: also stored as review_timestamp in audit trail)
+    review_items: list[dict[str, Any]]          # Items needing review
+    reviewer_decision: str | None            # "approved" | "rejected" | None
+    reviewer_comments: str | None            # Reviewer notes
+    reviewer_timestamp: str | None           # ISO 8601 timestamp (V82: also stored as review_timestamp in audit trail)
 
     # ── Report Output ────────────────────────────────────────────────
-    report: Dict[str, Any]                      # Final design report
+    report: dict[str, Any]                      # Final design report
     report_sha256: str                          # Report integrity hash
 
     # ── Stuck Detection (V77) ────────────────────────────────────────
     stuck_detected: bool                        # Was a stuck condition detected?
-    stuck_node: Optional[str]                   # Which node is stuck
-    stuck_duration_seconds: Optional[float]     # How long the node has been stuck
-    node_timings: Dict[str, Any]                # Per-node timing data
+    stuck_node: str | None                   # Which node is stuck
+    stuck_duration_seconds: float | None     # How long the node has been stuck
+    node_timings: dict[str, Any]                # Per-node timing data
 
     # ── Engineer Identity (V85: Dynamic scoping) ──────────────────────
     engineer_id: str                            # Engineer identifier for Mem0 user-scoping
@@ -167,17 +167,16 @@ class PipelineState(TypedDict, total=False):
     workflow_id: str                            # Unique workflow ID
     status: str                                 # WorkflowStatus value
     started_at: str                             # ISO 8601 start time
-    completed_at: Optional[str]                 # ISO 8601 end time
-    transition_log: List[Dict[str, Any]]        # Full audit trail
-    error_message: Optional[str]                # Error details if FAILED
+    completed_at: str | None                 # ISO 8601 end time
+    transition_log: list[dict[str, Any]]        # Full audit trail
+    error_message: str | None                # Error details if FAILED
 
 
 # ── State Transition Logger ──────────────────────────────────────────────────
 
 def _log_transition(state: PipelineState, from_node: str, to_node: str,
                     evidence: str = "") -> PipelineState:
-    """
-    Record a state transition in the audit trail.
+    """Record a state transition in the audit trail.
 
     This satisfies agent.md requirements:
     - Priority 7: Traceability
@@ -185,7 +184,7 @@ def _log_transition(state: PipelineState, from_node: str, to_node: str,
     - Engineering Evidence Contract: claims require evidence
     """
     log_entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "from_node": from_node,
         "to_node": to_node,
         "evidence": evidence,
@@ -215,13 +214,11 @@ def _compute_sha256(data: Any) -> str:
 
 @with_stuck_detection
 def node_initialize(state: PipelineState) -> PipelineState:
-    """
-    Initialize workflow state from input file.
+    """Initialize workflow state from input file.
 
     Verifies file exists, computes integrity hash, and records
     initial state in the audit trail.
     """
-
     file_path = state.get("file_path", "")
 
     # V112: Path traversal validation — prevent reading arbitrary files.
@@ -272,7 +269,7 @@ def node_initialize(state: PipelineState) -> PipelineState:
         "file_type": file_type,
         "workflow_id": workflow_id,
         "status": WorkflowStatus.RUNNING.value,
-        "started_at": datetime.now(timezone.utc).isoformat(),
+        "started_at": datetime.now(UTC).isoformat(),
         "transition_log": [],
     }
 
@@ -287,8 +284,7 @@ def node_initialize(state: PipelineState) -> PipelineState:
 
 @with_stuck_detection
 def node_parse(state: PipelineState) -> PipelineState:
-    """
-    Parse the input file to extract rooms and geometry.
+    """Parse the input file to extract rooms and geometry.
 
     Delegates to the existing parser infrastructure (DWGParser, PDF adapter).
     This is a DETERMINISTIC operation — no AI involved.
@@ -307,7 +303,7 @@ def node_parse(state: PipelineState) -> PipelineState:
 
             extractor = GeometryExtractor(file_path)
             walls = extractor.extract_walls()
-            rooms_result, report = extract_rooms_from_walls(walls, pdf_path=file_path)
+            rooms_result, _report = extract_rooms_from_walls(walls, pdf_path=file_path)
 
             rooms = [
                 {
@@ -367,8 +363,7 @@ def node_parse(state: PipelineState) -> PipelineState:
 
 @with_stuck_detection
 def node_validate(state: PipelineState) -> PipelineState:
-    """
-    Validate parsed data through multiple safety gates.
+    """Validate parsed data through multiple safety gates.
 
     Implements agent.md's VERIFICATION GATES:
     - Gate 1: Static Validation (geometry sanity, no NaN/Inf)
@@ -500,8 +495,7 @@ def node_validate(state: PipelineState) -> PipelineState:
 
 @with_stuck_detection
 def node_memory_enrich(state: PipelineState) -> PipelineState:
-    """
-    Enrich the workflow state with advisory context from Mem0 memory.
+    """Enrich the workflow state with advisory context from Mem0 memory.
 
     V75 ENHANCEMENT: Now passes environmental context to the bridge
     for regional standards search (Strategy 3). This enables:
@@ -600,9 +594,8 @@ def node_memory_enrich(state: PipelineState) -> PipelineState:
     )
 
 
-async def _fetch_environmental_data(lat: float, lon: float) -> Dict[str, Any]:
-    """
-    Fetch all environmental data in parallel (async).
+async def _fetch_environmental_data(lat: float, lon: float) -> dict[str, Any]:
+    """Fetch all environmental data in parallel (async).
 
     V84: Extracted from node_environmental_context to enable proper
     async execution via ThreadPoolExecutor + dedicated event loop.
@@ -676,8 +669,7 @@ async def _fetch_environmental_data(lat: float, lon: float) -> Dict[str, Any]:
 
 @with_stuck_detection
 def node_environmental_context(state: PipelineState) -> PipelineState:
-    """
-    Fetch environmental context for the building location.
+    """Fetch environmental context for the building location.
 
     Uses Phase 1 + Phase 2 API services (weather, geocoding, elevation,
     air quality, severe weather, hazmat, regulatory region).
@@ -685,7 +677,6 @@ def node_environmental_context(state: PipelineState) -> PipelineState:
     LIFE-SAFETY: Falls back to conservative defaults on API failure.
     Engineering calculations MUST NEVER be blocked by API failures.
     """
-
     lat = state.get("latitude")
     lon = state.get("longitude")
     environmental_context = {}
@@ -758,8 +749,7 @@ def node_environmental_context(state: PipelineState) -> PipelineState:
 
 @with_stuck_detection
 def node_nfpa_analysis(state: PipelineState) -> PipelineState:
-    """
-    Run NFPA 72 analysis on each room.
+    """Run NFPA 72 analysis on each room.
 
     This is the CORE engineering calculation — DETERMINISTIC, NOT AI.
     Uses existing run_full_pipeline.py logic.
@@ -902,8 +892,7 @@ def node_nfpa_analysis(state: PipelineState) -> PipelineState:
 
 @with_stuck_detection
 def node_conflict_detection(state: PipelineState) -> PipelineState:
-    """
-    Detect conflicts in detector placement and device routing.
+    """Detect conflicts in detector placement and device routing.
 
     V75 ENHANCEMENT: Now uses memory context for additional advisory
     conflict patterns. Memory hints add ADVISORY warnings for known
@@ -1057,8 +1046,7 @@ def node_conflict_detection(state: PipelineState) -> PipelineState:
 
 @with_stuck_detection
 def node_human_review_gate(state: PipelineState) -> PipelineState:
-    """
-    Human review gate — blocks automated progression until reviewer approves.
+    """Human review gate — blocks automated progression until reviewer approves.
 
     This is the KEY safety feature enabled by LangGraph:
     - interrupt_before allows the workflow to pause here
@@ -1131,8 +1119,7 @@ def node_human_review_gate(state: PipelineState) -> PipelineState:
 
 @with_stuck_detection
 def node_generate_report(state: PipelineState) -> PipelineState:
-    """
-    Generate the final NFPA 72 design report.
+    """Generate the final NFPA 72 design report.
 
     This is the FINAL node — produces the signed, hash-verified report
     that the engineer can submit to the AHJ.
@@ -1215,7 +1202,7 @@ def node_generate_report(state: PipelineState) -> PipelineState:
     # V85: Store generated_utc as a separate top-level field so it doesn't
     # pollute the deterministic report dict. This makes golden file comparison
     # and regression testing possible — the report dict is purely deterministic.
-    generated_utc = datetime.now(timezone.utc).isoformat()
+    generated_utc = datetime.now(UTC).isoformat()
 
     # Final status
     final_status = WorkflowStatus.COMPLETED.value
@@ -1271,7 +1258,7 @@ def node_generate_report(state: PipelineState) -> PipelineState:
         "report_sha256": report_sha256,
         "report_generated_utc": generated_utc,  # V85: Timestamp outside report dict for determinism
         "status": final_status,
-        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "completed_at": datetime.now(UTC).isoformat(),
     }
 
     state = {**state, **updates}
@@ -1306,10 +1293,9 @@ def should_proceed_after_validation(state: PipelineState) -> str:
 
 
 def should_require_review(state: PipelineState) -> str:
-    """
-    Route after conflict detection:
+    """Route after conflict detection:
     - Critical conflicts → human review gate
-    - No critical issues → generate report directly
+    - No critical issues → generate report directly.
     """
     if state.get("review_required", False):
         return "human_review_gate"
@@ -1317,28 +1303,25 @@ def should_require_review(state: PipelineState) -> str:
 
 
 def should_proceed_after_review(state: PipelineState) -> str:
-    """
-    Route after human review:
+    """Route after human review:
     - Approved → generate report
     - Rejected → END (stop, do not generate)
-    - No decision yet → END (waiting for interrupt)
+    - No decision yet → END (waiting for interrupt).
     """
     decision = state.get("reviewer_decision")
     if decision == "approved":
         return "generate_report"
-    elif decision == "rejected":
+    if decision == "rejected":
         return END
-    else:
-        # No decision yet — workflow is paused at human_review_gate
-        # This path should not be reached in normal operation
-        return END
+    # No decision yet — workflow is paused at human_review_gate
+    # This path should not be reached in normal operation
+    return END
 
 
 # ── Workflow Graph Builder ───────────────────────────────────────────────────
 
 def build_fireai_workflow() -> StateGraph:
-    """
-    Build the FireAI analysis workflow as a LangGraph StateGraph.
+    """Build the FireAI analysis workflow as a LangGraph StateGraph.
 
     Graph topology (V73 with Mem0 integration):
         START → initialize → parse → validate → memory_enrich
@@ -1439,8 +1422,7 @@ def build_fireai_workflow() -> StateGraph:
 # ── Workflow Service ─────────────────────────────────────────────────────────
 
 class WorkflowService:
-    """
-    Service for managing FireAI analysis workflows.
+    """Service for managing FireAI analysis workflows.
 
     Provides:
     - Start new workflows (with or without human review)
@@ -1454,8 +1436,8 @@ class WorkflowService:
     a node exceeds its timeout threshold.
     """
 
-    def __init__(self):
-        self._workflows: Dict[str, Dict[str, Any]] = {}
+    def __init__(self) -> None:
+        self._workflows: dict[str, dict[str, Any]] = {}
         # V129 FIX: Expose _langgraph_available and is_initialized so that
         # app.py lifespan can correctly report service status instead of
         # falling through to the "DEGRADED" warning path.
@@ -1526,13 +1508,12 @@ class WorkflowService:
     async def start_workflow(
         self,
         file_path: str,
-        latitude: Optional[float] = None,
-        longitude: Optional[float] = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
         skip_human_review: bool = False,
         engineer_id: str = "engineer_default",
-    ) -> Dict[str, Any]:
-        """
-        Start a new FireAI analysis workflow.
+    ) -> dict[str, Any]:
+        """Start a new FireAI analysis workflow.
 
         Args:
             file_path: Path to DWG/PDF/DXF file
@@ -1545,6 +1526,7 @@ class WorkflowService:
 
         Returns:
             Dict with workflow_id, status, and initial state
+
         """
         import uuid
 
@@ -1581,7 +1563,7 @@ class WorkflowService:
             "workflow_id": workflow_id,
             "engineer_id": engineer_id,  # V85: Dynamic engineer scoping for Mem0
             "status": WorkflowStatus.PENDING.value,
-            "started_at": datetime.now(timezone.utc).isoformat(),
+            "started_at": datetime.now(UTC).isoformat(),
             "completed_at": None,
             "transition_log": [],
             "error_message": None,
@@ -1639,10 +1621,9 @@ class WorkflowService:
         self,
         graph,
         initial_state: PipelineState,
-        config: Dict[str, Any],
+        config: dict[str, Any],
     ) -> PipelineState:
-        """
-        Run the workflow graph and return final state.
+        """Run the workflow graph and return final state.
 
         V80: Now integrates Langfuse CallbackHandler for observability.
         The handler auto-traces every node execution with full I/O capture.
@@ -1706,8 +1687,7 @@ class WorkflowService:
         state: PipelineState,
         handler,
     ) -> None:
-        """
-        Log workflow verification results as Langfuse EVAL scores.
+        """Log workflow verification results as Langfuse EVAL scores.
 
         V80: These scores are VERIFICATION RESULTS, not opinions.
         They reflect deterministic calculation outcomes that are
@@ -1743,7 +1723,7 @@ class WorkflowService:
         except Exception as e:
             logger.debug("Langfuse score logging failed (non-blocking): %s", e)
 
-    async def get_workflow_status(self, workflow_id: str) -> Optional[Dict[str, Any]]:
+    async def get_workflow_status(self, workflow_id: str) -> dict[str, Any] | None:
         """Get the current status of a workflow."""
         if workflow_id not in self._workflows:
             return None
@@ -1763,9 +1743,8 @@ class WorkflowService:
             "node_timings": state.get("node_timings", {}),
         }
 
-    async def check_stuck_workflow(self, workflow_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Check if a specific workflow is stuck (V77).
+    async def check_stuck_workflow(self, workflow_id: str) -> dict[str, Any] | None:
+        """Check if a specific workflow is stuck (V77).
 
         Uses the StuckDetector to determine if a workflow node has
         exceeded its timeout threshold. Returns the detection result
@@ -1815,9 +1794,8 @@ class WorkflowService:
 
         return result_dict
 
-    async def get_all_stuck_workflows(self) -> List[Dict[str, Any]]:
-        """
-        Get all currently stuck workflows (V77).
+    async def get_all_stuck_workflows(self) -> list[dict[str, Any]]:
+        """Get all currently stuck workflows (V77).
 
         Used for monitoring dashboards and alerting systems.
         """
@@ -1828,8 +1806,7 @@ class WorkflowService:
         return [r.to_dict() for r in results]
 
     def _on_workflow_stuck(self, result) -> None:
-        """
-        Callback invoked by StuckDetector watchdog when a stuck workflow is detected.
+        """Callback invoked by StuckDetector watchdog when a stuck workflow is detected.
 
         This is called from the watchdog's background thread, so it must be
         thread-safe and non-blocking. We update the in-memory workflow state
@@ -1867,10 +1844,9 @@ class WorkflowService:
     async def approve_workflow(
         self,
         workflow_id: str,
-        reviewer_comments: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Approve a workflow at the human review gate.
+        reviewer_comments: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Approve a workflow at the human review gate.
 
         Resumes the workflow and generates the final report.
         """
@@ -1890,7 +1866,7 @@ class WorkflowService:
         # Update state with reviewer decision
         state["reviewer_decision"] = "approved"
         state["reviewer_comments"] = reviewer_comments
-        state["review_timestamp"] = datetime.now(timezone.utc).isoformat()
+        state["review_timestamp"] = datetime.now(UTC).isoformat()
         state["reviewer_timestamp"] = state["review_timestamp"]  # V82: keep both keys in sync
         state["status"] = WorkflowStatus.APPROVED.value
 
@@ -1933,10 +1909,9 @@ class WorkflowService:
     async def reject_workflow(
         self,
         workflow_id: str,
-        reviewer_comments: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Reject a workflow at the human review gate.
+        reviewer_comments: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Reject a workflow at the human review gate.
 
         Marks the workflow as REJECTED and does NOT generate a report.
         """
@@ -1954,10 +1929,10 @@ class WorkflowService:
 
         state["reviewer_decision"] = "rejected"
         state["reviewer_comments"] = reviewer_comments
-        state["review_timestamp"] = datetime.now(timezone.utc).isoformat()
+        state["review_timestamp"] = datetime.now(UTC).isoformat()
         state["reviewer_timestamp"] = state["review_timestamp"]  # V82: keep both keys in sync
         state["status"] = WorkflowStatus.REJECTED.value
-        state["completed_at"] = datetime.now(timezone.utc).isoformat()
+        state["completed_at"] = datetime.now(UTC).isoformat()
 
         # Log the rejection
         state = _log_transition(
@@ -1975,7 +1950,7 @@ class WorkflowService:
             "reviewer_comments": reviewer_comments,
         }
 
-    async def get_audit_trail(self, workflow_id: str) -> Optional[List[Dict[str, Any]]]:
+    async def get_audit_trail(self, workflow_id: str) -> list[dict[str, Any]] | None:
         """Get the full audit trail for a workflow."""
         if workflow_id not in self._workflows:
             return None
@@ -1986,9 +1961,8 @@ class WorkflowService:
     async def resume_from_checkpoint(
         self,
         workflow_id: str,
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Resume a workflow from its last checkpoint after a crash.
+    ) -> dict[str, Any] | None:
+        """Resume a workflow from its last checkpoint after a crash.
 
         V75 ADDITION: This method enables crash recovery by reading the
         persisted checkpoint from AsyncSqliteSaver and continuing the
@@ -2018,6 +1992,7 @@ class WorkflowService:
         Returns:
             Dict with recovery status and current workflow state,
             or None if workflow_id not found or no checkpoint exists
+
         """
         config = {"configurable": {"thread_id": workflow_id}}
 
@@ -2125,15 +2100,15 @@ class WorkflowService:
                 "error": f"Recovery failed: {type(e).__name__}: {e}",
             }
 
-    async def list_recoverable_workflows(self) -> List[Dict[str, Any]]:
-        """
-        List all workflows that have persisted checkpoints and can be recovered.
+    async def list_recoverable_workflows(self) -> list[dict[str, Any]]:
+        """List all workflows that have persisted checkpoints and can be recovered.
 
         This is useful after a server restart to find in-progress workflows
         that were interrupted by a crash.
 
         Returns:
             List of dicts with workflow_id and status for each recoverable workflow
+
         """
         recoverable = []
         for workflow_id, wf in self._workflows.items():
@@ -2149,7 +2124,7 @@ class WorkflowService:
 
 # ── Singleton Management ─────────────────────────────────────────────────────
 
-_workflow_service: Optional[WorkflowService] = None
+_workflow_service: WorkflowService | None = None
 
 
 def get_workflow_service() -> WorkflowService:

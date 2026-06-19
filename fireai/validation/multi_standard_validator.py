@@ -1,5 +1,4 @@
-"""
-fireai/validation/multi_standard_validator.py — Advanced Multi-Standard Validation.
+"""fireai/validation/multi_standard_validator.py — Advanced Multi-Standard Validation.
 
 Composite pattern: each standard is a StandardValidator subclass.
 Supports cross-system conflict detection between standards.
@@ -22,10 +21,11 @@ from __future__ import annotations
 import json
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,7 @@ class SeverityLevel(Enum):
 @dataclass(frozen=True)
 class DesignData:
     """Immutable design data container for validation."""
+
     project_id: str = ""
     project_name: str = ""
     building_type: str = "commercial"
@@ -98,7 +99,7 @@ class DesignData:
     zone_classification: str = "non-hazardous"
     seismic_zone: str = "0"
     wind_zone: str = "I"
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
 
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, self.data.get(key, default))
@@ -107,6 +108,7 @@ class DesignData:
 @dataclass
 class RuleApplication:
     """Trace record of a single rule application."""
+
     rule_id: str
     section: str
     standard: ValidationStandard
@@ -115,29 +117,31 @@ class RuleApplication:
     severity: SeverityLevel
     details: str = ""
     remediation: str = ""
-    value_found: Optional[Any] = None
-    value_expected: Optional[Any] = None
+    value_found: Any | None = None
+    value_expected: Any | None = None
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
 
 @dataclass
 class StandardReport:
     """Validation report for a single standard."""
+
     standard: ValidationStandard
     passed: bool
     total_rules: int
     passed_rules: int
     failed_rules: int
     compliance_percent: float
-    rule_applications: List[RuleApplication] = field(default_factory=list)
+    rule_applications: list[RuleApplication] = field(default_factory=list)
     summary: str = ""
 
 
 @dataclass
 class CrossSystemConflict:
     """A conflict detected between two standards."""
+
     conflict_id: str
     standard_a: ValidationStandard
     standard_b: ValidationStandard
@@ -153,22 +157,24 @@ class CrossSystemConflict:
 @dataclass
 class CrossSystemReport:
     """Cross-system conflict detection report."""
+
     total_conflicts: int = 0
-    conflicts: List[CrossSystemConflict] = field(default_factory=list)
+    conflicts: list[CrossSystemConflict] = field(default_factory=list)
     summary: str = ""
 
 
 @dataclass
 class ValidationReport:
     """Complete multi-standard validation report."""
+
     design_id: str = ""
     design_name: str = ""
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
-    standards_validated: List[ValidationStandard] = field(default_factory=list)
-    standard_reports: Dict[str, StandardReport] = field(default_factory=dict)
-    cross_system: Optional[CrossSystemReport] = None
+    standards_validated: list[ValidationStandard] = field(default_factory=list)
+    standard_reports: dict[str, StandardReport] = field(default_factory=dict)
+    cross_system: CrossSystemReport | None = None
     overall_passed: bool = False
     overall_compliance_percent: float = 0.0
     total_rules: int = 0
@@ -184,9 +190,9 @@ class ValidationReport:
 class StandardValidator(ABC):
     """Abstract base for all standard-specific validators."""
 
-    def __init__(self, standard: ValidationStandard):
+    def __init__(self, standard: ValidationStandard) -> None:
         self._standard = standard
-        self._rules: List[Dict[str, Any]] = []
+        self._rules: list[dict[str, Any]] = []
         self._define_rules()
 
     @abstractmethod
@@ -199,7 +205,7 @@ class StandardValidator(ABC):
 
         Returns a StandardReport with per-rule traceability.
         """
-        applications: List[RuleApplication] = []
+        applications: list[RuleApplication] = []
         passed = 0
         failed = 0
 
@@ -228,7 +234,7 @@ class StandardValidator(ABC):
             ),
         )
 
-    def _apply_rule(self, rule: Dict[str, Any], design: DesignData) -> RuleApplication:
+    def _apply_rule(self, rule: dict[str, Any], design: DesignData) -> RuleApplication:
         """Apply a single rule to the design data."""
         try:
             context = asdict(design) if hasattr(design, '__dataclass_fields__') else {}
@@ -286,7 +292,7 @@ class StandardValidator(ABC):
         return self._standard
 
     @property
-    def rules(self) -> List[Dict[str, Any]]:
+    def rules(self) -> list[dict[str, Any]]:
         return list(self._rules)
 
 
@@ -297,7 +303,7 @@ class StandardValidator(ABC):
 class NFPA72Validator(StandardValidator):
     """NFPA 72-2022: National Fire Alarm and Signaling Code."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ValidationStandard.NFPA_72_2022)
 
     def _define_rules(self) -> None:
@@ -370,7 +376,7 @@ class NFPA72Validator(StandardValidator):
 class NFPA101Validator(StandardValidator):
     """NFPA 101-2021: Life Safety Code."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ValidationStandard.NFPA_101_2021)
 
     def _define_rules(self) -> None:
@@ -427,7 +433,7 @@ class NFPA101Validator(StandardValidator):
 class NECValidator(StandardValidator):
     """NEC 2023: National Electrical Code."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ValidationStandard.NEC_2023)
 
     def _define_rules(self) -> None:
@@ -484,7 +490,7 @@ class NECValidator(StandardValidator):
 class IBCValidator(StandardValidator):
     """IBC 2021: International Building Code."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ValidationStandard.IBC_2021)
 
     def _define_rules(self) -> None:
@@ -541,7 +547,7 @@ class IBCValidator(StandardValidator):
 class ASMEA17_1Validator(StandardValidator):
     """ASME A17.1: Elevator Safety Code."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ValidationStandard.ASME_A17_1)
 
     def _define_rules(self) -> None:
@@ -590,7 +596,7 @@ class ASMEA17_1Validator(StandardValidator):
 class UL864Validator(StandardValidator):
     """UL 864: Fire Alarm Control Units."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ValidationStandard.UL_864)
 
     def _define_rules(self) -> None:
@@ -647,7 +653,7 @@ class UL864Validator(StandardValidator):
 class ISO7240Validator(StandardValidator):
     """ISO 7240: Fire Detection and Alarm Systems."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ValidationStandard.ISO_7240)
 
     def _define_rules(self) -> None:
@@ -696,7 +702,7 @@ class ISO7240Validator(StandardValidator):
 class EN54Validator(StandardValidator):
     """EN 54: Fire Detection and Fire Alarm Systems (European Standard)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ValidationStandard.EN_54)
 
     def _define_rules(self) -> None:
@@ -762,7 +768,7 @@ class EN54Validator(StandardValidator):
 # Validator Registry (maps enum to class)
 # ════════════════════════════════════════════════════════════════════════════
 
-_VALIDATOR_MAP: Dict[ValidationStandard, type[StandardValidator]] = {
+_VALIDATOR_MAP: dict[ValidationStandard, type[StandardValidator]] = {
     ValidationStandard.NFPA_72_2022: NFPA72Validator,
     ValidationStandard.NFPA_101_2021: NFPA101Validator,
     ValidationStandard.NEC_2023: NECValidator,
@@ -796,11 +802,11 @@ class MultiStandardValidator:
       - All rule applications are traceable with section references
     """
 
-    def __init__(self):
-        self._validators: Dict[ValidationStandard, StandardValidator] = {}
+    def __init__(self) -> None:
+        self._validators: dict[ValidationStandard, StandardValidator] = {}
 
     def validate(
-        self, design: DesignData, standards: List[ValidationStandard]
+        self, design: DesignData, standards: list[ValidationStandard]
     ) -> ValidationReport:
         """Validate a design against the specified set of standards.
 
@@ -811,6 +817,7 @@ class MultiStandardValidator:
         Returns:
             A ValidationReport containing per-standard results and
             cross-system conflict analysis.
+
         """
         report = ValidationReport(
             design_id=design.project_id,
@@ -862,10 +869,10 @@ class MultiStandardValidator:
         return self._validators[standard]
 
     def _detect_cross_system_conflicts(
-        self, design: DesignData, standards: List[ValidationStandard]
+        self, design: DesignData, standards: list[ValidationStandard]
     ) -> CrossSystemReport:
         """Detect conflicts between the requirements of different standards."""
-        conflicts: List[CrossSystemConflict] = []
+        conflicts: list[CrossSystemConflict] = []
         conflict_id = 0
 
         # NFPA 72 vs IBC: detector spacing requirements
@@ -1126,7 +1133,7 @@ class MultiStandardValidator:
 
     def to_markdown(self, report: ValidationReport) -> str:
         """Generate a Markdown-formatted validation report."""
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append("# Multi-Standard Validation Report")
         lines.append("")
         lines.append(f"**Design:** {report.design_name or report.design_id}")

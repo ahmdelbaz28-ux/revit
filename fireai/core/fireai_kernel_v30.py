@@ -5,21 +5,21 @@
 # Safety-first: كل قرار يُدقَّق ثم يُدقَّق مرة أخرى
 # ═══════════════════════════════════════════════════════════════════════════════
 
-"""
-هذا الملف يحتوي على:
-  1. KernelCore         — نواة تنسيق صفرية مع event-driven architecture
-  2. AtomicRoomStore    — تخزين lock-free للغرف (MPSC queue + mmap)
-  3. VectorEngine       — محرك SIMD لحساب التغطية لملايين النقاط/ثانية
-  4. StreamingParser    — قراءة DWG/PDF/IFC بدون تحميل كامل للذاكرة
-  5. AdaptivePipeline   — pipeline ذاتي التكيف مع backpressure
-  6. SafetyLedger       — سجل لا يُمحى لكل قرار سلامة
-  7. ConcurrentSolver   — MIP solver موزّع على الأنوية
-  8. WireRouter_V2      — توجيه الأسلاك A* مع vectorized collision
+"""هذا الملف يحتوي على:
+1. KernelCore         — نواة تنسيق صفرية مع event-driven architecture
+2. AtomicRoomStore    — تخزين lock-free للغرف (MPSC queue + mmap)
+3. VectorEngine       — محرك SIMD لحساب التغطية لملايين النقاط/ثانية
+4. StreamingParser    — قراءة DWG/PDF/IFC بدون تحميل كامل للذاكرة
+5. AdaptivePipeline   — pipeline ذاتي التكيف مع backpressure
+6. SafetyLedger       — سجل لا يُمحى لكل قرار سلامة
+7. ConcurrentSolver   — MIP solver موزّع على الأنوية
+8. WireRouter_V2      — توجيه الأسلاك A* مع vectorized collision.
 """
 
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import hashlib
 import json
 import logging
@@ -30,20 +30,13 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
+from collections.abc import AsyncGenerator, AsyncIterator, Callable
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import (
     Any,
-    AsyncGenerator,
-    AsyncIterator,
-    Callable,
-    Dict,
-    List,
-    Optional,
     Protocol,
-    Set,
-    Tuple,
     TypeVar,
 )
 
@@ -62,8 +55,7 @@ _SENTINEL = object()
 
 
 class NFPA72:
-    """
-    NFPA 72-2022 constants — كل قيمة مُرتبطة بالمادة الأصلية.
+    """NFPA 72-2022 constants — كل قيمة مُرتبطة بالمادة الأصلية.
     لا يُسمح بتغيير هذه القيم إلا بموجب مراجعة هندسية مكتوبة.
     """
 
@@ -76,7 +68,7 @@ class NFPA72:
 
     # §17.6.3.5.1 Table — smoke detector spacing by ceiling height
     # {max_ceiling_m: max_radius_m}  (interpolated per §17.7.4.2.3.1 S×0.7)
-    SMOKE_RADIUS_TABLE: Dict[float, float] = {
+    SMOKE_RADIUS_TABLE: dict[float, float] = {
         3.0: 6.37,  # Up to 10 ft ceiling → 21 ft radius × 0.7 = 14.7 ft = 4.48m → use 6.37m (conservative)
         4.3: 6.37,  # Up to 14 ft
         6.1: 7.62,  # Up to 20 ft → 25 ft × 0.7
@@ -86,7 +78,7 @@ class NFPA72:
     SMOKE_DEFAULT_RADIUS_M: float = 6.37  # Conservative default
 
     # §17.5.4 — heat detector spacing
-    HEAT_RADIUS_TABLE: Dict[float, float] = {
+    HEAT_RADIUS_TABLE: dict[float, float] = {
         3.0: 4.57,  # 15 ft radius at standard ceiling
         4.3: 4.57,
         6.1: 5.49,
@@ -137,8 +129,7 @@ class NFPA72:
 
 
 class VectorEngine:
-    """
-    محرك تغطية مُعجَّل بـ NumPy SIMD.
+    """محرك تغطية مُعجَّل بـ NumPy SIMD.
 
     الأداء المقيس:
       - 100K غرفة × 1600 نقطة × 4 كواشف: ~2.3 ثانية (كل الأنوية)
@@ -149,7 +140,7 @@ class VectorEngine:
     COARSE_DIV = 4  # Coarse/fine ratio for hierarchical check
 
     def __init__(self) -> None:
-        self._pool: Optional[ThreadPoolExecutor] = None
+        self._pool: ThreadPoolExecutor | None = None
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -160,9 +151,8 @@ class VectorEngine:
         radius: float,
         fine_step: float = NFPA72.GRID_FINE_M,
         coarse_step: float = NFPA72.GRID_COARSE_M,
-    ) -> "CoverageResult":
-        """
-        Hierarchical two-pass coverage verification.
+    ) -> CoverageResult:
+        """Hierarchical two-pass coverage verification.
 
         Pass 1 (coarse): 1m grid — identify suspect cells.
         Pass 2 (fine):   0.25m grid — verify suspect cells only.
@@ -186,7 +176,7 @@ class VectorEngine:
         suspect_idx = np.where(~coarse_covered)[0]
 
         # Fine pass only on suspect regions
-        uncovered_fine: List[NDArray] = []
+        uncovered_fine: list[NDArray] = []
         fine_total = fine_covered = 0
 
         if suspect_idx.shape[0] > 0:
@@ -237,11 +227,10 @@ class VectorEngine:
 
     def batch_verify(
         self,
-        rooms: List[Tuple[NDArray, NDArray, float]],  # [(polygon, detectors, radius)]
+        rooms: list[tuple[NDArray, NDArray, float]],  # [(polygon, detectors, radius)]
         workers: int = 0,
-    ) -> List["CoverageResult"]:
-        """
-        Vectorised batch verification across N rooms.
+    ) -> list[CoverageResult]:
+        """Vectorised batch verification across N rooms.
         workers=0 → use all logical CPUs.
         """
         n_workers = workers or os.cpu_count() or 1
@@ -260,8 +249,7 @@ class VectorEngine:
         detectors_xy: NDArray[np.float64],  # [D,2]
         radius: float,
     ) -> NDArray[np.bool_]:
-        """
-        Returns bool mask [G] — True where point is within radius of any detector.
+        """Returns bool mask [G] — True where point is within radius of any detector.
         Chunked to stay within L3 cache.
         """
         G = grid_xy.shape[0]
@@ -278,7 +266,7 @@ class VectorEngine:
 
     @staticmethod
     def _build_grid(
-        bbox: Tuple[float, float, float, float],
+        bbox: tuple[float, float, float, float],
         step: float,
     ) -> NDArray[np.float64]:
         x0, y0, x1, y1 = bbox
@@ -290,7 +278,7 @@ class VectorEngine:
         return np.column_stack([gx.ravel(), gy.ravel()])
 
     @staticmethod
-    def _polygon_bbox(poly: NDArray[np.float64]) -> Tuple[float, float, float, float]:
+    def _polygon_bbox(poly: NDArray[np.float64]) -> tuple[float, float, float, float]:
         return (poly[:, 0].min(), poly[:, 1].min(), poly[:, 0].max(), poly[:, 1].max())
 
     @staticmethod
@@ -298,8 +286,7 @@ class VectorEngine:
         pts: NDArray[np.float64],  # [N,2]
         poly: NDArray[np.float64],  # [V,2] (closed polygon vertices)
     ) -> NDArray[np.bool_]:
-        """
-        Vectorized even-odd ray-casting.
+        """Vectorized even-odd ray-casting.
         Handles degenerate edges gracefully (horizontal edge bypass).
         """
         x, y = pts[:, 0], pts[:, 1]
@@ -326,7 +313,7 @@ class CoverageResult:
     covered_count: int
     total_count: int
     is_compliant: bool
-    uncovered_pts: List[Tuple[float, float]]
+    uncovered_pts: list[tuple[float, float]]
 
     @property
     def coverage_pct(self) -> float:
@@ -343,8 +330,7 @@ class CoverageResult:
 
 
 class AtomicRoomStore:
-    """
-    تخزين الغرف بدون قفل (lock-free MPSC).
+    """تخزين الغرف بدون قفل (lock-free MPSC).
 
     الأداء:
       - Write: ~50 ns (deque append, no lock)
@@ -356,30 +342,30 @@ class AtomicRoomStore:
     _RECORD_SIZE = 256
     _MAX_ROOMS_MAP = 100_000
 
-    def __init__(self, mmap_path: Optional[Path] = None) -> None:
-        self._writers: Dict[int, deque] = defaultdict(deque)
-        self._rooms: Dict[str, "RoomRecord"] = {}
+    def __init__(self, mmap_path: Path | None = None) -> None:
+        self._writers: dict[int, deque] = defaultdict(deque)
+        self._rooms: dict[str, RoomRecord] = {}
         self._lock = threading.Lock()
         self._version = 0
         self._mmap_path = mmap_path
-        self._mmap_fd: Optional[int] = None
-        self._mmap_obj: Optional[mmap.mmap] = None
+        self._mmap_fd: int | None = None
+        self._mmap_obj: mmap.mmap | None = None
         if mmap_path:
             self._init_mmap(mmap_path)
 
-    def put(self, room: "RoomRecord") -> None:
+    def put(self, room: RoomRecord) -> None:
         """Thread-safe, lock-free room insertion."""
         tid = threading.get_ident()
         self._writers[tid].append(room)
         self._flush_writer(tid)
 
-    def get(self, room_id: str) -> Optional["RoomRecord"]:
+    def get(self, room_id: str) -> RoomRecord | None:
         return self._rooms.get(room_id)
 
-    def get_all(self) -> List["RoomRecord"]:
+    def get_all(self) -> list[RoomRecord]:
         return list(self._rooms.values())
 
-    def bulk_put(self, rooms: List["RoomRecord"]) -> None:
+    def bulk_put(self, rooms: list[RoomRecord]) -> None:
         """Bulk insert — O(N) with single lock acquisition."""
         with self._lock:
             for r in rooms:
@@ -392,7 +378,7 @@ class AtomicRoomStore:
         q = self._writers[tid]
         if not q:
             return
-        batch: List["RoomRecord"] = []
+        batch: list[RoomRecord] = []
         while q:
             batch.append(q.popleft())
         with self._lock:
@@ -465,22 +451,20 @@ class RoomRecord:
 
 
 class StreamingParser:
-    """
-    يُعالج ملفات DWG/DXF/PDF/IFC بنظام streaming chunk-by-chunk.
-    """
+    """يُعالج ملفات DWG/DXF/PDF/IFC بنظام streaming chunk-by-chunk."""
 
     CHUNK_LINES = 10_000
     CHUNK_BYTES = 4 * 1024 * 1024
 
     def __init__(self, max_queue: int = 500) -> None:
         self._queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue)
-        self._errors: List[str] = []
+        self._errors: list[str] = []
 
-    async def parse_dxf_stream(self, path: Path) -> AsyncIterator[List[NDArray[np.float64]]]:
+    async def parse_dxf_stream(self, path: Path) -> AsyncIterator[list[NDArray[np.float64]]]:
         """Stream DXF file → yield batches of wall LineStrings as NDArray."""
-        buffer: List[str] = []
+        buffer: list[str] = []
         try:
-            with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            with open(path, encoding="utf-8", errors="replace") as fh:
                 for line in fh:
                     buffer.append(line)
                     if len(buffer) >= self.CHUNK_LINES:
@@ -504,7 +488,7 @@ class StreamingParser:
             self._errors.append(f"DXF stream error: {e}")
             logger.error("DXF stream error at %s: %s", path, e)
 
-    async def parse_pdf_stream(self, path: Path) -> AsyncIterator[List[NDArray[np.float64]]]:
+    async def parse_pdf_stream(self, path: Path) -> AsyncIterator[list[NDArray[np.float64]]]:
         """Stream PDF page-by-page → yield wall arrays."""
         try:
             import _fitz_compat as fitz
@@ -512,11 +496,11 @@ class StreamingParser:
             logger.error("PyMuPDF not installed")
             return
 
-        def _extract_page(doc_path: str, page_num: int) -> List[NDArray]:
+        def _extract_page(doc_path: str, page_num: int) -> list[NDArray]:
             try:
                 doc = fitz.open(doc_path)
                 page = doc[page_num]
-                paths: List[NDArray] = []
+                paths: list[NDArray] = []
                 for path_ in page.get_drawings():
                     pts = [(item[1].x, item[1].y) for item in path_["items"] if item[0] in ("m", "l")]
                     if len(pts) >= 2:
@@ -546,11 +530,11 @@ class StreamingParser:
             logger.error("PDF stream error: %s", e)
 
     @staticmethod
-    def _parse_dxf_chunk(lines: List[str]) -> List[NDArray[np.float64]]:
+    def _parse_dxf_chunk(lines: list[str]) -> list[NDArray[np.float64]]:
         """Parse a DXF chunk into wall geometry arrays."""
-        walls: List[NDArray] = []
+        walls: list[NDArray] = []
         i = 0
-        pts: List[Tuple[float, float]] = []
+        pts: list[tuple[float, float]] = []
         in_lwpoly = False
 
         while i < len(lines):
@@ -575,15 +559,11 @@ class StreamingParser:
                     pts = []
             elif in_lwpoly:
                 if code_int == 10:
-                    try:
+                    with contextlib.suppress(ValueError):
                         pts.append((float(val), 0.0))
-                    except ValueError:
-                        pass
                 elif code_int == 20 and pts:
-                    try:
+                    with contextlib.suppress(ValueError):
                         pts[-1] = (pts[-1][0], float(val))
-                    except ValueError:
-                        pass
 
         if in_lwpoly and len(pts) >= 2:
             walls.append(np.array(pts, dtype=np.float64))
@@ -625,9 +605,7 @@ class StageMetrics:
 
 
 class AdaptivePipeline:
-    """
-    Pipeline ذاتي التكيف مع backpressure, auto-scaling, circuit breaker.
-    """
+    """Pipeline ذاتي التكيف مع backpressure, auto-scaling, circuit breaker."""
 
     BACKPRESSURE_HIGH = 0.80
     BACKPRESSURE_CRIT = 0.95
@@ -636,15 +614,15 @@ class AdaptivePipeline:
 
     def __init__(
         self,
-        stages: List[Tuple[str, Callable, int]],
+        stages: list[tuple[str, Callable, int]],
         n_workers: int = 0,
     ) -> None:
         self._stages = stages
-        self._queues: List[asyncio.Queue] = [asyncio.Queue(maxsize=qs) for _, _, qs in stages]
+        self._queues: list[asyncio.Queue] = [asyncio.Queue(maxsize=qs) for _, _, qs in stages]
         self._metrics = {name: StageMetrics(name) for name, _, _ in stages}
         self._n_workers = n_workers or os.cpu_count() or 4
         self._running = False
-        self._tasks: List[asyncio.Task] = []
+        self._tasks: list[asyncio.Task] = []
 
     async def run(self, source: AsyncIterator[Any]) -> AsyncGenerator[Any, None]:
         self._running = True
@@ -728,7 +706,7 @@ class AdaptivePipeline:
                     circuit_open = True
                     logger.warning("Stage '%s' circuit breaker OPEN", name)
 
-    def get_metrics(self) -> Dict[str, StageMetrics]:
+    def get_metrics(self) -> dict[str, StageMetrics]:
         return dict(self._metrics)
 
 
@@ -738,9 +716,8 @@ class AdaptivePipeline:
 
 
 class SafetyLedger:
-    """
-    سجل سلامة لا يُمحى — كل قرار يُسجَّل ويُختم بـ SHA-256.
-    NFPA 72 §10.6.1 compliance: audit trail متطلب
+    """سجل سلامة لا يُمحى — كل قرار يُسجَّل ويُختم بـ SHA-256.
+    NFPA 72 §10.6.1 compliance: audit trail متطلب.
     """
 
     _VERSION = b"LEDGER_V1"
@@ -749,7 +726,7 @@ class SafetyLedger:
     def __init__(
         self,
         ledger_path: Path,
-        secret_key: bytes = None,  # V112: NO default — caller MUST provide via env var
+        secret_key: bytes | None = None,  # V112: NO default — caller MUST provide via env var
     ) -> None:
         import hmac as _hmac
 
@@ -771,10 +748,10 @@ class SafetyLedger:
         self._key = secret_key
         self._hmac = _hmac
         self._lock = threading.RLock()
-        self._entries: List["LedgerEntry"] = []
+        self._entries: list[LedgerEntry] = []
         self._prev_hash = b"\x00" * 32
         self._seq = 0
-        self._fh: Optional[Any] = None
+        self._fh: Any | None = None
         self._open()
 
     def _open(self) -> None:
@@ -785,9 +762,9 @@ class SafetyLedger:
         event_type: str,
         room_id: str,
         decision: str,
-        params: Dict[str, Any],
+        params: dict[str, Any],
         compliant: bool,
-    ) -> "LedgerEntry":
+    ) -> LedgerEntry:
         """Record a safety-critical decision synchronously."""
         with self._lock:
             entry = LedgerEntry(
@@ -814,7 +791,7 @@ class SafetyLedger:
             self._seq += 1
             return entry
 
-    def verify_chain(self) -> Tuple[bool, Optional[int]]:
+    def verify_chain(self) -> tuple[bool, int | None]:
         """Verify integrity of entire ledger."""
         prev = b"\x00" * 32
         for entry in self._entries:
@@ -825,7 +802,7 @@ class SafetyLedger:
             prev = bytes.fromhex(entry.entry_hash)
         return True, None
 
-    def get_entries_for_room(self, room_id: str) -> List["LedgerEntry"]:
+    def get_entries_for_room(self, room_id: str) -> list[LedgerEntry]:
         return [e for e in self._entries if e.room_id == room_id]
 
     def close(self) -> None:
@@ -847,7 +824,7 @@ class LedgerEntry:
     event_type: str
     room_id: str
     decision: str
-    params: Dict[str, Any]
+    params: dict[str, Any]
     compliant: bool
     prev_hash: str
     entry_hash: str
@@ -858,7 +835,7 @@ class LedgerEntry:
         d = {k: v for k, v in self.__dict__.items() if k != "entry_hash"}
         return json.dumps(d, sort_keys=True, ensure_ascii=True).encode()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return self.__dict__.copy()
 
 
@@ -868,16 +845,15 @@ class LedgerEntry:
 
 
 class ConcurrentSolver:
-    """
-    يُشغّل MIP optimization على عدة أنوية بالتوازي.
-    Safety: إذا فشل MIP → نرجع للـ greedy conservative fallback
+    """يُشغّل MIP optimization على عدة أنوية بالتوازي.
+    Safety: إذا فشل MIP → نرجع للـ greedy conservative fallback.
     """
 
     def __init__(self, n_workers: int = 0) -> None:
         self._n_workers = n_workers or min(os.cpu_count() or 4, 8)
-        self._executor: Optional[ProcessPoolExecutor] = None
+        self._executor: ProcessPoolExecutor | None = None
 
-    def __enter__(self) -> "ConcurrentSolver":
+    def __enter__(self) -> ConcurrentSolver:
         self._executor = ProcessPoolExecutor(max_workers=self._n_workers)
         return self
 
@@ -887,8 +863,8 @@ class ConcurrentSolver:
 
     def solve_batch(
         self,
-        problems: List["SolverProblem"],
-    ) -> List["SolverResult"]:
+        problems: list[SolverProblem],
+    ) -> list[SolverResult]:
         """Solve N room placement problems concurrently."""
         if not self._executor:
             return [_solve_room_safe(p) for p in problems]
@@ -904,7 +880,7 @@ class ConcurrentSolver:
         return results
 
 
-def _solve_room_safe(problem: "SolverProblem") -> "SolverResult":
+def _solve_room_safe(problem: SolverProblem) -> SolverResult:
     """Process-safe MIP solver with greedy fallback."""
     try:
         return _solve_mip(problem)
@@ -913,7 +889,7 @@ def _solve_room_safe(problem: "SolverProblem") -> "SolverResult":
         return _greedy_fallback(problem)
 
 
-def _solve_mip(problem: "SolverProblem") -> "SolverResult":
+def _solve_mip(problem: SolverProblem) -> SolverResult:
     """Binary MIP: minimize detector count s.t. full coverage."""
     try:
         import pulp
@@ -960,7 +936,7 @@ def _solve_mip(problem: "SolverProblem") -> "SolverResult":
     )
 
 
-def _greedy_fallback(problem: "SolverProblem") -> "SolverResult":
+def _greedy_fallback(problem: SolverProblem) -> SolverResult:
     """Conservative greedy: place detectors until every grid point is covered."""
     candidates = problem.candidates
     grid_pts = problem.grid_points
@@ -969,7 +945,7 @@ def _greedy_fallback(problem: "SolverProblem") -> "SolverResult":
     diff = candidates[:, None, :] - grid_pts[None, :, :]
     cov_mat = np.einsum("ijk,ijk->ij", diff, diff) <= R2
     covered = np.zeros(grid_pts.shape[0], dtype=bool)
-    placed: List[Tuple[float, float]] = []
+    placed: list[tuple[float, float]] = []
 
     while not covered.all():
         uncov = ~covered
@@ -999,7 +975,7 @@ class SolverProblem:
 
 @dataclass(slots=True)
 class SolverResult:
-    placements: List[Tuple[float, float]]
+    placements: list[tuple[float, float]]
     objective: float
     is_optimal: bool
     solver_status: str
@@ -1011,20 +987,18 @@ class SolverResult:
 
 
 class WireRouterV2:
-    """
-    توجيه الأسلاك بـ A* محسَّن مع vectorized LOS check.
-    """
+    """توجيه الأسلاك بـ A* محسَّن مع vectorized LOS check."""
 
-    def __init__(self, obstacles: List[NDArray[np.float64]]) -> None:
+    def __init__(self, obstacles: list[NDArray[np.float64]]) -> None:
         self._obstacles = obstacles
         self._segs = self._extract_segments(obstacles)
         self._tree = self._build_rtree()
 
     def route_class_a(
         self,
-        devices: List[Tuple[float, float]],
-        panel_pos: Tuple[float, float],
-    ) -> Optional[List[Tuple[float, float]]]:
+        devices: list[tuple[float, float]],
+        panel_pos: tuple[float, float],
+    ) -> list[tuple[float, float]] | None:
         """Find Class A ring circuit."""
         if not devices:
             return [panel_pos]
@@ -1047,9 +1021,9 @@ class WireRouterV2:
 
     def route_class_b(
         self,
-        devices: List[Tuple[float, float]],
-        panel_pos: Tuple[float, float],
-    ) -> List[List[Tuple[float, float]]]:
+        devices: list[tuple[float, float]],
+        panel_pos: tuple[float, float],
+    ) -> list[list[tuple[float, float]]]:
         """Class B home-run."""
         routes = []
         for dev in devices:
@@ -1057,17 +1031,17 @@ class WireRouterV2:
             routes.append(path or [panel_pos, dev])
         return routes
 
-    def total_cable_length(self, path: List[Tuple[float, float]]) -> float:
+    def total_cable_length(self, path: list[tuple[float, float]]) -> float:
         if len(path) < 2:
             return 0.0
         return sum(math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1]) for i in range(len(path) - 1))
 
     def _astar(
         self,
-        start: Tuple[float, float],
-        goal: Tuple[float, float],
-        nodes: Optional[List[Tuple[float, float]]] = None,
-    ) -> Optional[List[Tuple[float, float]]]:
+        start: tuple[float, float],
+        goal: tuple[float, float],
+        nodes: list[tuple[float, float]] | None = None,
+    ) -> list[tuple[float, float]] | None:
         import heapq
 
         if self._line_clear(start, goal):
@@ -1078,17 +1052,17 @@ class WireRouterV2:
             for pt in obs:
                 waypoints.append((float(pt[0]), float(pt[1])))
 
-        open_h: List[Tuple[float, float, Tuple]] = []
+        open_h: list[tuple[float, float, tuple]] = []
         heapq.heappush(open_h, (0.0, 0.0, start))
-        g: Dict[Tuple, float] = {start: 0.0}
-        came: Dict[Tuple, Optional[Tuple]] = {start: None}
-        vis: Set[Tuple] = set()
+        g: dict[tuple, float] = {start: 0.0}
+        came: dict[tuple, tuple | None] = {start: None}
+        vis: set[tuple] = set()
 
         def h(n):
             return math.hypot(goal[0] - n[0], goal[1] - n[1])
 
         while open_h:
-            f, g_cur, cur = heapq.heappop(open_h)
+            _f, g_cur, cur = heapq.heappop(open_h)
             if cur in vis:
                 continue
             vis.add(cur)
@@ -1113,7 +1087,7 @@ class WireRouterV2:
 
         return None
 
-    def _line_clear(self, a: Tuple[float, float], b: Tuple[float, float]) -> bool:
+    def _line_clear(self, a: tuple[float, float], b: tuple[float, float]) -> bool:
         """Vectorized LOS check using pre-built segment arrays."""
         if not self._segs:
             return True
@@ -1149,8 +1123,8 @@ class WireRouterV2:
 
     def _verify_and_smooth(
         self,
-        path: List[Tuple[float, float]],
-    ) -> List[Tuple[float, float]]:
+        path: list[tuple[float, float]],
+    ) -> list[tuple[float, float]]:
         """Remove waypoints where the path can go directly."""
         if len(path) <= 2:
             return path
@@ -1167,7 +1141,7 @@ class WireRouterV2:
         return smoothed
 
     @staticmethod
-    def _extract_segments(obstacles: List[NDArray]) -> Optional[NDArray]:
+    def _extract_segments(obstacles: list[NDArray]) -> NDArray | None:
         """Extract all wall segments as [S,2,2] array."""
         segs = []
         for obs in obstacles:
@@ -1191,9 +1165,7 @@ class WireRouterV2:
 
 
 class KernelCore:
-    """
-    النواة المركزية — تُنسّق جميع المكونات.
-    """
+    """النواة المركزية — تُنسّق جميع المكونات."""
 
     def __init__(
         self,
@@ -1210,15 +1182,15 @@ class KernelCore:
         self._solver = solver
         self._parser = parser
         self._workers = n_workers or os.cpu_count() or 4
-        self._pipeline_metrics: Dict[str, Any] = {}
+        self._pipeline_metrics: dict[str, Any] = {}
 
     @classmethod
     def create(
         cls,
-        mmap_path: Optional[Path] = None,
-        ledger_path: Optional[Path] = None,
+        mmap_path: Path | None = None,
+        ledger_path: Path | None = None,
         n_workers: int = 0,
-    ) -> "KernelCore":
+    ) -> KernelCore:
         """Factory: creates a fully wired KernelCore instance."""
         store = AtomicRoomStore(mmap_path)
         engine = VectorEngine()
@@ -1232,7 +1204,7 @@ class KernelCore:
         path: Path,
         ceiling_m: float = 3.0,
         standard: str = "NFPA72",
-    ) -> "BuildingResult":
+    ) -> BuildingResult:
         """Full pipeline: file → rooms → detectors → cables → report."""
         t_start = time.perf_counter()
         ext = path.suffix.lower()
@@ -1246,8 +1218,8 @@ class KernelCore:
         problems = [self._build_problem(r, ceiling_m) for r in rooms]
         solutions = self._solver.solve_batch(problems)
 
-        all_detectors: List[Dict] = []
-        all_violations: List[str] = []
+        all_detectors: list[dict] = []
+        all_violations: list[str] = []
 
         for room, prob, sol in zip(rooms, problems, solutions, strict=False):
             if not sol.placements:
@@ -1300,8 +1272,8 @@ class KernelCore:
             is_ok=len(all_violations) == 0,
         )
 
-    async def _extract_rooms(self, path: Path, ext: str) -> List[RoomRecord]:
-        rooms: List[RoomRecord] = []
+    async def _extract_rooms(self, path: Path, ext: str) -> list[RoomRecord]:
+        rooms: list[RoomRecord] = []
         if ext in (".dxf",):
             async for wall_batch in self._parser.parse_dxf_stream(path):
                 for wall in wall_batch:
@@ -1360,11 +1332,11 @@ class KernelCore:
 
     @staticmethod
     def _route_cables(
-        rooms: List[RoomRecord],
-        detectors: List[Dict],
-    ) -> List[Dict]:
+        rooms: list[RoomRecord],
+        detectors: list[dict],
+    ) -> list[dict]:
         cables = []
-        by_room: Dict[str, List[Dict]] = defaultdict(list)
+        by_room: dict[str, list[dict]] = defaultdict(list)
         for d in detectors:
             by_room[d["room_id"]].append(d)
         for _rid, dets in by_room.items():
@@ -1393,9 +1365,9 @@ class KernelCore:
 
 @dataclass
 class BuildingResult:
-    rooms: List[RoomRecord]
-    detectors: List[Dict]
-    cables: List[Dict]
+    rooms: list[RoomRecord]
+    detectors: list[dict]
+    cables: list[dict]
     t_start: float
     t_end: float
     violations: str
@@ -1413,7 +1385,7 @@ class BuildingResult:
     def n_detectors(self) -> int:
         return len(self.detectors)
 
-    def to_report(self) -> Dict[str, Any]:
+    def to_report(self) -> dict[str, Any]:
         return {
             "rooms": self.n_rooms,
             "detectors": self.n_detectors,
@@ -1430,9 +1402,7 @@ class BuildingResult:
 
 
 class AdapterBridge:
-    """
-    يربط AutoCADAdapter / RevitAdapter / PDFAdapter بـ KernelCore.
-    """
+    """يربط AutoCADAdapter / RevitAdapter / PDFAdapter بـ KernelCore."""
 
     def __init__(self, kernel: KernelCore) -> None:
         self._kernel = kernel
@@ -1443,14 +1413,14 @@ class AdapterBridge:
     @classmethod
     def create(
         cls,
-        mmap_path: Optional[Path] = None,
-        ledger_path: Optional[Path] = None,
+        mmap_path: Path | None = None,
+        ledger_path: Path | None = None,
         n_workers: int = 0,
-    ) -> "AdapterBridge":
+    ) -> AdapterBridge:
         kernel = KernelCore.create(mmap_path, ledger_path, n_workers)
         return cls(kernel)
 
-    def from_dwg_walls(self, walls: List[Any]) -> List[RoomRecord]:
+    def from_dwg_walls(self, walls: list[Any]) -> list[RoomRecord]:
         """Convert DWGParser wall objects → RoomRecord list."""
         records = []
         for wall in walls:
@@ -1482,16 +1452,15 @@ class AdapterBridge:
 
     def run_sync(
         self,
-        rooms: List[RoomRecord],
+        rooms: list[RoomRecord],
         ceiling_m: float = 3.0,
-    ) -> "BuildingResult":
+    ) -> BuildingResult:
         """Synchronous wrapper — call from existing adapter code."""
-
         self._kernel._store.bulk_put(rooms)
         problems = [KernelCore._build_problem(r, ceiling_m) for r in rooms]
         solutions = self._kernel._solver.solve_batch(problems)
 
-        detectors: List[Dict] = []
+        detectors: list[dict] = []
         for room, prob, sol in zip(rooms, problems, solutions, strict=False):
             for i, (x, y) in enumerate(sol.placements):
                 detectors.append(
@@ -1517,11 +1486,11 @@ class AdapterBridge:
         t_now = time.time()
         return BuildingResult(rooms, detectors, cables, t_now, t_now, "", True)
 
-    def verify_integrity(self) -> Tuple[bool, Optional[int]]:
+    def verify_integrity(self) -> tuple[bool, int | None]:
         """Verify safety ledger integrity."""
         return self._kernel._ledger.verify_chain()
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         return {
             "rooms_stored": len(self._kernel._store._rooms),
             "ledger_entries": len(self._kernel._ledger._entries),

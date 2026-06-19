@@ -35,6 +35,7 @@ class QuizGenerator:
 
         Returns:
             dict with 'system_prompt' and 'user_prompt' keys.
+
         """
         level = max(1, min(3, level))
         if num_questions is None:

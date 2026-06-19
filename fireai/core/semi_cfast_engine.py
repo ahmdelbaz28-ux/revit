@@ -1,5 +1,4 @@
-"""
-semi_cfast_engine.py — Physics-based smoke layer and tenability engine for ASET/RSET calculations.
+"""semi_cfast_engine.py — Physics-based smoke layer and tenability engine for ASET/RSET calculations.
 
 This module implements a simplified two-zone fire model inspired by CFAST (Consolidated Model
 of Fire Growth and Smoke Transport) for engineering-level ASET (Available Safe Egress Time)
@@ -27,32 +26,32 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Module exports
 # ---------------------------------------------------------------------------
 __all__ = [
+    "FIRE_GROWTH_RATES",
+    "OCCUPANCY_TRAVEL_SPEEDS",
+    "PHYSICAL_CONSTANTS",
+    "ASETResult",
     "FireScenario",
     "TenabilityCriteria",
-    "ASETResult",
-    "FIRE_GROWTH_RATES",
-    "PHYSICAL_CONSTANTS",
-    "OCCUPANCY_TRAVEL_SPEEDS",
+    "calculate_aset",
     "calculate_fire_hrr",
+    "calculate_rset",
     "calculate_smoke_layer_height",
     "calculate_smoke_layer_temp",
     "calculate_visibility",
     "estimate_co_concentration",
-    "calculate_aset",
-    "calculate_rset",
     "verify_aset_rset",
 ]
 
 # ---------------------------------------------------------------------------
 # Physical constants with NFPA/SFPE references
 # ---------------------------------------------------------------------------
-PHYSICAL_CONSTANTS: Dict[str, float] = {
+PHYSICAL_CONSTANTS: dict[str, float] = {
     # Ambient air density at 20 °C, 1 atm
     # Ref: SFPE Handbook, Table 1-2
     "AMBIENT_AIR_DENSITY_KG_M3": 1.2,
@@ -99,7 +98,7 @@ PHYSICAL_CONSTANTS: Dict[str, float] = {
 #   medium:     alpha = 0.01172 kW/s²  (e.g., residential furnishing)
 #   fast:       alpha = 0.04689 kW/s²  (e.g., foam / plastic)
 #   ultra-fast: alpha = 0.1876  kW/s²  (e.g., high-rack storage, pool fires)
-FIRE_GROWTH_RATES: Dict[str, float] = {
+FIRE_GROWTH_RATES: dict[str, float] = {
     "slow": 0.00293,
     "medium": 0.01172,
     "fast": 0.04689,
@@ -112,7 +111,7 @@ FIRE_GROWTH_RATES: Dict[str, float] = {
 # ---------------------------------------------------------------------------
 # Ref: SFPE Handbook, Chapter 61; PD 7974-6
 # Speeds in m/s for able-bodied adults; reduced for elderly, children, mobility-impaired
-OCCUPANCY_TRAVEL_SPEEDS: Dict[str, float] = {
+OCCUPANCY_TRAVEL_SPEEDS: dict[str, float] = {
     "office": 1.19,  # SFPE default adult walking speed on level
     "residential": 1.05,  # Slightly reduced (mixed demographics)
     "assembly": 1.05,  # Dense crowd, reduced speed per SFPE Ch. 61
@@ -147,6 +146,7 @@ class FireScenario:
         ceiling_type: Ceiling geometry. "FLAT" (default), "SLOPED", or "BEAM".
             Affects ceiling jet temperature and smoke layer formation.
             Ref: SFPE Handbook, Chapter 13 (Alpert ceiling jet).
+
     """
 
     fire_load_MJ: float
@@ -208,6 +208,7 @@ class TenabilityCriteria:
         max_o2_pct: Minimum tolerable O₂ concentration (%).
             Ref: SFPE Handbook, Chapter 67; ISO 13571. Below 15% causes
             impaired judgment and loss of motor control.
+
     """
 
     max_temp_c: float = 60.0
@@ -255,6 +256,7 @@ class ASETResult:
         co_concentration_ppm: CO concentration at ASET (ppm).
         details: Dictionary with full time-history and intermediate results
             for audit trail and debugging.
+
     """
 
     aset_seconds: float
@@ -263,7 +265,7 @@ class ASETResult:
     layer_temp_at_aset_c: float
     visibility_at_aset_m: float
     co_concentration_ppm: float
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -295,6 +297,7 @@ def calculate_fire_hrr(growth_rate: str, time_seconds: float) -> float:
 
     Raises:
         ValueError: If growth_rate is invalid or time_seconds is negative.
+
     """
     if time_seconds < 0:
         raise ValueError(f"time_seconds must be non-negative, got {time_seconds}")
@@ -302,8 +305,7 @@ def calculate_fire_hrr(growth_rate: str, time_seconds: float) -> float:
         raise ValueError(f"growth_rate must be one of {list(FIRE_GROWTH_RATES)}, got '{growth_rate}'")
 
     alpha = FIRE_GROWTH_RATES[growth_rate]
-    hrr = alpha * time_seconds**2
-    return hrr
+    return alpha * time_seconds**2
 
 
 def calculate_smoke_layer_height(
@@ -357,6 +359,7 @@ def calculate_smoke_layer_height(
 
     Raises:
         ValueError: If room_area_m2, room_height_m, or time_seconds are invalid.
+
     """
     if room_area_m2 <= 0:
         raise ValueError(f"room_area_m2 must be positive, got {room_area_m2}")
@@ -427,9 +430,8 @@ def calculate_smoke_layer_height(
         return 0.0  # Fail-safe: smoke at floor level
 
     # Clamp to physical bounds
-    Y = max(0.0, min(H, Y))
+    return max(0.0, min(H, Y))
 
-    return Y
 
 
 def calculate_smoke_layer_temp(
@@ -477,6 +479,7 @@ def calculate_smoke_layer_temp(
 
     Raises:
         ValueError: If room_height_m is not positive.
+
     """
     if room_height_m <= 0:
         raise ValueError(f"room_height_m must be positive, got {room_height_m}")
@@ -501,8 +504,7 @@ def calculate_smoke_layer_temp(
 
     delta_T *= ceiling_factor
 
-    T_layer = ambient_temp_c + delta_T
-    return T_layer
+    return ambient_temp_c + delta_T
 
 
 def calculate_visibility(smoke_optical_density_per_m: float) -> float:
@@ -538,6 +540,7 @@ def calculate_visibility(smoke_optical_density_per_m: float) -> float:
 
     Raises:
         ValueError: If optical density is negative.
+
     """
     if smoke_optical_density_per_m < 0:
         raise ValueError(f"smoke_optical_density_per_m must be non-negative, got {smoke_optical_density_per_m}")
@@ -575,6 +578,7 @@ def _compute_optical_density(
 
     Returns:
         Optical density per metre (1/m) in the upper smoke layer.
+
     """
     Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg
     y_soot = PHYSICAL_CONSTANTS["SOOT_YIELD_FACTOR"]  # 0.050
@@ -638,9 +642,8 @@ def _compute_optical_density(
     C_soot = total_soot / upper_layer_volume
 
     # Optical density (1/m)
-    od = alpha_ext * C_soot
+    return alpha_ext * C_soot
 
-    return od
 
 
 def estimate_co_concentration(
@@ -686,6 +689,7 @@ def estimate_co_concentration(
 
     Raises:
         ValueError: If room_volume_m3 <= 0 or time_seconds < 0.
+
     """
     if room_volume_m3 <= 0:
         raise ValueError(f"room_volume_m3 must be positive, got {room_volume_m3}")
@@ -755,7 +759,7 @@ def estimate_co_concentration(
 
 def calculate_aset(
     scenario: FireScenario,
-    criteria: Optional[TenabilityCriteria] = None,
+    criteria: TenabilityCriteria | None = None,
     time_step_s: float = 5.0,
     max_time_s: float = 3600.0,
 ) -> ASETResult:
@@ -796,6 +800,7 @@ def calculate_aset(
 
     Raises:
         ValueError: If time_step_s <= 0 or max_time_s <= 0.
+
     """
     if time_step_s <= 0:
         raise ValueError(f"time_step_s must be positive, got {time_step_s}")
@@ -809,7 +814,7 @@ def calculate_aset(
     room_volume_m3 = scenario.room_area_m2 * scenario.room_height_m
 
     # Time-history storage for audit trail
-    time_history: List[Dict[str, Any]] = []
+    time_history: list[dict[str, Any]] = []
 
     # Track the limiting criterion
     limiting_criterion = "No criterion violated within max_time_s"
@@ -950,7 +955,7 @@ def calculate_aset(
         min(aset_seconds, max_time_s),
     )
 
-    details: Dict[str, Any] = {
+    details: dict[str, Any] = {
         "scenario": {
             "fire_load_MJ": scenario.fire_load_MJ,
             "fire_growth_rate": scenario.fire_growth_rate,
@@ -1012,6 +1017,7 @@ def _estimate_o2_depletion(
 
     Returns:
         O₂ concentration as percentage by volume.
+
     """
     # V58 HIGH: NaN fire_hrr_kw → NaN O₂ calculation
     if not math.isfinite(fire_hrr_kw) or not math.isfinite(room_volume_m3):
@@ -1065,9 +1071,8 @@ def _estimate_o2_depletion(
     o2_vol_pct = o2_mass_fraction / 0.233 * 20.9  # Convert back to vol%
 
     # Clamp to physical range
-    o2_vol_pct = max(0.0, min(21.0, o2_vol_pct))
+    return max(0.0, min(21.0, o2_vol_pct))
 
-    return o2_vol_pct
 
 
 def calculate_rset(
@@ -1077,7 +1082,7 @@ def calculate_rset(
     occupancy_type: str = "office",
     pre_movement_s: float = 60.0,
     mobility_factor: float = 1.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculate Required Safe Egress Time (RSET).
 
     RSET is the time required for all occupants to reach a place of safety:
@@ -1126,6 +1131,7 @@ def calculate_rset(
 
     Raises:
         ValueError: If any physical parameter is invalid.
+
     """
     if room_area_m2 <= 0:
         raise ValueError(f"room_area_m2 must be positive, got {room_area_m2}")
@@ -1204,7 +1210,7 @@ def verify_aset_rset(
     aset_seconds: float,
     rset_seconds: float,
     safety_factor: float = 1.5,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Verify ASET/RSET compliance with required safety factor.
 
     The fundamental criterion for life safety is:
@@ -1246,6 +1252,7 @@ def verify_aset_rset(
 
     Raises:
         ValueError: If aset_seconds < 0, rset_seconds < 0, or safety_factor <= 1.0.
+
     """
     if aset_seconds < 0:
         raise ValueError(f"aset_seconds must be non-negative, got {aset_seconds}")

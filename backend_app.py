@@ -1,5 +1,4 @@
-"""
-backend_app.py - FireAI QOMN + Analyze API Application Entry Point
+"""backend_app.py - FireAI QOMN + Analyze API Application Entry Point.
 ====================================================================
 FastAPI application exposing:
   - QOMN-FIRE engineering kernel endpoints (under /api/qomn/...)
@@ -30,12 +29,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from backend.rbac import Role
-from backend.routers.qomn import router as qomn_router
 from backend.routers.analyze import (
-    router as analyze_router,
     project_router as analyze_project_router,
 )
+from backend.routers.analyze import (
+    router as analyze_router,
+)
 from backend.routers.health import router as health_router
+from backend.routers.qomn import router as qomn_router
 
 # V129: Security middleware — same hardening as backend/app.py.
 # SecurityHeadersMiddleware adds X-Frame-Options, X-Content-Type-Options,

@@ -1,5 +1,4 @@
-"""
-fireai/validation/qa_engine.py
+"""fireai/validation/qa_engine.py.
 ================================
 Advanced QA — Automated validation, regression framework, and
 architecture conformance checking for fire alarm designs.
@@ -21,16 +20,18 @@ References:
   - NFPA 72-2022 §17.7.3 — Smoke detector location
   - NFPA 72-2022 §17.7.3.2.4 — Beam construction compensation
   - NFPA 72-2022 §17.7.4 — Heat detector location
+
 """
 
 from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -42,7 +43,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class CheckSeverity(str, Enum):
+class CheckSeverity(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -50,14 +51,14 @@ class CheckSeverity(str, Enum):
     INFO = "INFO"
 
 
-class CheckStatus(str, Enum):
+class CheckStatus(StrEnum):
     PASSED = "PASSED"
     FAILED = "FAILED"
     WARNING = "WARNING"
     SKIPPED = "SKIPPED"
 
 
-class RuleSeverity(str, Enum):
+class RuleSeverity(StrEnum):
     MANDATORY = "MANDATORY"
     RECOMMENDED = "RECOMMENDED"
     ADVISORY = "ADVISORY"
@@ -91,7 +92,7 @@ class QAReport:
     passed: int
     failed: int
     warnings: int
-    checks: List[QACheck] = field(default_factory=list)
+    checks: list[QACheck] = field(default_factory=list)
     design_id: str = ""
     timestamp: str = ""
 
@@ -108,9 +109,9 @@ class QAReport:
 
 @dataclass(frozen=True)
 class RegressionReport:
-    breaking_changes: List[str] = field(default_factory=list)
-    new_issues: List[str] = field(default_factory=list)
-    resolved_issues: List[str] = field(default_factory=list)
+    breaking_changes: list[str] = field(default_factory=list)
+    new_issues: list[str] = field(default_factory=list)
+    resolved_issues: list[str] = field(default_factory=list)
     unchanged: int = 0
     baseline_id: str = ""
     proposed_id: str = ""
@@ -135,7 +136,7 @@ class NamingCheck:
     name: str
     pattern: str
     compliant: bool
-    violations: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -149,9 +150,9 @@ class RuleCheck:
 
 @dataclass(frozen=True)
 class ConformanceReport:
-    design_patterns: List[PatternCheck] = field(default_factory=list)
-    naming_conventions: List[NamingCheck] = field(default_factory=list)
-    architectural_rules: List[RuleCheck] = field(default_factory=list)
+    design_patterns: list[PatternCheck] = field(default_factory=list)
+    naming_conventions: list[NamingCheck] = field(default_factory=list)
+    architectural_rules: list[RuleCheck] = field(default_factory=list)
     overall_conformant: bool = True
     design_id: str = ""
 
@@ -159,12 +160,12 @@ class ConformanceReport:
 @dataclass(frozen=True)
 class DesignData:
     design_id: str = ""
-    rooms: List[Dict[str, Any]] = field(default_factory=list)
-    detectors: List[Dict[str, Any]] = field(default_factory=list)
-    notification_appliances: List[Dict[str, Any]] = field(default_factory=list)
-    panels: List[Dict[str, Any]] = field(default_factory=list)
-    cables: List[Dict[str, Any]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    rooms: list[dict[str, Any]] = field(default_factory=list)
+    detectors: list[dict[str, Any]] = field(default_factory=list)
+    notification_appliances: list[dict[str, Any]] = field(default_factory=list)
+    panels: list[dict[str, Any]] = field(default_factory=list)
+    cables: list[dict[str, Any]] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # ===========================================================================
@@ -173,8 +174,7 @@ class DesignData:
 
 
 class QAEngine:
-    """
-    Automated validation, regression framework, and architecture conformance.
+    """Automated validation, regression framework, and architecture conformance.
 
     Provides 25+ QA checks covering:
       1. Detector count reasonableness
@@ -194,22 +194,22 @@ class QAEngine:
     NFPA_SMOKE_MAX_SPACING_M = 9.1
     NFPA_HEAT_MAX_SPACING_M = 6.1
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
 
     # ── Design Validation ──────────────────────────────────────────────
 
     def validate_design(self, design: DesignData) -> QAReport:
-        """
-        Run all QA checks against a fire alarm design.
+        """Run all QA checks against a fire alarm design.
 
         Args:
             design: The fire alarm design to validate.
 
         Returns:
             QAReport with all check results.
+
         """
-        checks: List[QACheck] = []
+        checks: list[QACheck] = []
         all_check_funcs = self._get_all_checks()
 
         for check_func in all_check_funcs:
@@ -243,7 +243,7 @@ class QAEngine:
             warnings=warnings,
             checks=checks,
             design_id=design.design_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
         self._event_bus.publish(
@@ -269,8 +269,7 @@ class QAEngine:
         baseline: DesignData,
         proposed: DesignData,
     ) -> RegressionReport:
-        """
-        Compare a proposed design against a baseline to detect regressions.
+        """Compare a proposed design against a baseline to detect regressions.
 
         Args:
             baseline: The original (approved) design.
@@ -279,6 +278,7 @@ class QAEngine:
         Returns:
             RegressionReport with breaking changes, new issues, and
             resolved issues.
+
         """
         baseline_report = self.validate_design(baseline)
         proposed_report = self.validate_design(proposed)
@@ -290,9 +290,9 @@ class QAEngine:
             c.check_id: c for c in proposed_report.checks
         }
 
-        breaking_changes: List[str] = []
-        new_issues: List[str] = []
-        resolved_issues: List[str] = []
+        breaking_changes: list[str] = []
+        new_issues: list[str] = []
+        resolved_issues: list[str] = []
         unchanged = 0
 
         all_check_ids = set(baseline_checks) | set(proposed_checks)
@@ -355,8 +355,7 @@ class QAEngine:
     def check_architecture_conformance(
         self, design: DesignData
     ) -> ConformanceReport:
-        """
-        Check design conforms to expected architectural patterns.
+        """Check design conforms to expected architectural patterns.
 
         Validates:
           - Design pattern usage (singleton services, layered architecture)
@@ -368,6 +367,7 @@ class QAEngine:
 
         Returns:
             ConformanceReport with pattern, naming, and rule checks.
+
         """
         pattern_checks = self._check_design_patterns(design)
         naming_checks = self._check_naming_conventions(design)
@@ -391,7 +391,7 @@ class QAEngine:
 
     def _get_all_checks(
         self,
-    ) -> List[Callable[[DesignData], QACheck]]:
+    ) -> list[Callable[[DesignData], QACheck]]:
         return [
             self._check_detector_count_reasonableness,
             self._check_coverage_threshold,
@@ -911,7 +911,7 @@ class QAEngine:
             "cables": ["cable_id", "cable_type"],
         }
 
-        missing: List[str] = []
+        missing: list[str] = []
         for category, fields in required_fields.items():
             items = getattr(design, category, [])
             for i, item in enumerate(items):
@@ -1284,7 +1284,7 @@ class QAEngine:
 
     def _check_design_patterns(
         self, design: DesignData
-    ) -> List[PatternCheck]:
+    ) -> list[PatternCheck]:
         return [
             PatternCheck(
                 pattern_id="DP-001",
@@ -1311,8 +1311,8 @@ class QAEngine:
 
     def _check_naming_conventions(
         self, design: DesignData
-    ) -> List[NamingCheck]:
-        violations: List[str] = []
+    ) -> list[NamingCheck]:
+        violations: list[str] = []
         for det in design.detectors:
             for key in det:
                 if key.startswith("_"):
@@ -1344,7 +1344,7 @@ class QAEngine:
 
     def _check_architectural_rules(
         self, design: DesignData
-    ) -> List[RuleCheck]:
+    ) -> list[RuleCheck]:
         return [
             RuleCheck(
                 rule_id="AR-001",

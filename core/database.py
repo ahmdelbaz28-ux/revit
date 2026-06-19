@@ -1,5 +1,4 @@
-"""
-core/database.py — Universal Data Model (UDM) SQLite Store
+"""core/database.py — Universal Data Model (UDM) SQLite Store.
 ===========================================================
 
 Thread-safe SQLite persistence layer for UniversalElement objects.
@@ -49,13 +48,14 @@ Copyright (c) 2024-2026 FireAI Project. All rights reserved.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from datetime import UTC, datetime
+from typing import Any, Protocol, runtime_checkable
 
 from core.models import (
     _ELEMENT_UPDATABLE_KEYS,
@@ -80,9 +80,10 @@ class _ElementLike(Protocol):
     Allows duck-typed objects (e.g., ci_benchmark's _El) without
     forcing a UniversalElement dependency.
     """
+
     element_id: str
 
-    def to_dict(self) -> Dict[str, Any]: ...
+    def to_dict(self) -> dict[str, Any]: ...
 
 
 class UniversalDataModel:
@@ -138,11 +139,8 @@ class UniversalDataModel:
         V83 FIX (H-6): Previous code never closed the connection, causing
         file descriptor leaks in long-running processes.
         """
-        with self._lock:
-            try:
-                self._conn.close()
-            except Exception:
-                pass
+        with self._lock, contextlib.suppress(Exception):
+            self._conn.close()
 
     def _init_tables(self) -> None:
         """Create database tables if they don't exist.
@@ -238,12 +236,13 @@ class UniversalDataModel:
 
         Raises:
             MemoryError: If the system runs out of memory (not swallowed).
+
         """
         with self._lock:
             try:
                 element_id = element.element_id
                 data = element.to_dict()
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
 
                 cursor = self._conn.cursor()
                 # V129 FIX: Extract element_type and project_id from data for
@@ -268,7 +267,7 @@ class UniversalDataModel:
                 logger.error("MEDIUM: Error adding element %s: %s", element_id if 'element_id' in dir() else '?', e)
                 return False
 
-    def add_elements_batch(self, elements: List[_ElementLike]) -> int:
+    def add_elements_batch(self, elements: list[_ElementLike]) -> int:
         """Add multiple elements in a single transaction.
 
         Args:
@@ -279,11 +278,12 @@ class UniversalDataModel:
 
         Raises:
             MemoryError: If the system runs out of memory (not swallowed).
+
         """
         count = 0
         with self._lock:
             try:
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
                 cursor = self._conn.cursor()
                 for element in elements:
                     element_id = element.element_id
@@ -305,11 +305,12 @@ class UniversalDataModel:
                 logger.error("MEDIUM: Error in batch add: %s", e)
                 return count
 
-    def get_element(self, element_id: str) -> Optional[UniversalElement]:
+    def get_element(self, element_id: str) -> UniversalElement | None:
         """Retrieve an element by ID.
 
         Returns:
             UniversalElement if found, None otherwise.
+
         """
         with self._lock:
             try:
@@ -330,7 +331,7 @@ class UniversalDataModel:
                 logger.error("HIGH: Error getting element %s: %s", element_id, e)
                 return None
 
-    def get_all_elements(self, include_deleted: bool = True) -> List[UniversalElement]:
+    def get_all_elements(self, include_deleted: bool = True) -> list[UniversalElement]:
         """Retrieve elements from the store.
 
         V83 FIX (M-8): Added ``include_deleted`` parameter. Previous code
@@ -342,6 +343,7 @@ class UniversalDataModel:
 
         Returns:
             List of UniversalElement objects.
+
         """
         with self._lock:
             try:
@@ -364,7 +366,7 @@ class UniversalDataModel:
                 logger.error("HIGH: Error getting elements: %s", e)
                 return []
 
-    def update_element(self, element_id: str, updates: Dict[str, Any], source: Optional[ChangeSource] = None) -> bool:
+    def update_element(self, element_id: str, updates: dict[str, Any], source: ChangeSource | None = None) -> bool:
         """Update an element with the given field values.
 
         V83 FIX (C-3): Update keys are now validated against a whitelist.
@@ -382,6 +384,7 @@ class UniversalDataModel:
 
         Raises:
             ValueError: If updates contain keys not in the whitelist.
+
         """
         # V83 FIX (C-3): Key whitelist validation — prevents JSON injection
         invalid_keys = set(updates.keys()) - _ELEMENT_UPDATABLE_KEYS
@@ -409,7 +412,7 @@ class UniversalDataModel:
                 # Merge only whitelisted updates
                 data.update(updates)
                 new_version = current_version + 1
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
 
                 # V129 FIX: Also update element_type and project_id indexed columns
                 et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
@@ -429,7 +432,7 @@ class UniversalDataModel:
                 logger.error("HIGH: Error updating element %s: %s", element_id, e)
                 return False
 
-    def delete_element(self, element_id: str, source: Optional[ChangeSource] = None) -> bool:
+    def delete_element(self, element_id: str, source: ChangeSource | None = None) -> bool:
         """Soft-delete an element.
 
         Sets ``is_deleted = True`` rather than removing the row.
@@ -440,10 +443,11 @@ class UniversalDataModel:
 
         Returns:
             True if the element was deleted, False if not found.
+
         """
         with self._lock:
             try:
-                now = datetime.now(timezone.utc).isoformat()
+                now = datetime.now(UTC).isoformat()
                 cursor = self._conn.cursor()
                 cursor.execute(
                     "UPDATE elements SET is_deleted = 1, last_modified_timestamp = ? WHERE element_id = ?",
@@ -459,7 +463,7 @@ class UniversalDataModel:
 
     # ── Efficient indexed queries (V129 FIX) ─────────────────────────────
 
-    def get_elements_by_type(self, element_type: str, include_deleted: bool = False) -> List[UniversalElement]:
+    def get_elements_by_type(self, element_type: str, include_deleted: bool = False) -> list[UniversalElement]:
         """Retrieve elements by element_type using the indexed column.
 
         V129 FIX: Uses the element_type column instead of scanning all JSON
@@ -471,6 +475,7 @@ class UniversalDataModel:
 
         Returns:
             List of matching UniversalElement objects.
+
         """
         with self._lock:
             try:
@@ -499,7 +504,7 @@ class UniversalDataModel:
                 logger.error("HIGH: Error getting elements by type: %s", e)
                 return []
 
-    def get_elements_by_project(self, project_id: str, include_deleted: bool = False) -> List[UniversalElement]:
+    def get_elements_by_project(self, project_id: str, include_deleted: bool = False) -> list[UniversalElement]:
         """Retrieve elements by project_id using the indexed column.
 
         V129 FIX: Uses the project_id column instead of scanning all JSON
@@ -511,6 +516,7 @@ class UniversalDataModel:
 
         Returns:
             List of matching UniversalElement objects.
+
         """
         with self._lock:
             try:
@@ -539,7 +545,7 @@ class UniversalDataModel:
                 logger.error("HIGH: Error getting elements by project: %s", e)
                 return []
 
-    def detect_conflicts(self) -> List:
+    def detect_conflicts(self) -> list:
         """Detect conflicts between elements from different sources.
 
         Returns a list of Conflict objects for elements that have
@@ -552,7 +558,7 @@ class UniversalDataModel:
                 elements = self.get_all_elements(include_deleted=False)
                 # Simple conflict detection: find elements with same autocad_handle
                 # or overlapping coordinates from different sources
-                handle_map: Dict[str, list] = {}
+                handle_map: dict[str, list] = {}
                 for elem in elements:
                     if elem.autocad_handle:
                         handle_map.setdefault(elem.autocad_handle, []).append(elem)
@@ -576,7 +582,7 @@ class UniversalDataModel:
                                 change_a={"element_id": elems[i].element_id},
                                 change_b={"element_id": elems[i + 1].element_id},
                                 resolved=False,
-                                timestamp=datetime.now(timezone.utc),
+                                timestamp=datetime.now(UTC),
                             ))
 
                 # Also check conflicts table for persisted conflicts
@@ -601,7 +607,7 @@ class UniversalDataModel:
                 logger.error("MEDIUM: Error detecting conflicts: %s", e)
             return conflicts
 
-    def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> Optional[Any]:
+    def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> Any | None:
         """Resolve a conflict by ID with the given strategy.
 
         Args:
@@ -610,6 +616,7 @@ class UniversalDataModel:
 
         Returns:
             The resolved Conflict object, or None if not found.
+
         """
         with self._lock:
             try:
@@ -678,7 +685,7 @@ class UniversalDataModel:
                     total_connections: int = 0
                     total_conflicts: int = 0
                     unresolved_conflicts: int = 0
-                stats = _Stats(
+                return _Stats(
                     total_elements=total_elements,
                     active_elements=active_elements,
                     deleted_elements=deleted_elements,
@@ -686,7 +693,6 @@ class UniversalDataModel:
                     total_conflicts=total_conflicts,
                     unresolved_conflicts=unresolved_conflicts,
                 )
-                return stats
             except MemoryError:
                 raise
             except Exception as e:
@@ -705,7 +711,7 @@ class UniversalDataModel:
     # ── Deserialization ───────────────────────────────────────────────────
 
     @staticmethod
-    def _dict_to_element(data: Dict[str, Any], is_deleted: bool = False, version: int = 0) -> Optional[UniversalElement]:
+    def _dict_to_element(data: dict[str, Any], is_deleted: bool = False, version: int = 0) -> UniversalElement | None:
         """Reconstruct a UniversalElement from its JSON dictionary.
 
         Args:
@@ -715,6 +721,7 @@ class UniversalDataModel:
 
         Returns:
             Reconstructed UniversalElement, or None on failure.
+
         """
         try:
             # Properties

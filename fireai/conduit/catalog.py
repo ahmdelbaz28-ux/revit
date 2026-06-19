@@ -1,5 +1,4 @@
-"""
-fireai.conduit.catalog — Immutable Fitting Catalog
+"""fireai.conduit.catalog — Immutable Fitting Catalog.
 ===================================================
 
 All fitting data is hardcoded from manufacturer published dimensions and
@@ -34,7 +33,6 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
-from typing import Dict, Tuple
 
 from fireai.conduit.errors import CatalogError
 from fireai.conduit.types import ConduitType, FittingType, Result, TradeSize
@@ -51,8 +49,7 @@ _CATALOG_NUMBER_PATTERN = re.compile(
 
 @dataclass(frozen=True)
 class Fitting:
-    """
-    A single catalog fitting with all dimensional data.
+    """A single catalog fitting with all dimensional data.
 
     Adapted from OSE Piping elbow descriptor (alpha, POD, PID, H, J, M)
     but simplified to the fields needed for NEC conduit routing:
@@ -77,7 +74,9 @@ class Fitting:
         catalog_number:      Manufacturer catalog reference string.
         weight_kg:           Fitting weight in kg.
         nec_reference:       Applicable NEC article.
+
     """
+
     fitting_type:        FittingType
     conduit_type:        ConduitType
     trade_size:          TradeSize
@@ -136,14 +135,14 @@ class Fitting:
 # Internal catalog — keyed by (ConduitType, TradeSize, FittingType)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_CatalogKey = Tuple[ConduitType, TradeSize, FittingType]
+_CatalogKey = tuple[ConduitType, TradeSize, FittingType]
 
 # Developed length formula verification:
 # L = π × R × angle/180
 # EMT ½": L = π × 4.0 × 90/180 = π × 4.0 / 2 = 6.28318...
 # Catalog tables show 6.283 — verified ✓
 
-_CATALOG: Dict[_CatalogKey, Fitting] = {}
+_CATALOG: dict[_CatalogKey, Fitting] = {}
 
 
 def _reg(f: Fitting) -> None:
@@ -434,9 +433,8 @@ def get_fitting(
     conduit_type: ConduitType,
     trade_size: TradeSize,
     fitting_type: FittingType,
-) -> "Result[Fitting, CatalogError]":
-    """
-    Look up a fitting in the immutable catalog.
+) -> Result[Fitting, CatalogError]:
+    """Look up a fitting in the immutable catalog.
 
     Returns Result.ok(Fitting) on success, Result.err(CatalogError)
     if the (conduit_type, trade_size, fitting_type) combination is not
@@ -452,6 +450,7 @@ def get_fitting(
         Result.err(CatalogError) — combination not in catalog.
 
     Reference: NEC 110.3(B) — equipment must be installed per listing.
+
     """
     key: _CatalogKey = (conduit_type, trade_size, fitting_type)
     fitting = _CATALOG.get(key)
@@ -469,6 +468,6 @@ def catalog_size() -> int:
     return len(_CATALOG)
 
 
-def all_fittings() -> "Dict[_CatalogKey, Fitting]":
+def all_fittings() -> dict[_CatalogKey, Fitting]:
     """Return a copy of the full catalog (read-only view)."""
     return dict(_CATALOG)

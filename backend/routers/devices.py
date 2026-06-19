@@ -1,5 +1,4 @@
-"""
-backend/routers/devices.py — Devices CRUD endpoints.
+"""backend/routers/devices.py — Devices CRUD endpoints.
 
 LIFE-SAFETY NOTE: Devices represent fire alarm components (smoke detectors,
 heat detectors, manual pull stations, notification appliances, etc.).

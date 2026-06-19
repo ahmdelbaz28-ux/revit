@@ -1,5 +1,4 @@
-"""
-test_db_service_and_qomn.py — Integration tests for the DatabaseService
+"""test_db_service_and_qomn.py — Integration tests for the DatabaseService
 (UDM-backed) and additional QOMN calculation endpoints.
 
 Covers deeper code paths in:
@@ -19,7 +18,7 @@ from fastapi.testclient import TestClient
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
-def _setup_env():
+def _setup_env() -> None:
     """Set development environment for testing."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = ""
@@ -41,7 +40,7 @@ def client():
 class TestDbServiceElementCRUD:
     """Tests that exercise DatabaseService element operations through the API."""
 
-    def test_create_element_minimal(self, client):
+    def test_create_element_minimal(self, client) -> None:
         """Create an element with only required properties."""
         resp = client.post(
             "/api/elements",
@@ -54,7 +53,7 @@ class TestDbServiceElementCRUD:
         )
         assert resp.status_code in (200, 201, 500)
 
-    def test_create_element_with_geometry(self, client):
+    def test_create_element_with_geometry(self, client) -> None:
         """Create an element with geometry data."""
         resp = client.post(
             "/api/elements",
@@ -80,7 +79,7 @@ class TestDbServiceElementCRUD:
         )
         assert resp.status_code in (200, 201, 500)
 
-    def test_create_element_forbidden_extra_fields(self, client):
+    def test_create_element_forbidden_extra_fields(self, client) -> None:
         """Elements with extra fields must be rejected (extra='forbid')."""
         resp = client.post(
             "/api/elements",
@@ -94,7 +93,7 @@ class TestDbServiceElementCRUD:
         )
         assert resp.status_code == 422
 
-    def test_create_element_missing_required_properties(self, client):
+    def test_create_element_missing_required_properties(self, client) -> None:
         """Elements without properties must be rejected."""
         resp = client.post(
             "/api/elements",
@@ -102,7 +101,7 @@ class TestDbServiceElementCRUD:
         )
         assert resp.status_code == 422
 
-    def test_list_elements_all_pages(self, client):
+    def test_list_elements_all_pages(self, client) -> None:
         """Paginate through all elements."""
         page = 1
         total_seen = 0
@@ -120,7 +119,7 @@ class TestDbServiceElementCRUD:
             if page > 20:  # Safety limit
                 break
 
-    def test_update_element_add_material(self, client):
+    def test_update_element_add_material(self, client) -> None:
         """Update element properties to add material."""
         # Create an element first
         create_resp = client.post(
@@ -145,7 +144,7 @@ class TestDbServiceElementCRUD:
         )
         assert resp.status_code in (200, 404, 500)
 
-    def test_soft_delete_element(self, client):
+    def test_soft_delete_element(self, client) -> None:
         """Soft delete an element and verify it's gone from default list."""
         # Create
         create_resp = client.post(
@@ -167,7 +166,7 @@ class TestDbServiceElementCRUD:
         del_resp = client.delete(f"/api/elements/{elem_id}")
         assert del_resp.status_code in (200, 404, 500)
 
-    def test_list_deleted_elements(self, client):
+    def test_list_deleted_elements(self, client) -> None:
         """GET /api/elements?is_deleted=true must include soft-deleted."""
         resp = client.get("/api/elements?is_deleted=true")
         assert resp.status_code == 200
@@ -181,7 +180,7 @@ class TestDbServiceElementCRUD:
 class TestQomnAdditional:
     """Additional QOMN calculation endpoint tests."""
 
-    def test_smoke_spacing_high_ceiling(self, client):
+    def test_smoke_spacing_high_ceiling(self, client) -> None:
         """Smoke spacing at high ceiling must apply NFPA 72 derating."""
         resp = client.post(
             "/api/qomn/smoke-spacing",
@@ -189,7 +188,7 @@ class TestQomnAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_heat_spacing_with_area(self, client):
+    def test_heat_spacing_with_area(self, client) -> None:
         """Heat spacing with area_per_detector_m2 must succeed."""
         resp = client.post(
             "/api/qomn/heat-spacing",
@@ -202,7 +201,7 @@ class TestQomnAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_battery_with_custom_hours(self, client):
+    def test_battery_with_custom_hours(self, client) -> None:
         """Battery calculation with custom standby/alarm hours."""
         resp = client.post(
             "/api/qomn/battery",
@@ -215,7 +214,7 @@ class TestQomnAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_voltage_drop_with_12awg(self, client):
+    def test_voltage_drop_with_12awg(self, client) -> None:
         """Voltage drop calculation with 12 AWG cable."""
         resp = client.post(
             "/api/qomn/voltage-drop",
@@ -228,7 +227,7 @@ class TestQomnAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_voltage_drop_with_14awg(self, client):
+    def test_voltage_drop_with_14awg(self, client) -> None:
         """Voltage drop calculation with 14 AWG cable."""
         resp = client.post(
             "/api/qomn/voltage-drop",
@@ -241,7 +240,7 @@ class TestQomnAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_place_detectors_heat(self, client):
+    def test_place_detectors_heat(self, client) -> None:
         """Place heat detectors in a room."""
         resp = client.post(
             "/api/qomn/place-detectors",
@@ -254,7 +253,7 @@ class TestQomnAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_place_duct_detector(self, client):
+    def test_place_duct_detector(self, client) -> None:
         """Place duct detector endpoint."""
         resp = client.post(
             "/api/qomn/place-duct",
@@ -266,7 +265,7 @@ class TestQomnAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_qomn_constants(self, client):
+    def test_qomn_constants(self, client) -> None:
         """GET /api/qomn/constants must return engineering constants."""
         resp = client.get("/api/qomn/constants")
         assert resp.status_code in (200, 503)
@@ -280,34 +279,34 @@ class TestQomnAdditional:
 class TestEnvironmentAdditional:
     """Additional environment endpoint tests for deeper coverage."""
 
-    def test_countries_endpoint(self, client):
+    def test_countries_endpoint(self, client) -> None:
         """GET /api/environment/countries must return country list."""
         resp = client.get("/api/environment/countries")
         assert resp.status_code == 200
 
-    def test_context_with_lat_lon(self, client):
+    def test_context_with_lat_lon(self, client) -> None:
         """GET /api/environment/context with coordinates."""
         resp = client.get("/api/environment/context?lat=51.5&lon=-0.1")
         assert resp.status_code == 200
 
-    def test_full_context_with_material(self, client):
+    def test_full_context_with_material(self, client) -> None:
         """GET /api/environment/full-context with coordinates and material."""
         resp = client.get("/api/environment/full-context?lat=51.5&lon=-0.1&material=propane")
         assert resp.status_code == 200
 
-    def test_region_multiple_countries(self, client):
+    def test_region_multiple_countries(self, client) -> None:
         """GET /api/environment/region for different countries."""
         for code in ["US", "GB", "DE", "JP"]:
             resp = client.get(f"/api/environment/region?country_code={code}")
             assert resp.status_code == 200
 
-    def test_geocode_different_addresses(self, client):
+    def test_geocode_different_addresses(self, client) -> None:
         """GET /api/environment/geocode for different addresses."""
         for addr in ["Tokyo", "Berlin", "Sydney"]:
             resp = client.get(f"/api/environment/geocode?address={addr}")
             assert resp.status_code == 200
 
-    def test_hazmat_known_materials(self, client):
+    def test_hazmat_known_materials(self, client) -> None:
         """GET /api/environment/hazmat/known must list known materials."""
         resp = client.get("/api/environment/hazmat/known")
         assert resp.status_code == 200
@@ -325,7 +324,7 @@ class TestEnvironmentAdditional:
 class TestMemoryServiceAdditional:
     """Additional memory service endpoint tests."""
 
-    def test_add_memory_with_agent_scope(self, client):
+    def test_add_memory_with_agent_scope(self, client) -> None:
         """POST /api/memory/add with agent_id scope."""
         resp = client.post(
             "/api/memory/add",
@@ -337,7 +336,7 @@ class TestMemoryServiceAdditional:
         )
         assert resp.status_code in (200, 404, 422, 503)
 
-    def test_search_memories_with_filters(self, client):
+    def test_search_memories_with_filters(self, client) -> None:
         """POST /api/memory/search with filters."""
         resp = client.post(
             "/api/memory/search",
@@ -349,12 +348,12 @@ class TestMemoryServiceAdditional:
         )
         assert resp.status_code in (200, 404, 422, 503)
 
-    def test_get_all_memories_with_filters(self, client):
+    def test_get_all_memories_with_filters(self, client) -> None:
         """GET /api/memory/all with user_id and agent_id filters."""
         resp = client.get("/api/memory/all?user_id=test-user&agent_id=test-agent")
         assert resp.status_code in (200, 404, 503)
 
-    def test_memory_status_structure(self, client):
+    def test_memory_status_structure(self, client) -> None:
         """GET /api/memory/status must return structured status."""
         resp = client.get("/api/memory/status")
         assert resp.status_code in (200, 404, 503)
@@ -371,7 +370,7 @@ class TestMemoryServiceAdditional:
 class TestFACPAdditional:
     """Additional FACP endpoint tests for validation edge cases."""
 
-    def test_facp_select_small_system(self, client):
+    def test_facp_select_small_system(self, client) -> None:
         """FACP select for a very small system."""
         resp = client.post(
             "/api/facp/select",
@@ -384,7 +383,7 @@ class TestFACPAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_facp_select_large_system(self, client):
+    def test_facp_select_large_system(self, client) -> None:
         """FACP select for a large system with voice and network."""
         resp = client.post(
             "/api/facp/select",
@@ -401,7 +400,7 @@ class TestFACPAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_facp_select_with_manufacturer_preference(self, client):
+    def test_facp_select_with_manufacturer_preference(self, client) -> None:
         """FACP select with preferred manufacturer."""
         resp = client.post(
             "/api/facp/select",
@@ -415,7 +414,7 @@ class TestFACPAdditional:
         )
         assert resp.status_code in (200, 422, 503)
 
-    def test_facp_select_invalid_device_count(self, client):
+    def test_facp_select_invalid_device_count(self, client) -> None:
         """FACP select with device_count=0 must fail validation."""
         resp = client.post(
             "/api/facp/select",
@@ -428,7 +427,7 @@ class TestFACPAdditional:
         )
         assert resp.status_code == 422
 
-    def test_facp_verify_with_derating_method(self, client):
+    def test_facp_verify_with_derating_method(self, client) -> None:
         """FACP verify with peukert derating method."""
         resp = client.post(
             "/api/facp/verify",

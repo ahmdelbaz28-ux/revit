@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-FireAI — API Endpoints Index Generator
+"""FireAI — API Endpoints Index Generator.
 
 Scans backend/routers/ and generates a comprehensive API index.
 """
@@ -9,7 +8,6 @@ from __future__ import annotations
 
 # Run: python -m fireai.tools.api_indexer
 # Output: backend/API_ENDPOINTS_INDEX.md
-
 import re
 from collections import defaultdict
 from datetime import datetime
@@ -56,7 +54,6 @@ def extract_endpoints(routers_dir: Path) -> dict[str, list[dict[str, object]]]:
 
 def generate_markdown(endpoints: dict[str, list[dict[str, object]]]) -> str:
     """Generate Markdown documentation."""
-
     # Group by category
     categories: dict[str, list[dict[str, object]]] = {
         "Health & Monitoring": [],
@@ -134,7 +131,7 @@ def generate_markdown(endpoints: dict[str, list[dict[str, object]]]) -> str:
     return md
 
 
-def main():
+def main() -> int:
     root = Path(__file__).parent.parent.parent
     routers_dir = root / "backend" / "routers"
     output_file = root / "backend" / "API_ENDPOINTS_INDEX.md"

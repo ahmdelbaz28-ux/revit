@@ -29,7 +29,7 @@ import os
 import typing as t
 from contextvars import ContextVar
 
-_current_span: ContextVar[t.Optional[t.Any]] = ContextVar('current_span', default=None)
+_current_span: ContextVar[t.Any | None] = ContextVar('current_span', default=None)
 
 if _OPENTELEMETRY_AVAILABLE:
     _propagator = CompositeHTTPPropagator([
@@ -59,7 +59,7 @@ def setup_tracing(
     return provider
 
 
-def traced(name: t.Optional[str] = None):
+def traced(name: str | None = None):
     def decorator(fn: t.Callable) -> t.Callable:
         if not _OPENTELEMETRY_AVAILABLE:
             # Tracing disabled – return original function unchanged
@@ -82,11 +82,11 @@ def traced(name: t.Optional[str] = None):
     return decorator
 
 
-def get_current_span() -> t.Optional[t.Any]:
+def get_current_span() -> t.Any | None:
     return _current_span.get()
 
 
-def extract_traceparent(headers: t.Dict[str, str]) -> t.Optional[t.Dict[str, str]]:
+def extract_traceparent(headers: dict[str, str]) -> dict[str, str] | None:
     if _propagator is None:
         return None
     _propagator.extract(headers)
@@ -96,7 +96,7 @@ def extract_traceparent(headers: t.Dict[str, str]) -> t.Optional[t.Dict[str, str
     return None
 
 
-def inject_traceparent(headers: t.Optional[t.Dict[str, str]] = None) -> t.Dict[str, str]:
+def inject_traceparent(headers: dict[str, str] | None = None) -> dict[str, str]:
     if headers is None:
         headers = {}
     if not _OPENTELEMETRY_AVAILABLE or trace is None:
@@ -108,7 +108,7 @@ def inject_traceparent(headers: t.Optional[t.Dict[str, str]] = None) -> t.Dict[s
 
 
 class TraceContext:
-    def __init__(self, app, tracer: t.Optional[t.Any] = None):
+    def __init__(self, app, tracer: t.Any | None = None) -> None:
         self.app = app
         if not _OPENTELEMETRY_AVAILABLE or trace is None:
             self.tracer = None
@@ -138,7 +138,7 @@ class TraceContext:
             span.set_attribute('http.url', scope.get('path', '/'))
             span.set_attribute('http.host', headers.get('host', ''))
 
-            async def wrapped_send(message):
+            async def wrapped_send(message) -> None:
                 if message['type'] == 'http.response.start':
                     span.set_attribute('http.status_code', message.get('status', 0))
                 await send(message)

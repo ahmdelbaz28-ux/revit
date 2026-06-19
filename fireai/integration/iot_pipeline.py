@@ -1,5 +1,4 @@
-"""
-fireai/integration/iot_pipeline.py
+"""fireai/integration/iot_pipeline.py.
 ====================================
 IoT Device Integration — MQTT/OPC-UA sensor ingestion and real-time
 event processing for fire alarm system monitoring.
@@ -16,6 +15,7 @@ References:
   - OPC UA Part 1: Overview and Concepts (IEC 62541)
   - NFPA 72-2022 §14.4 — Inspection, testing and maintenance
   - NFPA 72-2022 §10.18 — System monitoring
+
 """
 
 from __future__ import annotations
@@ -24,10 +24,11 @@ import asyncio
 import logging
 import math
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 from fireai.core.event_bus import EventBus
 
@@ -39,7 +40,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-class SensorType(str, Enum):
+class SensorType(StrEnum):
     SMOKE_DETECTOR = "SMOKE_DETECTOR"
     HEAT_DETECTOR = "HEAT_DETECTOR"
     FLAME_DETECTOR = "FLAME_DETECTOR"
@@ -52,7 +53,7 @@ class SensorType(str, Enum):
     CURRENT_SENSOR = "CURRENT_SENSOR"
 
 
-class EventSeverity(str, Enum):
+class EventSeverity(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -60,7 +61,7 @@ class EventSeverity(str, Enum):
     INFO = "INFO"
 
 
-class SensorStatus(str, Enum):
+class SensorStatus(StrEnum):
     NORMAL = "NORMAL"
     ALARM = "ALARM"
     TROUBLE = "TROUBLE"
@@ -69,7 +70,7 @@ class SensorStatus(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class CommunicationProtocol(str, Enum):
+class CommunicationProtocol(StrEnum):
     MQTT = "MQTT"
     OPC_UA = "OPC_UA"
     MODBUS = "MODBUS"
@@ -91,7 +92,7 @@ class SensorReading:
     timestamp: datetime
     quality: float = 1.0  # 0.0 (bad) to 1.0 (good)
     protocol: CommunicationProtocol = CommunicationProtocol.MQTT
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.sensor_id.strip():
@@ -117,8 +118,8 @@ class SecurityEvent:
     message: str
     timestamp: datetime
     reading_value: float = 0.0
-    threshold: Optional[float] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    threshold: float | None = None
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 # ===========================================================================
@@ -133,8 +134,8 @@ class SensorConfig:
     min_value: float = -1e9
     max_value: float = 1e9
     rate_of_change_limit: float = 1e9  # max change per second
-    warning_threshold: Optional[float] = None
-    alarm_threshold: Optional[float] = None
+    warning_threshold: float | None = None
+    alarm_threshold: float | None = None
     comm_loss_seconds: float = 300.0  # 5 minutes default
     unit: str = ""
 
@@ -145,8 +146,7 @@ class SensorConfig:
 
 
 class IoTPipeline:
-    """
-    MQTT/OPC-UA sensor ingestion and real-time event processing.
+    """MQTT/OPC-UA sensor ingestion and real-time event processing.
 
     Features:
       - Async MQTT client with automatic reconnection (exponential backoff)
@@ -157,31 +157,31 @@ class IoTPipeline:
       - All events published to event_bus for downstream processing
     """
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
-        self._sensor_configs: Dict[str, SensorConfig] = {}
-        self._last_readings: Dict[str, SensorReading] = {}
-        self._rate_buffers: Dict[str, List[tuple[float, float]]] = {}
-        self._last_heartbeat: Dict[str, float] = {}
+        self._sensor_configs: dict[str, SensorConfig] = {}
+        self._last_readings: dict[str, SensorReading] = {}
+        self._rate_buffers: dict[str, list[tuple[float, float]]] = {}
+        self._last_heartbeat: dict[str, float] = {}
 
         # MQTT state
-        self._mqtt_client: Optional[Any] = None
+        self._mqtt_client: Any | None = None
         self._mqtt_connected: bool = False
         self._mqtt_broker: str = ""
         self._mqtt_port: int = 1883
         self._mqtt_topic: str = ""
         self._mqtt_reconnect_delay: float = 1.0
         self._mqtt_max_reconnect_delay: float = 60.0
-        self._mqtt_event_handler: Optional[Callable[[SensorReading], None]] = None
+        self._mqtt_event_handler: Callable[[SensorReading], None] | None = None
 
         # OPC-UA state
-        self._opcua_client: Optional[Any] = None
+        self._opcua_client: Any | None = None
         self._opcua_connected: bool = False
         self._opcua_endpoint: str = ""
         self._opcua_session_timeout: float = 600.0
 
         # Event processing state
-        self._comm_loss_timer: Optional[asyncio.Task[None]] = None
+        self._comm_loss_timer: asyncio.Task[None] | None = None
         self._running: bool = False
 
     # ── Configuration ──────────────────────────────────────────────────
@@ -189,7 +189,7 @@ class IoTPipeline:
     def register_sensor(self, config: SensorConfig) -> None:
         self._sensor_configs[config.sensor_id] = config
 
-    def get_sensor_config(self, sensor_id: str) -> Optional[SensorConfig]:
+    def get_sensor_config(self, sensor_id: str) -> SensorConfig | None:
         return self._sensor_configs.get(sensor_id)
 
     def unregister_sensor(self, sensor_id: str) -> None:
@@ -208,8 +208,7 @@ class IoTPipeline:
         username: str = "",
         password: str = "",
     ) -> bool:
-        """
-        Connect to an MQTT broker with auto-reconnection.
+        """Connect to an MQTT broker with auto-reconnection.
 
         Uses asyncio-mqtt when available, otherwise simulates
         the connection for testing.
@@ -223,6 +222,7 @@ class IoTPipeline:
 
         Returns:
             True if connection succeeded.
+
         """
         self._mqtt_broker = broker
         self._mqtt_port = port
@@ -274,8 +274,7 @@ class IoTPipeline:
         username: str = "",
         password: str = "",
     ) -> bool:
-        """
-        Connect to an OPC-UA server with session management.
+        """Connect to an OPC-UA server with session management.
 
         Uses opcua-asyncio when available, otherwise simulates
         the connection for testing.
@@ -288,6 +287,7 @@ class IoTPipeline:
 
         Returns:
             True if connection succeeded.
+
         """
         self._opcua_endpoint = endpoint
 
@@ -332,10 +332,9 @@ class IoTPipeline:
         self,
         sensor_id: str,
         value: float,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> SensorReading:
-        """
-        Ingest a sensor reading: validate and process.
+        """Ingest a sensor reading: validate and process.
 
         Steps:
           1. Look up sensor config
@@ -355,9 +354,10 @@ class IoTPipeline:
 
         Raises:
             ValueError: If sensor is unknown or value is invalid.
+
         """
         if timestamp is None:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
         if timestamp.tzinfo is None:
             raise ValueError("timestamp must be timezone-aware")
 
@@ -422,9 +422,8 @@ class IoTPipeline:
 
     def process_event(
         self, reading: SensorReading
-    ) -> Optional[SecurityEvent]:
-        """
-        Process a sensor reading and generate a SecurityEvent if
+    ) -> SecurityEvent | None:
+        """Process a sensor reading and generate a SecurityEvent if
         any thresholds or anomaly conditions are triggered.
 
         Event types:
@@ -438,29 +437,29 @@ class IoTPipeline:
 
         Returns:
             A SecurityEvent if a condition is triggered, else None.
+
         """
         config = self._sensor_configs.get(reading.sensor_id)
         if config is None:
             return None
 
         # Threshold crossing detection
-        if config.alarm_threshold is not None:
-            if reading.value >= config.alarm_threshold:
-                return SecurityEvent(
-                    event_id=self._generate_event_id(),
-                    sensor_id=reading.sensor_id,
-                    event_type="THRESHOLD_ALARM",
-                    severity=EventSeverity.CRITICAL,
-                    message=(
-                        f"Sensor {reading.sensor_id} value "
-                        f"{reading.value:.2f} {reading.unit} "
-                        f"exceeds alarm threshold "
-                        f"{config.alarm_threshold:.2f} {reading.unit}"
-                    ),
-                    timestamp=reading.timestamp,
-                    reading_value=reading.value,
-                    threshold=config.alarm_threshold,
-                )
+        if config.alarm_threshold is not None and reading.value >= config.alarm_threshold:
+            return SecurityEvent(
+                event_id=self._generate_event_id(),
+                sensor_id=reading.sensor_id,
+                event_type="THRESHOLD_ALARM",
+                severity=EventSeverity.CRITICAL,
+                message=(
+                    f"Sensor {reading.sensor_id} value "
+                    f"{reading.value:.2f} {reading.unit} "
+                    f"exceeds alarm threshold "
+                    f"{config.alarm_threshold:.2f} {reading.unit}"
+                ),
+                timestamp=reading.timestamp,
+                reading_value=reading.value,
+                threshold=config.alarm_threshold,
+            )
 
         if config.warning_threshold is not None:
             if reading.value >= config.warning_threshold:
@@ -528,14 +527,14 @@ class IoTPipeline:
     async def start_comm_loss_monitor(
         self, interval_seconds: float = 60.0
     ) -> None:
-        """
-        Start background task to detect communication loss.
+        """Start background task to detect communication loss.
 
         Periodically checks all registered sensors for heartbeat
         timeout and generates COMM_LOSS events.
 
         Args:
             interval_seconds: Check interval (default: 60s).
+
         """
         if self._comm_loss_timer is not None:
             self._comm_loss_timer.cancel()
@@ -599,14 +598,14 @@ class IoTPipeline:
 
     def get_latest_reading(
         self, sensor_id: str
-    ) -> Optional[SensorReading]:
+    ) -> SensorReading | None:
         """Get the latest reading for a sensor."""
         return self._last_readings.get(sensor_id)
 
-    def get_connected_sensors(self) -> Set[str]:
+    def get_connected_sensors(self) -> set[str]:
         """Get set of sensor IDs with recent heartbeats."""
         now = time.monotonic()
-        connected: Set[str] = set()
+        connected: set[str] = set()
         for sensor_id in self._sensor_configs:
             last_hb = self._last_heartbeat.get(sensor_id)
             if last_hb is not None:
@@ -696,7 +695,6 @@ class IoTPipeline:
 
 if __name__ == "__main__":
     import asyncio
-    from datetime import timezone
 
     async def test() -> None:
         pipeline = IoTPipeline()
@@ -728,7 +726,7 @@ if __name__ == "__main__":
         reading = await pipeline.ingest_sensor_data(
             "SMK-FL3-01",
             15.0,
-            datetime.now(timezone.utc),
+            datetime.now(UTC),
         )
         print(f"Reading: {reading.value} {reading.unit}")
 
@@ -736,7 +734,7 @@ if __name__ == "__main__":
         reading = await pipeline.ingest_sensor_data(
             "SMK-FL3-01",
             35.0,
-            datetime.now(timezone.utc),
+            datetime.now(UTC),
         )
         print(f"Reading (warning): {reading.value}")
 
@@ -744,7 +742,7 @@ if __name__ == "__main__":
         reading = await pipeline.ingest_sensor_data(
             "SMK-FL3-01",
             75.0,
-            datetime.now(timezone.utc),
+            datetime.now(UTC),
         )
         print(f"Reading (alarm): {reading.value}")
 

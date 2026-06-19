@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Tool to pack a directory into a .docx, .pptx, or .xlsx file with XML formatting undone.
+"""Tool to pack a directory into a .docx, .pptx, or .xlsx file with XML formatting undone.
 
 Example usage:
     python pack.py <input_directory> <office_file> [--force]
@@ -17,7 +16,7 @@ from pathlib import Path
 import defusedxml.minidom
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Pack a directory into an Office file")
     parser.add_argument("input_directory", help="Unpacked Office document directory")
     parser.add_argument("output_file", help="Output Office file (.docx/.pptx/.xlsx)")
@@ -43,7 +42,7 @@ def main():
         sys.exit(f"Error: {e}")
 
 
-def pack_document(input_dir, output_file, validate=False):
+def pack_document(input_dir, output_file, validate=False) -> bool:
     """Pack a directory into an Office file (.docx/.pptx/.xlsx).
 
     Args:
@@ -53,6 +52,7 @@ def pack_document(input_dir, output_file, validate=False):
 
     Returns:
         bool: True if successful, False if validation failed
+
     """
     input_dir = Path(input_dir)
     output_file = Path(output_file)
@@ -80,15 +80,14 @@ def pack_document(input_dir, output_file, validate=False):
                     zf.write(f, f.relative_to(temp_content_dir))
 
         # Validate if requested
-        if validate:
-            if not validate_document(output_file):
-                output_file.unlink()  # Delete the corrupt file
-                return False
+        if validate and not validate_document(output_file):
+            output_file.unlink()  # Delete the corrupt file
+            return False
 
     return True
 
 
-def validate_document(doc_path):
+def validate_document(doc_path) -> bool | None:
     """Validate document by converting to HTML with soffice."""
     # Determine the correct filter based on file extension
     match doc_path.suffix.lower():
@@ -131,9 +130,9 @@ def validate_document(doc_path):
             return False
 
 
-def condense_xml(xml_file):
+def condense_xml(xml_file) -> None:
     """Strip unnecessary whitespace and remove comments."""
-    with open(xml_file, "r", encoding="utf-8") as f:
+    with open(xml_file, encoding="utf-8") as f:
         dom = defusedxml.minidom.parse(f)
 
     # Process each element to remove whitespace and comments

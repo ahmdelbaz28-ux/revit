@@ -61,8 +61,8 @@ import math
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from typing import Any
 
 from .digital_twin import DigitalTwin
 from .event_bus import EventBus, Events
@@ -134,23 +134,24 @@ class PipelineResult:
         warnings: List of warning messages (non-fatal issues).
         timing: Dictionary mapping stage name → elapsed seconds.
         metadata: Additional metadata about the pipeline execution.
+
     """
 
     room_id: str
     stage_reached: PipelineStage
     success: bool
-    layout: Optional[DetectorLayout] = None
-    consensus: Optional[ConsensusResult] = None
-    certificate: Optional[ProofCertificate] = None
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    timing: Dict[str, float] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    layout: DetectorLayout | None = None
+    consensus: ConsensusResult | None = None
+    certificate: ProofCertificate | None = None
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    timing: dict[str, float] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     # Digital Twin fields (Bridge 2)
-    twin_version_id: Optional[str] = None
-    twin_checksum: Optional[str] = None
+    twin_version_id: str | None = None
+    twin_checksum: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to a dictionary (for JSON export / audit trail).
 
         Handles non-serializable types gracefully:
@@ -159,7 +160,7 @@ class PipelineResult:
           - ConsensusResult → dataclass asdict (with nested enums → values)
           - ProofCertificate → dataclass asdict
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "room_id": self.room_id,
             "stage_reached": self.stage_reached.value,
             "success": self.success,
@@ -261,7 +262,7 @@ class AnalysisPipeline:
         grid_step: float = VERIFY_STEP,
         generate_certificate: bool = True,
         require_consensus: bool = True,
-    ):
+    ) -> None:
         """Initialize the analysis pipeline.
 
         Args:
@@ -277,6 +278,7 @@ class AnalysisPipeline:
                 Default: True. Set to False for fast analysis-only mode.
             require_consensus: Whether to run triple consensus verification.
                 Default: True. Set to False to skip verification stage.
+
         """
         self.coverage_radius = coverage_radius
         self.max_spacing = max_spacing
@@ -362,6 +364,7 @@ class AnalysisPipeline:
 
         Returns:
             PipelineResult with all artifacts from every completed stage.
+
         """
         # Resolve room_id
         if not room_id:
@@ -734,14 +737,14 @@ class AnalysisPipeline:
                     "coverage_pct": layout.coverage_pct,
                     "nfpa_valid": layout.nfpa_valid,
                     "method": layout.method,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
                 if result.consensus is not None:
                     hash_payload["consensus_confidence"] = result.consensus.confidence.value
                     hash_payload["consensus_safe"] = result.consensus.is_safe
                 pipeline_hash = hashlib.sha256(json.dumps(hash_payload, sort_keys=True).encode()).hexdigest()
                 result.metadata["pipeline_hash"] = pipeline_hash
-                result.metadata["pipeline_timestamp"] = datetime.now(timezone.utc).isoformat()
+                result.metadata["pipeline_timestamp"] = datetime.now(UTC).isoformat()
                 # V60 FIX (P1-5): Log full hash (not truncated) for verification
                 logger.info("  SIGNING: pipeline_hash=%s (no certificate — hash from layout)", pipeline_hash)
 
@@ -940,8 +943,8 @@ class AnalysisPipeline:
 
     def analyze_building(
         self,
-        rooms: List[Tuple[Room, str, float]],
-    ) -> List[PipelineResult]:
+        rooms: list[tuple[Room, str, float]],
+    ) -> list[PipelineResult]:
         """Run pipeline for all rooms in a building.
 
         Error Resilience:
@@ -958,8 +961,9 @@ class AnalysisPipeline:
         Returns:
             List of PipelineResult objects, one per room.
             Failed rooms have success=False with detailed error info.
+
         """
-        results: List[PipelineResult] = []
+        results: list[PipelineResult] = []
         n_rooms = len(rooms)
 
         logger.info("Building analysis START: %s rooms", n_rooms)
@@ -1059,7 +1063,7 @@ class AnalysisPipeline:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 __all__ = [
-    "PipelineStage",
-    "PipelineResult",
     "AnalysisPipeline",
+    "PipelineResult",
+    "PipelineStage",
 ]

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-parse_jd.py — 解析 JD 文本，抽取 must-have / nice-to-have / 职责 / 特殊要求
+"""parse_jd.py — 解析 JD 文本，抽取 must-have / nice-to-have / 职责 / 特殊要求.
 
 用法：
     python parse_jd.py --jd-file jd.txt --out jd_parsed.json
@@ -105,7 +104,7 @@ def extract_special(text: str) -> dict:
 
 
 def extract_skills(sentences: list[str]) -> list[str]:
-    """从所有句子里抽取技能词候选（短词优先，避免抽出整句）。"""
+    """从所有句子里抽取技能词候选（短词优先，避免抽出整句）。."""
     text = " ".join(sentences)
     # 英文技能（CamelCase 或大写开头的词、含 . 或 +/- 的标识）
     en = re.findall(r"\b[A-Za-z][A-Za-z0-9+/.\-_#]{1,20}\b", text)

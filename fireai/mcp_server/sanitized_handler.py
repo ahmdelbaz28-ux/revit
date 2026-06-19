@@ -1,5 +1,4 @@
-"""
-sanitized_handler.py — Input-Sanitized MCP Request Handler
+"""sanitized_handler.py — Input-Sanitized MCP Request Handler.
 ===========================================================
 LIFE-SAFETY CRITICAL: This module is the GATEKEEPER between external
 MCP clients (AI assistants) and the FireAI system. Every request from
@@ -32,7 +31,7 @@ import re
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 # Import the existing sanitization module
 from fireai.core.bim_input_sanitizer import (
@@ -99,10 +98,12 @@ class MCPRequest:
         parameters: Dictionary of tool parameters (raw, unsanitized).
         source: Origin of the request (e.g., "claude_desktop", "api").
         timestamp: When the request was received.
+
     """
+
     request_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     tool_name: str = ""
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
     source: str = "unknown"
     timestamp: float = field(default_factory=time.time)
 
@@ -118,13 +119,15 @@ class MCPResponse:
         error: Error message (if failed).
         violations: List of validation/sanitization violations found.
         sanitized_parameters: The parameters after sanitization (for audit).
+
     """
+
     request_id: str = ""
     success: bool = False
     result: Any = None
     error: str = ""
-    violations: List[str] = field(default_factory=list)
-    sanitized_parameters: Dict[str, Any] = field(default_factory=dict)
+    violations: list[str] = field(default_factory=list)
+    sanitized_parameters: dict[str, Any] = field(default_factory=dict)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -168,7 +171,7 @@ class SanitizedMCPHandler:
     }
 
     # Parameter validation rules per tool
-    PARAM_RULES: Dict[str, Dict[str, Dict[str, Any]]] = {
+    PARAM_RULES: dict[str, dict[str, dict[str, Any]]] = {
         "update_bim_parameter": {
             "element_id": {"type": "str", "sanitize": "bim_parameter", "required": True},
             "parameter_name": {"type": "str", "sanitize": "bim_parameter", "required": True},
@@ -209,7 +212,7 @@ class SanitizedMCPHandler:
 
     def __init__(self) -> None:
         self._hazard_verifier = HazardOverrideVerifier()
-        self._request_log: List[Dict[str, Any]] = []
+        self._request_log: list[dict[str, Any]] = []
 
     def handle(self, request: MCPRequest) -> MCPResponse:
         """Process an MCP request with full input sanitization.
@@ -229,8 +232,9 @@ class SanitizedMCPHandler:
 
         Returns:
             MCPResponse with success/failure and audit information.
+
         """
-        violations: List[str] = []
+        violations: list[str] = []
 
         # Gate 1: Tool name whitelist
         if request.tool_name not in self.ALLOWED_TOOLS:
@@ -275,7 +279,7 @@ class SanitizedMCPHandler:
             )
 
         # Gate 3: Parameter sanitization
-        sanitized_params: Dict[str, Any] = {}
+        sanitized_params: dict[str, Any] = {}
         rules = self.PARAM_RULES.get(request.tool_name, {})
 
         for param_name, rule in rules.items():
@@ -400,6 +404,6 @@ class SanitizedMCPHandler:
             sanitized_parameters=sanitized_params,
         )
 
-    def get_request_log(self, last_n: int = 100) -> List[Dict[str, Any]]:
+    def get_request_log(self, last_n: int = 100) -> list[dict[str, Any]]:
         """Return the last N request log entries."""
         return list(self._request_log[-last_n:])

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-star_story_builder.py — 从简历文本里抽出工作 / 项目经历，生成"故事矩阵"骨架
+"""star_story_builder.py — 从简历文本里抽出工作 / 项目经历，生成"故事矩阵"骨架.
 
 用法：
     python star_story_builder.py --resume resume.md --out stories.md
@@ -62,9 +61,8 @@ def load_resume_text(path: Path) -> str:
 
 
 def extract_experiences(text: str) -> list[dict]:
-    """
-    简易抽取：找形如 "公司 | 岗位 | 时间" 或 "项目名 | ..." 的行作为锚点，
-    然后取该行后面、下一个锚点之前的内容作为经历内容。
+    """简易抽取：找形如 "公司 | 岗位 | 时间" 或 "项目名 | ..." 的行作为锚点，
+    然后取该行后面、下一个锚点之前的内容作为经历内容。.
     """
     lines = text.splitlines()
     experiences: list[dict] = []
@@ -91,7 +89,7 @@ def extract_experiences(text: str) -> list[dict]:
 
 
 def categorize_story(bullets: list[str]) -> list[str]:
-    """根据 bullet 关键词，判断这个故事最适合回答哪一类行为题。"""
+    """根据 bullet 关键词，判断这个故事最适合回答哪一类行为题。."""
     text = " ".join(bullets).lower()
     cats = []
     if any(k in text for k in ["主导", "owner", "推动", "drive", "lead", "0-1"]):

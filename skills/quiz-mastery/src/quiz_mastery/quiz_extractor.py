@@ -13,6 +13,7 @@ def build_extraction_prompt(content: str) -> dict:
 
     Returns:
         dict with 'system_prompt' and 'user_prompt' keys.
+
     """
     system_prompt = (
         "你是一个专业的题目解析助手。从用户提供的题目文件中识别并解析所有题目。\n"
@@ -81,6 +82,7 @@ def parse_questions_json(json_str: str) -> list[Question]:
     Raises:
         json.JSONDecodeError: If json_str is not valid JSON.
         ValueError: If the parsed data is not a list.
+
     """
     # Try to extract JSON from possible markdown code blocks
     cleaned = json_str.strip()

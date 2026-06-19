@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-profile_match.py — 把用户技能列表 vs 关键词库做匹配，输出匹配度报告
+"""profile_match.py — 把用户技能列表 vs 关键词库做匹配，输出匹配度报告.
 
 用法：
     python profile_match.py --skills "SQL,Python,产品规划,A/B测试" \
@@ -26,7 +25,7 @@ LIB_MAP = {
 
 
 def extract_keywords(md_path: Path) -> list[str]:
-    """简单解析 markdown，把所有 bullet 后面的中英文词汇收集起来。"""
+    """简单解析 markdown，把所有 bullet 后面的中英文词汇收集起来。."""
     text = md_path.read_text(encoding="utf-8")
     # 匹配 - 开头的行
     bullets = re.findall(r"^\s*[-*]\s+(.+)$", text, flags=re.MULTILINE)
@@ -47,7 +46,7 @@ def extract_keywords(md_path: Path) -> list[str]:
 
 
 def match_score(user_skills: list[str], lib_keywords: list[str]) -> dict:
-    """返回匹配命中、缺失、命中率。模糊匹配：包含即算命中。"""
+    """返回匹配命中、缺失、命中率。模糊匹配：包含即算命中。."""
     user_lower = [s.strip().lower() for s in user_skills if s.strip()]
     hits, missing = [], []
     for kw in lib_keywords:

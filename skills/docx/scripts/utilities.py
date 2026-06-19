@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Utilities for editing OOXML documents.
+"""Utilities for editing OOXML documents.
 
 This module provides XMLEditor, a tool for manipulating XML files with support for
 line-number-based node finding and DOM manipulation. Each element is automatically
@@ -30,17 +29,16 @@ Example usage:
     editor.save()
 """
 
+import contextlib
 import html
 from pathlib import Path
-from typing import Optional, Union
 
 import defusedxml.minidom
 import defusedxml.sax
 
 
 class XMLEditor:
-    """
-    Editor for manipulating OOXML XML files with line-number-based node finding.
+    """Editor for manipulating OOXML XML files with line-number-based node finding.
 
     This class parses XML files and tracks the original line and column position
     of each element. This enables finding nodes by their line number in the original
@@ -50,17 +48,18 @@ class XMLEditor:
         xml_path: Path to the XML file being edited
         encoding: Detected encoding of the XML file ('ascii' or 'utf-8')
         dom: Parsed DOM tree with parse_position attributes on elements
+
     """
 
-    def __init__(self, xml_path):
-        """
-        Initialize with path to XML file and parse with line number tracking.
+    def __init__(self, xml_path) -> None:
+        """Initialize with path to XML file and parse with line number tracking.
 
         Args:
             xml_path: Path to XML file to edit (str or Path)
 
         Raises:
             ValueError: If the XML file does not exist
+
         """
         self.xml_path = Path(xml_path)
         if not self.xml_path.exists():
@@ -76,12 +75,11 @@ class XMLEditor:
     def get_node(
         self,
         tag: str,
-        attrs: Optional[dict[str, str]] = None,
-        line_number: Optional[Union[int, range]] = None,
-        contains: Optional[str] = None,
+        attrs: dict[str, str] | None = None,
+        line_number: int | range | None = None,
+        contains: str | None = None,
     ):
-        """
-        Get a DOM element by tag and identifier.
+        """Get a DOM element by tag and identifier.
 
         Finds an element by either its line number in the original file or by
         matching attribute values. Exactly one match must be found.
@@ -108,6 +106,7 @@ class XMLEditor:
             elem = editor.get_node(tag="w:p", contains="specific text")
             elem = editor.get_node(tag="w:t", contains="&#8220;Agreement")  # Entity notation
             elem = editor.get_node(tag="w:t", contains="\u201cAgreement")   # Unicode character
+
         """
         matches = []
         for elem in self.dom.getElementsByTagName(tag):
@@ -125,12 +124,11 @@ class XMLEditor:
                         continue
 
             # Check attrs filter
-            if attrs is not None:
-                if not all(
-                    elem.getAttribute(attr_name) == attr_value
-                    for attr_name, attr_value in attrs.items()
-                ):
-                    continue
+            if attrs is not None and not all(
+                elem.getAttribute(attr_name) == attr_value
+                for attr_name, attr_value in attrs.items()
+            ):
+                continue
 
             # Check contains filter
             if contains is not None:
@@ -181,8 +179,7 @@ class XMLEditor:
         return matches[0]
 
     def _get_element_text(self, elem):
-        """
-        Recursively extract all text content from an element.
+        """Recursively extract all text content from an element.
 
         Skips text nodes that contain only whitespace (spaces, tabs, newlines),
         which typically represent XML formatting rather than document content.
@@ -192,6 +189,7 @@ class XMLEditor:
 
         Returns:
             str: Concatenated text from all non-whitespace text nodes within the element
+
         """
         text_parts = []
         for node in elem.childNodes:
@@ -204,8 +202,7 @@ class XMLEditor:
         return "".join(text_parts)
 
     def replace_node(self, elem, new_content):
-        """
-        Replace a DOM element with new XML content.
+        """Replace a DOM element with new XML content.
 
         Args:
             elem: defusedxml.minidom.Element to replace
@@ -216,6 +213,7 @@ class XMLEditor:
 
         Example:
             new_nodes = editor.replace_node(old_elem, "<w:r><w:t>text</w:t></w:r>")
+
         """
         parent = elem.parentNode
         nodes = self._parse_fragment(new_content)
@@ -225,8 +223,7 @@ class XMLEditor:
         return nodes
 
     def insert_after(self, elem, xml_content):
-        """
-        Insert XML content after a DOM element.
+        """Insert XML content after a DOM element.
 
         Args:
             elem: defusedxml.minidom.Element to insert after
@@ -237,6 +234,7 @@ class XMLEditor:
 
         Example:
             new_nodes = editor.insert_after(elem, "<w:r><w:t>text</w:t></w:r>")
+
         """
         parent = elem.parentNode
         next_sibling = elem.nextSibling
@@ -249,8 +247,7 @@ class XMLEditor:
         return nodes
 
     def insert_before(self, elem, xml_content):
-        """
-        Insert XML content before a DOM element.
+        """Insert XML content before a DOM element.
 
         Args:
             elem: defusedxml.minidom.Element to insert before
@@ -261,6 +258,7 @@ class XMLEditor:
 
         Example:
             new_nodes = editor.insert_before(elem, "<w:r><w:t>text</w:t></w:r>")
+
         """
         parent = elem.parentNode
         nodes = self._parse_fragment(xml_content)
@@ -269,8 +267,7 @@ class XMLEditor:
         return nodes
 
     def append_to(self, elem, xml_content):
-        """
-        Append XML content as a child of a DOM element.
+        """Append XML content as a child of a DOM element.
 
         Args:
             elem: defusedxml.minidom.Element to append to
@@ -281,27 +278,25 @@ class XMLEditor:
 
         Example:
             new_nodes = editor.append_to(elem, "<w:r><w:t>text</w:t></w:r>")
+
         """
         nodes = self._parse_fragment(xml_content)
         for node in nodes:
             elem.appendChild(node)
         return nodes
 
-    def get_next_rid(self):
+    def get_next_rid(self) -> str:
         """Get the next available rId for relationships files."""
         max_id = 0
         for rel_elem in self.dom.getElementsByTagName("Relationship"):
             rel_id = rel_elem.getAttribute("Id")
             if rel_id.startswith("rId"):
-                try:
+                with contextlib.suppress(ValueError):
                     max_id = max(max_id, int(rel_id[3:]))
-                except ValueError:
-                    pass
         return f"rId{max_id + 1}"
 
-    def save(self):
-        """
-        Save the edited XML back to the file.
+    def save(self) -> None:
+        """Save the edited XML back to the file.
 
         Serializes the DOM tree and writes it back to the original file path,
         preserving the original encoding (ascii or utf-8).
@@ -310,8 +305,7 @@ class XMLEditor:
         self.xml_path.write_bytes(content)
 
     def _parse_fragment(self, xml_content):
-        """
-        Parse XML fragment and return list of imported nodes.
+        """Parse XML fragment and return list of imported nodes.
 
         Args:
             xml_content: String containing XML fragment
@@ -321,6 +315,7 @@ class XMLEditor:
 
         Raises:
             AssertionError: If fragment contains no element nodes
+
         """
         # Extract namespace declarations from the root document element
         root_elem = self.dom.documentElement
@@ -344,8 +339,7 @@ class XMLEditor:
 
 
 def _create_line_tracking_parser():
-    """
-    Create a SAX parser that tracks line and column numbers for each element.
+    """Create a SAX parser that tracks line and column numbers for each element.
 
     Monkey patches the SAX content handler to store the current line and column
     position from the underlying expat parser onto each element as a parse_position
@@ -353,10 +347,11 @@ def _create_line_tracking_parser():
 
     Returns:
         defusedxml.sax.xmlreader.XMLReader: Configured SAX parser
+
     """
 
-    def set_content_handler(dom_handler):
-        def startElementNS(name, tagName, attrs):
+    def set_content_handler(dom_handler) -> None:
+        def startElementNS(name, tagName, attrs) -> None:
             orig_start_cb(name, tagName, attrs)
             cur_elem = dom_handler.elementStack[-1]
             cur_elem.parse_position = (

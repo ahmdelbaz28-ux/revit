@@ -1,5 +1,4 @@
-"""
-QOMN INTEGRATED ENGINE: CABLE ROUTING & HATCH PLACEMENT SUITE
+"""QOMN INTEGRATED ENGINE: CABLE ROUTING & HATCH PLACEMENT SUITE.
 =============================================================
 LIFE-SAFETY CRITICAL: This module represents a complete, deterministic,
 safety-critical integration of the QOMN-HATCH (Hatch Placement Engine)
@@ -30,7 +29,7 @@ import logging
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -41,19 +40,21 @@ logger = logging.getLogger(__name__)
 
 class CableRoutingError(Exception):
     """Raised when a general cable routing error occurs."""
+
     pass
 
 
 class HatchPlacementError(Exception):
     """Raised when hatch boundaries or parameters violate safe thresholds."""
+
     pass
 
 
 class NECViolationError(CableRoutingError):
-    """
-    Raised when conduit bends exceed strict regulatory thresholds.
+    """Raised when conduit bends exceed strict regulatory thresholds.
     Reference: NEC 2023 Article 358.26 (EMT) & Article 344.26 (RMC).
     """
+
     pass
 
 
@@ -63,11 +64,11 @@ class NECViolationError(CableRoutingError):
 
 @dataclass(frozen=True, slots=True)
 class Point3D:
-    """
-    An immutable, hashable, deterministic 3D Coordinate Point structure.
+    """An immutable, hashable, deterministic 3D Coordinate Point structure.
     Coordinates are rounded to 4 decimal places to prevent floating-point
     drifts across different operating systems and CPU architectures.
     """
+
     x: float
     y: float
     z: float
@@ -78,11 +79,11 @@ class Point3D:
         object.__setattr__(self, 'y', round(float(self.y), 4))
         object.__setattr__(self, 'z', round(float(self.z), 4))
 
-    def to_tuple(self) -> Tuple[float, float, float]:
+    def to_tuple(self) -> tuple[float, float, float]:
         """Converts point to a plain tuple."""
         return (self.x, self.y, self.z)
 
-    def to_dict(self) -> Dict[str, float]:
+    def to_dict(self) -> dict[str, float]:
         """Converts point to a serialization-safe dictionary representation."""
         return {"X": self.x, "Y": self.y, "Z": self.z}
 
@@ -92,10 +93,10 @@ class Point3D:
 # =====================================================================
 
 class ConduitType(Enum):
-    """
-    NEC Chapter 9 Table 2 compliant conduit configurations.
+    """NEC Chapter 9 Table 2 compliant conduit configurations.
     Enforces minimum bend radii according to material stiffness.
     """
+
     EMT = "EMT"  # Electrical Metallic Tubing (NEC Article 358)
     RMC = "RMC"  # Rigid Metal Conduit (NEC Article 344)
     FMC = "FMC"  # Flexible Metal Conduit (NEC Article 348)
@@ -105,16 +106,16 @@ class ConduitType(Enum):
         """Determines minimum bend radius multiplier relative to diameter."""
         if self == ConduitType.EMT:
             return 4.0
-        elif self == ConduitType.RMC:
+        if self == ConduitType.RMC:
             return 5.0
         return 3.0
 
 
 class HatchPattern(Enum):
-    """
-    Cross-platform unified hatch pattern representations.
+    """Cross-platform unified hatch pattern representations.
     Ensures absolute parity across AutoCAD, Revit, and IFC layers.
     """
+
     ANSI31 = "ANSI31"     # Diagonal lines (General cable run protection)
     SOLID = "SOLID"       # Solid fill (Device critical zone)
     CROSS = "CROSS"       # Cross-hatch (Smoke coverage areas)
@@ -125,11 +126,11 @@ class HatchPattern(Enum):
 # =====================================================================
 
 class GridMap3D:
-    """
-    Represents a discretized 3D grid space for deterministic MEP routing.
+    """Represents a discretized 3D grid space for deterministic MEP routing.
     Step size defaults to 0.5 meters to balance resolution with spatial memory.
     """
-    def __init__(self, step_size: float = 0.5):
+
+    def __init__(self, step_size: float = 0.5) -> None:
         if step_size <= 0:
             raise ValueError(
                 f"Grid step_size={step_size} must be > 0. "
@@ -138,15 +139,15 @@ class GridMap3D:
         self.step_size = step_size
         self.obstacles: set = set()
 
-    def to_grid(self, pt: Point3D) -> Tuple[int, int, int]:
+    def to_grid(self, pt: Point3D) -> tuple[int, int, int]:
         """Transforms a physical Point3D into discrete grid indices."""
         return (
-            int(round(pt.x / self.step_size)),
-            int(round(pt.y / self.step_size)),
-            int(round(pt.z / self.step_size))
+            round(pt.x / self.step_size),
+            round(pt.y / self.step_size),
+            round(pt.z / self.step_size)
         )
 
-    def to_physical(self, grid_pt: Tuple[int, int, int]) -> Point3D:
+    def to_physical(self, grid_pt: tuple[int, int, int]) -> Point3D:
         """Transforms discrete grid coordinates back to a physical Point3D."""
         return Point3D(
             grid_pt[0] * self.step_size,
@@ -154,33 +155,32 @@ class GridMap3D:
             grid_pt[2] * self.step_size
         )
 
-    def add_obstacle(self, pt: Point3D):
+    def add_obstacle(self, pt: Point3D) -> None:
         """Flags physical point as a non-walkable obstacle."""
         self.obstacles.add(self.to_grid(pt))
 
-    def is_blocked(self, grid_pt: Tuple[int, int, int]) -> bool:
+    def is_blocked(self, grid_pt: tuple[int, int, int]) -> bool:
         """Checks if a discrete coordinate resides within obstacle space."""
         return grid_pt in self.obstacles
 
 
 class CableRouter:
-    """
-    Deterministic Orthogonal 3D Pathfinding Engine.
+    """Deterministic Orthogonal 3D Pathfinding Engine.
     Employs the A* search algorithm using Manhattan distance heuristics.
 
     Reference:
     - NEC Article 300.18: Installation of wiring methods.
     - NEC Article 358.26: Bends in a single run (max 360 degrees).
     """
+
     @staticmethod
-    def manhattan_distance(p1: Tuple[int, int, int], p2: Tuple[int, int, int]) -> float:
+    def manhattan_distance(p1: tuple[int, int, int], p2: tuple[int, int, int]) -> float:
         """Calculates 3D Manhattan grid distance."""
         return float(abs(p1[0] - p2[0]) + abs(p1[1] - p2[1]) + abs(p1[2] - p2[2]))
 
     @classmethod
-    def route(cls, grid_map: GridMap3D, start: Point3D, end: Point3D, conduit: ConduitType) -> List[Point3D]:
-        """
-        Routes conduit orthogonal paths from Start to End point.
+    def route(cls, grid_map: GridMap3D, start: Point3D, end: Point3D, conduit: ConduitType) -> list[Point3D]:
+        """Routes conduit orthogonal paths from Start to End point.
         Checks for bend compliance according to NEC code standards.
 
         Args:
@@ -195,6 +195,7 @@ class CableRouter:
         Raises:
             CableRoutingError: If no path can be found or start/end is blocked.
             NECViolationError: If route exceeds NEC bend limits.
+
         """
         start_grid = grid_map.to_grid(start)
         end_grid = grid_map.to_grid(end)
@@ -209,9 +210,9 @@ class CableRouter:
         open_set: list[tuple[float, int, tuple[int, int, int]]] = []
         heapq.heappush(open_set, (0.0, heap_counter, start_grid))
 
-        came_from: Dict[Tuple[int, int, int], Tuple[int, int, int]] = {}
-        g_score: Dict[Tuple[int, int, int], float] = {start_grid: 0.0}
-        f_score: Dict[Tuple[int, int, int], float] = {
+        came_from: dict[tuple[int, int, int], tuple[int, int, int]] = {}
+        g_score: dict[tuple[int, int, int], float] = {start_grid: 0.0}
+        f_score: dict[tuple[int, int, int], float] = {
             start_grid: cls.manhattan_distance(start_grid, end_grid)
         }
 
@@ -265,9 +266,8 @@ class CableRouter:
         )
 
     @staticmethod
-    def calculate_total_bends_degrees(path: List[Point3D]) -> float:
-        """
-        Calculates total bend angles in degrees along the orthogonal segment run.
+    def calculate_total_bends_degrees(path: list[Point3D]) -> float:
+        """Calculates total bend angles in degrees along the orthogonal segment run.
         Changes in grid vectors represent discrete 90-degree bend sweeps.
 
         Reference: NEC Article 358.26 — maximum 360 degrees total bends
@@ -317,16 +317,15 @@ class CableRouter:
 # =====================================================================
 
 class HatchPlacementEngine:
-    """
-    Generates deterministic boundary vectors for physical zone plans.
+    """Generates deterministic boundary vectors for physical zone plans.
     Integrates directly with ezdxf to output robust architectural drawings.
     """
+
     @staticmethod
     def generate_smoke_detector_boundary(
         center: Point3D, radius: float, num_sides: int = 16
-    ) -> List[Tuple[float, float]]:
-        """
-        Constructs a deterministic multi-vertex circle polygon on the XY plane.
+    ) -> list[tuple[float, float]]:
+        """Constructs a deterministic multi-vertex circle polygon on the XY plane.
 
         Reference: NFPA 72 Section 17.7.3.2.3.1: Spacing limitation for
         standard smoke coverage. Default radius 9.144m (30ft).
@@ -338,6 +337,7 @@ class HatchPlacementEngine:
 
         Returns:
             List of (x, y) tuples forming the boundary polygon.
+
         """
         if radius <= 0:
             raise HatchPlacementError(
@@ -358,10 +358,9 @@ class HatchPlacementEngine:
 
     @staticmethod
     def generate_conduit_corridors(
-        path: List[Point3D], width: float = 0.1
-    ) -> List[List[Tuple[float, float]]]:
-        """
-        Creates thin rectangular bounding polygons wrapping around orthogonal
+        path: list[Point3D], width: float = 0.1
+    ) -> list[list[tuple[float, float]]]:
+        """Creates thin rectangular bounding polygons wrapping around orthogonal
         segments. Ensures perfect, non-overlapping hatch boundary rendering
         in CAD viewports.
 
@@ -371,6 +370,7 @@ class HatchPlacementEngine:
 
         Returns:
             List of corridor polygons, each a list of (x, y) tuples.
+
         """
         if width <= 0:
             raise HatchPlacementError(
@@ -412,20 +412,19 @@ class HatchPlacementEngine:
 # =====================================================================
 
 class CableHatchIntegrator:
-    """
-    Bridges QOMN-CABLE and QOMN-HATCH engines dynamically.
+    """Bridges QOMN-CABLE and QOMN-HATCH engines dynamically.
     Features geometric conflict resolution, warning logs, and unified output.
     """
-    def __init__(self, grid_map: GridMap3D):
+
+    def __init__(self, grid_map: GridMap3D) -> None:
         self.grid_map = grid_map
-        self.smoke_detectors: Dict[str, Tuple[Point3D, float]] = {}
-        self.cable_runs: Dict[str, Dict[str, Any]] = {}
+        self.smoke_detectors: dict[str, tuple[Point3D, float]] = {}
+        self.cable_runs: dict[str, dict[str, Any]] = {}
 
     def add_smoke_detector(
         self, detector_id: str, location: Point3D, radius: float = 9.144
-    ):
-        """
-        Adds a smoke detector to the map with a standard radius.
+    ) -> None:
+        """Adds a smoke detector to the map with a standard radius.
         Default: 30ft / 9.144m per NFPA 72 Section 17.7.3.2.3.1.
 
         Args:
@@ -435,6 +434,7 @@ class CableHatchIntegrator:
 
         Raises:
             ValueError: If radius is not positive.
+
         """
         if radius <= 0:
             raise ValueError(
@@ -452,9 +452,8 @@ class CableHatchIntegrator:
         end: Point3D,
         conduit: ConduitType,
         hatch_scale: float,
-    ) -> Dict[str, Any]:
-        """
-        Resolves routing and generates hatching metadata while checking
+    ) -> dict[str, Any]:
+        """Resolves routing and generates hatching metadata while checking
         all geometric conflicts.
 
         Args:
@@ -471,6 +470,7 @@ class CableHatchIntegrator:
             HatchPlacementError: If hatch_scale is invalid.
             CableRoutingError: If no path can be found.
             NECViolationError: If route exceeds NEC bend limits.
+
         """
         # STEP 1: Scale bounds check
         if hatch_scale < 0.001:
@@ -547,8 +547,7 @@ class CableHatchIntegrator:
     def _segment_intersects_circle_2d(
         p1: Point3D, p2: Point3D, center: Point3D, radius: float
     ) -> bool:
-        """
-        Determines if segment p1->p2 in 2D (XY projection) intersects
+        """Determines if segment p1->p2 in 2D (XY projection) intersects
         or touches target circle.
         """
         dx, dy = p2.x - p1.x, p2.y - p1.y
@@ -566,11 +565,10 @@ class CableHatchIntegrator:
 
     @staticmethod
     def _polygons_intersect_2d(
-        poly1: List[Tuple[float, float]],
-        poly2: List[Tuple[float, float]]
+        poly1: list[tuple[float, float]],
+        poly2: list[tuple[float, float]]
     ) -> bool:
-        """
-        Robust AABB intersection check for spatial poly overlaps.
+        """Robust AABB intersection check for spatial poly overlaps.
         Guarantees deterministic, fast collision detection.
         """
         min_x1 = min(p[0] for p in poly1)
@@ -588,8 +586,7 @@ class CableHatchIntegrator:
         )
 
     def export_revit_json(self) -> str:
-        """
-        Generates canonical, beautifully structured Revit/IFC integration JSON.
+        """Generates canonical, beautifully structured Revit/IFC integration JSON.
         Completely deterministic sort ordering prevents dynamic git merge conflicts.
         """
         revit_output: dict[str, Any] = {
@@ -640,8 +637,7 @@ class CableHatchIntegrator:
 # =====================================================================
 
 def compute_engine_signature(integrator: CableHatchIntegrator) -> str:
-    """
-    Generates a cryptographic SHA-256 hash representation of the geometry data.
+    """Generates a cryptographic SHA-256 hash representation of the geometry data.
     Ensures that identical inputs produce identical hash outputs across platforms.
 
     Args:
@@ -649,6 +645,7 @@ def compute_engine_signature(integrator: CableHatchIntegrator) -> str:
 
     Returns:
         SHA-256 hex digest string.
+
     """
     json_str = integrator.export_revit_json()
     return hashlib.sha256(json_str.encode("utf-8")).hexdigest()
@@ -659,15 +656,15 @@ def compute_engine_signature(integrator: CableHatchIntegrator) -> str:
 # =====================================================================
 
 __all__ = [
-    "Point3D",
-    "GridMap3D",
-    "CableRouter",
-    "HatchPlacementEngine",
     "CableHatchIntegrator",
-    "ConduitType",
-    "HatchPattern",
+    "CableRouter",
     "CableRoutingError",
+    "ConduitType",
+    "GridMap3D",
+    "HatchPattern",
+    "HatchPlacementEngine",
     "HatchPlacementError",
     "NECViolationError",
+    "Point3D",
     "compute_engine_signature",
 ]

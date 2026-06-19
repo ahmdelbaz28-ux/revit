@@ -1,5 +1,4 @@
-"""
-FireAI Digital Twin - Database Service
+"""FireAI Digital Twin - Database Service.
 ======================================
 Thread-safe singleton wrapping UniversalDataModel (core/database.py)
 and adding project management with its own SQLite table.
@@ -15,8 +14,8 @@ import os
 import sqlite3
 import threading
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from typing import Any
 
 from backend.schemas import (
     ConflictResponse,
@@ -77,7 +76,7 @@ _CAMEL_TO_SNAKE = {
 
 
 def _normalize_sort(sort_by: str) -> str:
-    """Convert camelCase sort parameter to snake_case WITH whitelist validation.
+    r"""Convert camelCase sort parameter to snake_case WITH whitelist validation.
 
     V113 SECURITY FIX: Only allows known sort fields. Unknown fields
     are silently mapped to 'created_at' (safe default) instead of
@@ -107,14 +106,13 @@ def _normalize_sort(sort_by: str) -> str:
 
 
 class DatabaseService:
-    """
-    Thread-safe singleton that wraps UniversalDataModel and adds project support.
+    """Thread-safe singleton that wraps UniversalDataModel and adds project support.
 
     Provides methods that the routers can call, handling the conversion between
     Pydantic schemas and core dataclasses.
     """
 
-    _instance: Optional[DatabaseService] = None
+    _instance: DatabaseService | None = None
     _lock = threading.Lock()
 
     def __new__(cls, *args: Any, **kwargs: Any) -> DatabaseService:
@@ -127,7 +125,7 @@ class DatabaseService:
                     cls._instance = instance
         return cls._instance
 
-    def __init__(self, db_path: Optional[str] = None) -> None:
+    def __init__(self, db_path: str | None = None) -> None:
         if self._initialized:
             return
 
@@ -147,7 +145,7 @@ class DatabaseService:
         self._init_projects_table()
 
         # In-memory project cache
-        self._projects: Dict[str, Dict[str, Any]] = {}
+        self._projects: dict[str, dict[str, Any]] = {}
         self._load_projects_from_db()
 
         self._initialized = True
@@ -157,7 +155,7 @@ class DatabaseService:
     # Projects table initialization
     # ──────────────────────────────────────────────────────────────────────────
 
-    def _safe_db_execute(self, sql: str, params: tuple = (), commit: bool = False) -> Optional[Any]:
+    def _safe_db_execute(self, sql: str, params: tuple = (), commit: bool = False) -> Any | None:
         """Execute SQL on the UDM connection with proper lock acquisition.
 
         SAFETY FIX (BUG-36): All direct SQL access to self._data_model._conn
@@ -262,7 +260,7 @@ class DatabaseService:
         """Create a new project."""
         with self._service_lock:
             project_id = str(uuid.uuid4())
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
 
             project_dict = {
                 "project_id": project_id,
@@ -304,7 +302,7 @@ class DatabaseService:
 
             return self._project_to_response(project_dict)
 
-    def get_project(self, project_id: str) -> Optional[ProjectResponse]:
+    def get_project(self, project_id: str) -> ProjectResponse | None:
         """Get a project by ID."""
         with self._service_lock:
             project = self._projects.get(project_id)
@@ -314,12 +312,12 @@ class DatabaseService:
 
     def list_projects(
         self,
-        status: Optional[str] = None,
+        status: str | None = None,
         page: int = 1,
         page_size: int = 20,
         sort_by: str = "created_timestamp",
         sort_order: str = "desc",
-    ) -> Tuple[List[ProjectResponse], int]:
+    ) -> tuple[list[ProjectResponse], int]:
         """List projects with optional filtering and pagination."""
         with self._service_lock:
             projects = list(self._projects.values())
@@ -343,14 +341,14 @@ class DatabaseService:
 
             return [self._project_to_response(p) for p in paginated], total
 
-    def update_project(self, project_id: str, update_data: ProjectUpdate) -> Optional[ProjectResponse]:
+    def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse | None:
         """Update a project."""
         with self._service_lock:
             project = self._projects.get(project_id)
             if project is None:
                 return None
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
 
             # Apply updates
             if update_data.name is not None:
@@ -435,7 +433,7 @@ class DatabaseService:
             del self._projects[project_id]
             return True
 
-    def _project_to_response(self, project_dict: Dict[str, Any]) -> ProjectResponse:
+    def _project_to_response(self, project_dict: dict[str, Any]) -> ProjectResponse:
         """Convert project dict to ProjectResponse."""
         # Count elements for this project
         element_count = 0
@@ -473,7 +471,7 @@ class DatabaseService:
                     count += 1
             return count
 
-    def _get_element_project_id(self, element_id: str) -> Optional[str]:
+    def _get_element_project_id(self, element_id: str) -> str | None:
         """Get the project ID for an element."""
         try:
             # BUG-36 FIX: Use _safe_db_execute for proper lock acquisition
@@ -541,7 +539,7 @@ class DatabaseService:
 
             return self._element_to_response(element, element_data.project_id)
 
-    def get_element(self, element_id: str) -> Optional[ElementResponse]:
+    def get_element(self, element_id: str) -> ElementResponse | None:
         """Get an element by ID."""
         with self._service_lock:
             element = self._data_model.get_element(element_id)
@@ -552,14 +550,14 @@ class DatabaseService:
 
     def list_elements(
         self,
-        element_type: Optional[str] = None,
-        project_id: Optional[str] = None,
-        is_deleted: Optional[bool] = None,
+        element_type: str | None = None,
+        project_id: str | None = None,
+        is_deleted: bool | None = None,
         page: int = 1,
         page_size: int = 20,
         sort_by: str = "created_timestamp",
         sort_order: str = "desc",
-    ) -> Tuple[List[ElementResponse], int]:
+    ) -> tuple[list[ElementResponse], int]:
         """List elements with optional filtering and pagination."""
         with self._service_lock:
             elements = self._data_model.get_all_elements()
@@ -615,7 +613,7 @@ class DatabaseService:
 
             return result, total
 
-    def update_element(self, element_id: str, update_data: ElementUpdate) -> Optional[ElementResponse]:
+    def update_element(self, element_id: str, update_data: ElementUpdate) -> ElementResponse | None:
         """Update an element."""
         with self._service_lock:
             element = self._data_model.get_element(element_id)
@@ -623,7 +621,7 @@ class DatabaseService:
                 return None
 
             # Build updates dict for UniversalDataModel.update_element()
-            updates: Dict[str, Any] = {}
+            updates: dict[str, Any] = {}
 
             if update_data.properties:
                 # Merge with existing properties
@@ -708,19 +706,19 @@ class DatabaseService:
                 return cursor
             return True
 
-    def bridge_create_table(self, create_sql: str):
+    def bridge_create_table(self, create_sql: str) -> None:
         """Create a table safely for bridge operations."""
         with self._service_lock:
             self._safe_db_execute(create_sql, commit=True)
 
-    def bridge_insert(self, sql: str, params: tuple):
+    def bridge_insert(self, sql: str, params: tuple) -> None:
         """Insert a row for bridge sync."""
         with self._service_lock:
             self._safe_db_execute(sql, params, commit=True)
 
     # ──────────────────────────────────────────────────────────────────────────
 
-    def _element_to_response(self, element: UniversalElement, project_id: Optional[str] = None) -> ElementResponse:
+    def _element_to_response(self, element: UniversalElement, project_id: str | None = None) -> ElementResponse:
         """Convert UniversalElement to ElementResponse.
 
         V115 FIX: Now passes proper Pydantic model instances instead of raw dicts
@@ -896,15 +894,15 @@ class DatabaseService:
 
     def list_connections(
         self,
-        project_id: Optional[str] = None,
-        element_id: Optional[str] = None,
-        relationship_type: Optional[str] = None,
+        project_id: str | None = None,
+        element_id: str | None = None,
+        relationship_type: str | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> Tuple[List[ConnectionResponse], int]:
+    ) -> tuple[list[ConnectionResponse], int]:
         """List connections with optional filtering and pagination."""
         with self._service_lock:
-            connections: List[ConnectionResponse] = []
+            connections: list[ConnectionResponse] = []
 
             try:
                 query = (
@@ -1050,7 +1048,7 @@ class DatabaseService:
     # Conflict detection and resolution
     # ──────────────────────────────────────────────────────────────────────────
 
-    def detect_conflicts(self) -> List[ConflictResponse]:
+    def detect_conflicts(self) -> list[ConflictResponse]:
         """Detect conflicts between elements."""
         with self._service_lock:
             conflicts = self._data_model.detect_conflicts()
@@ -1072,11 +1070,11 @@ class DatabaseService:
 
     def list_conflicts(
         self,
-        resolved: Optional[bool] = None,
-        conflict_type: Optional[str] = None,
+        resolved: bool | None = None,
+        conflict_type: str | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> Tuple[List[ConflictResponse], int]:
+    ) -> tuple[list[ConflictResponse], int]:
         """List conflicts with optional filtering and pagination.
 
         V129 FIX: Uses detect_conflicts() method instead of accessing
@@ -1120,7 +1118,7 @@ class DatabaseService:
 
             return responses, total
 
-    def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> Optional[ConflictResponse]:
+    def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> ConflictResponse | None:
         """Resolve a conflict by ID.
 
         V129 FIX: Uses resolve_conflict() on UniversalDataModel instead of
@@ -1201,10 +1199,10 @@ class DatabaseService:
 
     def export_data(
         self,
-        project_id: Optional[str] = None,
-        element_types: Optional[List[str]] = None,
+        project_id: str | None = None,
+        element_types: list[str] | None = None,
         include_deleted: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Export data as JSON-serializable dict."""
         with self._service_lock:
             elements = self._data_model.get_all_elements()
@@ -1259,7 +1257,7 @@ class DatabaseService:
             projects = list(self._projects.values())
 
             return {
-                "export_timestamp": datetime.now(timezone.utc).isoformat(),
+                "export_timestamp": datetime.now(UTC).isoformat(),
                 "projects": projects,
                 "elements": exported_elements,
                 "connections": connections,

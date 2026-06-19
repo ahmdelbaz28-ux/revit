@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""
-fireai/cli.py - Unified CLI for FireAI
-Usage: python -m fireai.cli build -f FILE.dxf -o OUTPUT_DIR
+"""fireai/cli.py - Unified CLI for FireAI
+Usage: python -m fireai.cli build -f FILE.dxf -o OUTPUT_DIR.
 
 V82 FIX: Removed all dead ``src.*`` imports that never existed.
 The ``src.auto_placement``, ``src.application.*``, ``src.core.models``,
@@ -28,7 +27,7 @@ import click
 _src_modules: dict = {}
 
 try:
-    from fireai.dxf_importer import DXFImporter as _DXFImporter  # noqa: F401
+    from fireai.dxf_importer import DXFImporter as _DXFImporter
     _src_modules["dxf_importer"] = _DXFImporter
 except ImportError:
     pass
@@ -49,15 +48,15 @@ Developer assumes NO LIABILITY for use of this tool's output.
 """
 
 
-def print_header():
+def print_header() -> None:
     print("\n" + "=" * 70)
     print("🔥 FireAI v1.0 - AHMED ELBAZ Stability Release")
     print("=" * 70)
 
 
 @click.group()
-def cli():
-    """🔥 FireAI v1.0 - Fire Alarm Design Assistant"""
+def cli() -> None:
+    """🔥 FireAI v1.0 - Fire Alarm Design Assistant."""
     pass
 
 
@@ -67,13 +66,13 @@ def cli():
 @click.option("--output", "-o", default="output", help="مجلد الإخراج")
 @click.option("--standard", "-s", default="NFPA72", type=click.Choice(["NFPA72", "BS5839"]), help="المعيار الهندسي")
 @click.option("--panel", "-p", default="0,0", help="موقع اللوحة: x,y")
-def build(dxf_file, calibrate, output, standard, panel):
-    """تشغيل كامل: استيراد ← توزيع ← توجيه ← إنتاج"""
+def build(dxf_file, calibrate, output, standard, panel) -> None:
+    """تشغيل كامل: استيراد ← توزيع ← توجيه ← إنتاج."""
     print_header()
     click.echo(DISCLAIMER)
 
     # Parse panel location
-    panel_x, panel_y = map(float, panel.split(","))
+    _panel_x, _panel_y = map(float, panel.split(","))
 
     # Create output directory
     out_dir = Path(output)

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Utility script for managing the blog examples library.
+"""Utility script for managing the blog examples library.
 Helps identify old examples to prune when the library exceeds the limit.
 """
 
@@ -29,7 +28,7 @@ def list_examples():
     return sorted(examples, key=lambda x: x[0])
 
 
-def check_library():
+def check_library() -> None:
     """Check library status and recommend pruning if needed."""
     examples = list_examples()
     count = len(examples)
@@ -56,7 +55,7 @@ def check_library():
         print(f"  {name}")
 
 
-def prune_oldest(dry_run=True):
+def prune_oldest(dry_run=True) -> None:
     """Remove the oldest examples to bring library under limit."""
     examples = list_examples()
     count = len(examples)

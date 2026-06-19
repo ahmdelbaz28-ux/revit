@@ -8,7 +8,7 @@ def safe_filename(title):
     # 移除非法文件名字符
     return re.sub(r'[\\/*?:"<>|]', "", title).strip()
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Save HTML content to a local file.")
     parser.add_argument("--title", required=True, help="Report title (used as filename)")
     args = parser.parse_args()
@@ -27,7 +27,7 @@ def main():
 
         print(f"Successfully generated: {os.path.abspath(filename)}")
     except Exception as e:
-        print(f"Error: {str(e)}", file=sys.stderr)
+        print(f"Error: {e!s}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

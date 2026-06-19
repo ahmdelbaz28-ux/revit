@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Aggregate individual run results into benchmark summary statistics.
+"""Aggregate individual run results into benchmark summary statistics.
 
 Reads grading.json files from run directories and produces:
 - run_summary with mean, stddev, min, max for each metric
@@ -32,13 +31,14 @@ The script supports two directory layouts:
             │   └── run-1/grading.json
             └── without_skill/
                 └── run-1/grading.json
+
 """
 
 import argparse
 import json
 import math
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -65,8 +65,7 @@ def calculate_stats(values: list[float]) -> dict:
 
 
 def load_run_results(benchmark_dir: Path) -> dict:
-    """
-    Load all run results from a benchmark directory.
+    """Load all run results from a benchmark directory.
 
     Returns dict keyed by config name (e.g. "with_skill"/"without_skill",
     or "new_skill"/"old_skill"), each containing a list of run results.
@@ -174,8 +173,7 @@ def load_run_results(benchmark_dir: Path) -> dict:
 
 
 def aggregate_results(results: dict) -> dict:
-    """
-    Aggregate run results into summary statistics.
+    """Aggregate run results into summary statistics.
 
     Returns run_summary with stats for each configuration and delta.
     """
@@ -225,9 +223,7 @@ def aggregate_results(results: dict) -> dict:
 
 
 def generate_benchmark(benchmark_dir: Path, skill_name: str = "", skill_path: str = "") -> dict:
-    """
-    Generate complete benchmark.json from run results.
-    """
+    """Generate complete benchmark.json from run results."""
     results = load_run_results(benchmark_dir)
     run_summary = aggregate_results(results)
 
@@ -260,13 +256,13 @@ def generate_benchmark(benchmark_dir: Path, skill_name: str = "", skill_path: st
         for r in config
     })
 
-    benchmark = {
+    return {
         "metadata": {
             "skill_name": skill_name or "<skill-name>",
             "skill_path": skill_path or "<path/to/skill>",
             "executor_model": "<model-name>",
             "analyzer_model": "<model-name>",
-            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "timestamp": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "evals_run": eval_ids,
             "runs_per_configuration": 3
         },
@@ -275,7 +271,6 @@ def generate_benchmark(benchmark_dir: Path, skill_name: str = "", skill_path: st
         "notes": []  # To be filled by analyzer
     }
 
-    return benchmark
 
 
 def generate_markdown(benchmark: dict) -> str:
@@ -335,7 +330,7 @@ def generate_markdown(benchmark: dict) -> str:
     return "\n".join(lines)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Aggregate benchmark run results into summary statistics"
     )

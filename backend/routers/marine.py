@@ -1,5 +1,4 @@
-"""
-backend/routers/marine.py — Marine Fire-Safety REST API
+"""backend/routers/marine.py — Marine Fire-Safety REST API.
 =========================================================
 REST endpoints for the marine fire-safety module.
 
@@ -26,7 +25,7 @@ Endpoints:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -35,12 +34,15 @@ from backend.auth import require_permission
 from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.marine_service import get_marine_service
-
 from marine.core.types import (
-    DetectorType, ExtinguishingSystem, FireClass, FireHazardClass,
-    MarineZone, ShipProject, ShipType, SpaceCategory,
+    DetectorPlacement,
+    DetectorType,
+    FireClass,
+    MarineZone,
+    ShipProject,
+    ShipType,
+    SpaceCategory,
 )
-
 
 router = APIRouter(prefix="/marine", tags=["Marine"])
 
@@ -50,7 +52,7 @@ router = APIRouter(prefix="/marine", tags=["Marine"])
 class ShipProjectRequest(BaseModel):
     project_id: str = Field(..., description="Unique project identifier")
     ship_name: str = Field(..., description="Ship name")
-    imo_number: Optional[str] = Field(None, description="7-digit IMO number")
+    imo_number: str | None = Field(None, description="7-digit IMO number")
     ship_type: ShipType = Field(ShipType.CARGO, description="SOLAS ship type")
     service: str = Field("bulk_carrier", description="Ship service category")
     length_overall_m: float = Field(..., gt=0, description="LOA in metres")
@@ -58,7 +60,7 @@ class ShipProjectRequest(BaseModel):
     passenger_capacity: int = Field(0, ge=0, description="Passenger capacity")
     flag_state: str = Field("", description="Flag state (ISO 3166)")
     classification_society: str = Field("LR", description="LR/DNV/BV/ABS")
-    build_date: Optional[str] = None
+    build_date: str | None = None
 
     def to_domain(self) -> ShipProject:
         """Convert Pydantic model to domain dataclass."""
@@ -81,6 +83,7 @@ class ShipProjectRequest(BaseModel):
 
 class ZoneRequest(BaseModel):
     """Optional explicit zone definition (else auto-divide)."""
+
     zone_id: str
     name: str
     space_category: SpaceCategory
@@ -91,18 +94,20 @@ class ZoneRequest(BaseModel):
     height_m: float = Field(2.5, gt=0)
     has_escape_route: bool = True
     escape_route_count: int = Field(1, ge=1)
-    max_distance_to_stairway_m: Optional[float] = None
-    shape_polygon: Optional[List[List[float]]] = None
+    max_distance_to_stairway_m: float | None = None
+    shape_polygon: list[list[float]] | None = None
 
 
 class DesignRequest(BaseModel):
     """Full design request: ship + optional explicit zones."""
+
     ship: ShipProjectRequest
-    zones: Optional[List[ZoneRequest]] = None
+    zones: list[ZoneRequest] | None = None
 
 
 class PowerDesignRequest(BaseModel):
     """Electrical power design request."""
+
     ship: ShipProjectRequest
     detection_load_w: float = Field(500.0, gt=0)
     alarm_load_w: float = Field(1000.0, gt=0)
@@ -111,6 +116,7 @@ class PowerDesignRequest(BaseModel):
 
 class EtapExportRequest(BaseModel):
     """ETAP export request."""
+
     ship: ShipProjectRequest
     detection_load_w: float = Field(500.0, gt=0)
     alarm_load_w: float = Field(1000.0, gt=0)
@@ -120,27 +126,30 @@ class EtapExportRequest(BaseModel):
 
 class DetectorPlacementRequest(BaseModel):
     """Minimal detector placement payload for DXF/Revit exports."""
+
     detector_id: str
     zone_id: str
     detector_type: DetectorType
-    position_xyz_mm: List[float] = Field(..., min_length=3, max_length=3)
+    position_xyz_mm: list[float] = Field(..., min_length=3, max_length=3)
     coverage_m2: float = Field(..., gt=0)
-    rated_temp_c: Optional[float] = None
+    rated_temp_c: float | None = None
     mounting_height_m: float = Field(3.0, gt=0)
     standard_reference: str = "IEC 60092-502 §4"
 
 
 class DxfExportRequest(BaseModel):
     """DXF export request."""
-    zones: List[ZoneRequest]
-    detector_placements: Optional[List[DetectorPlacementRequest]] = None
+
+    zones: list[ZoneRequest]
+    detector_placements: list[DetectorPlacementRequest] | None = None
     frame_spacing_m: float = Field(0.6, gt=0)
 
 
 class RevitExportRequest(BaseModel):
     """Revit export request."""
-    zones: List[ZoneRequest]
-    detector_placements: Optional[List[DetectorPlacementRequest]] = None
+
+    zones: list[ZoneRequest]
+    detector_placements: list[DetectorPlacementRequest] | None = None
 
 
 def _detector_request_to_domain(dpr: DetectorPlacementRequest) -> DetectorPlacement:
@@ -164,7 +173,7 @@ def _detector_request_to_domain(dpr: DetectorPlacementRequest) -> DetectorPlacem
     dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
 )
 @limiter.limit("100/minute")
-async def list_standards(request: Request) -> Dict[str, Any]:
+async def list_standards(request: Request) -> dict[str, Any]:
     """List the marine standards supported by this module."""
     return {
         "standards": [
@@ -197,7 +206,7 @@ async def list_standards(request: Request) -> Dict[str, Any]:
     dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
 )
 @limiter.limit("100/minute")
-async def list_fire_classes(request: Request) -> Dict[str, Any]:
+async def list_fire_classes(request: Request) -> dict[str, Any]:
     """List SOLAS fire division classes and their insulation minutes."""
     return {
         "fire_classes": [
@@ -212,7 +221,7 @@ async def list_fire_classes(request: Request) -> Dict[str, Any]:
     dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
 )
 @limiter.limit("30/minute")
-async def validate_ship(request: Request, body: DesignRequest) -> Dict[str, Any]:
+async def validate_ship(request: Request, body: DesignRequest) -> dict[str, Any]:
     """Validate a ship's SOLAS compliance (zones, divisions, escape routes)."""
     ship = body.ship.to_domain()
     zones = [MarineZone(**z.dict()) for z in body.zones] if body.zones else None
@@ -221,7 +230,8 @@ async def validate_ship(request: Request, body: DesignRequest) -> Dict[str, Any]
         zones = divide_into_main_vertical_zones(ship.length_overall_m, ship)
 
     from marine.solas.chapter_ii_2 import (
-        validate_escape_routes, validate_main_vertical_zones,
+        validate_escape_routes,
+        validate_main_vertical_zones,
     )
     mvz = validate_main_vertical_zones(zones, ship)
     esc = validate_escape_routes(zones)
@@ -238,7 +248,7 @@ async def validate_ship(request: Request, body: DesignRequest) -> Dict[str, Any]
     dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
 )
 @limiter.limit("10/minute")
-async def design_full(request: Request, body: DesignRequest) -> Dict[str, Any]:
+async def design_full(request: Request, body: DesignRequest) -> dict[str, Any]:
     """Run the full marine fire-safety design pipeline.
 
     Returns: zones, detectors, divisions, extinguishing systems, alarm
@@ -259,7 +269,7 @@ async def design_full(request: Request, body: DesignRequest) -> Dict[str, Any]:
     dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
 )
 @limiter.limit("30/minute")
-async def divide_zones(request: Request, ship: ShipProjectRequest) -> Dict[str, Any]:
+async def divide_zones(request: Request, ship: ShipProjectRequest) -> dict[str, Any]:
     """Divide a ship into SOLAS main vertical zones."""
     from marine.engine.zone_mapper import divide_into_main_vertical_zones
     domain = ship.to_domain()
@@ -279,7 +289,7 @@ async def design_extinguishing(
     request: Request,
     ship: ShipProjectRequest,
     zone: ZoneRequest,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Size an extinguishing system for a single zone."""
     from marine.engine.extinguishment import size_system
     design = size_system(zone_to_domain(zone), ship.to_domain())
@@ -294,12 +304,12 @@ async def design_extinguishing(
 async def generate_alarm_logic(
     request: Request,
     ship: ShipProjectRequest,
-    zones: List[ZoneRequest],
-) -> Dict[str, Any]:
+    zones: list[ZoneRequest],
+) -> dict[str, Any]:
     """Generate the PLC/DCS alarm-logic tree for a set of zones."""
+    from marine.core.types import DetectorType
     from marine.engine.alarm_logic import export_to_plc_script, generate_logic_tree
     from marine.iec60092.part_502 import place_detectors_grid, select_detector_type
-    from marine.core.types import DetectorType
     domain_ship = ship.to_domain()
     all_nodes = []
     for zr in zones:
@@ -324,11 +334,12 @@ async def generate_alarm_logic(
 async def generate_scada(
     request: Request,
     imo: str,
-    zone_ids: List[str],
-) -> Dict[str, Any]:
+    zone_ids: list[str],
+) -> dict[str, Any]:
     """Generate SCADA integration (MQTT topics + PyScada YAML)."""
     from marine.integration.scada_bridge import (
-        build_mqtt_topics, build_pyscada_yaml,
+        build_mqtt_topics,
+        build_pyscada_yaml,
     )
     tags = build_mqtt_topics(imo, zone_ids)
     return {
@@ -347,19 +358,21 @@ async def design_detection(
     request: Request,
     ship: ShipProjectRequest,
     zone: ZoneRequest,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Design detector selection, count, and grid placement for a zone."""
-    from marine.iec60092.part_502 import (
-        calculate_detector_count, place_detectors_grid, select_detector_type,
-    )
     from marine.core.types import DetectorType
+    from marine.iec60092.part_502 import (
+        calculate_detector_count,
+        place_detectors_grid,
+        select_detector_type,
+    )
 
     domain_ship = ship.to_domain()
     domain_zone = zone_to_domain(zone)
     selection = select_detector_type(domain_zone, domain_ship)
 
-    placements: List[Dict[str, Any]] = []
-    counts: List[Dict[str, Any]] = []
+    placements: list[dict[str, Any]] = []
+    counts: list[dict[str, Any]] = []
     for dt_str in selection.details.get("selected_types", []):
         dt = DetectorType(dt_str)
         count_result = calculate_detector_count(domain_zone, dt)
@@ -385,7 +398,7 @@ async def design_detection(
 @limiter.limit("30/minute")
 async def generate_divisions(
     request: Request, body: DesignRequest,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate fire-division specs for a list of zones."""
     from marine.engine.fire_resistance import generate_division_specs
     zones = [zone_to_domain(z) for z in (body.zones or [])]
@@ -405,7 +418,7 @@ async def generate_divisions(
 @limiter.limit("30/minute")
 async def design_power(
     request: Request, body: PowerDesignRequest,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Design the electrical power supply for fire systems."""
     from marine.iec60092.electrical_installations import design_fire_system_power
     ship = body.ship.to_domain()
@@ -425,11 +438,12 @@ async def design_power(
 @limiter.limit("30/minute")
 async def generate_etap(
     request: Request, body: EtapExportRequest,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate ETAP-compatible load and source CSVs."""
     from marine.iec60092.electrical_installations import design_fire_system_power
     from marine.integration.etap_bridge import (
-        export_etap_loads_csv, export_etap_sources_csv,
+        export_etap_loads_csv,
+        export_etap_sources_csv,
     )
     ship = body.ship.to_domain()
     spec = design_fire_system_power(
@@ -457,7 +471,7 @@ async def generate_etap(
 @limiter.limit("30/minute")
 async def generate_dxf(
     request: Request, body: DxfExportRequest,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate a complete AutoCAD DXF file."""
     from marine.integration.autocad_exporter import generate_full_dxf
     zones = [zone_to_domain(z) for z in body.zones]
@@ -484,11 +498,13 @@ async def generate_dxf(
 @limiter.limit("30/minute")
 async def generate_revit(
     request: Request, body: RevitExportRequest,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate Revit families, placements, and division elements."""
     from marine.engine.fire_resistance import generate_division_specs
     from marine.integration.revit_exporter import (
-        generate_revit_division, generate_revit_family, generate_revit_placement,
+        generate_revit_division,
+        generate_revit_family,
+        generate_revit_placement,
     )
     zones = [zone_to_domain(z) for z in body.zones]
     dps = [

@@ -1,5 +1,4 @@
-"""
-fireai/bridges/ifc_pipeline.py
+"""fireai/bridges/ifc_pipeline.py.
 ================================
 Full IFC → L1 → L2 → L3 → L5 → V23 → L7 → IFC pipeline.
 
@@ -38,7 +37,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -78,12 +77,12 @@ class SpaceAnalysisResult:
     layer2_extent_v: float
     layer3_epl: str
     layer3_tclass: str
-    layer3_protections: List[str]
+    layer3_protections: list[str]
     layer5_coverage_pct: float
     layer7_redundant_pct: float
     layer7_blind_spot_pct: float
-    detector_placements: List[Dict[str, Any]]
-    warnings: List[str] = field(default_factory=list)
+    detector_placements: list[dict[str, Any]]
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -98,13 +97,12 @@ class PipelineReport:
     total_detectors: int
     global_coverage_pct: float
     global_blind_spot_pct: float
-    space_results: List[SpaceAnalysisResult]
-    pipeline_warnings: List[str]
+    space_results: list[SpaceAnalysisResult]
+    pipeline_warnings: list[str]
 
 
 class IfcFirePipeline:
-    """
-    Orchestrates the full FireAI V24 pipeline on an IFC building model.
+    """Orchestrates the full FireAI V24 pipeline on an IFC building model.
 
     Flow:
     IFC → extract_spaces_enhanced() → extract_obstructions()
@@ -117,13 +115,12 @@ class IfcFirePipeline:
     All method calls match the ACTUAL FireAI module API surfaces.
     """
 
-    def __init__(self, config: IfcPipelineConfig):
+    def __init__(self, config: IfcPipelineConfig) -> None:
         self.cfg = config
-        self._warnings: List[str] = []
+        self._warnings: list[str] = []
 
     def run(self) -> PipelineReport:
-        """
-        Execute the full IFC → L1→L7 → IFC pipeline.
+        """Execute the full IFC → L1→L7 → IFC pipeline.
 
         Returns a PipelineReport with per-space results and aggregate stats.
         """
@@ -144,9 +141,9 @@ class IfcFirePipeline:
         self._warnings.extend(l1_warnings)
 
         # ── Per-space analysis ─────────────────────────────────────
-        all_results: List[SpaceAnalysisResult] = []
-        all_devices: List[Dict[str, Any]] = []
-        all_hybrid_maps: List[Any] = []
+        all_results: list[SpaceAnalysisResult] = []
+        all_devices: list[dict[str, Any]] = []
+        all_hybrid_maps: list[Any] = []
         slc_loop = 1
         slc_address = 1
 
@@ -228,7 +225,7 @@ class IfcFirePipeline:
 
     # ── L1: Regulatory Framework ──────────────────────────────────
 
-    def _run_l1(self) -> Tuple[str, List[str]]:
+    def _run_l1(self) -> tuple[str, list[str]]:
         """Resolve regulatory framework from country code."""
         try:
             from fireai.core.international_reg_selector import (
@@ -246,14 +243,14 @@ class IfcFirePipeline:
 
     def _analyse_space(
         self,
-        space: Dict[str, Any],
-        obstructions: List[Any],
+        space: dict[str, Any],
+        obstructions: list[Any],
         framework: str,
         slc_loop: int,
         slc_address: int,
-    ) -> Tuple[SpaceAnalysisResult, List[Dict[str, Any]], int, int]:
+    ) -> tuple[SpaceAnalysisResult, list[dict[str, Any]], int, int]:
         """Run L2→L3→L5→V23→L7 for one space."""
-        warnings: List[str] = []
+        warnings: list[str] = []
 
         # ── L2: HAC Classification ────────────────────────────────
         l2 = self._run_l2(space, warnings)
@@ -270,11 +267,11 @@ class IfcFirePipeline:
 
         # ── V23 + L7: Acoustic + Hybrid Survivability ─────────────
         ugld_sensors, sensor_positions = self._place_ugld_sensors(space)
-        l7_result, hybrid_map = self._run_l7(optical_result, grid_pts, ugld_sensors, sensor_positions, warnings)
+        l7_result, _hybrid_map = self._run_l7(optical_result, grid_pts, ugld_sensors, sensor_positions, warnings)
 
         # ── Build device placement list ───────────────────────────
         zone_id = f"{space.get('storey_name', '?')}_{l2.get('zone', 'UNKNOWN')}"
-        devices: List[Dict[str, Any]] = []
+        devices: list[dict[str, Any]] = []
 
         for fds in flame_det_specs:
             devices.append(
@@ -333,10 +330,8 @@ class IfcFirePipeline:
 
     # ── L2: HAC Classification ────────────────────────────────────
 
-    def _run_l2(self, space: Dict, warnings: List[str]) -> Dict:
-        """
-        L2 using the REAL HACClassificationEngine.classify_v21() API.
-        """
+    def _run_l2(self, space: dict, warnings: list[str]) -> dict:
+        """L2 using the REAL HACClassificationEngine.classify_v21() API."""
         try:
             from fireai.core.hac_classification_engine import (
                 HACClassificationEngine,
@@ -393,9 +388,8 @@ class IfcFirePipeline:
 
     # ── L3: ATEX Arbitration ──────────────────────────────────────
 
-    def _run_l3(self, l2: Dict, space: Dict, warnings: List[str]) -> Dict:
-        """
-        L3 using the REAL ATEXHazardousArbiter.arbitrate_v21() API.
+    def _run_l3(self, l2: dict, space: dict, warnings: list[str]) -> dict:
+        """L3 using the REAL ATEXHazardousArbiter.arbitrate_v21() API.
         Parameters: zone, hazard_type, autoignition_c, ...
         """
         try:
@@ -437,14 +431,13 @@ class IfcFirePipeline:
 
     def _run_l5(
         self,
-        det_specs: List[Dict],
-        grid_pts: List[Any],
-        obstructions: List[Any],
-        warnings: List[str],
-    ) -> Tuple[float, Any]:
-        """
-        L5 using the REAL FlameDetectorAOCRayTrace.analyse_multi_v21() API.
-        FlameDetectorSpec(position=[x,y,z], orientation_vector=[...], ...)
+        det_specs: list[dict],
+        grid_pts: list[Any],
+        obstructions: list[Any],
+        warnings: list[str],
+    ) -> tuple[float, Any]:
+        """L5 using the REAL FlameDetectorAOCRayTrace.analyse_multi_v21() API.
+        FlameDetectorSpec(position=[x,y,z], orientation_vector=[...], ...).
         """
         try:
             from fireai.core.flame_detector_aoc_raytrace import (
@@ -490,13 +483,12 @@ class IfcFirePipeline:
     def _run_l7(
         self,
         optical_result: Any,
-        grid_pts: List[Any],
-        ugld_sensors: List[Dict],
-        sensor_positions: Dict[str, Tuple],
-        warnings: List[str],
-    ) -> Tuple[Dict, Any]:
-        """
-        L7 using the REAL HybridSurvivabilityEngine.analyse() API.
+        grid_pts: list[Any],
+        ugld_sensors: list[dict],
+        sensor_positions: dict[str, tuple],
+        warnings: list[str],
+    ) -> tuple[dict, Any]:
+        """L7 using the REAL HybridSurvivabilityEngine.analyse() API.
         Parameters: optical_result, grid, ugld_sensors, sensor_positions, ...
         """
         try:
@@ -541,7 +533,7 @@ class IfcFirePipeline:
 
     # ── Placement helpers ─────────────────────────────────────────
 
-    def _make_grid(self, space: Dict) -> List[Any]:
+    def _make_grid(self, space: dict) -> list[Any]:
         """Generate uniform 3D RayTracePoint grid within space."""
         try:
             from fireai.core.models_v21 import RayTracePoint
@@ -569,7 +561,7 @@ class IfcFirePipeline:
             x += res
         return pts
 
-    def _place_flame_detectors(self, space: Dict) -> List[Dict]:
+    def _place_flame_detectors(self, space: dict) -> list[dict]:
         """Simple ceiling-mounted flame detector placement per NFPA 72."""
         polygon = space.get("floor_polygon")
         if not polygon:
@@ -611,9 +603,8 @@ class IfcFirePipeline:
             )
         return dets
 
-    def _place_ugld_sensors(self, space: Dict) -> Tuple[List[Dict], Dict[str, Tuple]]:
-        """
-        Place UGLD sensors at 1 m above floor per ISA-TR 84.00.07.
+    def _place_ugld_sensors(self, space: dict) -> tuple[list[dict], dict[str, tuple]]:
+        """Place UGLD sensors at 1 m above floor per ISA-TR 84.00.07.
         Returns (sensor_specs, sensor_positions) — positions are separate
         per the Separation of Concerns design in hybrid_survivability.py.
         """
@@ -655,9 +646,9 @@ class IfcFirePipeline:
 
     # ── IFC → FireAI model conversion ────────────────────────────
 
-    def _to_raytrace_obstructions(self, obstructions_data: List[Dict]) -> List[Any]:
+    def _to_raytrace_obstructions(self, obstructions_data: list[dict]) -> list[Any]:
         """Convert IFC AABB data → FireAI Obstruction objects."""
-        result: List[Any] = []
+        result: list[Any] = []
         try:
             from fireai.core.models_v21 import Obstruction, WavelengthBand
         except ImportError:
@@ -739,6 +730,6 @@ class IfcFirePipeline:
 __all__ = [
     "IfcFirePipeline",
     "IfcPipelineConfig",
-    "SpaceAnalysisResult",
     "PipelineReport",
+    "SpaceAnalysisResult",
 ]

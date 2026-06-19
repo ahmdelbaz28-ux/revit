@@ -1,5 +1,4 @@
-"""
-backend/routers/monitor.py — Real-time Monitoring Dashboard API.
+"""backend/routers/monitor.py — Real-time Monitoring Dashboard API.
 
 Endpoints:
   GET /api/v1/monitor/health          → Aggregated health status
@@ -20,8 +19,8 @@ import logging
 import threading
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timezone
-from typing import Any, DefaultDict, Deque, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
@@ -42,7 +41,7 @@ router = APIRouter(tags=["monitor"])
 class MonitorState:
     """Singleton holding all monitoring state with thread-safe access."""
 
-    _instance: Optional[MonitorState] = None
+    _instance: MonitorState | None = None
     _lock = threading.Lock()
 
     def __new__(cls) -> MonitorState:
@@ -59,7 +58,7 @@ class MonitorState:
         self._lock = threading.Lock()
 
         # Engine statuses
-        self._engines: Dict[str, Dict[str, Any]] = {
+        self._engines: dict[str, dict[str, Any]] = {
             "nfpa72-engine": {
                 "engine_id": "nfpa72-engine",
                 "name": "NFPA 72 Compliance Engine",
@@ -111,13 +110,13 @@ class MonitorState:
         }
 
         # Agent activity log (ring buffer)
-        self._agent_activity: Deque[Dict[str, Any]] = deque(maxlen=1000)
+        self._agent_activity: deque[dict[str, Any]] = deque(maxlen=1000)
 
         # Security alerts
-        self._security_alerts: List[Dict[str, Any]] = []
+        self._security_alerts: list[dict[str, Any]] = []
 
         # Alert rules and state
-        self._alert_rules: List[Dict[str, Any]] = [
+        self._alert_rules: list[dict[str, Any]] = [
             {
                 "rule_id": "high-cpu",
                 "name": "High CPU Usage",
@@ -166,7 +165,7 @@ class MonitorState:
         ]
 
         # Active alerts (currently firing)
-        self._active_alerts: List[Dict[str, Any]] = []
+        self._active_alerts: list[dict[str, Any]] = []
 
         # Uptime tracking
         self._start_time = time.time()
@@ -176,19 +175,19 @@ class MonitorState:
 
     # ── Engine management ───────────────────────────────────────────────────
 
-    def get_engines(self) -> List[Dict[str, Any]]:
+    def get_engines(self) -> list[dict[str, Any]]:
         with self._lock:
             return [
                 dict(e.items())
                 for e in self._engines.values()
             ]
 
-    def get_engine(self, engine_id: str) -> Optional[Dict[str, Any]]:
+    def get_engine(self, engine_id: str) -> dict[str, Any] | None:
         with self._lock:
             e = self._engines.get(engine_id)
             return dict(e) if e else None
 
-    def update_engine(self, engine_id: str, updates: Dict[str, Any]) -> bool:
+    def update_engine(self, engine_id: str, updates: dict[str, Any]) -> bool:
         with self._lock:
             if engine_id not in self._engines:
                 return False
@@ -206,16 +205,16 @@ class MonitorState:
 
     # ── Agent activity ──────────────────────────────────────────────────────
 
-    def add_agent_activity(self, activity: Dict[str, Any]) -> None:
+    def add_agent_activity(self, activity: dict[str, Any]) -> None:
         with self._lock:
             if "timestamp" not in activity:
-                activity["timestamp"] = datetime.now(timezone.utc).isoformat()
+                activity["timestamp"] = datetime.now(UTC).isoformat()
             self._agent_activity.appendleft(activity)
 
     def get_agent_activity(
-        self, limit: int = 50, agent_id: Optional[str] = None,
-        activity_type: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        self, limit: int = 50, agent_id: str | None = None,
+        activity_type: str | None = None,
+    ) -> list[dict[str, Any]]:
         with self._lock:
             results = list(self._agent_activity)
         if agent_id:
@@ -226,10 +225,10 @@ class MonitorState:
 
     # ── Security alerts ─────────────────────────────────────────────────────
 
-    def add_security_alert(self, alert: Dict[str, Any]) -> None:
+    def add_security_alert(self, alert: dict[str, Any]) -> None:
         with self._lock:
             if "timestamp" not in alert:
-                alert["timestamp"] = datetime.now(timezone.utc).isoformat()
+                alert["timestamp"] = datetime.now(UTC).isoformat()
             if "alert_id" not in alert:
                 import uuid
                 alert["alert_id"] = str(uuid.uuid4())
@@ -239,9 +238,9 @@ class MonitorState:
                 self._security_alerts = self._security_alerts[-500:]
 
     def get_security_alerts(
-        self, limit: int = 50, severity: Optional[str] = None,
-        resolved: Optional[bool] = None,
-    ) -> List[Dict[str, Any]]:
+        self, limit: int = 50, severity: str | None = None,
+        resolved: bool | None = None,
+    ) -> list[dict[str, Any]]:
         with self._lock:
             results = list(self._security_alerts)
         if severity:
@@ -252,35 +251,35 @@ class MonitorState:
 
     # ── Alert rules ─────────────────────────────────────────────────────────
 
-    def get_alert_rules(self) -> List[Dict[str, Any]]:
+    def get_alert_rules(self) -> list[dict[str, Any]]:
         with self._lock:
             return list(self._alert_rules)
 
-    def get_active_alerts(self) -> List[Dict[str, Any]]:
+    def get_active_alerts(self) -> list[dict[str, Any]]:
         with self._lock:
             return list(self._active_alerts)
 
-    def evaluate_alert_rules(self) -> List[Dict[str, Any]]:
+    def evaluate_alert_rules(self) -> list[dict[str, Any]]:
         """Evaluate all enabled alert rules against current engine state.
 
         Returns list of currently firing alerts.
         """
         with self._lock:
             now = time.time()
-            new_active: List[Dict[str, Any]] = []
+            new_active: list[dict[str, Any]] = []
             engines = dict(self._engines)
 
             for rule in self._alert_rules:
                 if not rule["enabled"]:
                     continue
-                rule["last_evaluated"] = datetime.now(timezone.utc).isoformat()
+                rule["last_evaluated"] = datetime.now(UTC).isoformat()
 
                 triggered = False
-                alert_data: Dict[str, Any] = {
+                alert_data: dict[str, Any] = {
                     "rule_id": rule["rule_id"],
                     "name": rule["name"],
                     "severity": rule["severity"],
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "message": "",
                 }
 
@@ -342,7 +341,7 @@ class MonitorState:
                         )
 
                 if triggered:
-                    rule["last_triggered"] = datetime.now(timezone.utc).isoformat()
+                    rule["last_triggered"] = datetime.now(UTC).isoformat()
                     new_active.append(alert_data)
 
             self._active_alerts = new_active
@@ -350,7 +349,7 @@ class MonitorState:
 
     # ── Health aggregation ──────────────────────────────────────────────────
 
-    def aggregated_health(self) -> Dict[str, Any]:
+    def aggregated_health(self) -> dict[str, Any]:
         """Aggregate health from all subsystems."""
         with self._lock:
             uptime = time.time() - self._start_time
@@ -379,7 +378,7 @@ class MonitorState:
                 "uptime_seconds": round(uptime, 2),
                 "uptime_human": self._format_uptime(uptime),
                 "version": __package_version__,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "database": "connected" if db_connected else "disconnected",
                 "engines": {
                     "total": len(self._engines),
@@ -415,7 +414,7 @@ class MonitorState:
     def collect_metrics(self) -> str:
         """Collect system metrics in Prometheus text format."""
         with self._lock:
-            lines: List[str] = []
+            lines: list[str] = []
             lines.append("# HELP fireai_uptime_seconds System uptime in seconds")
             lines.append("# TYPE fireai_uptime_seconds gauge")
             uptime = time.time() - self._start_time
@@ -494,10 +493,10 @@ class DashboardRateLimiter:
     so they get a higher limit than general API endpoints.
     """
 
-    def __init__(self, max_requests: int = 60, window_seconds: int = 60):
+    def __init__(self, max_requests: int = 60, window_seconds: int = 60) -> None:
         self._max_requests = max_requests
         self._window_seconds = window_seconds
-        self._clients: DefaultDict[str, Deque[float]] = defaultdict(lambda: deque(maxlen=max_requests))
+        self._clients: defaultdict[str, deque[float]] = defaultdict(lambda: deque(maxlen=max_requests))
         self._lock = threading.Lock()
 
     def check(self, client_ip: str) -> bool:
@@ -548,7 +547,7 @@ async def get_health(request: Request):
     return {
         "success": True,
         "data": health,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -570,7 +569,7 @@ async def get_metrics(request: Request):
 @router.get("/api/v1/monitor/engine-status", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_engine_status(
     request: Request,
-    engine_id: Optional[str] = Query(None, description="Filter by engine ID"),
+    engine_id: str | None = Query(None, description="Filter by engine ID"),
 ):
     """GET /api/v1/monitor/engine-status — Per-engine status and health.
 
@@ -601,7 +600,7 @@ async def get_engine_status(
         "data": {
             "engines": engines,
             "total": len(engines),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -610,8 +609,8 @@ async def get_engine_status(
 async def get_agent_activity(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max records to return"),
-    agent_id: Optional[str] = Query(None, description="Filter by agent ID"),
-    activity_type: Optional[str] = Query(None, description="Filter by activity type"),
+    agent_id: str | None = Query(None, description="Filter by agent ID"),
+    activity_type: str | None = Query(None, description="Filter by activity type"),
 ):
     """GET /api/v1/monitor/agent-activity — Agent activity log.
 
@@ -631,7 +630,7 @@ async def get_agent_activity(
             "activities": activities,
             "total": len(activities),
             "limit": limit,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -640,8 +639,8 @@ async def get_agent_activity(
 async def get_security_alerts(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max alerts to return"),
-    severity: Optional[str] = Query(None, pattern="^(low|medium|high|critical)$"),
-    resolved: Optional[bool] = Query(None, description="Filter by resolved state"),
+    severity: str | None = Query(None, pattern="^(low|medium|high|critical)$"),
+    resolved: bool | None = Query(None, description="Filter by resolved state"),
 ):
     """GET /api/v1/monitor/security-alerts — Active and historical security alerts.
 
@@ -672,7 +671,7 @@ async def get_security_alerts(
                     "alerts": alerts[:limit],
                     "total": len(alerts),
                     "source": "security_logging",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 },
             }
     except Exception as e:
@@ -685,7 +684,7 @@ async def get_security_alerts(
             "alerts": alerts,
             "total": len(alerts),
             "source": "monitor_state",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -715,7 +714,7 @@ async def get_alerts(request: Request):
             "alert_count": len(active_alerts),
             "rules": rules,
             "rule_count": len(rules),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 

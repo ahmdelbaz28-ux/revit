@@ -1,4 +1,4 @@
-"""ahj_submittal_package.py — AHJ Submittal Package Generator
+"""ahj_submittal_package.py — AHJ Submittal Package Generator.
 ================================================================
 
 Assembles a complete Authority Having Jurisdiction (AHJ) submittal
@@ -29,15 +29,15 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "SubmittalSection",
+    "AHJSubmittalGenerator",
     "SubmittalPackage",
     "SubmittalResult",
-    "AHJSubmittalGenerator",
+    "SubmittalSection",
 ]
 
 
@@ -57,6 +57,7 @@ class SubmittalSection:
         file_paths: Paths to attached files (DWG, DXF, PDF, etc.).
         nfpa_ref:  NFPA 72 reference for this section.
         required:  Whether this section is mandatory per NFPA 72.
+
     """
 
     title: str
@@ -81,6 +82,7 @@ class SubmittalPackage:
         dxf_files:        Paths to DXF drawing files.
         warnings:         Non-fatal advisories.
         errors:           Fatal issues.
+
     """
 
     project_name: str = ""
@@ -88,10 +90,10 @@ class SubmittalPackage:
     engineer_name: str = ""
     license_number: str = ""
     nfpa_version: str = "NFPA 72-2022"
-    sections: List[SubmittalSection] = field(default_factory=list)
-    dxf_files: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    sections: list[SubmittalSection] = field(default_factory=list)
+    dxf_files: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -105,14 +107,15 @@ class SubmittalResult:
         complete:   Whether all required sections are present.
         warnings:   Non-fatal advisories.
         errors:     Fatal issues.
+
     """
 
     output_path: str = ""
     section_count: int = 0
     file_count: int = 0
     complete: bool = False
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 # ============================================================================
@@ -162,12 +165,12 @@ class AHJSubmittalGenerator:
         project_address: str = "",
         engineer_name: str = "",
         license_number: str = "",
-        boq_result: Optional[Any] = None,
-        survivability_result: Optional[Any] = None,
-        nac_loading: Optional[Dict] = None,
-        voltage_drop_results: Optional[List[Dict]] = None,
-        battery_result: Optional[Dict] = None,
-        building_report: Optional[Any] = None,
+        boq_result: Any | None = None,
+        survivability_result: Any | None = None,
+        nac_loading: dict | None = None,
+        voltage_drop_results: list[dict] | None = None,
+        battery_result: dict | None = None,
+        building_report: Any | None = None,
     ) -> SubmittalPackage:
         """Assemble a submittal package from engineering outputs.
 
@@ -185,6 +188,7 @@ class AHJSubmittalGenerator:
 
         Returns:
             SubmittalPackage with all sections populated.
+
         """
         pkg = SubmittalPackage(
             project_name=project_name,
@@ -325,6 +329,7 @@ class AHJSubmittalGenerator:
 
         Returns:
             SubmittalResult with generation statistics.
+
         """
         result = SubmittalResult()
 
@@ -408,7 +413,7 @@ class AHJSubmittalGenerator:
         )
 
     @staticmethod
-    def _equipment_specs_content(boq_result: Optional[Any]) -> str:
+    def _equipment_specs_content(boq_result: Any | None) -> str:
         if boq_result is None:
             return "Equipment specifications pending — BOQ not yet generated."
         lines = ["EQUIPMENT SPECIFICATION SUMMARY\n"]
@@ -420,7 +425,7 @@ class AHJSubmittalGenerator:
         return "\n".join(lines)
 
     @staticmethod
-    def _boq_content(boq_result: Optional[Any]) -> str:
+    def _boq_content(boq_result: Any | None) -> str:
         if boq_result is None:
             return "Bill of Quantities pending — not yet generated."
         lines = ["BILL OF QUANTITIES\n"]
@@ -436,7 +441,7 @@ class AHJSubmittalGenerator:
         return "\n".join(lines)
 
     @staticmethod
-    def _voltage_drop_content(results: Optional[List[Dict]]) -> str:
+    def _voltage_drop_content(results: list[dict] | None) -> str:
         if not results:
             return "Voltage drop calculations pending."
         lines = ["VOLTAGE DROP CALCULATIONS\n", "NFPA 72 §10.14\n"]
@@ -450,7 +455,7 @@ class AHJSubmittalGenerator:
         return "\n".join(lines)
 
     @staticmethod
-    def _battery_content(result: Optional[Dict]) -> str:
+    def _battery_content(result: dict | None) -> str:
         if result is None:
             return "Battery calculations pending."
         return (
@@ -464,7 +469,7 @@ class AHJSubmittalGenerator:
         )
 
     @staticmethod
-    def _survivability_content(result: Optional[Any]) -> str:
+    def _survivability_content(result: Any | None) -> str:
         if result is None:
             return "Pathway survivability classification pending."
         lines = ["PATHWAY SURVIVABILITY CLASSIFICATION\n", "NFPA 72 §12.4\n"]
@@ -482,7 +487,7 @@ class AHJSubmittalGenerator:
         return "\n".join(lines)
 
     @staticmethod
-    def _nac_content(result: Optional[Dict]) -> str:
+    def _nac_content(result: dict | None) -> str:
         if result is None:
             return "NAC circuit loading analysis pending."
         lines = ["NAC CIRCUIT LOADING\n", "NFPA 72 §18.5 / §10.14.1\n"]
@@ -494,7 +499,7 @@ class AHJSubmittalGenerator:
         return "\n".join(lines)
 
     @staticmethod
-    def _certification_content(pkg: SubmittalPackage, report: Optional[Any]) -> str:
+    def _certification_content(pkg: SubmittalPackage, report: Any | None) -> str:
         lines = [
             "COMPLIANCE CERTIFICATION\n",
             f"I, {pkg.engineer_name}, PE License #{pkg.license_number}, "

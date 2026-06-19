@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Rearrange PowerPoint slides based on a sequence of indices.
+"""Rearrange PowerPoint slides based on a sequence of indices.
 
 Usage:
     python rearrange.py template.pptx output.pptx 0,34,34,50,52

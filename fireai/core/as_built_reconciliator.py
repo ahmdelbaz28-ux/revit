@@ -1,5 +1,4 @@
-"""
-as_built_reconciliator.py — 3D As-Built Reconciliator for FireAI
+"""as_built_reconciliator.py — 3D As-Built Reconciliator for FireAI.
 ================================================================
 
 Compares design-time device placement against as-built (field-verified)
@@ -52,7 +51,6 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 from fireai.core.blockchain_readiness_gate import BlockchainReadinessGate
 
@@ -60,7 +58,7 @@ from fireai.core.blockchain_readiness_gate import BlockchainReadinessGate
 # Constants — Device-type-specific 3D position tolerances (metres)
 # ============================================================================
 
-DEVICE_TOLERANCES: Dict[str, float] = {
+DEVICE_TOLERANCES: dict[str, float] = {
     "SMOKE": 0.3,
     # NFPA 72-2022 §17.6 — smoke detector spacing is sensitive to
     # ceiling position; drift beyond 0.3 m may place the detector
@@ -89,7 +87,7 @@ DEFAULT_TOLERANCE: float = 0.5
 DEVICE_ID_KEY: str = "id"
 """Key used to identify a device uniquely in both design and as-built dicts."""
 
-REQUIRED_DEVICE_KEYS: Tuple[str, ...] = ("id", "x", "y", "z", "device_type")
+REQUIRED_DEVICE_KEYS: tuple[str, ...] = ("id", "x", "y", "z", "device_type")
 """Keys that must be present in every device dict."""
 
 
@@ -109,6 +107,7 @@ def _get_tolerance(device_type: str) -> float:
 
     Returns:
         Tolerance in metres.
+
     """
     return DEVICE_TOLERANCES.get(device_type.upper(), DEFAULT_TOLERANCE)
 
@@ -134,11 +133,12 @@ def _euclidean_distance_3d(
 
     Returns:
         Euclidean distance in metres.
+
     """
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
 
 
-def _serialize_device(device: Dict) -> str:
+def _serialize_device(device: dict) -> str:
     """Serialize a device dict to a canonical JSON string for hashing.
 
     Keys are sorted to ensure deterministic output regardless of dict
@@ -150,11 +150,12 @@ def _serialize_device(device: Dict) -> str:
 
     Returns:
         Canonical JSON string.
+
     """
     return json.dumps(device, sort_keys=True, separators=(",", ":"))
 
 
-def _validate_device_dict(device: Dict, source: str) -> None:
+def _validate_device_dict(device: dict, source: str) -> None:
     """Validate that a device dict has all required keys.
 
     Args:
@@ -163,6 +164,7 @@ def _validate_device_dict(device: Dict, source: str) -> None:
 
     Raises:
         ValueError: If any required key is missing.
+
     """
     missing = [k for k in REQUIRED_DEVICE_KEYS if k not in device]
     if missing:
@@ -193,15 +195,16 @@ class ReconciliationResult:
         summary: Human-readable summary of the reconciliation.
         integrity_verified: Whether the Merkle integrity check passed.
             ``None`` if no merkle_root was provided.
+
     """
 
     status: str
     verified_count: int
-    rogue_devices: List[Tuple[str, str]]
-    missing_devices: List[Tuple[str, str]]
-    drifted_devices: List[Tuple[str, float, float, str]]
+    rogue_devices: list[tuple[str, str]]
+    missing_devices: list[tuple[str, str]]
+    drifted_devices: list[tuple[str, float, float, str]]
     summary: str
-    integrity_verified: Optional[bool] = None
+    integrity_verified: bool | None = None
 
     @property
     def total_deviations(self) -> int:
@@ -243,12 +246,13 @@ class AsBuiltReconciliator:
             or any device dict is missing required keys.
         RuntimeError: If merkle_root is provided but integrity check
             fails (design manifest has been tampered with).
+
     """
 
     def __init__(
         self,
-        design_manifest: Dict,
-        merkle_root: Optional[str] = None,
+        design_manifest: dict,
+        merkle_root: str | None = None,
     ) -> None:
         # --- Validate design manifest structure ---
         if "devices" not in design_manifest:
@@ -263,7 +267,7 @@ class AsBuiltReconciliator:
             _validate_device_dict(dev, source="design_manifest")
 
         # --- Merkle integrity check (optional) ---
-        self._integrity_verified: Optional[bool] = None
+        self._integrity_verified: bool | None = None
         if merkle_root is not None:
             # Serialize each device to a canonical string and build a
             # Merkle tree over those artifacts.
@@ -278,7 +282,7 @@ class AsBuiltReconciliator:
             self._integrity_verified = True
 
         # --- Index design devices by ID for O(1) lookup ---
-        self._design_by_id: Dict[str, Dict] = {}
+        self._design_by_id: dict[str, dict] = {}
         for dev in design_devices:
             device_id = str(dev[DEVICE_ID_KEY])
             if device_id in self._design_by_id:
@@ -291,7 +295,7 @@ class AsBuiltReconciliator:
 
     def reconcile(
         self,
-        as_built_devices: List[Dict],
+        as_built_devices: list[dict],
     ) -> ReconciliationResult:
         """Compare as-built devices against the design manifest.
 
@@ -317,13 +321,14 @@ class AsBuiltReconciliator:
         Raises:
             ValueError: If any as-built device dict is missing required
                 keys.
+
         """
         # Validate all as-built device dicts upfront
         for dev in as_built_devices:
             _validate_device_dict(dev, source="as_built_devices")
 
         # Index as-built devices by ID
-        as_built_by_id: Dict[str, Dict] = {}
+        as_built_by_id: dict[str, dict] = {}
         for dev in as_built_devices:
             device_id = str(dev[DEVICE_ID_KEY])
             # Note: duplicate as-built IDs are allowed (last wins) but
@@ -332,9 +337,9 @@ class AsBuiltReconciliator:
             as_built_by_id[device_id] = dev
 
         # --- Classification containers ---
-        rogue_devices: List[Tuple[str, str]] = []
-        missing_devices: List[Tuple[str, str]] = []
-        drifted_devices: List[Tuple[str, float, float, str]] = []
+        rogue_devices: list[tuple[str, str]] = []
+        missing_devices: list[tuple[str, str]] = []
+        drifted_devices: list[tuple[str, float, float, str]] = []
         verified_count: int = 0
 
         # --- Pass 1: Check each as-built device against design ---
@@ -438,6 +443,7 @@ class AsBuiltReconciliator:
 
         Returns:
             Multi-line summary string.
+
         """
         lines = [
             f"As-Built Reconciliation: {status}",
@@ -464,8 +470,8 @@ class AsBuiltReconciliator:
 # ============================================================================
 
 __all__ = [
-    "DEVICE_TOLERANCES",
     "DEFAULT_TOLERANCE",
-    "ReconciliationResult",
+    "DEVICE_TOLERANCES",
     "AsBuiltReconciliator",
+    "ReconciliationResult",
 ]

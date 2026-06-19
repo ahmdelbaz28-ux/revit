@@ -1,5 +1,4 @@
-"""
-backend/security_middleware.py — Security Headers & Correlation Middleware
+"""backend/security_middleware.py — Security Headers & Correlation Middleware.
 ==========================================================================
 
 Centralizes security-critical HTTP middleware for the FireAI backend:
@@ -43,6 +42,7 @@ References:
   - agent.md Rule #14 (NO MODIFICATION WITHOUT VERIFICATION) — this module
     was added after verifying no existing SecurityHeadersMiddleware exists
     in the codebase (grep for `class SecurityHeadersMiddleware` → 0 matches).
+
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 # Re-export CorrelationIdMiddleware for a single import surface.
 # Lazy import to avoid circular dependency if backend.request_context
 # ever imports from this module in the future.
-from backend.request_context import CorrelationIdMiddleware  # noqa: F401
+from backend.request_context import CorrelationIdMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +220,7 @@ class SecurityHeadersMiddleware:
         # Pre-computed set of header names we're adding, for O(1) dedup check.
         # If an upstream handler already set one of our headers, we DO NOT
         # override it (defense-in-depth: respect explicit per-route policy).
-        our_header_names = {k for k, _ in [(h[0].decode("latin-1"), h[1]) for h in extra_headers]}
+        {k for k, _ in [(h[0].decode("latin-1"), h[1]) for h in extra_headers]}
 
         async def send_with_security_headers(message: Message) -> None:
             """Wrap send() to inject security headers into http.response.start."""
@@ -325,10 +325,7 @@ def _is_public_path(path: str) -> bool:
     if path in _PUBLIC_PATHS_EXACT:
         return True
     # Prefix match for documented sub-paths (e.g. /docs/static/*)
-    for prefix in _PUBLIC_PATH_PREFIXES:
-        if path.startswith(prefix):
-            return True
-    return False
+    return any(path.startswith(prefix) for prefix in _PUBLIC_PATH_PREFIXES)
 
 
 class ApiKeyMiddleware:
@@ -443,7 +440,7 @@ class ApiKeyMiddleware:
 
 
 __all__ = [
-    "SecurityHeadersMiddleware",
-    "CorrelationIdMiddleware",
     "ApiKeyMiddleware",
+    "CorrelationIdMiddleware",
+    "SecurityHeadersMiddleware",
 ]

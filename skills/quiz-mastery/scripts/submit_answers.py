@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""提交测验答案并评分。
+"""提交测验答案并评分。.
 
 用法：python3 submit_answers.py <user_id> <document_id> <session_id> <answers_json>
 

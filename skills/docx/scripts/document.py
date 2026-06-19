@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Library for working with Word documents: comments, tracked changes, and editing.
+"""Library for working with Word documents: comments, tracked changes, and editing.
 
 Usage:
     from skills.docx.scripts.document import Document
@@ -26,12 +25,13 @@ Usage:
     doc.save()
 """
 
+import contextlib
 import html
 import random
 import shutil
 import tempfile
 import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import defusedxml.minidom
@@ -43,9 +43,9 @@ from .utilities import XMLEditor
 # Inline pack utility (replaces former ooxml.scripts.pack dependency)
 # ---------------------------------------------------------------------------
 
-def _condense_xml(xml_file):
+def _condense_xml(xml_file) -> None:
     """Strip unnecessary whitespace from XML, preserving text content."""
-    with open(xml_file, "r", encoding="utf-8") as f:
+    with open(xml_file, encoding="utf-8") as f:
         dom = defusedxml.minidom.parse(f)
     for element in dom.getElementsByTagName("*"):
         if element.tagName.endswith(":t"):
@@ -61,7 +61,7 @@ def _condense_xml(xml_file):
         f.write(dom.toxml(encoding="UTF-8"))
 
 
-def _pack_document(input_dir, output_file):
+def _pack_document(input_dir, output_file) -> None:
     """Pack an unpacked directory back into a .docx file."""
     input_dir = Path(input_dir)
     output_file = Path(output_file)
@@ -91,11 +91,12 @@ class DocxXMLEditor(XMLEditor):
 
     Attributes:
         dom (defusedxml.minidom.Document): The DOM document for direct manipulation
+
     """
 
     def __init__(
         self, xml_path, rsid: str, author: str = "Z.AI", initials: str = "Z"
-    ):
+    ) -> None:
         """Initialize with required RSID and optional author.
 
         Args:
@@ -103,6 +104,7 @@ class DocxXMLEditor(XMLEditor):
             rsid: RSID to automatically apply to new elements
             author: Author name for tracked changes and comments (default: "Z.AI")
             initials: Author initials (default: "C")
+
         """
         super().__init__(xml_path)
         self.rsid = rsid
@@ -117,13 +119,11 @@ class DocxXMLEditor(XMLEditor):
             for elem in elements:
                 change_id = elem.getAttribute("w:id")
                 if change_id:
-                    try:
+                    with contextlib.suppress(ValueError):
                         max_id = max(max_id, int(change_id))
-                    except ValueError:
-                        pass
         return max_id + 1
 
-    def _ensure_w16du_namespace(self):
+    def _ensure_w16du_namespace(self) -> None:
         """Ensure w16du namespace is declared on the root element."""
         root = self.dom.documentElement
         if not root.hasAttribute("xmlns:w16du"):  # type: ignore
@@ -132,7 +132,7 @@ class DocxXMLEditor(XMLEditor):
                 "http://schemas.microsoft.com/office/word/2023/wordml/word16du",
             )
 
-    def _ensure_w16cex_namespace(self):
+    def _ensure_w16cex_namespace(self) -> None:
         """Ensure w16cex namespace is declared on the root element."""
         root = self.dom.documentElement
         if not root.hasAttribute("xmlns:w16cex"):  # type: ignore
@@ -141,7 +141,7 @@ class DocxXMLEditor(XMLEditor):
                 "http://schemas.microsoft.com/office/word/2018/wordml/cex",
             )
 
-    def _ensure_w14_namespace(self):
+    def _ensure_w14_namespace(self) -> None:
         """Ensure w14 namespace is declared on the root element."""
         root = self.dom.documentElement
         if not root.hasAttribute("xmlns:w14"):  # type: ignore
@@ -150,7 +150,7 @@ class DocxXMLEditor(XMLEditor):
                 "http://schemas.microsoft.com/office/word/2010/wordml",
             )
 
-    def _inject_attributes_to_nodes(self, nodes):
+    def _inject_attributes_to_nodes(self, nodes) -> None:
         """Inject RSID, author, and date attributes into DOM nodes where applicable.
 
         Adds attributes to elements that support them:
@@ -163,12 +163,13 @@ class DocxXMLEditor(XMLEditor):
 
         Args:
             nodes: List of DOM nodes to process
+
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        def is_inside_deletion(elem):
+        def is_inside_deletion(elem) -> bool:
             """Check if element is inside a w:del element."""
             parent = elem.parentNode
             while parent:
@@ -177,7 +178,7 @@ class DocxXMLEditor(XMLEditor):
                 parent = parent.parentNode
             return False
 
-        def add_rsid_to_p(elem):
+        def add_rsid_to_p(elem) -> None:
             if not elem.hasAttribute("w:rsidR"):
                 elem.setAttribute("w:rsidR", self.rsid)
             if not elem.hasAttribute("w:rsidRDefault"):
@@ -192,7 +193,7 @@ class DocxXMLEditor(XMLEditor):
                 self._ensure_w14_namespace()
                 elem.setAttribute("w14:textId", _generate_hex_id())
 
-        def add_rsid_to_r(elem):
+        def add_rsid_to_r(elem) -> None:
             # Use w:rsidDel for <w:r> inside <w:del>, otherwise w:rsidR
             if is_inside_deletion(elem):
                 if not elem.hasAttribute("w:rsidDel"):
@@ -201,7 +202,7 @@ class DocxXMLEditor(XMLEditor):
                 if not elem.hasAttribute("w:rsidR"):
                     elem.setAttribute("w:rsidR", self.rsid)
 
-        def add_tracked_change_attrs(elem):
+        def add_tracked_change_attrs(elem) -> None:
             # Auto-assign w:id if not present
             if not elem.hasAttribute("w:id"):
                 elem.setAttribute("w:id", str(self._get_next_change_id()))
@@ -216,7 +217,7 @@ class DocxXMLEditor(XMLEditor):
                 self._ensure_w16du_namespace()
                 elem.setAttribute("w16du:dateUtc", timestamp)
 
-        def add_comment_attrs(elem):
+        def add_comment_attrs(elem) -> None:
             if not elem.hasAttribute("w:author"):
                 elem.setAttribute("w:author", self.author)
             if not elem.hasAttribute("w:date"):
@@ -224,13 +225,13 @@ class DocxXMLEditor(XMLEditor):
             if not elem.hasAttribute("w:initials"):
                 elem.setAttribute("w:initials", self.initials)
 
-        def add_comment_extensible_date(elem):
+        def add_comment_extensible_date(elem) -> None:
             # Add w16cex:dateUtc for comment extensible elements
             if not elem.hasAttribute("w16cex:dateUtc"):
                 self._ensure_w16cex_namespace()
                 elem.setAttribute("w16cex:dateUtc", timestamp)
 
-        def add_xml_space_to_t(elem):
+        def add_xml_space_to_t(elem) -> None:
             # Add xml:space="preserve" to w:t if text has leading/trailing whitespace
             if (
                 elem.firstChild
@@ -321,6 +322,7 @@ class DocxXMLEditor(XMLEditor):
             # Reject all insertions in a paragraph
             para = doc["word/document.xml"].get_node(tag="w:p", line_number=42)
             doc["word/document.xml"].revert_insertion(para)
+
         """
         # Collect insertions
         ins_elements = []
@@ -400,6 +402,7 @@ class DocxXMLEditor(XMLEditor):
             # Reject all deletions in a paragraph - returns [para]
             para = doc["word/document.xml"].get_node(tag="w:p", line_number=42)
             nodes = doc["word/document.xml"].revert_deletion(para)
+
         """
         # Collect deletions FIRST - before we modify the DOM
         del_elements = []
@@ -464,8 +467,7 @@ class DocxXMLEditor(XMLEditor):
         # Return based on input type
         if is_single_del and created_insertion:
             return [elem, created_insertion]
-        else:
-            return [elem]
+        return [elem]
 
     @staticmethod
     def suggest_paragraph(xml_content: str) -> str:
@@ -478,6 +480,7 @@ class DocxXMLEditor(XMLEditor):
 
         Returns:
             str: Transformed XML with tracked change wrapping
+
         """
         wrapper = f'<root xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">{xml_content}</root>'
         doc = minidom.parseString(wrapper)
@@ -531,6 +534,7 @@ class DocxXMLEditor(XMLEditor):
 
         Raises:
             ValueError: If element has existing tracked changes or invalid structure
+
         """
         if elem.nodeName == "w:r":
             # Check for existing w:delText
@@ -568,7 +572,7 @@ class DocxXMLEditor(XMLEditor):
 
             return del_wrapper
 
-        elif elem.nodeName == "w:p":
+        if elem.nodeName == "w:p":
             # Check for existing tracked changes
             if elem.getElementsByTagName("w:ins") or elem.getElementsByTagName("w:del"):
                 raise ValueError("w:p element already contains tracked changes")
@@ -626,8 +630,7 @@ class DocxXMLEditor(XMLEditor):
 
             return elem
 
-        else:
-            raise ValueError(f"Element must be w:r or w:p, got {elem.nodeName}")
+        raise ValueError(f"Element must be w:r or w:p, got {elem.nodeName}")
 
 
 def _generate_hex_id() -> str:
@@ -656,9 +659,8 @@ class Document:
         track_revisions=False,
         author="Z.AI",
         initials="C",
-    ):
-        """
-        Initialize with path to unpacked Word document directory.
+    ) -> None:
+        """Initialize with path to unpacked Word document directory.
         Automatically sets up comment infrastructure (people.xml, RSIDs).
 
         Args:
@@ -667,6 +669,7 @@ class Document:
             track_revisions: If True, enables track revisions in settings.xml (default: False)
             author: Default author name for comments (default: "Z.AI")
             initials: Default author initials for comments (default: "C")
+
         """
         self.original_path = Path(unpacked_dir)
 
@@ -715,8 +718,7 @@ class Document:
         self._add_author_to_people(author)
 
     def __getitem__(self, xml_path: str) -> DocxXMLEditor:
-        """
-        Get or create a DocxXMLEditor for the specified XML file.
+        """Get or create a DocxXMLEditor for the specified XML file.
 
         Enables lazy-loaded editors with bracket notation:
             node = doc["word/document.xml"].get_node(tag="w:p", line_number=42)
@@ -736,6 +738,7 @@ class Document:
 
             # Get node from comments.xml
             comment = doc["word/comments.xml"].get_node(tag="w:comment", attrs={"w:id": "0"})
+
         """
         if xml_path not in self._editors:
             file_path = self.unpacked_path / xml_path
@@ -748,8 +751,7 @@ class Document:
         return self._editors[xml_path]
 
     def add_comment(self, start, end, text: str) -> int:
-        """
-        Add a comment spanning from one element to another.
+        """Add a comment spanning from one element to another.
 
         Args:
             start: DOM element for the starting point
@@ -763,11 +765,12 @@ class Document:
             start_node = cm.get_document_node(tag="w:del", id="1")
             end_node = cm.get_document_node(tag="w:ins", id="2")
             cm.add_comment(start=start_node, end=end_node, text="Explanation")
+
         """
         comment_id = self.next_comment_id
         para_id = _generate_hex_id()
         durable_id = _generate_hex_id()
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # Add comment ranges to document.xml immediately
         self._document.insert_before(start, self._comment_range_start_xml(comment_id))
@@ -804,8 +807,7 @@ class Document:
         parent_comment_id: int,
         text: str,
     ) -> int:
-        """
-        Add a reply to an existing comment.
+        """Add a reply to an existing comment.
 
         Args:
             parent_comment_id: The w:id of the parent comment to reply to
@@ -816,6 +818,7 @@ class Document:
 
         Example:
             cm.reply_to_comment(parent_comment_id=0, text="I agree with this change")
+
         """
         if parent_comment_id not in self.existing_comments:
             raise ValueError(f"Parent comment with id={parent_comment_id} not found")
@@ -824,7 +827,7 @@ class Document:
         comment_id = self.next_comment_id
         para_id = _generate_hex_id()
         durable_id = _generate_hex_id()
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # Add comment ranges to document.xml immediately
         parent_start_elem = self._document.get_node(
@@ -867,14 +870,13 @@ class Document:
         self.next_comment_id += 1
         return comment_id
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Clean up temporary directory on deletion."""
         if hasattr(self, "temp_dir") and Path(self.temp_dir).exists():
             shutil.rmtree(self.temp_dir)
 
     def validate(self) -> None:
-        """
-        Validate the document (lightweight check).
+        """Validate the document (lightweight check).
 
         Currently performs basic structural checks. XSD schema validation and
         redlining validation have been removed. Use save(validate=False) to
@@ -886,14 +888,14 @@ class Document:
             raise ValueError("Validation failed: word/document.xml not found")
 
     def save(self, destination=None, validate=True) -> None:
-        """
-        Save all modified XML files to disk and copy to destination directory.
+        """Save all modified XML files to disk and copy to destination directory.
 
         This persists all changes made via add_comment() and reply_to_comment().
 
         Args:
             destination: Optional path to save to. If None, saves back to original directory.
             validate: If True, validates document before saving (default: True).
+
         """
         # Only ensure comment relationships and content types if comment files exist
         if self.comments_path.exists():
@@ -924,10 +926,8 @@ class Document:
         for comment_elem in editor.dom.getElementsByTagName("w:comment"):
             comment_id = comment_elem.getAttribute("w:id")
             if comment_id:
-                try:
+                with contextlib.suppress(ValueError):
                     max_id = max(max_id, int(comment_id))
-                except ValueError:
-                    pass
         return max_id + 1
 
     def _load_existing_comments(self):
@@ -959,11 +959,12 @@ class Document:
 
     # ==================== Private: Setup Methods ====================
 
-    def _setup_tracking(self, track_revisions=False):
+    def _setup_tracking(self, track_revisions=False) -> None:
         """Set up comment infrastructure in unpacked directory.
 
         Args:
             track_revisions: If True, enables track revisions in settings.xml
+
         """
         # Create or update word/people.xml
         people_file = self.word_path / "people.xml"
@@ -980,13 +981,13 @@ class Document:
             self.word_path / "settings.xml", track_revisions=track_revisions
         )
 
-    def _update_people_xml(self, path):
+    def _update_people_xml(self, path) -> None:
         """Create people.xml if it doesn't exist."""
         if not path.exists():
             # Copy from template
             shutil.copy(TEMPLATE_DIR / "people.xml", path)
 
-    def _add_content_type_for_people(self, path):
+    def _add_content_type_for_people(self, path) -> None:
         """Add people.xml content type to [Content_Types].xml if not already present."""
         editor = self["[Content_Types].xml"]
 
@@ -998,7 +999,7 @@ class Document:
         override_xml = '<Override PartName="/word/people.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.people+xml"/>'
         editor.append_to(root, override_xml)
 
-    def _add_relationship_for_people(self, path):
+    def _add_relationship_for_people(self, path) -> None:
         """Add people.xml relationship to document.xml.rels if not already present."""
         editor = self["word/_rels/document.xml.rels"]
 
@@ -1014,7 +1015,7 @@ class Document:
         rel_xml = f'<{prefix}Relationship Id="{next_rid}" Type="http://schemas.microsoft.com/office/2011/relationships/people" Target="people.xml"/>'
         editor.append_to(root, rel_xml)
 
-    def _update_settings(self, path, track_revisions=False, update_fields=True):
+    def _update_settings(self, path, track_revisions=False, update_fields=True) -> None:
         """Add RSID and optionally enable track revisions and update fields in settings.xml.
 
         Args:
@@ -1026,6 +1027,7 @@ class Document:
         - trackRevisions: early (before defaultTabStop)
         - updateFields: early (before defaultTabStop)
         - rsids: late (after compat)
+
         """
         editor = self["word/settings.xml"]
         root = editor.get_node(tag="w:settings")
@@ -1122,7 +1124,7 @@ class Document:
 
     def _add_to_comments_xml(
         self, comment_id, para_id, text, author, initials, timestamp
-    ):
+    ) -> None:
         """Add a single comment to comments.xml."""
         if not self.comments_path.exists():
             shutil.copy(TEMPLATE_DIR / "comments.xml", self.comments_path)
@@ -1143,7 +1145,7 @@ class Document:
 </w:comment>'''
         editor.append_to(root, comment_xml)
 
-    def _add_to_comments_extended_xml(self, para_id, parent_para_id):
+    def _add_to_comments_extended_xml(self, para_id, parent_para_id) -> None:
         """Add a single comment to commentsExtended.xml."""
         if not self.comments_extended_path.exists():
             shutil.copy(
@@ -1159,7 +1161,7 @@ class Document:
             xml = f'<w15:commentEx w15:paraId="{para_id}" w15:done="0"/>'
         editor.append_to(root, xml)
 
-    def _add_to_comments_ids_xml(self, para_id, durable_id):
+    def _add_to_comments_ids_xml(self, para_id, durable_id) -> None:
         """Add a single comment to commentsIds.xml."""
         if not self.comments_ids_path.exists():
             shutil.copy(TEMPLATE_DIR / "commentsIds.xml", self.comments_ids_path)
@@ -1170,7 +1172,7 @@ class Document:
         xml = f'<w16cid:commentId w16cid:paraId="{para_id}" w16cid:durableId="{durable_id}"/>'
         editor.append_to(root, xml)
 
-    def _add_to_comments_extensible_xml(self, durable_id):
+    def _add_to_comments_extensible_xml(self, durable_id) -> None:
         """Add a single comment to commentsExtensible.xml."""
         if not self.comments_extensible_path.exists():
             shutil.copy(
@@ -1185,11 +1187,11 @@ class Document:
 
     # ==================== Private: XML Fragments ====================
 
-    def _comment_range_start_xml(self, comment_id):
+    def _comment_range_start_xml(self, comment_id) -> str:
         """Generate XML for comment range start."""
         return f'<w:commentRangeStart w:id="{comment_id}"/>'
 
-    def _comment_range_end_xml(self, comment_id):
+    def _comment_range_end_xml(self, comment_id) -> str:
         """Generate XML for comment range end with reference run.
 
         Note: w:rsidR is automatically added by DocxXMLEditor.
@@ -1200,7 +1202,7 @@ class Document:
   <w:commentReference w:id="{comment_id}"/>
 </w:r>'''
 
-    def _comment_ref_run_xml(self, comment_id):
+    def _comment_ref_run_xml(self, comment_id) -> str:
         """Generate XML for comment reference run.
 
         Note: w:rsidR is automatically added by DocxXMLEditor.
@@ -1212,28 +1214,28 @@ class Document:
 
     # ==================== Private: Metadata Updates ====================
 
-    def _has_relationship(self, editor, target):
+    def _has_relationship(self, editor, target) -> bool:
         """Check if a relationship with given target exists."""
         for rel_elem in editor.dom.getElementsByTagName("Relationship"):
             if rel_elem.getAttribute("Target") == target:
                 return True
         return False
 
-    def _has_override(self, editor, part_name):
+    def _has_override(self, editor, part_name) -> bool:
         """Check if an override with given part name exists."""
         for override_elem in editor.dom.getElementsByTagName("Override"):
             if override_elem.getAttribute("PartName") == part_name:
                 return True
         return False
 
-    def _has_author(self, editor, author):
+    def _has_author(self, editor, author) -> bool:
         """Check if an author already exists in people.xml."""
         for person_elem in editor.dom.getElementsByTagName("w15:person"):
             if person_elem.getAttribute("w15:author") == author:
                 return True
         return False
 
-    def _add_author_to_people(self, author):
+    def _add_author_to_people(self, author) -> None:
         """Add author to people.xml (called during initialization)."""
         people_path = self.word_path / "people.xml"
 
@@ -1255,7 +1257,7 @@ class Document:
 </w15:person>'''
         editor.append_to(root, person_xml)
 
-    def _ensure_comment_relationships(self):
+    def _ensure_comment_relationships(self) -> None:
         """Ensure word/_rels/document.xml.rels has comment relationships."""
         editor = self["word/_rels/document.xml.rels"]
 
@@ -1295,7 +1297,7 @@ class Document:
             rel_xml = f'<{prefix}Relationship Id="rId{rel_id}" Type="{rel_type}" Target="{target}"/>'
             editor.append_to(root, rel_xml)
 
-    def _ensure_comment_content_types(self):
+    def _ensure_comment_content_types(self) -> None:
         """Ensure [Content_Types].xml has comment content types."""
         editor = self["[Content_Types].xml"]
 
