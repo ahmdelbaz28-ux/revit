@@ -151,7 +151,9 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
     "ignore::UserWarning",
-    "ignore::FutureWarning"
+    "ignore::FutureWarning",
+    "ignore::ImportWarning",
+    "ignore::PendingDeprecationWarning"
 ]
 norecursedirs = [".git", "__pycache__", "venv", "env", "revit-main", "facp_distributed"]
 python_files = ["test_*.py", "*_test.py"]
