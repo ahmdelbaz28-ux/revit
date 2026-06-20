@@ -174,11 +174,11 @@ jobs:
     needs: ml-test-suite
     strategy:
       matrix:
-        library:
-          - "xgboost"
-          - "lifelines"
-          - "shap"
-          - "scikit-learn"
+        include:
+          - { pip_name: "xgboost",      import_name: "xgboost" }
+          - { pip_name: "lifelines",    import_name: "lifelines" }
+          - { pip_name: "shap",         import_name: "shap" }
+          - { pip_name: "scikit-learn", import_name: "sklearn" }
 
     steps:
       - uses: actions/checkout@v4
@@ -189,14 +189,14 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Install ${{ matrix.library }} latest
+      - name: Install ${{ matrix.pip_name }} latest
         run: |
           python -m pip install --upgrade pip
-          pip install ${{ matrix.library }}
+          pip install ${{ matrix.pip_name }}
 
       - name: Verify import + version
         run: |
-          python -c "import ${{ matrix.library }}; print('${{ matrix.library }}:', ${{ matrix.library }}.__version__)"
+          python -c "import ${{ matrix.import_name }}; print('${{ matrix.pip_name }}:', ${{ matrix.import_name }}.__version__)"
 
   # ── Gate 4: Frontend ML Page Build ─────────────────────────────────────────
   ml-frontend-build:
