@@ -40,6 +40,7 @@ __all__ = [
     "autocad",
     "revit",
     "digital_twin",
+    "ml",
 ]
 
 if TYPE_CHECKING:
@@ -64,6 +65,7 @@ if TYPE_CHECKING:
     from . import autocad
     from . import revit
     from . import digital_twin
+    from . import ml
 
 # Lazily import all routers in __all__ so they are present in the module namespace
 for _name in __all__:

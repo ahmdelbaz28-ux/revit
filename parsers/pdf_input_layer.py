@@ -304,7 +304,11 @@ class PDFInputLayer:
 
     def _extract_data(self, pdf_path: str, result: InputLayerResult):
         """Extract devices, rooms, metadata from PDF."""
-        import _fitz_compat as fitz  # PyMuPDF
+        # P0.3 FIX: dual-import — try repo shim first, then pymupdf directly.
+        try:
+            import _fitz_compat as fitz  # PyMuPDF (dev mode)
+        except ImportError:
+            import pymupdf as fitz  # type: ignore[no-redef]  (installed-package mode)
 
         doc = fitz.open(pdf_path)
 

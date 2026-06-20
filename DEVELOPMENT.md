@@ -38,7 +38,7 @@ FireAI is a safety-critical system where errors can have life-threatening conseq
 ### Setup
 ```bash
 # Clone the repository
-git clone https://github.com/fireai/platform.git
+git clone https://github.com/ahmdelbaz28-ux/revit.git
 cd fireai-platform
 
 # Create virtual environment

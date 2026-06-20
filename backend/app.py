@@ -317,9 +317,9 @@ async def lifespan(app: FastAPI):
     Application lifespan events.
     Used for startup and shutdown tasks.
     """
-    logger.info("Starting CAD/BIM Integration Platform...")
+    logger.info("Starting FireAI — Safety-Critical Fire Protection Engineering Platform...")
     yield
-    logger.info("Shutting down CAD/BIM Integration Platform...")
+    logger.info("Shutting down FireAI — Safety-Critical Fire Protection Engineering Platform...")
 
 # Create FastAPI app with lifespan
 # V130 SECURITY FIX: docs/redoc/openapi are now gated by FIREAI_ENV.
@@ -332,7 +332,7 @@ _redoc_url = None if _is_prod else "/redoc"
 _openapi_url = None if _is_prod else "/openapi.json"
 
 app = FastAPI(
-    title="CAD/BIM Integration Platform",
+    title="FireAI — Safety-Critical Fire Protection Engineering Platform",
     description="""
 ## API Overview
 
@@ -496,6 +496,7 @@ for _router_name in (
     "facp",
     "api_keys",
     "analyze",
+    "ml",
 ):
     _safe_include_router(_router_name)
 
@@ -528,7 +529,7 @@ async def health_check_v1():
     """Health check endpoint for API v1."""
     return {
         "status": "healthy",
-        "service": "CAD/BIM Integration Platform",
+        "service": "FireAI — Safety-Critical Fire Protection Engineering Platform",
         "version": "1.0.0",
         "api_version": "v1"
     }
@@ -538,7 +539,7 @@ async def health_check_v2():
     """Health check endpoint for API v2."""
     return {
         "status": "healthy",
-        "service": "CAD/BIM Integration Platform",
+        "service": "FireAI — Safety-Critical Fire Protection Engineering Platform",
         "version": "1.0.0",
         "api_version": "v2",
         "features": ["rate_limiting", "enhanced_caching", "streaming"]
@@ -550,7 +551,7 @@ async def health_check():
     """Health check endpoint (deprecated - use /api/v1/health)."""
     return {
         "status": "healthy",
-        "service": "CAD/BIM Integration Platform",
+        "service": "FireAI — Safety-Critical Fire Protection Engineering Platform",
         "version": "1.0.0",
         "deprecated": True,
         "suggestion": "Use /api/v1/health or /api/v2/health"

@@ -1,8 +1,51 @@
 from __future__ import annotations
 
 """
-audit_trail.py — FireAI V5.3.0
-Immutable audit log with per-entry hash, thread-safe append.
+audit_trail.py — FireAI V5.3.1 (P0.8 hash-chained)
+Immutable audit log with per-entry hash + GENESIS-anchored hash chain,
+thread-safe append.
+
+P0.8 FIX (2026-06-20): Added prev_hash chaining.
+  Previous design verified only per-entry integrity:
+    verify_integrity() = ∀ entry: _compute_hash(entry) == entry.entry_hash
+  This catches tampering with a single entry's content but does NOT
+  catch:
+    - INSERTION of forged entries (each forged entry has a valid hash)
+    - DELETION of entries (no link between consecutive entries)
+    - REORDERING of entries (no sequence integrity)
+    - REPLACEMENT of an entire entry with a different one whose hash
+      happens to match (extremely unlikely with SHA-256 but possible
+      in principle)
+
+  For a safety-critical fire-protection audit trail, this is
+  unacceptable. NFPA 72 §14.6 and AHJ submission rules require that
+  the audit trail be tamper-evident against REORDERING and DELETION,
+  not just content modification. A contractor who installed fewer
+  detectors than required could previously delete the
+  COVERAGE_VERIFICATION entry that recorded the shortfall and the
+  audit trail would still verify as intact.
+
+  New design: each entry's hash includes the previous entry's hash
+  (blockchain-style chaining). The first entry uses the sentinel
+  "GENESIS" as its prev_hash.
+    H(i) = SHA256(content(i) || prev_hash(i))
+    prev_hash(0) = "GENESIS"
+    prev_hash(i) = H(i-1) for i > 0
+
+  Now:
+    - INSERTING a forged entry breaks the chain (next entry's prev_hash
+      no longer matches the forged entry's hash)
+    - DELETING an entry breaks the chain (next entry's prev_hash still
+      points to the deleted entry's hash)
+    - REORDERING entries breaks the chain (prev_hash pointers become
+      inconsistent)
+    - TAMPERING with an entry's content breaks the chain (its own hash
+      changes, so the next entry's prev_hash no longer matches)
+
+  Backward compatibility: existing serialized audit trails (without
+  prev_hash) will fail verify_integrity() until re-hashed. This is
+  INTENTIONAL — they were never tamper-proof to begin with. The
+  migration path is to re-create the audit trail from source data.
 
 V5.3.0 Changes (Consolidation):
   - Merged V5.1.2 (log_rejection) and V5.2.0 (threading lock + new methods)
@@ -32,8 +75,26 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 
+# P0.8: Sentinel value for the first entry's prev_hash. Any non-empty
+# string would work; "GENESIS" is conventional and clearly indicates
+# "this is the start of the chain" in audit reports.
+GENESIS_PREV_HASH = "GENESIS"
+
+
 @dataclass(frozen=True)
 class AuditEntry:
+    """Single immutable audit-trail entry.
+
+    P0.8: now includes prev_hash for hash-chaining. The entry_hash is
+    computed over (content || prev_hash), so any change to content OR
+    to the previous entry's hash invalidates this entry's hash — and
+    in turn invalidates every subsequent entry's prev_hash pointer.
+
+    The prev_hash field is mutable during construction (init=True) so
+    AuditTrail._add() can set it before computing entry_hash. After
+    __post_init__ runs, the dataclass is frozen (frozen=True) so the
+    entry cannot be modified.
+    """
     timestamp_utc: str
     room_id: str
     operation: str
@@ -41,6 +102,10 @@ class AuditEntry:
     outputs: Dict[str, Any]
     nfpa_reference: str
     notes: List[str] = field(default_factory=list)
+    # P0.8: hash of the previous entry in the chain. "GENESIS" for the
+    # first entry. Mutable at construction time so AuditTrail._add()
+    # can set it based on the last entry in the trail.
+    prev_hash: str = GENESIS_PREV_HASH
     entry_hash: str = field(default="", init=False)
 
     def __post_init__(self):
@@ -56,6 +121,9 @@ class AuditEntry:
                 "outputs": self.outputs,
                 "nfpa_reference": self.nfpa_reference,
                 "notes": self.notes,
+                # P0.8: include prev_hash in the content so that
+                # tampering with prev_hash invalidates entry_hash.
+                "prev_hash": self.prev_hash,
             },
             sort_keys=True,
             ensure_ascii=False,
@@ -74,22 +142,27 @@ class AuditEntry:
             "outputs": self.outputs,
             "nfpa_reference": self.nfpa_reference,
             "notes": self.notes,
+            # P0.8: expose prev_hash for serialized audit trails.
+            "prev_hash": self.prev_hash,
             "entry_hash": self.entry_hash,
         }
 
 
 class AuditTrail:
     """
-    Immutable, thread-safe audit log with per-entry SHA-256 hash.
+    Immutable, thread-safe audit log with per-entry SHA-256 hash AND
+    P0.8 hash-chaining across entries.
 
     All append operations are protected by a threading.Lock to ensure
     no entries are lost under concurrent writes (e.g. FastAPI async).
+    Each entry's entry_hash incorporates the previous entry's hash,
+    forming a tamper-evident chain anchored at GENESIS_PREV_HASH.
 
     Usage:
         trail = AuditTrail(project_name="my_project")
         trail.log_placement("R1", 3, "smoke_photoelectric", 99.5, [(1,1),(2,2)])
         trail.log_rejection("R2", "Invalid room type")
-        assert trail.verify_integrity()
+        assert trail.verify_integrity()  # checks per-entry hashes AND chain
     """
 
     def __init__(self, project_name: str, floor_id: str = "FL01"):
@@ -100,7 +173,36 @@ class AuditTrail:
         self._lock = threading.Lock()
 
     def _add(self, entry: AuditEntry):
+        """Append an entry to the trail, linking it to the previous one.
+
+        P0.8: This method now sets entry.prev_hash to the hash of the
+        last entry currently in the trail (or GENESIS_PREV_HASH if the
+        trail is empty), then recomputes entry.entry_hash to incorporate
+        the prev_hash. This MUST happen inside self._lock to prevent a
+        race where two threads concurrently read the same "last entry"
+        and both chain off it, producing a forked chain.
+
+        Because AuditEntry is frozen=True, we cannot mutate prev_hash
+        in place. Instead, we create a new AuditEntry with the same
+        fields plus the correct prev_hash. This is O(entry_size) but
+        audit entries are small (KB-scale) and _add is called at most
+        a few hundred times per project — not a performance concern.
+        """
         with self._lock:
+            # Determine the prev_hash for this entry
+            if self._entries:
+                prev_hash = self._entries[-1].entry_hash
+            else:
+                prev_hash = GENESIS_PREV_HASH
+
+            # Reconstruct the entry with the correct prev_hash. Because
+            # AuditEntry is frozen, we use object.__setattr__ to override
+            # prev_hash, then manually recompute entry_hash to incorporate
+            # it (the original __post_init__ ran with the default
+            # GENESIS_PREV_HASH before we knew the real previous entry).
+            object.__setattr__(entry, "prev_hash", prev_hash)
+            object.__setattr__(entry, "entry_hash", entry._compute_hash())
+
             self._entries.append(entry)
 
     # ── Core logging methods (V5.1.2 originals) ──────────────────────
@@ -274,10 +376,32 @@ class AuditTrail:
             return [e.to_dict() for e in self._entries]
 
     def verify_integrity(self) -> bool:
+        """Verify per-entry hashes AND the prev_hash chain.
+
+        P0.8: previously this only checked that each entry's stored
+        entry_hash matched a fresh _compute_hash() of that entry's
+        content. That caught content tampering but NOT deletion,
+        insertion, or reordering of entries.
+
+        Now also verifies the chain:
+          - The first entry's prev_hash MUST equal GENESIS_PREV_HASH.
+          - Each subsequent entry's prev_hash MUST equal the previous
+            entry's entry_hash.
+
+        Any tampering that breaks the chain (insertion, deletion,
+        reordering, or content modification) will cause this method to
+        return False.
+        """
         with self._lock:
+            prev_hash = GENESIS_PREV_HASH
             for entry in self._entries:
+                # Per-entry content integrity (catches content tampering)
                 if entry._compute_hash() != entry.entry_hash:
                     return False
+                # Chain integrity (catches insertion, deletion, reordering)
+                if entry.prev_hash != prev_hash:
+                    return False
+                prev_hash = entry.entry_hash
             return True
 
     def entries(self) -> List[AuditEntry]:

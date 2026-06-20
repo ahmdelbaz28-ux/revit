@@ -507,7 +507,13 @@ class StreamingParser:
     async def parse_pdf_stream(self, path: Path) -> AsyncIterator[List[NDArray[np.float64]]]:
         """Stream PDF page-by-page → yield wall arrays."""
         try:
-            import _fitz_compat as fitz
+            # P0.3 FIX: try repo-local shim first (dev mode), then pymupdf
+            # directly (installed-package mode where _fitz_compat.py at repo
+            # root is not on sys.path). Both expose the same `fitz.open()` API.
+            try:
+                import _fitz_compat as fitz
+            except ImportError:
+                import pymupdf as fitz  # type: ignore[no-redef]
         except ImportError:
             logger.error("PyMuPDF not installed")
             return
@@ -532,7 +538,11 @@ class StreamingParser:
         # in workflow_service.py — deprecated since Python 3.10.
         loop = asyncio.get_running_loop()
         try:
-            import _fitz_compat as fitz
+            # P0.3 FIX: same dual-import pattern as above (line 510).
+            try:
+                import _fitz_compat as fitz
+            except ImportError:
+                import pymupdf as fitz  # type: ignore[no-redef]
 
             doc = fitz.open(str(path))
             n_pages = len(doc)

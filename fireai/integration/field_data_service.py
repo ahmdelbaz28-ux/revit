@@ -15,7 +15,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -259,7 +259,12 @@ class FieldDataService:
 
     def sync_asset(
         self,
-        asset: "AssetData",  # noqa: F821
+        # P1.1 FIX: AssetData type was previously imported from the deleted
+        # fireai.analytics.predictive_maintenance module (577 lines of
+        # dead code with math errors, removed per operator decision).
+        # sync_asset only uses asset.asset_id, so accept Any type.
+        # Callers should pass any object with an `asset_id: str` attribute.
+        asset: Any,
         remote_version: Optional[int] = None,
     ) -> SyncResult:
         asset_id = asset.asset_id
@@ -418,15 +423,9 @@ if __name__ == "__main__":
     )
     print(f"Field updates: {len(updates)}")
 
-    from fireai.analytics.predictive_maintenance import (
-        AssetData,
-        AssetType,
-    )
-
-    asset = AssetData(
-        asset_id="DET-SMK-201",
-        asset_type=AssetType.DETECTOR_SMOKE,
-        installation_date=datetime(2019, 1, 1, tzinfo=timezone.utc),
-    )
-    sync = service.sync_asset(asset)
-    print(f"Sync OK: {sync.synced}, conflict: {sync.conflict}")
+    # P1.1 FIX: previously demonstrated sync_asset with an AssetData
+    # object imported from the now-deleted fireai.analytics.predictive_maintenance
+    # module. Removed — the demo was non-production code and the module
+    # was deleted per operator decision (577 lines of dead code with
+    # math errors). sync_asset now accepts any object with an asset_id
+    # attribute.

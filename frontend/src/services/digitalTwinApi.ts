@@ -487,6 +487,32 @@ class ApiClient {
   }
 
   // ============================================================================
+  // DIGITAL TWIN CONVERSION ENDPOINTS (P1.4 FIX)
+  // Backend: backend/routers/digital_twin.py
+  //   POST /digital-twin/convert    — bidirectional CAD/BIM conversion
+  //   GET  /digital-twin/history    — conversion history
+  //   POST /digital-twin/rollback/{version_id} — rollback to previous version
+  // ============================================================================
+
+  async convert(input: ConvertInput): Promise<ApiResponse<ConversionResult>> {
+    // Backend ConvertRequest uses snake_case fields.
+    return this.post<ConversionResult>('/digital-twin/convert', {
+      source_filepath: input.sourceFile,
+      target_filepath: input.targetFile,
+      conversion_type: input.conversionType,
+      template_path: input.templatePath,
+    });
+  }
+
+  async getConversionHistory(): Promise<ApiResponse<ConversionHistoryEntry[]>> {
+    return this.get<ConversionHistoryEntry[]>('/digital-twin/history');
+  }
+
+  async rollbackConversion(versionId: string): Promise<ApiResponse<void>> {
+    return this.post<void>('/digital-twin/rollback/' + encodeURIComponent(versionId));
+  }
+
+  // ============================================================================
   // EXPORT ENDPOINTS
   // ============================================================================
 
@@ -704,67 +730,42 @@ export interface HealthStatus {
 }
 
 // ============================================================================
+// DIGITAL TWIN CONVERSION TYPES (P1.4 FIX)
+// Backend: backend/routers/digital_twin.py + backend/services/digital_twin_service.py
+// ============================================================================
+
+export interface ConvertInput {
+  sourceFile: string;
+  targetFile: string;
+  conversionType: 'autocad_to_revit' | 'revit_to_autocad';
+  templatePath?: string;
+}
+
+export interface ConversionResult {
+  success: boolean;
+  source_file: string;
+  target_file: string;
+  elements_converted: number;
+  duration_seconds?: number | null;
+  errors: string[];
+  warnings: string[];
+  timestamp?: string;
+}
+
+export interface ConversionHistoryEntry {
+  version_id: string;
+  timestamp: string;
+  source_file: string;
+  target_file: string;
+  conversion_type: 'autocad_to_revit' | 'revit_to_autocad';
+  elements_count: number;
+  status: 'success' | 'failed' | 'rolled_back';
+}
+
+// ============================================================================
 // EXPORTED INSTANCE
 // ============================================================================
 
 export const api = new ApiClient();
 export default api;
 
-// Add CSRF token handling to API requests
-let csrfToken: string | null = null;
-
-// Function to get CSRF token from meta tag or other source
-function getCsrfToken(): string | null {
-  if (csrfToken) return csrfToken;
-  
-  // Try to get from meta tag
-  const tokenMeta = document.querySelector('meta[name="csrf-token"]');
-  if (tokenMeta) {
-    csrfToken = tokenMeta.getAttribute('content');
-    return csrfToken;
-  }
-  
-  // If not found, return null
-  return null;
-}
-
-// Update the API request functions to include CSRF token
-async function apiRequest<T>(
-  url: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> {
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-API-Key': getApiKey(),
-    ...options.headers,
-  };
-
-  // Add CSRF token for state-changing requests
-  const method = options.method || 'GET';
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-    const token = getCsrfToken();
-    if (token) {
-      headers['X-CSRF-Token'] = token;
-    }
-  }
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    const data = await response.json();
-    return {
-      success: response.ok,
-      data: response.ok ? data.data || data : null,
-      error: response.ok ? null : data.error || 'Unknown error',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      data: null,
-      error: error instanceof Error ? error.message : 'Network error',
-    };
-  }
-}

@@ -36,26 +36,19 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+// P1.4 FIX: use real API instead of setTimeout + Math.random mock.
+import { api } from '@/services/digitalTwinApi';
+import type {
+  ConversionResult,
+  ConversionHistoryEntry,
+} from '@/services/digitalTwinApi';
 
-interface ConversionResult {
-  success: boolean;
-  source_file: string;
-  target_file: string;
-  elements_converted: number;
-  errors: string[];
-  warnings: string[];
-  duration_seconds: number;
-  timestamp: string;
-}
-
-interface VersionInfo {
-  version_id: string;
-  timestamp: string;
-  source_file: string;
-  target_file: string;
-  conversion_type: 'autocad_to_revit' | 'revit_to_autocad';
-  elements_count: number;
-  status: 'success' | 'partial' | 'failed';
+// P1.4: VersionInfo is the UI-side type (allows 'partial' status that
+// the backend may return for partial conversions). The API client's
+// ConversionHistoryEntry is the wire type; we use Omit to override
+// the status field rather than extends (extends requires compatible types).
+interface VersionInfo extends Omit<ConversionHistoryEntry, 'status'> {
+  status: 'success' | 'partial' | 'failed' | 'rolled_back';
 }
 
 export function DigitalTwinPage() {
@@ -117,26 +110,32 @@ export function DigitalTwinPage() {
     setConversionResult(null);
 
     try {
-      // TODO: Implement actual API call to backend conversion service
-      // For now, simulate conversion
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // P1.4 FIX: was setTimeout(3000) + Math.random() — pure mock that
+      // returned a fake ConversionResult with random element count. Now
+      // calls the real backend conversion endpoint.
+      const targetFile = conversionType === 'autocad_to_revit' ? 'output.rvt' : 'output.dwg';
+      const response = await api.convert({
+        sourceFile: selectedFile.name,
+        targetFile,
+        conversionType,
+      });
 
-      const result: ConversionResult = {
-        success: true,
-        source_file: selectedFile.name,
-        target_file: conversionType === 'autocad_to_revit' ? 'output.rvt' : 'output.dwg',
-        elements_converted: Math.floor(Math.random() * 100) + 50,
-        errors: [],
-        warnings: ['Some entities were skipped due to missing layer mapping'],
-        duration_seconds: 2.5,
-        timestamp: new Date().toISOString(),
-      };
-
-      setConversionResult(result);
-      toast.success(`Conversion completed: ${result.elements_converted} elements converted`);
-      
-      // Refresh version history
-      fetchVersionHistory();
+      if (response.success && response.data) {
+        const result: ConversionResult = {
+          ...response.data,
+          timestamp: new Date().toISOString(),
+        };
+        setConversionResult(result);
+        if (result.errors.length > 0) {
+          toast.warning(`Conversion completed with ${result.errors.length} errors`);
+        } else {
+          toast.success(`Conversion completed: ${result.elements_converted} elements converted`);
+        }
+        // Refresh version history
+        fetchVersionHistory();
+      } else {
+        toast.error(response.error || 'Conversion failed');
+      }
     } catch (error) {
       toast.error(`Conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -147,24 +146,21 @@ export function DigitalTwinPage() {
   const fetchVersionHistory = async () => {
     setLoadingHistory(true);
     try {
-      // TODO: Implement actual API call
-      // const response = await api.getConversionHistory();
-      // setVersions(response);
-      
-      // Mock data for now
-      setVersions([
-        {
-          version_id: 'v1',
-          timestamp: new Date().toISOString(),
-          source_file: 'building_plan.dwg',
-          target_file: 'building_model.rvt',
-          conversion_type: 'autocad_to_revit',
-          elements_count: 85,
-          status: 'success',
-        },
-      ]);
+      // P1.4 FIX: was returning hardcoded mock data. Now calls the real
+      // backend /digital-twin/history endpoint.
+      const response = await api.getConversionHistory();
+      if (response.success && response.data) {
+        setVersions(response.data as VersionInfo[]);
+      } else {
+        // Backend returned an error response — show empty list, not mock data.
+        setVersions([]);
+        if (response.error) {
+          toast.error(`Failed to load version history: ${response.error}`);
+        }
+      }
     } catch (error) {
-      toast.error('Failed to load version history');
+      setVersions([]);
+      toast.error(`Failed to load version history: ${error instanceof Error ? error.message : 'Network error'}`);
     } finally {
       setLoadingHistory(false);
     }
@@ -172,11 +168,16 @@ export function DigitalTwinPage() {
 
   const handleRollback = async (versionId: string) => {
     try {
-      // TODO: Implement actual API call
+      // P1.4 FIX: was setTimeout(1000) + toast.success — pure mock. Now
+      // calls the real backend /digital-twin/rollback/{version_id} endpoint.
       toast.info(`Rolling back to version ${versionId}...`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Rollback completed successfully');
-      fetchVersionHistory();
+      const response = await api.rollbackConversion(versionId);
+      if (response.success) {
+        toast.success('Rollback completed successfully');
+        fetchVersionHistory();
+      } else {
+        toast.error(response.error || 'Rollback failed');
+      }
     } catch (error) {
       toast.error(`Rollback failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -341,7 +342,11 @@ export function DigitalTwinPage() {
                     </div>
                     <div>
                       <Label className="text-slate-400">Duration</Label>
-                      <p className="text-slate-200">{conversionResult.duration_seconds.toFixed(2)}s</p>
+                      <p className="text-slate-200">
+                        {conversionResult.duration_seconds != null
+                          ? `${conversionResult.duration_seconds.toFixed(2)}s`
+                          : 'N/A'}
+                      </p>
                     </div>
                   </div>
 

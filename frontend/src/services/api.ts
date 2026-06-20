@@ -22,7 +22,8 @@ const API_BASE = '/api/v1';
 /**
  * C-1 FIX: Get API key from environment or runtime config.
  * In production, the backend requires X-API-Key for all mutating requests.
- * The key is read from: VITE_FIREAI_API_KEY env var > localStorage settings > prompt.
+ * The key is read from: VITE_FIREAI_API_KEY env var > sessionStorage settings > prompt.
+ * (P1.6: unified to sessionStorage across dataService, mlApi, digitalTwinApi, api.ts)
  */
 function getApiKey(): string | null {
   // 1. Check Vite env variable (set at build time or in .env)

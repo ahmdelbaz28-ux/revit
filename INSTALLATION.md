@@ -9,7 +9,7 @@
 - 10GB available disk space
 
 ### Python Environment
-- **Python 3.8 or higher** (now compatible with Python 3.8+)
+- **Python 3.12 or higher** (P0.10: was 3.8+ — unified to 3.12+ to match pyproject.toml)
 - pip package manager
 - virtual environment support
 
@@ -20,7 +20,7 @@
 ## Prerequisites
 
 ### Python Installation
-Ensure Python 3.8+ is installed on your system:
+Ensure Python 3.12+ is installed on your system:
 
 **Windows:**
 1. Download Python from [python.org](https://www.python.org/downloads/)
@@ -68,7 +68,7 @@ sudo dnf install git
 ```bash
 # Check Python version
 python --version
-# Should show Python 3.8 or higher
+# Should show Python 3.12 or higher
 
 # Check pip version
 pip --version
@@ -110,7 +110,21 @@ python -m pip install --upgrade pip
 ### 4. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+# P0.3: pyproject.toml is the single source of truth.
+# requirements.txt has been removed.
+pip install .
+
+# For ML subsystem (XGBoost + Cox PH + SHAP):
+pip install .[ml]
+
+# For development tooling (pytest, ruff, mypy, bandit, etc.):
+pip install .[dev]
+
+# For everything (all optional integrations + dev + docs):
+pip install .[all,dev,docs]
+
+# For reproducible installs (pinned versions):
+pip install -r requirements.lock
 ```
 
 > **Note**: If you encounter compilation issues with certain packages (especially numpy, scipy), you may need to install Microsoft C++ Build Tools on Windows or Xcode Command Line Tools on macOS.
@@ -287,7 +301,7 @@ pre-commit install
 python --version
 ```
 
-Expected: Python 3.8 or higher
+Expected: Python 3.12 or higher
 
 ### 2. Test Basic Import
 
@@ -345,7 +359,7 @@ If you encounter compilation errors during installation:
 
 **Windows:**
 - Install Microsoft C++ Build Tools
-- Or use pre-compiled wheels: `pip install --only-binary=all -r requirements.txt`
+- Or use pre-compiled wheels: `pip install --only-binary=all .`
 
 **macOS:**
 - Install Xcode Command Line Tools: `xcode-select --install`
@@ -362,7 +376,7 @@ For systems with limited RAM:
 #### 3. Permission Issues
 If you encounter permission errors:
 - Use virtual environment (recommended)
-- Use `--user` flag: `pip install --user -r requirements.txt`
+- Use `--user` flag: `pip install --user .`
 
 ### Environment Setup Verification
 

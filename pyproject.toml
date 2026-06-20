@@ -1,25 +1,22 @@
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cad-bim-integration-platform"
-dynamic = ["version"]
-description = "Complete platform for AutoCAD and Revit integration with Digital Twin capabilities"
+name = "fireai"
+version = "1.55.0"  # P0.3: static version from VERSION file (was dynamic via setuptools_scm, which fails in Docker builder without git history)
+description = "FireAI — Safety-Critical Fire Protection Engineering Platform (NFPA 72-2022)"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [{name = "FireAI Project", email = "contact@fireai.org"}]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -27,50 +24,131 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed"
 ]
-keywords = ["cad", "bim", "revit", "autocad", "digital-twin", "engineering", "integration"]
+keywords = ["fireai", "fire-alarm", "nfpa72", "bim", "revit", "autocad", "digital-twin", "engineering", "safety-critical"]
 dependencies = [
+    # ── Web framework ────────────────────────────────────────────────────
     "fastapi>=0.100.0,<1.0.0",
     "uvicorn[standard]>=0.20.0,<1.0.0",
+    "python-multipart>=0.0.6,<1.0.0",
+    "websockets>=10.0.0,<13.0.0",
+    "aiohttp>=3.9.0,<4.0.0",
+    # ── Data models / validation ─────────────────────────────────────────
     "pydantic>=2.0.0,<3.0.0",
     "pydantic-settings>=2.0.0,<3.0.0",
-    "slowapi>=0.1.9,<1.0.0",
+    # ── Database ─────────────────────────────────────────────────────────
     "sqlalchemy>=2.0.0,<3.0.0",
     "psycopg2-binary>=2.9.0,<3.0.0",
     "alembic>=1.10.0,<2.0.0",
-    "python-multipart>=0.0.6,<1.0.0",
-    "python-dotenv>=1.0.0,<2.0.0",
-    "requests>=2.28.0,<3.0.0",
+    "asyncpg>=0.27.0,<1.0.0",
+    # ── Rate limiting & security ─────────────────────────────────────────
+    "slowapi>=0.1.9,<1.0.0",
     "pyjwt[crypto]>=2.6.0,<3.0.0",
     "passlib[bcrypt]>=1.7.0,<2.0.0",
-    "cryptography>=41.0.0,<43.0.0",
-    "websockets>=10.0.0,<12.0.0",
-    "asyncpg>=0.27.0,<1.0.0",
+    "cryptography>=41.0.0,<44.0.0",
+    # ── Async task queue / cache ─────────────────────────────────────────
     "redis>=4.5.0,<5.0.0",
-    "celery>=5.2.0,<6.0.0",
     "redis[hiredis]>=4.5.0,<5.0.0",
+    "celery>=5.2.0,<6.0.0",
+    # ── Utilities ────────────────────────────────────────────────────────
+    "python-dotenv>=1.0.0,<2.0.0",
+    "requests>=2.28.0,<3.0.0",
     "python-dateutil>=2.8.0,<3.0.0",
     "pytz>=2023.0.0,<2025.0.0",
+    "tenacity>=8.2.0,<10.0.0",
+    "psutil>=5.9.0,<7.0.0",
+    "click>=8.1.0,<9.0.0",
+    # ── Scientific computing (used by NFPA 72 / spatial / coverage engines)
+    "numpy>=1.24.0,<3.0.0",
+    "scipy>=1.11.0,<2.0.0",
+    "shapely>=2.0.0,<3.0.0",
+    "pandas>=2.0.0,<3.0.0",
+    "matplotlib>=3.7.0,<4.0.0",
+    # ── CAD/BIM parsers ─────────────────────────────────────────────────
+    "ezdxf>=1.1.0,<2.0.0",
+    "lxml>=4.9.0,<6.0.0",
+    # ── PDF generation (mandatory for AHJ submittal packages) ───────────
+    "reportlab>=4.0.0,<5.0.0",
+    # ── PDF reading (mandatory for CAD/PDF drawing input) ───────────────
+    "pymupdf>=1.23.0,<2.0.0",
+    # ── Excel export (BOQ generator, submittal schedules) ───────────────
+    "openpyxl>=3.1.0,<4.0.0",
+    # ── Hypothesis testing (property-based, also used in production checks)
+    "hypothesis>=6.82.0,<7.0.0",
+    # ── Observability ───────────────────────────────────────────────────
+    "prometheus-client>=0.17.0,<1.0.0",
+    # ── Windows-only CAD integration ─────────────────────────────────────
     "pywin32>=306;platform_system=='Windows'",
     "pythonnet>=3.0.0rc1;platform_system=='Windows'",
-    "tenacity>=8.2.0,<9.0.0",
-    "hypothesis>=6.82.0,<7.0.0"
 ]
 
 [project.optional-dependencies]
+# ── ML subsystem (XGBoost + Cox PH + SHAP) — advisory-only per NFPA 72 ──
+# Install with: pip install .[ml]
+ml = [
+    "xgboost>=2.0.0,<3.0.0",
+    "lightgbm>=4.0.0,<5.0.0",
+    "scikit-learn>=1.3.0,<2.0.0",
+    "shap>=0.43.0,<1.0.0",
+    "lime>=0.2.0,<1.0.0",
+    "lifelines>=0.27.0,<1.0.0",
+    "statsmodels>=0.14.0,<1.0.0",
+    # Prophet is heavy (bundles cmdstanpy); comment if not needed.
+    # "prophet>=1.1.4,<2.0.0",
+]
+
+# ── Distributed FACP / async messaging ─────────────────────────────────
+# Install with: pip install .[distributed]
+distributed = [
+    "asyncio-mqtt>=0.10.0,<1.0.0",
+]
+
+# ── Deep learning (LSTM time-series model) — heavy, opt-in ─────────────
+# Install with: pip install .[lstm]
+lstm = [
+    "torch>=2.0.0,<3.0.0",
+]
+
+# ── Computer vision (image-based fire/flame detection) ─────────────────
+# Install with: pip install .[cv]
+cv = [
+    "opencv-python>=4.8.0,<5.0.0",
+]
+
+# ── LangGraph workflow engine (Mem0 + LangGraph integration) ───────────
+# Install with: pip install .[workflow]
+workflow = [
+    "langgraph>=0.2.0,<1.0.0",
+    "mem0ai>=0.1.0,<1.0.0",
+]
+
+# ── All optional integrations in one install ───────────────────────────
+# Install with: pip install .[all]
+all = [
+    "fireai[ml,distributed,lstm,cv,workflow]",
+]
+
+# ── Development tooling ────────────────────────────────────────────────
+# Install with: pip install .[dev]
 dev = [
-    "pytest>=7.0.0,<8.0.0",
-    "pytest-asyncio>=0.21.0,<1.0.0",
-    "pytest-cov>=4.0.0,<5.0.0",
-    "black>=23.0.0,<24.0.0",
-    "flake8>=6.0.0,<7.0.0",
+    "pytest>=7.0.0,<9.0.0",
+    "pytest-asyncio>=0.21.0,<2.0.0",
+    "pytest-cov>=4.0.0,<6.0.0",
+    "black>=23.0.0,<25.0.0",
+    "flake8>=6.0.0,<8.0.0",
     "mypy>=1.0.0,<2.0.0",
     "ruff>=0.1.0,<1.0.0",
-    "pre-commit>=3.0.0,<4.0.0",
+    "pre-commit>=3.0.0,<5.0.0",
     "bandit>=1.7.0,<2.0.0",
-    "safety>=2.0.0,<3.0.0",
+    "safety>=2.0.0,<4.0.0",
+    "pip-audit>=2.6.0,<3.0.0",
+    "pip-tools>=7.0.0,<8.0.0",
+    "locust>=2.20.0,<3.0.0",
     "types-requests>=2.28.0,<3.0.0",
     "types-python-dateutil>=2.8.0,<3.0.0",
 ]
+
+# ── Documentation ──────────────────────────────────────────────────────
+# Install with: pip install .[docs]
 docs = [
     "mkdocs>=1.4.0,<2.0.0",
     "mkdocs-material>=9.0.0,<10.0.0",
@@ -82,23 +160,67 @@ fireai-server = "fireai.cli:main"
 fireai-cli = "fireai.cli:cli_main"
 
 [project.urls]
-Homepage = "https://github.com/fireai/platform"
-Documentation = "https://fireai.org/docs"
-Repository = "https://github.com/fireai/platform.git"
-Changelog = "https://github.com/fireai/platform/blob/main/CHANGELOG.md"
-"Issue Tracker" = "https://github.com/fireai/platform/issues"
-"Twitter" = "https://twitter.com/fireai_platform"
-"LinkedIn" = "https://linkedin.com/company/fireai-platform"
+Homepage = "https://github.com/ahmdelbaz28-ux/revit"
+Documentation = "https://github.com/ahmdelbaz28-ux/revit#readme"
+Repository = "https://github.com/ahmdelbaz28-ux/revit.git"
+Changelog = "https://github.com/ahmdelbaz28-ux/revit/blob/main/CHANGELOG.md"
+"Issue Tracker" = "https://github.com/ahmdelbaz28-ux/revit/issues"
 
-[tool.setuptools_scm]
+# ────────────────────────────────────────────────────────────────────────────
+# P0.3: Setuptools package discovery — explicit include list.
+# Previously, pyproject.toml had NO [tool.setuptools.packages.find] section,
+# so `pip install .` produced an EMPTY wheel (7KB dist-info only, no .py
+# files). This silently broke every Docker image and every clean-venv
+# install. We now explicitly list the top-level packages to ship.
+# ────────────────────────────────────────────────────────────────────────────
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "fireai*",
+    "backend*",
+    "parsers*",
+    "qomn_fire*",
+    "qomn_conduit*",
+    "facp_system*",
+    "facp_distributed*",
+    "core*",
+    "adapters*",
+    "marine*",
+    "integration*",
+]
+exclude = [
+    "tests*",
+    "docs*",
+    "frontend*",
+    "deploy*",
+    "skills*",
+    "*.tests*",
+    "*.tests",
+    "todo-app*",
+    "revit_samples*",
+    "revit_data*",
+    "templates*",
+    "test_data*",
+    "cloud*",
+    "nginx*",
+    "traefik*",
+    "alembic*",
+    "qomn_conduit.tests*",
+    "qomn_fire.tests*",
+    "facp_distributed.tests*",
+]
+
+# Ship VERSION, README.md, LICENSE as package data
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt", "*.json", "*.yaml", "*.yml", "VERSION"]
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py312']
 include = '\.pyi?$'
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 warn_unused_ignores = true
@@ -151,7 +273,9 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
     "ignore::UserWarning",
-    "ignore::FutureWarning"
+    "ignore::FutureWarning",
+    "ignore::ImportWarning",
+    "ignore::PendingDeprecationWarning"
 ]
 norecursedirs = [".git", "__pycache__", "venv", "env", "revit-main", "facp_distributed"]
 python_files = ["test_*.py", "*_test.py"]
@@ -192,12 +316,12 @@ skips = ["B101", "B102"]  # Skip "assert used" and "exec used" for testing purpo
 
 [tool.ruff]
 line-length = 100
-target-version = "py38"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
     "E",     # pycodestyle errors
-    "W",     # pycodestyle warnings  
+    "W",     # pycodestyle warnings
     "F",     # pyflakes
     "I",     # isort
     "N",     # pep8-naming
@@ -227,4 +351,4 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["backend", "core", "parsers", "fireai", "skills", "qomn_conduit", "db", "tests", "facp"]
-known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", "requests", "pyjwt", "passlib", "cryptography", "websockets", "asyncpg", "redis", "celery", "python_dateutil", "pytz", "pywin32", "pythonnet", "tenacity", "hypothesis", "pytest", "black", "flake8", "mypy", "ruff", "pre_commit", "bandit", "safety", "types_requests", "types_python_dateutil", "mkdocs", "mkdocs_material", "mkdocstrings", "numpy", "scipy", "shapely"]
+known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", "requests", "pyjwt", "passlib", "cryptography", "websockets", "asyncpg", "redis", "celery", "python_dateutil", "pytz", "pywin32", "pythonnet", "tenacity", "hypothesis", "pytest", "black", "flake8", "mypy", "ruff", "pre_commit", "bandit", "safety", "types_requests", "types_python_dateutil", "mkdocs", "mkdocs_material", "mkdocstrings", "numpy", "scipy", "shapely", "pandas", "matplotlib", "ezdxf", "lxml", "aiohttp", "click", "psutil", "prometheus_client", "xgboost", "lightgbm", "sklearn", "shap", "lime", "lifelines", "statsmodels", "langgraph", "mem0ai", "cv2"]

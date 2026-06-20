@@ -74,7 +74,7 @@ curl http://localhost:8000/api/health
 
 ### Steps
 1. Pull latest code: `git pull origin main`
-2. Install dependencies: `pip install -r requirements.txt`
+2. Install dependencies: `pip install .`
 3. Build frontend: `cd frontend && npm install && npm run build`
 4. Run tests: `pytest tests/ -v`
 5. Stop service: `docker compose down` or kill uvicorn process
