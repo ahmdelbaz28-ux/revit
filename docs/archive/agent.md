@@ -13079,3 +13079,174 @@ that passed 6/9 tests.
   requirements.txt`. Generate `requirements.lock` via `pip-compile`.
 
 
+
+---
+
+## P0.3 Fix (2026-06-20) — Unify dependencies on pyproject.toml (single source of truth)
+
+### Context
+Continuation of operator-initiated Phase 0 critical-fixes cycle. P0.3 is the
+third fix. Builds on P0.1 (commit 1e813ab) + P0.2 (commit 2c6ebb0), both
+already pushed. Base commit: 14bf686.
+
+### Bug (CRITICAL — Build/Deployment)
+**Files:** pyproject.toml, setup.py, requirements.txt, requirements-ml.txt,
+requirements-optional.txt, Dockerfile, deploy/docker/Dockerfile.api,
+deploy/docker/Dockerfile.worker, plus 9 docs and 2 CI workflows.
+**Discovery:** Operator P0.3 + verified line-by-line per Rule 6/14.
+
+The project had THREE parallel dependency manifests plus a setup.py that
+conflicted with pyproject.toml. The Dockerfiles and CI workflows used
+`pip install -r requirements.txt` which silently missed 25+ packages
+that the code actually imports (numpy, scipy, shapely, ezdxf, lxml,
+pandas, matplotlib, prometheus-client, psutil, click, aiohttp, reportlab,
+pymupdf, openpyxl, hypothesis, etc.).
+
+Additionally, pyproject.toml had SIX silent defects:
+1. `name='cad-bim-integration-platform'` (identity contradiction with
+   Dockerfile label 'FireAI' and ARCHITECTURE.md 'FireAI System').
+2. `requires-python='>=3.8'` (project standard is 3.12).
+3. NO `[tool.setuptools.packages.find]` section — `pip install .`
+   produced an EMPTY 7KB wheel with dist-info only, no .py files.
+4. Line 50 had `'redisiredis]>=4.5.0,<5.0.0'` (typo, missing `[`) —
+   unparseable but pip silently ignored.
+5. `dynamic=['version']` via setuptools_scm — fails in Docker builder
+   without git history.
+6. `setup.py` with `name='facp'` conflicted with pyproject name.
+
+**Impact:** Every Docker image built from these Dockerfiles would crash
+on first import. Every clean-venv `pip install .` would produce an empty
+package. The CI pipeline's Gate 5 (dependency audit) was running
+`pip-audit -r requirements.txt` against a 13-package file, completely
+missing vulnerabilities in the other 25 packages actually in use. This is
+a life-safety risk: a misbuilt Docker image could fail mid-deployment,
+leaving a building without fire-alarm coverage.
+
+### Root-Cause Analysis (Rule 17)
+The bug was NOT a missing dependency — it was architectural divergence.
+Three manifests existed because the project grew organically: someone
+added `requirements-ml.txt` for ML, `requirements-optional.txt` for
+distributed features, but no one reconciled them with `pyproject.toml`
+(which is the modern PEP 621 canonical source).
+
+A half-solution would have been: "just add the missing packages to
+requirements.txt". Wrong — that perpetuates the divergence. The
+root-cause fix is: declare pyproject.toml as the single source of truth,
+delete the three requirements files, and update all consumers
+(Dockerfiles, CI, docs, install scripts) to use `pip install .` or
+`pip install .[ml]` / `pip install .[dev]`.
+
+### Self-Criticism Applied (Rule 21)
+My FIRST attempt at P0.3 (before this commit) had a critical flaw: I
+updated pyproject.toml but forgot `[tool.setuptools.packages.find]`. The
+operator pushed back: "انتقد نفسك وطبق التعديلات بشكل اقوي وصحيح
+واختبرها محليا اولا". I then ran `python -m pip wheel . --no-deps` and
+discovered the wheel was only 7KB with 7 files (all dist-info). The fix
+was incomplete — I had to add the packages.find section AND copy source
+code into the Docker builder stage.
+
+This is exactly what Rule 21 (Layer 1: criticize the OUTPUT) demands:
+"Is this result actually correct? Not 'looks correct' — is it VERIFIED
+correct?" The dry-run `pip install` had succeeded because it only checks
+dependency resolution, not actual package contents. Only `pip wheel .`
++ `python -m zipfile -l` revealed the empty-wheel bug.
+
+### Fix Applied
+1. **pyproject.toml** — full rewrite:
+   - `name='fireai'` (canonical identity, was 'cad-bim-integration-platform')
+   - `version='1.55.0'` static (was dynamic via setuptools_scm)
+   - `requires-python='>=3.12'` (was '>=3.8')
+   - Added `[tool.setuptools.packages.find]` with explicit include list
+     for 11 top-level packages + exclude list for tests/docs/frontend/etc.
+   - Added 13 missing core deps (numpy, scipy, shapely, pandas, matplotlib,
+     ezdxf, lxml, reportlab, pymupdf, openpyxl, aiohttp, click, psutil,
+     prometheus-client). Fixed 'redisiredis]' typo → 'redis[hiredis]'.
+   - Added 8 optional-dependencies groups: ml, distributed, lstm, cv,
+     workflow, all, dev, docs.
+   - Updated all tool configs (black, mypy, ruff) to py312 target.
+   - Updated project URLs to actual repo (https://github.com/ahmdelbaz28-ux/revit).
+
+2. **Deleted:** requirements.txt, requirements-ml.txt, requirements-optional.txt, setup.py.
+
+3. **Added:** requirements.lock (92 pinned packages via `pip-compile`).
+
+4. **Dockerfiles (3):** root Dockerfile + deploy/docker/Dockerfile.api +
+   deploy/docker/Dockerfile.worker — all rewritten to:
+   - Copy ALL source code into builder stage (was: only pyproject.toml).
+   - Use `pip install .` (was: `pip install -r requirements.txt`).
+   - P0.4 also addressed: `facp/` → `facp_system/` + `facp_distributed/`
+     (the `facp/` directory never existed in the repo — would have
+     caused `docker build` to fail).
+   - Added gcc + libpq-dev to builder for C-extension wheels.
+   - OCI-compliant labels (org.opencontainers.image.title='FireAI').
+   - Exec-form CMD (was shell-form).
+
+5. **_fitz_compat.py dual-import pattern (5 files):**
+   fireai/core/fireai_kernel_v30.py (2 sites), parsers/pdf_input_layer.py,
+   parsers/parser_confidence.py, parsers/geometry_extractor.py,
+   parsers/symbol_extractor.py.
+   Bare `import _fitz_compat as fitz` works only in dev mode. In
+   installed-package mode, the shim is not on sys.path. Fix: dual
+   try/except — try shim first, fall back to `import pymupdf as fitz`.
+
+6. **Documentation (10 files):** INSTALLATION.md, QUICKSTART.md, README.md,
+   docs/INSTALLATION.md, docs/DEPLOYMENT.md, docs/MAINTENANCE.md,
+   docs/TROUBLESHOOTING.md, docs/BACKUP_RECOVERY.md, fireai/README.md,
+   fireai/ml/README.md. All `pip install -r requirements*.txt` → `pip install .`
+   or `pip install .[ml]` / `pip install .[dev]`.
+
+7. **CI workflows (2):** .github/workflows/ml-tests.yml + deploy.yml —
+   all `pip install -r requirements*.txt` → `pip install .[ml]` or `pip install .`.
+
+8. **scripts/test_ml_subsystem.py:** Updated install hint.
+
+### Verification (Rule 10 — Test-and-Fix Loop)
+- **Wheel build:** 2.2MB / 496 files (was 7KB / 7 files before fix).
+- **`pip install .` in clean venv:** SUCCESS (was: empty package + 25 missing deps).
+- **Post-install import test:**
+    `import fireai; fireai.__version__` → `'1.0.0'`
+    `from fireai.core.nfpa72_calculations import calculate_max_spacing`
+    `calculate_max_spacing(CeilingSpec(3.0), DetectorType.SMOKE)` → `9.1`
+    `calculate_max_spacing(CeilingSpec(3.0), DetectorType.HEAT)`  → `6.1`
+  (P0.1 fix verified to work in installed-package mode.)
+- **All fitz-using modules import correctly** in both dev and installed mode.
+- **P0.1 + P0.2 regression tests:** 166/166 PASS (no regression).
+- **parsers/tests/:** 206/206 PASS (no regression from fitz import changes).
+
+### Self-Criticism Notes (Rule 21 — 4 Layers)
+**Layer 1 (Output):** Verified by wheel inspection (496 files), clean-venv
+install + import test, and 372 regression tests passing. The first
+iteration was incomplete — caught by the operator's pushback and by
+Rule 21 self-criticism.
+
+**Layer 2 (Thinking):** Did NOT fall for "dry-run pip install succeeded =
+everything works". The wheel content inspection revealed the empty-wheel
+bug that dry-run hides. This is a key lesson: dry-run checks dependency
+resolution, not package contents.
+
+**Layer 3 (Method):** The fix is root-cause, not a patch. Single source
+of truth (pyproject.toml), explicit package discovery, no setuptools_scm,
+no setup.py conflict. Future dependency changes automatically propagate
+to Dockerfiles, CI, and lock file (via `pip-compile`).
+
+**Layer 4 (Commitment):** A misbuilt Docker image in a fire-safety system
+could leave a building without alarm coverage. The pre-P0.3 state was
+exactly this risk — every Docker image was missing 25+ packages. I would
+not be able to face the families if a deployment failed silently because
+of a missing dependency.
+
+### Commit Information
+- **Commit hash:** `b45e2ff`
+- **Files changed:** 24 (modified 18, deleted 4, added 1 new + 1 lock file)
+- **Branch:** `feature/ml-predictive-maintenance-subsystem`
+- **GitHub link:** https://github.com/ahmdelbaz28-ux/revit/commit/b45e2ff
+- **Pushed:** pending (will push after this agent.md commit)
+
+### Phase Status Report (Rule 11)
+- **(a) Current status:** P0.3 COMPLETE. 3 of 10 P0 fixes done. All tests green
+  in clean venv + dev mode. P0.4 (Dockerfile fixes) partially addressed in
+  this commit (facp_system + facp_distributed copied in all 3 Dockerfiles).
+- **(b) Required to advance:** P0.4 is largely done within P0.3; verify
+  remaining Dockerfile concerns (healthcheck URL, COPY ordering). Then P0.5
+  (CI pipeline: remove `|| true`, raise `cov-fail-under=70`, success job
+  `if: success()`).
