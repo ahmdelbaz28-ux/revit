@@ -39,22 +39,49 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   const [selectedDetector, setSelectedDetector] = useState<string | null>(null);
   const [newDetectorType, setNewDetectorType] = useState<DetectorType>('smoke');
   
-  // Handle click on canvas to add new detector
+  // Handle click on canvas to add new detector.
+  // P0.7 FIX: Three bugs fixed here:
+  //   (a) Double-fire: previously this handler ran on EVERY click inside
+  //       the canvas div, including clicks on detector <g> elements (which
+  //       also trigger handleMouseDown for dragging). Clicking a detector
+  //       to drag it would ALSO spawn a new detector at the same point.
+  //       Fix: ignore the click if the click target is not the canvas
+  //       div itself (i.e., the click bubbled up from a child element
+  //       like a detector <g> or the floor-plan <img>).
+  //   (b) ID collision: Date.now() has millisecond resolution and is
+  //       predictable — two rapid clicks in the same ms produce the
+  //       same id, and a hostile script could predict future ids.
+  //       Fix: use crypto.randomUUID() (Web Crypto API, available in
+  //       all modern browsers and Node 19+). Falls back to Date.now() +
+  //       Math.random() only if crypto is unavailable (very old runtime).
+  //   (c) Coverage radius was correctly using 6.37m for smoke and 4.27m
+  //       for heat (matches NFPA 72 §17.7.4.2.3.1 R = 0.7 × S with
+  //       S = 9.1m / 6.1m respectively). Left as-is.
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
-    
+    // P0.7 FIX (a): only treat clicks that land on the canvas div ITSELF
+    // as "add new detector". Clicks on detector <g> elements, the
+    // floor-plan <img>, or any other child should NOT spawn a detector.
+    if (e.target !== canvasRef.current) return;
+
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     // Define coverage radius based on detector type
-    let coverageRadius = 6.37; // Default for smoke detector
+    let coverageRadius = 6.37; // Default for smoke detector (NFPA 72 §17.7.4.2.3.1)
     if (newDetectorType === 'heat') {
-      coverageRadius = 4.27; // Smaller for heat detector
+      coverageRadius = 4.27; // Smaller for heat detector (NFPA 72 Table 17.6.3.1.1)
     }
-    
+
+    // P0.7 FIX (b): cryptographically-strong unique ID. Date.now() can
+    // collide on rapid clicks and is predictable.
+    const newId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? `detector-${crypto.randomUUID()}`
+      : `detector-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
     const newDetector: Detector = {
-      id: `detector-${Date.now()}`,
+      id: newId,
       x,
       y,
       type: newDetectorType,
@@ -67,7 +94,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       sensitivity: 'standard',
       lastTestDate: new Date().toISOString().split('T')[0]
     };
-    
+
     onDetectorsChange([...detectors, newDetector]);
   };
 
@@ -284,21 +311,39 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           </div>
         )}
         
-        {/* Coverage circles */}
-        {detectors.map(detector => (
-          <circle
-            key={`coverage-${detector.id}`}
-            cx={detector.x}
-            cy={detector.y}
-            r={detector.coverageRadius * 10} // Scale factor for visualization
-            fill="rgba(167, 139, 250, 0.2)"
-            stroke="rgba(167, 139, 250, 0.5)"
-            strokeWidth="1"
-          />
-        ))}
-        
-        {/* Detectors */}
-        <svg className="absolute inset-0 pointer-events-none">
+        {/* P0.7 FIX: Coverage circles + detectors both rendered inside ONE
+            <svg> element. Previously, the coverage <circle>s were direct
+            children of the canvas <div>, which means the browser did NOT
+            render them — SVG primitives only render inside an <svg>
+            container. This silently dropped all coverage visualization
+            (the engineer could not see whether detectors covered the
+            entire floor area, which is the primary safety function of
+            the canvas). */}
+
+        {/* Single SVG container holds both coverage circles and detector
+            icons. The SVG itself catches NO pointer events (pointer-events:
+            none) so clicks pass through to the canvas div below for the
+            "add new detector" flow. Detector <g> elements re-enable
+            pointer events via onMouseDown handlers. */}
+        <svg
+          className="absolute inset-0 w-full h-full"
+          style={{ pointerEvents: 'none' }}
+          aria-label={t('fireAlarm.detectorCanvas', 'Detector canvas')}
+        >
+          {/* Coverage circles — drawn first so detector icons appear on top */}
+          {detectors.map(detector => (
+            <circle
+              key={`coverage-${detector.id}`}
+              cx={detector.x}
+              cy={detector.y}
+              r={detector.coverageRadius * 10} // Scale factor for visualization
+              fill="rgba(167, 139, 250, 0.2)"
+              stroke="rgba(167, 139, 250, 0.5)"
+              strokeWidth="1"
+            />
+          ))}
+
+          {/* Detectors — rendered after coverage circles so they appear on top */}
           {detectors.map(renderDetector)}
         </svg>
       </div>
