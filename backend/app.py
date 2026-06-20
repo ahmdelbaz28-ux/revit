@@ -496,6 +496,7 @@ for _router_name in (
     "facp",
     "api_keys",
     "analyze",
+    "ml",
 ):
     _safe_include_router(_router_name)
 

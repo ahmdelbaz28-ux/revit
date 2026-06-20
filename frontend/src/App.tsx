@@ -16,6 +16,7 @@ import { FireAlarmPage } from './pages/FireAlarmPage';
 import { FireAlarmDesigner } from './components/mockups/engineering/FireAlarmDesigner';
 import { DigitalTwinPage } from './pages/DigitalTwinPage';
 import { CADSettingsPage } from './pages/CADSettingsPage';
+import { PredictiveMaintenancePage } from './pages/PredictiveMaintenancePage';
 import './i18n';
 import './styles/globals.css';
 import './styles/typography.css';
@@ -64,6 +65,7 @@ function App() {
     { path: '/digital-twin', element: <DigitalTwinPage /> },
     { path: '/fire-alarm', element: <FireAlarmPage /> },
     { path: '/fire-alarm/designer', element: <FireAlarmDesigner /> },
+    { path: '/predictive-maintenance', element: <PredictiveMaintenancePage /> },
   ];
 
   return (

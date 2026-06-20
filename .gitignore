@@ -388,3 +388,5 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 .bandit/
+data/ml_models/
+*.pt

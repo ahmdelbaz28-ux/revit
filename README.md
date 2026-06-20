@@ -183,6 +183,36 @@ curl -X POST "http://localhost:8000/api/digital-twin/convert" \
   }'
 ```
 
+## ML Predictive Maintenance Subsystem (Q4 2026 Roadmap)
+
+The platform now includes an ML-based predictive maintenance subsystem that
+**complements** (does not replace) the existing statistical engine.
+
+### Key Features
+- **Ensemble prediction** combining XGBoost, Cox PH, and LSTM models
+- **SHAP explainability** for every prediction (IEC 61508 compliance)
+- **Advisory-only** outputs — NFPA 72 deterministic rules remain authoritative
+- **Cross-references** existing statistical baseline for audit
+- **Full REST API** at `/api/v1/ml/predictive-maintenance/*`
+- **React dashboard** with risk gauge, model comparison, and SHAP visualisations
+
+### Library Provenance
+ML libraries curated from
+[awesome-machine-learning](https://github.com/josephmisiti/awesome-machine-learning).
+
+### Documentation
+- See `ARCHITECTURE_ML_ADDENDUM.md` for full architectural details
+- See `fireai/ml/README.md` for module documentation
+- See `requirements-ml.txt` for ML dependencies
+
+### Quick Start
+```bash
+pip install -r requirements-ml.txt
+python scripts/train_ml_models_demo.py    # Train on synthetic data
+python scripts/test_ml_subsystem.py       # Smoke test
+pytest tests/ml/ -v                       # Full test suite
+```
+
 ## Architecture
 
 ### Service Layer

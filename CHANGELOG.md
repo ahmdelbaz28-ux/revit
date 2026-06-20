@@ -7,7 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — ML Predictive Maintenance Subsystem (Roadmap Q4 2026)
+
+Implements the Q4 2026 Roadmap item: *AI-Powered Features → Predictive
+Maintenance Scheduling*. The new `fireai/ml/` module provides ML-based
+failure prediction that **complements** (does not replace) the existing
+statistical engine in `fireai/analytics/predictive_maintenance.py`.
+
+#### New Modules
+- `fireai/ml/` — Complete ML subsystem (predictor + models + explainers)
+  - `schemas.py` — Pydantic schemas for API contracts
+  - `feature_engineering.py` — Raw asset data → ML feature vectors
+  - `predictive_maintenance.py` — MLFailurePredictor ensemble orchestrator
+  - `models/xgboost_model.py` — XGBoost classifier (tabular features)
+  - `models/lstm_model.py` — LSTM time-series forecaster (sequential events)
+  - `models/cox_model.py` — Cox PH survival model (censored time-to-event)
+  - `explainers/shap_explainer.py` — SHAP explanations (IEC 61508 compliance)
+- `backend/routers/ml.py` — FastAPI endpoints under `/api/v1/ml/*`
+- `frontend/src/pages/PredictiveMaintenancePage.tsx` — React dashboard
+- `frontend/src/services/mlApi.ts` — Typed API client (Zod schemas)
+- `frontend/src/components/predictive/` — Risk gauge, model comparison, SHAP
+- `tests/ml/` — 24 tests (unit + integration with FastAPI TestClient)
+- `requirements-ml.txt` — ML dependencies (XGBoost, lifelines, SHAP, etc.)
+- `scripts/test_ml_subsystem.py` — Smoke test
+- `scripts/train_ml_models_demo.py` — Training demo on synthetic data
+
+#### Library Provenance
+Libraries selected from the curated
+[awesome-machine-learning](https://github.com/josephmisiti/awesome-machine-learning)
+list (CC license). Selection rationale documented in
+`ARCHITECTURE_ML_ADDENDUM.md`.
+
+#### Safety Architecture
+- **ML outputs are ADVISORY ONLY** — NFPA 72 deterministic rules remain
+  authoritative for all life-safety decisions
+- Every prediction carries SHAP explanation for regulatory audit
+  (IEC 61508, NFPA 72 §14.4)
+- Advisory notice mandatory in every API response
+- Cross-references existing `fireai/analytics/predictive_maintenance.py`
+  statistical baseline
+
+#### API Endpoints
+- `GET  /api/v1/ml/predictive-maintenance/health`
+- `GET  /api/v1/ml/predictive-maintenance/models`
+- `POST /api/v1/ml/predictive-maintenance/predict`
+- `POST /api/v1/ml/predictive-maintenance/predict-batch` (≤100 assets)
+- `POST /api/v1/ml/predictive-maintenance/train` (admin only)
+
+#### Frontend
+- New sidebar entry: "Predictive Maintenance" (Activity icon)
+- Route: `/predictive-maintenance`
+- Dark theme matching existing FireAI design language
+- Risk gauge, model comparison bar chart, SHAP force plot
+- Safety advisory banner on every view
+
+#### Tests
+- 24/24 tests passing (`tests/ml/test_predictive_maintenance.py` +
+  `tests/ml/test_ml_router.py`)
+- Unit tests: schema validation, feature engineering, predictor fallback
+- Integration tests: FastAPI TestClient with API key authentication
+
 ### Added
+
 - New NFPA 72-2022 compliance checks
 - Enhanced acoustic modeling for notification appliances
 - Real-time collaboration features for design teams
