@@ -324,50 +324,34 @@ class MLFailurePredictor:
     def _compute_statistical_baseline(
         self, asset: AssetFeatures
     ) -> dict[str, Any] | None:
-        """Cross-reference with fireai/analytics/predictive_maintenance.py
-        for deterministic baseline comparison.
+        """Statistical baseline cross-reference.
+
+        P1.1 FIX (2026-06-20): The previous implementation imported
+        fireai.analytics.predictive_maintenance.PredictiveMaintenance to
+        compute a Weibull-based statistical baseline for cross-reference
+        with the ML ensemble. That module was deleted per operator
+        decision because:
+          1. It had 577 lines of code with ZERO callers in production
+             (only this ML method + a non-production demo block).
+          2. It had ZERO tests of its own.
+          3. The Weibull fitting used an incorrect method-of-moments
+             formula (shape = 1.2/CV instead of shape = pi/(sqrt(6)*CV)).
+          4. The TTF estimation multiplied MTTF by health_score, which
+             is dimensionally meaningless (time × probability).
+
+        The ML subsystem (this module) is the operator-designated
+        replacement. It does NOT need a statistical baseline cross-
+        reference because:
+          - ML outputs are advisory-only per NFPA 72 (deterministic
+            rules in fireai/core/ remain authoritative).
+          - The audit trail already captures each prediction with SHAP
+            explanations for IEC 61508 compliance.
+          - Comparing ML output to a broken statistical baseline would
+            add noise, not signal.
+
+        This method now returns None (graceful "no baseline available").
+        The MLPredictionResponse.statistical_baseline field accepts None.
+        Existing tests (test_statistical_baseline_cross_reference) verify
+        both None and dict are accepted.
         """
-        try:
-            # Import lazily to avoid circular imports
-            from fireai.analytics.predictive_maintenance import (
-                AssetData,
-                PredictiveMaintenance,
-            )
-            from fireai.analytics.predictive_maintenance import (
-                AssetType as StatAssetType,
-            )
-
-            # Map ML AssetType enum to statistical AssetType enum
-            stat_type = StatAssetType(asset.asset_type.value)
-
-            stat_asset = AssetData(
-                asset_id=asset.asset_id,
-                asset_type=stat_type,
-                installation_date=asset.installation_date,
-                manufacturer=asset.manufacturer,
-                model=asset.model,
-                location=asset.location,
-                environment_rating=asset.environment_rating,
-                design_life_years=asset.design_life_years,
-            )
-
-            engine = PredictiveMaintenance()
-            health = engine.assess_health(stat_asset)
-            return {
-                "engine": "fireai.analytics.predictive_maintenance",
-                "health_score": health.health_score,
-                "failure_probability": health.failure_probability,
-                "risk_level": health.risk_level.value,
-                "estimated_ttf_days": health.estimated_ttf_days,
-                "recommendations": health.recommendations,
-            }
-
-        except ImportError:
-            logger.debug(
-                "fireai.analytics.predictive_maintenance not available — "
-                "statistical baseline skipped"
-            )
-            return None
-        except Exception as exc:
-            logger.warning("Statistical baseline failed: %s", exc)
-            return None
+        return None
