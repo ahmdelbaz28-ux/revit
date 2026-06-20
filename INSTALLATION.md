@@ -9,7 +9,7 @@
 - 10GB available disk space
 
 ### Python Environment
-- **Python 3.8 or higher** (now compatible with Python 3.8+)
+- **Python 3.12 or higher** (P0.10: was 3.8+ — unified to 3.12+ to match pyproject.toml)
 - pip package manager
 - virtual environment support
 
@@ -20,7 +20,7 @@
 ## Prerequisites
 
 ### Python Installation
-Ensure Python 3.8+ is installed on your system:
+Ensure Python 3.12+ is installed on your system:
 
 **Windows:**
 1. Download Python from [python.org](https://www.python.org/downloads/)
@@ -68,7 +68,7 @@ sudo dnf install git
 ```bash
 # Check Python version
 python --version
-# Should show Python 3.8 or higher
+# Should show Python 3.12 or higher
 
 # Check pip version
 pip --version
@@ -301,7 +301,7 @@ pre-commit install
 python --version
 ```
 
-Expected: Python 3.8 or higher
+Expected: Python 3.12 or higher
 
 ### 2. Test Basic Import
 

@@ -1,4 +1,4 @@
-# CAD/BIM Integration Platform
+# FireAI — Safety-Critical Fire Protection Engineering Platform
 
 [![CI/CD Pipeline](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)
@@ -35,7 +35,7 @@ This platform provides bidirectional conversion between AutoCAD DWG files and Re
 ## Installation
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.12+ (P0.10: was 3.8+ — unified to 3.12+ to match pyproject.toml)
 - Windows OS (for AutoCAD/Revit integration)
 - AutoCAD (optional, for full functionality)
 - Revit (optional, for full functionality)

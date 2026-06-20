@@ -307,7 +307,7 @@ Multiple validation layers ensure safety:
 ## Technology Stack
 
 ### Backend Technologies
-- **Python 3.8+**: Primary implementation language
+- **Python 3.12+**: Primary implementation language
 - **FastAPI**: Web framework for API services
 - **SQLAlchemy**: ORM for database interactions
 - **Redis**: In-memory data store
