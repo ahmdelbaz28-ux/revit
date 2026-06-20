@@ -56,7 +56,15 @@ venv\Scripts\activate  # On Windows
 
 3. Install dependencies:
 ```bash
-pip install -r requirements.txt
+# P0.3: pyproject.toml is the single source of truth.
+# requirements.txt has been removed.
+pip install .
+
+# For ML subsystem:
+pip install .[ml]
+
+# For development:
+pip install .[dev]
 ```
 
 4. Run the application:
@@ -203,11 +211,11 @@ ML libraries curated from
 ### Documentation
 - See `ARCHITECTURE_ML_ADDENDUM.md` for full architectural details
 - See `fireai/ml/README.md` for module documentation
-- See `requirements-ml.txt` for ML dependencies
+- See `pyproject.toml [project.optional-dependencies.ml]` for ML dependencies
 
 ### Quick Start
 ```bash
-pip install -r requirements-ml.txt
+pip install .[ml]
 python scripts/train_ml_models_demo.py    # Train on synthetic data
 python scripts/test_ml_subsystem.py       # Smoke test
 pytest tests/ml/ -v                       # Full test suite

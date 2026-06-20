@@ -62,7 +62,9 @@ Before installing FireAI, ensure your system meets the following requirements:
 
 2. **Install Python dependencies**
    ```bash
-   pip install -r requirements.txt
+   # P0.3: pyproject.toml is the single source of truth.
+   # requirements.txt has been removed.
+   pip install .
    ```
 
 3. **Build the frontend**
@@ -261,10 +263,10 @@ Before installing FireAI, ensure your system meets the following requirements:
 pip install --upgrade pip
 
 # Install with no cache
-pip install --no-cache-dir -r requirements.txt
+pip install --no-cache-dir .
 
 # Or install dependencies individually
-pip install --force-reinstall -r requirements.txt
+pip install --force-reinstall .
 ```
 
 #### Configuration Issues

@@ -110,7 +110,21 @@ python -m pip install --upgrade pip
 ### 4. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+# P0.3: pyproject.toml is the single source of truth.
+# requirements.txt has been removed.
+pip install .
+
+# For ML subsystem (XGBoost + Cox PH + SHAP):
+pip install .[ml]
+
+# For development tooling (pytest, ruff, mypy, bandit, etc.):
+pip install .[dev]
+
+# For everything (all optional integrations + dev + docs):
+pip install .[all,dev,docs]
+
+# For reproducible installs (pinned versions):
+pip install -r requirements.lock
 ```
 
 > **Note**: If you encounter compilation issues with certain packages (especially numpy, scipy), you may need to install Microsoft C++ Build Tools on Windows or Xcode Command Line Tools on macOS.
@@ -345,7 +359,7 @@ If you encounter compilation errors during installation:
 
 **Windows:**
 - Install Microsoft C++ Build Tools
-- Or use pre-compiled wheels: `pip install --only-binary=all -r requirements.txt`
+- Or use pre-compiled wheels: `pip install --only-binary=all .`
 
 **macOS:**
 - Install Xcode Command Line Tools: `xcode-select --install`
@@ -362,7 +376,7 @@ For systems with limited RAM:
 #### 3. Permission Issues
 If you encounter permission errors:
 - Use virtual environment (recommended)
-- Use `--user` flag: `pip install --user -r requirements.txt`
+- Use `--user` flag: `pip install --user .`
 
 ### Environment Setup Verification
 

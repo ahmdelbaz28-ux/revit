@@ -60,7 +60,7 @@ cp .env.example .env
 
 ### Complete System Recovery
 1. Clone repository: `git clone https://github.com/ahmdelbaz28-ux/revit.git`
-2. Install dependencies: `pip install -r requirements.txt`
+2. Install dependencies: `pip install .`
 3. Restore .env with production secrets
 4. Restore databases from backup
 5. Build frontend: `cd frontend && npm install && npm run build`

@@ -20,8 +20,8 @@ cp .env.example .env
 #   FIREAI_EVIDENCE_HMAC_KEY=<your-hmac-key>
 #   FIREAI_ENV=development
 
-# 3. Install Python dependencies
-pip install -r requirements.txt
+# 3. Install Python dependencies (P0.3: pyproject.toml is SSoT, requirements.txt removed)
+pip install .
 
 # 4. Install optional features (if needed)
 pip install fireai[workflow]   # LangGraph workflow engine

@@ -1,3 +1,9 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# FireAI API Server — Safety-Critical Fire Protection Platform
+# Multi-stage Docker build (builder → runtime)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ─── Stage 1: Builder ─────────────────────────────────────────────────────
 FROM python:3.12-slim AS builder
 
 WORKDIR /build
@@ -7,33 +13,56 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# P0.3 FIX: previously `pip install -r requirements.txt` — switched to
+# `pip install .` so pyproject.toml is the single source of truth.
+# P0.4 FIX: previously COPY'd `facp/` which does not exist. The real
+# top-level dirs are `facp_system/` and `facp_distributed/`.
+COPY pyproject.toml README.md LICENSE ./
+COPY backend/ ./backend/
+COPY fireai/ ./fireai/
+COPY facp_system/ ./facp_system/
+COPY facp_distributed/ ./facp_distributed/
+COPY core/ ./core/
+COPY parsers/ ./parsers/
+COPY qomn_conduit/ ./qomn_conduit/
+COPY qomn_fire/ ./qomn_fire/
+COPY adapters/ ./adapters/
+COPY marine/ ./marine/
+COPY integration/ ./integration/
 
+RUN pip install --no-cache-dir --prefix=/install .
+
+# ─── Stage 2: Runtime ─────────────────────────────────────────────────────
 FROM python:3.12-slim
 
-LABEL maintainer="FireAI Engineering Team" \
-      description="FireAI API Server — Safety-Critical Fire Protection Platform" \
-      version="1.0.0" \
-      security.fireai.compliance="nfpa72-2022"
+LABEL org.opencontainers.image.title="FireAI API" \
+      org.opencontainers.image.description="FireAI API Server — Safety-Critical Fire Protection Platform" \
+      org.opencontainers.image.version="1.55.0" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.source="https://github.com/ahmdelbaz28-ux/revit" \
+      security.fireai.compliance="nfpa72-2022" \
+      maintainer="FireAI Engineering Team"
 
-RUN groupadd -r fireai && \
-    useradd -r -g fireai -d /app -s /sbin/nologin -c "FireAI Service" fireai
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r fireai \
+    && useradd -r -g fireai -d /app -s /sbin/nologin -c "FireAI Service" fireai
 
 WORKDIR /app
 
+# Copy installed Python packages
 COPY --from=builder /install /usr/local
 
+# Copy application source code (P0.4 FIX: facp/ → facp_system/ + facp_distributed/)
 COPY --chown=fireai:fireai backend/ ./backend/
 COPY --chown=fireai:fireai fireai/ ./fireai/
-COPY --chown=fireai:fireai facp/ ./facp/
+COPY --chown=fireai:fireai facp_system/ ./facp_system/
+COPY --chown=fireai:fireai facp_distributed/ ./facp_distributed/
 COPY --chown=fireai:fireai core/ ./core/
 COPY --chown=fireai:fireai parsers/ ./parsers/
-COPY --chown=fireai:fireai pyproject.toml setup.py ./
+COPY --chown=fireai:fireai qomn_conduit/ ./qomn_conduit/
+COPY --chown=fireai:fireai qomn_fire/ ./qomn_fire/
+COPY --chown=fireai:fireai pyproject.toml ./
 
 RUN mkdir -p /app/data /app/logs /app/tmp && \
     chown -R fireai:fireai /app/data /app/logs /app/tmp

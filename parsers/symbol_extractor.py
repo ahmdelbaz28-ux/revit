@@ -14,7 +14,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Tuple
 
-import _fitz_compat as fitz
+# P0.3 FIX: dual-import for installed-package mode (repo shim not on sys.path).
+try:
+    import _fitz_compat as fitz  # PyMuPDF (dev mode)
+except ImportError:
+    import pymupdf as fitz  # type: ignore[no-redef]
 
 
 class SymbolType(Enum):

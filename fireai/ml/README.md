@@ -143,11 +143,13 @@ with risk gauge, model comparison chart, and SHAP visualisation.
 ## Installation
 
 ```bash
-# Base dependencies (already in requirements.txt)
-pip install -r requirements.txt
+# P0.3: pyproject.toml is the single source of truth.
+# Both requirements.txt and requirements-ml.txt have been removed.
+# Install the base package + ML extras in one step:
+pip install .[ml]
 
-# ML subsystem dependencies
-pip install -r requirements-ml.txt
+# Or for development + ML:
+pip install .[ml,dev]
 ```
 
 ## Testing
