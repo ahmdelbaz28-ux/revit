@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
@@ -8,26 +8,66 @@ import { SmartHelpDrawer } from '@/components/help/SmartHelpDrawer';
 import CommandPalette from '@/components/command/CommandPalette';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
 import { PageErrorBoundary } from '@/components/core/PageErrorBoundary';
+// P1.9: Eagerly load DashboardPage (landing page — must render instantly)
+// and NotFoundPage (404 fallback — small, no benefit from lazy).
 import { DashboardPage } from './pages/DashboardPage';
-import { ProjectsPage } from './pages/ProjectsPage';
-import { EngineeringPage } from './pages/EngineeringPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { ReportGeneratorPage } from './pages/ReportGeneratorPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { FireAlarmPage } from './pages/FireAlarmPage';
-import { FireAlarmDesigner } from './components/mockups/engineering/FireAlarmDesigner';
-import { DigitalTwinPage } from './pages/DigitalTwinPage';
-import { CADSettingsPage } from './pages/CADSettingsPage';
-import { PredictiveMaintenancePage } from './pages/PredictiveMaintenancePage';
-import { DiagramDemoPage } from './pages/DiagramDemoPage';
-import Elements from './pages/Elements';
-import ElementDetail from './pages/ElementDetail';
-import Connections from './pages/Connections';
-import Conflicts from './pages/Conflicts';
 import { NotFoundPage } from './pages/NotFoundPage';
+// P1.9: Lazily load all other pages to reduce initial bundle size.
+// Each page becomes a separate chunk loaded on first navigation.
+// Pattern for named exports: .then(m => ({ default: m.PageName }))
+const ProjectsPage = React.lazy(() =>
+  import('./pages/ProjectsPage').then(m => ({ default: m.ProjectsPage }))
+);
+const EngineeringPage = React.lazy(() =>
+  import('./pages/EngineeringPage').then(m => ({ default: m.EngineeringPage }))
+);
+const ReportsPage = React.lazy(() =>
+  import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage }))
+);
+const ReportGeneratorPage = React.lazy(() =>
+  import('./pages/ReportGeneratorPage').then(m => ({ default: m.ReportGeneratorPage }))
+);
+const SettingsPage = React.lazy(() =>
+  import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage }))
+);
+const FireAlarmPage = React.lazy(() =>
+  import('./pages/FireAlarmPage').then(m => ({ default: m.FireAlarmPage }))
+);
+const FireAlarmDesigner = React.lazy(() =>
+  import('./components/mockups/engineering/FireAlarmDesigner').then(m => ({ default: m.FireAlarmDesigner }))
+);
+const DigitalTwinPage = React.lazy(() =>
+  import('./pages/DigitalTwinPage').then(m => ({ default: m.DigitalTwinPage }))
+);
+const CADSettingsPage = React.lazy(() =>
+  import('./pages/CADSettingsPage').then(m => ({ default: m.CADSettingsPage }))
+);
+const PredictiveMaintenancePage = React.lazy(() =>
+  import('./pages/PredictiveMaintenancePage').then(m => ({ default: m.PredictiveMaintenancePage }))
+);
+const DiagramDemoPage = React.lazy(() =>
+  import('./pages/DiagramDemoPage').then(m => ({ default: m.DiagramDemoPage }))
+);
+// These use default exports — simpler pattern
+const Elements = React.lazy(() => import('./pages/Elements'));
+const ElementDetail = React.lazy(() => import('./pages/ElementDetail'));
+const Connections = React.lazy(() => import('./pages/Connections'));
+const Conflicts = React.lazy(() => import('./pages/Conflicts'));
 import './i18n';
 import './styles/globals.css';
 import './styles/typography.css';
+
+// P1.9: Simple loading fallback shown while lazy chunks download.
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]" role="status" aria-live="polite">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-slate-600 border-t-slate-300 rounded-full animate-spin" />
+        <span className="text-sm text-slate-400">Loading…</span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * P0.6 FIX — App.tsx routing + syntax + 404 fallback
@@ -135,7 +175,9 @@ function App() {
                 path={route.path}
                 element={
                   <PageErrorBoundary pageName={route.name}>
-                    {route.element}
+                    <Suspense fallback={<PageLoader />}>
+                      {route.element}
+                    </Suspense>
                   </PageErrorBoundary>
                 }
               />
