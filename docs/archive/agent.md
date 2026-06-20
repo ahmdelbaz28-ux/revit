@@ -12822,3 +12822,115 @@ Initially I only added SecurityHeadersMiddleware to `backend/app.py`. During Pha
 - Cache endpoints verified admin-only (403 without auth).
 - All changes pushed to GitHub: https://github.com/ahmdelbaz28-ux/revit/commit/fbda5f39
 
+---
+
+## P0.1 Fix (2026-06-20) — NFPA 72 calculate_max_spacing() detector_type ignored
+
+### Context
+Operator-initiated Phase 0 critical fixes cycle. P0.1 is the first fix in
+the operator's 10-item P0 list (sourced from the FireAI remediation brief).
+Branch: `feature/ml-predictive-maintenance-subsystem`. Base commit: `cdbbad3f`.
+
+### Bug (CRITICAL — Life Safety)
+**File:** `fireai/core/nfpa72_calculations.py:422-444` (pre-fix line range)
+**Discovery:** Operator P0.1 + verified line-by-line per Rule 6/14.
+
+`calculate_max_spacing(ceiling, detector_type)` accepted the
+`detector_type` parameter but never branched on it. It always called
+`get_smoke_detector_radius_safe(low_height)` and reversed R = 0.7×S to
+recover S. This returned S ≈ 9.1m for EVERY detector type — including
+HEAT detectors whose correct listed spacing at h≤3.0m is **6.1m** per
+NFPA 72 Table 17.6.3.1.1 (heat column).
+
+**Impact:** 49% over-allowance in heat-detector spacing. A heat detector
+placed 9.1m from its neighbour cannot respond to a fire within its design
+envelope, leaving areas of the building with insufficient thermal coverage.
+
+### Root-Cause Analysis (Rule 17)
+The bug was NOT a missing branch — it was an architectural bypass. The
+function had a `detector_type` parameter for V10 compatibility but the
+body used a smoke-only helper (`get_smoke_detector_radius_safe`) that
+knew nothing about detector type. The fix must use the canonical NFPA 72
+height-adjusted spacing table that already exists in the codebase and
+already supports both "smoke" and "heat" columns: `calculate_coverage_radius_from_height()`.
+
+A half-solution would have been `if detector_type == HEAT: return 6.1`
+— wrong because (a) hardcodes one row, (b) ignores height adjustment,
+(c) leaves FLAME/GAS/COMBINATION undefined. The root-cause fix routes
+through the canonical table and adds a classifier that maps every
+`DetectorType` enum value to its NFPA 72 spacing column.
+
+### Fix Applied
+1. Added `_classify_detector_for_spacing(detector_type)` helper that
+   maps each `DetectorType` enum value to `"smoke"` or `"heat"`:
+   - `HEAT*` → `"heat"` (height-adjusted per Table 17.6.3.5.1, 6.1m at h≤3.0m)
+   - `SMOKE*` → `"smoke"` (flat 9.1m per §17.7.3.2.3)
+   - `COMBINATION`, `SMOKE_HEAT_COMBINATION` → `"smoke"` (permissive column)
+   - `FLAME`, `GAS`, unknown → `"heat"` (conservative: tighter spacing)
+2. Rewrote `calculate_max_spacing()` to call
+   `calculate_coverage_radius_from_height(low_height, detector_type=dt_simple)`
+   and read `CoverageSpec.spacing_max` (the canonical NFPA 72 S value).
+3. Preserved V65 flat-ceiling fallback (`getattr(height_m, 3.0)`).
+4. Preserved sloped-ceiling handling: uses `min(low, high)` spacing for
+   both smoke and heat (smoke is flat so unchanged in practice, but
+   applied uniformly for correctness if the smoke table is ever
+   re-height-adjusted).
+
+### Regression Tests Added (5 new) — `fireai/core/tests/test_nfpa72_calculations.py`
+- `test_heat_detector_spacing_differs_from_smoke`: smoke=9.1m, heat=6.1m at h=3.0m
+- `test_heat_detector_spacing_decreases_with_height`: heat shrinks w/ height, smoke flat
+- `test_heat_family_detectors_use_heat_spacing`: all HEAT_* variants get 6.1m
+- `test_combination_uses_smoke_spacing`: COMBINATION + SMOKE_HEAT_COMBINATION get 9.1m
+- `test_flame_and_gas_use_conservative_heat_spacing`: FLAME + GAS get 6.1m (conservative)
+
+### Verification (Rule 10 — Test-and-Fix Loop)
+- New tests: **5/5 PASS**
+- Existing `TestMaxSpacing` tests: **4/4 PASS** (no regression)
+- Full `fireai/core/tests/` + `tests/test_safety_critical_fixes.py`:
+  **1275 PASS, 9 SKIPPED, 1 FAIL**
+- The 1 FAIL (`test_string_dimension_crashes_format`) is **pre-existing** —
+  verified failing on `cdbbad3f` before this commit (via `git stash`).
+  Unrelated to NFPA 72 spacing logic.
+- Manual end-to-end check:
+  - h=3.0m: smoke S=9.1m, heat S=6.1m, ratio=1.492 (49% over-allowance closed)
+  - h=9.0m: smoke S=9.1m (flat per §17.7.3.2.3), heat S=4.3m (Table 17.6.3.5.1)
+
+### Self-Criticism Notes (Rule 21 — 4 Layers)
+**Layer 1 (Output):** Verified by 5 new tests + 1275 existing tests passing.
+The 1 pre-existing failure is documented and unrelated.
+
+**Layer 2 (Thinking):** Did NOT fall for confirmation bias. Specifically
+checked: (a) does any production caller depend on the buggy 9.1m-for-heat
+behavior? Searched `fireai/`, `tests/`, `backend/` — none found.
+(b) Does `calculate_coverage_radius()` and `calculate_max_wall_distance()`
+(which both call `calculate_max_spacing` internally) still produce correct
+R and wall-distance for HEAT? Verified manually: R=4.27m, wall=3.05m
+for HEAT at h=3.0m, consistent with S=6.1m.
+(c) Does the sloped-ceiling branch work for heat? Yes — heat shrinks with
+height, so `min(low, high)` is the conservative choice for sloped ceilings.
+
+**Layer 3 (Method):** The fix is root-cause, not a patch. It removes the
+divergent smoke-radius reverse computation that was the bug's vector and
+routes all spacing/radius/wall-distance helpers through ONE canonical
+NFPA 72 table. Future changes to the table automatically propagate.
+
+**Layer 4 (Commitment):** The previous bug could have left a building
+with heat detectors spaced 49% too far apart — a fire could grow
+undetected in the gap. This is exactly the kind of defect Rule 12 warns
+about: "Wrong code in this system is catastrophic — it threatens human
+life." I would not be able to face the families if I had cut corners.
+
+### Commit Information
+- **Commit hash:** `1e813ab`
+- **Files changed:** 2 (fireai/core/nfpa72_calculations.py +109/-17, fireai/core/tests/test_nfpa72_calculations.py +80)
+- **Branch:** `feature/ml-predictive-maintenance-subsystem`
+- **GitHub link:** https://github.com/ahmdelbaz28-ux/revit/commit/1e813ab
+- **Pushed:** pending operator confirmation (will push after this commit log)
+
+### Phase Status Report (Rule 11)
+- **(a) Current status:** P0.1 COMPLETE. 1 of 10 P0 fixes done. All tests
+  green except 1 pre-existing unrelated failure.
+- **(b) Required to advance:** P0.2 — fix path traversal in
+  `backend/routers/digital_twin.py:55-72` using
+  `parsers/_path_security.validate_input_path()` (same pattern as `revit.py`).
+
