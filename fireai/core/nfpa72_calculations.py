@@ -419,28 +419,103 @@ __all__ = [\
 # MISSING FUNCTIONS FOR V10 COMPATIBILITY
 # ============================================================================
 
-def calculate_max_spacing(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
-    """NFPA 72 §17.6.3 - spacing between detectors.
+def _classify_detector_for_spacing(detector_type: "DetectorType") -> DetectorTypeSimple:
+    """Classify a DetectorType enum into the NFPA 72 spacing-table category.
 
-    CRITICAL FIX: This now returns the actual LISTED SPACING (S) from NFPA 72
-    Table 17.6.3.1.1, NOT the coverage radius.  The old version incorrectly
-    called get_smoke_detector_coverage_max() which returns a radius, not spacing.
+    NFPA 72 Table 17.6.3.1.1 distinguishes only TWO spacing categories:
+    "smoke" (flat 9.1m per §17.7.3.2.3) and "heat" (height-adjusted per
+    Table 17.6.3.5.1, 6.1m at h<=3.0m). Multi-criteria / combination / beam
+    / flame / gas detectors are not directly listed in the spacing table
+    and are mapped conservatively:
+
+      - Smoke-family (SMOKE, SMOKE_PHOTOELECTRIC, SMOKE_IONIZATION,
+        SMOKE_MULTI_CRITERIA) → "smoke"
+      - Heat-family (HEAT, HEAT_FIXED, HEAT_FIXED_TEMP, HEAT_RATE_OF_RISE,
+        HEAT_COMBINATION) → "heat"
+      - COMBINATION / SMOKE_HEAT_COMBINATION → "smoke" (the more
+        permissive category is correct here because a combination device
+        contains a smoke element, so the listed smoke spacing applies)
+      - FLAME / GAS → "heat" (conservative: these are spot/specialty
+        devices whose listed spacing is typically tighter than smoke;
+        using the heat column protects against under-placement. Real
+        designs should always verify against the device's listed spacing.)
+
+    Returns one of "smoke" or "heat" for use with
+    calculate_coverage_radius_from_height().
     """
-    # Use the module-level import (already imported from .nfpa72_models at top of file)
-    # CRITICAL: Do NOT use bare import `from nfpa72_models import` here — that resolves
-    # to the stale root-level copy which still has R=S/2 (4.55m) instead of R=0.7×S (6.37m).
-    # V65 FIX: height_at_low_point_m may not exist on flat ceilings — use getattr
-    # fallback to height_m (the standard flat-ceiling attribute).
-    low_height = getattr(ceiling, 'height_at_low_point_m', None)
+    name = detector_type.value if hasattr(detector_type, "value") else str(detector_type)
+    name_upper = name.upper()
+    # Heat-family: any HEAT* variant
+    if name_upper.startswith("HEAT"):
+        return "heat"
+    # Combination devices containing both smoke and heat elements use
+    # the smoke spacing column per NFPA 72 §17.6.3.1.1 ("combination
+    # smoke-and-heat detectors shall be spaced as smoke detectors").
+    if name_upper in ("COMBINATION", "SMOKE_HEAT_COMBINATION"):
+        return "smoke"
+    # Smoke-family (incl. multi-criteria)
+    if name_upper.startswith("SMOKE"):
+        return "smoke"
+    # FLAME, GAS, and any unknown → conservative (heat column = tighter spacing)
+    return "heat"
+
+
+def calculate_max_spacing(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
+    """NFPA 72 §17.6.3.1.1 - listed spacing S between detectors.
+
+    Returns the NFPA 72 listed spacing S (in meters) appropriate for the
+    requested detector_type and ceiling height. The caller MUST distinguish
+    this value from:
+      - Coverage radius R = 0.7 × S   (use calculate_coverage_radius())
+      - Maximum wall distance = S/2   (use calculate_max_wall_distance())
+
+    P0.1 FIX (2026-06-20): The previous implementation IGNORED detector_type
+    and always computed a smoke spacing via get_smoke_detector_radius_safe(),
+    then divided by 0.7 to recover S. This returned S≈9.1m even when the
+    caller requested a HEAT detector, whose correct listed spacing at h≤3.0m
+    is 6.1m per NFPA 72 Table 17.6.3.1.1 (heat column). The result was a
+    49% over-allowance in heat-detector spacing — a life-safety defect
+    because a heat detector placed 9.1m from its neighbour cannot respond
+    to a fire within its design envelope.
+
+    Root-cause fix: route through calculate_coverage_radius_from_height(),
+    which already implements the canonical NFPA 72 height-adjusted spacing
+    table (smoke vs heat columns) sourced from fireai/constants/nfpa72.py
+    (the project's single source of truth). This eliminates the
+    detector_type bug AND removes the divergent smoke-radius reverse
+    computation, so all spacing/radius/wall-distance helpers now share
+    one table.
+    """
+    # V65 FIX preserved: height_at_low_point_m may not exist on flat
+    # ceilings — fall back to the height_m property (which itself returns
+    # height_at_low_point_m on CeilingSpec, but other duck-typed ceiling
+    # objects in tests may only expose height_m).
+    low_height = getattr(ceiling, "height_at_low_point_m", None)
     if low_height is None:
-        low_height = getattr(ceiling, 'height_m', 3.0)  # Conservative default
-    radius = get_smoke_detector_radius_safe(low_height)
-    spacing = radius / 0.7  # Reverse R = 0.7 × S → S = R / 0.7
+        low_height = getattr(ceiling, "height_m", 3.0)  # Conservative default
+
+    dt_simple = _classify_detector_for_spacing(detector_type)
+
+    # Use the canonical NFPA 72 height-adjusted spacing table for BOTH
+    # smoke and heat. calculate_coverage_radius_from_height() returns a
+    # CoverageSpec whose .spacing_max is exactly the S value from
+    # Table 17.6.3.1.1 (height-adjusted for heat; flat 9.1m for smoke).
+    low_spec = calculate_coverage_radius_from_height(low_height, detector_type=dt_simple)
+    spacing = float(low_spec.spacing_max)
+
+    # Sloped-ceiling handling (NFPA 72 §17.6.3.1.2): use the MORE
+    # CONSERVATIVE (smaller) spacing derived from the high point as
+    # well. Smoke spacing is flat 9.1m at all heights, so this branch
+    # only changes heat-detector spacing — but applying it uniformly
+    # keeps the code correct if the smoke table is ever re-height-adjusted.
     if ceiling.is_sloped:
-        high_height = getattr(ceiling, 'height_at_high_point_m', None)
+        high_height = getattr(ceiling, "height_at_high_point_m", None)
         if high_height is not None:
-            radius_high = get_smoke_detector_radius_safe(high_height)
-            spacing = min(spacing, radius_high / 0.7)
+            high_spec = calculate_coverage_radius_from_height(
+                high_height, detector_type=dt_simple
+            )
+            spacing = min(spacing, float(high_spec.spacing_max))
+
     return round(spacing, 3)
 
 
