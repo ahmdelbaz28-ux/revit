@@ -66,7 +66,11 @@
     "status": "الحالة",
     "optional": "اختياري",
     "required": "مطلوب",
-    "none": "لا شيء"
+    "none": "لا شيء",
+    "audit": "تدقيق",
+    "branch": "فرع",
+    "research": "بحث",
+    "study": "دراسة"
   },
   "dashboard": {
     "title": "لوحة التحكم",
