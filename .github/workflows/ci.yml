@@ -464,6 +464,7 @@ jobs:
                 GEMINI_API_KEY: "test"
                 ENCRYPTION_KEY: "test"
                 JWT_SECRET: "test"
+                REPLICATION_PASSWORD: "test"
             fireai-tls:
               type: kubernetes.io/tls
               stringData:
@@ -510,6 +511,7 @@ jobs:
                 GEMINI_API_KEY: "test"
                 ENCRYPTION_KEY: "test"
                 JWT_SECRET: "test"
+                REPLICATION_PASSWORD: "test"
             fireai-tls:
               type: kubernetes.io/tls
               stringData:
@@ -568,6 +570,7 @@ jobs:
                 GEMINI_API_KEY: "test"
                 ENCRYPTION_KEY: "test"
                 JWT_SECRET: "test"
+                REPLICATION_PASSWORD: "test"
             fireai-tls:
               type: kubernetes.io/tls
               stringData:
