@@ -355,8 +355,6 @@ jobs:
           docker run -d --name test-app -p 8888:8000 ${{ steps.meta.outputs.tags }}
 
           # Wait for the container to be ready (up to 60 seconds).
-          # Use docker logs + wget instead of curl — curl is not always
-          # installed on ubuntu:24.04 runners, but wget is.
           echo "Waiting for container to start..."
           for i in $(seq 1 60); do
             if docker ps --filter "name=test-app" --filter "status=running" | grep -q test-app; then
@@ -374,18 +372,31 @@ jobs:
           # Give the app a few seconds to bind to port 8000.
           sleep 5
 
-          # Test the health endpoint using wget (always available on
-          # ubuntu runners). Use --spider to avoid downloading the
-          # response body — we only care about the HTTP status code.
+          # Test the health endpoint using Python (guaranteed to be
+          # installed on ubuntu runners — unlike curl/wget which are
+          # NOT installed on ubuntu:24.04 by default).
           echo "Testing /health endpoint..."
-          wget -q -S --spider --timeout=10 http://localhost:8888/health 2>&1 | head -5 || {
-            echo "FAIL: /health endpoint not reachable"
+          python3 -c "
+          import urllib.request, sys
+          try:
+              req = urllib.request.urlopen('http://localhost:8888/health', timeout=10)
+              print(f'HTTP {req.status}')
+              if req.status == 200:
+                  print('PASS: /health endpoint reachable')
+                  sys.exit(0)
+              else:
+                  print(f'FAIL: /health returned HTTP {req.status}')
+                  sys.exit(1)
+          except Exception as e:
+              print(f'FAIL: /health endpoint not reachable: {e}')
+              sys.exit(1)
+          " || {
+            echo "--- docker logs ---"
             docker logs test-app
             docker stop test-app || true
             exit 1
           }
 
-          echo "PASS: /health endpoint reachable"
           docker stop test-app || true
 
   # ── Gate 7: Helm Chart Validation ──────────────────────────────────────────
