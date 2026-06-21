@@ -328,7 +328,9 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         <svg
           className="absolute inset-0 w-full h-full"
           style={{ pointerEvents: 'none' }}
+          role="img"
           aria-label={t('fireAlarm.detectorCanvas', 'Detector canvas')}
+          aria-description={`${detectors.length} detectors placed on the fire alarm design canvas`}
         >
           {/* Coverage circles — drawn first so detector icons appear on top */}
           {detectors.map(detector => (

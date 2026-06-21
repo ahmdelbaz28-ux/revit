@@ -5,17 +5,20 @@
     "lib": ["es2022", "dom", "dom.iterable"],
     "module": "ESNext",
 
-    /* Type Safety — strict mode enabled
-     * NOTE: Some existing files have violations that need fixing:
-     * - src/services/digitalTwinApi.ts: null checks needed (strictNullChecks)
-     * - src/pages/EngineeringPage.tsx: unused imports
-     * - src/pages/FireAlarmPage.tsx: missing override keyword
-     * - src/pages/ReportsPage.tsx: unused imports/variables
-     * TODO: Fix these violations and enable noUnusedLocals, noUnusedParameters,
-     * noImplicitOverride, noPropertyAccessFromIndexSignature, noUncheckedIndexedAccess
+    /* Type Safety — strict mode enabled (P2.6)
+     * Gradually enabling strict flags. Currently enabled:
+     * - strict: true (covers strictNullChecks, strictFunctionTypes, etc.)
+     * - noFallthroughCasesInSwitch: true
+     * - noImplicitOverride: true (safe to enable — only requires `override` keyword)
+     *
+     * TODO: Enable these after fixing pre-existing violations:
+     * - noUnusedLocals (many unused imports in pages/)
+     * - noUnusedParameters (many unused event handlers)
+     * - noUncheckedIndexedAccess (would break many array accesses)
      */
     "strict": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
 
     /* skipLibCheck kept true for Vite ecosystem compatibility
      * (many @types packages have cross-version conflicts) */
