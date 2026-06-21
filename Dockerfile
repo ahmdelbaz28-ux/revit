@@ -33,7 +33,14 @@ WORKDIR /build
 RUN pip install --no-cache-dir --upgrade pip "setuptools>=68.0.0" wheel
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Install requirements + explicitly force-install 'packaging' into the
+# /install prefix. pip's --prefix mode doesn't install 'packaging' from
+# requirements.txt because it considers packaging a pip dependency
+# (already satisfied in the build environment). But the runtime image
+# (python:3.11-slim) doesn't have packaging, so the app crashes with
+# ModuleNotFoundError. --force-reinstall ensures packaging lands in /install.
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt && \
+    pip install --no-cache-dir --prefix=/install --force-reinstall packaging
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
 # V133: Use Python 3.11 for runtime too (must match builder — see Stage 2
