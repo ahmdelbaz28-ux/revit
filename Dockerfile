@@ -15,31 +15,30 @@ COPY frontend/ .
 RUN npm run build
 
 # ─── Stage 2: Python Dependencies ─────────────────────────────────────────
-FROM python:3.12-slim AS python-builder
+# V133 (2026-06-21): Use Python 3.11 (not 3.12) because requirements.txt
+# pins numpy==1.24.3 which doesn't support Python 3.12:
+#   - numpy 1.24.3 has no prebuilt wheel for Python 3.12 → builds from source
+#   - numpy 1.24.3's setup.py imports distutils.msvccompiler (removed in 3.12)
+#   - Python 3.12 also removed pkgutil.ImpImporter (used by old setuptools)
+#
+# When the application team upgrades numpy to >=1.26 (which has Python 3.12
+# wheels), switch this back to python:3.12-slim. Until then, 3.11 is the
+# safest choice — it has prebuilt wheels for all pinned dependencies.
+FROM python:3.11-slim AS python-builder
 
 WORKDIR /build
 
-# python:3.12-slim does NOT include setuptools/wheel by default, and the
-# bundled pip is old enough that its PEP 517 build isolation pulls in a
-# stale setuptools that uses pkgutil.ImpImporter (removed in Python 3.12).
-#
-# Fix: upgrade pip + setuptools + wheel to versions that support Python 3.12
-# BEFORE installing requirements. This ensures both:
-#   - System-level setuptools is new enough (--no-build-isolation path)
-#   - pip's build-isolation environment pulls a new setuptools automatically
-#     (newer pip defaults to setuptools>=68 for build isolation)
+# python:3.11-slim includes setuptools/wheel, but they may be stale. Upgrade
+# to ensure PEP 517 build backends work correctly.
 RUN pip install --no-cache-dir --upgrade pip "setuptools>=68.0.0" wheel
 
 COPY requirements.txt .
-# Use --no-build-isolation so that pip uses the SYSTEM setuptools (which we
-# just upgraded to >=68) instead of creating an isolated environment with a
-# potentially stale setuptools. This is required for packages like
-# numpy==1.24.3 that don't have prebuilt wheels for Python 3.12 and must
-# be built from source.
-RUN pip install --no-cache-dir --prefix=/install --no-build-isolation -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
-FROM python:3.12-slim
+# V133: Use Python 3.11 for runtime too (must match builder — see Stage 2
+# comment about numpy 1.24.3 Python 3.12 incompatibility).
+FROM python:3.11-slim
 
 LABEL maintainer="FireAI Engineering Team"
 LABEL description="Safety-Critical Fire Protection Digital Twin — NFPA 72-2022"
