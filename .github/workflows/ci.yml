@@ -354,28 +354,28 @@ jobs:
           # V133 (2026-06-21): The Docker image BUILD is the primary
           # validation — if the image builds successfully, all Python
           # dependencies installed correctly and the application code
-          # is importable. This is what we're validating here.
+          # is importable.
           #
-          # A full runtime health check would require the app's runtime
-          # dependencies (PostgreSQL, Redis) which aren't available in
-          # the CI environment. The app's /health endpoint is tested
-          # separately in the Test Suite gate (Gate 2) via pytest +
-          # TestClient, which is more thorough than a container smoke
-          # test anyway.
-          #
-          # Here we just verify the image EXISTS and can be inspected
-          # (confirms the build produced a valid image manifest).
+          # steps.meta.outputs.tags is a multi-line string (sha + latest),
+          # so we extract the first tag for the inspect/run commands.
+          # Using the SHA tag is most reliable — it's always unique.
+          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -1 | tr -d '[:space:]')
+          echo "Using image tag: $IMAGE_TAG"
+
+          # Verify the image EXISTS and can be inspected.
           echo "Verifying Docker image exists..."
-          docker image inspect ${{ steps.meta.outputs.tags }} > /dev/null || {
+          docker image inspect "$IMAGE_TAG" > /dev/null || {
             echo "FAIL: Docker image not found"
+            echo "Available images:"
+            docker images
             exit 1
           }
           echo "PASS: Docker image built and inspectable"
 
-          # Also verify the image's CMD is importable (catches
-          # ImportError without needing to run the full server).
+          # Verify the image's CMD is importable (catches ImportError
+          # without needing to run the full server with DB/Redis).
           echo "Verifying Python imports in the image..."
-          docker run --rm --entrypoint python ${{ steps.meta.outputs.tags }} -c "
+          docker run --rm --entrypoint python "$IMAGE_TAG" -c "
           import backend.app
           print('PASS: backend.app imports successfully')
           " || {
