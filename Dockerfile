@@ -19,6 +19,11 @@ FROM python:3.12-slim AS python-builder
 
 WORKDIR /build
 
+# python:3.12-slim does NOT include setuptools/wheel by default, but
+# many packages in requirements.txt need setuptools.build_meta as their
+# PEP 517 build backend. Install them first.
+RUN pip install --no-cache-dir --prefix=/install setuptools wheel
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
