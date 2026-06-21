@@ -1,8 +1,36 @@
 /**
  * useApi.ts - React hooks wrapping the digitalTwinApi client
- * Uses useState/useEffect for data fetching with loading/error states
+ *
+ * P1.2 FIX (2026-06-20): migrated from useState/useEffect pattern to
+ * @tanstack/react-query. The previous implementation had 482 lines of
+ * boilerplate — each hook repeated the same 30-line pattern (useState
+ * × 3 + useCallback refetch + useEffect with cancelled flag + then/
+ * catch with success/error branching). React Query handles all of
+ * this in 3 lines per hook.
+ *
+ * Backward compatibility: the hook return shape ({ data, loading,
+ * error, refetch }) is PRESERVED so existing callers (DashboardPage,
+ * ProjectsPage, ReportsPage, ReportGeneratorPage, SettingsPage,
+ * App.tsx) do not need to change.
+ *
+ * React Query v5 mapping:
+ *   data    = query.data
+ *   loading = query.isLoading (true only on first load, not refetch)
+ *   error   = query.error?.message ?? null
+ *   refetch = query.refetch
+ *
+ * For mutations, useMutation is used. The hook returns:
+ *   mutate  = mutation.mutateAsync
+ *   loading = mutation.isPending
+ *   error   = mutation.error?.message ?? null
+ *   data    = mutation.data
+ *   reset   = mutation.reset
+ *
+ * React Query is already configured in main.tsx (QueryClientProvider
+ * wraps the App). The QueryClient has staleTime: 60s and refetchOnWindowFocus
+ * enabled, so API calls are automatically cached and refreshed.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '@/services/digitalTwinApi';
 import type {
   Project,
@@ -17,7 +45,7 @@ import type {
 } from '@/services/digitalTwinApi';
 
 // ============================================================================
-// Generic hook result type
+// Generic hook result type (PRESERVED for backward compatibility)
 // ============================================================================
 
 interface UseApiResult<T> {
@@ -27,44 +55,54 @@ interface UseApiResult<T> {
   refetch: () => void;
 }
 
+// Helper: extract error message from React Query error
+function errorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  return fallback;
+}
+
+// Helper: unwrap ApiResponse<T> — returns data on success, throws on failure
+// (React Query catches the throw and exposes it via .error)
+async function unwrap<T>(promise: Promise<ApiResponse<T>>, fallbackMsg: string): Promise<T> {
+  const res = await promise;
+  if (res.success && res.data !== undefined) {
+    return res.data;
+  }
+  throw new Error(res.error || fallbackMsg);
+}
+
+// Helper: unwrap ApiResponse<PaginatedResponse<T>> → T[]
+async function unwrapPaginated<T>(
+  promise: Promise<ApiResponse<PaginatedResponse<T>>>,
+  fallbackMsg: string,
+): Promise<T[]> {
+  const res = await promise;
+  if (res.success && res.data) {
+    return res.data.data;
+  }
+  throw new Error(res.error || fallbackMsg);
+}
+
 // ============================================================================
 // useHealth - Fetch backend health status
 // ============================================================================
 
 export function useHealth(): UseApiResult<HealthStatus> & { connected: boolean } {
-  const [data, setData] = useState<HealthStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const query = useQuery({
+    queryKey: ['health'],
+    queryFn: () => unwrap(api.healthCheck(), 'Health check failed'),
+    refetchInterval: 30000, // Poll every 30s for health
+    staleTime: 10000, // Health is stale after 10s
+  });
 
-  const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    api.healthCheck().then((res: ApiResponse<HealthStatus>) => {
-      if (cancelled) return;
-      setLoading(false);
-      if (res.success && res.data) {
-        setData(res.data);
-        setError(null);
-      } else {
-        setData(null);
-        setError(res.error || 'Health check failed');
-      }
-    }).catch((err: unknown) => {
-      if (cancelled) return;
-      setLoading(false);
-      setData(null);
-      setError(err instanceof Error ? err.message : 'Network error');
-    });
-
-    return () => { cancelled = true; };
-  }, [refreshKey]);
-
-  return { data, loading, error, refetch, connected: data?.status === 'ok' };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? errorMessage(query.error, 'Health check failed') : null,
+    refetch: () => { void query.refetch(); },
+    connected: query.data?.status === 'ok',
+  };
 }
 
 // ============================================================================
@@ -72,39 +110,17 @@ export function useHealth(): UseApiResult<HealthStatus> & { connected: boolean }
 // ============================================================================
 
 export function useProjects(): UseApiResult<Project[]> {
-  const [data, setData] = useState<Project[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const query = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => unwrapPaginated(api.getProjects(), 'Failed to fetch projects'),
+  });
 
-  const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    api.getProjects().then((res: ApiResponse<PaginatedResponse<Project>>) => {
-      if (cancelled) return;
-      setLoading(false);
-      if (res.success && res.data) {
-        setData(res.data.data);
-        setError(null);
-      } else {
-        setData(null);
-        setError(res.error || 'Failed to fetch projects');
-      }
-    }).catch((err: unknown) => {
-      if (cancelled) return;
-      setLoading(false);
-      setData(null);
-      setError(err instanceof Error ? err.message : 'Network error');
-    });
-
-    return () => { cancelled = true; };
-  }, [refreshKey]);
-
-  return { data, loading, error, refetch };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? errorMessage(query.error, 'Failed to fetch projects') : null,
+    refetch: () => { void query.refetch(); },
+  };
 }
 
 // ============================================================================
@@ -112,45 +128,18 @@ export function useProjects(): UseApiResult<Project[]> {
 // ============================================================================
 
 export function useProject(id: string | null): UseApiResult<Project> {
-  const [data, setData] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const query = useQuery({
+    queryKey: ['project', id],
+    queryFn: () => unwrap(api.getProject(id!), 'Failed to fetch project'),
+    enabled: !!id, // Don't fetch if id is null
+  });
 
-  const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  useEffect(() => {
-    if (!id) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    api.getProject(id).then((res: ApiResponse<Project>) => {
-      if (cancelled) return;
-      setLoading(false);
-      if (res.success && res.data) {
-        setData(res.data);
-        setError(null);
-      } else {
-        setData(null);
-        setError(res.error || 'Failed to fetch project');
-      }
-    }).catch((err: unknown) => {
-      if (cancelled) return;
-      setLoading(false);
-      setData(null);
-      setError(err instanceof Error ? err.message : 'Network error');
-    });
-
-    return () => { cancelled = true; };
-  }, [id, refreshKey]);
-
-  return { data, loading, error, refetch };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? errorMessage(query.error, 'Failed to fetch project') : null,
+    refetch: () => { void query.refetch(); },
+  };
 }
 
 // ============================================================================
@@ -158,45 +147,18 @@ export function useProject(id: string | null): UseApiResult<Project> {
 // ============================================================================
 
 export function useDevices(projectId: string | null): UseApiResult<Device[]> {
-  const [data, setData] = useState<Device[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const query = useQuery({
+    queryKey: ['devices', projectId],
+    queryFn: () => unwrapPaginated(api.getDevices(projectId!), 'Failed to fetch devices'),
+    enabled: !!projectId,
+  });
 
-  const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  useEffect(() => {
-    if (!projectId) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    api.getDevices(projectId).then((res: ApiResponse<PaginatedResponse<Device>>) => {
-      if (cancelled) return;
-      setLoading(false);
-      if (res.success && res.data) {
-        setData(res.data.data);
-        setError(null);
-      } else {
-        setData(null);
-        setError(res.error || 'Failed to fetch devices');
-      }
-    }).catch((err: unknown) => {
-      if (cancelled) return;
-      setLoading(false);
-      setData(null);
-      setError(err instanceof Error ? err.message : 'Network error');
-    });
-
-    return () => { cancelled = true; };
-  }, [projectId, refreshKey]);
-
-  return { data, loading, error, refetch };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? errorMessage(query.error, 'Failed to fetch devices') : null,
+    refetch: () => { void query.refetch(); },
+  };
 }
 
 // ============================================================================
@@ -204,45 +166,18 @@ export function useDevices(projectId: string | null): UseApiResult<Device[]> {
 // ============================================================================
 
 export function useConnections(projectId: string | null): UseApiResult<Connection[]> {
-  const [data, setData] = useState<Connection[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const query = useQuery({
+    queryKey: ['connections', projectId],
+    queryFn: () => unwrapPaginated(api.getConnections(projectId!), 'Failed to fetch connections'),
+    enabled: !!projectId,
+  });
 
-  const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  useEffect(() => {
-    if (!projectId) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    api.getConnections(projectId).then((res: ApiResponse<PaginatedResponse<Connection>>) => {
-      if (cancelled) return;
-      setLoading(false);
-      if (res.success && res.data) {
-        setData(res.data.data);
-        setError(null);
-      } else {
-        setData(null);
-        setError(res.error || 'Failed to fetch connections');
-      }
-    }).catch((err: unknown) => {
-      if (cancelled) return;
-      setLoading(false);
-      setData(null);
-      setError(err instanceof Error ? err.message : 'Network error');
-    });
-
-    return () => { cancelled = true; };
-  }, [projectId, refreshKey]);
-
-  return { data, loading, error, refetch };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? errorMessage(query.error, 'Failed to fetch connections') : null,
+    refetch: () => { void query.refetch(); },
+  };
 }
 
 // ============================================================================
@@ -250,45 +185,18 @@ export function useConnections(projectId: string | null): UseApiResult<Connectio
 // ============================================================================
 
 export function useReports(projectId: string | null): UseApiResult<Report[]> {
-  const [data, setData] = useState<Report[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const query = useQuery({
+    queryKey: ['reports', projectId],
+    queryFn: () => unwrapPaginated(api.getReports(projectId!), 'Failed to fetch reports'),
+    enabled: !!projectId,
+  });
 
-  const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  useEffect(() => {
-    if (!projectId) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    api.getReports(projectId).then((res: ApiResponse<PaginatedResponse<Report>>) => {
-      if (cancelled) return;
-      setLoading(false);
-      if (res.success && res.data) {
-        setData(res.data.data);
-        setError(null);
-      } else {
-        setData(null);
-        setError(res.error || 'Failed to fetch reports');
-      }
-    }).catch((err: unknown) => {
-      if (cancelled) return;
-      setLoading(false);
-      setData(null);
-      setError(err instanceof Error ? err.message : 'Network error');
-    });
-
-    return () => { cancelled = true; };
-  }, [projectId, refreshKey]);
-
-  return { data, loading, error, refetch };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? errorMessage(query.error, 'Failed to fetch reports') : null,
+    refetch: () => { void query.refetch(); },
+  };
 }
 
 // ============================================================================
@@ -305,178 +213,116 @@ interface UseMutationResult<TArgs, TResult> {
 
 // useCreateProject - Mutation hook for creating a project
 export function useCreateProject(): UseMutationResult<CreateProjectInput, Project> & { refetch: () => void } {
-  const [data, setData] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useMutation({
+    mutationFn: (input: CreateProjectInput) => unwrap(api.createProject(input), 'Failed to create project'),
+  });
 
-  const mutate = useCallback(async (input: CreateProjectInput): Promise<Project | null> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.createProject(input);
-      setLoading(false);
-      if (res.success && res.data) {
-        setData(res.data);
-        return res.data;
-      } else {
-        setError(res.error || 'Failed to create project');
+  return {
+    mutate: async (args: CreateProjectInput) => {
+      try {
+        const data = await mutation.mutateAsync(args);
+        return data;
+      } catch {
         return null;
       }
-    } catch (err: unknown) {
-      setLoading(false);
-      const msg = err instanceof Error ? err.message : 'Network error';
-      setError(msg);
-      return null;
-    }
-  }, []);
-
-  const reset = useCallback(() => {
-    setData(null);
-    setLoading(false);
-    setError(null);
-  }, []);
-
-  // Alias refetch as reset for consistency
-  return { mutate, loading, error, data, reset, refetch: reset };
+    },
+    loading: mutation.isPending,
+    error: mutation.error ? errorMessage(mutation.error, 'Failed to create project') : null,
+    data: mutation.data ?? null,
+    reset: mutation.reset,
+    refetch: mutation.reset, // Alias for backward compat (old code called refetch to clear state)
+  };
 }
 
 // useCreateDevice - Mutation hook for creating a device
 export function useCreateDevice(): UseMutationResult<{ projectId: string; data: CreateDeviceInput }, Device> {
-  const [data, setData] = useState<Device | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useMutation({
+    mutationFn: (args: { projectId: string; data: CreateDeviceInput }) =>
+      unwrap(api.createDevice(args.projectId, args.data), 'Failed to create device'),
+  });
 
-  const mutate = useCallback(async (args: { projectId: string; data: CreateDeviceInput }): Promise<Device | null> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.createDevice(args.projectId, args.data);
-      setLoading(false);
-      if (res.success && res.data) {
-        setData(res.data);
-        return res.data;
-      } else {
-        setError(res.error || 'Failed to create device');
+  return {
+    mutate: async (args: { projectId: string; data: CreateDeviceInput }) => {
+      try {
+        const data = await mutation.mutateAsync(args);
+        return data;
+      } catch {
         return null;
       }
-    } catch (err: unknown) {
-      setLoading(false);
-      const msg = err instanceof Error ? err.message : 'Network error';
-      setError(msg);
-      return null;
-    }
-  }, []);
-
-  const reset = useCallback(() => {
-    setData(null);
-    setLoading(false);
-    setError(null);
-  }, []);
-
-  return { mutate, loading, error, data, reset };
+    },
+    loading: mutation.isPending,
+    error: mutation.error ? errorMessage(mutation.error, 'Failed to create device') : null,
+    data: mutation.data ?? null,
+    reset: mutation.reset,
+  };
 }
 
 // useDeleteProject - Mutation hook for deleting a project
 export function useDeleteProject(): UseMutationResult<string, void> & { refetch: () => void } {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useMutation({
+    mutationFn: async (id: string) => {
+      await unwrap(api.deleteProject(id), 'Failed to delete project');
+    },
+  });
 
-  const mutate = useCallback(async (id: string): Promise<void | null> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.deleteProject(id);
-      setLoading(false);
-      if (res.success) {
+  return {
+    mutate: async (id: string) => {
+      try {
+        await mutation.mutateAsync(id);
         return undefined;
-      } else {
-        setError(res.error || 'Failed to delete project');
+      } catch {
         return null;
       }
-    } catch (err: unknown) {
-      setLoading(false);
-      const msg = err instanceof Error ? err.message : 'Network error';
-      setError(msg);
-      return null;
-    }
-  }, []);
-
-  const reset = useCallback(() => {
-    setLoading(false);
-    setError(null);
-  }, []);
-
-  return { mutate, loading, error, data: null, reset, refetch: reset };
+    },
+    loading: mutation.isPending,
+    error: mutation.error ? errorMessage(mutation.error, 'Failed to delete project') : null,
+    data: null,
+    reset: mutation.reset,
+    refetch: mutation.reset,
+  };
 }
 
 // useSyncProject - Mutation hook for syncing a project
 export function useSyncProject(): UseMutationResult<string, unknown> {
-  const [data, setData] = useState<unknown>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useMutation({
+    mutationFn: (projectId: string) => unwrap(api.syncProject(projectId), 'Failed to sync project'),
+  });
 
-  const mutate = useCallback(async (projectId: string): Promise<unknown | null> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.syncProject(projectId);
-      setLoading(false);
-      if (res.success) {
-        setData(res.data);
-        return res.data;
-      } else {
-        setError(res.error || 'Failed to sync project');
+  return {
+    mutate: async (projectId: string) => {
+      try {
+        const data = await mutation.mutateAsync(projectId);
+        return data;
+      } catch {
         return null;
       }
-    } catch (err: unknown) {
-      setLoading(false);
-      const msg = err instanceof Error ? err.message : 'Network error';
-      setError(msg);
-      return null;
-    }
-  }, []);
-
-  const reset = useCallback(() => {
-    setData(null);
-    setLoading(false);
-    setError(null);
-  }, []);
-
-  return { mutate, loading, error, data, reset };
+    },
+    loading: mutation.isPending,
+    error: mutation.error ? errorMessage(mutation.error, 'Failed to sync project') : null,
+    data: mutation.data ?? null,
+    reset: mutation.reset,
+  };
 }
 
 // useGenerateReport - Mutation hook for generating a report
 export function useGenerateReport(): UseMutationResult<{ projectId: string; data: { type: string; execution_params: Record<string, unknown> } }, Report> {
-  const [data, setData] = useState<Report | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useMutation({
+    mutationFn: (args: { projectId: string; data: { type: string; execution_params: Record<string, unknown> } }) =>
+      unwrap(api.generateReport(args.projectId, args.data), 'Failed to generate report'),
+  });
 
-  const mutate = useCallback(async (args: { projectId: string; data: { type: string; execution_params: Record<string, unknown> } }): Promise<Report | null> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.generateReport(args.projectId, args.data);
-      setLoading(false);
-      if (res.success && res.data) {
-        setData(res.data);
-        return res.data;
-      } else {
-        setError(res.error || 'Failed to generate report');
+  return {
+    mutate: async (args: { projectId: string; data: { type: string; execution_params: Record<string, unknown> } }) => {
+      try {
+        const data = await mutation.mutateAsync(args);
+        return data;
+      } catch {
         return null;
       }
-    } catch (err: unknown) {
-      setLoading(false);
-      const msg = err instanceof Error ? err.message : 'Network error';
-      setError(msg);
-      return null;
-    }
-  }, []);
-
-  const reset = useCallback(() => {
-    setData(null);
-    setLoading(false);
-    setError(null);
-  }, []);
-
-  return { mutate, loading, error, data, reset };
+    },
+    loading: mutation.isPending,
+    error: mutation.error ? errorMessage(mutation.error, 'Failed to generate report') : null,
+    data: mutation.data ?? null,
+    reset: mutation.reset,
+  };
 }

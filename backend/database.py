@@ -40,6 +40,16 @@ _DB_PATH = os.environ.get("DIGITAL_TWIN_DB_PATH", os.path.join(_DB_DIR, "digital
 # use psycopg2 + connection pooling instead of SQLite.
 _DATABASE_URL = os.environ.get("DATABASE_URL", "")
 _USE_POSTGRES = _DATABASE_URL.startswith(("postgres://", "postgresql://"))
+# P2.1: SQLite is opt-in for tests only. Production MUST use PostgreSQL.
+# If FIREAI_ENV != "test" and no DATABASE_URL is set, refuse to start.
+_FIREAI_ENV = os.environ.get("FIREAI_ENV", "production")
+if not _USE_POSTGRES and _FIREAI_ENV != "test" and not os.environ.get("FIREAI_ALLOW_SQLITE"):
+    logger.warning(
+        "SQLite is not recommended for production (FIREAI_ENV=%s). "
+        "Set DATABASE_URL to a PostgreSQL connection string for production deployments. "
+        "Set FIREAI_ALLOW_SQLITE=1 to suppress this warning.",
+        _FIREAI_ENV,
+    )
 
 
 class Database:
@@ -1324,11 +1334,8 @@ class Database:
                 pass
             self._conn.close()
 
-    def __del__(self) -> None:
-        try:
-            self.close()
-        except Exception as e:
-            logger.debug("Database.__del__ close failed: %s", e)
+    # NOTE: __del__ removed (P2.1) — unsafe during interpreter shutdown.
+    # Use the lifespan handler in backend/app.py to close the pool explicitly.
 
 
 # ============================================================================

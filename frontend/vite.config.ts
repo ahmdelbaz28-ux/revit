@@ -57,6 +57,9 @@ export default defineConfig({
           if (id.includes('node_modules/recharts/')) {
             return 'vendor-chart';
           }
+          if (id.includes('node_modules/mermaid/')) {
+            return 'vendor-mermaid';
+          }
           if (id.includes('node_modules/three/')) {
             return 'vendor-3d';
           }

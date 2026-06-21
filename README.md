@@ -1,4 +1,4 @@
-# CAD/BIM Integration Platform
+# FireAI — Safety-Critical Fire Protection Engineering Platform
 
 [![CI/CD Pipeline](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)
@@ -35,7 +35,7 @@ This platform provides bidirectional conversion between AutoCAD DWG files and Re
 ## Installation
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.12+ (P0.10: was 3.8+ — unified to 3.12+ to match pyproject.toml)
 - Windows OS (for AutoCAD/Revit integration)
 - AutoCAD (optional, for full functionality)
 - Revit (optional, for full functionality)
@@ -56,7 +56,15 @@ venv\Scripts\activate  # On Windows
 
 3. Install dependencies:
 ```bash
-pip install -r requirements.txt
+# P0.3: pyproject.toml is the single source of truth.
+# requirements.txt has been removed.
+pip install .
+
+# For ML subsystem:
+pip install .[ml]
+
+# For development:
+pip install .[dev]
 ```
 
 4. Run the application:
@@ -181,6 +189,36 @@ curl -X POST "http://localhost:8000/api/digital-twin/convert" \
     "target_filepath": "output.dwg",
     "conversion_type": "revit_to_autocad"
   }'
+```
+
+## ML Predictive Maintenance Subsystem (Q4 2026 Roadmap)
+
+The platform now includes an ML-based predictive maintenance subsystem that
+**complements** (does not replace) the existing statistical engine.
+
+### Key Features
+- **Ensemble prediction** combining XGBoost, Cox PH, and LSTM models
+- **SHAP explainability** for every prediction (IEC 61508 compliance)
+- **Advisory-only** outputs — NFPA 72 deterministic rules remain authoritative
+- **Cross-references** existing statistical baseline for audit
+- **Full REST API** at `/api/v1/ml/predictive-maintenance/*`
+- **React dashboard** with risk gauge, model comparison, and SHAP visualisations
+
+### Library Provenance
+ML libraries curated from
+[awesome-machine-learning](https://github.com/josephmisiti/awesome-machine-learning).
+
+### Documentation
+- See `ARCHITECTURE_ML_ADDENDUM.md` for full architectural details
+- See `fireai/ml/README.md` for module documentation
+- See `pyproject.toml [project.optional-dependencies.ml]` for ML dependencies
+
+### Quick Start
+```bash
+pip install .[ml]
+python scripts/train_ml_models_demo.py    # Train on synthetic data
+python scripts/test_ml_subsystem.py       # Smoke test
+pytest tests/ml/ -v                       # Full test suite
 ```
 
 ## Architecture

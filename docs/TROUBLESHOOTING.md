@@ -8,7 +8,7 @@
 
 **Fix**:
 ```bash
-pip install -r requirements.txt
+pip install .
 # For optional features:
 pip install fireai[workflow]  # if you need /api/workflow
 pip install fireai[memory]    # if you need /api/memory

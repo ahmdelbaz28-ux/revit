@@ -1,5 +1,13 @@
 /**
  * EngineeringPage.tsx - Fire Alarm Electrical Calculations
+ *
+ * P1.3 FIX (2026-06-20): Replaced placeholder math with real engine calls.
+ * Previously calculateCableSizing used hardcoded deratingFactor = 0.85 and
+ * ignored ambientTemp + installationMethod. calculateVoltageDrop used a
+ * simplified resistivity formula without reactance or phase multiplier.
+ * calculateBatteryRequirements didn't apply NFPA 72 §27.6.2 validation.
+ * Now all three route through frontend/src/engine/ which has proper IEC
+ * 60364 / NEC / NFPA 72 implementations.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +31,31 @@ import {
   Cable,
   Ruler,
 } from 'lucide-react';
+// P1.3: import real calculation engines
+import {
+  calculateVoltageDrop as engineCalcVoltageDrop,
+  calculateCableSizing as engineCalcCableSizing,
+  type CableMaterial,
+  type InstallationMethod,
+} from '@/engine/CalculationEngine';
+import {
+  calculateBatteryRequirements as engineCalcBattery,
+  validateBatteryCompliance,
+} from '@/engine/BatteryCalculator';
+
+// P1.3: BatteryCalcInput is not exported from BatteryCalculator, so we
+// redefine it locally to match the engine's expected shape.
+interface BatteryCalcInput {
+  devices: {
+    type: string;
+    standbyCurrent: number;  // mA
+    alarmCurrent: number;    // mA
+    count: number;
+  }[];
+  standbyHours: number;
+  alarmMinutes: number;
+  safetyFactor: number;
+}
 
 // ============================================================================
 // EngineeringPage Component
@@ -54,79 +87,141 @@ export function EngineeringPage() {
   });
 
   const calculateVoltageDrop = () => {
-    // Placeholder calculation
+    // P1.3: route through real engine. Previous implementation used a
+    // simplified resistivity formula (V = resistivity × L × 2 / crossSection)
+    // that ignored cable reactance, power factor, and phase multiplier.
+    // The real engine uses IEC 60364-5-52 Annex G:
+    //   ΔV = phaseMultiplier × I × L × (R·cosφ + X·sinφ)
+    // with phaseMultiplier = 2 (single-phase) or √3 (three-phase).
     const current = parseFloat(voltageDropInputs.current);
     const length = parseFloat(voltageDropInputs.length);
     const cableSize = parseFloat(voltageDropInputs.cableSize);
     const voltage = parseFloat(voltageDropInputs.voltage);
-    
+
     if (isNaN(current) || isNaN(length) || isNaN(cableSize) || isNaN(voltage)) {
       return { percentage: 0, absolute: 0 };
     }
-    
-    // Simplified calculation: Vdrop = (R * I * L) / 1000
-    // Where R is resistance per km (approximated)
-    const resistivity = voltageDropInputs.material === 'cu' ? 0.0172 : 0.0282; // Ohm·mm²/m
-    const resistance = (resistivity * length * 2) / cableSize; // *2 for round trip
-    const voltageDrop = current * resistance;
-    const percentage = (voltageDrop / voltage) * 100;
-    
-    return {
-      percentage: parseFloat(percentage.toFixed(2)),
-      absolute: parseFloat(voltageDrop.toFixed(3))
-    };
+
+    try {
+      const material: CableMaterial = voltageDropInputs.material === 'cu' ? 'Cu' : 'Al';
+      const result = engineCalcVoltageDrop(
+        current,
+        length,
+        material,
+        cableSize,
+        0.85, // powerFactor — fire alarm circuits are typically resistive
+        voltage,
+        'power', // circuitType — fire alarm NAC circuits are power circuits
+        'single', // phaseType — most fire alarm systems are single-phase
+      );
+      return {
+        percentage: result.percentage,
+        absolute: result.absoluteVoltage,
+        status: result.status,
+        limit: result.limit,
+      };
+    } catch {
+      // Engine throws on invalid input (negative current, etc.)
+      return { percentage: 0, absolute: 0 };
+    }
   };
 
   const calculateCableSizing = () => {
-    // Placeholder calculation
+    // P1.3: route through real engine. Previous implementation used
+    // hardcoded deratingFactor = 0.85 and IGNORED ambientTemp and
+    // installationMethod. The real engine uses IEC 60364-5-52:
+    //   deratingFactor = installationFactor × ambientTempFactor × simultaneousFactor
+    // with separate ampacity tables for Cu and Al (V131 FIX in engine).
     const loadCurrent = parseFloat(cableSizingInputs.loadCurrent);
-    const length = parseFloat(cableSizingInputs.length);
+    const length = parseFloat(cableSizingInputs.length); // eslint-disable-line @typescript-eslint/no-unused-vars
     const ambientTemp = parseFloat(cableSizingInputs.ambientTemp);
-    
-    if (isNaN(loadCurrent) || isNaN(length) || isNaN(ambientTemp)) {
+
+    if (isNaN(loadCurrent) || isNaN(ambientTemp)) {
       return { recommendedSize: 'N/A', baseAmpacity: 0, deratingFactor: 0, finalAmpacity: 0 };
     }
-    
-    // Simplified calculation
-    const baseAmpacity = loadCurrent * 1.25; // 25% safety factor
-    const deratingFactor = 0.85; // Simplified derating
-    const finalAmpacity = baseAmpacity * deratingFactor;
-    const recommendedSize = Math.ceil(finalAmpacity / 5) * 2.5; // Approximate size
-    
-    return {
-      recommendedSize: recommendedSize.toFixed(1),
-      baseAmpacity: parseFloat(baseAmpacity.toFixed(2)),
-      deratingFactor: parseFloat(deratingFactor.toFixed(2)),
-      finalAmpacity: parseFloat(finalAmpacity.toFixed(2))
+
+    // Map UI values to engine's InstallationMethod enum.
+    // UI uses 'free-air'/'conduit'/'trunking'; engine uses 'free_air'/'conduit'/'tray'.
+    const methodMap: Record<string, InstallationMethod> = {
+      'free-air': 'free_air',
+      'conduit': 'conduit',
+      'trunking': 'tray',
     };
+    const installationMethod = methodMap[cableSizingInputs.installationMethod] || 'free_air';
+
+    try {
+      const result = engineCalcCableSizing(
+        loadCurrent,
+        'Cu', // material — fire alarm circuits use copper per NFPA 72
+        installationMethod,
+        ambientTemp,
+        1.0, // simultaneousFactor — fire alarm loads are all-on simultaneously
+      );
+      return {
+        recommendedSize: result.recommendedCrossSection.toFixed(1),
+        baseAmpacity: result.ampacity,
+        deratingFactor: result.deratingFactor,
+        finalAmpacity: result.finalAmpacity,
+        ambientTempFactor: result.ambientTempFactor,
+        installationFactor: result.installationFactor,
+        suitable: result.suitable,
+      };
+    } catch {
+      return { recommendedSize: 'N/A', baseAmpacity: 0, deratingFactor: 0, finalAmpacity: 0 };
+    }
   };
 
   const calculateBatteryRequirements = () => {
-    // Placeholder calculation
+    // P1.3: route through real engine with NFPA 72 §27.6.2 validation.
+    // Previous implementation used a simplified formula without safety
+    // factor validation or 24h/5min minimum duration checks.
     const standbyDevices = parseInt(batteryCalcInputs.standbyDevices);
     const standbyCurrent = parseFloat(batteryCalcInputs.standbyCurrent);
     const alarmDevices = parseInt(batteryCalcInputs.alarmDevices);
     const alarmCurrent = parseFloat(batteryCalcInputs.alarmCurrent);
     const standbyHours = parseFloat(batteryCalcInputs.standbyHours);
     const alarmMinutes = parseFloat(batteryCalcInputs.alarmMinutes);
-    
-    if (isNaN(standbyDevices) || isNaN(standbyCurrent) || isNaN(alarmDevices) || 
+
+    if (isNaN(standbyDevices) || isNaN(standbyCurrent) || isNaN(alarmDevices) ||
         isNaN(alarmCurrent) || isNaN(standbyHours) || isNaN(alarmMinutes)) {
       return { totalStandbyCurrent: 0, totalAlarmCurrent: 0, requiredCapacity: 0, recommendedBattery: 'N/A' };
     }
-    
-    const totalStandbyCurrent = standbyDevices * standbyCurrent;
-    const totalAlarmCurrent = alarmDevices * alarmCurrent;
-    const standbyCapacity = (totalStandbyCurrent / 1000) * standbyHours;
-    const alarmCapacity = (totalAlarmCurrent / 1000) * (alarmMinutes / 60);
-    const requiredCapacity = (standbyCapacity + alarmCapacity) * 1.2; // 20% safety factor
-    
-    return {
-      totalStandbyCurrent: parseFloat(totalStandbyCurrent.toFixed(2)),
-      totalAlarmCurrent: parseFloat(totalAlarmCurrent.toFixed(2)),
-      requiredCapacity: parseFloat(requiredCapacity.toFixed(2)),
-      recommendedBattery: `24V ${Math.ceil(requiredCapacity)}Ah Lead Acid`
+
+    const input: BatteryCalcInput = {
+      devices: [
+        {
+          type: 'Standby devices',
+          standbyCurrent,
+          alarmCurrent: 0, // standby devices don't draw alarm current
+          count: standbyDevices,
+        },
+        {
+          type: 'Alarm devices',
+          standbyCurrent: 0, // alarm devices don't draw standby current in this simplified input
+          alarmCurrent,
+          count: alarmDevices,
+        },
+      ],
+      standbyHours,
+      alarmMinutes,
+      safetyFactor: 1.2, // NFPA 72 §27.6.2 recommends 20% safety factor
     };
+
+    try {
+      const result = engineCalcBattery(input);
+      const compliance = validateBatteryCompliance(result);
+      return {
+        totalStandbyCurrent: result.totalStandbyCurrent,
+        totalAlarmCurrent: result.totalAlarmCurrent,
+        requiredCapacity: result.requiredCapacity,
+        recommendedBattery: `${result.recommendedBattery.voltage}V ${result.recommendedBattery.capacity}Ah ${result.recommendedBattery.type}`,
+        complianceCompliant: compliance.compliant,
+        complianceViolations: compliance.violations,
+        complianceWarnings: compliance.warnings,
+      };
+    } catch {
+      return { totalStandbyCurrent: 0, totalAlarmCurrent: 0, requiredCapacity: 0, recommendedBattery: 'N/A' };
+    }
   };
 
   const vDropResult = calculateVoltageDrop();

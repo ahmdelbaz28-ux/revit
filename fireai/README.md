@@ -32,9 +32,17 @@ fireai/
 
 ## Installation
 ```bash
-pip install -r requirements.txt
+# P0.3: pyproject.toml is the single source of truth.
+# requirements.txt has been removed.
+pip install .
+
+# For ML subsystem (XGBoost + Cox PH + SHAP):
+pip install .[ml]
+
+# For development tooling:
+pip install .[dev]
 ```
-*Requirements include: fastapi, uvicorn, pydantic, shapely, slowapi, pulp*
+*Core deps include: fastapi, uvicorn, pydantic, shapely, slowapi, numpy, scipy, ezdxf, reportlab, pymupdf*
 
 ## Running the API
 ```bash

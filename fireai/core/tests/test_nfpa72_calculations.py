@@ -413,6 +413,86 @@ class TestMaxSpacing:
         # Sloped ceiling uses the lower of two heights
         assert spacing_sloped <= spacing_flat
 
+    # ── P0.1 regression (2026-06-20): heat vs smoke spacing ───────────────
+    # Previous calculate_max_spacing() ignored detector_type and returned
+    # the smoke spacing (9.1m) for every detector. This test enforces the
+    # fix: HEAT must receive a smaller, height-adjusted spacing per NFPA 72
+    # Table 17.6.3.1.1 (heat column).
+    def test_heat_detector_spacing_differs_from_smoke(self):
+        """Heat detectors must use the heat column of NFPA 72 Table 17.6.3.1.1.
+
+        At h<=3.0m: smoke S=9.1m, heat S=6.1m. A heat detector placed at
+        9.1m spacing would be 49% over the listed spacing — a life-safety
+        defect (insufficient thermal coverage).
+        """
+        ceiling = _flat_ceiling(3.0)
+        smoke_spacing = calculate_max_spacing(ceiling, DetectorType.SMOKE)
+        heat_spacing = calculate_max_spacing(ceiling, DetectorType.HEAT)
+        # Smoke = 9.1m per NFPA 72 §17.7.3.2.3 (flat at all heights)
+        assert smoke_spacing == pytest.approx(9.1, abs=0.1)
+        # Heat = 6.1m per NFPA 72 Table 17.6.3.1.1 (heat column at h<=3.0m)
+        assert heat_spacing == pytest.approx(6.1, abs=0.1)
+        # Heat spacing must be strictly less than smoke spacing
+        assert heat_spacing < smoke_spacing, (
+            f"Heat spacing {heat_spacing}m must be < smoke spacing {smoke_spacing}m. "
+            f"Heat detectors need CLOSER spacing than smoke (NFPA 72 Table 17.6.3.1.1)."
+        )
+
+    def test_heat_detector_spacing_decreases_with_height(self):
+        """Heat spacing shrinks as ceiling rises (1%/ft per Table 17.6.3.5.1).
+
+        Smoke spacing is FLAT 9.1m at all heights per §17.7.3.2.3, but
+        heat spacing decreases from 6.1m at h<=3.0m to 5.8m at h<=3.7m
+        and so on. This is the regression that the previous
+        calculate_max_spacing() could NEVER satisfy because it always
+        returned the smoke value.
+        """
+        low = calculate_max_spacing(_flat_ceiling(3.0), DetectorType.HEAT)
+        high = calculate_max_spacing(_flat_ceiling(9.0), DetectorType.HEAT)
+        assert high < low, (
+            f"Heat spacing at h=9.0m ({high}m) must be < at h=3.0m ({low}m) "
+            f"per NFPA 72 Table 17.6.3.5.1 height reduction."
+        )
+        # Smoke must remain flat
+        smoke_low = calculate_max_spacing(_flat_ceiling(3.0), DetectorType.SMOKE)
+        smoke_high = calculate_max_spacing(_flat_ceiling(9.0), DetectorType.SMOKE)
+        assert smoke_low == smoke_high
+
+    def test_heat_family_detectors_use_heat_spacing(self):
+        """All HEAT_* enum variants must classify as 'heat' spacing."""
+        ceiling = _flat_ceiling(3.0)
+        smoke_spacing = calculate_max_spacing(ceiling, DetectorType.SMOKE)
+        for variant in [
+            DetectorType.HEAT,
+            DetectorType.HEAT_FIXED,
+            DetectorType.HEAT_FIXED_TEMP,
+            DetectorType.HEAT_RATE_OF_RISE,
+            DetectorType.HEAT_COMBINATION,
+        ]:
+            v_spacing = calculate_max_spacing(ceiling, variant)
+            assert v_spacing == pytest.approx(6.1, abs=0.1), (
+                f"{variant} spacing {v_spacing}m must equal heat 6.1m at h=3.0m"
+            )
+            assert v_spacing < smoke_spacing
+
+    def test_combination_uses_smoke_spacing(self):
+        """COMBINATION / SMOKE_HEAT_COMBINATION use smoke spacing (permissive
+        column) because they contain a smoke element."""
+        ceiling = _flat_ceiling(3.0)
+        smoke = calculate_max_spacing(ceiling, DetectorType.SMOKE)
+        for variant in [DetectorType.COMBINATION, DetectorType.SMOKE_HEAT_COMBINATION]:
+            assert calculate_max_spacing(ceiling, variant) == pytest.approx(smoke, abs=0.05)
+
+    def test_flame_and_gas_use_conservative_heat_spacing(self):
+        """FLAME / GAS are not in the spacing table — conservative heat
+        column is used to prevent under-placement."""
+        ceiling = _flat_ceiling(3.0)
+        for variant in [DetectorType.FLAME, DetectorType.GAS]:
+            v_spacing = calculate_max_spacing(ceiling, variant)
+            assert v_spacing == pytest.approx(6.1, abs=0.1), (
+                f"{variant} must use conservative heat spacing 6.1m at h=3.0m"
+            )
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 13. estimate_detector_count_polygon

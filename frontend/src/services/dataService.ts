@@ -59,11 +59,15 @@ export class DataService {
   private apiKey: string | null = null;
 
   private constructor() {
-    // Try to load API key from localStorage or environment
+    // P1.6 FIX: use sessionStorage (was localStorage) to match the
+    // unified API key storage pattern. localStorage persists across
+    // browser sessions, increasing XSS attack window. sessionStorage
+    // is cleared when the tab closes, limiting key exposure time.
+    // Matches services/api.ts:36 + services/digitalTwinApi.ts:586.
     try {
-      this.apiKey = localStorage.getItem('fireai_api_key') || null;
+      this.apiKey = sessionStorage.getItem('fireai_api_key') || null;
     } catch {
-      // localStorage not available
+      // sessionStorage not available
     }
   }
 
@@ -79,12 +83,12 @@ export class DataService {
     this.apiKey = key;
     try {
       if (key) {
-        localStorage.setItem('fireai_api_key', key);
+        sessionStorage.setItem('fireai_api_key', key);
       } else {
-        localStorage.removeItem('fireai_api_key');
+        sessionStorage.removeItem('fireai_api_key');
       }
     } catch {
-      // localStorage not available
+      // sessionStorage not available
     }
   }
 

@@ -21,6 +21,7 @@ FIXES APPLIED:
 import os
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, status
@@ -34,6 +35,7 @@ from backend.services.digital_twin_service import (
     ConversionConfigManager,
     DigitalTwinService,
 )
+from parsers._path_security import validate_input_path, UnsafePathError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/digital-twin", tags=["digital-twin"])
@@ -56,17 +58,83 @@ def get_config_manager() -> ConversionConfigManager:
 def _safe_resolve_upload_path(filename: str) -> str:
     """Resolve a filename to a safe path within the uploads directory.
 
-    Prevents path traversal by ensuring the resolved path stays
-    within the designated uploads directory.
+    P0.2 FIX (2026-06-20): The previous implementation used
+    `os.path.normpath + startswith(abs_upload)` which is bypassable
+    in several ways:
+      - Case-insensitive filesystems (e.g. "Uploads/../etc" vs "uploads")
+        where startswith() compares strings, not canonical paths.
+      - Symlink chases: normpath does not resolve symlinks, so a symlink
+        inside upload_dir pointing outside would pass the check.
+      - Trailing-separator confusion: "uploads/" vs "uploads" prefix
+        match can be tricked with siblings like "uploads_evil/...".
+
+    Root-cause fix: reuse the centralised parsers._path_security.validate_input_path()
+    helper — the same security contract used by backend/routers/revit.py.
+
+    The function applies TWO security passes:
+      PASS 1 (string-level, on the user-supplied filename):
+        - Null-byte rejection (C-string truncation guard)
+        - Argument-injection guard (rejects filenames starting with "-")
+        These checks MUST run on the raw filename BEFORE joining to
+        upload_dir, because joining turns "-foo" into "uploads/-foo"
+        which no longer starts with "-" and bypasses the guard.
+
+      PASS 2 (path-level, on the joined path):
+        - Path.resolve() — follows symlinks, canonicalises case
+        - relative_to(allowed_base) check — true path-containment, not
+          string-prefix matching
+        - Existence check (FileNotFoundError on missing)
+
+    The function is intentionally stricter than the old one: it REQUIRES
+    the file to exist (404 on missing) and to live under
+    $FIREAI_ALLOWED_UPLOAD_DIRS (400 on escape attempt).
     """
+    # ── PASS 1: raw-string security checks on the user filename ───────
+    # We call validate_input_path() on the bare filename to invoke the
+    # null-byte and leading-dash guards. These run BEFORE the existence
+    # check, so they fire even when the path doesn't exist.
+    # FileNotFoundError is expected here (the bare filename won't exist
+    # as a relative path) — we swallow it and proceed to PASS 2.
+    try:
+        validate_input_path(filename, parser_name="digital_twin_router::filename")
+    except UnsafePathError as exc:
+        # Hard security rejection — log details, return generic 400.
+        logger.warning(
+            "Path traversal blocked in digital_twin (filename guard): %s", exc
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid filename. Contact administrator.",
+        ) from exc
+    except FileNotFoundError:
+        # Expected — the bare filename doesn't exist as a relative path.
+        # PASS 2 will check existence of the joined path.
+        pass
+
+    # ── PASS 2: path-containment check on the joined path ────────────
     upload_dir = os.getenv("FIREAI_UPLOAD_DIR", "uploads")
-    # Resolve to absolute path and ensure no path traversal
-    resolved = os.path.normpath(os.path.join(upload_dir, filename))
-    # Verify the resolved path is still within upload_dir
-    abs_upload = os.path.abspath(upload_dir)
-    if not resolved.startswith(abs_upload):
-        raise HTTPException(status_code=400, detail="Invalid file path")
-    return resolved
+    candidate = Path(upload_dir) / filename
+    try:
+        safe_path = validate_input_path(
+            str(candidate),
+            parser_name="digital_twin_router::joined",
+        )
+    except FileNotFoundError as exc:
+        # Benign missing-file case — let the caller return 404.
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found.",
+        ) from exc
+    except UnsafePathError as exc:
+        # Hard security rejection — log details, return generic 400.
+        logger.warning(
+            "Path traversal blocked in digital_twin (joined path): %s", exc
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File path is outside allowed directories. Contact administrator.",
+        ) from exc
+    return str(safe_path)
 
 
 # ── Pydantic models ────────────────────────────────────────────────────────

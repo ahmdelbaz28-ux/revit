@@ -40,9 +40,9 @@ curl http://localhost:8000/api/health
 
 ### Steps
 
-1. Install:
+1. Install (P0.3: pyproject.toml is SSoT, requirements.txt removed):
 ```bash
-pip install -r requirements.txt
+pip install .
 pip install fireai[workflow]  # optional
 pip install fireai[memory]    # optional
 ```

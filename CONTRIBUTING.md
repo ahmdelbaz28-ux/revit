@@ -55,7 +55,7 @@ pip install -e ".[dev,test]"
 ## How to Contribute
 
 ### Reporting Issues
-- Browse existing [issues](https://github.com/fireai/platform/issues)
+- Browse existing [issues](https://github.com/ahmdelbaz28-ux/revit/issues)
 - Comment on issues you'd like to work on
 - If creating a new issue, follow the template
 
