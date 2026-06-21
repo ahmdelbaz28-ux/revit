@@ -372,14 +372,17 @@ jobs:
           # Give the app a few seconds to bind to port 8000.
           sleep 5
 
-          # Test the health endpoint using Python (guaranteed to be
-          # installed on ubuntu runners — unlike curl/wget which are
-          # NOT installed on ubuntu:24.04 by default).
+          # Test the health endpoint using docker exec to run Python
+          # INSIDE the container. This avoids depending on curl/wget/
+          # python3 being installed on the runner host (ubuntu:24.04
+          # runners don't have curl or wget, and the docker-build job
+          # doesn't set up Python). The container is a python:3.11-slim
+          # image, so python3 is guaranteed to be available.
           echo "Testing /health endpoint..."
-          python3 -c "
+          docker exec test-app python3 -c "
           import urllib.request, sys
           try:
-              req = urllib.request.urlopen('http://localhost:8888/health', timeout=10)
+              req = urllib.request.urlopen('http://localhost:8000/health', timeout=10)
               print(f'HTTP {req.status}')
               if req.status == 200:
                   print('PASS: /health endpoint reachable')
