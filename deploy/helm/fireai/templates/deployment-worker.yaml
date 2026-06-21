@@ -1,3 +1,11 @@
+{{- /*
+V133 (2026-06-21): In DR standby mode, Worker is scaled to 0 to
+prevent duplicate async job processing (the primary region's Worker
+is still consuming the queue). When NOT in standby mode, the Worker
+Deployment is created normally.
+*/ -}}
+{{- $standbyMode := and .Values.multiRegion.enabled .Values.multiRegion.secondary.standby }}
+{{- if not $standbyMode }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +14,9 @@ metadata:
   labels:
     {{- include "fireai.labels" . | nindent 4 }}
     app.kubernetes.io/component: worker
+    {{- if $standbyMode }}
+    fireai.io/dr-role: standby
+    {{- end }}
 spec:
   replicas: {{ .Values.replicas.worker }}
   strategy:
@@ -23,6 +34,9 @@ spec:
         {{- include "fireai.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: worker
         app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+        {{- if $standbyMode }}
+        fireai.io/dr-role: standby
+        {{- end }}
       annotations:
         seccomp.security.alpha.kubernetes.io/pod: "runtime/default"
     spec:
@@ -97,3 +111,4 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+{{- end }}{{- /* end if not $standbyMode */ -}}

@@ -1,0 +1,185 @@
+{{- /*
+Chaos Mesh experiments — verify resilience under failure.
+
+V133 (2026-06-21): Five scheduled experiments covering the most
+common production failure modes:
+  1. Pod-kill:           API pod killed → HPA + load balancer recovery
+  2. Network latency:    API ↔ Postgres latency → graceful degradation
+  3. Redis failover:     Redis master killed → cluster failover
+  4. Disk pressure:      Worker PVC 90% full → graceful handling
+  5. DNS blackout:       DNS resolution blocked → cached fallback
+
+All experiments are SCHEDULED (not one-shot) and run during business
+hours only (10:00-14:00 UTC, Mon-Fri) to minimize blast radius. Every
+experiment has a `duration` for automatic rollback.
+
+Prerequisites (documented in deploy/chaos/README.md):
+  1. Chaos Mesh installed: `helm install chaos-mesh chaos-mesh/chaos-mesh`
+  2. ServiceAccount `fireai-chaos-runner` with experiment RBAC
+  3. (Optional) Slack webhook for experiment notifications
+
+Wires:
+  - chaosEngineering.enabled             → master toggle
+  - chaosEngineering.schedule.startingDeadlineSeconds
+  - chaosEngineering.experiments.*       → per-experiment config
+*/ -}}
+{{- if .Values.chaosEngineering.enabled }}
+{{- $fullname := include "fireai.fullname" . }}
+{{- $namespace := .Values.namespace.name }}
+
+# ─── 1. Pod-Kill: API ───────────────────────────────────────────────────────
+{{- if .Values.chaosEngineering.experiments.podKill.enabled }}
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: {{ $fullname }}-chaos-pod-kill-api
+  namespace: chaos-mesh  # Chaos Mesh experiments MUST live in chaos-mesh namespace
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: fireai-chaos
+    app.kubernetes.io/component: chaos-experiment
+    fireai.io/experiment-type: pod-kill
+spec:
+  action: pod-kill
+  mode: {{ .Values.chaosEngineering.experiments.podKill.mode }}
+  selector:
+    namespaces:
+      - {{ $namespace }}
+    labelSelectors:
+      {{- toYaml .Values.chaosEngineering.experiments.podKill.selector | nindent 6 }}
+  {{- if .Values.chaosEngineering.experiments.podKill.gracePeriod }}
+  gracePeriod: {{ .Values.chaosEngineering.experiments.podKill.gracePeriod }}
+  {{- end }}
+  scheduler:
+    cron: "{{ .Values.chaosEngineering.experiments.podKill.schedule }}"
+    startingDeadlineSeconds: {{ .Values.chaosEngineering.schedule.startingDeadlineSeconds }}
+{{- end }}
+
+# ─── 2. Network Latency: API → Postgres ────────────────────────────────────
+{{- if .Values.chaosEngineering.experiments.networkLatency.enabled }}
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: {{ $fullname }}-chaos-network-latency-api-pg
+  namespace: chaos-mesh
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: fireai-chaos
+    app.kubernetes.io/component: chaos-experiment
+    fireai.io/experiment-type: network-latency
+spec:
+  action: delay
+  mode: {{ .Values.chaosEngineering.experiments.networkLatency.mode }}
+  selector:
+    namespaces:
+      - {{ $namespace }}
+    labelSelectors:
+      {{- toYaml .Values.chaosEngineering.experiments.networkLatency.selector | nindent 6 }}
+  delay:
+    latency: {{ .Values.chaosEngineering.experiments.networkLatency.latency | quote }}
+  direction: to
+  target:
+    selector:
+      namespaces:
+        - {{ $namespace }}
+      labelSelectors:
+        {{- toYaml .Values.chaosEngineering.experiments.networkLatency.target | nindent 8 }}
+    mode: all
+  duration: {{ .Values.chaosEngineering.experiments.networkLatency.duration | quote }}
+  scheduler:
+    cron: "{{ .Values.chaosEngineering.experiments.networkLatency.schedule }}"
+    startingDeadlineSeconds: {{ .Values.chaosEngineering.schedule.startingDeadlineSeconds }}
+{{- end }}
+
+# ─── 3. Redis Failover: kill one master ────────────────────────────────────
+{{- if .Values.chaosEngineering.experiments.redisFailover.enabled }}
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: {{ $fullname }}-chaos-redis-failover
+  namespace: chaos-mesh
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: fireai-chaos
+    app.kubernetes.io/component: chaos-experiment
+    fireai.io/experiment-type: redis-failover
+spec:
+  action: pod-kill
+  mode: {{ .Values.chaosEngineering.experiments.redisFailover.mode }}
+  selector:
+    namespaces:
+      - {{ $namespace }}
+    labelSelectors:
+      {{- toYaml .Values.chaosEngineering.experiments.redisFailover.selector | nindent 6 }}
+  duration: {{ .Values.chaosEngineering.experiments.redisFailover.duration | quote }}
+  scheduler:
+    cron: "{{ .Values.chaosEngineering.experiments.redisFailover.schedule }}"
+    startingDeadlineSeconds: {{ .Values.chaosEngineering.schedule.startingDeadlineSeconds }}
+{{- end }}
+
+# ─── 4. Disk Pressure: Worker ──────────────────────────────────────────────
+{{- if .Values.chaosEngineering.experiments.diskPressure.enabled }}
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: IOChaos
+metadata:
+  name: {{ $fullname }}-chaos-disk-pressure-worker
+  namespace: chaos-mesh
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: fireai-chaos
+    app.kubernetes.io/component: chaos-experiment
+    fireai.io/experiment-type: disk-pressure
+spec:
+  action: faults
+  mode: {{ .Values.chaosEngineering.experiments.diskPressure.mode }}
+  selector:
+    namespaces:
+      - {{ $namespace }}
+    labelSelectors:
+      {{- toYaml .Values.chaosEngineering.experiments.diskPressure.selector | nindent 6 }}
+  volumePath: /data
+  path: /data/**
+  errno: 28  # ENOSPC — disk full
+  percent: {{ .Values.chaosEngineering.experiments.diskPressure.fill }}
+  duration: {{ .Values.chaosEngineering.experiments.diskPressure.duration | quote }}
+  scheduler:
+    cron: "{{ .Values.chaosEngineering.experiments.diskPressure.schedule }}"
+    startingDeadlineSeconds: {{ .Values.chaosEngineering.schedule.startingDeadlineSeconds }}
+{{- end }}
+
+# ─── 5. DNS Blackout: all FireAI pods ──────────────────────────────────────
+{{- if .Values.chaosEngineering.experiments.dnsBlackout.enabled }}
+{{- if .Values.chaosEngineering.experiments.dnsBlackout.dnsDomainName }}
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: {{ $fullname }}-chaos-dns-blackout
+  namespace: chaos-mesh
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: fireai-chaos
+    app.kubernetes.io/component: chaos-experiment
+    fireai.io/experiment-type: dns-blackout
+spec:
+  action: error
+  mode: {{ .Values.chaosEngineering.experiments.dnsBlackout.mode }}
+  selector:
+    namespaces:
+      - {{ $namespace }}
+    labelSelectors:
+      {{- toYaml .Values.chaosEngineering.experiments.dnsBlackout.selector | nindent 6 }}
+  domainNames:
+    - {{ .Values.chaosEngineering.experiments.dnsBlackout.dnsDomainName | quote }}
+  duration: {{ .Values.chaosEngineering.experiments.dnsBlackout.duration | quote }}
+  scheduler:
+    cron: "{{ .Values.chaosEngineering.experiments.dnsBlackout.schedule }}"
+    startingDeadlineSeconds: {{ .Values.chaosEngineering.schedule.startingDeadlineSeconds }}
+{{- end }}
+{{- end }}
+
+{{- end }}

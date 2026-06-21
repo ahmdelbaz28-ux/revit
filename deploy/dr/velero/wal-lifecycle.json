@@ -1,0 +1,17 @@
+{
+  "Rules": [
+    {
+      "ID": "wal-archive-expire-30d",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": ""
+      },
+      "Expiration": {
+        "Days": 30
+      },
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 7
+      }
+    }
+  ]
+}

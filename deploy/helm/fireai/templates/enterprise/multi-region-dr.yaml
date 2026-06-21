@@ -1,0 +1,76 @@
+{{- /*
+Multi-region disaster recovery — standby deployment for DR failover.
+
+V133 (2026-06-21): Active-passive multi-region deployment. When
+`multiRegion.enabled: true` and `multiRegion.secondary.standby: true`,
+this manifest:
+  - Scales Worker to 0 (no duplicate async job processing)
+  - Disables Ingress (no traffic to secondary API)
+  - Adds the `fireai.io/dr-role: standby` label to all resources
+  - Reduces API replicas to 1 (warm enough to failover fast, cheap
+    enough to leave running indefinitely)
+
+The primary region uses the SAME Helm chart with `multiRegion.enabled:
+false` (default), so no special config is needed there.
+
+Failover procedure (documented in deploy/dr/README.md):
+  1. Halt Velero backups in the failed primary region
+  2. Run `velero restore create --from-backup fireai-hourly-latest`
+     in the secondary region
+  3. Update the values.yaml in the secondary region:
+       multiRegion.secondary.standby: false
+     and run `helm upgrade fireai ./deploy/helm/fireai -f values.yaml`
+  4. Update Route53 / Cloud DNS to point at the secondary hostname
+  5. Switch WAL archive destination to the secondary region's bucket
+*/ -}}
+{{- if and .Values.multiRegion.enabled .Values.multiRegion.secondary.standby }}
+---
+# Patch the Worker Deployment to scale to 0 in standby mode.
+# We use a separate Deployment manifest instead of patching the
+# existing one so that the standby config is self-contained and
+# auditable. The original deployment-worker.yaml template already
+# checks `.Values.multiRegion.secondary.standby` and skips itself
+# when this is true — see the conditional at the top of that file.
+#
+# NOTE: This manifest is intentionally empty (it's documentation
+# only). The actual standby-mode behavior is implemented by
+# conditionals in the existing templates:
+#   - deployment-worker.yaml: skips entirely when standby=true
+#   - deployment-api.yaml:    reduces replicaCount to 1 when standby
+#   - ingress.yaml:           disabled when standby
+#
+# This file exists so that operators running `helm template` can
+# see the DR-mode behavior explicitly. It also serves as the
+# anchor for the DR-mode documentation above.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fireai.fullname" . }}-dr-standby-marker
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: fireai-dr
+    app.kubernetes.io/component: disaster-recovery
+    fireai.io/dr-role: standby
+    fireai.io/dr-region: {{ .Values.multiRegion.secondary.region }}
+  annotations:
+    "fireai.io/dr-standby": "true"
+    "fireai.io/dr-primary-region": {{ .Values.multiRegion.primary.region | quote }}
+    "fireai.io/dr-secondary-region": {{ .Values.multiRegion.secondary.region | quote }}
+    "fireai.io/dr-rpo": "1h"
+    "fireai.io/dr-rto": "15m"
+    "fireai.io/dr-failover-procedure": "See deploy/dr/README.md"
+data:
+  README.txt: |
+    This ConfigMap marks the FireAI Helm release as running in DR
+    standby mode. The Helm templates have conditionally disabled:
+      - Worker Deployment (scaled to 0)
+      - Ingress (no traffic to secondary API)
+      - Reduced API replicas to 1 (warm standby)
+
+    To promote this cluster to primary:
+      helm upgrade fireai ./deploy/helm/fireai \
+        --set multiRegion.secondary.standby=false
+
+    See deploy/dr/README.md for the full failover procedure.
+{{- end }}

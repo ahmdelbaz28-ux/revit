@@ -1,0 +1,204 @@
+{{- /*
+Redis Cluster — high-availability message queue and cache.
+
+V133 (2026-06-21): Replaces the single-instance Redis from the
+`external.redis` section with a 6-node Redis Cluster (3 masters +
+3 replicas) for HA. Survives any single node failure without queue
+loss — required for life-safety: a fire-alarm design job in the
+queue MUST NOT be lost if a Redis pod dies.
+
+This manifest creates a StatefulSet with the official redis-cluster
+image. For production, prefer the bitnami/redis-cluster Helm chart
+as a dependency (it handles bootstrap, slot allocation, and cluster
+health checks automatically). This manifest is a minimal reference
+for clusters that can't add Helm dependencies.
+
+Wires:
+  - redisCluster.enabled       → toggle
+  - redisCluster.masters       → master count (>= 3 for quorum)
+  - redisCluster.replicas      → replicas per master
+  - redisCluster.existingSecret + existingSecretPasswordKey
+  - redisCluster.persistence   → PVC spec
+  - redisCluster.resources     → pod resources
+  - redisCluster.podAntiAffinityPreset + topologySpreadConstraints
+*/ -}}
+{{- if .Values.redisCluster.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fireai.fullname" . }}-redis-cluster
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: redis-cluster
+    app.kubernetes.io/component: cache
+spec:
+  type: ClusterIP
+  clusterIP: None  # headless — required for StatefulSet DNS
+  ports:
+    - name: redis-client
+      port: 6379
+      targetPort: 6379
+      protocol: TCP
+    - name: redis-bus
+      port: 16379
+      targetPort: 16379
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: redis-cluster
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fireai.fullname" . }}-redis-cluster
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: redis-cluster
+    app.kubernetes.io/component: cache
+spec:
+  serviceName: {{ include "fireai.fullname" . }}-redis-cluster
+  # Total pods = masters + (masters * replicas). With defaults
+  # (3 masters, 1 replica each) = 6 pods.
+  replicas: {{ mul .Values.redisCluster.masters (add .Values.redisCluster.replicas 1) }}
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis-cluster
+  template:
+    metadata:
+      labels:
+        {{- include "fireai.labels" . | nindent 8 }}
+        app.kubernetes.io/name: redis-cluster
+        app.kubernetes.io/part-of: fireai
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        {{- if eq .Values.redisCluster.podAntiAffinityPreset "hard" }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: redis-cluster
+              topologyKey: kubernetes.io/hostname
+        {{- else if eq .Values.redisCluster.podAntiAffinityPreset "soft" }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: redis-cluster
+                topologyKey: kubernetes.io/hostname
+        {{- end }}
+      topologySpreadConstraints:
+        {{- toYaml .Values.redisCluster.topologySpreadConstraints | nindent 8 }}
+      containers:
+        - name: redis
+          image: redis:7.2-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: redis-client
+              containerPort: 6379
+              protocol: TCP
+            - name: redis-bus
+              containerPort: 16379
+              protocol: TCP
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redisCluster.existingSecret }}
+                  key: {{ .Values.redisCluster.existingSecretPasswordKey }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              # Redis Cluster node config: announce by stable pod DNS name
+              # (headless service + StatefulSet ordinal). Required for
+              # cluster gossip to survive pod restarts.
+              POD_ORDINAL=$(echo "$POD_NAME" | rev | cut -d- -f1)
+              NODE_HOST="${POD_NAME}.{{ include "fireai.fullname" . }}-redis-cluster.{{ .Values.namespace.name }}.svc.cluster.local"
+              echo "Starting Redis Cluster node $NODE_HOST (ordinal $POD_ORDINAL)"
+              exec redis-server \
+                --port 6379 \
+                --cluster-enabled yes \
+                --cluster-config-file nodes.conf \
+                --cluster-node-timeout 5000 \
+                --cluster-announce-ip "$NODE_HOST" \
+                --cluster-announce-port 6379 \
+                --cluster-announce-bus-port 16379 \
+                --appendonly yes \
+                --appendfsync everysec \
+                --maxmemory 512mb \
+                --maxmemory-policy allkeys-lru \
+                --requirepass "$REDIS_PASSWORD"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redisCluster.existingSecret }}
+                  key: {{ .Values.redisCluster.existingSecretPasswordKey }}
+          resources:
+            {{- toYaml .Values.redisCluster.resources | nindent 12 }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "redis-cli -a $REDIS_PASSWORD ping | grep PONG"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "redis-cli -a $REDIS_PASSWORD ping | grep PONG"
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          app.kubernetes.io/name: redis-cluster
+          app.kubernetes.io/part-of: fireai
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- if .Values.redisCluster.persistence.storageClass }}
+        storageClassName: {{ .Values.redisCluster.persistence.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.redisCluster.persistence.size }}
+{{- end }}

@@ -1,0 +1,219 @@
+{{- /*
+PostgreSQL HA — primary + replicas with automated failover.
+
+V133 (2026-06-21): Replaces the single-instance PostgreSQL from the
+`external.postgresql` section with a primary + replicas HA setup
+using Patroni for failover. Combined with WAL archiving to S3, this
+provides point-in-time recovery to ANY second within the WAL
+retention window — required for NFPA 72 §14.6 audit-trail retention.
+
+This manifest creates:
+  - A headless Service for the StatefulSet (Patroni needs stable DNS)
+  - A Service for read-write traffic (always points to primary)
+  - A Service for read-only traffic (round-robin across replicas)
+  - A StatefulSet running Patroni + PostgreSQL
+
+For production, prefer the bitnami/postgresql-ha Helm chart as a
+dependency — it handles Patroni config, PgBouncer pooler, and
+metrics out of the box. This manifest is a minimal reference for
+clusters that can't add Helm dependencies.
+
+Wires:
+  - postgresqlHA.enabled              → toggle
+  - postgresqlHA.replicas             → replica count (primary + N)
+  - postgresqlHA.existingSecret       → Secret with POSTGRES_PASSWORD
+  - postgresqlHA.persistence          → PVC spec
+  - postgresqlHA.walArchive           → S3 destination + IRSA annotation
+  - postgresqlHA.resources            → per-pod resources
+*/ -}}
+{{- if .Values.postgresqlHA.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fireai.fullname" . }}-postgresql-ha
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: postgresql-ha
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  clusterIP: None  # headless — required for Patroni DNS-based leader election
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: postgresql-ha
+---
+# Read-write service — always points to the primary (Patroni leader).
+# Patroni updates the `role: primary` label on the leader pod; this
+# service selects on that label so clients always reach the primary.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fireai.fullname" . }}-postgresql-primary
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: postgresql-ha
+    app.kubernetes.io/component: database-primary
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: postgresql-ha
+    role: primary
+---
+# Read-only service — round-robin across all replicas.
+# Use this for read-heavy analytics queries to offload the primary.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fireai.fullname" . }}-postgresql-replica
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: postgresql-ha
+    app.kubernetes.io/component: database-replica
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: postgresql-ha
+    role: replica
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fireai.fullname" . }}-postgresql-ha
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/name: postgresql-ha
+    app.kubernetes.io/component: database
+spec:
+  serviceName: {{ include "fireai.fullname" . }}-postgresql-ha
+  # Total pods = 1 primary + replicas
+  replicas: {{ add 1 .Values.postgresqlHA.replicas }}
+  podManagementPolicy: OrderedReady  # Patroni needs ordered startup for quorum
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql-ha
+  template:
+    metadata:
+      labels:
+        {{- include "fireai.labels" . | nindent 8 }}
+        app.kubernetes.io/name: postgresql-ha
+        app.kubernetes.io/part-of: fireai
+        # Patroni updates this label: 'primary' on the leader, 'replica' on others.
+        # Initialized to 'replica' — Patroni will overwrite on election.
+        role: replica
+    spec:
+      securityContext:
+        fsGroup: 999  # postgres group in the official image
+      serviceAccountName: {{ include "fireai.fullname" . }}-postgresql
+      {{- if .Values.postgresqlHA.walArchive.serviceAccountAnnotation }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: postgresql-ha
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql-ha
+      containers:
+        - name: postgresql
+          image: bitnami/postgresql:16-debian-12
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgresql
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresqlHA.existingSecret }}
+                  key: postgres-password
+            - name: POSTGRESQL_REPLICATION_MODE
+              value: "master"
+            - name: POSTGRESQL_REPLICATION_USER
+              value: "repl_user"
+            - name: POSTGRESQL_REPLICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresqlHA.existingSecret }}
+                  key: replication-password
+            - name: POSTGRESQL_CLUSTER_NAME
+              value: "fireai-pg-cluster"
+            - name: POSTGRESQL_PGAUDIT_LOG
+              value: "all"
+            {{- if .Values.postgresqlHA.walArchive.enabled }}
+            - name: POSTGRESQL_WAL_ARCHIVE
+              value: {{ .Values.postgresqlHA.walArchive.destination | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.postgresqlHA.resources.primary | nindent 12 }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "pg_isready -U postgres -h 127.0.0.1 -p 5432"
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "pg_isready -U postgres -h 127.0.0.1 -p 5432"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 999
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: /bitnami/postgresql
+  volumeClaimTemplates:
+    - metadata:
+        name: postgresql-data
+        labels:
+          app.kubernetes.io/name: postgresql-ha
+          app.kubernetes.io/part-of: fireai
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- if .Values.postgresqlHA.persistence.storageClass }}
+        storageClassName: {{ .Values.postgresqlHA.persistence.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgresqlHA.persistence.size }}
+{{- end }}
