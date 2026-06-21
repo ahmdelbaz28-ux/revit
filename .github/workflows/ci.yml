@@ -346,13 +346,16 @@ jobs:
           load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # V133: Disable GHA cache — it was serving stale pip install
-          # layers after requirements.txt changed, causing the import
-          # check to fail on missing dependencies. The build is fast
-          # enough without cache (~3 min) and correctness > speed.
-          cache-from: ""
-          cache-to: ""
-          no-cache: true
+          # V133: Re-enabled GHA cache with proper cache key. The
+          # Dockerfile's COPY requirements.txt . step already invalidates
+          # the pip install layer when requirements.txt changes — the
+          # previous stale-cache issue was caused by the old Dockerfile
+          # not upgrading pip/setuptools before the COPY, which made
+          # the layer hash not depend on pip version. With the current
+          # Dockerfile (pip upgrade + force-reinstall packaging), the
+          # cache key correctly includes requirements.txt content.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Test Docker container
         run: |
@@ -377,27 +380,32 @@ jobs:
           }
           echo "PASS: Docker image built and inspectable"
 
-          # Verify key Python modules are importable in the image.
-          # We don't import backend.app directly because it triggers
-          # FastAPI router registration which requires runtime deps
-          # (DB, Redis) and has version-sensitive Pydantic ForwardRef
-          # behavior. Instead, verify the core modules that the app
-          # depends on are installed and importable.
+          # Verify Python imports in the image. Two-tier check:
+          #   1. Try importing backend.app (the real app entry point).
+          #      If this succeeds, the app is fully functional.
+          #   2. If backend.app fails (e.g. due to pre-existing FastAPI
+          #      ForwardRef issues with pinned versions), fall back to
+          #      verifying all core dependencies are importable. This
+          #      still catches missing-dependency bugs (like the
+          #      slowapi/packaging issues we fixed) without blocking
+          #      on pre-existing app-level issues.
           echo "Verifying Python imports in the image..."
           docker run --rm --entrypoint python "$IMAGE_TAG" -c "
           import sys
+
+          # Tier 1: try the real app import
+          try:
+              import backend.app
+              print('PASS: backend.app imports successfully (full app import)')
+              sys.exit(0)
+          except Exception as e:
+              print(f'WARNING: backend.app import failed: {e}')
+              print('Falling back to core module check...')
+
+          # Tier 2: verify all core dependencies
           modules = [
-              'fastapi',
-              'uvicorn',
-              'pydantic',
-              'slowapi',
-              'packaging',
-              'numpy',
-              'pandas',
-              'scipy',
-              'lxml',
-              'bs4',
-              'psutil',
+              'fastapi', 'uvicorn', 'pydantic', 'slowapi', 'packaging',
+              'numpy', 'pandas', 'scipy', 'lxml', 'bs4', 'psutil',
           ]
           failed = []
           for mod in modules:
@@ -408,9 +416,9 @@ jobs:
                   print(f'  FAIL: {mod} — {e}')
                   failed.append(mod)
           if failed:
-              print(f'FAIL: {len(failed)} module(s) could not be imported: {failed}')
+              print(f'FAIL: {len(failed)} core module(s) could not be imported: {failed}')
               sys.exit(1)
-          print('PASS: all core modules import successfully')
+          print('PASS: all core modules import successfully (backend.app has pre-existing issues)')
           " || {
             echo "FAIL: module import check failed"
             exit 1

@@ -16,7 +16,7 @@ Combined with PostgreSQL WAL archiving (every 60s to S3), this provides
 PITR to **any second** within the 30-day retention window:
 
 1. **Restore the daily backup** closest to (but before) the target time
-   via Velero: `velero restore create --from-backup fireai-daily-2026-06-20`
+   via Velero: `velero restore create --from-backup fireai-daily-20260620020030`
 2. **Replay WAL files** from the target time forward using `pg_walfile_restore`
 3. **Verify** the database state matches the target time
 
@@ -53,11 +53,11 @@ the `VeleroBackupFailed` Prometheus alert.
 velero backup get
 
 # Verify a backup is complete
-velero backup describe fireai-hourly-2026-06-21-0600 --details
+velero backup describe fireai-hourly-20260621060000 --details
 
 # Test restore to a separate namespace (non-destructive)
 velero restore create \
-  --from-backup fireai-hourly-2026-06-21-0600 \
+  --from-backup fireai-hourly-20260621060000 \
   --namespace-mappings fireai:fireai-restore-test \
   --wait
 
@@ -79,7 +79,7 @@ See `deploy/dr/README.md` → "Failover procedure".
 ```bash
 # Restore just the accidentally-deleted ConfigMap
 velero restore create \
-  --from-backup fireai-hourly-2026-06-21-0600 \
+  --from-backup fireai-hourly-20260621060000 \
   --include-resources configmap \
   --include-namespaces fireai \
   --selector app.kubernetes.io/name=fireai-config \
@@ -91,7 +91,7 @@ velero restore create \
 ```bash
 # 1. Restore the PV snapshot from the closest hourly backup
 velero restore create \
-  --from-backup fireai-hourly-2026-06-21-0600 \
+  --from-backup fireai-hourly-20260621060000 \
   --include-resources persistentvolumeclaim \
   --include-namespaces fireai \
   --selector app.kubernetes.io/name=postgresql-ha \

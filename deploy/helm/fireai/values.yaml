@@ -282,6 +282,10 @@ secrets:
       GEMINI_API_KEY: ""
       ENCRYPTION_KEY: ""
       JWT_SECRET: ""
+      # V133: PostgreSQL HA replication password (separate from DB_PASSWORD
+      # for security — the replication user has different privileges).
+      # Required when postgresqlHA.enabled is true.
+      REPLICATION_PASSWORD: ""
   fireai-tls:
     type: kubernetes.io/tls
     stringData:
@@ -414,10 +418,12 @@ redisCluster:
   # one replica, so total pods = masters * 2.
   masters: 3
   replicas: 1
-  # Redis Cluster password — must reference an existing Secret. NEVER
-  # put the password in plaintext in values.yaml.
-  existingSecret: fireai-redis-cluster
-  existingSecretPasswordKey: redis-password
+  # Redis Cluster password — references the EXISTING fireai-secrets
+  # Secret (same one used by the API/Worker pods) with the key
+  # REDIS_PASSWORD. This avoids requiring a separate Secret just for
+  # Redis Cluster.
+  existingSecret: fireai-secrets
+  existingSecretPasswordKey: REDIS_PASSWORD
   # Persistence — survives pod restarts and node failures.
   persistence:
     enabled: true
@@ -451,9 +457,14 @@ postgresqlHA:
   # Number of PostgreSQL replicas (excluding primary). 2 replicas = 3
   # total PostgreSQL pods. Quorum requires odd number of Patroni nodes.
   replicas: 2
-  # Existing Secret with POSTGRES_PASSWORD, REPLICATION_PASSWORD,
-  # PMM_API_KEY (optional). NEVER commit passwords to git.
-  existingSecret: fireai-postgresql-ha
+  # References the EXISTING fireai-secrets Secret (same one used by
+  # the API/Worker pods). The Secret must contain:
+  #   DB_PASSWORD — PostgreSQL admin password (used by the app too)
+  #   REPLICATION_PASSWORD — PostgreSQL replication password (HA only)
+  # NEVER commit passwords to git.
+  existingSecret: fireai-secrets
+  postgresPasswordKey: DB_PASSWORD
+  replicationPasswordKey: REPLICATION_PASSWORD
   persistence:
     enabled: true
     storageClass: standard

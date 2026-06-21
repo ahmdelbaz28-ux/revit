@@ -151,7 +151,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.postgresqlHA.existingSecret }}
-                  key: postgres-password
+                  key: {{ .Values.postgresqlHA.postgresPasswordKey | default "DB_PASSWORD" }}
             - name: POSTGRESQL_REPLICATION_MODE
               value: "master"
             - name: POSTGRESQL_REPLICATION_USER
@@ -160,7 +160,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.postgresqlHA.existingSecret }}
-                  key: replication-password
+                  key: {{ .Values.postgresqlHA.replicationPasswordKey | default "REPLICATION_PASSWORD" }}
             - name: POSTGRESQL_CLUSTER_NAME
               value: "fireai-pg-cluster"
             - name: POSTGRESQL_PGAUDIT_LOG

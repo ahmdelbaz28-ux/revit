@@ -1,42 +1,13 @@
 {
   "Rules": [
     {
-      "ID": "velero-hourly-expire",
+      "ID": "velero-backup-expire-24h",
       "Status": "Enabled",
       "Filter": {
-        "Prefix": "fireai/hourly/"
-      },
-      "Expiration": {
-      "Days": 1
+        "Prefix": "fireai/"
       },
       "NoncurrentVersionExpiration": {
         "NoncurrentDays": 1
-      }
-    },
-    {
-      "ID": "velero-daily-expire",
-      "Status": "Enabled",
-      "Filter": {
-        "Prefix": "fireai/daily/"
-      },
-      "Expiration": {
-        "Days": 30
-      },
-      "NoncurrentVersionExpiration": {
-        "NoncurrentDays": 30
-      }
-    },
-    {
-      "ID": "velero-weekly-expire",
-      "Status": "Enabled",
-      "Filter": {
-        "Prefix": "fireai/weekly/"
-      },
-      "Expiration": {
-        "Days": 90
-      },
-      "NoncurrentVersionExpiration": {
-        "NoncurrentDays": 90
       }
     }
   ]
