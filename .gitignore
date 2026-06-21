@@ -193,6 +193,10 @@ Thumbs.db
 *.sqlite3-wal
 fireai_learning.sqlite3
 db/api_keys.json
+db/api_keys.secret
+# Catch-all for any API key / secret file pattern
+*.secret
+api_keys.*
 
 # Logs
 *.log

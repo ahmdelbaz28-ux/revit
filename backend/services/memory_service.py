@@ -65,9 +65,85 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
+
+
+# ── Input Normalization Helper (Arabic-mistype → English recovery) ─────────
+#
+# When a user's OS keyboard is set to Arabic, queries typed in English
+# produce Arabic glyphs. We recover the intended English text before
+# sending the query to the LLM/embedding layer (otherwise the search
+# would silently return zero results).
+#
+# OFF by default. Enabled via FIREAI_INPUT_NORMALIZATION_ENABLED=true.
+# See fireai/core/input_normalizer.py for the full pipeline.
+
+_MEMORY_NORMALIZER_CONFIG_CACHE: Optional[bool] = None
+
+
+def _memory_norm_enabled() -> bool:
+    """Cached read of the input-normalization config flag."""
+    global _MEMORY_NORMALIZER_CONFIG_CACHE
+    if _MEMORY_NORMALIZER_CONFIG_CACHE is not None:
+        return _MEMORY_NORMALIZER_CONFIG_CACHE
+    try:
+        from fireai.env_config import config
+        _MEMORY_NORMALIZER_CONFIG_CACHE = config.input_normalization_enabled
+    except Exception:  # noqa: BLE001
+        _MEMORY_NORMALIZER_CONFIG_CACHE = False
+    return _MEMORY_NORMALIZER_CONFIG_CACHE
+
+
+def _normalize_memory_text(value: Any) -> Any:
+    """Normalize free-text inputs to the memory service.
+
+    Handles both str and list-of-message-dicts (the two accepted
+    shapes for ``MemoryAddRequest.messages``). Returns the value
+    unchanged if normalization is disabled or the input is not text.
+    """
+    if not _memory_norm_enabled():
+        return value
+    try:
+        from fireai.core.input_normalizer import normalize_user_text
+    except ImportError:
+        return value
+
+    if isinstance(value, str) and value:
+        result = normalize_user_text(value, context="free_text")
+        if result.transform_applied != "none":
+            logger.info(
+                "memory_input_normalized",
+                extra={
+                    "transform": result.transform_applied,
+                    "language": result.detected_language,
+                    "field": "messages/string",
+                },
+            )
+        return result.normalized
+    if isinstance(value, list):
+        # Each item may be a message dict with a 'content' key.
+        normalized_list = []
+        for item in value:
+            if isinstance(item, dict) and isinstance(item.get("content"), str):
+                result = normalize_user_text(
+                    item["content"], context="free_text"
+                )
+                if result.transform_applied != "none":
+                    logger.info(
+                        "memory_input_normalized",
+                        extra={
+                            "transform": result.transform_applied,
+                            "language": result.detected_language,
+                            "field": "messages/list/content",
+                        },
+                    )
+                normalized_list.append({**item, "content": result.normalized})
+            else:
+                normalized_list.append(item)
+        return normalized_list
+    return value
 
 
 # ── Persistent Storage Paths ────────────────────────────────────────────────
@@ -141,6 +217,15 @@ class MemoryAddRequest(BaseModel):
         description="Memory type: semantic_memory, episodic_memory, procedural_memory"
     )
 
+    @field_validator("messages")
+    @classmethod
+    def normalize_messages_field(cls, v):
+        """Recover Arabic-mistype input to its intended English text.
+
+        No-op unless FIREAI_INPUT_NORMALIZATION_ENABLED=true.
+        """
+        return _normalize_memory_text(v)
+
 
 class MemorySearchRequest(BaseModel):
     """Request model for searching memories."""
@@ -150,6 +235,17 @@ class MemorySearchRequest(BaseModel):
     run_id: Optional[str] = Field(None, description="Filter by project/run")
     top_k: int = Field(10, ge=1, le=50, description="Maximum results to return")
     threshold: float = Field(0.3, ge=0.0, le=1.0, description="Minimum similarity threshold")
+
+    @field_validator("query")
+    @classmethod
+    def normalize_query_field(cls, v):
+        """Recover Arabic-mistype input to its intended English text.
+
+        Critical for memory search: an Arabic-mistype query would
+        otherwise produce zero matches in the vector store, making
+        the memory layer appear broken to the user.
+        """
+        return _normalize_memory_text(v)
 
 
 class MemoryResult(BaseModel):

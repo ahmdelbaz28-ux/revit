@@ -53,6 +53,12 @@ class FireAIConfig:
     coverage_threshold_pct: float
     langfuse_enabled: bool
     langfuse_host: str
+    # Input normalization (Arabic→English QWERTY mistype recovery).
+    # OFF by default per agent.md "Safety > Convenience" — must be
+    # explicitly enabled. When enabled, free-text fields in API
+    # requests are normalized via fireai.core.input_normalizer.
+    input_normalization_enabled: bool
+    input_normalization_log_only: bool
 
     def __post_init__(self) -> None:
         # Validate database path is writable (unless :memory: or testing)
@@ -160,14 +166,22 @@ def _load_config() -> FireAIConfig:
         coverage_threshold_pct=_env_float("FIREAI_COVERAGE_THRESHOLD_PCT", 99.0, 90.0, 100.0),
         langfuse_enabled=langfuse_enabled,
         langfuse_host=langfuse_host,
+        input_normalization_enabled=_env_bool(
+            "FIREAI_INPUT_NORMALIZATION_ENABLED", False
+        ),
+        input_normalization_log_only=_env_bool(
+            "FIREAI_INPUT_NORMALIZATION_LOG_ONLY", False
+        ),
     )
 
     logger.info(
-        "FireAI configuration loaded: env=%s, db=%s, coverage_threshold=%.2f%%, langfuse=%s",
+        "FireAI configuration loaded: env=%s, db=%s, coverage_threshold=%.2f%%, langfuse=%s, input_norm=%s",
         cfg.environment,
         cfg.database_path,
         cfg.coverage_threshold_pct,
         "ENABLED" if cfg.langfuse_enabled else "disabled",
+        ("ENABLED" if cfg.input_normalization_enabled else "disabled")
+        + (" (log-only)" if cfg.input_normalization_log_only else ""),
     )
     return cfg
 

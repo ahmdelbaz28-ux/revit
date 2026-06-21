@@ -442,8 +442,85 @@ class ApiKeyMiddleware:
         await send({"type": "http.response.body", "body": body})
 
 
+class InputNormalizationObservabilityMiddleware:
+    """Pure ASGI middleware that OBSERVES (never modifies) requests for
+    input-normalization audit purposes.
+
+    PURPOSE:
+        When input normalization (Arabic→English QWERTY recovery) is
+        enabled, the actual transformation happens inside Pydantic
+        field validators (see backend/schemas.py). This middleware
+        adds an HTTP response header ``X-Input-Normalization: enabled``
+        so clients can see that the server is normalizing inputs, and
+        increments a request counter for observability.
+
+    DESIGN (per agent.md BUG-34):
+        - Pure ASGI middleware (NOT BaseHTTPMiddleware) to avoid
+          response-body buffering that breaks StreamingResponse.
+        - Never reads or modifies the request body — body parsing in
+          ASGI is fragile and would consume the stream.
+        - All actual normalization logic lives in
+          fireai.core.input_normalizer and is invoked by Pydantic
+          validators; this middleware is purely an observability
+          surface.
+
+    USAGE:
+        app.add_middleware(InputNormalizationObservabilityMiddleware)
+        # Or in backend/app.py middleware stack.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+        # Counter for observability — incremented on every HTTP request
+        # when normalization is enabled. In production this would be
+        # replaced by a Prometheus counter or OpenTelemetry meter.
+        self._requests_observed: int = 0
+
+    async def __call__(
+        self, scope: Scope, receive: Receive, send: Send
+    ) -> None:
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
+        # Read the config flag ONCE per process — it doesn't change at
+        # runtime. Cached on the instance to avoid env_config import
+        # overhead on every request.
+        if not getattr(self, "_normalization_enabled_cached", False):
+            try:
+                from fireai.env_config import config
+                self._normalization_enabled_cached = (
+                    config.input_normalization_enabled
+                )
+            except Exception:  # noqa: BLE001
+                self._normalization_enabled_cached = False
+
+        if not self._normalization_enabled_cached:
+            # Normalization disabled — pass through without overhead.
+            await self.app(scope, receive, send)
+            return
+
+        # Normalization enabled — add observability header to the response.
+        self._requests_observed += 1
+
+        async def send_with_header(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.append(
+                    (
+                        b"x-input-normalization",
+                        b"enabled",
+                    )
+                )
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_header)
+
+
 __all__ = [
     "SecurityHeadersMiddleware",
     "CorrelationIdMiddleware",
     "ApiKeyMiddleware",
+    "InputNormalizationObservabilityMiddleware",
 ]

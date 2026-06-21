@@ -33,6 +33,7 @@ import { api } from '@/services/digitalTwinApi';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DEVICE_LIBRARY, DEVICE_CATEGORIES, getDevicesByCategory } from '@/types/deviceLibrary';
 import type { DeviceCategory, DeviceSpec } from '@/types/deviceLibrary';
+import { useInputNormalization } from '@/hooks/useInputNormalization';
 import type { Project, Device, CreateDeviceInput, CreateConnectionInput } from '@/services/digitalTwinApi';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -80,6 +81,8 @@ export function ProjectsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [syncTarget, setSyncTarget] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  // Phase 3: surface "Did you mean?" toast when backend normalized input.
+  const { showIfNormalized } = useInputNormalization();
 
   const filteredProjects = useMemo(() => {
     if (!projects) return [];
@@ -94,6 +97,16 @@ export function ProjectsPage() {
     setCreating(true);
     const result = await createProject(newProject);
     if (result) {
+      // If the backend normalized the project name/description (Arabic
+      // mistype → English QWERTY recovery), show a toast so the user
+      // can verify the saved value matches their intent.
+      showIfNormalized({
+        title: t('projects.inputNormalizedTitle', 'Input normalized'),
+        description: t(
+          'projects.inputNormalizedDesc',
+          'Your project name/description was automatically converted from Arabic keyboard to English. Please verify the saved value.'
+        ),
+      });
       setNewProject({ name: '', description: '' });
       setShowCreateForm(false);
       refetch();
