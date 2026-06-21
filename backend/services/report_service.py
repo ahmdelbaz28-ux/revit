@@ -149,7 +149,7 @@ def generate_voltage_drop_report(
     circuits = []
 
     for conn in connections:
-        from_dev = device_map.get(conn["fromId"])
+        from_dev = device_map.get(conn.get("fromId"))
         to_dev = device_map.get(conn.get("toId"))
         if from_dev and to_dev:
             circuits.append({
