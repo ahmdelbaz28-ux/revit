@@ -339,6 +339,29 @@ class TestRidgeZone:
         assert result[1] == pytest.approx(0.9, abs=1e-6)
         assert result[3] == pytest.approx(0.9, abs=1e-6)
 
+    def test_ridge_zone_default_buffer_is_0_9m(self):
+        """NFPA 72 §17.6.3.4 default ridge buffer = 0.9m (3ft).
+
+        Pins the default value so changing it is detected. Most callers
+        rely on the default, so a silent change would affect every
+        sloped-ceiling ridge zone check in the system.
+        """
+        ridge = (0.0, 0.0, 10.0, 0.0)
+        # Call WITHOUT explicit buffer_m — should use default 0.9
+        result = calculate_ridge_zone_boundary(ridge, 30.0)
+        assert result[1] == pytest.approx(0.9, abs=1e-6), (
+            f"Default ridge buffer changed: expected 0.9m, got {result[1]}m. "
+            f"NFPA 72 §17.6.3.4 specifies 0.9m (3ft) — verify any change with AHJ."
+        )
+
+    def test_is_in_ridge_zone_default_buffer_is_0_9m(self):
+        """is_in_ridge_zone also uses 0.9m default buffer."""
+        # Point 0.95m from ridge — inside default 0.9m? No, 0.95 > 0.9
+        # (with default buffer=0.9, point at 0.95m should be OUTSIDE)
+        assert is_in_ridge_zone((5, 0.95), (0, 0, 10, 0), 30.0) is False
+        # Point 0.85m from ridge — inside default 0.9m
+        assert is_in_ridge_zone((5, 0.85), (0, 0, 10, 0), 30.0) is True
+
     def test_is_in_ridge_zone_flat_always_true(self):
         """Flat ceiling → every point is in the ridge zone (no requirement)."""
         assert is_in_ridge_zone((5, 5), (0, 0, 10, 0), 0.0) is True
@@ -450,6 +473,18 @@ class TestSpacingTriad:
         """Smoke R at h=3.0m = 0.7 × 9.1 = 6.37m (the canonical NFPA 72 value)."""
         r = calculate_coverage_radius(flat_ceiling_3m, DetectorType.SMOKE)
         assert r == pytest.approx(6.37, abs=0.01)
+
+    def test_radius_wall_distance_ratio_is_0_7_vs_0_5(self, flat_ceiling_3m: CeilingSpec):
+        """R = 0.7×S and W = 0.5×S, so R/W = 1.4 exactly.
+
+        This pins the relationship that distinguishes coverage radius from
+        wall distance — the historical confusion that caused over-conservative
+        detector placement.
+        """
+        r = calculate_coverage_radius(flat_ceiling_3m, DetectorType.SMOKE)
+        w = calculate_max_wall_distance(flat_ceiling_3m, DetectorType.SMOKE)
+        # R = 0.7S, W = 0.5S → R/W = 1.4 (NOT 1.0 — they are different quantities)
+        assert r / w == pytest.approx(1.4, abs=1e-3)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

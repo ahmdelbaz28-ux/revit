@@ -1123,7 +1123,7 @@ _FA_MIN_AWG: int = 14  # Minimum AWG permitted for fire alarm circuits per NEC 7
 # Filter keeps gauges with number <= 14 (i.e., 14, 12, 10) — the thicker
 # wires permitted for fire alarm circuits.
 AWG_GAUGES: List[int] = sorted(
-    [g for g in AWG_RESISTANCE_TABLE.keys() if g <= _FA_MIN_AWG],
+    [g for g in AWG_RESISTANCE_TABLE if g <= _FA_MIN_AWG],
     reverse=True
 )  # [14, 12, 10] — sorted descending so auto_select_awg tries thinnest-permitted first
 
