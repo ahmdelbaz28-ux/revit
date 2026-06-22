@@ -672,3 +672,147 @@ class AutoCADService:
         except Exception as e:
             logger.error(f"Error saving document to {filepath}: {e}")
             return False
+    
+    def delete_entity(self, handle: str) -> bool:
+        """
+        Delete an entity by its handle.
+        
+        Args:
+            handle: Handle of the entity to delete
+            
+        Returns:
+            bool: True if deletion successful, False otherwise
+        """
+        try:
+            if not self.connected or not self.acad_doc:
+                logger.error("AutoCAD service not connected. Cannot delete entity.")
+                return False
+            
+            # Get the entity by handle
+            entity = self.acad_doc.HandleToObject(handle)
+            if entity:
+                entity.Delete()
+                # Remove from active entities if tracking
+                if handle in self.active_entities:
+                    del self.active_entities[handle]
+                logger.info(f"Deleted entity with handle: {handle}")
+                return True
+            else:
+                logger.warning(f"No entity found with handle: {handle}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error deleting entity {handle}: {e}")
+            return False
+    
+    def modify_entity(self, handle: str, properties: Dict[str, Any]) -> bool:
+        """
+        Modify an entity's properties by its handle.
+        
+        Args:
+            handle: Handle of the entity to modify
+            properties: Dictionary of properties to update
+            
+        Returns:
+            bool: True if modification successful, False otherwise
+        """
+        try:
+            if not self.connected or not self.acad_doc:
+                logger.error("AutoCAD service not connected. Cannot modify entity.")
+                return False
+            
+            # Get the entity by handle
+            entity = self.acad_doc.HandleToObject(handle)
+            if not entity:
+                logger.warning(f"No entity found with handle: {handle}")
+                return False
+            
+            # Apply properties based on entity type
+            modified = False
+            
+            # Layer
+            if 'layer' in properties:
+                try:
+                    entity.Layer = properties['layer']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set layer for entity {handle}: {e}")
+            
+            # Color
+            if 'color' in properties:
+                try:
+                    entity.Color = properties['color']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set color for entity {handle}: {e}")
+            
+            # Linetype
+            if 'linetype' in properties:
+                try:
+                    entity.Linetype = properties['linetype']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set linetype for entity {handle}: {e}")
+            
+            # Lineweight
+            if 'lineweight' in properties:
+                try:
+                    entity.Lineweight = properties['lineweight']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set lineweight for entity {handle}: {e}")
+            
+            # Common geometric properties based on entity type
+            if hasattr(entity, 'StartPoint') and 'start_point' in properties:
+                try:
+                    entity.StartPoint = properties['start_point']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set start point for entity {handle}: {e}")
+            
+            if hasattr(entity, 'EndPoint') and 'end_point' in properties:
+                try:
+                    entity.EndPoint = properties['end_point']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set end point for entity {handle}: {e}")
+            
+            if hasattr(entity, 'Center') and 'center' in properties:
+                try:
+                    entity.Center = properties['center']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set center for entity {handle}: {e}")
+            
+            if hasattr(entity, 'Radius') and 'radius' in properties:
+                try:
+                    entity.Radius = properties['radius']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set radius for entity {handle}: {e}")
+            
+            if hasattr(entity, 'TextString') and 'text' in properties:
+                try:
+                    entity.TextString = properties['text']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set text for entity {handle}: {e}")
+            
+            if hasattr(entity, 'Height') and 'height' in properties:
+                try:
+                    entity.Height = properties['height']
+                    modified = True
+                except Exception as e:
+                    logger.warning(f"Could not set height for entity {handle}: {e}")
+            
+            if modified:
+                logger.info(f"Modified entity {handle} with properties: {list(properties.keys())}")
+                # Update in active entities if tracking
+                if handle in self.active_entities:
+                    self.active_entities[handle].update(properties)
+            
+            return modified
+            
+        except Exception as e:
+            logger.error(f"Error modifying entity {handle}: {e}")
+            return False

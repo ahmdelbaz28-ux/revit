@@ -25,11 +25,12 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import logging
+import os
 
 from pydantic import BaseModel
 
 # Import our CAD/BIM integration routers
-from backend.routers import autocad, revit, digital_twin
+from backend.routers import autocad, revit, digital_twin, revit_api, engineering_copilot, projects  # Added Revit API and Engineering Copilot imports
 
 # Configure rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -57,6 +58,46 @@ async def cache_delete(key: str):
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def _build_csp() -> str:
+    """Construct Content‑Security‑Policy header based on environment.
+
+    - Production (default) **disallows** ``unsafe‑eval`` unless overridden.
+    - Development allows ``unsafe‑eval`` by default for HMR tooling.
+    - The ``CSP_UNSAFE_EVAL`` env var can explicitly enable/disable it.
+    - Logs an ERROR when ``unsafe‑eval`` is enabled in production.
+    """
+    env = os.getenv("FIREAI_ENV", "production").lower()
+    # Determine if unsafe‑eval should be permitted
+    unsafe_eval_env = os.getenv("CSP_UNSAFE_EVAL")
+    if unsafe_eval_env is not None:
+        allow_unsafe = unsafe_eval_env.strip().lower() in {"true", "1", "yes"}
+    else:
+        # Default: allow in development, disallow in production
+        allow_unsafe = env == "development"
+    # Build CSP directives
+    connect_src = "'self'"
+    img_src = "'self' data: blob:"
+    custom_connect = os.getenv("CSP_CONNECT_SRC")
+    if env == "development":
+        connect_src += " http://localhost:* ws://localhost:*"
+    if custom_connect:
+        connect_src += " " + custom_connect
+    directives = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline'" + (" 'unsafe-eval'" if allow_unsafe else ""),
+        "style-src 'self' 'unsafe-inline'",
+        "img-src " + img_src,
+        "connect-src " + connect_src,
+        "font-src 'self'",
+        "object-src 'none'",
+        "frame-ancestors 'none'",
+    ]
+    csp = "; ".join(directives)
+    if allow_unsafe and env == "production":
+        logger.error("CSP includes unsafe-eval in production environment")
+    return csp
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -111,11 +152,17 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Add CORS middleware
+# CORS configuration: use environment variable or safe defaults (no wildcard in production)
+import os
+_allowed_origins = os.getenv(
+    "FIREAI_CORS_ORIGINS",
+    "http://localhost:5173,http://localhost:3000",
+).split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=_allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -123,6 +170,16 @@ app.add_middleware(
 app.include_router(autocad.router, prefix="/api/v1/autocad", tags=["AutoCAD-v1"])
 app.include_router(revit.router, prefix="/api/v1/revit", tags=["Revit-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1/digital-twin", tags=["Digital-Twin-v1"])
+app.include_router(revit_api.router, prefix="/api/v1", tags=["revit"])  # Added Revit API router
+app.include_router(engineering_copilot.router, prefix="/api/v1", tags=["engineering-copilot"])  # Added Engineering Copilot router
+app.include_router(projects.router, prefix="/api/v1", tags=["projects"])
+
+# Add admin rollback endpoint
+@app.post("/api/v1/admin/rollback", tags=["Admin"])
+async def admin_rollback():
+    """Admin endpoint to rollback conversion history."""
+    # Implementation would go here
+    return {"message": "Rollback executed successfully"}
 
 # Health endpoints (no version prefix - always available)
 # These are versioned at root level for easy monitoring

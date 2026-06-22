@@ -142,5 +142,41 @@
     "conversion_type": "revit_to_autocad",
     "elements_count": 1,
     "status": "success"
+  },
+  {
+    "version_id": "36c868af-1bc6-442a-ae2c-85505af9880d",
+    "timestamp": "2026-06-22T11:44:32.405082",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmp9jiwvnv1.dwg",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpcj95ui56.rvt",
+    "conversion_type": "autocad_to_revit",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "21ebab5e-76b3-4c4f-98e5-18e82fe556ee",
+    "timestamp": "2026-06-22T11:44:32.451054",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpl1zpq6dq.rvt",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmp487m941u.dwg",
+    "conversion_type": "revit_to_autocad",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "32c4fc3f-dfa8-4286-89ef-84457f0e9b58",
+    "timestamp": "2026-06-22T12:39:12.073881",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpoaug47k5.dwg",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpkkwc6pwl.rvt",
+    "conversion_type": "autocad_to_revit",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "75308ca0-e8da-4ddc-a12a-e267a06b620e",
+    "timestamp": "2026-06-22T12:39:12.101895",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpcmqs32k5.rvt",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmp1w250u_6.dwg",
+    "conversion_type": "revit_to_autocad",
+    "elements_count": 1,
+    "status": "success"
   }
 ]

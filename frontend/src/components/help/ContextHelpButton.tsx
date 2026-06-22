@@ -1,4 +1,4 @@
-import { CircleHelp } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSmartHelp } from '@/hooks/useSmartHelp';
 import type { ContextHelpButtonProps } from '@/help/types';
@@ -22,7 +22,7 @@ export function ContextHelpButton({
       aria-label={label}
       onClick={() => openHelp(contextId)}
     >
-      <CircleHelp className="h-4 w-4" />
+      <HelpCircle className="h-4 w-4" />
     </Button>
   );
 }

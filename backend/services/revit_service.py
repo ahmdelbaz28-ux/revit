@@ -33,8 +33,8 @@ from typing import Any, Dict, List, Optional, Union
 logger = logging.getLogger(__name__)
 
 try:
-    import clr
-    import System
+    import clr  # type: ignore[import]
+    import System  # type: ignore[import]
     from System import Array
     clr.AddReference("System.Windows.Forms")
     clr.AddReference("System.Drawing")
@@ -124,11 +124,11 @@ class RevitService:
         # This is a simulated implementation - in reality this would interface with Revit API
         try:
             element_data = {
-                "id": getattr(element, 'Id', {}).ToString() if hasattr(element, 'Id') else 'unknown',
+                "id": getattr(element, 'Id', None).ToString() if hasattr(element, 'Id') else 'unknown',  # type: ignore[attr-defined]
                 "name": getattr(element, 'Name', 'unnamed'),
-                "category": getattr(element, 'Category', {}).Name if hasattr(element, 'Category') else 'unknown',
-                "level": getattr(element, 'Level', {}).Name if hasattr(element, 'Level') else 'Level 1',
-                "workset": getattr(element, 'WorksetId', {}).ToString() if hasattr(element, 'WorksetId') else 'default',
+                "category": getattr(element, 'Category', None).Name if hasattr(element, 'Category') else 'unknown',  # type: ignore[attr-defined]
+                "level": getattr(element, 'Level', None).Name if hasattr(element, 'Level') else 'Level 1',  # type: ignore[attr-defined]
+                "workset": getattr(element, 'WorksetId', None).ToString() if hasattr(element, 'WorksetId') else 'default',  # type: ignore[attr-defined]
                 "element_type": getattr(element, 'GetType', lambda: 'Element')(),
             }
             

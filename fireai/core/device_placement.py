@@ -623,9 +623,8 @@ def place_duct_detector(spec: DuctDetectorSpec) -> Dict[str, Any]:
     v = spec.velocity_m_s
     if not math.isfinite(v) or v <= 0:
         raise PhysicsGuardError("velocity_m_s", v, "air velocity must be > 0", "NFPA 72-2022 §17.7.4.2.2")
-
-    MIN_VEL = 0.305  # 60 fpm
-    MAX_VEL = 15.24  # 3000 fpm
+    MIN_VEL = 0.305
+    MAX_VEL = 15.24
     if v < MIN_VEL:
         raise PhysicsGuardError(
             "velocity_m_s",
@@ -640,8 +639,6 @@ def place_duct_detector(spec: DuctDetectorSpec) -> Dict[str, Any]:
             f"exceeds maximum {MAX_VEL}m/s (3000 fpm). Detector may false alarm.",
             "NFPA 72-2022 §17.7.4.2.2",
         )
-
-    # Number of detectors based on duct width
     W = spec.width_m
     if W <= 0.305:
         n_detectors = 1
@@ -649,7 +646,11 @@ def place_duct_detector(spec: DuctDetectorSpec) -> Dict[str, Any]:
         n_detectors = 2
     else:
         n_detectors = math.ceil(W / 0.914) + 1
-
+    HIGH_VELOCITY_THRESHOLD_M_S = 10.16
+    if v > HIGH_VELOCITY_THRESHOLD_M_S:
+        warnings = [f"Velocity {v:.2f} m/s ({v/0.00508:.0f} fpm) exceeds 2000 fpm. Verify detector model is listed for this velocity. [NFPA 72-2022 §17.7.4.2.2, manufacturer listing data]"]
+    else:
+        warnings = []
     return {
         "duct_id": spec.duct_id,
         "n_detectors": n_detectors,
@@ -657,4 +658,5 @@ def place_duct_detector(spec: DuctDetectorSpec) -> Dict[str, Any]:
         "air_velocity_m_s": v,
         "nfpa_section": "NFPA 72-2022 §17.7.4",
         "compliance_note": f"{n_detectors} detector(s) required for {W:.3f}m width duct",
+        "warnings": warnings,
     }

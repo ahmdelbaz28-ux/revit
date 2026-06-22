@@ -119,7 +119,7 @@ SMOKE_HEIGHT_SPACING_TABLE: List[Tuple[float, float]] = [
     (5.5,   9.10),   # h <= 5.5m: flat 30ft / 9.1m per §17.7.3.2.3
     (6.1,   9.10),   # h <= 6.1m: flat 30ft / 9.1m per §17.7.3.2.3
     (7.6,   9.10),   # h <= 7.6m: flat 30ft / 9.1m per §17.7.3.2.3
-    (9.1,   9.10),   # h <= 9.1m: flat 30ft / 9.1m per §17.7.3.2.3
+    (9.144, 9.10),   # h <= 9.144m (30ft): flat 30ft / 9.1m per §17.7.3.2.3 — synced with COMBINED
     (10.7,  9.10),   # h <= 10.7m: flat 30ft / 9.1m per §17.7.3.2.3
     (12.2,  9.10),   # h <= 12.2m: flat 30ft / 9.1m per §17.7.3.2.3
 ]
@@ -226,7 +226,7 @@ COMBINED_HEIGHT_SPACING_TABLE: List[Tuple[float, float, float]] = [
     (5.5,   9.10, 5.20),
     (6.1,   9.10, 4.90),
     (7.6,   9.10, 4.60),
-    (9.1,   9.10, 4.30),
+    (9.144,   9.10, 4.30),
     (10.7,  9.10, 4.00),
     (12.2,  9.10, 3.70),
 ]

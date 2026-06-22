@@ -540,82 +540,34 @@ def _estimate_coverage(
     positions: List[Tuple[float, float]],
     polygon: List[Tuple[float, float]],
     radius_m: float,
-    step: float = 0.0,
 ) -> float:
-    """
-    Fast coverage estimate using grid sampling.
-    Returns percentage 0.0–100.0. Used when Shapely is not available.
-
-    PERFORMANCE FIX (CRITICAL-1): Adaptive grid step based on polygon
-    size. The old fixed step=0.5m caused O(n²) behavior on large rooms,
-    making 100K-room stress tests take hours. Now uses max(step_min, 1.0m)
-    for rooms larger than 100m², which cuts grid points by 4× with
-    <0.5% accuracy loss on coverage percentage.
-    """
     if not positions or not polygon:
         return 0.0
-
-    xs = [p[0] for p in polygon]
-    ys = [p[1] for p in polygon]
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
-
-    bbox_area = (max_x - min_x) * (max_y - min_y)
-
-    # V98 FIX: Adaptive step based on coverage radius.
-    # Old fixed step=0.5m was too coarse for heat detectors (R≈3m) in small
-    # rooms: step/radius ratio = 0.5/3 = 17% → high quantization error →
-    # false compliance. New formula: min(0.25m, radius_m / 10.0) ensures
-    # at least 10 sample points across the radius for accuracy.
-    # For large rooms (>100m²), use coarser step for performance.
-    if step <= 0:
-        step = min(0.25, radius_m / 10.0) if bbox_area <= 100.0 else min(0.5, radius_m / 5.0)
-
-    total = 0
-    covered = 0
-    r2 = radius_m * radius_m
-
-    # Build a set of grid buckets for O(1) nearest-detector lookup.
-    # Bucket size = radius_m so each grid point only checks 9 buckets.
-    bucket_size = radius_m
-    detector_buckets: Dict[Tuple[int, int], List[Tuple[float, float]]] = {}
-    for dx, dy in positions:
-        bk = (int(dx // bucket_size), int(dy // bucket_size))
-        if bk not in detector_buckets:
-            detector_buckets[bk] = []
-        detector_buckets[bk].append((dx, dy))
-
-    y = min_y + step / 2
-    while y <= max_y:
-        x = min_x + step / 2
-        while x <= max_x:
+    xs = [p[0] for p in polygon]; ys = [p[1] for p in polygon]
+    min_x, max_x = min(xs), max(xs); min_y, max_y = min(ys), max(ys)
+    # ADAPTIVE step: never larger than R/4 to guarantee interior points in small rooms
+    step = min(0.25, max(0.05, radius_m / 8.0))
+    total = 0; covered = 0; r2 = radius_m * radius_m
+    y = min_y + step/2
+    while y < max_y:
+        x = min_x + step/2
+        while x < max_x:
             if _point_in_polygon(x, y, polygon):
                 total += 1
-                # Check only detectors in nearby buckets (9-bucket window)
-                bk_x = int(x // bucket_size)
-                bk_y = int(y // bucket_size)
-                found = False
-                for ddx in (-1, 0, 1):
-                    if found:
+                for dx, dy in positions:
+                    if (x-dx)**2 + (y-dy)**2 <= r2:
+                        covered += 1
                         break
-                    for ddy in (-1, 0, 1):
-                        if found:
-                            break
-                        bucket = detector_buckets.get((bk_x + ddx, bk_y + ddy))
-                        if bucket:
-                            for dx, dy in bucket:
-                                if (x - dx) ** 2 + (y - dy) ** 2 <= r2:
-                                    covered += 1
-                                    found = True
-                                    break
             x += step
         y += step
-
-    # V96 FIX: Clamp coverage to [0.0, 100.0]. Detector coverage circles can
-    # extend slightly outside the polygon boundary, making covered > total
-    # (coverage > 100%). This violates the 0–100% contract and confuses
-    # downstream classify_safety_tier which expects 0–100.
-    return min(100.0, round(100.0 * covered / total, 4)) if total > 0 else 0.0
+    if total == 0:
+        # Degenerate polygon — place centroid and assume covered if ≥1 detector within R
+        cx = (min_x + max_x) / 2; cy = (min_y + max_y) / 2
+        for dx, dy in positions:
+            if (cx-dx)**2 + (cy-dy)**2 <= r2:
+                return 100.0
+        return 0.0
+    return round(100.0 * covered / total, 4)
 
 
 def _stage3_verify_coverage(
@@ -1185,6 +1137,8 @@ def analyze_room(
     # ── Stage 5: Release Gates ────────────────────────────────────────────────
     nfpa_result = {
         "is_compliant": coverage_pct >= 99.0 and wall_violations == 0,
+        "coverage_pct": coverage_pct,
+        "_coverage_pct": coverage_pct,
         "violations": ([f"Coverage {coverage_pct:.2f}% < 99%"] if coverage_pct < 99.0 else [])
         + ([f"{wall_violations} wall distance violation(s)"] if wall_violations > 0 else []),
     }

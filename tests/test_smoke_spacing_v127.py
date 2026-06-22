@@ -37,7 +37,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pytest
 
-from fireai.constants import SMOKE_MAX_SPACING_M
+from fireai.constants import SMOKE_MAX_SPACING_M, NFPA72_SMOKE_SPACING_TABLE, NFPA72_HEIGHT_SPACING_TABLE
 from fireai.core.qomn_kernel import (
     NFPA72_SMOKE_MAX_SPACING_M,
     compute_smoke_detector_spacing,
@@ -196,3 +196,11 @@ class TestSSoTConsistency:
         for h in (2.0, 3.0, 5.0, 8.0, 12.0, 18.0):
             r = compute_smoke_detector_spacing(h)
             assert r["listed_spacing_m"] == pytest.approx(SMOKE_MAX_SPACING_M, abs=1e-3)
+
+class TestTableLengthAndAlignment:
+    def test_table_lengths_and_alignment(self):
+        assert len(NFPA72_SMOKE_SPACING_TABLE) == 9, f"SMOKE table has {len(NFPA72_SMOKE_SPACING_TABLE)} rows, expected 9"
+        assert len(NFPA72_HEIGHT_SPACING_TABLE) == 9, f"COMBINED table has {len(NFPA72_HEIGHT_SPACING_TABLE)} rows, expected 9"
+        for i, (smoke, combined) in enumerate(zip(NFPA72_SMOKE_SPACING_TABLE, NFPA72_HEIGHT_SPACING_TABLE)):
+            assert abs(smoke[0] - combined[0]) < 0.01, f"Row {i} height mismatch: SMOKE={smoke[0]} COMBINED={combined[0]}"
+            # Spacing may differ: SMOKE is flat 9.1m per V130, COMBINED includes heat reduction

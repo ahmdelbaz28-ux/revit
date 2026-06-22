@@ -1,4 +1,4 @@
-# CAD/BIM Integration Platform
+# ETAP-AI-WORK Digital Engineering Platform
 
 [![CI/CD Pipeline](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)
@@ -8,13 +8,20 @@
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger%20UI-blue)](https://github.com/ahmdelbaz28-ux/revit/blob/main/backend/app.py)
 [![Docker](https://img.shields.io/badge/docker-ready-blue)](https://github.com/ahmdelbaz28-ux/revit/pkgs/container/revit)
 
-Complete platform for AutoCAD and Revit integration with Digital Twin capabilities.
+Advanced CAD/BIM integration platform with AI-powered analysis capabilities. Integrates AutoCAD, Revit, and other engineering tools into a unified digital twin.
 
 ## Overview
 
-This platform provides bidirectional conversion between AutoCAD DWG files and Revit RVT files through a sophisticated Digital Twin engine. The system enables seamless interoperability between 2D CAD drawings and 3D BIM models, supporting the entire AEC (Architecture, Engineering, Construction) workflow.
+This platform provides bidirectional conversion between AutoCAD DWG files and Revit RVT files through a sophisticated Digital Twin engine. The system enables seamless interoperability between 2D CAD drawings and 3D BIM models, supporting the entire AEC (Architecture, Engineering, Construction) workflow. It also includes an AI-powered Engineering Copilot that understands engineering intent and automatically generates, updates, synchronizes, and validates engineering data across multiple platforms.
 
 ## Features
+
+- Real-time CAD/BIM synchronization
+- Digital twin integration
+- AI-powered analysis
+- Multi-format support (DWG, DXF, RVT, IFC)
+- Collaborative workflows
+- Engineering Copilot with natural language processing
 
 ### Core Capabilities
 - **AutoCAD Integration**: Connect to AutoCAD, read/write DWG files, create/draw entities
@@ -185,12 +192,26 @@ curl -X POST "http://localhost:8000/api/digital-twin/convert" \
 
 ## Architecture
 
+### Core Components
+
+- **FastAPI Backend** - Modern Python web framework
+- **Digital Twin Core** - Central data model and synchronization
+- **GIS Integration Layer** - Geographic information system integration
+- **SCADA Layer** - Supervisory control and data acquisition
+- **Event Bus** - Asynchronous event processing
+- **State Store** - Persistent state management
+- **Synchronization Engine** - Cross-platform synchronization
+- **AI Agents** - Intelligent automation
+- **PostgreSQL** - Relational database
+- **Redis** - In-memory caching
+
 ### Service Layer
 - `AutoCADService`: Handles all AutoCAD operations via COM API
 - `RevitService`: Handles all Revit operations via Revit API
 - `DigitalTwinService`: Core conversion engine with semantic mapping
 - `ConversionConfigManager`: Manages persistent conversion settings
 - `VersionManager`: Tracks and manages conversion history
+- `AICopilotService`: AI-powered engineering assistant for natural language processing and automatic drawing generation
 
 ### Router Layer
 - `autocad.py`: AutoCAD-specific endpoints
@@ -207,7 +228,34 @@ curl -X POST "http://localhost:8000/api/digital-twin/convert" \
 
 ## Configuration
 
-The system supports extensive configuration for conversion mapping:
+The system supports extensive configuration for conversion mapping and AI capabilities:
+
+### Engineering Copilot
+
+The Engineering Copilot is an AI-driven engineering platform that understands engineering intent and automatically generates, updates, synchronizes, and validates engineering data across:
+
+- **ETAP** - Electrical engineering analysis and design
+- **AutoCAD** - 2D/3D drafting and design
+- **Revit** - Building Information Modeling (BIM)
+
+#### Key Capabilities
+
+- **Natural Language Processing** - Understands engineering requests in plain English
+- **Automatic Drawing Generation** - Creates CAD drawings from text descriptions
+- **Multi-Platform Synchronization** - Keeps ETAP, AutoCAD, and Revit models in sync
+- **Engineering Validation** - Checks designs against standards and codes
+- **Report Generation** - Creates BOMs, schedules, and documentation
+- **Bidirectional Translation** - Converts between different engineering formats
+
+#### Example Usage
+
+```python
+from engineering_copilot.ai_agent.ai_agent import AICopilot
+
+copilot = AICopilot()
+request = "Create a main distribution board with 5 outgoing feeders and 1 transformer"
+result = copilot.process_request(request, ["AutoCAD", "ETAP", "Revit"])
+```
 
 ### Layer/Category Mapping
 Map AutoCAD layers to Revit categories:

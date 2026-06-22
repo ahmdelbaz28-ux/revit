@@ -837,6 +837,14 @@ def _handle_error(exc: Exception) -> NoReturn:
                 "action": "Report this to the engineering team with input values.",
             }
         )
+    if isinstance(exc, ImportError):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "ENGINE_UNAVAILABLE",
+                "detail": "QOMN-FIRE kernel module unavailable. Check installation.",
+            },
+        )
     if isinstance(exc, ValueError):
         # M-2 FIX: Sanitize ValueError messages — Shapely/geometry errors
         # can expose coordinates and internal variable names

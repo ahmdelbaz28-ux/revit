@@ -79,16 +79,22 @@ def _guard_finite(value: float, field: str) -> float:
     Source: IEEE-754-2008 §7 — Exception handling.
     NaN and Inf are NEVER permitted in life-safety computations.
     """
+    if value is None:
+        raise PhysicsGuardError(
+            field, "None",
+            "value is None — must be a finite numeric value",
+            "IEEE-754-2008 §7 / QOMN Layer 0"
+        )
     if not isinstance(value, (int, float)):
-        raise PhysicsGuardError(field, value, "must be numeric", "IEEE-754-2008 §7")
+        raise PhysicsGuardError(
+            field, type(value).__name__,
+            f"must be numeric, got {type(value).__name__}",
+            "IEEE-754-2008 §7"
+        )
     if math.isnan(value):
-        raise PhysicsGuardError(
-            field, "NaN", "NaN is not permitted in safety-critical computation", "IEEE-754-2008 §7.2"
-        )
+        raise PhysicsGuardError(field, "NaN", "NaN not permitted in safety computation", "IEEE-754-2008 §7.2")
     if math.isinf(value):
-        raise PhysicsGuardError(
-            field, "Inf", "Infinity is not permitted in safety-critical computation", "IEEE-754-2008 §7.4"
-        )
+        raise PhysicsGuardError(field, "Inf", "Infinity not permitted in safety computation", "IEEE-754-2008 §7.4")
     return float(value)
 
 
@@ -243,6 +249,13 @@ from fireai.constants.nfpa72 import (  # noqa: E402,I001
 # V130 FIX: Flat 9.1m per §17.7.3.2.3 (NO height reduction) — imported from fireai.constants.nfpa72
 # NOTE: NFPA72_SMOKE_MAX_SPACING_M is imported at line 227 — do NOT redefine with a literal.
 
+# Alias for high-ceiling threshold (used in compute_smoke_detector_spacing)
+_SPOT_SMOKE_HIGH_CEILING_M = _SMOKE_PRACTICAL_CEILING_HEIGHT_M  # 6.096m (20ft)
+
+# Module-level logger
+import logging as _logging_mod
+_logger = _logging_mod.getLogger(__name__)
+
 # Maximum heat detector spacing — NFPA 72 §17.6.3.1
 # CRITICAL FIX: Was 15.24m (50ft) which is the LINEAR detection spacing, NOT fixed-temperature.
 # Using 15.24m would produce R = 0.7 × 15.24 = 10.67m — a 2.5× overestimate vs correct
@@ -362,103 +375,44 @@ def _f64_hash(value: float) -> str:
 def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
     """Compute smoke detector spacing per NFPA 72-2022 §17.7.3.2.3.
 
-    V121 FIX: Flat spacing per NFPA 72-2022 §17.7.3.2.3
-    ═══════════════════════════════════════════════════════
-    Smoke detector spacing on smooth flat ceilings: 30 ft (9.1 m).
-    NO height-based reduction per NFPA 72 §17.7.3.2.3.
-
-    The previous implementation applied a 1% per foot reduction above
-    10 ft, which is from NFPA 72 Table 17.6.3.5.1 (HEAT detectors).
-    Per ECMAG (May 2022), SFPE Europe Issue 33, and NFPA Research
-    Foundation: "THERE IS NO [height reduction] TABLE for smoke
-    detectors." The reduction table applies to HEAT detectors only.
-
-    This fix was deferred from V120 pending FPE review. The V120 audit
-    confidence was 95% for the finding, but only 50% for replacement
-    values. After further research confirming the flat-spacing rule in
-    NFPA 72-2022 §17.7.3.2.3 itself, confidence is now 95% for both.
-    The standard states verbatim: "Spot-type smoke detectors shall be
-    spaced not more than 30 ft (9.1 m) apart on smooth ceilings."
-
-    For ceilings above 20 ft (6.096m), spot-type smoke detection is
-    unreliable due to stratification per §17.7.1.11. The function
-    returns valid spacing but adds an audit_notice recommending
-    alternative technology (beam §17.7.4.6, aspirating §17.7.4.7).
-    ═══════════════════════════════════════════════════════
-
-    Args:
-        ceiling_height_m: Ceiling height in meters.
-
-    Returns:
-        dict with listed_spacing_m, coverage_radius_m, nfpa_table_ref,
-        computation_hash, and audit_notice when above 6.096 m.
-
-    Raises:
-        PhysicsGuardError: If ceiling_height_m is outside bounds.
+    V130 CRITICAL FIX: Smoke detector spacing is FLAT 9.1m at ALL ceiling heights.
+    Per NFPA 72-2022 §17.7.3.2.3 (verbatim):
+      "Spot-type smoke detectors shall be spaced not more than
+       30 ft (9.1 m) apart on smooth ceilings."
+    There is NO height-based spacing reduction for smoke detectors.
+    The 1%/ft reduction from Table 17.6.3.5.1 applies to HEAT detectors ONLY.
     """
     h = guard_ceiling_height_m(ceiling_height_m)
 
-    # V130 CRITICAL FIX: Smoke detector spacing is FLAT 9.1m per NFPA 72 §17.7.3.2.3.
-    # Per NFPA 72-2022 §17.7.3.2.3 (verbatim):
-    #   "Spot-type smoke detectors shall be spaced not more than
-    #    30 ft (9.1 m) apart on smooth ceilings."
-    # There is NO height-based spacing reduction for smoke detectors.
-    # The 1%/ft reduction from Table 17.6.3.5.1 applies to HEAT detectors ONLY.
-    # Previous versions incorrectly applied heat detector reduction to smoke
-    # detectors, causing up to 65% over-densification at high ceilings.
-    _SPOT_SMOKE_HIGH_CEILING_M = _SMOKE_PRACTICAL_CEILING_HEIGHT_M  # 6.096m (20ft)
-    spacing_m = NFPA72_SMOKE_MAX_SPACING_M  # 9.1m — FLAT per §17.7.3.2.3
+    # V130: Flat spacing S=9.1m at ALL heights per §17.7.3.2.3
+    spacing_m = NFPA72_SMOKE_MAX_SPACING_M  # 9.1m
+    radius_m = round(NFPA72_COVERAGE_RADIUS_FACTOR * spacing_m, 6)
     table_row = "Flat spacing S=9.1m per NFPA 72 §17.7.3.2.3 (NO height reduction)"
 
-    # Coverage radius — NFPA 72 §17.7.4.2.3.1
-    radius_m = NFPA72_COVERAGE_RADIUS_FACTOR * spacing_m
-
-    # Compute deterministic hash for audit
     result_hash = _f64_hash(spacing_m) + _f64_hash(radius_m)
 
-    # V130 SAFETY NET — WARNING for high-ceiling spot smoke detection.
-    # Per NFPA 72-2022 §17.7.1.11 (stratification) and consistent FPE guidance,
-    # spot-type smoke detection is unreliable above 20 ft (6.096m).
-    # This is a NON-BINDING advisory — the spacing value is still 9.1m
-    # per §17.7.3.2.3 (flat, no height reduction).
-    # At heights where spot smoke detection is unreliable, the engineering
-    # solution is alternative TECHNOLOGY (beam §17.7.4.6, ASD §17.7.4.7),
-    # NOT reducing point detector spacing.
+    # V130 advisory for high ceilings (stratification)
     audit_notice: Optional[str] = None
     if h > _SPOT_SMOKE_HIGH_CEILING_M:
         audit_notice = (
-            f"⚠️ V130 ADVISORY: ceiling {h:.2f} m > "
-            f"{_SPOT_SMOKE_HIGH_CEILING_M:.3f} m (20 ft). Per NFPA 72-2022 "
-            "§17.7.1.11 (stratification) and consistent FPE guidance "
-            "(ECMAG, SFPE Europe), spot-type smoke detection is "
+            f"V130 ADVISORY: ceiling {h:.2f}m > "
+            f"{_SPOT_SMOKE_HIGH_CEILING_M:.3f}m (20ft). Per NFPA 72-2022 "
+            "§17.7.1.11 (stratification), spot-type smoke detection is "
             "unreliable above this height. Consider: (a) projected beam "
-            "detectors per §17.7.4.6; (b) air-sampling per §17.7.4.7; "
-            "(c) performance-based design per Annex B. Spacing remains "
-            "9.1m per §17.7.3.2.3 (V130: flat spacing confirmed — NO "
-            "height reduction applies to smoke detectors)."
+            "detectors per §17.7.4.6; (b) air-sampling per §17.7.4.7. "
+            "Spacing remains 9.1m per §17.7.3.2.3 (V130: flat spacing confirmed)."
         )
-        try:
-            import logging as _logging
-            _logger = _logging.getLogger("fireai.core.qomn_kernel")
-            _logger.warning(audit_notice)
-        except Exception:
-            pass
-
-    nfpa_section = "NFPA 72-2022 §17.7.3.2.3 (flat spacing — NO height reduction)"
-    formula = (
-        f"R = 0.7 × S [§17.7.4.2.3.1], S = {spacing_m:.2f}m "
-        f"[flat per §17.7.3.2.3]"
-    )
+        _logger.warning("V130 AUDIT WARNING: " + audit_notice)
 
     result = {
         "listed_spacing_m": round(spacing_m, 6),
-        "coverage_radius_m": round(radius_m, 6),
-        "wall_min_m": round(NFPA72_WALL_MIN_DISTANCE_M, 4),  # 0.1016m dead air space per §17.6.3.1.1
-        "wall_max_m": round(0.5 * spacing_m, 6),  # S/2 max wall distance per §17.6.3.1.1
+        "coverage_radius_m": radius_m,
+        "wall_min_m": round(NFPA72_WALL_MIN_DISTANCE_M, 4),
+        "wall_max_m": round(0.5 * spacing_m, 6),
         "corner_min_m": round(0.7 * spacing_m, 6),
-        "nfpa_section": nfpa_section,
+        "nfpa_section": "NFPA 72-2022 §17.7.3.2.3 (flat spacing — NO height reduction)",
         "table_row_used": table_row,
-        "formula": formula,
+        "formula": f"R = 0.7 × S = 0.7 × {spacing_m:.4f} = {radius_m:.4f}m",
         "computation_hash": result_hash,
     }
     if audit_notice is not None:

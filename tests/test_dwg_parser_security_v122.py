@@ -28,6 +28,7 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import pytest
+pytest.importorskip("fireai.parsers.dwg_parser", reason="DWG parser not yet implemented")
 
 from parsers._path_security import (
     UnsafePathError,

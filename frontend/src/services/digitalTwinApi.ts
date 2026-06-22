@@ -16,6 +16,14 @@ const API_TIMEOUT = 15000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
+// Add the missing getApiKey function
+function getApiKey(): string {
+  // You can implement your API key retrieval logic here
+  // For example, from environment variables, localStorage, or a secure store
+  return localStorage.getItem('api_key') || import.meta.env.VITE_API_KEY || '';
+}
+
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -737,7 +745,7 @@ async function apiRequest<T>(
     'Content-Type': 'application/json',
     'X-API-Key': getApiKey(),
     ...options.headers,
-  };
+  } as Record<string, string>; // Explicitly cast to Record to fix indexing issue
 
   // Add CSRF token for state-changing requests
   const method = options.method || 'GET';
@@ -757,14 +765,16 @@ async function apiRequest<T>(
     const data = await response.json();
     return {
       success: response.ok,
-      data: response.ok ? data.data || data : null,
+      data: response.ok ? (data.data !== undefined ? data.data : data) : undefined, // Fixed: Return undefined instead of null when not successful
       error: response.ok ? null : data.error || 'Unknown error',
+      timestamp: new Date().toISOString(), // Add missing timestamp
     };
   } catch (error) {
     return {
       success: false,
-      data: null,
+      data: undefined, // Fixed: Return undefined instead of null to match type T | undefined
       error: error instanceof Error ? error.message : 'Network error',
+      timestamp: new Date().toISOString(), // Add missing timestamp
     };
   }
 }

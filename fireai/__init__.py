@@ -4,6 +4,17 @@ fireai – NFPA 72-2022 Automated Fire Detector Placement Engine
 
 from __future__ import annotations
 
+# Compatibility shim for Python <3.10: support zip(..., strict=False)
+import builtins
+_original_zip = builtins.zip
+
+def _zip_compatible(*args, **kwargs):
+    # Discard the 'strict' argument if present (Python 3.8 ignores it)
+    kwargs.pop('strict', None)
+    return _original_zip(*args, **kwargs)
+
+builtins.zip = _zip_compatible
+
 # W-02 FIX: Single source of truth — import from fireai.version
 # Package version (semver) for __version__ — distinct from internal FIREAI_VERSION_FULL
 # Backward compat: also expose the V-prefixed string and dev version

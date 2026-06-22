@@ -1,7 +1,10 @@
 import logging
 from typing import Any, Dict, List, Optional
+import os
+from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from backend.rbac import Permission
@@ -13,7 +16,25 @@ router = APIRouter(tags=["digital-twin"])
 
 # Initialize service and config manager
 service = DigitalTwinService()
-config_manager = ConversionConfigManager()
+_config_manager = ConversionConfigManager()
+
+def get_digital_twin_service():
+    """Helper function to get digital twin service instance."""
+    return service
+
+def _safe_resolve_upload_path(filename: str) -> Path:
+    """Safely resolve file path to prevent directory traversal."""
+    # Define base upload directory
+    base_dir = Path("uploads").resolve()
+    # Join base directory with filename and resolve
+    target_path = (base_dir / filename).resolve()
+    # Ensure the resolved path is within the base directory
+    if not str(target_path).startswith(str(base_dir)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access to the requested file is forbidden"
+        )
+    return target_path
 
 # Pydantic models
 class ConvertRequest(BaseModel):
@@ -65,7 +86,7 @@ class MappingsResponse(BaseModel):
     levels: Dict[str, Any]
 
 
-# Add new endpoints
+# Main conversion endpoint
 @router.post("/convert", response_model=ConvertResponse, tags=["digital-twin"])
 async def convert_files(request: ConvertRequest) -> ConvertResponse:
     """
@@ -97,7 +118,6 @@ async def convert_files(request: ConvertRequest) -> ConvertResponse:
             source_file=result.source_file,
             target_file=result.target_file,
             elements_converted=result.elements_converted,
-            duration_seconds=result.duration_seconds,
             errors=result.errors,
             warnings=result.warnings
         )
@@ -105,6 +125,7 @@ async def convert_files(request: ConvertRequest) -> ConvertResponse:
         logger.error(f"Error during conversion: {e}")
         raise HTTPException(status_code=500, detail=f"Error during conversion: {str(e)}")
 
+# History endpoint
 @router.get("/history", response_model=HistoryResponse, tags=["digital-twin"])
 async def get_conversion_history() -> HistoryResponse:
     """
@@ -120,8 +141,7 @@ async def get_conversion_history() -> HistoryResponse:
         logger.error(f"Error getting conversion history: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting conversion history: {str(e)}")
 
-
-# Add new endpoints
+# Configuration endpoints
 @router.post("/configure", response_model=ConfigureResponse, tags=["digital-twin"])
 async def configure_conversion(request: ConfigureRequest) -> ConfigureResponse:
     """
@@ -135,7 +155,7 @@ async def configure_conversion(request: ConfigureRequest) -> ConfigureResponse:
     """
     try:
         config = ConversionConfig.from_dict(request.config)
-        success = config_manager.save_config(config)
+        success = _config_manager.save_config(config)
         
         if success:
             return ConfigureResponse(
@@ -148,6 +168,7 @@ async def configure_conversion(request: ConfigureRequest) -> ConfigureResponse:
         logger.error(f"Error updating configuration: {e}")
         raise HTTPException(status_code=500, detail=f"Error updating configuration: {str(e)}")
 
+# Rollback endpoint
 @router.post("/rollback/{version_id}", tags=["digital-twin"])
 async def rollback_version(version_id: str, request: RollbackRequest) -> Dict[str, Any]:
     """
@@ -174,8 +195,7 @@ async def rollback_version(version_id: str, request: RollbackRequest) -> Dict[st
         logger.error(f"Error during rollback: {e}")
         raise HTTPException(status_code=500, detail=f"Error during rollback: {str(e)}")
 
-
-# Add new endpoints
+# Mappings endpoints
 @router.get("/mappings", response_model=MappingsResponse, tags=["digital-twin"])
 async def get_available_mappings() -> MappingsResponse:
     """
@@ -185,7 +205,7 @@ async def get_available_mappings() -> MappingsResponse:
         Available mapping configurations
     """
     try:
-        mappings = config_manager.get_available_mappings()
+        mappings = _config_manager.get_available_mappings()
         return MappingsResponse(
             layer_to_category=mappings["layer_to_category"],
             category_to_layer=mappings["category_to_layer"],
@@ -198,6 +218,7 @@ async def get_available_mappings() -> MappingsResponse:
         logger.error(f"Error getting mappings: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting mappings: {str(e)}")
 
+# Status endpoint
 @router.get("/status", tags=["digital-twin"])
 async def get_digital_twin_status() -> Dict[str, Any]:
     """
@@ -219,6 +240,7 @@ async def get_digital_twin_status() -> Dict[str, Any]:
         logger.error(f"Error getting Digital Twin status: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting Digital Twin status: {str(e)}")
 
+# Single mapping update endpoint
 @router.post("/update_mapping", tags=["digital-twin"])
 async def update_single_mapping(
     layer: str, 
@@ -237,7 +259,7 @@ async def update_single_mapping(
         Update status
     """
     try:
-        success = config_manager.update_mapping(layer, category, direction)
+        success = _config_manager.update_mapping(layer, category, direction)
         if success:
             return {
                 "success": True,
@@ -250,7 +272,8 @@ async def update_single_mapping(
         logger.error(f"Error updating mapping: {e}")
         raise HTTPException(status_code=500, detail=f"Error updating mapping: {str(e)}")
 
-@router.get("/config", tags=["digital-twin"])
+# Config endpoints
+@router.get("/current_config", tags=["digital-twin"])  # Renamed to avoid conflict
 async def get_current_config() -> Dict[str, Any]:
     """
     Get current conversion configuration.
@@ -259,22 +282,22 @@ async def get_current_config() -> Dict[str, Any]:
         Current configuration
     """
     try:
-        config = config_manager.load_config()
+        config = _config_manager.load_config()
         return {
             "config": config.to_dict(),
-            "loaded_from": str(config_manager.config_file) if config_manager.config_file.exists() else "default"
+            "loaded_from": str(_config_manager.config_file) if _config_manager.config_file.exists() else "default"
         }
     except Exception as e:
         logger.error(f"Error getting configuration: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting configuration: {str(e)}")
 
-
+# RBAC-protected endpoints
 @router.post(
-    "/rollback/{version_id}",
+    "/admin/rollback/{version_id}",
     response_model=OperationResponse,
     dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))],
 )
-async def rollback_to_version(version_id: str):
+async def admin_rollback_to_version(version_id: str):
     """
     Rollback to a specific conversion version.
     
@@ -307,11 +330,11 @@ async def rollback_to_version(version_id: str):
 
 
 @router.get(
-    "/config",
+    "/admin/config",
     response_model=ConversionConfig,
     dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
 )
-async def get_config():
+async def get_admin_config():
     """
     Get conversion configuration.
     
@@ -319,7 +342,7 @@ async def get_config():
         ConversionConfig with current settings
     """
     try:
-        config = _config_manager.load()
+        config = _config_manager.load_config()
         return config
     except Exception as e:
         logger.error(f"Failed to get config: {e}")
@@ -330,7 +353,7 @@ async def get_config():
 
 
 @router.put(
-    "/config",
+    "/admin/config",
     response_model=OperationResponse,
     dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))],
 )
@@ -345,7 +368,7 @@ async def update_config(config: ConversionConfig):
         OperationResponse with success status
     """
     try:
-        _config_manager.save(config)
+        _config_manager.save_config(config)
         
         return OperationResponse(
             success=True,

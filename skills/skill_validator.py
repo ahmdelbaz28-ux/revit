@@ -73,13 +73,16 @@ class SkillMetadata(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name_chars(cls, v: str) -> str:
-        """Ensure name contains only allowed characters."""
-        allowed = set("abcdefghijklmnopqrstuvwxyz0123456789-_")
-        if not all(c.lower() in allowed for c in v):
+        """Ensure name contains only allowed characters (Unicode letters, marks, numbers, hyphens, underscores)."""
+        import unicodedata
+        for c in v:
+            cat = unicodedata.category(c)
+            if cat.startswith('L') or cat.startswith('M') or c.isdigit() or c in '-_':
+                continue
             raise ValueError(
-                "Name must contain only lowercase letters, numbers, hyphens, underscores"
+                "Name must contain only letters, numbers, hyphens, underscores"
             )
-        return v.lower()
+        return v
 
 
 # ═══════════════════════════════════════════════════════════════════════════

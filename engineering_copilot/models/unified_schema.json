@@ -1,0 +1,411 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Unified Engineering Model Schema",
+  "description": "Schema for the unified engineering data model across ETAP, AutoCAD, and Revit",
+  "type": "object",
+  "definitions": {
+    "baseEntity": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the entity"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the entity"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the entity"
+        },
+        "coordinates": {
+          "type": "object",
+          "properties": {
+            "x": {"type": "number"},
+            "y": {"type": "number"},
+            "z": {"type": "number"}
+          },
+          "required": ["x", "y"]
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional metadata properties"
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {"type": "string"},
+              "entity_id": {"type": "string"},
+              "relationship": {"type": "string"}
+            }
+          }
+        },
+        "source_system": {
+          "type": "string",
+          "enum": ["ETAP", "AutoCAD", "Revit", "Unified"]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "name", "source_system", "created_at", "updated_at"]
+    },
+    "project": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Project"},
+            "project_number": {"type": "string"},
+            "project_phase": {"type": "string"},
+            "location": {"type": "string"},
+            "owner": {"type": "string"},
+            "start_date": {"type": "string", "format": "date"},
+            "end_date": {"type": "string", "format": "date"}
+          }
+        }
+      ]
+    },
+    "building": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Building"},
+            "building_type": {"type": "string"},
+            "floors": {"type": "integer"},
+            "address": {"type": "string"},
+            "floor_area": {"type": "number"}
+          }
+        }
+      ]
+    },
+    "level": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Level"},
+            "level_number": {"type": "integer"},
+            "elevation": {"type": "number"},
+            "floor_height": {"type": "number"}
+          }
+        }
+      ]
+    },
+    "room": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Room"},
+            "room_number": {"type": "string"},
+            "room_type": {"type": "string"},
+            "area": {"type": "number"},
+            "volume": {"type": "number"},
+            "level_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "electrical_room": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "ElectricalRoom"},
+            "room_classification": {"type": "string"},
+            "voltage_level": {"type": "number"},
+            "equipment_count": {"type": "integer"}
+          }
+        }
+      ]
+    },
+    "panel": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Panel"},
+            "panel_type": {"type": "string"},
+            "voltage_rating": {"type": "number"},
+            "current_rating": {"type": "number"},
+            "pole_count": {"type": "integer"},
+            "feeder_count": {"type": "integer"},
+            "manufacturer": {"type": "string"},
+            "model": {"type": "string"},
+            "location_room_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "switchboard": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Switchboard"},
+            "voltage_rating": {"type": "number"},
+            "current_rating": {"type": "number"},
+            "interrupting_rating": {"type": "number"},
+            "bus_configuration": {"type": "string"},
+            "location_room_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "bus": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Bus"},
+            "voltage_rating": {"type": "number"},
+            "current_rating": {"type": "number"},
+            "bus_material": {"type": "string"},
+            "bus_size": {"type": "string"},
+            "length": {"type": "number"},
+            "parent_switchboard_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "transformer": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Transformer"},
+            "transformer_type": {"type": "string"},
+            "primary_voltage": {"type": "number"},
+            "secondary_voltage": {"type": "number"},
+            "power_rating": {"type": "number"},
+            "impedance": {"type": "number"},
+            "efficiency": {"type": "number"},
+            "cooling_type": {"type": "string"},
+            "location_room_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "generator": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Generator"},
+            "generator_type": {"type": "string"},
+            "power_rating": {"type": "number"},
+            "voltage_rating": {"type": "number"},
+            "fuel_type": {"type": "string"},
+            "prime_mover": {"type": "string"},
+            "location_room_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "cable": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Cable"},
+            "cable_type": {"type": "string"},
+            "conductor_count": {"type": "integer"},
+            "conductor_size": {"type": "string"},
+            "voltage_rating": {"type": "number"},
+            "ampacity": {"type": "number"},
+            "length": {"type": "number"},
+            "installation_method": {"type": "string"},
+            "source_equipment_id": {"type": "string"},
+            "destination_equipment_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "breaker": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Breaker"},
+            "breaker_type": {"type": "string"},
+            "voltage_rating": {"type": "number"},
+            "current_rating": {"type": "number"},
+            "interrupting_rating": {"type": "number"},
+            "pole_count": {"type": "integer"},
+            "frame_size": {"type": "string"},
+            "location_panel_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "load": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Load"},
+            "load_type": {"type": "string"},
+            "power_rating": {"type": "number"},
+            "voltage_rating": {"type": "number"},
+            "power_factor": {"type": "number"},
+            "demand_factor": {"type": "number"},
+            "connected_equipment_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "motor": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Motor"},
+            "motor_type": {"type": "string"},
+            "horsepower": {"type": "number"},
+            "voltage_rating": {"type": "number"},
+            "current_rating": {"type": "number"},
+            "efficiency": {"type": "number"},
+            "speed_rpm": {"type": "number"},
+            "connected_equipment_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "relay": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Relay"},
+            "relay_type": {"type": "string"},
+            "manufacturer": {"type": "string"},
+            "model": {"type": "string"},
+            "settings": {"type": "object"},
+            "connected_equipment_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "protection_device": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "ProtectionDevice"},
+            "device_type": {"type": "string"},
+            "voltage_rating": {"type": "number"},
+            "current_rating": {"type": "number"},
+            "settings": {"type": "object"},
+            "connected_equipment_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "conduit": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Conduit"},
+            "conduit_type": {"type": "string"},
+            "size": {"type": "string"},
+            "material": {"type": "string"},
+            "length": {"type": "number"},
+            "start_point": {"$ref": "#/definitions/baseEntity/properties/coordinates"},
+            "end_point": {"$ref": "#/definitions/baseEntity/properties/coordinates"}
+          }
+        }
+      ]
+    },
+    "tray": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Tray"},
+            "tray_type": {"type": "string"},
+            "width": {"type": "number"},
+            "height": {"type": "number"},
+            "material": {"type": "string"},
+            "length": {"type": "number"},
+            "fill_capacity": {"type": "number"}
+          }
+        }
+      ]
+    },
+    "equipment": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Equipment"},
+            "equipment_type": {"type": "string"},
+            "manufacturer": {"type": "string"},
+            "model": {"type": "string"},
+            "serial_number": {"type": "string"},
+            "installation_date": {"type": "string", "format": "date"},
+            "location_room_id": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "annotation": {
+      "allOf": [
+        {"$ref": "#/definitions/baseEntity"},
+        {
+          "properties": {
+            "type": {"const": "Annotation"},
+            "annotation_type": {"type": "string"},
+            "text": {"type": "string"},
+            "style": {"type": "string"},
+            "attached_to_entity_id": {"type": "string"}
+          }
+        }
+      ]
+    }
+  },
+  "properties": {
+    "entities": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"$ref": "#/definitions/project"},
+          {"$ref": "#/definitions/building"},
+          {"$ref": "#/definitions/level"},
+          {"$ref": "#/definitions/room"},
+          {"$ref": "#/definitions/electrical_room"},
+          {"$ref": "#/definitions/panel"},
+          {"$ref": "#/definitions/switchboard"},
+          {"$ref": "#/definitions/bus"},
+          {"$ref": "#/definitions/transformer"},
+          {"$ref": "#/definitions/generator"},
+          {"$ref": "#/definitions/cable"},
+          {"$ref": "#/definitions/breaker"},
+          {"$ref": "#/definitions/load"},
+          {"$ref": "#/definitions/motor"},
+          {"$ref": "#/definitions/relay"},
+          {"$ref": "#/definitions/protection_device"},
+          {"$ref": "#/definitions/conduit"},
+          {"$ref": "#/definitions/tray"},
+          {"$ref": "#/definitions/equipment"},
+          {"$ref": "#/definitions/annotation"}
+        ]
+      }
+    },
+    "project_id": {"type": "string"},
+    "schema_version": {"type": "string", "const": "1.0.0"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "required": ["entities", "project_id", "schema_version", "created_at", "updated_at"]
+}

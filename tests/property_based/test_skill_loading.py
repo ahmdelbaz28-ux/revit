@@ -76,6 +76,7 @@ trigger_words_strategy = st.lists(
     trigger_word_strategy,
     min_size=1,
     max_size=10,
+    unique=True,
 )
 
 use_cases_strategy = st.lists(
@@ -452,7 +453,7 @@ def test_manifest_and_result_json_serialization() -> None:
     ).filter(
         lambda value: value == ""
         or not value[0].isalpha()
-        or any(char not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for char in value.lower())
+        or any(char not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for char in value)
     ),
 )
 def test_invalid_skill_name_rejected(bad_name: str) -> None:
@@ -481,7 +482,13 @@ def test_short_description_rejected(short_description: str) -> None:
 
 
 @settings(max_examples=50, deadline=1000)
-@given(trigger_words=st.lists(st.text(min_size=0, max_size=10), min_size=0, max_size=5))
+@given(
+    trigger_words=st.lists(
+        st.text(min_size=0, max_size=10),
+        min_size=0,
+        max_size=5,
+    ).filter(lambda words: not words or any(word == "" for word in words))
+)
 def test_empty_trigger_words_rejected(trigger_words: list[str]) -> None:
     with pytest.raises(ValueError):
         SkillDescription(short_description="A valid description", trigger_words=trigger_words)
