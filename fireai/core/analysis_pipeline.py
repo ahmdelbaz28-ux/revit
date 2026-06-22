@@ -387,7 +387,7 @@ class AnalysisPipeline:
             },
         )
 
-        logger.info(f"Pipeline START: room={room_id} ({room.width:.1f}m × {room.length:.1f}m, h={ceiling_height:.1f}m)")
+        logger.info("Pipeline START: room=%s (%sm × %sm, h=%sm)", room_id, room.width, room.length, ceiling_height)
 
         # ── Event: Pipeline Start ──────────────────────────────────────
         self._bus.publish(
@@ -417,7 +417,7 @@ class AnalysisPipeline:
                     f"GEOMETRY INVALID: {_name}={_val!r} (must be finite positive number). "
                     "Cannot run optimization with invalid room geometry."
                 )
-                logger.error(f"  GEOMETRY INVALID for {room_id}: {_name}={_val!r}")
+                logger.error("  GEOMETRY INVALID for %s: %s=%s", room_id, _name, _val)
                 _geom_valid = False
                 break
         if not _geom_valid:
@@ -467,7 +467,7 @@ class AnalysisPipeline:
             elapsed = round(time.monotonic() - t0, 4)
             result.timing["optimization"] = elapsed
             result.errors.append(f"OPTIMIZATION FAILED: {type(exc).__name__}: {exc}")
-            logger.error(f"  OPTIMIZATION FAILED for {room_id}: {exc}")
+            logger.error("  OPTIMIZATION FAILED for %s: %s", room_id, exc)
             # Cannot continue without a layout
             return result
 
@@ -488,7 +488,7 @@ class AnalysisPipeline:
                 result.stage_reached = PipelineStage.VERIFICATION
                 result.timing["verification"] = round(time.monotonic() - t0, 4)
 
-                logger.info(f"  VERIFICATION: {consensus.consensus_str}, is_safe={consensus.is_safe}")
+                logger.info("  VERIFICATION: %s, is_safe=%s", consensus.consensus_str, consensus.is_safe)
 
                 # Warnings for consensus discrepancies
                 if consensus.confidence == ConfidenceLevel.WARNING:
@@ -579,7 +579,7 @@ class AnalysisPipeline:
                 error_msg = f"VERIFICATION FAILED: {type(exc).__name__}: {exc}"
                 result.errors.append(error_msg)
                 result.warnings.append(f"Room {room_id}: Verification stage failed — proceeding without consensus")
-                logger.warning(f"  VERIFICATION FAILED for {room_id}: {exc}")
+                logger.warning("  VERIFICATION FAILED for %s: %s", room_id, exc)
                 # Continue pipeline — verification failure is not fatal
         else:
             # Verification skipped — still emit coverage event from layout
@@ -709,7 +709,7 @@ class AnalysisPipeline:
                 result.warnings.append(
                     f"Room {room_id}: Certificate generation failed — proceeding without proof certificate"
                 )
-                logger.warning(f"  CERTIFICATION FAILED for {room_id}: {exc}")
+                logger.warning("  CERTIFICATION FAILED for %s: %s", room_id, exc)
                 # Continue pipeline — certificate failure is not fatal
         else:
             result.timing["certification"] = 0.0
@@ -743,7 +743,7 @@ class AnalysisPipeline:
                 result.metadata["pipeline_hash"] = pipeline_hash
                 result.metadata["pipeline_timestamp"] = datetime.now(timezone.utc).isoformat()
                 # V60 FIX (P1-5): Log full hash (not truncated) for verification
-                logger.info(f"  SIGNING: pipeline_hash={pipeline_hash} (no certificate — hash from layout)")
+                logger.info("  SIGNING: pipeline_hash=%s (no certificate — hash from layout)", pipeline_hash)
 
             result.stage_reached = PipelineStage.SIGNING
             result.timing["signing"] = round(time.monotonic() - t0, 4)
@@ -754,7 +754,7 @@ class AnalysisPipeline:
             error_msg = f"SIGNING FAILED: {type(exc).__name__}: {exc}"
             result.errors.append(error_msg)
             result.warnings.append(f"Room {room_id}: Signing failed — certificate may not be tamper-evident")
-            logger.warning(f"  SIGNING FAILED for {room_id}: {exc}")
+            logger.warning("  SIGNING FAILED for %s: %s", room_id, exc)
             # Continue — signing failure is not fatal
 
         # ═══════════════════════════════════════════════════════════════
@@ -806,7 +806,7 @@ class AnalysisPipeline:
                 result.stage_reached = PipelineStage.STORAGE
                 result.timing["storage"] = round(time.monotonic() - t0, 4)
 
-                logger.info(f"  STORAGE: audit_hash={audit_hash[:16]}...")
+                logger.info("  STORAGE: audit_hash=%s...", audit_hash[:16])
 
             else:
                 # No audit store available — skip storage
@@ -820,7 +820,7 @@ class AnalysisPipeline:
             error_msg = f"STORAGE FAILED: {type(exc).__name__}: {exc}"
             result.errors.append(error_msg)
             result.warnings.append(f"Room {room_id}: Audit storage failed — result not persisted to audit trail")
-            logger.warning(f"  STORAGE FAILED for {room_id}: {exc}")
+            logger.warning("  STORAGE FAILED for %s: %s", room_id, exc)
             # Continue — storage failure is not fatal for the result
 
         # ═══════════════════════════════════════════════════════════════
@@ -882,13 +882,13 @@ class AnalysisPipeline:
                     correlation_id=correlation_id,
                 )
 
-                logger.info(f"  TWIN_SYNC: {len(layout.detectors)} detectors snapshot, checksum={checksum[:16]}...")
+                logger.info("  TWIN_SYNC: %s detectors snapshot, checksum=%s...", len(layout.detectors), checksum[:16])
 
             except Exception as exc:
                 elapsed = round(time.monotonic() - t0, 4)
                 result.timing["twin_sync"] = elapsed
                 result.warnings.append(f"Room {room_id}: Twin sync failed — no live digital copy for this room: {exc}")
-                logger.warning(f"  TWIN_SYNC FAILED for {room_id}: {exc}")
+                logger.warning("  TWIN_SYNC FAILED for %s: %s", room_id, exc)
                 # Continue — twin failure is NOT a safety failure
         else:
             result.timing["twin_sync"] = 0.0
@@ -962,7 +962,7 @@ class AnalysisPipeline:
         results: List[PipelineResult] = []
         n_rooms = len(rooms)
 
-        logger.info(f"Building analysis START: {n_rooms} rooms")
+        logger.info("Building analysis START: %s rooms", n_rooms)
 
         # ── Event: Building Analysis Start ────────────────────────────
         self._bus.publish(
@@ -984,7 +984,7 @@ class AnalysisPipeline:
 
             except MemoryError:
                 # CRITICAL: Memory errors propagate — cannot safely continue
-                logger.critical(f"CRITICAL: MemoryError in room {room_id}. Aborting building analysis.")
+                logger.critical("CRITICAL: MemoryError in room %s. Aborting building analysis.", room_id)
                 # Still record the failure
                 results.append(
                     PipelineResult(
@@ -999,7 +999,7 @@ class AnalysisPipeline:
 
             except SystemError as exc:
                 # CRITICAL: System errors propagate — corrupted state
-                logger.critical(f"CRITICAL: SystemError in room {room_id}: {exc}. Aborting building analysis.")
+                logger.critical("CRITICAL: SystemError in room %s: %s. Aborting building analysis.", room_id, exc)
                 results.append(
                     PipelineResult(
                         room_id=room_id,

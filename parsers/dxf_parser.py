@@ -78,7 +78,7 @@ class DXFParser:
         self.max_area = max_area
 
     def parse(self, dxf_path: str) -> DXFParseResult:
-        logger.info(f"Parsing DXF: {dxf_path}")
+        logger.info("Parsing DXF: %s", dxf_path)
 
         # SAFETY: Try normal read first, then recovery
         try:
@@ -112,7 +112,7 @@ class DXFParser:
             # calculations (NaN * anything = NaN → global coverage = NaN).
             area = poly.area
             if not math.isfinite(area):
-                logger.warning(f"{rid}: area is {area} (NaN/Inf) — SKIPPED")
+                logger.warning("%s: area is %s (NaN/Inf) — SKIPPED", rid, area)
                 skipped += 1
                 continue
 
@@ -124,7 +124,7 @@ class DXFParser:
                 # A room with area 500,000 m² is likely a unit conversion error
                 # (DXF in mm parsed as meters). Accepting it produces catastrophically
                 # wrong detector counts — a 500,000 m² room would get 0 detectors/m².
-                logger.warning(f"{rid}: area {poly.area:.1f}m² > max {self.max_area}m² — SKIPPED (possible unit error)")
+                logger.warning("%s: area %sm² > max %sm² — SKIPPED (possible unit error)", rid, poly.area, self.max_area)
                 skipped += 1
                 continue
 
@@ -170,7 +170,7 @@ class DXFParser:
         # This is CRITICAL for safety - we cannot guess
         detected = self._detect_unit_heuristic(doc)
         if detected is not None:
-            logger.info(f"Units auto-detected: {detected}")
+            logger.info("Units auto-detected: %s", detected)
             return detected
 
         # Failed to detect: safety-first approach
@@ -241,7 +241,7 @@ class DXFParser:
             # Sort by room count descending - pick the one with most rooms
             valid_scales.sort(key=lambda x: -x[2])
             scale, name, count = valid_scales[0]
-            logger.info(f"Unit detected: {name} -> {count} valid rooms")
+            logger.info("Unit detected: %s -> %s valid rooms", name, count)
 
             # Map back to DXF unit code
             _SCALE_TO_UNIT = {0.001: 4, 0.01: 5, 0.3048: 2}
@@ -263,7 +263,7 @@ class DXFParser:
                 # V76 HIGH-08 FIX: NaN/Inf coordinates from corrupt DXF files
                 # produce invalid Shapely geometries that crash downstream analysis.
                 if not (math.isfinite(sx) and math.isfinite(sy) and math.isfinite(ex) and math.isfinite(ey)):
-                    logger.warning(f"Skipping LINE with non-finite coordinates: start=({sx},{sy}) end=({ex},{ey})")
+                    logger.warning("Skipping LINE with non-finite coordinates: start=(%s,%s) end=(%s,%s)", sx, sy, ex, ey)
                     continue
                 s, e = (sx, sy), (ex, ey)
                 if s != e:
@@ -287,7 +287,7 @@ class DXFParser:
                     if len(pts) >= 3 and ent.closed:
                         lines.append(LineString(pts))
                 except Exception as e:
-                    logger.debug(f"Polyline skip: {e}")
+                    logger.debug("Polyline skip: %s", e)
             elif ent.dxftype() == "CIRCLE":
                 # Convert CIRCLE to polygon approximation
                 try:
@@ -295,21 +295,21 @@ class DXFParser:
                     if poly and poly.is_valid:
                         lines.append(poly.exterior)
                 except Exception as e:
-                    logger.debug(f"Circle skip: {e}")
+                    logger.debug("Circle skip: %s", e)
             elif ent.dxftype() == "ARC":
                 # Convert ARC to line segments
                 try:
                     segments = self._arc_to_segments(ent, scale)
                     lines.extend(segments)
                 except Exception as e:
-                    logger.debug(f"Arc skip: {e}")
+                    logger.debug("Arc skip: %s", e)
             elif ent.dxftype() == "SPLINE":
                 # Convert SPLINE to line segments (64 points approximation)
                 try:
                     segments = self._spline_to_segments(ent, scale)
                     lines.extend(segments)
                 except Exception as e:
-                    logger.debug(f"Spline skip: {e}")
+                    logger.debug("Spline skip: %s", e)
         return lines
 
     def _circle_to_polygon(self, entity, scale):
@@ -387,7 +387,7 @@ class DXFParser:
 
             return segments
         except Exception as e:
-            logger.debug(f"Spline conversion failed: {e}")
+            logger.debug("Spline conversion failed: %s", e)
             return []
 
     def _is_duplicate(self, poly1: Polygon, poly2: Polygon) -> bool:

@@ -63,7 +63,7 @@ class EngineController:
             self.heartbeat_thread.start()
             self.health_check_thread.start()
 
-            self.logger.info(f"Engine Controller {self.controller_id} started")
+            self.logger.info("Engine Controller %s started", self.controller_id)
 
     def stop(self):
         """
@@ -76,7 +76,7 @@ class EngineController:
             self.engine_pool.graceful_shutdown()
             self.is_running = False
 
-            self.logger.info(f"Engine Controller {self.controller_id} stopped")
+            self.logger.info("Engine Controller %s stopped", self.controller_id)
 
     def process_request(self, request_data: Dict[str, Any], source_node: str = None) -> Dict[str, Any]:
         """
@@ -349,7 +349,7 @@ class EngineController:
                 self._send_heartbeat()
                 time.sleep(self.heartbeat_interval)
             except Exception as e:
-                self.logger.error(f"Heartbeat loop error: {e}")
+                self.logger.error("Heartbeat loop error: %s", e)
                 time.sleep(5)  # Wait before retrying
 
     def _health_check_loop(self):
@@ -361,7 +361,7 @@ class EngineController:
                 self._perform_health_check()
                 time.sleep(self.health_check_interval)
             except Exception as e:
-                self.logger.error(f"Health check loop error: {e}")
+                self.logger.error("Health check loop error: %s", e)
                 time.sleep(5)  # Wait before retrying
 
     def _send_heartbeat(self):
@@ -383,7 +383,7 @@ class EngineController:
                     "timestamp": time.time()
                 })
             except Exception as e:
-                self.logger.error(f"Failed to send heartbeat to cluster: {e}")
+                self.logger.error("Failed to send heartbeat to cluster: %s", e)
 
     def _perform_health_check(self):
         """
@@ -397,10 +397,10 @@ class EngineController:
         # Check for unhealthy workers
         for worker_id, worker_status in pool_status.get("worker_statuses", {}).items():
             if not worker_status.get("is_running", False):
-                self.logger.warning(f"Worker {worker_id} is not running")
+                self.logger.warning("Worker %s is not running", worker_id)
                 # In a real implementation, we might restart the worker or alert
             elif not worker_status.get("is_healthy", True):
-                self.logger.warning(f"Worker {worker_id} is not healthy")
+                self.logger.warning("Worker %s is not healthy", worker_id)
 
         # Check resource usage
         self._update_resource_usage()
@@ -433,7 +433,7 @@ class EngineController:
         """
         # In a real implementation, this would update controller based on cluster state
         # For now, we'll just log the sync
-        self.logger.info(f"Received cluster sync update with {len(cluster_state)} entries")
+        self.logger.info("Received cluster sync update with %s entries", len(cluster_state))
 
     def update_worker_pool_size(self, new_size: int):
         """
@@ -443,12 +443,12 @@ class EngineController:
             raise ValueError("Pool size must be at least 1")
 
         if new_size > self.max_pool_size:
-            self.logger.warning(f"Requested size {new_size} exceeds max size {self.max_pool_size}")
+            self.logger.warning("Requested size %s exceeds max size %s", new_size, self.max_pool_size)
             new_size = self.max_pool_size
 
         # In a real implementation, this would resize the pool
         # For now, we'll just log the request
-        self.logger.info(f"Pool size update requested: {new_size}")
+        self.logger.info("Pool size update requested: %s", new_size)
 
         # Actually update the pool size
         with self.lock:
@@ -499,7 +499,7 @@ class EngineController:
             for key, value in new_limits.items():
                 if key in self.resource_limits:
                     self.resource_limits[key] = value
-            self.logger.info(f"Resource limits updated: {new_limits}")
+            self.logger.info("Resource limits updated: %s", new_limits)
 
     def force_worker_restart(self, worker_id: str) -> bool:
         """
@@ -510,7 +510,7 @@ class EngineController:
         if worker_id in pool_status.get("worker_statuses", {}):
             # In a real implementation, we would restart the specific worker
             # For now, we'll just log the action
-            self.logger.info(f"Worker restart requested for {worker_id}")
+            self.logger.info("Worker restart requested for %s", worker_id)
             return True
 
         return False
@@ -522,7 +522,7 @@ class EngineController:
         with self.lock:
             active_count = len(self.active_tasks)
             if active_count > 0:
-                self.logger.info(f"Draining controller: {active_count} active tasks")
+                self.logger.info("Draining controller: %s active tasks", active_count)
                 # In a real implementation, we would wait for tasks to complete
                 # For now, we'll just return status
                 return False  # Not drained yet
@@ -627,7 +627,7 @@ class DistributedEngineController(EngineController):
             return result
         except Exception as e:
             # If forwarding fails, process locally
-            self.logger.error(f"Request forwarding failed: {e}, processing locally")
+            self.logger.error("Request forwarding failed: %s, processing locally", e)
             return super().process_request(request_data, source_node)
 
     def _select_target_node(self) -> Optional[str]:

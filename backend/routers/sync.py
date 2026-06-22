@@ -125,7 +125,7 @@ class ConnectionManager:
             if not self._ip_connections[client_ip]:
                 del self._ip_connections[client_ip]
 
-        logger.info(f"WebSocket client disconnected from {client_ip}. Total: {len(self.active_connections)}")
+        logger.info("WebSocket client disconnected from %s. Total: %s", client_ip, len(self.active_connections))
 
     def subscribe(self, websocket: WebSocket, project_id: str) -> None:
         """Subscribe a connection to updates for a specific project."""
@@ -431,5 +431,5 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        logger.error("WebSocket error: %s", e)
         manager.disconnect(websocket)

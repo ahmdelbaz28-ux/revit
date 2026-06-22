@@ -87,6 +87,16 @@ logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(
 # SECTION 1: DATA TYPES & ENCAPSULATED OUTPUT MODEL
 # =====================================================================
 
+
+class SecurityError(Exception):
+    """Raised when a security policy violation prevents continuation.
+
+    Used by audit subsystem to reject operations that would compromise
+    audit log integrity (e.g., missing HMAC key in production).
+    """
+    pass
+
+
 class ErrorSeverity(Enum):
     """Classification of error severity for weighted circuit breaker scoring.
 
@@ -394,28 +404,41 @@ class AsyncAuditLogger:
         elif os.environ.get("QOMN_AUDIT_SECRET_KEY", ""):
             self.secret_key = os.environ.get("QOMN_AUDIT_SECRET_KEY").encode("utf-8")
         else:
-            import sys
-            if "pytest" in sys.modules:
-                # H-2 NOTE: Running under pytest — use deterministic test key
-                # for test reproducibility. This key is ONLY used when pytest
-                # is in sys.modules (never in production server processes).
-                self.secret_key = b"QOMN_SECRET_KEY"
-                logging.debug(
-                    "[AUDIT] Running under pytest — using deterministic test key "
-                    "for signature verification. This is NOT secure for production."
+            # V127 SAFETY-CRITICAL FIX (agent.md Rule #17 — NO HALF-SOLUTIONS):
+            # The previous "pytest in sys.modules" check used a hardcoded
+            # b"QOMN_SECRET_KEY" as fallback. This is a CATASTROPHIC vulnerability
+            # because pytest is importable in many production environments that
+            # install test dependencies (CI runners, Docker images bundling test
+            # deps, developer laptops running uvicorn locally with test deps
+            # installed). A known-default HMAC key allows attackers to forge
+            # audit log entries, hiding the fact that a self-healing action was
+            # never actually performed.
+            #
+            # FIX:
+            #   - Production (FIREAI_ENV=production): RAISE SecurityError.
+            #     Audit logging cannot proceed without a stable HMAC key.
+            #   - Non-production: generate a random per-process key with WARNING.
+            #     Tests that need a deterministic key must pass secret_key=...
+            #     explicitly via the constructor.
+            import secrets as _secrets
+            env = os.environ.get("FIREAI_ENV", "development").lower()
+            is_production = env in ("production", "prod")
+            if is_production:
+                raise SecurityError(
+                    "QOMN_AUDIT_SECRET_KEY is not set in production. "
+                    "Audit log HMAC cannot be verified without a stable key. "
+                    "Generate one with: "
+                    "python -c 'import secrets; print(secrets.token_hex(32))'"
                 )
-            else:
-                # H-2 FIX: Generate a random key instead of using a known default
-                import secrets
-                self.secret_key = secrets.token_bytes(32)
-                logging.warning(
-                    "[AUDIT SECURITY] QOMN_AUDIT_SECRET_KEY not set in environment. "
-                    "Generated a random key for this session. This key will change on "
-                    "restart, making previous audit logs unverifiable. For production, "
-                    "set QOMN_AUDIT_SECRET_KEY to a stable, cryptographically random value "
-                    "(>= 32 bytes). A known-default key like b'QOMN_SECRET_KEY' allows "
-                    "attackers to forge audit log signatures."
-                )
+            self.secret_key = _secrets.token_bytes(32)
+            logging.warning(
+                "[AUDIT SECURITY] QOMN_AUDIT_SECRET_KEY not set in environment. "
+                "Generated a random key for this session. This key will change on "
+                "restart, making previous audit logs unverifiable. For production, "
+                "set QOMN_AUDIT_SECRET_KEY to a stable, cryptographically random value "
+                "(>= 32 bytes). A known-default key like b'QOMN_SECRET_KEY' allows "
+                "attackers to forge audit log signatures."
+            )
         self.lock = threading.Lock()
 
         # Batch statistics for monitoring

@@ -502,7 +502,7 @@ class StreamingParser:
                         yield walls
         except Exception as e:
             self._errors.append(f"DXF stream error: {e}")
-            logger.error(f"DXF stream error at {path}: {e}")
+            logger.error("DXF stream error at %s: %s", path, e)
 
     async def parse_pdf_stream(self, path: Path) -> AsyncIterator[List[NDArray[np.float64]]]:
         """Stream PDF page-by-page → yield wall arrays."""
@@ -524,7 +524,7 @@ class StreamingParser:
                 doc.close()
                 return paths
             except Exception as e:
-                logger.warning(f"PDF page {page_num} error: {e}")
+                logger.warning("PDF page %s error: %s", page_num, e)
                 return []
 
         # V86 FIX: Replaced asyncio.get_event_loop() with
@@ -543,7 +543,7 @@ class StreamingParser:
                     yield walls
         except Exception as e:
             self._errors.append(f"PDF stream error: {e}")
-            logger.error(f"PDF stream error: {e}")
+            logger.error("PDF stream error: %s", e)
 
     @staticmethod
     def _parse_dxf_chunk(lines: List[str]) -> List[NDArray[np.float64]]:
@@ -723,10 +723,10 @@ class AdaptivePipeline:
             except Exception as e:
                 metrics.errors += 1
                 error_window.append(1)
-                logger.error(f"Stage '{name}' error: {e}")
+                logger.error("Stage '%s' error: %s", name, e)
                 if len(error_window) == 100 and sum(error_window) / 100 >= self.ERROR_RATE_TRIP:
                     circuit_open = True
-                    logger.warning(f"Stage '{name}' circuit breaker OPEN")
+                    logger.warning("Stage '%s' circuit breaker OPEN", name)
 
     def get_metrics(self) -> Dict[str, StageMetrics]:
         return dict(self._metrics)
@@ -752,7 +752,6 @@ class SafetyLedger:
         secret_key: bytes = None,  # V112: NO default — caller MUST provide via env var
     ) -> None:
         import hmac as _hmac
-        import os
 
         # V112: Security — secret_key MUST be provided, never use a default.
         # A hardcoded secret defeats the entire HMAC audit trail.
@@ -900,7 +899,7 @@ class ConcurrentSolver:
             try:
                 results.append(f.result(timeout=60))
             except Exception as e:
-                logger.error(f"Solver future error: {e}")
+                logger.error("Solver future error: %s", e)
                 results.append(SolverResult([], 0.0, False, str(e)))
         return results
 
@@ -910,7 +909,7 @@ def _solve_room_safe(problem: "SolverProblem") -> "SolverResult":
     try:
         return _solve_mip(problem)
     except Exception as e:
-        logger.warning(f"MIP failed for {problem.room_id}: {e}, using greedy")
+        logger.warning("MIP failed for %s: %s, using greedy", problem.room_id, e)
         return _greedy_fallback(problem)
 
 

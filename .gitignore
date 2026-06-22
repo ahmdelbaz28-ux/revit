@@ -210,6 +210,9 @@ db/api_keys.json
 secrets/
 secret.json
 config/secrets.json
+# API key server-side HMAC secret (per-instance, must never be committed)
+db/api_keys.secret
+*.secret
 
 # Testing
 .pytest_cache/
@@ -332,3 +335,56 @@ qomn_fire/integration/output/
 
 # Git worktrees
 worktree-*/
+
+# V127 SAFETY HARDENING — additional sensitive file patterns
+# Private keys (all formats)
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+authorized_keys
+*_rsa
+*_dsa
+*_ecdsa
+
+# Cloud credentials
+.aws/
+.gcp/
+.azure/
+*.kubeconfig
+
+# Database dump files (may contain PII / audit data)
+*.db-journal
+*.db-wal
+*.db-shm
+*.sql
+*.dump
+*.dmp
+
+# HashiCorp Vault tokens / secrets
+.vault-token
+*.vault
+
+# OS-level sensitive files
+.DS_Store
+Thumbs.db
+
+# IDE state that may leak secrets (when env vars are inline)
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# Coverage reports may contain source paths
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.bandit/

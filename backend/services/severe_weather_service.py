@@ -42,7 +42,11 @@ import time
 try:
     import defusedxml.ElementTree as ET  # nosec B314 — safe XML parser
 except ImportError:
-    import xml.etree.ElementTree as ET  # fallback when defusedxml unavailable
+    # FIX: Hard-fail if defusedxml is not available.
+    # Standard xml.etree.ElementTree is vulnerable to XML attacks
+    # (billion laughs, XXE). In a safety-critical system, we must
+    # not silently fall back to an insecure parser.
+    ET = None  # type: ignore[assignment]
 from dataclasses import dataclass
 from typing import Optional
 
@@ -603,7 +607,7 @@ class SevereWeatherService:
             "Accept": "application/json",
         }
 
-        logger.info(f"Fetching MeteoAlarm JSON API for country={country_code}")
+        logger.info("Fetching MeteoAlarm JSON API for country=%s", country_code)
         response = await client.get(
             f"{self.METEOALARM_API_URL}/{country_code}",
             headers=headers,
@@ -750,7 +754,7 @@ class SevereWeatherService:
             "Accept": "application/atom+xml, application/xml, text/xml",
         }
 
-        logger.info(f"Fetching MeteoAlarm Atom feed for country={country_code}")
+        logger.info("Fetching MeteoAlarm Atom feed for country=%s", country_code)
         response = await client.get(
             f"{self.METEOALARM_ATOM_URL}/{country_code}",
             headers=headers,
@@ -762,6 +766,12 @@ class SevereWeatherService:
         has_extreme_temp = False
 
         try:
+            # FIX: Guard against missing defusedxml
+            if ET is None:
+                raise ImportError(
+                    "defusedxml is required for XML parsing in safety-critical systems. "
+                    "Install with: pip install defusedxml"
+                )
             # Parse Atom XML feed (ET is defusedxml.ElementTree when available — noqa S314)
             root = ET.fromstring(response.text)  # noqa: S314
 
@@ -800,7 +810,7 @@ class SevereWeatherService:
                     continue
 
         except ET.ParseError as e:
-            logger.warning(f"MeteoAlarm Atom XML parse error: {e}")
+            logger.warning("MeteoAlarm Atom XML parse error: %s", e)
             # Return empty results — caller will handle fallback
             pass
 

@@ -1136,8 +1136,6 @@ class ConstraintEngine:
         Returns:
             Movement cost in equivalent meters.
         """
-        to_cell[0] - from_cell[0]
-        to_cell[1] - from_cell[1]
         dz = to_cell[2] - from_cell[2]
 
         # Base cost: one cell length
@@ -1146,6 +1144,12 @@ class ConstraintEngine:
         # Elevation change penalty
         if dz != 0:
             cost += self._elevation_penalty_m * abs(dz)
+
+        # Electrical proximity penalty
+        if is_near_electrical:
+            cost += ELECTRICAL_PROXIMITY_PENALTY_M
+
+        return cost
 
         # Horizontal direction change (bend) is detected by the router,
         # not here. This method only computes single-step cost.

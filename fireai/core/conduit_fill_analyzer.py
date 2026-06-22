@@ -316,7 +316,7 @@ class WireSpec:
                 # damage and thermal buildup per NEC 310.15. Overestimating area is SAFE
                 # (rejects conduit → upsizes). FPLP shielded 14 AWG is 5.20mm actual.
                 object.__setattr__(self, "outer_diameter_mm", 6.0)
-                logger.warning(f"No diameter data for {self.insulation.value} AWG {self.awg}, using conservative default 6.0mm. Verify actual cable diameter.")
+                logger.warning("No diameter data for %s AWG %s, using conservative default 6.0mm. Verify actual cable diameter.", self.insulation.value, self.awg)
 
     @property
     def cross_section_mm2(self) -> float:

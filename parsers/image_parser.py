@@ -170,14 +170,14 @@ class ImageParser:
                 return result
 
             result.image_size = (img.shape[1], img.shape[0])
-            logger.info(f"Image loaded: {result.image_size}")
+            logger.info("Image loaded: %s", result.image_size)
 
             # Preprocess
             gray, edges = self._preprocess(img)
 
             # Find contours (potential rooms)
             contours = self._find_contours(edges)
-            logger.info(f"Found {len(contours)} potential regions")
+            logger.info("Found %s potential regions", len(contours))
 
             # Process each contour
             for contour in contours:
@@ -271,7 +271,6 @@ class ImageParser:
     def _extract_room_name(self, img, x: int, y: int, w: int, h: int) -> str:
         """Extract room name using OCR."""
         try:
-            import os
 
             import pytesseract
             os.environ['TESSDATA_PREFIX'] = '/usr/share/tesseract-ocr'
@@ -304,7 +303,7 @@ class ImageParser:
             return text[:50]  # Limit length
 
         except Exception as e:
-            logger.debug(f"OCR failed: {e}")
+            logger.debug("OCR failed: %s", e)
             return ""
 
 

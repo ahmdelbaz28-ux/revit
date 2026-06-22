@@ -316,7 +316,7 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
     except ValueError as e:
         # Log rejection before returning error
         _audit_trail.log_rejection(room_id=body.room.room_id, reason=str(e))
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail="Invalid room specification. Check room parameters and try again.")
 
     forced_type: Optional[DetectorType] = None
     if body.forced_detector_type:
@@ -405,7 +405,8 @@ async def analyse_room_v10(request: Request, body: AnalyseRoomRequest) -> RoomRe
     try:
         room_spec = _build_room_spec(body.room)
     except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        logger.warning("Room spec validation failed: %s", e)
+        raise HTTPException(status_code=422, detail="Invalid room specification. Check room parameters and try again.")
 
     system = _get_fireai_system()
     result = system.analyse_room(
@@ -426,7 +427,8 @@ async def analyse_floor_v10(request: Request, body: AnalyseFloorRequestV10):
         try:
             room_specs.append(_build_room_spec(r))
         except ValueError as e:
-            raise HTTPException(status_code=422, detail=str(e))
+            logger.warning("Room spec validation failed: %s", e)
+            raise HTTPException(status_code=422, detail="Invalid room specification in batch. Check room parameters.")
 
     system = _get_fireai_system()
     results = system.analyse_floor(

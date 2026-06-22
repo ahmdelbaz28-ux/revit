@@ -16,6 +16,7 @@ import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
+import os
 
 # ============================================================================
 # CONTRACT v1 — Shared Data Models
@@ -330,7 +331,6 @@ def get_feature_flags() -> Dict[str, bool]:
     Example: FIREAI_FEATURE_FLAGS='{"SMOKE_SIMULATION": true}'
     """
     import json
-    import os
 
     flags = dict(DEFAULT_FEATURE_FLAGS)
 

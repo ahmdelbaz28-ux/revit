@@ -46,17 +46,19 @@ repos:
   # Stage 4: Testing
   - repo: local
     hooks:
-      # Fast unit tests
+      # V130 FIX: Fast unit tests now run on EVERY commit (was: only on push,
+      # AND only ran tests/ dir — silently skipped 95 of 144 test files).
+      # Engineers now get a real test gate on every commit.
       - id: fast-unit-tests
         name: fast unit tests
-        entry: python -m pytest tests/test_*.py -x --tb=short
+        entry: python -m pytest tests/ backend/tests/ fireai/conduit/tests/ parsers/tests/ qomn_conduit/tests/ qomn_fire/tests/ core/tests/ -x --tb=short -q
         language: system
         types: [python]
         pass_filenames: false
         require_serial: true
-        stages: [push]
+        stages: [commit]
 
-      # Property-based tests
+      # Property-based tests (still on push — they are slower)
       - id: property-tests
         name: property-based tests
         entry: python -m pytest tests/property_based/ -v --tb=short
@@ -65,6 +67,17 @@ repos:
         pass_filenames: false
         require_serial: true
         stages: [push]
+
+  # V130 FIX: Add pip-audit hook for dependency vulnerability scanning.
+  # Previously the repo declared `safety` in dev deps but never enforced it.
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.7.3
+    hooks:
+      - id: pip-audit
+        name: dependency vulnerability scan
+        args: ["--strict", "--desc"]
+        files: ^requirements.*\.txt$
+        pass_filenames: false
 
   # Stage 5: Skill Validation
   - repo: local

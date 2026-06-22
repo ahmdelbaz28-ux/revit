@@ -62,7 +62,7 @@ MEMORY_DISCLAIMER = (
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("/status", summary="Get memory service status")
+@router.get("/status", summary="Get memory service status", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def get_status():
     """
     Get the current status of the memory service.
@@ -101,7 +101,7 @@ async def add_memory(request: MemoryAddRequest):
     return result
 
 
-@router.post("/search", summary="Search memories")
+@router.post("/search", summary="Search memories", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def search_memories(request: MemorySearchRequest):
     """
     Search memories using hybrid search (semantic + BM25 + entity boosting).
@@ -120,7 +120,7 @@ async def search_memories(request: MemorySearchRequest):
     return response.model_dump()
 
 
-@router.get("/all", summary="Get all memories")
+@router.get("/all", summary="Get all memories", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_all_memories(
     user_id: Optional[str] = Query(None, description="Filter by user/engineer"),
     agent_id: Optional[str] = Query(None, description="Filter by agent"),
@@ -168,7 +168,7 @@ async def delete_memory(memory_id: str):
     return result
 
 
-@router.get("/{memory_id}/history", summary="Get memory history")
+@router.get("/{memory_id}/history", summary="Get memory history", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_memory_history(memory_id: str):
     """
     Get the full history of a memory (all changes over time).

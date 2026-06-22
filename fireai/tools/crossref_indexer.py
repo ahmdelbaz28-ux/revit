@@ -8,9 +8,8 @@ Generates impact analysis for constant changes.
 
 from __future__ import annotations
 
-Run: python -m fireai.tools.crossref_indexer
-Output: fireai/CROSSREF_INDEX.md
-"""
+# Run: python -m fireai.tools.crossref_indexer
+# Output: fireai/CROSSREF_INDEX.md
 
 import logging
 import re

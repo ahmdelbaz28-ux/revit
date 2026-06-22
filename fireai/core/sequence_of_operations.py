@@ -633,7 +633,7 @@ class SequenceOfOperationsMatrix:
         # An unknown device is NOT a confirmed condition — false general alarm
         # in a high-rise or healthcare building causes injuries during
         # unnecessary evacuation.
-        logger.warning(f"Unknown device type '{raw_type}' for device {dev.get('device_id', '?')}")
+        logger.warning("Unknown device type '%s' for device %s", raw_type, dev.get('device_id', '?'))
         return DeviceInputType.UNKNOWN
 
 

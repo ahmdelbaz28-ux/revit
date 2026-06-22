@@ -37,6 +37,7 @@ import math
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Tuple
+import os
 
 log = logging.getLogger(__name__)
 
@@ -845,7 +846,6 @@ def parse_ifc_file(file_path: str) -> BuildingModel:
     if ifs is None:
         raise ImportError("IfcOpenShell is required for IFC file parsing. Install with: pip install ifcopenshell")
 
-    import os
 
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"IFC file not found: {file_path}")
@@ -888,7 +888,6 @@ def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
             model = ifs.open(temp_path)
             return _extract_building_model(model)
         finally:
-            import os
 
             os.unlink(temp_path)
     except Exception as exc:

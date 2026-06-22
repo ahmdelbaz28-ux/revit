@@ -132,7 +132,7 @@ class FloorResult:
         # to cover up compliance failures.
         safe_name = re.sub(r'[^A-Za-z0-9_\-]', '_', self.project_name)
         if safe_name != self.project_name:
-            logger.warning(f"project_name sanitized for path safety: '{self.project_name}' -> '{safe_name}'")
+            logger.warning("project_name sanitized for path safety: '%s' -> '%s'", self.project_name, safe_name)
 
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")  # V54 FIX (AUDIT-012): UTC
         filename = f"{output_dir}/audit_{safe_name}_{timestamp}.json"
@@ -141,7 +141,7 @@ class FloorResult:
         resolved_path = Path(filename).resolve()
         resolved_dir = Path(output_dir).resolve()
         if not str(resolved_path).startswith(str(resolved_dir)):
-            logger.critical(f"Path traversal blocked: '{filename}' resolves outside '{output_dir}'")
+            logger.critical("Path traversal blocked: '%s' resolves outside '%s'", filename, output_dir)
             filename = f"{output_dir}/audit_SANITIZED_{timestamp}.json"
 
         audit_data = {
@@ -184,7 +184,7 @@ class FloorResult:
         with open(filename, "w") as f:
             json.dump(audit_data, f, indent=2)
 
-        logger.info(f"Audit saved: {filename}")
+        logger.info("Audit saved: %s", filename)
         return filename
 
 
@@ -201,7 +201,7 @@ class FloorOrchestrator:
         self.audit_trail = audit_trail
 
     def process(self, room_specs: List[RoomSpec], project_name: str = "", source_dxf: str = "") -> FloorResult:
-        logger.info(f"Processing: {project_name} ({len(room_specs)} rooms)")
+        logger.info("Processing: %s (%s rooms)", project_name, len(room_specs))
 
         result = FloorResult(
             project_name=project_name,
@@ -212,7 +212,7 @@ class FloorOrchestrator:
         for spec in room_specs:
             room_res = self._process_one_room(spec)
             result.room_results.append(room_res)
-            logger.info(f"  {spec.name}: {room_res.status}")
+            logger.info("  %s: %s", spec.name, room_res.status)
 
             # Log each room to audit trail if available
             if self.audit_trail:
@@ -402,7 +402,7 @@ class FloorOrchestrator:
 
         except Exception as e:
             # CRITICAL: RuntimeError → STOP EVERYTHING
-            logger.critical(f"SYSTEM ERROR in {spec.room_id}: {type(e).__name__}: {e}")
+            logger.critical("SYSTEM ERROR in %s: %s: %s", spec.room_id, type(e).__name__, e)
             raise  # FAIL FAST — do not continue with corrupted environment
 
         finally:

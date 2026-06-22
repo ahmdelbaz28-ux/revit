@@ -277,7 +277,7 @@ class EnterpriseOrchestrator:
                 elif isinstance(acoustic_result, dict):
                     acoustic_compliant = acoustic_result.get("compliant", False)
             except Exception as e:
-                logger.error(f"Acoustic check failed: {e}")
+                logger.error("Acoustic check failed: %s", e)
                 all_violations.append(
                     {
                         "module": "acoustic",
@@ -298,7 +298,7 @@ class EnterpriseOrchestrator:
                 elif isinstance(battery_result, dict):
                     battery_compliant = battery_result.get("is_adequate", False)
             except Exception as e:
-                logger.error(f"Battery check failed: {e}")
+                logger.error("Battery check failed: %s", e)
                 all_violations.append(
                     {
                         "module": "battery",
@@ -319,7 +319,7 @@ class EnterpriseOrchestrator:
                 elif isinstance(tenability_result, dict):
                     tenability_compliant = tenability_result.get("is_safe", False)
             except Exception as e:
-                logger.error(f"Tenability check failed: {e}")
+                logger.error("Tenability check failed: %s", e)
                 all_violations.append(
                     {
                         "module": "tenability",
@@ -350,7 +350,7 @@ class EnterpriseOrchestrator:
             if gate_kwargs:
                 release_result = verify_and_evaluate(**gate_kwargs)
         except Exception as e:
-            logger.warning(f"Release gate evaluation failed: {e}")
+            logger.warning("Release gate evaluation failed: %s", e)
 
         # Build summary
         all_ok = acoustic_compliant and battery_compliant and tenability_compliant

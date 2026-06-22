@@ -35,7 +35,7 @@ import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -210,7 +210,7 @@ class SemanticMapper:
         # Determine target category
         category = self.config.layer_to_category.get(layer)
         if not category:
-            logger.warning(f"No mapping for layer '{layer}' — skipping entity")
+            logger.warning("No mapping for layer '%s' — skipping entity", layer)
             return None
         
         # Map based on entity type and layer
@@ -235,7 +235,7 @@ class SemanticMapper:
         elif entity_type == "DIMENSION":
             return self._map_dimension_to_revit(autocad_entity)
         else:
-            logger.debug(f"Unsupported entity type: {entity_type}")
+            logger.debug("Unsupported entity type: %s", entity_type)
             return None
     
     def _map_line_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:
@@ -272,7 +272,7 @@ class SemanticMapper:
             if i + 1 < len(coords):
                 vertices.append([coords[i], coords[i+1], 0])  # Add Z=0
         
-        closed = entity.get("closed", False)
+        _closed = entity.get("closed", False)  # noqa: F841  (reserved for future closed-polygon logic)
         
         if category == "Floors" and len(vertices) >= 3:
             return {
@@ -416,7 +416,7 @@ class SemanticMapper:
         # Determine target layer
         layer = self.config.category_to_layer.get(category)
         if not layer:
-            logger.warning(f"No mapping for category '{category}' — skipping element")
+            logger.warning("No mapping for category '%s' — skipping element", category)
             return None
         
         # Map based on category
@@ -596,7 +596,7 @@ class DigitalTwinEngine:
                 logger.warning("AutoCAD service could not be initialized - proceeding with file operations only")
             
             # Read DWG file
-            logger.info(f"Reading DWG file: {dwg_filepath}")
+            logger.info("Reading DWG file: %s", dwg_filepath)
             dwg_result = acad_service.read_dwg(dwg_filepath)
             
             if not dwg_result.get("success", False):
@@ -656,7 +656,7 @@ class DigitalTwinEngine:
             )
             
         except Exception as e:
-            logger.error(f"Conversion failed: {e}")
+            logger.error("Conversion failed: %s", e)
             return ConversionResult(
                 success=False,
                 source_file=dwg_filepath,
@@ -693,7 +693,7 @@ class DigitalTwinEngine:
                 logger.warning("Revit service could not be initialized - proceeding with file operations only")
             
             # Read Revit document
-            logger.info(f"Reading RVT file: {rvt_filepath}")
+            logger.info("Reading RVT file: %s", rvt_filepath)
             rvt_result = revit_service.read_rvt(rvt_filepath)
             
             if not rvt_result.get("success", False):
@@ -753,7 +753,7 @@ class DigitalTwinEngine:
             )
             
         except Exception as e:
-            logger.error(f"Conversion failed: {e}")
+            logger.error("Conversion failed: %s", e)
             return ConversionResult(
                 success=False,
                 source_file=rvt_filepath,
@@ -798,9 +798,9 @@ class VersionManager:
             backup_path = f"{target_file}.backup.{version_id}"
             try:
                 shutil.copy2(target_file, backup_path)
-                logger.info(f"Created backup: {backup_path}")
+                logger.info("Created backup: %s", backup_path)
             except Exception as e:
-                logger.error(f"Failed to create backup: {e}")
+                logger.error("Failed to create backup: %s", e)
         
         # Load existing history
         history = self._load_history()
@@ -811,7 +811,7 @@ class VersionManager:
         # Save history
         self._save_history(history)
         
-        logger.info(f"Recorded version {version_id}")
+        logger.info("Recorded version %s", version_id)
         return version_id
     
     def get_history(self) -> List[Dict[str, Any]]:
@@ -835,16 +835,16 @@ class VersionManager:
                     try:
                         # Copy backup to target location
                         shutil.copy2(backup_path, target_file)
-                        logger.info(f"Restored version {version_id} to {target_file}")
+                        logger.info("Restored version %s to %s", version_id, target_file)
                         return True
                     except Exception as e:
-                        logger.error(f"Failed to restore backup: {e}")
+                        logger.error("Failed to restore backup: %s", e)
                         return False
                 else:
-                    logger.error(f"Backup file not found: {backup_path}")
+                    logger.error("Backup file not found: %s", backup_path)
                     return False
         
-        logger.error(f"Version {version_id} not found")
+        logger.error("Version %s not found", version_id)
         return False
     
     def _load_history(self) -> List[Dict[str, Any]]:
@@ -856,7 +856,7 @@ class VersionManager:
             with open(self.history_file, "r") as f:
                 return json.load(f)
         except json.JSONDecodeError:
-            logger.error(f"History file corrupted: {self.history_file}")
+            logger.error("History file corrupted: %s", self.history_file)
             return []
     
     def _save_history(self, history: List[Dict[str, Any]]):
@@ -931,26 +931,26 @@ class ConversionConfigManager:
             with open(self.config_file, "w") as f:
                 json.dump(config.to_dict(), f, indent=2)
             
-            logger.info(f"Configuration saved to {self.config_file}")
+            logger.info("Configuration saved to %s", self.config_file)
             return True
         except Exception as e:
-            logger.error(f"Failed to save configuration: {e}")
+            logger.error("Failed to save configuration: %s", e)
             return False
     
     def load_config(self) -> ConversionConfig:
         """Load configuration from file."""
         if not self.config_file.exists():
-            logger.info(f"Configuration file not found, using default: {self.config_file}")
+            logger.info("Configuration file not found, using default: %s", self.config_file)
             return ConversionConfig()
         
         try:
             with open(self.config_file, "r") as f:
                 data = json.load(f)
             
-            logger.info(f"Configuration loaded from {self.config_file}")
+            logger.info("Configuration loaded from %s", self.config_file)
             return ConversionConfig.from_dict(data)
         except Exception as e:
-            logger.error(f"Failed to load configuration: {e}")
+            logger.error("Failed to load configuration: %s", e)
             return ConversionConfig()
     
     def update_mapping(self, layer: str, category: str, direction: str = "autocad_to_revit") -> bool:
@@ -974,7 +974,7 @@ class ConversionConfigManager:
             
             return self.save_config(config)
         except Exception as e:
-            logger.error(f"Failed to update mapping: {e}")
+            logger.error("Failed to update mapping: %s", e)
             return False
     
     def get_available_mappings(self) -> Dict[str, Any]:

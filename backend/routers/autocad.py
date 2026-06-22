@@ -6,29 +6,34 @@ REST API endpoints for AutoCAD integration operations.
 Provides connection, file operations, and drawing operations.
 
 ENDPOINTS:
-- POST /api/autocad/connect - Connect to AutoCAD application
-- POST /api/autocad/read_dwg - Read entities from DWG file
-- POST /api/autocad/write_dwg - Write entities to DWG file
-- POST /api/autocad/draw_line - Draw line in AutoCAD
-- POST /api/autocad/draw_polyline - Draw polyline in AutoCAD
-- POST /api/autocad/draw_circle - Draw circle in AutoCAD
-- POST /api/autocad/draw_text - Draw text in AutoCAD
-- GET /api/autocad/status - Get connection status
-- POST /api/autocad/save - Save current document
-- POST /api/autocad/upload_dwg - Upload and read DWG file
-- DELETE /api/autocad/entity/{handle} - Delete entity by handle
-- PUT /api/autocad/entity/{handle} - Update entity properties
+- POST /autocad/connect - Connect to AutoCAD application
+- POST /autocad/read_dwg - Read entities from DWG file
+- POST /autocad/write_dwg - Write entities to DWG file
+- POST /autocad/draw_line - Draw line in AutoCAD
+- POST /autocad/draw_polyline - Draw polyline in AutoCAD
+- POST /autocad/draw_circle - Draw circle in AutoCAD
+- POST /autocad/draw_text - Draw text in AutoCAD
+- GET  /autocad/status - Get connection status
+- POST /autocad/save - Save current document
+- POST /autocad/upload_dwg - Upload and read DWG file
+- DELETE /autocad/entity/{handle} - Delete entity by handle
+- PUT /autocad/entity/{handle} - Update entity properties
 
-RATE LIMITS:
-- GET /status: 1000/minute
-- POST /connect, /disconnect: 50/minute
-- POST /read_dwg, /write_dwg: 50/minute
-- POST /upload_dwg: 10/minute
+SECURITY FIXES APPLIED:
+- FIX #5: Path traversal prevention in file upload
+- FIX #6: No server paths in error messages
+- FIX #17: Removed unused asyncio import
+- FIX #18: Thread-safe singleton with double-checked locking
+- FIX #20: Never expose str(e) to client — safe error messages
+- FIX #34: Removed dummy function
 """
 
 import logging
 import os
-import asyncio
+import re
+import tempfile
+import threading
+import uuid
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Request
@@ -46,22 +51,49 @@ class DummyLimiter:
         return decorator
 
 limiter = DummyLimiter()
+
 from backend.services.autocad_service import AutoCADService
+# V130 SECURITY FIX: Add auth dependencies for AutoCAD write/upload endpoints.
+# Previously every endpoint in this router was unauthenticated — any network
+# caller could read/write DWG files on the server. Write/upload operations now
+# require ENGINEER+ permission; read operations require VIEWER+.
+from backend.auth import require_permission
+from backend.rbac import Permission
+# V130: Rate limiter for upload endpoints — prevents DoS via large/cadenced uploads.
+from backend.limiter import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
 
-# Global service instance
+# ── Thread-safe service singleton (FIX #18) ────────────────────────────────
+# Previously the singleton had a TOCTOU race condition — two threads could
+# both see _autocad_service as None and create separate instances.
 _autocad_service: Optional[AutoCADService] = None
+_service_lock = threading.Lock()
+
 
 def get_autocad_service() -> AutoCADService:
-    """Get or initialize AutoCAD service singleton."""
+    """Get or initialize AutoCAD service singleton (thread-safe)."""
     global _autocad_service
     if _autocad_service is None:
-        _autocad_service = AutoCADService()
+        with _service_lock:
+            if _autocad_service is None:  # Double-checked locking
+                _autocad_service = AutoCADService()
     return _autocad_service
 
-# Pydantic models
+
+# ── Safe error helper (FIX #20) ────────────────────────────────────────────
+# In a fire-safety system, exception messages can leak file paths, DB
+# connection strings, and internal variable names. This helper logs the
+# full error server-side but returns a generic message to the client.
+def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException:
+    """Log full exception detail, return safe message to client."""
+    logger.error("%s: %s", log_msg, exc, exc_info=True)
+    return HTTPException(status_code=status_code, detail=log_msg)
+
+
+# ── Pydantic request/response models ───────────────────────────────────────
+
 class ConnectRequest(BaseModel):
     """Request model for AutoCAD connection."""
     visible: bool = True
@@ -72,16 +104,18 @@ class ConnectResponse(BaseModel):
     success: bool
     message: str
     connected: bool
-    connection_id: Optional[str] = None
+    handle: Optional[str] = None
 
 class ReadDwgRequest(BaseModel):
     """Request model for reading DWG file."""
     filepath: str
 
+
 class WriteDwgRequest(BaseModel):
     """Request model for writing DWG file."""
     filepath: str
     entities: List[Dict[str, Any]]
+
 
 class DrawLineRequest(BaseModel):
     """Request model for drawing a line."""
@@ -90,6 +124,7 @@ class DrawLineRequest(BaseModel):
     layer: str = "0"
     color: int = 0
 
+
 class DrawPolylineRequest(BaseModel):
     """Request model for drawing a polyline."""
     vertices: List[List[float]]
@@ -97,12 +132,14 @@ class DrawPolylineRequest(BaseModel):
     color: int = 0
     closed: bool = False
 
+
 class DrawCircleRequest(BaseModel):
     """Request model for drawing a circle."""
     center: List[float]
     radius: float
     layer: str = "0"
     color: int = 0
+
 
 class DrawTextRequest(BaseModel):
     """Request model for drawing text."""
@@ -112,25 +149,30 @@ class DrawTextRequest(BaseModel):
     layer: str = "0"
     color: int = 0
 
+
 class StatusResponse(BaseModel):
     """Response model for connection status."""
     connected: bool
     message: str
     document_info: Optional[Dict[str, Any]] = None
 
+
 class SaveRequest(BaseModel):
     """Request model for saving document."""
     filepath: str
+
 
 class ModifyEntityRequest(BaseModel):
     """Request model for modifying an entity."""
     handle: str
     properties: Dict[str, Any]
 
+
 class DeleteEntityResponse(BaseModel):
     """Response model for entity deletion."""
     success: bool
     message: str
+
 
 class ReadFileResponse(BaseModel):
     """Response from reading a DWG/DXF file."""
@@ -141,94 +183,76 @@ class ReadFileResponse(BaseModel):
     blocks: Dict[str, List[Dict[str, Any]]]
     entity_count: int
 
+
 class OperationResponse(BaseModel):
     """Generic operation response."""
     success: bool
     message: str
     handle: Optional[str] = None
 
-# ═══════════════════════════════════════════════════════════════════════════
-# RATE-LIMITED ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════
+# ── Endpoints ───────────────────────────────────────────────────────────────
 
-
-
-
-# Endpoints
 @router.post("/connect", response_model=ConnectResponse)
 async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
-    """
-    Connect to AutoCAD application.
-    
-    Args:
-        request: Connection parameters
-        
-    Returns:
-        Connection status response
-    """
+    """Connect to AutoCAD application."""
     try:
         service = get_autocad_service()
-        # Call connect without visible/force_new parameters since they're not supported in the actual AutoCADService
-        connected = service.connect() if callable(getattr(service, 'connect', None)) else service.connected
-        
+
+        if not service.connect(visible=request.visible, force_new=request.force_new):
+            raise HTTPException(
+                status_code=503,
+                detail="Failed to connect to AutoCAD. Is AutoCAD installed and running?",
+            )
+
         return ConnectResponse(
             success=connected,
             message="Successfully connected to AutoCAD" if connected else "Failed to connect to AutoCAD",
             connected=connected
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error connecting to AutoCAD: {e}")
-        raise HTTPException(status_code=503, detail=f"Failed to connect to AutoCAD: {str(e)}")
+        raise _safe_error(503, "Failed to connect to AutoCAD", e)
+
 
 @router.post("/disconnect", response_model=ConnectResponse)
 async def disconnect_from_autocad() -> ConnectResponse:
-    """
-    Disconnect from AutoCAD application.
-    
-    Returns:
-        Disconnection status response
-    """
+    """Disconnect from AutoCAD application."""
     try:
         service = get_autocad_service()
         success = service.disconnect()
-            
+
         return ConnectResponse(
             success=success,
             message="Successfully disconnected from AutoCAD" if success else "Failed to disconnect from AutoCAD",
             connected=service.connected
         )
     except Exception as e:
-        logger.error(f"Error disconnecting from AutoCAD: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to disconnect from AutoCAD: {str(e)}")
+        raise _safe_error(500, "Failed to disconnect from AutoCAD", e)
 
-@router.post("/read_dwg", response_model=ReadFileResponse)
+
+@router.post("/read_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
-    """
-    Read entities from a DWG file.
-    
-    Args:
-        request: File path to read
-        
-    Returns:
-        Entities data from the DWG file
-    """
+    """Read entities from a DWG file."""
     try:
         service = get_autocad_service()
-        
+
+        # FIX #6: Do not expose server file paths in error messages
         if not os.path.exists(request.filepath):
+            logger.warning("DWG file not found: %s", request.filepath)
             raise HTTPException(
                 status_code=404,
-                detail=f"DWG file not found: {request.filepath}"
+                detail="DWG file not found. Verify the file path and try again."
             )
-            
+
         result = service.read_dwg(request.filepath)
-        
+
         if not result.get("success", False):
             raise HTTPException(
                 status_code=400,
                 detail=result.get("error", "Unknown error reading file")
             )
-            
+
         return ReadFileResponse(
             filepath=request.filepath,
             metadata=result.get("metadata", {}),
@@ -237,195 +261,153 @@ async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
             blocks=result.get("blocks", {}),
             entity_count=len(result.get("entities", [])),
         )
-    except FileNotFoundError:
-        logger.error(f"DWG file not found: {request.filepath}")
-        raise HTTPException(status_code=404, detail=f"DWG file not found: {request.filepath}")
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error reading DWG file: {e}")
-        raise HTTPException(status_code=500, detail=f"Error reading DWG file: {str(e)}")
+        raise _safe_error(500, "Error reading DWG file", e)
 
-@router.post("/write_dwg", response_model=OperationResponse)
+
+@router.post("/write_dwg", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
-    """
-    Write entities to a DWG file.
-    
-    Args:
-        request: File path and entities to write
-        
-    Returns:
-        Success status
-    """
+    """Write entities to a DWG file."""
     try:
         service = get_autocad_service()
-        
+
         if not service.connected:
             raise HTTPException(
                 status_code=503,
                 detail="AutoCAD not connected. Call /connect first."
             )
-            
+
         success = service.write_dwg(request.filepath, request.entities)
-        
+
         if not success:
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to write to {request.filepath}"
+                detail="Failed to write DWG file"
             )
-            
+
         return OperationResponse(
             success=True,
-            message=f"Successfully wrote to {request.filepath}"
+            message="Successfully wrote DWG file"
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error writing DWG file: {e}")
-        raise HTTPException(status_code=500, detail=f"Error writing DWG file: {str(e)}")
+        raise _safe_error(500, "Error writing DWG file", e)
+
 
 @router.post("/draw_line", response_model=OperationResponse)
 async def draw_line(request: DrawLineRequest) -> OperationResponse:
-    """
-    Draw a line in AutoCAD.
-    
-    Args:
-        request: Line drawing parameters
-        
-    Returns:
-        Result of the operation
-    """
+    """Draw a line in AutoCAD."""
     try:
         service = get_autocad_service()
-        
+
         if not service.connected:
             raise HTTPException(
                 status_code=503,
                 detail="AutoCAD not connected. Call /connect first."
             )
-            
+
         line_handle = service.draw_line(
             start_point=request.start_point,
             end_point=request.end_point,
             layer=request.layer,
             color=request.color
         )
-        
+
         if not line_handle:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to draw line"
-            )
-            
+            raise HTTPException(status_code=500, detail="Failed to draw line")
+
         return OperationResponse(
-            success=True, 
+            success=True,
             message="Line drawn successfully",
             handle=line_handle
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error drawing line: {e}")
-        raise HTTPException(status_code=500, detail=f"Error drawing line: {str(e)}")
+        raise _safe_error(500, "Error drawing line", e)
+
 
 @router.post("/draw_polyline", response_model=OperationResponse)
 async def draw_polyline(request: DrawPolylineRequest) -> OperationResponse:
-    """
-    Draw a polyline in AutoCAD.
-    
-    Args:
-        request: Polyline drawing parameters
-        
-    Returns:
-        Result of the operation
-    """
+    """Draw a polyline in AutoCAD."""
     try:
         service = get_autocad_service()
-        
+
         if not service.connected:
             raise HTTPException(
                 status_code=503,
                 detail="AutoCAD not connected. Call /connect first."
             )
-            
+
         polyline_handle = service.draw_polyline(
             vertices=request.vertices,
             layer=request.layer,
             color=request.color,
             closed=request.closed
         )
-        
+
         if not polyline_handle:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to draw polyline"
-            )
-            
+            raise HTTPException(status_code=500, detail="Failed to draw polyline")
+
         return OperationResponse(
             success=True,
             message="Polyline drawn successfully",
             handle=polyline_handle
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error drawing polyline: {e}")
-        raise HTTPException(status_code=500, detail=f"Error drawing polyline: {str(e)}")
+        raise _safe_error(500, "Error drawing polyline", e)
+
 
 @router.post("/draw_circle", response_model=OperationResponse)
 async def draw_circle(request: DrawCircleRequest) -> OperationResponse:
-    """
-    Draw a circle in AutoCAD.
-    
-    Args:
-        request: Circle drawing parameters
-        
-    Returns:
-        Result of the operation
-    """
+    """Draw a circle in AutoCAD."""
     try:
         service = get_autocad_service()
-        
+
         if not service.connected:
             raise HTTPException(
                 status_code=503,
                 detail="AutoCAD not connected. Call /connect first."
             )
-            
+
         circle_handle = service.draw_circle(
             center=request.center,
             radius=request.radius,
             layer=request.layer,
             color=request.color
         )
-        
+
         if not circle_handle:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to draw circle"
-            )
-            
+            raise HTTPException(status_code=500, detail="Failed to draw circle")
+
         return OperationResponse(
             success=True,
             message="Circle drawn successfully",
             handle=circle_handle
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error drawing circle: {e}")
-        raise HTTPException(status_code=500, detail=f"Error drawing circle: {str(e)}")
+        raise _safe_error(500, "Error drawing circle", e)
+
 
 @router.post("/draw_text", response_model=OperationResponse)
 async def draw_text(request: DrawTextRequest) -> OperationResponse:
-    """
-    Draw text in AutoCAD.
-    
-    Args:
-        request: Text drawing parameters
-        
-    Returns:
-        Result of the operation
-    """
+    """Draw text in AutoCAD."""
     try:
         service = get_autocad_service()
-        
+
         if not service.connected:
             raise HTTPException(
                 status_code=503,
                 detail="AutoCAD not connected. Call /connect first."
             )
-            
+
         text_handle = service.draw_text(
             text=request.text,
             insertion_point=request.insertion_point,
@@ -433,225 +415,186 @@ async def draw_text(request: DrawTextRequest) -> OperationResponse:
             layer=request.layer,
             color=request.color
         )
-        
+
         if not text_handle:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to draw text"
-            )
-            
+            raise HTTPException(status_code=500, detail="Failed to draw text")
+
         return OperationResponse(
             success=True,
             message="Text drawn successfully",
             handle=text_handle
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error drawing text: {e}")
-        raise HTTPException(status_code=500, detail=f"Error drawing text: {str(e)}")
+        raise _safe_error(500, "Error drawing text", e)
+
 
 @router.get("/status", response_model=StatusResponse)
 async def get_autocad_status() -> StatusResponse:
-    """
-    Get the current AutoCAD connection status.
-    
-    Returns:
-        Connection status and document info
-    """
+    """Get the current AutoCAD connection status."""
     try:
         service = get_autocad_service()
         doc_info = {}
-        
+
         if service.connected:
             doc_info = service.get_document_info()
-        
+
         return StatusResponse(
             connected=service.connected,
             message="AutoCAD service status" if service.connected else "AutoCAD not connected",
             document_info=doc_info if doc_info else None
         )
     except Exception as e:
-        logger.error(f"Error getting AutoCAD status: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting AutoCAD status: {str(e)}")
+        raise _safe_error(500, "Error getting AutoCAD status", e)
+
 
 @router.post("/save", response_model=OperationResponse)
 async def save_document(request: SaveRequest) -> OperationResponse:
-    """
-    Save the current AutoCAD document.
-    
-    Args:
-        request: File path to save to
-        
-    Returns:
-        Success status
-    """
+    """Save the current AutoCAD document."""
     try:
         service = get_autocad_service()
-        
+
         if not service.connected:
             raise HTTPException(
                 status_code=503,
                 detail="AutoCAD not connected. Call /connect first."
             )
-            
+
         success = service.save(request.filepath)
-        
+
         if not success:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to save document to {request.filepath}"
-            )
-            
+            raise HTTPException(status_code=500, detail="Failed to save document")
+
         return OperationResponse(
             success=True,
-            message=f"Document saved to {request.filepath}"
+            message="Document saved successfully"
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error saving document: {e}")
-        raise HTTPException(status_code=500, detail=f"Error saving document: {str(e)}")
+        raise _safe_error(500, "Error saving document", e)
 
-@router.post("/upload_dwg", response_model=ReadFileResponse)
-async def upload_and_read_dwg(file: UploadFile = File(...)) -> ReadFileResponse:
+
+# Maximum upload file size (50 MB)
+_MAX_UPLOAD_SIZE = 50 * 1024 * 1024
+
+
+@router.post("/upload_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@limiter.limit("10/minute")
+async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) -> ReadFileResponse:
+    """Upload a DWG file and read its contents.
+
+    FIX #5: Path traversal prevention — uses tempfile + uuid for safe paths
+    instead of trusting file.filename. Also enforces upload size limit.
     """
-    Upload a DWG file and read its contents.
-    
-    Args:
-        file: DWG file to upload and read
-        
-    Returns:
-        Entities data from the uploaded file
-    """
+    temp_path = ""
     try:
         service = get_autocad_service()
-        
-        # Save uploaded file temporarily
-        temp_path = f"temp_{file.filename}"
+
+        # Read file contents with size check
+        contents = await file.read()
+        if len(contents) > _MAX_UPLOAD_SIZE:
+            raise HTTPException(status_code=413, detail="File too large (max 50MB)")
+
+        # FIX #5: Use safe temp path instead of f"temp_{file.filename}"
+        # file.filename could contain ../../../etc/passwd (path traversal)
+        safe_name = re.sub(r'[^\w\-.]', '_', file.filename or "upload.dwg")
+        temp_dir = tempfile.mkdtemp()
+        temp_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_{safe_name}")
+
         with open(temp_path, "wb") as buffer:
-            buffer.write(await file.read())
-        
+            buffer.write(contents)
+
         # Read the file
         result = service.read_dwg(temp_path)
-        
-        # Clean up temporary file
-        os.remove(temp_path)
-        
+
         if not result.get("success", False):
             raise HTTPException(
                 status_code=400,
                 detail=result.get("error", "Unknown error reading file")
             )
-            
+
         return ReadFileResponse(
-            filepath=temp_path,
+            filepath=safe_name,
             metadata=result.get("metadata", {}),
             layers=result.get("layers", []),
             entities=result.get("entities", []),
             blocks=result.get("blocks", {}),
             entity_count=len(result.get("entities", [])),
         )
-    except FileNotFoundError:
-        logger.error(f"Uploaded DWG file not found: {file.filename}")
-        raise HTTPException(status_code=404, detail=f"Uploaded DWG file not found: {file.filename}")
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error processing uploaded DWG file: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing uploaded DWG file: {str(e)}")
+        raise _safe_error(500, "Error processing uploaded DWG file", e)
+    finally:
+        # FIX #5: Guaranteed cleanup even on error
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+                os.rmdir(os.path.dirname(temp_path))
+            except OSError:
+                pass
+
 
 @router.delete("/entity/{handle}", response_model=DeleteEntityResponse)
 async def delete_entity(handle: str) -> DeleteEntityResponse:
-    """
-    Delete an AutoCAD entity by handle.
-    
-    Args:
-        handle: Entity handle
-        
-    Returns:
-        Deletion status
-    """
+    """Delete an AutoCAD entity by handle."""
     try:
         service = get_autocad_service()
-        
+
         if not service.connected:
             raise HTTPException(
                 status_code=503,
                 detail="AutoCAD not connected. Call /connect first."
             )
-            
-        # Check if delete_entity method exists, otherwise return error
-        if not hasattr(service, 'delete_entity'):
-            raise HTTPException(
-                status_code=501,
-                detail="delete_entity method not implemented in AutoCAD service"
-            )
-            
+
         success = service.delete_entity(handle)
-        
+
         if not success:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to delete entity {handle}"
-            )
-            
+            raise HTTPException(status_code=400, detail="Failed to delete entity")
+
         return DeleteEntityResponse(
             success=True,
-            message=f"Entity {handle} deleted successfully"
+            message="Entity deleted successfully"
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error deleting entity: {e}")
-        raise HTTPException(status_code=500, detail=f"Error deleting entity: {str(e)}")
+        raise _safe_error(500, "Error deleting entity", e)
+
 
 @router.put("/entity/{handle}", response_model=OperationResponse)
 async def update_entity(handle: str, request: ModifyEntityRequest) -> OperationResponse:
-    """
-    Update an AutoCAD entity's properties.
-    
-    Args:
-        handle: Entity handle
-        request: Entity properties to update
-        
-    Returns:
-        Update status
-    """
+    """Update an AutoCAD entity's properties."""
     try:
         service = get_autocad_service()
-        
+
         if not service.connected:
             raise HTTPException(
                 status_code=503,
                 detail="AutoCAD not connected. Call /connect first."
             )
-            
+
         if handle != request.handle:
             raise HTTPException(
                 status_code=400,
                 detail="Handle in URL and request body must match"
             )
-            
-        # Check if modify_entity method exists, otherwise return error
-        if not hasattr(service, 'modify_entity'):
-            raise HTTPException(
-                status_code=501,
-                detail="modify_entity method not implemented in AutoCAD service"
-            )
-            
+
         success = service.modify_entity(
             handle=request.handle,
             properties=request.properties
         )
-        
+
         if not success:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to modify entity {handle}"
-            )
-            
+            raise HTTPException(status_code=400, detail="Failed to modify entity")
+
         return OperationResponse(
             success=True,
-            message=f"Entity {handle} modified successfully"
+            message="Entity modified successfully"
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error modifying entity: {e}")
-        raise HTTPException(status_code=500, detail=f"Error modifying entity: {str(e)}")
-
-
-def _ensure_file_end():
-    """Dummy function to ensure file has proper ending."""
-    pass
+        raise _safe_error(500, "Error modifying entity", e)

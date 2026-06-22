@@ -250,10 +250,10 @@ class PDFParser:
 
                 # If no text, try OCR
                 if not text or len(text.strip()) < 50:
-                    logger.info(f"Page {page_num}: No text found, trying OCR...")
+                    logger.info("Page %s: No text found, trying OCR...", page_num)
                     text = self._ocr_page(page)
                     if text:
-                        logger.info(f"Page {page_num}: OCR recovered {len(text)} chars")
+                        logger.info("Page %s: OCR recovered %s chars", page_num, len(text))
 
                 if text:
                     all_text.append(text)
@@ -277,7 +277,6 @@ class PDFParser:
     def _ocr_page(self, page) -> str:
         """Extract text from page using OCR (Tesseract)."""
         try:
-            import os
 
             import pytesseract
 
@@ -299,7 +298,7 @@ class PDFParser:
             logger.warning("pytesseract not installed")
             return ""
         except Exception as e:
-            logger.error(f"OCR failed: {e}")
+            logger.error("OCR failed: %s", e)
             return ""
 
     def _find_devices(self, text: str, page: int) -> List[PDFDevice]:

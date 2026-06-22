@@ -364,7 +364,7 @@ class TestDetectorPlacementEngineHeat:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-class TestBeamObstruction:
+class TestBeamObstruction:  # noqa: F811  (duplicate test class — second definition wins)
     """Beam depth > 10% of ceiling height = wall per NFPA 72 §17.7.3.2.7."""
 
     def test_no_beams_zero_sections(self, engine, simple_room):

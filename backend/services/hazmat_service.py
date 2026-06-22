@@ -319,8 +319,11 @@ class HazmatService:
             HazardousMaterialData with source="pubchem"
         """
         client = await self._get_client()
+        # FIX: URL-encode user-supplied material_name to prevent URL injection
+        from urllib.parse import quote
+        safe_name = quote(material_name.strip(), safe='')
         response = await client.get(
-            f"{self.PUBCHEM_URL}/name/{material_name}/property/"
+            f"{self.PUBCHEM_URL}/name/{safe_name}/property/"
             "MolecularWeight,InChI/JSON",
         )
         response.raise_for_status()
@@ -349,7 +352,7 @@ class HazmatService:
             source="pubchem",
         )
 
-        logger.info(f"Hazmat data fetched from PubChem: {material_name} (MW={mw})")
+        logger.info("Hazmat data fetched from PubChem: %s (MW=%s)", material_name, mw)
         return data
 
     def _get_default(self, material_name: str) -> HazardousMaterialData:

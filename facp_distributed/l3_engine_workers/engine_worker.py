@@ -67,7 +67,7 @@ class EngineWorker:
         """Start the engine worker"""
         self.is_running = True
         self.status = "running"
-        self.logger.info(f"Engine Worker {self.worker_id} started")
+        self.logger.info("Engine Worker %s started", self.worker_id)
 
         # Start the execution loop in a separate thread
         self.execution_thread = threading.Thread(target=self._execution_loop, daemon=True)
@@ -77,7 +77,7 @@ class EngineWorker:
         """Stop the engine worker"""
         self.is_running = False
         self.status = "stopped"
-        self.logger.info(f"Engine Worker {self.worker_id} stopped")
+        self.logger.info("Engine Worker %s stopped", self.worker_id)
 
     def process_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -203,7 +203,7 @@ class EngineWorker:
             )
 
             if not is_deterministic:
-                self.logger.warning(f"Deterministic validation warning for {request_id}: {det_message}")
+                self.logger.warning("Deterministic validation warning for %s: %s", request_id, det_message)
 
             # Create successful response
             response = FACPResponse(

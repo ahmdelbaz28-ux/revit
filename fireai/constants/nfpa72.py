@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """
 FireAI — NFPA 72 Centralized Constants (Single Source of Truth)
 
@@ -416,5 +414,8 @@ PE_SIGNOFF_NOTICE = (
     "Alternatively, provide verbatim quotation from NFPA 72-2022 with "
     "section number, edition year, and publicly-verifiable source."
 )
-"""Notice attached to all regulatory constants. Per agent.md Rule #22,
+"""
+
+from __future__ import annotations
+Notice attached to all regulatory constants. Per agent.md Rule #22,
 changes to these values require PE sign-off or verbatim standard quotation."""

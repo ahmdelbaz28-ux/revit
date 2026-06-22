@@ -233,7 +233,7 @@ class ValidationFirewall:
         """Log security-related events in distributed context"""
         details["source_node"] = source_node
         details["timestamp"] = time.time()
-        self.logger.info(f"DIST_SECURITY_EVENT: {event_type} - {details}")
+        self.logger.info("DIST_SECURITY_EVENT: %s - %s", event_type, details)
 
     def get_security_stats(self) -> Dict[str, Any]:
         """Get security statistics for distributed system"""

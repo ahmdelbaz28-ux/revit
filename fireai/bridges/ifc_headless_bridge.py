@@ -176,7 +176,7 @@ class HeadlessIFCBridge:
                     }
                 )
             except Exception as e:
-                logger.warning(f"Error processing space {space.GlobalId}: {e}")
+                logger.warning("Error processing space %s: %s", space.GlobalId, e)
         return rooms
 
     def push_fire_alarm_design(self, devices: List[Dict[str, Any]], output_path: str) -> bool:
@@ -236,7 +236,7 @@ class HeadlessIFCBridge:
             elif "COMBO" in type_upper or "MULTI" in type_upper:
                 pass
             else:
-                logger.warning(f"Unknown device type '{type_upper}' mapped to HEATSENSOR for device {dev.get('device_id')}")
+                logger.warning("Unknown device type '%s' mapped to HEATSENSOR for device %s", type_upper, dev.get('device_id'))
 
             # Match device z-coordinate to correct storey
             z = dev.get("z", 0.0)
@@ -285,7 +285,7 @@ class HeadlessIFCBridge:
             )
 
         self.model.write(output_path)
-        logger.info(f"Successfully exported Level-3 BIM IFC Model with Native Topology: {output_path}")
+        logger.info("Successfully exported Level-3 BIM IFC Model with Native Topology: %s", output_path)
         return True
 
     # ══════════════════════════════════════════════════════════════
@@ -348,7 +348,7 @@ class HeadlessIFCBridge:
                 if sd is not None:
                     result.append(sd)
             except Exception as e:
-                logger.warning(f"Error extracting enhanced space {space.GlobalId}: {e}")
+                logger.warning("Error extracting enhanced space %s: %s", space.GlobalId, e)
 
         result.sort(key=lambda s: (s.get("storey_elevation", 0.0), s.get("name", "")))
         return result
@@ -380,7 +380,7 @@ class HeadlessIFCBridge:
                     if od is not None:
                         result.append(od)
                 except Exception as e:
-                    logger.debug(f"Could not extract AABB for {entity.GlobalId}: {e}")
+                    logger.debug("Could not extract AABB for %s: %s", entity.GlobalId, e)
         return result
 
     # ══════════════════════════════════════════════════════════════

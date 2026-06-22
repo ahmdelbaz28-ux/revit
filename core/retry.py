@@ -245,7 +245,7 @@ def async_network_retry(
                         )
                         await asyncio.sleep(delay)
                     else:
-                        logger.error(f"All {max_attempts} attempts failed. Last error: {e}")
+                        logger.error("All %s attempts failed. Last error: %s", max_attempts, e)
                         
             raise last_exception
         return wrapper
@@ -298,9 +298,9 @@ def circuit_breaker_retry(
                 
                 if state['failures'] >= failure_threshold:
                     state['open'] = True
-                    logger.error(f"Circuit breaker OPENED after {failure_threshold} failures")
+                    logger.error("Circuit breaker OPENED after %s failures", failure_threshold)
                 
-                raise e
+                raise  # FIX: bare 'raise' preserves original traceback; 'raise e' loses it
                 
         return wrapper
     return retry_decorator

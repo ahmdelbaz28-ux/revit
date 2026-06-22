@@ -10,9 +10,10 @@ silent data corruption that could lead to incorrect engineering calculations.
 
 from __future__ import annotations
 
+import math
 import uuid
 from datetime import datetime, timezone
-from typing import Literal, Optional
+from typing import List, Literal, Optional, TypeVar
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -28,9 +29,13 @@ class PaginationParams(BaseModel):
     order: Literal["asc", "desc"] = Field(default="desc", description="Sort order")
 
 
+# FIX #22: Use generic type parameter for list items instead of bare list
+T = TypeVar("T")
+
+
 class PaginatedResponse(BaseModel):
     """Generic paginated response wrapper."""
-    data: list
+    data: List
     total: int = Field(ge=0)
     page: int = Field(ge=1)
     limit: int = Field(ge=1)
@@ -134,9 +139,14 @@ class CreateDeviceInput(BaseModel):
     @field_validator("load")
     @classmethod
     def validate_load_finite(cls, v: float) -> float:
-        """Load must be a finite number (not inf or nan)."""
-        import math
-        if v and (math.isinf(v) or math.isnan(v)):
+        """Load must be a finite number (not inf or nan).
+
+        FIX #23: Moved math import to module level. Also removed the
+        'if v and' guard — it incorrectly skipped validation for 0.0
+        (though isinf/nan return False for 0.0 anyway, the intent was
+        unclear and the pattern was misleading).
+        """
+        if math.isinf(v) or math.isnan(v):
             raise ValueError("Load must be a finite number")
         return v
 

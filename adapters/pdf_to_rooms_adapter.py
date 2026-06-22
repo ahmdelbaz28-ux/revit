@@ -104,7 +104,7 @@ def extract_rooms_from_walls(
     except Exception as e:
         report["status"] = "error"
         report["warnings"].append(f"Room extraction error: {e}")
-        logger.error(f"Room extraction failed: {e}", exc_info=True)
+        logger.error("Room extraction failed: %s", e, exc_info=True)
 
     return rooms, report
 

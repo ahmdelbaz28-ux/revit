@@ -6,7 +6,6 @@ Unit and integration tests for the Revit service.
 Tests connection, file operations, and element creation functionality.
 """
 
-import json
 import os
 import tempfile
 from unittest.mock import Mock, patch

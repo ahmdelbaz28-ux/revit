@@ -280,7 +280,7 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
         # file paths, variable names, and internal implementation details.
         # This data is retrievable via the API, creating an information
         # leakage vulnerability. Log the full error server-side instead.
-        logger.error(f"Report generation failed for project {project_id}: {e}", exc_info=True)
+        logger.error("Report generation failed for project %s: %s", project_id, e, exc_info=True)
         db.update_report(
             project_id,
             report["id"],
@@ -420,7 +420,7 @@ async def export_report(
             )
         except Exception as e:
             # V113 SECURITY: Never expose str(e) to client
-            logger.error(f"PDF generation failed: {e}", exc_info=True)
+            logger.error("PDF generation failed: %s", e, exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail="PDF generation failed — an internal error occurred. Contact administrator.",

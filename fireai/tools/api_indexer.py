@@ -7,9 +7,8 @@ Scans backend/routers/ and generates a comprehensive API index.
 
 from __future__ import annotations
 
-Run: python -m fireai.tools.api_indexer
-Output: backend/API_ENDPOINTS_INDEX.md
-"""
+# Run: python -m fireai.tools.api_indexer
+# Output: backend/API_ENDPOINTS_INDEX.md
 
 import re
 from collections import defaultdict

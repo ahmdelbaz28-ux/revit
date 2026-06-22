@@ -28,6 +28,7 @@ from fireai.core.qomn_self_healing_engine import (
     compute_hash,
     demonstrate_and_verify_all_tiers,
     fetch_emergency_audio_sequence,
+    global_audit_logger,
     global_circuit_breaker,
     global_lru_cache,
     self_healing,
@@ -113,12 +114,20 @@ class TestQomnFireSelfHealing(unittest.TestCase):
         self.assertIn("payload", logged_entry)
         self.assertIn("signature", logged_entry)
 
-        # Verify signature matching payload integrity
+        # Verify signature using the global audit logger's actual secret_key.
+        # V127 SAFETY FIX: The hardcoded b"QOMN_SECRET_KEY" fallback was
+        # REMOVED as a CRITICAL security vulnerability (forged audit signatures).
+        # The test now reads the actual key from the logger instance.
+        secret_key = global_audit_logger.secret_key
+        self.assertIsNotNone(secret_key,
+                             "global_audit_logger.secret_key must not be None")
+        self.assertNotEqual(secret_key, b"QOMN_SECRET_KEY",
+                            "V127 SAFETY: hardcoded default key must NEVER be used")
         payload_bytes = json.dumps(
             logged_entry["payload"], sort_keys=True, default=str
         ).encode("utf-8")
         expected_sig = hmac.new(
-            b"QOMN_SECRET_KEY",
+            secret_key,
             payload_bytes,
             hashlib.sha256
         ).hexdigest()
@@ -1256,3 +1265,93 @@ if __name__ == '__main__':
     demonstrate_and_verify_all_tiers()
     # Execute the self-verifying test suite
     unittest.main()
+
+
+# ============================================================================
+# V127 SAFETY REGRESSION TESTS — HMAC key security (no hardcoded fallback)
+# ============================================================================
+
+
+class TestV127HmacKeySecurity(unittest.TestCase):
+    """V127 SAFETY: Verify the b"QOMN_SECRET_KEY" hardcoded fallback was
+    removed. This was a CRITICAL vulnerability — in environments where
+    pytest is importable (CI/CD with test deps), production code would
+    silently use a known-default HMAC key, allowing attackers to forge
+    audit log entries."""
+
+    def test_no_hardcoded_default_key_when_pytest_importable(self):
+        """When pytest is importable + FIREAI_ENV=production + no env var,
+        AsyncAuditLogger MUST raise SecurityError, NOT use the hardcoded
+        b"QOMN_SECRET_KEY"."""
+        import sys
+        import os
+        # Ensure pytest is in sys.modules (it is, since we're running under pytest)
+        self.assertIn("pytest", sys.modules, "Test precondition: pytest must be in sys.modules")
+
+        # Save env state
+        saved_env = os.environ.get("FIREAI_ENV")
+        saved_key = os.environ.get("QOMN_AUDIT_SECRET_KEY")
+        try:
+            os.environ["FIREAI_ENV"] = "production"
+            os.environ.pop("QOMN_AUDIT_SECRET_KEY", None)
+
+            with self.assertRaises(Exception) as ctx:
+                AsyncAuditLogger(filepath=os.path.join(tempfile.gettempdir(), "v127_security_test.jsonl"))
+            self.assertIn("QOMN_AUDIT_SECRET_KEY", str(ctx.exception))
+        finally:
+            if saved_env is not None:
+                os.environ["FIREAI_ENV"] = saved_env
+            else:
+                os.environ.pop("FIREAI_ENV", None)
+            if saved_key is not None:
+                os.environ["QOMN_AUDIT_SECRET_KEY"] = saved_key
+
+    def test_dev_mode_generates_random_key_not_hardcoded(self):
+        """In dev mode, the fallback key must be RANDOM, not b"QOMN_SECRET_KEY"."""
+        import os
+        saved_env = os.environ.get("FIREAI_ENV")
+        saved_key = os.environ.get("QOMN_AUDIT_SECRET_KEY")
+        try:
+            os.environ["FIREAI_ENV"] = "development"
+            os.environ.pop("QOMN_AUDIT_SECRET_KEY", None)
+            logger = AsyncAuditLogger(filepath=os.path.join(tempfile.gettempdir(), "v127_dev_test.jsonl"))
+            self.assertNotEqual(logger.secret_key, b"QOMN_SECRET_KEY",
+                                "V127 SAFETY: hardcoded default key must NEVER be used")
+            self.assertEqual(len(logger.secret_key), 32,
+                             "Random fallback must be 32 bytes (256 bits)")
+        finally:
+            if saved_env is not None:
+                os.environ["FIREAI_ENV"] = saved_env
+            else:
+                os.environ.pop("FIREAI_ENV", None)
+            if saved_key is not None:
+                os.environ["QOMN_AUDIT_SECRET_KEY"] = saved_key
+
+    def test_explicit_secret_key_takes_precedence(self):
+        """Explicit secret_key passed to constructor must be used as-is."""
+        explicit = b"my-explicit-test-key-32-bytes-long"
+        logger = AsyncAuditLogger(
+            filepath=os.path.join(tempfile.gettempdir(), "v127_explicit.jsonl"),
+            secret_key=explicit,
+        )
+        self.assertEqual(logger.secret_key, explicit)
+
+    def test_env_var_secret_key_takes_precedence_in_production(self):
+        """In production, QOMN_AUDIT_SECRET_KEY env var must be honored."""
+        import os
+        saved_env = os.environ.get("FIREAI_ENV")
+        saved_key = os.environ.get("QOMN_AUDIT_SECRET_KEY")
+        try:
+            os.environ["FIREAI_ENV"] = "production"
+            os.environ["QOMN_AUDIT_SECRET_KEY"] = "production-stable-key-32-bytes-long"
+            logger = AsyncAuditLogger(filepath=os.path.join(tempfile.gettempdir(), "v127_prod_env.jsonl"))
+            self.assertEqual(logger.secret_key, b"production-stable-key-32-bytes-long")
+        finally:
+            if saved_env is not None:
+                os.environ["FIREAI_ENV"] = saved_env
+            else:
+                os.environ.pop("FIREAI_ENV", None)
+            if saved_key is not None:
+                os.environ["QOMN_AUDIT_SECRET_KEY"] = saved_key
+            else:
+                os.environ.pop("QOMN_AUDIT_SECRET_KEY", None)

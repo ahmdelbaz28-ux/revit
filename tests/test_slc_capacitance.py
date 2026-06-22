@@ -371,7 +371,7 @@ class TestUnknownWireType:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-class TestDeviceParasiticCapacitance:
+class TestDeviceParasiticCapacitance:  # noqa: F811  (duplicate test class — second definition wins)
     """V20.2 FIX: Device parasitic capacitance included in total."""
 
     def test_device_count_affects_compliance(self):

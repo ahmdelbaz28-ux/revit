@@ -960,7 +960,7 @@ def verify_full_coverage(
         area_status = "PASS" if area_coverage_pct >= 99.9 else "FAIL"
 
     except Exception as area_err:
-        logger.warning(f"Area-based coverage failed in verify_full_coverage, falling back to point-based: {area_err}")
+        logger.warning("Area-based coverage failed in verify_full_coverage, falling back to point-based: %s", area_err)
         area_coverage_pct = None
         area_status = None
 

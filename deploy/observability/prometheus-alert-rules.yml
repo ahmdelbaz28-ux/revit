@@ -1,0 +1,144 @@
+# Prometheus Alerting Rules — FireAI Platform
+# =============================================
+# V130 FIX (2026-06-18 audit): Extracted from the old alertmanager.yml file,
+# which incorrectly mixed Alertmanager routing config with Prometheus alert
+# rules. Prometheus loads this file via the `rule_files:` directive in
+# prometheus.yml; Alertmanager loads deploy/observability/alertmanager.yml.
+
+groups:
+  - name: fireai-engine-alerts
+    interval: 30s
+    rules:
+      - alert: EngineHighErrorRate
+        expr: rate(fireai_errors_total{component="engine"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Engine error rate exceeds 0.1/s over 5m"
+          description: >
+            Engine component error rate is {{ $value | humanize }} per second.
+            This may indicate a systemic failure in fire protection computations.
+
+      - alert: EngineRunFailures
+        expr: rate(fireai_engine_runs_total{status="error"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Engine runs are failing"
+          description: >
+            Engine runs with status=error detected. Immediate investigation required.
+
+      - alert: EngineSlowComputation
+        expr: histogram_quantile(0.95, rate(fireai_computation_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Engine computation p95 latency exceeds 30s"
+          description: >
+            P95 computation latency is {{ $value | humanize }}s.
+            This may cause workflow timeouts.
+
+      - alert: CoverageDegraded
+        expr: fireai_coverage_percent{status="failing"} > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Coverage degradation detected"
+          description: >
+            {{ $value }} rooms have failing coverage status.
+            Check detector placement and NFPA compliance.
+
+      - alert: LowCoverage
+        expr: avg(fireai_coverage_percent{status="passing"}) < 80
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Average coverage below 80%"
+          description: >
+            Average coverage is {{ $value | humanize }}%.
+            Below the 80% minimum threshold.
+
+  - name: fireai-system-alerts
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: fireai_memory_bytes / 1e9 > 4
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High memory usage (>4GB)"
+          description: >
+            Component {{ $labels.component }} is using {{ $value | humanize }} GB.
+
+      - alert: QueueBacklog
+        expr: fireai_queue_depth > 100
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Work queue depth exceeds 100"
+          description: >
+            Queue {{ $labels.queue }} depth is {{ $value }}.
+            Workers may be unable to keep up.
+
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.99, rate(fireai_api_latency_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "API p99 latency exceeds 5s"
+          description: >
+            P99 latency for endpoint {{ $labels.endpoint }} is {{ $value | humanize }}s.
+
+      - alert: NoActiveWorkflows
+        expr: fireai_active_workflows == 0
+        for: 10m
+        labels:
+          severity: info
+          team: platform
+        annotations:
+          summary: "No active workflows"
+          description: >
+            No active workflows detected for 10 minutes.
+            System may be idle or stalled.
+
+  - name: fireai-infrastructure-alerts
+    interval: 30s
+    rules:
+      - alert: HighDiskUsage
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Disk space below 10%"
+          description: >
+            Available disk space is {{ $value | humanize }}%.
+            Data loss risk if disks fill up.
+
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Instance {{ $labels.instance }} is down"
+          description: >
+            Instance {{ $labels.instance }} has been unreachable for 1 minute.

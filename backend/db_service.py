@@ -151,7 +151,7 @@ class DatabaseService:
         self._load_projects_from_db()
 
         self._initialized = True
-        logger.info(f"DatabaseService initialized with db_path={db_path}")
+        logger.info("DatabaseService initialized with db_path=%s", db_path)
 
     # ──────────────────────────────────────────────────────────────────────────
     # Projects table initialization
@@ -228,7 +228,7 @@ class DatabaseService:
                 self._safe_db_execute("SELECT 1", commit=True)
                 logger.info("Projects table initialized")
             except Exception as e:
-                logger.error(f"Error initializing projects table: {e}")
+                logger.error("Error initializing projects table: %s", e)
 
     def _load_projects_from_db(self) -> None:
         """Load projects from SQLite into in-memory cache."""
@@ -250,9 +250,9 @@ class DatabaseService:
                         "created_timestamp": row[5],
                         "last_modified_timestamp": row[6],
                     }
-                logger.info(f"Loaded {len(self._projects)} projects from database")
+                logger.info("Loaded %s projects from database", len(self._projects))
             except Exception as e:
-                logger.error(f"Error loading projects: {e}")
+                logger.error("Error loading projects: %s", e)
 
     # ──────────────────────────────────────────────────────────────────────────
     # Project CRUD
@@ -296,7 +296,7 @@ class DatabaseService:
                 )
                 conn.commit()
             except Exception as e:
-                logger.error(f"Error persisting project: {e}")
+                logger.error("Error persisting project: %s", e)
                 raise
 
             # Cache in memory
@@ -383,7 +383,7 @@ class DatabaseService:
                 )
                 conn.commit()
             except Exception as e:
-                logger.error(f"Error updating project: {e}")
+                logger.error("Error updating project: %s", e)
                 raise
 
             return self._project_to_response(project)
@@ -417,7 +417,7 @@ class DatabaseService:
                 )
                 conn.commit()
             except Exception as e:
-                logger.error(f"Error deleting project: {e}")
+                logger.error("Error deleting project: %s", e)
                 # Still remove from cache even if DB delete fails for associations
                 try:
                     with self._db_lock:
@@ -811,7 +811,7 @@ class DatabaseService:
                     commit=True,
                 )
             except Exception as e:
-                logger.error(f"Error associating element with project: {e}")
+                logger.error("Error associating element with project: %s", e)
 
     # ──────────────────────────────────────────────────────────────────────────
     # Connection (Relationship) CRUD
@@ -882,7 +882,7 @@ class DatabaseService:
                 # BUG-37 FIX: Roll back in-memory changes on SQL failure
                 from_element.relationships.pop()
                 to_element.relationships.pop()
-                logger.error(f"Error persisting connection: {e}")
+                logger.error("Error persisting connection: %s", e)
                 raise RuntimeError(f"Failed to persist connection: {e}")
 
             return ConnectionResponse(
@@ -942,7 +942,7 @@ class DatabaseService:
                         )
                     )
             except Exception as e:
-                logger.error(f"Error listing connections: {e}")
+                logger.error("Error listing connections: %s", e)
                 # Fallback: scan from in-memory elements
                 elements = self._data_model.get_all_elements()
                 for element in elements:
@@ -1043,7 +1043,7 @@ class DatabaseService:
 
                 return True
             except Exception as e:
-                logger.error(f"Error deleting connection: {e}")
+                logger.error("Error deleting connection: %s", e)
                 return False
 
     # ──────────────────────────────────────────────────────────────────────────

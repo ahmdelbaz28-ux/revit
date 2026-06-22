@@ -29,7 +29,7 @@ USAGE:
   from fireai.core.security_logging import security_audit, mask_sensitive
 
   security_audit.log_event("AUTH_FAILURE", ip="1.2.3.4", path="/api/projects")
-  logger.info(f"Key: {mask_sensitive(api_key)}")
+  logger.info("Key: %s", mask_sensitive(api_key))
 
 NFPA 72 Reference:
   - §10.6.7 — Record retention requirements

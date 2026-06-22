@@ -49,13 +49,13 @@ jobs:
         run: mkdir -p reports
 
       - name: Ruff lint
-        run: ruff check backend/ fireai/ core/ skills/ --exit-non-zero-on-fix
+        run: ruff check backend/ fireai/ core/ skills/ backend_app.py --exit-non-zero-on-fix
 
       - name: MyPy type check
         run: mypy backend/ fireai/ core/ skills/ --ignore-missing-imports --no-strict-optional --exclude '.*test.*'
 
       - name: Bandit security scan
-        run: bandit -r backend/ fireai/ core/ skills/ -f json -o reports/bandit.json -ll
+        run: bandit -r backend/ fireai/ core/ skills/ backend_app.py -f json -o reports/bandit.json -ll
 
       - name: Bandit severity gate
         run: |

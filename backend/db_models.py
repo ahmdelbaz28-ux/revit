@@ -10,7 +10,6 @@ SQLAlchemy model here, then run `alembic revision --autogenerate -m "description
 """
 
 from sqlalchemy import (
-    Boolean,
     Column,
     Float,
     ForeignKey,

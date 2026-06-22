@@ -87,9 +87,9 @@ class EventSchemaRegistry:
     def register(cls, event_type: str, schema: Dict[str, Any]) -> None:
         with cls._lock:
             if event_type in cls._schemas:
-                logger.warning(f"Overwriting schema for event type: {event_type}")
+                logger.warning("Overwriting schema for event type: %s", event_type)
             cls._schemas[event_type] = schema
-            logger.info(f"Registered schema for event type: {event_type}")
+            logger.info("Registered schema for event type: %s", event_type)
 
     @classmethod
     def get_schema(cls, event_type: str) -> Optional[Dict[str, Any]]:
@@ -307,7 +307,7 @@ class InMemoryEventBus(EventBus):
         """Publish an event — validates schema, stores, and dispatches to handlers."""
         valid, error = self._schema_registry.validate(event)
         if not valid:
-            logger.error(f"Schema validation failed for event {event.id}: {error}")
+            logger.error("Schema validation failed for event %s: %s", event.id, error)
             self._dlq.add(DeadLetterRecord(
                 event_id=event.id,
                 event_type=event.type,
@@ -328,7 +328,7 @@ class InMemoryEventBus(EventBus):
     async def subscribe(self, event_type: str, handler: HandlerFunc) -> None:
         async with self._lock:
             self._subscribers[event_type].append(handler)
-            logger.info(f"Subscribed handler {handler.__name__} to {event_type}")
+            logger.info("Subscribed handler %s to %s", handler.__name__, event_type)
 
     async def unsubscribe(self, event_type: str, handler: HandlerFunc) -> bool:
         async with self._lock:
@@ -391,7 +391,7 @@ class InMemoryEventBus(EventBus):
                 continue
             await self._dispatch(event)
             count += 1
-        logger.info(f"Replayed {count} events (type={event_type or 'all'})")
+        logger.info("Replayed %s events (type=%s)", count, event_type or 'all')
         return count
 
     async def replay_dlq(self, max_events: int = 100) -> int:
@@ -403,7 +403,7 @@ class InMemoryEventBus(EventBus):
             await self._dispatch(event)
             self._dlq.mark_replayed(record.event_id)
             count += 1
-        logger.info(f"Replayed {count} events from DLQ")
+        logger.info("Replayed %s events from DLQ", count)
         return count
 
     async def start(self) -> None:
@@ -463,7 +463,7 @@ class RedisEventBus(EventBus):
             try:
                 import redis.asyncio as aioredis
                 self._redis = aioredis.from_url(self._redis_url, decode_responses=True)  # type: ignore[assignment]
-                logger.info(f"Connected to Redis at {self._redis_url}")
+                logger.info("Connected to Redis at %s", self._redis_url)
             except ImportError:
                 raise RuntimeError("redis-py is required for RedisEventBus: pip install redis")
         return self._redis
@@ -472,7 +472,7 @@ class RedisEventBus(EventBus):
         r = await self._get_redis()
         stream_key = f"{self._stream_prefix}{event.type}"
         await r.xadd(stream_key, event.to_dict(), maxlen=10000)
-        logger.debug(f"Published event {event.id} to stream {stream_key}")
+        logger.debug("Published event %s to stream %s", event.id, stream_key)
 
     async def subscribe(self, event_type: str, handler: HandlerFunc) -> None:
         async with self._lock:
@@ -488,7 +488,7 @@ class RedisEventBus(EventBus):
             except Exception as e:
                 logger.debug("Redis stream group creation failed for %s (may already exist): %s", stream_key, e)
         self._poll_task = asyncio.create_task(self._poll_loop())
-        logger.info(f"RedisEventBus started (consumer={self._consumer_name})")
+        logger.info("RedisEventBus started (consumer=%s)", self._consumer_name)
 
     async def stop(self) -> None:
         self._running = False
@@ -523,11 +523,11 @@ class RedisEventBus(EventBus):
                                 await self._deliver(event)
                                 await r.xack(stream_key, self._consumer_group, msg_id)
                     except Exception as e:
-                        logger.error(f"Redis poll error for {stream_key}: {e}")
+                        logger.error("Redis poll error for %s: %s", stream_key, e)
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Redis poll loop error: {e}")
+                logger.error("Redis poll loop error: %s", e)
                 await asyncio.sleep(1)
 
     async def _deliver(self, event: Event) -> None:
@@ -555,7 +555,7 @@ class RedisEventBus(EventBus):
                 dlq_key = f"{self._stream_prefix}dlq"
                 await r.lpush(dlq_key, json.dumps(event.to_dict()))
                 await r.ltrim(dlq_key, 0, self._dlq_max - 1)
-                logger.error(f"Event {event.id} moved to Redis DLQ after failed delivery to {handler.__name__}")
+                logger.error("Event %s moved to Redis DLQ after failed delivery to %s", event.id, handler.__name__)
 
     async def replay_events(self, event_type: Optional[str] = None, from_time: Optional[datetime] = None) -> int:
         """Replay events from Redis Streams."""
@@ -572,7 +572,7 @@ class RedisEventBus(EventBus):
                     continue
                 await self._deliver(event)
                 count += 1
-        logger.info(f"Replayed {count} events from Redis Streams")
+        logger.info("Replayed %s events from Redis Streams", count)
         return count
 
     async def replay_dlq(self, max_events: int = 100) -> int:
@@ -589,8 +589,8 @@ class RedisEventBus(EventBus):
                 await self._deliver(event)
                 count += 1
             except Exception as e:
-                logger.error(f"Failed to replay DLQ event: {e}")
-        logger.info(f"Replayed {count} events from Redis DLQ")
+                logger.error("Failed to replay DLQ event: %s", e)
+        logger.info("Replayed %s events from Redis DLQ", count)
         return count
 
 
@@ -632,7 +632,7 @@ class KafkaEventBus(EventBus):
                     client_id=f"fireai-producer-{uuid.uuid4().hex[:8]}",
                 )
                 await self._producer.start()  # type: ignore[attr-defined]
-                logger.info(f"Kafka producer connected to {self._bootstrap_servers}")
+                logger.info("Kafka producer connected to %s", self._bootstrap_servers)
             except ImportError:
                 raise RuntimeError("aiokafka is required for KafkaEventBus: pip install aiokafka")
         return self._producer
@@ -650,7 +650,7 @@ class KafkaEventBus(EventBus):
                     auto_offset_reset="earliest",
                 )
                 await self._consumer.start()  # type: ignore[attr-defined]
-                logger.info(f"Kafka consumer started for topics: {topics}")
+                logger.info("Kafka consumer started for topics: %s", topics)
             except ImportError:
                 raise RuntimeError("aiokafka is required for KafkaEventBus: pip install aiokafka")
         return self._consumer
@@ -660,7 +660,7 @@ class KafkaEventBus(EventBus):
         topic = f"{self._topic_prefix}{event.type}"
         payload = json.dumps(event.to_dict()).encode("utf-8")
         await producer.send_and_wait(topic, payload)
-        logger.debug(f"Published event {event.id} to Kafka topic {topic}")
+        logger.debug("Published event %s to Kafka topic %s", event.id, topic)
 
     async def subscribe(self, event_type: str, handler: HandlerFunc) -> None:
         async with self._lock:
@@ -693,12 +693,12 @@ class KafkaEventBus(EventBus):
                     event = Event.from_dict(json.loads(msg.value.decode("utf-8")))
                     await self._deliver(event)
                 except Exception as e:
-                    logger.error(f"Failed to process Kafka message: {e}")
+                    logger.error("Failed to process Kafka message: %s", e)
                     dlq_topic = f"{msg.topic}{self._dlq_topic_suffix}"
                     producer = await self._get_producer()
                     await producer.send_and_wait(dlq_topic, msg.value)
         except Exception as e:
-            logger.error(f"Kafka consume loop error: {e}")
+            logger.error("Kafka consume loop error: %s", e)
 
     async def _deliver(self, event: Event) -> None:
         handlers = list(self._handlers.get(event.type, []))
@@ -723,7 +723,7 @@ class KafkaEventBus(EventBus):
                 producer = await self._get_producer()
                 dlq_topic = f"{self._topic_prefix}{event.type}{self._dlq_topic_suffix}"
                 await producer.send_and_wait(dlq_topic, json.dumps(event.to_dict()).encode("utf-8"))
-                logger.error(f"Event {event.id} sent to Kafka DLQ topic {dlq_topic}")
+                logger.error("Event %s sent to Kafka DLQ topic %s", event.id, dlq_topic)
 
     async def replay_events(self, event_type: Optional[str] = None, from_time: Optional[datetime] = None) -> int:
         """Replay events by seeking to beginning on Kafka topics."""
@@ -749,7 +749,7 @@ class KafkaEventBus(EventBus):
                             continue
                         await self._deliver(event)
                         count += 1
-        logger.info(f"Replayed {count} events from Kafka")
+        logger.info("Replayed %s events from Kafka", count)
         return count
 
     async def replay_dlq(self, max_events: int = 100) -> int:
@@ -777,8 +777,8 @@ class KafkaEventBus(EventBus):
                     count += 1
                 await dlq_consumer.stop()
             except Exception as e:
-                logger.error(f"Kafka DLQ replay error for {dlq_topic}: {e}")
-        logger.info(f"Replayed {count} events from Kafka DLQ")
+                logger.error("Kafka DLQ replay error for %s: %s", dlq_topic, e)
+        logger.info("Replayed %s events from Kafka DLQ", count)
         return count
 
 

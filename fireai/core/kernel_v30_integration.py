@@ -47,7 +47,7 @@ try:
             # NumPy exposes CPU info on some builds
             pass
         except Exception as e:
-            logger.debug(f"V112: _detect_simd: failed to read numpy BLAS config: {e!r}")
+            logger.debug("V112: _detect_simd: failed to read numpy BLAS config: %s", e)
             pass
         # Heuristic: try to execute AVX2 instruction via numpy
         try:
@@ -59,7 +59,7 @@ try:
             elif platform.machine() in ("arm64", "aarch64"):
                 return "NEON"
         except Exception as e:
-            logger.debug(f"V112: _detect_simd: AVX2/NEON detection failed, falling back to SCALAR: {e!r}")
+            logger.debug("V112: _detect_simd: AVX2/NEON detection failed, falling back to SCALAR: %s", e)
             pass
         return "SCALAR"
 except ImportError:
@@ -373,7 +373,7 @@ class MmapResultCache:
                 self._set_entry_count(n + 1)
                 return True
             except Exception as e:
-                logger.warning(f"V112: MmapResultCache.put: failed to write room_id={room_id!r} to mmap cache: {e!r}")
+                logger.warning("V112: MmapResultCache.put: failed to write room_id=%s to mmap cache: %s", room_id, e)
                 return False
 
     def get(self, room_id: str) -> Optional[str]:
@@ -392,7 +392,7 @@ class MmapResultCache:
                         return self._mmap[data_off : data_off + data_len].decode("utf-8")
                 return None
             except Exception as e:
-                logger.warning(f"V112: MmapResultCache.get: failed to read room_id={room_id!r} from mmap cache: {e!r}")
+                logger.warning("V112: MmapResultCache.get: failed to read room_id=%s from mmap cache: %s", room_id, e)
                 return None
 
     def close(self) -> None:
@@ -402,20 +402,20 @@ class MmapResultCache:
                     self._mmap.flush()
                     self._mmap.close()
                 except Exception as e:
-                    logger.debug(f"V112: MmapResultCache.close: mmap flush/close failed: {e!r}")
+                    logger.debug("V112: MmapResultCache.close: mmap flush/close failed: %s", e)
                     pass
             if self._file:
                 try:
                     self._file.close()
                 except Exception as e:
-                    logger.debug(f"V112: MmapResultCache.close: file close failed: {e!r}")
+                    logger.debug("V112: MmapResultCache.close: file close failed: %s", e)
                     pass
 
     def __del__(self) -> None:
         try:
             self.close()
         except Exception as e:
-            logger.debug(f"V112: MmapResultCache.__del__: close failed: {e!r}")
+            logger.debug("V112: MmapResultCache.__del__: close failed: %s", e)
             pass
 
     def __enter__(self):
@@ -469,7 +469,7 @@ class KernelV30Dispatcher:
             try:
                 self._cache = MmapResultCache()
             except Exception as e:
-                logger.warning(f"V112: KernelV30Dispatcher.__init__: failed to create MmapResultCache: {e!r}")
+                logger.warning("V112: KernelV30Dispatcher.__init__: failed to create MmapResultCache: %s", e)
                 pass
 
         # Lazy import DensityOptimizer for fallback
@@ -508,7 +508,7 @@ class KernelV30Dispatcher:
                     cached_data = json.loads(cached)
                     return self._dict_to_layout(cached_data, room)
                 except Exception as e:
-                    logger.warning(f"V112: optimize: failed to deserialize cached data for room_id={room_id!r}: {e!r}")
+                    logger.warning("V112: optimize: failed to deserialize cached data for room_id=%s: %s", room_id, e)
                     pass
 
         # SIMD path — with fallback when proof fails
@@ -537,7 +537,7 @@ class KernelV30Dispatcher:
                     json.dumps(self._layout_to_dict(layout), default=str),
                 )
             except Exception as e:
-                logger.warning(f"V112: optimize: failed to cache result for room_id={room_id!r}: {e!r}")
+                logger.warning("V112: optimize: failed to cache result for room_id=%s: %s", room_id, e)
                 pass
 
         return layout
@@ -783,7 +783,7 @@ class KernelV30Dispatcher:
                 nfpa_table_ref="NFPA 72-2022 Table 17.6.3.1.1",
             )
         except Exception as e:
-            logger.warning(f"V112: _dict_to_layout: failed to reconstruct DetectorLayout from cached data: {e!r}")
+            logger.warning("V112: _dict_to_layout: failed to reconstruct DetectorLayout from cached data: %s", e)
             return None
 
     def shutdown(self) -> None:

@@ -64,7 +64,7 @@ async def list_elements(
             ),
         )
     except Exception as e:
-        logger.error(f"list_elements failed: {e}", exc_info=True)
+        logger.error("list_elements failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -86,7 +86,7 @@ async def create_element(
         safe_msg = re.sub(r'<class \w+>', '[CLASS]', safe_msg)
         raise HTTPException(status_code=400, detail=safe_msg)
     except Exception as e:
-        logger.error(f"create_element failed: {e}", exc_info=True)
+        logger.error("create_element failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -104,7 +104,7 @@ async def get_element(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"get_element failed: {e}", exc_info=True)
+        logger.error("get_element failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -123,7 +123,7 @@ async def update_element(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"update_element failed: {e}", exc_info=True)
+        logger.error("update_element failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -141,5 +141,5 @@ async def delete_element(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"delete_element failed: {e}", exc_info=True)
+        logger.error("delete_element failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")

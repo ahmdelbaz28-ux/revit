@@ -48,14 +48,14 @@ class L1Gateway:
         request_data["execution_state"] = "RECEIVED"
 
         # Log request receipt
-        self.logger.info(f"L1[{self.node_id}]: Request {request_id} received from {source_ip}")
+        self.logger.info("L1[%s]: Request %s received from %s", self.node_id, request_id, source_ip)
 
         # Validate basic schema (L1 only does minimal validation)
         validator = FACPMessageValidator()
         is_valid, basic_errors = validator.validate_request(FACPRequest.from_dict(request_data))
 
         if not is_valid:
-            self.logger.warning(f"L1[{self.node_id}]: Request {request_id} failed basic validation: {basic_errors}")
+            self.logger.warning("L1[%s]: Request %s failed basic validation: %s", self.node_id, request_id, basic_errors)
 
             error_response = FACPResponse(
                 id=request_id,
@@ -86,7 +86,7 @@ class L1Gateway:
             self.validation_firewall.process_request(request_data, self.node_id)
 
         if not is_valid:
-            self.logger.warning(f"L1[{self.node_id}]: Request {request_id} failed validation firewall: {validation_errors}")
+            self.logger.warning("L1[%s]: Request %s failed validation firewall: %s", self.node_id, request_id, validation_errors)
 
             error_response = FACPResponse(
                 id=request_id,
@@ -109,7 +109,7 @@ class L1Gateway:
             return False, error_response
 
         # Request passed validation firewall, now forward to orchestrator
-        self.logger.info(f"L1[{self.node_id}]: Request {request_id} passed validation, forwarding to orchestrator")
+        self.logger.info("L1[%s]: Request %s passed validation, forwarding to orchestrator", self.node_id, request_id)
 
         # Update execution state
         request_data["execution_state"] = "VALIDATED"
@@ -138,7 +138,7 @@ class L1Gateway:
             return True, orchestrator_response
 
         except Exception as e:
-            self.logger.error(f"L1[{self.node_id}]: Failed to forward request {request_id} to orchestrator: {str(e)}")
+            self.logger.error("L1[%s]: Failed to forward request %s to orchestrator: %s", self.node_id, request_id, str(e))
 
             error_response = FACPResponse(
                 id=request_id,
@@ -164,7 +164,7 @@ class L1Gateway:
         """
         Handle response from downstream services and prepare for client delivery
         """
-        self.logger.info(f"L1[{self.node_id}]: Preparing response for client request {request_id}")
+        self.logger.info("L1[%s]: Preparing response for client request %s", self.node_id, request_id)
 
         # Add L1-specific trace information
         if "trace" not in response_data:
@@ -205,7 +205,7 @@ class L1Gateway:
         ]
 
         for req_id in expired_requests:
-            self.logger.warning(f"L1[{self.node_id}]: Cleaning up expired request {req_id}")
+            self.logger.warning("L1[%s]: Cleaning up expired request %s", self.node_id, req_id)
             del self.active_requests[req_id]
 
     def validate_client_request_format(self, request_data: Dict[str, Any]) -> Tuple[bool, list]:
@@ -233,7 +233,7 @@ class L1Gateway:
 
     def graceful_shutdown(self):
         """Perform graceful shutdown of the gateway"""
-        self.logger.info(f"L1[{self.node_id}]: Initiating graceful shutdown")
+        self.logger.info("L1[%s]: Initiating graceful shutdown", self.node_id)
 
         # Wait for active requests to complete (up to a timeout)
         import time
@@ -245,7 +245,7 @@ class L1Gateway:
 
         # Force cleanup if timeout reached
         if len(self.active_requests) > 0:
-            self.logger.warning(f"L1[{self.node_id}]: Force cleaning up {len(self.active_requests)} remaining requests")
+            self.logger.warning("L1[%s]: Force cleaning up %s remaining requests", self.node_id, len(self.active_requests))
 
         self.active_requests.clear()
 
@@ -253,4 +253,4 @@ class L1Gateway:
         if hasattr(self.transport, 'stop'):
             self.transport.stop()
 
-        self.logger.info(f"L1[{self.node_id}]: Shutdown complete")
+        self.logger.info("L1[%s]: Shutdown complete", self.node_id)

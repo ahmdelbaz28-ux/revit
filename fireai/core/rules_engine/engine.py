@@ -326,7 +326,7 @@ class RulesEngine:
                 self._retract_fact_internal(fact.fact_id, trigger_tms=True)
 
             self._facts[fact.fact_id] = fact
-            logger.debug(f"Fact asserted: {fact.fact_type} id={fact.fact_id} source={fact.source}")
+            logger.debug("Fact asserted: %s id=%s source=%s", fact.fact_type, fact.fact_id, fact.source)
             return fact.fact_id
 
     def retract_fact(self, fact_id: str) -> bool:
@@ -369,7 +369,7 @@ class RulesEngine:
                         del self._supports[source_id]
             del self._derived_from[fact_id]
 
-        logger.debug(f"Fact retracted: {fact.fact_type} id={fact_id}")
+        logger.debug("Fact retracted: %s id=%s", fact.fact_type, fact_id)
         return True
 
     def get_facts(self, fact_type: Optional[str] = None) -> List[Fact]:

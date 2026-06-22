@@ -7,7 +7,7 @@ These tests verify that validation rules hold for arbitrary valid inputs.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from hypothesis import given, settings, Phase, assume
 from hypothesis import strategies as st
 import pytest
@@ -15,8 +15,6 @@ import pytest
 from skills.skill_validator import (
     SkillMetadata,
     SkillDescription,
-    SkillPermissions,
-    SkillRequirements,
     SkillManifest,
     ExecutionResult,
     ExecutionError,

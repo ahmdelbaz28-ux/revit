@@ -31,10 +31,10 @@ from fireai.core.building_engine import BuildingEngine
 
 # V25 — Pipeline Integration Modules (8 consultant subsystems)
 from fireai.core.cable_routing_engine import (
-    MAX_VOLTAGE_DROP_PCT,
-    NOMINAL_VOLTAGE_FA,
+    MAX_VOLTAGE_DROP_PCT as MAX_VOLTAGE_DROP_PCT,
+    NOMINAL_VOLTAGE_FA as NOMINAL_VOLTAGE_FA,
     CableRoutingEngine,
-    ObstacleType,
+    ObstacleType as ObstacleType,
     RouteResult,
     RoutingObstacle3D,
     VoltageDropSegment,
@@ -242,6 +242,14 @@ try:
     from fireai.core.spatial_engine.density_optimizer import DensityOptimizer  # type: ignore
 except Exception:  # pragma: no cover
     DensityOptimizer = None  # type: ignore
+
+# Fail-safe guard: DensityOptimizer must not be None
+if DensityOptimizer is None:
+    raise ImportError(
+        "DensityOptimizer failed to import and resolved to None. "
+        "This module is REQUIRED for NFPA 72 detector placement optimization. "
+        "Ensure fireai.core.spatial_engine.density_optimizer is installed correctly."
+    )
 from fireai.core.spatial_engine.proof_certificate import (
     ProofCertificate,
     ProofCertificateGenerator,

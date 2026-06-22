@@ -592,7 +592,7 @@ class TestDistributedFACP(unittest.TestCase):
         # Clean up any running components
         try:
             self.engine_controller.stop()
-        except:
+        except Exception:
             pass
 
 

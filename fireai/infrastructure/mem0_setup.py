@@ -175,16 +175,16 @@ def _test_openai_connectivity(api_key: str) -> bool:
                 )
                 return False
             # Other 403 — might be invalid key
-            logger.warning(f"OpenAI API returned 403: {body[:200]}")
+            logger.warning("OpenAI API returned 403: %s", body[:200])
             return False
         # Other HTTP errors — might be temporary
         # V83 FIX: Decode bytes before slicing to avoid mid-UTF8-character slicing
         body = e.read().decode("utf-8", errors="replace")[:200]
-        logger.warning(f"OpenAI API returned HTTP {e.code}: {body}")
+        logger.warning("OpenAI API returned HTTP %s: %s", e.code, body)
         return False
     except Exception as e:
         # Network error — might be temporary
-        logger.warning(f"OpenAI connectivity test failed: {type(e).__name__}: {e}")
+        logger.warning("OpenAI connectivity test failed: %s: %s", type(e).__name__, e)
         return False
     return False
 
@@ -223,9 +223,9 @@ def _test_gemini_connectivity(api_key: str) -> bool:
             )
             return False
         if "403" in error_str or "PERMISSION_DENIED" in error_str:
-            logger.warning(f"Gemini API returned 403: {error_str[:200]}")
+            logger.warning("Gemini API returned 403: %s", error_str[:200])
             return False
-        logger.warning(f"Gemini connectivity test failed: {type(e).__name__}: {error_str[:200]}")
+        logger.warning("Gemini connectivity test failed: %s: %s", type(e).__name__, error_str[:200])
         return False
 
 
@@ -262,12 +262,12 @@ def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
                     f"OpenAI-compatible API at {base_url} is region-blocked (403). Falling back to next provider."
                 )
                 return False
-            logger.warning(f"API at {base_url} returned 403: {body[:200]}")
+            logger.warning("API at %s returned 403: %s", base_url, body[:200])
             return False
-        logger.warning(f"API at {base_url} returned HTTP {e.code}")
+        logger.warning("API at %s returned HTTP %s", base_url, e.code)
         return False
     except Exception as e:
-        logger.warning(f"Connectivity test failed for {base_url}: {type(e).__name__}: {e}")
+        logger.warning("Connectivity test failed for %s: %s: %s", base_url, type(e).__name__, e)
         return False
     return False
 
@@ -295,7 +295,7 @@ def _detect_provider() -> Dict[str, Any]:
     if _detect_provider_cache is not None:
         elapsed = _time.monotonic() - _detect_provider_cache_time
         if elapsed < _PROVIDER_CACHE_TTL_SECONDS:
-            logger.debug(f"Provider detection cache hit (age={elapsed:.0f}s, TTL={_PROVIDER_CACHE_TTL_SECONDS}s)")
+            logger.debug("Provider detection cache hit (age=%ss, TTL=%ss)", elapsed, _PROVIDER_CACHE_TTL_SECONDS)
             return _detect_provider_cache
 
     result = _detect_provider_uncached()
@@ -303,7 +303,7 @@ def _detect_provider() -> Dict[str, Any]:
     # Cache the result
     _detect_provider_cache = result
     _detect_provider_cache_time = _time.monotonic()
-    logger.debug(f"Provider detection result cached for {_PROVIDER_CACHE_TTL_SECONDS}s")
+    logger.debug("Provider detection result cached for %ss", _PROVIDER_CACHE_TTL_SECONDS)
     return result
 
 
@@ -513,7 +513,7 @@ def _detect_provider_uncached() -> Dict[str, Any]:
         with urllib.request.urlopen(req, timeout=5) as resp:  # noqa: S310 — scheme validated above
             health = json.loads(resp.read().decode())
             if health.get("status") == "ok":
-                logger.info(f"z-ai proxy available at {proxy_url} — using proxy provider")
+                logger.info("z-ai proxy available at %s — using proxy provider", proxy_url)
                 return {
                     "provider": "zai_proxy",
                     "api_key": "z-ai-proxy",
@@ -531,7 +531,7 @@ def _detect_provider_uncached() -> Dict[str, Any]:
                     "base_url": f"{proxy_url}/v1",
                 }
     except Exception as e:
-        logger.warning(f"z-ai proxy not available at {proxy_url}: {e}")
+        logger.warning("z-ai proxy not available at %s: %s", proxy_url, e)
 
     # ── Strategy 6: No provider available ──
     raise ValueError(
@@ -660,7 +660,7 @@ def create_mem0_instance() -> Any:
     try:
         mem0_instance = Memory.from_config(config)
     except Exception as e:
-        logger.error(f"Mem0 initialization failed: {e}")
+        logger.error("Mem0 initialization failed: %s", e)
         raise RuntimeError(
             f"Failed to initialize Mem0: {e}. Check your provider configuration and connectivity."
         ) from e
@@ -717,7 +717,7 @@ class FireAIMemory:
             run_id=project_id,
             metadata=metadata or {},
         )
-        logger.info(f"Added memory for engineer={self.engineer_id}, project={project_id}")
+        logger.info("Added memory for engineer=%s, project=%s", self.engineer_id, project_id)
         return result
 
     def search_standards(

@@ -37,8 +37,8 @@ from fireai.mcp_server.sanitized_handler import (
 from fireai.mcp_server.thread_safe_queue import (
     ModelUpdateAction,
     ModelUpdateResult,
-    ModelUpdateStatus,
-    ModelUpdateType,
+    ModelUpdateStatus as ModelUpdateStatus,
+    ModelUpdateType as ModelUpdateType,
     ThreadSafeModelUpdateQueue,
 )
 

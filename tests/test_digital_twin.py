@@ -6,7 +6,6 @@ Unit and integration tests for the Digital Twin service.
 Tests bidirectional conversion functionality and configuration management.
 """
 
-import json
 import os
 import tempfile
 from unittest.mock import Mock, patch

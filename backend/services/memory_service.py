@@ -434,7 +434,7 @@ class MemoryService:
             }
 
         except Exception as e:
-            logger.error(f"Memory add failed: {e}", exc_info=True)
+            logger.error("Memory add failed: %s", e, exc_info=True)
             return {
                 "success": False,
                 "error": str(e),
@@ -513,7 +513,7 @@ class MemoryService:
             )
 
         except Exception as e:
-            logger.error(f"Memory search failed: {e}", exc_info=True)
+            logger.error("Memory search failed: %s", e, exc_info=True)
             return MemorySearchResponse(
                 results=[],
                 query=request.query,
@@ -637,7 +637,7 @@ class MemoryService:
                 }
 
         except Exception as e:
-            logger.error(f"Memory get_all failed: {e}", exc_info=True)
+            logger.error("Memory get_all failed: %s", e, exc_info=True)
             return {
                 "success": False,
                 "error": str(e),
@@ -656,7 +656,7 @@ class MemoryService:
 
         try:
             self._memory.delete(memory_id=memory_id)
-            logger.info(f"Memory deleted: id={memory_id}")
+            logger.info("Memory deleted: id=%s", memory_id)
             return {
                 "success": True,
                 "memory_id": memory_id,
@@ -664,7 +664,7 @@ class MemoryService:
             }
 
         except Exception as e:
-            logger.error(f"Memory delete failed: {e}", exc_info=True)
+            logger.error("Memory delete failed: %s", e, exc_info=True)
             return {
                 "success": False,
                 "error": str(e),
@@ -694,7 +694,7 @@ class MemoryService:
             }
 
         except Exception as e:
-            logger.error(f"Memory history failed: {e}", exc_info=True)
+            logger.error("Memory history failed: %s", e, exc_info=True)
             return {
                 "success": False,
                 "error": str(e),

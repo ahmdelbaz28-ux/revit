@@ -389,7 +389,7 @@ class NFPA72ComplianceChecker:
             occupancy_type=occupancy_type,
         )
         fid = self.engine.assert_fact(facts[0])
-        logger.info(f"Room added: {room_id} h={ceiling_height_m}m type={detector_type}")
+        logger.info("Room added: %s h=%sm type=%s", room_id, ceiling_height_m, detector_type)
         return fid
 
     def add_detector(
@@ -415,7 +415,7 @@ class NFPA72ComplianceChecker:
             wall_distance_max_m=wall_distance_max_m,
         )
         fid = self.engine.assert_fact(fact)
-        logger.info(f"Detector added: {detector_id} in {room_id} at ({x:.1f}, {y:.1f})")
+        logger.info("Detector added: %s in %s at (%s, %s)", detector_id, room_id, x, y)
         return fid
 
     def add_hvac(
@@ -493,7 +493,7 @@ class NFPA72ComplianceChecker:
             is_compliant=is_compliant,
         )
         fid = self.engine.assert_fact(fact)
-        logger.info(f"Voltage drop result added: drop={voltage_drop_pct:.2f}%, compliant={is_compliant}")
+        logger.info("Voltage drop result added: drop=%s%, compliant=%s", voltage_drop_pct, is_compliant)
         return fid
 
     def add_fault_isolation_result(
@@ -524,7 +524,7 @@ class NFPA72ComplianceChecker:
 
     def evaluate(self) -> ComplianceReport:
         """Run compliance evaluation and return a structured report."""
-        logger.info(f"Starting NFPA 72 compliance evaluation for session {self.engine.session_id}")
+        logger.info("Starting NFPA 72 compliance evaluation for session %s", self.engine.session_id)
         try:
             self.engine.evaluate()
 
@@ -539,7 +539,7 @@ class NFPA72ComplianceChecker:
             report = results_to_report(self.engine)
         except Exception as e:
             # FIX: Never silently fail to produce a report in a safety-critical system
-            logger.critical(f"Compliance evaluation failed: {e}", exc_info=True)
+            logger.critical("Compliance evaluation failed: %s", e, exc_info=True)
             return ComplianceReport(
                 session_id=self.engine.session_id,
                 is_safe=False,  # Conservative: assume unsafe

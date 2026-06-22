@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """backend/contract.py — Runtime API response contract validation.
 
 Ensures every API response matches the expected shape before being
@@ -27,6 +25,8 @@ V115 FIX: Contract validators now support BOTH naming conventions:
 The validators accept either convention and log a warning on mismatch
 instead of raising a hard error, since both systems are in production.
 """
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict, List
 
@@ -104,7 +104,7 @@ def validate_project(data: Dict[str, Any]) -> Dict[str, Any]:
     }
     violations = _validate_fields(data, required, optional)
     if violations:
-        logger.critical(f"Project contract violation: {violations} — data was: {list(data.keys())}")
+        logger.critical("Project contract violation: %s — data was: %s", violations, list(data.keys()))
         # V115: Log but do NOT raise — both naming conventions are valid in production.
         # Raising would break ALL System A endpoints that use database.py.
         logger.warning(
@@ -143,7 +143,7 @@ def validate_device(data: Dict[str, Any]) -> Dict[str, Any]:
     }
     violations = _validate_fields(data, required, optional)
     if violations:
-        logger.critical(f"Device contract violation: {violations} — data was: {list(data.keys())}")
+        logger.critical("Device contract violation: %s — data was: %s", violations, list(data.keys()))
         logger.warning(
             "Contract violation logged but not raised. "
             "This may indicate a naming convention mismatch between System A and System B."
@@ -174,7 +174,7 @@ def validate_connection(data: Dict[str, Any]) -> Dict[str, Any]:
     }
     violations = _validate_fields(data, required, optional)
     if violations:
-        logger.critical(f"Connection contract violation: {violations} — data was: {list(data.keys())}")
+        logger.critical("Connection contract violation: %s — data was: %s", violations, list(data.keys()))
         logger.warning(
             "Contract violation logged but not raised. "
             "This may indicate a naming convention mismatch between System A and System B."
@@ -201,7 +201,7 @@ def validate_paginated(data: Dict[str, Any], item_validator=None) -> Dict[str, A
     }
     violations = _validate_fields(data, required, optional)
     if violations:
-        logger.critical(f"Paginated response contract violation: {violations}")
+        logger.critical("Paginated response contract violation: %s", violations)
         logger.warning(
             "Paginated contract violation logged but not raised. "
             "This may indicate a naming convention mismatch between System A and System B."
@@ -229,6 +229,6 @@ def validate_health(data: Dict[str, Any]) -> Dict[str, Any]:
     }
     violations = _validate_fields(data, required, optional)
     if violations:
-        logger.critical(f"Health check contract violation: {violations}")
+        logger.critical("Health check contract violation: %s", violations)
         raise ContractViolation("validate_health", violations)
     return data

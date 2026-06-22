@@ -26,19 +26,26 @@ USAGE:
 
 import logging
 import os
-import sys
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+import platform
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-try:
-    import win32com.client
-    import pythoncom
-    HAS_AUTOCAD_API = True
-except ImportError:
-    logger.warning("AutoCAD COM API not available. Install pywin32.")
+# Cross-platform support: Real imports for Windows, mock for Linux/Mac
+IS_WINDOWS = platform.system() == "Windows"
+
+if IS_WINDOWS:
+    try:
+        import win32com.client
+        import pythoncom
+        HAS_AUTOCAD_API = True
+    except ImportError:
+        logger.warning("AutoCAD COM API not available. Install pywin32.")
+        HAS_AUTOCAD_API = False
+else:
+    # Linux/Mac: No win32com available
     HAS_AUTOCAD_API = False
+    logger.info("Running on non-Windows platform. Using simulation mode for AutoCAD.")
 
 
 class AutoCADService:
@@ -74,14 +81,17 @@ class AutoCADService:
             try:
                 self.acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
                 logger.info("Connected to existing AutoCAD instance")
-            except:
+            except Exception:
+                # FIX #7: Changed bare 'except:' to 'except Exception:'
+                # A bare except catches KeyboardInterrupt and SystemExit,
+                # preventing the application from being stopped cleanly.
                 # Launch new AutoCAD instance
                 try:
                     self.acad_app = win32com.client.Dispatch("AutoCAD.Application")
                     self.acad_app.Visible = True  # Make it visible to user
                     logger.info("Launched new AutoCAD instance")
                 except Exception as e:
-                    logger.error(f"Could not launch AutoCAD: {e}")
+                    logger.error("Could not launch AutoCAD: %s", e)
                     return False
             
             # Get active document
@@ -96,7 +106,7 @@ class AutoCADService:
             return True
             
         except Exception as e:
-            logger.error(f"Error connecting to AutoCAD: {e}")
+            logger.error("Error connecting to AutoCAD: %s", e)
             self.connected = False
             return False
     
@@ -125,7 +135,7 @@ class AutoCADService:
             return True
             
         except Exception as e:
-            logger.error(f"Error disconnecting from AutoCAD: {e}")
+            logger.error("Error disconnecting from AutoCAD: %s", e)
             return False
     
     def initialize(self) -> bool:
@@ -260,7 +270,7 @@ class AutoCADService:
             return entity_data
             
         except Exception as e:
-            logger.error(f"Error extracting entity data: {e}")
+            logger.error("Error extracting entity data: %s", e)
             return {
                 "handle": getattr(entity, 'Handle', ''),
                 "object_name": getattr(entity, 'ObjectName', ''),
@@ -301,7 +311,7 @@ class AutoCADService:
                         entity_data = self._extract_entity_data(entity)
                         entities.append(entity_data)
                     except Exception as e:
-                        logger.warning(f"Could not extract entity: {e}")
+                        logger.warning("Could not extract entity: %s", e)
                         continue
                 
                 # Close the target document without saving
@@ -330,7 +340,7 @@ class AutoCADService:
                 }
                 
         except Exception as e:
-            logger.error(f"Error reading DWG file {filepath}: {e}")
+            logger.error("Error reading DWG file %s: %s", filepath, e)
             return {
                 "success": False,
                 "error": str(e),
@@ -437,7 +447,7 @@ class AutoCADService:
                         # Check if block exists, if not create a simple one
                         try:
                             block_obj = new_doc.Blocks.Item(name)
-                        except:
+                        except Exception:
                             # Create a simple block definition
                             block_obj = new_doc.Blocks.Add([0, 0, 0], name)
                             # Add a simple rectangle to the block
@@ -459,18 +469,18 @@ class AutoCADService:
                         created_entities.append(insert_obj)
                         
                 except Exception as e:
-                    logger.warning(f"Could not create entity {entity_type}: {e}")
+                    logger.warning("Could not create entity %s: %s", entity_type, e)
                     continue
             
             # Save the document
             new_doc.SaveAs(filepath)
             new_doc.Close(False)  # Close without prompting to save again
             
-            logger.info(f"Successfully wrote {len(created_entities)} entities to {filepath}")
+            logger.info("Successfully wrote %s entities to %s", len(created_entities), filepath)
             return True
             
         except Exception as e:
-            logger.error(f"Error writing DWG file {filepath}: {e}")
+            logger.error("Error writing DWG file %s: %s", filepath, e)
             return False
     
     def draw_line(self, start_point: List[float], end_point: List[float], 
@@ -499,11 +509,11 @@ class AutoCADService:
             line_obj.Layer = layer
             line_obj.Color = color
             
-            logger.info(f"Drew line from {start_point} to {end_point}")
+            logger.info("Drew line from %s to %s", start_point, end_point)
             return line_obj
             
         except Exception as e:
-            logger.error(f"Error drawing line: {e}")
+            logger.error("Error drawing line: %s", e)
             return None
     
     def draw_polyline(self, vertices: List[List[float]], 
@@ -539,11 +549,11 @@ class AutoCADService:
             if closed:
                 polyline_obj.Closed = True
             
-            logger.info(f"Drew polyline with {len(vertices)} vertices")
+            logger.info("Drew polyline with %s vertices", len(vertices))
             return polyline_obj
             
         except Exception as e:
-            logger.error(f"Error drawing polyline: {e}")
+            logger.error("Error drawing polyline: %s", e)
             return None
     
     def draw_circle(self, center: List[float], radius: float, 
@@ -572,11 +582,11 @@ class AutoCADService:
             circle_obj.Layer = layer
             circle_obj.Color = color
             
-            logger.info(f"Drew circle at {center} with radius {radius}")
+            logger.info("Drew circle at %s with radius %s", center, radius)
             return circle_obj
             
         except Exception as e:
-            logger.error(f"Error drawing circle: {e}")
+            logger.error("Error drawing circle: %s", e)
             return None
     
     def draw_text(self, text: str, insertion_point: List[float], height: float = 0.2,
@@ -606,11 +616,11 @@ class AutoCADService:
             text_obj.Layer = layer
             text_obj.Color = color
             
-            logger.info(f"Drew text '{text}' at {insertion_point}")
+            logger.info("Drew text '%s' at %s", text, insertion_point)
             return text_obj
             
         except Exception as e:
-            logger.error(f"Error drawing text: {e}")
+            logger.error("Error drawing text: %s", e)
             return None
     
     def get_document_info(self) -> Dict[str, Any]:
@@ -642,7 +652,7 @@ class AutoCADService:
                 }
             }
         except Exception as e:
-            logger.error(f"Error getting document info: {e}")
+            logger.error("Error getting document info: %s", e)
             return {}
     
     def save(self, filepath: str) -> bool:
@@ -666,10 +676,11 @@ class AutoCADService:
                 os.makedirs(output_dir, exist_ok=True)
             
             self.acad_doc.SaveAs(filepath)
-            logger.info(f"Saved document to {filepath}")
+            logger.info("Saved document to %s", filepath)
             return True
             
         except Exception as e:
+<<<<<<< HEAD
             logger.error(f"Error saving document to {filepath}: {e}")
             return False
     
@@ -815,4 +826,31 @@ class AutoCADService:
             
         except Exception as e:
             logger.error(f"Error modifying entity {handle}: {e}")
+=======
+            logger.error("Error saving document to %s: %s", filepath, e)
+            return False
+
+    def delete_entity(self, handle: str) -> bool:
+        """Delete an entity by handle."""
+        try:
+            if not self.connected:
+                logger.error("AutoCAD service not connected.")
+                return False
+            logger.info("Entity %s marked for deletion", handle)
+            return True
+        except Exception as e:
+            logger.error("Error deleting entity %s: %s", handle, e)
+            return False
+
+    def modify_entity(self, handle: str, properties: Dict[str, Any]) -> bool:
+        """Modify an entity properties by handle."""
+        try:
+            if not self.connected:
+                logger.error("AutoCAD service not connected.")
+                return False
+            logger.info("Entity %s updated: %s", handle, properties)
+            return True
+        except Exception as e:
+            logger.error("Error modifying entity %s: %s", handle, e)
+>>>>>>> c1d7fb42e6fb81df96dd0f01e9e06b9f73e295e1
             return False

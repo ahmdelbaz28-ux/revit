@@ -577,7 +577,6 @@ def run_compliance_on_ifc(ifc_path: str) -> dict:
 
 def _run_self_test():
     """Test with programmatically created IFC file with spatial relationships"""
-    import os
     import tempfile
 
     print("=" * 60)

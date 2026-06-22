@@ -132,7 +132,7 @@ class ContractValidator:
             "nfpa_reference": nfpa_reference,  # type: ignore[dict-item]
             "safety_critical": safety_critical,  # type: ignore[dict-item]
         }
-        logger.debug(f"Contract registered: {key}")
+        logger.debug("Contract registered: %s", key)
 
     def validate_response(
         self,
@@ -167,7 +167,7 @@ class ContractValidator:
             # Contract exists — check if safety-critical before skipping
             if not contract.get("safety_critical", False):
                 # Non-critical contract, DISABLED mode → skip validation
-                logger.debug(f"Contract validation DISABLED for {key}")
+                logger.debug("Contract validation DISABLED for %s", key)
                 return data
             # Safety-critical contract — FALL THROUGH to validation
             # even in DISABLED mode. Log a warning that we're overriding.
@@ -229,7 +229,7 @@ class ContractValidator:
             if self.severity == ContractSeverity.STRICT:
                 raise
 
-            logger.error(f"Contract violation on {key}: {e.errors()}. Returning unvalidated response (severity=LOG).")
+            logger.error("Contract violation on %s: %s. Returning unvalidated response (severity=LOG).", key, e.errors())
             return data
 
     def validate_request(
@@ -258,7 +258,7 @@ class ContractValidator:
                 actual_value=data,
             )
             self._violation_log.append(violation)
-            logger.error(f"Request validation failed on {method}:{endpoint}: {e.errors()}")
+            logger.error("Request validation failed on %s:%s: %s", method, endpoint, e.errors())
             raise
 
     def get_violations(self) -> List[ContractViolationDetail]:

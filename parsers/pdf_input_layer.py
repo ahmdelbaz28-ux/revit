@@ -280,7 +280,7 @@ class PDFInputLayer:
 
             if confidence.gate == GateDecision.REJECT:
                 result.errors.append("Drawing REJECTED by confidence gate")
-                logger.warning(f"REJECTED: {confidence.message}")
+                logger.warning("REJECTED: %s", confidence.message)
                 return result
 
             if confidence.gate == GateDecision.CAUTION:
@@ -298,7 +298,7 @@ class PDFInputLayer:
             full_tb = traceback.format_exc()
             result.errors.append(f"Data extraction failed: {e}")
             result.errors.append(f"Traceback: {full_tb}")
-            logger.error(f"Extraction error: {e}\n{full_tb}")
+            logger.error("Extraction error: %s\n%s", e, full_tb)
 
         return result
 

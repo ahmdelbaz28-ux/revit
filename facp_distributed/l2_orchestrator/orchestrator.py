@@ -95,7 +95,7 @@ class Orchestrator:
             )
 
             if not allowed:
-                self.logger.warning(f"Orchestrator[{self.node_id}]: Request {request_id} denied by permission check: {permission_reason}")
+                self.logger.warning("Orchestrator[%s]: Request %s denied by permission check: %s", self.node_id, request_id, permission_reason)
 
                 error_response = FACPResponse(
                     id=request_id,
@@ -179,7 +179,7 @@ class Orchestrator:
 
             else:
                 # Handle with an agent
-                self.logger.info(f"Orchestrator[{self.node_id}]: Processing request {request_id} with agent for method {method}")
+                self.logger.info("Orchestrator[%s]: Processing request %s with agent for method %s", self.node_id, request_id, method)
 
                 # Find appropriate agent
                 agent = self.agent_manager.find_appropriate_agent(method)
@@ -270,7 +270,7 @@ class Orchestrator:
                     return False, error_response
 
         except Exception as e:
-            self.logger.error(f"Orchestrator[{self.node_id}]: Unexpected error processing request {request_id}: {str(e)}")
+            self.logger.error("Orchestrator[%s]: Unexpected error processing request %s: %s", self.node_id, request_id, str(e))
 
             error_response = FACPResponse(
                 id=request_id,
@@ -446,7 +446,7 @@ class Orchestrator:
 
     def update_policy(self, policy_name: str, policy_config: Dict[str, Any]):
         """Update a specific policy (placeholder for future implementation)"""
-        self.logger.info(f"Policy update requested: {policy_name}")
+        self.logger.info("Policy update requested: %s", policy_name)
         # Implementation would depend on policy management system
 
     def handle_node_join(self, node_id: str, node_type: str, capabilities: List[str]):

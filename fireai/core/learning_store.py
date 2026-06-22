@@ -42,7 +42,7 @@ class LearningStore:
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._create_tables()
-        logger.info(f"LearningStore initialized: {db_path}")
+        logger.info("LearningStore initialized: %s", db_path)
 
     def _create_tables(self):
         """Create learning and calibration tables."""
@@ -163,7 +163,7 @@ class LearningStore:
             self.conn.commit()
             return True
         except sqlite3.Error as e:
-            logger.warning(f"Failed to store experience: {e}")
+            logger.warning("Failed to store experience: %s", e)
             return False
 
     def get_calibrated_thresholds(self) -> Tuple[float, float]:
@@ -240,7 +240,7 @@ class LearningStore:
         count = len(rows)
 
         if count < 30:
-            logger.info(f"Not enough compliant records for recalibration: {count} < 30")
+            logger.info("Not enough compliant records for recalibration: %s < 30", count)
             return False
 
         # Calculate 10th percentile
@@ -272,7 +272,7 @@ class LearningStore:
         )
         self.conn.commit()
 
-        logger.info(f"Recalibrated: high={high:.3f}, medium={medium:.3f}, records={count}")
+        logger.info("Recalibrated: high=%s, medium=%s, records=%s", high, medium, count)
         return True
 
     def close(self):

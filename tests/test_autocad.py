@@ -6,7 +6,6 @@ Unit and integration tests for the AutoCAD service.
 Tests connection, file operations, and drawing functionality.
 """
 
-import json
 import os
 import tempfile
 from unittest.mock import Mock, patch
@@ -44,7 +43,7 @@ class TestAutoCADServiceInitialization:
         mock_app.ActiveDocument = mock_doc
         mock_doc.Utility = mock_util
         
-        result = service.connect()
+        result = service.connect()  # noqa: F841  (verified via side effects below)
         
         # Verify the connection attempt
         assert mock_win32com.Dispatch.called

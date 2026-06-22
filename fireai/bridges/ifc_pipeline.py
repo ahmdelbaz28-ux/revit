@@ -166,7 +166,7 @@ class IfcFirePipeline:
                 self._warnings.append(
                     f"Space {space.get('name', '?')} ({space.get('guid', '?')}): analysis failed — {exc}"
                 )
-                logger.error(f"Space analysis failed: {exc}", exc_info=True)
+                logger.error("Space analysis failed: %s", exc, exc_info=True)
 
         # ── Write back to IFC ──────────────────────────────────────
         bridge.push_fire_alarm_design(all_devices, self.cfg.ifc_output_path)
@@ -678,7 +678,7 @@ class IfcFirePipeline:
                     )
                 )
             except Exception as e:
-                logger.debug(f"Could not convert obstruction {od.get('guid', '?')}: {e}")
+                logger.debug("Could not convert obstruction %s: %s", od.get('guid', '?'), e)
         return result
 
     # ── Substance lookup ─────────────────────────────────────────

@@ -47,7 +47,7 @@ class EnginePool:
 
             self.current_size = self.initial_size
             self.is_initialized = True
-            self.logger.info(f"Engine Pool {self.pool_id} initialized with {self.current_size} workers")
+            self.logger.info("Engine Pool %s initialized with %s workers", self.pool_id, self.current_size)
 
     def _create_worker(self, worker_name: str) -> EngineWorker:
         """
@@ -149,7 +149,7 @@ class EnginePool:
             new_worker.start()
 
             self.current_size += 1
-            self.logger.info(f"Engine Pool scaled up to {self.current_size} workers")
+            self.logger.info("Engine Pool scaled up to %s workers", self.current_size)
 
     def _scale_down(self):
         """
@@ -181,7 +181,7 @@ class EnginePool:
                 self.workers = [w for w in self.workers if w.worker_id != worker_to_remove.worker_id]
 
                 self.current_size -= 1
-                self.logger.info(f"Engine Pool scaled down to {self.current_size} workers")
+                self.logger.info("Engine Pool scaled down to %s workers", self.current_size)
 
     def perform_scaling_decision(self):
         """
@@ -267,7 +267,7 @@ class EnginePool:
         """
         Gracefully shut down all workers in the pool
         """
-        self.logger.info(f"Starting graceful shutdown of Engine Pool {self.pool_id}")
+        self.logger.info("Starting graceful shutdown of Engine Pool %s", self.pool_id)
 
         with self.lock:
             for worker in self.active_workers.values():
@@ -279,7 +279,7 @@ class EnginePool:
             self.current_size = 0
             self.is_initialized = False
 
-        self.logger.info(f"Engine Pool {self.pool_id} shutdown complete")
+        self.logger.info("Engine Pool %s shutdown complete", self.pool_id)
 
     def get_queue_status(self) -> Dict[str, Any]:
         """
@@ -367,7 +367,7 @@ class EnginePool:
         load_stats = self.get_load_distribution()
 
         if load_stats["std_dev_load"] > 0.3:  # If there's significant load imbalance
-            self.logger.info(f"Load rebalancing initiated. Current std dev: {load_stats['std_dev_load']:.2f}")
+            self.logger.info("Load rebalancing initiated. Current std dev: %.2f", load_stats['std_dev_load'])
             # In a real implementation, this would redistribute tasks among workers
             # For now, we'll just log the action
             pass

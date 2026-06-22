@@ -10,11 +10,10 @@ This script scans the codebase and generates a comprehensive index of:
 
 from __future__ import annotations
 
-Run: python -m fireai.tools.constant_indexer
-Output: fireai/CONSTANTS_USAGE_MAP.json
-
-PE SIGN-OFF REQUIRED for any changes to canonical constants.
-"""
+# Run: python -m fireai.tools.constant_indexer
+# Output: fireai/CONSTANTS_USAGE_MAP.json
+#
+# PE SIGN-OFF REQUIRED for any changes to canonical constants.
 
 import json
 import logging

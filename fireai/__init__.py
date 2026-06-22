@@ -18,7 +18,7 @@ builtins.zip = _zip_compatible
 # W-02 FIX: Single source of truth — import from fireai.version
 # Package version (semver) for __version__ — distinct from internal FIREAI_VERSION_FULL
 # Backward compat: also expose the V-prefixed string and dev version
-from fireai.version import FIREAI_VERSION, FIREAI_VERSION_FULL, build_version_header
+from fireai.version import FIREAI_VERSION as FIREAI_VERSION, FIREAI_VERSION_FULL as FIREAI_VERSION_FULL, build_version_header as build_version_header
 from fireai.version import __package_version__ as __version__
 
 # CRITICAL FIX: Replaced wildcard import with lazy __getattr__.

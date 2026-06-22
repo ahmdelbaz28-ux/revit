@@ -219,7 +219,7 @@ class StreamProcessor:
         or None to drop the event from the pipeline.
         """
         self._transforms.append((name, fn))
-        logger.info(f"StreamProcessor '{self._name}': added transform '{name}'")
+        logger.info("StreamProcessor '%s': added transform '%s'", self._name, name)
         return self
 
     def add_filter(self, name: str, fn: Callable[[Event], bool]) -> StreamProcessor:
@@ -228,7 +228,7 @@ class StreamProcessor:
         Events that return False are dropped from the pipeline.
         """
         self._filters.append((name, fn))
-        logger.info(f"StreamProcessor '{self._name}': added filter '{name}'")
+        logger.info("StreamProcessor '%s': added filter '%s'", self._name, name)
         return self
 
     def add_sink(
@@ -240,7 +240,7 @@ class StreamProcessor:
         to every sink. Sinks run concurrently.
         """
         self._sinks.append((name, fn))
-        logger.info(f"StreamProcessor '{self._name}': added sink '{name}'")
+        logger.info("StreamProcessor '%s': added sink '%s'", self._name, name)
         return self
 
     def add_aggregator(self, name: str, window_spec: WindowSpec) -> WindowedAggregation:
@@ -423,7 +423,7 @@ class StreamProcessor:
         for agg in self._aggregators.values():
             agg.clear()
         self._throttle.clear()
-        logger.info(f"StreamProcessor '{self._name}': reset")
+        logger.info("StreamProcessor '%s': reset", self._name)
 
     @property
     def name(self) -> str:

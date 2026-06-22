@@ -332,7 +332,7 @@ class DDCAdapter:
             _safe_cwd = _SAFE_CWD_BASE / f"fireai_ddc_cwd_{os.getpid()}"
             _safe_cwd.mkdir(parents=True, exist_ok=True)
 
-            logger.info(f"DDC convert: {' '.join(cmd)} → {output_dir}")
+            logger.info("DDC convert: %s → %s", ' '.join(cmd), output_dir)
 
             result = subprocess.run(  # noqa: S603 — command from class constant, not user input
                 cmd,
@@ -393,7 +393,7 @@ class DDCAdapter:
                 duration_s=300.0,
             )
         except Exception as e:
-            logger.error(f"DDC convert error: {e}", exc_info=True)
+            logger.error("DDC convert error: %s", e, exc_info=True)
             return DDCConversionResult(
                 success=False,
                 source_file=str(input_path),
@@ -451,7 +451,7 @@ class DDCAdapter:
 
             wb.close()
         except Exception as e:
-            logger.error(f"DDC XLSX room extraction failed: {e}", exc_info=True)
+            logger.error("DDC XLSX room extraction failed: %s", e, exc_info=True)
 
         return rooms
 
@@ -479,7 +479,7 @@ class DDCAdapter:
 
             wb.close()
         except Exception as e:
-            logger.error(f"DDC XLSX element extraction failed: {e}", exc_info=True)
+            logger.error("DDC XLSX element extraction failed: %s", e, exc_info=True)
 
         return elements
 
@@ -506,7 +506,7 @@ class DDCAdapter:
                         }
                     )
         except Exception as e:
-            logger.error(f"xlrd extraction failed: {e}", exc_info=True)
+            logger.error("xlrd extraction failed: %s", e, exc_info=True)
         return rooms
 
 

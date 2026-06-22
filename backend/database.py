@@ -28,7 +28,7 @@ import threading
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Any, Generator, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -74,11 +74,15 @@ class Database:
 
     def _init_sqlite(self, db_path: str) -> None:
         """Initialize SQLite connection with performance pragmas."""
-        # CRITICAL FIX: os.path.dirname returns '' for relative paths without
-        # directory component (e.g., "digital_twin.db"). os.makedirs('') raises
-        # FileNotFoundError. Always use absolute path to compute directory.
-        _abs_db_path = os.path.abspath(db_path)
-        _db_dir = os.path.dirname(_abs_db_path)
+        # V127 SAFETY FIX: guard makedirs for :memory: and empty paths.
+        # os.path.dirname(os.path.abspath(':memory:')) returns the CWD, which
+        # would trigger an unnecessary makedirs on the project root. Skip
+        # directory creation entirely for in-memory databases.
+        _db_dir = (
+            os.path.dirname(os.path.abspath(db_path))
+            if db_path not in (":memory:", "")
+            else None
+        )
         if _db_dir:
             os.makedirs(_db_dir, exist_ok=True)
 
@@ -97,12 +101,12 @@ class Database:
         self._conn.execute("PRAGMA temp_store=MEMORY")
 
         self._init_schema()
-        logger.info(f"Digital Twin database initialized (SQLite) at {db_path}")
+        logger.info("Digital Twin database initialized (SQLite) at %s", db_path)
 
     def _init_postgres(self) -> None:
         """Initialize PostgreSQL connection pool."""
         try:
-            import psycopg2
+            import psycopg2  # noqa: F401  (imported to surface ImportError early)
             from psycopg2 import pool as pg_pool
         except ImportError:
             raise ImportError(

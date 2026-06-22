@@ -107,7 +107,7 @@ async def update_connection(
     connection_id: str,
     cableSize: str | None = None,
     length: float | None = None,
-    type: str | None = None,
+    connection_type: str | None = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
 ):
     """Update an existing connection in a project.
 
@@ -128,8 +128,8 @@ async def update_connection(
         updates["cableSize"] = cableSize
     if length is not None:
         updates["length"] = length
-    if type is not None:
-        updates["type"] = type
+    if connection_type is not None:
+        updates["type"] = connection_type
 
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")

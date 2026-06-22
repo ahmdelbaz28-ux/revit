@@ -49,6 +49,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, StateGraph
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +221,6 @@ def node_initialize(state: PipelineState) -> PipelineState:
     Verifies file exists, computes integrity hash, and records
     initial state in the audit trail.
     """
-    import os
 
     file_path = state.get("file_path", "")
 
@@ -338,7 +338,7 @@ def node_parse(state: PipelineState) -> PipelineState:
             parse_warnings.append(f"Unsupported file type: {file_type}")
 
     except Exception as e:
-        logger.error(f"Parse failed: {e}", exc_info=True)
+        logger.error("Parse failed: %s", e, exc_info=True)
         parse_warnings.append(f"Parse error: {type(e).__name__}: {e}")
 
     # Fail-safe: empty rooms = no protection = FAILED
@@ -669,7 +669,7 @@ async def _fetch_environmental_data(lat: float, lon: float) -> Dict[str, Any]:
                 "is_gulf_state": region.is_gulf_state,
             }
         except Exception as e:
-            logger.warning(f"Region context fetch failed: {e}")
+            logger.warning("Region context fetch failed: %s", e)
 
     return env_context
 
@@ -734,7 +734,7 @@ def node_environmental_context(state: PipelineState) -> PipelineState:
                 "source": "default_timeout",
             }
         except Exception as e:
-            logger.warning(f"Environmental context fetch failed: {e}")
+            logger.warning("Environmental context fetch failed: %s", e)
             environmental_context = {
                 "latitude": lat,
                 "longitude": lon,
@@ -1264,7 +1264,7 @@ def node_generate_report(state: PipelineState) -> PipelineState:
     except ImportError:
         logger.warning("store_procedural_trace not available — skipping")
     except Exception as e:
-        logger.warning(f"Procedural trace storage failed: {e}")
+        logger.warning("Procedural trace storage failed: %s", e)
 
     updates = {
         "report": report,
@@ -1465,7 +1465,6 @@ class WorkflowService:
         # server crash = total checkpoint loss = potential life-safety data gone.
         # Replaced with AsyncSqliteSaver for persistent SQLite checkpointing.
         # Per agent.md Rule 1 (Absolute Truth) and Priority 4 (Reliability).
-        import os
         checkpoint_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             "data", "checkpoints"
@@ -1498,7 +1497,7 @@ class WorkflowService:
         else:
             logger.warning("StuckDetector not available — workflow stuck detection DISABLED")
 
-        logger.info(f"WorkflowService initialized with SQLite checkpointing at {self._checkpoint_db_path}")
+        logger.info("WorkflowService initialized with SQLite checkpointing at %s", self._checkpoint_db_path)
 
     async def _ensure_compiled(self):
         """Lazy-initialize the checkpointer and re-compile the graph with it.
@@ -1664,7 +1663,7 @@ class WorkflowService:
             invoke_config = dict(config)
             if langfuse_handler:
                 invoke_config["callbacks"] = [langfuse_handler]
-                logger.info(f"Langfuse tracing ACTIVE for workflow {initial_state.get('workflow_id', '?')}")
+                logger.info("Langfuse tracing ACTIVE for workflow %s", initial_state.get('workflow_id', '?'))
             else:
                 logger.debug("Langfuse tracing not active (handler not available)")
 
@@ -1695,7 +1694,7 @@ class WorkflowService:
 
             return result if result else initial_state
         except Exception as e:
-            logger.error(f"Workflow execution failed: {e}", exc_info=True)
+            logger.error("Workflow execution failed: %s", e, exc_info=True)
             return {
                 **initial_state,
                 "status": WorkflowStatus.FAILED.value,
@@ -1742,7 +1741,7 @@ class WorkflowService:
                 f"safety_gate={'PASS' if not state.get('has_critical_conflicts', False) and state.get('validation_passed', False) and state.get('nfpa_compliant', False) else 'FAIL'}"
             )
         except Exception as e:
-            logger.debug(f"Langfuse score logging failed (non-blocking): {e}")
+            logger.debug("Langfuse score logging failed (non-blocking): %s", e)
 
     async def get_workflow_status(self, workflow_id: str) -> Optional[Dict[str, Any]]:
         """Get the current status of a workflow."""
@@ -1925,7 +1924,7 @@ class WorkflowService:
                 "report_sha256": result.get("report_sha256", "") if result else "",
             }
         except Exception as e:
-            logger.error(f"Workflow resume failed: {e}", exc_info=True)
+            logger.error("Workflow resume failed: %s", e, exc_info=True)
             return {
                 "error": f"Resume failed: {type(e).__name__}: {e}",
                 "workflow_id": workflow_id,
