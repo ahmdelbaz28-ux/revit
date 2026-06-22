@@ -1,9 +1,33 @@
+> ⚠️ **SUPERSEDED — 2026-06-22**
+>
+> This GO/NO-GO report is **INVALID and must not be used as a basis for any
+> production deployment decision.** The 2026-06-18 STRESS_TEST_REMEDIATION
+> report discovered that at the time this GO verdict was issued:
+>
+> 1. **Authentication was 100% broken** — `validate_api_key()` re-hashed
+>    input with a random salt, NEVER matching the stored hash.
+> 2. **17 of 23 routers were never registered** in `app.py` — the API
+>    surface was "secure" only because it didn't exist (404s everywhere).
+> 3. **ApiKeyMiddleware was entirely missing** — `fireai_role` always
+>    None; admin endpoints returned 403, viewer endpoints were public.
+>
+> The GO verdict below was issued against a non-functional system. A new
+> GO/NO-GO report must be issued after the V133 remediation plan is
+> complete. See `FireAI_Production_Launch_Plan.docx` for the current
+> remediation roadmap.
+>
+> **Do NOT remove this report** — it is retained for audit trail purposes.
+
+---
+
 # FireAI Digital Twin — FINAL GO/NO-GO Production Release Report
 
 **Date**: 2026-06-09  
 **Version**: 1.0.0  
 **Report Type**: Evidence-based production release validation  
 **Every claim below is backed by: file path, command executed, output produced, and code evidence.**
+
+**Status**: 🔴 **SUPERSEDED** — see warning above
 
 ---
 

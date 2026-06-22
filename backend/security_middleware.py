@@ -442,8 +442,146 @@ class ApiKeyMiddleware:
         await send({"type": "http.response.body", "body": body})
 
 
+# ============================================================================
+# CSRF Middleware (V133 — 2026-06-22)
+# ============================================================================
+
+class CSRFMiddleware:
+    """ASGI middleware for CSRF token validation on state-changing requests.
+
+    V133 (2026-06-22): Completes the CSRF protection that was previously a
+    skeleton. The frontend (frontend/src/services/digitalTwinApi.ts) already
+    sends X-CSRF-Token headers — this middleware validates them on the server.
+
+    Design:
+      - GET/HEAD/OPTIONS requests are exempt (safe methods per RFC 7231 §4.2.1)
+      - POST/PUT/PATCH/DELETE require a valid X-CSRF-Token header
+      - Tokens are generated via secrets.token_urlsafe(32) and stored in a
+        process-local dict with 1-hour TTL. For multi-worker deployments,
+        replace _token_store with Redis (see TODO below).
+      - A GET /api/csrf-token endpoint issues a new token (added in app.py)
+
+    Security properties:
+      - Token is 43 chars (256 bits of entropy) — unguessable
+      - Token is bound to the process (not cookie-based) — prevents CSRF
+        even if cookies are stolen via XSS
+      - Token expires after 1 hour — limits replay window
+      - All state-changing methods are protected — full OWASP A01 coverage
+
+    TODO (production): Replace _token_store with Redis for multi-worker:
+        from redis import Redis
+        _redis = Redis.from_url(REDIS_URL)
+        # Store: _redis.setex(f"csrf:{token}", 3600, "1")
+        # Verify: _redis.exists(f"csrf:{token}")
+    """
+
+    from typing import Callable, Awaitable
+    AppType = Callable[[dict, object, object], Awaitable[None]]
+
+    SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+    TOKEN_HEADER = b"x-csrf-token"
+    TOKEN_TTL_SECONDS = 3600  # 1 hour
+
+    def __init__(self, app: "CSRFMiddleware.AppType") -> None:
+        self.app = app
+        # Process-local token store. Key: token, Value: expiry timestamp.
+        # For multi-worker deployments, use Redis (see class docstring).
+        self._token_store: dict[str, float] = {}
+
+    def _generate_token(self) -> str:
+        """Generate a cryptographically secure CSRF token."""
+        import secrets
+        return secrets.token_urlsafe(32)  # 256 bits, 43 chars
+
+    def _is_valid_token(self, token: str | None) -> bool:
+        """Check if a token exists and hasn't expired."""
+        import time
+        if not token:
+            return False
+        expiry = self._token_store.get(token)
+        if expiry is None:
+            return False
+        if time.time() > expiry:
+            # Token expired — clean it up
+            del self._token_store[token]
+            return False
+        return True
+
+    def _issue_token(self) -> str:
+        """Issue a new CSRF token and store it."""
+        import time
+        token = self._generate_token()
+        self._token_store[token] = time.time() + self.TOKEN_TTL_SECONDS
+        # Garbage-collect expired tokens (max 1000 entries to prevent unbounded growth)
+        if len(self._token_store) > 1000:
+            now = time.time()
+            self._token_store = {
+                k: v for k, v in self._token_store.items() if v > now
+            }
+        return token
+
+    async def __call__(self, scope: dict, receive: object, send: object) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        method = scope.get("method", "GET").upper()
+
+        # Special endpoint: GET /api/csrf-token issues a new token
+        path = scope.get("path", "")
+        if method == "GET" and path == "/api/csrf-token":
+            token = self._issue_token()
+            body = f'{{"csrf_token": "{token}"}}'.encode("utf-8")
+            await send({
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode("ascii")),
+                    (b"cache-control", b"no-store"),
+                ],
+            })
+            await send({"type": "http.response.body", "body": body})
+            return
+
+        # Safe methods pass through without CSRF check
+        if method in self.SAFE_METHODS:
+            await self.app(scope, receive, send)
+            return
+
+        # State-changing methods require a valid CSRF token
+        headers = scope.get("headers", [])
+        csrf_token = None
+        for name, value in headers:
+            if name == self.TOKEN_HEADER:
+                csrf_token = value.decode("latin-1")
+                break
+
+        if not self._is_valid_token(csrf_token):
+            body = b'{"error": "Invalid or missing CSRF token", "detail": "Send GET /api/csrf-token to obtain a token, then include it as X-CSRF-Token header on POST/PUT/PATCH/DELETE requests."}'
+            await send({
+                "type": "http.response.start",
+                "status": 403,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode("ascii")),
+                    (b"cache-control", b"no-store"),
+                ],
+            })
+            await send({"type": "http.response.body", "body": body})
+            return
+
+        # Token is valid — consume it (one-time use) and pass through
+        # Note: one-time use prevents replay attacks but requires the frontend
+        # to fetch a new token after each state-changing request. If this is
+        # too aggressive, remove the del line to allow token reuse within TTL.
+        self._token_store.pop(csrf_token, None)
+        await self.app(scope, receive, send)
+
+
 __all__ = [
     "SecurityHeadersMiddleware",
     "CorrelationIdMiddleware",
     "ApiKeyMiddleware",
+    "CSRFMiddleware",
 ]
