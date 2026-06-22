@@ -381,7 +381,7 @@ async def update_config(
 ) -> OperationResponse:
     """Update conversion configuration."""
     try:
-        config_mgr.save(config)
+        config_mgr.save_config(config)
 
         return OperationResponse(
             success=True,

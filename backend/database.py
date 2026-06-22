@@ -1349,3 +1349,31 @@ def get_db() -> Database:
             if _db is None:
                 _db = Database()
     return _db
+
+
+# Global database instance for the application
+_db_instance = None
+
+def get_database() -> Database:
+    """Get the global database instance."""
+    global _db_instance
+    if _db_instance is None:
+        _db_instance = Database()
+    return _db_instance
+
+
+async def get_db_session():
+    """
+    Get a database session for use with dependency injection in FastAPI routes.
+    This is a compatibility wrapper for the Database class to work with existing
+    dependency injection patterns that expect an async session-like object.
+    """
+    # For backward compatibility with existing code that expects an async session
+    # we return the Database instance which provides the necessary methods
+    return get_database()
+
+
+# Legacy compatibility functions for SQLAlchemy-style usage
+def get_sync_db_session():
+    """Synchronous version of get_db_session for sync operations."""
+    return get_database()

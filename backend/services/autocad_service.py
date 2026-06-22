@@ -21,6 +21,11 @@ else:
     HAS_AUTOCAD_API = False
     logger.info("Running on non-Windows platform. Using simulation mode for AutoCAD.")
 
+# Define stubs for type checkers when imports are not available
+if not IS_WINDOWS or not globals().get('HAS_AUTOCAD_API', False):
+    pythoncom = None
+    win32com = None
+
 
 class AutoCADService:
     """
@@ -48,6 +53,11 @@ class AutoCADService:
                 logger.error("AutoCAD COM API not available. Install pywin32.")
                 return False
 
+            # Check if pythoncom is available before using it
+            if pythoncom is None:
+                logger.error("pythoncom is not available on this platform")
+                return False
+                
             pythoncom.CoInitialize()
 
             # Try to connect to existing AutoCAD instance
@@ -98,10 +108,12 @@ class AutoCADService:
             self.connected = False
 
             if HAS_AUTOCAD_API:
-                try:
-                    pythoncom.CoUninitialize()
-                except Exception:
-                    pass
+                # Check if pythoncom is available before using it
+                if pythoncom is not None:
+                    try:
+                        pythoncom.CoUninitialize()
+                    except Exception:
+                        pass
 
             logger.info("Disconnected from AutoCAD")
             return True

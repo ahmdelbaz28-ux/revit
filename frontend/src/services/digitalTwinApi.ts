@@ -816,7 +816,7 @@ export const api = new ApiClient();
 export default api;
 
 // Add CSRF token handling to API requests
-let csrfToken: string | null = null;
+// (csrfToken is already declared at the top of the file; this duplicate was removed.)
 
 // Function to get CSRF token from meta tag or other source
 function getCsrfToken(): string | null {
