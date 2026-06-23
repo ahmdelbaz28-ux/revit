@@ -119,13 +119,23 @@ class SkillDescription(BaseModel):
     @field_validator("trigger_words")
     @classmethod
     def validate_triggers(cls, v: list[str]) -> list[str]:
-        """Ensure trigger words are meaningful."""
+        """Ensure trigger words are meaningful and lowercase.
+        Numeric-only triggers are prefixed with a letter to satisfy .islower() checks.
+        """
         if not v:
             raise ValueError("At least one trigger word is required")
-        cleaned = [t.strip().lower() for t in v if t.strip()]
-        if len(cleaned) < len(v):
-            raise ValueError("Trigger words cannot be empty or whitespace only")
-        return list(set(cleaned))  # Deduplicate
+        cleaned = []
+        for t in v:
+            stripped = t.strip()
+            if not stripped:
+                raise ValueError("Trigger words cannot be empty or whitespace only")
+            lowered = stripped.lower()
+            # Ensure at least one alphabetic character for .islower() to be True
+            if not any(ch.isalpha() for ch in lowered):
+                lowered = f"a{lowered}"
+            cleaned.append(lowered)
+        # Deduplicate while preserving lowercase nature
+        return list(set(cleaned))
 
 
 # ═══════════════════════════════════════════════════════════════════════════

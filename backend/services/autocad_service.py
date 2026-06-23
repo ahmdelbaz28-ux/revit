@@ -60,17 +60,17 @@ class AutoCADService:
                 
             pythoncom.CoInitialize()
 
-            # Try to connect to existing AutoCAD instance
+            # Try to launch a new AutoCAD instance first; fallback to existing instance
             try:
-                self.acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
-                logger.info("Connected to existing AutoCAD instance")
+                self.acad_app = win32com.client.Dispatch("AutoCAD.Application")
+                self.acad_app.Visible = True
+                logger.info("Launched new AutoCAD instance")
             except Exception:
                 try:
-                    self.acad_app = win32com.client.Dispatch("AutoCAD.Application")
-                    self.acad_app.Visible = True
-                    logger.info("Launched new AutoCAD instance")
+                    self.acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
+                    logger.info("Connected to existing AutoCAD instance")
                 except Exception as e:
-                    logger.error("Could not launch AutoCAD: %s", e)
+                    logger.error("Could not launch or attach to AutoCAD: %s", e)
                     return False
 
             # Get active document
@@ -287,8 +287,11 @@ class AutoCADService:
         """Write entities to a DWG file."""
         try:
             if not self.connected or not self.acad_app:
-                logger.error("AutoCAD service not connected. Cannot write DWG file.")
-                return False
+                # Attempt to connect automatically if not already connected
+                logger.info("AutoCAD not connected, attempting auto-connect before write.")
+                if not self.connect():
+                    logger.error("AutoCAD service not connected after auto-connect attempt. Cannot write DWG file.")
+                    return False
 
             output_dir = os.path.dirname(filepath)
             if output_dir:
