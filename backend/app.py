@@ -176,7 +176,7 @@ _CACHE_MAX_ENTRIES = int(os.getenv("FIREAI_CACHE_MAX_ENTRIES", "10000"))
 # STRICT FIX C: Max size of a single cached value (1 MB default).
 # Prevents a single entry from consuming excessive memory.
 _CACHE_MAX_VALUE_SIZE = int(os.getenv("FIREAI_CACHE_MAX_VALUE_SIZE", str(1024 * 1024)))
-_cache: _OrderedDict[str, dict] = _OrderedDict()
+_cache = _OrderedDict()  # type: _OrderedDict[str, dict]
 _cache_lock = threading.Lock()
 
 # STRICT FIX H: Background reaper configuration
@@ -309,46 +309,6 @@ async def cache_delete(key: str):
     """Delete key from cache."""
     with _cache_lock:
         _cache.pop(key, None)
-
-
-def _build_csp() -> str:
-    """Construct Content‑Security‑Policy header based on environment.
-
-    - Production (default) **disallows** ``unsafe‑eval`` unless overridden.
-    - Development allows ``unsafe‑eval`` by default for HMR tooling.
-    - The ``CSP_UNSAFE_EVAL`` env var can explicitly enable/disable it.
-    - Logs an ERROR when ``unsafe‑eval`` is enabled in production.
-    """
-    env = os.getenv("FIREAI_ENV", "production").lower()
-    # Determine if unsafe‑eval should be permitted
-    unsafe_eval_env = os.getenv("CSP_UNSAFE_EVAL")
-    if unsafe_eval_env is not None:
-        allow_unsafe = unsafe_eval_env.strip().lower() in {"true", "1", "yes"}
-    else:
-        # Default: allow in development, disallow in production
-        allow_unsafe = env == "development"
-    # Build CSP directives
-    connect_src = "'self'"
-    img_src = "'self' data: blob:"
-    custom_connect = os.getenv("CSP_CONNECT_SRC")
-    if env == "development":
-        connect_src += " http://localhost:* ws://localhost:*"
-    if custom_connect:
-        connect_src += " " + custom_connect
-    directives = [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline'" + (" 'unsafe-eval'" if allow_unsafe else ""),
-        "style-src 'self' 'unsafe-inline'",
-        "img-src " + img_src,
-        "connect-src " + connect_src,
-        "font-src 'self'",
-        "object-src 'none'",
-        "frame-ancestors 'none'",
-    ]
-    csp = "; ".join(directives)
-    if allow_unsafe and env == "production":
-        logger.error("CSP includes unsafe-eval in production environment")
-    return csp
 
 
 @asynccontextmanager

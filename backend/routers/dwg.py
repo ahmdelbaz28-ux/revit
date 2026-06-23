@@ -49,8 +49,15 @@ _MAX_DWG_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 _AUTH = [Depends(require_permission(Permission.PROJECT_CREATE))]
 
 
+def rate_limit_if_enabled(func):
+    """Apply rate limiting decorator if enabled."""
+    if _HAS_LIMITER:
+        return limiter.limit("10/minute")(func)
+    return func
+
+
 @router.post("", dependencies=_AUTH)
-@limiter.limit("10/minute") if _HAS_LIMITER else (lambda f: f)
+@rate_limit_if_enabled
 async def parse_dwg(request: Request, file: UploadFile = File(...)):  # noqa: B008
     """
     Upload a DWG or DXF file for parsing.

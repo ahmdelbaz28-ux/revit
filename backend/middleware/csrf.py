@@ -44,7 +44,8 @@ EXEMPT_PATHS = {
 class CSRFMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp):
         super().__init__(app)
-        self.redis_client = get_redis_client()
+        # Don't initialize Redis client in constructor since it's async
+        self.app = app
 
     async def dispatch(self, request: Request, call_next):
         # Skip CSRF for exempt paths and non-mutating methods
@@ -87,17 +88,21 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             logger.warning(f"CSRF validation failed: No token provided for {request.method} {request.url.path}")
             raise HTTPException(status_code=403, detail="CSRF token missing")
 
-        # Check if token exists in Redis (validates it's a real token)
-        token_exists = await self.redis_client.exists(f"csrf:{csrf_token}")
+        # Get Redis client and check if token exists in Redis (validates it's a real token)
+        redis_client = await get_redis_client()
+        token_exists = await redis_client.exists(f"csrf:{csrf_token}")
         if not token_exists:
             logger.warning(f"CSRF validation failed: Invalid/expired token for {request.method} {request.url.path}")
             raise HTTPException(status_code=403, detail="Invalid CSRF token")
 
         # Remove the token after use (one-time use to prevent replay attacks)
-        await self.redis_client.delete(f"csrf:{csrf_token}")
+        await redis_client.delete(f"csrf:{csrf_token}")
 
     async def generate_csrf_token(self) -> str:
         """Generate a new CSRF token and store it in Redis."""
+        # Get Redis client
+        redis_client = await get_redis_client()
+        
         # Generate cryptographically secure token
         token = secrets.token_urlsafe(32)
         
@@ -105,7 +110,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         token_key = f"csrf:{token}"
         
         # Set with expiration to prevent token buildup (1 hour)
-        await self.redis_client.setex(token_key, 3600, "valid")
+        await redis_client.setex(token_key, 3600, "valid")
         
         return token
 
@@ -113,7 +118,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 # Global function to generate CSRF tokens (can be called from anywhere)
 async def generate_csrf_token() -> str:
     """Generate a new CSRF token and store it in Redis."""
-    redis_client = get_redis_client()
+    redis_client = await get_redis_client()
     
     # Generate cryptographically secure token
     token = secrets.token_urlsafe(32)

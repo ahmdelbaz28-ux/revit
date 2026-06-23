@@ -1,0 +1,166 @@
+warning: in the working copy of 'backend/middleware/csrf.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/README.md b/README.md[m
+[1mindex 2aa8570f..08caf97c 100755[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -1,4 +1,4 @@[m
+[31m-# ETAP-AI-WORK Digital Engineering Platform[m
+[32m+[m[32m# FireAI - Integrated CAD/BIM Safety Systems Platform[m
+ [m
+ [![CI/CD Pipeline](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)[m
+ [![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)[m
+[36m@@ -8,350 +8,126 @@[m
+ [![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger%20UI-blue)](https://github.com/ahmdelbaz28-ux/revit/blob/main/backend/app.py)[m
+ [![Docker](https://img.shields.io/badge/docker-ready-blue)](https://github.com/ahmdelbaz28-ux/revit/pkgs/container/revit)[m
+ [m
+[31m-Advanced CAD/BIM integration platform with AI-powered analysis capabilities. Integrates AutoCAD, Revit, and other engineering tools into a unified digital twin.[m
+[31m-[m
+[31m-## Overview[m
+[31m-[m
+[31m-This platform provides bidirectional conversion between AutoCAD DWG files and Revit RVT files through a sophisticated Digital Twin engine. The system enables seamless interoperability between 2D CAD drawings and 3D BIM models, supporting the entire AEC (Architecture, Engineering, Construction) workflow. It also includes an AI-powered Engineering Copilot that understands engineering intent and automatically generates, updates, synchronizes, and validates engineering data across multiple platforms.[m
+[32m+[m[32mFireAI is an advanced platform for integrated CAD/BIM systems with focus on fire safety engineering, electrical calculations, and building automation. The platform provides APIs for AutoCAD, Revit, and Digital Twin integrations with AI-powered analysis capabilities.[m
+ [m
+ ## Features[m
+ [m
+[31m-- Real-time CAD/BIM synchronization[m
+[31m-- Digital twin integration[m
+[31m-- AI-powered analysis[m
+[31m-- Multi-format support (DWG, DXF, RVT, IFC)[m
+[31m-- Collaborative workflows[m
+[31m-- Engineering Copilot with natural language processing[m
+[31m-[m
+[31m-### Core Capabilities[m
+[31m-- **AutoCAD Integration**: Connect to AutoCAD, read/write DWG files, create/draw entities[m
+[31m-- **Revit Integration**: Connect to Revit, read/write RVT files, create/modify elements[m
+[31m-- **Bidirectional Conversion**: Convert between AutoCAD and Revit formats[m
+[31m-- **Digital Twin Engine**: Central conversion hub with semantic mapping[m
+[31m-- **Version Management**: Track and rollback conversion history[m
+[31m-- **Configuration Management**: Flexible mapping rules for conversion[m
+[31m-[m
+[31m-### Technical Architecture[m
+[31m-- **Backend**: FastAPI-based REST API[m
+[31m-- **Services**: Modular service architecture for CAD/BIM operations[m
+[31m-- **API Layer**: Comprehensive endpoints for all operations[m
+[31m-- **Data Models**: Typed Pydantic models for request/response validation[m
+[31m-- **Error Handling**: Comprehensive error handling and logging[m
+[31m-- **Testing**: Complete test suite for all components[m
+[32m+[m[32m- **AutoCAD Integration**: Full API support for AutoCAD operations[m
+[32m+[m[32m- **Revit Integration**: Complete BIM integration with Revit API[m
+[32m+[m[32m- **Digital Twin**: Real-time modeling and simulation capabilities[m
+[32m+[m[32m- **AI-Powered Analysis**: Machine learning algorithms for predictive analysis[m
+[32m+[m[32m- **Safety Compliance**: NFPA 72 and NEC compliance checking[m
+[32m+[m[32m- **Conduit Fill Calculations**: Electrical conduit fill analysis[m
+[32m+[m[32m- **Security Headers**: Enterprise-grade security middleware[m
+[32m+[m[32m- **Rate Limiting**: API protection and throttling[m
+ [m
+ ## Installation[m
+ [m
+[31m-### Prerequisites[m
+[31m-- Python 3.8+[m
+[31m-- Windows OS (for AutoCAD/Revit integration)[m
+[31m-- AutoCAD (optional, for full functionality)[m
+[31m-- Revit (optional, for full functionality)[m
+[31m-[m
+[31m-### Setup[m
+[31m-[m
+ 1. Clone the repository:[m
+[31m-```bash[m
+[31m-git clone <repository-url>[m
+[31m-cd revit-main[m
+[31m-```[m
+[32m+[m[32m   ```bash[m
+[32m+[m[32m   git clone https://github.com/ahmdelbaz28-ux/revit.git[m
+[32m+[m[32m   cd revit[m
+[32m+[m[32m   ```[m
+ [m
+[31m-2. Create virtual environment:[m
+[31m-```bash[m
+[31m-python -m venv venv[m
+[31m-venv\Scripts\activate  # On Windows[m
+[31m-```[m
+[32m+[m[32m2. Create a virtual environment:[m
+[32m+[m[32m   ```bash[m
+[32m+[m[32m   python -m venv venv[m
+[32m+[m[32m   source venv/bin/activate  # On Windows: venv\Scripts\activate[m
+[32m+[m[32m   ```[m
+ [m
+ 3. Install dependencies:[m
+[31m-```bash[m
+[31m-pip install -r requirements.txt[m
+[31m-```[m
+[32m+[m[32m   ```bash[m
+[32m+[m[32m   pip install -r requirements.txt[m
+[32m+[m[32m   ```[m
+ [m
+[31m-4. Run the application:[m
+[31m-```bash[m
+[31m-cd backend[m
+[31m-uvicorn app:app --reload --host 0.0.0.0 --port 8000[m
+[31m-```[m
+[32m+[m[32m4. Set up environment variables:[m
+[32m+[m[32m   ```bash[m
+[32m+[m[32m   cp .env.sample .env[m
+[32m+[m[32m   # Edit .env with your configuration[m
+[32m+[m[32m   ```[m
+ [m
+[31m-## API Endpoints[m
+[31m-[m
+[31m-### AutoCAD Endpoints[m
+[31m-- `POST /api/autocad/connect` - Connect to AutoCAD[m
+[31m-- `POST /api/autocad/disconnect` - Disconnect from AutoCAD[m
+[31m-- `POST /api/autocad/read_dwg` - Read DWG file[m
+[31m-- `POST /api/autocad/write_dwg` - Write DWG file[m
+[31m-- `POST /api/autocad/draw_line` - Draw line in AutoCAD[m
+[31m-- `POST /api/autocad/draw_polyline` - Draw polyline in AutoCAD[m
+[31m-- `POST /api/autocad/draw_circle` - Draw circle in AutoCAD[m
+[31m-- `POST /api/autocad/draw_text` - Draw text in AutoCAD[m
+[31m-- `GET /api/autocad/status` - Get connection status[m
+[31m-- `POST /api/autocad/save` - Save current document[m
+[31m-- `POST /api/autocad/upload_dwg` - Upload and read DWG file[m
+[31m-[m
+[31m-### Revit Endpoints[m
+[31m-- `POST /api/revit/connect` - Connect to Revit[m
+[31m-- `POST /api/revit/disconnect` - Disconnect from Revit[m
+[31m-- `POST /api/revit/read_rvt` - Read RVT file[m
+[31m-- `POST /api/revit/write_rvt` - Write RVT file[m
+[31m-- `POST /api/revit/create_wall` - Create wall in Revit[m
+[31m-- `POST /api/revit/create_floor` - Create floor in Revit[m
+[31m-- `POST /api/revit/create_column` - Create column in Revit[m
+[31m-- `GET /api/revit/status` - Get connection status[m
+[31m-- `POST /api/revit/save` - Save current document[m
+[31m-- `POST /api/revit/get_elements` - Get elements from document[m
+[31m-- `POST /api/revit/upload_rvt` - Upload and read RVT file[m
+[31m-[m
+[31m-### Digital Twin Endpoints[m
+[31m-- `POST /api/digital-twin/convert` - Bidirectional conversion[m
+[31m-- `GET /api/digital-twin/history` - Get conversion history[m
+[31m-- `POST /api/digital-twin/configure` - Update conversion config[m
+[31m-- `POST /api/digital-twin/rollback/{version_id}` - Rollback to version[m
+[31m-- `GET /api/digital-twin/mappings` - Get available mappings[m
+[31m-- `GET /api/digital-twin/status` - Get service status[m
+[31m-- `POST /api/digital-twin/update_mapping` - Update single mapping[m
+[31m-- `GET /api/digital-twin/config` - Get current config[m
+[31m-[m
+[31m-## Usage Examples[m
+[31m-[m
+[31m-### AutoCAD Operations[m
+[31m-[m
+[31m-Connect to AutoCAD:[m
+[31m-```bash[m
+[31m-curl -X POST "http://localhost:8000/api/autocad/connect" \[m
+[31m-  -H "Content-Type: application/json" \[m
+[31m-  -d '{"visible": true}'[m
+[31m-```[m
+[32m+[m[32m## Running the Server[m
+ [m
+[31m-Read a DWG file:[m
+[31m-```bash[m
+[31m-curl -X POST "http://localhost:8000/api/autocad/read_dwg" \[m
+[31m-  -H "Content-Type: application/json" \[m
+[31m-  -d '{"filepath": "path/to/drawing.dwg"}'[m
+[31m-```[m
+[32m+[m[32mTo start the development server:[m
+ [m
+[31m-Draw a line in AutoCAD:[m
+ ```bash[m
+[31m-curl -X POST "http://localhost

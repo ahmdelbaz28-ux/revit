@@ -1,4 +1,4 @@
-# ETAP-AI-WORK Digital Engineering Platform
+# FireAI - Integrated CAD/BIM Safety Systems Platform
 
 [![CI/CD Pipeline](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)
@@ -8,350 +8,126 @@
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger%20UI-blue)](https://github.com/ahmdelbaz28-ux/revit/blob/main/backend/app.py)
 [![Docker](https://img.shields.io/badge/docker-ready-blue)](https://github.com/ahmdelbaz28-ux/revit/pkgs/container/revit)
 
-Advanced CAD/BIM integration platform with AI-powered analysis capabilities. Integrates AutoCAD, Revit, and other engineering tools into a unified digital twin.
-
-## Overview
-
-This platform provides bidirectional conversion between AutoCAD DWG files and Revit RVT files through a sophisticated Digital Twin engine. The system enables seamless interoperability between 2D CAD drawings and 3D BIM models, supporting the entire AEC (Architecture, Engineering, Construction) workflow. It also includes an AI-powered Engineering Copilot that understands engineering intent and automatically generates, updates, synchronizes, and validates engineering data across multiple platforms.
+FireAI is an advanced platform for integrated CAD/BIM systems with focus on fire safety engineering, electrical calculations, and building automation. The platform provides APIs for AutoCAD, Revit, and Digital Twin integrations with AI-powered analysis capabilities.
 
 ## Features
 
-- Real-time CAD/BIM synchronization
-- Digital twin integration
-- AI-powered analysis
-- Multi-format support (DWG, DXF, RVT, IFC)
-- Collaborative workflows
-- Engineering Copilot with natural language processing
-
-### Core Capabilities
-- **AutoCAD Integration**: Connect to AutoCAD, read/write DWG files, create/draw entities
-- **Revit Integration**: Connect to Revit, read/write RVT files, create/modify elements
-- **Bidirectional Conversion**: Convert between AutoCAD and Revit formats
-- **Digital Twin Engine**: Central conversion hub with semantic mapping
-- **Version Management**: Track and rollback conversion history
-- **Configuration Management**: Flexible mapping rules for conversion
-
-### Technical Architecture
-- **Backend**: FastAPI-based REST API
-- **Services**: Modular service architecture for CAD/BIM operations
-- **API Layer**: Comprehensive endpoints for all operations
-- **Data Models**: Typed Pydantic models for request/response validation
-- **Error Handling**: Comprehensive error handling and logging
-- **Testing**: Complete test suite for all components
+- **AutoCAD Integration**: Full API support for AutoCAD operations
+- **Revit Integration**: Complete BIM integration with Revit API
+- **Digital Twin**: Real-time modeling and simulation capabilities
+- **AI-Powered Analysis**: Machine learning algorithms for predictive analysis
+- **Safety Compliance**: NFPA 72 and NEC compliance checking
+- **Conduit Fill Calculations**: Electrical conduit fill analysis
+- **Security Headers**: Enterprise-grade security middleware
+- **Rate Limiting**: API protection and throttling
 
 ## Installation
 
-### Prerequisites
-- Python 3.8+
-- Windows OS (for AutoCAD/Revit integration)
-- AutoCAD (optional, for full functionality)
-- Revit (optional, for full functionality)
-
-### Setup
-
 1. Clone the repository:
-```bash
-git clone <repository-url>
-cd revit-main
-```
+   ```bash
+   git clone https://github.com/ahmdelbaz28-ux/revit.git
+   cd revit
+   ```
 
-2. Create virtual environment:
-```bash
-python -m venv venv
-venv\Scripts\activate  # On Windows
-```
+2. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
 3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-4. Run the application:
+4. Set up environment variables:
+   ```bash
+   cp .env.sample .env
+   # Edit .env with your configuration
+   ```
+
+## Running the Server
+
+To start the development server:
+
 ```bash
 cd backend
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## API Endpoints
+The server will be available at `http://localhost:8000`.
 
-### AutoCAD Endpoints
-- `POST /api/autocad/connect` - Connect to AutoCAD
-- `POST /api/autocad/disconnect` - Disconnect from AutoCAD
-- `POST /api/autocad/read_dwg` - Read DWG file
-- `POST /api/autocad/write_dwg` - Write DWG file
-- `POST /api/autocad/draw_line` - Draw line in AutoCAD
-- `POST /api/autocad/draw_polyline` - Draw polyline in AutoCAD
-- `POST /api/autocad/draw_circle` - Draw circle in AutoCAD
-- `POST /api/autocad/draw_text` - Draw text in AutoCAD
-- `GET /api/autocad/status` - Get connection status
-- `POST /api/autocad/save` - Save current document
-- `POST /api/autocad/upload_dwg` - Upload and read DWG file
+## API Usage Example
 
-### Revit Endpoints
-- `POST /api/revit/connect` - Connect to Revit
-- `POST /api/revit/disconnect` - Disconnect from Revit
-- `POST /api/revit/read_rvt` - Read RVT file
-- `POST /api/revit/write_rvt` - Write RVT file
-- `POST /api/revit/create_wall` - Create wall in Revit
-- `POST /api/revit/create_floor` - Create floor in Revit
-- `POST /api/revit/create_column` - Create column in Revit
-- `GET /api/revit/status` - Get connection status
-- `POST /api/revit/save` - Save current document
-- `POST /api/revit/get_elements` - Get elements from document
-- `POST /api/revit/upload_rvt` - Upload and read RVT file
+Once the server is running, you can test the health endpoint:
 
-### Digital Twin Endpoints
-- `POST /api/digital-twin/convert` - Bidirectional conversion
-- `GET /api/digital-twin/history` - Get conversion history
-- `POST /api/digital-twin/configure` - Update conversion config
-- `POST /api/digital-twin/rollback/{version_id}` - Rollback to version
-- `GET /api/digital-twin/mappings` - Get available mappings
-- `GET /api/digital-twin/status` - Get service status
-- `POST /api/digital-twin/update_mapping` - Update single mapping
-- `GET /api/digital-twin/config` - Get current config
-
-## Usage Examples
-
-### AutoCAD Operations
-
-Connect to AutoCAD:
 ```bash
-curl -X POST "http://localhost:8000/api/autocad/connect" \
-  -H "Content-Type: application/json" \
-  -d '{"visible": true}'
+curl http://localhost:8000/api/v1/health
 ```
 
-Read a DWG file:
+For protected endpoints, include your API key:
+
 ```bash
-curl -X POST "http://localhost:8000/api/autocad/read_dwg" \
-  -H "Content-Type: application/json" \
-  -d '{"filepath": "path/to/drawing.dwg"}'
+curl -H "X-API-Key: YOUR_API_KEY" http://localhost:8000/api/v1/projects
 ```
 
-Draw a line in AutoCAD:
-```bash
-curl -X POST "http://localhost:8000/api/autocad/draw_line" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "start_point": [0, 0, 0],
-    "end_point": [1000, 0, 0],
-    "layer": "Walls",
-    "color": 1
-  }'
+## Project Structure
+
 ```
-
-### Revit Operations
-
-Connect to Revit:
-```bash
-curl -X POST "http://localhost:8000/api/revit/connect"
+backend/
+├── app.py                 # Main FastAPI application
+├── config.py             # Configuration settings
+├── auth.py               # Authentication middleware
+├── middleware/           # Custom middleware
+│   ├── csrf.py           # CSRF protection
+│   └── security.py       # Security headers
+├── routers/              # API route definitions
+│   ├── autocad.py        # AutoCAD integration
+│   ├── revit.py          # Revit integration
+│   ├── digital_twin.py   # Digital twin endpoints
+│   └── ...
+├── services/             # Business logic
+│   ├── autocad_service.py
+│   ├── revit_service.py
+│   └── ...
+└── core/                 # Core utilities
+    ├── redis_client.py   # Redis connection utilities
+    └── ...
 ```
-
-Read an RVT file:
-```bash
-curl -X POST "http://localhost:8000/api/revit/read_rvt" \
-  -H "Content-Type: application/json" \
-  -d '{"filepath": "path/to/model.rvt"}'
-```
-
-Create a wall in Revit:
-```bash
-curl -X POST "http://localhost:8000/api/revit/create_wall" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "start_point": [0, 0, 0],
-    "end_point": [5000, 0, 0],
-    "height": 3000.0,
-    "level": "Level 1"
-  }'
-```
-
-### Digital Twin Conversion
-
-Convert AutoCAD to Revit:
-```bash
-curl -X POST "http://localhost:8000/api/digital-twin/convert" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "source_filepath": "input.dwg",
-    "target_filepath": "output.rvt",
-    "conversion_type": "autocad_to_revit"
-  }'
-```
-
-Convert Revit to AutoCAD:
-```bash
-curl -X POST "http://localhost:8000/api/digital-twin/convert" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "source_filepath": "model.rvt",
-    "target_filepath": "output.dwg",
-    "conversion_type": "revit_to_autocad"
-  }'
-```
-
-## Architecture
-
-### Core Components
-
-- **FastAPI Backend** - Modern Python web framework
-- **Digital Twin Core** - Central data model and synchronization
-- **GIS Integration Layer** - Geographic information system integration
-- **SCADA Layer** - Supervisory control and data acquisition
-- **Event Bus** - Asynchronous event processing
-- **State Store** - Persistent state management
-- **Synchronization Engine** - Cross-platform synchronization
-- **AI Agents** - Intelligent automation
-- **PostgreSQL** - Relational database
-- **Redis** - In-memory caching
-
-### Service Layer
-- `AutoCADService`: Handles all AutoCAD operations via COM API
-- `RevitService`: Handles all Revit operations via Revit API
-- `DigitalTwinService`: Core conversion engine with semantic mapping
-- `ConversionConfigManager`: Manages persistent conversion settings
-- `VersionManager`: Tracks and manages conversion history
-- `AICopilotService`: AI-powered engineering assistant for natural language processing and automatic drawing generation
-
-### Router Layer
-- `autocad.py`: AutoCAD-specific endpoints
-- `revit.py`: Revit-specific endpoints
-- `digital_twin.py`: Digital Twin conversion endpoints
-- All other standard FastAPI routers
-
-### Data Flow
-1. Client makes API request
-2. Router validates request and forwards to service
-3. Service performs CAD/BIM operation
-4. Results returned to client
-5. Operations logged for audit trail
-
-## Configuration
-
-The system supports extensive configuration for conversion mapping and AI capabilities:
-
-### Engineering Copilot
-
-The Engineering Copilot is an AI-driven engineering platform that understands engineering intent and automatically generates, updates, synchronizes, and validates engineering data across:
-
-- **ETAP** - Electrical engineering analysis and design
-- **AutoCAD** - 2D/3D drafting and design
-- **Revit** - Building Information Modeling (BIM)
-
-#### Key Capabilities
-
-- **Natural Language Processing** - Understands engineering requests in plain English
-- **Automatic Drawing Generation** - Creates CAD drawings from text descriptions
-- **Multi-Platform Synchronization** - Keeps ETAP, AutoCAD, and Revit models in sync
-- **Engineering Validation** - Checks designs against standards and codes
-- **Report Generation** - Creates BOMs, schedules, and documentation
-- **Bidirectional Translation** - Converts between different engineering formats
-
-#### Example Usage
-
-```python
-from engineering_copilot.ai_agent.ai_agent import AICopilot
-
-copilot = AICopilot()
-request = "Create a main distribution board with 5 outgoing feeders and 1 transformer"
-result = copilot.process_request(request, ["AutoCAD", "ETAP", "Revit"])
-```
-
-### Layer/Category Mapping
-Map AutoCAD layers to Revit categories:
-```json
-{
-  "layer_to_category": {
-    "Walls": "Walls",
-    "A-WALL": "Walls",
-    "Doors": "Doors",
-    "A-DOOR": "Doors"
-  }
-}
-```
-
-### Unit Conversion
-Configure unit conversion between systems:
-```json
-{
-  "source_units": "Millimeters",
-  "target_units": "Millimeters",
-  "scale_factor": 1.0
-}
-```
-
-### Semantic Mapping
-Define how elements are converted between systems:
-- Lines on "Walls" layer → Revit Walls
-- Hatches on "Floors" layer → Revit Floors
-- Blocks named "Door" → Revit Door families
-- Text → Revit Text Notes
 
 ## Testing
 
-Run the complete test suite:
+Run the full test suite:
+
 ```bash
-pytest tests/
+python -m pytest -v
 ```
 
-Run specific test modules:
+For specific tests:
+
 ```bash
-pytest tests/test_digital_twin.py
-pytest tests/test_autocad.py
-pytest tests/test_revit.py
+python -m pytest tests/test_auth_integration.py -v
 ```
 
-## Error Handling
+## Security
 
-The system provides comprehensive error handling:
+The platform implements multiple layers of security:
 
-- **Connection Errors**: 503 Service Unavailable when CAD applications not available
-- **File Errors**: 404 Not Found for missing files
-- **Validation Errors**: 400 Bad Request for invalid parameters
-- **General Errors**: 500 Internal Server Error for unexpected issues
-
-## Deployment
-
-For production deployment:
-
-1. Use a WSGI server like Gunicorn:
-```bash
-gunicorn -w 4 -b 0.0.0.0:8000 backend.app:app
-```
-
-2. Configure reverse proxy with Nginx
-3. Set up SSL certificates
-4. Configure logging and monitoring
-
-## Security Considerations
-
-- Validate all file uploads to prevent malicious files
-- Implement rate limiting for API endpoints
-- Use authentication for production deployments
-- Sanitize file paths to prevent directory traversal
-- Validate CAD file contents before processing
-
-## Troubleshooting
-
-### Common Issues
-
-1. **AutoCAD not found**: Ensure AutoCAD is installed and COM API enabled
-2. **Revit not found**: Ensure Revit is installed with API support
-3. **Permission errors**: Run with appropriate permissions for CAD applications
-4. **File access errors**: Check file paths and permissions
-
-### Logs
-
-Check application logs in the console output or configured logging destination for detailed error information.
+- API key authentication
+- Rate limiting with SlowAPI
+- Content Security Policy (CSP) headers
+- Cross-site request forgery (CSRF) protection
+- Input validation and sanitization
+- Secure session management
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, please contact the development team or create an issue in the GitHub repository.
