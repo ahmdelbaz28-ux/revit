@@ -1,3 +1,9 @@
+{{- /*
+V133 (2026-06-21): Worker PDB is skipped in DR standby mode because
+the Worker Deployment itself is skipped (scaled to 0). Creating a PDB
+for a non-existent Deployment is invalid and wastes API server quota.
+*/ -}}
+{{- $standbyMode := and .Values.multiRegion.enabled .Values.multiRegion.secondary.standby }}
 {{- if .Values.podDisruptionBudgets.api.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -15,7 +21,7 @@ spec:
       app.kubernetes.io/component: api
 ---
 {{- end }}
-{{- if .Values.podDisruptionBudgets.worker.enabled }}
+{{- if and .Values.podDisruptionBudgets.worker.enabled (not $standbyMode) }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

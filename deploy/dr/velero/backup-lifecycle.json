@@ -1,0 +1,14 @@
+{
+  "Rules": [
+    {
+      "ID": "velero-backup-expire-24h",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "fireai/"
+      },
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 1
+      }
+    }
+  ]
+}

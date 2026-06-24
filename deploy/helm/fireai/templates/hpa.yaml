@@ -1,4 +1,20 @@
-{{- if .Values.autoscaling.api.enabled }}
+{{- /*
+HorizontalPodAutoscaler — API and Worker services
+
+Enterprise scaling: scales API on CPU+memory+RPS, scales Worker on
+queue depth (custom metric from Prometheus Adapter) plus CPU+memory.
+
+V133 (2026-06-21): Added Worker HPA (was missing — Worker was
+hardcoded to replicaCount: 1, a single point of failure for the
+entire async pipeline). Added behavior policy (scale-down stabilization
+300s) to prevent flapping under bursty fire-alarm design workloads.
+
+In DR standby mode, HPA is disabled — the standby region uses fixed
+replica counts (1 API, 0 Worker) to minimize cost while remaining
+warm enough for fast failover.
+*/ -}}
+{{- $standbyMode := and .Values.multiRegion.enabled .Values.multiRegion.secondary.standby }}
+{{- if and .Values.autoscaling.api.enabled (not $standbyMode) }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -27,4 +43,96 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ .Values.autoscaling.api.targetMemoryUtilizationPercentage }}
+    {{- if .Values.autoscaling.api.targetRPS }}
+    - type: Pods
+      pods:
+        metric:
+          name: http_requests_per_second
+        target:
+          type: AverageValue
+          averageValue: "{{ .Values.autoscaling.api.targetRPS }}"
+    {{- end }}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.api.scaleUpStabilizationSeconds | default 60 }}
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+        - type: Pods
+          value: 4
+          periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.api.scaleDownStabilizationSeconds | default 300 }}
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 120
+      selectPolicy: Min
+{{- end }}
+---
+{{- if and .Values.autoscaling.worker.enabled (not $standbyMode) }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "fireai.fullname" . }}-worker-hpa
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "fireai.fullname" . }}-worker
+  minReplicas: {{ .Values.autoscaling.worker.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.worker.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.worker.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.worker.targetMemoryUtilizationPercentage }}
+    {{- if .Values.autoscaling.worker.targetQueueDepth }}
+    # Queue-depth-driven scaling — requires Prometheus Adapter exposing
+    # the `redis_list_length` metric from the FireAI celery queue.
+    # See deploy/observability/prometheus-alert-rules.yml for the
+    # recording rule that produces this metric.
+    - type: Pods
+      pods:
+        metric:
+          name: redis_list_length
+        target:
+          type: AverageValue
+          averageValue: "{{ .Values.autoscaling.worker.targetQueueDepth }}"
+    {{- end }}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: {{ .Values.autoscaling.worker.scaleUpStabilizationSeconds | default 30 }}
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+      selectPolicy: Max
+    scaleDown:
+      # Workers should hold scale for 10 minutes after a burst —
+      # draining a long-running fire-alarm design job mid-flight
+      # would corrupt the audit trail.
+      stabilizationWindowSeconds: {{ .Values.autoscaling.worker.scaleDownStabilizationSeconds | default 600 }}
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 300
+      selectPolicy: Min
 {{- end }}

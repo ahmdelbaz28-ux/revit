@@ -58,6 +58,7 @@ from backend.limiter import limiter
 from backend.security_middleware import (
     ApiKeyMiddleware,
     CorrelationIdMiddleware,
+    CSRFMiddleware,
     SecurityHeadersMiddleware,
 )
 
@@ -432,6 +433,16 @@ app.add_middleware(CorrelationIdMiddleware)
 # (OPTIONS) are not blocked by auth.
 app.add_middleware(ApiKeyMiddleware)
 
+# V133 (2026-06-22): CSRFMiddleware validates X-CSRF-Token on all
+# state-changing requests (POST/PUT/PATCH/DELETE). GET/HEAD/OPTIONS are
+# exempt. Tokens are issued via GET /api/csrf-token (handled inside the
+# middleware itself, not via a router). Added AFTER ApiKeyMiddleware so
+# that auth runs first (if auth fails, CSRF check is skipped — 401
+# before 403). Added BEFORE CORSMiddleware so CORS preflight (OPTIONS)
+# is not blocked by CSRF (OPTIONS is a safe method, exempt anyway, but
+# the ordering prevents any edge-case interaction).
+app.add_middleware(CSRFMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -440,7 +451,9 @@ app.add_middleware(
     # requests are unnecessary and would expand the attack surface.
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["X-API-Key", "Content-Type", "X-Correlation-ID"],
+    # V133: Added X-CSRF-Token to allowed headers so the frontend can
+    # send the CSRF token in cross-origin requests.
+    allow_headers=["X-API-Key", "Content-Type", "X-Correlation-ID", "X-CSRF-Token"],
 )
 
 # Include our CAD/BIM integration routers

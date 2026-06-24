@@ -15,15 +15,37 @@ COPY frontend/ .
 RUN npm run build
 
 # ─── Stage 2: Python Dependencies ─────────────────────────────────────────
-FROM python:3.12-slim AS python-builder
+# V133 (2026-06-21): Use Python 3.11 (not 3.12) because requirements.txt
+# pins numpy==1.24.3 which doesn't support Python 3.12:
+#   - numpy 1.24.3 has no prebuilt wheel for Python 3.12 → builds from source
+#   - numpy 1.24.3's setup.py imports distutils.msvccompiler (removed in 3.12)
+#   - Python 3.12 also removed pkgutil.ImpImporter (used by old setuptools)
+#
+# When the application team upgrades numpy to >=1.26 (which has Python 3.12
+# wheels), switch this back to python:3.12-slim. Until then, 3.11 is the
+# safest choice — it has prebuilt wheels for all pinned dependencies.
+FROM python:3.11-slim AS python-builder
 
 WORKDIR /build
 
+# python:3.11-slim includes setuptools/wheel, but they may be stale. Upgrade
+# to ensure PEP 517 build backends work correctly.
+RUN pip install --no-cache-dir --upgrade pip "setuptools>=68.0.0" wheel
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Install requirements + explicitly force-install 'packaging' into the
+# /install prefix. pip's --prefix mode doesn't install 'packaging' from
+# requirements.txt because it considers packaging a pip dependency
+# (already satisfied in the build environment). But the runtime image
+# (python:3.11-slim) doesn't have packaging, so the app crashes with
+# ModuleNotFoundError. --force-reinstall ensures packaging lands in /install.
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt && \
+    pip install --no-cache-dir --prefix=/install --force-reinstall packaging
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
-FROM python:3.12-slim
+# V133: Use Python 3.11 for runtime too (must match builder — see Stage 2
+# comment about numpy 1.24.3 Python 3.12 incompatibility).
+FROM python:3.11-slim
 
 LABEL maintainer="FireAI Engineering Team"
 LABEL description="Safety-Critical Fire Protection Digital Twin — NFPA 72-2022"

@@ -713,19 +713,92 @@ export default api;
 // Add CSRF token handling to API requests
 let csrfToken: string | null = null;
 
-// Function to get CSRF token from meta tag or other source
-function getCsrfToken(): string | null {
+// Function to get the API key for the X-API-Key header.
+// Mirrors the logic in src/services/api.ts:getApiKey but kept local to
+// avoid a circular import (api.ts imports types from this file).
+// Order of precedence:
+//   1. VITE_FIREAI_API_KEY env var (set at build time)
+//   2. sessionStorage 'fireai_settings' (set via Settings page)
+//   3. null (caller must handle — e.g. omit the header or fail gracefully)
+function getApiKey(): string | null {
+  // 1. Check Vite env variable (set at build time or in .env)
+  const envKey = import.meta.env.VITE_FIREAI_API_KEY;
+  if (envKey) return envKey;
+
+  // 2. Check sessionStorage (set via Settings page at runtime).
+  // SECURITY: sessionStorage (not localStorage) limits key exposure to
+  // the active tab session.
+  try {
+    const stored = sessionStorage.getItem('fireai_settings');
+    if (stored) {
+      const settings = JSON.parse(stored);
+      if (settings?.apiKey && typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
+        return settings.apiKey.trim();
+      }
+    }
+  } catch {
+    // sessionStorage may be unavailable (private mode, sandboxed iframe)
+    // — fall through to return null.
+  }
+
+  // 3. No key available
+  return null;
+}
+
+// V133 (2026-06-22): Fetch a fresh CSRF token from the backend.
+// The backend CSRFMiddleware handles GET /api/csrf-token and returns
+// { "csrf_token": "<43-char-token>" }. The token is one-time-use —
+// after each state-changing request, a new token must be fetched.
+// We cache the token in memory (csrfToken) and clear it after each use.
+async function fetchCsrfToken(): Promise<string | null> {
+  // If we already have a cached token, return it
   if (csrfToken) return csrfToken;
-  
-  // Try to get from meta tag
+
+  try {
+    const response = await fetch('/api/csrf-token', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.csrf_token) {
+        csrfToken = data.csrf_token;
+        return csrfToken;
+      }
+    }
+  } catch {
+    // Network error or backend not available — fall through to meta tag
+  }
+
+  // Fallback: try meta tag (for server-rendered pages that embed the token)
   const tokenMeta = document.querySelector('meta[name="csrf-token"]');
   if (tokenMeta) {
     csrfToken = tokenMeta.getAttribute('content');
     return csrfToken;
   }
-  
-  // If not found, return null
+
   return null;
+}
+
+// Function to get CSRF token — tries cache first, then fetches if needed.
+// This is async because it may need to call the backend.
+function getCsrfTokenSync(): string | null {
+  // Return cached token if available (sync path)
+  if (csrfToken) return csrfToken;
+
+  // Fallback: try meta tag (sync)
+  const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+  if (tokenMeta) {
+    csrfToken = tokenMeta.getAttribute('content');
+    return csrfToken;
+  }
+
+  return null;
+}
+
+// Clear the cached CSRF token after use (one-time-use tokens).
+function clearCsrfToken(): void {
+  csrfToken = null;
 }
 
 // Update the API request functions to include CSRF token
@@ -733,16 +806,27 @@ async function apiRequest<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const headers = {
+  // Typed as Record<string, string> so the CSRF token assignment below
+  // passes type checking. The literal-object form inferred a closed shape
+  // { 'Content-Type': string; 'X-API-Key': string | null } which then
+  // rejected the dynamic 'X-CSRF-Token' key.
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-API-Key': getApiKey(),
-    ...options.headers,
+    'X-API-Key': getApiKey() ?? '',
   };
+  if (options.headers) {
+    // Merge caller-supplied headers (Headers | Record<string, string>).
+    const incoming = options.headers as Record<string, string>;
+    for (const [k, v] of Object.entries(incoming)) {
+      headers[k] = v;
+    }
+  }
 
   // Add CSRF token for state-changing requests
+  // V133: fetch token from backend if not cached, then clear after use
   const method = options.method || 'GET';
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-    const token = getCsrfToken();
+    const token = await fetchCsrfToken();
     if (token) {
       headers['X-CSRF-Token'] = token;
     }
@@ -754,17 +838,25 @@ async function apiRequest<T>(
       headers,
     });
 
+    // V133: Clear the CSRF token after use (one-time-use tokens)
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      clearCsrfToken();
+    }
+
     const data = await response.json();
     return {
       success: response.ok,
-      data: response.ok ? data.data || data : null,
-      error: response.ok ? null : data.error || 'Unknown error',
+      data: response.ok ? (data.data ?? data) : undefined,
+      error: response.ok ? undefined : data.error || 'Unknown error',
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
     return {
       success: false,
-      data: null,
+      data: undefined,
       error: error instanceof Error ? error.message : 'Network error',
+      timestamp: new Date().toISOString(),
     };
   }
 }
+

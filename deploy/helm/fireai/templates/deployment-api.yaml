@@ -1,3 +1,11 @@
+{{- /*
+V133 (2026-06-21): In DR standby mode, API replicas are reduced to 1
+(warm standby — cheap enough to leave running, warm enough to failover
+fast). The HPA (if enabled) is also disabled in standby mode via the
+hpa.yaml template's conditional.
+*/ -}}
+{{- $standbyMode := and .Values.multiRegion.enabled .Values.multiRegion.secondary.standby }}
+{{- $apiReplicas := ternary 1 (.Values.replicas.api | int) $standbyMode }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,8 +14,11 @@ metadata:
   labels:
     {{- include "fireai.labels" . | nindent 4 }}
     app.kubernetes.io/component: api
+    {{- if $standbyMode }}
+    fireai.io/dr-role: standby
+    {{- end }}
 spec:
-  replicas: {{ .Values.replicas.api }}
+  replicas: {{ $apiReplicas }}
   strategy:
     type: RollingUpdate
     rollingUpdate:

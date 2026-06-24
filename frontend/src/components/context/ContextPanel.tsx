@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, CircleHelp, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, HelpCircle as CircleHelp, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSmartHelp } from '@/hooks/useSmartHelp';

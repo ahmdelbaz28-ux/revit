@@ -1,0 +1,116 @@
+{{- /*
+Velero Backup Schedules — point-in-time recovery for the FireAI platform.
+
+V133 (2026-06-21): Three schedules for tiered recovery:
+  - hourly:  24 hourly PV snapshots  → 1 day of PV-level PITR
+  - daily:   30 daily full backups   → 1 month of resource-level recovery
+  - weekly:  12 weekly backups       → ~3 months of weekly recovery
+
+Combined with PostgreSQL WAL archiving (postgresqlHA.walArchive), this
+provides point-in-time recovery to ANY second within the retention
+window — required for NFPA 72 §14.6 audit-trail retention.
+
+Prerequisites (documented in deploy/dr/velero/README.md):
+  1. Velero server installed: `velero install --provider aws ...`
+  2. S3 bucket provisioned (cross-region for DR protection)
+  3. BackupStorageLocation + VolumeSnapshotLocation configured
+  4. IAM role / ServiceAccount with bucket + snapshot permissions
+
+Wires:
+  - velero.enabled                 → toggle (all schedules)
+  - velero.hourly/daily/weekly     → per-schedule config
+  - velero.backupStorageLocation   → S3 destination
+  - velero.volumeSnapshotLocation  → EBS/GCS snapshot region
+*/ -}}
+{{- if .Values.velero.enabled }}
+{{- range $name, $sched := dict "hourly" .Values.velero.hourly "daily" .Values.velero.daily "weekly" .Values.velero.weekly }}
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: {{ include "fireai.fullname" $ }}-{{ $name }}
+  namespace: velero  # Velero schedules MUST live in the velero namespace
+  labels:
+    {{- include "fireai.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: fireai-velero-schedule
+    app.kubernetes.io/component: backup
+    app.kubernetes.io/part-of: fireai
+    fireai.io/schedule-tier: {{ $name }}
+  annotations:
+    # Description for operators running `velero schedule describe`.
+    "fireai.io/description": "{{ $name }} backup for FireAI platform — see deploy/dr/velero/README.md"
+spec:
+  schedule: {{ $sched.schedule | quote }}
+  template:
+    ttl: {{ $sched.ttl | quote }}
+    # Limit backups to the FireAI namespace — don't back up other
+    # namespaces that may share the cluster.
+    includedNamespaces:
+      - {{ $.Values.namespace.name }}
+    {{- if $sched.includeVolumes }}
+    # Snapshot PVCs in addition to Kubernetes resource manifests.
+    # PV snapshots are required for true PITR (Kubernetes resources
+    # alone won't restore PostgreSQL data).
+    snapshotVolumes: true
+    {{- else }}
+    snapshotVolumes: false
+    {{- end }}
+    {{- if $sched.labelSelector }}
+    # Selector limits to FireAI-labeled resources only — prevents
+    # accidental backup of unrelated resources in the same namespace.
+    labelSelector:
+      matchLabels:
+        {{- range $k, $v := $sched.labelSelector }}
+        {{ $k }}: {{ $v }}
+        {{- end }}
+    {{- end }}
+    {{- if eq $name "daily" }}
+    # Daily backups include cluster-scoped resources (but not CRDs
+    # from other namespaces) for full DR recovery.
+    includeClusterResources: {{ $sched.includeClusterResources }}
+    {{- else }}
+    includeClusterResources: false
+    {{- end }}
+    # Storage locations — must match the names configured in the
+    # Velero server's BackupStorageLocation and VolumeSnapshotLocation
+    # resources.
+    storageLocation: {{ $.Values.velero.backupStorageLocation.name }}
+    {{- if $sched.includeVolumes }}
+    volumeSnapshotLocations:
+      - {{ $.Values.velero.volumeSnapshotLocation.name }}
+    {{- end }}
+    # Hooks: quiesce PostgreSQL before snapshot for consistent backup.
+    # The pre-hook puts PostgreSQL in backup mode (pg_start_backup);
+    # the post-hook ends it (pg_stop_backup). This ensures the on-disk
+    # files are a valid backup that can be recovered with WAL replay.
+    {{- if $sched.includeVolumes }}
+    hooks:
+      resources:
+        - name: postgresql-quiesce
+          includedNamespaces:
+            - {{ $.Values.namespace.name }}
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql-ha
+              role: primary
+          pre:
+            - exec:
+                container: postgresql
+                command:
+                  - /bin/sh
+                  - -c
+                  - "psql -U postgres -c \"SELECT pg_start_backup('velero-{{ $name }}', true)\""
+                onError: Fail
+                timeout: 60s
+          post:
+            - exec:
+                container: postgresql
+                command:
+                  - /bin/sh
+                  - -c
+                  - "psql -U postgres -c \"SELECT pg_stop_backup()\""
+                onError: Fail
+                timeout: 60s
+    {{- end }}
+{{- end }}
+{{- end }}

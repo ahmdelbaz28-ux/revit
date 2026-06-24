@@ -1,4 +1,11 @@
-{{- if .Values.ingress.enabled }}
+{{- /*
+V133 (2026-06-21): In DR standby mode, Ingress is disabled to
+prevent traffic from reaching the secondary region's API. The
+secondary region's API pods still run (warm standby) but receive
+no external traffic until promoted to primary.
+*/ -}}
+{{- $standbyMode := and .Values.multiRegion.enabled .Values.multiRegion.secondary.standby }}
+{{- if and .Values.ingress.enabled (not $standbyMode) }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

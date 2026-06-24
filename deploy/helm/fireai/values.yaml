@@ -282,6 +282,10 @@ secrets:
       GEMINI_API_KEY: ""
       ENCRYPTION_KEY: ""
       JWT_SECRET: ""
+      # V133: PostgreSQL HA replication password (separate from DB_PASSWORD
+      # for security — the replication user has different privileges).
+      # Required when postgresqlHA.enabled is true.
+      REPLICATION_PASSWORD: ""
   fireai-tls:
     type: kubernetes.io/tls
     stringData:
@@ -367,11 +371,285 @@ logging:
     max-size: "10m"
     max-file: "3"
 
-# ── Autoscaling (optional) ───────────────────────────────────────────────────
+# ── Autoscaling (enterprise: enabled by default) ─────────────────────────────
+# V133 (2026-06-21): Both API and Worker are now HPA-managed by default.
+# Worker HPA was previously missing — Worker was hardcoded to 1 replica,
+# a single point of failure for the entire async pipeline (NFPA 72
+# report generation, ML predictive maintenance training, audit chain
+# sealing). With HPA, Worker scales 2→20 based on queue depth.
 autoscaling:
   api:
-    enabled: false
+    enabled: true
     minReplicas: 3
-    maxReplicas: 10
+    maxReplicas: 20
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
+    # Custom metric: requests-per-second per pod (requires Prometheus
+    # Adapter). Set to null to disable RPS-driven scaling.
+    targetRPS: "100"
+    scaleUpStabilizationSeconds: 60
+    scaleDownStabilizationSeconds: 300
+  worker:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 80
+    # Custom metric: when the Redis celery queue grows beyond this many
+    # items per worker pod, HPA scales up. Requires Prometheus Adapter
+    # exposing the `redis_list_length` metric.
+    targetQueueDepth: "50"
+    scaleUpStabilizationSeconds: 30
+    scaleDownStabilizationSeconds: 600  # 10 min — don't kill in-flight jobs
+
+# ── Redis Cluster (high availability) ────────────────────────────────────────
+# V133 (2026-06-21): Replaces single-instance Redis with a 6-node
+# Redis Cluster (3 masters + 3 replicas) for HA. Survives any single
+# node failure without queue loss. Required for life-safety: a fire
+# alarm design job in the queue MUST NOT be lost if a Redis pod dies.
+#
+# Production: set `cluster.enabled: true` and provide `cluster.password`
+# via a pre-existing Secret named `fireai-redis-cluster`.
+# Development: keep `cluster.enabled: false` to use the single-instance
+# Redis from the `external.redis` section above.
+redisCluster:
+  enabled: true
+  # Number of master nodes (must be >= 3 for quorum). Each master has
+  # one replica, so total pods = masters * 2.
+  masters: 3
+  replicas: 1
+  # Redis Cluster password — references the EXISTING fireai-secrets
+  # Secret (same one used by the API/Worker pods) with the key
+  # REDIS_PASSWORD. This avoids requiring a separate Secret just for
+  # Redis Cluster.
+  existingSecret: fireai-secrets
+  existingSecretPasswordKey: REDIS_PASSWORD
+  # Persistence — survives pod restarts and node failures.
+  persistence:
+    enabled: true
+    storageClass: standard
+    size: 8Gi
+  # Resources per Redis pod. Redis is memory-bound; the limit is the
+  # max memory Redis will use before evicting keys.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  # Spread Redis pods across nodes for fault tolerance.
+  podAntiAffinityPreset: hard
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+
+# ── PostgreSQL HA (high availability) ────────────────────────────────────────
+# V133 (2026-06-21): Adds HA PostgreSQL via primary+replica architecture
+# with automated failover. The primary accepts writes; replicas serve
+# reads and promote to primary if the primary fails.
+#
+# This is a thin reference to the bitnami/postgresql-ha chart —
+# install it as a dependency: `helm dependency update ./deploy/helm/fireai`
+postgresqlHA:
+  enabled: true
+  # Number of PostgreSQL replicas (excluding primary). 2 replicas = 3
+  # total PostgreSQL pods. Quorum requires odd number of Patroni nodes.
+  replicas: 2
+  # References the EXISTING fireai-secrets Secret (same one used by
+  # the API/Worker pods). The Secret must contain:
+  #   DB_PASSWORD — PostgreSQL admin password (used by the app too)
+  #   REPLICATION_PASSWORD — PostgreSQL replication password (HA only)
+  # NEVER commit passwords to git.
+  existingSecret: fireai-secrets
+  postgresPasswordKey: DB_PASSWORD
+  replicationPasswordKey: REPLICATION_PASSWORD
+  persistence:
+    enabled: true
+    storageClass: standard
+    size: 50Gi
+  # Point-in-time recovery (PITR) via WAL archiving. WAL files are
+    # shipped to object storage (S3/GCS) every 60s, allowing recovery
+    # to any second within the retention window.
+  walArchive:
+    enabled: true
+    # S3-compatible bucket URI: s3://fireai-prod-wal-archive/
+    # The bucket MUST have versioning + lifecycle rules (see
+    # deploy/dr/velero/wal-lifecycle.json for the recommended policy).
+    destination: ""
+    # IAM role annotation for IRSA (EKS) or workload identity (GKE).
+    # The ServiceAccount annotated here MUST have s3:PutObject on the
+    # WAL bucket.
+    serviceAccountAnnotation: ""
+  resources:
+    primary:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+    replica:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+# ── Multi-region disaster recovery ───────────────────────────────────────────
+# V133 (2026-06-21): Active-passive multi-region deployment.
+# Primary region serves all traffic; secondary region is warm standby
+# with hourly Velero restores + continuous WAL replay.
+#
+# RPO: 1 hour (Velero backup interval)
+# RTO: 15 minutes (DNS failover + warm pod startup)
+#
+# To promote the secondary region to primary in a disaster:
+#   1. Halt Velero backups in the failed primary region
+#   2. Run `velero restore create --from-backup fireai-hourly-latest`
+#      in the secondary region
+#   3. Update Route53 / Cloud DNS health-check to point at secondary
+#   4. Switch WAL archive destination to secondary region's bucket
+multiRegion:
+  enabled: false  # opt-in; most deployments are single-region
+  primary:
+    region: us-east-1
+    # Kubernetes context to use for primary deployment
+    context: fireai-prod-us-east-1
+    # DNS record managed externally (Route53, Cloud DNS, etc.)
+    hostname: fireai.example.com
+  secondary:
+    region: us-west-2
+    context: fireai-prod-us-west-2
+    hostname: fireai-dr.example.com
+    # When true, the secondary region's Helm release is installed in
+    # `standby` mode: API pods run but Ingress is disabled and Worker
+    # is scaled to 0 (no duplicate job processing).
+    standby: true
+  # Global DNS configuration. Update this CNAME to switch regions
+  # during a DR failover. Use a low TTL (60s) for fast propagation.
+  dns:
+    cname: fireai.example.com
+    ttl: 60
+
+# ── Velero backups (point-in-time recovery) ──────────────────────────────────
+# V133 (2026-06-21): Velero schedules for both PV snapshots and
+# resource exports. Combined with PostgreSQL WAL archiving, this
+# provides point-in-time recovery to ANY second within the retention
+# window — required for compliance with NFPA 72 §14.6 audit-trail
+# retention.
+#
+# Prerequisites:
+#   - Velero server installed in velero namespace
+#   - S3-compatible bucket provisioned (see deploy/dr/velero/README.md)
+#   - IAM role / service account with bucket access
+velero:
+  enabled: true
+  # Hourly PV snapshots of all fireai-namespace PVCs.
+  # Retention: 24 hourly snapshots = 1 day of PV-level PITR.
+  hourly:
+    schedule: "0 * * * *"
+    ttl: "24h"
+    includeVolumes: true
+    # Selector limits backups to the FireAI namespace only.
+    labelSelector:
+      app.kubernetes.io/part-of: fireai
+  # Daily full backups (PVs + Kubernetes resources).
+  # Retention: 30 daily backups = 1 month of resource-level recovery.
+  daily:
+    schedule: "30 2 * * *"
+    ttl: "720h"
+    includeVolumes: true
+    includeClusterResources: false
+  # Weekly backups for long-term retention.
+  # Retention: 12 weekly backups = ~3 months of weekly recovery.
+  weekly:
+    schedule: "0 4 * * 0"
+    ttl: "5040h"
+    includeVolumes: false
+  # Object storage destination. The bucket MUST be in a DIFFERENT
+  # region from the primary cluster for true DR protection.
+  backupStorageLocation:
+    name: fireai-velero-backups
+    # s3://, gs://, or azure:// — must end with /
+    bucket: ""
+    prefix: fireai
+    region: us-east-1
+  volumeSnapshotLocation:
+    name: fireai-velero-snapshots
+    region: us-east-1
+
+# ── Chaos engineering (Chaos Mesh) ───────────────────────────────────────────
+# V133 (2026-06-21): Chaos Mesh experiments to verify resilience.
+# All experiments are SCHEDULED (not one-shot) and run during business
+# hours only (10:00-14:00 UTC, Mon-Fri) to minimize blast radius.
+#
+# Prerequisites:
+#   - Chaos Mesh installed in chaos-mesh namespace
+#   - ServiceAccount `fireai-chaos-runner` with experiment RBAC
+#
+# Safety: every experiment has a `duration` (auto-rollback) and is
+# gated by the `chaosEngineering.enabled` flag. Disable before running
+# in production until you've validated in staging.
+chaosEngineering:
+  enabled: false  # opt-in; enable after staging validation
+  schedule:
+    # Business-hours only — never run chaos experiments at 3am.
+    startingDeadlineSeconds: 300
+  experiments:
+    # 1. Pod-kill: random API pod killed every 30 min during business
+    # hours. Verifies HPA spins up replacement + load balancer routes
+    # around the killed pod within 30s.
+    podKill:
+      enabled: true
+      schedule: "*/30 10-14 * * 1-5"
+      mode: one
+      selector:
+        app.kubernetes.io/component: api
+      gracePeriod: 5
+    # 2. Network latency: inject 100ms latency between API and Postgres
+    # for 60s. Verifies API degrades gracefully (timeout + retry, not
+    # crash) under database slowness.
+    networkLatency:
+      enabled: true
+      schedule: "0 11 * * 1-5"
+      duration: "60s"
+      mode: all
+      selector:
+        app.kubernetes.io/component: api
+      latency: "100ms"
+      target:
+        app.kubernetes.io/name: postgresql-ha
+    # 3. Redis pod failure: kill one Redis Cluster master for 5 min.
+    # Verifies cluster fails over to a replica without queue loss.
+    redisFailover:
+      enabled: true
+      schedule: "30 11 * * 1-5"
+      duration: "5m"
+      mode: one
+      selector:
+        app.kubernetes.io/name: redis-cluster
+        app.kubernetes.io/component: master
+    # 4. Disk pressure: fill PVC to 90% on one Worker pod for 2 min.
+    # Verifies Worker handles disk-full gracefully (log + alert, not
+    # silent corruption of audit chain).
+    diskPressure:
+      enabled: true
+      schedule: "0 12 * * 1-5"
+      duration: "2m"
+      mode: one
+      selector:
+        app.kubernetes.io/component: worker
+      fill: "90%"
+    # 5. DNS blackout: block DNS resolution for 30s. Verifies pods
+    # cache critical service DNS and don't crash on transient failures.
+    dnsBlackout:
+      enabled: true
+      schedule: "30 12 * * 1-5"
+      duration: "30s"
+      mode: all
+      selector:
+        app.kubernetes.io/part-of: fireai
+      dnsDomainName: ""
