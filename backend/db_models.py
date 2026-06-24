@@ -1,5 +1,4 @@
-"""
-backend/db_models.py — SQLAlchemy ORM models for Alembic autogenerate support.
+"""backend/db_models.py — SQLAlchemy ORM models for Alembic autogenerate support.
 
 These models mirror the exact schema defined in database.py (_init_schema / _init_schema_pg).
 They are used ONLY by Alembic for `alembic revision --autogenerate` to detect schema changes.
@@ -10,6 +9,7 @@ SQLAlchemy model here, then run `alembic revision --autogenerate -m "description
 """
 
 from sqlalchemy import (
+    CheckConstraint,
     Column,
     Float,
     ForeignKey,
@@ -17,18 +17,19 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    CheckConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 
 class Base(DeclarativeBase):
     """SQLAlchemy declarative base for all ORM models."""
+
     pass
 
 
 class Project(Base):
     """A fire alarm engineering project."""
+
     __tablename__ = "projects"
 
     id = Column(String, primary_key=True)
@@ -58,6 +59,7 @@ class Project(Base):
 
 class Device(Base):
     """A fire alarm device within a project."""
+
     __tablename__ = "devices"
 
     id = Column(String, primary_key=True)
@@ -87,6 +89,7 @@ class Device(Base):
 
 class Connection(Base):
     """A cable connection between two devices."""
+
     __tablename__ = "connections"
 
     id = Column(String, primary_key=True)
@@ -110,6 +113,7 @@ class Connection(Base):
 
 class Report(Base):
     """An engineering report for a project."""
+
     __tablename__ = "reports"
 
     id = Column(String, primary_key=True)
@@ -140,6 +144,7 @@ class Report(Base):
 
 class SyncStatus(Base):
     """Status of project synchronization."""
+
     __tablename__ = "sync_status"
 
     project_id = Column(
@@ -166,6 +171,7 @@ class SyncStatus(Base):
 
 class SyncOperation(Base):
     """Granular per-entity sync tracking."""
+
     __tablename__ = "sync_operations"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

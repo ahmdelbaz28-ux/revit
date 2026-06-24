@@ -1,5 +1,4 @@
-"""
-fireai/integration/iot_pipeline.py
+"""fireai/integration/iot_pipeline.py
 ====================================
 IoT Device Integration — MQTT/OPC-UA sensor ingestion and real-time
 event processing for fire alarm system monitoring.
@@ -16,6 +15,7 @@ References:
   - OPC UA Part 1: Overview and Concepts (IEC 62541)
   - NFPA 72-2022 §14.4 — Inspection, testing and maintenance
   - NFPA 72-2022 §10.18 — System monitoring
+
 """
 
 from __future__ import annotations
@@ -145,8 +145,7 @@ class SensorConfig:
 
 
 class IoTPipeline:
-    """
-    MQTT/OPC-UA sensor ingestion and real-time event processing.
+    """MQTT/OPC-UA sensor ingestion and real-time event processing.
 
     Features:
       - Async MQTT client with automatic reconnection (exponential backoff)
@@ -208,8 +207,7 @@ class IoTPipeline:
         username: str = "",
         password: str = "",
     ) -> bool:
-        """
-        Connect to an MQTT broker with auto-reconnection.
+        """Connect to an MQTT broker with auto-reconnection.
 
         Uses asyncio-mqtt when available, otherwise simulates
         the connection for testing.
@@ -223,6 +221,7 @@ class IoTPipeline:
 
         Returns:
             True if connection succeeded.
+
         """
         self._mqtt_broker = broker
         self._mqtt_port = port
@@ -274,8 +273,7 @@ class IoTPipeline:
         username: str = "",
         password: str = "",
     ) -> bool:
-        """
-        Connect to an OPC-UA server with session management.
+        """Connect to an OPC-UA server with session management.
 
         Uses opcua-asyncio when available, otherwise simulates
         the connection for testing.
@@ -288,6 +286,7 @@ class IoTPipeline:
 
         Returns:
             True if connection succeeded.
+
         """
         self._opcua_endpoint = endpoint
 
@@ -334,8 +333,7 @@ class IoTPipeline:
         value: float,
         timestamp: Optional[datetime] = None,
     ) -> SensorReading:
-        """
-        Ingest a sensor reading: validate and process.
+        """Ingest a sensor reading: validate and process.
 
         Steps:
           1. Look up sensor config
@@ -355,6 +353,7 @@ class IoTPipeline:
 
         Raises:
             ValueError: If sensor is unknown or value is invalid.
+
         """
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
@@ -423,8 +422,7 @@ class IoTPipeline:
     def process_event(
         self, reading: SensorReading
     ) -> Optional[SecurityEvent]:
-        """
-        Process a sensor reading and generate a SecurityEvent if
+        """Process a sensor reading and generate a SecurityEvent if
         any thresholds or anomaly conditions are triggered.
 
         Event types:
@@ -438,6 +436,7 @@ class IoTPipeline:
 
         Returns:
             A SecurityEvent if a condition is triggered, else None.
+
         """
         config = self._sensor_configs.get(reading.sensor_id)
         if config is None:
@@ -528,14 +527,14 @@ class IoTPipeline:
     async def start_comm_loss_monitor(
         self, interval_seconds: float = 60.0
     ) -> None:
-        """
-        Start background task to detect communication loss.
+        """Start background task to detect communication loss.
 
         Periodically checks all registered sensors for heartbeat
         timeout and generates COMM_LOSS events.
 
         Args:
             interval_seconds: Check interval (default: 60s).
+
         """
         if self._comm_loss_timer is not None:
             self._comm_loss_timer.cancel()

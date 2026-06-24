@@ -1,5 +1,4 @@
-"""
-mep_sync_injector.py — MEP Interface Module Synchronizer for Fire Alarm Integration
+"""mep_sync_injector.py — MEP Interface Module Synchronizer for Fire Alarm Integration
 ====================================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -129,6 +128,7 @@ class MEPElement:
         sprinkler_system_id: For SPRINKLER_SYSTEM — system identifier.
         is_fire_rated: For EGRESS_DOOR — whether door is fire-rated.
         nfpa_reference: Applicable NFPA code reference.
+
     """
 
     element_id: str
@@ -160,6 +160,7 @@ class ElevatorRecallSpec:
         phase_ii_enabled: Whether Phase II is verified by PE. Default False.
         phase_i_nfpa_ref: NFPA reference for Phase I.
         phase_ii_nfpa_ref: NFPA reference for Phase II.
+
     """
 
     elevator_bank: str
@@ -181,6 +182,7 @@ class HVACShutdownSpec:
         requires_duct_detector: True if duct smoke detection needed.
         shutdown_nfpa_ref: NFPA reference for shutdown requirement.
         duct_detector_nfpa_ref: NFPA reference for duct detection.
+
     """
 
     ahu_id: str
@@ -207,6 +209,7 @@ class MEPInterfaceModule:
         zone_id: Fire zone assignment.
         floor_id: Floor assignment.
         description: Human-readable description.
+
     """
 
     module_id: str
@@ -224,6 +227,7 @@ class MEPInterfaceModule:
         Returns:
             Dictionary with device_type, device_idx, position, zone_id
             keys compatible with the fault isolator injection algorithm.
+
         """
         return {
             "device_type": f"MEP_{self.module_type.value}",
@@ -249,6 +253,7 @@ class MEPSyncResult:
         total_modules: Count of interface modules generated.
         total_elevator_banks: Count of elevator banks processed.
         total_ahu_shutdowns: Count of AHUs requiring shutdown.
+
     """
 
     interface_modules: Tuple[MEPInterfaceModule, ...]
@@ -280,6 +285,7 @@ def validate_mep_elements(elements: List[MEPElement]) -> List[str]:
 
     Returns:
         List of error strings (empty if all valid).
+
     """
     errors: List[str] = []
     seen_ids: set = set()
@@ -342,6 +348,7 @@ def extend_boq_with_mep_modules(
     Returns:
         List of BOQ item dicts with item_type, description, quantity,
         unit, unit_cost_usd, total_cost_usd, nfpa_reference.
+
     """
     # Aggregate by module type
     type_counts: Dict[str, int] = {}
@@ -407,6 +414,7 @@ class MEPSyncInjector:
     Args:
         mep_elements: List of MEPElement from building model.
         default_address_type: Default addressing for interface modules.
+
     """
 
     def __init__(
@@ -422,6 +430,7 @@ class MEPSyncInjector:
 
         Returns:
             MEPSyncResult with all interface modules, specs, warnings, errors.
+
         """
         # Validate inputs
         validation_errors = validate_mep_elements(self._elements)
@@ -688,16 +697,16 @@ class MEPSyncInjector:
 __all__ = [
     "AHU_CFM_THRESHOLD",
     "MEP_UNIT_COSTS",
-    "ModuleType",
-    "MEPElementType",
     "AddressType",
     "ElevatorPhase",
-    "MEPElement",
     "ElevatorRecallSpec",
     "HVACShutdownSpec",
+    "MEPElement",
+    "MEPElementType",
     "MEPInterfaceModule",
-    "MEPSyncResult",
-    "validate_mep_elements",
-    "extend_boq_with_mep_modules",
     "MEPSyncInjector",
+    "MEPSyncResult",
+    "ModuleType",
+    "extend_boq_with_mep_modules",
+    "validate_mep_elements",
 ]

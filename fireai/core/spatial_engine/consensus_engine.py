@@ -1,5 +1,4 @@
-"""
-Consensus Verification Engine — Triple Verification System
+"""Consensus Verification Engine — Triple Verification System
 ===========================================================
 Combines results from all three independent verification engines
 to produce a consensus verdict with confidence level.
@@ -132,6 +131,7 @@ class ConsensusEngine:
 
         Returns:
             ConsensusResult with combined verdict.
+
         """
         verdicts: List[EngineVerdict] = []
 

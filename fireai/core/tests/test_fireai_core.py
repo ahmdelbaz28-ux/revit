@@ -1,5 +1,4 @@
-"""
-Comprehensive tests for the fireai_core module.
+"""Comprehensive tests for the fireai_core module.
 
 Tests cover:
   - ConfidenceLevel enum: all members, value access
@@ -273,27 +272,27 @@ class TestEnhancedRoomResult:
         assert result.occupancy_class is None
 
     def test_status_pass(self):
-        """status property should return 'PASS' when compliant."""
+        """Status property should return 'PASS' when compliant."""
         result = EnhancedRoomResult(compliant=True)
         assert result.status == "PASS"
 
     def test_status_fail(self):
-        """status property should return 'FAIL' when not compliant."""
+        """Status property should return 'FAIL' when not compliant."""
         result = EnhancedRoomResult(compliant=False)
         assert result.status == "FAIL"
 
     def test_refused_true(self):
-        """refused property should be True when non-compliant with errors."""
+        """Refused property should be True when non-compliant with errors."""
         result = EnhancedRoomResult(compliant=False, errors=["Analysis engine error"])
         assert result.refused is True
 
     def test_refused_false_compliant(self):
-        """refused property should be False when compliant (even with errors)."""
+        """Refused property should be False when compliant (even with errors)."""
         result = EnhancedRoomResult(compliant=True, errors=["some warning"])
         assert result.refused is False
 
     def test_refused_false_no_errors(self):
-        """refused property should be False when there are no errors."""
+        """Refused property should be False when there are no errors."""
         result = EnhancedRoomResult(compliant=False, errors=[])
         assert result.refused is False
 

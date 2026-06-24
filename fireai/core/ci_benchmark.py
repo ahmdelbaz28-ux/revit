@@ -1,5 +1,4 @@
-"""
-ci_benchmark.py — Automated CI Benchmark Suite
+"""ci_benchmark.py — Automated CI Benchmark Suite
 ================================================
 Section 11.5: "Automated CI benchmark that fails PRs with >5% performance
 regression."
@@ -62,8 +61,7 @@ class BenchResult:
 
 
 def _run_timed(fn: Callable, n: int = 1_000, warmup: int = 100) -> Tuple[float, float]:
-    """
-    Run fn n times, return (ops_per_sec, std_dev_pct).
+    """Run fn n times, return (ops_per_sec, std_dev_pct).
     Uses multiple rounds for statistical stability.
     """
     # Warmup
@@ -90,8 +88,7 @@ def _run_timed(fn: Callable, n: int = 1_000, warmup: int = 100) -> Tuple[float, 
 
 
 class CIBenchmarkSuite:
-    """
-    Runs all FireAI performance benchmarks and compares to baseline.
+    """Runs all FireAI performance benchmarks and compares to baseline.
     Fails (exit code 1) if any benchmark regresses by > REGRESSION_THRESHOLD%.
     """
 
@@ -297,8 +294,7 @@ class CIBenchmarkSuite:
         return path
 
     def compare_to_baseline(self, path: Optional[str] = None) -> Tuple[bool, List[str]]:
-        """
-        Compare current results to saved baseline.
+        """Compare current results to saved baseline.
         Returns (all_passed, list_of_failures).
         Fails if any benchmark is >REGRESSION_THRESHOLD% slower.
         """
@@ -341,7 +337,7 @@ class CIBenchmarkSuite:
         return len(failures) == 0, failures
 
     @staticmethod
-    def _stub(name: str, expected_ops: float) -> "BenchResult":
+    def _stub(name: str, expected_ops: float) -> BenchResult:
         warnings.warn(
             f"Benchmark '{name}' used STUB data (expected_ops={expected_ops:.0f}). "
             f"Real measurement could not run — import failure. "
@@ -394,7 +390,7 @@ def main() -> int:
         suite.save_baseline(args.baseline_file)
         return 0
 
-    elif args.baseline == "compare":
+    if args.baseline == "compare":
         passed, failures = suite.compare_to_baseline(args.baseline_file)
         if failures:
             print(f"\nBENCHMARK REGRESSION DETECTED ({len(failures)} failures):")
@@ -403,9 +399,8 @@ def main() -> int:
             print(f"\nThis PR is >{args.threshold}% slower than baseline.")
             print("Fix the regression before merging.")
             return 1
-        else:
-            print(f"\nNo regressions detected (threshold: {args.threshold}%)")
-            return 0
+        print(f"\nNo regressions detected (threshold: {args.threshold}%)")
+        return 0
 
     return 0
 

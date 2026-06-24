@@ -1,5 +1,4 @@
-"""
-FireAI Digital Twin - Database Service
+"""FireAI Digital Twin - Database Service
 ======================================
 Thread-safe singleton wrapping UniversalDataModel (core/database.py)
 and adding project management with its own SQLite table.
@@ -107,8 +106,7 @@ def _normalize_sort(sort_by: str) -> str:
 
 
 class DatabaseService:
-    """
-    Thread-safe singleton that wraps UniversalDataModel and adds project support.
+    """Thread-safe singleton that wraps UniversalDataModel and adds project support.
 
     Provides methods that the routers can call, handling the conversion between
     Pydantic schemas and core dataclasses.

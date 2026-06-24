@@ -1,5 +1,4 @@
-"""
-hac_classification_engine.py – Hazardous Area Classification Engine
+"""hac_classification_engine.py – Hazardous Area Classification Engine
 =====================================================================
 Classifies hazardous areas from physical parameters (physics-first,
 no manual human input for zone assignment).
@@ -337,8 +336,7 @@ def _iec_annex_b_extent(
     ambient_temp_c: float = 40.0,
     is_indoor: bool = True,
 ) -> tuple:
-    """
-    GAP-01: IEC 60079-10-1:2015 Annex B — Hazardous Area Extent.
+    """GAP-01: IEC 60079-10-1:2015 Annex B — Hazardous Area Extent.
     Returns (horizontal_m, vertical_m, volume_m3).
 
     Consultant Phase 5 improvement: added density fallback with warning
@@ -503,8 +501,7 @@ def _resolve_zone_with_grade_vent(
     ventilation: VentilationLevel,
     is_gas: bool,
 ) -> ZoneType:
-    """
-    GAP-02: IEC 60079-10-1:2015 §4.2 + §4.3.
+    """GAP-02: IEC 60079-10-1:2015 §4.2 + §4.3.
     Zone from release grade (primary) modified by ventilation (secondary).
 
     IEC §4.3 Note 2: "high dilution may reduce zone extent but should
@@ -536,8 +533,7 @@ def _resolve_zone_with_grade_vent(
 
 
 class HACClassificationEngine:
-    """
-    Classifies hazardous areas from physical parameters.
+    """Classifies hazardous areas from physical parameters.
 
     V21 API:  classify_v21() uses Pydantic models (strict, fail-fast)
     Legacy:   classify() still available for backward compatibility
@@ -570,8 +566,7 @@ class HACClassificationEngine:
         release_rate_kg_s: float = 0.0,
         room_volume_m3: float = 1000.0,
     ) -> HACResult:
-        """
-        V21.2 classify using Pydantic models — fail-fast on invalid input.
+        """V21.2 classify using Pydantic models — fail-fast on invalid input.
 
         GAP-02: release_grade is now the PRIMARY zone determinant per IEC §4.2.
         ventilation is the SECONDARY modifier per IEC §4.3.
@@ -790,7 +785,6 @@ class HACClassificationEngine:
         lfl_corrected=None,
     ) -> HACResult:
         """IEC 60079-10-1 gas zone classification (V21.2 with LFL correction)."""
-
         # Fix #9: Flash point check (NFPA 497 §4.2)
         if sub.flash_point_c is not None:
             if sub.flash_point_c > ambient + 20.0:
@@ -846,7 +840,6 @@ class HACClassificationEngine:
         critical_flags,
     ) -> HACResult:
         """IEC 60079-10-2 dust zone classification (V21)."""
-
         # Fix #10: MIE check
         if sub.mie_mj is not None and sub.mie_mj < 3.0:
             warnings.append(
@@ -1126,8 +1119,7 @@ class HACClassificationEngine:
         is_indoor: bool = True,
         ambient_temp_c: float = 40.0,
     ) -> HACResultLegacy:
-        """
-        Legacy classify — backward compatible with dataclass inputs.
+        """Legacy classify — backward compatible with dataclass inputs.
         Prefer classify_v21() for new code.
 
         FIX #7 (HIGH): Default ambient_temp_c changed from 25.0°C to 40.0°C
@@ -1284,7 +1276,7 @@ class HACClassificationEngine:
                 std = "IEC 60079-10-2" if is_dust else "IEC 60079-10-1"
                 note = f"Zone upgraded {base_zone.value}->{new_zone.value} due to HIGH ventilation. {std} §6.2."
             return new_zone, note
-        elif degree == VentilationDegree.LOW:
+        if degree == VentilationDegree.LOW:
             lookup = dust_downgrade if is_dust else gas_downgrade
             new_zone = lookup.get(base_zone, base_zone)
             if new_zone != base_zone:

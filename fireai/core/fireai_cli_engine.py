@@ -1,5 +1,4 @@
-"""
-fireai_cli_engine.py – FireAI CLI Orchestration Engine
+"""fireai_cli_engine.py – FireAI CLI Orchestration Engine
 =======================================================
 Coordinates the 5-layer + audit fire alarm design pipeline for standalone CLI usage.
 
@@ -169,8 +168,7 @@ class PipelineResult:
 
 
 class CLIFireAIEngine:
-    """
-    Standalone CLI orchestration engine for FireAI 5-layer pipeline.
+    """Standalone CLI orchestration engine for FireAI 5-layer pipeline.
 
     Processes all layers sequentially with full environmental context
     propagation. Each layer's output feeds into the next.
@@ -204,14 +202,14 @@ class CLIFireAIEngine:
         detector_threshold: float = 0.1,
         env_context: Optional[EnvironmentalContext] = None,
     ) -> None:
-        """
-        Initialize CLI engine with optional environmental context.
+        """Initialize CLI engine with optional environmental context.
 
         Args:
             grid_step_m: Grid resolution for ray trace (meters)
             detector_threshold: Minimum transmittance for coverage (0.0-1.0)
             env_context: Environmental context. If None, uses worst-case defaults
                         (Pasquill F, 0.5 m/s wind, 40C ambient).
+
         """
         self._reg_selector = InternationalRegSelector()  # Legacy, kept for reference
         self._hac_engine = HACClassificationEngine()
@@ -228,8 +226,7 @@ class CLIFireAIEngine:
     # ── Layer 1: Regulatory Framework ────────────────────────────────────
 
     def run_layer1(self, country_code: str) -> Layer1Result:
-        """
-        Resolve regulatory framework from country code.
+        """Resolve regulatory framework from country code.
 
         Fails fast on unknown country — no silent IECEx fallback.
         [Q3: UnknownCountryError]
@@ -264,8 +261,7 @@ class CLIFireAIEngine:
         release_rate_kg_s: float = 0.0,
         room_volume_m3: float = 1000.0,
     ) -> Layer2Result:
-        """
-        Classify hazardous area with Burgess-Wheeler LFL thermal correction.
+        """Classify hazardous area with Burgess-Wheeler LFL thermal correction.
 
         GAP-02: release_grade is now the PRIMARY zone determinant per IEC §4.2.
         Default release_grade=None → PRIMARY (backward compatible).
@@ -341,8 +337,7 @@ class CLIFireAIEngine:
         hac_warnings: Optional[List[str]] = None,
         hac_critical: Optional[List[str]] = None,
     ) -> Layer3Result:
-        """
-        Determine ATEX equipment specification with IEC 60079-14 thermal margin.
+        """Determine ATEX equipment specification with IEC 60079-14 thermal margin.
 
         Uses _select_temp_class_with_margin which applies:
           - Zone 0/20: 5% margin, minimum 10K
@@ -393,8 +388,7 @@ class CLIFireAIEngine:
         obstructions: List[Obstruction],
         volumetric_media: Optional[List[VolumetricMedium]] = None,
     ) -> Layer5Result:
-        """
-        Compute optical coverage with volumetric media (Beer-Lambert).
+        """Compute optical coverage with volumetric media (Beer-Lambert).
 
         Uses sequential batch processing (NOT ProcessPoolExecutor).
         Chunks the target grid for memory efficiency, but processes
@@ -457,8 +451,7 @@ class CLIFireAIEngine:
         detector_z_positions: Optional[List[float]] = None,
         ceiling_height_m: float = 6.0,
     ) -> Layer6Result:
-        """
-        Run post-calculation safety audit against IEC/NFPA rules
+        """Run post-calculation safety audit against IEC/NFPA rules
         and jurisdiction-specific requirements.
 
         The audit engine NEVER modifies outputs — only reports violations.
@@ -511,8 +504,7 @@ class CLIFireAIEngine:
         volumetric_media: Optional[List[VolumetricMedium]] = None,
         is_indoor: bool = True,
     ) -> PipelineResult:
-        """
-        Run the complete 5-layer pipeline.
+        """Run the complete 5-layer pipeline.
 
         Each layer's output feeds into the next. Pipeline stops on
         unrecoverable failure but reports partial results.

@@ -1,5 +1,4 @@
-"""
-backend/routers/dwg.py — DWG/DXF file parsing endpoint.
+"""backend/routers/dwg.py — DWG/DXF file parsing endpoint.
 
 Provides a single endpoint for uploading a DWG or DXF file and
 receiving structured parsing results (room count, errors, etc.).
@@ -52,8 +51,7 @@ _AUTH = [Depends(require_permission(Permission.PROJECT_CREATE))]
 @router.post("", dependencies=_AUTH)
 @limiter.limit("10/minute") if _HAS_LIMITER else (lambda f: f)
 async def parse_dwg(request: Request, file: UploadFile = File(...)):  # noqa: B008
-    """
-    Upload a DWG or DXF file for parsing.
+    """Upload a DWG or DXF file for parsing.
 
     Returns structured parsing results including room count, conversion
     time, and any errors/warnings. On validation failure, returns a

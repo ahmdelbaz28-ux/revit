@@ -1,5 +1,4 @@
-"""
-Tests for fireai.core.routing_engine_v10
+"""Tests for fireai.core.routing_engine_v10
 ========================================
 Comprehensive tests covering:
   - ObstacleType enum
@@ -241,12 +240,12 @@ class TestRoutingObstacle:
             RoutingObstacle(obstacle_type="wall", x=0, y=float("-inf"), width=1, height=1)
 
     def test_bounds_property(self):
-        """bounds returns (minx, miny, maxx, maxy)."""
+        """Bounds returns (minx, miny, maxx, maxy)."""
         obs = RoutingObstacle(obstacle_type="wall", x=1.0, y=2.0, width=3.0, height=4.0)
         assert obs.bounds == (1.0, 2.0, 4.0, 6.0)
 
     def test_bounds_zero_size(self):
-        """bounds for a zero-size obstacle."""
+        """Bounds for a zero-size obstacle."""
         obs = RoutingObstacle(obstacle_type="wall", x=5.0, y=5.0, width=0.0, height=0.0)
         assert obs.bounds == (5.0, 5.0, 5.0, 5.0)
 

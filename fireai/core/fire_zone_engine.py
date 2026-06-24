@@ -1,5 +1,4 @@
-"""
-fire_zone_engine.py — NFPA 72 Fire Zone Clustering Engine
+"""fire_zone_engine.py — NFPA 72 Fire Zone Clustering Engine
 =========================================================
 
 Groups rooms into fire alarm zones per NFPA 72 §21.3.3 and
@@ -77,6 +76,7 @@ class ZoneConstraints:
             validation warnings when zone assignments exceed loop capacity.
             (Consultant #7 — concept accepted, threshold corrected: 250 is
             the SLC loop limit, NOT the zone limit. Zone default remains 100.)
+
     """
 
     max_area_sqm: float = 1858.0  # NFPA 72 §21.3.4 limit ≈ 20,000 sq ft = 1,858 sqm
@@ -104,6 +104,7 @@ class FireZone:
         occupancy_types: Set of occupancy types in this zone.
         floor_id: Floor identifier this zone belongs to.
         zone_type: "alarm", "supervisory", or "trouble".
+
     """
 
     zone_id: str
@@ -132,6 +133,7 @@ class ZoneReport:
         total_detectors: Total detectors across all zones.
         warnings: List of advisory warnings.
         unzoned_rooms: Room IDs that couldn't be assigned (overflow).
+
     """
 
     floor_id: str
@@ -203,6 +205,7 @@ class FireZoneEngine:
 
         Returns:
             ZoneReport with zone assignments.
+
         """
         report = ZoneReport(floor_id=floor_id)
 
@@ -325,6 +328,7 @@ class FireZoneEngine:
 
         Returns:
             List of clusters (each cluster is a list of room dicts).
+
         """
         room_map = {r["id"]: r for r in rooms}
         visited: Set[str] = set()
@@ -367,6 +371,7 @@ class FireZoneEngine:
 
         Returns:
             List of clusters (each a list of room dicts).
+
         """
         sorted_rooms = sorted(rooms, key=lambda r: r["area"], reverse=True)
         # Put all rooms in one cluster; constraints will split later
@@ -387,6 +392,7 @@ class FireZoneEngine:
 
         Returns:
             List of FireZone objects.
+
         """
         max_area = self.constraints.max_area_sqm
         max_det = self.constraints.max_detectors_per_zone
@@ -455,6 +461,7 @@ class FireZoneEngine:
 
         Returns:
             Dict mapping room_id -> zone_id (both strings).
+
         """
         zone_map: Dict[str, str] = {}
         for zone in report.zones:

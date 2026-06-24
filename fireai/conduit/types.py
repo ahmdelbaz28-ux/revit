@@ -1,5 +1,4 @@
-"""
-fireai.conduit.types — Type Definitions for Conduit Fitting System
+"""fireai.conduit.types — Type Definitions for Conduit Fitting System
 ===================================================================
 
 All types used throughout the conduit fitting engine.
@@ -36,8 +35,7 @@ E = TypeVar("E")
 
 
 class Result(Generic[T, E]):
-    """
-    Explicit success/failure container.
+    """Explicit success/failure container.
 
     Computation functions NEVER raise; they return Result.
     Callers must check is_ok() before accessing value.
@@ -45,7 +43,7 @@ class Result(Generic[T, E]):
     Inspired by Rust Result<T,E> — adapted for Python 3.12 fire safety systems.
     """
 
-    __slots__ = ("_value", "_error", "_ok")
+    __slots__ = ("_error", "_ok", "_value")
 
     def __init__(self, value: Optional[T], error: Optional[E], ok: bool) -> None:
         self._value = value
@@ -53,12 +51,12 @@ class Result(Generic[T, E]):
         self._ok = ok
 
     @classmethod
-    def ok(cls, value: T) -> "Result[T, E]":
+    def ok(cls, value: T) -> Result[T, E]:
         """Construct a success result."""
         return cls(value=value, error=None, ok=True)
 
     @classmethod
-    def err(cls, error: E) -> "Result[T, E]":
+    def err(cls, error: E) -> Result[T, E]:
         """Construct an error result."""
         return cls(value=None, error=error, ok=False)
 
@@ -101,8 +99,7 @@ class Result(Generic[T, E]):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class ConduitType(enum.Enum):
-    """
-    NEC conduit type designations.
+    """NEC conduit type designations.
 
     EMT      — Electrical Metallic Tubing (NEC Article 358)
                 Thin-wall steel, set-screw or compression fittings.
@@ -120,6 +117,7 @@ class ConduitType(enum.Enum):
                Heaviest-wall steel, threaded fittings.
                Maximum mechanical protection; used in hazardous locations.
     """
+
     EMT        = "EMT"
     UPVC_SCH40 = "UPVC_SCH40"
     UPVC_SCH80 = "UPVC_SCH80"
@@ -134,8 +132,7 @@ class ConduitType(enum.Enum):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TradeSize(enum.Enum):
-    """
-    Nominal conduit trade sizes.
+    """Nominal conduit trade sizes.
 
     These are nominal (marketing) sizes — not actual measurements.
     Actual OD values are defined per conduit type in the catalog.
@@ -143,6 +140,7 @@ class TradeSize(enum.Enum):
     Reference: NEC Chapter 9, Table 4 — Dimensions and Percent Area
                of Conduit and Tubing.
     """
+
     HALF       = "1/2"
     THREE_QTR  = "3/4"
     ONE        = "1"
@@ -159,8 +157,7 @@ class TradeSize(enum.Enum):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class FittingType(enum.Enum):
-    """
-    Conduit fitting types supported by this engine.
+    """Conduit fitting types supported by this engine.
 
     ELBOW_90  — Standard 90° elbow (NEC 358.24 / 352.24 / 344.24)
     ELBOW_45  — 45° elbow (developed length = π × R × 45/180)
@@ -169,6 +166,7 @@ class FittingType(enum.Enum):
     PULL_BOX  — Pull/junction box required when cumulative bend > 360°
                 (NEC 358.26 / 352.26 / 344.26)
     """
+
     ELBOW_90 = "ELBOW_90"
     ELBOW_45 = "ELBOW_45"
     COUPLING = "COUPLING"
@@ -185,8 +183,7 @@ class FittingType(enum.Enum):
 
 @dataclass(frozen=True)
 class Point3D:
-    """
-    Immutable 3D point in the building coordinate system.
+    """Immutable 3D point in the building coordinate system.
 
     All coordinates are in METRES (SI) for consistency with IFC and
     BIM coordinate systems. Conversion to inches is performed at
@@ -199,7 +196,9 @@ class Point3D:
         x: Easting coordinate in metres.
         y: Northing coordinate in metres.
         z: Elevation coordinate in metres (floor level = 0.0).
+
     """
+
     x: float
     y: float
     z: float
@@ -212,7 +211,7 @@ class Point3D:
                     "Non-finite coordinates indicate data corruption."
                 )
 
-    def distance_to(self, other: "Point3D") -> float:
+    def distance_to(self, other: Point3D) -> float:
         """Euclidean distance in metres. Formula: √(Δx²+Δy²+Δz²)."""
         return math.sqrt(
             (self.x - other.x) ** 2
@@ -220,7 +219,7 @@ class Point3D:
             + (self.z - other.z) ** 2
         )
 
-    def manhattan_to(self, other: "Point3D") -> float:
+    def manhattan_to(self, other: Point3D) -> float:
         """Manhattan distance — admissible A* heuristic for orthogonal routing."""
         return abs(self.x - other.x) + abs(self.y - other.y) + abs(self.z - other.z)
 
@@ -234,8 +233,7 @@ class Point3D:
 
 @dataclass(frozen=True)
 class PlacedFitting:
-    """
-    A catalog fitting placed at a specific location in the conduit run.
+    """A catalog fitting placed at a specific location in the conduit run.
 
     Attributes:
         fitting_type:    Type of fitting (ELBOW_90, COUPLING, etc.).
@@ -246,7 +244,9 @@ class PlacedFitting:
         angle_deg:       Bend angle in degrees (90 or 45 for elbows, 0 others).
         developed_length_m: Arc length of bend in metres (0 for straight fittings).
         weight_kg:       Fitting weight in kg (0.0 if not catalogued).
+
     """
+
     fitting_type:       FittingType
     conduit_type:       ConduitType
     trade_size:         TradeSize
@@ -269,8 +269,7 @@ class PlacedFitting:
 
 @dataclass(frozen=True)
 class ConduitSegment:
-    """
-    A straight conduit stick between two points.
+    """A straight conduit stick between two points.
 
     Attributes:
         start:       Start point (metres).
@@ -278,7 +277,9 @@ class ConduitSegment:
         conduit_type: Material type.
         trade_size:  Nominal trade size.
         length_m:    Euclidean length in metres (computed from start/end).
+
     """
+
     start:        Point3D
     end:          Point3D
     conduit_type: ConduitType
@@ -303,8 +304,7 @@ class ConduitSegment:
 
 @dataclass
 class ConduitRun:
-    """
-    A complete conduit run from one pull point to the next.
+    """A complete conduit run from one pull point to the next.
 
     Contains all segments and fittings. The run is bounded by pull points
     (pull boxes or panel knockouts). NEC 358.26/352.26/344.26 limit the
@@ -320,7 +320,9 @@ class ConduitRun:
         total_bend_deg: Cumulative bend degrees (NEC limit: 360°).
         is_compliant:   True if all NEC checks pass.
         violations:     List of NEC violation strings (empty if compliant).
+
     """
+
     run_id:         str
     conduit_type:   ConduitType
     trade_size:     TradeSize
@@ -362,8 +364,7 @@ class ConduitRun:
 
 @dataclass(frozen=True)
 class FillResult:
-    """
-    Result of a NEC Chapter 9, Table 1 conduit fill calculation.
+    """Result of a NEC Chapter 9, Table 1 conduit fill calculation.
 
     Attributes:
         conduit_type:         Conduit material.
@@ -376,7 +377,9 @@ class FillResult:
         is_compliant:         fill_percentage ≤ max_allowed_pct.
         recommended_size:     Next larger trade size if non-compliant, else None.
         nec_reference:        Citation string for this calculation.
+
     """
+
     conduit_type:              ConduitType
     trade_size:                TradeSize
     conductor_count:           int
@@ -402,8 +405,7 @@ class FillResult:
 
 @dataclass(frozen=True)
 class BendResult:
-    """
-    Result of NEC bend radius verification.
+    """Result of NEC bend radius verification.
 
     Attributes:
         conduit_type:        Conduit material.
@@ -415,7 +417,9 @@ class BendResult:
         developed_length_m:  Same in metres.
         is_compliant:        actual_radius_in ≥ min_required_in.
         nec_reference:       Article citation for this conduit type.
+
     """
+
     conduit_type:        ConduitType
     trade_size:          TradeSize
     actual_radius_in:    float
@@ -441,15 +445,16 @@ class BendResult:
 
 @dataclass(frozen=True)
 class RoutePath:
-    """
-    Output of the orthogonal A* pathfinding algorithm.
+    """Output of the orthogonal A* pathfinding algorithm.
 
     Attributes:
         waypoints:        Ordered list of Point3D nodes on the path.
         total_length_m:   Sum of segment lengths in metres.
         bend_count:       Number of direction changes (90° turns).
         elevation_change_m: Absolute vertical displacement.
+
     """
+
     waypoints:          Tuple[Point3D, ...]
     total_length_m:     float
     bend_count:         int

@@ -1,5 +1,4 @@
-"""
-fireai/core/submittal_integrity_gate.py
+"""fireai/core/submittal_integrity_gate.py
 =======================================
 Post-draft SHA-256 hash verification for the DXF compilation pipeline.
 
@@ -43,6 +42,7 @@ Usage:
     if not result.match:
         # REJECT submittal — source was modified
         raise RuntimeError(result.violations[0]["description"])
+
 """
 
 from __future__ import annotations
@@ -99,6 +99,7 @@ class HashRecord:
             computed.
         phase: Pipeline phase — one of "pre_calculation", "post_draft",
             "final_submittal".
+
     """
 
     file_path: str
@@ -117,6 +118,7 @@ class IntegrityCheckResult:
         post_hash: SHA-256 hash computed at verification time.
         match: True if pre_hash == post_hash (file unchanged).
         violations: List of violation dicts if mismatch detected.
+
     """
 
     source_file: str
@@ -171,6 +173,7 @@ class SubmittalIntegrityGate:
         Raises:
             FileNotFoundError: If *file_path* does not exist.
             IOError: If the file cannot be read.
+
         """
         sha256 = hashlib.sha256()
         with open(file_path, "rb") as f:
@@ -204,6 +207,7 @@ class SubmittalIntegrityGate:
         Raises:
             FileNotFoundError: If *file_path* does not exist.
             IOError: If the file cannot be read.
+
         """
         hex_digest = self._compute_sha256(file_path)
         record = HashRecord(
@@ -255,6 +259,7 @@ class SubmittalIntegrityGate:
 
         Raises:
             FileNotFoundError: If *source_file* does not exist.
+
         """
         current_hash = self._compute_sha256(source_file)
         match = current_hash == pre_calculation_hash
@@ -393,6 +398,7 @@ class SubmittalIntegrityGate:
 
         Returns:
             List of :class:`HashRecord` entries in chronological order.
+
         """
         return list(self._hash_records.get(file_path, []))
 

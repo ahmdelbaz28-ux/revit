@@ -232,12 +232,11 @@ class CeilingSpec:
         cls,
         height_at_low_point_m: float,
         height_at_high_point_m: Optional[float] = None,
-        ceiling_type: "CeilingType" = None,
+        ceiling_type: CeilingType = None,
         beam_depth_m: float = 0.0,
         beam_spacing_m: float = 0.0,
-    ) -> "CeilingSpec":
-        """
-        V9: Factory method — clamps height to NFPA range instead of raising.
+    ) -> CeilingSpec:
+        """V9: Factory method — clamps height to NFPA range instead of raising.
         Use this for production code to avoid crashes on unusual building heights.
 
         Heights outside 3.0–18.288m are clamped with a warning logged.
@@ -328,7 +327,7 @@ class RoomSpec:
     ceiling_spec: Optional[CeilingSpec] = None
     detector_type: Optional[DetectorType] = None
     occupancy_type: str = "office"
-    heat_detector_spec: Optional["HeatDetectorSpec"] = None
+    heat_detector_spec: Optional[HeatDetectorSpec] = None
     hvac_duct_list: List[HVACDuct] = field(default_factory=list)
     geometry_unresolved: bool = False  # V111: When True, NFPA analysis MUST be skipped
 
@@ -507,7 +506,7 @@ class RoomSpec:
             self.detector_type = DetectorType.SMOKE
 
     @classmethod
-    def create_validated(cls, **kwargs) -> "RoomSpec":
+    def create_validated(cls, **kwargs) -> RoomSpec:
         """Factory method - ONLY way to create RoomSpec safely"""
         return cls(**kwargs)
 
@@ -537,18 +536,18 @@ class RoomSpec:
         ]
 
     @property
-    def ceiling(self) -> Optional["CeilingSpec"]:
+    def ceiling(self) -> Optional[CeilingSpec]:
         """Get ceiling spec - maps to ceiling_spec for V12 compatibility"""
         return self.ceiling_spec
 
     @property
-    def _hvac_ducts(self) -> List["HVACDuct"]:
+    def _hvac_ducts(self) -> List[HVACDuct]:
         """Get HVAC ducts - alias for V12 compatibility"""
         return self.hvac_duct_list
 
     # V12 compatibility: exposed as hvac_ducts via forward ref in V12
     @property
-    def hvac_ducts(self) -> List["HVACDuct"]:
+    def hvac_ducts(self) -> List[HVACDuct]:
         """Get HVAC ducts - maps to hvac_duct_list for V12 compatibility"""
         return self.hvac_duct_list
 
@@ -626,8 +625,7 @@ class HeatDetectorSpec:
 # ============================================================================
 @dataclass
 class DetectorPlacement:
-    """
-    Individual detector placement
+    """Individual detector placement
     FIXED: 2026-05-14
     - Added ceiling_height_m as explicit parameter
     - Uses get_smoke_detector_radius_safe() for safe fallback
@@ -642,8 +640,7 @@ class DetectorPlacement:
     coverage_radius_m: Optional[float] = None
 
     def __post_init__(self):
-        """
-        Initialize coverage radius with type-appropriate fallback.
+        """Initialize coverage radius with type-appropriate fallback.
         V20.2 FIX: Use detector-type-appropriate default radius.
         Heat detectors use R = 0.7 × 6.1m = 4.27m, NOT the smoke detector
         radius of 6.37m. Using smoke radius for heat detectors overestimates
@@ -728,8 +725,7 @@ class NFPAComplianceResult:
 
 @dataclass
 class FireAlarmPanel:
-    """
-    Fire Alarm Control Panel per NFPA 72 Chapter 21.
+    """Fire Alarm Control Panel per NFPA 72 Chapter 21.
 
     ⚠️ CRITICAL LIMITS:
     - Maximum 250 devices per zone (NFPA 72 21.2.2)
@@ -740,6 +736,7 @@ class FireAlarmPanel:
         panel_id: Unique identifier
         max_devices: Maximum devices (default 250)
         voltage: Operating voltage (default 24V)
+
     """
 
     panel_id: str
@@ -760,8 +757,7 @@ class FireAlarmPanel:
         self.connected_devices.append(device_id)
 
     def check_voltage_drop(self, distance_m: float) -> float:
-        """
-        Calculate voltage drop at distance.
+        """Calculate voltage drop at distance.
 
         DEPRECATED (Issue #12): This simplified formula (0.04V/100m) ignores
         load current and wire gauge. For accurate voltage drop calculations
@@ -818,14 +814,15 @@ Verify all detector placements with local AHJ requirements.
 # HELPER FUNCTIONS - Radius Calculations
 # ============================================================================
 def get_smoke_detector_radius(ceiling_height_m: float) -> float:
-    """
-    Calculate smoke detector coverage radius based on NFPA 72 Table 17.6.3.2.
+    """Calculate smoke detector coverage radius based on NFPA 72 Table 17.6.3.2.
+
     Args:
         ceiling_height_m: Ceiling height in meters
     Returns:
         Coverage radius in meters
     Raises:
         CeilingHeightError: If height is outside NFPA 72 limits
+
     """
     # NFPA 72 Table 17.6.3.2 - Coverage per Ceiling Height
     # Heights in meters (converted from feet)
@@ -874,12 +871,13 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
 
 
 def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
-    """
-    Calculate maximum coverage area (circles can extend to) per NFPA 72.
+    """Calculate maximum coverage area (circles can extend to) per NFPA 72.
+
     Args:
         ceiling_height_m: Ceiling height in meters
     Returns:
         Maximum coverage radius in meters
+
     """
     # Maximum coverage per NFPA 72 Table 17.6.3.2
     MAX_COVERAGE_MAP = {
@@ -901,12 +899,13 @@ def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
 
 
 def validate_ceiling_height(ceiling_height_m: float) -> None:
-    """
-    Validate ceiling height against NFPA 72 limits.
+    """Validate ceiling height against NFPA 72 limits.
+
     Args:
         ceiling_height_m: Ceiling height in meters
     Raises:
         CeilingHeightError: If height is outside limits
+
     """
     # V128 FIX: Use canonical ceiling height limits from fireai.constants.nfpa72
     MIN_HEIGHT = _NFPA_HEIGHT_MIN_M
@@ -928,8 +927,7 @@ def validate_ceiling_height(ceiling_height_m: float) -> None:
 # Principle: More detectors (closer spacing) = safer for fire safety.
 # ============================================================================
 def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: bool = False) -> float:
-    """
-    ⭐ ELITE SOLUTION: Get smoke detector radius with SAFE FALLBACK.
+    """⭐ ELITE SOLUTION: Get smoke detector radius with SAFE FALLBACK.
     This provides CONSERVATIVE values for heights outside NFPA 72 range.
     More detectors (closer spacing) = safer design.
 
@@ -939,6 +937,7 @@ def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: boo
     Args:
         ceiling_height_m: Actual ceiling height in meters
         _return_details: If True, returns (radius, details dict)
+
     Returns:
         float: Coverage radius in meters (conservative)
         tuple: (radius, details) if _return_details=True
@@ -951,6 +950,7 @@ def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: boo
         Input 15.24m -> Output 3.64m (standard, R = 0.7 × 5.20)
         Input 18.288m -> Output 3.64m (standard, R = 0.7 × 5.20)
         Input 20.0m -> Output 3.64m (capped at 18.288m) + flag
+
     """
     # ⚠️ CRITICAL: REJECT invalid heights - DO NOT fallback silently
     if ceiling_height_m <= 0:
@@ -1071,25 +1071,25 @@ def _get_max_internal(h: float) -> float:
 
 # Test exported symbols
 __all__ = [
+    "CeilingHeightError",
+    "CeilingSpec",
+    "CeilingType",
+    "CoverageError",
+    "CoverageGeometry",
+    "CoverageResult",
+    "DetectorPlacement",
     "DetectorType",
     "HeatDetectionMode",
-    "CoverageGeometry",
-    "CeilingType",
+    "HeatDetectorSpec",
     "NFPAComplianceError",
-    "CeilingHeightError",
-    "CoverageError",
-    "SpacingError",
+    "NFPAComplianceResult",
     "RidgeZoneError",
-    "CeilingSpec",
     "RoomSpec",
     "SmokeDetectorSpec",
-    "HeatDetectorSpec",
-    "DetectorPlacement",
-    "CoverageResult",
-    "NFPAComplianceResult",
-    "get_smoke_detector_radius",
-    "get_smoke_detector_radius_safe",  # ⭐ safe fallback — REQUIRED
+    "SpacingError",
     "get_smoke_detector_coverage_max",
     "get_smoke_detector_coverage_max_safe",  # ⭐ safe fallback — REQUIRED
+    "get_smoke_detector_radius",
+    "get_smoke_detector_radius_safe",  # ⭐ safe fallback — REQUIRED
     "validate_ceiling_height",
 ]

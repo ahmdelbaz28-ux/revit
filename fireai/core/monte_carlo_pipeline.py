@@ -1,5 +1,4 @@
-"""
-monte_carlo_pipeline.py — Monte Carlo Integration into Main Pipeline
+"""monte_carlo_pipeline.py — Monte Carlo Integration into Main Pipeline
 ====================================================================
 SURGICAL FIX: Monte Carlo simulation existed in fire-alarm-db/accuracy_engine/
 but was never called from FloorAnalyser, BuildingEngine, or ScenarioEngine.
@@ -34,8 +33,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 @dataclass
 class DetectorFailureModel:
-    """
-    Stochastic failure model for a single detector.
+    """Stochastic failure model for a single detector.
 
     Based on NFPA 72-2022 Section 14 (testing intervals) and
     manufacturer MTBF data.
@@ -52,8 +50,7 @@ class DetectorFailureModel:
 
 
 class DetectorReliabilitySimulator:
-    """
-    SURGICAL FIX: This was in monte_carlo/ but never called from pipeline.
+    """SURGICAL FIX: This was in monte_carlo/ but never called from pipeline.
 
     Computes P(coverage) under random detector failures.
     Uses importance sampling for computational efficiency.
@@ -79,8 +76,7 @@ class DetectorReliabilitySimulator:
         failure_model: Optional[DetectorFailureModel] = None,
         time_horizon_yr: float = 1.0,
     ) -> Dict[str, Any]:
-        """
-        SURGICAL FIX: Run N Monte Carlo trials for detector reliability.
+        """SURGICAL FIX: Run N Monte Carlo trials for detector reliability.
 
         Each trial:
           1. Randomly fail detectors based on annual_failure_rate
@@ -92,6 +88,7 @@ class DetectorReliabilitySimulator:
             worst_coverage_pct, recommended_min_detectors.
 
         NFPA 72-2022 Section 14 / IEC 61508 (safety integrity levels).
+
         """
         if not detectors:
             return self._empty_result()
@@ -185,8 +182,7 @@ class DetectorReliabilitySimulator:
 
 
 class MCPipelineAdapter:
-    """
-    SURGICAL FIX: Connects MonteCarloSimulator to FloorAnalyser pipeline.
+    """SURGICAL FIX: Connects MonteCarloSimulator to FloorAnalyser pipeline.
 
     Previous state: MC existed in accuracy_engine/ isolated module.
     After fix: Called automatically when proof_valid=True in DetectorLayout.
@@ -212,8 +208,7 @@ class MCPipelineAdapter:
         layout: Any,  # DetectorLayout
         room: Any,
     ) -> Dict[str, Any]:
-        """
-        Run MC simulation and attach results to layout.
+        """Run MC simulation and attach results to layout.
 
         If MC shows reliability < threshold, adds warning.
         If MC shows P(full_coverage) < 0.90, sets proof_valid=False.
@@ -265,8 +260,7 @@ class MCPipelineAdapter:
         floor_report: Any,  # FloorReport
         n_trials: int = 1_000,
     ) -> Dict[str, Any]:
-        """
-        SURGICAL FIX: Run MC on all rooms in a floor report.
+        """SURGICAL FIX: Run MC on all rooms in a floor report.
 
         Was never called from FloorAnalyser. Now can be called
         after analyse() to add reliability stats to every room.

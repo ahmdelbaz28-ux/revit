@@ -1,5 +1,4 @@
-"""
-backend/response.py — Unified API response helpers.
+"""backend/response.py — Unified API response helpers.
 
 All API endpoints MUST use these helpers to return consistent response format.
 The frontend expects: {success, data?, error?, message?, timestamp}

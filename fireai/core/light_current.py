@@ -1,5 +1,4 @@
-"""
-fireai.core.light_current — QOMN-FIRE Light Current System Design
+"""fireai.core.light_current — QOMN-FIRE Light Current System Design
 =================================================================
 
 Deterministic engineering calculations for light current systems.
@@ -291,6 +290,7 @@ def validate_horizontal_cable(
 
     Raises:
         ContractViolation: If inputs are invalid (NaN/Inf, negative).
+
     """
     _validate_positive(length_m, "length_m", "TIA-568.2-D")
     _validate_positive(patch_cord_m, "patch_cord_m", "TIA-568.2-D")
@@ -353,6 +353,7 @@ def validate_fiber_link(
 
     Raises:
         ContractViolation: If inputs are invalid (NaN/Inf, negative).
+
     """
     _validate_positive(length_m, "length_m", "TIA-598")
     _validate_finite(attenuation_margin_db, "attenuation_margin_db")
@@ -427,6 +428,7 @@ def calculate_cctv_coverage(
 
     Raises:
         ContractViolation: If inputs are invalid.
+
     """
     _validate_positive(room_length_m, "room_length_m", "IEC 62676")
     _validate_positive(room_width_m, "room_width_m", "IEC 62676")
@@ -510,6 +512,7 @@ def validate_access_control(
 
     Raises:
         ContractViolation: If inputs are invalid.
+
     """
     _validate_finite(reader_height_m, "reader_height_m")
 

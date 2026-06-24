@@ -1,5 +1,4 @@
-"""
-sensor_physics_advisor.py — Advisory Layer for 3D Ceiling/Slope Effects
+"""sensor_physics_advisor.py — Advisory Layer for 3D Ceiling/Slope Effects
 ========================================================================
 
 VERIFICATION-ONLY advisory module. Does NOT modify coverage calculations.
@@ -67,6 +66,7 @@ class SensorAdvisory:
         nfpa_references: List of NFPA 72 section references.
         beam_detector_recommended: True if beam detectors should be considered.
         performance_based_design: True if PE performance-based design required.
+
     """
 
     room_id: str
@@ -145,6 +145,7 @@ class SensorPhysicsAdvisor:
 
         Returns:
             SensorAdvisory with recommendations.
+
         """
         recommendations: List[str] = []
         nfpa_refs: List[str] = []
@@ -249,6 +250,7 @@ class SensorPhysicsAdvisor:
 
         Returns:
             SensorAdvisory with recommendations.
+
         """
         ceiling_h = room_dict.get("ceiling_height", 3.0) or 3.0
         slope = room_dict.get("ceiling_slope_degrees", 0.0) or 0.0

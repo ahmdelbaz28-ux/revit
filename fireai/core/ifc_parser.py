@@ -1,5 +1,4 @@
-"""
-fireai.core.ifc_parser — IFC Building Geometry Extraction
+"""fireai.core.ifc_parser — IFC Building Geometry Extraction
 =========================================================
 
 Reads building geometry from IFC files (ISO 16739) and produces a
@@ -34,10 +33,10 @@ from __future__ import annotations
 import hashlib
 import logging
 import math
+import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Tuple
-import os
 
 log = logging.getLogger(__name__)
 
@@ -105,6 +104,7 @@ class BoundingBox3D:
         is_fire_rated: Whether element has fire rating (affects routing).
         fire_rating_hours: Fire rating in hours (0.0 if not rated).
         ifc_class: Original IFC class name (e.g. 'IfcWallStandardCase').
+
     """
 
     element_id: str
@@ -171,6 +171,7 @@ class SpaceInfo:
         floor_elevation: Floor elevation in meters.
         ceiling_elevation: Ceiling elevation in meters.
         is_fire_zone: Whether this space is a fire zone.
+
     """
 
     space_id: str
@@ -200,6 +201,7 @@ class BuildingModel:
         grid_resolution: Grid cell size in meters (0.1 = 100mm).
         grid_data: Flat 3D occupancy grid (CellState values).
         computation_hash: SHA-256 hash for deterministic verification.
+
     """
 
     building_name: str = ""
@@ -269,6 +271,7 @@ def _classify_ifc_element(ifc_class: str) -> IfcElementType:
 
     Returns:
         IfcElementType enum value.
+
     """
     return _IFC_CLASS_MAP.get(ifc_class, IfcElementType.UNKNOWN)
 
@@ -298,6 +301,7 @@ def _extract_fire_rating(
 
     Returns:
         (is_fire_rated, fire_rating_hours) tuple.
+
     """
     # V96 FIX: Fail-safe defaults depend on element type.
     # Blocking elements default to fire-rated (True, 2.0h) on failure.
@@ -354,6 +358,7 @@ def _compute_world_placement(element) -> Optional[Tuple[float, float, float]]:
 
     Returns:
         (x, y, z) world coordinates, or None if placement cannot be resolved.
+
     """
     try:
         placement = element.ObjectPlacement
@@ -430,6 +435,7 @@ def _extract_extrusion_direction(item) -> Optional[Tuple[float, float, float]]:
 
     Returns:
         (dx, dy, dz) direction vector (not necessarily normalized), or None.
+
     """
     try:
         if hasattr(item, "ExtrudedDirection") and item.ExtrudedDirection is not None:
@@ -461,6 +467,7 @@ def _is_z_axis_direction(dx: float, dy: float, dz: float, tolerance: float = 1e-
 
     Returns:
         True if the direction is along the Z-axis.
+
     """
     # Normalize
     mag = math.sqrt(dx * dx + dy * dy + dz * dz)
@@ -483,6 +490,7 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
 
     Returns:
         BoundingBox3D or None if geometry cannot be extracted.
+
     """
     ifc_class = element.is_a()
     element_type = _classify_ifc_element(ifc_class)
@@ -841,6 +849,7 @@ def parse_ifc_file(file_path: str) -> BuildingModel:
         ImportError: If IfcOpenShell is not installed.
         FileNotFoundError: If the IFC file does not exist.
         ValueError: If the IFC file cannot be parsed.
+
     """
     ifs = _get_ifcopenshell()
     if ifs is None:
@@ -872,6 +881,7 @@ def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
     Raises:
         ImportError: If IfcOpenShell is not installed.
         ValueError: If the content cannot be parsed.
+
     """
     ifs = _get_ifcopenshell()
     if ifs is None:
@@ -902,6 +912,7 @@ def _extract_building_model(ifc_model) -> BuildingModel:
 
     Returns:
         BuildingModel with geometry and grid.
+
     """
     elements = []
     spaces = []
@@ -1031,6 +1042,7 @@ def _build_occupancy_grid(
         - grid_origin: (x, y, z) of grid origin
         - grid_size: (nx, ny, nz) grid dimensions
         - grid_data: bytes of CellState values
+
     """
     if not elements:
         return (0.0, 0.0, 0.0), (0, 0, 0), b""
@@ -1127,6 +1139,7 @@ def build_abstract_model(
 
     Returns:
         BuildingModel with occupancy grid.
+
     """
     grid_origin, grid_size, grid_data = _build_occupancy_grid(obstacles, resolution=resolution)
 
@@ -1159,6 +1172,7 @@ def get_cell_state(
     Returns:
         CellState at the given position. Returns BLOCKED if
         coordinates are outside the grid bounds.
+
     """
     if not model.grid_data or model.grid_size == (0, 0, 0):
         return CellState.BLOCKED
@@ -1201,6 +1215,7 @@ def world_to_grid(
 
     Returns:
         (ix, iy, iz) grid indices.
+
     """
     ox, oy, oz = model.grid_origin
     return (
@@ -1224,6 +1239,7 @@ def grid_to_world(
 
     Returns:
         (x, y, z) world coordinates at cell center.
+
     """
     ox, oy, oz = model.grid_origin
     r = model.grid_resolution

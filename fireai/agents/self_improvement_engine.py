@@ -1,5 +1,4 @@
-"""
-fireai/agents/self_improvement_engine.py — Continuous Improvement Engine
+"""fireai/agents/self_improvement_engine.py — Continuous Improvement Engine
 ==========================================================================
 Ingests feedback from validation results, analyzes performance trends,
 optimizes algorithm parameters via grid search, and tracks improvements
@@ -100,8 +99,7 @@ _GRID_SEARCH_PARAMS = {
 
 
 class SelfImprovementEngine:
-    """
-    Continuous improvement through feedback processing:
+    """Continuous improvement through feedback processing:
     - Feedback ingestion from validation results
     - Performance optimization recommendations
     - Model refinement triggers

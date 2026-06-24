@@ -1,5 +1,4 @@
-"""
-fireai/core/schedule_generator.py
+"""fireai/core/schedule_generator.py
 ===================================
 Cable schedule and compliance report generator.
 
@@ -12,10 +11,11 @@ Integrates with:
   - fireai/core/cable_routing_engine.py (RouteResult, VoltageDropSegment)
   - fireai/core/revit_exporter.py     (ScheduleRow, ReportSummary)
 
-REFERENCES:
+References:
   - System Requirement §4: Output format (schedule + report)
   - NFPA 72 §23.6.2: NAC circuit max length per gauge
   - NEC 760.24(A): 18" (457mm) support spacing
+
 """
 
 from __future__ import annotations
@@ -73,8 +73,7 @@ class ScheduleReport:
 
 
 class ScheduleGenerator:
-    """
-    Generates cable schedules and compliance reports from routing results.
+    """Generates cable schedules and compliance reports from routing results.
 
     Accepts results from either:
       - CableRouter.route_all() → RoutingSchedule
@@ -84,8 +83,7 @@ class ScheduleGenerator:
     """
 
     def from_routing_schedule(self, schedule, ps_voltage: float = 0.0) -> List[ScheduleRow]:
-        """
-        Convert a RoutingSchedule (from CableRouter.route_all) to ScheduleRow list.
+        """Convert a RoutingSchedule (from CableRouter.route_all) to ScheduleRow list.
 
         V113 FIX: Added ps_voltage parameter with fail-safe default of 0.0.
         Previously, this method hardcoded ps_voltage=24.0, which is WRONG for:
@@ -197,8 +195,7 @@ class ScheduleGenerator:
         return rows
 
     def to_csv(self, rows: List[ScheduleRow]) -> str:
-        """
-        Generate CSV cable schedule (system requirement §4).
+        """Generate CSV cable schedule (system requirement §4).
         Columns: Device_ID, From_Location, To_Location, Length, Type, Voltage_Drop
         """
         buf = io.StringIO()
@@ -235,8 +232,7 @@ class ScheduleGenerator:
         return buf.getvalue()
 
     def to_report(self, rows: List[ScheduleRow]) -> ScheduleReport:
-        """
-        Generate compliance summary report (system requirement §4).
+        """Generate compliance summary report (system requirement §4).
         Includes: total cable length, bends, max circuit length.
         """
         if not rows:

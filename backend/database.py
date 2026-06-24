@@ -1,5 +1,4 @@
-"""
-backend/database.py — Lightweight database layer for the Digital Twin API.
+"""backend/database.py — Lightweight database layer for the Digital Twin API.
 
 Supports two backends:
   - SQLite (default) — for single-instance development/deployment
@@ -43,8 +42,7 @@ _USE_POSTGRES = _DATABASE_URL.startswith(("postgres://", "postgresql://"))
 
 
 class Database:
-    """
-    Thread-safe database for the Digital Twin REST API.
+    """Thread-safe database for the Digital Twin REST API.
 
     Supports two backends:
       - SQLite (default) — for single-instance development/deployment
@@ -498,7 +496,7 @@ class Database:
                 ) c ON p.id = c.project_id
                 ORDER BY p.{sort} {order}
                 LIMIT {self._ph()} OFFSET {self._ph()}
-                """,  # noqa: S608 — sort/order whitelisted above
+                """,
                 (limit, offset),
             )
             rows = cur.fetchall()
@@ -542,7 +540,7 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE projects SET {', '.join(set_clauses)} WHERE id = {self._ph()}",  # noqa: S608 — set_clauses built from whitelisted field_map keys
+                f"UPDATE projects SET {', '.join(set_clauses)} WHERE id = {self._ph()}",
                 values,
             )
 
@@ -673,7 +671,7 @@ class Database:
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM devices WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",  # noqa: S608 — sort/order whitelisted above
+                f"SELECT * FROM devices WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -723,7 +721,7 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE devices SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
+                f"UPDATE devices SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 values,
             )
 
@@ -860,7 +858,7 @@ class Database:
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM connections WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",  # noqa: S608 — sort/order whitelisted above
+                f"SELECT * FROM connections WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -894,6 +892,7 @@ class Database:
 
         Returns:
             Updated connection dict, or None if not found.
+
         """
         # First verify the connection exists
         connection = self.get_connection(project_id, connection_id)
@@ -1016,7 +1015,7 @@ class Database:
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM reports WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",  # noqa: S608 — sort/order whitelisted above
+                f"SELECT * FROM reports WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -1056,7 +1055,7 @@ class Database:
         values.extend([report_id, project_id])
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
+                f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 values,
             )
 
@@ -1149,6 +1148,7 @@ class Database:
 
         Returns:
             The row ID of the inserted/updated sync operation.
+
         """
         now = datetime.now(timezone.utc).isoformat()
 

@@ -1,5 +1,4 @@
-"""
-fireai/analytics/predictive_maintenance.py
+"""fireai/analytics/predictive_maintenance.py
 ============================================
 Predictive Maintenance — Asset health scoring and failure prediction
 for fire alarm equipment using Weibull analysis and composite health models.
@@ -8,6 +7,7 @@ References:
   - NFPA 72-2022 §14.4 — Inspection, testing and maintenance
   - IEEE 762-2006 — Reliability data for power equipment
   - IEC 60300-3-11 — Reliability centered maintenance
+
 """
 
 from __future__ import annotations
@@ -122,8 +122,7 @@ class AssetHealth:
 
 
 class PredictiveMaintenance:
-    """
-    Asset health scoring and failure prediction for fire alarm equipment.
+    """Asset health scoring and failure prediction for fire alarm equipment.
 
     Health score is a weighted composite of:
       - age_factor        (0.3) — degradation vs design life
@@ -401,8 +400,7 @@ class PredictiveMaintenance:
     def _fit_weibull(
         self, history: List[MaintenanceEvent]
     ) -> tuple[float, float]:
-        """
-        Fit Weibull parameters using method of moments on time-between-failures.
+        """Fit Weibull parameters using method of moments on time-between-failures.
 
         Falls back to defaults if insufficient data points (< 3).
         """

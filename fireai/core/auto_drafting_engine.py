@@ -1,5 +1,4 @@
-"""
-auto_drafting_engine.py — A* Wall-Aware Auto-Drafting for Fire Alarm Shop Drawings
+"""auto_drafting_engine.py — A* Wall-Aware Auto-Drafting for Fire Alarm Shop Drawings
 ===================================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -191,6 +190,7 @@ class _AStarRouter:
                    key are fire-rated.
             bounds: (min_x, min_y, max_x, max_y) bounding box.
             resolution: Grid cell size in metres.
+
         """
         self._resolution = resolution
         self._bounds = bounds
@@ -277,6 +277,7 @@ class _AStarRouter:
 
         Returns:
             List of (x, y) waypoints in metres. Empty if no path found.
+
         """
         start_g = self._world_to_grid(*start)
         end_g = self._world_to_grid(*end)
@@ -390,6 +391,7 @@ class WallSegment:
         end: (x, y) end point in metres.
         fire_rating: Fire rating in minutes (0 = non-rated, 60, 90, 120).
         wall_type: Description (e.g., "concrete", "gypsum").
+
     """
 
     start: Tuple[float, float]
@@ -409,6 +411,7 @@ class DraftingDevice:
         floor_id: Floor identifier.
         zone_id: Fire zone identifier.
         address: Device address on the SLC loop.
+
     """
 
     device_id: str
@@ -431,6 +434,7 @@ class FirestoppingCallout:
         wall_fire_rating: Fire rating of the wall being penetrated.
         cable_type: Type of cable penetrating (FPL, FPLR, FPLP, CI).
         nfpa_reference: IBC §714 reference.
+
     """
 
     position: Tuple[float, float]
@@ -455,6 +459,7 @@ class PlenumZone:
         plenum_height_m: Clear height of the plenum space (m).
         collision_zones: List of (x, y, width, height) obstacles within plenum.
         requires_fplp: Whether FPLP cable is required (always True for plenum).
+
     """
 
     zone_id: str
@@ -482,6 +487,7 @@ class SurvivabilityRouteConstraint:
         must_avoid_plenum:   If True, route must avoid plenum spaces
                              (CI cable cannot simply run in plenum without
                              rated enclosure at Level 3).
+
     """
 
     route_id: str
@@ -504,6 +510,7 @@ class DraftingResult:
         class_a_routes: Number of Class A return paths.
         warnings: Non-blocking issues.
         errors: Blocking issues.
+
     """
 
     output_path: str
@@ -535,6 +542,7 @@ class AutoDraftingEngine:
         devices: List of device dicts or DraftingDevice objects.
         project_info: Project metadata (name, number, etc.).
         class_a: Whether to generate Class A return paths.
+
     """
 
     def __init__(
@@ -635,6 +643,7 @@ class AutoDraftingEngine:
 
         Returns:
             List of (x, y) waypoints. Empty if no path found.
+
         """
         router = self._init_router()
         return router.find_path(start, end)
@@ -654,6 +663,7 @@ class AutoDraftingEngine:
 
         Returns:
             Waypoints of the return path, offset by >=1 m.
+
         """
         if not outgoing_path:
             return []
@@ -705,6 +715,7 @@ class AutoDraftingEngine:
 
         Returns:
             List of FirestoppingCallout at penetration points.
+
         """
         router = self._init_router()
         callouts = []
@@ -769,6 +780,7 @@ class AutoDraftingEngine:
                 - "obstacle": (x, y, w, h) collision zone bounds
                 - "requires_fplp": True (plenum always requires FPLP)
                 - "warning": Advisory message
+
         """
         collisions = []
 
@@ -826,6 +838,7 @@ class AutoDraftingEngine:
 
         Returns:
             Tuple of (possibly modified path, list of warning strings).
+
         """
         warnings = []
 
@@ -890,6 +903,7 @@ class AutoDraftingEngine:
 
         Returns:
             DraftingResult with generation statistics.
+
         """
         if not HAS_EZDXF:
             return DraftingResult(
@@ -1132,14 +1146,14 @@ class AutoDraftingEngine:
 
 
 __all__ = [
-    "CLASS_A_MIN_SEPARATION_M",
     "A_STAR_GRID_RESOLUTION_M",
-    "DEVICE_TYPE_TO_BLOCK",
     "BLOCK_DEFINITIONS",
     "CAD_LAYERS",
-    "WallSegment",
-    "DraftingDevice",
-    "FirestoppingCallout",
-    "DraftingResult",
+    "CLASS_A_MIN_SEPARATION_M",
+    "DEVICE_TYPE_TO_BLOCK",
     "AutoDraftingEngine",
+    "DraftingDevice",
+    "DraftingResult",
+    "FirestoppingCallout",
+    "WallSegment",
 ]

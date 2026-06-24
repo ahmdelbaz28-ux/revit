@@ -148,8 +148,7 @@ def _predict_strategy_order(width: float, length: float) -> list[str]:
         if length > width:
             # Long room — prefer y-aligned hex
             return ["hexG_y", "hexA_y", "hexG_x", "hexA_x", "rect"]
-        else:
-            return ["hexG_x", "hexA_x", "hexG_y", "hexA_y", "rect"]
+        return ["hexG_x", "hexA_x", "hexG_y", "hexA_y", "rect"]
 
     # Near-square: hex-guarded is the safe default, rect as second
     return ["hexG_x", "hexG_y", "rect", "hexA_x", "hexA_y"]
@@ -246,6 +245,7 @@ class DensityOptimizer:
 
         PDF Phase 3: "The density optimizer must be refactored to include a
         formal termination condition — max iteration counter + epsilon tolerance."
+
         """
         self.max_spacing = max_spacing
         self.wm = wall_min
@@ -280,6 +280,7 @@ class DensityOptimizer:
 
         Returns:
             DetectorLayout with positions, coverage, and compliance info.
+
         """
         # ── Convergence guards (PDF Phase 3 requirement) ──
         self._start_time = time.monotonic()
@@ -389,8 +390,7 @@ class DensityOptimizer:
     # ── A: Hex-Guarded ──────────────────────────────────────────────────────────
 
     def _calculate_rows(self, L: float) -> list[float]:
-        """
-        Returns y-coordinates of rows.
+        """Returns y-coordinates of rows.
         - First and last rows are within R_place of the walls.
         - Inner rows are evenly spaced such that gap <= Ry.
 
@@ -424,8 +424,7 @@ class DensityOptimizer:
         return [round(y, 3) for y in rows]
 
     def _distribute_rows(self, L: float, n_rows: int) -> list[float]:
-        """
-        Evenly distribute row centers in [wm, L-wm].
+        """Evenly distribute row centers in [wm, L-wm].
         Guarantees wall distance <= S/2 for first and last rows.
         """
         if n_rows == 1:
@@ -435,8 +434,7 @@ class DensityOptimizer:
         return [self.wm + i * gap for i in range(n_rows)]
 
     def _calculate_columns(self, W: float) -> tuple[int, float]:
-        """
-        Returns (n_cols, step_x) for horizontal placement.
+        """Returns (n_cols, step_x) for horizontal placement.
         Guarantees step_x <= max_spacing.
 
         V7.4: Uses R_place instead of R to align with verification.
@@ -501,8 +499,7 @@ class DensityOptimizer:
     # ── B: Hex-Adaptive ──────────────────────────────────────────────────────────
 
     def _hex_adaptive(self, room: Room, along_x: bool) -> DetectorLayout:
-        """
-        Uses calculated row distribution for NFPA compliance.
+        """Uses calculated row distribution for NFPA compliance.
 
         V7.4: Uses R_place instead of R for placement decisions.
         """
@@ -1267,8 +1264,7 @@ class DensityOptimizer:
                 violations.append(f"{wall_name} wall gap: [{gap_start:.3f}, {gap_end:.3f}]")
 
     def _verify_vectorized(self, layout: DetectorLayout) -> None:
-        """
-        Vectorised coverage verification using NumPy.
+        """Vectorised coverage verification using NumPy.
         Same logic as _verify, but O(n*k) with broadcasting for speed.
         Falls back silently to _verify if NumPy is unavailable.
         """
@@ -1329,6 +1325,7 @@ class DensityOptimizer:
         Args:
             room: Room object.
             coverage_radius: Coverage radius in meters (default DETECTOR_RADIUS = 6.40m).
+
         """
         return max(1, math.ceil(room.width * room.length / (math.pi * coverage_radius**2)))
 

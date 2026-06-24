@@ -1,5 +1,4 @@
-"""
-fireai.core.contracts_validation — Input Contract Validation
+"""fireai.core.contracts_validation — Input Contract Validation
 =============================================================
 
 Validates room input payloads BEFORE they enter the pipeline.
@@ -166,6 +165,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     Raises:
         ContractViolation: On any fatal input contract violation.
+
     """
     if not isinstance(payload, dict):
         raise ContractViolation(
@@ -364,6 +364,7 @@ def validate_voltage(value_v: float, field_name: str = "voltage") -> float:
 
     Raises:
         ContractViolation: If voltage is out of range or not finite.
+
     """
     if not isinstance(value_v, (int, float)) or not math.isfinite(value_v):
         raise ContractViolation(
@@ -410,6 +411,7 @@ def validate_current(value_a: float, field_name: str = "current") -> float:
 
     Raises:
         ContractViolation: If current is out of range or not finite.
+
     """
     if not isinstance(value_a, (int, float)) or not math.isfinite(value_a):
         raise ContractViolation(
@@ -451,6 +453,7 @@ def validate_temperature(value_c: float, field_name: str = "temperature") -> flo
 
     Raises:
         ContractViolation: If temperature is out of range or not finite.
+
     """
     if not isinstance(value_c, (int, float)) or not math.isfinite(value_c):
         raise ContractViolation(
@@ -498,6 +501,7 @@ def validate_battery_params(
 
     Raises:
         ContractViolation: If any parameter is out of bounds.
+
     """
     errors = []
 

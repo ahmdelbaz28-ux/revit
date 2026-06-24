@@ -1,5 +1,4 @@
-"""
-fireai.conduit.bend — NEC Bend Radius Verifier
+"""fireai.conduit.bend — NEC Bend Radius Verifier
 ===============================================
 
 Verifies that conduit bend radii meet NEC minimums and computes
@@ -51,9 +50,8 @@ from fireai.conduit.types import (
 def _min_bend_radius_in(
     conduit_type: ConduitType,
     trade_size: TradeSize,
-) -> "Result[float, PhysicsError]":
-    """
-    Return NEC minimum bend radius in inches from the fitting catalog.
+) -> Result[float, PhysicsError]:
+    """Return NEC minimum bend radius in inches from the fitting catalog.
 
     The catalog stores the STANDARD 90° elbow bend radius, which equals
     the NEC minimum for field bends. This avoids a second lookup table
@@ -108,9 +106,8 @@ def verify_bend_radius(
     trade_size: TradeSize,
     actual_radius_in: float,
     angle_deg: float = 90.0,
-) -> "Result[BendResult, PhysicsError | CodeViolationError]":
-    """
-    Verify a field bend meets NEC minimum radius and compute arc length.
+) -> Result[BendResult, PhysicsError | CodeViolationError]:
+    """Verify a field bend meets NEC minimum radius and compute arc length.
 
     FORMULA (NEC + geometry):
       developed_length_in = π × R × angle_deg / 180
@@ -132,6 +129,7 @@ def verify_bend_radius(
         Result.err(CodeViolationError) — conduit type not in catalog.
 
     Reference: NEC 358.24 / 352.24 / 344.24.
+
     """
     # ── Input validation ─────────────────────────────────────────────────────
 
@@ -219,9 +217,8 @@ def verify_bend_radius(
 def calculate_developed_length(
     bend_radius_in: float,
     angle_deg: float,
-) -> "Result[float, PhysicsError]":
-    """
-    Compute bend arc length in inches.
+) -> Result[float, PhysicsError]:
+    """Compute bend arc length in inches.
 
     FORMULA: L = π × R × angle / 180
     This is the CORRECT arc formula. Never use chord (2R sin θ/2) for
@@ -236,6 +233,7 @@ def calculate_developed_length(
         Result.err(PhysicsError) — non-finite or non-positive inputs.
 
     Reference: Geometry — arc length formula s = Rθ (θ in radians).
+
     """
     if not math.isfinite(bend_radius_in) or bend_radius_in <= 0.0:
         return Result.err(PhysicsError(
@@ -254,9 +252,8 @@ def calculate_developed_length(
 def verify_cumulative_bends(
     conduit_type: ConduitType,
     bend_angles_deg: list[float],
-) -> "Result[float, CodeViolationError]":
-    """
-    Verify total bend degrees between pull points ≤ 360°.
+) -> Result[float, CodeViolationError]:
+    """Verify total bend degrees between pull points ≤ 360°.
 
     NEC 358.26 / 352.26 / 344.26: "There shall not be more than the
     equivalent of four quarter bends (360° total) between pull points,
@@ -271,6 +268,7 @@ def verify_cumulative_bends(
         Result.err(CodeViolationError) — total > 360°.
 
     Reference: NEC 358.26 / 352.26 / 344.26.
+
     """
     total = sum(bend_angles_deg)
     if total > MAX_CUMULATIVE_BEND_DEG:

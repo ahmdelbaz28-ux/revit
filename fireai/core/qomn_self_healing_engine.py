@@ -94,6 +94,7 @@ class SecurityError(Exception):
     Used by audit subsystem to reject operations that would compromise
     audit log integrity (e.g., missing HMAC key in production).
     """
+
     pass
 
 
@@ -106,6 +107,7 @@ class ErrorSeverity(Enum):
 
     V2.0 FEATURE (from consultant): Enables severity-aware circuit breaking.
     """
+
     TRANSIENT = 1
     DEGRADED = 3
     CRITICAL = 5
@@ -126,6 +128,7 @@ class SystemStatus:
     V53 FIX (BUG 3): Status values are constrained to prevent invalid strings.
     V2.0 EXTENSION: Added HALF_OPEN and DEGRADED for weighted CB + half-open.
     """
+
     NOMINAL: StatusType = "NOMINAL"
     HEALED: StatusType = "HEALED"
     CRITICAL_CIRCUIT_OPEN: StatusType = "CRITICAL_CIRCUIT_OPEN"
@@ -145,14 +148,14 @@ VALID_STATUSES = (
 
 @dataclass(frozen=True)
 class SafetyResult:
-    """
-    An immutable, type-safe representation of safety-critical output values.
+    """An immutable, type-safe representation of safety-critical output values.
     Every healed result is explicitly marked with its healing classification.
 
     V53 FIX (BUG 3): status validated at construction time to prevent
     invalid status strings like "FAKE_NOMINAL" from being created.
     V2.0 EXTENSION: Added audit_ref for HMAC traceability.
     """
+
     value: Any
     status: StatusType
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -185,6 +188,7 @@ class SafetyResult:
 
 class PhysicsGuardViolation(Exception):
     """Raised when a healed value violates hard physical/engineering bounds."""
+
     pass
 
 
@@ -197,6 +201,7 @@ class SafetyCriticalFailure(Exception):
 
     V2.0 FEATURE (from consultant).
     """
+
     pass
 
 
@@ -208,6 +213,7 @@ class LLMUnavailableError(Exception):
 
     V2.0 FEATURE (from consultant).
     """
+
     pass
 
 
@@ -216,14 +222,14 @@ class LLMUnavailableError(Exception):
 # =====================================================================
 
 class Config:
-    """
-    Environment-variable-backed configuration for the self-healing engine.
+    """Environment-variable-backed configuration for the self-healing engine.
 
     All parameters can be overridden via environment variables, enabling
     deployment-specific tuning without code changes.
 
     V2.0 FEATURE (from consultant): Centralized configuration with env-var overrides.
     """
+
     @staticmethod
     def _safe_float(env_var: str, default: float, min_val: float = 0.0) -> float:
         """V71 FIX: Parse float from env var with validation. Falls back to
@@ -348,8 +354,7 @@ ERROR_WEIGHTS: Dict[str, ErrorSeverity] = {
 # =====================================================================
 
 class AsyncAuditLogger:
-    """
-    Thread-safe, append-only JSON Lines logger with HMAC-SHA256 signatures,
+    """Thread-safe, append-only JSON Lines logger with HMAC-SHA256 signatures,
     file rotation, and batch statistics.
 
     SAFETY DESIGN DECISION: Despite the name "Async", log_event() writes
@@ -370,6 +375,7 @@ class AsyncAuditLogger:
     V2.0 FEATURE (from consultant): File rotation + batch statistics.
     V76 FIX (HIGH): Hash chain for tamper detection (deletion detection).
     """
+
     def __init__(
         self,
         filepath: str = "qomn_fire_healing_audit.jsonl",
@@ -482,8 +488,7 @@ class AsyncAuditLogger:
             logging.warning(f"[AUDIT ROTATION FAILED] {e}. Continuing without rotation.")
 
     def log_event(self, event_data: Dict[str, Any]) -> bool:
-        """
-        Serializes, signs, and appends the healing event to the audit ledger.
+        """Serializes, signs, and appends the healing event to the audit ledger.
         Returns True if logging succeeded, False if it failed (I/O error).
 
         V53 FIX (BUG 7): Catches OSError to prevent crash on I/O failure.
@@ -594,7 +599,7 @@ class AsyncAuditLogger:
         expected_hash = "0" * 64  # Genesis
 
         try:
-            with open(target, "r", encoding="utf-8") as f:
+            with open(target, encoding="utf-8") as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     if not line:
@@ -654,8 +659,7 @@ AuditLogger = AsyncAuditLogger
 # =====================================================================
 
 class LruCache:
-    """
-    Thread-safe storage of Last Known Good (LKG) values for critical systems.
+    """Thread-safe storage of Last Known Good (LKG) values for critical systems.
     Reference: ISO/IEC 15408 fallback recovery patterns.
 
     V53 FIX (BUG 1): Now uses OrderedDict with move_to_end() for TRUE LRU eviction.
@@ -664,6 +668,7 @@ class LruCache:
     V58 FIX (BUG #11): update() deep-copies value on insert to prevent caller
     from corrupting cached data.
     """
+
     def __init__(self, maxsize: int = 128):
         self.maxsize = maxsize
         # V53 FIX (BUG 1): OrderedDict preserves insertion order and supports move_to_end
@@ -692,8 +697,7 @@ class LruCache:
             self.cache[key] = copy.deepcopy(value)  # V58 FIX: deep copy on insert
 
     def get(self, key: str) -> Optional[Any]:
-        """
-        Retrieve a cached value, marking it as most-recently-used.
+        """Retrieve a cached value, marking it as most-recently-used.
         V53 FIX (BUG 6): Returns a deep copy to prevent caller from corrupting cache.
         V53 FIX (BUG 1): Moves accessed key to end (most recently used position).
         """
@@ -724,8 +728,7 @@ class LruCache:
 # =====================================================================
 
 class WeightedCircuitBreaker:
-    """
-    Thread-safe weighted circuit breaker with O(1) deque and half-open recovery.
+    """Thread-safe weighted circuit breaker with O(1) deque and half-open recovery.
 
     V2.0 FEATURES (from consultant):
     - Weighted scoring: errors contribute severity-based weight to the threshold,
@@ -740,6 +743,7 @@ class WeightedCircuitBreaker:
     - V53 FIX (BUG 9): health() method for proactive monitoring.
     - V58 FIX (BUG #6): check_and_cooldown() acquires lock ONCE.
     """
+
     # State constants (string values for backward compatibility)
     CLOSED = "CLOSED"
     OPEN = "OPEN"
@@ -776,8 +780,7 @@ class WeightedCircuitBreaker:
         return sum(weight for _, weight in self._events)
 
     def register_healing_event(self, error_type: str = "default") -> bool:
-        """
-        Registers a healing incident with severity-weighted scoring.
+        """Registers a healing incident with severity-weighted scoring.
         Returns True if the circuit breaker remains CLOSED, False if it TRIPS (OPENS).
 
         Error severity is looked up from ERROR_WEIGHTS. Critical errors
@@ -808,8 +811,7 @@ class WeightedCircuitBreaker:
             return True
 
     def record_success(self) -> None:
-        """
-        Record a successful operation. In HALF_OPEN state, consecutive successes
+        """Record a successful operation. In HALF_OPEN state, consecutive successes
         transition the breaker back to CLOSED after half_open_max successes.
 
         This is called ONLY when the wrapped function completes WITHOUT
@@ -830,8 +832,7 @@ class WeightedCircuitBreaker:
                     )
 
     def record_probe_failure(self) -> None:
-        """
-        Record a probe failure in HALF_OPEN state, transitioning back to OPEN.
+        """Record a probe failure in HALF_OPEN state, transitioning back to OPEN.
 
         In a safety-critical system, a "healed" call does NOT count as a
         success for half-open recovery. The circuit breaker is testing whether
@@ -850,16 +851,14 @@ class WeightedCircuitBreaker:
                 )
 
     def is_open(self) -> bool:
-        """
-        Pure query: checks if circuit breaker is currently OPEN.
+        """Pure query: checks if circuit breaker is currently OPEN.
         V53 FIX (BUG 2): This method does not mutate state. Use try_cooldown() for that.
         """
         with self.lock:
             return self.state == self.OPEN
 
     def try_cooldown(self) -> bool:
-        """
-        Attempts auto-cooldown if the cooldown period has elapsed.
+        """Attempts auto-cooldown if the cooldown period has elapsed.
         Returns True if the breaker transitioned from OPEN to HALF_OPEN.
         V53 FIX (BUG 2): Separated from is_open() for Command-Query Separation.
         V2.0 EXTENSION: Cooldown transitions to HALF_OPEN (not CLOSED directly).
@@ -877,8 +876,7 @@ class WeightedCircuitBreaker:
             return False
 
     def check_and_cooldown(self) -> Tuple[bool, str]:
-        """
-        Combined check: returns (is_fully_open, state_at_check) tuple.
+        """Combined check: returns (is_fully_open, state_at_check) tuple.
 
         V58 FIX (BUG #6): Acquires lock ONCE instead of twice. The original
         code called try_cooldown() then is_open(), which released and
@@ -902,6 +900,7 @@ class WeightedCircuitBreaker:
             (True, state)  -- breaker is fully OPEN, caller should use Tier 3 fallback
             (False, state) -- breaker is CLOSED or HALF_OPEN, caller may proceed
             state is the state at the moment of the atomic check
+
         """
         with self.lock:
             if self.state == self.OPEN:
@@ -913,13 +912,12 @@ class WeightedCircuitBreaker:
                     )
                     return (False, self.HALF_OPEN)  # just cooled down to HALF_OPEN
                 return (True, self.OPEN)  # still OPEN
-            elif self.state == self.HALF_OPEN:
+            if self.state == self.HALF_OPEN:
                 return (False, self.HALF_OPEN)  # HALF_OPEN, allow probe
             return (False, self.CLOSED)  # CLOSED
 
     def is_half_open_and_available(self) -> bool:
-        """
-        Check if the breaker is in HALF_OPEN state and has probe capacity.
+        """Check if the breaker is in HALF_OPEN state and has probe capacity.
         Returns True if a probe request can be allowed through.
         """
         with self.lock:
@@ -929,8 +927,7 @@ class WeightedCircuitBreaker:
             )
 
     def health(self) -> Dict[str, Any]:
-        """
-        V53 FIX (BUG 9): Returns health metrics for proactive monitoring.
+        """V53 FIX (BUG 9): Returns health metrics for proactive monitoring.
         Allows operators to detect approaching threshold before breaker trips.
         V2.0 EXTENSION: Includes weighted metrics and half-open status.
         """
@@ -973,8 +970,7 @@ CircuitBreaker = WeightedCircuitBreaker
 # =====================================================================
 
 class LLMCircuitBreaker:
-    """
-    Rate limiter for local Ollama LLM calls.
+    """Rate limiter for local Ollama LLM calls.
 
     Prevents overwhelming the LLM service with too many requests.
     Uses a sliding window counter to enforce max requests per second.
@@ -982,6 +978,7 @@ class LLMCircuitBreaker:
     V2.0 FEATURE (from consultant): Essential for preventing Ollama overload.
     Without rate limiting, every error triggers an LLM call with no throttle.
     """
+
     def __init__(self, max_rps: float = 5.0, timeout: float = 2.0):
         self.max_rps = max_rps
         self.timeout = timeout
@@ -989,8 +986,7 @@ class LLMCircuitBreaker:
         self.lock = threading.Lock()
 
     def allow_request(self) -> bool:
-        """
-        Check if an LLM request is allowed within the rate limit.
+        """Check if an LLM request is allowed within the rate limit.
         Returns True if the request is allowed, False if rate limited.
 
         V74 FIX: Only consumes a rate limit slot when the request is actually
@@ -1012,8 +1008,7 @@ class LLMCircuitBreaker:
             return False
 
     def peek(self) -> bool:
-        """
-        V74 FIX: Pure query -- check if a request WOULD be allowed without
+        """V74 FIX: Pure query -- check if a request WOULD be allowed without
         consuming a rate limit slot. This allows callers to check
         availability without side effects.
         """
@@ -1109,8 +1104,7 @@ def self_healing(
     physics_validator: Optional[Callable[[Any], bool]] = None,
     force_mock_ollama: bool = False
 ):
-    """
-    Self-healing decorator enforcing three tiers of system healing.
+    """Self-healing decorator enforcing three tiers of system healing.
 
     V2.0 EXTENSIONS:
     - Weighted circuit breaker: errors contribute severity-based weight
@@ -1367,7 +1361,7 @@ def self_healing(
                 if isinstance(e, SafetyCriticalFailure):
                     logging.critical(
                         f"[SAFETY CRITICAL FAILURE] {func_name} raised "
-                        f"SafetyCriticalFailure: {str(e)}. "
+                        f"SafetyCriticalFailure: {e!s}. "
                         f"This exception type is NON-HEALABLE by design. "
                         f"Re-raising immediately. System requires immediate attention."
                     )
@@ -1652,8 +1646,7 @@ def query_local_ollama_engine(
     default_fallback: Any,
     timeout: float = 2.0,
 ) -> Any:
-    """
-    Connects to the local Ollama instance (llama3) to generate a patch.
+    """Connects to the local Ollama instance (llama3) to generate a patch.
     This process is contained locally and does not leak telemetry data externally.
 
     V58 FIX (BUG #12): NaN/Inf detection uses math module, not fragile string comparison.
@@ -1682,7 +1675,7 @@ def query_local_ollama_engine(
     }
 
     req_body = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(  # noqa: S310 -- URL is localhost API endpoint, not user-supplied
+    req = urllib.request.Request(
         url,
         data=req_body,
         headers={"Content-Type": "application/json"},
@@ -1691,7 +1684,7 @@ def query_local_ollama_engine(
 
     try:
         # Enforce strict timeout to prevent stalling the safety thread
-        with urllib.request.urlopen(req, timeout=timeout) as response:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=timeout) as response:
             res_body = response.read().decode("utf-8")
             res_json = json.loads(res_body)
             llm_text = res_json.get("response", "{}")
@@ -1714,7 +1707,7 @@ def query_local_ollama_engine(
     except (urllib.error.URLError, json.JSONDecodeError, TimeoutError) as e:
         # Local Ollama offline, timeouts, or invalid JSON response falls back to mock validation
         logging.warning(
-            f"[LOCAL OLLAMA UNREACHABLE/TIMEOUT] Reason: {str(e)}. "
+            f"[LOCAL OLLAMA UNREACHABLE/TIMEOUT] Reason: {e!s}. "
             f"Failing-over to local safe boundary validation logic."
         )
         return default_fallback
@@ -1750,8 +1743,7 @@ def validate_sprinkler_pressure(val: Any) -> bool:
 
 @self_healing(safe_minimum=7.0, default_value=7.0, physics_validator=validate_sprinkler_pressure)
 def calculate_sprinkler_pressure(flow_gpm: float, k_factor: float) -> float:
-    """
-    Computes required operating pressure: P = (Q / K)^2
+    """Computes required operating pressure: P = (Q / K)^2
     Citing: NFPA 13 Section 23.4.4
     """
     if k_factor == 0.0:
@@ -1771,8 +1763,7 @@ def validate_sequence_block(val: Any) -> bool:
     force_mock_ollama=True  # Demonstrates Tier 2 fallback processing
 )
 def fetch_emergency_audio_sequence(sequence_list: List[str], index: int) -> str:
-    """
-    Fetches scheduled audio tone file.
+    """Fetches scheduled audio tone file.
     Citing: NFPA 72 Section 18.4
     """
     if index >= len(sequence_list):
@@ -1781,8 +1772,7 @@ def fetch_emergency_audio_sequence(sequence_list: List[str], index: int) -> str:
 
 
 def demonstrate_and_verify_all_tiers():
-    """
-    Demonstrates active runtime healing across all tiers, logging actions in the ledger.
+    """Demonstrates active runtime healing across all tiers, logging actions in the ledger.
     """
     print("\n" + "=" * 70)
     print("RUNNING QOMN-FIRE SELF-HEALING SYSTEM V2.0 (MERGED)")
@@ -1823,7 +1813,7 @@ def demonstrate_and_verify_all_tiers():
         if res.status == SystemStatus.CRITICAL_CIRCUIT_OPEN:
             print(f"Cycle {cycle:02d}: Circuit Breaker OPENED! Fallback value: {res.value}")
             break
-        elif res.status == SystemStatus.DEGRADED:
+        if res.status == SystemStatus.DEGRADED:
             print(f"Cycle {cycle:02d}: DEGRADED (half-open probe). Value: {res.value}")
         else:
             print(

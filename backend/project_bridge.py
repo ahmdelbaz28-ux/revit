@@ -1,5 +1,4 @@
-"""
-backend/project_bridge.py — Cross-database project & device synchronization bridge.
+"""backend/project_bridge.py — Cross-database project & device synchronization bridge.
 
 Ensures that project creation, update, and deletion in System A
 (digital_twin.db) is reflected in System B (udm_elements.db).
@@ -491,7 +490,7 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str
                         current_props["rotation"] = safe_property_updates["rotation"]
                     if "category" in safe_property_updates:
                         current_props["device_category"] = safe_property_updates["category"]
-                    if "properties" in safe_property_updates and safe_property_updates["properties"]:
+                    if safe_property_updates.get("properties"):
                         current_props.update(safe_property_updates["properties"])
                     set_clauses.append("properties = ?")
                     values.append(json.dumps(current_props))

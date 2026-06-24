@@ -1,5 +1,4 @@
-"""
-backend/services/memory_service.py — Mem0-based Memory Layer for FireAI (V76).
+"""backend/services/memory_service.py — Mem0-based Memory Layer for FireAI (V76).
 
 PROFESSIONAL NOTE:
   This module provides a long-term memory layer for the FireAI platform,
@@ -105,6 +104,7 @@ Focus on extracting and storing fire protection engineering information:
 
 class MemoryScope(str, Enum):
     """Memory scoping levels — determines the context boundary of stored memories."""
+
     USER = "user"          # Engineer's personal preferences and patterns
     PROJECT = "project"    # Project-specific context (run_id)
     AGENT = "agent"        # FireAI agent's learned procedures
@@ -113,6 +113,7 @@ class MemoryScope(str, Enum):
 
 class MemoryCategory(str, Enum):
     """Categories of memories for structured storage and retrieval."""
+
     LAYOUT = "layout"                    # Building layouts and detector placements
     PREFERENCE = "preference"            # User preferences (standards, manufacturers)
     CALCULATION = "calculation"          # Calculation patterns and results
@@ -125,6 +126,7 @@ class MemoryCategory(str, Enum):
 
 class MemoryAddRequest(BaseModel):
     """Request model for adding a memory."""
+
     messages: Any = Field(
         ...,
         description="Message(s) to extract memories from. Can be a string or list of message dicts."
@@ -144,6 +146,7 @@ class MemoryAddRequest(BaseModel):
 
 class MemorySearchRequest(BaseModel):
     """Request model for searching memories."""
+
     query: str = Field(..., description="Search query")
     user_id: Optional[str] = Field(None, description="Filter by engineer/user")
     agent_id: Optional[str] = Field(None, description="Filter by agent")
@@ -154,6 +157,7 @@ class MemorySearchRequest(BaseModel):
 
 class MemoryResult(BaseModel):
     """Single memory result."""
+
     id: str
     memory: str
     score: Optional[float] = None
@@ -165,6 +169,7 @@ class MemoryResult(BaseModel):
 
 class MemorySearchResponse(BaseModel):
     """Response model for memory search."""
+
     results: List[MemoryResult]
     query: str
     total: int
@@ -178,6 +183,7 @@ class MemorySearchResponse(BaseModel):
 
 class MemoryServiceStatus(BaseModel):
     """Status of the memory service."""
+
     initialized: bool = False
     provider: str = "unknown"
     vector_store: str = "unknown"
@@ -190,8 +196,7 @@ class MemoryServiceStatus(BaseModel):
 # ── Memory Service ─────────────────────────────────────────────────────────────
 
 class MemoryService:
-    """
-    FireAI Memory Service — Long-term memory layer for engineering context.
+    """FireAI Memory Service — Long-term memory layer for engineering context.
 
     This service wraps Mem0 (mem0ai) and provides:
     - Structured memory storage scoped by user/project/agent
@@ -213,8 +218,7 @@ class MemoryService:
         self._initialize()
 
     def _initialize(self):
-        """
-        Initialize the Mem0 memory instance with FireAI-specific configuration.
+        """Initialize the Mem0 memory instance with FireAI-specific configuration.
 
         V76 Configuration (OpenAI Primary):
         - LLM: OpenAI gpt-4o (PRIMARY — best engineering accuracy)
@@ -391,8 +395,7 @@ class MemoryService:
         return self._status.initialized and self._memory is not None
 
     def add_memory(self, request: MemoryAddRequest) -> Dict[str, Any]:
-        """
-        Add a memory to the FireAI memory store.
+        """Add a memory to the FireAI memory store.
 
         SAFETY: Memory addition is non-blocking. Failure NEVER prevents calculations.
         """
@@ -442,8 +445,7 @@ class MemoryService:
             }
 
     def search_memories(self, request: MemorySearchRequest) -> MemorySearchResponse:
-        """
-        Search memories using hybrid search (semantic + BM25 + entity boosting).
+        """Search memories using hybrid search (semantic + BM25 + entity boosting).
 
         SAFETY: Results are ADVISORY CONTEXT only.
         Memory search failure NEVER blocks calculations — returns empty results.
@@ -672,8 +674,7 @@ class MemoryService:
             }
 
     def get_memory_history(self, memory_id: str) -> Dict[str, Any]:
-        """
-        Get the history of a specific memory (all changes over time).
+        """Get the history of a specific memory (all changes over time).
 
         Supports agent.md's traceability requirement (Priority 7).
         """

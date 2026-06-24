@@ -1,5 +1,4 @@
-"""
-FireAI NFPA 72 Rules Engine — Safety-Critical Declarative Rules System
+"""FireAI NFPA 72 Rules Engine — Safety-Critical Declarative Rules System
 ======================================================================
 
 A pure-Python forward-chaining rules engine designed specifically for

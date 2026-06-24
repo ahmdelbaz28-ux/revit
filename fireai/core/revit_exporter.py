@@ -1,5 +1,4 @@
-"""
-fireai.core.revit_exporter — IFC & Revit Output Generation
+"""fireai.core.revit_exporter — IFC & Revit Output Generation
 ===========================================================
 
 Generates output files from cable routing results:
@@ -64,6 +63,7 @@ class ScheduleRow:
         num_bends: Number of 90° bends.
         is_compliant: Whether this route meets all constraints.
         code_reference: Applicable code sections.
+
     """
 
     device_id: str
@@ -92,6 +92,7 @@ class IFCElement:
         length_m: Element length in meters.
         workset: Dedicated workset name ("FA-CABLES").
         route_id: Parent route identifier.
+
     """
 
     global_id: str
@@ -121,6 +122,7 @@ class ReportSummary:
         constraint_violations: Number of constraint violations.
         code_references: All code sections referenced.
         computation_hash: SHA-256 hash for verification.
+
     """
 
     project_name: str
@@ -184,6 +186,7 @@ class RevitExporter:
 
         Args:
             workset: Dedicated workset name for fire alarm cables.
+
         """
         self._workset = workset
 
@@ -203,6 +206,7 @@ class RevitExporter:
 
         Returns:
             List of ScheduleRow objects.
+
         """
         rows = []
 
@@ -246,6 +250,7 @@ class RevitExporter:
 
         Returns:
             CSV-formatted string.
+
         """
         rows = self.generate_schedule(schedule)
         output = io.StringIO()
@@ -304,6 +309,7 @@ class RevitExporter:
 
         Returns:
             List of IFCElement objects.
+
         """
         elements = []
 
@@ -390,6 +396,7 @@ class RevitExporter:
 
         Returns:
             JSON string with IFC element data.
+
         """
         elements = self.generate_ifc_elements(schedule)
 
@@ -432,6 +439,7 @@ class RevitExporter:
 
         Returns:
             List of model line definition dicts.
+
         """
         lines = []
 
@@ -485,6 +493,7 @@ class RevitExporter:
 
         Returns:
             ReportSummary with all metrics.
+
         """
         total_violations = 0
         max_vdrop = 0.0
@@ -540,6 +549,7 @@ class RevitExporter:
 
         Returns:
             Formatted text report string.
+
         """
         report = self.generate_report(schedule, project_name)
 

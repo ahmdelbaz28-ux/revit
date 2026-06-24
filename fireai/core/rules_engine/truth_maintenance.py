@@ -1,5 +1,4 @@
-"""
-FireAI Rules Engine — Truth Maintenance System (TMS)
+"""FireAI Rules Engine — Truth Maintenance System (TMS)
 =====================================================
 
 Ensures that when a base fact is retracted, ALL conclusions derived

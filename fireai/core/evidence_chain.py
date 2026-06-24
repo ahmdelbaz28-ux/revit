@@ -1,5 +1,4 @@
-"""
-evidence_chain.py — Chained Evidence Envelopes for FireAI
+"""evidence_chain.py — Chained Evidence Envelopes for FireAI
 ==========================================================
 Adapted from Elite Platform V2 evidence_chain.py.
 
@@ -137,6 +136,7 @@ class EvidenceChain:
         secret_key:  Secret key for HMAC signing. Must be kept secure.
         signer_id:   Identifier for the signing entity (e.g. "fireai-v1").
         namespace:   Project namespace for HMAC domain separation (e.g. "fireai-project-42").
+
     """
 
     # V113: Known-weak secret keys that MUST be rejected.
@@ -215,6 +215,7 @@ class EvidenceChain:
 
         Returns:
             Signed envelope dictionary with hashes and HMAC signature.
+
         """
         body = {
             "schema_version": "evidence-envelope/1",
@@ -262,6 +263,7 @@ class EvidenceChain:
 
         Raises:
             EvidenceChainError: If any check fails, with the specific reason.
+
         """
         expected = dict(envelope)
         signature = expected.pop("signature")
@@ -336,6 +338,7 @@ class EvidenceChain:
               - envelope_count: int — Number of envelopes checked
               - errors: List[str] — Specific failures (empty if valid)
               - first_break: Optional[int] — Index of first invalid envelope
+
         """
         if len(envelopes) != len(snapshot_payloads) or len(envelopes) != len(analysis_payloads):
             return {
@@ -395,7 +398,7 @@ class EvidenceChain:
         # Format: namespace || envelope_hash ensures that signatures from
         # different projects (different namespaces) are always different,
         # even for identical envelope content.
-        message = f"{self._namespace}:{envelope_hash}".encode("utf-8")
+        message = f"{self._namespace}:{envelope_hash}".encode()
         return hmac.new(
             self._secret_key,
             message,

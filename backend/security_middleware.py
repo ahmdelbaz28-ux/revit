@@ -1,5 +1,4 @@
-"""
-backend/security_middleware.py — Security Headers & Correlation Middleware
+"""backend/security_middleware.py — Security Headers & Correlation Middleware
 ==========================================================================
 
 Centralizes security-critical HTTP middleware for the FireAI backend:
@@ -43,6 +42,7 @@ References:
   - agent.md Rule #14 (NO MODIFICATION WITHOUT VERIFICATION) — this module
     was added after verifying no existing SecurityHeadersMiddleware exists
     in the codebase (grep for `class SecurityHeadersMiddleware` → 0 matches).
+
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 # Re-export CorrelationIdMiddleware for a single import surface.
 # Lazy import to avoid circular dependency if backend.request_context
 # ever imports from this module in the future.
-from backend.request_context import CorrelationIdMiddleware  # noqa: F401
+from backend.request_context import CorrelationIdMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -443,7 +443,7 @@ class ApiKeyMiddleware:
 
 
 __all__ = [
-    "SecurityHeadersMiddleware",
-    "CorrelationIdMiddleware",
     "ApiKeyMiddleware",
+    "CorrelationIdMiddleware",
+    "SecurityHeadersMiddleware",
 ]

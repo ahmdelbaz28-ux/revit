@@ -1,5 +1,4 @@
-"""
-test_pipeline_v2.py — Comprehensive tests for fireai.core.pipeline
+"""test_pipeline_v2.py — Comprehensive tests for fireai.core.pipeline
 ===================================================================
 
 Focus areas for coverage improvement (71% → 80%):

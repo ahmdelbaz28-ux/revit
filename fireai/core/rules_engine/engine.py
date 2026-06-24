@@ -1,5 +1,4 @@
-"""
-FireAI Rules Engine — Core Engine
+"""FireAI Rules Engine — Core Engine
 ==================================
 
 Pure-Python forward-chaining rules engine with:

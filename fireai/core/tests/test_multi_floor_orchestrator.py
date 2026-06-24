@@ -689,7 +689,7 @@ class TestConstants:
         assert MAX_ZONE_AREA_SQFT == 20_000.0
 
     def test_max_zone_area_sqm(self):
-        assert MAX_ZONE_AREA_SQM == pytest.approx(20_000.0 * 0.092903, rel=1e-4)
+        assert pytest.approx(20_000.0 * 0.092903, rel=1e-4) == MAX_ZONE_AREA_SQM
 
     def test_default_recall_floor(self):
         assert DEFAULT_RECALL_FLOOR == "GF"
@@ -2181,7 +2181,7 @@ class TestEdgeCases:
         assert len(result.riser_routing_results) == 19
 
     def test_all_fields_none_optional(self, orchestrator):
-        """orchestrate should work with only required parameters."""
+        """Orchestrate should work with only required parameters."""
         result = orchestrator.orchestrate(
             building_id="MINIMAL",
             floors={"GF": []},

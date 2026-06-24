@@ -713,6 +713,23 @@ export default api;
 // Add CSRF token handling to API requests
 let csrfToken: string | null = null;
 
+// Free-function API key getter (mirrors DigitalTwinApi.getApiKey class method).
+// Used by the standalone apiRequest() helper below.
+function getApiKey(): string | null {
+  const envKey = import.meta.env.VITE_FIREAI_API_KEY;
+  if (envKey) return envKey;
+  try {
+    const stored = sessionStorage.getItem('fireai_settings');
+    if (stored) {
+      const settings = JSON.parse(stored);
+      return settings.apiKey ?? null;
+    }
+  } catch {
+    // sessionStorage not available or invalid JSON
+  }
+  return null;
+}
+
 // Function to get CSRF token from meta tag or other source
 function getCsrfToken(): string | null {
   if (csrfToken) return csrfToken;
@@ -733,10 +750,10 @@ async function apiRequest<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-API-Key': getApiKey(),
-    ...options.headers,
+    'X-API-Key': getApiKey() ?? '',
+    ...((options.headers as Record<string, string>) ?? {}),
   };
 
   // Add CSRF token for state-changing requests
@@ -757,14 +774,16 @@ async function apiRequest<T>(
     const data = await response.json();
     return {
       success: response.ok,
-      data: response.ok ? data.data || data : null,
-      error: response.ok ? null : data.error || 'Unknown error',
-    };
+      data: response.ok ? data.data || data : undefined,
+      error: response.ok ? undefined : data.error || 'Unknown error',
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<T>;
   } catch (error) {
     return {
       success: false,
-      data: null,
+      data: undefined,
       error: error instanceof Error ? error.message : 'Network error',
-    };
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<T>;
   }
 }

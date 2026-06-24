@@ -1,5 +1,4 @@
-"""
-twin_db.py — SQLite-Backed Twin System of Record
+"""twin_db.py — SQLite-Backed Twin System of Record
 =================================================
 Adapted from Elite Platform V2 twin_db.py.
 
@@ -44,6 +43,7 @@ class TwinSystemOfRecord:
         Args:
             db_path: Path to the SQLite database file.
                      Created automatically if it doesn't exist.
+
         """
         self.db_path = db_path
         self._init_db()
@@ -112,6 +112,7 @@ class TwinSystemOfRecord:
 
         Raises:
             ValueError: If snapshot_id is missing or empty.
+
         """
         snapshot_id = snapshot_payload.get("snapshot_id", "")
         if not snapshot_id or not isinstance(snapshot_id, str) or not snapshot_id.strip():
@@ -159,6 +160,7 @@ class TwinSystemOfRecord:
 
         Raises:
             KeyError: If snapshot_id not found.
+
         """
         conn = self._connect()
         try:
@@ -196,6 +198,7 @@ class TwinSystemOfRecord:
             revision_id:      Revision ID from the source system.
             snapshot_id:      The snapshot this revision produced.
             created_at:       ISO timestamp.
+
         """
         conn = self._connect()
         try:
@@ -220,6 +223,7 @@ class TwinSystemOfRecord:
 
         Returns:
             Dictionary with connector details, or None if not found.
+
         """
         conn = self._connect()
         try:
@@ -280,6 +284,7 @@ class TwinSystemOfRecord:
 
         Returns:
             List of drift records with room_id, drift_type, and details.
+
         """
         old_bundle = self.load_snapshot_bundle(old_snapshot_id)
         new_bundle = self.load_snapshot_bundle(new_snapshot_id)

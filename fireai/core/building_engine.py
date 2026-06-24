@@ -1,5 +1,4 @@
-"""
-fireai/core/building_engine.py  V0.2
+"""fireai/core/building_engine.py  V0.2
 =====================================
 Building-level fire alarm design analyser.
 
@@ -90,8 +89,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BuildingReport:
-    """
-    Complete analysis report for an entire building.
+    """Complete analysis report for an entire building.
 
     Attributes:
         building_id: Unique building identifier (e.g. "BLDG-001").
@@ -116,6 +114,7 @@ class BuildingReport:
             Any unsafe floor causes the building's safe_to_submit to be False.
         building_warnings: Building-level advisory messages.
         analysis_time_s: Total wall-clock analysis time in seconds.
+
     """
 
     building_id: str
@@ -144,8 +143,7 @@ class BuildingReport:
 
 
 class BuildingEngine:
-    """
-    Building-level fire alarm design analyser.
+    """Building-level fire alarm design analyser.
 
     Uses FloorAnalyser V2.1 as a component (composition, not reimplementation).
     Each floor is analysed by an independent FloorAnalyser instance.
@@ -196,6 +194,7 @@ class BuildingEngine:
         >>> report = engine.analyse(floors)
         >>> print(report.safe_to_submit)
         True
+
     """
 
     def __init__(
@@ -219,8 +218,7 @@ class BuildingEngine:
     # ─── public ──────────────────────────────────────────────────────
 
     def analyse(self, floors: Dict[str, list]) -> BuildingReport:
-        """
-        Analyse all floors in the building and return a BuildingReport.
+        """Analyse all floors in the building and return a BuildingReport.
 
         Each floor is processed sequentially by an independent FloorAnalyser.
         The same audit_trail and audit_store are passed to each FloorAnalyser
@@ -250,6 +248,7 @@ class BuildingEngine:
             - Logs each floor result via Python logging
             - Records events in AuditTrail and AuditStore (if provided)
             - Persists DeltaCache to SQLite (if path provided)
+
         """
         t0 = time.time()
         report = BuildingReport(building_id=self.building_id)

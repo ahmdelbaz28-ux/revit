@@ -1,5 +1,4 @@
-"""
-FireAI Service Contracts — Versioned JSON Schemas
+"""FireAI Service Contracts — Versioned JSON Schemas
 ==================================================
 Defines the data contracts between services.
 
@@ -13,10 +12,10 @@ useful even in monolithic mode for type safety and documentation.
 from __future__ import annotations
 
 import math
+import os
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
-import os
 
 # ============================================================================
 # CONTRACT v1 — Shared Data Models
@@ -410,6 +409,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     Raises:
         ContractViolation: If any contract rule is violated.
+
     """
     if not isinstance(payload, dict):
         raise ContractViolation("Room input must be a dictionary")
@@ -574,6 +574,7 @@ def validate_loop_input(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     Raises:
         ContractViolation: If any contract rule is violated.
+
     """
     if not isinstance(payload, dict):
         raise ContractViolation("Loop input must be a dictionary")

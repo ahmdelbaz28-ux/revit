@@ -600,8 +600,6 @@ class TestAnalyzeRoomStages:
 
     def test_signing_failure_continues_pipeline(self, pipeline, simple_room):
         """Signing failure is not fatal — pipeline continues."""
-
-
         # We'll mock certificate.seal to fail, but we need to capture the cert first
         class FailSeal:
             def seal(self):

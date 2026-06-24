@@ -1,5 +1,4 @@
-"""
-fireai/core/bps_allocator.py
+"""fireai/core/bps_allocator.py
 =============================
 NAC Booster Power Supply (BPS) Auto-Allocator for Fire Alarm Systems.
 
@@ -104,6 +103,7 @@ def _guard_finite(value: float, field_name: str) -> float:
 
     Raises:
         ValueError: If value is NaN or Inf.
+
     """
     if not isinstance(value, (int, float)):
         raise ValueError(
@@ -133,6 +133,7 @@ def _guard_positive_finite(value: float, field_name: str) -> float:
 
     Raises:
         ValueError: If value is NaN, Inf, zero, or negative.
+
     """
     v = _guard_finite(value, field_name)
     if v <= 0:
@@ -152,6 +153,7 @@ def _guard_non_negative_finite(value: float, field_name: str) -> float:
 
     Raises:
         ValueError: If value is NaN, Inf, or negative.
+
     """
     v = _guard_finite(value, field_name)
     if v < 0:
@@ -318,6 +320,7 @@ def calculate_strobe_current(candela: float) -> float:
 
     Raises:
         ValueError: If candela is NaN, Inf, or negative.
+
     """
     c = _guard_non_negative_finite(candela, "candela")
     if c == 0.0:
@@ -352,6 +355,7 @@ def calculate_device_current(
 
     Raises:
         ValueError: If inputs are NaN/Inf or device_type is unknown.
+
     """
     dt = device_type.lower().strip()
 
@@ -404,6 +408,7 @@ def calculate_nac_circuit_current(devices: List[Dict[str, Any]]) -> float:
 
     Raises:
         ValueError: If any device current input is NaN/Inf.
+
     """
     total = 0.0
     for i, dev in enumerate(devices):
@@ -453,6 +458,7 @@ def calculate_voltage_drop_vdc(
 
     Raises:
         ValueError: If inputs are NaN/Inf or AWG is unknown.
+
     """
     i = _guard_non_negative_finite(total_current_a, "total_current_a")
     l = _guard_non_negative_finite(one_way_length_ft, "one_way_length_ft")
@@ -495,6 +501,7 @@ def calculate_eol_voltage(
 
     Raises:
         ValueError: If inputs are NaN/Inf.
+
     """
     v_nom = _guard_positive_finite(nominal_voltage_vdc, "nominal_voltage_vdc")
     v_drop = calculate_voltage_drop_vdc(total_current_a, one_way_length_ft, awg, v_nom)
@@ -541,6 +548,7 @@ def select_minimum_wire_gauge(
 
     Raises:
         ValueError: If inputs are NaN/Inf.
+
     """
     i = _guard_non_negative_finite(total_current_a, "total_current_a")
     l = _guard_non_negative_finite(one_way_length_ft, "one_way_length_ft")
@@ -593,6 +601,7 @@ def calculate_max_circuit_length_ft(
 
     Raises:
         ValueError: If inputs are NaN/Inf or AWG is unknown.
+
     """
     i = _guard_non_negative_finite(total_current_a, "total_current_a")
     _guard_positive_finite(nominal_voltage_vdc, "nominal_voltage_vdc")
@@ -745,6 +754,7 @@ def _validate_nac_circuit_result(result: NACCircuitResult) -> NACCircuitResult:
 
     Raises:
         ValueError: If any computed value is NaN/Inf (computation error).
+
     """
     # Check for NaN/Inf in computed results
     for attr_name in ("total_current_a", "eol_voltage_vdc", "current_headroom_a", "total_wire_length_ft"):
@@ -851,6 +861,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If any numeric parameter is NaN/Inf or out of bounds.
+
         """
         # LAYER 0: Input sanitization
         self.facp_nac_rating = _guard_positive_finite(facp_nac_rating_a, "facp_nac_rating_a")
@@ -927,6 +938,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If any numeric input is NaN/Inf.
+
         """
         # L0: Validate floor data inputs
         self._validate_floor_data(floor_data)
@@ -1180,6 +1192,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If any numeric input is NaN/Inf.
+
         """
         # L0: Validate inputs
         _guard_finite(max_cable_length_ft, "max_cable_length_ft")
@@ -1439,6 +1452,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If inputs are NaN/Inf.
+
         """
         # L0: Input validation
         _guard_finite(nac_rating_a or self.facp_nac_rating, "nac_rating_a")
@@ -1580,6 +1594,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If inputs are NaN/Inf.
+
         """
         i = _guard_non_negative_finite(total_current_a, "total_current_a")
         l = _guard_non_negative_finite(one_way_length_ft, "one_way_length_ft")
@@ -1640,6 +1655,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If inputs are NaN/Inf or AWG is unknown.
+
         """
         return calculate_max_circuit_length_ft(
             total_current_a,
@@ -1660,6 +1676,7 @@ class NACBoosterAllocator:
 
         Raises:
             ValueError: If any numeric value is NaN/Inf.
+
         """
         for idx, f_info in enumerate(floor_data):
             nac_current = f_info.get("nac_current")
@@ -1702,6 +1719,7 @@ class NACBoosterAllocator:
             severity: "CRITICAL", "HIGH", "MEDIUM", or "LOW".
             citation: NFPA/NEC code reference.
             description: Human-readable violation description.
+
         """
         # Map "WARNING" to "HIGH" for provenance Violation compatibility
         mapped_severity = severity
@@ -1751,6 +1769,7 @@ def quick_voltage_check(
 
     Raises:
         ValueError: If inputs are NaN/Inf.
+
     """
     i = _guard_non_negative_finite(total_current_a, "total_current_a")
     l = _guard_non_negative_finite(one_way_length_ft, "one_way_length_ft")
@@ -1805,6 +1824,7 @@ def quick_nac_load_check(
 
     Raises:
         ValueError: If inputs are NaN/Inf.
+
     """
     rating = _guard_positive_finite(nac_rating_a, "nac_rating_a")
     total = calculate_nac_circuit_current(devices)

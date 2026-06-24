@@ -1,5 +1,4 @@
-"""
-test_elements_conflicts_exports.py — Integration tests for the elements CRUD,
+"""test_elements_conflicts_exports.py — Integration tests for the elements CRUD,
 conflicts CRUD, and export endpoints that exercise deeper code paths.
 
 These tests aim to cover:

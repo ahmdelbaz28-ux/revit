@@ -1,5 +1,4 @@
-"""
-fireai.core.detector_response — NFPA 72 Detector Response Time Modeling
+"""fireai.core.detector_response — NFPA 72 Detector Response Time Modeling
 =======================================================================
 
 Implements detector response time estimation per NFPA 72 and fire
@@ -138,6 +137,7 @@ def calculate_heat_detector_response(
 
     Returns:
         DetectorResponseResult with estimated activation time.
+
     """
     # Input validation
     if not math.isfinite(fire_hrr_kw) or fire_hrr_kw <= 0:
@@ -254,6 +254,7 @@ def calculate_smoke_detector_response(
 
     Returns:
         DetectorResponseResult with estimated activation time.
+
     """
     # Input validation
     if not math.isfinite(fire_hrr_kw) or fire_hrr_kw <= 0:

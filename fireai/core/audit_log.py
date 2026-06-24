@@ -1,5 +1,4 @@
-"""
-fireai.core.audit_log — QOMN-FIRE Layer 4: Audit Log (Immutable Record)
+"""fireai.core.audit_log — QOMN-FIRE Layer 4: Audit Log (Immutable Record)
 ========================================================================
 
 Creates permanent, tamper-evident record of every computation.
@@ -137,6 +136,7 @@ def create_audit_entry(
     -------
     AuditEntry
         Fully populated entry with ``entry_hash`` computed.
+
     """
     if prev_entry_hash is None:
         prev_entry_hash = GENESIS_PREV_HASH
@@ -207,6 +207,7 @@ class AuditLog:
         Secret key for HMAC-SHA256 signing.  If *None*, HMAC signatures
         are **not** computed (the ``hmac_signature`` field will remain
         ``NULL``).
+
     """
 
     def __init__(self, db_path: str = ":memory:", hmac_key: Optional[bytes] = None) -> None:
@@ -251,6 +252,7 @@ class AuditLog:
             ``prev_entry_hash``.
         RuntimeError
             If the log has been closed.
+
         """
         # V69-11 FIX: Lock entire append for hash chain integrity
         with self._lock:
@@ -316,6 +318,7 @@ class AuditLog:
         ------
         RuntimeError
             If the log has been closed.
+
         """
         with self._lock:
             self._check_closed()
@@ -377,6 +380,7 @@ class AuditLog:
         ------
         RuntimeError
             If the log has been closed.
+
         """
         with self._lock:
             self._check_closed()
@@ -394,6 +398,7 @@ class AuditLog:
         ------
         RuntimeError
             If the log has been closed.
+
         """
         with self._lock:
             self._check_closed()
@@ -416,6 +421,7 @@ class AuditLog:
         ------
         RuntimeError
             If the log has been closed.
+
         """
         # get_analysis already acquires _lock and checks closed
         entries = self.get_analysis(analysis_id)
@@ -445,6 +451,7 @@ class AuditLog:
         Tuple[bool, str]
             ``(True, "")`` if the export is valid, or
             ``(False, description)`` otherwise.
+
         """
         try:
             export_obj = json.loads(json_str)
@@ -494,6 +501,7 @@ class AuditLog:
         ------
         RuntimeError
             If the log has been closed.
+
         """
         with self._lock:
             self._check_closed()

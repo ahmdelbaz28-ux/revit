@@ -1,5 +1,4 @@
-"""
-fireai/core/tests/test_edge_cases.py — Edge Case Tests for FireAI Core
+"""fireai/core/tests/test_edge_cases.py — Edge Case Tests for FireAI Core
 =======================================================================
 Task 2.17: Add edge case tests for fireai/
 
@@ -361,7 +360,8 @@ class TestSingleDetectorRooms:
     def test_high_ceiling_reduces_spacing(self):
         """Higher ceilings produce tighter spacing for heat detectors only.
         Per NFPA 72-2022 Table 17.6.3.1, smoke detector spacing is flat 9.1m
-        at all ceiling heights — so we test heat detectors here."""
+        at all ceiling heights — so we test heat detectors here.
+        """
         low = get_detector_spacing(3.0, "heat")
         high = get_detector_spacing(9.0, "heat")
         assert high.max_spacing_m <= low.max_spacing_m

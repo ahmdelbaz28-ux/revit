@@ -1,5 +1,4 @@
-"""
-core/models.py — Universal BIM Data Model (domain layer)
+"""core/models.py — Universal BIM Data Model (domain layer)
 =========================================================
 
 Frozen dataclass models for the Universal Data Model (UDM). These classes
@@ -125,7 +124,9 @@ class Point3D:
         x: Easting coordinate in metres.
         y: Northing coordinate in metres.
         z: Elevation coordinate in metres (floor level = 0.0).
+
     """
+
     x: float
     y: float
     z: float = 0.0
@@ -157,7 +158,9 @@ class Geometry:
         polyline_closed: True if the last point connects back to the first.
         area: Computed area in square metres (0.0 for open polylines).
         perimeter: Computed perimeter in metres.
+
     """
+
     points: Tuple[Point3D, ...] = ()
     polyline_closed: bool = False
     area: float = 0.0
@@ -238,7 +241,9 @@ class SemanticProperties:
         load_bearing: Whether the element carries structural load.
         layer: CAD/BIM layer name.
         revit_category: Revit category string.
+
     """
+
     element_type: Union[ElementType, str]
     name: str = ""
     description: Optional[str] = None
@@ -300,7 +305,9 @@ class Relationship:
         is_parametric: Whether the relationship is parametrically driven.
         metadata: Optional arbitrary metadata dictionary.
         connection_id: Optional UUID for this relationship (set by db_service).
+
     """
+
     from_element_id: str = ""
     to_element_id: str = ""
     relationship_type: str = ""
@@ -346,7 +353,9 @@ class Conflict:
         resolution: How the conflict was resolved (None if unresolved).
         resolved: Whether the conflict has been resolved.
         timestamp: When the conflict was detected.
+
     """
+
     conflict_id: str = ""
     element_id: str = ""
     conflict_type: ConflictType = ConflictType.GEOMETRY_MISMATCH
@@ -399,7 +408,9 @@ class UniversalElement:
         version: Incremented on each update (optimistic concurrency).
         is_deleted: Soft-delete flag.
         project_id: Optional project association.
+
     """
+
     element_id: str = ""
     properties: Optional[SemanticProperties] = None
     geometry: Optional[Geometry] = None

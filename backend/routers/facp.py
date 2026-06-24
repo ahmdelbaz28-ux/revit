@@ -1,5 +1,4 @@
-"""
-backend/routers/facp.py — FACP Selection & Compliance REST API
+"""backend/routers/facp.py — FACP Selection & Compliance REST API
 ================================================================
 REST endpoints for the Fire Alarm Control Panel selection engine.
 
@@ -51,6 +50,7 @@ class FACPSelectionRequest(BaseModel):
 
     All fields map to facp_system.panel_selector.ProjectRequirements.
     """
+
     device_count: int = Field(
         ..., gt=0,
         description="Total number of addressable devices (detectors, modules, etc.)"
@@ -99,6 +99,7 @@ class FACPVerificationRequest(BaseModel):
     Accepts the same ProjectRequirements plus a PanelRecommendation
     to verify compliance against UL/FDNY/NFPA rules.
     """
+
     device_count: int = Field(..., gt=0)
     nac_circuit_count: int = Field(..., gt=0)
     building_size_m2: float = Field(..., gt=0)
@@ -122,6 +123,7 @@ class FACPVerificationRequest(BaseModel):
 
 class FACPScheduleRequest(BaseModel):
     """Input for DXF schedule table generation."""
+
     recommended_model: str = Field(..., description="Panel model from selection result")
     manufacturer: str = Field(..., description="Panel manufacturer")
     capacity_utilization: float = Field(..., ge=0.0, le=1.0)
@@ -136,6 +138,7 @@ class FACPScheduleRequest(BaseModel):
 
 class FACPSpecRequest(BaseModel):
     """Input for CSI specification generation."""
+
     device_count: int = Field(..., gt=0)
     nac_circuit_count: int = Field(..., gt=0)
     building_size_m2: float = Field(..., gt=0)

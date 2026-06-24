@@ -111,6 +111,7 @@ def _get_hmac_key() -> str:
 
     Returns:
         The HMAC key for signing events.
+
     """
     global _DEV_HMAC_KEY, _DEV_KEY_WARNED
 
@@ -325,6 +326,7 @@ def _get_ecdsa_signer():
 
     Returns:
         SigningKey instance, or None if ECDSA is not configured.
+
     """
     global _ecdsa_signing_key, _ecdsa_initialized
 
@@ -360,6 +362,7 @@ def _compute_ecdsa_signature(current_hash: str) -> Optional[str]:
 
     Returns:
         Hex-encoded ECDSA signature, or None if ECDSA not configured.
+
     """
     sk = _get_ecdsa_signer()
     if sk is None:
@@ -394,6 +397,7 @@ def verify_ecdsa_signature(record: Dict[str, Any], public_key_pem: str) -> bool:
 
     Raises:
         ImportError: If ecdsa library is not installed.
+
     """
     if not HAS_ECDSA:
         raise ImportError("ecdsa library required for ECDSA verification. Install with: pip install ecdsa")
@@ -457,6 +461,7 @@ def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> st
     Raises:
         ValueError: If details_dict is not a dictionary
         SecurityError: If HMAC key is not properly configured
+
     """
     # Validate details
     if not isinstance(details_dict, dict):
@@ -503,6 +508,7 @@ def verify_chain() -> Optional[Tuple[bool, Optional[Dict[str, Any]]]]:
         (is_valid, error_details) tuple
         - is_valid: True if chain AND signatures are intact, False if tampered
         - error_details: Details of the tampered event if any
+
     """
     conn = _get_connection()
     cursor = conn.cursor()
@@ -651,12 +657,12 @@ class AuditStore:
 # _init_database() is called by _get_connection() on first use.
 
 __all__ = [
-    "SecurityError",
-    "AuditStore",
-    "add_event",
-    "verify_chain",
-    "get_events",
-    "verify_ecdsa_signature",
-    "NFPA_VERSION",
     "DATABASE_PATH",
+    "NFPA_VERSION",
+    "AuditStore",
+    "SecurityError",
+    "add_event",
+    "get_events",
+    "verify_chain",
+    "verify_ecdsa_signature",
 ]

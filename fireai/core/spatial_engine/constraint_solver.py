@@ -1,5 +1,4 @@
-"""
-ConstraintSolver — Area-Based Greedy Fallback Coverage Solver
+"""ConstraintSolver — Area-Based Greedy Fallback Coverage Solver
 =============================================================
 When DensityOptimizer fails to achieve 99.9% coverage (typically for
 non-rectangular rooms — L-shape, U-shape, rooms with cutouts), this
@@ -93,6 +92,7 @@ class ConstraintSolverResult:
         warnings: List of warnings generated during solving.
         solve_time_seconds: Wall-clock time for the solve.
         method: Description of the method used.
+
     """
 
     coverage_percent: float = 0.0
@@ -131,7 +131,7 @@ class ConstraintSolver:
 
     def __init__(
         self,
-        room_polygon: "Polygon",
+        room_polygon: Polygon,
         device_radius: float,
         coverage_safety_factor: float = COVERAGE_SAFETY_FACTOR,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
@@ -149,6 +149,7 @@ class ConstraintSolver:
         Raises:
             ValueError: If device_radius is not positive.
             ImportError: If Shapely is not available.
+
         """
         if not HAS_SHAPELY:
             raise ImportError(
@@ -207,6 +208,7 @@ class ConstraintSolver:
 
         Returns:
             ConstraintSolverResult with placement and coverage information.
+
         """
         start_time = time.monotonic()
         warnings: List[str] = []
@@ -372,6 +374,7 @@ class ConstraintSolver:
 
         Returns:
             List of (x, y) candidate positions within room bounding box.
+
         """
         minx, miny, maxx, maxy = self.room_polygon.bounds
         width = maxx - minx
@@ -409,6 +412,7 @@ class ConstraintSolver:
 
         Returns:
             List of (x, y) positions including centroid and boundary points.
+
         """
         candidates = []
 

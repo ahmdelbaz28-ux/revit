@@ -1,5 +1,4 @@
-"""
-mem0_setup.py — Mem0 Memory Layer Setup for FireAI (V81 OpenCode Support).
+"""mem0_setup.py — Mem0 Memory Layer Setup for FireAI (V81 OpenCode Support).
 
 PURPOSE:
   Configures and initializes the Mem0 memory layer for the FireAI
@@ -133,8 +132,7 @@ MEM0_QDRANT_PATH.mkdir(parents=True, exist_ok=True)
 
 
 def _test_openai_connectivity(api_key: str) -> bool:
-    """
-    Test if OpenAI API is reachable and not region-blocked.
+    """Test if OpenAI API is reachable and not region-blocked.
 
     V78 FIX: OpenAI returns 403 "unsupported_country_region_territory" in
     certain regions (Egypt, UAE, etc.). We must detect this at startup
@@ -149,11 +147,12 @@ def _test_openai_connectivity(api_key: str) -> bool:
 
     Returns:
         True if OpenAI is reachable, False if blocked or unavailable
+
     """
     try:
         import urllib.request
 
-        req = urllib.request.Request(  # noqa: S310 — hardcoded https://api.openai.com
+        req = urllib.request.Request(
             "https://api.openai.com/v1/models",
             method="GET",
             headers={
@@ -161,7 +160,7 @@ def _test_openai_connectivity(api_key: str) -> bool:
                 "Content-Type": "application/json",
             },
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status == 200:
                 return True
     except urllib.error.HTTPError as e:
@@ -190,8 +189,7 @@ def _test_openai_connectivity(api_key: str) -> bool:
 
 
 def _test_gemini_connectivity(api_key: str) -> bool:
-    """
-    Test if Gemini API is reachable and not rate-limited.
+    """Test if Gemini API is reachable and not rate-limited.
 
     V87 FIX: Strategy 4 (Gemini) previously did NOT test connectivity before
     selecting Gemini as the provider. This meant a rate-limited or invalid
@@ -203,6 +201,7 @@ def _test_gemini_connectivity(api_key: str) -> bool:
 
     Returns:
         True if Gemini is reachable, False if rate-limited or unavailable
+
     """
     try:
         import google.generativeai as genai
@@ -230,20 +229,20 @@ def _test_gemini_connectivity(api_key: str) -> bool:
 
 
 def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
-    """
-    Test if an OpenAI-compatible API endpoint is reachable.
+    """Test if an OpenAI-compatible API endpoint is reachable.
 
     V79: Generalized from _test_openai_connectivity to support any
     OpenAI-compatible provider (OpenQuotta, local proxies, etc.).
 
     Returns:
         True if the endpoint responds to /models, False otherwise
+
     """
     try:
         import urllib.request
 
         models_url = f"{base_url.rstrip('/')}/models"
-        req = urllib.request.Request(  # noqa: S310 — URL constructed from validated base_url
+        req = urllib.request.Request(
             models_url,
             method="GET",
             headers={
@@ -251,7 +250,7 @@ def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
                 "Content-Type": "application/json",
             },
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status == 200:
                 return True
     except urllib.error.HTTPError as e:
@@ -279,8 +278,7 @@ _PROVIDER_CACHE_TTL_SECONDS = 300  # 5 minutes
 
 
 def _detect_provider() -> Dict[str, Any]:
-    """
-    Detect the best available LLM/embedding provider.
+    """Detect the best available LLM/embedding provider.
 
     V83: Added caching with 5-minute TTL to avoid repeated connectivity
     tests (up to 40s+ blocking per call when all providers are slow).
@@ -308,8 +306,7 @@ def _detect_provider() -> Dict[str, Any]:
 
 
 def _detect_provider_uncached() -> Dict[str, Any]:
-    """
-    Detect the best available LLM/embedding provider (uncached version).
+    """Detect the best available LLM/embedding provider (uncached version).
 
     Strategy (V81 — 6-Strategy Failover with OpenCode):
     1. Try OpenAI API (if OPENAI_API_KEY available AND not region-blocked)
@@ -374,12 +371,11 @@ def _detect_provider_uncached() -> Dict[str, Any]:
                 "embedding_dims": 1536,
                 "collection_name": "fireai_memory",
             }
-        else:
-            # OpenAI is region-blocked — fall through to OpenRouter
-            logger.info(
-                "OpenAI API key found but not reachable (region-blocked or network error). "
-                "Falling back to OpenRouter, OpenCode, or Gemini provider."
-            )
+        # OpenAI is region-blocked — fall through to OpenRouter
+        logger.info(
+            "OpenAI API key found but not reachable (region-blocked or network error). "
+            "Falling back to OpenRouter, OpenCode, or Gemini provider."
+        )
 
     # ── Strategy 2: OpenRouter (V80 — OpenAI-compatible aggregator, no region block) ──
     # OpenRouter provides access to gpt-4o and many other models through
@@ -414,11 +410,10 @@ def _detect_provider_uncached() -> Dict[str, Any]:
                 "collection_name": "fireai_memory_openrouter_v80",
                 "base_url": openrouter_base_url,
             }
-        else:
-            logger.info(
-                f"OpenRouter API key found but {openrouter_base_url} not reachable. "
-                "Falling back to OpenCode, Gemini, or z-ai proxy."
-            )
+        logger.info(
+            f"OpenRouter API key found but {openrouter_base_url} not reachable. "
+            "Falling back to OpenCode, Gemini, or z-ai proxy."
+        )
 
     # ── Strategy 3: OpenCode (V81 — OpenAI-compatible, no region block) ──
     # OpenCode (opencode.ai) provides access to GPT-4o, Claude, and other
@@ -454,10 +449,9 @@ def _detect_provider_uncached() -> Dict[str, Any]:
                 "collection_name": "fireai_memory_opencode_v81",
                 "base_url": opencode_base_url,
             }
-        else:
-            logger.info(
-                f"OpenCode API key found but {opencode_base_url} not reachable. Falling back to Gemini or z-ai proxy."
-            )
+        logger.info(
+            f"OpenCode API key found but {opencode_base_url} not reachable. Falling back to Gemini or z-ai proxy."
+        )
 
     # ── Strategy 4: Gemini (PRIMARY when OpenAI/OpenRouter/OpenCode unavailable) ──
     if gemini_key:
@@ -494,10 +488,9 @@ def _detect_provider_uncached() -> Dict[str, Any]:
                 "embedding_dims": 384,
                 "collection_name": "fireai_memory_gemini_v78",
             }
-        else:
-            logger.info(
-                "Gemini API key found but not reachable (quota exceeded or network error). Falling back to z-ai proxy."
-            )
+        logger.info(
+            "Gemini API key found but not reachable (quota exceeded or network error). Falling back to z-ai proxy."
+        )
 
     # ── Strategy 5: Try z-ai proxy ──
     proxy_url = os.getenv("FIREAI_PROXY_URL", "http://localhost:11435")
@@ -509,8 +502,8 @@ def _detect_provider_uncached() -> Dict[str, Any]:
         _parsed = _urlparse(proxy_url)
         if _parsed.scheme not in ("http", "https"):
             raise ValueError(f"Rejected proxy URL scheme '{_parsed.scheme}' — only http/https allowed")
-        req = urllib.request.Request(f"{proxy_url}/health", method="GET")  # noqa: S310 — scheme validated above
-        with urllib.request.urlopen(req, timeout=5) as resp:  # noqa: S310 — scheme validated above
+        req = urllib.request.Request(f"{proxy_url}/health", method="GET")
+        with urllib.request.urlopen(req, timeout=5) as resp:
             health = json.loads(resp.read().decode())
             if health.get("status") == "ok":
                 logger.info("z-ai proxy available at %s — using proxy provider", proxy_url)
@@ -549,8 +542,7 @@ def _detect_provider_uncached() -> Dict[str, Any]:
 
 
 def get_mem0_config() -> Dict[str, Any]:
-    """
-    Get the Mem0 configuration for FireAI.
+    """Get the Mem0 configuration for FireAI.
 
     V80: Auto-detects the best available provider (6-strategy failover):
     - OpenAI (PRIMARY if key set — best engineering accuracy, native Mem0 support)
@@ -640,8 +632,7 @@ def get_mem0_config() -> Dict[str, Any]:
 
 
 def create_mem0_instance() -> Any:
-    """
-    Create and return a configured Mem0 Memory instance.
+    """Create and return a configured Mem0 Memory instance.
 
     This is the PRIMARY entry point for all FireAI memory operations.
 
@@ -651,6 +642,7 @@ def create_mem0_instance() -> Any:
     Raises:
         ValueError: If no LLM provider is available
         RuntimeError: If Mem0 initialization fails
+
     """
     from mem0 import Memory
 
@@ -673,8 +665,7 @@ def create_mem0_instance() -> Any:
 
 
 class FireAIMemory:
-    """
-    High-level FireAI memory interface.
+    """High-level FireAI memory interface.
 
     Wraps Mem0 with domain-specific operations for fire protection engineering.
 

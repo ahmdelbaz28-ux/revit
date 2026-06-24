@@ -1,5 +1,4 @@
-"""
-flame_detector_aoc_raytrace.py – Flame Detector AOC Ray Trace Engine
+"""flame_detector_aoc_raytrace.py – Flame Detector AOC Ray Trace Engine
 =====================================================================
 Computes Angle of Coverage (AOC) and Line of Sight (LOS) visibility
 for flame detectors using 3-D ray tracing geometry.
@@ -182,8 +181,7 @@ class SingleDetectorResult:
 
 @dataclass(frozen=True)
 class CoverageResult:
-    """
-    Q5: Coverage computed from grid cell count — never Convex Hull.
+    """Q5: Coverage computed from grid cell count — never Convex Hull.
     Conservative bias: a point is covered only if >=1 detector has LOS + AOC.
 
     GAP-06: Added redundancy fields for NFPA 72-2022 §17.8.3.4 / FM Global DS 5-48.
@@ -231,8 +229,7 @@ class CoverageResult:
 
     @property
     def is_nfpa72_redundant(self) -> bool:
-        """
-        True if all covered points have >=2 detector coverage.
+        """True if all covered points have >=2 detector coverage.
         NFPA 72-2022 §17.8.3.4 requirement for critical applications.
         FM Global DS 5-48 §3.1 requirement for high-hazard areas.
         """
@@ -241,7 +238,8 @@ class CoverageResult:
     @property
     def redundancy_pct(self) -> float:
         """Percentage of covered points with redundancy >= 2.
-        NFPA 72-2022 §17.8.3.4 / FM Global DS 5-48 §4.3."""
+        NFPA 72-2022 §17.8.3.4 / FM Global DS 5-48 §4.3.
+        """
         if not self.redundancy_map or self.covered_points == 0:
             return 0.0
         pts_with_2plus = sum(1 for c in self.redundancy_map.values() if c >= 2)
@@ -262,8 +260,7 @@ class CoverageResult:
 
 
 class FlameDetectorAOCRayTrace:
-    """
-    3D ray-trace coverage analyser for flame detectors.
+    """3D ray-trace coverage analyser for flame detectors.
 
     V21 API:
       analyse_single_v21() — uses Pydantic FlameDetectorSpec, Obstruction
@@ -291,8 +288,7 @@ class FlameDetectorAOCRayTrace:
     # ── V21 API ────────────────────────────────────────────────────────────
 
     def _build_spatial_index(self, obstructions: List[V21Obstruction]) -> None:
-        """
-        Q2: Build R-tree spatial index for obstructions.
+        """Q2: Build R-tree spatial index for obstructions.
         Falls back to list if rtree not installed.
         """
         try:
@@ -339,8 +335,7 @@ class FlameDetectorAOCRayTrace:
         obstructions: List[V21Obstruction],
         band: WavelengthBand,
     ) -> bool:
-        """
-        Check if ray is blocked by any opaque obstruction for given spectral band.
+        """Check if ray is blocked by any opaque obstruction for given spectral band.
         Q6: Uses spectral transmittance per band.
         Uses spatial index for candidate filtering.
         """
@@ -405,8 +400,7 @@ class FlameDetectorAOCRayTrace:
 
     @staticmethod
     def _sensitivity_v21(distance_m: float, rated_range: float) -> float:
-        """
-        Fix #19: Inverse square law, capped at 1.0 for near distances.
+        """Fix #19: Inverse square law, capped at 1.0 for near distances.
         """
         # V57 FIX (Finding 10): NaN distance bypasses guards — NaN <= 0 is False,
         # NaN <= rated_range is False, so NaN propagates to ratio = rated_range/NaN
@@ -428,8 +422,7 @@ class FlameDetectorAOCRayTrace:
         volumetric_media: List[VolumetricMedium],
         band: WavelengthBand,
     ) -> float:
-        """
-        V21.2: Calculate total spectral transmittance along a ray.
+        """V21.2: Calculate total spectral transmittance along a ray.
 
         Two-stage check:
         1. Solid obstructions: if opaque for this band, T = 0.0 (blocked)
@@ -461,8 +454,7 @@ class FlameDetectorAOCRayTrace:
         obstructions: List[V21Obstruction],
         volumetric_media: Optional[List[VolumetricMedium]] = None,
     ) -> SingleDetectorResult:
-        """
-        V21.2: Analyse one detector against all target points.
+        """V21.2: Analyse one detector against all target points.
         Returns set of covered point indices and per-point spectral transmittance.
 
         V59 FIX (Finding 9): NaN detector geometry (position, orientation) now
@@ -579,8 +571,7 @@ class FlameDetectorAOCRayTrace:
         zone_type: Optional[ZoneType] = None,
         env_context: Optional[EnvironmentalContext] = None,
     ) -> CoverageResult:
-        """
-        V21.2: Multi-detector analysis.
+        """V21.2: Multi-detector analysis.
         Fix #20: No double-counting. Union of covered sets.
         Q5: Coverage = covered_count / total_count (not hull area).
         V21.2: Includes volumetric media (Beer-Lambert) analysis.

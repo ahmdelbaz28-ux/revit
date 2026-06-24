@@ -1,5 +1,4 @@
-"""
-fire_expert_system.py
+"""fire_expert_system.py
 =====================
 Fire-detection expert system – rectangular rooms, NFPA 72 compliance.
 
@@ -23,8 +22,7 @@ from fireai.core.spatial_engine.density_optimizer import (
 
 
 class FireExpertSystem:
-    """
-    Main expert system class.
+    """Main expert system class.
 
     Usage
     -----
@@ -39,8 +37,7 @@ class FireExpertSystem:
     # ── public API ──────────────────────────────────────────────────────────────
 
     def analyse_room(self, name: str, width: float, length: float, ceiling_height: float = 3.0) -> AnalysisResult:
-        """
-        Perform full NFPA-72 analysis for a rectangular room.
+        """Perform full NFPA-72 analysis for a rectangular room.
 
         Parameters
         ----------
@@ -60,6 +57,7 @@ class FireExpertSystem:
         correct R=4.48m) — producing too few detectors and leaving areas
         unprotected. Per NFPA 72 §17.6.3.1.1, coverage radius MUST be
         height-adjusted.
+
         """
         room = Room(name=name, width=width, length=length, ceiling_height=ceiling_height)
         # V20.2 FIX: Use height-adjusted coverage radius from NFPA 72 Table 17.6.3.1.1
@@ -112,7 +110,7 @@ class AnalysisResult:
         return self.proof_valid and self.wall_violations == 0
 
     def efficiency_ratio(self) -> float:
-        """actual / theoretical_lower_bound — lower is better (1.0 = perfect)."""
+        """Actual / theoretical_lower_bound — lower is better (1.0 = perfect)."""
         if self.theoretical_lower_bound == 0:
             return float("inf")
         return self.count / self.theoretical_lower_bound
@@ -123,7 +121,7 @@ class AnalysisResult:
             f"[{status}] {self.name:30s} | "
             f"Detectors: {self.count:4d} (LB≥{self.theoretical_lower_bound:3d}) | "
             f"Coverage: {self.coverage:6.2f}% | "
-            f"proof_valid: {str(self.proof_valid):5s} | "
+            f"proof_valid: {self.proof_valid!s:5s} | "
             f"wall_violations: {self.wall_violations:2d} | "
             f"Ratio: {self.efficiency_ratio():.2f}x"
         )

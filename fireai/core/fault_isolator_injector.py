@@ -1,5 +1,4 @@
-"""
-fault_isolator_injector.py — SLC Loop Fault Isolation per NFPA 72
+"""fault_isolator_injector.py — SLC Loop Fault Isolation per NFPA 72
 =================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -118,6 +117,7 @@ def inject_fault_isolators(
 
     Returns:
         IsolatorInjectionResult with the secure loop and placement records.
+
     """
     if not loop_devices:
         return IsolatorInjectionResult(
@@ -137,7 +137,7 @@ def inject_fault_isolators(
 
     def _get_zone(device: Dict[str, Any]) -> Optional[str]:
         """Extract zone ID from device or zone_map."""
-        if "zone_id" in device and device["zone_id"]:
+        if device.get("zone_id"):
             return str(device["zone_id"])
         if zone_map:
             for key in ("id", "device_id", "room_id", "device_idx"):
@@ -295,6 +295,7 @@ def verify_isolator_compliance(
     Returns:
         Dict with 'compliant', 'max_segment_devices', 'isolator_count',
         'violations', and 'recommendation' keys.
+
     """
     if not loop_devices:
         return {
@@ -350,12 +351,12 @@ def verify_isolator_compliance(
 
 
 __all__ = [
-    "IsolatorPlacement",
-    "IsolatorInjectionResult",
-    "inject_fault_isolators",
-    "verify_isolator_compliance",
+    "DEFAULT_MAX_DEVICES_BETWEEN_ISOLATORS",
     "ISOLATOR_DEVICE_TYPE",
     "NFPA_CITATION_ISOLATION",
     "NFPA_CITATION_ZONE_LIMIT",
-    "DEFAULT_MAX_DEVICES_BETWEEN_ISOLATORS",
+    "IsolatorInjectionResult",
+    "IsolatorPlacement",
+    "inject_fault_isolators",
+    "verify_isolator_compliance",
 ]

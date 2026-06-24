@@ -1,5 +1,4 @@
-"""
-fireai.core.tenability_evaluator — Tenability Assessment for Egress
+"""fireai.core.tenability_evaluator — Tenability Assessment for Egress
 ===================================================================
 
 Implements tenability criteria for occupant egress during fire:
@@ -108,6 +107,7 @@ def evaluate_tenability(
 
     Returns:
         TenabilityResult with all criteria and overall assessment.
+
     """
     # Input validation
     for name, value in [

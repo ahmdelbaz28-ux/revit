@@ -1,5 +1,4 @@
-"""
-bim_input_sanitizer.py — Safety-Critical Input Sanitization for BIM Parameters
+"""bim_input_sanitizer.py — Safety-Critical Input Sanitization for BIM Parameters
 ================================================================================
 LIFE-SAFETY CRITICAL: Unsanitized inputs to BIM parameters can cause:
   1. Remote Code Execution (RCE) via eval()/exec() in MCP tool handlers
@@ -92,6 +91,7 @@ def sanitize_bim_parameter(param_value: str) -> str:
         'Office Room 101'
         >>> sanitize_bim_parameter("; import os; os.system('rm -rf /') #")
         ValueError: Injection pattern detected
+
     """
     if not isinstance(param_value, str):
         raise ValueError(
@@ -143,6 +143,7 @@ def sanitize_room_name(room_name: str) -> str:
 
     Raises:
         ValueError: If injection pattern detected.
+
     """
     if not isinstance(room_name, str):
         raise ValueError(
@@ -187,6 +188,7 @@ def sanitize_file_path(file_path: str) -> str:
     Raises:
         ValueError: If path traversal detected.
         ValueError: If path contains non-whitelisted characters.
+
     """
     if not isinstance(file_path, str):
         raise ValueError(
@@ -246,6 +248,7 @@ def validate_numeric_parameter(
         7.0
         >>> validate_numeric_parameter("-5.0", min_value=0.0, param_name="pressure")
         ValueError: pressure=-5.0 is below minimum 0.0
+
     """
     if not isinstance(value, str):
         raise ValueError(
@@ -296,7 +299,7 @@ def validate_numeric_parameter(
 
 __all__ = [
     "sanitize_bim_parameter",
-    "sanitize_room_name",
     "sanitize_file_path",
+    "sanitize_room_name",
     "validate_numeric_parameter",
 ]

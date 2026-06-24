@@ -1,5 +1,4 @@
-"""
-fireai.core.security_logging — Security Event Audit Logging & Log Rotation
+"""fireai.core.security_logging — Security Event Audit Logging & Log Rotation
 ==========================================================================
 
 Centralized security event logging for the FireAI system. Provides:
@@ -176,6 +175,7 @@ def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
 
     Returns:
         The string with sensitive values replaced by the mask.
+
     """
     if not text or not isinstance(text, str):
         return str(text) if text is not None else ""
@@ -262,6 +262,7 @@ def configure_log_rotation(
         log_file: Filename for the log file (within _LOG_DIR).
         max_bytes: Maximum size per log file before rotation.
         backup_count: Number of rotated backup files to keep.
+
     """
     # V105 FIX (CRITICAL-2): Prevent duplicate sinks for security_audit.log.
     # SecurityAuditLogger already manages its own loguru sink with proper
@@ -338,6 +339,7 @@ def configure_timed_rotation(
         log_file: Filename for the log file (within _LOG_DIR).
         when: Rotation interval ('midnight', 'D' for daily, 'H' for hourly).
         backup_count: Number of days of logs to retain.
+
     """
     # V105 FIX (CRITICAL-2): Same protection as configure_log_rotation.
     if log_file == "security_audit.log":
@@ -527,13 +529,14 @@ class SecurityAuditLogger:
         Returns:
             The chain hash to use for the next entry, or _SECURITY_GENESIS
             if the log is empty or doesn't exist.
+
         """
         if not self._log_path.exists():
             return _SECURITY_GENESIS
 
         try:
             last_line = None
-            with open(self._log_path, "r", encoding="utf-8") as f:
+            with open(self._log_path, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -580,12 +583,13 @@ class SecurityAuditLogger:
 
         Returns:
             The event ID (hash-based) for traceability.
+
         """
         with self._lock:
             timestamp = datetime.now(timezone.utc).isoformat()
 
             # Generate event ID
-            event_id = hashlib.sha256(f"{timestamp}:{event_type}:{self._chain_hash}".encode("utf-8")).hexdigest()[:16]
+            event_id = hashlib.sha256(f"{timestamp}:{event_type}:{self._chain_hash}".encode()).hexdigest()[:16]
 
             # Build the event record — mask sensitive details BEFORE computing
             # the chain hash, so that the hash covers the actual stored value.
@@ -639,6 +643,7 @@ class SecurityAuditLogger:
             - valid: True if chain is intact
             - entries_checked: Number of entries verified
             - first_break: Event ID where chain was broken (if any)
+
         """
         if not self._log_path.exists():
             return {"valid": True, "entries_checked": 0, "first_break": None}
@@ -647,7 +652,7 @@ class SecurityAuditLogger:
         expected_chain = _SECURITY_GENESIS
         first_break = None
 
-        with open(self._log_path, "r", encoding="utf-8") as f:
+        with open(self._log_path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:

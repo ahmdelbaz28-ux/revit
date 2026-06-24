@@ -1,5 +1,4 @@
-"""
-fireai/core/routing_global_class_a.py
+"""fireai/core/routing_global_class_a.py
 =====================================
 WRAPPER — Delegates to EliteClassARouter (routing_engine_v10.py).
 
@@ -33,15 +32,16 @@ from fireai.core.routing_engine_v10 import EliteClassARouter
 
 
 class EliteGlobalRouter:
-    """
-    Backward-compatible wrapper around EliteClassARouter.
+    """Backward-compatible wrapper around EliteClassARouter.
 
     Converts the canonical RouteSegment output to DecisionProvenance
     format for audit trail compatibility.
 
-    Parameters:
+    Parameters
+    ----------
         global_bounds: (min_x, min_y, max_x, max_y) in meters.
         resolution: Grid cell size in meters (default 0.25m).
+
     """
 
     def __init__(self, global_bounds: Tuple[float, float, float, float], resolution: float = 0.25):
@@ -57,8 +57,7 @@ class EliteGlobalRouter:
         self._min_y = min_y
 
     def apply_class_a_separation(self, outgoing_path: List[Tuple[float, float]], min_sep_m: float = 1.0) -> None:
-        """
-        No-op for backward compatibility. Separation is applied internally
+        """No-op for backward compatibility. Separation is applied internally
         by EliteClassARouter.generate_class_a_loop().
         """
         pass  # Delegated to EliteClassARouter internally
@@ -66,19 +65,21 @@ class EliteGlobalRouter:
     def route_class_a_loop(
         self, panel: Tuple[float, float], terminal_device: Tuple[float, float]
     ) -> DecisionProvenance:
-        """
-        Compute a full Class A loop via EliteClassARouter and wrap
+        """Compute a full Class A loop via EliteClassARouter and wrap
         the result in a DecisionProvenance for audit trail compatibility.
 
-        Parameters:
+        Parameters
+        ----------
             panel: (x, y) coordinates of the fire alarm panel.
             terminal_device: (x, y) coordinates of the last device on the loop.
 
-        Returns:
+        Returns
+        -------
             DecisionProvenance with:
               - value: {"out_path": [...], "return_path": [...]}
               - rules_applied: NFPA 72 S12.2.2 with 1.0m constant
               - violations: CRITICAL if return path blocked
+
         """
         try:
             result = self._router.generate_class_a_loop(panel, [terminal_device])

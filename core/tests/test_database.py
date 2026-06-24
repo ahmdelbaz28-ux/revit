@@ -1,5 +1,4 @@
-"""
-core/tests/test_database.py — Comprehensive unit tests for core/database.py
+"""core/tests/test_database.py — Comprehensive unit tests for core/database.py
 
 Tests the UniversalDataModel SQLite store covering:
 - Database initialization (in-memory and file-based)

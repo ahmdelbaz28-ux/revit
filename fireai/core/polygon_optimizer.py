@@ -1,5 +1,4 @@
-"""
-fireai/core/polygon_optimizer.py  V1.0
+"""fireai/core/polygon_optimizer.py  V1.0
 ======================================
 True polygon support for non-rectangular rooms.
 
@@ -49,8 +48,7 @@ from fireai.core.spatial_engine.density_optimizer import (
 
 @dataclass
 class PolygonRoom:
-    """
-    Room model for polygon-based rooms (including rectangular).
+    """Room model for polygon-based rooms (including rectangular).
 
     Attributes:
         room_id:        Unique room identifier.
@@ -59,6 +57,7 @@ class PolygonRoom:
         detector_type:  Detector type string (default "smoke").
         ducts:          Optional list of duct specification dicts.
         name:           Display name (default same as room_id).
+
     """
 
     room_id: str
@@ -81,7 +80,7 @@ class PolygonRoom:
         origin: Tuple[float, float] = (0.0, 0.0),
         ceiling_height: float = 3.0,
         detector_type: str = "smoke",
-    ) -> "PolygonRoom":
+    ) -> PolygonRoom:
         """Create a rectangular PolygonRoom from dimensions."""
         ox, oy = origin
         return cls(
@@ -103,7 +102,7 @@ class PolygonRoom:
         origin: Tuple[float, float] = (0.0, 0.0),
         ceiling_height: float = 3.0,
         detector_type: str = "smoke",
-    ) -> "PolygonRoom":
+    ) -> PolygonRoom:
         """Create an L-shaped PolygonRoom from dimensions and cutout."""
         ox, oy = origin
         tw, tl = total_width, total_length
@@ -149,8 +148,7 @@ class PolygonRoom:
 
 @dataclass
 class PolygonRoomSummary:
-    """
-    Result summary for a polygon room analysis.
+    """Result summary for a polygon room analysis.
 
     Attributes:
         room_id:        Room identifier.
@@ -171,6 +169,7 @@ class PolygonRoomSummary:
         analysis_ms:    Wall-clock analysis time in milliseconds.
         duct_devices:   List of duct detector results.
         duct_warnings:  List of duct analysis warnings.
+
     """
 
     room_id: str
@@ -224,8 +223,7 @@ def _greedy_set_cover(
     polygon: List[Tuple[float, float]],
     radius: float,
 ) -> List[Tuple[float, float]]:
-    """
-    Greedy Set Cover placement on polygon interior.
+    """Greedy Set Cover placement on polygon interior.
 
     Candidate positions = interior_points.
     Each candidate covers all interior_points within *radius*.
@@ -286,8 +284,7 @@ def _audit_nfpa_spacing(
     detectors: List[Tuple[float, float]],
     max_spacing: float = MAX_SPACING_M,
 ) -> List[str]:
-    """
-    Check NFPA 72 spacing between adjacent detectors.
+    """Check NFPA 72 spacing between adjacent detectors.
 
     For each detector, verify that the nearest neighbor is within
     max_spacing. Returns list of violation descriptions.
@@ -316,8 +313,7 @@ def _audit_nfpa_spacing(
 
 
 class PolygonDensityOptimizer:
-    """
-    Polygon-aware detector placement optimizer.
+    """Polygon-aware detector placement optimizer.
 
     Strategy:
         - Rectangular polygon -> delegate to DensityOptimizer V7.3 (proven).
@@ -355,14 +351,14 @@ class PolygonDensityOptimizer:
     # ------------------------------------------------------------------
 
     def optimize_polygon(self, room: PolygonRoom) -> PolygonRoomSummary:
-        """
-        Optimise detector placement for a polygon room.
+        """Optimise detector placement for a polygon room.
 
         Args:
             room: PolygonRoom with polygon, ceiling_height, detector_type.
 
         Returns:
             PolygonRoomSummary with detectors, coverage, compliance info.
+
         """
         t0 = time.time()
 
@@ -436,8 +432,7 @@ class PolygonDensityOptimizer:
         radius: float,
         spec: CoverageSpec,
     ) -> PolygonRoomSummary:
-        """
-        Greedy Set Cover placement for non-rectangular polygons.
+        """Greedy Set Cover placement for non-rectangular polygons.
 
         1. Generate interior grid points within the polygon
         2. Run greedy set cover to select detector positions
@@ -484,8 +479,7 @@ class PolygonDensityOptimizer:
         room: PolygonRoom,
         summary: PolygonRoomSummary,
     ) -> None:
-        """
-        Run duct detector analysis using the existing duct_detector module.
+        """Run duct detector analysis using the existing duct_detector module.
 
         Uses the correct API: analyse_ducts(ducts: List[DuctSpec]).
         Converts dict entries to DuctSpec if needed.

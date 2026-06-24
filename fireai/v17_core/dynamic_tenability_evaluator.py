@@ -1,5 +1,4 @@
-"""
-v17_core/dynamic_tenability_evaluator.py — NFPA 101 §9.3 ASET vs RSET
+"""v17_core/dynamic_tenability_evaluator.py — NFPA 101 §9.3 ASET vs RSET
 ======================================================================
 CRITICAL LIFE-SAFETY MODULE — Part of the V17 Critical Trilogy
 
@@ -131,6 +130,7 @@ class TenabilityEvaluator:
             pre_movement_delay_s: Default pre-movement delay in seconds.
                 Overridden by occupancy-based values when occupancy_type
                 is provided. Default: 60s (consultant's value — fallback).
+
         """
         self.speed = walking_speed_mps
         self.delay = pre_movement_delay_s
@@ -182,6 +182,7 @@ class TenabilityEvaluator:
         Returns:
             DecisionProvenance with ASET/RSET comparison and audit trail,
             or dict if provenance is unavailable.
+
         """
         # Calculate ASET — use time-series if available, else estimate
         if smoke_layer_height_series:
@@ -349,6 +350,7 @@ class TenabilityEvaluator:
 
         Returns:
             Dict with ASET/RSET analysis results for release_gates.py Gate 7.
+
         """
         return perform_aset_rset_analysis(
             room_area_m2=room_area_m2,

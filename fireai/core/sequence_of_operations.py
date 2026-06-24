@@ -1,5 +1,4 @@
-"""
-sequence_of_operations.py — NFPA 72 §14.4 Cause & Effect Matrix Generator
+"""sequence_of_operations.py — NFPA 72 §14.4 Cause & Effect Matrix Generator
 ==========================================================================
 CRITICAL LIFE-SAFETY MODULE — V18
 
@@ -288,6 +287,7 @@ class DeviceInput:
         zone_id: Zone/fire area identifier.
         floor_id: Floor identifier for zone-specific outputs.
         description: Human-readable device description.
+
     """
 
     device_id: str
@@ -313,6 +313,7 @@ class MatrixRow:
         input_type: DeviceInputType classification.
         outputs_triggered: List of LogicFunction outputs.
         nfpa_references: NFPA 72 section citations for this row.
+
     """
 
     input_device_id: str
@@ -416,6 +417,7 @@ class SequenceOfOperationsMatrix:
         Returns:
             DecisionProvenance with the complete matrix, or dict if
             provenance is unavailable.
+
         """
         matrix_rows: List[MatrixRow] = []
         warnings: List[str] = []
@@ -574,6 +576,7 @@ class SequenceOfOperationsMatrix:
 
         Returns:
             Same as generate_matrix().
+
         """
         typed_devices = []
         for dev in devices:
@@ -638,11 +641,11 @@ class SequenceOfOperationsMatrix:
 
 
 __all__ = [
-    "LogicFunction",
-    "DeviceInputType",
-    "DeviceInput",
-    "MatrixRow",
     "CAUSE_EFFECT_RULES",
     "NFPA_REFERENCES",
+    "DeviceInput",
+    "DeviceInputType",
+    "LogicFunction",
+    "MatrixRow",
     "SequenceOfOperationsMatrix",
 ]

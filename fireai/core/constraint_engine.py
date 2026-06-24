@@ -1,5 +1,4 @@
-"""
-fireai.core.constraint_engine — Code-Based Routing Constraints
+"""fireai.core.constraint_engine — Code-Based Routing Constraints
 ==============================================================
 
 Deterministic constraint engine for fire alarm cable routing.
@@ -159,6 +158,7 @@ class ConstraintResult:
         severity: 'CRITICAL', 'HIGH', 'MEDIUM', or 'LOW'.
         remediation: What to do if the constraint is violated.
         formula: The formula used for the check, with values.
+
     """
 
     constraint_name: str
@@ -181,6 +181,7 @@ class RoutingConstraintSet:
         all_satisfied: True if ALL constraints are satisfied.
         critical_violations: Count of CRITICAL severity violations.
         total_violations: Count of all violations.
+
     """
 
     results: Tuple[ConstraintResult, ...]
@@ -238,6 +239,7 @@ class ConstraintEngine:
             max_fastening_interval_mm: Maximum cable fastening interval (default 457mm).
             bend_penalty_m: Bend penalty in equivalent meters (default 0.5m).
             elevation_penalty_m: Elevation change penalty (default 2.0m).
+
         """
         self._min_conduit_inches = min_conduit_inches
         self._bend_radius_factor = bend_radius_factor
@@ -270,6 +272,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with pass/fail status.
+
         """
         max_length = _NAC_MAX_LENGTHS_M.get(wire_gauge, 229.0)  # type: ignore[call-overload]
 
@@ -346,6 +349,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with voltage drop analysis.
+
         """
         # Compute voltage drop with DC return path (×2)
         # V60 FIX: Use temperature-corrected resistance per NEC practice
@@ -425,6 +429,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with separation check result.
+
         """
         is_satisfied = actual_separation_mm >= self._min_electrical_separation_mm
 
@@ -476,6 +481,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with bend radius check.
+
         """
         max_bend_radius = self._bend_radius_factor * conduit_diameter_mm
 
@@ -544,6 +550,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with conduit size check.
+
         """
         is_satisfied = conduit_inches >= self._min_conduit_inches
 
@@ -577,6 +584,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with fastening check.
+
         """
         max_interval_mm = self._max_fastening_interval_mm
 
@@ -667,6 +675,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with separation check.
+
         """
         min_distance = float("inf")
 
@@ -731,6 +740,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with ampacity analysis.
+
         """
         amp_result = check_ampacity(
             alarm_current_a=alarm_current_a,
@@ -781,6 +791,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with derating information.
+
         """
         factor = get_ambient_derating_factor(ambient_temp_c, conductor_temp_rating_c)
         is_satisfied = factor >= 0.80  # Flag if derating is severe
@@ -821,6 +832,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with derating information.
+
         """
         factor = get_conductor_count_derating(num_current_carrying)
         is_satisfied = num_current_carrying <= 3
@@ -864,6 +876,7 @@ class ConstraintEngine:
 
         Returns:
             ConstraintResult with fill percentage.
+
         """
         if conduit_inner_diameter_mm <= 0:
             return ConstraintResult(
@@ -985,6 +998,7 @@ class ConstraintEngine:
 
         Returns:
             RoutingConstraintSet with all check results.
+
         """
         results = []
 
@@ -1135,6 +1149,7 @@ class ConstraintEngine:
 
         Returns:
             Movement cost in equivalent meters.
+
         """
         dz = to_cell[2] - from_cell[2]
 
@@ -1181,6 +1196,7 @@ class ConstraintEngine:
 
         Returns:
             Bend cost in equivalent meters (0.0 for straight, 0.5 for 90°).
+
         """
         if prev_dir is None:
             return 0.0  # First move has no bend
@@ -1218,6 +1234,7 @@ class ConstraintEngine:
 
         Returns:
             Estimated minimum cost from current to goal.
+
         """
         dx = abs(goal[0] - current[0])
         dy = abs(goal[1] - current[1])

@@ -1,5 +1,4 @@
-"""
-enterprise_pipeline.py — V17 Enterprise Orchestrator
+"""enterprise_pipeline.py — V17 Enterprise Orchestrator
 =====================================================
 Connects all V17 Critical Trilogy modules into a unified pipeline
 for AHJ submittal. This replaces the disconnected checks that could
@@ -59,6 +58,7 @@ class V17SystemResult:
         release_gate_result: Release gate evaluation result.
         violations: All violations from all modules.
         summary: Human-readable summary.
+
     """
 
     acoustic_compliant: bool
@@ -110,6 +110,7 @@ class EnterpriseOrchestrator:
             battery_alarm_minutes: Default alarm minutes for battery sizing.
             tenability_walking_speed_mps: Default walking speed for ASET/RSET.
             tenability_pre_movement_delay_s: Default pre-movement delay.
+
         """
         # V78 FIX: Safe import pattern — if v17_core is unavailable, degrade gracefully
         # instead of crashing the entire enterprise pipeline. Per integration_bridge.py
@@ -166,6 +167,7 @@ class EnterpriseOrchestrator:
 
         Returns:
             DecisionProvenance or dict with acoustic compliance result.
+
         """
         return self.acoustic_calc.calculate_room_spl(
             room_id=room_id,
@@ -196,6 +198,7 @@ class EnterpriseOrchestrator:
 
         Returns:
             DecisionProvenance or dict with battery compliance result.
+
         """
         return self.battery_sizer.calculate_minimum_ah(
             quiescent_ma=quiescent_ma,
@@ -226,6 +229,7 @@ class EnterpriseOrchestrator:
 
         Returns:
             DecisionProvenance or dict with tenability compliance result.
+
         """
         return self.tenability_eval.validate_aset_vs_rset(
             longest_travel_dist_m=longest_travel_dist_m,
@@ -255,6 +259,7 @@ class EnterpriseOrchestrator:
 
         Returns:
             V17SystemResult with compliance status for all checks.
+
         """
         all_violations: List[Dict[str, Any]] = []
         acoustic_compliant = False

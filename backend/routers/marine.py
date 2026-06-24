@@ -1,5 +1,4 @@
-"""
-backend/routers/marine.py — Marine Fire-Safety REST API
+"""backend/routers/marine.py — Marine Fire-Safety REST API
 =========================================================
 REST endpoints for the marine fire-safety module.
 
@@ -35,12 +34,14 @@ from backend.auth import require_permission
 from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.marine_service import get_marine_service
-
 from marine.core.types import (
-    DetectorType, ExtinguishingSystem, FireClass, FireHazardClass,
-    MarineZone, ShipProject, ShipType, SpaceCategory,
+    DetectorType,
+    FireClass,
+    MarineZone,
+    ShipProject,
+    ShipType,
+    SpaceCategory,
 )
-
 
 router = APIRouter(prefix="/marine", tags=["Marine"])
 
@@ -81,6 +82,7 @@ class ShipProjectRequest(BaseModel):
 
 class ZoneRequest(BaseModel):
     """Optional explicit zone definition (else auto-divide)."""
+
     zone_id: str
     name: str
     space_category: SpaceCategory
@@ -97,12 +99,14 @@ class ZoneRequest(BaseModel):
 
 class DesignRequest(BaseModel):
     """Full design request: ship + optional explicit zones."""
+
     ship: ShipProjectRequest
     zones: Optional[List[ZoneRequest]] = None
 
 
 class PowerDesignRequest(BaseModel):
     """Electrical power design request."""
+
     ship: ShipProjectRequest
     detection_load_w: float = Field(500.0, gt=0)
     alarm_load_w: float = Field(1000.0, gt=0)
@@ -111,6 +115,7 @@ class PowerDesignRequest(BaseModel):
 
 class EtapExportRequest(BaseModel):
     """ETAP export request."""
+
     ship: ShipProjectRequest
     detection_load_w: float = Field(500.0, gt=0)
     alarm_load_w: float = Field(1000.0, gt=0)
@@ -120,6 +125,7 @@ class EtapExportRequest(BaseModel):
 
 class DetectorPlacementRequest(BaseModel):
     """Minimal detector placement payload for DXF/Revit exports."""
+
     detector_id: str
     zone_id: str
     detector_type: DetectorType
@@ -132,6 +138,7 @@ class DetectorPlacementRequest(BaseModel):
 
 class DxfExportRequest(BaseModel):
     """DXF export request."""
+
     zones: List[ZoneRequest]
     detector_placements: Optional[List[DetectorPlacementRequest]] = None
     frame_spacing_m: float = Field(0.6, gt=0)
@@ -139,6 +146,7 @@ class DxfExportRequest(BaseModel):
 
 class RevitExportRequest(BaseModel):
     """Revit export request."""
+
     zones: List[ZoneRequest]
     detector_placements: Optional[List[DetectorPlacementRequest]] = None
 
@@ -221,7 +229,8 @@ async def validate_ship(request: Request, body: DesignRequest) -> Dict[str, Any]
         zones = divide_into_main_vertical_zones(ship.length_overall_m, ship)
 
     from marine.solas.chapter_ii_2 import (
-        validate_escape_routes, validate_main_vertical_zones,
+        validate_escape_routes,
+        validate_main_vertical_zones,
     )
     mvz = validate_main_vertical_zones(zones, ship)
     esc = validate_escape_routes(zones)
@@ -297,9 +306,9 @@ async def generate_alarm_logic(
     zones: List[ZoneRequest],
 ) -> Dict[str, Any]:
     """Generate the PLC/DCS alarm-logic tree for a set of zones."""
+    from marine.core.types import DetectorType
     from marine.engine.alarm_logic import export_to_plc_script, generate_logic_tree
     from marine.iec60092.part_502 import place_detectors_grid, select_detector_type
-    from marine.core.types import DetectorType
     domain_ship = ship.to_domain()
     all_nodes = []
     for zr in zones:
@@ -328,7 +337,8 @@ async def generate_scada(
 ) -> Dict[str, Any]:
     """Generate SCADA integration (MQTT topics + PyScada YAML)."""
     from marine.integration.scada_bridge import (
-        build_mqtt_topics, build_pyscada_yaml,
+        build_mqtt_topics,
+        build_pyscada_yaml,
     )
     tags = build_mqtt_topics(imo, zone_ids)
     return {
@@ -349,10 +359,12 @@ async def design_detection(
     zone: ZoneRequest,
 ) -> Dict[str, Any]:
     """Design detector selection, count, and grid placement for a zone."""
-    from marine.iec60092.part_502 import (
-        calculate_detector_count, place_detectors_grid, select_detector_type,
-    )
     from marine.core.types import DetectorType
+    from marine.iec60092.part_502 import (
+        calculate_detector_count,
+        place_detectors_grid,
+        select_detector_type,
+    )
 
     domain_ship = ship.to_domain()
     domain_zone = zone_to_domain(zone)
@@ -429,7 +441,8 @@ async def generate_etap(
     """Generate ETAP-compatible load and source CSVs."""
     from marine.iec60092.electrical_installations import design_fire_system_power
     from marine.integration.etap_bridge import (
-        export_etap_loads_csv, export_etap_sources_csv,
+        export_etap_loads_csv,
+        export_etap_sources_csv,
     )
     ship = body.ship.to_domain()
     spec = design_fire_system_power(
@@ -488,7 +501,9 @@ async def generate_revit(
     """Generate Revit families, placements, and division elements."""
     from marine.engine.fire_resistance import generate_division_specs
     from marine.integration.revit_exporter import (
-        generate_revit_division, generate_revit_family, generate_revit_placement,
+        generate_revit_division,
+        generate_revit_family,
+        generate_revit_placement,
     )
     zones = [zone_to_domain(z) for z in body.zones]
     dps = [

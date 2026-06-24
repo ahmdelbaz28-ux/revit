@@ -1,5 +1,4 @@
-"""
-core — Compatibility shim for the Universal Data Model (UDM) layer.
+"""core — Compatibility shim for the Universal Data Model (UDM) layer.
 
 This package exists SOLELY to satisfy import references throughout the
 codebase that use ``from core.models import ...`` and

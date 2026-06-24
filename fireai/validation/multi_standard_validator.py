@@ -1,5 +1,4 @@
-"""
-fireai/validation/multi_standard_validator.py — Advanced Multi-Standard Validation.
+"""fireai/validation/multi_standard_validator.py — Advanced Multi-Standard Validation.
 
 Composite pattern: each standard is a StandardValidator subclass.
 Supports cross-system conflict detection between standards.
@@ -55,6 +54,7 @@ class SeverityLevel(Enum):
 @dataclass(frozen=True)
 class DesignData:
     """Immutable design data container for validation."""
+
     project_id: str = ""
     project_name: str = ""
     building_type: str = "commercial"
@@ -107,6 +107,7 @@ class DesignData:
 @dataclass
 class RuleApplication:
     """Trace record of a single rule application."""
+
     rule_id: str
     section: str
     standard: ValidationStandard
@@ -125,6 +126,7 @@ class RuleApplication:
 @dataclass
 class StandardReport:
     """Validation report for a single standard."""
+
     standard: ValidationStandard
     passed: bool
     total_rules: int
@@ -138,6 +140,7 @@ class StandardReport:
 @dataclass
 class CrossSystemConflict:
     """A conflict detected between two standards."""
+
     conflict_id: str
     standard_a: ValidationStandard
     standard_b: ValidationStandard
@@ -153,6 +156,7 @@ class CrossSystemConflict:
 @dataclass
 class CrossSystemReport:
     """Cross-system conflict detection report."""
+
     total_conflicts: int = 0
     conflicts: List[CrossSystemConflict] = field(default_factory=list)
     summary: str = ""
@@ -161,6 +165,7 @@ class CrossSystemReport:
 @dataclass
 class ValidationReport:
     """Complete multi-standard validation report."""
+
     design_id: str = ""
     design_name: str = ""
     timestamp: str = field(
@@ -811,6 +816,7 @@ class MultiStandardValidator:
         Returns:
             A ValidationReport containing per-standard results and
             cross-system conflict analysis.
+
         """
         report = ValidationReport(
             design_id=design.project_id,

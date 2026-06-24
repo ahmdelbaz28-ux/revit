@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-fireai/cli.py - Unified CLI for FireAI
+"""fireai/cli.py - Unified CLI for FireAI
 Usage: python -m fireai.cli build -f FILE.dxf -o OUTPUT_DIR
 
 V82 FIX: Removed all dead ``src.*`` imports that never existed.
@@ -28,7 +27,7 @@ import click
 _src_modules: dict = {}
 
 try:
-    from fireai.dxf_importer import DXFImporter as _DXFImporter  # noqa: F401
+    from fireai.dxf_importer import DXFImporter as _DXFImporter
     _src_modules["dxf_importer"] = _DXFImporter
 except ImportError:
     pass

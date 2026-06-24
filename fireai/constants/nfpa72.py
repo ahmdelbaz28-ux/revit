@@ -1,5 +1,4 @@
-"""
-FireAI — NFPA 72 Centralized Constants (Single Source of Truth)
+"""FireAI — NFPA 72 Centralized Constants (Single Source of Truth)
 
 CANONICAL SOURCE for all NFPA 72-2022 constants used across the codebase.
 No other module may define duplicate NFPA 72 constants — all must import from here.

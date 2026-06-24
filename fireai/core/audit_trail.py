@@ -79,8 +79,7 @@ class AuditEntry:
 
 
 class AuditTrail:
-    """
-    Immutable, thread-safe audit log with per-entry SHA-256 hash.
+    """Immutable, thread-safe audit log with per-entry SHA-256 hash.
 
     All append operations are protected by a threading.Lock to ensure
     no entries are lost under concurrent writes (e.g. FastAPI async).

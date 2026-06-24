@@ -1,5 +1,4 @@
-"""
-backend/app.py — FastAPI Application Entry Point
+"""backend/app.py — FastAPI Application Entry Point
 ===============================================
 
 Core FastAPI application with all CAD/BIM integration routes.
@@ -31,25 +30,29 @@ V129 INFRASTRUCTURE SECURITY HARDENING (2026-06-18):
     production deployments MUST use a reverse proxy: nginx, traefik, AWS ALB)
 """
 
+import logging
 import os
 import sys
-import time
-import logging
 import threading
+import time
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-# Import our CAD/BIM integration routers
-from backend.routers import autocad, revit, digital_twin
-from backend.routers import health as health_router_module
+# V129: Auth dependency for cache management endpoints (was public).
+from backend.auth import require_permission
 
 # Import rate limiter from centralized module (avoids circular import)
 from backend.limiter import limiter
+from backend.rbac import Permission
+
+# Import our CAD/BIM integration routers
+from backend.routers import autocad, digital_twin, revit
+from backend.routers import health as health_router_module
 
 # V129: Security middleware — SecurityHeadersMiddleware adds X-Frame-Options,
 # X-Content-Type-Options, HSTS, CSP, Referrer-Policy, Permissions-Policy to
@@ -60,10 +63,6 @@ from backend.security_middleware import (
     CorrelationIdMiddleware,
     SecurityHeadersMiddleware,
 )
-
-# V129: Auth dependency for cache management endpoints (was public).
-from backend.auth import require_permission
-from backend.rbac import Permission
 
 # Configure logging
 logging.basicConfig(
@@ -313,8 +312,7 @@ async def cache_delete(key: str):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Application lifespan events.
+    """Application lifespan events.
     Used for startup and shutdown tasks.
     """
     logger.info("Starting CAD/BIM Integration Platform...")
@@ -504,6 +502,7 @@ for _router_name in (
 # detector selection, extinguishing sizing, alarm-logic generation, and
 # SCADA/ETAP/Revit/AutoCAD integrations for marine projects.
 from backend.routers import marine as marine_router_module  # noqa: E402
+
 app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"])
 
 # V130 FIX: Mount the monitor router so Prometheus can scrape /api/v1/monitor/metrics.
@@ -513,6 +512,7 @@ app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"
 # For unauthenticated /metrics scraping, deploy a sidecar that injects a
 # service-account API key, or expose /metrics via a separate internal port.
 from backend.routers import monitor as monitor_router_module  # noqa: E402
+
 app.include_router(monitor_router_module.router, prefix="/api/v1", tags=["Monitor"])
 
 # V129: Mount the health router under /api prefix so /api/health works.

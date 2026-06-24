@@ -1,5 +1,4 @@
-"""
-safety_audit_engine.py – FireAI V21.2 Automated Safety Audit Engine
+"""safety_audit_engine.py – FireAI V21.2 Automated Safety Audit Engine
 ====================================================================
 Post-calculation compliance validation engine. Runs as the final step
 after all 5 layers complete. Validates design outputs against IEC/NFPA
@@ -183,8 +182,7 @@ class AuditResult(BaseModel):
 
 
 def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 6.0) -> ElevationTier:
-    """
-    Infer the elevation tier of a detector from its Z position.
+    """Infer the elevation tier of a detector from its Z position.
 
     This is a heuristic mapping. In practice, the engineer should specify
     the intended elevation tier directly. This function provides a reasonable
@@ -196,6 +194,7 @@ def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 
 
     Returns:
         ElevationTier based on detector height relative to ceiling
+
     """
     # V57 FIX: NaN z_position silently falls through to BREATHING_ZONE.
     # NaN >= X is False, NaN <= X is False → BREATHING_ZONE (middle tier).
@@ -205,10 +204,9 @@ def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 
         # for NaN and emit CRITICAL violation via ZAX-002/ZAX-003
     if z_position >= ceiling_height_m * 0.75:
         return ElevationTier.HIGH
-    elif z_position <= ceiling_height_m * 0.25:
+    if z_position <= ceiling_height_m * 0.25:
         return ElevationTier.LOW
-    else:
-        return ElevationTier.BREATHING_ZONE
+    return ElevationTier.BREATHING_ZONE
 
 
 # ---------------------------------------------------------------------------
@@ -234,8 +232,7 @@ def _get_required_redundancy(
     zone: ZoneType,
     jurisdiction: Jurisdiction,
 ) -> int:
-    """
-    Get minimum required detector redundancy per zone and jurisdiction.
+    """Get minimum required detector redundancy per zone and jurisdiction.
 
     For GLOBAL_IEC / EGYPTIAN_FIRE_CODE / USA_NFPA: uses MIN_REDUNDANCY_BY_ZONE
     These jurisdictions follow base IEC/NFPA standards which allow
@@ -250,6 +247,7 @@ def _get_required_redundancy(
 
     Returns:
         Minimum number of independent detectors required per point
+
     """
     # V43 FIX: If zone is None or unrecognized, return a conservative default
     # (2 detectors) instead of 1. A single detector in an unknown zone is a
@@ -270,8 +268,7 @@ def _get_required_redundancy(
 
 
 class SafetyAuditEngine:
-    """
-    Automated safety audit engine for FireAI design outputs.
+    """Automated safety audit engine for FireAI design outputs.
 
     Runs as the FINAL step in the design pipeline (after Layer 5).
     Validates design outputs against IEC/NFPA rules and jurisdiction-specific
@@ -319,8 +316,7 @@ class SafetyAuditEngine:
         ceiling_height_m: float = 6.0,
         audit_input: Optional[AuditInput] = None,
     ) -> AuditResult:
-        """
-        Run all audit gates and return combined AuditResult.
+        """Run all audit gates and return combined AuditResult.
 
         Args:
             zone: Zone classification from Layer 2
@@ -334,6 +330,7 @@ class SafetyAuditEngine:
 
         Returns:
             AuditResult with PASS/FAIL status and list of violations
+
         """
         # ── Handle AuditInput (simplified API) ──
         if audit_input is not None:
@@ -456,8 +453,7 @@ class SafetyAuditEngine:
         )
 
     def _run_audit_from_input(self, audit_input: AuditInput) -> AuditResult:
-        """
-        Run audit from a structured AuditInput object.
+        """Run audit from a structured AuditInput object.
 
         This method uses the simplified AuditInput API where the caller
         provides a single immutable object with all audit parameters.
@@ -577,8 +573,7 @@ class SafetyAuditEngine:
         self,
         audit_input: AuditInput,
     ) -> tuple:
-        """
-        Check detector elevation vs gas buoyancy using ratio-based classification.
+        """Check detector elevation vs gas buoyancy using ratio-based classification.
 
         Uses vapor_density_tier() from models_v21 for precise density-ratio
         classification (0.97/1.03 of AIR_MW thresholds).
@@ -592,6 +587,7 @@ class SafetyAuditEngine:
 
         Returns:
             Tuple of (violations, total_checks, passed_checks)
+
         """
         violations: List[AuditViolation] = []
         total_checks = 1
@@ -986,8 +982,7 @@ class SafetyAuditEngine:
         detector_z_positions: Optional[List[float]],
         ceiling_height_m: float,
     ) -> tuple:
-        """
-        Check detector elevation against gas buoyancy behavior.
+        """Check detector elevation against gas buoyancy behavior.
 
         Gas buoyancy determines WHERE a gas accumulates, classified by
         density ratio (MW_gas / MW_air) using ±3% band:
@@ -1145,8 +1140,7 @@ class SafetyAuditEngine:
         zone: ZoneType,
         env_context: EnvironmentalContext,
     ) -> tuple:
-        """
-        Check MENA region-specific advisory rules.
+        """Check MENA region-specific advisory rules.
 
         These are advisory (WARNING/INFO) — NOT forced. The engineer
         always has the final say. The audit merely highlights conditions

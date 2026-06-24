@@ -1,5 +1,4 @@
-"""
-backend/routers/qomn.py — QOMN-FIRE Engineering Kernel REST API
+"""backend/routers/qomn.py — QOMN-FIRE Engineering Kernel REST API
 ================================================================
 REST endpoints for the QOMN-FIRE deterministic engineering kernel.
 
@@ -154,6 +153,7 @@ def _get_kernel():
 
 class SmokeSpacingRequest(BaseModel):
     """Input for smoke detector spacing calculation."""
+
     ceiling_height_m: float = Field(
         ..., gt=0, le=18.288,
         description="Ceiling height in meters [0+, ≤18.288m per NFPA 72 §17.7.3.2.4]"
@@ -162,6 +162,7 @@ class SmokeSpacingRequest(BaseModel):
 
 class HeatSpacingRequest(BaseModel):
     """Input for heat detector spacing calculation."""
+
     ceiling_height_m:      float = Field(..., gt=0, le=18.288)
     area_per_detector_m2:  float = Field(
         ..., gt=0,
@@ -171,6 +172,7 @@ class HeatSpacingRequest(BaseModel):
 
 class BatteryRequest(BaseModel):
     """Input for battery capacity calculation per NFPA 72 §10.6.7.2.1."""
+
     standby_load_a:  float = Field(..., ge=0, description="Standby current in Amperes")
     alarm_load_a:    float = Field(..., ge=0, description="Alarm current in Amperes")
     standby_hours:   float = Field(24.0, gt=0, le=96, description="Standby hours (default 24h)")
@@ -181,6 +183,7 @@ class BatteryRequest(BaseModel):
 
 class VoltageDropRequest(BaseModel):
     """Input for voltage drop calculation per NEC Chapter 9, Table 8."""
+
     current_a:        float = Field(..., gt=0, description="Circuit current in Amperes")
     length_m:         float = Field(..., gt=0, description="One-way circuit length in meters")
     # V65 FIX: Validate AWG gauge against NEC Table 8 valid sizes.
@@ -220,6 +223,7 @@ class VoltageDropRequest(BaseModel):
 
 class RoomRequest(BaseModel):
     """Room specification for detector placement."""
+
     room_id:          str   = Field(..., description="Unique room identifier")
     width_m:          float = Field(..., gt=0, description="Room width in meters")
     length_m:         float = Field(..., gt=0, description="Room length in meters")
@@ -237,6 +241,7 @@ class RoomRequest(BaseModel):
 
 class DuctDetectorRequest(BaseModel):
     """Duct detector placement request."""
+
     duct_id:        str   = Field(..., description="Duct identifier")
     width_m:        float = Field(..., gt=0, description="Duct width in meters")
     height_m:       float = Field(..., gt=0, description="Duct height in meters")

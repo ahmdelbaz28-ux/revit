@@ -42,13 +42,13 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "RiserPanel",
+    "RiserDiagramGenerator",
+    "RiserDiagramResult",
+    "RiserDiagramSpec",
     "RiserLoop",
     "RiserNACCircuit",
     "RiserNetworkLink",
-    "RiserDiagramSpec",
-    "RiserDiagramResult",
-    "RiserDiagramGenerator",
+    "RiserPanel",
 ]
 
 
@@ -67,6 +67,7 @@ class RiserPanel:
         floor_id:   Floor where panel is located.
         loop_count: Number of SLC loops on this panel.
         nac_count:  Number of NAC circuits on this panel.
+
     """
 
     panel_id: str
@@ -89,6 +90,7 @@ class RiserLoop:
         cable_type:        Cable type (FPL/FPLR/FPLP/CI).
         cable_length_m:    Estimated cable length.
         class_type:        "A" or "B" (Class A or Class B wiring).
+
     """
 
     loop_id: str
@@ -112,6 +114,7 @@ class RiserNACCircuit:
         device_count:   Number of notification appliances.
         floor_id:       Floor served.
         cable_type:     Cable type for NAC wiring.
+
     """
 
     nac_id: str
@@ -131,6 +134,7 @@ class RiserNetworkLink:
         to_panel:   Destination panel ID.
         link_type:  "NETWORK" (panel-to-panel) or "RISER" (vertical cable).
         cable_type: Cable type for the network link.
+
     """
 
     from_panel: str
@@ -151,6 +155,7 @@ class RiserDiagramSpec:
         network_links:   Network connections between panels.
         survivability_level: Pathway survivability level (from engine).
         nfpa_version:    NFPA edition applied.
+
     """
 
     project_name: str = "FIRE ALARM SYSTEM"
@@ -173,6 +178,7 @@ class RiserDiagramResult:
         nac_count:   Number of NAC circuits drawn.
         warnings:    Non-fatal advisories.
         errors:      Fatal issues.
+
     """
 
     output_path: str = ""
@@ -235,6 +241,7 @@ class RiserDiagramGenerator:
 
         Returns:
             RiserDiagramResult with generation statistics.
+
         """
         result = RiserDiagramResult()
 

@@ -1,5 +1,4 @@
-"""
-fireai/core/tests/test_security_logging.py — Security Logging Tests
+"""fireai/core/tests/test_security_logging.py — Security Logging Tests
 =====================================================================
 Task 2.14: Enhance security test coverage (91% → 95%)
 

@@ -73,7 +73,7 @@ def _reset_module_state():
     audit_mod.DATABASE_PATH = orig_db_path
 
 
-@pytest.fixture()
+@pytest.fixture
 def memory_db():
     """Configure audit_store to use an in-memory database and initialise it."""
     audit_mod.DATABASE_PATH = ":memory:"
@@ -91,7 +91,7 @@ def memory_db():
     audit_mod._db_initialized = False
 
 
-@pytest.fixture()
+@pytest.fixture
 def hmac_key_env():
     """Set a valid AUDIT_HMAC_KEY in the environment and restore on exit."""
     key = "a" * 32  # 32-char minimum valid key
@@ -104,7 +104,7 @@ def hmac_key_env():
         os.environ["AUDIT_HMAC_KEY"] = old
 
 
-@pytest.fixture()
+@pytest.fixture
 def clean_hmac_env():
     """Ensure AUDIT_HMAC_KEY is NOT set; restore on exit."""
     old = os.environ.pop("AUDIT_HMAC_KEY", None)
@@ -113,7 +113,7 @@ def clean_hmac_env():
         os.environ["AUDIT_HMAC_KEY"] = old
 
 
-@pytest.fixture()
+@pytest.fixture
 def production_env():
     """Set FIREAI_ENV=production; restore on exit."""
     old = os.environ.get("FIREAI_ENV")
@@ -1046,7 +1046,7 @@ class TestFileDatabase:
             conn = audit_mod._get_connection()
             audit_mod._release_connection(conn)
             # Connection should be closed now; using it should raise
-            with pytest.raises((RuntimeError, ValueError, Exception)):  # noqa: B017
+            with pytest.raises((RuntimeError, ValueError, Exception)):
                 conn.execute("SELECT 1")
             audit_mod._db_initialized = False
 

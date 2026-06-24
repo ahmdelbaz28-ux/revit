@@ -1,5 +1,4 @@
-"""
-test_monitor_integration.py — HTTP-level integration tests for the Monitor
+"""test_monitor_integration.py — HTTP-level integration tests for the Monitor
 dashboard API endpoints.
 
 Covers all 6 monitor endpoints that are NOT exercised by the existing

@@ -1,5 +1,4 @@
-"""
-revit_acl.py – Anti-Corruption Layer for Revit/BIM Data Import
+"""revit_acl.py – Anti-Corruption Layer for Revit/BIM Data Import
 ==============================================================
 Protects strict Pydantic domain models from corrupted external data.
 
@@ -177,8 +176,7 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
 
 
 class RevitSubstanceDTO(BaseModel):
-    """
-    Anti-Corruption Layer for substance data from Revit/BIM exports.
+    """Anti-Corruption Layer for substance data from Revit/BIM exports.
 
     This model is FLEXIBLE (strict=False) to accept raw external data.
     It sanitizes and coerces values before converting to strict domain models.
@@ -252,8 +250,7 @@ class RevitSubstanceDTO(BaseModel):
         return data
 
     def to_domain(self, report: Optional[ImportReport] = None) -> Optional[SubstanceProperties]:
-        """
-        Convert this flexible DTO to a strict SubstanceProperties model.
+        """Convert this flexible DTO to a strict SubstanceProperties model.
         Returns None if conversion fails (logged to report).
         """
         try:
@@ -301,8 +298,7 @@ class RevitSubstanceDTO(BaseModel):
 
 
 class RevitObstructionDTO(BaseModel):
-    """
-    Anti-Corruption Layer for obstruction data from Revit/BIM exports.
+    """Anti-Corruption Layer for obstruction data from Revit/BIM exports.
     Handles: missing transparency data, vertex format variations, etc.
     """
 
@@ -388,8 +384,7 @@ class RevitObstructionDTO(BaseModel):
 
 
 class RevitDetectorDTO(BaseModel):
-    """
-    Anti-Corruption Layer for flame detector data from Revit/BIM exports.
+    """Anti-Corruption Layer for flame detector data from Revit/BIM exports.
     """
 
     model_config = ConfigDict(frozen=False, strict=False, extra="allow")
@@ -467,8 +462,7 @@ class RevitDetectorDTO(BaseModel):
 def import_substances_from_revit(
     raw_data: List[Dict[str, Any]],
 ) -> Tuple[List[SubstanceProperties], ImportReport]:
-    """
-    Import a batch of substance data from Revit/BIM export.
+    """Import a batch of substance data from Revit/BIM export.
 
     Args:
         raw_data: List of dictionaries from Revit API/CSV/JSON export.
@@ -476,6 +470,7 @@ def import_substances_from_revit(
     Returns:
         Tuple of (valid_substances, import_report).
         Invalid entries are logged in the report and skipped — CLI continues.
+
     """
     report = ImportReport(total_elements=len(raw_data))
 

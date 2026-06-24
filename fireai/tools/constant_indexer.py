@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-FireAI — Constants Usage Index Generator
+"""FireAI — Constants Usage Index Generator
 
 This script scans the codebase and generates a comprehensive index of:
 1. Where each constant is DEFINED (canonical source)
@@ -14,7 +13,6 @@ from __future__ import annotations
 # Output: fireai/CONSTANTS_USAGE_MAP.json
 #
 # PE SIGN-OFF REQUIRED for any changes to canonical constants.
-
 import json
 import logging
 import re
@@ -208,7 +206,6 @@ def check_constant_consistency(root_path: Path) -> list[dict]:
 
 def generate_report(root_path: Path) -> dict[str, Any]:
     """Generate comprehensive constants index report."""
-
     constants_list = list(CANONICAL_CONSTANTS.keys())
     definitions = find_constant_definitions(root_path)
     usages = find_constant_usages(root_path, constants_list)

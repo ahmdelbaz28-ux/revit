@@ -1,5 +1,4 @@
-"""
-FireAI Rules Engine — NFPA 72 Declarative Rule Definitions
+"""FireAI Rules Engine — NFPA 72 Declarative Rule Definitions
 ============================================================
 
 Defines NFPA 72 fire alarm code compliance rules as declarative

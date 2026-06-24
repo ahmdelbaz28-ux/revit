@@ -1,5 +1,4 @@
-"""
-fireai/core/multi_floor_orchestrator.py
+"""fireai/core/multi_floor_orchestrator.py
 ========================================
 LIFE-SAFETY CRITICAL: Multi-Floor Building Orchestrator for FireAI.
 
@@ -203,6 +202,7 @@ class SLCLoop:
         voltage_drop_compliant: Whether voltage drop is within §27.4.1 limits.
         warnings: Advisory warnings.
         nfpa_reference: Applicable NFPA 72 section.
+
     """
 
     loop_id: str
@@ -249,6 +249,7 @@ class VerticalZone:
         area_compliant: Whether total area is within §21.3.4 limits.
         warnings: Advisory warnings.
         nfpa_reference: Applicable NFPA 72 section.
+
     """
 
     zone_id: str
@@ -286,6 +287,7 @@ class FloorAssignment:
         slc_loops: SLC loops serving this floor.
         vertical_zone_id: Vertical zone this floor belongs to.
         warnings: Advisory warnings for this floor.
+
     """
 
     floor_id: str
@@ -318,6 +320,7 @@ class SmokeSpreadResult:
         violations: NFPA compliance violations found.
         warnings: Advisory warnings.
         nfpa_reference: Applicable NFPA section.
+
     """
 
     pathway: SmokeSpreadPathway = SmokeSpreadPathway.STAIRWELL
@@ -349,6 +352,7 @@ class ElevatorRecallResult:
         violations: NFPA compliance violations found.
         warnings: Advisory warnings.
         nfpa_reference: Applicable NFPA 72 section.
+
     """
 
     elevator_id: str = ""
@@ -379,6 +383,7 @@ class RiserRoutingResult:
         route_valid: Whether the routing engine found a valid path.
         violations: Any constraint violations.
         nfpa_reference: Applicable NFPA/NEC section.
+
     """
 
     from_floor: str = ""
@@ -417,6 +422,7 @@ class BuildingAnalysis:
         warnings: Building-level warnings.
         errors: Building-level errors (non-fatal, logged at CRITICAL).
         disclaimer: Legal disclaimer.
+
     """
 
     building_id: str = ""
@@ -491,6 +497,7 @@ class MultiFloorOrchestrator:
             stairwells=[...],
             hvac_ducts=[...],
         )
+
     """
 
     def __init__(
@@ -565,6 +572,7 @@ class MultiFloorOrchestrator:
 
         Returns:
             BuildingAnalysis with complete results.
+
         """
         t0 = time.monotonic()
 
@@ -739,6 +747,7 @@ class MultiFloorOrchestrator:
             floor_areas: Dict of floor_id → area (sqm).
             project_name: Project name for audit.
             source_dxf: Source DXF file for audit.
+
         """
         # Sort floors by elevation (or by name if no elevation)
         sorted_floor_ids = sorted(
@@ -839,6 +848,7 @@ class MultiFloorOrchestrator:
 
         Returns:
             List of SLCLoop assignments.
+
         """
         if not floor_assignments:
             return []
@@ -949,6 +959,7 @@ class MultiFloorOrchestrator:
         Args:
             loop: SLCLoop to estimate.
             floor_assignments: Floor data for area calculations.
+
         """
         floor_area_map = {fa.floor_id: fa.area_sqm for fa in floor_assignments}
         floor_elev_map = {fa.floor_id: fa.elevation_m for fa in floor_assignments}
@@ -1024,6 +1035,7 @@ class MultiFloorOrchestrator:
 
         Returns:
             List of VerticalZone groupings.
+
         """
         floor_areas = floor_areas or {}
 
@@ -1165,6 +1177,7 @@ class MultiFloorOrchestrator:
 
         Returns:
             List of SmokeSpreadResult, one per pathway analyzed.
+
         """
         results: List[SmokeSpreadResult] = []
 
@@ -1457,6 +1470,7 @@ class MultiFloorOrchestrator:
 
         Returns:
             List of ElevatorRecallResult, one per elevator.
+
         """
         results: List[ElevatorRecallResult] = []
 
@@ -1629,6 +1643,7 @@ class MultiFloorOrchestrator:
 
         Returns:
             List of RiserRoutingResult, one per floor-to-floor segment.
+
         """
         results: List[RiserRoutingResult] = []
 
@@ -1760,6 +1775,7 @@ class MultiFloorOrchestrator:
 
         Returns:
             True if building is fully compliant, False otherwise.
+
         """
         # SLC loop compliance
         for loop in analysis.slc_loops:

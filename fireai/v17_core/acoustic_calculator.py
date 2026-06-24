@@ -1,5 +1,4 @@
-"""
-v17_core/acoustic_calculator.py — NFPA 72 §18.4 Audible Notification Compliance
+"""v17_core/acoustic_calculator.py — NFPA 72 §18.4 Audible Notification Compliance
 =================================================================================
 CRITICAL LIFE-SAFETY MODULE — Part of the V17 Critical Trilogy
 
@@ -102,6 +101,7 @@ class AcousticSPLCalculator:
             room_ambient_noise: Dict mapping occupancy types to ambient
                 noise levels in dBA. Merged with defaults from
                 NFPA 72 Table A.18.4.3.
+
         """
         # Start with NFPA 72 Table A.18.4.3 defaults
         self.ambient_levels: Dict[str, float] = dict(AMBIENT_NOISE_LEVELS)
@@ -219,6 +219,7 @@ class AcousticSPLCalculator:
         Returns:
             DecisionProvenance with compliance status, or dict if
             provenance is unavailable.
+
         """
         # Convert consultant-style dicts to proper objects
         speaker_objs = self._convert_speakers(speakers)

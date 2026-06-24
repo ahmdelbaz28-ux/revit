@@ -89,6 +89,7 @@ def is_rectangular_polygon(coords: List[Tuple[float, float]], tolerance: float =
 
     Returns:
         True if the polygon is effectively rectangular.
+
     """
     if not coords or len(coords) < 3:
         return False
@@ -167,6 +168,7 @@ def grid_polygon_verify(
 
     Returns:
         (proof_valid, coverage_pct)
+
     """
     if not HAS_SHAPELY:
         return False, 0.0
@@ -311,6 +313,7 @@ class ConsensusEngineV2:
 
         Returns:
             ConsensusResult with combined verdict.
+
         """
         verdicts: List[EngineVerdict] = []
 
@@ -480,6 +483,7 @@ class ConsensusEngineV2:
 
         Returns:
             ConsensusResult with combined verdict.
+
         """
         if detectors is None:
             detectors = []

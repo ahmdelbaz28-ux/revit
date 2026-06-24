@@ -1,5 +1,4 @@
-"""
-fireai/core/safe_building_engine.py
+"""fireai/core/safe_building_engine.py
 ===================================
 Replaces ProcessPoolExecutor bindings triggering Deadlocks at CBC level,
 with safely managed, lock-restricted threading executing pure multi-node
@@ -48,8 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 class SafeBuildingEngine:
-    """
-    Thread-safe multi-floor building analysis engine.
+    """Thread-safe multi-floor building analysis engine.
 
     Uses ThreadPoolExecutor with a global RLock to serialize CBC solver
     invocations. This prevents the deadlock scenario that occurs when
@@ -62,7 +60,8 @@ class SafeBuildingEngine:
       3. The ThreadPoolExecutor provides clean task submission and
          result collection with timeout support
 
-    Parameters:
+    Parameters
+    ----------
         max_threads: Maximum number of worker threads (default 4).
             Note: due to the RLock, only ONE thread will be actively
             solving at any time. Multiple threads allow overlap of
@@ -70,6 +69,7 @@ class SafeBuildingEngine:
         coverage_radius: MIP coverage radius in meters (default 6.37 = 0.7*9.1m).
         candidate_step: Grid spacing for MIP candidate positions (default 1.0m).
         time_limit_s: MIP solver time limit per room (default 60s).
+
     """
 
     def __init__(
@@ -88,8 +88,7 @@ class SafeBuildingEngine:
         )  # Hard barrier avoiding C++ Memory Corruption on solver library instance loading.
 
     def _solve_mip_safe(self, room_spec: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Solve MIP for a single room in a thread-safe manner.
+        """Solve MIP for a single room in a thread-safe manner.
 
         Uses solve_set_covering_mip (function-based) which is the VERIFIED
         solver used by FloorAnalyser and BuildingEngine. This avoids the
@@ -98,7 +97,8 @@ class SafeBuildingEngine:
         The RLock ensures only one thread enters the CBC solver at a
         time, preventing concurrent access to C-level solver state.
 
-        Parameters:
+        Parameters
+        ----------
             room_spec: Dictionary with room parameters:
                 - room_id: Unique room identifier
                 - width_m: Room width in meters
@@ -107,7 +107,8 @@ class SafeBuildingEngine:
                 - candidate_step: Override candidate step (optional)
                 - time_limit_s: Override time limit (optional)
 
-        Returns:
+        Returns
+        -------
             Dictionary with:
                 - room_id: Room identifier
                 - success: Whether solve completed without exception
@@ -116,6 +117,7 @@ class SafeBuildingEngine:
                 - solver_status: Solver status string
                 - calc_time_sec: Wall-clock solve time
                 - error: Exception message (if failed)
+
         """
         start = time.time()
         try:
@@ -154,8 +156,7 @@ class SafeBuildingEngine:
             return {"room_id": room_spec.get("room_id", "UNK"), "success": False, "status": "ERROR", "error": str(ex)}
 
     def run_multi_floor_safety_analysis(self, floor_spec_registry: List[Dict[str, Any]]) -> List[Dict]:
-        """
-        Run MIP analysis across multiple floors in a thread-safe manner.
+        """Run MIP analysis across multiple floors in a thread-safe manner.
 
         Flattens the floor/room hierarchy into a list of room specifications,
         submits each room as a separate task to the ThreadPoolExecutor, and
@@ -165,13 +166,15 @@ class SafeBuildingEngine:
         are serialized, preventing the deadlock scenario that occurs with
         ProcessPoolExecutor + CBC.
 
-        Parameters:
+        Parameters
+        ----------
             floor_spec_registry: List of floor specification dictionaries.
                 Each floor dict must have:
                     - floor_id: Floor identifier
                     - rooms: List of room specification dicts
 
-        Returns:
+        Returns
+        -------
             List of result dictionaries (one per room), each containing:
                 - room_id: Room identifier
                 - success: Whether solve completed
@@ -180,6 +183,7 @@ class SafeBuildingEngine:
                 - status: Solver status or "CRASH" on fatal error
                 - calc_time_sec: Solve time (if successful)
                 - error: Exception message (if failed)
+
         """
         results = []
         rooms_flatted = []

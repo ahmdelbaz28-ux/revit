@@ -1,5 +1,4 @@
-"""
-fireai/infrastructure/event_bus.py — Production Event Bus with Schema Validation,
+"""fireai/infrastructure/event_bus.py — Production Event Bus with Schema Validation,
 Retry with Backoff, Dead Letter Queue, At-Least-Once Delivery, and Event Replay.
 
 Architecture:
@@ -38,6 +37,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class Event:
     """Immutable event envelope — every field is frozen after creation."""
+
     id: str
     type: str
     source: str
@@ -170,6 +170,7 @@ def _validate_against_schema(data: Any, schema: Dict[str, Any], path: str = "$")
 @dataclass
 class RetryPolicy:
     """Retry configuration for failed event handlers."""
+
     max_retries: int = 3
     base_delay_s: float = 0.1
     max_delay_s: float = 10.0
@@ -191,6 +192,7 @@ class RetryPolicy:
 @dataclass
 class DeadLetterRecord:
     """Record of a failed event sent to the dead letter queue."""
+
     event_id: str
     event_type: str
     event_payload: Dict[str, Any]

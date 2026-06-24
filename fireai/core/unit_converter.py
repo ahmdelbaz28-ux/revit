@@ -1,5 +1,4 @@
-"""
-unit_converter.py — Safety-Critical Unit Conversion Utility
+"""unit_converter.py — Safety-Critical Unit Conversion Utility
 ============================================================
 LIFE-SAFETY CRITICAL: Incorrect unit conversions in BIM/Revit integration
 lead to catastrophic engineering errors. A pipe sized in feet instead of
@@ -23,6 +22,7 @@ References:
   - NIST Special Publication 811: Guide for the Use of the International System of Units
   - Revit API SDK: UnitUtils.Convert() for version-safe conversions
   - NFPA 13-2022 Chapter 23: Hydraulic calculation units
+
 """
 
 from __future__ import annotations
@@ -99,6 +99,7 @@ def revit_internal_to_metres(internal_feet: float) -> float:
 
     Raises:
         ValueError: If input is NaN or infinite.
+
     """
     if not math.isfinite(internal_feet):
         raise ValueError(
@@ -122,6 +123,7 @@ def metres_to_revit_internal(metres: float) -> float:
 
     Raises:
         ValueError: If input is NaN, infinite, or negative (lengths must be >= 0).
+
     """
     if not math.isfinite(metres):
         raise ValueError(
@@ -150,6 +152,7 @@ def revit_internal_to_mm(internal_feet: float) -> float:
 
     Raises:
         ValueError: If input is NaN or infinite.
+
     """
     if not math.isfinite(internal_feet):
         raise ValueError(
@@ -167,6 +170,7 @@ def mm_to_revit_internal(mm: float) -> float:
 
     Returns:
         Length in Revit internal decimal feet.
+
     """
     if not math.isfinite(mm):
         raise ValueError(
@@ -188,6 +192,7 @@ def inches_to_mm(inches: float) -> float:
 
     Returns:
         Length in millimetres.
+
     """
     if not math.isfinite(inches):
         raise ValueError(f"Cannot convert non-finite inches: {inches}")
@@ -207,6 +212,7 @@ def psi_to_bar(psi: float) -> float:
 
     Returns:
         Pressure in bar.
+
     """
     if not math.isfinite(psi):
         raise ValueError(f"Cannot convert non-finite pressure: {psi}")
@@ -221,6 +227,7 @@ def bar_to_psi(bar: float) -> float:
 
     Returns:
         Pressure in pounds per square inch.
+
     """
     if not math.isfinite(bar):
         raise ValueError(f"Cannot convert non-finite pressure: {bar}")
@@ -238,6 +245,7 @@ def gpm_to_lpm(gpm: float) -> float:
 
     Returns:
         Flow rate in litres per minute.
+
     """
     if not math.isfinite(gpm):
         raise ValueError(f"Cannot convert non-finite flow rate: {gpm}")
@@ -258,6 +266,7 @@ def sqft_to_sqm(sqft: float) -> float:
 
     Returns:
         Area in square metres.
+
     """
     if not math.isfinite(sqft):
         raise ValueError(f"Cannot convert non-finite area: {sqft}")
@@ -278,6 +287,7 @@ def fahrenheit_to_celsius(f: float) -> float:
 
     Returns:
         Temperature in degrees Celsius.
+
     """
     if not math.isfinite(f):
         raise ValueError(f"Cannot convert non-finite temperature: {f}")
@@ -292,6 +302,7 @@ def celsius_to_fahrenheit(c: float) -> float:
 
     Returns:
         Temperature in degrees Fahrenheit.
+
     """
     if not math.isfinite(c):
         raise ValueError(f"Cannot convert non-finite temperature: {c}")
@@ -319,6 +330,7 @@ def convert_polygon_revit_to_metres(
 
     Raises:
         ValueError: If any coordinate is non-finite.
+
     """
     result = []
     for i, (x, y) in enumerate(polygon_revit):

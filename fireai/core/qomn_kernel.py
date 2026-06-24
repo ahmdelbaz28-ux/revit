@@ -1,5 +1,4 @@
-"""
-fireai/core/qomn_kernel.py — QOMN-FIRE Deterministic Engineering Kernel
+"""fireai/core/qomn_kernel.py — QOMN-FIRE Deterministic Engineering Kernel
 QOMN-FIRE: Zero-Defect Fire Alarm & Light Current Engineering Kernel
 
 ARCHITECTURE: Five strict layers per QOMN specification:
@@ -226,7 +225,7 @@ from fireai.constants.nfpa72 import (  # noqa: E402,I001
     SMOKE_HEIGHT_SPACING_TABLE as NFPA72_SMOKE_SPACING_TABLE,  # noqa: F401
     SMOKE_MAX_SPACING_M as NFPA72_SMOKE_MAX_SPACING_M,
     SMOKE_PRACTICAL_CEILING_HEIGHT_M as _SMOKE_PRACTICAL_CEILING_HEIGHT_M,
-    WALL_MIN_DISTANCE_M as NFPA72_WALL_MIN_DISTANCE_M,  # noqa: F401
+    WALL_MIN_DISTANCE_M as NFPA72_WALL_MIN_DISTANCE_M,
 )
 
 # Coverage radius = 0.7 × listed_spacing
@@ -395,6 +394,7 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
 
     Raises:
         PhysicsGuardError: If ceiling_height_m is outside bounds.
+
     """
     h = guard_ceiling_height_m(ceiling_height_m)
 
@@ -481,6 +481,7 @@ def compute_heat_detector_spacing(
 
     Returns:
         dict with spacing_m, coverage_radius_m, compliance status.
+
     """
     guard_ceiling_height_m(ceiling_height_m)
     a = _guard_finite(area_per_detector_m2, "area_per_detector_m2")
@@ -578,6 +579,7 @@ def compute_battery_capacity_ah(
 
     Returns:
         dict with required_ah, formula, and computation_hash.
+
     """
     i_sb = _guard_finite(standby_load_a, "standby_load_a")
     i_al = _guard_finite(alarm_load_a, "alarm_load_a")
@@ -648,6 +650,7 @@ def compute_voltage_drop(
     Raises:
         PhysicsGuardError: If inputs violate physical/code bounds.
         ValueError: If AWG gauge not found in NEC Table 8.
+
     """
     i = _guard_finite(current_a, "current_a")
     L = _guard_finite(length_m, "length_m")

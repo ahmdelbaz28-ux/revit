@@ -1,5 +1,4 @@
-"""
-FireAI Digital Twin - Connections V2 Router
+"""FireAI Digital Twin - Connections V2 Router
 ============================================
 Relationship-based connections for the UniversalDataModel.
 Separate from the project-scoped cable connections router.

@@ -1,5 +1,4 @@
-"""
-sanitized_handler.py — Input-Sanitized MCP Request Handler
+"""sanitized_handler.py — Input-Sanitized MCP Request Handler
 ===========================================================
 LIFE-SAFETY CRITICAL: This module is the GATEKEEPER between external
 MCP clients (AI assistants) and the FireAI system. Every request from
@@ -99,7 +98,9 @@ class MCPRequest:
         parameters: Dictionary of tool parameters (raw, unsanitized).
         source: Origin of the request (e.g., "claude_desktop", "api").
         timestamp: When the request was received.
+
     """
+
     request_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     tool_name: str = ""
     parameters: Dict[str, Any] = field(default_factory=dict)
@@ -118,7 +119,9 @@ class MCPResponse:
         error: Error message (if failed).
         violations: List of validation/sanitization violations found.
         sanitized_parameters: The parameters after sanitization (for audit).
+
     """
+
     request_id: str = ""
     success: bool = False
     result: Any = None
@@ -229,6 +232,7 @@ class SanitizedMCPHandler:
 
         Returns:
             MCPResponse with success/failure and audit information.
+
         """
         violations: List[str] = []
 

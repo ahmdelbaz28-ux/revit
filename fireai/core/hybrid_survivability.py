@@ -1,5 +1,4 @@
-"""
-hybrid_survivability.py — Layer 7: Hybrid Survivability Index Engine
+"""hybrid_survivability.py — Layer 7: Hybrid Survivability Index Engine
 ====================================================================
 V24 — Intersection of Optical (Layer 5) and Acoustic (V23) coverage.
 
@@ -76,8 +75,7 @@ logger = logging.getLogger(__name__)
 
 
 class SurvivabilityClass(str, Enum):
-    """
-    Per-point hybrid survivability classification.
+    """Per-point hybrid survivability classification.
 
     The classification is the Cartesian product of {optical, no_optical}
     x {acoustic, no_acoustic}, yielding 4 exhaustive and mutually exclusive
@@ -138,8 +136,7 @@ class SurvivabilityClass(str, Enum):
 
 
 class AcousticCoverageDetail(BaseModel):
-    """
-    Per-point acoustic coverage detail from UGLD analysis.
+    """Per-point acoustic coverage detail from UGLD analysis.
 
     This is an OUTPUT model — it stores the result of running V23's
     trace_acoustic_ray for a specific (grid_point, sensor) pair. It does
@@ -167,8 +164,7 @@ class AcousticCoverageDetail(BaseModel):
 
 
 class HybridPointResult(BaseModel):
-    """
-    Per-point hybrid survivability result.
+    """Per-point hybrid survivability result.
 
     The atomic unit of the hybrid map. Each grid point gets one of these,
     combining optical and acoustic data into a single classification.
@@ -194,8 +190,7 @@ class HybridPointResult(BaseModel):
 
 
 class HybridSurvivabilityMap(BaseModel):
-    """
-    Layer 7 output: complete hybrid survivability analysis.
+    """Layer 7 output: complete hybrid survivability analysis.
 
     Intersects Layer 5 optical coverage with V23 acoustic coverage on a
     shared spatial grid. Each point is classified into one of 4 states.
@@ -305,8 +300,7 @@ class HybridSurvivabilityMap(BaseModel):
 
     @property
     def is_nfpa72_compliant(self) -> bool:
-        """
-        True if every point is REDUNDANT_HYBRID.
+        """True if every point is REDUNDANT_HYBRID.
 
         NFPA 72-2022 §17.8.3.4: For critical applications, detector
         redundancy is required. While the standard does not explicitly
@@ -327,8 +321,7 @@ class HybridSurvivabilityMap(BaseModel):
 
 
 class HybridSurvivabilityEngine:
-    """
-    Layer 7: Intersects optical and acoustic coverage on a shared grid.
+    """Layer 7: Intersects optical and acoustic coverage on a shared grid.
 
     Algorithm:
       1. Take Layer 5 CoverageResult (optical) — redundancy_map gives
@@ -360,8 +353,7 @@ class HybridSurvivabilityEngine:
         temp_c: float = 40.0,
         relative_humidity_pct: float = 50.0,
     ) -> None:
-        """
-        Initialize with UGLD acoustic parameters.
+        """Initialize with UGLD acoustic parameters.
 
         Args:
             leak_spl_at_1m: Reference SPL of a gas leak at 1m distance (dB).
@@ -371,6 +363,7 @@ class HybridSurvivabilityEngine:
             center_frequency_hz: Center frequency for acoustic calculations.
             temp_c: Ambient temperature (Celsius).
             relative_humidity_pct: Relative humidity (%).
+
         """
         self._leak_spl = leak_spl_at_1m
         self._freq_hz = center_frequency_hz
@@ -385,8 +378,7 @@ class HybridSurvivabilityEngine:
         sensor_positions: Dict[str, Tuple[float, float, float]],
         acoustic_obstacles: Optional[List[AcousticObstacle]] = None,
     ) -> HybridSurvivabilityMap:
-        """
-        Run hybrid survivability analysis.
+        """Run hybrid survivability analysis.
 
         Intersects Layer 5 optical coverage with V23 acoustic coverage
         on the same spatial grid, classifying each point into one of
@@ -406,6 +398,7 @@ class HybridSurvivabilityEngine:
         Raises:
             ValueError: If grid is empty, length mismatch, or missing
               sensor positions.
+
         """
         # ── Input validation ──────────────────────────────────────────
         if not grid:
@@ -558,8 +551,7 @@ class HybridSurvivabilityEngine:
         hybrid_map: HybridSurvivabilityMap,
         output_path: str,
     ) -> str:
-        """
-        Export HybridSurvivabilityMap to a JSON file consumable by the
+        """Export HybridSurvivabilityMap to a JSON file consumable by the
         WebGL heatmap viewer (heatmap_viewer.html).
 
         The JSON schema matches the HybridSurvivabilityMap model exactly:
@@ -582,6 +574,7 @@ class HybridSurvivabilityEngine:
 
         Returns:
             Path of the written JSON file.
+
         """
         COLOR_MAP = {
             SurvivabilityClass.REDUNDANT_HYBRID: "#00AA44",

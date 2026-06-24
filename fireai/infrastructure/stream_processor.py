@@ -1,5 +1,4 @@
-"""
-fireai/infrastructure/stream_processor.py — Stream Processor with
+"""fireai/infrastructure/stream_processor.py — Stream Processor with
 Transform/Filter/Sink Pipeline, Windowed Aggregations (1min, 5min, 1h),
 and Throttled Output (max 1 event per window per key).
 
@@ -33,6 +32,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class WindowSpec:
     """Specification for a sliding time window."""
+
     duration: timedelta
     slide: timedelta
     name: str

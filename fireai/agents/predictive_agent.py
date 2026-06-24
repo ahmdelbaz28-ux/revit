@@ -1,5 +1,4 @@
-"""
-fireai/agents/predictive_agent.py — Anticipatory Recommendations Agent
+"""fireai/agents/predictive_agent.py — Anticipatory Recommendations Agent
 ========================================================================
 Analyzes future compliance state given design changes, suggests optimal
 detector placement, and performs what-if analysis for design alternatives.
@@ -103,8 +102,7 @@ class WhatIfResult:
 
 
 class PredictiveAgent:
-    """
-    Anticipatory recommendations and future-state analysis:
+    """Anticipatory recommendations and future-state analysis:
     - Suggests optimal detector placement before user asks
     - Analyzes future compliance state given design changes
     - What-if analysis for design alternatives

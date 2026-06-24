@@ -1,5 +1,4 @@
-"""
-fireai/core/tests/test_helpers.py — Reusable Test Utilities
+"""fireai/core/tests/test_helpers.py — Reusable Test Utilities
 ============================================================
 Task 2.18: Improve test utilities
 
@@ -48,6 +47,7 @@ def make_square(side: float = 10.0, x0: float = 0.0, y0: float = 0.0) -> Geometr
 
     Returns:
         Closed Geometry with computed area and perimeter.
+
     """
     pts = (
         Point3D(x=x0, y=y0),
@@ -69,6 +69,7 @@ def make_rectangle(width: float, length: float, x0: float = 0.0, y0: float = 0.0
 
     Returns:
         Closed Geometry with computed area and perimeter.
+
     """
     pts = (
         Point3D(x=x0, y=y0),
@@ -101,6 +102,7 @@ def make_circle_polygon(radius: float, num_points: int = 36) -> Geometry:
 
     Returns:
         Closed Geometry approximating a circle.
+
     """
     pts = tuple(
         Point3D(x=radius * math.cos(2 * math.pi * i / num_points),
@@ -137,6 +139,7 @@ def make_element(
 
     Returns:
         A fully-formed UniversalElement.
+
     """
     props = SemanticProperties(
         element_type=element_type,
@@ -162,6 +165,7 @@ def make_elements_batch(count: int, prefix: str = "ELEM") -> List[UniversalEleme
 
     Returns:
         List of UniversalElement objects.
+
     """
     return [
         make_element(
@@ -196,6 +200,7 @@ def make_room_dict(
 
     Returns:
         Dict with polygon_coords and ceiling_height.
+
     """
     return {
         "room_id": room_id,
@@ -223,6 +228,7 @@ def make_floor_rooms(
 
     Returns:
         Dict mapping floor_id to list of room dicts.
+
     """
     rooms = [
         make_room_dict(
@@ -266,6 +272,7 @@ def assert_compliant_spacing(result, detector_type: str = "smoke") -> None:
     Args:
         result: SpacingResult from get_detector_spacing().
         detector_type: 'smoke' or 'heat'.
+
     """
     assert result.max_spacing_m > 0
     assert result.coverage_radius_m > 0

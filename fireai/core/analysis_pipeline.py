@@ -134,6 +134,7 @@ class PipelineResult:
         warnings: List of warning messages (non-fatal issues).
         timing: Dictionary mapping stage name → elapsed seconds.
         metadata: Additional metadata about the pipeline execution.
+
     """
 
     room_id: str
@@ -277,6 +278,7 @@ class AnalysisPipeline:
                 Default: True. Set to False for fast analysis-only mode.
             require_consensus: Whether to run triple consensus verification.
                 Default: True. Set to False to skip verification stage.
+
         """
         self.coverage_radius = coverage_radius
         self.max_spacing = max_spacing
@@ -362,6 +364,7 @@ class AnalysisPipeline:
 
         Returns:
             PipelineResult with all artifacts from every completed stage.
+
         """
         # Resolve room_id
         if not room_id:
@@ -958,6 +961,7 @@ class AnalysisPipeline:
         Returns:
             List of PipelineResult objects, one per room.
             Failed rooms have success=False with detailed error info.
+
         """
         results: List[PipelineResult] = []
         n_rooms = len(rooms)
@@ -1059,7 +1063,7 @@ class AnalysisPipeline:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 __all__ = [
-    "PipelineStage",
-    "PipelineResult",
     "AnalysisPipeline",
+    "PipelineResult",
+    "PipelineStage",
 ]

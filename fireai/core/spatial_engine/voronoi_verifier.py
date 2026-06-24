@@ -77,6 +77,7 @@ class VoronoiVerifier:
             coverage_radius: Coverage radius R in meters.
             tolerance: Acceptable margin for numerical precision (default 0.05m).
                 Voronoi boundary computations can have ~0.02-0.05m error.
+
         """
         self.R = coverage_radius
         self.tolerance = tolerance
@@ -96,6 +97,7 @@ class VoronoiVerifier:
 
         Returns:
             VoronoiResult with gap analysis.
+
         """
         if not detectors:
             return VoronoiResult(
@@ -108,8 +110,7 @@ class VoronoiVerifier:
 
         if HAS_SHAPELY_VORONOI and len(detectors) >= 2:
             return self._verify_voronoi(width, length, detectors)
-        else:
-            return self._verify_brute_force(width, length, detectors)
+        return self._verify_brute_force(width, length, detectors)
 
     def _verify_voronoi(
         self,

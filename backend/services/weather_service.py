@@ -1,5 +1,4 @@
-"""
-backend/services/weather_service.py — Real-time weather data for FireAI.
+"""backend/services/weather_service.py — Real-time weather data for FireAI.
 
 Provides ambient temperature, wind speed, and relative humidity from
 Open-Meteo (https://open-meteo.com) — a free, no-auth, CORS-enabled API.
@@ -19,6 +18,7 @@ References:
   - NFPA 72-2022 §10.14 (battery derating)
   - NFPA 92-2024 §6.4.2 (smoke control design)
   - IEC 60079-10-1:2015 Annex B (ambient temperature effect on LFL)
+
 """
 
 from __future__ import annotations
@@ -52,8 +52,7 @@ DEFAULT_HUMIDITY_PCT = 50.0        # Mid-range (conservative for acoustic propag
 
 @dataclass(frozen=True)
 class WeatherData:
-    """
-    Immutable weather snapshot for engineering calculations.
+    """Immutable weather snapshot for engineering calculations.
 
     Attributes:
         temperature_c: Ambient temperature in Celsius
@@ -64,7 +63,9 @@ class WeatherData:
         latitude: Latitude of weather observation
         longitude: Longitude of weather observation
         is_stale: Whether this data is from cache beyond TTL
+
     """
+
     temperature_c: float
     wind_speed_m_s: float
     relative_humidity_pct: float
@@ -82,7 +83,8 @@ class WeatherData:
     @property
     def air_density_kg_m3(self) -> float:
         """Air density at current conditions (ideal gas approximation).
-        Used for smoke control and zone extent calculations."""
+        Used for smoke control and zone extent calculations.
+        """
         # rho = P / (R * T) where P=101325 Pa, R=287.05 J/(kg*K)
         return 101325.0 / (287.05 * self.temperature_k)
 
@@ -93,8 +95,7 @@ class WeatherData:
 
 
 class WeatherService:
-    """
-    Async weather data provider with TTL caching and fail-safe defaults.
+    """Async weather data provider with TTL caching and fail-safe defaults.
 
     Uses Open-Meteo (free, no auth, CORS-enabled) as the primary source.
     Falls back to conservative defaults on any failure.
@@ -180,8 +181,7 @@ class WeatherService:
     async def _fetch_open_meteo(
         self, latitude: float, longitude: float
     ) -> WeatherData:
-        """
-        Fetch current weather from Open-Meteo API.
+        """Fetch current weather from Open-Meteo API.
 
         API: https://api.open-meteo.com/v1/forecast
         Parameters:
@@ -190,6 +190,7 @@ class WeatherService:
 
         Returns:
             WeatherData with source="open-meteo"
+
         """
         client = await self._get_client()
         response = await client.get(
@@ -242,8 +243,7 @@ class WeatherService:
         return weather
 
     def _get_default(self, latitude: float, longitude: float) -> WeatherData:
-        """
-        Return conservative default weather data.
+        """Return conservative default weather data.
 
         These defaults are SAFER than no data:
         - 40°C indoor temp (conservative for HAC/battery)
@@ -270,8 +270,7 @@ class WeatherService:
         latitude: float,
         longitude: float,
     ) -> WeatherData:
-        """
-        Fetch current weather for engineering calculations.
+        """Fetch current weather for engineering calculations.
 
         Strategy:
           1. Check cache — return if fresh (< TTL)
@@ -284,6 +283,7 @@ class WeatherService:
 
         Returns:
             WeatherData (always succeeds, never raises)
+
         """
         # Validate coordinates
         if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
@@ -325,8 +325,7 @@ class WeatherService:
         longitude: float,
         is_indoor: bool = True,
     ):
-        """
-        Get EnvironmentalContext for core calculations.
+        """Get EnvironmentalContext for core calculations.
 
         Bridges weather data → fireai.core.models_v21.EnvironmentalContext
 
@@ -337,6 +336,7 @@ class WeatherService:
 
         Returns:
             dict with keys matching EnvironmentalContext fields
+
         """
         weather = await self.fetch_weather(latitude, longitude)
 

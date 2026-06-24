@@ -1,5 +1,4 @@
-"""
-audit_blockchain_bridge.py — Real Hash-Chain Audit (Not Blockchain)
+"""audit_blockchain_bridge.py — Real Hash-Chain Audit (Not Blockchain)
 ====================================================================
 SURGICAL FIX: blockchain_readiness_gate.py was calling itself "blockchain"
 but implementing SHA-256 hash chain. This is CORRECT engineering but
@@ -66,8 +65,7 @@ def _hmac_sha256(key: bytes, data: str | bytes) -> str:
 
 
 def _chain_hash(prev_hash: str, entry_json: str) -> str:
-    """
-    Compute chain hash: SHA-256(prev_hash || entry_json).
+    """Compute chain hash: SHA-256(prev_hash || entry_json).
     Linking each entry to all previous entries.
     """
     payload = prev_hash + "|" + entry_json
@@ -81,8 +79,7 @@ def _chain_hash(prev_hash: str, entry_json: str) -> str:
 
 @dataclass
 class AuditEntry:
-    """
-    Single immutable audit record.
+    """Single immutable audit record.
 
     chain_hash links this entry to all previous entries.
     hmac_sig allows independent verification without the chain.
@@ -116,7 +113,7 @@ class AuditEntry:
         )
 
     @classmethod
-    def from_json(cls, json_str: str) -> "AuditEntry":
+    def from_json(cls, json_str: str) -> AuditEntry:
         d = json.loads(json_str)
         return cls(**d)
 
@@ -127,8 +124,7 @@ class AuditEntry:
 
 
 class HashChainAuditStore:
-    """
-    SURGICAL FIX: Replaces blockchain_readiness_gate.py misconception.
+    """SURGICAL FIX: Replaces blockchain_readiness_gate.py misconception.
 
     Provides:
       - Append-only SHA-256 hash chain
@@ -198,8 +194,7 @@ class HashChainAuditStore:
         data: Dict[str, Any],
         actor: str = "system",
     ) -> AuditEntry:
-        """
-        Append tamper-evident entry to the hash chain.
+        """Append tamper-evident entry to the hash chain.
 
         SURGICAL FIX: Was called from blockchain_readiness_gate but
         the actual AuditStore was not connected. Now wired directly.
@@ -275,14 +270,14 @@ class HashChainAuditStore:
     # ------------------------------------------------------------------
 
     def verify_chain(self) -> Tuple[bool, List[str]]:
-        """
-        Verify entire hash chain integrity.
+        """Verify entire hash chain integrity.
 
         SURGICAL FIX: Previous code only checked hash on write.
         Now verifies on every read — catches post-write tampering.
 
         Returns:
             (is_valid, list_of_violations)
+
         """
         with self._lock:
             entries = list(self._entries)
@@ -340,8 +335,7 @@ class HashChainAuditStore:
     # ------------------------------------------------------------------
 
     def build_merkle_proof(self, entry_id: str) -> Optional[Dict[str, Any]]:
-        """
-        SURGICAL FIX: Merkle tree was built but proof.verify() was never
+        """SURGICAL FIX: Merkle tree was built but proof.verify() was never
         called. Now builds proof AND verifies it before returning.
 
         Returns proof dict that an AHJ can independently verify.
@@ -424,8 +418,7 @@ class HashChainAuditStore:
     # ------------------------------------------------------------------
 
     def compliance_report(self) -> Dict[str, Any]:
-        """
-        Generate AHJ-ready compliance report.
+        """Generate AHJ-ready compliance report.
 
         This is what fire marshals and AHJs can verify independently.
         """

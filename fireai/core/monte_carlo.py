@@ -37,8 +37,7 @@ def run_resilience_check(
     iterations: int = _MC_ITERATIONS,
     seed: int = 42,
 ) -> Tuple[float, float, bool]:
-    """
-    Run Monte Carlo resilience check for detector placement.
+    """Run Monte Carlo resilience check for detector placement.
 
     Args:
         positions: Current detector positions.
@@ -50,12 +49,12 @@ def run_resilience_check(
 
     Returns:
         Tuple of (pass_rate, min_coverage_seen, resilient)
+
     """
     if _NUMPY:
         return _run_resilience_check_fast(positions, poly, radius, floor, iterations, seed)
-    else:
-        # Fall back to original implementation
-        return _run_resilience_check_original(positions, poly, radius, floor, iterations, seed)
+    # Fall back to original implementation
+    return _run_resilience_check_original(positions, poly, radius, floor, iterations, seed)
 
 
 def _run_resilience_check_fast(
@@ -66,8 +65,7 @@ def _run_resilience_check_fast(
     iterations: int = _MC_ITERATIONS,
     seed: int = 42,
 ) -> Tuple[float, float, bool]:
-    """
-    Accelerated Monte Carlo using numpy vectorized operations.
+    """Accelerated Monte Carlo using numpy vectorized operations.
 
     Args:
         positions: Current detector positions.
@@ -79,6 +77,7 @@ def _run_resilience_check_fast(
 
     Returns:
         Tuple of (pass_rate, min_coverage_seen, resilient)
+
     """
     if len(positions) < 2:
         return (1.0, 1.0, False)
@@ -130,8 +129,7 @@ def _run_resilience_check_original(
     iterations: int = _MC_ITERATIONS,
     seed: int = 42,
 ) -> Tuple[float, float, bool]:
-    """
-    Original Monte Carlo implementation (fallback).
+    """Original Monte Carlo implementation (fallback).
 
     This is the same as the implementation in fire_expert_system.py.
 
@@ -145,6 +143,7 @@ def _run_resilience_check_original(
 
     Returns:
         Tuple of (pass_rate, min_coverage_seen, resilient)
+
     """
     if len(positions) < 2:
         return (1.0, 1.0, False)

@@ -1,5 +1,4 @@
-"""
-fireai/core/dxf_table_schedule.py
+"""fireai/core/dxf_table_schedule.py
 =================================
 Uses proper Autodesk CAD Data objects replacing plain MTEXT lines.
 Required functionality for enabling digital data link queries externally
@@ -32,8 +31,7 @@ except ImportError:
 
 
 class TrueAECDraftingTable:
-    """
-    Generates proper DXF TABLE entities for fire alarm device schedules.
+    """Generates proper DXF TABLE entities for fire alarm device schedules.
 
     Previous implementations used add_text() for each cell, which does not
     create queryable DXF TABLE entities. This class creates real TABLE
@@ -44,30 +42,34 @@ class TrueAECDraftingTable:
     the draft_device_boq_table() method returns False, and callers
     should fall back to text blocks.
 
-    Parameters:
+    Parameters
+    ----------
         table_position_xyz: (x, y, z) insertion point for the table.
+
     """
 
     def __init__(self, table_position_xyz: tuple = (0.0, 0.0, 0.0)):
         self.position = table_position_xyz
 
     def draft_device_boq_table(self, msp, device_array: list, project_metadata: str = "Fire Alarm Device Log") -> bool:
-        """
-        Create a DXF TABLE entity with device schedule data.
+        """Create a DXF TABLE entity with device schedule data.
 
         The table includes columns: INDEX_ID, DEVICE_TYPE, CIRCUIT_GROUP,
         ZONE, LOCATION. Each device in the device_array is rendered as a
         data row with its properties.
 
-        Parameters:
+        Parameters
+        ----------
             msp: ezdxf Modelspace object to draw into.
             device_array: List of devices (dicts or objects) with fields:
                 - device_id / device_type / circuit_id / zone_id / x / y
             project_metadata: Title text for the table header row.
 
-        Returns:
+        Returns
+        -------
             True if table was successfully created, False if ezdfx Table
             addon is not available or rendering fails.
+
         """
         if Table is None:
             # If ezdxf isn't fresh enough

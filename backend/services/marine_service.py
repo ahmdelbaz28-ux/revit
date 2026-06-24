@@ -1,5 +1,4 @@
-"""
-backend/services/marine_service.py — Marine Fire-Safety Service Layer
+"""backend/services/marine_service.py — Marine Fire-Safety Service Layer
 =====================================================================
 Service layer that orchestrates the marine package engines behind the
 backend/routers/marine.py REST API.
@@ -19,37 +18,47 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from marine.core.types import (
-    ComplianceResult, DetectorPlacement, ExtinguishingDesign,
-    FireResistanceSpec, MarineZone, ShipProject,
+    DetectorPlacement,
+    ExtinguishingDesign,
+    MarineZone,
+    ShipProject,
 )
 from marine.engine.alarm_logic import (
-    export_to_plc_script, generate_logic_tree,
+    export_to_plc_script,
+    generate_logic_tree,
 )
 from marine.engine.extinguishment import size_system
 from marine.engine.fire_resistance import generate_division_specs
 from marine.engine.zone_mapper import (
-    divide_into_main_vertical_zones,
     compute_escape_route_adjacency,
+    divide_into_main_vertical_zones,
 )
 from marine.iec60092.electrical_installations import (
     design_fire_system_power,
 )
 from marine.iec60092.part_502 import (
-    place_detectors_grid, select_detector_type,
+    place_detectors_grid,
+    select_detector_type,
 )
 from marine.iec60092.part_504 import classify_hazardous_zone
 from marine.integration.autocad_exporter import (
-    draw_zones, generate_dxf_layer_definitions, place_detector_entities,
+    draw_zones,
+    generate_dxf_layer_definitions,
+    place_detector_entities,
 )
 from marine.integration.etap_bridge import export_etap_loads_csv
 from marine.integration.revit_exporter import (
-    generate_revit_division, generate_revit_family, generate_revit_placement,
+    generate_revit_division,
+    generate_revit_family,
+    generate_revit_placement,
 )
 from marine.integration.scada_bridge import (
-    build_mqtt_topics, build_pyscada_yaml, dashboard_payload,
+    build_mqtt_topics,
+    build_pyscada_yaml,
 )
 from marine.solas.chapter_ii_2 import (
-    validate_escape_routes, validate_fire_divisions,
+    validate_escape_routes,
+    validate_fire_divisions,
     validate_main_vertical_zones,
 )
 
@@ -71,6 +80,7 @@ class MarineService:
         Returns:
             Dict with: zones, detectors, divisions, extinguishing,
             alarm_logic, power, integrations.
+
         """
         # 1. Zone division
         if zones is None:

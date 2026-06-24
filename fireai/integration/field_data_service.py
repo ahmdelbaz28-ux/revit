@@ -1,5 +1,4 @@
-"""
-fireai/integration/field_data_service.py
+"""fireai/integration/field_data_service.py
 ==========================================
 Field Data Integration — Mobile data capture, inspection feedback,
 and asset synchronization with conflict detection.
@@ -7,6 +6,7 @@ and asset synchronization with conflict detection.
 References:
   - NFPA 72-2022 §14.4 — Inspection, testing and maintenance
   - NFPA 72-2022 §7.5 — Records and recordkeeping
+
 """
 
 from __future__ import annotations
@@ -146,8 +146,7 @@ class SyncResult:
 
 
 class FieldDataService:
-    """
-    Mobile data capture, inspection feedback, and asset synchronization.
+    """Mobile data capture, inspection feedback, and asset synchronization.
 
     Features:
       - Inspection submission with validation
@@ -259,7 +258,7 @@ class FieldDataService:
 
     def sync_asset(
         self,
-        asset: "AssetData",  # noqa: F821
+        asset: AssetData,
         remote_version: Optional[int] = None,
     ) -> SyncResult:
         asset_id = asset.asset_id
@@ -369,8 +368,7 @@ class FieldDataService:
     def _resolve_conflict(
         self, asset_id: str, local_ver: int, remote_ver: int
     ) -> str:
-        """
-        Last-write-wins conflict resolution.
+        """Last-write-wins conflict resolution.
 
         The higher version number wins. If versions are equal,
         the remote version is preferred (field data is considered

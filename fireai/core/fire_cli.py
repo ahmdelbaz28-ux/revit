@@ -1,5 +1,4 @@
-"""
-fire_cli.py – FireAI command-line entry point.
+"""fire_cli.py – FireAI command-line entry point.
 
 Usage:
     fireai version

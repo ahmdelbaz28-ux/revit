@@ -1,5 +1,4 @@
-"""
-ugld_acoustics.py — Ultrasonic Gas Leak Detection (UGLD) Acoustic Physics Engine
+"""ugld_acoustics.py — Ultrasonic Gas Leak Detection (UGLD) Acoustic Physics Engine
 ==================================================================================
 V23 — Parallel Acoustic Detection Layer
 
@@ -136,8 +135,7 @@ def atmospheric_attenuation_db_per_m(
     temp_c: float = 20.0,
     relative_humidity_pct: float = 50.0,
 ) -> float:
-    """
-    Calculate atmospheric attenuation coefficient (dB/m) for ultrasonic frequencies.
+    """Calculate atmospheric attenuation coefficient (dB/m) for ultrasonic frequencies.
 
     Uses ISO 9613-1:1993 §6 methodology with simplified lookup and correction.
     The base values are computed at 20°C / 50% RH, then temperature and humidity
@@ -166,6 +164,7 @@ def atmospheric_attenuation_db_per_m(
         Atmospheric attenuation coefficient in dB/m. Always positive.
 
     Reference: ISO 9613-1:1993 §6, Table 2 + Annex E
+
     """
     # V65 SAFETY: Validate inputs before computation.
     # This is a standalone function (not protected by Pydantic model validation).
@@ -248,8 +247,7 @@ class UGLDFrequencyBand(str, Enum):
 
 
 class UltrasonicSensor(BaseModel):
-    """
-    UGLD sensor specification.
+    """UGLD sensor specification.
 
     The trigger_threshold_db is the minimum SPL at the sensor required to
     generate an alarm. The background_noise_db represents the ambient
@@ -308,8 +306,7 @@ class UltrasonicSensor(BaseModel):
 
 
 class AcousticPropagation(BaseModel):
-    """
-    Acoustic propagation model from leak source to UGLD sensor.
+    """Acoustic propagation model from leak source to UGLD sensor.
 
     Models free-field (no obstructions) spherical propagation of ultrasonic
     noise from a pressurized gas leak. The three physical effects are:
@@ -405,7 +402,7 @@ class AcousticPropagation(BaseModel):
     )
 
     @model_validator(mode="after")
-    def compute_acoustics(self) -> "AcousticPropagation":
+    def compute_acoustics(self) -> AcousticPropagation:
         """Compute all acoustic propagation values deterministically."""
         # 1. Temperature-dependent speed of sound (ISO 9613-1 §5)
         #    c = 331.3 * sqrt(1 + T/273.15)
@@ -446,8 +443,7 @@ class AcousticPropagation(BaseModel):
 
 
 class UGLDTriggerResult(BaseModel):
-    """
-    Structured result of UGLD trigger check.
+    """Structured result of UGLD trigger check.
 
     Returns more than just triggered/not-triggered — provides the full
     acoustic analysis for audit trail and engineering review. This follows
@@ -495,8 +491,7 @@ def check_ugld_trigger(
     propagation: AcousticPropagation,
     sensor: UltrasonicSensor,
 ) -> UGLDTriggerResult:
-    """
-    Check whether a UGLD sensor will detect a gas leak based on acoustic physics.
+    """Check whether a UGLD sensor will detect a gas leak based on acoustic physics.
 
     The sensor triggers ONLY if BOTH conditions are met:
       1. Final SPL >= Sensor Trigger Threshold (hardware limit)
@@ -514,6 +509,7 @@ def check_ugld_trigger(
         UGLDTriggerResult with triggered status, margins, and fail reason.
 
     Reference: ISA-TR 84.00.07 §4.3, IEC 61252:1993
+
     """
     final_spl = propagation.final_spl_db
     bg_noise = sensor.background_noise_db
@@ -563,8 +559,7 @@ def max_detection_range_m(
     temp_c: float = 40.0,
     relative_humidity_pct: float = 50.0,
 ) -> float:
-    """
-    Calculate the maximum detection range of a UGLD sensor for a given leak.
+    """Calculate the maximum detection range of a UGLD sensor for a given leak.
 
     Uses binary search to find the distance at which the sensor can still
     detect the leak (both threshold and SNR conditions met).
@@ -584,6 +579,7 @@ def max_detection_range_m(
         even at 1m distance.
 
     Reference: ISA-TR 84.00.07 §4.3.2
+
     """
     # Quick check: can the sensor detect the leak at 1m?
     prop_1m = AcousticPropagation(
@@ -627,8 +623,7 @@ def max_detection_range_m(
 
 
 def speed_of_sound(temp_c: float) -> float:
-    """
-    Calculate the speed of sound in air as a function of temperature.
+    """Calculate the speed of sound in air as a function of temperature.
 
     c = 331.3 * sqrt(1 + T/273.15)
 
@@ -639,6 +634,7 @@ def speed_of_sound(temp_c: float) -> float:
 
     Returns:
         Speed of sound in m/s.
+
     """
     return round(331.3 * math.sqrt(1.0 + (temp_c / 273.15)), 1)
 

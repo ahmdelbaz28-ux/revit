@@ -1,5 +1,4 @@
-"""
-thread_safe_queue.py — Thread-Safe Model Update Queue for Revit API
+"""thread_safe_queue.py — Thread-Safe Model Update Queue for Revit API
 ===================================================================
 LIFE-SAFETY CRITICAL: The Revit API is SINGLE-THREADED — all model
 modifications MUST occur on the Revit UI thread. Any attempt to modify
@@ -55,6 +54,7 @@ class ModelUpdateType(str, Enum):
     SAFETY: Each type maps to a specific Revit API operation.
     Unknown types are REJECTED — no dynamic dispatch.
     """
+
     SET_PARAMETER = "set_parameter"
     SET_ROOM_NAME = "set_room_name"
     SET_HAZARD_CLASS = "set_hazard_class"
@@ -68,6 +68,7 @@ class ModelUpdateType(str, Enum):
 
 class ModelUpdateStatus(str, Enum):
     """Status of a model update action."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMPLETED = "completed"
@@ -97,7 +98,9 @@ class ModelUpdateAction:
         timestamp: When this action was created.
         priority: Execution priority (lower = higher priority).
         nfpa_reference: Engineering code reference for audit trail.
+
     """
+
     action_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     action_type: ModelUpdateType = ModelUpdateType.SET_PARAMETER
     element_id: str = ""
@@ -131,7 +134,9 @@ class ModelUpdateResult:
         execution_time_ms: How long the Revit Transaction took.
         audit_trail_id: Reference to the audit log entry.
         completed_at: Timestamp when the result was reported (epoch seconds).
+
     """
+
     action_id: str = ""
     status: ModelUpdateStatus = ModelUpdateStatus.PENDING
     error_message: str = ""
@@ -183,6 +188,7 @@ class ThreadSafeModelUpdateQueue:
         Args:
             max_size: Maximum number of pending actions. Prevents
                 memory exhaustion from runaway MCP clients.
+
         """
         self._queue: queue.PriorityQueue = queue.PriorityQueue(maxsize=max_size)
         self._results: Dict[str, ModelUpdateResult] = {}
@@ -213,6 +219,7 @@ class ThreadSafeModelUpdateQueue:
         Raises:
             ValueError: If action is invalid or missing required fields.
             queue.Full: If the queue is at capacity.
+
         """
         # Validate required fields
         if not action.action_id:
@@ -283,6 +290,7 @@ class ThreadSafeModelUpdateQueue:
 
         Returns:
             The next ModelUpdateAction, or None if queue is empty.
+
         """
         try:
             priority, action = self._queue.get(block=True, timeout=timeout)
@@ -297,6 +305,7 @@ class ThreadSafeModelUpdateQueue:
 
         Args:
             result: The execution result.
+
         """
         # Stamp completion time for cleanup_old_results age-based filtering
         result.completed_at = time.time()
@@ -338,6 +347,7 @@ class ThreadSafeModelUpdateQueue:
 
         Returns:
             The ModelUpdateResult.
+
         """
         with self._results_lock:
             event = self._results_events.get(action_id)
@@ -391,6 +401,7 @@ class ThreadSafeModelUpdateQueue:
 
         Returns:
             Number of results removed.
+
         """
         cutoff = time.time() - max_age_seconds
         removed = 0

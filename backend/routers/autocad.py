@@ -1,5 +1,4 @@
-"""
-backend/routers/autocad.py — AutoCAD Integration Endpoints
+"""backend/routers/autocad.py — AutoCAD Integration Endpoints
 ==========================================================
 
 REST API endpoints for AutoCAD integration operations.
@@ -36,18 +35,19 @@ import threading
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
-from backend.services.autocad_service import AutoCADService
 # V130 SECURITY FIX: Add auth dependencies for AutoCAD write/upload endpoints.
 # Previously every endpoint in this router was unauthenticated — any network
 # caller could read/write DWG files on the server. Write/upload operations now
 # require ENGINEER+ permission; read operations require VIEWER+.
 from backend.auth import require_permission
-from backend.rbac import Permission
+
 # V130: Rate limiter for upload endpoints — prevents DoS via large/cadenced uploads.
 from backend.limiter import limiter
+from backend.rbac import Permission
+from backend.services.autocad_service import AutoCADService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
@@ -83,12 +83,14 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 
 class ConnectRequest(BaseModel):
     """Request model for AutoCAD connection."""
+
     visible: bool = True
     force_new: bool = False
 
 
 class ConnectResponse(BaseModel):
     """Response model for AutoCAD connection."""
+
     success: bool
     message: str
     connected: bool
@@ -97,17 +99,20 @@ class ConnectResponse(BaseModel):
 
 class ReadDwgRequest(BaseModel):
     """Request model for reading DWG file."""
+
     filepath: str
 
 
 class WriteDwgRequest(BaseModel):
     """Request model for writing DWG file."""
+
     filepath: str
     entities: List[Dict[str, Any]]
 
 
 class DrawLineRequest(BaseModel):
     """Request model for drawing a line."""
+
     start_point: List[float]
     end_point: List[float]
     layer: str = "0"
@@ -116,6 +121,7 @@ class DrawLineRequest(BaseModel):
 
 class DrawPolylineRequest(BaseModel):
     """Request model for drawing a polyline."""
+
     vertices: List[List[float]]
     layer: str = "0"
     color: int = 0
@@ -124,6 +130,7 @@ class DrawPolylineRequest(BaseModel):
 
 class DrawCircleRequest(BaseModel):
     """Request model for drawing a circle."""
+
     center: List[float]
     radius: float
     layer: str = "0"
@@ -132,6 +139,7 @@ class DrawCircleRequest(BaseModel):
 
 class DrawTextRequest(BaseModel):
     """Request model for drawing text."""
+
     text: str
     insertion_point: List[float]
     height: float = 0.2
@@ -141,6 +149,7 @@ class DrawTextRequest(BaseModel):
 
 class StatusResponse(BaseModel):
     """Response model for connection status."""
+
     connected: bool
     message: str
     document_info: Optional[Dict[str, Any]] = None
@@ -148,23 +157,27 @@ class StatusResponse(BaseModel):
 
 class SaveRequest(BaseModel):
     """Request model for saving document."""
+
     filepath: str
 
 
 class ModifyEntityRequest(BaseModel):
     """Request model for modifying an entity."""
+
     handle: str
     properties: Dict[str, Any]
 
 
 class DeleteEntityResponse(BaseModel):
     """Response model for entity deletion."""
+
     success: bool
     message: str
 
 
 class ReadFileResponse(BaseModel):
     """Response from reading a DWG/DXF file."""
+
     filepath: str
     metadata: Dict[str, Any]
     layers: List[Dict[str, Any]]
@@ -175,6 +188,7 @@ class ReadFileResponse(BaseModel):
 
 class OperationResponse(BaseModel):
     """Generic operation response."""
+
     success: bool
     message: str
     handle: Optional[str] = None

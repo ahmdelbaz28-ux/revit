@@ -1,5 +1,4 @@
-"""
-hazard_override.py — Mandatory Safety Override for AI/ML Hazard Classifications
+"""hazard_override.py — Mandatory Safety Override for AI/ML Hazard Classifications
 ================================================================================
 LIFE-SAFETY CRITICAL: Machine learning classifiers and AI models can
 misclassify high-risk occupancy rooms, applying weaker fire protection
@@ -47,6 +46,7 @@ class HazardClassification(str, Enum):
     Ordered from least severe (LIGHT) to most severe (EXTRA_HAZARD_2).
     The override system NEVER lowers a classification — only raises it.
     """
+
     LIGHT_HAZARD = "light_hazard"
     ORDINARY_HAZARD_1 = "ordinary_hazard_1"
     ORDINARY_HAZARD_2 = "ordinary_hazard_2"
@@ -159,6 +159,7 @@ MANDATORY_HAZARD_OVERRIDES: Dict[str, str] = {
 @dataclass
 class OverrideResult:
     """Result of hazard classification override verification."""
+
     room_name: str
     original_prediction: str
     final_classification: str
@@ -208,6 +209,7 @@ class HazardOverrideVerifier:
                 Default: "ordinary_hazard_1" (conservative/safe).
                 NEVER use "light_hazard" as default — it is only appropriate
                 for truly non-combustible spaces.
+
         """
         self._overrides = dict(MANDATORY_HAZARD_OVERRIDES)
         if custom_overrides:
@@ -242,6 +244,7 @@ class HazardOverrideVerifier:
 
         Returns:
             OverrideResult with the final classification and audit information.
+
         """
         if not room_name or not isinstance(room_name, str):
             return OverrideResult(
@@ -292,20 +295,19 @@ class HazardOverrideVerifier:
                         f"fatal in a real fire. Override is NON-BYPASSABLE."
                     ),
                 )
-            else:
-                # ML prediction is already at or above mandatory level — keep it
-                return OverrideResult(
-                    room_name=room_name,
-                    original_prediction=ml_predicted_hazard,
-                    final_classification=ml_predicted_hazard,
-                    override_applied=False,
-                    matched_keyword=matched_keyword,
-                    safety_rationale=(
-                        f"Room name contains '{matched_keyword}' (mandatory: "
-                        f"{mandatory_hazard}). ML prediction {ml_predicted_hazard} "
-                        f"already meets or exceeds this requirement."
-                    ),
-                )
+            # ML prediction is already at or above mandatory level — keep it
+            return OverrideResult(
+                room_name=room_name,
+                original_prediction=ml_predicted_hazard,
+                final_classification=ml_predicted_hazard,
+                override_applied=False,
+                matched_keyword=matched_keyword,
+                safety_rationale=(
+                    f"Room name contains '{matched_keyword}' (mandatory: "
+                    f"{mandatory_hazard}). ML prediction {ml_predicted_hazard} "
+                    f"already meets or exceeds this requirement."
+                ),
+            )
 
         # No keyword match — apply minimum default if prediction is below it
         if is_more_severe(self._minimum_default, ml_predicted_hazard):
@@ -348,9 +350,9 @@ class HazardOverrideVerifier:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 __all__ = [
+    "MANDATORY_HAZARD_OVERRIDES",
     "HazardClassification",
     "HazardOverrideVerifier",
     "OverrideResult",
-    "MANDATORY_HAZARD_OVERRIDES",
     "is_more_severe",
 ]

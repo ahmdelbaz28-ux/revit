@@ -1,5 +1,4 @@
-"""
-fireai/core/tests/test_regression.py — Regression Tests for Known Bugs
+"""fireai/core/tests/test_regression.py — Regression Tests for Known Bugs
 ======================================================================
 Task 2.19: Add regression tests for known bugs that were fixed.
 
@@ -230,7 +229,7 @@ class TestV83JSONInjection:
 
         expected = {"properties", "geometry", "source_file", "last_modified_by",
                     "is_deleted", "project_id"}
-        assert _ELEMENT_UPDATABLE_KEYS == frozenset(expected)
+        assert frozenset(expected) == _ELEMENT_UPDATABLE_KEYS
 
     def test_universal_element_mandatory_id(self):
         """V83 FIX: UniversalElement requires non-empty element_id."""

@@ -1,5 +1,4 @@
-"""
-event_bus.py - FireAI Event Bus (Digital Twin Foundation)
+"""event_bus.py - FireAI Event Bus (Digital Twin Foundation)
 =========================================================
 
 Central pub/sub event bus for the FireAI engineering system.
@@ -153,10 +152,10 @@ EventCallback = Callable[[Event], None]
 
 __all__ = [
     "Event",
-    "Events",
+    "EventBus",
     "EventCallback",
     "EventRecorder",
-    "EventBus",
+    "Events",
 ]
 
 
@@ -262,7 +261,7 @@ class EventBus:
         bus = EventBus.instance()
     """
 
-    _instance: Optional["EventBus"] = None
+    _instance: Optional[EventBus] = None
     _instance_lock = threading.Lock()
 
     def __init__(self) -> None:
@@ -272,7 +271,7 @@ class EventBus:
         self._error_count = 0
 
     @classmethod
-    def instance(cls) -> "EventBus":
+    def instance(cls) -> EventBus:
         """Get or create the singleton EventBus.
 
         Use this in production — ensures all modules share the same bus.
@@ -307,6 +306,7 @@ class EventBus:
         SAFETY: If the same callback is registered twice for the same
         event type, it will be called twice. This is intentional —
         it's the caller's responsibility to manage subscriptions.
+
         """
         if not callable(callback):
             raise TypeError(f"callback must be callable, got {type(callback).__name__}")
@@ -318,6 +318,7 @@ class EventBus:
 
         Returns:
             True if the callback was found and removed, False otherwise.
+
         """
         with self._lock:
             cbs = self._listeners.get(event_type, [])
@@ -351,6 +352,7 @@ class EventBus:
             - Exceptions in callbacks are caught and counted —
               the bus NEVER crashes due to a bad callback.
             - Dispatch order: specific subscribers first, then "*" subscribers.
+
         """
         event = Event(
             event_type=event_type,

@@ -1,5 +1,4 @@
-"""
-hydraulic_solver.py — Hazen-Williams Friction Loss & Hydraulic Calculation Engine
+"""hydraulic_solver.py — Hazen-Williams Friction Loss & Hydraulic Calculation Engine
 =================================================================================
 LIFE-SAFETY CRITICAL: Incorrect hydraulic calculations cause undersized fire
 suppression piping. If friction loss is underestimated, the residual pressure
@@ -163,6 +162,7 @@ def calculate_friction_loss(
         → denominator = 120^1.85 × 2.067^4.87 = 7051.758 × 34.004 = 239789.289
         → p = 22653.662 / 239789.289 = 0.094473 psi/ft
         → Total = 0.094473 × 100 = 9.4473 psi
+
     """
     # Input validation — NaN/Inf guard
     for name, val in [
@@ -284,6 +284,7 @@ def calculate_sprinkler_discharge(
 
     Hand-Verification:
         K=5.6, P=7.0 → Q = 5.6 × √7.0 = 5.6 × 2.64575 = 14.8162 gpm
+
     """
     if not (math.isfinite(k_factor) and math.isfinite(pressure_psi)):
         raise ValueError(
@@ -357,6 +358,7 @@ HAZARD_DESIGN_REQUIREMENTS: Dict[str, Dict[str, float]] = {
 @dataclass
 class SprinklerComplianceResult:
     """Result of sprinkler compliance validation against NFPA 13 / SBC 801."""
+
     is_compliant: bool
     hazard_class: str
     head_pressure_psi: float
@@ -399,6 +401,7 @@ def validate_sprinkler_compliance(
         False
         >>> result.violations[0]
         'Residual pressure 6.5 psi is below mandatory NFPA 13 limit of 7.0 psi.'
+
     """
     violations: List[str] = []
     normalized_hazard = hazard_class.strip().lower().replace(" ", "_")
@@ -492,6 +495,7 @@ def validate_roughness_factor(
         120.0
         >>> validate_roughness_factor("wet_steel", 500.0)
         ValueError: Friction factor C=500.0 exceeds maximum 140.0 for wet_steel
+
     """
     if not math.isfinite(c_factor):
         raise ValueError(
@@ -533,14 +537,14 @@ def validate_roughness_factor(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 __all__ = [
-    "calculate_friction_loss",
-    "calculate_sprinkler_discharge",
-    "validate_sprinkler_compliance",
-    "validate_roughness_factor",
-    "MIN_SPRINKLER_PRESSURE_PSI",
-    "HAZARD_DESIGN_REQUIREMENTS",
     "C_FACTOR_RANGES",
+    "HAZARD_DESIGN_REQUIREMENTS",
+    "MIN_SPRINKLER_PRESSURE_PSI",
     "SCHEDULE_40_INTERNAL_DIAMETERS",
     "STANDARD_K_FACTORS",
     "SprinklerComplianceResult",
+    "calculate_friction_loss",
+    "calculate_sprinkler_discharge",
+    "validate_roughness_factor",
+    "validate_sprinkler_compliance",
 ]

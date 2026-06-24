@@ -1,5 +1,4 @@
-"""
-digital_twin_sync.py — Digital Twin Synchronization Module for FireAI
+"""digital_twin_sync.py — Digital Twin Synchronization Module for FireAI
 ======================================================================
 
 Synchronizes the design model with the digital twin, ensuring that the
@@ -115,11 +114,11 @@ logger = logging.getLogger(__name__)
 
 
 __all__ = [
-    "SyncResult",
-    "DriftReport",
     "CoverageValidationResult",
-    "SyncReport",
     "DigitalTwinSync",
+    "DriftReport",
+    "SyncReport",
+    "SyncResult",
 ]
 
 
@@ -143,6 +142,7 @@ class SyncResult:
         timestamp: ISO 8601 UTC timestamp of when the sync completed.
         building_id: Building identifier from the twin.
         correlation_id: Correlation ID linking all events from this sync.
+
     """
 
     operation: str
@@ -208,6 +208,7 @@ class DriftReport:
         type_mismatch_count: Number of type mismatch drifts.
         timestamp: ISO 8601 UTC timestamp.
         correlation_id: Links drift events together.
+
     """
 
     building_id: str
@@ -303,6 +304,7 @@ class CoverageValidationResult:
         critical_gaps: List of room_ids with zero OK detectors.
         timestamp: ISO 8601 UTC timestamp.
         correlation_id: Links validation events together.
+
     """
 
     building_id: str
@@ -365,6 +367,7 @@ class SyncReport:
             "CRITICAL_GAPS".
         timestamp: ISO 8601 UTC timestamp.
         correlation_id: Links all sub-reports together.
+
     """
 
     building_id: str
@@ -490,6 +493,7 @@ class DigitalTwinSync:
 
         # Full report
         report = sync.generate_sync_report()
+
     """
 
     # Valid detector types per NFPA 72-2022
@@ -520,6 +524,7 @@ class DigitalTwinSync:
 
         Raises:
             TypeError: If twin is not a DigitalTwin instance.
+
         """
         if not isinstance(twin, DigitalTwin):
             raise TypeError(f"twin must be a DigitalTwin instance, got {type(twin).__name__}")
@@ -571,6 +576,7 @@ class DigitalTwinSync:
         Raises:
             TypeError: If design_detectors is not a list.
             ValueError: If detector_type is not a valid type.
+
         """
         # ── Input validation ──
         if not isinstance(design_detectors, list):
@@ -780,6 +786,7 @@ class DigitalTwinSync:
 
         Raises:
             TypeError: If as_built_detectors is not a list.
+
         """
         # ── Input validation ──
         if not isinstance(as_built_detectors, list):
@@ -992,6 +999,7 @@ class DigitalTwinSync:
 
         Returns:
             DriftReport with all detected drifts and severity counts.
+
         """
         correlation_id = str(uuid.uuid4())
 
@@ -1081,6 +1089,7 @@ class DigitalTwinSync:
 
         Returns:
             CoverageValidationResult with room-level coverage details.
+
         """
         correlation_id = str(uuid.uuid4())
 
@@ -1219,6 +1228,7 @@ class DigitalTwinSync:
 
         Returns:
             SyncReport with all sub-reports and overall status.
+
         """
         correlation_id = str(uuid.uuid4())
 
@@ -1296,6 +1306,7 @@ class DigitalTwinSync:
         Returns:
             List of DriftRecord for missing, extra, and type-mismatch
             drifts.
+
         """
         drifts: List[DriftRecord] = []
         now = datetime.now(timezone.utc).isoformat()
@@ -1386,6 +1397,7 @@ class DigitalTwinSync:
             detector: Current detector state from the twin.
             as_built_data: As-built data dict with optional x/y/z.
             warnings: List to append position drift warnings to.
+
         """
         ab_x = as_built_data.get("x")
         ab_y = as_built_data.get("y")
@@ -1429,6 +1441,7 @@ class DigitalTwinSync:
             event_type: Type of event to log.
             room_id: Room identifier (empty string if not room-specific).
             details: Event details dictionary.
+
         """
         if self._audit_store is None:
             return

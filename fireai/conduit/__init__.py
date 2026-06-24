@@ -1,5 +1,4 @@
-"""
-fireai.conduit — NFPA 72 Fire Alarm Conduit Fitting Engine
+"""fireai.conduit — NFPA 72 Fire Alarm Conduit Fitting Engine
 ===========================================================
 
 Public API for conduit fill calculation, bend radius verification,

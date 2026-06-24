@@ -1,5 +1,4 @@
-"""
-backend/tests/test_integration_enhanced.py — Enhanced integration tests for
+"""backend/tests/test_integration_enhanced.py — Enhanced integration tests for
 low-coverage API routes via TestClient.
 
 Covers: sync, reports, qomn, elements, exports, environment, connections_v2,

@@ -1,5 +1,4 @@
-"""
-backend/routers/sync.py — Project synchronization and WebSocket endpoint.
+"""backend/routers/sync.py — Project synchronization and WebSocket endpoint.
 
 Provides:
   - POST /api/projects/:id/sync  — trigger project sync

@@ -1,5 +1,4 @@
-"""
-backend/services/air_quality_service.py — Air quality data for FireAI.
+"""backend/services/air_quality_service.py — Air quality data for FireAI.
 
 Provides real-time Air Quality Index (AQI) data from the World Air Quality
 Index (WAQI) project (https://waqi.info/) — a free API for global air quality.
@@ -28,6 +27,7 @@ References:
   - NFPA 92-2024 §6.4 (smoke control design)
   - IEC 60079-10-1:2015 §6.2 (ventilation assessment)
   - EPA AQI Scale: https://www.airnow.gov/aqi/aqi-basics/
+
 """
 
 from __future__ import annotations
@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 
 class AQILevel(IntEnum):
     """EPA Air Quality Index levels — used for tenability baseline."""
+
     GOOD = 50           # 0-50: Satisfactory
     MODERATE = 100      # 51-100: Acceptable
     UNHEALTHY_SENSITIVE = 150  # 101-150: Unhealthy for sensitive groups
@@ -64,8 +65,7 @@ DEFAULT_PM10_UG_M3 = 50.0  # WHO interim target-1 (conservative)
 
 @dataclass(frozen=True)
 class AirQualityData:
-    """
-    Immutable air quality snapshot for engineering calculations.
+    """Immutable air quality snapshot for engineering calculations.
 
     Attributes:
         aqi: Air Quality Index (0-500, EPA scale)
@@ -76,7 +76,9 @@ class AirQualityData:
         latitude: Latitude of measurement
         longitude: Longitude of measurement
         is_stale: Whether this data is from cache beyond TTL
+
     """
+
     aqi: int
     pm25_ug_m3: float
     pm10_ug_m3: float
@@ -101,21 +103,19 @@ def aqi_to_level(aqi: int) -> str:
     """Convert AQI numeric value to human-readable level."""
     if aqi <= 50:
         return "Good"
-    elif aqi <= 100:
+    if aqi <= 100:
         return "Moderate"
-    elif aqi <= 150:
+    if aqi <= 150:
         return "Unhealthy for Sensitive Groups"
-    elif aqi <= 200:
+    if aqi <= 200:
         return "Unhealthy"
-    elif aqi <= 300:
+    if aqi <= 300:
         return "Very Unhealthy"
-    else:
-        return "Hazardous"
+    return "Hazardous"
 
 
 class AirQualityService:
-    """
-    Async air quality data provider with fail-safe defaults.
+    """Async air quality data provider with fail-safe defaults.
 
     Primary source: WAQI (World Air Quality Index) — free, demo token
     Fallback: Conservative defaults (MODERATE AQI = 100)
@@ -198,8 +198,7 @@ class AirQualityService:
     async def _fetch_waqi(
         self, latitude: float, longitude: float
     ) -> AirQualityData:
-        """
-        Fetch air quality from WAQI (World Air Quality Index) API.
+        """Fetch air quality from WAQI (World Air Quality Index) API.
 
         API: https://api.waqi.info/feed/geo:LAT;LON/?token=demo
         Returns the nearest monitoring station data including AQI and
@@ -207,6 +206,7 @@ class AirQualityService:
 
         Returns:
             AirQualityData with source="waqi"
+
         """
         if not self.WAQI_TOKEN:
             raise ValueError(
@@ -285,8 +285,7 @@ class AirQualityService:
 
     @staticmethod
     def _pm25_to_aqi(pm25: float) -> int:
-        """
-        Convert PM2.5 concentration to EPA AQI.
+        """Convert PM2.5 concentration to EPA AQI.
 
         Simplified EPA AQI formula:
         AQI = ((I_hi - I_lo) / (C_hi - C_lo)) * (C - C_lo) + I_lo
@@ -319,8 +318,7 @@ class AirQualityService:
 
     @staticmethod
     def _aqi_to_pm25(aqi_val: float) -> float:
-        """
-        Convert AQI sub-index back to approximate PM2.5 concentration.
+        """Convert AQI sub-index back to approximate PM2.5 concentration.
 
         Inverse of _pm25_to_aqi using EPA breakpoints.
         Uses the midpoint of each AQI range for the concentration.
@@ -349,8 +347,7 @@ class AirQualityService:
 
     @staticmethod
     def _aqi_to_pm10(aqi_val: float) -> float:
-        """
-        Convert AQI sub-index back to approximate PM10 concentration.
+        """Convert AQI sub-index back to approximate PM10 concentration.
 
         EPA PM10 breakpoints:
         PM10 (µg/m³) → AQI range
@@ -381,8 +378,7 @@ class AirQualityService:
         return 604.0
 
     def _get_default(self, latitude: float, longitude: float) -> AirQualityData:
-        """
-        Return conservative default air quality data.
+        """Return conservative default air quality data.
 
         MODERATE AQI (100) is conservative: it indicates that baseline
         air quality is not perfect, which adds a safety margin to
@@ -408,8 +404,7 @@ class AirQualityService:
         latitude: float,
         longitude: float,
     ) -> AirQualityData:
-        """
-        Fetch air quality for engineering calculations.
+        """Fetch air quality for engineering calculations.
 
         Strategy:
           1. Check cache — return if fresh (< 30-min TTL)
@@ -422,6 +417,7 @@ class AirQualityService:
 
         Returns:
             AirQualityData (always succeeds, never raises)
+
         """
         if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
             logger.warning(

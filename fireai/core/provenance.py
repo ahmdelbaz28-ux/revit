@@ -1,5 +1,4 @@
-"""
-fireai.core.provenance — Decision Provenance & Audit Trail
+"""fireai.core.provenance — Decision Provenance & Audit Trail
 ===========================================================
 
 Provides structured audit provenance for engineering decisions in the
@@ -66,6 +65,7 @@ class ConfidenceScore:
         rule_coverage: Fraction of applicable rules that were verified (0.0 to 1.0).
         geometry_certainty: Certainty of geometric inputs (0.0 to 1.0).
         overall: Overall confidence level (alias for level).
+
     """
 
     level: ConfidenceLevel = ConfidenceLevel.MEDIUM
@@ -96,6 +96,7 @@ class RuleApplied:
         unit: Unit of measurement for value_used (e.g., 'm', 'ft', 'VDC').
         constant_id: Identifier for the engineering constant referenced.
         citation: Full citation string for the rule source.
+
     """
 
     rule_id: str = ""
@@ -125,6 +126,7 @@ class Violation:
         remediation: Suggested fix.
         citation: Full citation string for the violated rule.
         location: Location identifier where the violation was found.
+
     """
 
     rule_id: str = ""
@@ -170,6 +172,7 @@ class DecisionProvenance:
         alternatives_top_3: Top 3 alternative decisions considered.
         warnings: Warnings generated during decision-making.
         violations_detected: Violations detected during decision-making.
+
     """
 
     decision_id: str = ""
@@ -192,7 +195,7 @@ class DecisionProvenance:
     violations_detected: Optional[List[Any]] = None
 
     @classmethod
-    def new(cls, **kwargs: Any) -> "DecisionProvenance":
+    def new(cls, **kwargs: Any) -> DecisionProvenance:
         """Factory method to create a DecisionProvenance with auto-generated ID.
 
         Accepts the same keyword arguments as the constructor, plus

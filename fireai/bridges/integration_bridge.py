@@ -1,5 +1,4 @@
-"""
-fireai/bridges/integration_bridge.py
+"""fireai/bridges/integration_bridge.py
 =====================================
 LIFE-SAFETY CRITICAL: Integration Bridge for the FireAI Fire Alarm
 Engineering Platform.  Wires together four core subsystems into a
@@ -184,6 +183,7 @@ class FloorData:
             (e.g. ``"business"``, ``"residential"``).
         room_specs: Optional list of room specification dicts for
             per-room analysis by FloorOrchestrator.
+
     """
 
     floor_id: str
@@ -230,6 +230,7 @@ class AcousticConfig:
             at 3 m (or reference distance) in dBA.
         include_ugld: Whether to include UGLD (ultrasonic gas leak
             detection) analysis per ISA-TR84.00.07.
+
     """
 
     mode: str = "public"
@@ -271,6 +272,7 @@ class CableRoutingResult:
         circuit_count: Number of circuits routed.
         violations: Aggregated violations across all circuits.
         warnings: Aggregated warnings across all circuits.
+
     """
 
     routes: List[Any] = field(default_factory=list)
@@ -314,6 +316,7 @@ class IntegrationConfig:
         nfpa_year: NFPA 72 edition year.  Default 2022.
             Supported values: 2019, 2022.  Used for edition-specific
             rule selection throughout all subsystems.
+
     """
 
     building_id: str
@@ -415,6 +418,7 @@ class IntegrationResult:
         overall_compliant: ``True`` only if ALL available subsystems
             that successfully executed reported compliance.
         execution_time_s: Total wall-clock execution time in seconds.
+
     """
 
     cable_result: Optional[CableRoutingResult] = None
@@ -485,6 +489,7 @@ class IntegrationBridge:
         Raises:
             TypeError: If ``config`` is not an :class:`IntegrationConfig`.
             ValueError: If ``config`` fails validation.
+
         """
         if not isinstance(config, IntegrationConfig):
             raise TypeError(
@@ -554,6 +559,7 @@ class IntegrationBridge:
 
         Reference:
             NFPA 72-2022 §10.14, §12.2, §18.4, §21
+
         """
         t0 = time.monotonic()
 
@@ -692,6 +698,7 @@ class IntegrationBridge:
         Reference:
             NFPA 72-2022 §10.14 (voltage drop), §12.2 (pathway design),
             NEC Article 760 (fire alarm wiring)
+
         """
         if not _HAS_CABLE_ROUTING:
             logger.info("%s skipped — subsystem unavailable.", self._SUB_CABLE)
@@ -868,6 +875,7 @@ class IntegrationBridge:
         Reference:
             NFPA 72-2022 §7.5 (documentation requirements),
             §14.3.4 (decommissioned devices)
+
         """
         if not _HAS_TWIN_SYNC:
             logger.info("%s skipped — subsystem unavailable.", self._SUB_TWIN)
@@ -958,6 +966,7 @@ class IntegrationBridge:
             §18.4.2 (sleeping areas 75 dBA),
             §18.4.3 (public mode +15 dB),
             §18.4.4 (private mode +10 dB)
+
         """
         if not _HAS_ACOUSTICS:
             logger.info("%s skipped — subsystem unavailable.", self._SUB_ACOUSTICS)
@@ -1131,6 +1140,7 @@ class IntegrationBridge:
             §21.3.3 (vertical zones), §21.3.4 (zone area limits),
             §21.4.1 (shunt trip), §21.6 (emergency control),
             §21.7.1 (HVAC shutdown)
+
         """
         if not _HAS_MULTI_FLOOR:
             logger.info("%s skipped — subsystem unavailable.", self._SUB_MULTI_FLOOR)
@@ -1221,6 +1231,7 @@ class IntegrationBridge:
         Returns:
             ``True`` if all available subsystems with results are
             compliant, ``False`` otherwise.
+
         """
         compliance_checks: List[Tuple[str, bool]] = []
 
@@ -1298,10 +1309,10 @@ class IntegrationBridge:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 __all__ = [
+    "AcousticConfig",
+    "CableRoutingResult",
+    "FloorData",
     "IntegrationBridge",
     "IntegrationConfig",
     "IntegrationResult",
-    "FloorData",
-    "AcousticConfig",
-    "CableRoutingResult",
 ]

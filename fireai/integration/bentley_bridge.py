@@ -1,5 +1,4 @@
-"""
-fireai/integration/bentley_bridge.py
+"""fireai/integration/bentley_bridge.py
 ======================================
 Bentley Systems Integration — OpenBuildings/STAAD integration via Bentley APIs.
 
@@ -11,6 +10,7 @@ References:
   - Bentley STAAD.Pro API
   - Bentley iTwin Platform
   - IFC for data exchange when direct API is unavailable
+
 """
 
 from __future__ import annotations
@@ -122,8 +122,7 @@ class DesignData:
 
 
 class BentleyBridge:
-    """
-    OpenBuildings/STAAD integration via Bentley APIs.
+    """OpenBuildings/STAAD integration via Bentley APIs.
 
     Provides:
       - Import of Bentley models (OpenBuildings, STAAD, iTwin)
@@ -161,8 +160,7 @@ class BentleyBridge:
     # ── Import ──────────────────────────────────────────────────────────
 
     def import_bentley(self, path: str) -> DesignData:
-        """
-        Import a Bentley model from file.
+        """Import a Bentley model from file.
 
         Supports:
           - IFC files (recommended interchange format)
@@ -174,6 +172,7 @@ class BentleyBridge:
 
         Returns:
             DesignData with extracted building entities.
+
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"Bentley file not found: {path}")
@@ -213,8 +212,7 @@ class BentleyBridge:
     # ── Synchronization ─────────────────────────────────────────────────
 
     def sync_design(self, design: DesignData) -> SyncStatus:
-        """
-        Synchronize a FireAI design with the Bentley model.
+        """Synchronize a FireAI design with the Bentley model.
 
         Two-way sync: updates from Bentley are incorporated into the
         FireAI design, and FireAI annotations (detector placements,
@@ -225,6 +223,7 @@ class BentleyBridge:
 
         Returns:
             SyncStatus with results of the synchronization.
+
         """
         project_id = design.metadata.get(
             "bentley_project_id", "unknown"
@@ -293,22 +292,21 @@ class BentleyBridge:
     def get_bentley_assets(
         self, project_id: str
     ) -> List[BentleyAsset]:
-        """
-        Retrieve Bentley assets for a project.
+        """Retrieve Bentley assets for a project.
 
         Args:
             project_id: Bentley project identifier.
 
         Returns:
             List of BentleyAsset objects classified by element type.
+
         """
         return self._assets_cache.get(project_id, [])
 
     def get_fire_relevant_assets(
         self, project_id: str
     ) -> List[BentleyAsset]:
-        """
-        Get assets relevant to fire alarm design.
+        """Get assets relevant to fire alarm design.
 
         Filters to structural elements that affect detector placement
         and cable routing (walls, floors, ducts, openings, etc.).
@@ -318,6 +316,7 @@ class BentleyBridge:
 
         Returns:
             List of fire-relevant BentleyAsset objects.
+
         """
         all_assets = self._assets_cache.get(project_id, [])
         return [
@@ -329,8 +328,7 @@ class BentleyBridge:
     # ── Connection Management ───────────────────────────────────────────
 
     def connect_api(self, credentials: Dict[str, str]) -> bool:
-        """
-        Connect to the Bentley iTwin API.
+        """Connect to the Bentley iTwin API.
 
         Args:
             credentials: Dict with 'client_id', 'client_secret',
@@ -338,6 +336,7 @@ class BentleyBridge:
 
         Returns:
             True if connection succeeded.
+
         """
         required = {"client_id", "client_secret", "subscription_id"}
         if not required.issubset(credentials.keys()):
@@ -367,8 +366,7 @@ class BentleyBridge:
         raw: bytes,
         file_hash: str,
     ) -> DesignData:
-        """
-        Import an IFC file exported from Bentley.
+        """Import an IFC file exported from Bentley.
 
         Delegates to fireai/bridges/ifc_headless_bridge.py when available.
         """
@@ -404,8 +402,7 @@ class BentleyBridge:
         raw: bytes,
         file_hash: str,
     ) -> DesignData:
-        """
-        Import a Bentley DGN file.
+        """Import a Bentley DGN file.
 
         Production Note:
           DGN is a proprietary Bentley format. Full parsing requires
@@ -430,8 +427,7 @@ class BentleyBridge:
         raw: bytes,
         file_hash: str,
     ) -> DesignData:
-        """
-        Import a Bentley iModel snapshot.
+        """Import a Bentley iModel snapshot.
 
         Production Note:
           iModel parsing requires the Bentley iTwin SDK.

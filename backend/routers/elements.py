@@ -1,5 +1,4 @@
-"""
-FireAI Digital Twin - Elements Router
+"""FireAI Digital Twin - Elements Router
 ======================================
 CRUD endpoints for building elements.
 """

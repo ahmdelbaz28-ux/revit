@@ -1,5 +1,4 @@
-"""
-core/database.py — Universal Data Model (UDM) SQLite Store
+"""core/database.py — Universal Data Model (UDM) SQLite Store
 ===========================================================
 
 Thread-safe SQLite persistence layer for UniversalElement objects.
@@ -80,6 +79,7 @@ class _ElementLike(Protocol):
     Allows duck-typed objects (e.g., ci_benchmark's _El) without
     forcing a UniversalElement dependency.
     """
+
     element_id: str
 
     def to_dict(self) -> Dict[str, Any]: ...
@@ -238,6 +238,7 @@ class UniversalDataModel:
 
         Raises:
             MemoryError: If the system runs out of memory (not swallowed).
+
         """
         with self._lock:
             try:
@@ -279,6 +280,7 @@ class UniversalDataModel:
 
         Raises:
             MemoryError: If the system runs out of memory (not swallowed).
+
         """
         count = 0
         with self._lock:
@@ -310,6 +312,7 @@ class UniversalDataModel:
 
         Returns:
             UniversalElement if found, None otherwise.
+
         """
         with self._lock:
             try:
@@ -342,6 +345,7 @@ class UniversalDataModel:
 
         Returns:
             List of UniversalElement objects.
+
         """
         with self._lock:
             try:
@@ -382,6 +386,7 @@ class UniversalDataModel:
 
         Raises:
             ValueError: If updates contain keys not in the whitelist.
+
         """
         # V83 FIX (C-3): Key whitelist validation — prevents JSON injection
         invalid_keys = set(updates.keys()) - _ELEMENT_UPDATABLE_KEYS
@@ -440,6 +445,7 @@ class UniversalDataModel:
 
         Returns:
             True if the element was deleted, False if not found.
+
         """
         with self._lock:
             try:
@@ -471,6 +477,7 @@ class UniversalDataModel:
 
         Returns:
             List of matching UniversalElement objects.
+
         """
         with self._lock:
             try:
@@ -511,6 +518,7 @@ class UniversalDataModel:
 
         Returns:
             List of matching UniversalElement objects.
+
         """
         with self._lock:
             try:
@@ -610,6 +618,7 @@ class UniversalDataModel:
 
         Returns:
             The resolved Conflict object, or None if not found.
+
         """
         with self._lock:
             try:
@@ -715,6 +724,7 @@ class UniversalDataModel:
 
         Returns:
             Reconstructed UniversalElement, or None on failure.
+
         """
         try:
             # Properties

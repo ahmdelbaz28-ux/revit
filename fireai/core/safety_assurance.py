@@ -1,5 +1,4 @@
-"""
-safety_assurance.py — FireAI Safety Assurance Module
+"""safety_assurance.py — FireAI Safety Assurance Module
 =====================================================
 
 Adopted from the external consultant's Safety Assurance Architecture,
@@ -118,6 +117,7 @@ def classify_safety_tier(
         <SafetyTier.PROOF_VERIFIED: 'PROOF_VERIFIED'>
         >>> classify_safety_tier(97.0, fallback_used=True)
         <SafetyTier.FALLBACK_USED: 'FALLBACK_USED'>
+
     """
     # V52 FIX: NaN/Inf coverage_pct bypasses ALL safety tier checks.
     # NaN < 95.0 = False, NaN < 99.0 = False, NaN >= 99.99 = False.
@@ -262,6 +262,7 @@ def apply_fail_safe(
           - fail_safe_required: bool — whether fail-safe action is required (backward compat)
           - actions: List[str] — recommended actions (backward compat)
           - recommendation: str — human-readable recommendation (backward compat)
+
     """
     # V109: Auto-detect calling convention
     if isinstance(coverage_pct_or_tier, SafetyTier):
@@ -555,6 +556,7 @@ def check_review_triggers(
 
     Returns:
         List of triggered review requirements.
+
     """
     # V53 FIX (AUDIT-009 + F-008): Non-conservative defaults + NaN bypass.
     # Old defaults (100.0, "rectangular", 3.0, 100.0) meant missing data
@@ -755,22 +757,22 @@ class EngineeringEvidencePackage:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 __all__ = [
-    "SafetyTier",
-    "classify_safety_tier",
-    "tier_requires_fpe_review",
-    "tier_can_submit",
-    "FailSafeRule",
-    "apply_fail_safe",
-    "OverrideRole",
-    "OverrideRecord",
+    "ABSOLUTE_MINIMUM_COVERAGE",
+    "MANDATORY_REVIEW_TRIGGERS",
+    "MINIMUM_COVERAGE_FOR_SUBMISSION",
     "NON_OVERRIDABLE",
     "OVERRIDE_PERMISSIONS",
-    "MANDATORY_REVIEW_TRIGGERS",
-    "check_review_triggers",
-    "EngineeringEvidencePackage",
-    "ABSOLUTE_MINIMUM_COVERAGE",
-    "MINIMUM_COVERAGE_FOR_SUBMISSION",
-    "STANDARD_COVERAGE_THRESHOLD",
     "PROOF_VERIFIED_THRESHOLD",
+    "STANDARD_COVERAGE_THRESHOLD",
+    "EngineeringEvidencePackage",
+    "FailSafeRule",
+    "OverrideRecord",
+    "OverrideRole",
+    "SafetyTier",
     "_audit_compute_hmac",
+    "apply_fail_safe",
+    "check_review_triggers",
+    "classify_safety_tier",
+    "tier_can_submit",
+    "tier_requires_fpe_review",
 ]

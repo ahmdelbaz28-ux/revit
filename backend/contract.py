@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 class ContractViolation(Exception):
     """Raised when a response fails contract validation."""
+
     def __init__(self, endpoint: str, violations: List[str]):
         self.endpoint = endpoint
         self.violations = violations

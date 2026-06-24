@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-api_server.py — FastAPI REST wrapper for FireAI
+"""api_server.py — FastAPI REST wrapper for FireAI
 Based on V10 Enhanced + LearningStore
 
 SECURITY FIXES APPLIED:
@@ -110,6 +109,7 @@ async def verify_api_key(api_key: str = Security(_API_KEY_HEADER)) -> str:
 
     Raises:
         HTTPException: 401 if API key is missing or invalid.
+
     """
     if not api_key:
         raise HTTPException(
@@ -151,6 +151,7 @@ class RateLimiter:
 
         Returns:
             True if allowed, False if rate limited.
+
         """
         now = time.monotonic()
         requests = self._clients.get(client_id, [])
@@ -196,11 +197,11 @@ from fireai.core.nfpa72_models import CeilingSpec, CeilingType, RoomSpec
 # 1. Any import error crashed the entire module
 # 2. Database was opened before env vars were set
 # 3. Testing required mocking the global singleton
-_system: Optional["FireAISystem"] = None
+_system: Optional[FireAISystem] = None
 _system_lock = threading.Lock()
 
 
-def _get_system() -> "FireAISystem":
+def _get_system() -> FireAISystem:
     """Get or lazily create the FireAI system instance (thread-safe).
 
     Uses double-checked locking for thread-safe lazy initialization.

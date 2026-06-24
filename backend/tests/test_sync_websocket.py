@@ -1,5 +1,4 @@
-"""
-test_sync_websocket.py — WebSocket integration tests for the sync endpoint.
+"""test_sync_websocket.py — WebSocket integration tests for the sync endpoint.
 
 Covers the WebSocket /ws endpoint that existing tests don't exercise:
   - WebSocket connection and ping/pong

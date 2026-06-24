@@ -1,5 +1,4 @@
-"""
-fireai.conduit.output — Revit, AutoCAD, and Schedule Output Generators
+"""fireai.conduit.output — Revit, AutoCAD, and Schedule Output Generators
 =======================================================================
 
 Converts a completed ConduitRun into:
@@ -58,8 +57,7 @@ _M_TO_FT: float = 1.0 / 0.3048
 
 
 def generate_revit_conduit(run: ConduitRun) -> Dict[str, Any]:
-    """
-    Generate Revit-compatible JSON for a complete ConduitRun.
+    """Generate Revit-compatible JSON for a complete ConduitRun.
 
     Produces a structure importable by Dynamo or the Revit API Python shell
     to create Conduit and ConduitFitting elements in a Revit model.
@@ -79,6 +77,7 @@ def generate_revit_conduit(run: ConduitRun) -> Dict[str, Any]:
           sha256 (deterministic hash for audit trail).
 
     Reference: Autodesk Revit MEP API — Conduit.Create(), ConduitFitting.Create().
+
     """
     segments_out: List[Dict[str, Any]] = []
     for seg in run.segments:
@@ -125,8 +124,7 @@ def generate_revit_conduit(run: ConduitRun) -> Dict[str, Any]:
 
 
 def generate_autocad_entities(run: ConduitRun) -> List[Dict[str, Any]]:
-    """
-    Generate DXF entity descriptions for a ConduitRun.
+    """Generate DXF entity descriptions for a ConduitRun.
 
     Each straight segment becomes a LINE entity.
     Each elbow becomes an ARC entity.
@@ -142,6 +140,7 @@ def generate_autocad_entities(run: ConduitRun) -> List[Dict[str, Any]]:
           entity_type, layer, color_index, [geometry keys per type].
 
     Reference: AutoCAD DXF R2018 specification — LINE, ARC, POINT entities.
+
     """
     layer = _DXF_LAYER.get(run.conduit_type, "FA-CONDUIT")
     color = _dxf_color(run.conduit_type)
@@ -191,8 +190,7 @@ def generate_autocad_entities(run: ConduitRun) -> List[Dict[str, Any]]:
 
 
 def generate_schedules(run: ConduitRun) -> Dict[str, Any]:
-    """
-    Generate material, fitting, and summary schedules for procurement.
+    """Generate material, fitting, and summary schedules for procurement.
 
     Produces three sub-schedules:
       conduit_schedule:  Trade size, type, total metres/feet, stick count.
@@ -208,6 +206,7 @@ def generate_schedules(run: ConduitRun) -> Dict[str, Any]:
         dict with keys: conduit_schedule, fitting_schedule, summary.
 
     Reference: NEC 358.120 (EMT stick length); NFPA 72 design documents.
+
     """
     # ── Conduit schedule ─────────────────────────────────────────────────────
 
@@ -317,8 +316,7 @@ def _dxf_color(ct: ConduitType) -> int:
 
 
 def _sha256(payload: Dict[str, Any]) -> str:
-    """
-    Compute deterministic SHA-256 of a JSON-serialisable payload.
+    """Compute deterministic SHA-256 of a JSON-serialisable payload.
 
     Keys sorted, floats rounded to 9 dp for cross-platform stability.
     Excludes the 'sha256' key itself to avoid circular dependency.

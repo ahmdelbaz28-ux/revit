@@ -1,5 +1,4 @@
-"""
-room_lifecycle.py — FireAI Room Lifecycle State Machine
+"""room_lifecycle.py — FireAI Room Lifecycle State Machine
 ========================================================
 NFPA 72-2022 compliant state machine that transforms the fire safety
 system from a stateless "calculator" into a proper engineering system
@@ -133,6 +132,7 @@ class RoomTransition:
             Engineer), or "ahj" (Authority Having Jurisdiction).
         metadata: Optional dict for extra information (e.g. engine results,
             error details, detector counts, coverage percentages).
+
     """
 
     from_state: RoomState
@@ -183,6 +183,7 @@ class RoomLifecycle:
         assert lc.state == RoomState.OPTIMIZED
         assert lc.can_transition_to(RoomState.VERIFYING)
         assert not lc.can_transition_to(RoomState.CERTIFIED)
+
     """
 
     def __init__(
@@ -195,6 +196,7 @@ class RoomLifecycle:
         Args:
             room_id: Unique identifier for this room (e.g. "R-101").
             bus: Optional EventBus instance. If None, uses the singleton.
+
         """
         self._room_id = room_id
         self._state = RoomState.PENDING
@@ -243,6 +245,7 @@ class RoomLifecycle:
 
         Note:
             This method is thread-safe and does NOT modify state.
+
         """
         with self._lock:
             allowed = LEGAL_TRANSITIONS.get(self._state, set())
@@ -283,6 +286,7 @@ class RoomLifecycle:
                 actor="system",
                 metadata={"engines": ["analytical", "voronoi", "grid"]},
             )
+
         """
         with self._lock:
             allowed = LEGAL_TRANSITIONS.get(self._state, set())
@@ -339,6 +343,7 @@ class RoomLifecycle:
             to_state: State after transition.
             reason: Transition reason.
             actor: Who initiated the transition.
+
         """
         try:
             # FIX-3: Always use the singleton EventBus to ensure all
@@ -379,6 +384,7 @@ class RoomLifecycle:
             lc.transition_to(RoomState.ANALYZING, "Start", "system")
             time.sleep(2.5)
             assert lc.duration_in_state() >= 2.0
+
         """
         with self._lock:
             entered = self._state_entered_at
@@ -399,6 +405,7 @@ class RoomLifecycle:
 
         Returns:
             True if the room is in a terminal state.
+
         """
         with self._lock:
             return self._state in {RoomState.CERTIFIED, RoomState.REJECTED}
@@ -408,6 +415,7 @@ class RoomLifecycle:
 
         Returns:
             True if the room is in FAILED state.
+
         """
         with self._lock:
             return self._state == RoomState.FAILED
@@ -418,6 +426,7 @@ class RoomLifecycle:
         Returns:
             Dictionary containing room_id, current state, transition count,
             state entered timestamp, and full transition history.
+
         """
         with self._lock:
             return {
@@ -464,6 +473,7 @@ class RoomLifecycleManager:
         # {"PENDING": 1, "ANALYZING": 1, ...}
 
         assert not manager.all_certified()
+
     """
 
     def __init__(self, bus: Optional[EventBus] = None) -> None:
@@ -472,6 +482,7 @@ class RoomLifecycleManager:
         Args:
             bus: Optional EventBus instance. If None, the singleton
                 is used for each room's lifecycle.
+
         """
         self._rooms: Dict[str, RoomLifecycle] = {}
         # ✅ FIX: Use RLock instead of Lock to prevent deadlock.
@@ -498,6 +509,7 @@ class RoomLifecycleManager:
 
         Raises:
             TypeError: If room_id is not a string.
+
         """
         if not isinstance(room_id, str):
             raise TypeError(f"room_id must be str, got {type(room_id).__name__}")
@@ -520,6 +532,7 @@ class RoomLifecycleManager:
 
         Returns:
             The RoomLifecycle for the room, or None if not registered.
+
         """
         with self._lock:
             return self._rooms.get(room_id)
@@ -532,6 +545,7 @@ class RoomLifecycleManager:
 
         Returns:
             True if the room is registered.
+
         """
         with self._lock:
             return room_id in self._rooms
@@ -541,6 +555,7 @@ class RoomLifecycleManager:
 
         Returns:
             List of room ID strings.
+
         """
         with self._lock:
             return list(self._rooms.keys())
@@ -571,6 +586,7 @@ class RoomLifecycleManager:
             #     RoomState.CERTIFIED: 5,
             #     ...
             # }
+
         """
         with self._lock:
             # Initialize all states to zero
@@ -592,6 +608,7 @@ class RoomLifecycleManager:
             True if ALL rooms are in CERTIFIED state.
             False if any room is in any other state, or if no rooms
             are registered.
+
         """
         with self._lock:
             if not self._rooms:
@@ -603,6 +620,7 @@ class RoomLifecycleManager:
 
         Returns:
             True if at least one room is FAILED.
+
         """
         with self._lock:
             return any(lc.state == RoomState.FAILED for lc in self._rooms.values())
@@ -612,6 +630,7 @@ class RoomLifecycleManager:
 
         Returns:
             True if at least one room is in WARNING state.
+
         """
         with self._lock:
             return any(lc.state == RoomState.WARNING for lc in self._rooms.values())
@@ -627,6 +646,7 @@ class RoomLifecycleManager:
         Returns:
             Percentage of rooms that are CERTIFIED.
             Returns 0.0 if no rooms are registered.
+
         """
         with self._lock:
             if not self._rooms:
@@ -647,6 +667,7 @@ class RoomLifecycleManager:
 
         Raises:
             KeyError: If the room is not registered.
+
         """
         with self._lock:
             if room_id not in self._rooms:
@@ -661,6 +682,7 @@ class RoomLifecycleManager:
         Returns:
             Dictionary containing room count, certification progress,
             building status, and per-room lifecycle summaries.
+
         """
         with self._lock:
             return {
@@ -680,11 +702,11 @@ class RoomLifecycleManager:
 # ═══════════════════════════════════════════════════════════════════════
 
 __all__ = [
-    "RoomState",
-    "RoomTransition",
+    "LEGAL_TRANSITIONS",
     "RoomLifecycle",
     "RoomLifecycleManager",
-    "LEGAL_TRANSITIONS",
+    "RoomState",
+    "RoomTransition",
 ]
 
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-FireAI — Constants Cross-Reference Index Generator
+"""FireAI — Constants Cross-Reference Index Generator
 
 Tracks where each constant is used across the codebase.
 Generates impact analysis for constant changes.
@@ -10,7 +9,6 @@ from __future__ import annotations
 
 # Run: python -m fireai.tools.crossref_indexer
 # Output: fireai/CROSSREF_INDEX.md
-
 import logging
 import re
 from collections import defaultdict
@@ -115,7 +113,6 @@ def find_inline_definitions(root: Path) -> list[dict]:
 
 def generate_markdown(usages: dict, drift: list) -> str:
     """Generate Markdown documentation."""
-
     md = f"""# FireAI — Constants Cross-Reference Map
 
 **Generated:** {datetime.now().strftime('%Y-%m-%d')}

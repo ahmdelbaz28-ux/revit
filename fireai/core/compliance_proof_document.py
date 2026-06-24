@@ -1,5 +1,4 @@
-"""
-D2: Compliance Proof Document Generator — AHJ-Ready Markdown
+"""D2: Compliance Proof Document Generator — AHJ-Ready Markdown
 =============================================================
 Generates a comprehensive NFPA 72 compliance proof document from
 verified placement results. This document is intended for submission
@@ -148,6 +147,7 @@ class ComplianceProofDocument:
 
         Returns:
             Markdown-formatted string ready for AHJ submission.
+
         """
         sections = [
             self._header(),
@@ -463,12 +463,11 @@ class ComplianceProofDocument:
         """Return the NFPA reference for the coverage radius at a given height."""
         if ceiling_height <= 3.0:
             return "NFPA 72 Table 17.6.3.1.1 — h ≤ 3.0m → R = 0.7 × 9.1 = 6.37m"
-        elif ceiling_height <= 3.7:
+        if ceiling_height <= 3.7:
             return "NFPA 72 Table 17.6.3.1.1 — h ∈ (3.0, 3.7]m → R = 6.37m"
-        elif ceiling_height <= 4.3:
+        if ceiling_height <= 4.3:
             return "NFPA 72 Table 17.6.3.1.1 — h ∈ (3.7, 4.3]m → R < 6.37m"
-        else:
-            return f"NFPA 72 Table 17.6.3.1.1 — h={ceiling_height:.1f}m → R reduced"
+        return f"NFPA 72 Table 17.6.3.1.1 — h={ceiling_height:.1f}m → R reduced"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

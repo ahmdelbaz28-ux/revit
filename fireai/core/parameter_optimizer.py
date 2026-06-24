@@ -1,5 +1,4 @@
-"""
-fireai/core/parameter_optimizer.py  V1.0
+"""fireai/core/parameter_optimizer.py  V1.0
 =========================================
 Grid-searches verify_step on benchmark rooms.
 Results saved to JSON for manual engineer review.
@@ -75,7 +74,7 @@ class ParameterOptimizationResult:
             mark = "  <-- BEST" if c is self.best_config else ""
             lines.append(
                 f"  {c.verify_step:>6.2f} {c.total_time_ms:>8}"
-                f" {c.avg_count:>10.1f} {str(c.all_valid):>9}"
+                f" {c.avg_count:>10.1f} {c.all_valid!s:>9}"
                 f" {c.pareto_score:>8.2f}{mark}"
             )
         lines += [
@@ -87,19 +86,18 @@ class ParameterOptimizationResult:
 
 
 class ParameterOptimizer:
-    """
-    Finds the Pareto-optimal verify_step for fireai's DensityOptimizer.
+    """Finds the Pareto-optimal verify_step for fireai's DensityOptimizer.
 
     Only configurations where ALL benchmark rooms return proof_valid=True
     are considered. Results are written to JSON for manual engineer review.
     """
 
     def __init__(self, coverage_radius: float = DETECTOR_RADIUS) -> None:
-        """
-        Args:
-            coverage_radius: Coverage radius in metres (default DETECTOR_RADIUS = 6.37m
-                             per NFPA 72 §17.7.4.2.3.1: R = 0.7 × S = 0.7 × 9.1m at h≤3.0m).
-                             Passed to DensityOptimizer.optimize().
+        """Args:
+        coverage_radius: Coverage radius in metres (default DETECTOR_RADIUS = 6.37m
+                         per NFPA 72 §17.7.4.2.3.1: R = 0.7 × S = 0.7 × 9.1m at h≤3.0m).
+                         Passed to DensityOptimizer.optimize().
+
         """
         self.coverage_radius = coverage_radius
 
@@ -108,8 +106,7 @@ class ParameterOptimizer:
         rooms: List[Room],
         steps: Optional[List[float]] = None,
     ) -> ParameterOptimizationResult:
-        """
-        Run grid search over verify_step values.
+        """Run grid search over verify_step values.
 
         Args:
             rooms: List of Room objects to benchmark against.
@@ -117,6 +114,7 @@ class ParameterOptimizer:
 
         Returns:
             ParameterOptimizationResult with best config and all configs.
+
         """
         steps = steps or [0.10, 0.15, 0.20, 0.25, 0.30, 0.40]
         old_step = _dm.VERIFY_STEP

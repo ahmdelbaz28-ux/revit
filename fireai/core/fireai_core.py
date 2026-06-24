@@ -131,6 +131,7 @@ def _resolve_db_path(db_path: Optional[str] = None) -> str:
 
     Returns:
         Resolved absolute path for the audit database.
+
     """
     if db_path:
         if db_path == ":memory:":
@@ -150,8 +151,7 @@ def _resolve_db_path(db_path: Optional[str] = None) -> str:
 
 @dataclass
 class FireAISystem:
-    """
-    Central orchestrator that combines analysis with audit logging
+    """Central orchestrator that combines analysis with audit logging
     and adaptive learning.
 
     CRITICAL FIX: Now uses the actual FireExpertSystem instead of
@@ -161,6 +161,7 @@ class FireAISystem:
         db_path: Path to the audit database. If None, uses FIREAI_DB_PATH
             env var or './data/fireai_audit.db'. If ':memory:', uses
             in-memory SQLite (testing only).
+
     """
 
     db_path: str
@@ -225,8 +226,7 @@ class FireAISystem:
         user_id: str = "system",
         run_resilience: bool = True,
     ) -> EnhancedRoomResult:
-        """
-        Analyze a single room and log to audit trail.
+        """Analyze a single room and log to audit trail.
 
         CRITICAL FIX: Uses actual FireExpertSystem instead of the
         non-existent `analyse_room_enhanced` function.
@@ -238,6 +238,7 @@ class FireAISystem:
 
         Returns:
             EnhancedRoomResult with full analysis results
+
         """
         if not room_spec or not hasattr(room_spec, "room_id"):
             raise ValueError("room_spec must have a room_id attribute")
@@ -444,8 +445,7 @@ class FireAISystem:
         user_id: str = "system",
         run_resilience: bool = True,
     ) -> List[EnhancedRoomResult]:
-        """
-        Analyze multiple rooms as a floor and log to audit trail.
+        """Analyze multiple rooms as a floor and log to audit trail.
 
         Args:
             rooms: List of RoomSpec to analyze as a floor
@@ -454,6 +454,7 @@ class FireAISystem:
 
         Returns:
             List of EnhancedRoomResult, one per room
+
         """
         if not rooms:
             raise ValueError("rooms list must not be empty")
@@ -541,8 +542,7 @@ class FireAISystem:
         bim_source: Optional[str] = None,
         user_id: str = "system",
     ) -> Dict[str, Any]:
-        """
-        Run the FULL integration pipeline wiring all 8 subsystems.
+        """Run the FULL integration pipeline wiring all 8 subsystems.
 
         This is the main entry point that connects the entire FireAI
         platform: the 4 core subsystems (cable routing, digital twin
@@ -578,6 +578,7 @@ class FireAISystem:
 
         Reference:
             NFPA 72-2022 §10.14, §12.2, §18.4, §21
+
         """
         from fireai.bridges.integration_bridge import (
             AcousticConfig,
@@ -840,11 +841,11 @@ class FireAISystem:
 
 
 __all__ = [
-    "FireAISystem",
-    "SecurityError",
-    "_resolve_db_path",
-    "EnhancedRoomResult",
     "ConfidenceLevel",
+    "EnhancedRoomResult",
+    "FireAISystem",
     "PlacementProof",
     "ResilienceResult",
+    "SecurityError",
+    "_resolve_db_path",
 ]

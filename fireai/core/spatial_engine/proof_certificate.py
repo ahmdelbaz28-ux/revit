@@ -143,7 +143,7 @@ class ProofCertificate:
         return json.dumps(asdict(self), indent=indent, ensure_ascii=False)
 
     @classmethod
-    def from_json(cls, json_str: str) -> "ProofCertificate":
+    def from_json(cls, json_str: str) -> ProofCertificate:
         """Deserialize certificate from JSON."""
         data = json.loads(json_str)
         return cls(**data)
@@ -212,6 +212,7 @@ class ProofCertificateGenerator:
 
         Returns:
             ProofCertificate with mathematical proof.
+
         """
         delta = self.delta
         R = self.R

@@ -5,16 +5,15 @@
 # Safety-first: كل قرار يُدقَّق ثم يُدقَّق مرة أخرى
 # ═══════════════════════════════════════════════════════════════════════════════
 
-"""
-هذا الملف يحتوي على:
-  1. KernelCore         — نواة تنسيق صفرية مع event-driven architecture
-  2. AtomicRoomStore    — تخزين lock-free للغرف (MPSC queue + mmap)
-  3. VectorEngine       — محرك SIMD لحساب التغطية لملايين النقاط/ثانية
-  4. StreamingParser    — قراءة DWG/PDF/IFC بدون تحميل كامل للذاكرة
-  5. AdaptivePipeline   — pipeline ذاتي التكيف مع backpressure
-  6. SafetyLedger       — سجل لا يُمحى لكل قرار سلامة
-  7. ConcurrentSolver   — MIP solver موزّع على الأنوية
-  8. WireRouter_V2      — توجيه الأسلاك A* مع vectorized collision
+"""هذا الملف يحتوي على:
+1. KernelCore         — نواة تنسيق صفرية مع event-driven architecture
+2. AtomicRoomStore    — تخزين lock-free للغرف (MPSC queue + mmap)
+3. VectorEngine       — محرك SIMD لحساب التغطية لملايين النقاط/ثانية
+4. StreamingParser    — قراءة DWG/PDF/IFC بدون تحميل كامل للذاكرة
+5. AdaptivePipeline   — pipeline ذاتي التكيف مع backpressure
+6. SafetyLedger       — سجل لا يُمحى لكل قرار سلامة
+7. ConcurrentSolver   — MIP solver موزّع على الأنوية
+8. WireRouter_V2      — توجيه الأسلاك A* مع vectorized collision
 """
 
 from __future__ import annotations
@@ -62,8 +61,7 @@ _SENTINEL = object()
 
 
 class NFPA72:
-    """
-    NFPA 72-2022 constants — كل قيمة مُرتبطة بالمادة الأصلية.
+    """NFPA 72-2022 constants — كل قيمة مُرتبطة بالمادة الأصلية.
     لا يُسمح بتغيير هذه القيم إلا بموجب مراجعة هندسية مكتوبة.
     """
 
@@ -137,8 +135,7 @@ class NFPA72:
 
 
 class VectorEngine:
-    """
-    محرك تغطية مُعجَّل بـ NumPy SIMD.
+    """محرك تغطية مُعجَّل بـ NumPy SIMD.
 
     الأداء المقيس:
       - 100K غرفة × 1600 نقطة × 4 كواشف: ~2.3 ثانية (كل الأنوية)
@@ -160,9 +157,8 @@ class VectorEngine:
         radius: float,
         fine_step: float = NFPA72.GRID_FINE_M,
         coarse_step: float = NFPA72.GRID_COARSE_M,
-    ) -> "CoverageResult":
-        """
-        Hierarchical two-pass coverage verification.
+    ) -> CoverageResult:
+        """Hierarchical two-pass coverage verification.
 
         Pass 1 (coarse): 1m grid — identify suspect cells.
         Pass 2 (fine):   0.25m grid — verify suspect cells only.
@@ -239,9 +235,8 @@ class VectorEngine:
         self,
         rooms: List[Tuple[NDArray, NDArray, float]],  # [(polygon, detectors, radius)]
         workers: int = 0,
-    ) -> List["CoverageResult"]:
-        """
-        Vectorised batch verification across N rooms.
+    ) -> List[CoverageResult]:
+        """Vectorised batch verification across N rooms.
         workers=0 → use all logical CPUs.
         """
         n_workers = workers or os.cpu_count() or 1
@@ -260,8 +255,7 @@ class VectorEngine:
         detectors_xy: NDArray[np.float64],  # [D,2]
         radius: float,
     ) -> NDArray[np.bool_]:
-        """
-        Returns bool mask [G] — True where point is within radius of any detector.
+        """Returns bool mask [G] — True where point is within radius of any detector.
         Chunked to stay within L3 cache.
         """
         G = grid_xy.shape[0]
@@ -298,8 +292,7 @@ class VectorEngine:
         pts: NDArray[np.float64],  # [N,2]
         poly: NDArray[np.float64],  # [V,2] (closed polygon vertices)
     ) -> NDArray[np.bool_]:
-        """
-        Vectorized even-odd ray-casting.
+        """Vectorized even-odd ray-casting.
         Handles degenerate edges gracefully (horizontal edge bypass).
         """
         x, y = pts[:, 0], pts[:, 1]
@@ -343,8 +336,7 @@ class CoverageResult:
 
 
 class AtomicRoomStore:
-    """
-    تخزين الغرف بدون قفل (lock-free MPSC).
+    """تخزين الغرف بدون قفل (lock-free MPSC).
 
     الأداء:
       - Write: ~50 ns (deque append, no lock)
@@ -358,7 +350,7 @@ class AtomicRoomStore:
 
     def __init__(self, mmap_path: Optional[Path] = None) -> None:
         self._writers: Dict[int, deque] = defaultdict(deque)
-        self._rooms: Dict[str, "RoomRecord"] = {}
+        self._rooms: Dict[str, RoomRecord] = {}
         self._lock = threading.Lock()
         self._version = 0
         self._mmap_path = mmap_path
@@ -367,19 +359,19 @@ class AtomicRoomStore:
         if mmap_path:
             self._init_mmap(mmap_path)
 
-    def put(self, room: "RoomRecord") -> None:
+    def put(self, room: RoomRecord) -> None:
         """Thread-safe, lock-free room insertion."""
         tid = threading.get_ident()
         self._writers[tid].append(room)
         self._flush_writer(tid)
 
-    def get(self, room_id: str) -> Optional["RoomRecord"]:
+    def get(self, room_id: str) -> Optional[RoomRecord]:
         return self._rooms.get(room_id)
 
-    def get_all(self) -> List["RoomRecord"]:
+    def get_all(self) -> List[RoomRecord]:
         return list(self._rooms.values())
 
-    def bulk_put(self, rooms: List["RoomRecord"]) -> None:
+    def bulk_put(self, rooms: List[RoomRecord]) -> None:
         """Bulk insert — O(N) with single lock acquisition."""
         with self._lock:
             for r in rooms:
@@ -392,7 +384,7 @@ class AtomicRoomStore:
         q = self._writers[tid]
         if not q:
             return
-        batch: List["RoomRecord"] = []
+        batch: List[RoomRecord] = []
         while q:
             batch.append(q.popleft())
         with self._lock:
@@ -465,8 +457,7 @@ class RoomRecord:
 
 
 class StreamingParser:
-    """
-    يُعالج ملفات DWG/DXF/PDF/IFC بنظام streaming chunk-by-chunk.
+    """يُعالج ملفات DWG/DXF/PDF/IFC بنظام streaming chunk-by-chunk.
     """
 
     CHUNK_LINES = 10_000
@@ -480,7 +471,7 @@ class StreamingParser:
         """Stream DXF file → yield batches of wall LineStrings as NDArray."""
         buffer: List[str] = []
         try:
-            with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            with open(path, encoding="utf-8", errors="replace") as fh:
                 for line in fh:
                     buffer.append(line)
                     if len(buffer) >= self.CHUNK_LINES:
@@ -625,8 +616,7 @@ class StageMetrics:
 
 
 class AdaptivePipeline:
-    """
-    Pipeline ذاتي التكيف مع backpressure, auto-scaling, circuit breaker.
+    """Pipeline ذاتي التكيف مع backpressure, auto-scaling, circuit breaker.
     """
 
     BACKPRESSURE_HIGH = 0.80
@@ -738,8 +728,7 @@ class AdaptivePipeline:
 
 
 class SafetyLedger:
-    """
-    سجل سلامة لا يُمحى — كل قرار يُسجَّل ويُختم بـ SHA-256.
+    """سجل سلامة لا يُمحى — كل قرار يُسجَّل ويُختم بـ SHA-256.
     NFPA 72 §10.6.1 compliance: audit trail متطلب
     """
 
@@ -771,7 +760,7 @@ class SafetyLedger:
         self._key = secret_key
         self._hmac = _hmac
         self._lock = threading.RLock()
-        self._entries: List["LedgerEntry"] = []
+        self._entries: List[LedgerEntry] = []
         self._prev_hash = b"\x00" * 32
         self._seq = 0
         self._fh: Optional[Any] = None
@@ -787,7 +776,7 @@ class SafetyLedger:
         decision: str,
         params: Dict[str, Any],
         compliant: bool,
-    ) -> "LedgerEntry":
+    ) -> LedgerEntry:
         """Record a safety-critical decision synchronously."""
         with self._lock:
             entry = LedgerEntry(
@@ -825,7 +814,7 @@ class SafetyLedger:
             prev = bytes.fromhex(entry.entry_hash)
         return True, None
 
-    def get_entries_for_room(self, room_id: str) -> List["LedgerEntry"]:
+    def get_entries_for_room(self, room_id: str) -> List[LedgerEntry]:
         return [e for e in self._entries if e.room_id == room_id]
 
     def close(self) -> None:
@@ -868,8 +857,7 @@ class LedgerEntry:
 
 
 class ConcurrentSolver:
-    """
-    يُشغّل MIP optimization على عدة أنوية بالتوازي.
+    """يُشغّل MIP optimization على عدة أنوية بالتوازي.
     Safety: إذا فشل MIP → نرجع للـ greedy conservative fallback
     """
 
@@ -877,7 +865,7 @@ class ConcurrentSolver:
         self._n_workers = n_workers or min(os.cpu_count() or 4, 8)
         self._executor: Optional[ProcessPoolExecutor] = None
 
-    def __enter__(self) -> "ConcurrentSolver":
+    def __enter__(self) -> ConcurrentSolver:
         self._executor = ProcessPoolExecutor(max_workers=self._n_workers)
         return self
 
@@ -887,8 +875,8 @@ class ConcurrentSolver:
 
     def solve_batch(
         self,
-        problems: List["SolverProblem"],
-    ) -> List["SolverResult"]:
+        problems: List[SolverProblem],
+    ) -> List[SolverResult]:
         """Solve N room placement problems concurrently."""
         if not self._executor:
             return [_solve_room_safe(p) for p in problems]
@@ -904,7 +892,7 @@ class ConcurrentSolver:
         return results
 
 
-def _solve_room_safe(problem: "SolverProblem") -> "SolverResult":
+def _solve_room_safe(problem: SolverProblem) -> SolverResult:
     """Process-safe MIP solver with greedy fallback."""
     try:
         return _solve_mip(problem)
@@ -913,7 +901,7 @@ def _solve_room_safe(problem: "SolverProblem") -> "SolverResult":
         return _greedy_fallback(problem)
 
 
-def _solve_mip(problem: "SolverProblem") -> "SolverResult":
+def _solve_mip(problem: SolverProblem) -> SolverResult:
     """Binary MIP: minimize detector count s.t. full coverage."""
     try:
         import pulp
@@ -960,7 +948,7 @@ def _solve_mip(problem: "SolverProblem") -> "SolverResult":
     )
 
 
-def _greedy_fallback(problem: "SolverProblem") -> "SolverResult":
+def _greedy_fallback(problem: SolverProblem) -> SolverResult:
     """Conservative greedy: place detectors until every grid point is covered."""
     candidates = problem.candidates
     grid_pts = problem.grid_points
@@ -1011,8 +999,7 @@ class SolverResult:
 
 
 class WireRouterV2:
-    """
-    توجيه الأسلاك بـ A* محسَّن مع vectorized LOS check.
+    """توجيه الأسلاك بـ A* محسَّن مع vectorized LOS check.
     """
 
     def __init__(self, obstacles: List[NDArray[np.float64]]) -> None:
@@ -1191,8 +1178,7 @@ class WireRouterV2:
 
 
 class KernelCore:
-    """
-    النواة المركزية — تُنسّق جميع المكونات.
+    """النواة المركزية — تُنسّق جميع المكونات.
     """
 
     def __init__(
@@ -1218,7 +1204,7 @@ class KernelCore:
         mmap_path: Optional[Path] = None,
         ledger_path: Optional[Path] = None,
         n_workers: int = 0,
-    ) -> "KernelCore":
+    ) -> KernelCore:
         """Factory: creates a fully wired KernelCore instance."""
         store = AtomicRoomStore(mmap_path)
         engine = VectorEngine()
@@ -1232,7 +1218,7 @@ class KernelCore:
         path: Path,
         ceiling_m: float = 3.0,
         standard: str = "NFPA72",
-    ) -> "BuildingResult":
+    ) -> BuildingResult:
         """Full pipeline: file → rooms → detectors → cables → report."""
         t_start = time.perf_counter()
         ext = path.suffix.lower()
@@ -1430,8 +1416,7 @@ class BuildingResult:
 
 
 class AdapterBridge:
-    """
-    يربط AutoCADAdapter / RevitAdapter / PDFAdapter بـ KernelCore.
+    """يربط AutoCADAdapter / RevitAdapter / PDFAdapter بـ KernelCore.
     """
 
     def __init__(self, kernel: KernelCore) -> None:
@@ -1446,7 +1431,7 @@ class AdapterBridge:
         mmap_path: Optional[Path] = None,
         ledger_path: Optional[Path] = None,
         n_workers: int = 0,
-    ) -> "AdapterBridge":
+    ) -> AdapterBridge:
         kernel = KernelCore.create(mmap_path, ledger_path, n_workers)
         return cls(kernel)
 
@@ -1484,9 +1469,8 @@ class AdapterBridge:
         self,
         rooms: List[RoomRecord],
         ceiling_m: float = 3.0,
-    ) -> "BuildingResult":
+    ) -> BuildingResult:
         """Synchronous wrapper — call from existing adapter code."""
-
         self._kernel._store.bulk_put(rooms)
         problems = [KernelCore._build_problem(r, ceiling_m) for r in rooms]
         solutions = self._kernel._solver.solve_batch(problems)

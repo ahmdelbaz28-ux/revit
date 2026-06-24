@@ -1,5 +1,4 @@
-"""
-fireai/integration/autocad_bridge.py
+"""fireai/integration/autocad_bridge.py
 ======================================
 AutoCAD Integration — DWG/DXF processing and AutoCAD APS/Forge compatibility.
 
@@ -15,6 +14,7 @@ Layer conventions extracted:
 References:
   - AutoCAD DXF Reference (Autodesk)
   - ezdxf library documentation (https://ezdxf.mozman.at)
+
 """
 
 from __future__ import annotations
@@ -133,8 +133,7 @@ class DesignData:
 
 
 class _DXFTextParser:
-    """
-    Minimal DXF text parser for when ezdxf is unavailable.
+    """Minimal DXF text parser for when ezdxf is unavailable.
 
     Parses basic DXF entities (LINE, LWPOLYLINE, CIRCLE, INSERT)
     and groups them by layer. Does not support blocks, xdata, or
@@ -259,8 +258,7 @@ class _DXFTextParser:
 
 
 class AutoCADBridge:
-    """
-    DWG/DXF processing and AutoCAD APS/Forge compatibility.
+    """DWG/DXF processing and AutoCAD APS/Forge compatibility.
 
     Handles:
       - DXF import (via ezdxf when available, fallback text parser)
@@ -302,8 +300,7 @@ class AutoCADBridge:
     # ── Import ──────────────────────────────────────────────────────────
 
     def import_dwg(self, path: str) -> DesignData:
-        """
-        Import a DWG file.
+        """Import a DWG file.
 
         Production Note:
           Full DWG support requires the Open Design Alliance (ODA/Teigha)
@@ -315,6 +312,7 @@ class AutoCADBridge:
 
         Returns:
             DesignData with extracted entities (or error metadata).
+
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"DWG file not found: {path}")
@@ -351,19 +349,19 @@ class AutoCADBridge:
         return design
 
     def import_dxf(self, path: str) -> DesignData:
-        """
-        Import a DXF file using ezdxf (preferred) or fallback text parser.
+        """Import a DXF file using ezdxf (preferred) or fallback text parser.
 
         Args:
             path: Path to the DXF file.
 
         Returns:
             DesignData with extracted layers and entities.
+
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"DXF file not found: {path}")
 
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
+        with open(path, encoding="utf-8", errors="replace") as f:
             content = f.read()
 
         file_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -407,8 +405,7 @@ class AutoCADBridge:
     # ── Export ──────────────────────────────────────────────────────────
 
     def export_dwg(self, design: DesignData, path: str) -> str:
-        """
-        Export design data to DWG format.
+        """Export design data to DWG format.
 
         Production Note:
           DWG export requires the ODA/Teigha SDK or AutoCAD API.
@@ -420,6 +417,7 @@ class AutoCADBridge:
 
         Returns:
             Path to the exported file.
+
         """
         output_dir = os.path.dirname(path)
         if output_dir and not os.path.exists(output_dir):
@@ -449,8 +447,7 @@ class AutoCADBridge:
         return path
 
     def export_dxf(self, design: DesignData, path: str) -> str:
-        """
-        Export design data to DXF format.
+        """Export design data to DXF format.
 
         Preserves all layers and entities from the design data,
         enabling round-trip: import DXF -> process -> export DXF.
@@ -461,6 +458,7 @@ class AutoCADBridge:
 
         Returns:
             Path to the exported file.
+
         """
         output_dir = os.path.dirname(path)
         if output_dir and not os.path.exists(output_dir):
@@ -664,23 +662,7 @@ class AutoCADBridge:
             coords.append(
                 [entity.dxf.center.x, entity.dxf.center.y, entity.dxf.center.z]
             )
-        elif dxf_type == "INSERT":
-            coords.append(
-                [
-                    entity.dxf.insert.x,
-                    entity.dxf.insert.y,
-                    entity.dxf.insert.z,
-                ]
-            )
-        elif dxf_type == "TEXT":
-            coords.append(
-                [
-                    entity.dxf.insert.x,
-                    entity.dxf.insert.y,
-                    entity.dxf.insert.z,
-                ]
-            )
-        elif dxf_type == "MTEXT":
+        elif dxf_type == "INSERT" or dxf_type == "TEXT" or dxf_type == "MTEXT":
             coords.append(
                 [
                     entity.dxf.insert.x,

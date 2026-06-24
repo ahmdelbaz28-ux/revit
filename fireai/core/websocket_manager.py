@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-WebSocket connection manager for FastAPI with API key verification.
+"""WebSocket connection manager for FastAPI with API key verification.
 """
 
 from __future__ import annotations

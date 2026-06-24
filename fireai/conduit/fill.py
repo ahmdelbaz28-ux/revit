@@ -1,5 +1,4 @@
-"""
-fireai.conduit.fill — NEC Chapter 9 Conduit Fill Calculator
+"""fireai.conduit.fill — NEC Chapter 9 Conduit Fill Calculator
 ============================================================
 
 Implements conduit fill percentage calculation and trade size
@@ -52,8 +51,7 @@ _MAX_FILL_3PLUS_CONDUCTORS: float = 40.0  # NEC Ch.9 Table 1, col "Over 2 Wires"
 
 
 def _max_fill_pct(conductor_count: int) -> float:
-    """
-    Return the NEC Table 1 maximum fill percentage for the given conductor count.
+    """Return the NEC Table 1 maximum fill percentage for the given conductor count.
 
     Reference: NEC 2022 Chapter 9, Table 1.
     """
@@ -130,9 +128,8 @@ def _next_larger_size(current: TradeSize) -> Optional[TradeSize]:
 def get_internal_area(
     conduit_type: ConduitType,
     trade_size: TradeSize,
-) -> "Result[float, PhysicsError]":
-    """
-    Return the tabulated internal cross-sectional area in in².
+) -> Result[float, PhysicsError]:
+    """Return the tabulated internal cross-sectional area in in².
 
     Reference: NEC 2022 Chapter 9, Table 4.
 
@@ -143,6 +140,7 @@ def get_internal_area(
     Returns:
         Result.ok(float) — area in in².
         Result.err(PhysicsError) — unsupported combination.
+
     """
     key = (conduit_type, trade_size)
     area = _INTERNAL_AREA_IN2.get(key)
@@ -166,9 +164,8 @@ def calculate_fill(
     conduit_type: ConduitType,
     trade_size: TradeSize,
     cable_diameters_in: List[float],
-) -> "Result[FillResult, PhysicsError | CodeViolationError]":
-    """
-    Calculate conduit fill percentage per NEC Chapter 9, Table 1.
+) -> Result[FillResult, PhysicsError | CodeViolationError]:
+    """Calculate conduit fill percentage per NEC Chapter 9, Table 1.
 
     FORMULA (NEC Chapter 9, Table 1 + Table 5):
       conductor_area_i = π × (dᵢ/2)²   [each conductor, in²]
@@ -192,6 +189,7 @@ def calculate_fill(
             but returned as error so caller must explicitly handle).
 
     Reference: NEC 2022 Chapter 9, Table 1.
+
     """
     # ── Input validation ─────────────────────────────────────────────────────
 
@@ -306,9 +304,8 @@ def calculate_fill_compliant(
     conduit_type: ConduitType,
     trade_size: TradeSize,
     cable_diameters_in: List[float],
-) -> "Result[FillResult, PhysicsError | CodeViolationError]":
-    """
-    Identical to calculate_fill but returns Result.ok() even when
+) -> Result[FillResult, PhysicsError | CodeViolationError]:
+    """Identical to calculate_fill but returns Result.ok() even when
     fill is non-compliant, embedding the violation in FillResult.
 
     Use this when you want to inspect fill percentage regardless of

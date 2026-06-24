@@ -468,8 +468,7 @@ async def analyse_floor_async(
     body: AnalyseFloorRequestV10,
     background_tasks: BackgroundTasks,
 ):
-    """
-    Analyze floor asynchronously - returns immediately with task_id.
+    """Analyze floor asynchronously - returns immediately with task_id.
 
     For large floors (10+ rooms), use this endpoint for background processing.
     Poll GET /task/{task_id} for results.
@@ -540,7 +539,6 @@ async def get_task_result(task_id: str):
     task = _task_store[task_id]
     if task["status"] == "completed":
         return {"status": "completed", "result": task["result"]}
-    elif task["status"] == "error":
+    if task["status"] == "error":
         return {"status": "error", "error": task["error"]}
-    else:
-        return {"status": "processing"}
+    return {"status": "processing"}

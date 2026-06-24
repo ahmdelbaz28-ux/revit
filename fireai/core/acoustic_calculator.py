@@ -1,5 +1,4 @@
-"""
-acoustic_calculator.py — NFPA 72 Audible Notification Compliance
+"""acoustic_calculator.py — NFPA 72 Audible Notification Compliance
 =================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -171,6 +170,7 @@ def calculate_spl_at_distance(
 
     Returns:
         SPLResult with calculated SPL and breakdown.
+
     """
     # V65 SAFETY: Reject NaN/Inf inputs — these are life-safety calculations.
     # NaN SPL values silently bypass compliance checks (NaN < threshold is False,
@@ -268,6 +268,7 @@ def check_audibility_compliance(
 
     Returns:
         AudibilityResult with PASS/FAIL and details.
+
     """
     if mode not in AUDIBLE_REQUIREMENTS:
         mode = "public"  # Safe default
@@ -348,6 +349,7 @@ def calculate_min_speakers_for_room(
 
     Returns:
         SpeakerPlacementResult with speaker count and spacing.
+
     """
     room_area = room_length_m * room_width_m
 
@@ -472,6 +474,7 @@ def get_speaker_coverage_radius(
     Returns:
         Maximum coverage radius in metres where audibility is compliant.
         If no distance is compliant (speaker too quiet), returns 0.0.
+
     """
     if room_absorption_m2 is None:
         # Estimate: typical room 10m×10m, α≈0.25, surface ≈ 300m²
@@ -530,6 +533,7 @@ class CheckPoint:
         y: Y coordinate in metres.
         z: Z coordinate in metres (height above floor).
         label: Optional label for identification.
+
     """
 
     x: float
@@ -549,6 +553,7 @@ class Speaker:
         rating_dba: Speaker output in dBA at the reference distance.
         ref_distance_m: Reference distance for the speaker spec (default 3m).
         speaker_id: Optional identifier.
+
     """
 
     x: float
@@ -568,6 +573,7 @@ class Barrier:
             Or a custom dBA value can be specified.
         attenuation_dba: Custom attenuation in dBA (overrides barrier_type).
         label: Optional label for identification.
+
     """
 
     barrier_type: str = "standard_door"
@@ -595,6 +601,7 @@ class RoomAcousticResult:
         margin_dba: Worst margin (effective - required).
         violations: List of violation dicts for non-compliant points.
         point_results: Detailed results for each check point.
+
     """
 
     room_id: str
@@ -649,6 +656,7 @@ class AcousticSPLCalculator:
         Args:
             room_ambient_noise: Dict mapping occupancy types to ambient noise
                 levels in dBA. If None, uses AMBIENT_NOISE_LEVELS defaults.
+
         """
         self.ambient_levels = room_ambient_noise or dict(AMBIENT_NOISE_LEVELS)
 
@@ -704,6 +712,7 @@ class AcousticSPLCalculator:
 
         Returns:
             RoomAcousticResult with compliance status for all check points.
+
         """
         ambient_dba = self._get_ambient_for_occ(occ_type)
 
@@ -847,21 +856,21 @@ class AcousticSPLCalculator:
 
 
 __all__ = [
-    "AUDIBLE_REQUIREMENTS",
     "AMBIENT_NOISE_LEVELS",
-    "MAX_SOUND_LEVEL_DBA",
-    "DEFAULT_REF_DISTANCE_M",
+    "AUDIBLE_REQUIREMENTS",
     "BARRIER_ATTENUATION_DB",
-    "SPLResult",
-    "AudibilityResult",
-    "SpeakerPlacementResult",
-    "CheckPoint",
-    "Speaker",
-    "Barrier",
-    "RoomAcousticResult",
+    "DEFAULT_REF_DISTANCE_M",
+    "MAX_SOUND_LEVEL_DBA",
     "AcousticSPLCalculator",
+    "AudibilityResult",
+    "Barrier",
+    "CheckPoint",
+    "RoomAcousticResult",
+    "SPLResult",
+    "Speaker",
+    "SpeakerPlacementResult",
+    "calculate_min_speakers_for_room",
     "calculate_spl_at_distance",
     "check_audibility_compliance",
-    "calculate_min_speakers_for_room",
     "get_speaker_coverage_radius",
 ]

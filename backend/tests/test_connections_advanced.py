@@ -1,5 +1,4 @@
-"""
-test_connections_advanced.py — Advanced connection CRUD integration tests
+"""test_connections_advanced.py — Advanced connection CRUD integration tests
 covering device validation, self-connection prevention, and connection
 listing with pagination and sort.
 

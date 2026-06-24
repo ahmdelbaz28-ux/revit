@@ -1,5 +1,4 @@
-"""
-FireAI Centralized Constants — NFPA 72 / NEC Clause-Cited Registry
+"""FireAI Centralized Constants — NFPA 72 / NEC Clause-Cited Registry
 
 PDF Audit Phase 2: Architectural Rigidity
 Per "From Prototype to Production-Grade" §Phase 2 recommendation #2:

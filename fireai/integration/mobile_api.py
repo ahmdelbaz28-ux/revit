@@ -1,5 +1,4 @@
-"""
-fireai/integration/mobile_api.py
+"""fireai/integration/mobile_api.py
 ==================================
 Mobile Platform — Secure API layer for iOS/Android field applications.
 
@@ -168,8 +167,7 @@ class SyncPackage:
 
 
 class MobileAPI:
-    """
-    Secure API layer for iOS/Android field applications.
+    """Secure API layer for iOS/Android field applications.
 
     Features:
       - Token-based authentication with refresh token rotation

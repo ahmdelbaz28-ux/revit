@@ -1,5 +1,4 @@
-"""
-aset_rset_calculator.py — ASET vs RSET Life-Safety Analysis
+"""aset_rset_calculator.py — ASET vs RSET Life-Safety Analysis
 ============================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -42,6 +41,7 @@ Usage:
     aset = calculate_aset(smoke_layer_height_time_series, room_height=4.0)
     rset = calculate_rset(travel_distance_m=45.0, occupancy_type="business")
     result = validate_aset_vs_rset(aset, rset)
+
 """
 
 from __future__ import annotations
@@ -229,6 +229,7 @@ def calculate_aset(
 
     Returns:
         ASETResult with calculated ASET and limiting factor.
+
     """
     thresholds = TENABILITY_THRESHOLDS
     min_height = thresholds["min_smoke_layer_height_m"]
@@ -434,6 +435,7 @@ def calculate_rset(
 
     Returns:
         RSETResult with breakdown of all components.
+
     """
     occ = occupancy_type.lower()
     if occ not in PREMOVEMENT_DELAYS:
@@ -616,6 +618,7 @@ def validate_aset_vs_rset(
 
     Returns:
         AsetRsetValidation with PASS/FAIL verdict and margin.
+
     """
     aset = aset_result.aset_seconds
     rset = rset_result.rset_seconds
@@ -733,6 +736,7 @@ def perform_aset_rset_analysis(
           - occupancy_type: Occupancy classification
           - verdict: Human-readable PASS/FAIL
           - details: Full analysis details
+
     """
     try:
         from fireai.core.semi_cfast_engine import (
@@ -905,16 +909,16 @@ def perform_aset_rset_analysis(
 
 
 __all__ = [
-    "TENABILITY_THRESHOLDS",
     "PREMOVEMENT_DELAYS",
-    "WALKING_SPEEDS",
-    "SAFETY_FACTORS",
     "RISK_CATEGORIES",
+    "SAFETY_FACTORS",
+    "TENABILITY_THRESHOLDS",
+    "WALKING_SPEEDS",
     "ASETResult",
-    "RSETResult",
     "AsetRsetValidation",
+    "RSETResult",
     "calculate_aset",
     "calculate_rset",
-    "validate_aset_vs_rset",
     "perform_aset_rset_analysis",
+    "validate_aset_vs_rset",
 ]

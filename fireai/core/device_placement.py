@@ -1,5 +1,4 @@
-"""
-fireai/core/device_placement.py — NFPA 72 Device Placement Engine
+"""fireai/core/device_placement.py — NFPA 72 Device Placement Engine
 ===================================================================
 Implements deterministic device placement per NFPA 72-2022:
 
@@ -264,6 +263,7 @@ class DetectorPlacementEngine:
 
         Returns:
             PlacementResult with all placed devices.
+
         """
         room.validate()
         violations: List[str] = []

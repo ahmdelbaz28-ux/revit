@@ -1,5 +1,4 @@
-"""
-fireai/v17_core — V17 Critical Life-Safety Triad
+"""fireai/v17_core — V17 Critical Life-Safety Triad
 ==================================================
 The three modules that prevent AHJ rejection and ensure real-world
 life safety. These are the V17 "Critical Trilogy":

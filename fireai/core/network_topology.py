@@ -1,5 +1,4 @@
-"""
-fireai/core/network_topology.py
+"""fireai/core/network_topology.py
 =================================
 Master Network Backbone Topology & Class X Redundancy Router.
 
@@ -94,6 +93,7 @@ class PanelNode:
         building_id: Building identifier (e.g. "BLDG-A").
         location: (x, y) coordinate for routing.
         is_master: Whether this is the master (central) panel.
+
     """
 
     panel_id: str
@@ -113,6 +113,7 @@ class NetworkLink:
         link_type: "copper", "fiber_single", "fiber_dual".
         is_class_x: Whether this link has redundant path (Class X).
         length_m: Physical cable length in metres.
+
     """
 
     link_id: str
@@ -167,6 +168,7 @@ class NetworkTopologyAuditor:
 
         Returns:
             ``DecisionProvenance`` or plain dict.
+
         """
         violations: list = []
         fiber_recommendations: List[Dict[str, Any]] = []
@@ -508,6 +510,7 @@ class NetworkTopologyAuditor:
         Returns:
             "star", "daisy_chain", "ring", "disconnected_rings", "mesh",
             or "unknown".
+
         """
         if len(panel_ids) <= 1:
             return "single_panel"
@@ -551,6 +554,7 @@ class NetworkTopologyAuditor:
 
         Returns:
             True if all panels are reachable from any starting panel.
+
         """
         if not panel_ids:
             return True
@@ -579,6 +583,7 @@ class NetworkTopologyAuditor:
 
         Returns:
             List of (from_panel, to_panel) tuples that are bridge edges.
+
         """
         # Tarjan's bridge-finding: O(V + E)
         visited = set()
@@ -612,8 +617,8 @@ class NetworkTopologyAuditor:
 
 
 __all__ = [
+    "REQUIRED_TOPOLOGY",
+    "NetworkLink",
     "NetworkTopologyAuditor",
     "PanelNode",
-    "NetworkLink",
-    "REQUIRED_TOPOLOGY",
 ]

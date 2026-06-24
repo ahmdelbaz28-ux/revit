@@ -1,5 +1,4 @@
-"""
-backend/routers/digital_twin.py — Digital Twin Conversion Endpoints
+"""backend/routers/digital_twin.py — Digital Twin Conversion Endpoints
 ===================================================================
 
 Provides endpoints for bidirectional CAD/BIM conversion,
@@ -18,17 +17,17 @@ FIXES APPLIED:
 - FIX #33: Proper multi-line imports
 """
 
-import os
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from backend.rbac import Permission
 from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.services.digital_twin_service import (
     ConversionConfig,
     ConversionConfigManager,
@@ -73,6 +72,7 @@ def _safe_resolve_upload_path(filename: str) -> str:
 
 class ConvertRequest(BaseModel):
     """Request model for conversion operation."""
+
     source_filepath: str = Field(min_length=1, max_length=500)
     target_filepath: str = Field(min_length=1, max_length=500)
     conversion_type: str = Field(
@@ -88,6 +88,7 @@ class ConvertResponse(BaseModel):
     FIX #8: Added duration_seconds field which was previously missing,
     causing Pydantic ValidationError at runtime.
     """
+
     success: bool
     source_file: str
     target_file: str
@@ -99,6 +100,7 @@ class ConvertResponse(BaseModel):
 
 class OperationResponse(BaseModel):
     """Generic operation response."""
+
     success: bool
     message: str
     handle: Optional[str] = None
@@ -106,22 +108,26 @@ class OperationResponse(BaseModel):
 
 class HistoryResponse(BaseModel):
     """Response model for conversion history."""
+
     history: List[Dict[str, Any]]
 
 
 class ConfigureRequest(BaseModel):
     """Request model for configuration update."""
+
     config: Dict[str, Any]
 
 
 class ConfigureResponse(BaseModel):
     """Response model for configuration update."""
+
     success: bool
     message: str
 
 
 class RollbackRequest(BaseModel):
     """Request model for rollback operation."""
+
     target_file: str = Field(min_length=1, max_length=500)
 
 
@@ -130,6 +136,7 @@ class UpdateMappingRequest(BaseModel):
 
     Uses request body instead of query parameters for a POST operation.
     """
+
     layer: str = Field(min_length=1, max_length=255)
     category: str = Field(min_length=1, max_length=255)
     direction: str = Field(
@@ -140,6 +147,7 @@ class UpdateMappingRequest(BaseModel):
 
 class MappingsResponse(BaseModel):
     """Response model for available mappings."""
+
     layer_to_category: Dict[str, str]
     category_to_layer: Dict[str, str]
     linetype_to_element: Dict[str, str]
@@ -223,8 +231,7 @@ async def configure_conversion(
                 success=True,
                 message="Configuration updated successfully",
             )
-        else:
-            raise HTTPException(status_code=500, detail="Failed to save configuration")
+        raise HTTPException(status_code=500, detail="Failed to save configuration")
     except HTTPException:
         raise
     except Exception as e:
@@ -324,8 +331,7 @@ async def update_single_mapping(
                 "message": f"Mapping updated: {request.layer} -> {request.category} ({request.direction})",
                 "mapping": {request.layer: request.category},
             }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to update mapping")
+        raise HTTPException(status_code=500, detail="Failed to update mapping")
     except HTTPException:
         raise
     except Exception as e:

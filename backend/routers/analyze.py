@@ -1,5 +1,4 @@
-"""
-backend/routers/analyze.py - Project-level analyze endpoints
+"""backend/routers/analyze.py - Project-level analyze endpoints
 =============================================================
 Endpoints for running NFPA 72 / NEC calculations in the context of a
 project / room:
@@ -23,11 +22,11 @@ from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
 from backend.rbac import Permission
-from fireai.core.qomn_kernel import (
-    QOMNKernel,
-    PhysicsGuardError,
-)
 from fireai.core.pipeline import analyze_room
+from fireai.core.qomn_kernel import (
+    PhysicsGuardError,
+    QOMNKernel,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +68,7 @@ class BatteryRequest(BaseModel):
         Ah = (I_standby * T_standby + I_alarm * T_alarm_min/60)
              / discharge_efficiency * safety_factor
     """
+
     standby_load_a: float = Field(..., gt=0, description="Standby current draw (A)")
     alarm_load_a: float = Field(..., ge=0, description="Alarm current draw (A)")
     standby_hours: float = Field(24.0, gt=0, description="Standby duration (h)")
@@ -85,6 +85,7 @@ class VoltageRequest(BaseModel):
     NEC Chapter 9 Table 8:
         V_drop = 2 * I * L * R_per_m
     """
+
     current_a: float = Field(..., gt=0, description="Circuit current (A)")
     length_m: float = Field(..., gt=0, description="One-way circuit length (m)")
     awg_gauge: str = Field("14", description="AWG gauge (e.g., 14, 12, 10)")
@@ -93,6 +94,7 @@ class VoltageRequest(BaseModel):
 
 class RoomAnalyzeRequest(BaseModel):
     """Full room analysis request body for /api/projects/{project_id}/analyze/room."""
+
     room_id: str = Field(
         ..., description="Room identifier (must match {project_id} or be scoped to it)"
     )
@@ -121,6 +123,7 @@ async def analyze_battery(req: BatteryRequest) -> Dict[str, Any]:
 
     Returns:
         Dict with required_ah, installed_ah, formula, computation_hash.
+
     """
     try:
         kernel = QOMNKernel()
@@ -153,6 +156,7 @@ async def analyze_voltage(req: VoltageRequest) -> Dict[str, Any]:
 
     Returns:
         Dict with voltage_drop_v, actual_value, percentage_drop, compliant.
+
     """
     try:
         kernel = QOMNKernel()

@@ -1,5 +1,4 @@
-"""
-test_reports_advanced.py — Advanced report integration tests covering
+"""test_reports_advanced.py — Advanced report integration tests covering
 report export paths, pending status handling, pagination, and NFPA 72
 battery calculation correctness.
 

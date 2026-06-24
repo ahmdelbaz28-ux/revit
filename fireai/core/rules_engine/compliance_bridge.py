@@ -1,5 +1,4 @@
-"""
-FireAI Rules Engine — Integration Bridge
+"""FireAI Rules Engine — Integration Bridge
 ==========================================
 
 Bridges the new Rules Engine with the existing FireAI compliance
@@ -659,6 +658,7 @@ def dual_compliance_check(
 
     Returns:
         DualComplianceResult with combined pass/fail and divergence info
+
     """
     from fireai.validation.compliance_engine import ComplianceEngine
 

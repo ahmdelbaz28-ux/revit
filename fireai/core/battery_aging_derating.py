@@ -1,5 +1,4 @@
-"""
-battery_aging_derating.py — NFPA 72 §10.6.7 Battery Capacity Auditor
+"""battery_aging_derating.py — NFPA 72 §10.6.7 Battery Capacity Auditor
 =====================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -149,6 +148,7 @@ class BatterySpec:
             For a 24V system with two 12V batteries in series: 12 cells.
         battery_type: "flooded" or "vrla" (valve-regulated lead-acid).
             VRLA is the most common type in fire alarm applications.
+
     """
 
     amp_hour_20h: float
@@ -185,6 +185,7 @@ class LoadProfile:
             Typically 24 hours for local/proprietary, 60 hours for central station.
         alarm_hours: Required alarm duration after standby.
             Typically 5 minutes (0.083h) for local, 15 minutes for central station.
+
     """
 
     standby_load_amps: float
@@ -216,6 +217,7 @@ def get_temperature_derating_factor(temperature_c: float) -> float:
         Multiply rated Ah by this factor to get usable Ah at this temperature.
         Capped at 1.00 — elevated temperatures accelerate VRLA aging and
         must not yield a derating factor above 1.00.
+
     """
     temps = sorted(TEMPERATURE_DERATING.keys())
 
@@ -288,6 +290,7 @@ def get_aging_derating_factor(
         Derating factor as a fraction. For new design (age=0), returns 1.0.
         For end-of-life assessment, returns the factor that should be used
         for sizing (typically 0.80).
+
     """
     if current_age_years <= 0:
         # New installation — design for end-of-life
@@ -329,6 +332,7 @@ class BatterySizingResult:
         violations: List of violation dicts if sizing is inadequate.
         nfpa_reference: NFPA 72 section for citation.
         details: Full calculation details for audit trail.
+
     """
 
     required_ah: float
@@ -377,6 +381,7 @@ def _compute_discharge_rate_correction(
     Returns:
         Correction factor (typically < 1.0 for high discharge rates).
         Multiply rated Ah by this factor to get effective capacity.
+
     """
     # V65 FIX: Zero/negative battery capacity or load is physically impossible.
     # Old code silently returned 1.0, hiding data errors upstream. A zero
@@ -486,6 +491,7 @@ def size_battery(
 
     Returns:
         BatterySizingResult with full calculation details and compliance status.
+
     """
     violations: list[dict[str, Any]] = []
 
@@ -831,6 +837,7 @@ class BatteryAuditor:
 
         Returns:
             BatterySizingResult with compliance status and violations.
+
         """
         return size_battery(
             standby_load_amps=standby_load_amps,
@@ -851,6 +858,7 @@ class BatteryAuditor:
 
         Returns:
             BatterySizingResult with compliance status and violations.
+
         """
         return size_battery(
             standby_load_amps=profile.standby_load_amps,
@@ -880,6 +888,7 @@ def battery_result_for_gate(result: BatterySizingResult) -> dict[str, Any]:
 
     Returns:
         Dict with keys: required_ah, installed_ah, is_adequate, usable_ah.
+
     """
     return {
         "required_ah": result.required_ah,

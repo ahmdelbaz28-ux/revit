@@ -1,5 +1,4 @@
-"""
-fireai/validation/qa_engine.py
+"""fireai/validation/qa_engine.py
 ================================
 Advanced QA — Automated validation, regression framework, and
 architecture conformance checking for fire alarm designs.
@@ -21,6 +20,7 @@ References:
   - NFPA 72-2022 §17.7.3 — Smoke detector location
   - NFPA 72-2022 §17.7.3.2.4 — Beam construction compensation
   - NFPA 72-2022 §17.7.4 — Heat detector location
+
 """
 
 from __future__ import annotations
@@ -173,8 +173,7 @@ class DesignData:
 
 
 class QAEngine:
-    """
-    Automated validation, regression framework, and architecture conformance.
+    """Automated validation, regression framework, and architecture conformance.
 
     Provides 25+ QA checks covering:
       1. Detector count reasonableness
@@ -200,14 +199,14 @@ class QAEngine:
     # ── Design Validation ──────────────────────────────────────────────
 
     def validate_design(self, design: DesignData) -> QAReport:
-        """
-        Run all QA checks against a fire alarm design.
+        """Run all QA checks against a fire alarm design.
 
         Args:
             design: The fire alarm design to validate.
 
         Returns:
             QAReport with all check results.
+
         """
         checks: List[QACheck] = []
         all_check_funcs = self._get_all_checks()
@@ -269,8 +268,7 @@ class QAEngine:
         baseline: DesignData,
         proposed: DesignData,
     ) -> RegressionReport:
-        """
-        Compare a proposed design against a baseline to detect regressions.
+        """Compare a proposed design against a baseline to detect regressions.
 
         Args:
             baseline: The original (approved) design.
@@ -279,6 +277,7 @@ class QAEngine:
         Returns:
             RegressionReport with breaking changes, new issues, and
             resolved issues.
+
         """
         baseline_report = self.validate_design(baseline)
         proposed_report = self.validate_design(proposed)
@@ -355,8 +354,7 @@ class QAEngine:
     def check_architecture_conformance(
         self, design: DesignData
     ) -> ConformanceReport:
-        """
-        Check design conforms to expected architectural patterns.
+        """Check design conforms to expected architectural patterns.
 
         Validates:
           - Design pattern usage (singleton services, layered architecture)
@@ -368,6 +366,7 @@ class QAEngine:
 
         Returns:
             ConformanceReport with pattern, naming, and rule checks.
+
         """
         pattern_checks = self._check_design_patterns(design)
         naming_checks = self._check_naming_conventions(design)

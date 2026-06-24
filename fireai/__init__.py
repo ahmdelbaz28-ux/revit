@@ -1,5 +1,4 @@
-"""
-fireai – NFPA 72-2022 Automated Fire Detector Placement Engine
+"""fireai – NFPA 72-2022 Automated Fire Detector Placement Engine
 """
 
 from __future__ import annotations
@@ -7,8 +6,10 @@ from __future__ import annotations
 # W-02 FIX: Single source of truth — import from fireai.version
 # Package version (semver) for __version__ — distinct from internal FIREAI_VERSION_FULL
 # Backward compat: also expose the V-prefixed string and dev version
-from fireai.version import FIREAI_VERSION as FIREAI_VERSION, FIREAI_VERSION_FULL as FIREAI_VERSION_FULL, build_version_header as build_version_header
+from fireai.version import FIREAI_VERSION as FIREAI_VERSION
+from fireai.version import FIREAI_VERSION_FULL as FIREAI_VERSION_FULL
 from fireai.version import __package_version__ as __version__
+from fireai.version import build_version_header as build_version_header
 
 # CRITICAL FIX: Replaced wildcard import with lazy __getattr__.
 # The old `from fireai.core import *` eagerly imported the entire engine

@@ -87,6 +87,7 @@ class AnalyticalVerifier:
 
         Returns:
             AnalyticalResult with coverage analysis.
+
         """
         if not detectors:
             return AnalyticalResult(

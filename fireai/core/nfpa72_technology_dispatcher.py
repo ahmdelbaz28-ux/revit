@@ -1,5 +1,4 @@
-"""
-nfpa72_technology_dispatcher.py — Automatic Detector Technology Selection
+"""nfpa72_technology_dispatcher.py — Automatic Detector Technology Selection
 =========================================================================
 
 Automatically selects the appropriate detector TECHNOLOGY (not just radius)
@@ -80,6 +79,7 @@ class TechnologyDecision:
         ridge_zone_required: True if ridge zone detector is required.
         warnings: Advisory warnings.
         fallback_technology: Technology to use if preferred is unavailable.
+
     """
 
     technology: DetectorTechnology
@@ -179,6 +179,7 @@ class EliteTechnologyDispatcher:
 
         Returns:
             TechnologyDecision with technology selection, spacing, and NFPA refs.
+
         """
         warnings: List[str] = []
         nfpa_refs: List[str] = []
@@ -341,6 +342,7 @@ class EliteTechnologyDispatcher:
 
         Returns:
             Flat spacing S = 9.1m per NFPA 72 §17.7.3.2.3.
+
         """
         # NOTE: Table iteration is vestigial — all rows return 9.10m.
         # Kept for structural parity with heat detector spacing lookup.
@@ -367,6 +369,7 @@ def dispatch_detector_technology(room_dict: dict) -> TechnologyDecision:
 
     Returns:
         TechnologyDecision for this room.
+
     """
     ceiling_h = room_dict.get("ceiling_height", 3.0) or 3.0
     slope = room_dict.get("ceiling_slope_degrees", 0.0) or 0.0

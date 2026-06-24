@@ -1,5 +1,4 @@
-"""
-Clause-Mapped Compliance Engine — NFPA 72 / NEC Validation
+"""Clause-Mapped Compliance Engine — NFPA 72 / NEC Validation
 
 PDF Audit Phase 3: Domain Verification
 Per "From Prototype to Production-Grade" §Phase 3, Appendix B:
@@ -37,6 +36,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class ComplianceRule:
     """A rule that defines a valid state for a calculation."""
+
     clause_id: str
     description: str
     validator: Callable[[Dict[str, Any]], bool]

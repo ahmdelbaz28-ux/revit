@@ -1,5 +1,4 @@
-"""
-test_devices.py — Devices CRUD integration tests.
+"""test_devices.py — Devices CRUD integration tests.
 
 Verifies device creation, retrieval, listing, and deletion
 under project-scoped endpoints.

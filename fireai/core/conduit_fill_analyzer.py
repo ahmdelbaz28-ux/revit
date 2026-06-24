@@ -1,5 +1,4 @@
-"""
-conduit_fill_analyzer.py — NEC Chapter 9 Conduit Fill Analysis
+"""conduit_fill_analyzer.py — NEC Chapter 9 Conduit Fill Analysis
 ===============================================================
 CRITICAL LIFE-SAFETY MODULE — V18
 
@@ -272,6 +271,7 @@ def get_derating_factor(conductor_count: int) -> float:
 
     Returns:
         Derating factor (1.0 for 3 or fewer conductors).
+
     """
     if conductor_count <= 3:
         return 1.0
@@ -295,6 +295,7 @@ class WireSpec:
         insulation: InsulationType enum.
         outer_diameter_mm: Outer diameter in millimetres.
         circuit_class: PLFA or NPLFA — affects conduit separation.
+
     """
 
     awg: int
@@ -346,6 +347,7 @@ class ConduitFillResult:
         plfa_nlfa_separated: Whether PLFA/NPLFA circuits are separated.
         violations: List of violation dicts.
         warnings: List of warning strings.
+
     """
 
     bundle_id: str
@@ -424,6 +426,7 @@ class ConduitSizer:
 
         Returns:
             DecisionProvenance or dict with conduit fill analysis.
+
         """
         total_area = 0.0
         conductor_count = 0
@@ -731,6 +734,7 @@ class ConduitSizer:
         Returns:
             DecisionProvenance or dict with conduit fill analysis using
             the upgraded wire sizes.
+
         """
         # No overrides — delegate directly to the standard analysis
         if not wire_size_overrides:
@@ -830,15 +834,15 @@ class ConduitSizer:
 
 
 __all__ = [
-    "InsulationType",
-    "CircuitClass",
-    "ConduitType",
-    "WireSpec",
-    "ConduitFillResult",
-    "ConduitSizer",
-    "WIRE_DIAMETERS_MM",
+    "CONDUCTOR_DERATING",
     "CONDUIT_SPECS",
     "FILL_LIMITS",
-    "CONDUCTOR_DERATING",
+    "WIRE_DIAMETERS_MM",
+    "CircuitClass",
+    "ConduitFillResult",
+    "ConduitSizer",
+    "ConduitType",
+    "InsulationType",
+    "WireSpec",
     "get_derating_factor",
 ]

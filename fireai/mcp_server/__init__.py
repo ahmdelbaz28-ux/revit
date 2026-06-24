@@ -1,5 +1,4 @@
-"""
-fireai.mcp_server — Model Context Protocol Server for Revit Integration
+"""fireai.mcp_server — Model Context Protocol Server for Revit Integration
 =======================================================================
 LIFE-SAFETY CRITICAL: This module provides the bridge between AI assistants
 (Claude, GPT, etc.) and the Revit BIM model. It is the PRIMARY attack
@@ -37,17 +36,21 @@ from fireai.mcp_server.sanitized_handler import (
 from fireai.mcp_server.thread_safe_queue import (
     ModelUpdateAction,
     ModelUpdateResult,
-    ModelUpdateStatus as ModelUpdateStatus,
-    ModelUpdateType as ModelUpdateType,
     ThreadSafeModelUpdateQueue,
+)
+from fireai.mcp_server.thread_safe_queue import (
+    ModelUpdateStatus as ModelUpdateStatus,
+)
+from fireai.mcp_server.thread_safe_queue import (
+    ModelUpdateType as ModelUpdateType,
 )
 
 __all__ = [
-    "ThreadSafeModelUpdateQueue",
-    "ModelUpdateAction",
-    "ModelUpdateResult",
-    "SanitizedMCPHandler",
     "MCPRequest",
     "MCPResponse",
+    "ModelUpdateAction",
+    "ModelUpdateResult",
     "RevitMCPServer",
+    "SanitizedMCPHandler",
+    "ThreadSafeModelUpdateQueue",
 ]

@@ -1,5 +1,4 @@
-"""
-digital_twin.py — FireAI Digital Twin (Production Safety System)
+"""digital_twin.py — FireAI Digital Twin (Production Safety System)
 ================================================================
 The central orchestrator for the FireAI digital twin.  Maintains a
 live, auditable model of every fire detector in a building — tracking
@@ -67,23 +66,23 @@ logger = logging.getLogger(__name__)
 
 
 __all__ = [
-    "DetectorStatus",
-    "EventType",
-    "DriftType",
+    "LEGAL_STATUS_TRANSITIONS",
+    "NFPA72_DEFAULT_CEILING_M",
+    "NFPA72_HEAT_RADIUS_M",
+    "NFPA72_MAX_SPACING_M",
+    "NFPA72_SMOKE_RADIUS_M",
     "DetectorState",
-    "TwinEvent",
+    "DetectorStatus",
+    "DigitalTwin",
     "DriftRecord",
-    "TwinHealthReport",
+    "DriftType",
+    "EventType",
     "SimulationResult",
     "TwinDriftAnalyzer",
-    "TwinSimulator",
+    "TwinEvent",
+    "TwinHealthReport",
     "TwinSerializer",
-    "DigitalTwin",
-    "LEGAL_STATUS_TRANSITIONS",
-    "NFPA72_SMOKE_RADIUS_M",
-    "NFPA72_HEAT_RADIUS_M",
-    "NFPA72_DEFAULT_CEILING_M",
-    "NFPA72_MAX_SPACING_M",
+    "TwinSimulator",
 ]
 
 
@@ -236,6 +235,7 @@ class DetectorState:
         installed_at: ISO 8601 timestamp when status changed to OK.
         last_verified_at: ISO 8601 timestamp of last verification.
         metadata: Additional key-value metadata.
+
     """
 
     detector_id: str
@@ -283,7 +283,7 @@ class DetectorState:
         return d
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DetectorState":
+    def from_dict(cls, data: Dict[str, Any]) -> DetectorState:
         """Deserialize from dictionary.
 
         Handles backward compatibility: if design_x/y/z are missing
@@ -323,7 +323,7 @@ class TwinEvent:
         return d
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TwinEvent":
+    def from_dict(cls, data: Dict[str, Any]) -> TwinEvent:
         data = dict(data)
         if isinstance(data.get("event_type"), str):
             data["event_type"] = EventType(data["event_type"])
@@ -344,6 +344,7 @@ class DriftRecord:
         severity: "low", "medium", "high", or "critical".
         timestamp: When the drift was detected.
         resolved: Whether the drift has been resolved.
+
     """
 
     drift_id: str
@@ -362,7 +363,7 @@ class DriftRecord:
         return d
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DriftRecord":
+    def from_dict(cls, data: Dict[str, Any]) -> DriftRecord:
         data = dict(data)
         if isinstance(data.get("drift_type"), str):
             data["drift_type"] = DriftType(data["drift_type"])
@@ -413,6 +414,7 @@ class SimulationResult:
         new_coverage_pct: Simulated coverage percentage.
         new_active_count: Simulated count of active detectors.
         notes: Additional observations.
+
     """
 
     simulation_id: str
@@ -462,6 +464,7 @@ class TwinDriftAnalyzer:
 
         Returns:
             List of DriftRecords for detected drifts.
+
         """
         drifts: List[DriftRecord] = []
         now = datetime.now(timezone.utc).isoformat()
@@ -551,6 +554,7 @@ class TwinSimulator:
 
         Returns:
             SimulationResult with projected health impact.
+
         """
         return self._run_simulation(
             detectors,
@@ -569,6 +573,7 @@ class TwinSimulator:
 
         Returns:
             SimulationResult showing impact of full commissioning.
+
         """
         planned_ids = [did for did, d in detectors.items() if d.status == DetectorStatus.PLANNED]
         return self._run_simulation(
@@ -599,6 +604,7 @@ class TwinSimulator:
 
         Returns:
             SimulationResult showing impact of the addition.
+
         """
         new_id = f"SIM_{uuid.uuid4().hex[:8]}"
         effective_radius = (
@@ -711,7 +717,7 @@ class TwinSerializer:
     """
 
     @staticmethod
-    def serialize(twin: "DigitalTwin") -> str:
+    def serialize(twin: DigitalTwin) -> str:
         """Serialize the full twin state to a JSON string.
 
         Args:
@@ -719,6 +725,7 @@ class TwinSerializer:
 
         Returns:
             JSON string containing the complete twin state.
+
         """
         with twin._lock:
             state = {
@@ -733,7 +740,7 @@ class TwinSerializer:
         return json.dumps(state, sort_keys=True, indent=2, ensure_ascii=False)
 
     @staticmethod
-    def deserialize(json_str: str) -> "DigitalTwin":
+    def deserialize(json_str: str) -> DigitalTwin:
         """Deserialize a JSON string into a DigitalTwin instance.
 
         Args:
@@ -744,6 +751,7 @@ class TwinSerializer:
 
         Raises:
             ValueError: If the JSON is malformed or missing required fields.
+
         """
         try:
             state = json.loads(json_str)
@@ -807,6 +815,7 @@ class DigitalTwin:
         twin.register_detector("R-01", "D-001", x=3.0, y=2.5, z=3.0)
         twin.update_detector_status("D-001", DetectorStatus.OK)
         report = twin.health_report()
+
     """
 
     def __init__(self, building_id: str = "") -> None:
@@ -815,6 +824,7 @@ class DigitalTwin:
         Args:
             building_id: Identifier for the building.  If empty,
                 a UUID is generated.
+
         """
         self._lock = threading.RLock()
         self._building_id = building_id or str(uuid.uuid4())
@@ -887,6 +897,7 @@ class DigitalTwin:
 
         Raises:
             ValueError: If detector_id already exists.
+
         """
         # V20.2 FIX: Select default radius based on detector_type
         effective_radius = (
@@ -978,6 +989,7 @@ class DigitalTwin:
 
         Raises:
             ValueError: If the transition is not allowed.
+
         """
         allowed = LEGAL_STATUS_TRANSITIONS.get(old_status, set())
         if new_status not in allowed:
@@ -1014,6 +1026,7 @@ class DigitalTwin:
         Raises:
             KeyError: If detector_id not found.
             ValueError: If the transition is illegal and force is False.
+
         """
         with self._lock:
             if detector_id not in self._detectors:
@@ -1102,6 +1115,7 @@ class DigitalTwin:
 
         Raises:
             KeyError: If detector_id not found.
+
         """
         with self._lock:
             if detector_id not in self._detectors:
@@ -1144,6 +1158,7 @@ class DigitalTwin:
 
         Returns:
             The SHA-256 checksum of the snapshot.
+
         """
         checksum = self.compute_checksum()
 
@@ -1183,6 +1198,7 @@ class DigitalTwin:
 
         Returns:
             List of DriftRecords for detected discrepancies.
+
         """
         with self._lock:
             detectors_copy = dict(self._detectors)
@@ -1235,6 +1251,7 @@ class DigitalTwin:
 
         Returns:
             TwinHealthReport with full health assessment.
+
         """
         with self._lock:
             detectors = dict(self._detectors)
@@ -1358,6 +1375,7 @@ class DigitalTwin:
 
         Returns:
             SimulationResult with projected health impact.
+
         """
         with self._lock:
             detectors_copy = dict(self._detectors)
@@ -1390,6 +1408,7 @@ class DigitalTwin:
 
         Returns:
             SimulationResult showing impact of full commissioning.
+
         """
         with self._lock:
             detectors_copy = dict(self._detectors)
@@ -1426,6 +1445,7 @@ class DigitalTwin:
 
         Returns:
             SimulationResult showing impact of the addition.
+
         """
         with self._lock:
             detectors_copy = dict(self._detectors)
@@ -1460,6 +1480,7 @@ class DigitalTwin:
 
         Returns:
             Hex-encoded SHA-256 digest.
+
         """
         with self._lock:
             if not self._detectors:
@@ -1507,6 +1528,7 @@ class DigitalTwin:
 
         Returns:
             Number of detectors registered.
+
         """
         room_results = self._normalize_report(report)
 
@@ -1613,7 +1635,7 @@ class DigitalTwin:
         return self._serializer.serialize(self)
 
     @classmethod
-    def deserialize(cls, json_str: str) -> "DigitalTwin":
+    def deserialize(cls, json_str: str) -> DigitalTwin:
         """Deserialize a JSON string into a DigitalTwin instance."""
         return TwinSerializer.deserialize(json_str)
 

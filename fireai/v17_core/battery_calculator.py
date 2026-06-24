@@ -1,5 +1,4 @@
-"""
-v17_core/battery_calculator.py — NFPA 72 §10.6.7 Battery Aging & Temperature Derating
+"""v17_core/battery_calculator.py — NFPA 72 §10.6.7 Battery Aging & Temperature Derating
 ======================================================================================
 CRITICAL LIFE-SAFETY MODULE — Part of the V17 Critical Trilogy
 
@@ -120,6 +119,7 @@ class StrictBatterySizer:
                 Default: 5 years (VRLA in fire alarm applications).
             safety_margin_pct: Additional safety margin percentage.
                 IEEE 485 recommends 10-25% for critical applications.
+
         """
         self.req_standby_h = standby_hours
         self.req_alarm_h = alarm_minutes / 60.0
@@ -162,6 +162,7 @@ class StrictBatterySizer:
         Returns:
             DecisionProvenance with battery sizing result and audit trail,
             or dict if provenance is unavailable.
+
         """
         # Convert mA to A (consultant's interface uses mA)
         quiescent_a = quiescent_ma / 1000.0
@@ -309,6 +310,7 @@ class StrictBatterySizer:
 
         Returns:
             DecisionProvenance or dict with audit result.
+
         """
         return self.calculate_minimum_ah(
             quiescent_ma=quiescent_ma,

@@ -146,7 +146,7 @@ _SERVER_SECRET: bytes = b""
 #
 # Cache is invalidated on delete_api_key / update_api_key_role so role
 # changes and revocations take effect immediately (no stale auth).
-_VALIDATED_KEY_CACHE: dict[str, tuple["APIKeyInfo", float]] = {}
+_VALIDATED_KEY_CACHE: dict[str, tuple[APIKeyInfo, float]] = {}
 _VALIDATED_KEY_CACHE_LOCK = threading.Lock()
 _VALIDATED_KEY_CACHE_TTL = float(os.getenv("FIREAI_KEY_CACHE_TTL", "300"))
 
@@ -227,11 +227,10 @@ def _hash_key(key: str) -> str:
     if HAS_BCRYPT:
         normalized = _normalize_key_for_bcrypt(key)
         return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode('utf-8')
-    else:
-        # Fallback: HMAC-SHA256 with random salt
-        salt = secrets.token_hex(16)
-        h = hmac.new(salt.encode(), key.encode(), hashlib.sha256).hexdigest()
-        return f"hmac-sha256${salt}${h}"
+    # Fallback: HMAC-SHA256 with random salt
+    salt = secrets.token_hex(16)
+    h = hmac.new(salt.encode(), key.encode(), hashlib.sha256).hexdigest()
+    return f"hmac-sha256${salt}${h}"
 
 
 def _verify_key(key: str, hashed_key: str) -> bool:
@@ -249,7 +248,7 @@ def _verify_key(key: str, hashed_key: str) -> bool:
         if HAS_BCRYPT and hashed_key.startswith('$2'):
             normalized = _normalize_key_for_bcrypt(key)
             return bcrypt.checkpw(normalized, hashed_key.encode())
-        elif hashed_key.startswith("hmac-sha256$"):
+        if hashed_key.startswith("hmac-sha256$"):
             # FIX #30: Verify HMAC-SHA256 with salt
             try:
                 _, salt, stored_hash = hashed_key.split("$", 2)
@@ -276,7 +275,7 @@ def _load_keys() -> dict:
     if not path.exists():
         return {}
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError) as e:
         logger.warning("Failed to load API keys file: %s", e)
@@ -433,11 +432,10 @@ def validate_api_key(key: str) -> Optional[APIKeyInfo]:
             # to a valid key" from "any call to an invalid key" without
             # already knowing the key.
             return None
-        else:
-            # Copy out the fields we need under the lock, then release.
-            stored_hash = info.get("bcrypt_hash") or info.get("key_hash", "")
-            role_str = info.get("role", Role.VIEWER.value)
-            description = info.get("description", "")
+        # Copy out the fields we need under the lock, then release.
+        stored_hash = info.get("bcrypt_hash") or info.get("key_hash", "")
+        role_str = info.get("role", Role.VIEWER.value)
+        description = info.get("description", "")
 
     # Verify the key against the stored bcrypt hash OUTSIDE the lock
     # (bcrypt.checkpw is slow — don't hold the lock during it).

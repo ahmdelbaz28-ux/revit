@@ -1,5 +1,4 @@
-"""
-fireai/integration/ar_vr_visualizer.py
+"""fireai/integration/ar_vr_visualizer.py
 ========================================
 AR/VR Visualization — Generates 3D scene descriptions for AR/VR rendering.
 
@@ -22,6 +21,7 @@ References:
   - glTF 2.0 specification
   - USDZ (USD) specification for Apple platforms
   - A-Frame WebXR specification
+
 """
 
 from __future__ import annotations
@@ -331,8 +331,7 @@ class CoverageResult:
 
 
 class ARVRVisualizer:
-    """
-    Generates 3D scene descriptions for AR/VR rendering.
+    """Generates 3D scene descriptions for AR/VR rendering.
 
     Converts fire alarm designs into:
     - Three.js scene JSON for web-based VR
@@ -395,19 +394,19 @@ class ARVRVisualizer:
             - GLTF: bytes (binary glTF 2.0)
             - AFRAME: str (A-Frame HTML document)
             - USDZ: str (USD ASCII scene description)
+
         """
         scene = self._build_scene(design)
 
         if fmt == SceneFormat.THREEJS:
             return self.generate_threejs(design)
-        elif fmt == SceneFormat.GLTF:
+        if fmt == SceneFormat.GLTF:
             return self.generate_gltf(design)
-        elif fmt == SceneFormat.AFRAME:
+        if fmt == SceneFormat.AFRAME:
             return self.generate_aframe_html(design)
-        elif fmt == SceneFormat.USDZ:
+        if fmt == SceneFormat.USDZ:
             return self._generate_usdz(scene)
-        else:
-            raise ValueError(f"Unsupported scene format: {fmt}")
+        raise ValueError(f"Unsupported scene format: {fmt}")
 
     def generate_threejs(self, design: DesignData) -> dict:
         """Generate a Three.js-compatible JSON scene description.
@@ -456,6 +455,7 @@ class ARVRVisualizer:
 
         Returns:
             Scene with coverage visualization nodes added.
+
         """
         coverage_mat = Material(
             name="coverage_overlay",
@@ -520,6 +520,7 @@ class ARVRVisualizer:
 
         Returns:
             Scene with annotation node added.
+
         """
         target_node = self._find_node_by_device_id(scene, device_id)
         if target_node is None:
@@ -778,17 +779,16 @@ class ARVRVisualizer:
 
     def _detector_icon_shape(self, det_type: str) -> str:
         """Determine the icon geometry shape for a detector type."""
-        base = det_type.split("_")[0] if det_type else ""
+        base = det_type.split("_", maxsplit=1)[0] if det_type else ""
         if base == "DUCT":
             return "box"
-        elif base == "FLAME":
+        if base == "FLAME":
             return "cylinder"
-        elif base == "GAS":
+        if base == "GAS":
             return "box"
-        elif base in ("HEAT",):
+        if base in ("HEAT",):
             return "cylinder"
-        else:
-            return "sphere"
+        return "sphere"
 
     def _add_detectors(self, scene: Scene, design: DesignData) -> None:
         """Add detector nodes to the scene."""
@@ -1380,9 +1380,9 @@ class ARVRVisualizer:
         """
         if geom.type == "box":
             return self._generate_box_mesh(geom.width, geom.height, geom.depth)
-        elif geom.type == "sphere":
+        if geom.type == "sphere":
             return self._generate_sphere_mesh(geom.radius)
-        elif geom.type == "cylinder":
+        if geom.type == "cylinder":
             return self._generate_cylinder_mesh(geom.radius, geom.height)
         return self._generate_box_mesh(1, 1, 1)
 
@@ -1605,7 +1605,7 @@ class ARVRVisualizer:
             path = scene.camera_paths[0]
             if path.keyframes:
                 html_parts.append('  <a-animation id="guided-tour-anim" attribute="position"')
-                html_parts.append('    dur="{}"'.format(int(sum(kf.duration_sec for kf in path.keyframes) * 1000)))
+                html_parts.append(f'    dur="{int(sum(kf.duration_sec for kf in path.keyframes) * 1000)}"')
                 html_parts.append('    fill="backwards" repeat="indefinite"')
                 html_parts.append('    begin="tour-start"')
                 values = "; ".join(
@@ -1785,7 +1785,7 @@ class ARVRVisualizer:
             lines.append(f'def Material "{mat_name}"')
             lines.append('{')
             lines.append('    token outputs:surface.connect = None')
-            lines.append('    token outputs:surface.connect = </{}/PBRShader.outputs:surface>'.format(mat_name))
+            lines.append(f'    token outputs:surface.connect = </{mat_name}/PBRShader.outputs:surface>')
             lines.append('')
             lines.append('    def Shader "PBRShader"')
             lines.append('    {')

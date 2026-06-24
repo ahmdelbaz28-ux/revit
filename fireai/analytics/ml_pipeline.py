@@ -1,5 +1,4 @@
-"""
-fireai/analytics/ml_pipeline.py — End-to-End ML Pipeline
+"""fireai/analytics/ml_pipeline.py — End-to-End ML Pipeline
 ============================================================
 Feature engineering, model registry, training with cross-validation,
 and evaluation framework for fire alarm design data.
@@ -8,11 +7,11 @@ and evaluation framework for fire alarm design data.
 from __future__ import annotations
 
 import copy
+import io
 import json
 import logging
 import math
 import os
-import io
 import pickle
 import random
 import sqlite3
@@ -375,8 +374,7 @@ def _get_fallback_model(model_type: str, hyperparameters: Dict[str, Any]) -> Any
 
 
 class MLPipeline:
-    """
-    End-to-end ML pipeline:
+    """End-to-end ML pipeline:
     - Feature engineering from fire alarm design data
     - Model registry (versioned, metadata-tagged)
     - Training pipeline with cross-validation

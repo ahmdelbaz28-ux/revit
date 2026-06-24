@@ -1,5 +1,4 @@
-"""
-streaming_dwg_parser.py — Real-time DWG Streaming Parser
+"""streaming_dwg_parser.py — Real-time DWG Streaming Parser
 =========================================================
 Solves Section 11.1: "Process 100MB+ DWG files without loading entire
 file into memory."
@@ -102,9 +101,8 @@ def _assemble_closed_polygons_v29(
     lines: List[Tuple[Tuple[float, float], Tuple[float, float]]],
     tolerance: float = 0.01,
     return_consumed: bool = False,
-) -> "list | tuple[list, set]":
-    """
-    V29 O(n) spatial grid index polygon assembler — BIDIRECTIONAL.
+) -> list | tuple[list, set]:
+    """V29 O(n) spatial grid index polygon assembler — BIDIRECTIONAL.
 
     This is our algorithm from dwg_parser.py, which extends chains
     from BOTH ends (head + tail). This handles more DWG/DXF drawing
@@ -127,6 +125,7 @@ def _assemble_closed_polygons_v29(
     list of list of (x, y)
         Each inner list is a closed polygon's vertex sequence.
         If return_consumed=True, returns (polygons, consumed_set).
+
     """
     if not lines:
         return []
@@ -195,7 +194,7 @@ def _assemble_closed_polygons_v29(
                     consumed.add(idx)
                     changed = True
                     break
-                elif d_te <= tol_sq:
+                if d_te <= tol_sq:
                     chain_vertices.append(ls)
                     consumed.add(idx)
                     changed = True
@@ -218,7 +217,7 @@ def _assemble_closed_polygons_v29(
                     consumed.add(idx)
                     changed = True
                     break
-                elif d_he <= tol_sq:
+                if d_he <= tol_sq:
                     chain_vertices.insert(0, ls)
                     consumed.add(idx)
                     changed = True
@@ -246,8 +245,7 @@ def _assemble_closed_polygons_v29(
 
 
 class StreamingDXFParser:
-    """
-    Streaming DXF parser: yields rooms as polygon entities are assembled.
+    """Streaming DXF parser: yields rooms as polygon entities are assembled.
     Reads DXF in text chunks without loading the full file.
 
     Section 11.1: handles 100MB+ DXF files with < 50MB peak RAM.
@@ -268,8 +266,7 @@ class StreamingDXFParser:
         self.floor_id = floor_id
 
     def stream_file(self, filepath: str) -> Generator[StreamedRoom, None, StreamingStats]:
-        """
-        Generator: yield StreamedRoom objects as they are assembled.
+        """Generator: yield StreamedRoom objects as they are assembled.
 
         Memory: only `chunk_lines` lines in memory at once.
         Never loads the full DXF file.
@@ -284,7 +281,7 @@ class StreamingDXFParser:
         pending_lines: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
 
         try:
-            with open(filepath, "r", encoding="utf-8", errors="replace", buffering=131_072) as fh:  # 128KB read buffer
+            with open(filepath, encoding="utf-8", errors="replace", buffering=131_072) as fh:  # 128KB read buffer
                 chunk_buf: List[str] = []
                 for raw_line in fh:
                     stats.bytes_read += len(raw_line.encode("utf-8"))
@@ -358,8 +355,7 @@ class StreamingDXFParser:
         self,
         lines: List[str],
     ) -> List[Tuple[Tuple[float, float], Tuple[float, float]]]:
-        """
-        Extract LINE entity endpoints from DXF text chunk.
+        """Extract LINE entity endpoints from DXF text chunk.
         DXF format: group code on one line, value on next.
         Returns list of ((x1,y1),(x2,y2)) segments.
         """
@@ -400,7 +396,7 @@ class StreamingDXFParser:
                 continue
 
             # LWPOLYLINE entity (more compact)
-            elif code == "0" and val.upper() == "LWPOLYLINE":
+            if code == "0" and val.upper() == "LWPOLYLINE":
                 verts: List[Tuple[float, float]] = []
                 cx = cy = None
                 j = i + 2
@@ -443,8 +439,7 @@ class StreamingDXFParser:
 
 
 class ParallelRoomProcessor:
-    """
-    Section 11.3: Embarrassingly parallel room optimization.
+    """Section 11.3: Embarrassingly parallel room optimization.
     Uses multiprocessing.Pool for DensityOptimizer across rooms.
 
     Target: 8 cores × ~2 rooms/sec = ~16 rooms/sec (8× speedup).
@@ -464,8 +459,7 @@ class ParallelRoomProcessor:
         rooms: List[Any],
         optimize_fn: Any,  # DensityOptimizer instance or callable
     ) -> List[Any]:
-        """
-        Process N rooms in parallel using multiprocessing.Pool.
+        """Process N rooms in parallel using multiprocessing.Pool.
         Falls back to sequential if multiprocessing unavailable.
 
         rooms:       List of Room objects (or dicts)
@@ -498,8 +492,7 @@ class ParallelRoomProcessor:
         optimize_fn: Any,
         buffer_size: int = 100,
     ) -> Generator[Any, None, None]:
-        """
-        Process streaming rooms: buffer buffer_size rooms, process in parallel,
+        """Process streaming rooms: buffer buffer_size rooms, process in parallel,
         yield results. Combines Section 11.1 (streaming) + 11.3 (parallel).
         """
         buffer: List[Any] = []

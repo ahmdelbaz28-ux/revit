@@ -1,5 +1,4 @@
-"""
-fireai – NFPA 72-2022 Automated Fire Detector Placement Engine
+"""fireai – NFPA 72-2022 Automated Fire Detector Placement Engine
 """
 
 __version__ = "1.0.0"
@@ -32,14 +31,21 @@ from fireai.core.building_engine import BuildingEngine
 # V25 — Pipeline Integration Modules (8 consultant subsystems)
 from fireai.core.cable_routing_engine import (
     MAX_VOLTAGE_DROP_PCT as MAX_VOLTAGE_DROP_PCT,
+)
+from fireai.core.cable_routing_engine import (
     NOMINAL_VOLTAGE_FA as NOMINAL_VOLTAGE_FA,
+)
+from fireai.core.cable_routing_engine import (
     CableRoutingEngine,
-    ObstacleType as ObstacleType,
     RouteResult,
     RoutingObstacle3D,
     VoltageDropSegment,
     WireGauge,
 )
+from fireai.core.cable_routing_engine import (
+    ObstacleType as ObstacleType,
+)
+from fireai.core.circuit_topology import CircuitTopology
 from fireai.core.digital_twin import DigitalTwin
 from fireai.core.digital_twin_interface import (
     ChangeRecord,
@@ -55,7 +61,6 @@ from fireai.core.digital_twin_sync import (
     SyncResult,
 )
 from fireai.core.dxf_table_schedule import TrueAECDraftingTable
-from fireai.core.circuit_topology import CircuitTopology
 
 # V19 — Elevator Shunt-Trip + NAC Booster Allocator + Seismic Joint Penalty
 from fireai.core.elevator_shunt_trip import ElevatorShuntTripAuditor
@@ -236,6 +241,7 @@ from fireai.core.spatial_engine.consensus_engine import (
     ConsensusEngine,
     ConsensusResult,
 )
+
 # NOTE: DensityOptimizer is imported lazily to avoid runtime type-hint
 # incompatibilities on older Python versions (e.g., Python 3.8).
 try:

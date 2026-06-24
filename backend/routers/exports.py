@@ -1,5 +1,4 @@
-"""
-backend/routers/exports.py — DXF, Revit JSON, and IFC export endpoints.
+"""backend/routers/exports.py — DXF, Revit JSON, and IFC export endpoints.
 
 These endpoints export the full project data in standard BIM/CAD formats:
   - DXF: Using ezdxf for AutoCAD-compatible output

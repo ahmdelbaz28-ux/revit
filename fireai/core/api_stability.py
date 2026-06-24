@@ -1,5 +1,4 @@
-"""
-api_stability.py — FireAI Public API Stability Layer
+"""api_stability.py — FireAI Public API Stability Layer
 =====================================================
 Section 11.4: "Freeze the public API so Revit plugin development can proceed."
 
@@ -42,8 +41,7 @@ MIN_PLUGIN_VERSION = "28.0.0"  # Oldest plugin version supported
 
 @dataclass(frozen=True)
 class PluginRoom:
-    """
-    Stable room representation for plugin API.
+    """Stable room representation for plugin API.
     Fields will not be removed in MINOR versions.
     New optional fields may be added without breaking existing plugins.
     """
@@ -110,8 +108,7 @@ def deprecated(
     since: str = API_VERSION,
     removed_in: str = "",
 ) -> Callable:
-    """
-    Mark a public API function as deprecated.
+    """Mark a public API function as deprecated.
     Emits DeprecationWarning on first call (not every call — uses set).
     """
     _warned: set = set()
@@ -140,8 +137,7 @@ def deprecated(
 
 
 class FireAIPluginAPI:
-    """
-    Versioned, stable public API for Revit plugin integration.
+    """Versioned, stable public API for Revit plugin integration.
 
     Section 11.4: This class is the ONLY interface plugins should use.
     Internal modules may change; this class provides a stable adapter.
@@ -153,9 +149,9 @@ class FireAIPluginAPI:
     """
 
     def __init__(self, building_engine: Any = None) -> None:
-        """
-        Args:
-            building_engine: BuildingEngine instance (optional — auto-created)
+        """Args:
+        building_engine: BuildingEngine instance (optional — auto-created)
+
         """
         self._engine = building_engine
         self._version = API_VERSION
@@ -170,8 +166,7 @@ class FireAIPluginAPI:
         return API_VERSION_TUPLE
 
     def is_compatible_with(self, plugin_version: str) -> bool:
-        """
-        Check if this API is compatible with a plugin built for plugin_version.
+        """Check if this API is compatible with a plugin built for plugin_version.
         MAJOR version must match exactly.
         """
         try:
@@ -186,8 +181,7 @@ class FireAIPluginAPI:
         *,
         coverage_radius: Optional[float] = None,
     ) -> PluginDetectorLayout:
-        """
-        Analyse a single room and return detector placement.
+        """Analyse a single room and return detector placement.
 
         Stable API: signature guaranteed not to change in v29.x.x.
         New optional parameters may be added as keyword-only with defaults.
@@ -234,8 +228,7 @@ class FireAIPluginAPI:
         coverage_radius: Optional[float] = None,
         n_workers: int = 0,
     ) -> List[PluginDetectorLayout]:
-        """
-        Analyse multiple rooms. Parallelised internally when n_workers > 1.
+        """Analyse multiple rooms. Parallelised internally when n_workers > 1.
 
         Stable API: always returns list of same length as input.
         Order preserved. Failed rooms return PluginDetectorLayout with proof_valid=False.
@@ -329,8 +322,7 @@ class FireAIPluginAPI:
         room: PluginRoom,
         coverage_radius: Optional[float],
     ) -> PluginDetectorLayout:
-        """
-        Conservative fallback: place detectors on a grid when no engine available.
+        """Conservative fallback: place detectors on a grid when no engine available.
         Always places MORE detectors than needed (safety rule).
         """
         R = coverage_radius or 6.37
@@ -364,8 +356,7 @@ class FireAIPluginAPI:
 
 
 def check_api_compatibility(plugin_requires: str) -> None:
-    """
-    Call at plugin startup to verify API compatibility.
+    """Call at plugin startup to verify API compatibility.
     Raises RuntimeError if MAJOR version mismatch.
 
     Usage in plugin:

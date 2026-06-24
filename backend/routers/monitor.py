@@ -1,5 +1,4 @@
-"""
-backend/routers/monitor.py — Real-time Monitoring Dashboard API.
+"""backend/routers/monitor.py — Real-time Monitoring Dashboard API.
 
 Endpoints:
   GET /api/v1/monitor/health          → Aggregated health status

@@ -1,5 +1,4 @@
-"""
-models_v21.py – FireAI V21 Pydantic Models (Fast-Fail Validation)
+"""models_v21.py – FireAI V21 Pydantic Models (Fast-Fail Validation)
 ==================================================================
 Replaces dataclasses with Pydantic BaseModel for fail-fast validation.
 No dict/tuple passes through. No silent failures. Physics validators enforced.
@@ -283,8 +282,7 @@ class ElevationTier(str, Enum):
 
 
 class SubstanceProperties(BaseModel):
-    """
-    Physical properties of the hazardous substance.
+    """Physical properties of the hazardous substance.
     ALL validators run at construction — no invalid object can exist.
     """
 
@@ -305,7 +303,7 @@ class SubstanceProperties(BaseModel):
     molecular_weight: Optional[float] = Field(None, gt=0.0)
 
     @model_validator(mode="after")
-    def physics_consistency(self) -> "SubstanceProperties":
+    def physics_consistency(self) -> SubstanceProperties:
         # flash_point must be below autoignition
         if (
             self.flash_point_c is not None
@@ -358,7 +356,7 @@ class ZoneExtent(BaseModel):
     is_outdoor: bool = False  # True = full sphere, False = hemisphere
 
     @model_validator(mode="after")
-    def extent_geometry(self) -> "ZoneExtent":
+    def extent_geometry(self) -> ZoneExtent:
         # Volume must be consistent with the appropriate volume model
         r = max(self.horizontal_m, self.vertical_m)
         if self.is_outdoor:
@@ -390,7 +388,7 @@ class HACResult(BaseModel):
     critical_flags: List[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def check_critical_combination(self) -> "HACResult":
+    def check_critical_combination(self) -> HACResult:
         if self.ventilation == VentilationLevel.POOR and self.zone in (ZoneType.ZONE_0, ZoneType.ZONE_20):
             flag = (
                 "CRITICAL: Zone 0/20 with POOR ventilation — "
@@ -405,8 +403,7 @@ class HACResult(BaseModel):
 
 
 def _select_temp_class(autoignition_c: float) -> TemperatureClass:
-    """
-    FIXED Fix #15: Select temperature class whose max surface temp
+    """FIXED Fix #15: Select temperature class whose max surface temp
     is STRICTLY LESS THAN autoignition temperature.
     IEC 60079-0 §7.3.
 
@@ -449,8 +446,7 @@ def _select_temp_class(autoignition_c: float) -> TemperatureClass:
 
 
 class ATEXEquipmentSpec(BaseModel):
-    """
-    ATEX equipment requirements derived from zone classification.
+    """ATEX equipment requirements derived from zone classification.
     EPL hierarchy enforced — cannot construct an inconsistent spec.
     """
 
@@ -466,9 +462,8 @@ class ATEXEquipmentSpec(BaseModel):
     hac_critical: List[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def epl_category_consistency(self) -> "ATEXEquipmentSpec":
-        """
-        FIXED Fix #14: EPL hierarchy was inverted.
+    def epl_category_consistency(self) -> ATEXEquipmentSpec:
+        """FIXED Fix #14: EPL hierarchy was inverted.
         Correct gas hierarchy: Ga > Gb > Gc (Ga = highest protection)
         Correct dust hierarchy: Da > Db > Dc
         """
@@ -514,9 +509,8 @@ class ATEXEquipmentSpec(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def protection_mode_zone_fit(self) -> "ATEXEquipmentSpec":
-        """
-        FIXED Fix #17: 'ia' for Zone 2 is over-specified (costly, unnecessary).
+    def protection_mode_zone_fit(self) -> ATEXEquipmentSpec:
+        """FIXED Fix #17: 'ia' for Zone 2 is over-specified (costly, unnecessary).
         Zone 2 -> 'ic' is sufficient. Zone 1 -> 'ib' or 'ia'. Zone 0 -> 'ia' only.
         [IEC 60079-14]
         """
@@ -568,7 +562,7 @@ class ATEXEquipmentSpec(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def thermal_margin_check(self) -> "ATEXEquipmentSpec":
+    def thermal_margin_check(self) -> ATEXEquipmentSpec:
         """V54 FIX (V48 #6): Validate thermal margin per IEC 60079-14 §5.3.
 
         When autoignition_c is provided, verify that the temperature class
@@ -621,8 +615,7 @@ class ATEXEquipmentSpec(BaseModel):
 
 
 class Obstruction(BaseModel):
-    """
-    FIXED Q6: Spectral transparency replaces single boolean.
+    """FIXED Q6: Spectral transparency replaces single boolean.
     Glass: UV=0.0 (opaque), IR=0.8 (mostly transparent).
     Polycarbonate: UV=0.0, VIS=0.9, IR=0.7.
     Steel: all 0.0.
@@ -642,7 +635,7 @@ class Obstruction(BaseModel):
     )
 
     @model_validator(mode="after")
-    def transparency_range(self) -> "Obstruction":
+    def transparency_range(self) -> Obstruction:
         for band, val in self.spectral_transparency.items():
             if not 0.0 <= val <= 1.0:
                 raise ValueError(f"spectral_transparency[{band}]={val} must be in [0.0, 1.0].")
@@ -671,8 +664,7 @@ class Obstruction(BaseModel):
 
 
 class FlameDetectorSpec(BaseModel):
-    """
-    Flame detector physical specification for ray-trace engine.
+    """Flame detector physical specification for ray-trace engine.
     """
 
     model_config = ConfigDict(frozen=True, strict=True)
@@ -685,14 +677,14 @@ class FlameDetectorSpec(BaseModel):
     spectral_bands: List[WavelengthBand] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def orientation_not_zero(self) -> "FlameDetectorSpec":
+    def orientation_not_zero(self) -> FlameDetectorSpec:
         mag = math.sqrt(sum(v**2 for v in self.orientation_vector))
         if mag < 1e-9:
             raise ValueError("orientation_vector must not be zero vector.")
         return self
 
     @model_validator(mode="after")
-    def position_valid(self) -> "FlameDetectorSpec":
+    def position_valid(self) -> FlameDetectorSpec:
         if any(not math.isfinite(v) for v in self.position):
             raise ValueError("position contains non-finite values.")
         return self
@@ -703,8 +695,7 @@ class FlameDetectorSpec(BaseModel):
         return [v / mag for v in self.orientation_vector]
 
     def is_facing_upward(self) -> bool:
-        """
-        Detector pointing up (z > 0.9) won't cover floor.
+        """Detector pointing up (z > 0.9) won't cover floor.
         Returns True if detector aims predominantly upward.
         """
         unit = self.orientation_unit
@@ -741,8 +732,7 @@ class RegSelectorResult(BaseModel):
 
 
 class EnvironmentalContext(BaseModel):
-    """
-    Strict context for HAC calculations with environmental correction.
+    """Strict context for HAC calculations with environmental correction.
     Defaults to worst-case indoor scenarios to guarantee fail-safe designs.
 
     If an engineer does NOT provide environmental data, the system assumes
@@ -825,7 +815,7 @@ class EnvironmentalContext(BaseModel):
     )
 
     @model_validator(mode="after")
-    def cross_validate_environment(self) -> "EnvironmentalContext":
+    def cross_validate_environment(self) -> EnvironmentalContext:
         # Physically impossible: high instability with near-zero wind
         if self.wind_speed_m_s < 2.0 and self.stability_class in (PasquillStability.A, PasquillStability.B):
             raise ValueError(
@@ -838,8 +828,7 @@ class EnvironmentalContext(BaseModel):
 
     @property
     def advisories(self) -> List[str]:
-        """
-        Generate advisory warnings based on region vs actual values.
+        """Generate advisory warnings based on region vs actual values.
 
         The system NEVER silently overwrites engineer inputs. Instead,
         it generates advisory warnings when the selected region suggests
@@ -854,6 +843,7 @@ class EnvironmentalContext(BaseModel):
 
         Returns:
             List of advisory warning strings
+
         """
         warnings: List[str] = []
 
@@ -934,8 +924,7 @@ _MW_LOW_THRESHOLD: float = _MW_AIR * _VD_RATIO_LOW  # 29.8288
 
 
 def vapor_density_tier(molecular_weight: float) -> ElevationTier:
-    """
-    Classify gas buoyancy behavior by molecular weight using density ratios.
+    """Classify gas buoyancy behavior by molecular weight using density ratios.
 
     This function uses precise density ratios (MW_gas / MW_air) rather
     than fixed MW thresholds, providing a physically rigorous classification
@@ -961,6 +950,7 @@ def vapor_density_tier(molecular_weight: float) -> ElevationTier:
         ValueError: If molecular_weight is not greater than 0
 
     Reference: IEC 60079-10-1:2015 §B.4, NFPA 497 §4.5
+
     """
     # V57 FIX (Finding 13): NaN molecular_weight silently returns LOW — NaN <= 0
     # is False, NaN < _MW_HIGH_THRESHOLD is False, NaN <= _MW_LOW_THRESHOLD is False,
@@ -981,10 +971,9 @@ def vapor_density_tier(molecular_weight: float) -> ElevationTier:
 
     if molecular_weight < _MW_HIGH_THRESHOLD:
         return ElevationTier.HIGH
-    elif molecular_weight <= _MW_LOW_THRESHOLD:
+    if molecular_weight <= _MW_LOW_THRESHOLD:
         return ElevationTier.BREATHING_ZONE
-    else:
-        return ElevationTier.LOW
+    return ElevationTier.LOW
 
 
 # ===========================================================================
@@ -997,8 +986,7 @@ def room_purge_time(
     ach: float,
     target_fraction: float = 0.01,
 ) -> float:
-    """
-    Calculate the time (seconds) for ventilation to reduce gas concentration
+    """Calculate the time (seconds) for ventilation to reduce gas concentration
     to `target_fraction` of initial concentration.
 
     Based on IEC 60079-10-1:2015 Annex B §B.2 dilution model:
@@ -1025,6 +1013,7 @@ def room_purge_time(
     Reference: IEC 60079-10-1:2015 Annex B §B.2,
                NFPA 497-2021 §4.3,
                Lees' Loss Prevention §15.3 (exponential dilution)
+
     """
     if ach <= 0.0 or target_fraction <= 0.0 or target_fraction >= 1.0:
         return float("inf")  # Cannot purge without ventilation
@@ -1040,8 +1029,7 @@ def room_concentration_at_time(
     ach: float,
     time_seconds: float,
 ) -> float:
-    """
-    Calculate gas concentration at time t using exponential dilution.
+    """Calculate gas concentration at time t using exponential dilution.
 
     C(t) = C_0 * exp(-ACH * t / 3600)
 
@@ -1056,6 +1044,7 @@ def room_concentration_at_time(
 
     Returns:
         Concentration at time t (vol%)
+
     """
     if ach <= 0.0:
         return initial_concentration_vol_pct  # No ventilation = no decay
@@ -1074,8 +1063,7 @@ def burgess_wheeler_lfl(
     heat_of_combustion_kj_mol: Optional[float] = None,
     lfl_floor_ratio: Optional[float] = 0.5,
 ) -> float:
-    """
-    Burgess-Wheeler LFL thermal correction.
+    """Burgess-Wheeler LFL thermal correction.
 
     At elevated temperatures, gases expand and LFL decreases.
     This is NOT optional — IEC 60079-10-1 Annex B acknowledges that
@@ -1104,6 +1092,7 @@ def burgess_wheeler_lfl(
 
     Reference: Burgess & Wheeler (1929), Zabetakis (1965) Bureau of Mines
                Bulletin 627, IEC 60079-10-1 Annex B.
+
     """
     # V53 FIX: lfl_25c must be positive — it's a physical property.
     # Zero or negative LFL has no physical meaning and would bypass
@@ -1152,8 +1141,7 @@ def _select_temp_class_with_margin(
     autoignition_c: float,
     zone: ZoneType,
 ) -> TemperatureClass:
-    """
-    V21.2: Select temperature class with IEC 60079-14 thermal margin.
+    """V21.2: Select temperature class with IEC 60079-14 thermal margin.
 
     The previous _select_temp_class only required max_surface < autoignition.
     This left a 1C margin (e.g., autoignition=136C -> T4 max 135C) which is
@@ -1180,6 +1168,7 @@ def _select_temp_class_with_margin(
         ValueError: if no temperature class satisfies the margin requirement
 
     Reference: IEC 60079-14:2013 §5.3, IEC 60079-0:2017 §7.3
+
     """
     # Determine safe maximum surface temperature
     if zone in (ZoneType.ZONE_0, ZoneType.ZONE_20):
@@ -1257,8 +1246,7 @@ _DEFAULT_MEDIUM_ALPHA: Dict[str, Dict[str, float]] = {
 
 
 class SpectralSignature(BaseModel):
-    """
-    Spectral absorption coefficient per wavelength band for a substance.
+    """Spectral absorption coefficient per wavelength band for a substance.
     Used by Layer 5 Beer-Lambert volumetric transmittance calculations.
 
     Decoupled from SubstanceProperties to keep the core model lightweight.
@@ -1289,8 +1277,7 @@ class SpectralSignature(BaseModel):
 
 
 class SpectralSignatureRegistry:
-    """
-    Lazy-loaded registry of spectral signatures indexed by CAS number.
+    """Lazy-loaded registry of spectral signatures indexed by CAS number.
 
     Design rationale: Spectral data is only needed in Layer 5 (optical).
     Loading it into SubstanceProperties would bloat Layers 1-4.
@@ -1902,8 +1889,7 @@ class SpectralSignatureRegistry:
 
 
 class VolumetricMedium(BaseModel):
-    """
-    A gaseous or particulate medium in the optical path that absorbs
+    """A gaseous or particulate medium in the optical path that absorbs
     spectral energy according to Beer-Lambert law.
 
     Unlike solid Obstructions (which block geometrically), VolumetricMedia
@@ -1942,16 +1928,15 @@ class VolumetricMedium(BaseModel):
     )
 
     @model_validator(mode="after")
-    def bbox_valid(self) -> "VolumetricMedium":
+    def bbox_valid(self) -> VolumetricMedium:
         for i in range(3):
             if self.bbox_min[i] > self.bbox_max[i]:
                 raise ValueError(f"bbox_min[{i}]={self.bbox_min[i]} > bbox_max[{i}]={self.bbox_max[i]}")
         return self
 
     @model_validator(mode="after")
-    def bbox_nonzero_volume(self) -> "VolumetricMedium":
-        """
-        GAP-07: A volumetric medium with zero volume has no physical meaning.
+    def bbox_nonzero_volume(self) -> VolumetricMedium:
+        """GAP-07: A volumetric medium with zero volume has no physical meaning.
         IEC 60079-10-1:2015 Annex B §B.3: minimum enclosure volume applies.
         """
         dx = self.bbox_max[0] - self.bbox_min[0]
@@ -1966,8 +1951,7 @@ class VolumetricMedium(BaseModel):
         return self
 
     def get_alpha(self, band: WavelengthBand) -> float:
-        """
-        GAP-03: Return absorption coefficient (m^-1) for `band`.
+        """GAP-03: Return absorption coefficient (m^-1) for `band`.
 
         Priority order:
         1. alpha_override[band]  — explicit user value, highest priority
@@ -2012,8 +1996,7 @@ class VolumetricMedium(BaseModel):
         return float(raw) * self.concentration_factor
 
     def get_alpha_with_registry(self, band: WavelengthBand, registry: SpectralSignatureRegistry) -> float:
-        """
-        Get absorption coefficient using registry lookup.
+        """Get absorption coefficient using registry lookup.
 
         Priority order:
         1. alpha_override[band] — explicit user value
@@ -2065,8 +2048,7 @@ def beer_lambert_transmittance(
     alpha_per_m: float,
     path_length_m: float,
 ) -> float:
-    """
-    Calculate spectral transmittance through a volumetric medium
+    """Calculate spectral transmittance through a volumetric medium
     using the Beer-Lambert law:
 
         T = exp(-alpha * d)
@@ -2092,6 +2074,7 @@ def beer_lambert_transmittance(
         Transmittance value in [0.0, 1.0]
 
     Reference: Beer-Lambert law, IEC 60079-29-4 §6.2
+
     """
     if alpha_per_m <= 0.0 or path_length_m <= 0.0:
         return 1.0
@@ -2106,8 +2089,7 @@ def volumetric_path_transmittance(
     band: WavelengthBand,
     registry: Optional[SpectralSignatureRegistry] = None,
 ) -> float:
-    """
-    Calculate total spectral transmittance along a ray path through
+    """Calculate total spectral transmittance along a ray path through
     multiple volumetric media (smoke, gas clouds, steam).
 
     For each medium intersected, calculates:
@@ -2124,6 +2106,7 @@ def volumetric_path_transmittance(
 
     Returns:
         Total transmittance in [0.0, 1.0]. 1.0 = clear path, 0.0 = fully absorbed.
+
     """
     if not media:
         return 1.0
@@ -2157,8 +2140,7 @@ def _ray_aabb_path_length(
     bbox_min: List[float],
     bbox_max: List[float],
 ) -> float:
-    """
-    Calculate the path length of a ray segment through an AABB.
+    """Calculate the path length of a ray segment through an AABB.
     Returns 0.0 if the ray doesn't intersect the box.
     Uses slab method for ray-box intersection.
     """

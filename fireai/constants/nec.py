@@ -1,5 +1,4 @@
-"""
-FireAI — NEC (National Electrical Code) Constants
+"""FireAI — NEC (National Electrical Code) Constants
 
 NEC (NFPA 70-2023) clause-cited constants for:
   - Conductor ampacity and derating

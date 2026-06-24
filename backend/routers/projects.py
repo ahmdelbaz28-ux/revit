@@ -1,5 +1,4 @@
-"""
-backend/routers/projects.py — Projects CRUD endpoints.
+"""backend/routers/projects.py — Projects CRUD endpoints.
 
 LIFE-SAFETY NOTE: Projects are the top-level container for all fire alarm
 engineering data. Deletion cascades to all child devices, connections,

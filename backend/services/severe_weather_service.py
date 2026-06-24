@@ -1,5 +1,4 @@
-"""
-backend/services/severe_weather_service.py — Severe weather alerts for FireAI.
+"""backend/services/severe_weather_service.py — Severe weather alerts for FireAI.
 
 Provides active weather alerts from multiple international sources:
   - US National Weather Service (NWS) API for US locations
@@ -31,6 +30,7 @@ References:
   - NFPA 72-2022 §10.6 (secondary power)
   - NFPA 72-2022 §10.14 (battery derating)
   - NFPA 92-2024 §6.4.2 (smoke control wind design)
+
 """
 
 from __future__ import annotations
@@ -114,6 +114,7 @@ class WeatherAlertSeverity:
       - MeteoAlarm Yellow → Moderate
       - MeteoAlarm Green  → Minor
     """
+
     EXTREME = "Extreme"
     SEVERE = "Severe"
     MODERATE = "Moderate"
@@ -134,6 +135,7 @@ class WeatherAlertType:
 
     Covers both NWS and MeteoAlarm event types.
     """
+
     TORNADO_WARNING = "Tornado Warning"
     SEVERE_THUNDERSTORM = "Severe Thunderstorm Warning"
     HIGH_WIND = "High Wind Warning"
@@ -178,8 +180,7 @@ _METEOALARM_TYPE_MAP: dict[str, str] = {
 
 @dataclass(frozen=True)
 class WeatherAlert:
-    """
-    A single weather alert relevant to fire safety engineering.
+    """A single weather alert relevant to fire safety engineering.
 
     Attributes:
         event: Alert event type (e.g., "Tornado Warning")
@@ -191,7 +192,9 @@ class WeatherAlert:
         expires: ISO 8601 timestamp when alert expires
         urgency: Urgency level (Immediate, Expected, Future, Past)
         certainty: Certainty level (Observed, Likely, Possible, Unlikely)
+
     """
+
     event: str
     severity: str
     headline: str
@@ -225,8 +228,7 @@ class WeatherAlert:
 
 @dataclass(frozen=True)
 class SevereWeatherData:
-    """
-    Immutable severe weather data for engineering calculations.
+    """Immutable severe weather data for engineering calculations.
 
     Attributes:
         active_alerts: List of active weather alerts
@@ -240,7 +242,9 @@ class SevereWeatherData:
             "eu" — MeteoAlarm coverage (EU/EEA countries)
             "global" — Open-Meteo or partial global coverage
             "none" — No alert source available for this location
+
     """
+
     active_alerts: tuple  # Tuple of WeatherAlert (frozen=True requires hashable)
     max_wind_speed_kt: float = 0.0
     has_power_outage_risk: bool = False
@@ -265,8 +269,7 @@ class SevereWeatherData:
 
 
 class SevereWeatherService:
-    """
-    Async severe weather alert provider with international source dispatch.
+    """Async severe weather alert provider with international source dispatch.
 
     Source selection based on coordinates:
       - US locations (lat 24-50, lon -125 to -66): Use NWS API
@@ -348,8 +351,7 @@ class SevereWeatherService:
     # ── Source Detection ──────────────────────────────────────────────────
 
     def _is_us_location(self, latitude: float, longitude: float) -> bool:
-        """
-        Determine if coordinates fall within US NWS coverage area.
+        """Determine if coordinates fall within US NWS coverage area.
 
         Uses bounding box for continental US. NWS also covers Alaska,
         Hawaii, and US territories, but these have limited alert coverage.
@@ -360,6 +362,7 @@ class SevereWeatherService:
 
         Returns:
             True if location is within US NWS coverage bounding box
+
         """
         return (
             self.US_LAT_MIN <= latitude <= self.US_LAT_MAX
@@ -367,8 +370,7 @@ class SevereWeatherService:
         )
 
     def _determine_coverage(self, latitude: float, longitude: float) -> str:
-        """
-        Determine the best alert source for given coordinates.
+        """Determine the best alert source for given coordinates.
 
         Strategy:
           1. US bounding box → "us" (NWS)
@@ -385,6 +387,7 @@ class SevereWeatherService:
 
         Returns:
             Coverage area string: "us", "eu", or "global"
+
         """
         if self._is_us_location(latitude, longitude):
             return "us"
@@ -410,8 +413,7 @@ class SevereWeatherService:
     async def _fetch_nws_alerts(
         self, latitude: float, longitude: float
     ) -> SevereWeatherData:
-        """
-        Fetch active weather alerts from NWS API.
+        """Fetch active weather alerts from NWS API.
 
         Uses the NWS alerts endpoint with point filtering:
         https://api.weather.gov/alerts?point={lat},{lon}
@@ -424,6 +426,7 @@ class SevereWeatherService:
         References:
             - NFPA 72-2022 §10.6 (secondary power sizing)
             - NFPA 72-2022 §10.14 (battery temperature derating)
+
         """
         client = await self._get_client()
         logger.info(
@@ -504,8 +507,7 @@ class SevereWeatherService:
     async def _fetch_meteoalarm_alerts(
         self, latitude: float, longitude: float, country_code: str
     ) -> SevereWeatherData:
-        """
-        Fetch active weather alerts from MeteoAlarm EU API.
+        """Fetch active weather alerts from MeteoAlarm EU API.
 
         MeteoAlarm provides weather warnings for EU/EEA member states
         using the Common Alerting Protocol (CAP) format.
@@ -533,6 +535,7 @@ class SevereWeatherService:
             - NFPA 72-2022 §10.6 (secondary power — wind/storm risk)
             - NFPA 92-2024 §6.4.2 (smoke control wind design)
             - EN 54-13 (fire detection and alarm systems — EU standard)
+
         """
         # Map ISO country code to MeteoAlarm feed identifier
         cc = _ISO_TO_METEOALARM.get(country_code.upper(), country_code.upper())
@@ -585,8 +588,7 @@ class SevereWeatherService:
     async def _fetch_meteoalarm_json(
         self, country_code: str
     ) -> tuple[list[WeatherAlert], bool, bool]:
-        """
-        Fetch alerts from MeteoAlarm JSON API (v1).
+        """Fetch alerts from MeteoAlarm JSON API (v1).
 
         Endpoint: https://api.meteoalarm.org/api/v1/warnings/{country_code}
 
@@ -598,6 +600,7 @@ class SevereWeatherService:
 
         Raises:
             httpx.HTTPError: On API failure (caller handles fallback)
+
         """
         client = await self._get_client()
 
@@ -652,8 +655,7 @@ class SevereWeatherService:
         return alerts, has_power_risk, has_extreme_temp
 
     def _parse_meteoalarm_warning(self, warning: dict) -> Optional[WeatherAlert]:
-        """
-        Parse a single MeteoAlarm warning dict into a WeatherAlert.
+        """Parse a single MeteoAlarm warning dict into a WeatherAlert.
 
         MeteoAlarm JSON warning structure (varies by API version):
           - event: Alert type description
@@ -673,6 +675,7 @@ class SevereWeatherService:
 
         Returns:
             WeatherAlert or None if parsing fails
+
         """
         # Extract event type
         event = warning.get("event", "")
@@ -730,8 +733,7 @@ class SevereWeatherService:
     async def _fetch_meteoalarm_atom(
         self, country_code: str
     ) -> tuple[list[WeatherAlert], bool, bool]:
-        """
-        Fetch alerts from MeteoAlarm Atom feed (legacy fallback).
+        """Fetch alerts from MeteoAlarm Atom feed (legacy fallback).
 
         Endpoint: https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-country/{cc}
 
@@ -746,6 +748,7 @@ class SevereWeatherService:
 
         Raises:
             httpx.HTTPError: On API failure
+
         """
         client = await self._get_client()
 
@@ -773,7 +776,7 @@ class SevereWeatherService:
                     "Install with: pip install defusedxml"
                 )
             # Parse Atom XML feed (ET is defusedxml.ElementTree when available — noqa S314)
-            root = ET.fromstring(response.text)  # noqa: S314
+            root = ET.fromstring(response.text)
 
             # Atom namespace
             ns = {
@@ -819,8 +822,7 @@ class SevereWeatherService:
     def _parse_meteoalarm_atom_entry(
         self, entry: ET.Element, ns: dict
     ) -> Optional[WeatherAlert]:
-        """
-        Parse a single Atom <entry> element into a WeatherAlert.
+        """Parse a single Atom <entry> element into a WeatherAlert.
 
         MeteoAlarm Atom entries contain:
           - <title>: Alert headline
@@ -839,6 +841,7 @@ class SevereWeatherService:
 
         Returns:
             WeatherAlert or None if parsing fails
+
         """
         # Try namespaced elements first, then fall back to non-namespaced
         def find_text(element: ET.Element, path_ns: str, path_no_ns: str) -> str:
@@ -904,8 +907,7 @@ class SevereWeatherService:
     async def _fetch_openmeteo_alerts(
         self, latitude: float, longitude: float
     ) -> SevereWeatherData:
-        """
-        Attempt to fetch weather alerts from Open-Meteo.
+        """Attempt to fetch weather alerts from Open-Meteo.
 
         Open-Meteo provides limited weather alert data for some regions.
         This is a best-effort global fallback when neither NWS nor
@@ -930,6 +932,7 @@ class SevereWeatherService:
         References:
             - NFPA 72-2022 §10.6 (secondary power)
             - Conservative default when no alert source available
+
         """
         client = await self._get_client()
 
@@ -1028,8 +1031,7 @@ class SevereWeatherService:
         longitude: float,
         coverage_area: str = "none",
     ) -> SevereWeatherData:
-        """
-        Return default severe weather data (no alerts).
+        """Return default severe weather data (no alerts).
 
         No alerts = assume normal conditions. This is acceptable because:
         - Lack of alert data is not inherently dangerous
@@ -1043,6 +1045,7 @@ class SevereWeatherService:
 
         Returns:
             SevereWeatherData with no active alerts
+
         """
         logger.warning(
             f"Using DEFAULT severe weather data (no alerts) for "
@@ -1065,8 +1068,7 @@ class SevereWeatherService:
     async def _resolve_country_code(
         self, latitude: float, longitude: float
     ) -> Optional[str]:
-        """
-        Resolve coordinates to an ISO 3166-1 alpha-2 country code.
+        """Resolve coordinates to an ISO 3166-1 alpha-2 country code.
 
         Uses the GeocodingService (reverse geocoding) to determine
         the country. Returns None if resolution fails.
@@ -1077,6 +1079,7 @@ class SevereWeatherService:
 
         Returns:
             ISO country code (e.g., "DE", "US") or None
+
         """
         try:
             from backend.services.geocoding_service import get_geocoding_service
@@ -1100,8 +1103,7 @@ class SevereWeatherService:
         latitude: float,
         longitude: float,
     ) -> SevereWeatherData:
-        """
-        Fetch severe weather alerts for engineering calculations.
+        """Fetch severe weather alerts for engineering calculations.
 
         Strategy (international dispatch):
           1. Check cache — return if fresh (< 10-min TTL)
@@ -1125,6 +1127,7 @@ class SevereWeatherService:
             - NFPA 72-2022 §10.6 (secondary power)
             - NFPA 72-2022 §10.14 (battery derating)
             - NFPA 92-2024 §6.4.2 (smoke control wind design)
+
         """
         if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
             return self._get_default(latitude, longitude, coverage_area="none")
@@ -1174,36 +1177,35 @@ class SevereWeatherService:
                     )
                     self._set_cached(latitude, longitude, data)
                     return data
-                else:
-                    # Coordinates are in EU bounding box but country code
-                    # not in MeteoAlarm coverage. Try as-is with the
-                    # resolved country code (some nearby countries may work).
-                    if country_code:
-                        logger.info(
-                            f"Country {country_code} not in MeteoAlarm list, "
-                            f"attempting API call anyway for lat={latitude:.4f}, "
-                            f"lon={longitude:.4f}"
-                        )
-                        try:
-                            data = await self._fetch_meteoalarm_alerts(
-                                latitude, longitude, country_code
-                            )
-                            self._set_cached(latitude, longitude, data)
-                            return data
-                        except Exception as e:
-                            logger.debug("NWS API failed, falling through to Open-Meteo: %s", e)
-                            # Fall through to Open-Meteo
-
-                    # No country code resolved or MeteoAlarm failed —
-                    # try Open-Meteo as global fallback
+                # Coordinates are in EU bounding box but country code
+                # not in MeteoAlarm coverage. Try as-is with the
+                # resolved country code (some nearby countries may work).
+                if country_code:
                     logger.info(
-                        f"MeteoAlarm not available for lat={latitude:.4f}, "
-                        f"lon={longitude:.4f} (country={country_code}). "
-                        f"Trying Open-Meteo fallback."
+                        f"Country {country_code} not in MeteoAlarm list, "
+                        f"attempting API call anyway for lat={latitude:.4f}, "
+                        f"lon={longitude:.4f}"
                     )
-                    data = await self._fetch_openmeteo_alerts(latitude, longitude)
-                    self._set_cached(latitude, longitude, data)
-                    return data
+                    try:
+                        data = await self._fetch_meteoalarm_alerts(
+                            latitude, longitude, country_code
+                        )
+                        self._set_cached(latitude, longitude, data)
+                        return data
+                    except Exception as e:
+                        logger.debug("NWS API failed, falling through to Open-Meteo: %s", e)
+                        # Fall through to Open-Meteo
+
+                # No country code resolved or MeteoAlarm failed —
+                # try Open-Meteo as global fallback
+                logger.info(
+                    f"MeteoAlarm not available for lat={latitude:.4f}, "
+                    f"lon={longitude:.4f} (country={country_code}). "
+                    f"Trying Open-Meteo fallback."
+                )
+                data = await self._fetch_openmeteo_alerts(latitude, longitude)
+                self._set_cached(latitude, longitude, data)
+                return data
 
             except (httpx.HTTPError, ValueError, KeyError) as e:
                 logger.warning(

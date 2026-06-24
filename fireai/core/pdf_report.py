@@ -1,5 +1,4 @@
-"""
-fireai/core/pdf_report.py  V1.0 — Building-level NFPA 72-2022 PDF Report
+"""fireai/core/pdf_report.py  V1.0 — Building-level NFPA 72-2022 PDF Report
 ========================================================================
 Professional PDF compliance report generator for FireAI.
 
@@ -411,7 +410,7 @@ def _floor_tables(report: BuildingReport) -> List:
 # -- 4. Scenario verification --
 
 
-def _scenario_section(scenario_results: Dict[str, "ScenarioBatteryResult"]) -> List:
+def _scenario_section(scenario_results: Dict[str, ScenarioBatteryResult]) -> List:
     elems = []
     elems.append(Paragraph("Scenario Verification", STYLES["SectionHead"]))
     elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
@@ -589,11 +588,10 @@ def _notes_section() -> List:
 def generate_building_report(
     report: BuildingReport,
     output_path: str = "fireai_report.pdf",
-    scenario_results: Optional[Dict[str, "ScenarioBatteryResult"]] = None,
+    scenario_results: Optional[Dict[str, ScenarioBatteryResult]] = None,
     audit_summary: Optional[dict] = None,
 ) -> str:
-    """
-    Generate a professional NFPA 72-2022 compliance PDF report.
+    """Generate a professional NFPA 72-2022 compliance PDF report.
 
     Args:
         report: BuildingReport from BuildingEngine.analyse().
@@ -603,6 +601,7 @@ def generate_building_report(
 
     Returns:
         Absolute path to the generated PDF file (or fallback .txt on error).
+
     """
     import os as _os
 

@@ -1,5 +1,4 @@
-"""
-fireai/agents/tool_selector.py — Dynamic Tool Routing with Capability Scoring
+"""fireai/agents/tool_selector.py — Dynamic Tool Routing with Capability Scoring
 ================================================================================
 Scores available tools by capability match, provides context-aware
 orchestration, and adaptive routing based on historical success.
@@ -71,8 +70,7 @@ class RoutingLog:
 
 
 class ToolSelector:
-    """
-    Dynamic tool routing with capability scoring:
+    """Dynamic tool routing with capability scoring:
     - Scores available tools by capability match
     - Context-aware orchestration (picks best tool for job)
     - Adaptive routing based on historical success

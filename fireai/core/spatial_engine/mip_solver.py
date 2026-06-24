@@ -1,5 +1,4 @@
-"""
-MIP Solver for FireAI — Set Covering Formulation
+"""MIP Solver for FireAI — Set Covering Formulation
 =================================================
 Wraps PuLP with graceful fallback to greedy if unavailable or timeout.
 
@@ -56,6 +55,7 @@ class MIPResult:
         used_mip:            True if MIP solver was actually used.
         fallback_reason:     Reason for fallback, or None if successful.
         candidate_step:      Grid spacing used for candidate positions (meters).
+
     """
 
     success: bool
@@ -75,8 +75,7 @@ def solve_set_covering_mip(
     candidate_step: float = 1.0,
     time_limit_seconds: float = 10.0,
 ) -> MIPResult:
-    """
-    Solves the minimum detector placement problem as a Set Covering ILP.
+    """Solves the minimum detector placement problem as a Set Covering ILP.
 
     Variables:
         x_j ∈ {0,1}  — place detector at candidate position j

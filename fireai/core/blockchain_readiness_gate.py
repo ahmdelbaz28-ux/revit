@@ -1,5 +1,4 @@
-"""
-blockchain_readiness_gate.py — Merkle Tree Readiness Gate for FireAI
+"""blockchain_readiness_gate.py — Merkle Tree Readiness Gate for FireAI
 ====================================================================
 LOW PRIORITY MODULE
 
@@ -105,6 +104,7 @@ class MerkleProof:
         leaf_hash: Hash of the leaf being proven.
         siblings: List of sibling hashes from bottom to top.
         merkle_root: Expected root hash for verification.
+
     """
 
     leaf_index: int
@@ -123,6 +123,7 @@ class MerkleProof:
 
         Returns:
             True if the proof is valid (leaf is in the tree).
+
         """
         current = self.leaf_hash
         index = self.leaf_index
@@ -163,6 +164,7 @@ class MerkleTree:
         leaves: Original leaf hashes.
         merkle_root: Root hash of the tree.
         tree_levels: All levels of the tree (for debugging).
+
     """
 
     def __init__(self, leaves: List[str]) -> None:
@@ -170,6 +172,7 @@ class MerkleTree:
 
         Args:
             leaves: List of hex-encoded hash strings (the leaves).
+
         """
         self._leaves = list(leaves)
         self._levels: List[List[str]] = []
@@ -225,7 +228,7 @@ class MerkleTree:
         return len(self._leaves)
 
     @classmethod
-    def from_leaves(cls, leaf_data: List[str]) -> "MerkleTree":
+    def from_leaves(cls, leaf_data: List[str]) -> MerkleTree:
         """Create a MerkleTree from raw data (hashes each item first).
 
         Args:
@@ -233,6 +236,7 @@ class MerkleTree:
 
         Returns:
             MerkleTree with SHA-256 hashed leaves.
+
         """
         leaves = [_sha256_hex(item) for item in leaf_data]
         return cls(leaves)
@@ -251,6 +255,7 @@ class MerkleTree:
 
         Raises:
             IndexError: If index is out of range.
+
         """
         if index < 0 or index >= len(self._leaves):
             raise IndexError(f"Leaf index {index} out of range [0, {len(self._leaves)})")
@@ -290,6 +295,7 @@ class MerkleTree:
 
         Returns:
             True if the proof is valid.
+
         """
         return proof.verify()
 
@@ -311,6 +317,7 @@ class BlockchainReadinessGate:
 
     Args:
         design_artifacts: List of artifact data strings to include in the tree.
+
     """
 
     def __init__(self, design_artifacts: List[str]) -> None:
@@ -352,6 +359,7 @@ class BlockchainReadinessGate:
 
         Raises:
             IndexError: If artifact_index is out of range.
+
         """
         return self._tree.get_proof(artifact_index)
 
@@ -363,6 +371,7 @@ class BlockchainReadinessGate:
 
         Returns:
             True if the proof is valid.
+
         """
         return proof.verify()
 
@@ -378,6 +387,7 @@ class BlockchainReadinessGate:
 
         Returns:
             True if NO tampering detected (roots match).
+
         """
         return self.merkle_root == original_root
 
@@ -398,6 +408,7 @@ class BlockchainReadinessGate:
 
         Returns:
             Updated evidence chain with the new anchoring event appended.
+
         """
         anchoring_event = {
             "event_type": "merkle_anchor",
@@ -419,7 +430,7 @@ class BlockchainReadinessGate:
 __all__ = [
     "EMPTY_HASH",
     "PRIORITY",
+    "BlockchainReadinessGate",
     "MerkleProof",
     "MerkleTree",
-    "BlockchainReadinessGate",
 ]

@@ -1,5 +1,4 @@
-"""
-pipeline.py — FireAI Main Analysis Pipeline
+"""pipeline.py — FireAI Main Analysis Pipeline
 =============================================
 THE MISSING GLUE. Connects every module into one executable workflow.
 
@@ -102,8 +101,7 @@ class StageResult:
 
 @dataclass
 class PipelineResult:
-    """
-    Complete result from the FireAI analysis pipeline.
+    """Complete result from the FireAI analysis pipeline.
 
     All fields have safe defaults — never raises on access.
     Caller checks result.success and result.release_status before using values.
@@ -254,6 +252,7 @@ def _stage05_qomn_physics_guard(
     Returns:
         dict with qomn_spacing, qomn_radius, audit_entries, chain_valid,
         cross_check_passed, physics_guard_passed.
+
     """
     try:
         from fireai.core.qomn_kernel import PhysicsGuardError, QOMNKernel
@@ -397,8 +396,7 @@ def _stage2_placement(
     validated_payload: Dict,
     coverage_radius_m: float,
 ) -> Dict:
-    """
-    Run detector placement optimizer.
+    """Run detector placement optimizer.
 
     Attempts to import DensityOptimizer from the existing codebase.
     Falls back to geometric estimate if optimizer is not available.
@@ -466,8 +464,7 @@ def _hex_grid_placement(
     polygon: List[Tuple[float, float]],
     radius_m: float,
 ) -> List[Tuple[float, float]]:
-    """
-    Place detectors on a hexagonal grid inside polygon.
+    """Place detectors on a hexagonal grid inside polygon.
 
     Conservative: uses 0.9×radius spacing (not full 1.0×) to ensure
     overlap at grid boundaries. Never violates 0.1m wall minimum.
@@ -542,8 +539,7 @@ def _estimate_coverage(
     radius_m: float,
     step: float = 0.0,
 ) -> float:
-    """
-    Fast coverage estimate using grid sampling.
+    """Fast coverage estimate using grid sampling.
     Returns percentage 0.0–100.0. Used when Shapely is not available.
 
     PERFORMANCE FIX (CRITICAL-1): Adaptive grid step based on polygon
@@ -899,8 +895,7 @@ def analyze_room(
     cable_connections: Optional[List[Dict[str, Any]]] = None,
     building_model: Optional[Any] = None,
 ) -> PipelineResult:
-    """
-    Run the complete FireAI analysis pipeline for one room.
+    """Run the complete FireAI analysis pipeline for one room.
 
     Args:
         payload:           Room input dict (room_polygon, ceiling_height_m, etc.)
@@ -916,6 +911,7 @@ def analyze_room(
 
     Returns:
         PipelineResult — never raises, all errors captured inside result.
+
     """
     t_total = time.perf_counter()
     # V61 FIX: Deterministic run_id from input content hash.
@@ -1311,8 +1307,7 @@ def _stage7_cable_routing(
     positions: List[Tuple[float, float]],
     room_z_m: float = 0.0,
 ) -> Dict:
-    """
-    Stage 7: Cable routing between detector positions.
+    """Stage 7: Cable routing between detector positions.
 
     Uses CableRoutingEngine to route NAC/SLC circuits between
     detector positions. Returns routing schedule with voltage drop
@@ -1325,6 +1320,7 @@ def _stage7_cable_routing(
       - NFPA 72 §23.6.2: NAC circuit max length
       - NEC 760.24(A): cable support spacing
       - System Req §4: cable schedule output
+
     """
     try:
         from fireai.core.cable_router import (  # type: ignore[attr-defined]
@@ -1739,8 +1735,7 @@ def analyze_building(
     max_workers: int = 4,
     **kwargs,
 ) -> Dict[str, Any]:
-    """
-    Analyze all rooms in a building concurrently.
+    """Analyze all rooms in a building concurrently.
 
     Args:
         rooms:       List of room payload dicts.
@@ -1749,6 +1744,7 @@ def analyze_building(
 
     Returns:
         Building-level summary with per-room results.
+
     """
     t0 = time.perf_counter()
 
@@ -1794,8 +1790,8 @@ def analyze_building(
 
 
 __all__ = [
-    "analyze_room",
-    "analyze_building",
     "PipelineResult",
     "StageResult",
+    "analyze_building",
+    "analyze_room",
 ]

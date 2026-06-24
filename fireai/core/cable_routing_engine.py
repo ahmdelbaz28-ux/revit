@@ -1,5 +1,4 @@
-"""
-fireai/core/cable_routing_engine.py
+"""fireai/core/cable_routing_engine.py
 ====================================
 LIFE-SAFETY CRITICAL: Cable routing engine for the FireAI fire alarm
 engineering platform.  Routes Class A (ring) and Class B (home-run)
@@ -76,8 +75,12 @@ class _WireGaugeInstance:
     """
 
     __slots__ = (
-        "awg_value", "resistance_ohm_per_km", "resistance_ohm_per_m",
-        "resistance_ohm_per_km_at_20c", "diameter_mm", "ampacity_a",
+        "ampacity_a",
+        "awg_value",
+        "diameter_mm",
+        "resistance_ohm_per_km",
+        "resistance_ohm_per_km_at_20c",
+        "resistance_ohm_per_m",
     )
 
     def __init__(
@@ -135,8 +138,7 @@ class _WireGaugeMeta(type):
 
 
 class WireGauge(metaclass=_WireGaugeMeta):
-    """
-    NEC Article 760 / NEC Chapter 9 Table 8 — Fire alarm wire gauges.
+    """NEC Article 760 / NEC Chapter 9 Table 8 — Fire alarm wire gauges.
 
     Standard fire alarm circuit wire gauges: AWG 12, 14, 16, 18.
     These are the gauges permitted by NEC 760.154 for PLFA circuits.
@@ -208,8 +210,7 @@ class ObstacleType(Enum):
 
 @dataclass(frozen=True)
 class RoutingObstacle3D:
-    """
-    A 3D axis-aligned bounding box obstacle for cable routing.
+    """A 3D axis-aligned bounding box obstacle for cable routing.
 
     Defined by two corner points (x1,y1,z1) and (x2,y2,z2) with
     optional firestop/rating metadata for fire-rated wall penetrations.
@@ -222,6 +223,7 @@ class RoutingObstacle3D:
         requires_firestop: Whether cable penetration requires firestopping.
         is_rated: Whether the obstacle is a fire-rated assembly.
         fire_rating_hours: Fire resistance rating in hours.
+
     """
 
     obstacle_id: str = ""
@@ -307,6 +309,7 @@ class VoltageDropSegment:
         cumulative_drop_v: Cumulative drop from panel to end of segment.
         is_compliant: Whether cumulative drop is within limits.
         nfpa_section: Standard citation.
+
     """
 
     segment_index: int
@@ -329,8 +332,7 @@ class VoltageDropSegment:
 
 @dataclass(frozen=True)
 class RouteResult:
-    """
-    Immutable result of a cable routing operation.
+    """Immutable result of a cable routing operation.
 
     Attributes:
         circuit_id: Unique circuit identifier.
@@ -344,6 +346,7 @@ class RouteResult:
         wire_gauge: The WireGauge instance used.
         selected_gauge_is_minimum: Whether the auto-selected gauge is the minimum.
         total_return_length_m: Return path length for Class A circuits.
+
     """
 
     circuit_id: str = ""
@@ -365,8 +368,7 @@ class RouteResult:
 
 
 class CableRoutingEngine:
-    """
-    LIFE-SAFETY CRITICAL cable routing engine for fire alarm circuits.
+    """LIFE-SAFETY CRITICAL cable routing engine for fire alarm circuits.
 
     Implements voltage drop verification per NFPA 72 §10.6.4,
     auto gauge selection (AWG 18→12), and 3D Euclidean distance
@@ -384,8 +386,7 @@ class CableRoutingEngine:
         ps_voltage: float = NOMINAL_VOLTAGE_FA,
         max_voltage_drop_pct: float = MAX_VOLTAGE_DROP_PCT,
     ) -> None:
-        """
-        Initialize the cable routing engine.
+        """Initialize the cable routing engine.
 
         Args:
             obstacles: Initial list of routing obstacles.
@@ -394,6 +395,7 @@ class CableRoutingEngine:
 
         Raises:
             ValueError: If parameters are invalid.
+
         """
         if not math.isfinite(ps_voltage) or ps_voltage <= 0:
             raise ValueError(f"ps_voltage={ps_voltage} must be finite and positive")
@@ -455,6 +457,7 @@ class CableRoutingEngine:
 
         Raises:
             ValueError: If any coordinate is NaN or Inf.
+
         """
         for name, pt in [("p1", p1), ("p2", p2)]:
             for i, coord in enumerate(pt):
@@ -486,6 +489,7 @@ class CableRoutingEngine:
 
         Raises:
             ValueError: If circuit has invalid data.
+
         """
         voltage = ps_voltage if ps_voltage is not None else self._ps_voltage
 
@@ -567,21 +571,20 @@ class CableRoutingEngine:
                 selected_gauge_is_minimum=True,
                 total_return_length_m=getattr(circuit, "return_length_m", 0.0),
             )
-        else:
-            result = self._compute_route(circuit, wire_gauge, voltage)
-            return RouteResult(
-                circuit_id=circuit.circuit_id,
-                is_compliant=result.is_compliant,
-                total_voltage_drop_v=result.total_voltage_drop_v,
-                total_voltage_drop_pct=result.total_voltage_drop_pct,
-                end_of_line_voltage_v=result.end_of_line_voltage_v,
-                segments=tuple(result.segments),
-                warnings=tuple(result.warnings),
-                violations=tuple(result.violations),
-                wire_gauge=wire_gauge,
-                selected_gauge_is_minimum=False,
-                total_return_length_m=getattr(circuit, "return_length_m", 0.0),
-            )
+        result = self._compute_route(circuit, wire_gauge, voltage)
+        return RouteResult(
+            circuit_id=circuit.circuit_id,
+            is_compliant=result.is_compliant,
+            total_voltage_drop_v=result.total_voltage_drop_v,
+            total_voltage_drop_pct=result.total_voltage_drop_pct,
+            end_of_line_voltage_v=result.end_of_line_voltage_v,
+            segments=tuple(result.segments),
+            warnings=tuple(result.warnings),
+            violations=tuple(result.violations),
+            wire_gauge=wire_gauge,
+            selected_gauge_is_minimum=False,
+            total_return_length_m=getattr(circuit, "return_length_m", 0.0),
+        )
 
     # ── Internal Route Computation ─────────────────────────────────────────
 

@@ -1,5 +1,4 @@
-"""
-backend/routers/connections.py — Connections CRUD endpoints.
+"""backend/routers/connections.py — Connections CRUD endpoints.
 
 LIFE-SAFETY NOTE: Connections represent cable wiring between fire alarm
 devices. The cable size and length parameters are used in voltage drop

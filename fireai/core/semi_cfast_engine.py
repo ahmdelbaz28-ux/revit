@@ -1,5 +1,4 @@
-"""
-semi_cfast_engine.py — Physics-based smoke layer and tenability engine for ASET/RSET calculations.
+"""semi_cfast_engine.py — Physics-based smoke layer and tenability engine for ASET/RSET calculations.
 
 This module implements a simplified two-zone fire model inspired by CFAST (Consolidated Model
 of Fire Growth and Smoke Transport) for engineering-level ASET (Available Safe Egress Time)
@@ -33,19 +32,19 @@ from typing import Any, Dict, List, Optional
 # Module exports
 # ---------------------------------------------------------------------------
 __all__ = [
+    "FIRE_GROWTH_RATES",
+    "OCCUPANCY_TRAVEL_SPEEDS",
+    "PHYSICAL_CONSTANTS",
+    "ASETResult",
     "FireScenario",
     "TenabilityCriteria",
-    "ASETResult",
-    "FIRE_GROWTH_RATES",
-    "PHYSICAL_CONSTANTS",
-    "OCCUPANCY_TRAVEL_SPEEDS",
+    "calculate_aset",
     "calculate_fire_hrr",
+    "calculate_rset",
     "calculate_smoke_layer_height",
     "calculate_smoke_layer_temp",
     "calculate_visibility",
     "estimate_co_concentration",
-    "calculate_aset",
-    "calculate_rset",
     "verify_aset_rset",
 ]
 
@@ -147,6 +146,7 @@ class FireScenario:
         ceiling_type: Ceiling geometry. "FLAT" (default), "SLOPED", or "BEAM".
             Affects ceiling jet temperature and smoke layer formation.
             Ref: SFPE Handbook, Chapter 13 (Alpert ceiling jet).
+
     """
 
     fire_load_MJ: float
@@ -208,6 +208,7 @@ class TenabilityCriteria:
         max_o2_pct: Minimum tolerable O₂ concentration (%).
             Ref: SFPE Handbook, Chapter 67; ISO 13571. Below 15% causes
             impaired judgment and loss of motor control.
+
     """
 
     max_temp_c: float = 60.0
@@ -255,6 +256,7 @@ class ASETResult:
         co_concentration_ppm: CO concentration at ASET (ppm).
         details: Dictionary with full time-history and intermediate results
             for audit trail and debugging.
+
     """
 
     aset_seconds: float
@@ -295,6 +297,7 @@ def calculate_fire_hrr(growth_rate: str, time_seconds: float) -> float:
 
     Raises:
         ValueError: If growth_rate is invalid or time_seconds is negative.
+
     """
     if time_seconds < 0:
         raise ValueError(f"time_seconds must be non-negative, got {time_seconds}")
@@ -357,6 +360,7 @@ def calculate_smoke_layer_height(
 
     Raises:
         ValueError: If room_area_m2, room_height_m, or time_seconds are invalid.
+
     """
     if room_area_m2 <= 0:
         raise ValueError(f"room_area_m2 must be positive, got {room_area_m2}")
@@ -477,6 +481,7 @@ def calculate_smoke_layer_temp(
 
     Raises:
         ValueError: If room_height_m is not positive.
+
     """
     if room_height_m <= 0:
         raise ValueError(f"room_height_m must be positive, got {room_height_m}")
@@ -538,6 +543,7 @@ def calculate_visibility(smoke_optical_density_per_m: float) -> float:
 
     Raises:
         ValueError: If optical density is negative.
+
     """
     if smoke_optical_density_per_m < 0:
         raise ValueError(f"smoke_optical_density_per_m must be non-negative, got {smoke_optical_density_per_m}")
@@ -575,6 +581,7 @@ def _compute_optical_density(
 
     Returns:
         Optical density per metre (1/m) in the upper smoke layer.
+
     """
     Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg
     y_soot = PHYSICAL_CONSTANTS["SOOT_YIELD_FACTOR"]  # 0.050
@@ -686,6 +693,7 @@ def estimate_co_concentration(
 
     Raises:
         ValueError: If room_volume_m3 <= 0 or time_seconds < 0.
+
     """
     if room_volume_m3 <= 0:
         raise ValueError(f"room_volume_m3 must be positive, got {room_volume_m3}")
@@ -796,6 +804,7 @@ def calculate_aset(
 
     Raises:
         ValueError: If time_step_s <= 0 or max_time_s <= 0.
+
     """
     if time_step_s <= 0:
         raise ValueError(f"time_step_s must be positive, got {time_step_s}")
@@ -1012,6 +1021,7 @@ def _estimate_o2_depletion(
 
     Returns:
         O₂ concentration as percentage by volume.
+
     """
     # V58 HIGH: NaN fire_hrr_kw → NaN O₂ calculation
     if not math.isfinite(fire_hrr_kw) or not math.isfinite(room_volume_m3):
@@ -1126,6 +1136,7 @@ def calculate_rset(
 
     Raises:
         ValueError: If any physical parameter is invalid.
+
     """
     if room_area_m2 <= 0:
         raise ValueError(f"room_area_m2 must be positive, got {room_area_m2}")
@@ -1246,6 +1257,7 @@ def verify_aset_rset(
 
     Raises:
         ValueError: If aset_seconds < 0, rset_seconds < 0, or safety_factor <= 1.0.
+
     """
     if aset_seconds < 0:
         raise ValueError(f"aset_seconds must be non-negative, got {aset_seconds}")

@@ -1,5 +1,4 @@
-"""
-test_database_and_utils.py — Integration tests for database.py, contract.py,
+"""test_database_and_utils.py — Integration tests for database.py, contract.py,
 response.py, and project_bridge.py utility modules.
 
 Covers code paths in backend modules that are exercised indirectly by

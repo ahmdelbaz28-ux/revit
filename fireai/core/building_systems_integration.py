@@ -1,5 +1,4 @@
-"""
-fireai.core.building_systems_integration — Building Systems Fire Integration
+"""fireai.core.building_systems_integration — Building Systems Fire Integration
 =============================================================================
 
 Implements fire alarm integration with building systems per NFPA 72:
@@ -104,6 +103,7 @@ def evaluate_elevator_recall(
 
     Returns:
         ElevatorRecallResult with compliance assessment.
+
     """
     violations = []
     recall_required = True  # Always required for fire alarm activation
@@ -204,6 +204,7 @@ def evaluate_hvac_shutdown(
 
     Returns:
         HVACShutdownResult with compliance assessment.
+
     """
     violations = []
 
@@ -294,6 +295,7 @@ def evaluate_smoke_control(
 
     Raises:
         ValueError: If design_pressure_pa is NaN/Inf, negative, or method is invalid.
+
     """
     violations = []
 
@@ -421,6 +423,7 @@ def evaluate_fire_pump(
 
     Returns:
         FirePumpResult with compliance assessment.
+
     """
     violations = []
 

@@ -1,5 +1,4 @@
-"""
-backend/routers/reports.py — Report generation and export endpoints.
+"""backend/routers/reports.py — Report generation and export endpoints.
 
 Reports can be:
   - voltage_drop: IEC 60364 / NFPA 72 voltage drop analysis
@@ -85,7 +84,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             "circuits": circuits,
         }
 
-    elif report_type == "nfpa72_coverage":
+    if report_type == "nfpa72_coverage":
         return {
             "type": "nfpa72_coverage",
             "standard": "NFPA 72-2022",
@@ -98,7 +97,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             ],
         }
 
-    elif report_type == "nfpa72_battery":
+    if report_type == "nfpa72_battery":
         # NFPA 72-2022 §27.6.2 Battery Calculation
         # Load values are stored in Amperes (A) in the database.
         # The devices.py router converts mA/W to A before storage on CREATE.
@@ -174,7 +173,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             ),
         }
 
-    elif report_type == "cable_sizing":
+    if report_type == "cable_sizing":
         return {
             "type": "cable_sizing",
             "standard": "IEC 60364 / NFPA 70",
@@ -191,16 +190,15 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             ],
         }
 
-    else:
-        # Generic report with project summary
-        return {
-            "type": report_type,
-            "standard": "General Engineering Analysis",
-            "generatedAt": now,
-            "totalDevices": len(devices),
-            "totalConnections": len(connections),
-            "devicesByCategory": _count_by_category(devices),
-        }
+    # Generic report with project summary
+    return {
+        "type": report_type,
+        "standard": "General Engineering Analysis",
+        "generatedAt": now,
+        "totalDevices": len(devices),
+        "totalConnections": len(connections),
+        "devicesByCategory": _count_by_category(devices),
+    }
 
 
 def _count_by_category(devices: list) -> dict:
@@ -337,7 +335,7 @@ async def export_report(
                 "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.json\""
             },
         )
-    elif format == "pdf":
+    if format == "pdf":
         # PDF generation using reportlab
         try:
             from reportlab.lib.pagesizes import A4

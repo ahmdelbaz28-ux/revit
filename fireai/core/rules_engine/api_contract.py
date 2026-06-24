@@ -1,5 +1,4 @@
-"""
-FireAI Type-Safe API Contract System
+"""FireAI Type-Safe API Contract System
 ======================================
 
 Inspired by tRPC's end-to-end type safety, this module provides:

@@ -1,5 +1,4 @@
-"""
-fireai.core.notification_appliance — NFPA 72 Notification Appliance Calculations
+"""fireai.core.notification_appliance — NFPA 72 Notification Appliance Calculations
 =================================================================================
 
 Implements NFPA 72 Chapter 18 notification appliance engineering:
@@ -116,6 +115,7 @@ def calculate_nac_load(
 
     Returns:
         NACLoadResult with total current, max allowed, compliance.
+
     """
     # Input validation — safety first
     if not math.isfinite(nac_rating_a) or nac_rating_a <= 0:
@@ -226,6 +226,7 @@ def calculate_spl(
 
     Returns:
         SPLResult with calculated SPL, compliance, and NFPA reference.
+
     """
     # Input validation
     if not math.isfinite(horn_rating_dba):
@@ -295,6 +296,7 @@ def min_horn_rating_for_room(
 
     Returns:
         Dict with min_horn_rating_dba, coverage_distance, compliance info.
+
     """
     # V96 FIX: Invalid room dimension must return a clearly invalid horn rating,
     # not 0.0 dBA (which looks like a valid value and could lead to specifying
@@ -379,10 +381,11 @@ class StrobeResult:
       For multiple strobes, the candela per strobe may be reduced
       per NFPA 72 §18.5.5.2 — but never below 15 cd.
 
-    WARNING:
+    Warning:
       Strobe placement is critical. A strobe in a corridor must be
       visible from the entire corridor length. A strobe behind a
       partition may not be visible to occupants on the other side.
+
     """
 
     required_candela: float
@@ -424,6 +427,7 @@ def calculate_strobe_candela(
 
     Returns:
         StrobeResult with required candela, per-strobe rating, compliance.
+
     """
     # Input validation
     if not math.isfinite(room_area_m2) or room_area_m2 <= 0:
@@ -553,6 +557,7 @@ def calculate_corridor_strobes(
 
     Returns:
         CorridorStrobeResult with count, spacing, compliance.
+
     """
     if not math.isfinite(corridor_length_m) or corridor_length_m <= 0:
         raise ValueError(f"corridor_length_m must be positive finite, got {corridor_length_m}")

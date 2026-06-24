@@ -1,5 +1,4 @@
-"""
-as_built_reconciliator.py — 3D As-Built Reconciliator for FireAI
+"""as_built_reconciliator.py — 3D As-Built Reconciliator for FireAI
 ================================================================
 
 Compares design-time device placement against as-built (field-verified)
@@ -109,6 +108,7 @@ def _get_tolerance(device_type: str) -> float:
 
     Returns:
         Tolerance in metres.
+
     """
     return DEVICE_TOLERANCES.get(device_type.upper(), DEFAULT_TOLERANCE)
 
@@ -134,6 +134,7 @@ def _euclidean_distance_3d(
 
     Returns:
         Euclidean distance in metres.
+
     """
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
 
@@ -150,6 +151,7 @@ def _serialize_device(device: Dict) -> str:
 
     Returns:
         Canonical JSON string.
+
     """
     return json.dumps(device, sort_keys=True, separators=(",", ":"))
 
@@ -163,6 +165,7 @@ def _validate_device_dict(device: Dict, source: str) -> None:
 
     Raises:
         ValueError: If any required key is missing.
+
     """
     missing = [k for k in REQUIRED_DEVICE_KEYS if k not in device]
     if missing:
@@ -193,6 +196,7 @@ class ReconciliationResult:
         summary: Human-readable summary of the reconciliation.
         integrity_verified: Whether the Merkle integrity check passed.
             ``None`` if no merkle_root was provided.
+
     """
 
     status: str
@@ -243,6 +247,7 @@ class AsBuiltReconciliator:
             or any device dict is missing required keys.
         RuntimeError: If merkle_root is provided but integrity check
             fails (design manifest has been tampered with).
+
     """
 
     def __init__(
@@ -317,6 +322,7 @@ class AsBuiltReconciliator:
         Raises:
             ValueError: If any as-built device dict is missing required
                 keys.
+
         """
         # Validate all as-built device dicts upfront
         for dev in as_built_devices:
@@ -438,6 +444,7 @@ class AsBuiltReconciliator:
 
         Returns:
             Multi-line summary string.
+
         """
         lines = [
             f"As-Built Reconciliation: {status}",
@@ -464,8 +471,8 @@ class AsBuiltReconciliator:
 # ============================================================================
 
 __all__ = [
-    "DEVICE_TOLERANCES",
     "DEFAULT_TOLERANCE",
-    "ReconciliationResult",
+    "DEVICE_TOLERANCES",
     "AsBuiltReconciliator",
+    "ReconciliationResult",
 ]

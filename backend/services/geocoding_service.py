@@ -1,5 +1,4 @@
-"""
-backend/services/geocoding_service.py — Geocoding service for FireAI.
+"""backend/services/geocoding_service.py — Geocoding service for FireAI.
 
 Provides forward geocoding (address → lat/lon) using Nominatim
 (OpenStreetMap) — a free, no-auth API.
@@ -17,6 +16,7 @@ LIFE-SAFETY NOTE:
 References:
   - Nominatim API: https://nominatim.org/release-docs/latest/api/Search/
   - Usage policy: Max 1 request/second, User-Agent required
+
 """
 
 from __future__ import annotations
@@ -34,8 +34,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class GeocodingResult:
-    """
-    Immutable geocoding result for engineering use.
+    """Immutable geocoding result for engineering use.
 
     Attributes:
         latitude: Latitude in decimal degrees
@@ -43,7 +42,9 @@ class GeocodingResult:
         display_name: Human-readable address
         country_code: ISO 3166-1 alpha-2 country code (e.g., "EG", "US", "SA")
         source: Data provenance ("nominatim" | "manual" | "default")
+
     """
+
     latitude: float
     longitude: float
     display_name: str = ""
@@ -57,8 +58,7 @@ class GeocodingResult:
 
 
 class GeocodingService:
-    """
-    Async geocoding service using Nominatim (OpenStreetMap).
+    """Async geocoding service using Nominatim (OpenStreetMap).
 
     Rate Limiting:
         Nominatim requires max 1 request/second. This service enforces
@@ -168,8 +168,7 @@ class GeocodingService:
         return result
 
     async def geocode(self, address: str) -> Optional[GeocodingResult]:
-        """
-        Geocode an address to coordinates.
+        """Geocode an address to coordinates.
 
         Strategy:
           1. Check cache
@@ -181,6 +180,7 @@ class GeocodingService:
 
         Returns:
             GeocodingResult or None if geocoding fails
+
         """
         if not address or not address.strip():
             return None
@@ -211,8 +211,7 @@ class GeocodingService:
     async def reverse_geocode(
         self, latitude: float, longitude: float
     ) -> Optional[GeocodingResult]:
-        """
-        Reverse geocode coordinates to address.
+        """Reverse geocode coordinates to address.
 
         Args:
             latitude: Latitude in decimal degrees
@@ -220,6 +219,7 @@ class GeocodingService:
 
         Returns:
             GeocodingResult or None if reverse geocoding fails
+
         """
         await self._enforce_rate_limit()
         client = await self._get_client()

@@ -1,5 +1,4 @@
-"""
-fireai/core/slc_capacitance.py
+"""fireai/core/slc_capacitance.py
 ================================
 SLC (Signaling Line Circuit) Data Attenuation & Capacitance Auditor.
 
@@ -120,6 +119,7 @@ class SLCLoopSpec:
         wire_type: Cable type key for capacitance lookup.
         manufacturer: FACP manufacturer key for capacitance limit.
         device_count: Number of addressable devices on the loop.
+
     """
 
     loop_id: str
@@ -173,6 +173,7 @@ class SLCCapacitanceAuditor:
                 limit lookup.
             max_cap_uf: Override maximum capacitance in µF.  If None,
                 uses manufacturer default.
+
         """
         self.manufacturer = manufacturer.strip().lower()
         if max_cap_uf is not None:
@@ -199,6 +200,7 @@ class SLCCapacitanceAuditor:
 
         Returns:
             ``DecisionProvenance`` or plain dict.
+
         """
         violations: list = []
         detailed_results: List[SLCCapacitanceResult] = []
@@ -425,10 +427,10 @@ class SLCCapacitanceAuditor:
 
 
 __all__ = [
-    "SLCCapacitanceAuditor",
-    "SLCLoopSpec",
-    "SLCCapacitanceResult",
     "CABLE_CAPACITANCE_PF_PER_M",
-    "SLC_MAX_CAPACITANCE_UF",
     "DEFAULT_MAX_CAP_UF",
+    "SLC_MAX_CAPACITANCE_UF",
+    "SLCCapacitanceAuditor",
+    "SLCCapacitanceResult",
+    "SLCLoopSpec",
 ]

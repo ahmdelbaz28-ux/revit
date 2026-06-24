@@ -1,5 +1,4 @@
-"""
-revit_bim_sync.py — BIM/Revit Sync Without Revit API Dependency
+"""revit_bim_sync.py — BIM/Revit Sync Without Revit API Dependency
 ================================================================
 SURGICAL FIX: revit-connector/ existed but required Windows + Revit API.
 This meant the connector was useless in CI, cloud, and Linux environments.
@@ -36,8 +35,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BIMRoom:
-    """
-    Room data extracted from BIM source.
+    """Room data extracted from BIM source.
     Compatible with Revit Room, IFC IfcSpace, gbXML Space.
     """
 
@@ -90,8 +88,7 @@ class BIMRoom:
 
 
 class RevitAPIBridge:
-    """
-    SURGICAL FIX: Revit API is optional, not required.
+    """SURGICAL FIX: Revit API is optional, not required.
 
     Priority:
       1. pyrevit / Revit API (when running inside Revit on Windows)
@@ -138,26 +135,25 @@ class RevitAPIBridge:
         return self._mode in ("revit_api", "pyrevit")
 
     def extract_rooms(self, source: str) -> List[BIMRoom]:
-        """
-        Extract rooms from BIM source.
+        """Extract rooms from BIM source.
 
         Args:
             source: File path (IFC/JSON/DXF) or "live" for Revit API.
+
         """
         if source == "live" and self.is_live:
             return self._extract_revit_live()
-        elif source.endswith(".ifc") and self._mode == "ifcopenshell":
+        if source.endswith(".ifc") and self._mode == "ifcopenshell":
             return self._extract_ifc(source)
-        elif source.endswith(".json"):
+        if source.endswith(".json"):
             return self._extract_json(source)
-        elif source.endswith(".dxf"):
+        if source.endswith(".dxf"):
             return self._extract_dxf(source)
-        else:
-            raise ValueError(
-                f"Cannot extract rooms from {source!r} with mode={self._mode}. "
-                f"Available: IFC (need ifcopenshell), JSON, DXF, "
-                f"or Revit live (need Windows + Revit)."
-            )
+        raise ValueError(
+            f"Cannot extract rooms from {source!r} with mode={self._mode}. "
+            f"Available: IFC (need ifcopenshell), JSON, DXF, "
+            f"or Revit live (need Windows + Revit)."
+        )
 
     def _extract_revit_live(self) -> List[BIMRoom]:
         """Extract rooms from live Revit session."""
@@ -295,8 +291,7 @@ class RevitAPIBridge:
             raise ImportError("ifcopenshell not installed. Install: pip install ifcopenshell")
 
     def _extract_json(self, filepath: str) -> List[BIMRoom]:
-        """
-        Extract rooms from FireAI JSON export or Revit Dynamo JSON.
+        """Extract rooms from FireAI JSON export or Revit Dynamo JSON.
 
         This is the universal fallback — works in CI, cloud, Linux.
         Generate the JSON from Revit using the provided Dynamo script.
@@ -405,8 +400,7 @@ DYNAMO_SCRIPT_JSON = """
 
 
 def generate_dynamo_script(output_path: str = "fireai_room_export.dyn") -> str:
-    """
-    Generate Dynamo script to export Revit rooms to FireAI JSON.
+    """Generate Dynamo script to export Revit rooms to FireAI JSON.
     Run this inside Revit Dynamo player to get rooms without Revit API dependency.
     """
     with open(output_path, "w") as f:
@@ -420,8 +414,7 @@ def generate_dynamo_script(output_path: str = "fireai_room_export.dyn") -> str:
 
 
 class BIMSyncOrchestrator:
-    """
-    SURGICAL FIX: Ties everything together.
+    """SURGICAL FIX: Ties everything together.
 
     Workflow:
       1. Extract rooms (any source)
@@ -438,12 +431,12 @@ class BIMSyncOrchestrator:
         source: str,
         analyser: Any = None,  # FloorAnalyser
     ) -> Dict[str, Any]:
-        """
-        Extract rooms -> analyse -> return results.
+        """Extract rooms -> analyse -> return results.
 
         Args:
             source:   "live", "path/to/file.ifc", "path/to/file.json", etc.
             analyser: FloorAnalyser instance (creates default if None).
+
         """
         # Step 1: Extract rooms
         bim_rooms = self._bridge.extract_rooms(source)

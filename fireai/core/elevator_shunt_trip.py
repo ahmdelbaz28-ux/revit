@@ -1,5 +1,4 @@
-"""
-fireai/core/elevator_shunt_trip.py
+"""fireai/core/elevator_shunt_trip.py
 ===================================
 Elevator Shunt-Trip Power Severance Auditor — CRITICAL LIFE-SAFETY MODULE.
 
@@ -198,6 +197,7 @@ class ElevatorShuntTripAuditor:
                 RTI.  Defaults to 1.0 (HD must not be slower than
                 sprinkler).  A more permissive value (e.g. 1.5) may be
                 used when the temperature gap is sufficiently large.
+
         """
         self.safety_gap_C = safety_gap_C
         self.rti_ratio_limit = rti_ratio_limit
@@ -608,13 +608,13 @@ class ElevatorShuntTripAuditor:
 
 
 __all__ = [
+    "DEFAULT_HD_RTI",
+    "DEFAULT_SPRINKLER_RTI",
+    "MAX_HD_SPRINKLER_DISTANCE_M",
+    "RTI_RATIO_LIMIT",
+    "SAFETY_GAP_C",
+    "STANDARD_HD_TEMPS_C",
+    "STANDARD_SPRINKLER_TEMPS_C",
     "ElevatorShuntTripAuditor",
     "ShuntTripResult",
-    "SAFETY_GAP_C",
-    "MAX_HD_SPRINKLER_DISTANCE_M",
-    "DEFAULT_SPRINKLER_RTI",
-    "DEFAULT_HD_RTI",
-    "RTI_RATIO_LIMIT",
-    "STANDARD_SPRINKLER_TEMPS_C",
-    "STANDARD_HD_TEMPS_C",
 ]

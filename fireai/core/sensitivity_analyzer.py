@@ -1,5 +1,4 @@
-"""
-fireai/core/sensitivity_analyzer.py  V1.0
+"""fireai/core/sensitivity_analyzer.py  V1.0
 ==========================================
 Standalone sensitivity tool for FireAI engineers.
 
@@ -84,7 +83,7 @@ class SensitivityReport:
             mark = " <-- baseline" if abs(p.param_value - self.baseline_value) < 1e-9 else ""
             lines.append(
                 f"  {p.param_value:>8.3f} {p.count:>6} {p.coverage:>7.3f}"
-                f" {p.time_ms:>6} {str(p.proof_valid):>5} {p.wall_viol:>5}"
+                f" {p.time_ms:>6} {p.proof_valid!s:>5} {p.wall_viol:>5}"
                 f"  {p.method}{mark}"
             )
         lines += [
@@ -103,8 +102,7 @@ class SensitivityReport:
 
 
 class SensitivityAnalyzer:
-    """
-    Standalone sensitivity tool for FireAI engineers.
+    """Standalone sensitivity tool for FireAI engineers.
 
     Sweeps a single parameter across a list of values, calls
     fireai's DensityOptimizer.optimize() for each value, and
@@ -128,8 +126,7 @@ class SensitivityAnalyzer:
         values: Optional[List[float]] = None,
         baseline_value: Optional[float] = None,
     ) -> SensitivityReport:
-        """
-        Run a single-parameter sensitivity sweep.
+        """Run a single-parameter sensitivity sweep.
 
         Parameters
         ----------
@@ -138,6 +135,7 @@ class SensitivityAnalyzer:
         param         : 'coverage_radius' or 'verify_step'
         values        : list of values to sweep (baseline included automatically)
         baseline_value: reference value (default: current engine default)
+
         """
         if param not in self.SUPPORTED_PARAMS:
             raise ValueError(

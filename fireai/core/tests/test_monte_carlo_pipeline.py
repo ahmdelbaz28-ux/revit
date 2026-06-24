@@ -1,5 +1,4 @@
-"""
-test_monte_carlo_pipeline.py — Comprehensive tests for the Monte Carlo pipeline.
+"""test_monte_carlo_pipeline.py — Comprehensive tests for the Monte Carlo pipeline.
 
 Covers:
   1. DetectorFailureModel dataclass (defaults, custom values, field access)
@@ -1265,15 +1264,14 @@ class TestAnalyseFloor:
                     "nfpa_reference": "NFPA 72-2022",
                     "time_horizon_yr": 1.0, "detector_count": 1,
                 }
-            else:
-                return {
-                    "n_trials": 200, "mean_coverage_pct": 5.0,
-                    "p_full_coverage": 0.01, "cvar_5pct": 0.0,
-                    "worst_coverage_pct": 0.0, "best_coverage_pct": 10.0,
-                    "std_dev_pct": 3.0, "is_reliable": False,
-                    "nfpa_reference": "NFPA 72-2022",
-                    "time_horizon_yr": 1.0, "detector_count": 1,
-                }
+            return {
+                "n_trials": 200, "mean_coverage_pct": 5.0,
+                "p_full_coverage": 0.01, "cvar_5pct": 0.0,
+                "worst_coverage_pct": 0.0, "best_coverage_pct": 10.0,
+                "std_dev_pct": 3.0, "is_reliable": False,
+                "nfpa_reference": "NFPA 72-2022",
+                "time_horizon_yr": 1.0, "detector_count": 1,
+            }
 
         with patch.object(
             adapter_fast._sim, "simulate_room_reliability",

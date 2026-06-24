@@ -1,5 +1,4 @@
-"""
-backend/models.py — Pydantic V2 models for the Digital Twin REST API.
+"""backend/models.py — Pydantic V2 models for the Digital Twin REST API.
 
 These models match the frontend TypeScript interfaces defined in
 frontend/src/services/digitalTwinApi.ts exactly.
@@ -23,6 +22,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class PaginationParams(BaseModel):
     """Query parameters for paginated list endpoints."""
+
     page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
     limit: int = Field(default=20, ge=1, le=100, description="Items per page")
     sort: str = Field(default="createdAt", description="Sort field")
@@ -35,6 +35,7 @@ T = TypeVar("T")
 
 class PaginatedResponse(BaseModel):
     """Generic paginated response wrapper."""
+
     data: List
     total: int = Field(ge=0)
     page: int = Field(ge=1)
@@ -48,6 +49,7 @@ class PaginatedResponse(BaseModel):
 
 class Project(BaseModel):
     """A fire alarm engineering project."""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(min_length=1, max_length=255)
     description: str = Field(default="", max_length=5000)  # V113: max_length prevents DoS via unbounded string
@@ -65,6 +67,7 @@ class Project(BaseModel):
 
 class CreateProjectInput(BaseModel):
     """Input for creating a new project."""
+
     name: str = Field(min_length=1, max_length=255)
     description: str = Field(default="", max_length=5000)  # V113: max_length prevents 100MB body DoS
     author: str = Field(default="", max_length=255)  # V113: max_length prevents memory exhaustion
@@ -72,6 +75,7 @@ class CreateProjectInput(BaseModel):
 
 class UpdateProjectInput(BaseModel):
     """Input for updating an existing project."""
+
     name: Optional[str] = Field(default=None, min_length=1, max_length=255)
     description: Optional[str] = Field(default=None, max_length=5000)  # V113: max_length prevents DoS
     author: Optional[str] = Field(default=None, max_length=255)  # V113: max_length prevents DoS
@@ -84,6 +88,7 @@ class UpdateProjectInput(BaseModel):
 
 class Device(BaseModel):
     """A fire alarm device within a project."""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     projectId: str
     type: str = Field(min_length=1, max_length=255)
@@ -115,6 +120,7 @@ class Device(BaseModel):
 
 class CreateDeviceInput(BaseModel):
     """Input for creating a new device."""
+
     type: str = Field(min_length=1, max_length=255)
     name: str = Field(min_length=1, max_length=255)
     category: str = Field(min_length=1, max_length=255)
@@ -160,6 +166,7 @@ class UpdateDeviceInput(BaseModel):
     Without this field, updating load: 500 intending 500mA would store 500A —
     a 1000x error in life-safety battery sizing calculations.
     """
+
     name: Optional[str] = Field(default=None, min_length=1, max_length=255)
     x: Optional[float] = Field(default=None)
     y: Optional[float] = Field(default=None)
@@ -184,6 +191,7 @@ class UpdateDeviceInput(BaseModel):
 
 class Connection(BaseModel):
     """A cable connection between two devices."""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     projectId: str
     fromId: str
@@ -198,6 +206,7 @@ class Connection(BaseModel):
 
 class CreateConnectionInput(BaseModel):
     """Input for creating a new connection."""
+
     fromId: str = Field(min_length=1, max_length=255)
     toId: str = Field(min_length=1, max_length=255)
     cableSize: Optional[str] = Field(default="1.5mm²")
@@ -220,6 +229,7 @@ class CreateConnectionInput(BaseModel):
 
 class DeleteConnectionResponse(BaseModel):
     """Response for connection deletion."""
+
     success: bool
     message: str = ""
 
@@ -230,6 +240,7 @@ class DeleteConnectionResponse(BaseModel):
 
 class Report(BaseModel):
     """An engineering report for a project."""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     projectId: str
     type: str = Field(min_length=1, max_length=255)
@@ -244,6 +255,7 @@ class Report(BaseModel):
 
 class GenerateReportInput(BaseModel):
     """Input for generating a new report."""
+
     type: str = Field(min_length=1, max_length=255)
     name: Optional[str] = Field(default=None, max_length=255)
     parameters: Optional[dict] = Field(default=None)
@@ -267,7 +279,7 @@ class GenerateReportInput(BaseModel):
                 if not obj:
                     return current
                 return max(_get_depth(val, current + 1) for val in obj.values())
-            elif isinstance(obj, list):
+            if isinstance(obj, list):
                 if not obj:
                     return current
                 return max(_get_depth(item, current + 1) for item in obj)
@@ -287,6 +299,7 @@ class GenerateReportInput(BaseModel):
 
 class SyncStatus(BaseModel):
     """Status of project synchronization."""
+
     projectId: str
     status: Literal["syncing", "synced", "error"]
     lastSync: str = Field(
@@ -302,6 +315,7 @@ class SyncStatus(BaseModel):
 
 class HealthStatus(BaseModel):
     """Health check response."""
+
     status: Literal["ok", "degraded", "error"]
     version: str = Field(default="1.0.0")
     uptime: float = Field(default=0.0, ge=0)

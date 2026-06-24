@@ -26,18 +26,18 @@ from fireai.core.nfpa72_calculations import (
 )
 
 __all__ = [
-    "BOQItem",
-    "BatterySpec",
-    "BOQResult",
-    "UNIT_COSTS",
     "STANDARD_BATTERY_SIZES",
+    "UNIT_COSTS",
+    "BOQItem",
+    "BOQResult",
+    "BatterySpec",
     "calculate_battery_for_panels",
-    "generate_detector_boq",
-    "generate_isolator_boq",
-    "generate_cable_boq",
-    "generate_full_boq",
-    "standard_battery_size",
     "generate_battery_result_for_release_gate",
+    "generate_cable_boq",
+    "generate_detector_boq",
+    "generate_full_boq",
+    "generate_isolator_boq",
+    "standard_battery_size",
 ]
 
 # ---------------------------------------------------------------------------
@@ -173,6 +173,7 @@ def standard_battery_size(required_ah: float) -> float:
 
     Returns:
         Standard battery size in Ah (always >= required_ah).
+
     """
     for size in STANDARD_BATTERY_SIZES:
         if size >= required_ah:
@@ -202,6 +203,7 @@ def calculate_battery_for_panels(
     Returns:
         Dict with keys: ``required_ah``, ``installed_ah``, ``battery_count``,
         ``is_adequate``, ``cost_usd``, ``per_panel_ah``.
+
     """
     # Per-panel required capacity
     per_panel_ah = required_battery_capacity_ah(  # type: ignore[call-arg]
@@ -261,6 +263,7 @@ def generate_detector_boq(
 
     Returns:
         List of :class:`BOQItem` for detectors.
+
     """
     items: List[BOQItem] = []
 
@@ -342,6 +345,7 @@ def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
 
     Returns:
         List of :class:`BOQItem` for fault isolators.
+
     """
     items: List[BOQItem] = []
     total_isolators_needed = 0
@@ -442,6 +446,7 @@ def generate_cable_boq(
 
     Returns:
         List of :class:`BOQItem` for cable, conduit, and junction boxes.
+
     """
     items: List[BOQItem] = []
 
@@ -597,6 +602,7 @@ def generate_full_boq(
     Returns:
         A :class:`BOQResult` with all line items, totals, and any
         warnings for unusual configurations.
+
     """
     warnings: List[str] = []
 
@@ -822,6 +828,7 @@ def generate_battery_result_for_release_gate(
           - installed_ah: Selected standard battery size
           - is_adequate: Whether installed >= required
           - battery_count: Total batteries (2 per panel per §10.6.7)
+
     """
     spec = BatterySpec(
         standby_current_ma=standby_current_ma,

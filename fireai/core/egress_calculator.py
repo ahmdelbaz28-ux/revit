@@ -1,5 +1,4 @@
-"""
-fireai.core.egress_calculator — Egress Time Calculation per NFPA 101
+"""fireai.core.egress_calculator — Egress Time Calculation per NFPA 101
 =====================================================================
 
 Implements egress time calculation for occupant evacuation:
@@ -123,6 +122,7 @@ def calculate_egress_time(
 
     Returns:
         EgressResult with RSET, ASET, safety factor, and adequacy.
+
     """
     # Input validation
     if not isinstance(occupant_count, int) or occupant_count < 0:
@@ -210,6 +210,7 @@ def minimum_exit_width(
 
     Returns:
         Dict with min_width_m, flow_rate, and NFPA reference.
+
     """
     if occupant_count <= 0:
         return {"min_width_m": _MIN_EGRESS_WIDTH_M, "nfpa_section": "NFPA 101 §7.3.4"}

@@ -1,5 +1,4 @@
-"""
-test_health.py — Health endpoint integration tests.
+"""test_health.py — Health endpoint integration tests.
 
 Verifies that the /api/health endpoint returns correct status,
 proper structure, and honest health reporting per agent.md.

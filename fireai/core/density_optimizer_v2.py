@@ -1,5 +1,4 @@
-"""
-fireai/core/density_optimizer_v2.py
+"""fireai/core/density_optimizer_v2.py
 ===================================
 Multiprocessing batch API for DensityOptimizer.
 
@@ -97,8 +96,7 @@ Point3D = None  # type: ignore[assignment,misc]  # NOT IMPLEMENTED
 
 @dataclass
 class BatchResult:
-    """
-    Result of a batch optimization operation.
+    """Result of a batch optimization operation.
 
     Attributes
     ----------
@@ -118,6 +116,7 @@ class BatchResult:
         Number of workers used.
     version : str
         Engine version for audit trail.
+
     """
 
     results: Dict[str, Any] = field(default_factory=dict)
@@ -136,8 +135,7 @@ class BatchResult:
 
 
 def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
-    """
-    Worker function for multiprocessing batch optimization.
+    """Worker function for multiprocessing batch optimization.
 
     Must be at module level for pickle serialization.
 
@@ -148,6 +146,7 @@ def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
     Returns
     -------
     (room_id, result_or_error) tuple
+
     """
     room_id, room_spec_dict, detector_type, kwargs = args
 
@@ -202,8 +201,7 @@ def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
 
 
 class DensityOptimizerV2:
-    """
-    Multiprocessing batch API for DensityOptimizer.
+    """Multiprocessing batch API for DensityOptimizer.
 
     Designed for large buildings (10K+ rooms) where sequential
     processing would take minutes instead of seconds.
@@ -237,6 +235,7 @@ class DensityOptimizerV2:
         Smaller chunks = better load balancing but more IPC overhead.
     timeout_per_room_s : float
         Maximum seconds per room before marking as failed. Default: 60.
+
     """
 
     def __init__(
@@ -258,8 +257,7 @@ class DensityOptimizerV2:
             log.warning("DensityOptimizer not available — batch optimization will return errors for all rooms")
 
     def optimize_batch(self, room_specs: Dict[str, Any], detector_type: str = "smoke", **kwargs) -> BatchResult:
-        """
-        Optimize detector placement for a batch of rooms.
+        """Optimize detector placement for a batch of rooms.
 
         Parameters
         ----------
@@ -273,6 +271,7 @@ class DensityOptimizerV2:
         Returns
         -------
         BatchResult
+
         """
         t0 = time.perf_counter()
         total = len(room_specs)
@@ -440,8 +439,7 @@ class DensityOptimizerV2:
         )
 
     def optimize_single(self, room_id: str, room_spec: Any, detector_type: str = "smoke", **kwargs) -> Any:
-        """
-        Optimize a single room (convenience wrapper).
+        """Optimize a single room (convenience wrapper).
 
         Parameters
         ----------
@@ -455,6 +453,7 @@ class DensityOptimizerV2:
         Returns
         -------
         Optimization result.
+
         """
         _, result = _optimize_room_worker((room_id, room_spec, detector_type, kwargs))
         return result

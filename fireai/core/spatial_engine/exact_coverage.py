@@ -124,6 +124,7 @@ class ExactCoverageEngine:
         Args:
             coverage_radius_m: NFPA 72 coverage radius R in meters.
                 For smoke at h≤3.0m: R = 0.7 × 9.1 = 6.37m.
+
         """
         if coverage_radius_m <= 0:
             raise ValueError(f"Coverage radius must be positive, got {coverage_radius_m}")
@@ -155,6 +156,7 @@ class ExactCoverageEngine:
 
         Returns:
             ExactCoverageResult with coverage analysis.
+
         """
         if not HAS_SHAPELY:
             return ExactCoverageResult(
@@ -360,8 +362,7 @@ class ExactCoverageEngine:
 
     @staticmethod
     def _fast_union(geoms: list) -> Any:
-        """
-        V55 B3: Union list of geometries using the fastest available method.
+        """V55 B3: Union list of geometries using the fastest available method.
 
         Auto-selects strategy based on geometry count:
           <= 5:  Sequential reduce (minimal overhead)
@@ -422,6 +423,7 @@ class ExactCoverageEngine:
 
         Returns:
             ExactCoverageResult with obstacle-aware coverage analysis.
+
         """
         return self.verify(
             room_boundary_coords=room_boundary_coords,

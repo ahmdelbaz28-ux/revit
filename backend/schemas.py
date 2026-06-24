@@ -1,5 +1,4 @@
-"""
-FireAI Digital Twin - Pydantic V2 API Schemas
+"""FireAI Digital Twin - Pydantic V2 API Schemas
 =============================================
 Maps to core/models.py dataclasses for REST API request/response validation.
 """
@@ -41,7 +40,7 @@ def _validate_json_size_and_depth(
             if not obj:
                 return current
             return max(_get_depth(v, current + 1) for v in obj.values())
-        elif isinstance(obj, list):
+        if isinstance(obj, list):
             if not obj:
                 return current
             return max(_get_depth(item, current + 1) for item in obj)
@@ -71,6 +70,7 @@ def _to_camel(field_name: str) -> str:
 # also accept camelCase input via populate_by_name=True.
 class CamelModel(BaseModel):
     """Base model that serializes snake_case fields as camelCase."""
+
     model_config = ConfigDict(
         alias_generator=_to_camel,
         populate_by_name=True,  # Accept both snake_case and camelCase input
@@ -189,6 +189,7 @@ class SemanticPropertiesResponse(CamelModel):
 
 class ElementCreate(BaseModel):
     """Schema for creating a new element."""
+
     # SECURITY FIX (BUG-35): Changed extra from "allow" to "forbid".
     # In a safety-critical system, extra fields could indicate a client bug
     # or injection attempt. They should be rejected with a 422 error.
@@ -206,6 +207,7 @@ class ElementCreate(BaseModel):
 
 class ElementUpdate(BaseModel):
     """Schema for updating an existing element."""
+
     # SECURITY FIX (BUG-35): Changed extra from "allow" to "forbid".
     model_config = ConfigDict(extra="forbid")
 
@@ -218,6 +220,7 @@ class ElementUpdate(BaseModel):
 
 class ElementResponse(CamelModel):
     """Full element response."""
+
     element_id: str
     properties: Optional[SemanticPropertiesResponse] = None
     geometry: Optional[GeometryResponse] = None
@@ -235,6 +238,7 @@ class ElementResponse(CamelModel):
 
 class ElementListResponse(CamelModel):
     """Paginated element list response."""
+
     items: List[ElementResponse]
     total: int
     page: int
@@ -248,6 +252,7 @@ class ElementListResponse(CamelModel):
 
 class ProjectCreate(BaseModel):
     """Schema for creating a new project."""
+
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     status: ProjectStatus = ProjectStatus.DRAFT
@@ -264,6 +269,7 @@ class ProjectCreate(BaseModel):
 
 class ProjectUpdate(BaseModel):
     """Schema for updating a project."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     status: Optional[ProjectStatus] = None
@@ -280,6 +286,7 @@ class ProjectUpdate(BaseModel):
 
 class ProjectResponse(CamelModel):
     """Full project response."""
+
     project_id: str
     name: str
     description: Optional[str] = None
@@ -292,6 +299,7 @@ class ProjectResponse(CamelModel):
 
 class ProjectListResponse(CamelModel):
     """Paginated project list response."""
+
     items: List[ProjectResponse]
     total: int
     page: int
@@ -305,6 +313,7 @@ class ProjectListResponse(CamelModel):
 
 class DeviceCreate(BaseModel):
     """Schema for creating a device (element with electrical/equipment type)."""
+
     device_type: str = Field(..., min_length=1, max_length=255)
     name: str = Field(..., min_length=1, max_length=255)
     position: Optional[Dict[str, float]] = None  # {x, y, z}
@@ -329,6 +338,7 @@ class DeviceCreate(BaseModel):
 
 class DeviceResponse(CamelModel):
     """Device response."""
+
     device_id: str
     device_type: str
     name: str
@@ -348,6 +358,7 @@ class DeviceResponse(CamelModel):
 
 class ConnectionCreate(BaseModel):
     """Schema for creating a connection (relationship)."""
+
     from_element_id: str
     to_element_id: str
     relationship_type: str = Field(..., min_length=1, max_length=255)
@@ -371,6 +382,7 @@ class ConnectionCreate(BaseModel):
 
 class ConnectionResponse(CamelModel):
     """Connection response."""
+
     connection_id: str
     from_element_id: str
     to_element_id: str
@@ -381,6 +393,7 @@ class ConnectionResponse(CamelModel):
 
 class ConnectionListResponse(CamelModel):
     """Paginated connection list response."""
+
     items: List[ConnectionResponse]
     total: int
     page: int
@@ -394,12 +407,14 @@ class ConnectionListResponse(CamelModel):
 
 class ConflictResolveRequest(BaseModel):
     """Schema for resolving a conflict."""
+
     strategy: str = Field(default="SEMANTIC_MERGE", pattern="^(LAST_WRITE_WINS|SEMANTIC_MERGE)$")
     resolution: Optional[Dict[str, Any]] = None
 
 
 class ConflictResponse(CamelModel):
     """Conflict response."""
+
     conflict_id: str
     element_id: str = ""
     conflict_type: str
@@ -414,6 +429,7 @@ class ConflictResponse(CamelModel):
 
 class ConflictListResponse(CamelModel):
     """Paginated conflict list response."""
+
     items: List[ConflictResponse]
     total: int
     page: int
@@ -427,6 +443,7 @@ class ConflictListResponse(CamelModel):
 
 class StatisticsResponse(CamelModel):
     """Database statistics response."""
+
     total_elements: int = 0
     deleted_elements: int = 0
     active_elements: int = 0
@@ -450,6 +467,7 @@ T = TypeVar("T")
 
 class ApiResponse(CamelModel, Generic[T]):
     """Universal response wrapper for all API endpoints."""
+
     success: bool
     data: Optional[T] = None
     message: Optional[str] = None
@@ -457,6 +475,7 @@ class ApiResponse(CamelModel, Generic[T]):
 
 class PaginatedData(CamelModel, Generic[T]):
     """Wrapper for paginated data inside ApiResponse."""
+
     items: List[T]
     total: int
     page: int
@@ -466,6 +485,7 @@ class PaginatedData(CamelModel, Generic[T]):
 
 class ExportRequest(BaseModel):
     """Request body for data export."""
+
     project_id: Optional[str] = None
     element_types: Optional[List[str]] = None
     include_deleted: bool = False
@@ -474,6 +494,7 @@ class ExportRequest(BaseModel):
 
 class ConnectionUpdate(BaseModel):
     """Schema for updating an existing connection."""
+
     cable_size: Optional[str] = Field(None, max_length=255)
     length: Optional[float] = Field(None, ge=0)
     type: Optional[str] = Field(None, max_length=255)

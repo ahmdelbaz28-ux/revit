@@ -1,5 +1,4 @@
-"""
-fireai.core.release_gates — Release Gate Evaluation
+"""fireai.core.release_gates — Release Gate Evaluation
 =====================================================
 
 Implements the 8 release gates that must ALL pass before a design
@@ -282,6 +281,7 @@ def verify_and_evaluate(
           - total_gates: Total number of gates evaluated
           - passed_gates: Number of gates that passed
           - failed_gates: Number of gates that failed
+
     """
     # ═══════════════════════════════════════════════════════════════════════
     # SAFETY FIX (CRITICAL-3/4): Extract coverage, wall violations, and
@@ -398,6 +398,7 @@ def describe_blockers(gate_result: Dict[str, Any]) -> List[str]:
 
     Returns:
         List of human-readable blocker descriptions.
+
     """
     if gate_result.get("release_status") == "green":
         return []

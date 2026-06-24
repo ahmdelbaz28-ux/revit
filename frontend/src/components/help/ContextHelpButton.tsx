@@ -1,4 +1,4 @@
-import { CircleHelp } from 'lucide-react';
+import { HelpCircle as CircleHelp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSmartHelp } from '@/hooks/useSmartHelp';
 import type { ContextHelpButtonProps } from '@/help/types';

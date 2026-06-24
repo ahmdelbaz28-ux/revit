@@ -1,5 +1,4 @@
-"""
-fireai/core/voltage_drop.py — Voltage Drop & Battery Calculator
+"""fireai/core/voltage_drop.py — Voltage Drop & Battery Calculator
 ================================================================
 LIFE-SAFETY CRITICAL: Incorrect voltage drop calculations can cause
 horns and strobes to fail during a fire, meaning NO ALARM in occupied
@@ -110,8 +109,7 @@ NOMINAL_VOLTAGE_FA = 24.0  # 24VDC nominal for FA systems
 
 @lru_cache(maxsize=256)
 def get_wire_resistance_ohm_per_m(awg: str) -> float:
-    """
-    Look up wire resistance by AWG label.
+    """Look up wire resistance by AWG label.
 
     BUG-12 FIX: Keyed by AWG string (e.g. "14"), not numeric index.
     Previous code used AWG number as list index → wrong gauge looked up.
@@ -135,8 +133,7 @@ def calculate_voltage_drop(
     nominal_voltage: float = NOMINAL_VOLTAGE_FA,
     temperature_c: float = 75.0,
 ) -> dict[str, float]:
-    """
-    Calculate voltage drop for a FA circuit.
+    """Calculate voltage drop for a FA circuit.
 
     BUG-11 FIX: Uses Ω/m (not Ω/km) for distance in metres.
     BUG-12 FIX: AWG lookup by label string.
@@ -154,6 +151,7 @@ def calculate_voltage_drop(
     Returns:
         Dict with voltage_drop_v, voltage_drop_pct, is_compliant,
         terminal_voltage, resistance_total_ohm.
+
     """
     if current_a < 0:
         raise ValueError(f"current_a={current_a}A must be >= 0")
@@ -221,8 +219,7 @@ def calculate_max_circuit_length(
     nominal_voltage: float = NOMINAL_VOLTAGE_FA,
     max_drop_pct: float = MAX_VOLTAGE_DROP_PCT,
 ) -> float:
-    """
-    Maximum one-way circuit length for <= max_drop_pct voltage drop.
+    """Maximum one-way circuit length for <= max_drop_pct voltage drop.
 
     BUG-11 FIX: Returns length in metres (not km).
     NFPA 72-2022 §27.4.1 / NEC Article 310.
@@ -243,8 +240,7 @@ def recommend_wire_gauge(
     nominal_voltage: float = NOMINAL_VOLTAGE_FA,
     max_drop_pct: float = MAX_VOLTAGE_DROP_PCT,
 ) -> dict[str, str | float]:
-    """
-    Recommend smallest wire gauge meeting voltage drop requirement.
+    """Recommend smallest wire gauge meeting voltage drop requirement.
     Returns dict with recommended_awg, voltage_drop_pct, is_compliant.
 
     BUG-11 + BUG-12 FIX: Uses correct Ω/m lookup.
@@ -292,8 +288,7 @@ def calculate_battery_backup(
     derating_factor: float = 0.80,  # 80% usable capacity per §10.6.7.1
     temperature_c: float = 25.0,  # Ambient temperature
 ) -> dict[str, float]:
-    """
-    DEPRECATED: Use battery_aging_derating.size_battery() instead.
+    """DEPRECATED: Use battery_aging_derating.size_battery() instead.
 
     This function uses a simplified linear temperature derating model
     (0.5% per °C below 25°C) and does NOT include Peukert discharge
@@ -327,6 +322,7 @@ def calculate_battery_backup(
 
     Returns:
         Dict with required_ah, recommended_ah, nfpa_compliant.
+
     """
     if standby_load_a < 0 or alarm_load_a < 0:
         raise ValueError("Loads must be >= 0 Amperes")

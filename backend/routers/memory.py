@@ -1,5 +1,4 @@
-"""
-backend/routers/memory.py — REST API Router for FireAI Memory Service.
+"""backend/routers/memory.py — REST API Router for FireAI Memory Service.
 
 Provides HTTP endpoints for the Mem0-based memory layer:
   POST /api/memory/add          → Add a memory
@@ -64,8 +63,7 @@ MEMORY_DISCLAIMER = (
 
 @router.get("/status", summary="Get memory service status", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def get_status():
-    """
-    Get the current status of the memory service.
+    """Get the current status of the memory service.
 
     Returns initialization state, provider info, and any errors.
     This endpoint is useful for health checks and debugging.
@@ -81,8 +79,7 @@ async def get_status():
 
 @router.post("/add", summary="Add a memory", dependencies=[Depends(require_permission(Permission.USER_MANAGE))])
 async def add_memory(request: MemoryAddRequest):
-    """
-    Add a memory to the FireAI memory store.
+    """Add a memory to the FireAI memory store.
 
     The memory service extracts facts from the provided messages and
     stores them with the specified scoping (user, project, agent).
@@ -94,6 +91,7 @@ async def add_memory(request: MemoryAddRequest):
 
     Returns:
         Dict with operation result
+
     """
     service = get_memory_service()
     result = service.add_memory(request)
@@ -103,8 +101,7 @@ async def add_memory(request: MemoryAddRequest):
 
 @router.post("/search", summary="Search memories", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def search_memories(request: MemorySearchRequest):
-    """
-    Search memories using hybrid search (semantic + BM25 + entity boosting).
+    """Search memories using hybrid search (semantic + BM25 + entity boosting).
 
     Results are ADVISORY CONTEXT — they must not replace deterministic
     NFPA 72 calculations or engineering judgment.
@@ -114,6 +111,7 @@ async def search_memories(request: MemorySearchRequest):
 
     Returns:
         MemorySearchResponse with results and safety disclaimer
+
     """
     service = get_memory_service()
     response = service.search_memories(request)
@@ -126,8 +124,7 @@ async def get_all_memories(
     agent_id: Optional[str] = Query(None, description="Filter by agent"),
     run_id: Optional[str] = Query(None, description="Filter by project/run"),
 ):
-    """
-    Get all memories for a given scope.
+    """Get all memories for a given scope.
 
     Supports filtering by user, agent, or project.
 
@@ -138,6 +135,7 @@ async def get_all_memories(
 
     Returns:
         Dict with list of memories
+
     """
     service = get_memory_service()
     result = service.get_all_memories(
@@ -151,14 +149,14 @@ async def get_all_memories(
 
 @router.delete("/{memory_id}", summary="Delete a memory", dependencies=[Depends(require_permission(Permission.USER_MANAGE))])
 async def delete_memory(memory_id: str):
-    """
-    Delete a specific memory by ID.
+    """Delete a specific memory by ID.
 
     Args:
         memory_id: The memory ID to delete
 
     Returns:
         Dict with operation result
+
     """
     service = get_memory_service()
     result = service.delete_memory(memory_id=memory_id)
@@ -170,8 +168,7 @@ async def delete_memory(memory_id: str):
 
 @router.get("/{memory_id}/history", summary="Get memory history", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_memory_history(memory_id: str):
-    """
-    Get the full history of a memory (all changes over time).
+    """Get the full history of a memory (all changes over time).
 
     Supports agent.md's traceability requirement (Priority 7).
 
@@ -180,6 +177,7 @@ async def get_memory_history(memory_id: str):
 
     Returns:
         Dict with memory history
+
     """
     service = get_memory_service()
     result = service.get_memory_history(memory_id=memory_id)

@@ -1,5 +1,4 @@
-"""
-fireai/core/facp_capacity_auditor.py
+"""fireai/core/facp_capacity_auditor.py
 ====================================
 FACP (Fire Alarm Control Panel) Global Capacity Auditor.
 
@@ -108,6 +107,7 @@ class FACP_Profile:
         max_amps_per_nac:      Per-circuit NAC current limit (A).
         slc_max_current_ma:    Maximum quiescent current per SLC loop (mA).
             Exceeding this can burn the SLC card's output circuit.
+
     """
 
     manufacturer: str
@@ -165,6 +165,7 @@ def get_default_profile(manufacturer: str) -> FACP_Profile:
 
     Raises:
         ValueError: If the manufacturer is not in the pre-defined set.
+
     """
     key = manufacturer.strip().lower()
     if key not in _MANUFACTURER_PROFILES:
@@ -254,6 +255,7 @@ def _classify_device(device_type: str) -> str:
 
     Returns:
         ``"detector"`` or ``"module"``.
+
     """
     if device_type in DETECTOR_DEVICE_TYPES:
         return "detector"
@@ -314,6 +316,7 @@ class FACPCapacityAuditor:
             - ``rules_applied`` (list[dict]): Rules evaluated during the audit.
             - ``provenance``: A ``DecisionProvenance`` object if available,
               otherwise ``None``.
+
         """
         violations: List[Dict[str, Any]] = []
         rules_applied: List[Dict[str, Any]] = []
@@ -447,6 +450,7 @@ class FACPCapacityAuditor:
             - ``all_pass`` (bool): True only if every loop passes.
             - ``violations`` (list[dict]): Violation records.
             - ``provenance``: ``DecisionProvenance`` if available, else ``None``.
+
         """
         loops_passing: List[Dict[str, Any]] = []
         loops_failing: List[Dict[str, Any]] = []
@@ -607,8 +611,8 @@ class FACPCapacityAuditor:
 # Module exports
 # ============================================================================
 __all__ = [
-    "FACP_Profile",
-    "FACPCapacityAuditor",
     "DETECTOR_DEVICE_TYPES",
+    "FACPCapacityAuditor",
+    "FACP_Profile",
     "get_default_profile",
 ]

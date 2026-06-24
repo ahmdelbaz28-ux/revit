@@ -1,5 +1,4 @@
-"""
-fireai/core/floor_analyser.py  V3.0
+"""fireai/core/floor_analyser.py  V3.0
 ====================================
 Safe, sequential floor-level fire alarm design analyser.
 
@@ -137,8 +136,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RoomSummary:
-    """
-    Compact per-room summary for floor report.
+    """Compact per-room summary for floor report.
 
     Attributes:
         room_id:        Unique room identifier from input dict.
@@ -176,6 +174,7 @@ class RoomSummary:
         scenario_blind_spots: Total blind spots across all scenarios.
         scenario_battery_ms: Wall-clock time for scenario verification in ms.
                             0.0 if not run.
+
     """
 
     room_id: str
@@ -230,8 +229,7 @@ class RoomSummary:
 
 @dataclass
 class FloorReport:
-    """
-    Complete analysis report for one floor.
+    """Complete analysis report for one floor.
 
     Attributes:
         floor_id:            Floor identifier.
@@ -244,6 +242,7 @@ class FloorReport:
         unsafe_rooms:        IDs of rooms that failed the triple check.
         floor_warnings:      Floor-level advisory messages.
         analysis_time_s:     Total wall-clock time (seconds).
+
     """
 
     floor_id: str
@@ -268,8 +267,7 @@ class FloorReport:
 
 
 class FloorAnalyser:
-    """
-    Safe, sequential full-floor fire alarm design analyser.
+    """Safe, sequential full-floor fire alarm design analyser.
 
     Uses the V7.3 DensityOptimizer directly - no ExpertSystem.
     Optional MIP verification (use_mip=True) proves optimality after greedy.
@@ -326,6 +324,7 @@ class FloorAnalyser:
         >>> report = analyser.analyse(rooms)
         >>> print(report.safe_to_submit)
         True
+
     """
 
     def __init__(
@@ -368,8 +367,7 @@ class FloorAnalyser:
     # ─── public ──────────────────────────────────────────────────────
 
     def analyse(self, rooms: List[dict]) -> FloorReport:
-        """
-        Analyse all rooms on the floor and return a FloorReport.
+        """Analyse all rooms on the floor and return a FloorReport.
 
         Processes rooms sequentially (no parallelism) and applies the
         triple-check gate to each room independently.
@@ -392,6 +390,7 @@ class FloorAnalyser:
             - Logs each room result via Python logging
             - Records decisions in AuditTrail (if provided)
             - No external I/O or database writes
+
         """
         t0 = time.time()
         report = FloorReport(floor_id=self.floor_id)
@@ -435,7 +434,7 @@ class FloorAnalyser:
                     report.room_summaries.append(summary)
                     report.unsafe_rooms.append(room_dict.get("room_id", room_name))
                     continue
-                elif sanitize_result.was_modified:
+                if sanitize_result.was_modified:
                     # Use cleaned coordinates
                     room_dict = dict(room_dict)  # copy to avoid mutating original
                     room_dict["polygon_coords"] = sanitize_result.coords
@@ -838,8 +837,7 @@ class FloorAnalyser:
         layout: DetectorLayout,
         summary: RoomSummary,
     ) -> None:
-        """
-        Run MIP Set Covering ILP as verification after greedy placement.
+        """Run MIP Set Covering ILP as verification after greedy placement.
 
         MIP proves the minimum detector count on a candidate grid.
         This is VERIFICATION ONLY — greedy placement is always used.
@@ -855,6 +853,7 @@ class FloorAnalyser:
             room:    Room object with width, length, ceiling_height.
             layout:  DetectorLayout from greedy (DensityOptimizer V7.3).
             summary: RoomSummary to update with MIP verification results.
+
         """
         try:
             from fireai.core.spatial_engine.mip_solver import (
@@ -931,8 +930,7 @@ class FloorAnalyser:
         polygon_coords: list,
         radius: float,
     ) -> int:
-        """
-        Filter detectors that fall outside a non-rectangular polygon (V4.0).
+        """Filter detectors that fall outside a non-rectangular polygon (V4.0).
 
         DensityOptimizer places detectors on the bounding rectangle. For
         L-shaped or other non-rectangular rooms, some detectors may land
@@ -951,6 +949,7 @@ class FloorAnalyser:
 
         Returns:
             Number of detectors filtered (removed from cutout region).
+
         """
         original_count = len(layout.detectors)
 
@@ -985,8 +984,7 @@ class FloorAnalyser:
         layout: DetectorLayout,
         summary: RoomSummary,
     ) -> None:
-        """
-        Run Greedy Set Cover verifier on a non-rectangular polygon (V6.0).
+        """Run Greedy Set Cover verifier on a non-rectangular polygon (V6.0).
 
         This is VERIFICATION ONLY — it never replaces the actual placement.
         The verifier proves how many detectors suffice on the actual polygon
@@ -1075,8 +1073,7 @@ class FloorAnalyser:
         room_dict: dict,
         summary: RoomSummary,
     ) -> None:
-        """
-        Run duct detector analysis for a room (V3.1).
+        """Run duct detector analysis for a room (V3.1).
 
         If the room_dict contains a 'ducts' key with a list of duct
         specifications, this method analyses each duct per NFPA 72 §17.7.5
@@ -1088,6 +1085,7 @@ class FloorAnalyser:
         Args:
             room_dict: Room dictionary (must have optional 'ducts' key).
             summary:   RoomSummary to update with duct results.
+
         """
         try:
             from fireai.core.duct_detector import (
@@ -1170,8 +1168,7 @@ class FloorAnalyser:
         ceiling_h: float,
         det_type_str: str,
     ) -> None:
-        """
-        Run fire scenario verification after detector placement (V3.0).
+        """Run fire scenario verification after detector placement (V3.0).
 
         Tests the placed detector layout against standard NFPA 72 §17.7.3
         fire scenarios. This is VERIFICATION ONLY — it does not modify
@@ -1192,6 +1189,7 @@ class FloorAnalyser:
             summary:      RoomSummary to update with scenario results.
             ceiling_h:    Ceiling height in metres.
             det_type_str: Detector type string (e.g. "smoke_photoelectric").
+
         """
         try:
             from fireai.core.scenario_engine import (
@@ -1301,8 +1299,7 @@ class FloorAnalyser:
 
     @staticmethod
     def _check_safety_refusal(room_type: str, detector_type: str) -> tuple:
-        """
-        Validate room_type + detector_type combination against NFPA 72 safety rules.
+        """Validate room_type + detector_type combination against NFPA 72 safety rules.
 
         This is a simple rule-based check — NOT an ExpertSystem.
         It enforces clear NFPA 72 prohibitions that must not be violated
@@ -1321,6 +1318,7 @@ class FloorAnalyser:
             Tuple of (is_refused: bool, reason: str).
             If is_refused is True, reason contains the NFPA reference.
             If is_refused is False, reason is empty string.
+
         """
         # NFPA 72 §17.6.4: Smoke detectors shall not be installed in kitchens
         room_lower = room_type.lower().strip()
@@ -1338,8 +1336,7 @@ class FloorAnalyser:
 
     @staticmethod
     def _build_room(room_dict: dict) -> Room:
-        """
-        Build a Room object from a dictionary.
+        """Build a Room object from a dictionary.
 
         Calculates width/length from the bounding box of polygon_coords.
         This means L-shaped rooms are treated as their bounding rectangle
@@ -1354,6 +1351,7 @@ class FloorAnalyser:
 
         Returns:
             Room object with computed width, length, and ceiling_height.
+
         """
         coords = room_dict["polygon_coords"]
         xs = [p[0] for p in coords]
@@ -1489,5 +1487,5 @@ if __name__ == "__main__":
     for s in report.room_summaries:
         status = "PASS" if s.compliant else "FAIL"
         print(
-            f"{s.name:<25} {s.detector_count:<5} {s.theoretical_lower_bound:<4} {s.efficiency_ratio:<6.2f} {s.coverage_pct:<8.2f} {str(s.nfpa_valid):<5} {str(s.proof_valid):<5} {str(s.fallback_used):<8} {s.method:<15} {status:<10}"
+            f"{s.name:<25} {s.detector_count:<5} {s.theoretical_lower_bound:<4} {s.efficiency_ratio:<6.2f} {s.coverage_pct:<8.2f} {s.nfpa_valid!s:<5} {s.proof_valid!s:<5} {s.fallback_used!s:<8} {s.method:<15} {status:<10}"
         )

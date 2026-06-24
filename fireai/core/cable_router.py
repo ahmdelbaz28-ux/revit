@@ -1,5 +1,4 @@
-"""
-fireai.core.cable_router — Deterministic Orthogonal A* Cable Router
+"""fireai.core.cable_router — Deterministic Orthogonal A* Cable Router
 ====================================================================
 
 Cable routing engine for Fire Alarm systems using Orthogonal A*
@@ -96,6 +95,7 @@ class RouteWaypoint:
         is_bend: True if this is a direction change point.
         direction_change: Direction tuple at this waypoint, or None.
         code_reference: NEC/NFPA reference for why this waypoint exists.
+
     """
 
     x: float
@@ -132,6 +132,7 @@ class CableRoute:
         constraint_results: Full constraint check results.
         computation_hash: SHA-256 hash for deterministic verification.
         decision_log: List of (description, code_reference) tuples.
+
     """
 
     route_id: str
@@ -189,6 +190,7 @@ class RoutingSchedule:
         max_circuit_length_m: Longest single circuit.
         compliance_summary: Overall compliance status.
         computation_hash: SHA-256 for verification.
+
     """
 
     project_name: str
@@ -229,14 +231,14 @@ class _AStarNode:
     Tie-breaking by (f, h, counter) ensures deterministic ordering.
     """
 
-    __slots__ = ("cell", "g", "h", "f", "parent", "direction", "counter")
+    __slots__ = ("cell", "counter", "direction", "f", "g", "h", "parent")
 
     def __init__(
         self,
         cell: Tuple[int, int, int],
         g: float,
         h: float,
-        parent: Optional["_AStarNode"],
+        parent: Optional[_AStarNode],
         direction: Tuple[int, int, int],
         counter: int,
     ):
@@ -248,7 +250,7 @@ class _AStarNode:
         self.direction = direction
         self.counter = counter
 
-    def __lt__(self, other: "_AStarNode") -> bool:
+    def __lt__(self, other: _AStarNode) -> bool:
         """Priority queue ordering: lower f wins, then lower h, then earlier counter."""
         if self.f != other.f:
             return self.f < other.f
@@ -307,6 +309,7 @@ class CableRouter:
 
         Raises:
             ValueError: If model has no valid grid.
+
         """
         if model.grid_size == (0, 0, 0):
             raise ValueError(
@@ -476,6 +479,7 @@ class CableRouter:
         Raises:
             ContractViolation: If inputs are invalid (NaN/Inf).
             ValueError: If start/end are outside the building grid.
+
         """
         # ── Input Validation (QOMN-FIRE Layer 0) ─────────────────────────
         for label, point in [("start", start), ("end", end)]:
@@ -667,6 +671,7 @@ class CableRouter:
 
         Returns:
             (path, decision_log) tuple. Path is None if no route found.
+
         """
         decision_log: List[Tuple[str, str]] = []
         decision_log.append((f"A* search: {start} → {goal}", "Orthogonal 6-dir, Manhattan heuristic"))
@@ -795,6 +800,7 @@ class CableRouter:
 
         Returns:
             CellState at the given cell.
+
         """
         ix, iy, iz = cell
         nx, ny, nz = self._model.grid_size
@@ -817,6 +823,7 @@ class CableRouter:
 
         Returns:
             List of (ix, iy, iz) cells from start to goal.
+
         """
         path = []
         current = node
@@ -841,6 +848,7 @@ class CableRouter:
 
         Returns:
             List of RouteWaypoint objects at key points.
+
         """
         if not path:
             return []
@@ -900,6 +908,7 @@ class CableRouter:
 
         Returns:
             (total_length, straight_length, num_bends, num_elevation_changes)
+
         """
         if len(waypoints) < 2:
             return 0.0, 0.0, 0, 0
@@ -987,6 +996,7 @@ class CableRouter:
 
         Returns:
             RoutingSchedule with all routes and compliance summary.
+
         """
         routes = []
         total_length = 0.0

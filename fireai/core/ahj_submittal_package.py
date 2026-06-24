@@ -34,10 +34,10 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "SubmittalSection",
+    "AHJSubmittalGenerator",
     "SubmittalPackage",
     "SubmittalResult",
-    "AHJSubmittalGenerator",
+    "SubmittalSection",
 ]
 
 
@@ -57,6 +57,7 @@ class SubmittalSection:
         file_paths: Paths to attached files (DWG, DXF, PDF, etc.).
         nfpa_ref:  NFPA 72 reference for this section.
         required:  Whether this section is mandatory per NFPA 72.
+
     """
 
     title: str
@@ -81,6 +82,7 @@ class SubmittalPackage:
         dxf_files:        Paths to DXF drawing files.
         warnings:         Non-fatal advisories.
         errors:           Fatal issues.
+
     """
 
     project_name: str = ""
@@ -105,6 +107,7 @@ class SubmittalResult:
         complete:   Whether all required sections are present.
         warnings:   Non-fatal advisories.
         errors:     Fatal issues.
+
     """
 
     output_path: str = ""
@@ -185,6 +188,7 @@ class AHJSubmittalGenerator:
 
         Returns:
             SubmittalPackage with all sections populated.
+
         """
         pkg = SubmittalPackage(
             project_name=project_name,
@@ -325,6 +329,7 @@ class AHJSubmittalGenerator:
 
         Returns:
             SubmittalResult with generation statistics.
+
         """
         result = SubmittalResult()
 

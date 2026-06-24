@@ -1,5 +1,4 @@
-"""
-Static analysis tool — scans ALL .py files for numeric constant mismatches.
+"""Static analysis tool — scans ALL .py files for numeric constant mismatches.
 Prevents Bug #25-class issues where mw_air or DETECTOR_RADIUS diverge silently.
 
 Run:  python -m fireai.tools.constant_consistency_checker
@@ -414,8 +413,7 @@ def _filter_suspicious(
     all_literals: List[SuspiciousLiteral],
     all_occurrences: List[ConstantOccurrence],
 ) -> List[SuspiciousLiteral]:
-    """
-    Remove false positives: a literal on the SAME line as its named constant
+    """Remove false positives: a literal on the SAME line as its named constant
     assignment is not suspicious (it IS the definition).
     """
     definition_lines: set = set()
@@ -429,8 +427,7 @@ def _filter_suspicious(
 def _canonical_mismatch_check(
     registry: Dict[str, List[ConstantOccurrence]],
 ) -> List[str]:
-    """
-    Check: known canonical constants against their expected values.
+    """Check: known canonical constants against their expected values.
     Returns list of CRITICAL mismatch descriptions.
     """
     critical: List[str] = []

@@ -1,5 +1,4 @@
-"""
-fireai/core/routing_engine_v10.py
+"""fireai/core/routing_engine_v10.py
 =================================
 NEC/NFPA-compliant cable routing engine — V10 Optimized.
 
@@ -110,8 +109,7 @@ class ObstacleType(str, Enum):
 
 @dataclass
 class RoutingObstacle:
-    """
-    An obstacle in the routing space.
+    """An obstacle in the routing space.
 
     Defined as an axis-aligned bounding box (AABB) with a type,
     which determines the required clearance.
@@ -130,6 +128,7 @@ class RoutingObstacle:
         Whether cable can cross this obstacle (default: False).
     height_above_floor_m : float, optional
         Vertical position for 3D clearance checks (V12 2D projection fix).
+
     """
 
     obstacle_type: str
@@ -184,8 +183,7 @@ class RoutingObstacle:
 
 @dataclass(frozen=True)
 class RoutingConstraint:
-    """
-    Constraints for cable routing per NEC/NFPA.
+    """Constraints for cable routing per NEC/NFPA.
 
     Attributes
     ----------
@@ -203,6 +201,7 @@ class RoutingConstraint:
         Cost multiplier for paths crossing corridors.
     seismic_joint_orthogonal_bonus : float
         Cost discount for orthogonal seismic joint crossings per NEC 300.4(D).
+
     """
 
     bend_radius_mm: float = 300.0
@@ -236,8 +235,7 @@ class RoutingConstraint:
 
 @dataclass
 class RouteResult:
-    """
-    Result of a cable routing operation.
+    """Result of a cable routing operation.
 
     Attributes
     ----------
@@ -259,6 +257,7 @@ class RouteResult:
         Which solver produced this result (for audit trail).
     version : str
         Engine version (for audit trail).
+
     """
 
     waypoints: List[Tuple[float, float]] = field(default_factory=list)
@@ -278,8 +277,7 @@ class RouteResult:
 
 
 class _ObstacleIndex:
-    """
-    Spatial index over obstacle clearance polygons.
+    """Spatial index over obstacle clearance polygons.
 
     Uses Shapely STRtree for O(log O) line-of-sight queries.
     Falls back to linear scan when Shapely is unavailable.
@@ -325,8 +323,7 @@ class _ObstacleIndex:
                     valid_idx += 1
 
     def check_los(self, start: Tuple[float, float], end: Tuple[float, float]) -> bool:
-        """
-        Check line-of-sight between two points.
+        """Check line-of-sight between two points.
 
         Returns True if the line segment does NOT intersect any
         obstacle clearance polygon.
@@ -362,8 +359,7 @@ class _ObstacleIndex:
         return True
 
     def check_los_fallback(self, start: Tuple[float, float], end: Tuple[float, float]) -> bool:
-        """
-        Line-of-sight check without Shapely (AABB-based).
+        """Line-of-sight check without Shapely (AABB-based).
 
         Uses Liang-Barsky algorithm for each obstacle.
         """
@@ -423,8 +419,7 @@ class _ObstacleIndex:
 
 
 class RoutingEngineV10:
-    """
-    NEC/NFPA-compliant cable routing engine — V10 Optimized.
+    """NEC/NFPA-compliant cable routing engine — V10 Optimized.
 
     Key improvements over engineering_router.py:
       1. STRtree spatial index for O(log O) LOS queries
@@ -446,13 +441,13 @@ class RoutingEngineV10:
     """
 
     def __init__(self, constraints: RoutingConstraint = None):
-        """
-        Initialize the router.
+        """Initialize the router.
 
         Parameters
         ----------
         constraints : RoutingConstraint, optional
             Routing constraints. Defaults to ProductionConfig values.
+
         """
         self.constraints = constraints or RoutingConstraint.from_production_config()
         self.obstacles: List[RoutingObstacle] = []
@@ -515,8 +510,7 @@ class RoutingEngineV10:
     # ── Routing API ────────────────────────────────────────────────────────
 
     def route(self, start: Tuple[float, float], end: Tuple[float, float]) -> RouteResult:
-        """
-        Route a cable from start to end, avoiding obstacles.
+        """Route a cable from start to end, avoiding obstacles.
 
         Parameters
         ----------
@@ -529,6 +523,7 @@ class RoutingEngineV10:
         -------
         RouteResult
             The routing result with waypoints and validation.
+
         """
         # Life-Safety Rule 2: Reject NaN/Inf inputs
         for name, pt in [("start", start), ("end", end)]:
@@ -572,8 +567,7 @@ class RoutingEngineV10:
     def route_multi(
         self, points: List[Tuple[float, float]], panel_pos: Tuple[float, float] = None
     ) -> List[RouteResult]:
-        """
-        Route cables between multiple points using nearest-neighbour ordering.
+        """Route cables between multiple points using nearest-neighbour ordering.
 
         Parameters
         ----------
@@ -586,6 +580,7 @@ class RoutingEngineV10:
         -------
         list of RouteResult
             One RouteResult per segment.
+
         """
         if not points:
             return []
@@ -612,8 +607,7 @@ class RoutingEngineV10:
     def route_batch(
         self, segments: List[Tuple[Tuple[float, float], Tuple[float, float]]], n_workers: int = 1
     ) -> List[RouteResult]:
-        """
-        Route multiple cable segments.
+        """Route multiple cable segments.
 
         Parameters
         ----------
@@ -626,6 +620,7 @@ class RoutingEngineV10:
         Returns
         -------
         list of RouteResult
+
         """
         if n_workers > 1:
             log.warning(
@@ -637,8 +632,7 @@ class RoutingEngineV10:
     # ── Line-of-Sight ──────────────────────────────────────────────────────
 
     def _has_line_of_sight(self, start: Tuple[float, float], end: Tuple[float, float]) -> bool:
-        """
-        Check if there is a clear line of sight between two points.
+        """Check if there is a clear line of sight between two points.
 
         Delegates to _ObstacleIndex which uses STRtree for O(log O)
         candidate lookup, then precise Shapely intersection on candidates.
@@ -661,8 +655,7 @@ class RoutingEngineV10:
     def _find_path_lazy_astar(
         self, start: Tuple[float, float], end: Tuple[float, float]
     ) -> Optional[List[Tuple[float, float]]]:
-        """
-        Find a path from start to end using Lazy A* on a visibility graph.
+        """Find a path from start to end using Lazy A* on a visibility graph.
 
         Key optimization: The visibility graph is NOT pre-computed.
         Instead, when A* expands a node, we lazily compute visibility
@@ -742,8 +735,7 @@ class RoutingEngineV10:
         return None  # No path found
 
     def _segment_cost_factor(self, p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
-        """
-        Compute cost multiplier for a segment based on routing constraints.
+        """Compute cost multiplier for a segment based on routing constraints.
 
         V12 Fix preserved: Uses Shapely LineString.intersection() to check
         the ENTIRE segment against obstacle clearance zones, not just
@@ -819,8 +811,7 @@ class RoutingEngineV10:
     def _compute_approach_angle(
         self, p1: Tuple[float, float], p2: Tuple[float, float], obs: RoutingObstacle
     ) -> Optional[float]:
-        """
-        Compute the approach angle of a path segment relative to an obstacle.
+        """Compute the approach angle of a path segment relative to an obstacle.
 
         Returns angle in degrees between the path direction and the
         obstacle's LONG axis. For a seismic joint (thin horizontal strip),
@@ -936,8 +927,7 @@ class RoutingEngineV10:
         )
 
     def _validate_route(self, result: RouteResult) -> RouteResult:
-        """
-        Validate a route against NEC/NFPA constraints.
+        """Validate a route against NEC/NFPA constraints.
 
         Checks:
           1. Maximum cable length per NEC 760.154
@@ -1061,8 +1051,7 @@ EngineeringRouter = RoutingEngineV10  # type: ignore[misc]
 
 
 def benchmark_routing(n_obstacles: int = 50, n_routes: int = 100) -> Dict:
-    """
-    Benchmark the routing engine performance.
+    """Benchmark the routing engine performance.
 
     Parameters
     ----------
@@ -1074,6 +1063,7 @@ def benchmark_routing(n_obstacles: int = 50, n_routes: int = 100) -> Dict:
     Returns
     -------
     dict with timing and performance metrics.
+
     """
     import random
     import time
@@ -1271,14 +1261,14 @@ if __name__ == "__main__":
 
 @dataclass
 class RouteSegment:
-    """
-    One segment of a Class A routed loop.
+    """One segment of a Class A routed loop.
 
     Attributes:
         path: Ordered list of (x, y) waypoints.
         class_type: "CLASS_A_OUT" or "CLASS_A_RETURN".
         firestop_nodes: List of (x, y) penetration points requiring firestopping.
         length_m: Total path length in meters.
+
     """
 
     path: List[Tuple[float, float]]
@@ -1288,13 +1278,14 @@ class RouteSegment:
 
 
 class ArchitecturalWall:
-    """
-    A wall segment with optional fire-rating metadata.
+    """A wall segment with optional fire-rating metadata.
 
-    Parameters:
+    Parameters
+    ----------
         p1: (x, y) start point.
         p2: (x, y) end point.
         fire_rated: True if this wall has a fire-resistance rating.
+
     """
 
     def __init__(self, p1: Tuple[float, float], p2: Tuple[float, float], fire_rated: bool = False):
@@ -1313,8 +1304,7 @@ class ArchitecturalWall:
 
 
 class EliteClassARouter:
-    """
-    Unified Class A + Firestopping routing engine.
+    """Unified Class A + Firestopping routing engine.
 
     This router computes both outgoing and return paths for a Class A
     loop while simultaneously identifying fire-rated wall penetrations
@@ -1327,7 +1317,8 @@ class EliteClassARouter:
       4. Compute firestop intersection points for both paths
       5. Return RouteSegments with firestop_nodes populated
 
-    Parameters:
+    Parameters
+    ----------
         width: Building width in meters.
         length: Building length in meters.
         resolution: Grid cell size in meters (default 0.5m).
@@ -1346,6 +1337,7 @@ class EliteClassARouter:
       unavoidable. NFPA 72 S12.2.2 separation applies to the INTERMEDIATE
       routing path, not the terminal connection points. The penalty mask
       EXEMPTS the first/last terminal_buffer_m meters of the outgoing path.
+
     """
 
     def __init__(self, width: float, length: float, resolution: float = 0.5):
@@ -1365,15 +1357,16 @@ class EliteClassARouter:
         self.walls: List[ArchitecturalWall] = []
 
     def inject_structural_obstructions(self, walls: List[ArchitecturalWall]):
-        """
-        Add wall obstructions to the cost grid.
+        """Add wall obstructions to the cost grid.
 
         Fire-rated walls get a cost of 1500.0 (high but traversable —
         cables CAN pass through walls but firestopping will be triggered).
         Non-fire-rated walls get a cost of 100.0 (standard obstruction).
 
-        Parameters:
+        Parameters
+        ----------
             walls: List of ArchitecturalWall objects.
+
         """
         self.walls = walls
         for wall in walls:
@@ -1390,8 +1383,7 @@ class EliteClassARouter:
     def generate_class_a_loop(
         self, facp_node: Tuple[float, float], loop_devices: List[Tuple[float, float]]
     ) -> Dict[str, RouteSegment]:
-        """
-        Generate a complete Class A loop with outgoing and return paths.
+        """Generate a complete Class A loop with outgoing and return paths.
 
         V14: The outgoing path DAISY-CHAINS through ALL devices in order:
           FACP -> loop_devices[0] -> loop_devices[1] -> ... -> loop_devices[-1]
@@ -1402,17 +1394,21 @@ class EliteClassARouter:
         Both paths are checked for fire-rated wall penetrations,
         and firestop_nodes are populated accordingly.
 
-        Parameters:
+        Parameters
+        ----------
             facp_node: (x, y) coordinates of the Fire Alarm Control Panel.
             loop_devices: List of (x, y) device coordinates (daisy-chain order).
 
-        Returns:
+        Returns
+        -------
             Dictionary with keys:
                 "outgoing_class_a": RouteSegment for outgoing path
                 "return_class_a": RouteSegment for return path
 
-        Raises:
+        Raises
+        ------
             ValueError: If return path cannot satisfy 1m separation constraint.
+
         """
         if not loop_devices:
             return {}

@@ -1,5 +1,4 @@
-"""
-acoustics_engine.py — Unified Acoustics Integration Engine for FireAI
+"""acoustics_engine.py — Unified Acoustics Integration Engine for FireAI
 ======================================================================
 CRITICAL LIFE-SAFETY MODULE — V25
 
@@ -177,6 +176,7 @@ class AcousticCoverageResult:
         room_results: Per-room detailed results delegated from
             :class:`AcousticSPLCalculator`.
         nfpa_sections_referenced: NFPA 72 sections checked during analysis.
+
     """
 
     compliant: bool
@@ -213,6 +213,7 @@ class UGLDDetectionZone:
         total_insertion_loss_db: Sum of Maekawa IL from all intersected
             obstacles (0.0 if LOS is clear).
         obstacle_count: Number of obstacles intersecting the ray path.
+
     """
 
     sensor_id: str
@@ -242,6 +243,7 @@ class UGLDCoverageGap:
             after all propagation losses.
         deficit_db: How far below the detection threshold the signal is
             at the nearest sensor.  Positive = deficit.
+
     """
 
     leak_point: Tuple[float, float, float]
@@ -272,6 +274,7 @@ class UGLDCoverageResult:
         total_area_m2: Total floor area of the evaluated region.
         ceiling_reflections_used: Whether image-source ceiling
             reflections were included in the analysis.
+
     """
 
     fully_covered: bool
@@ -336,6 +339,7 @@ def _image_source_reflection_spl(
     Reference:
         ISO 9613-2:1996 §7 (image source method),
         Beranek & Ver (1992) Chapter 7.
+
     """
     # Mirror the leak source across the ceiling plane
     image_x = leak_point[0]
@@ -390,6 +394,7 @@ def _combine_spl_db(spl_a: float, spl_b: float) -> float:
 
     Returns:
         Combined SPL in dB.
+
     """
     # V65 SAFETY: Guard against NaN/Inf inputs.
     # NaN SPL silently bypasses compliance checks (NaN < threshold is False).
@@ -425,6 +430,7 @@ def _evaluate_ugld_trigger(
     Returns:
         Tuple of (detected: bool, deficit_db: float).
         deficit_db is 0.0 when detected, positive when not detected.
+
     """
     snr = final_spl - sensor.background_noise_db
     threshold_met = final_spl >= sensor.trigger_threshold_db
@@ -517,6 +523,7 @@ class AcousticsEngine:
                 :data:`acoustic_calculator.AMBIENT_NOISE_LEVELS` are used.
                 Passed through to the internal
                 :class:`AcousticSPLCalculator`.
+
         """
         self._spl_calculator = AcousticSPLCalculator(
             room_ambient_noise=room_ambient_noise,
@@ -593,6 +600,7 @@ class AcousticsEngine:
 
         Reference:
             NFPA 72-2022 §18.4, ISO 9613-1:1993 §5.2
+
         """
         # ── Input validation ──────────────────────────────────────────
         if not speakers:
@@ -770,6 +778,7 @@ class AcousticsEngine:
             ISA-TR84.00.07 §4.3, ISO 9613-1:1993 §6,
             ISO 9613-2:1996 Annex A (Maekawa),
             IEC 60079-29-4
+
         """
         # ── Input validation ──────────────────────────────────────────
         if leak_spl_at_1m <= 0:
@@ -1010,6 +1019,7 @@ class AcousticsEngine:
         Reference:
             ISA-TR84.00.07 §4.3, ISO 9613-1:1993 §6,
             ISO 9613-2:1996 Annex A, IEC 60079-29-4
+
         """
         # ── Input validation ──────────────────────────────────────────
         if not leak_points:
