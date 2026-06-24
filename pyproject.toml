@@ -246,6 +246,7 @@ known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", 
     "PLC0415", # Import outside top-level (intentional for lazy imports)
     "N806",    # Non-lowercase variable in function (engineering convention)
     "PLW1510", # subprocess-run-without-check (intentional — we check returncode manually)
+    "BLE001",  # Blind except (intentional for LLM fallback robustness)
 ]
 "skills/etap-expert/tests/*.py" = [
     "RUF001",  # Ambiguous unicode in strings
@@ -257,4 +258,14 @@ known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", 
     "PLC0415", # Import outside top-level
     "N806",    # Non-lowercase variable
     "PLW1510", # subprocess-run-without-check (test code)
+]
+"skills/etap-expert/references/*.py" = [
+    "RUF001",  # Ambiguous unicode (engineering notation ×, °C, δ, Ω)
+    "RUF002",  # Ambiguous unicode in docstrings
+    "RUF003",  # Ambiguous unicode in comments
+    "ANN001",  # Missing type annotation
+    "ANN201",  # Missing return type annotation
+    "D205",    # Docstring blank line
+    "BLE001",  # Blind except (intentional for PE review robustness)
+    "PLC0415", # Import outside top-level
 ]
