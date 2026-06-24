@@ -37,6 +37,7 @@ from backend.rbac import Permission
 from backend.services.marine_service import get_marine_service
 
 from marine.core.types import (
+    DetectorPlacement,
     DetectorType, ExtinguishingSystem, FireClass, FireHazardClass,
     MarineZone, ShipProject, ShipType, SpaceCategory,
 )

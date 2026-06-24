@@ -693,21 +693,44 @@ class TestAnalyzeRoomErrorHandling:
         assert result.success is False
         assert any("GEOMETRY INVALID" in e for e in result.errors)
 
-    def test_string_dimension_crashes_format(self, pipeline):
-        """String dimension causes ValueError in the logging format string.
+    def test_string_dimension_rejected_gracefully(self, pipeline):
+        """String dimension is rejected gracefully with a GEOMETRY INVALID error.
 
-        The pipeline logs room dimensions with f-string formatting before
-        reaching the geometry validation guard. Setting width to a string
-        causes a ValueError in the format spec (:.1f), which propagates
-        up since it occurs before the geometry validation check.
-        This is a known edge case — Room.__post_init__ prevents this in
-        normal usage.
+        V132 FIX (2026-06-21): The pipeline's geometry validation guard
+        (V59) now uses ``%s`` formatting in its log call (line ~417 of
+        analysis_pipeline.py), so a non-numeric width no longer crashes
+        the formatter. Instead, the guard detects that ``float(_val)``
+        raises (or that the value isn't an int/float), appends a
+        ``GEOMETRY INVALID`` message to ``result.errors``, sets
+        ``stage_reached = PipelineStage.OPTIMIZATION``, and returns the
+        result without raising.
+
+        This is the correct life-safety behavior: invalid input must
+        produce a clear diagnostic in ``result.errors``, NOT crash the
+        pipeline. The previous test (which expected ``ValueError``) was
+        pinning the OLD buggy behavior and broke when V59 introduced the
+        geometry guard. The Room dataclass still prevents this in normal
+        usage via ``__post_init__``; this test bypasses ``__post_init__``
+        to verify the pipeline-level guard catches what the dataclass
+        would have caught.
         """
         room = Room(name="str-dim", width=10.0, length=10.0)
-        room.width = "ten"
-        # The format string f"{room.width:.1f}" raises ValueError
-        with pytest.raises(ValueError, match="Unknown format code"):
-            pipeline.analyze_room(room=room, room_id="str-dim", ceiling_height=3.0)
+        room.width = "ten"  # bypass __post_init__ to test the pipeline guard
+        # V132: pipeline no longer raises — it records the error and returns
+        result = pipeline.analyze_room(room=room, room_id="str-dim", ceiling_height=3.0)
+        # Stage reached must be OPTIMIZATION (where the guard fires)
+        assert result.stage_reached == PipelineStage.OPTIMIZATION
+        # An error message must be recorded
+        assert any("GEOMETRY INVALID" in e for e in result.errors), (
+            f"Expected GEOMETRY INVALID in errors, got: {result.errors}"
+        )
+        assert any("room.width" in e for e in result.errors), (
+            f"Expected error to mention room.width, got: {result.errors}"
+        )
+        # Layout / consensus / certificate must NOT be produced for invalid input
+        assert result.layout is None
+        assert result.consensus is None
+        assert result.certificate is None
 
     def test_invalid_geometry_no_layout(self, pipeline):
         """Invalid geometry produces no layout."""
