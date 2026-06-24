@@ -413,6 +413,15 @@ class AnalysisPipeline:
         # V59 FIX: NaN/Inf in room dimensions silently propagates through the
         # optimizer, producing invalid layouts that appear valid (proof_valid=True).
         # Life-Safety Rule 5: reject non-finite geometry immediately.
+        #
+        # Dimension values are formatted with :.1f here so that non-numeric
+        # types (e.g. string "ten") raise ValueError("Unknown format code")
+        # immediately.  Room.__post_init__ prevents this in normal usage;
+        # a bypassed string dimension is a programming error that must be
+        # caught loudly (fail-safe), not silently degraded.
+        for _name, _val in [("room.width", room.width), ("room.length", room.length), ("ceiling_height", ceiling_height)]:
+            f"{_val:.1f}"  # format-check: raises ValueError on non-numeric types
+
         _geom_valid = True
         for _name, _val in [("room.width", room.width), ("room.length", room.length), ("ceiling_height", ceiling_height)]:
             if not isinstance(_val, (int, float)) or not math.isfinite(float(_val)) or float(_val) <= 0:

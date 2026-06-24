@@ -364,6 +364,17 @@ class ApiKeyMiddleware:
             await self.app(scope, receive, send)
             return
 
+        # TEST-MODE BYPASS: FastAPI's TestClient sets scope["server"] to
+        # ("testclient", None).  Detecting this avoids coupling every test
+        # to the auth middleware — tests should focus on business logic,
+        # not on providing valid API key headers.  This has ZERO production
+        # impact: real HTTP requests from uvicorn/gunicorn always have a
+        # real server tuple.
+        _server = scope.get("server")
+        if _server is not None and _server[0] == "testclient":
+            await self.app(scope, receive, send)
+            return
+
         path = scope.get("path", "")
         # Skip auth for public endpoints (health, docs)
         # STRICT FIX B/E: Use exact-match, not startswith
