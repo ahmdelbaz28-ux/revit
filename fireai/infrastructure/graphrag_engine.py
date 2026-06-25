@@ -69,6 +69,7 @@ class GraphRAGEngine:
         neo4j_user: Optional[str] = None,
         neo4j_password: Optional[str] = None,
         openai_api_key: Optional[str] = None,
+        openai_base_url: Optional[str] = None,
         embedding_model: str = "text-embedding-3-small",
         embedding_dimensions: int = 1536,
         llm_model: str = "gpt-4o",
@@ -76,22 +77,45 @@ class GraphRAGEngine:
         """
         Initialize the GraphRAG engine.
 
+        V142: Supports ANY OpenAI-compatible API (Modal, OpenQuotta, z-ai, etc.)
+        via openai_base_url. Not limited to OpenAI's GPT-4o.
+
         Args:
-            neo4j_uri: Neo4j connection URI (bolt:// or neo4j+s://).
+            neo4j_uri: Neo4j connection URI.
             neo4j_user: Neo4j username.
             neo4j_password: Neo4j password.
-            openai_api_key: OpenAI API key for embeddings + LLM.
-            embedding_model: OpenAI embedding model name.
-            embedding_dimensions: Embedding vector dimensions (must match model).
-            llm_model: OpenAI LLM model for graph transformation + QA.
+            openai_api_key: API key (OpenAI, Modal, OpenQuotta, or any compatible).
+            openai_base_url: Base URL for OpenAI-compatible API.
+            embedding_model: Embedding model name.
+            embedding_dimensions: Embedding vector dimensions.
+            llm_model: LLM model for graph transformation + QA.
         """
         self._neo4j_uri = neo4j_uri or os.environ.get("NEO4J_URI", "")
         self._neo4j_user = neo4j_user or os.environ.get("NEO4J_USER", "neo4j")
         self._neo4j_password = neo4j_password or os.environ.get("NEO4J_PASSWORD", "")
-        self._openai_key = openai_api_key or os.environ.get("OPENAI_API_KEY", "")
+
+        # V142: Multi-provider support — priority: OPENAI → MODAL → OPENQUOTTA
+        self._openai_key = (
+            openai_api_key
+            or os.environ.get("OPENAI_API_KEY", "")
+            or os.environ.get("MODAL_API_KEY", "")
+            or os.environ.get("OPENQUOTTA_API_KEY", "")
+        )
+        self._openai_base_url = (
+            openai_base_url
+            or os.environ.get("OPENAI_BASE_URL", "")
+            or os.environ.get("MODAL_BASE_URL", "")
+            or os.environ.get("OPENQUOTTA_BASE_URL", "")
+        )
+
+        # V142: Auto-select model based on provider
+        if os.environ.get("MODAL_API_KEY") and not openai_api_key:
+            self._llm_model = os.environ.get("MODAL_MODEL", "zai-org/GLM-5.1-FP8")
+        else:
+            self._llm_model = llm_model
+
         self._embedding_model = embedding_model
         self._embedding_dimensions = embedding_dimensions
-        self._llm_model = llm_model
 
         self._graph = None        # Neo4jGraph connection
         self._vector_store = None  # Neo4jVector store
@@ -110,7 +134,10 @@ class GraphRAGEngine:
             return
 
         if not self._openai_key:
-            logger.warning("GraphRAG: OPENAI_API_KEY not set. Engine disabled (no embeddings/LLM).")
+            logger.warning(
+                "GraphRAG: No API key set (OPENAI_API_KEY, MODAL_API_KEY, or OPENQUOTTA_API_KEY). "
+                "Engine disabled (no embeddings/LLM)."
+            )
             self._initialized = True
             return
 
@@ -120,6 +147,9 @@ class GraphRAGEngine:
             os.environ["NEO4J_USERNAME"] = self._neo4j_user
             os.environ["NEO4J_PASSWORD"] = self._neo4j_password
             os.environ["OPENAI_API_KEY"] = self._openai_key
+            # V142: Set base_url for OpenAI-compatible providers (Modal, OpenQuotta)
+            if self._openai_base_url:
+                os.environ["OPENAI_BASE_URL"] = self._openai_base_url
 
             # Layer 1: Neo4jGraph connection (for graph operations)
             from langchain_neo4j import Neo4jGraph
@@ -135,44 +165,70 @@ class GraphRAGEngine:
             from langchain_neo4j import Neo4jVector
             from langchain_openai import OpenAIEmbeddings
 
-            embeddings = OpenAIEmbeddings(model=self._embedding_model)
-
+            # V142: Pass base_url for OpenAI-compatible providers
+            emb_kwargs = {"model": self._embedding_model}
+            if self._openai_base_url:
+                emb_kwargs["base_url"] = self._openai_base_url
             try:
-                # Try to connect to existing index
-                self._vector_store = Neo4jVector.from_existing_index(
-                    embeddings,
-                    index_name="ai_memory_index",
-                    node_label="MemoryChunk",
-                    text_node_property="text",
-                    embedding_node_property="embedding",
+                embeddings = OpenAIEmbeddings(**emb_kwargs)
+            except Exception as emb_err:
+                logger.warning(
+                    "GraphRAG: Embeddings via %s failed (%s). "
+                    "Vector store disabled — graph + QA still work.",
+                    self._openai_base_url or "OpenAI", emb_err,
                 )
-                logger.info("GraphRAG: Connected to existing vector index 'ai_memory_index'")
-            except Exception:
-                # Create new index if it doesn't exist
-                self._vector_store = Neo4jVector.from_existing_graph(
-                    embeddings,
-                    index_name="ai_memory_index",
-                    node_label="MemoryChunk",
-                    text_node_properties=["text"],
-                    embedding_node_property="embedding",
-                )
-                logger.info("GraphRAG: Created new vector index 'ai_memory_index'")
+                embeddings = None
+
+            if embeddings is not None:
+                try:
+                    self._vector_store = Neo4jVector.from_existing_index(
+                        embeddings,
+                        index_name="ai_memory_index",
+                        node_label="MemoryChunk",
+                        text_node_property="text",
+                        embedding_node_property="embedding",
+                    )
+                    logger.info("GraphRAG: Connected to existing vector index 'ai_memory_index'")
+                except Exception:
+                    try:
+                        self._vector_store = Neo4jVector.from_existing_graph(
+                            embeddings,
+                            index_name="ai_memory_index",
+                            node_label="MemoryChunk",
+                            text_node_properties=["text"],
+                            embedding_node_property="embedding",
+                        )
+                        logger.info("GraphRAG: Created new vector index 'ai_memory_index'")
+                    except Exception as vs_err:
+                        logger.warning("GraphRAG: Vector store init failed: %s", vs_err)
+                        self._vector_store = None
+            else:
+                self._vector_store = None
 
             # Layer 3: LLMGraphTransformer (entity/relationship extraction)
             from langchain_experimental.graph_transformers import LLMGraphTransformer
             from langchain_openai import ChatOpenAI
 
-            llm = ChatOpenAI(model=self._llm_model, temperature=0)
+            # V142: Pass base_url for LLM too
+            llm_kwargs = {"model": self._llm_model, "temperature": 0}
+            if self._openai_base_url:
+                llm_kwargs["base_url"] = self._openai_base_url
+            llm = ChatOpenAI(**llm_kwargs)
             self._transformer = LLMGraphTransformer(llm=llm)
             logger.info("GraphRAG: LLMGraphTransformer initialized (model=%s)", self._llm_model)
 
             # Layer 4: GraphCypherQAChain (natural language → Cypher → answer)
             from langchain_neo4j import GraphCypherQAChain
 
+            # V142: Pass base_url for QA chain LLM + acknowledge dangerous requests
+            qa_llm_kwargs = {"model": self._llm_model, "temperature": 0}
+            if self._openai_base_url:
+                qa_llm_kwargs["base_url"] = self._openai_base_url
             self._qa_chain = GraphCypherQAChain.from_llm(
-                llm=ChatOpenAI(model=self._llm_model, temperature=0),
+                llm=ChatOpenAI(**qa_llm_kwargs),
                 graph=self._graph,
                 verbose=False,
+                allow_dangerous_requests=True,  # V142: Required by langchain-neo4j 0.10+
             )
             logger.info("GraphRAG: GraphCypherQAChain initialized")
 
