@@ -1444,3 +1444,4 @@ class GenerativeOptimizer:
             safety_index=round(safety_index, 4),
             description=description
         )
+ 
