@@ -1353,7 +1353,24 @@ class RevitService(BIMProvider):
     # =========================================================================
 
     def execute_ai_command(self, command: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Execute a natural language command from AI agent."""
+        """Execute a natural language command from AI agent.
+        
+        V131 SECURITY HARDENING:
+        - Rejects commands containing shell meta-characters or path traversal patterns.
+        """
+        import re
+        dangerous_patterns = [
+            r"\.\./", r"\.\\",  # Path traversal
+            r"[;&|`]",          # Shell chaining
+            r"import\s+",       # Python imports
+            r"exec\(", r"eval\(", # Dynamic execution
+            r"subprocess",      # Process execution
+        ]
+        for pattern in dangerous_patterns:
+            if re.search(pattern, command, re.IGNORECASE):
+                logger.warning("Dangerous command pattern blocked: %s", command)
+                return {"success": False, "message": "Security violation: Dangerous command pattern detected."}
+
         command = command.lower()
 
         if not context:

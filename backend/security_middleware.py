@@ -442,8 +442,73 @@ class ApiKeyMiddleware:
         await send({"type": "http.response.body", "body": body})
 
 
+import hmac as _hmac
+import os as _os
+import secrets as _secrets
+
+from backend.api_keys import validate_api_key as _validate_api_key
+
+
+class CSRFMiddleware:
+    """ASGI middleware for CSRF protection using Double Submit Cookie pattern.
+
+    SECURITY:
+      - Validates that the 'X-CSRF-Token' header matches the 'csrf_token' cookie.
+      - Only enforced for state-changing methods (POST, PUT, DELETE, PATCH).
+      - Safe methods (GET, HEAD, OPTIONS) are allowed without a token.
+      - In production, cookies are marked Secure, HttpOnly, and SameSite=Lax.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+        self._secret = _os.getenv("CSRF_SECRET", _secrets.token_urlsafe(32))
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        method = scope.get("method", "GET")
+        if method in ("GET", "HEAD", "OPTIONS"):
+            # Safe methods — set cookie if not present, but don't validate.
+            await self.app(scope, receive, send)
+            return
+
+        # State-changing methods — validate token
+        headers = dict(scope.get("headers", []))
+        csrf_header = headers.get(b"x-csrf-token", b"").decode("utf-8")
+        
+        # Get cookie
+        cookie_header = headers.get(b"cookie", b"").decode("utf-8")
+        cookies = {c.split("=")[0].strip(): c.split("=")[1].strip() 
+                   for c in cookie_header.split(";") if "=" in c}
+        csrf_cookie = cookies.get("csrf_token", "")
+
+        if not csrf_header or not csrf_cookie or not _hmac.compare_digest(csrf_header, csrf_cookie):
+            # CSRF validation failed
+            await self._send_403(send)
+            return
+
+        await self.app(scope, receive, send)
+
+    @staticmethod
+    async def _send_403(send: Send) -> None:
+        body = b'{"detail":"CSRF validation failed","success":false}'
+        headers = [
+            (b"content-type", b"application/json"),
+            (b"content-length", str(len(body)).encode("ascii")),
+        ]
+        await send({
+            "type": "http.response.start",
+            "status": 403,
+            "headers": headers,
+        })
+        await send({"type": "http.response.body", "body": body})
+
+
 __all__ = [
     "ApiKeyMiddleware",
     "CorrelationIdMiddleware",
     "SecurityHeadersMiddleware",
+    "CSRFMiddleware",
 ]

@@ -62,6 +62,7 @@ from backend.security_middleware import (
     ApiKeyMiddleware,
     CorrelationIdMiddleware,
     SecurityHeadersMiddleware,
+    CSRFMiddleware,
 )
 
 # Configure logging
@@ -429,6 +430,9 @@ app.add_middleware(CorrelationIdMiddleware)
 # endpoints effectively public. Added AFTER CORS so CORS preflight requests
 # (OPTIONS) are not blocked by auth.
 app.add_middleware(ApiKeyMiddleware)
+
+# V131: CSRF Protection for state-changing requests.
+app.add_middleware(CSRFMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
