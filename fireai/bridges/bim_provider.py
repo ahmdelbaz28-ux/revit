@@ -295,8 +295,19 @@ class BIMProviderRegistry:
             )
             return None
 
-        # Cache key includes kwargs for safety (different kwargs = different instance)
-        cache_key = f"{name}:{hash(tuple(sorted(kwargs.items())))}"
+        # V135 F-18 FIX: Use json.dumps for cache key instead of hash().
+        # The OLD code did `hash(tuple(sorted(kwargs.items())))` which raises
+        # TypeError if kwargs contains unhashable values (lists, dicts).
+        # For example, `get_provider("ifc_file", levels=["L1","L2"])` would
+        # silently return None because hash() fails on the list.
+        # json.dumps handles all JSON-serializable types and is deterministic.
+        import json as _json
+        try:
+            kwargs_str = _json.dumps(kwargs, sort_keys=True, default=str)
+        except (TypeError, ValueError):
+            # Fallback for non-serializable kwargs
+            kwargs_str = str(sorted(kwargs.items()))
+        cache_key = f"{name}:{kwargs_str}"
         if cache_key not in cls._instances:
             try:
                 cls._instances[cache_key] = cls._providers[name](**kwargs)  # type: ignore[call-arg]
@@ -314,10 +325,18 @@ class BIMProviderRegistry:
         return list(cls._providers.keys())
 
     @classmethod
-    def clear(cls) -> None:
-        """Clear all registrations (for testing only)."""
+    def _clear_for_testing(cls) -> None:
+        """Clear all registrations (for testing only).
+
+        V135 F-32 FIX: Renamed from ``clear()`` to ``_clear_for_testing()``
+        to prevent accidental production calls. The OLD public name could
+        unregister all providers if called by mistake.
+        """
         cls._providers.clear()
         cls._instances.clear()
+
+    # V135 F-32: Keep backward-compat alias (deprecated)
+    clear = _clear_for_testing  # type: ignore[assignment]
 
 
 # Convenience function for callers
@@ -767,7 +786,14 @@ class AutodeskForgeProvider:
         )
 
     def health_check(self) -> Dict[str, Any]:
-        """Check APS connectivity and credentials."""
+        """Check APS connectivity and credentials.
+
+        V135 F-19 FIX: The OLD code returned ``healthy: True`` when
+        credentials were present, even though the provider is a STUB
+        that can't actually do anything. Monitoring systems saw
+        "healthy" and assumed BIM integration worked. Now returns
+        ``healthy: False`` with a clear "stub" message.
+        """
         if not self._client_id or not self._client_secret:
             return {
                 "healthy": False,
@@ -775,13 +801,19 @@ class AutodeskForgeProvider:
                 "details": "APS credentials not configured",
                 "error": "Missing APS_CLIENT_ID or APS_CLIENT_SECRET",
             }
-        # Even with credentials, we can't really health-check without
-        # making an API call. For now, just report that creds are present.
+        # V135 F-19: Credentials present but provider is a STUB.
+        # Do NOT report healthy=True — the provider cannot actually
+        # extract rooms, read devices, or write devices. Monitoring
+        # systems must know this is non-functional.
         return {
-            "healthy": True,  # credentials present (actual API call not made)
+            "healthy": False,  # V135 F-19: was True (misleading)
             "latency_ms": 0.0,
-            "details": "APS credentials configured (stub — API call not implemented)",
-            "error": None,
+            "details": (
+                "APS credentials configured BUT provider is a STUB — "
+                "extract_rooms/read_devices/write_devices are NOT implemented. "
+                "Do NOT assume BIM integration is functional."
+            ),
+            "error": "Provider is a stub (not implemented)",
         }
 
 

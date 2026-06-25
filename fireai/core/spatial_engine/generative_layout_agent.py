@@ -434,7 +434,10 @@ class GenerativeLayoutAgent:
         """
         # Validate weights
         total = coverage_weight + compliance_weight + redundancy_weight + cost_weight
-        if not math.isclose(total, 1.0, abs_tol=0.01):
+        # V135 F-31 FIX: Tightened tolerance from 0.01 to 0.001
+        # The OLD code allowed weights to sum to 0.99-1.01. The docstring
+        # says "must sum to 1.0". Now we allow 0.999-1.001 (stricter).
+        if not math.isclose(total, 1.0, abs_tol=0.001):
             raise ValueError(
                 f"Weights must sum to 1.0 (got {total}). "
                 f"coverage={coverage_weight}, compliance={compliance_weight}, "

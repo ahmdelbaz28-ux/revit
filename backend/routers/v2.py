@@ -108,7 +108,7 @@ class WebhookSubscribeRequest(BaseModel):
     """Request body for /api/v2/webhooks/subscribe."""
 
     url: str
-    secret: str = Field(..., min_length=16)
+    secret: str = Field(..., min_length=32)  # V135 F-33: NIST SP 800-107
     event_types: List[str] = Field(default_factory=list)
 
 

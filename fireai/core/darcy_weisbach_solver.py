@@ -80,7 +80,7 @@ from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, Tuple
 
@@ -211,10 +211,18 @@ class DarcyWeisbachResult:
     flow_velocity_m_s: float
     flow_regime: str
     fluid_type: str
-    warnings: list = None
+    # V135 F-37 FIX: Use field(default_factory=list) instead of None
+    warnings: list = field(default_factory=list)
     nfpa_reference: str = "Darcy-Weisbach (NFPA 12/2001)"
+    # V135 F-27 FIX: Add converged field so callers know if the
+    # Colebrook-White iteration actually converged or returned a
+    # fallback. The OLD code returned unconverged values with only
+    # a DEBUG log — callers had no way to know.
+    converged: bool = True
 
     def __post_init__(self):
+        # V135 F-37: Keep __post_init__ for backward compat (in case
+        # someone passes warnings=None explicitly)
         if self.warnings is None:
             self.warnings = []
 
@@ -230,6 +238,7 @@ class DarcyWeisbachResult:
             "fluid_type": self.fluid_type,
             "warnings": self.warnings,
             "nfpa_reference": self.nfpa_reference,
+            "converged": self.converged,  # V135 F-27
         }
 
 
@@ -303,6 +312,19 @@ def calculate_darcy_weisbach_friction_loss(
         raise ValueError(f"Cross-sectional area is non-positive: {cross_sectional_area}")
     flow_velocity = flow_rate_kg_s / (density * cross_sectional_area)
 
+    # V135 F-29 FIX: Validate flow velocity upper bound.
+    # The OLD code accepted any velocity, even supersonic (1000+ m/s).
+    # For fire suppression systems, velocities > 100 m/s indicate either:
+    # (a) input error (wrong units), or (b) physically impossible scenario.
+    # Per Crane TP-410, typical fire main velocities are 3-10 m/s.
+    MAX_FLOW_VELOCITY_M_S = 100.0
+    if flow_velocity > MAX_FLOW_VELOCITY_M_S:
+        warnings.append(
+            f"Flow velocity {flow_velocity:.1f} m/s exceeds physical limit "
+            f"{MAX_FLOW_VELOCITY_M_S} m/s. This may indicate input error "
+            f"(wrong units?) or an impossible scenario. Results may be unreliable."
+        )
+
     # ── Compute Reynolds number ──
     # Re = ρ × v × d / μ
     if viscosity <= 0:
@@ -336,15 +358,18 @@ def calculate_darcy_weisbach_friction_loss(
     pressure_loss_pa = density * GRAVITY_M_S2 * head_loss
     pressure_loss_psi = pressure_loss_pa / 6894.757  # 1 psi = 6894.757 Pa
 
-    # ── Sanity check: pressure loss should be non-negative ──
+    # V135 F-26 FIX: Negative pressure loss indicates a COMPUTATION ERROR.
+    # The OLD code used abs() which masked the error. Per safety-first
+    # principle (agent.md Rule 12), we raise ValueError so the caller
+    # knows something is wrong. Physically, pressure loss CANNOT be
+    # negative — if it is, there's a bug in the calculation.
     if pressure_loss_pa < 0:
-        warnings.append(
+        raise ValueError(
             f"Negative pressure loss ({pressure_loss_pa} Pa) — physically impossible. "
-            f"Check input parameters."
+            f"This indicates a computation error. Check: friction_factor={friction_factor}, "
+            f"head_loss={head_loss}, density={density}. "
+            f"All values should be non-negative."
         )
-        pressure_loss_pa = abs(pressure_loss_pa)
-        pressure_loss_psi = abs(pressure_loss_psi)
-        head_loss = abs(head_loss)
 
     return DarcyWeisbachResult(
         head_loss_m=head_loss,
@@ -579,6 +604,14 @@ def compare_with_hazen_williams(
     Returns:
         Dict with both results and comparison metrics.
     """
+    # V135 F-28 FIX: Validate inputs before calculation.
+    # The OLD code didn't call _validate_input, so negative pipe_length
+    # or NaN inputs would silently produce wrong results.
+    _validate_input("pipe_length_m", pipe_length_m, min_val=0.0)
+    _validate_input("pipe_diameter_m", pipe_diameter_m, min_val=MIN_PIPE_DIAMETER_M, max_val=MAX_PIPE_DIAMETER_M)
+    _validate_input("flow_rate_kg_s", flow_rate_kg_s, min_val=MIN_FLOW_RATE_KG_S)
+    _validate_input("c_factor", c_factor, min_val=1.0, max_val=200.0)
+
     # Darcy-Weisbach (water)
     dw_result = calculate_darcy_weisbach_friction_loss(
         pipe_length_m=pipe_length_m,

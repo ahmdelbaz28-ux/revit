@@ -284,18 +284,34 @@ class RevitAPIDocsSearcher:
         short_name = class_name.split(".")[-1]
         short_name_lower = short_name.lower()
 
+        # V135 F-25 FIX: Use EXACT match instead of substring match.
+        # The OLD code used `class_name_lower in str(k).lower()` which
+        # returned True for "Wall" if docs contained "WallType",
+        # "WallFoundation", "CurtainWall", etc. This could lead the AI
+        # to think a class exists when it doesn't.
+        # Now we check: exact full name, exact short name, or suffix match.
         if isinstance(docs, dict):
-            return (
-                class_name in docs
-                or short_name in docs
-                or any(class_name_lower in str(k).lower() for k in docs.keys())
-            )
+            # Check exact match first
+            if class_name in docs or short_name in docs:
+                return True
+            # V135 F-25: Suffix match (e.g., "Wall" matches "T:Autodesk.Revit.DB.Wall")
+            # but NOT substring (so "Wall" won't match "WallType")
+            for k in docs.keys():
+                k_str = str(k)
+                # Match if key ends with .ShortName (e.g., ".Wall" at end of full name)
+                if k_str.endswith(f".{short_name}") or k_str == short_name:
+                    return True
+            return False
         elif isinstance(docs, list):
             for entry in docs:
                 if not isinstance(entry, dict):
                     continue
                 name = str(entry.get("APIName") or entry.get("Title") or entry.get("Name") or "")
-                if class_name_lower in name.lower() or short_name_lower in name.lower():
+                # V135 F-25: Exact match or suffix match (not substring)
+                if name.lower() == class_name_lower or name.lower() == short_name_lower:
+                    return True
+                # Suffix match: "T:Autodesk.Revit.DB.Wall" matches short_name "Wall"
+                if name.lower().endswith(f".{short_name_lower}"):
                     return True
             return False
 
@@ -639,8 +655,22 @@ class SmitheryMCPClient:
                     "nfpa_reference": "NFPA 72-2022 §23.8 (PE Review Required)",
                 },
             )
-        except Exception:
-            pass  # Never block on audit failure
+        except Exception as audit_exc:
+            # V135 F-24 FIX: Audit failure MUST be escalated, not silenced.
+            # The OLD code did `except Exception: pass` which silently
+            # swallowed audit failures. If both the queue AND the audit
+            # store are down, the proposal is COMPLETELY LOST with no trace.
+            # Per NFPA 72 §23.8, every proposed Revit action MUST be
+            # auditable for legal traceability. We log at CRITICAL so
+            # operators can investigate — we don't block the operation.
+            logger.critical(
+                "AUDIT FAILURE: Failed to record REVIT_ACTION_PROPOSED event "
+                "for action %s (%s): %s. "
+                "NFPA 72 §23.8 PE review audit trail at risk — investigate AuditStore. "
+                "The proposed action may be lost without human review.",
+                action.id, action.action_type.value, audit_exc,
+                exc_info=True,
+            )
 
     # ------------------------------------------------------------------
     # Smithery Cloud Connection (Optional)

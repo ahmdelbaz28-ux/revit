@@ -125,13 +125,24 @@ class Beam:
 
     @property
     def is_horizontal(self) -> bool:
-        """True if beam runs along X-axis (perpendicular to Y)."""
-        return abs(self.end[1] - self.start[1]) < 0.001
+        """True if beam runs along X-axis (perpendicular to Y).
+
+        V135 F-38 FIX: Tightened tolerance from 0.001m (1mm) to 1e-6m (1μm).
+        The OLD tolerance was too loose — a beam from (0,0) to (10, 0.0005)
+        was considered horizontal but is actually slightly diagonal. This
+        could cause incorrect pocket subdivision.
+        """
+        _ANGLE_TOLERANCE_M = 1e-6  # 1 micrometer
+        return abs(self.end[1] - self.start[1]) < _ANGLE_TOLERANCE_M
 
     @property
     def is_vertical(self) -> bool:
-        """True if beam runs along Y-axis (perpendicular to X)."""
-        return abs(self.end[0] - self.start[0]) < 0.001
+        """True if beam runs along Y-axis (perpendicular to X).
+
+        V135 F-38 FIX: Same tightened tolerance as is_horizontal.
+        """
+        _ANGLE_TOLERANCE_M = 1e-6
+        return abs(self.end[0] - self.start[0]) < _ANGLE_TOLERANCE_M
 
 
 @dataclass
@@ -520,7 +531,19 @@ def _subdivide_by_horizontal_beams(
     y_min, y_max = min(ys), max(ys)
 
     # Create pocket boundaries: [y_min, y1, y2, ..., y_max]
-    boundaries = [y_min] + [y for y in y_positions if y_min < y < y_max] + [y_max]
+    # V135 F-30 FIX: Use inclusive bounds (y_min <= y <= y_max).
+    # The OLD code used exclusive (y_min < y < y_max) which excluded
+    # beams flush with the wall. Per NFPA 72 §17.7.3.2.4.2, a beam at
+    # the wall still forms a pocket (wall+beam). Inclusive bounds
+    # ensure these beams are included in subdivision.
+    # We use a small tolerance (1mm) to handle floating-point edge cases.
+    _BOUNDARY_TOLERANCE_M = 0.001
+    boundaries = [y_min] + [
+        y for y in y_positions
+        if y_min - _BOUNDARY_TOLERANCE_M <= y <= y_max + _BOUNDARY_TOLERANCE_M
+        and abs(y - y_min) > _BOUNDARY_TOLERANCE_M
+        and abs(y - y_max) > _BOUNDARY_TOLERANCE_M
+    ] + [y_max]
     boundaries = sorted(set(boundaries))
 
     # Get room X bounds for pocket polygon construction

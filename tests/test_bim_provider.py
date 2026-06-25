@@ -302,12 +302,13 @@ class TestAutodeskForgeProvider:
         assert "APS_CLIENT_ID" in result["error"]
 
     def test_health_check_with_credentials(self, monkeypatch):
-        """health_check returns healthy=True when credentials are set (stub)."""
+        """V135 F-19: health_check returns healthy=False (stub, not implemented)."""
         monkeypatch.setenv("APS_CLIENT_ID", "test_client_id")
         monkeypatch.setenv("APS_CLIENT_SECRET", "test_secret")
         p = AutodeskForgeProvider()
         result = p.health_check()
-        assert result["healthy"] is True
+        # V135 F-19: Stub returns healthy=False (was True — misleading)
+        assert result["healthy"] is False
         assert "stub" in result["details"].lower()
 
 

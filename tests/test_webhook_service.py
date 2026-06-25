@@ -41,7 +41,7 @@ def valid_subscription():
     return WebhookSubscription(
         id="sub-test-001",
         url="https://example.com/webhook",
-        secret="test-secret-key-1234567890",
+        secret="very-secure-secret-key-1234567890-abcdef",
         event_types=["DESIGN_COMPLETED"],
     )
 
@@ -53,7 +53,7 @@ def valid_subscription():
 
 class TestSignature:
     def test_signature_is_64_char_hex(self):
-        sig = compute_webhook_signature(b"payload", "secret-1234567890")
+        sig = compute_webhook_signature(b"payload", "very-secure-secret-key-1234567890-abcdef")
         assert len(sig) == 64
         # All hex characters
         int(sig, 16)  # raises if not hex
@@ -89,7 +89,7 @@ class TestSubscriptionValidation:
         with pytest.raises(ValueError, match="HTTP webhooks are not allowed"):
             prod_service.subscribe(WebhookSubscription(
                 id="sub-1", url="http://insecure.com/hook",
-                secret="secret-1234567890",
+                secret="very-secure-secret-key-1234567890-abcdef",
             ))
 
     def test_http_allowed_in_development_mode(self):
@@ -97,35 +97,36 @@ class TestSubscriptionValidation:
         # Should not raise
         dev_service.subscribe(WebhookSubscription(
             id="sub-1", url="http://localhost:8000/hook",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
         ))
 
     def test_short_secret_rejected(self, service):
-        with pytest.raises(ValueError, match="at least 16 characters"):
+        """V135 F-33: Secret must be ≥ 32 chars (NIST SP 800-107)."""
+        with pytest.raises(ValueError, match="at least 32 characters"):
             service.subscribe(WebhookSubscription(
                 id="sub-1", url="https://example.com/hook",
-                secret="short",
+                secret="short-secret-only-20-chars",  # 28 chars < 32
             ))
 
     def test_empty_id_rejected(self, service):
         with pytest.raises(ValueError, match="non-empty string"):
             service.subscribe(WebhookSubscription(
                 id="", url="https://example.com/hook",
-                secret="secret-1234567890",
+                secret="very-secure-secret-key-1234567890-abcdef",
             ))
 
     def test_empty_url_rejected(self, service):
         with pytest.raises(ValueError, match="non-empty string"):
             service.subscribe(WebhookSubscription(
                 id="sub-1", url="",
-                secret="secret-1234567890",
+                secret="very-secure-secret-key-1234567890-abcdef",
             ))
 
     def test_non_http_scheme_rejected(self, service):
         with pytest.raises(ValueError, match="http or https scheme"):
             service.subscribe(WebhookSubscription(
                 id="sub-1", url="ftp://example.com/hook",
-                secret="secret-1234567890",
+                secret="very-secure-secret-key-1234567890-abcdef",
             ))
 
     def test_host_allowlist_enforced(self):
@@ -136,13 +137,13 @@ class TestSubscriptionValidation:
         # Allowed host
         service.subscribe(WebhookSubscription(
             id="sub-1", url="https://allowed.com/hook",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
         ))
         # Disallowed host
         with pytest.raises(ValueError, match="not in allowlist"):
             service.subscribe(WebhookSubscription(
                 id="sub-2", url="https://forbidden.com/hook",
-                secret="secret-1234567890",
+                secret="very-secure-secret-key-1234567890-abcdef",
             ))
 
 
@@ -169,11 +170,11 @@ class TestSubscriptionManagement:
     def test_list_subscriptions(self, service):
         sub1 = WebhookSubscription(
             id="sub-1", url="https://example.com/1",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
         )
         sub2 = WebhookSubscription(
             id="sub-2", url="https://example.com/2",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
         )
         service.subscribe(sub1)
         service.subscribe(sub2)
@@ -196,7 +197,7 @@ class TestEventMatching:
     def test_empty_event_types_matches_all(self):
         sub = WebhookSubscription(
             id="sub-1", url="https://example.com/hook",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
             event_types=[],  # empty = receive all
         )
         assert sub.matches_event("ANY_EVENT") is True
@@ -204,7 +205,7 @@ class TestEventMatching:
     def test_paused_subscription_doesnt_match(self):
         sub = WebhookSubscription(
             id="sub-1", url="https://example.com/hook",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
             status=WebhookStatus.PAUSED,
         )
         assert sub.matches_event("DESIGN_COMPLETED") is False
@@ -212,7 +213,7 @@ class TestEventMatching:
     def test_disabled_subscription_doesnt_match(self):
         sub = WebhookSubscription(
             id="sub-1", url="https://example.com/hook",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
             status=WebhookStatus.DISABLED,
         )
         assert sub.matches_event("DESIGN_COMPLETED") is False
@@ -250,7 +251,7 @@ class TestEventPublishing:
     def test_publish_skips_non_matching_subscribers(self, service):
         sub = WebhookSubscription(
             id="sub-1", url="https://example.com/hook",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
             event_types=["ROOM_ANALYSIS_COMPLETED"],  # different event
         )
         service.subscribe(sub)
@@ -275,7 +276,7 @@ class TestDeliveryRetry:
         sub = WebhookSubscription(
             id="sub-1",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
         )
         service.subscribe(sub)
 
@@ -294,7 +295,7 @@ class TestDeliveryRetry:
         sub = WebhookSubscription(
             id="sub-1",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
         )
         service.subscribe(sub)
         service.publish_event(
@@ -316,7 +317,7 @@ class TestDeliveryRetry:
         sub = WebhookSubscription(
             id="sub-1",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
         )
         service.subscribe(sub)
         service.publish_event(
@@ -355,7 +356,7 @@ class TestSecurity:
     def test_signature_verification_works(self):
         """Verify that HMAC signature can be recomputed and matches."""
         payload = b'{"event": "test"}'
-        secret = "my-secret-1234567890"
+        secret = "very-secure-secret-key-1234567890-abcdef"
         sig = compute_webhook_signature(payload, secret)
 
         # Receiver recomputes and compares
@@ -365,11 +366,11 @@ class TestSecurity:
     def test_is_https_detection(self):
         https_sub = WebhookSubscription(
             id="sub-1", url="https://example.com",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
         )
         http_sub = WebhookSubscription(
             id="sub-2", url="http://example.com",
-            secret="secret-1234567890",
+            secret="very-secure-secret-key-1234567890-abcdef",
         )
         assert https_sub.is_https() is True
         assert http_sub.is_https() is False

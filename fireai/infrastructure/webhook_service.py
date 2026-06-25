@@ -270,6 +270,7 @@ class WebhookDeliveryService:
         dlq_max_size: int = DEFAULT_DLQ_MAX_SIZE,
         allow_http: Optional[bool] = None,
         allowed_hosts: Optional[Set[str]] = None,
+        history_max_size: int = 1000,
     ) -> None:
         """Initialize the webhook delivery service.
 
@@ -290,6 +291,8 @@ class WebhookDeliveryService:
         self.retry_backoff_base = retry_backoff_base
         self.retry_backoff_max = retry_backoff_max
         self.dlq_max_size = dlq_max_size
+        # V135 F-21: Configurable history cap (was hardcoded 1000)
+        self.history_max_size = history_max_size
 
         # Determine HTTP allowance
         if allow_http is None:
@@ -412,10 +415,14 @@ class WebhookDeliveryService:
             )
 
         # Secret validation
-        if not sub.secret or len(sub.secret) < 16:
+        # V135 F-33 FIX: Increased minimum secret length from 16 to 32 chars.
+        # Per NIST SP 800-107, HMAC-SHA256 should use keys ≥ 32 bytes.
+        # The OLD 16-char minimum was below NIST recommendation.
+        MIN_HMAC_SECRET_LENGTH = 32
+        if not sub.secret or len(sub.secret) < MIN_HMAC_SECRET_LENGTH:
             raise ValueError(
-                "HMAC secret must be at least 16 characters for security. "
-                f"Got {len(sub.secret)} characters."
+                f"HMAC secret must be at least {MIN_HMAC_SECRET_LENGTH} characters "
+                f"for security (NIST SP 800-107). Got {len(sub.secret) if sub.secret else 0} characters."
             )
 
         # Event type validation
@@ -611,8 +618,9 @@ class WebhookDeliveryService:
             # Store in history (capped)
             with self._lock:
                 self._delivery_history.append(attempt)
-                if len(self._delivery_history) > 1000:
-                    self._delivery_history = self._delivery_history[-1000:]
+                # V135 F-21: Use configurable history_max_size (was hardcoded 1000)
+                if len(self._delivery_history) > self.history_max_size:
+                    self._delivery_history = self._delivery_history[-self.history_max_size:]
 
             if attempt.status == DeliveryStatus.SUCCESS:
                 logger.info(
@@ -675,8 +683,21 @@ class WebhookDeliveryService:
                     "nfpa_reference": "NFPA 72-2022 §7.5 (Audit Trail)",
                 },
             )
-        except Exception:
-            pass  # never block on audit failure
+        except Exception as audit_exc:
+            # V135 F-20 FIX: Audit failure MUST be escalated, not silenced.
+            # The OLD code did `except Exception: pass` which silently
+            # swallowed audit failures. Per NFPA 72 §7.5, audit trail
+            # integrity is a legal requirement — failures MUST be logged
+            # at CRITICAL level so operators can investigate.
+            # We still don't block the operation (fail-safe), but we
+            # make the failure visible.
+            logger.critical(
+                "AUDIT FAILURE: Failed to record WEBHOOK_DELIVERY_FAILED event "
+                "for subscription %s event %s: %s. "
+                "NFPA 72 §7.5 audit trail integrity at risk — investigate AuditStore.",
+                subscription.id, event_id, audit_exc,
+                exc_info=True,
+            )
 
     def _check_ssrf_url(self, url: str) -> Optional[str]:
         """V134 F-1: Pre-flight SSRF check — reject internal/reserved IPs.
