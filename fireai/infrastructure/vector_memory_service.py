@@ -384,16 +384,19 @@ class VectorMemoryService:
 
             search_filter = Filter(must=must_conditions) if must_conditions else None
 
-            results = self._client.search(
+            # V142 FIX: Qdrant client v1.18+ uses query_points() not search()
+            results = self._client.query_points(
                 collection_name=collection,
-                query_vector=query_embedding,
+                query=query_embedding,
                 limit=limit,
                 score_threshold=score_threshold,
                 query_filter=search_filter,
             )
 
             entries: List[MemoryEntry] = []
-            for hit in results:
+            # query_points returns QueryResponse with .points attribute
+            points = results.points if hasattr(results, 'points') else results
+            for hit in points:
                 payload = hit.payload or {}
                 entries.append(MemoryEntry(
                     id=str(hit.id),
