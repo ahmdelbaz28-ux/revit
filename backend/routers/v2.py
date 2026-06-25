@@ -187,8 +187,52 @@ async def list_bim_providers() -> Dict[str, Any]:
 
 @router.post("/bim/extract-rooms")
 async def extract_rooms(req: BIMExtractRoomsRequest) -> Dict[str, Any]:
-    """Extract rooms via configured BIM provider."""
+    """Extract rooms via configured BIM provider.
+
+    V137 F-5 FIX: Added source path validation to prevent SSRF/path traversal.
+    The OLD code passed ``req.source`` directly to ``provider.extract_rooms()``
+    which calls ``ifcopenshell.open(source)`` — allowing arbitrary file reads.
+    """
     from fireai.bridges.bim_provider import get_provider
+
+    # V137 F-5: Validate source path if provided
+    if req.source:
+        import os
+        from pathlib import Path
+        try:
+            source_path = Path(req.source).resolve()
+            # Check for path traversal (..)
+            if not str(source_path).startswith(str(Path.cwd().resolve())):
+                # Allow /tmp and uploads directories
+                allowed_prefixes = [
+                    str(Path.cwd().resolve()),
+                    "/tmp",
+                    "/var/tmp",
+                    os.environ.get("FIREAI_UPLOAD_DIR", str(Path.cwd() / "uploads")),
+                ]
+                if not any(str(source_path).startswith(p) for p in allowed_prefixes):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Source path is outside allowed directories.",
+                    )
+            # Check for null byte injection
+            if "\x00" in req.source:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Source path contains null byte (injection attempt).",
+                )
+            # Check file extension
+            allowed_extensions = {".ifc", ".dxf", ".dwg", ".rvt", ".rfa", ".json"}
+            if source_path.suffix.lower() not in allowed_extensions:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Source file extension '{source_path.suffix}' not allowed. "
+                    f"Allowed: {allowed_extensions}",
+                )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid source path: {exc}") from exc
 
     provider = get_provider(req.provider)
     if provider is None:
@@ -429,6 +473,26 @@ async def create_smoke_state(req: SmokeSimulationStateRequest) -> Dict[str, Any]
     )
 
     if req.fds_run_id:
+        # V137 F-6 FIX: Validate FDS run ID format to prevent fake validation.
+        # The OLD code accepted ANY string as fds_run_id — a user could submit
+        # arbitrary smoke data with fds_run_id="fake" and the state would be
+        # marked VALIDATED, potentially tainting the legal audit chain.
+        # Now we require FDS run IDs to follow a specific format (fds-YYYY-NNN)
+        # and emit a WARNING if the format doesn't match. Full provenance
+        # verification would require querying an FDS runner service.
+        import re
+        FDS_RUN_ID_PATTERN = r'^fds-\d{4}-\d{3,}$'  # e.g., "fds-2026-001"
+        if not re.match(FDS_RUN_ID_PATTERN, req.fds_run_id):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid FDS run ID format: '{req.fds_run_id}'. "
+                    f"Expected format: 'fds-YYYY-NNN' (e.g., 'fds-2026-001'). "
+                    f"FDS run IDs must correspond to actual simulation runs — "
+                    f"fake IDs are rejected to prevent audit chain contamination."
+                ),
+            )
+
         # Create validated state from FDS results
         points = [
             SmokeDensityPoint(

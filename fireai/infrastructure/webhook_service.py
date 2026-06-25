@@ -479,54 +479,60 @@ class WebhookDeliveryService:
             event_id, event_type, len(matching),
         )
 
-        # V135 F-11 FIX: Deliver ASYNCHRONOUSLY via ThreadPoolExecutor.
-        # The OLD code delivered SYNCHRONOUSLY — a single slow/failing
-        # subscriber with 31s of retry backoff would block ALL subsequent
-        # subscribers and the calling thread (DoS).
+        # V135 F-11 / V137 F-3 FIX: Deliver ASYNCHRONOUSLY via ThreadPoolExecutor.
+        # The V135 F-11 "fix" used `concurrent.futures.wait()` which does NOT
+        # raise TimeoutError — it returns (done, not_done) tuple. The `except
+        # TimeoutError` was dead code. Additionally, `with ThreadPoolExecutor()`
+        # exit blocks via `shutdown(wait=True)` — negating the timeout entirely.
         #
-        # Now each subscriber gets its own worker thread. The publish_event
-        # call returns immediately after queueing the deliveries. A global
-        # delivery timeout (60s total) prevents unbounded thread retention.
-        #
-        # Per agent.md Rule 12: this is a reliability fix, not a safety fix.
-        # Timely event delivery matters for COMPLIANCE_VIOLATION_DETECTED.
+        # V137 F-3 FIX: Use `as_completed()` with timeout, which DOES raise
+        # TimeoutError when the timeout expires. Cancel pending futures on
+        # timeout. Do NOT use `with` statement (which blocks on exit) —
+        # manually shutdown(wait=False) to avoid blocking.
         try:
-            from concurrent.futures import ThreadPoolExecutor, as_completed
-            import concurrent.futures
+            from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeoutError
 
-            # Use a thread pool sized to the number of subscribers (capped at 10)
             max_workers = min(len(matching), 10)
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = []
-                for sub in matching:
-                    future = executor.submit(
-                        self._deliver_with_retry,
-                        subscription=sub,
-                        event_id=event_id,
-                        event_type=event_type,
-                        source=source,
-                        data=data,
-                        timestamp=timestamp,
-                        trace_id=trace_id,
-                    )
-                    futures.append(future)
+            executor = ThreadPoolExecutor(max_workers=max_workers)
+            futures = []
+            for sub in matching:
+                future = executor.submit(
+                    self._deliver_with_retry,
+                    subscription=sub,
+                    event_id=event_id,
+                    event_type=event_type,
+                    source=source,
+                    data=data,
+                    timestamp=timestamp,
+                    trace_id=trace_id,
+                )
+                futures.append(future)
 
-                # Wait for all deliveries with a global timeout (60s)
-                # Per F-11 fix: prevents unbounded blocking from slow subscribers
-                GLOBAL_DELIVERY_TIMEOUT_S = 60.0
-                try:
-                    concurrent.futures.wait(
-                        futures,
-                        timeout=GLOBAL_DELIVERY_TIMEOUT_S,
-                    )
-                except concurrent.futures.TimeoutError:
-                    logger.warning(
-                        "Webhook delivery timed out after %ds for event %s "
-                        "(some subscribers may not have received it)",
-                        GLOBAL_DELIVERY_TIMEOUT_S, event_id,
-                    )
+            GLOBAL_DELIVERY_TIMEOUT_S = 60.0
+            try:
+                # V137 F-3: as_completed raises TimeoutError when timeout expires
+                for future in as_completed(futures, timeout=GLOBAL_DELIVERY_TIMEOUT_S):
+                    try:
+                        future.result()
+                    except Exception as exc:
+                        logger.warning("Webhook delivery worker error: %s", exc)
+            except FuturesTimeoutError:
+                # V137 F-3: Cancel remaining futures (was dead code before)
+                cancelled = 0
+                for f in futures:
+                    if not f.done():
+                        f.cancel()
+                        cancelled += 1
+                logger.warning(
+                    "Webhook delivery timed out after %ds for event %s "
+                    "(%d subscribers may not have received it — cancelled)",
+                    GLOBAL_DELIVERY_TIMEOUT_S, event_id, cancelled,
+                )
+            finally:
+                # V137 F-3: shutdown(wait=False) to avoid blocking on exit
+                executor.shutdown(wait=False)
         except Exception as exc:
-            # Fallback to synchronous if thread pool fails (shouldn't happen)
+            # Fallback to synchronous if thread pool fails
             logger.warning(
                 "Async webhook delivery failed (%s) — falling back to synchronous",
                 exc,

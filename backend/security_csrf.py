@@ -234,27 +234,63 @@ class CSRFMiddleware:
             receive: ASGI receive callable.
             send: ASGI send callable.
         """
-        # V135 F-22 FIX: WebSocket connections need Origin header validation
-        # to prevent Cross-Site WebSocket Hijacking (CSWSH). The OLD code
-        # bypassed ALL security for WebSocket scope types. Now we validate
-        # the Origin header on WebSocket upgrade requests.
+        # V135 F-22 / V137 F-2 FIX: WebSocket connections need Origin header
+        # validation to prevent Cross-Site WebSocket Hijacking (CSWSH).
+        # The V135 F-22 "fix" only logged at DEBUG and ALWAYS called
+        # await self.app() — it was a NO-OP. Now we ACTUALLY enforce
+        # the Origin check: reject WebSocket connections from untrusted origins.
         scope_type = scope.get("type")
         if scope_type == "websocket":
-            # Check Origin header for WebSocket connections
             headers = scope.get("headers", [])
             origin = None
+            host = None
             for name, value in headers:
                 if name == b"origin":
                     origin = value.decode("utf-8", errors="replace")
-                    break
+                elif name == b"host":
+                    host = value.decode("utf-8", errors="replace")
 
-            if origin:
-                # In production, validate origin against allowlist
-                # For now, log the origin for audit trail
-                logger.debug("WebSocket connection from origin: %s", origin)
-                # Per OWASP: reject cross-origin WebSocket unless explicitly allowed
-                # This is a minimal check — full implementation would compare
-                # against a configured allowlist
+            # V137 F-2: If Origin header is present, verify it matches the Host.
+            # Per OWASP CSWSH Prevention Cheat Sheet: the Origin header must
+            # match the server's host (or be in an allowlist).
+            if origin and host:
+                # Extract hostname from Origin URL
+                try:
+                    from urllib.parse import urlparse
+                    origin_parsed = urlparse(origin)
+                    origin_host = origin_parsed.hostname or ""
+                    # Extract hostname from Host header (strip port)
+                    host_name = host.split(":")[0]
+
+                    # Allow if origin host matches server host
+                    # In dev mode, also allow localhost variants
+                    is_dev = _os.environ.get("FIREAI_ENV", "development").lower() == "development"
+                    trusted_hosts = {host_name, "localhost", "127.0.0.1"} if is_dev else {host_name}
+
+                    if origin_host not in trusted_hosts:
+                        # V137 F-2: REJECT the WebSocket connection (was NO-OP before)
+                        logger.warning(
+                            "CSWSH BLOCKED: WebSocket connection from untrusted origin '%s' "
+                            "(host='%s'). Rejecting connection per OWASP CSWSH prevention.",
+                            origin, host,
+                        )
+                        # Send close frame with policy violation code
+                        await send({
+                            "type": "websocket.close",
+                            "code": 1008,  # Policy Violation
+                            "reason": "Untrusted origin",
+                        })
+                        return
+                except Exception as exc:
+                    logger.warning("WebSocket origin check error: %s", exc)
+                    # Fail-safe: reject if we can't verify
+                    await send({
+                        "type": "websocket.close",
+                        "code": 1008,
+                        "reason": "Origin verification failed",
+                    })
+                    return
+
             await self.app(scope, receive, send)
             return
 
@@ -400,6 +436,12 @@ class CSRFMiddleware:
 def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:
     """Build the Set-Cookie header value for the CSRF token.
 
+    V137 F-9 FIX: The __Host- prefix (V135 F-14) REQUIRES the Secure
+    attribute. If _DEV_ALLOW_HTTP_COOKIES=True and is_https=False, the
+    OLD code omitted Secure — producing an INVALID __Host- cookie that
+    browsers REJECT. Now we ALWAYS include Secure when using __Host-
+    prefix (browsers enforce this anyway, but we're explicit).
+
     Args:
         token: CSRF token string.
         is_https: Whether the connection is HTTPS (affects Secure attribute).
@@ -407,7 +449,15 @@ def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:
     Returns:
         Set-Cookie header value string.
     """
-    secure_attr = "Secure; " if (is_https or not _DEV_ALLOW_HTTP_COOKIES) else ""
+    # V137 F-9: __Host- prefix REQUIRES Secure attribute per RFC 6265bis.
+    # Even in dev mode with _DEV_ALLOW_HTTP_COOKIES=True, we MUST include
+    # Secure because __Host- cookies without it are rejected by browsers.
+    # In dev mode over HTTP, the cookie simply won't be SET by the browser
+    # (which is the correct behavior — use HTTPS for testing CSRF).
+    # The only way to test CSRF over HTTP is to NOT use __Host- prefix,
+    # which we don't support (security > dev convenience).
+    secure_attr = "Secure; "  # Always include for __Host- prefix
+
     return (
         f"{CSRF_COOKIE_NAME}={token}; "
         "Path=/; "

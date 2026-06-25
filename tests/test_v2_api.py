@@ -311,19 +311,20 @@ class TestSmokeSimulationEndpoint:
         assert "NOT VALIDATED" in data["validation_warning"]
 
     def test_create_validated_state_with_fds(self, client, auth_headers):
+        """V137 F-6: FDS run ID must match format 'fds-YYYY-NNN'."""
         r = client.post("/api/v2/smoke-simulation/state", json={
             "room_id": "R-002",
             "smoke_density_points": [
                 {"x": 5.0, "y": 3.0, "z": 1.7, "density_kg_m3": 0.025},
             ],
             "visibility_at_height": {"1.7": 8.5},
-            "fds_run_id": "fds-001",
+            "fds_run_id": "fds-2026-001",  # V137 F-6: valid format
         }, headers=auth_headers)
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "validated"
         assert data["is_validated"] is True
-        assert data["fds_run_id"] == "fds-001"
+        assert data["fds_run_id"] == "fds-2026-001"
 
 
 # ---------------------------------------------------------------------------

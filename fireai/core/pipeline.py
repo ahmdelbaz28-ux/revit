@@ -1747,8 +1747,46 @@ def _failed_result(
     t_total: float,
     room_id: str = "",
 ) -> PipelineResult:
-    """Build a failure result when a critical stage fails."""
+    """Build a failure result when a critical stage fails.
+
+    V137 F-4 FIX: Added audit chain recording for FAILED analyses.
+    The V132 P0 fix only recorded audits on SUCCESS paths (the normal
+    return at the end of analyze_room). Early returns via _failed_result
+    skipped the audit write entirely — leaving ZERO forensic trail for
+    the cases that MOST need investigation (stage failures).
+    Now we record a ROOM_ANALYSIS event with success=False before returning.
+    """
     room_id = room_id or str(payload.get("room_id", "UNKNOWN") if isinstance(payload, dict) else "UNKNOWN")
+
+    # V137 F-4: Record audit for failed analysis (was missing entirely)
+    try:
+        from fireai.core.audit_store import AuditStore as _AuditStore
+        _AuditStore.add_event(
+            event_type="ROOM_ANALYSIS_FAILED",
+            room_id=room_id,
+            details_dict={
+                "run_id": run_id,
+                "success": False,
+                "release_status": "blocked",
+                "safety_tier": SafetyTier.REJECTED.value,
+                "errors": errors[:10],  # First 10 errors (cap for size)
+                "stage_count": len(stages),
+                "failed_stages": [s.stage_name for s in stages if not s.success],
+                "total_ms": round((time.perf_counter() - t_total) * 1000.0, 2),
+                "source": "stateless_api_pipeline_failed_result",
+                "nfpa_reference": "NFPA 72-2022 §7.5 (Audit Trail)",
+            },
+        )
+    except Exception as audit_exc:
+        warnings.append(
+            f"[AUDIT CHAIN] Failed to record ROOM_ANALYSIS_FAILED event: {audit_exc!r}. "
+            f"NFPA 72 §7.5 audit trail integrity at risk."
+        )
+        logger.error(
+            "Audit chain write failed for FAILED run_id=%s room_id=%s: %s",
+            run_id, room_id, audit_exc, exc_info=True,
+        )
+
     return PipelineResult(
         run_id=run_id,
         room_id=room_id,

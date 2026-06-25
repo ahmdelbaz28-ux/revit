@@ -163,10 +163,10 @@ class TestIFC43Mapper:
         assert "IsCodeCompliant" in safety_pset
 
     def test_map_detector_unknown_type_defaults_to_smoke(self, mapper, sample_detector):
-        """Unknown detector type defaults to SMOKE_DETECTOR (conservative)."""
+        """V137 F-8: Unknown detector type raises ValueError (was silent default)."""
         d_unknown = {**sample_detector, "type": "unknown_type"}
-        result = mapper.map_detector(d_unknown)
-        assert result.predefined_type == "SMOKE_DETECTOR"
+        with pytest.raises(ValueError, match="Unknown FireAI detector type"):
+            mapper.map_detector(d_unknown)
 
     def test_map_detector_heat_type(self, mapper, sample_detector):
         """Heat detector must map correctly."""

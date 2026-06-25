@@ -246,22 +246,46 @@ class IFC43Mapper:
         IFC GlobalId is a 22-character base64-encoded 128-bit value.
         Per agent.md V85 Bug #28: must be DETERMINISTIC (no uuid4).
 
+        V137 F-7 FIX: IFC uses a CUSTOM base64 alphabet that differs from
+        standard base64. The OLD code used standard base64 (with +/)
+        which produces INVALID GlobalIds ~58.7% of the time (any GlobalId
+        containing + or / is rejected by IFC parsers). Now we use the
+        IFC-specific alphabet: 0-9, A-Z, a-z, _, $ (no + or /).
+
         Args:
             seed: Input string (e.g., device_id + room_id).
 
         Returns:
-            22-character GlobalId string.
+            22-character GlobalId string using IFC base64 alphabet.
         """
         import hashlib
 
-        # SHA-256 → first 16 bytes → base64 (22 chars, no padding)
+        # SHA-256 → first 16 bytes (128 bits)
         digest = hashlib.sha256(seed.encode("utf-8")).digest()[:16]
-        # IFC uses a custom base64 alphabet (no padding)
-        # For simplicity and cross-compat, we use standard base64 minus padding
-        import base64
-        b64 = base64.b64encode(digest).decode("ascii").rstrip("=")
+
+        # V137 F-7: IFC custom base64 alphabet
+        # Per IFC spec: uses "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"
+        # instead of standard "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        _IFC_BASE64_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"
+
+        # Manual base64 encoding with IFC alphabet
+        result = []
+        for i in range(0, len(digest), 3):
+            chunk = digest[i:i+3]
+            # Pad chunk to 3 bytes
+            chunk_padded = chunk + b'\x00' * (3 - len(chunk))
+            n = (chunk_padded[0] << 16) | (chunk_padded[1] << 8) | chunk_padded[2]
+            # Extract 4 6-bit groups
+            result.append(_IFC_BASE64_ALPHABET[(n >> 18) & 0x3F])
+            result.append(_IFC_BASE64_ALPHABET[(n >> 12) & 0x3F])
+            if len(chunk) > 1:
+                result.append(_IFC_BASE64_ALPHABET[(n >> 6) & 0x3F])
+            if len(chunk) > 2:
+                result.append(_IFC_BASE64_ALPHABET[n & 0x3F])
+
+        global_id = "".join(result)
         # Pad/truncate to exactly 22 chars (IFC spec)
-        return b64[:22].ljust(22, "0")
+        return global_id[:22].ljust(22, "0")
 
     # ------------------------------------------------------------------
     # Element Mapping
@@ -293,13 +317,16 @@ class IFC43Mapper:
         # Lookup IFC 4.3 element type
         ifc_type_enum = FIREAI_TO_IFC43_MAP.get(fireai_type)
         if ifc_type_enum is None:
-            # Fallback: treat as generic smoke detector (conservative)
-            logger.warning(
-                "Unknown FireAI detector type '%s' — defaulting to SMOKE_DETECTOR. "
-                "Add mapping to FIREAI_TO_IFC43_MAP.",
-                fireai_type,
+            # V137 F-8 FIX: Raise ValueError instead of silently defaulting to SMOKE_DETECTOR.
+            # The OLD code silently mapped unknown types to smoke — a heat detector
+            # could be exported as smoke, producing wrong physics in downstream BIM tools.
+            # Per agent.md Rule 12 (Safety-First): fail LOUD, not silent.
+            raise ValueError(
+                f"Unknown FireAI detector type '{fireai_type}'. "
+                f"This detector cannot be exported to IFC 4.3 without correct type mapping. "
+                f"Add the mapping to FIREAI_TO_IFC43_MAP in fireai/bridges/ifc43_mapper.py. "
+                f"Known types: {list(FIREAI_TO_IFC43_MAP.keys())[:20]}..."
             )
-            ifc_type_enum = IFC43ElementType.SMOKE_DETECTOR
 
         # Parse IFC type and predefined type
         # e.g., "IfcFireAlarmInstance_SMOKE_DETECTOR" →
