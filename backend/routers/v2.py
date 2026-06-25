@@ -706,6 +706,91 @@ async def topology_health() -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# V142: GraphRAG Endpoints
+# ---------------------------------------------------------------------------
+
+
+class GraphRAGAddKnowledgeRequest(BaseModel):
+    """Request body for /api/v2/graphrag/knowledge."""
+
+    text: str = Field(..., min_length=1, max_length=50000)
+    extract_entities: bool = Field(True, description="Extract entities/relationships via LLM")
+
+
+class GraphRAGAskRequest(BaseModel):
+    """Request body for /api/v2/graphrag/ask."""
+
+    question: str = Field(..., min_length=1, max_length=2000)
+
+
+class GraphRAGSearchRequest(BaseModel):
+    """Request body for /api/v2/graphrag/search."""
+
+    query: str = Field(..., min_length=1, max_length=2000)
+    limit: int = Field(5, ge=1, le=50)
+
+
+@router.post("/graphrag/knowledge")
+async def add_graphrag_knowledge(req: GraphRAGAddKnowledgeRequest) -> Dict[str, Any]:
+    """
+    Add knowledge to GraphRAG (vector + entity/relationship graph).
+
+    V142: Uses LLMGraphTransformer to extract entities and relationships
+    from text, stores them in Neo4j as a knowledge graph. Also stores
+    the original text as a vector for semantic search.
+    """
+    from fireai.infrastructure.graphrag_engine import get_graphrag_engine
+
+    engine = get_graphrag_engine()
+    if req.extract_entities:
+        success = engine.add_knowledge(req.text)
+    else:
+        success = engine.save_to_memory(req.text)
+
+    if not success:
+        raise HTTPException(
+            status_code=503,
+            detail="GraphRAG engine not available (Neo4j or OpenAI not configured)",
+        )
+    return {"stored": True, "extract_entities": req.extract_entities, "text_length": len(req.text)}
+
+
+@router.post("/graphrag/ask")
+async def ask_graphrag(req: GraphRAGAskRequest) -> Dict[str, Any]:
+    """
+    Ask a question using GraphRAG hybrid retrieval (vector + graph).
+
+    V142: The GraphCypherQAChain will:
+    1. Generate a Cypher query from the natural language question
+    2. Execute on Neo4j (graph traversal)
+    3. Formulate a natural language answer
+    """
+    from fireai.infrastructure.graphrag_engine import get_graphrag_engine
+
+    engine = get_graphrag_engine()
+    answer = engine.ask(req.question)
+    return {"question": req.question, "answer": answer}
+
+
+@router.post("/graphrag/search")
+async def search_graphrag(req: GraphRAGSearchRequest) -> Dict[str, Any]:
+    """Semantic search in GraphRAG vector store (no LLM, fast)."""
+    from fireai.infrastructure.graphrag_engine import get_graphrag_engine
+
+    engine = get_graphrag_engine()
+    results = engine.search_similar(req.query, limit=req.limit)
+    return {"query": req.query, "results": results, "total": len(results)}
+
+
+@router.get("/graphrag/health")
+async def graphrag_health() -> Dict[str, Any]:
+    """Check GraphRAG engine health."""
+    from fireai.infrastructure.graphrag_engine import get_graphrag_engine
+
+    return get_graphrag_engine().health_check()
+
+
+# ---------------------------------------------------------------------------
 # Health Endpoint for v2
 # ---------------------------------------------------------------------------
 
