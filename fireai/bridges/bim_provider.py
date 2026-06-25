@@ -474,7 +474,12 @@ class IfcFileProvider:
     _CAPABILITIES: Tuple[BIMProviderCapability, ...] = (
         BIMProviderCapability.ROOM_EXTRACTION,
         BIMProviderCapability.DEVICE_READ,
-        BIMProviderCapability.DEVICE_WRITE,
+        # V135 F-10 FIX: Removed DEVICE_WRITE — write_devices is a stub that
+        # returns 0. Declaring a capability the provider doesn't actually
+        # implement is a LIE that could cause callers to assume devices were
+        # written when they weren't. Per the BIMProvider Protocol docstring:
+        # "providers without write capability MUST raise NotImplementedError".
+        # The stub will be re-enabled when full IFC writing is implemented.
         BIMProviderCapability.CLOUD_NATIVE,
         BIMProviderCapability.THREAD_SAFE,
     )
@@ -586,15 +591,21 @@ class IfcFileProvider:
     ) -> int:
         """Write devices to IFC file (append mode).
 
-        Note: This is a stub. Full IFC writing requires creating
-        IfcFireAlarmInstance entities with proper spatial containment.
+        V135 F-10 FIX: This is a stub. Previously returned 0 (silent failure).
+        Now raises NotImplementedError per the BIMProvider Protocol docstring:
+        "providers without write capability MUST raise NotImplementedError".
+
+        Full IFC writing requires creating IfcFireAlarmInstance entities
+        with proper spatial containment. Use ``fireai.core.revit_exporter``
+        for full IFC generation until this is implemented.
         """
-        logger.warning(
-            "IfcFileProvider.write_devices is a stub — %d devices not written. "
-            "Use fireai.core.revit_exporter for full IFC generation.",
-            len(devices),
+        raise NotImplementedError(
+            "IfcFileProvider.write_devices is not yet implemented. "
+            "DEVICE_WRITE capability was removed from _CAPABILITIES in V135 F-10. "
+            "Use fireai.core.revit_exporter for full IFC generation, or "
+            "contribute an implementation that creates IfcFireAlarmInstance "
+            "entities with proper spatial containment."
         )
-        return 0
 
     def health_check(self) -> Dict[str, Any]:
         return {

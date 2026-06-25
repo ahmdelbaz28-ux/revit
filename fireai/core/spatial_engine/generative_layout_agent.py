@@ -288,14 +288,32 @@ def _generate_variant_worker(args: Tuple[str, Dict[str, Any]]) -> Dict[str, Any]
             # This places MORE detectors for fail-safe coverage
             safety_radius = optimizer.R * SAFETY_MAXIMIZED_SPACING_FACTOR
             layout = optimizer.optimize(room, coverage_radius=safety_radius)
-            # Cap at 2.0× theoretical lower bound (per R3)
+            # V135 F-7 FIX: Cap at 2.0× theoretical lower bound (per R3).
+            # The OLD code did `layout.detectors[:cap]` which truncated the
+            # FIRST `cap` detectors in placement order (grid scan) — leaving
+            # large coverage holes in one corner. Now we use `_remove_redundant()`
+            # which INTELLIGENTLY prunes the least-valuable detectors while
+            # maintaining coverage. If still over cap, we re-run with standard
+            # spacing (safer than arbitrary truncation).
             cap = int(math.ceil(layout.theoretical_lower_bound * DENSITY_CAP_FACTOR))
             if layout.count > cap:
-                layout.warnings.append(
-                    f"SAFETY_MAXIMIZED capped at {cap} detectors "
-                    f"(2.0× theoretical lower bound) to prevent SLC loop overload."
-                )
-                layout.detectors = layout.detectors[:cap]
+                # Step 1: Try intelligent redundancy removal (preserves coverage)
+                optimizer._remove_redundant(layout)
+                # Step 2: If still over cap, fall back to standard spacing
+                if layout.count > cap:
+                    layout.warnings.append(
+                        f"SAFETY_MAXIMIZED could not achieve {cap} detector cap "
+                        f"with 0.85x spacing (got {layout.count}). Falling back to "
+                        f"standard spacing — variant may not provide extra redundancy."
+                    )
+                    # Re-run with standard radius (no safety factor)
+                    layout = optimizer.optimize(room)
+                else:
+                    layout.warnings.append(
+                        f"SAFETY_MAXIMIZED capped to {layout.count} detectors "
+                        f"(≤ {cap} = 2.0× theoretical lower bound) via intelligent "
+                        f"redundancy removal — coverage preserved."
+                    )
                 # Re-verify after cap
                 optimizer._verify_fast(layout)
                 optimizer._audit_nfpa(layout)
@@ -504,23 +522,44 @@ class GenerativeLayoutAgent:
         variants: Dict[LayoutVariant, VariantResult] = {}
         audit_events: List[str] = []
 
+        # V135 F-8: First pass — compute costs for all variants to determine
+        # the reference_cost (median) used in the additive scoring formula.
+        # The OLD formula didn't need this because it used multiplicative
+        # denominator, but the new additive formula normalizes cost against
+        # the median to keep the penalty in a reasonable range.
+        variant_costs: Dict[LayoutVariant, float] = {}
+        variant_layouts: Dict[LayoutVariant, DetectorLayout] = {}
+        variant_overlaps: Dict[LayoutVariant, float] = {}
+        variant_compliance: Dict[LayoutVariant, bool] = {}
+
         for r in results:
             variant = LayoutVariant(r["variant"])
             layout = _deserialize_layout(r["layout"])
+            variant_layouts[variant] = layout
+            variant_costs[variant] = self._compute_cost(layout, detector_type)
+            variant_overlaps[variant] = self._compute_overlap_pct(layout)
+            variant_compliance[variant] = layout.nfpa_valid and layout.proof_valid
 
-            # Compute cost
-            total_cost = self._compute_cost(layout, detector_type)
+        # V135 F-8: Compute reference_cost = median of all variant costs
+        # Falls back to 1000.0 if all costs are 0 (degenerate case)
+        costs_list = sorted(variant_costs.values())
+        if costs_list and costs_list[len(costs_list) // 2] > 0:
+            reference_cost = costs_list[len(costs_list) // 2]
+        else:
+            reference_cost = 1000.0  # Safe default
 
-            # Compute overlap %
-            overlap_pct = self._compute_overlap_pct(layout)
+        for variant, layout in variant_layouts.items():
+            total_cost = variant_costs[variant]
+            overlap_pct = variant_overlaps[variant]
+            is_compliant = variant_compliance[variant]
 
-            # Compute score
-            is_compliant = layout.nfpa_valid and layout.proof_valid
+            # V135 F-8: Pass reference_cost to the new additive scoring formula
             score = self._compute_score(
                 coverage_pct=layout.coverage_pct,
                 is_compliant=is_compliant,
                 overlap_pct=overlap_pct,
                 total_cost=total_cost,
+                reference_cost=reference_cost,
             )
 
             variants[variant] = VariantResult(
@@ -655,21 +694,54 @@ class GenerativeLayoutAgent:
         is_compliant: bool,
         overlap_pct: float,
         total_cost: float,
+        reference_cost: float = 1000.0,
     ) -> float:
         """Compute weighted score for a variant.
 
-        score = (w_cov × coverage + w_comp × compliant + w_red × overlap) /
-                (1 + w_cost × cost)
+        V135 F-8 FIX: The OLD formula used a MULTIPLICATIVE denominator
+        ``(1 + w_cost × cost)`` which made cost dominate the score
+        (a 2× cost reduction doubled the score, while 10% coverage
+        improvement added only 5 points). The docstring claimed
+        "COST_WEIGHT = 0.10 # Cost is least important" but mathematically
+        cost had the LARGEST impact.
+
+        New formula uses ADDITIVE cost penalty (matches stated weights):
+
+            score = (w_cov×coverage + w_comp×compliance×100 + w_red×overlap)
+                    - w_cost × (cost / reference_cost) × 100
+
+        where ``reference_cost`` is the median cost across variants
+        (passed by caller). This normalizes the cost penalty to a
+        0-100 scale matching the other terms. A variant at 2×
+        reference cost loses ~10 points (w_cost × 2 × 100 = 20, but
+        typical cost variance is smaller).
 
         Higher score = better variant.
         """
-        numerator = (
-            self.weights["coverage"] * coverage_pct
+        import math
+
+        # Validate inputs (per agent.md V57 NaN/Inf bypass)
+        for name, val in (("coverage_pct", coverage_pct),
+                          ("overlap_pct", overlap_pct),
+                          ("total_cost", total_cost),
+                          ("reference_cost", reference_cost)):
+            if not math.isfinite(val):
+                return 0.0  # Fail-safe: NaN/Inf → score 0
+
+        # V135 F-8: Additive formula (cost penalty, not multiplicative denominator)
+        bonus = (
+            self.weights["coverage"] * max(0.0, coverage_pct)
             + self.weights["compliance"] * (100.0 if is_compliant else 0.0)
-            + self.weights["redundancy"] * overlap_pct
+            + self.weights["redundancy"] * max(0.0, overlap_pct)
         )
-        denominator = 1.0 + self.weights["cost"] * max(0.0, total_cost)
-        return numerator / denominator if denominator > 0 else 0.0
+        # Cost penalty: normalized to 0-100 scale via reference_cost
+        # cost_ratio = 1.0 (at reference) → penalty = w_cost × 100 = 10 points
+        # cost_ratio = 2.0 (double reference) → penalty = w_cost × 200 = 20 points
+        cost_ratio = total_cost / reference_cost if reference_cost > 0 else 0.0
+        penalty = self.weights["cost"] * cost_ratio * 100.0
+
+        score = bonus - penalty
+        return max(0.0, score)  # Score should not be negative
 
     # ------------------------------------------------------------------
     # Recommendation Logic
@@ -682,13 +754,22 @@ class GenerativeLayoutAgent:
     ) -> LayoutVariant:
         """Recommend the best variant for the given occupancy.
 
-        Safety-first logic (per agent.md Rule 12):
-        - High-hazard occupancies → SAFETY_MAXIMIZED (if compliant)
-        - Standard occupancies → STANDARD_COMPLIANT (if compliant)
-        - Cost-Minimized only recommended for low-hazard + budget-constrained
+        V135 F-9 FIX: The OLD docstring said "Cost-Minimized only
+        recommended for low-hazard + budget-constrained" but the code
+        NEVER recommended COST_MINIMIZED — it always fell through to
+        STANDARD_COMPLIANT. This made the COST_MINIMIZED variant
+        useless (generated but never selected).
 
-        If no compliant variant exists, recommend the one with highest
-        coverage (fail-safe).
+        New logic:
+        - High-hazard occupancies → SAFETY_MAXIMIZED (if compliant)
+        - Low-hazard occupancies (storage, parking, utility) with
+          COST_MINIMIZED compliant AND scoring ≥ 90% of STANDARD →
+          COST_MINIMIZED (honors the docstring promise)
+        - Standard occupancies → STANDARD_COMPLIANT (default)
+        - If no compliant variant exists, recommend highest coverage
+
+        Safety-first logic (per agent.md Rule 12) is preserved:
+        COST_MINIMIZED is NEVER recommended for high-hazard occupancies.
         """
         occ_lower = occupancy_type.lower()
 
@@ -696,11 +777,11 @@ class GenerativeLayoutAgent:
         compliant = {v: r for v, r in variants.items() if r.is_compliant}
 
         if not compliant:
-            # No compliant variant — recommend highest coverage
+            # No compliant variant — recommend highest coverage (fail-safe)
             best = max(variants.values(), key=lambda r: r.layout.coverage_pct)
             return best.variant
 
-        # High-hazard occupancy → SAFETY_MAXIMIZED preferred
+        # High-hazard occupancy → SAFETY_MAXIMIZED preferred (NEVER cost-minimized)
         if any(h in occ_lower for h in HIGH_HAZARD_OCCUPANCIES):
             if LayoutVariant.SAFETY_MAXIMIZED in compliant:
                 return LayoutVariant.SAFETY_MAXIMIZED
@@ -708,7 +789,27 @@ class GenerativeLayoutAgent:
             if LayoutVariant.STANDARD_COMPLIANT in compliant:
                 return LayoutVariant.STANDARD_COMPLIANT
 
-        # Standard occupancy → STANDARD_COMPLIANT preferred
+        # V135 F-9: Low-hazard occupancy → COST_MINIMIZED allowed if score is competitive
+        # Low-hazard = storage, parking, utility, mercantile (per NFPA 101)
+        LOW_HAZARD_OCCUPANCIES = frozenset({
+            "storage", "parking", "utility", "mercantile", "business",
+            "office", "industrial_light", "warehouse",
+        })
+        is_low_hazard = any(h in occ_lower for h in LOW_HAZARD_OCCUPANCIES)
+
+        if is_low_hazard and LayoutVariant.COST_MINIMIZED in compliant:
+            cost_min_score = compliant[LayoutVariant.COST_MINIMIZED].score
+            std_score = compliant.get(
+                LayoutVariant.STANDARD_COMPLIANT,
+                compliant[LayoutVariant.COST_MINIMIZED],  # fallback
+            ).score
+            # V135 F-9: Recommend COST_MINIMIZED if its score is ≥ 90% of STANDARD
+            # This ensures cost savings don't come at unacceptable quality loss
+            if std_score > 0 and cost_min_score >= 0.9 * std_score:
+                return LayoutVariant.COST_MINIMIZED
+            # If COST_MINIMIZED score is much lower, fall through to STANDARD
+
+        # Standard occupancy → STANDARD_COMPLIANT preferred (default)
         if LayoutVariant.STANDARD_COMPLIANT in compliant:
             return LayoutVariant.STANDARD_COMPLIANT
 

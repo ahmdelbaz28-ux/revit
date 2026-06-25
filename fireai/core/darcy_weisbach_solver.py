@@ -438,29 +438,51 @@ def _solve_colebrook_white(
         f = 0.02
 
     # ── Newton-Raphson iteration ──
+    # V135 F-15 FIX: Added NaN/Inf guards throughout the loop.
+    # The OLD code could produce NaN friction factor via:
+    #   - f becoming very small → 1/(f*sqrt_f) → Inf
+    #   - Inf - Inf → NaN
+    #   - NaN propagates to head_loss, pressure_loss (all NaN)
+    #   - NaN < 0 is False, so sanity checks don't catch it
+    # Now we break early if any intermediate value is non-finite.
     for iteration in range(COLEBROOK_MAX_ITERATIONS):
+        # V135 F-15: Guard against non-finite f at loop start
+        if not math.isfinite(f) or f <= 0:
+            break
+
         sqrt_f = math.sqrt(f) if f > 0 else 0.0
         if sqrt_f == 0:
             break
 
         # Colebrook-White function: g(f) = 1/√f + 2×log10( (ε/d)/3.7 + 2.51/(Re×√f) )
         # We want g(f) = 0
-        g = (1.0 / sqrt_f) + 2.0 * math.log10(
-            (relative_roughness / 3.7) + (2.51 / (reynolds * sqrt_f))
-        )
+        log_arg = (relative_roughness / 3.7) + (2.51 / (reynolds * sqrt_f))
+        # V135 F-15: log10 of non-positive → ValueError/NaN
+        if log_arg <= 0:
+            break
+        g = (1.0 / sqrt_f) + 2.0 * math.log10(log_arg)
+
+        # V135 F-15: Guard against non-finite g
+        if not math.isfinite(g):
+            break
 
         # Derivative: g'(f) = -1/(2×f^(3/2)) + 2 × (-1/ln(10)) × (-2.51/(Re×2×f^(3/2)))
         #                              / ( (ε/d)/3.7 + 2.51/(Re×√f) )
-        denom = (relative_roughness / 3.7) + (2.51 / (reynolds * sqrt_f))
+        denom = log_arg  # Same as log_arg
         if denom <= 0:
             break
         g_prime = -1.0 / (2.0 * f * sqrt_f) + (2.0 / math.log(10)) * (2.51 / (reynolds * 2.0 * f * sqrt_f)) / denom
 
-        if abs(g_prime) < 1e-15:
+        # V135 F-15: Guard against non-finite g_prime (Inf or NaN)
+        if not math.isfinite(g_prime) or abs(g_prime) < 1e-15:
             break
 
         # Newton-Raphson update: f_new = f - g(f)/g'(f)
         f_new = f - g / g_prime
+
+        # V135 F-15: Guard against non-finite f_new
+        if not math.isfinite(f_new):
+            break
 
         # Ensure f stays positive
         if f_new <= 0:
@@ -471,6 +493,21 @@ def _solve_colebrook_white(
             return f_new
 
         f = f_new
+
+    # V135 F-15: Final guard — if f is non-finite, return Haaland initial guess
+    if not math.isfinite(f) or f <= 0:
+        logger.warning(
+            "Colebrook-White iteration produced non-finite friction factor "
+            "(Re=%f, ε/d=%f). Returning Haaland approximation as fallback.",
+            reynolds, relative_roughness,
+        )
+        # Recompute Haaland (the initial guess)
+        if reynolds > 0:
+            haaland_rhs = -1.8 * math.log10(
+                ((relative_roughness / 3.7) ** 1.11) + (6.9 / reynolds)
+            )
+            return (1.0 / haaland_rhs) ** 2 if haaland_rhs != 0 else 0.02
+        return 0.02
 
     # Return last computed value (may not have converged)
     logger.debug(

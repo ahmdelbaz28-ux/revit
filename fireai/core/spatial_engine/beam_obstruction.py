@@ -532,11 +532,11 @@ def _subdivide_by_horizontal_beams(
         y_low = boundaries[i]
         y_high = boundaries[i + 1]
 
-        # Construct rectangular pocket polygon
-        # NOTE: This assumes the room is roughly rectangular. For non-rectangular
-        # rooms, the pocket polygon would need to be the intersection of the
-        # room polygon with the Y-strip [y_low, y_high]. Full implementation
-        # would use Shapely.
+        # V135 F-16 FIX: Construct rectangular pocket polygon with WARNING.
+        # The OLD code silently assumed the room is rectangular. For
+        # non-rectangular rooms (L-shaped, T-shaped), the pocket polygon
+        # may include area OUTSIDE the room — leading to phantom detectors.
+        # Now we check if the room is rectangular; if not, we emit a warning.
         pocket_polygon = [
             (x_min, y_low),
             (x_max, y_low),
@@ -544,6 +544,18 @@ def _subdivide_by_horizontal_beams(
             (x_min, y_high),
         ]
         area = _compute_polygon_area(pocket_polygon)
+
+        # V135 F-16: Check if room is approximately rectangular
+        room_area = _compute_polygon_area(room_polygon)
+        bbox_area = (x_max - x_min) * (y_max - y_min)
+        is_rectangular = abs(room_area - bbox_area) < 0.01 * room_area  # 1% tolerance
+
+        # V135 F-17 FIX: Reduce pocket ceiling height by max beam depth.
+        # Per NFPA 72 §17.6.3.1.3: detector spacing in beam pockets is
+        # based on the EFFECTIVE ceiling height (ceiling - beam_depth).
+        # The OLD code used room ceiling height — too wide spacing.
+        max_beam_depth = max((b.depth_m for b in beams), default=0.0)
+        effective_ceiling_height = max(ceiling_height_m - max_beam_depth, 0.1)
 
         # Find which beams created this pocket
         creating_beams = [
@@ -555,9 +567,17 @@ def _subdivide_by_horizontal_beams(
             pocket_id=f"{room_id}-P{i+1}",
             polygon=pocket_polygon,
             area_m2=area,
-            ceiling_height_m=ceiling_height_m,  # Pocket ceiling = room ceiling
+            ceiling_height_m=effective_ceiling_height,  # V135 F-17: reduced by beam depth
             created_by_beam_ids=creating_beams,
         )
+        if not is_rectangular:
+            # V135 F-16: Warn that pocket area may include out-of-room space
+            logger.warning(
+                "Room %s pocket P%d: room is non-rectangular (room_area=%.2f, "
+                "bbox_area=%.2f). Pocket polygon may include out-of-room space. "
+                "Manual FPE review required per NFPA 72 §17.7.3.2.4.2.",
+                room_id, i + 1, room_area, bbox_area,
+            )
         pockets.append(pocket)
 
     return pockets
@@ -607,6 +627,15 @@ def _subdivide_by_vertical_beams(
         ]
         area = _compute_polygon_area(pocket_polygon)
 
+        # V135 F-16: Check if room is approximately rectangular
+        room_area = _compute_polygon_area(room_polygon)
+        bbox_area = (x_max - x_min) * (y_max - y_min)
+        is_rectangular = abs(room_area - bbox_area) < 0.01 * room_area
+
+        # V135 F-17: Reduce pocket ceiling height by max beam depth
+        max_beam_depth = max((b.depth_m for b in beams), default=0.0)
+        effective_ceiling_height = max(ceiling_height_m - max_beam_depth, 0.1)
+
         creating_beams = [
             b.id for b in beams
             if abs(b.start[0] - x_low) < 0.001 or abs(b.start[0] - x_high) < 0.001
@@ -616,9 +645,16 @@ def _subdivide_by_vertical_beams(
             pocket_id=f"{room_id}-P{i+1}",
             polygon=pocket_polygon,
             area_m2=area,
-            ceiling_height_m=ceiling_height_m,
+            ceiling_height_m=effective_ceiling_height,  # V135 F-17
             created_by_beam_ids=creating_beams,
         )
+        if not is_rectangular:
+            logger.warning(
+                "Room %s pocket P%d: room is non-rectangular (room_area=%.2f, "
+                "bbox_area=%.2f). Pocket polygon may include out-of-room space. "
+                "Manual FPE review required per NFPA 72 §17.7.3.2.4.2.",
+                room_id, i + 1, room_area, bbox_area,
+            )
         pockets.append(pocket)
 
     return pockets

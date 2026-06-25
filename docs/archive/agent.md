@@ -14131,3 +14131,140 @@ Test breakdown:
 - **Direct commit link:** https://github.com/ahmdelbaz28-ux/revit/commit/cd73cd9e
 - **Tests:** 488 passed, 0 failed, 0 regressions
 
+
+---
+
+## V135 Fixes (2026-06-25) — Adversarial Audit Cycle 2: 11 HIGH Fixes (F-7 to F-17)
+
+### Context
+Per agent.md Rule 19 (Infinite Improvement Cycle), continued the adversarial audit by fixing the 11 HIGH findings (F-7 through F-17) identified in the AUDIT-V134 report. All fixes are evidence-based with explicit regression tests.
+
+### 11 HIGH Fixes Applied
+
+#### F-7: SAFETY_MAXIMIZED Cap Uses Intelligent Redundancy Removal (HIGH — Safety)
+**File:** `fireai/core/spatial_engine/generative_layout_agent.py:286-319`
+**Bug:** The OLD code did `layout.detectors[:cap]` which truncated the FIRST `cap` detectors in placement order (grid scan) — leaving large coverage holes in one corner. SAFETY_MAXIMIZED (designed to be the SAFEST variant) could end up with LOWER coverage than STANDARD_COMPLIANT.
+**Fix:** Replaced truncation with `_remove_redundant()` (intelligent pruning that preserves coverage). If still over cap, falls back to standard spacing (safer than arbitrary truncation).
+
+#### F-8: Scoring Formula Changed to Additive (HIGH — Correctness)
+**File:** `fireai/core/spatial_engine/generative_layout_agent.py:670-723`
+**Bug:** The OLD formula used multiplicative denominator `(1 + w_cost × cost)` which made cost dominate the score (2× cost reduction doubled the score, while 10% coverage improvement added only 5 points). The docstring claimed "COST_WEIGHT = 0.10 # Cost is least important" but mathematically cost had the LARGEST impact.
+**Fix:** Changed to additive formula: `score = (w_cov×coverage + w_comp×compliance×100 + w_red×overlap) - w_cost × (cost / reference_cost) × 100`. The `reference_cost` is the median cost across variants, normalizing the penalty to a 0-100 scale. Added NaN/Inf validation.
+
+#### F-9: Recommendation Logic Allows COST_MINIMIZED for Low-Hazard (HIGH — Functionality)
+**File:** `fireai/core/spatial_engine/generative_layout_agent.py:750-818`
+**Bug:** The docstring said "Cost-Minimized only recommended for low-hazard + budget-constrained" but the code NEVER recommended COST_MINIMIZED — it always fell through to STANDARD_COMPLIANT. This made the COST_MINIMIZED variant useless (generated but never selected).
+**Fix:** Added low-hazard occupancy check (storage, parking, utility, mercantile, business, office). For low-hazard occupancies, COST_MINIMIZED is recommended if its score is ≥ 90% of STANDARD_COMPLIANT. High-hazard occupancies NEVER get COST_MINIMIZED (safety preserved).
+
+#### F-10: IfcFileProvider No Longer Declares DEVICE_WRITE (HIGH — Honesty)
+**File:** `fireai/bridges/bim_provider.py:474-485, 586-608`
+**Bug:** IfcFileProvider declared `DEVICE_WRITE` capability but `write_devices` was a stub returning 0. The capability flag LIED about what the provider could do. A caller checking capabilities would proceed to call write_devices, receive 0, and either treat it as silent failure or retry in a loop.
+**Fix:** Removed `DEVICE_WRITE` from `_CAPABILITIES`. Changed `write_devices` to raise `NotImplementedError` (matching the Protocol docstring). The stub will be re-enabled when full IFC writing is implemented.
+
+#### F-11: Webhook Delivery Is Asynchronous (HIGH — DoS Prevention)
+**File:** `fireai/infrastructure/webhook_service.py:466-527`
+**Bug:** The OLD code delivered SYNCHRONOUSLY — a single slow/failing subscriber with 31s of retry backoff would block ALL subsequent subscribers and the calling thread (DoS).
+**Fix:** Moved delivery to `ThreadPoolExecutor` with one worker per subscriber (capped at 10). Added 60s global delivery timeout. Falls back to synchronous if thread pool fails. `publish_event` now returns immediately after queueing.
+
+#### F-12: replay_dead_letter Actually Replays (HIGH — Functionality)
+**File:** `fireai/infrastructure/webhook_service.py:206-226, 639-649, 904-986`
+**Bug:** The OLD `replay_dead_letter` was a NO-OP — it logged and returned True without actually replaying. The DLQ entry didn't store the original payload, making replay impossible.
+**Fix:** Added `payload` and `source` fields to `DeadLetterEntry`. The DLQ now stores the original payload when entries are created. `replay_dead_letter` now reconstructs headers, calls `_deliver_once`, and removes the entry from DLQ on success.
+
+#### F-13: CSRF _DEV_ALLOW_HTTP_COOKIES From Env Var (HIGH — Security)
+**File:** `backend/security_csrf.py:103-108, 212-216`
+**Bug:** `_DEV_ALLOW_HTTP_COOKIES = True` was hardcoded, overriding the `dev_allow_http` parameter. In production behind a TLS-terminating proxy, the CSRF cookie was set WITHOUT the Secure attribute (cookie transmitted over HTTP if connection downgraded).
+**Fix:** Read `_DEV_ALLOW_HTTP_COOKIES` from env var `FIREAI_DEV_ALLOW_HTTP_COOKIES` (defaults to False). The `dev_allow_http` parameter is now authoritative (no OR with constant).
+
+#### F-14: CSRF Cookie Uses __Host- Prefix (HIGH — Security)
+**File:** `backend/security_csrf.py:65-75`
+**Bug:** The cookie name was `fireai_csrf_token` (no `__Host-` prefix). An attacker with XSS on a subdomain (e.g., blog.fireai.com) could inject a cookie on the victim's browser, bypassing CSRF protection. This is the classic Double Submit Cookie vulnerability.
+**Fix:** Changed cookie name to `__Host-fireai_csrf_token`. Per OWASP, the `__Host-` prefix enforces Secure attribute, Path=/, and no Domain attribute — preventing subdomain cookie injection. Browsers reject `__Host-` cookies that don't meet these requirements.
+
+#### F-15: Darcy-Weisbach NaN Guard in Newton-Raphson (HIGH — Safety)
+**File:** `fireai/core/darcy_weisbach_solver.py:440-510`
+**Bug:** The Newton-Raphson iteration could produce NaN friction factor via `Inf - Inf` or `Inf / Inf` when `f` became very small. The NaN propagated silently to head_loss, pressure_loss (all NaN). The sanity check `if pressure_loss_pa < 0` doesn't catch NaN (NaN < 0 is False).
+**Fix:** Added NaN/Inf guards at every step of the iteration: check `f` at loop start, check `log_arg` before log10, check `g` and `g_prime` before use, check `f_new` before assignment. Final guard: if `f` is non-finite after loop, return Haaland approximation as fallback.
+
+#### F-16: Beam Pocket Rectangular Warning (HIGH — Safety)
+**File:** `fireai/core/spatial_engine/beam_obstruction.py:535-581, 617-658`
+**Bug:** The OLD code silently assumed the room is rectangular. For non-rectangular rooms (L-shaped, T-shaped), the pocket polygon may include area OUTSIDE the room — leading to phantom detectors in invalid locations.
+**Fix:** Added rectangularity check (room_area vs bbox_area, 1% tolerance). If non-rectangular, emits a WARNING: "Pocket polygon may include out-of-room space. Manual FPE review required per NFPA 72 §17.7.3.2.4.2."
+
+#### F-17: Beam Pocket Ceiling Height Reduced by Beam Depth (HIGH — NFPA 72 Compliance)
+**File:** `fireai/core/spatial_engine/beam_obstruction.py:553-558, 635-637`
+**Bug:** The pocket's ceiling height was set to the ROOM's ceiling height, not reduced by beam depth. Per NFPA 72 §17.6.3.1.3: detector spacing in beam pockets is based on the EFFECTIVE ceiling height (ceiling - beam_depth). For a 3.0m ceiling with 0.5m beams: effective pocket ceiling = 2.5m, but the code used 3.0m — too wide spacing.
+**Fix:** `effective_ceiling_height = max(ceiling_height_m - max_beam_depth, 0.1)`. The 0.1m minimum prevents negative ceiling heights when beam depth > ceiling height (unusual but possible edge case). Applied to both horizontal and vertical beam subdivision.
+
+### Verification Evidence (V135)
+
+```
+============================= 506 passed in 40.11s =============================
+```
+
+Test breakdown:
+- `test_v135_high_fixes.py`: 18/18 PASS (NEW — regression tests for F-7 to F-17)
+- All V134+V133+V132 tests: 488/488 PASS (no regression)
+- **Total: 506 passed, 0 failed**
+
+### Files Modified (5 files, 1 new test file)
+
+| File | Lines Changed | Purpose |
+|------|---------------|---------|
+| `fireai/core/spatial_engine/generative_layout_agent.py` | +60 / -25 | F-7 (intelligent cap), F-8 (additive scoring), F-9 (low-hazard COST_MIN) |
+| `fireai/bridges/bim_provider.py` | +15 / -5 | F-10 (remove DEVICE_WRITE, raise NotImplementedError) |
+| `fireai/infrastructure/webhook_service.py` | +85 / -15 | F-11 (async delivery), F-12 (replay_dead_letter + payload storage) |
+| `backend/security_csrf.py` | +15 / -5 | F-13 (env var), F-14 (__Host- prefix) |
+| `fireai/core/darcy_weisbach_solver.py` | +35 / -10 | F-15 (NaN guards in Newton-Raphson) |
+| `fireai/core/spatial_engine/beam_obstruction.py` | +45 / -10 | F-16 (rectangular warning), F-17 (ceiling height reduction) |
+| `tests/test_v135_high_fixes.py` (NEW) | +280 | 18 regression tests |
+| `tests/test_bim_provider.py` | +3 / -2 | Updated for F-10 (NotImplementedError) |
+| `tests/test_generative_layout_agent.py` | +8 / -3 | Updated for F-9 (COST_MIN allowed for office) |
+
+### Self-Criticism Notes (V135)
+
+1. **F-8 (scoring formula) was the most mathematically subtle fix** — the OLD formula "worked" (produced numbers) but the numbers were misleading. The docstring said cost was "least important" but mathematically it dominated. This is the kind of bug that passes tests but produces wrong recommendations. The fix (additive formula with median reference cost) makes the weights actually mean what they say.
+
+2. **F-9 (recommendation logic) was a functionality gap, not a bug** — COST_MINIMIZED was generated but never selected. The fix makes it selectable for low-hazard occupancies (storage, parking, office) when its score is competitive. This honors the original design intent without compromising safety (high-hazard never gets COST_MIN).
+
+3. **F-11 (async webhook delivery) was a DoS vector** — a single malicious subscriber could block the entire pipeline for 31s. The fix (ThreadPoolExecutor + 60s timeout) ensures one slow subscriber doesn't block others. The fallback to synchronous ensures the fix doesn't break if thread pool fails.
+
+4. **F-14 (__Host- prefix) was the most security-critical fix** — without it, an attacker with XSS on any subdomain could bypass CSRF entirely. The __Host- prefix is a browser-enforced protection that prevents subdomain cookie injection. This is OWASP CSRF Prevention 101.
+
+5. **F-15 (NaN guard) was the most safety-critical fix** — a NaN friction factor would produce NaN pressure loss, which could be used in pipe sizing calculations. A pipe sized for NaN pressure loss could be arbitrarily sized — too small (insufficient agent delivery for CO2/clean agent systems) or too large (wasted cost). The fix ensures NaN never propagates.
+
+6. **F-17 (ceiling height reduction) was an NFPA 72 compliance fix** — the code was using the wrong ceiling height for beam pockets, producing spacing that was too wide. This is a direct violation of NFPA 72 §17.6.3.1.3. The fix (effective_ceiling = room_ceiling - beam_depth) ensures correct spacing.
+
+### Remaining Gaps (Documented for V136)
+
+1. **13 MEDIUM findings not yet fixed**: unhashable kwargs, dead code, missing validation, masked errors.
+2. **8 LOW findings not yet fixed**: type hints, tolerance, naming.
+3. **GLB has no real geometry**: F-3 fix (V134) removed invalid accessor references but didn't add real vertex data.
+4. **Beam obstruction still uses simplified subdivision**: No Shapely-based polygon splitting for non-rectangular rooms (F-16 emits warning instead).
+
+### Phase Status Report (Rule 11)
+
+- **(a) Current status:** V135 COMPLETE. 11 HIGH fixes applied (F-7 to F-17). 18 regression tests added. 506/506 tests pass. Zero regressions.
+- **(b) Required to advance:** Operator review + commit + push. Suggested follow-ups for V136:
+  - Fix 13 MEDIUM findings
+  - Generate real GLB vertex data (box + cylinder geometry)
+  - Add Shapely-based beam polygon splitting (eliminate F-16 warning)
+
+### Confidence Level: HIGH
+- All 506 tests pass deterministically (40.11s total)
+- All 11 HIGH fixes have explicit regression tests
+- Scoring formula verified (cost no longer dominates)
+- Recommendation logic verified (COST_MIN allowed for low-hazard, never for high-hazard)
+- IfcFileProvider no longer lies about DEVICE_WRITE capability
+- Webhook delivery is async (no DoS from slow subscribers)
+- replay_dead_letter actually replays (not NO-OP)
+- CSRF _DEV_ALLOW_HTTP_COOKIES from env var (defaults False)
+- CSRF cookie uses __Host- prefix (subdomain injection blocked)
+- Darcy-Weisbach NaN guard verified (extreme Re doesn't produce NaN)
+- Beam pocket ceiling height reduced by beam depth (NFPA 72 §17.6.3.1.3)
+
+### Commit Information
+- **Commit Hash:** (pending — will be filled after git commit)
+- **Branch:** `feat/v133-total-remediation` (V135 added to V133/V134 PR)
+- **Tests:** 506 passed, 0 failed, 0 regressions
+

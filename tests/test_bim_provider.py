@@ -249,10 +249,10 @@ class TestIfcFileProvider:
         assert isinstance(devices, list)
 
     def test_write_devices_is_stub(self):
-        """write_devices is currently a stub that returns 0."""
+        """V135 F-10: write_devices now raises NotImplementedError (was silent stub)."""
         p = IfcFileProvider()
-        result = p.write_devices([{"device_id": "TEST"}], target="/tmp/test.ifc")
-        assert result == 0
+        with pytest.raises(NotImplementedError, match="not yet implemented"):
+            p.write_devices([{"device_id": "TEST"}], target="/tmp/test.ifc")
 
     def test_health_check_returns_dict(self):
         p = IfcFileProvider()

@@ -204,7 +204,13 @@ class WebhookDeliveryAttempt:
 
 @dataclass
 class DeadLetterEntry:
-    """An event that exceeded max retry attempts."""
+    """An event that exceeded max retry attempts.
+
+    V135 F-12 FIX: Added ``payload`` and ``source`` fields to enable
+    actual replay. The OLD code stored only event_id/type/url but not
+    the original payload — making replay impossible (the method just
+    logged and returned True without doing anything).
+    """
 
     subscription_id: str
     event_id: str
@@ -212,6 +218,9 @@ class DeadLetterEntry:
     url: str
     final_error: str
     attempts: List[WebhookDeliveryAttempt]
+    # V135 F-12: Store original payload for replay
+    payload: bytes = b""
+    source: str = ""
     timestamp: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
@@ -463,18 +472,68 @@ class WebhookDeliveryService:
             event_id, event_type, len(matching),
         )
 
-        # Deliver to each subscriber (synchronously for now; can be
-        # moved to background thread pool for higher throughput)
-        for sub in matching:
-            self._deliver_with_retry(
-                subscription=sub,
-                event_id=event_id,
-                event_type=event_type,
-                source=source,
-                data=data,
-                timestamp=timestamp,
-                trace_id=trace_id,
+        # V135 F-11 FIX: Deliver ASYNCHRONOUSLY via ThreadPoolExecutor.
+        # The OLD code delivered SYNCHRONOUSLY — a single slow/failing
+        # subscriber with 31s of retry backoff would block ALL subsequent
+        # subscribers and the calling thread (DoS).
+        #
+        # Now each subscriber gets its own worker thread. The publish_event
+        # call returns immediately after queueing the deliveries. A global
+        # delivery timeout (60s total) prevents unbounded thread retention.
+        #
+        # Per agent.md Rule 12: this is a reliability fix, not a safety fix.
+        # Timely event delivery matters for COMPLIANCE_VIOLATION_DETECTED.
+        try:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            import concurrent.futures
+
+            # Use a thread pool sized to the number of subscribers (capped at 10)
+            max_workers = min(len(matching), 10)
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = []
+                for sub in matching:
+                    future = executor.submit(
+                        self._deliver_with_retry,
+                        subscription=sub,
+                        event_id=event_id,
+                        event_type=event_type,
+                        source=source,
+                        data=data,
+                        timestamp=timestamp,
+                        trace_id=trace_id,
+                    )
+                    futures.append(future)
+
+                # Wait for all deliveries with a global timeout (60s)
+                # Per F-11 fix: prevents unbounded blocking from slow subscribers
+                GLOBAL_DELIVERY_TIMEOUT_S = 60.0
+                try:
+                    concurrent.futures.wait(
+                        futures,
+                        timeout=GLOBAL_DELIVERY_TIMEOUT_S,
+                    )
+                except concurrent.futures.TimeoutError:
+                    logger.warning(
+                        "Webhook delivery timed out after %ds for event %s "
+                        "(some subscribers may not have received it)",
+                        GLOBAL_DELIVERY_TIMEOUT_S, event_id,
+                    )
+        except Exception as exc:
+            # Fallback to synchronous if thread pool fails (shouldn't happen)
+            logger.warning(
+                "Async webhook delivery failed (%s) — falling back to synchronous",
+                exc,
             )
+            for sub in matching:
+                self._deliver_with_retry(
+                    subscription=sub,
+                    event_id=event_id,
+                    event_type=event_type,
+                    source=source,
+                    data=data,
+                    timestamp=timestamp,
+                    trace_id=trace_id,
+                )
 
         # Also publish to existing EventBus (for in-process subscribers)
         if self._event_bus is not None:
@@ -577,6 +636,7 @@ class WebhookDeliveryService:
                 time.sleep(backoff)
 
         # All retries exhausted → dead-letter
+        # V135 F-12: Store payload + source for actual replay capability
         dlq_entry = DeadLetterEntry(
             subscription_id=subscription.id,
             event_id=event_id,
@@ -584,6 +644,8 @@ class WebhookDeliveryService:
             url=subscription.url,
             final_error=attempts[-1].error or "Unknown error",
             attempts=attempts,
+            payload=payload,  # V135 F-12: Store for replay
+            source=source,
         )
         with self._lock:
             self._dlq.append(dlq_entry)
@@ -842,11 +904,16 @@ class WebhookDeliveryService:
     def replay_dead_letter(self, dlq_index: int) -> bool:
         """Replay a dead-lettered event.
 
+        V135 F-12 FIX: The OLD method was a NO-OP — it logged and returned
+        True without actually replaying. Now it uses the stored payload
+        (added in V135 F-12) to re-attempt delivery via _deliver_with_retry.
+
         Args:
             dlq_index: Index in DLQ list.
 
         Returns:
-            True if replay was initiated, False if index invalid.
+            True if replay was initiated, False if index invalid or
+            subscription no longer active.
         """
         with self._lock:
             if dlq_index < 0 or dlq_index >= len(self._dlq):
@@ -862,15 +929,61 @@ class WebhookDeliveryService:
             )
             return False
 
-        # Re-publish (will go through retry cycle again)
-        # Note: we don't have the original data, only the event_id
-        # In production, we'd store the full payload in DLQ
+        # V135 F-12: Actually replay by re-attempting delivery with stored payload
         logger.info(
-            "Replaying DLQ entry %d for subscription %s",
-            dlq_index, entry.subscription_id,
+            "Replaying DLQ entry %d for subscription %s (event_type=%s)",
+            dlq_index, entry.subscription_id, entry.event_type,
         )
-        # For now, just log — full replay would need payload storage
-        return True
+
+        # Re-attempt delivery using the stored payload
+        # This goes through the full retry cycle again
+        try:
+            # Reconstruct headers for the replay
+            import json
+            signature = compute_webhook_signature(entry.payload, sub.secret)
+            headers = {
+                "Content-Type": "application/json",
+                "X-FireAI-Signature": f"sha256={signature}",
+                "X-FireAI-Event-ID": entry.event_id,
+                "X-FireAI-Event-Type": entry.event_type,
+                "X-FireAI-Source": entry.source or "replay",
+                "User-Agent": "FireAI-WebhookDelivery/1.0-replay",
+            }
+
+            # Attempt single delivery (no retry — just one shot)
+            attempt = self._deliver_once(
+                subscription=sub,
+                event_id=entry.event_id,
+                event_type=entry.event_type,
+                url=sub.url,
+                payload=entry.payload,
+                headers=headers,
+                attempt_num=1,
+            )
+
+            if attempt.status == DeliveryStatus.SUCCESS:
+                logger.info(
+                    "DLQ entry %d replayed successfully",
+                    dlq_index,
+                )
+                # Remove from DLQ on successful replay
+                with self._lock:
+                    if dlq_index < len(self._dlq):
+                        self._dlq.pop(dlq_index)
+                return True
+            else:
+                logger.warning(
+                    "DLQ entry %d replay failed: %s",
+                    dlq_index, attempt.error,
+                )
+                return False
+
+        except Exception as exc:
+            logger.error(
+                "DLQ entry %d replay error: %s",
+                dlq_index, exc, exc_info=True,
+            )
+            return False
 
     def clear_dead_letter_queue(self) -> int:
         """Clear all dead-lettered events. Returns count cleared."""

@@ -170,12 +170,17 @@ class TestDeterminism:
 
 class TestRecommendation:
     def test_standard_occupancy_recommends_standard(self, sequential_agent, small_office):
-        """Standard occupancy should recommend STANDARD_COMPLIANT."""
+        """V135 F-9: Office is now low-hazard → COST_MINIMIZED allowed if competitive."""
         result = sequential_agent.generate_variants(
             small_office, occupancy_type="office"
         )
-        # Office is low-hazard → STANDARD_COMPLIANT preferred
-        assert result.recommended_variant == LayoutVariant.STANDARD_COMPLIANT
+        # V135 F-9: Office is low-hazard — COST_MINIMIZED is now a valid
+        # recommendation if its score is ≥ 90% of STANDARD_COMPLIANT.
+        # Both variants are acceptable; the test should accept either.
+        assert result.recommended_variant in (
+            LayoutVariant.STANDARD_COMPLIANT,
+            LayoutVariant.COST_MINIMIZED,
+        ), f"Office should recommend STANDARD or COST_MIN, got {result.recommended_variant}"
 
     def test_high_hazard_occupancy_prefers_safety(self, sequential_agent, small_office):
         """High-hazard occupancy should prefer SAFETY_MAXIMIZED."""

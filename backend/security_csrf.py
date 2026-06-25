@@ -62,7 +62,15 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-CSRF_COOKIE_NAME = "fireai_csrf_token"
+# V135 F-14 FIX: Use __Host- prefix for the CSRF cookie.
+# Per OWASP: the __Host- prefix enforces:
+#   - Secure attribute (HTTPS only)
+#   - Path=/ (root only)
+#   - No Domain attribute (host-only)
+# This prevents subdomain cookie injection attacks where an attacker with
+# XSS on blog.fireai.com could set fireai_csrf_token on the victim's browser.
+# Browsers REJECT __Host- cookies that don't meet these requirements.
+CSRF_COOKIE_NAME = "__Host-fireai_csrf_token"
 CSRF_HEADER_NAME = "x-csrf-token"
 CSRF_TOKEN_LENGTH = 32  # bytes → 43 chars in urlsafe base64
 
@@ -100,9 +108,12 @@ CSRF_SAFE_CONTENT_TYPES = frozenset({
     "application/vnd.api+json",
 })
 
-# In development, allow HTTP for cookie testing (browsers drop Secure cookies on HTTP)
-# In production, this MUST be False
-_DEV_ALLOW_HTTP_COOKIES = True
+# V135 F-13 FIX: Read _DEV_ALLOW_HTTP_COOKIES from env var (was hardcoded True).
+# In production, this MUST be False (or unset, which defaults to False).
+# The OLD hardcoded True overrode the dev_allow_http parameter, causing the
+# Secure attribute to be omitted in production behind TLS-terminating proxies.
+import os as _os
+_DEV_ALLOW_HTTP_COOKIES = _os.environ.get("FIREAI_DEV_ALLOW_HTTP_COOKIES", "").lower() in ("1", "true", "yes")
 
 
 # ---------------------------------------------------------------------------
@@ -206,7 +217,11 @@ class CSRFMiddleware:
         """
         self.app = app
         self.exempt_paths = CSRF_EXEMPT_PATHS | (exempt_paths or frozenset())
-        self.dev_allow_http = dev_allow_http or _DEV_ALLOW_HTTP_COOKIES
+        # V135 F-13 FIX: Respect the dev_allow_http parameter (don't OR with constant).
+        # The OLD code did `dev_allow_http or _DEV_ALLOW_HTTP_COOKIES` which
+        # ignored False values (False or True = True). Now the parameter is
+        # authoritative; _DEV_ALLOW_HTTP_COOKIES is only a module-level default.
+        self.dev_allow_http = bool(dev_allow_http) if dev_allow_http is not None else _DEV_ALLOW_HTTP_COOKIES
 
     async def __call__(
         self,
