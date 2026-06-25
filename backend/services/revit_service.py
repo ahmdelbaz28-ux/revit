@@ -1,3 +1,4 @@
+from fireai.bridges.bim_provider import BIMProvider
 import re
 """backend/services/revit_service.py — Revit Integration Service
 =============================================================
@@ -126,7 +127,6 @@ if IS_WINDOWS and HAS_PYTHONNET:
 # REVIT SERVICE CLASS
 # ============================================================================
 
-from fireai.bridges.bim_provider import BIMProvider
 
 class RevitService(BIMProvider):
     """Complete Revit integration service.
