@@ -422,8 +422,17 @@ def _subdivide_room_by_beams(
     - Each pair of adjacent beams (or beam + wall) defines a pocket
     - Pocket polygon = slice of room between two Y values
 
-    For mixed orientations: falls back to single pocket (whole room) with
-    a warning, since full polygon splitting requires Shapely.
+    V134 F-6 FIX: The previous code abandoned ENTIRE subdivision if ANY
+    single beam was diagonal (mixed orientation). This was UNSAFE because:
+    - If 10 horizontal beams + 1 diagonal → all 10 ignored → no subdivision
+    - Beam pockets left UNDER-protected (not over-protected as the old
+      comment incorrectly claimed)
+    - Violates NFPA 72 §17.7.3.2.4.2
+
+    Fix: Subdivide using the dominant orientation (horizontal OR vertical),
+    ignoring mixed-orientation beams with a WARNING. This ensures the
+    majority of significant beams still cause subdivision. The mixed beams
+    are logged so an engineer can manually review those pockets.
 
     Args:
         room_id: Original room identifier.
@@ -439,13 +448,30 @@ def _subdivide_room_by_beams(
     vertical_beams = [b for b in significant_beams if b.is_vertical]
     mixed_beams = [b for b in significant_beams if not b.is_horizontal and not b.is_vertical]
 
+    # V134 F-6: If there are mixed-orientation beams, log a WARNING but
+    # still proceed with the dominant orientation. The old code abandoned
+    # all subdivision — that was unsafe (under-protection, not over-protection).
     if mixed_beams:
         logger.warning(
-            "Room %s has %d mixed-orientation beams. Full subdivision requires "
-            "Shapely. Falling back to single pocket (conservative — may over-cover).",
+            "Room %s has %d mixed-orientation (diagonal) beams that cannot "
+            "be handled by the simplified subdivision algorithm. These beams "
+            "will be IGNORED for pocket calculation — manual FPE review required "
+            "per NFPA 72 §17.7.3.2.4.2. Proceeding with %d horizontal and %d "
+            "vertical beams for subdivision.",
+            room_id, len(mixed_beams),
+            len(horizontal_beams), len(vertical_beams),
+        )
+
+    # V134 F-6: If no horizontal or vertical beams remain (all mixed),
+    # THEN fall back to single pocket with an explicit UNSAFE warning.
+    if not horizontal_beams and not vertical_beams:
+        logger.warning(
+            "Room %s has %d beams but ALL are mixed-orientation (diagonal). "
+            "Cannot subdivide without Shapely. Falling back to single pocket. "
+            "WARNING: Beam pockets may be UNDER-protected — manual FPE review "
+            "REQUIRED per NFPA 72 §17.7.3.2.4.2.",
             room_id, len(mixed_beams),
         )
-        # Fallback: single pocket (safer to over-cover than under-cover)
         area = _compute_polygon_area(room_polygon)
         return [BeamPocket(
             pocket_id=f"{room_id}-P1",
@@ -455,7 +481,7 @@ def _subdivide_room_by_beams(
             created_by_beam_ids=[b.id for b in significant_beams],
         )]
 
-    # Use the dominant orientation
+    # V134 F-6: Use the dominant orientation (only horizontal or vertical beams)
     if len(horizontal_beams) >= len(vertical_beams):
         return _subdivide_by_horizontal_beams(
             room_id, room_polygon, ceiling_height_m, horizontal_beams

@@ -111,6 +111,12 @@ class ProposedAction:
     The AI creates these proposals. A human engineer reviews them in Revit
     and approves or rejects each one. Only approved actions are executed.
 
+    V134 F-5 FIX: Added ``enqueue_status`` and ``enqueue_error`` fields to
+    distinguish between "successfully enqueued for human review" and
+    "proposal recorded but silently dropped (queue unavailable)". Previously,
+    callers could not tell whether their proposal would actually be reviewed
+    by a human PE — a critical safety gap per NFPA 72 §23.8.
+
     Attributes:
         id: Unique proposal ID (UUID for traceability).
         action_type: CREATE / UPDATE / DELETE / READ.
@@ -122,6 +128,9 @@ class ProposedAction:
         rationale: AI's reasoning for this proposal.
         confidence: AI confidence score (0.0-1.0).
         status: Current review status.
+        enqueue_status: V134 F-5 — "enqueued" / "dropped" / "failed".
+            Tells the caller whether the proposal will actually be reviewed.
+        enqueue_error: V134 F-5 — error message if enqueue failed.
         reviewed_by: Human reviewer ID (when reviewed).
         reviewed_at: Review timestamp (when reviewed).
         review_notes: Human reviewer notes.
@@ -140,10 +149,18 @@ class ProposedAction:
     rationale: str = ""
     confidence: float = 0.0
     status: ActionStatus = ActionStatus.PROPOSED
+    # V134 F-5: New fields for enqueue transparency
+    enqueue_status: str = "pending"  # "enqueued" / "dropped" / "failed" / "pending"
+    enqueue_error: Optional[str] = None
     reviewed_by: Optional[str] = None
     reviewed_at: Optional[str] = None
     review_notes: str = ""
     nfpa_reference: str = ""
+
+    @property
+    def is_enqueued(self) -> bool:
+        """V134 F-5: True if the proposal was successfully enqueued for human review."""
+        return self.enqueue_status == "enqueued"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -157,6 +174,9 @@ class ProposedAction:
             "rationale": self.rationale,
             "confidence": self.confidence,
             "status": self.status.value,
+            "enqueue_status": self.enqueue_status,
+            "enqueue_error": self.enqueue_error,
+            "is_enqueued": self.is_enqueued,
             "reviewed_by": self.reviewed_by,
             "reviewed_at": self.reviewed_at,
             "review_notes": self.review_notes,
@@ -528,6 +548,14 @@ class SmitheryMCPClient:
 
         Per safety design: this NEVER executes the action. It only adds
         it to the review queue.
+
+        V134 F-5 FIX: The previous implementation silently swallowed
+        ImportError and Exception, leaving ``action.status=PROPOSED``
+        even when the proposal was NOT actually enqueued. This created
+        a false sense of safety — callers assumed their proposal would
+        be reviewed by a human PE, but it might have been silently
+        dropped. Now we set ``action.enqueue_status`` explicitly so
+        callers can verify via ``action.is_enqueued``.
         """
         try:
             # Try to use the existing ThreadSafeModelUpdateQueue
@@ -551,6 +579,10 @@ class SmitheryMCPClient:
             )
             queue.enqueue(request)
 
+            # V134 F-5: Mark as successfully enqueued
+            action.enqueue_status = "enqueued"
+            action.enqueue_error = None
+
             logger.info(
                 "Proposed action %s enqueued for human review: %s %s",
                 action.id, action.action_type.value, action.element_type,
@@ -559,16 +591,25 @@ class SmitheryMCPClient:
             # Record in AuditStore (per Rule 12 + NFPA 72 §7.5)
             self._record_audit(action)
 
-        except ImportError:
+        except ImportError as exc:
+            # V134 F-5: Mark as DROPPED (not enqueued) — caller can detect this
+            action.enqueue_status = "dropped"
+            action.enqueue_error = f"ThreadSafeModelUpdateQueue unavailable: {exc}"
+
             logger.warning(
                 "ThreadSafeModelUpdateQueue not available. "
-                "Proposed action %s recorded but NOT enqueued for Revit review. "
-                "Action details: %s",
+                "Proposed action %s NOT enqueued for Revit review (DROPPED). "
+                "Action details: %s. "
+                "Caller must check action.is_enqueued before assuming review will occur.",
                 action.id, action.to_dict(),
             )
             # Still record in AuditStore for traceability
-            self._record_audit(action)
+            self._record_audit(action, success=False, error=action.enqueue_error)
         except Exception as exc:
+            # V134 F-5: Mark as FAILED
+            action.enqueue_status = "failed"
+            action.enqueue_error = str(exc)
+
             logger.error(
                 "Failed to enqueue proposed action %s: %s",
                 action.id, exc, exc_info=True,

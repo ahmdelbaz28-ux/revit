@@ -303,15 +303,19 @@ class TestDigitalTwinAdapter:
 
     def test_from_digital_twin_with_detectors(self, exporter):
         class FakeDetectorState:
-            x_m = 5.0
-            y_m = 3.0
-            z_m = 2.8
+            # V134 F-4: Use correct field names (x, y, z — not x_m, y_m, z_m)
+            x = 5.0
+            y = 3.0
+            z = 2.8
             detector_type = "smoke"
-            is_concealed = False
-            safety_tier = "TIER_1"
-            requires_inspection = True
+            # V134 F-4: AR exporter now reads metadata dict (not direct attrs)
+            metadata = {
+                "is_concealed": False,
+                "safety_tier": "TIER_1",
+                "requires_inspection": True,
+            }
             room_id = "R-001"
-            is_active = True
+            status = "OK"  # DetectorStatus.OK equivalent
 
         class FakeTwin:
             building_id = "B-TEST"
@@ -323,5 +327,6 @@ class TestDigitalTwinAdapter:
 
         detector_node = next(n for n in snapshot.nodes if n.node_type == "detector")
         assert detector_node.id == "SM-01"
+        # V134 F-4: Position now correctly extracted (was (0,0,0) before fix)
         assert detector_node.position == (5.0, 3.0, 2.8)
         assert detector_node.inspection_critical is True

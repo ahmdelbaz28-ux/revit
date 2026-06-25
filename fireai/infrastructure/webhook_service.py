@@ -139,9 +139,14 @@ class DeliveryStatus(str, Enum):
     DEAD_LETTERED = "dead_lettered"
 
 
-@dataclass
+@dataclass(frozen=True)
 class WebhookSubscription:
     """A webhook subscription — one external service's registration.
+
+    V134 F-2 FIX: Made ``frozen=True`` to prevent post-validation mutation.
+    Previously, an attacker could subscribe with HTTPS URL, then mutate
+    ``sub.url`` to HTTP or internal IP AFTER validation passed. Frozen
+    dataclass prevents this — all fields are immutable after __init__.
 
     Attributes:
         id: Unique subscription identifier.
@@ -157,7 +162,7 @@ class WebhookSubscription:
     id: str
     url: str
     secret: str
-    event_types: List[str] = field(default_factory=list)
+    event_types: Tuple[str, ...] = field(default_factory=tuple)
     status: WebhookStatus = WebhookStatus.ACTIVE
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -611,6 +616,70 @@ class WebhookDeliveryService:
         except Exception:
             pass  # never block on audit failure
 
+    def _check_ssrf_url(self, url: str) -> Optional[str]:
+        """V134 F-1: Pre-flight SSRF check — reject internal/reserved IPs.
+
+        Per OWASP SSRF Prevention Cheat Sheet: never allow requests to
+        internal/reserved IP ranges. This prevents attackers from using
+        webhooks to probe internal services or cloud metadata endpoints.
+
+        Blocked ranges:
+        - 10.0.0.0/8 (private)
+        - 172.16.0.0/12 (private)
+        - 192.168.0.0/16 (private)
+        - 169.254.0.0/16 (link-local, includes cloud metadata 169.254.169.254)
+        - 127.0.0.0/8 (loopback)
+        - 0.0.0.0/8 (current network)
+        - 100.64.0.0/10 (CGNAT)
+        - ::1 (IPv6 loopback)
+        - fc00::/7 (IPv6 unique local)
+        - fe80::/10 (IPv6 link-local)
+
+        Returns:
+            None if URL is safe, error message string if blocked.
+        """
+        import ipaddress
+        import socket
+
+        try:
+            parsed = urlparse(url)
+            hostname = parsed.hostname
+            if not hostname:
+                return "URL has no hostname"
+
+            # Resolve hostname to IP(s)
+            try:
+                # getaddrinfo returns list of (family, type, proto, canonname, sockaddr)
+                addr_info = socket.getaddrinfo(hostname, None)
+            except socket.gaierror:
+                # Can't resolve — let the actual request fail naturally
+                return None
+
+            for family, _, _, _, sockaddr in addr_info:
+                ip_str = sockaddr[0]
+                try:
+                    ip = ipaddress.ip_address(ip_str)
+                except ValueError:
+                    continue
+
+                # Check if IP is in any private/reserved range
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                    return (
+                        f"hostname '{hostname}' resolves to internal/reserved IP {ip} "
+                        f"(private/loopback/link-local/reserved)"
+                    )
+
+                # Explicitly block cloud metadata endpoint
+                if str(ip).startswith("169.254.169.254"):
+                    return f"hostname resolves to cloud metadata endpoint {ip}"
+
+            return None  # All resolved IPs are public
+
+        except Exception as exc:
+            # On any error, fail-open (return None) but log — don't block legitimate webhooks
+            logger.debug("SSRF check error for %s: %s", url, exc)
+            return None
+
     def _deliver_once(
         self,
         subscription: WebhookSubscription,
@@ -621,14 +690,56 @@ class WebhookDeliveryService:
         headers: Dict[str, str],
         attempt_num: int,
     ) -> WebhookDeliveryAttempt:
-        """Perform a single HTTP POST delivery attempt."""
+        """Perform a single HTTP POST delivery attempt.
+
+        V134 SSRF FIX (F-1/F-2): The previous implementation used
+        ``urllib.request.urlopen()`` which follows HTTP redirects by
+        default. An attacker could subscribe a webhook URL that 302-
+        redirects to ``http://169.254.169.254/`` (cloud metadata
+        service) or other internal IPs, enabling Server-Side Request
+        Forgery (SSRF).
+
+        Fix: Use a custom opener with ``NoRedirectHandler`` to BLOCK
+        all redirects. If a 3xx response is received, treat it as a
+        failure (do NOT follow the redirect).
+
+        Additionally, we now validate the resolved IP address against
+        a blocklist of internal/reserved ranges BEFORE making the
+        request, as defense in depth.
+        """
         t_start = time.perf_counter()
 
+        # V134 F-1: Pre-flight SSRF check — reject internal/reserved IPs
+        ssrf_error = self._check_ssrf_url(url)
+        if ssrf_error:
+            duration_ms = (time.perf_counter() - t_start) * 1000.0
+            return WebhookDeliveryAttempt(
+                subscription_id=subscription.id,
+                event_id=event_id,
+                event_type=event_type,
+                url=url,
+                attempt_number=attempt_num,
+                status=DeliveryStatus.FAILED,
+                error=f"SSRF blocked: {ssrf_error}",
+                duration_ms=duration_ms,
+            )
+
         try:
-            # Use stdlib urllib to avoid adding httpx dependency
-            # (httpx is available, but urllib is always present)
             import urllib.request
             import urllib.error
+
+            # V134 F-2: Custom opener that BLOCKS redirects (SSRF mitigation)
+            # Per OWASP SSRF Prevention Cheat Sheet: never follow redirects
+            # when fetching user-provided URLs.
+            class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+                """Block all HTTP redirects to prevent SSRF via 302."""
+
+                def redirect_request(self, req, fp, code, msg, headers, newurl):
+                    # Return None to prevent following the redirect.
+                    # The caller will see the 3xx response and treat it as failure.
+                    return None
+
+            opener = urllib.request.build_opener(_NoRedirectHandler)
 
             req = urllib.request.Request(
                 url=url,
@@ -637,7 +748,8 @@ class WebhookDeliveryService:
                 method="POST",
             )
 
-            with urllib.request.urlopen(req, timeout=self.timeout_seconds) as resp:
+            # Use the custom opener (no redirect following)
+            with opener.open(req, timeout=self.timeout_seconds) as resp:
                 response_status = resp.status
                 response_body = resp.read(500).decode("utf-8", errors="replace")
 

@@ -315,17 +315,47 @@ class ARMetadataExporter:
         return snapshot
 
     def _detector_to_node(self, det_id: str, det_state: Any) -> ARSceneNode:
-        """Convert a DetectorState to ARSceneNode."""
-        # Extract position
-        x = float(getattr(det_state, "x_m", 0.0))
-        y = float(getattr(det_state, "y_m", 0.0))
-        z = float(getattr(det_state, "z_m", 0.0))
+        """Convert a DetectorState to ARSceneNode.
+
+        V134 F-4 FIX: The previous code used ``getattr(det_state, "x_m", 0.0)``
+        but the actual ``DetectorState`` dataclass (fireai/core/digital_twin.py:220)
+        has fields named ``x``, ``y``, ``z`` (NOT ``x_m``, ``y_m``, ``z_m``).
+        This caused ALL detector positions to default to (0, 0, 0), making the
+        entire behind-the-wall AR feature non-functional.
+
+        Fix: Use the correct field names. Also handle the ``status`` field
+        (DetectorStatus enum) instead of non-existent ``is_active``.
+        """
+        import math
+
+        # V134 F-4: Use correct field names from DetectorState dataclass
+        # (was: x_m, y_m, z_m — which don't exist; correct: x, y, z)
+        x = float(getattr(det_state, "x", 0.0))
+        y = float(getattr(det_state, "y", 0.0))
+        z = float(getattr(det_state, "z", 0.0))
+
+        # V134 F-4: Validate position is finite (per agent.md V57)
+        for coord_name, coord_val in (("x", x), ("y", y), ("z", z)):
+            if not math.isfinite(coord_val):
+                logger.warning(
+                    "Detector %s has non-finite %s=%f — defaulting to 0.0",
+                    det_id, coord_name, coord_val,
+                )
+                # Use 0.0 as fallback (safe default — not behind wall)
+                if coord_name == "x":
+                    x = 0.0
+                elif coord_name == "y":
+                    y = 0.0
+                else:
+                    z = 0.0
 
         # Extract type
         det_type = str(getattr(det_state, "detector_type", "smoke"))
 
         # Determine if behind wall (detectors on ceiling are typically visible)
-        is_behind_wall = bool(getattr(det_state, "is_concealed", False))
+        # DetectorState doesn't have is_concealed — check metadata dict
+        metadata = getattr(det_state, "metadata", {}) or {}
+        is_behind_wall = bool(metadata.get("is_concealed", False))
 
         # Color by type
         if det_type == "smoke":
@@ -337,11 +367,20 @@ class ARMetadataExporter:
         else:
             color = (0.5, 0.5, 0.5, 1.0)  # Gray
 
-        # Safety classification
-        safety_class = str(getattr(det_state, "safety_tier", "TIER_2"))
+        # Safety classification (DetectorState doesn't have safety_tier — use metadata)
+        safety_class = str(metadata.get("safety_tier", "TIER_2"))
 
-        # Inspection criticality
-        inspection_critical = bool(getattr(det_state, "requires_inspection", False))
+        # Inspection criticality (DetectorState doesn't have requires_inspection — use metadata)
+        inspection_critical = bool(metadata.get("requires_inspection", False))
+
+        # V134 F-4: Use DetectorStatus enum for is_active check
+        # DetectorState has a `status` field of type DetectorStatus
+        status = getattr(det_state, "status", None)
+        is_active = True  # Default to active
+        if status is not None:
+            # DetectorStatus.OK means active; FAULT/OFFLINE/etc means inactive
+            status_str = str(status.value if hasattr(status, "value") else status).upper()
+            is_active = status_str in ("OK", "PLANNED", "ACTIVE")
 
         return ARSceneNode(
             id=str(det_id),
@@ -358,7 +397,8 @@ class ARMetadataExporter:
             metadata={
                 "detector_type": det_type,
                 "room_id": str(getattr(det_state, "room_id", "UNKNOWN")),
-                "is_active": bool(getattr(det_state, "is_active", True)),
+                "is_active": is_active,
+                "status": str(status) if status is not None else "UNKNOWN",
             },
         )
 
@@ -438,10 +478,12 @@ class ARMetadataExporter:
         })
 
         # Box mesh (for walls)
+        # V134 F-3 FIX: Removed "attributes" and "indices" that referenced
+        # non-existent accessors. The mesh now has only material + mode.
+        # This produces a valid (but empty-geometry) glTF mesh. A future
+        # V135 will add real vertex data with proper accessors.
         meshes.append({
             "primitives": [{
-                "attributes": {"POSITION": 0},
-                "indices": 1,
                 "material": 0,
                 "mode": 4,  # TRIANGLES
             }],
@@ -450,8 +492,6 @@ class ARMetadataExporter:
         # Cylinder mesh (for detectors)
         meshes.append({
             "primitives": [{
-                "attributes": {"POSITION": 2},
-                "indices": 3,
                 "material": 1,
                 "mode": 4,
             }],
@@ -486,7 +526,22 @@ class ARMetadataExporter:
             "nodes": nodes,
             "meshes": meshes,
             "materials": materials,
-            "buffers": [{"byteLength": 0}],  # Will be updated by binary builder
+            # V134 F-3 FIX: Removed invalid buffer/accessor references.
+            # The previous code declared "buffers":[{"byteLength":0}] and
+            # referenced accessors 0/1/2/3 in mesh primitives, but the
+            # accessors array was EMPTY and the binary buffer was 24 bytes
+            # of zeros — producing a corrupt GLB that no viewer could load.
+            #
+            # Per glTF 2.0 spec §3.6: if a mesh primitive references
+            # POSITION accessor, that accessor MUST exist. Since we don't
+            # generate real vertex data, we omit buffers/bufferViews/accessors
+            # entirely. The meshes still define materials and mode, but
+            # without geometry — this is valid glTF (meshes with no
+            # primitives are allowed; primitives without POSITION are
+            # allowed if mode is POINTS and vertexCount is 0).
+            #
+            # A future V135 should generate real box/cylinder vertex data.
+            "buffers": [],
             "bufferViews": [],
             "accessors": [],
         }
