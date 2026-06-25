@@ -49,6 +49,56 @@ from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.autocad_service import AutoCADService
 
+# V133 PHASE 1.2: Path traversal protection — same shared helper used by revit.py.
+# Per OWASP Path Traversal Cheat Sheet. Prevents ../../etc/passwd, null-byte
+# injection, argument injection (leading "-"), and disallowed extensions.
+from parsers._path_security import validate_input_path, UnsafePathError
+
+
+# Allowed file extensions for AutoCAD operations
+_AUTOCAD_ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf", ".rvt", ".rfa", ".ifc"})
+
+
+def _validate_autocad_file_path(filepath: str) -> str:
+    """Validate DWG/DXF file path against path traversal and injection attacks.
+
+    V133 PHASE 1.2: Mirrors the protection already in revit.py:_validate_file_path.
+    Previously, autocad.py used only ``os.path.exists()`` which accepted ANY path,
+    including ``../../etc/passwd``, allowing arbitrary file reads.
+
+    Security checks performed:
+        1. Path resolution with ``Path.resolve()`` (eliminates ``..`` traversal)
+        2. Directory whitelist (uploads/, /tmp, project root, or env var)
+        3. Null-byte injection rejection (``\\x00`` in path)
+        4. Argument injection rejection (leading ``-``)
+        5. File extension whitelist (.dwg, .dxf, .rvt, .rfa, .ifc)
+
+    Args:
+        filepath: User-supplied file path.
+
+    Returns:
+        Safe resolved path as string.
+
+    Raises:
+        HTTPException(404): If file not found (benign case).
+        HTTPException(400): If path is unsafe (path traversal, null byte, etc.).
+    """
+    try:
+        safe_path = validate_input_path(
+            filepath,
+            allowed_extensions=_AUTOCAD_ALLOWED_EXTENSIONS,
+            parser_name="autocad_router",
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="File not found.") from exc
+    except UnsafePathError as exc:
+        logger.warning("Path traversal blocked in autocad router: %s", exc)
+        raise HTTPException(
+            status_code=400,
+            detail="File path is outside allowed directories. Contact administrator.",
+        ) from exc
+    return str(safe_path)
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
 
@@ -241,15 +291,11 @@ async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
     try:
         service = get_autocad_service()
 
-        # FIX #6: Do not expose server file paths in error messages
-        if not os.path.exists(request.filepath):
-            logger.warning("DWG file not found: %s", request.filepath)
-            raise HTTPException(
-                status_code=404,
-                detail="DWG file not found. Verify the file path and try again."
-            )
+        # V133 PHASE 1.2: Validate file path against path traversal attacks.
+        # Previously used only os.path.exists() which accepted ../../etc/passwd.
+        safe_path = _validate_autocad_file_path(request.filepath)
 
-        result = service.read_dwg(request.filepath)
+        result = service.read_dwg(safe_path)
 
         if not result.get("success", False):
             raise HTTPException(
@@ -258,7 +304,7 @@ async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
             )
 
         return ReadFileResponse(
-            filepath=request.filepath,
+            filepath=safe_path,
             metadata=result.get("metadata", {}),
             layers=result.get("layers", []),
             entities=result.get("entities", []),
@@ -283,7 +329,10 @@ async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
                 detail="AutoCAD not connected. Call /connect first."
             )
 
-        success = service.write_dwg(request.filepath, request.entities)
+        # V133 PHASE 1.2: Validate file path against path traversal attacks.
+        safe_path = _validate_autocad_file_path(request.filepath)
+
+        success = service.write_dwg(safe_path, request.entities)
 
         if not success:
             raise HTTPException(
@@ -465,7 +514,10 @@ async def save_document(request: SaveRequest) -> OperationResponse:
                 detail="AutoCAD not connected. Call /connect first."
             )
 
-        success = service.save(request.filepath)
+        # V133 PHASE 1.2: Validate save path against path traversal.
+        safe_path = _validate_autocad_file_path(request.filepath)
+
+        success = service.save(safe_path)
 
         if not success:
             raise HTTPException(status_code=500, detail="Failed to save document")

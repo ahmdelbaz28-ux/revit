@@ -42,7 +42,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -473,6 +473,7 @@ async def v2_health() -> Dict[str, Any]:
             "/api/v2/webhooks/subscriptions",
             "/api/v2/webhooks/publish",
             "/api/v2/smoke-simulation/state",
+            "/api/v2/auth/csrf-token",
             "/api/v2/health",
         ],
         "capabilities": [
@@ -482,8 +483,55 @@ async def v2_health() -> Dict[str, Any]:
             "ar_metadata_export",
             "webhook_delivery",
             "smoke_simulation_state",
+            "csrf_protection",
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# CSRF Token Endpoint (PHASE 1.1)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/auth/csrf-token")
+async def get_csrf_token(request: Request) -> Dict[str, Any]:
+    """Issue a CSRF token via Double Submit Cookie pattern.
+
+    Sets the CSRF token in:
+    1. A cookie (fireai_csrf_token, SameSite=Strict)
+    2. The response body (for the frontend to extract and send in X-CSRF-Token header)
+
+    The frontend MUST call this endpoint once per session, then include the
+    token in the X-CSRF-Token header for all subsequent POST/PUT/DELETE/PATCH requests.
+
+    Per OWASP CSRF Prevention Cheat Sheet — Double Submit Cookie pattern.
+    """
+    from backend.security_csrf import (
+        CSRF_COOKIE_NAME,
+        build_csrf_cookie_header,
+        generate_csrf_token,
+    )
+    from fastapi.responses import JSONResponse
+
+    token = generate_csrf_token()
+
+    # Detect HTTPS from X-Forwarded-Proto (common behind reverse proxy)
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").lower()
+    is_https = forwarded_proto == "https" or request.url.scheme == "https"
+
+    cookie_header = build_csrf_cookie_header(token, is_https=is_https)
+
+    response = JSONResponse(content={
+        "csrf_token": token,
+        "cookie_name": CSRF_COOKIE_NAME,
+        "header_name": "X-CSRF-Token",
+        "instructions": (
+            "Include this token in the X-CSRF-Token header for all "
+            "POST/PUT/DELETE/PATCH requests. The cookie is set automatically."
+        ),
+    })
+    response.headers["Set-Cookie"] = cookie_header
+    return response
 
 
 __all__ = ["router"]

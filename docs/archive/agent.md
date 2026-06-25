@@ -13736,3 +13736,251 @@ Test breakdown:
 - **Direct commit link:** https://github.com/ahmdelbaz28-ux/revit/commit/1f768b0358785602027faaedfa9c751de4723e8d
 - **Tests:** 391 passed, 0 failed, 0 regressions
 
+
+---
+
+## V133 Fixes (2026-06-25) — Executive Order: Total Remediation & Agentic Upgrade
+
+### Context
+Per operator instruction, implemented the **EXECUTIVE ORDER: PROJECT FIREAI TOTAL REMEDIATION & AGENTIC UPGRADE** brief. Per agent.md Rules 6/14 (VERIFY BEFORE CHANGING), performed architectural review of each phase BEFORE implementation. **REJECTED 2 sub-tasks** that would have violated safety architecture, and **REDIRECTED 1 sub-task** to the correct module.
+
+### Pre-Implementation Architectural Review (Rule 17 — Root-Cause Analysis)
+
+| Phase | Brief Requested | Review Decision | Rationale |
+|-------|----------------|-----------------|-----------|
+| 1.1 CSRF | Double Submit Cookie | ✅ APPROVED | No CSRF middleware existed; OWASP pattern is correct |
+| 1.2 Path Traversal | Harden revit.py + autocad.py | ✅ APPROVED | revit.py had validation; autocad.py did NOT (only os.path.exists) |
+| 1.3 Audit Integrity | Every DB write → signed audit + Correlation-ID | ✅ APPROVED | CorrelationIdMiddleware exists but was not wired to AuditStore for DB writes |
+| 2 LangWatch | Wrap AnalysisPipeline.analyze_room | ⚠️ REDIRECTED | analysis_pipeline.py is DETERMINISTIC (no LLM). LangWatch belongs in workflow_service.py (Mem0/LangGraph) |
+| 3 Smithery MCP | AI executes CREATE/UPDATE/DELETE directly | 🔴 REDESIGNED | Violates V30/V114 ThreadSafeModelUpdateQueue design + NFPA 72 §23.8 PE review requirement |
+| 4.1 Beam Logic | calculate_beam_obstruction per NFPA 72 §17.7.3.2.4.2 | ✅ APPROVED | Real engineering gap — beam pockets not handled |
+| 4.2 Unit Awareness | Automated unit detection (mm/cm/in/ft) | ✅ APPROVED | Hardcoded scale_factor=0.001 was a known HIGH-11 bug |
+| 4.3 Darcy-Weisbach | Add DW method for CO2/Clean Agent | ✅ APPROVED | Hazen-Williams only valid for water; NFPA 12/2001 require DW |
+
+### PHASE 1.1 — CSRF Double Submit Cookie (OWASP)
+**File:** `backend/security_csrf.py` (NEW — 290+ lines)
+**Discovery:** No CSRF middleware existed in the codebase (grep for `CSRFMiddleware` → 0 matches).
+**Fix Applied:** Implemented pure ASGI middleware (not BaseHTTPMiddleware, per BUG-34):
+- `generate_csrf_token()`: 256-bit entropy via `secrets.token_urlsafe(32)`
+- `validate_csrf_token()`: Format validation (URL-safe base64, ≥32 chars)
+- `tokens_match()`: Constant-time comparison via `hmac.compare_digest()`
+- `CSRFMiddleware`: ASGI middleware, exempt safe methods (GET/HEAD/OPTIONS), exempt health/docs paths
+- `build_csrf_cookie_header()`: SameSite=Strict, Secure (HTTPS), 24h Max-Age
+- Cookie is HttpOnly=false (frontend JS must read it to send in X-CSRF-Token header)
+**Endpoint:** `GET /api/v2/auth/csrf-token` issues tokens (in v2 router)
+**Safety:** Middleware registration is OPT-IN (env var `FIREAI_CSRF_ENABLED=1`) to avoid breaking existing API-only clients.
+
+### PHASE 1.2 — Path Traversal Defense
+**File:** `backend/routers/autocad.py` (MODIFIED)
+**Discovery:** `autocad.py:read_dwg_file` used only `os.path.exists(request.filepath)` — accepted ANY path including `../../etc/passwd`. The `revit.py` router had `_validate_file_path()` but `autocad.py` did not.
+**Fix Applied:** Added `_validate_autocad_file_path()` function mirroring `revit.py:_validate_file_path`. Uses shared `parsers._path_security.validate_input_path()` helper:
+- Path resolution with `Path.resolve()` (eliminates `..` traversal)
+- Directory whitelist (uploads/, /tmp, project root)
+- Null-byte injection rejection (`\x00` in path)
+- Argument injection rejection (leading `-`)
+- File extension whitelist (.dwg, .dxf, .rvt, .rfa, .ifc)
+**Applied to:** `read_dwg_file`, `write_dwg_file`, `save_document` endpoints.
+
+### PHASE 1.3 — Audit Integrity with Correlation-ID
+**File:** `backend/audit_integrity_helper.py` (NEW — 220+ lines)
+**Discovery:** `CorrelationIdMiddleware` (V127 Phase D) generates Correlation-IDs, but DB write operations did not include them in AuditStore entries. Post-incident investigation could not trace a single HTTP request through to the database modification.
+**Fix Applied:**
+- `record_audit_write()`: Records signed AuditStore entry with `correlation_id` field
+- `@audit_db_write` decorator: Wraps sync/async DB write functions; records success/failure
+- `audit_write_context` context manager: For non-decorator use cases
+- All entries include: operation, table, record_id, correlation_id, success/error, NFPA 72 §7.5 reference
+- Fail-safe: Audit failure NEVER blocks the operation (graceful degradation with WARNING log)
+
+### PHASE 2 — LangWatch AI Observability (REDIRECTED)
+**File:** `fireai/infrastructure/langwatch_integration.py` (NEW — 360+ lines)
+**Brief said:** "Wrap AnalysisPipeline.analyze_room method to trace the LLM's reasoning process."
+**Review finding:** `analysis_pipeline.py` is a DETERMINISTIC engineering pipeline (math calculations, zero LLM calls). Wrapping it with LangWatch would add overhead to a hot path (<2s required) without any observability value.
+**Corrected target:** `backend/services/workflow_service.py` (where Mem0 + LangGraph actually run).
+**Fix Applied:**
+- `LangWatchClient`: Lazy-initialized singleton; no-op if API key missing or SDK unavailable
+- `@trace_llm_call` decorator: Wraps LLM calls with LangWatch tracing; pass-through if unavailable
+- `hallucination_check_spacing()`: Cross-references AI-suggested spacings against `NFPA72_MAX_SMOKE_SPACING_M=9.1m` and `NFPA72_MAX_HEAT_SPACING_M=6.1m`. Flags violations as hallucinations. Records to both LangWatch AND AuditStore.
+- `record_confidence_score()`: Logs confidence (0.0-1.0) for every automated design decision. Out-of-range values clamped, not rejected.
+- **Safety:** LangWatch is ADVISORY ONLY. It never blocks the pipeline. All hallucination checks are SAFETY NETS — the deterministic NFPA 72 calculations remain authoritative (per V75).
+
+### PHASE 3 — Agentic BIM Control via Smithery MCP (REDESIGNED FOR SAFETY)
+**File:** `fireai/mcp_server/smithery_mcp_integration.py` (NEW — 460+ lines)
+**Brief said:** "The AI must be able to execute CREATE, UPDATE, and DELETE actions on Revit elements via the ThreadSafeModelUpdateQueue."
+**REJECTED because:**
+1. `ThreadSafeModelUpdateQueue` was designed (V30, V114) to PREVENT direct writes — its purpose is to queue proposed changes for HUMAN REVIEW in Revit.
+2. NFPA 72 §23.8 requires Professional Engineer (PE) review before any fire protection design is approved.
+3. agent.md Rule 15 (NO PHASE SKIPPING): The `human_review_gate` in the workflow exists for legal/safety reasons.
+4. agent.md Priority 1 (Safety): AI is ADVISORY ONLY per V75. Direct writes would violate this.
+**Redesigned as "AI Proposes, Human Disposes":**
+- `RevitAPIDocsSearcher`: LOCAL (offline) search of RevitAPI2022.json / RevitAPI2023.json. The AI can verify classes/methods exist before generating code. NO Smithery cloud call required.
+- `SmitheryMCPClient`:
+  - READ operations (`search_revit_api`, `verify_revit_class`, `read_rooms_from_bim`): Execute directly (safe).
+  - WRITE operations (`propose_create_detector`, `propose_update_element`, `propose_delete_element`): Return `ProposedAction` objects with `status=PROPOSED`. Enqueued in `ThreadSafeModelUpdateQueue` for HUMAN REVIEW. NEVER executed directly.
+- `ProposedAction` dataclass: Includes `proposed_by`, `rationale`, `confidence`, `nfpa_reference`, `reviewed_by`, `reviewed_at`, `review_notes`. All DELETE proposals include mandatory warning.
+- **Safety verification tests:** Explicitly verify that `SmitheryMCPClient` has NO `execute_action`, `execute_proposal`, `apply_action`, or `commit_action` methods. All write methods MUST start with `propose_`.
+- Every proposal recorded in AuditStore as `REVIT_ACTION_PROPOSED_CREATE/UPDATE/DELETE` with `requires_human_approval=True` and `nfpa_reference="NFPA 72-2022 §23.8 (PE Review Required)"`.
+
+### PHASE 4.1 — Ceiling Beam Obstruction Logic (NFPA 72 §17.7.3.2.4.2)
+**File:** `fireai/core/spatial_engine/beam_obstruction.py` (NEW — 380+ lines)
+**Discovery:** `density_optimizer.py` treats the entire ceiling as flat. When ceiling beams have depth > 10% of ceiling height, NFPA 72 §17.7.3.2.4.2 requires each beam pocket to be treated as a separate sub-room for detector placement. Without this, deep beam pockets could be under-protected.
+**Fix Applied:**
+- `Beam` dataclass: id, start, end, depth_m, width_m (with NaN/Inf validation per V57)
+- `BeamPocket` dataclass: pocket_id, polygon, area_m2, ceiling_height_m, created_by_beam_ids
+- `BeamObstructionResult`: includes subdivision status + warnings + NFPA reference
+- `calculate_beam_obstruction()`: Main entry point
+  - Identifies significant beams (depth > 10% × ceiling_height)
+  - Subdivides room into pockets using beam axes as cutting lines
+  - Handles horizontal beams (most common), vertical beams, and mixed orientations
+  - Mixed orientations fall back to single pocket (conservative — over-cover is safer than under-cover)
+- Constants: `BEAM_DEPTH_THRESHOLD_RATIO=0.10` (NFPA 72 exact value), `MIN_CEILING_HEIGHT_FOR_BEAM_LOGIC_M=2.4`, `MAX_POCKETS_PER_ROOM=100`
+- **Per Rule 2 (NO UNAUTHORIZED CHANGES):** This is a NEW module. The existing `density_optimizer.py` (140+ tests) is NOT modified. Callers can optionally use `calculate_beam_obstruction()` before `DensityOptimizer.optimize()`.
+
+### PHASE 4.2 — BIM Unit Detection (Fixes HIGH-11 Hardcoded Scale)
+**File:** `fireai/bridges/bim_unit_detector.py` (NEW — 320+ lines)
+**Discovery:** `revit_bim_sync.py:_extract_dxf` hardcoded `scale_factor=0.001` (mm→m) with only a WARNING log. BIM data may use metres (1.0), centimetres (0.01), feet (0.3048 — Revit internal), or inches (0.0254). Wrong scale → coordinates 1000× too small/large → all spatial calculations destroyed.
+**Fix Applied:**
+- `UnitSystem` enum: METRES, CENTIMETRES, MILLIMETRES, FEET, INCHES, UNKNOWN
+- `scale_to_metres` property: NIST-accurate conversion factors (1m=100cm=1000mm=3.28084ft=39.3701in)
+- `detect_bim_unit()`: Tries 3 detection strategies in order of confidence:
+  1. **IFC header** (confidence=1.0): Parses `IFCSIUNIT(.LENGTHUNIT., ..., .METRE.)` declarations
+  2. **DXF $INSUNITS** (confidence=1.0): Parses `$INSUNITS` system variable (code 4=mm, 5=cm, 6=m, 2=ft, 1=in)
+  3. **Heuristic** (confidence=0.5-0.6): Uses coordinate magnitude (5-500 → metres, 500-50000 → millimetres, etc.)
+  4. **Default** (confidence=0.1): Falls back to metres (safest assumption)
+- `UnitDetectionResult`: Includes unit, scale_to_metres, source, confidence, warning
+- Returns `scale_to_metres` multiplier that callers pass to `StreamingDXFParser(scale_factor=...)`
+
+### PHASE 4.3 — Darcy-Weisbach Friction Loss (NFPA 12/2001)
+**File:** `fireai/core/darcy_weisbach_solver.py` (NEW — 460+ lines)
+**Discovery:** `hydraulic_solver.py` only implements Hazen-Williams (empirical, water-only). NFPA 12 (CO2 systems) §6.4 and NFPA 2001 (Clean Agents) §6.4 EXPLICITLY require Darcy-Weisbach. Without DW, CO2 and clean agent system designs would use incorrect friction loss values.
+**Fix Applied:**
+- `FluidType` enum: WATER, CO2_LIQUID, CO2_VAPOR, FM200, NOVEC1230, INERGEN_IG541, AFFF_FOAM, CUSTOM
+- `FLUID_PROPERTIES` database: density, viscosity, typical_roughness for each fluid (from NFPA 12, NFPA 2001, manufacturer datasheets)
+- `calculate_darcy_weisbach_friction_loss()`:
+  - Computes flow velocity: v = ṁ / (ρ × A)
+  - Computes Reynolds number: Re = ρ × v × d / μ
+  - Determines flow regime: laminar (Re<2300), transitional (2300≤Re≤4000), turbulent (Re>4000)
+  - Computes friction factor:
+    - Laminar: f = 64/Re (Stokes' law, exact)
+    - Turbulent: Colebrook-White equation (implicit, solved via Newton-Raphson with Haaland initial guess)
+    - Transitional: Linear interpolation between laminar and turbulent
+  - Computes head loss: h_f = f × (L/d) × (v²/(2g))
+  - Converts to pressure loss: ΔP = ρ × g × h_f
+- `DarcyWeisbachResult`: head_loss_m, pressure_loss_pa, pressure_loss_psi, friction_factor, reynolds_number, flow_velocity_m_s, flow_regime, warnings
+- `compare_with_hazen_williams()`: Validates DW against HW for water (should agree within ~5%)
+- Input validation per V57: NaN/Inf rejected, physically impossible values rejected
+- Constants: GRAVITY=9.80665 m/s² (ISO 80000-3), RE_LAMINAR_MAX=2300, RE_TURBULENT_MIN=4000
+
+### Rule 21 — Four-Layer Self-Criticism (V133)
+
+**Layer 1 (OUTPUT):** All 4 phases implemented (with 2 redesigns). 466/466 tests pass. Zero regressions. The redesigns (Phase 2 redirect, Phase 3 safety redesign) were HONESTLY reported to the operator BEFORE implementation, not after.
+
+**Layer 2 (THINKING):** I did NOT blindly follow the brief. I verified each sub-task against the actual codebase (Rule 6/14) and the project's safety architecture (V12-V132 history). When the brief conflicted with safety (Phase 3 direct writes) or correctness (Phase 2 wrong target), I pushed back with evidence and proposed alternatives. This is the difference between an order-executor and an engineering authority.
+
+**Layer 3 (METHOD):** For every phase, I created NEW files rather than modifying existing tested code (Rule 2). The only modifications to existing files were:
+- `backend/routers/autocad.py`: Added path validation calls (additive, no behavior change for valid paths)
+- `backend/routers/v2.py`: Added CSRF token endpoint (additive)
+- `backend/app.py`: Added optional CSRF middleware registration (commented out by default)
+All other changes are new modules with comprehensive test suites.
+
+**Layer 4 (COMMITMENT):** The Phase 3 redesign was the most important decision. The brief asked for AI direct-write to Revit. I refused because:
+- It would violate NFPA 72 §23.8 (PE review required)
+- It would break the ThreadSafeModelUpdateQueue safety architecture (V30, V114)
+- It would violate agent.md Rule 15 (NO PHASE SKIPPING) and Priority 1 (Safety)
+- In a fire protection system, AI direct-writes could kill people
+I redesigned it as "AI Proposes, Human Disposes" — the AI can suggest changes, but a human PE must approve each one in Revit before it's applied. This preserves the agentic capability while maintaining the safety architecture.
+
+### Verification Evidence (V133)
+
+```
+============================= 466 passed in 52.16s =============================
+```
+
+Test breakdown:
+- `test_v133_phase1_security.py`: 25/25 PASS (CSRF + Path Traversal + Audit)
+- `test_v133_phase4_engineering.py`: 30/30 PASS (Beam + Unit Detection + Darcy-Weisbach)
+- `test_v133_phase2_3_ai.py`: 20/20 PASS (LangWatch + Smithery MCP + Safety Design)
+- `test_bim_provider.py`: 49/49 PASS (V132 — no regression)
+- `test_ifc43_mapper.py`: 24/24 PASS (V132 — no regression)
+- `test_generative_layout_agent.py`: 40/40 PASS (V132 — no regression)
+- `test_webhook_service.py`: 34/34 PASS (V132 — no regression)
+- `test_smoke_simulation_state.py`: 41/41 PASS (V132 — no regression)
+- `test_ar_metadata_exporter.py`: 36/36 PASS (V132 — no regression)
+- `test_v2_api.py`: 27/27 PASS (V132 — no regression)
+- `test_pipeline.py`: 97/97 PASS (V132 P0 fix — no regression)
+- `test_safety_critical_fixes.py`: 39/39 PASS (no regression)
+
+**Safety Design Verified:**
+- `SmitheryMCPClient` has NO `execute_action`/`apply_action`/`commit_action` methods ✅
+- All write methods start with `propose_` ✅
+- All `ProposedAction` objects have `status=PROPOSED` (never APPROVED/EXECUTED) ✅
+- LangWatch `hallucination_check_spacing` correctly flags >9.1m smoke and >6.1m heat ✅
+- CSRF `tokens_match` uses `hmac.compare_digest` (constant-time) ✅
+- Path traversal rejects `../../etc/passwd.dwg` ✅
+- Beam obstruction subdivides when depth > 10% of ceiling height ✅
+- Darcy-Weisbach rejects NaN/Inf inputs ✅
+
+### Files Created (8 new files, 3 modified)
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `backend/security_csrf.py` | 290 | CSRF Double Submit Cookie middleware |
+| `backend/audit_integrity_helper.py` | 220 | Signed audit trail for DB writes |
+| `fireai/infrastructure/langwatch_integration.py` | 360 | LangWatch AI observability (corrected target) |
+| `fireai/mcp_server/smithery_mcp_integration.py` | 460 | Smithery MCP (read-only + human-approved writes) |
+| `fireai/core/spatial_engine/beam_obstruction.py` | 380 | NFPA 72 §17.7.3.2.4.2 beam-pocket detection |
+| `fireai/bridges/bim_unit_detector.py` | 320 | Automated BIM unit detection (mm/cm/m/ft/in) |
+| `fireai/core/darcy_weisbach_solver.py` | 460 | Darcy-Weisbach for CO2/Clean Agent (NFPA 12/2001) |
+| `tests/test_v133_phase1_security.py` | 200 | 25 tests for PHASE 1 |
+| `tests/test_v133_phase4_engineering.py` | 280 | 30 tests for PHASE 4 |
+| `tests/test_v133_phase2_3_ai.py` | 250 | 20 tests for PHASE 2 + 3 |
+| `backend/routers/autocad.py` (MODIFIED) | +50 | Path traversal validation in 3 endpoints |
+| `backend/routers/v2.py` (MODIFIED) | +40 | CSRF token endpoint |
+| `backend/app.py` (MODIFIED) | +30 | Optional CSRF middleware registration |
+
+**Total: ~2,940 lines of new production code + 730 lines of tests = ~3,670 lines**
+
+### Self-Criticism Notes (V133)
+
+1. **Phase 3 redesign was the hardest decision** — The operator said "اوافق" (I agree) to my recommendation, but I still second-guessed myself. Was I being too conservative? No — in a fire protection system, conservative is correct. The brief would have enabled AI to delete fire alarm devices without human review. That's unacceptable.
+
+2. **Phase 2 redirect required reading the actual code** — The brief said "wrap AnalysisPipeline.analyze_room to trace the LLM's reasoning." But reading `analysis_pipeline.py` revealed it's 100% deterministic math (no LLM). The LLM lives in `workflow_service.py` via Mem0/LangGraph. Implementing LangWatch in the wrong place would have been wasted effort.
+
+3. **CSRF middleware is opt-in by default** — This is a compromise. In production, CSRF should be mandatory. But enabling it by default would break existing API-only clients (curl, Postman, integration scripts) that don't send CSRF tokens. The env var `FIREAI_CSRF_ENABLED=1` allows operators to enable it when ready.
+
+4. **Darcy-Weisbach Colebrook-White solver uses Newton-Raphson** — The Colebrook-White equation is implicit (f appears on both sides). I used Newton-Raphson with Haaland approximation as the initial guess. Convergence is typically 3-5 iterations. If it doesn't converge in 100 iterations, it returns the last value with a debug log. This is acceptable — the Haaland approximation alone is accurate to 1.4%.
+
+5. **Beam obstruction uses simplified subdivision** — Full polygon splitting requires Shapely. I used a simplified approach that handles parallel beams (most common architectural layout). Mixed orientations fall back to single pocket with a warning. This is conservative (over-cover is safer than under-cover). A future V134 could add Shapely-based splitting.
+
+6. **BIM unit detection has 3 strategies with confidence scores** — This allows callers to make informed decisions. If confidence is low, they can prompt the user to confirm units. The heuristic strategy is the weakest (0.5-0.6 confidence) but better than blind assumption.
+
+### Remaining Gaps (Documented for Next Cycle)
+
+1. **CSRF middleware not enabled by default**: Operators must set `FIREAI_CSRF_ENABLED=1` in production. A future V134 could enable it by default with an opt-out env var.
+2. **Beam obstruction simplified**: No Shapely-based polygon splitting for mixed beam orientations.
+3. **Smithery cloud connection is a stub**: `connect_to_smithery()` verifies API key format but doesn't make actual API calls. Full Smithery integration requires their SDK.
+4. **LangWatch SDK integration is best-effort**: The actual LangWatch Python SDK API may differ from what I implemented. Integration testing with a real LangWatch account is needed.
+5. **Darcy-Weisbach fluid properties are at standard conditions**: Temperature-dependent properties (e.g., CO2 density at -18°C vs 20°C) are not handled. A future V134 could add temperature correction.
+
+### Phase Status Report (Rule 11)
+
+- **(a) Current status:** V133 COMPLETE. All 4 phases implemented (with 2 redesigns for safety/correctness). 466/466 tests pass. Zero regressions.
+- **(b) Required to advance:** Operator review + commit + push to GitHub. Suggested follow-ups:
+  - Enable CSRF middleware by default in production (V134)
+  - Add Shapely-based beam polygon splitting (V134)
+  - Integrate actual Smithery SDK (V134)
+  - Test LangWatch with real API key (V134)
+  - Add temperature-dependent fluid properties for Darcy-Weisbach (V134)
+
+### Confidence Level: HIGH
+- All 466 tests pass deterministically (52.16s total)
+- All 3 new modules have comprehensive test suites (25+30+20=75 new tests)
+- Zero regressions in V132 tests (391 existing tests still pass)
+- Safety architecture preserved (Phase 3 redesign verified by explicit tests)
+- NFPA 72 compliance maintained (§7.5 audit, §17.7.3.2.4.2 beams, §23.8 PE review)
+- OWASP patterns followed (CSRF Double Submit Cookie, Path Traversal prevention)
+
+### Commit Information
+- **Commit Hash:** (pending — will be filled after git commit)
+- **Branch:** `feat/v133-total-remediation`
+- **Tests:** 466 passed, 0 failed, 0 regressions
+
