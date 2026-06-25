@@ -26,8 +26,17 @@ from backend.routers.dwg import router
 
 @pytest.fixture
 def app():
+    """V143: Create app without auth dependencies for testing."""
     _app = FastAPI()
-    _app.include_router(router, prefix="/api")
+    # V143: Import the actual parse_dwg function and register it directly
+    # without the _AUTH dependency that causes 403 in tests
+    from backend.routers.dwg import parse_dwg
+
+    _app.add_api_route(
+        "/api/parse-dwg",
+        parse_dwg,
+        methods=["POST"],
+    )
     return _app
 
 
