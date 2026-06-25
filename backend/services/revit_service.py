@@ -130,6 +130,13 @@ from fireai.bridges.bim_provider import BIMProvider
 class RevitService(BIMProvider):
     """Complete Revit integration service.
     
+    Handles:
+    - Multiple connection methods (API, Macro, Simulation)
+    - Element CRUD (Walls, Floors, Doors, Windows, Columns, Beams)
+    - Document operations (Open, Save, Close)
+    - Parameter manipulation
+    - AI command interpretation
+
     V131: Now implements BIMProvider protocol for platform agnosticism.
     """
 
