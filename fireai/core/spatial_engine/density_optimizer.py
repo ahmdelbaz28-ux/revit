@@ -1357,19 +1357,17 @@ class DensityOptimizer:
         layout.wall_violations = viol
 
     @staticmethod
-    def theoretical_lower_bound(room: Room, coverage_radius: float = DETECTOR_RADIUS) -> int:
-        """Estimative lower bound for detector count (NOT proven minimum).
-
-        Same calculation as DetectorLayout.theoretical_lower_bound property.
-        Provided as a static convenience method.
-        See TECHNICAL_HONESTY.md §5: theoretical_lower_bound ≠ theoretical_minimum.
-
-        Args:
-            room: Room object.
-            coverage_radius: Coverage radius in meters (default DETECTOR_RADIUS = 6.40m).
-
+    def theoretical_lower_bound(room: Room, coverage_radius: float = DETECTOR_RADIUS, detector_type: str = "smoke") -> int:
+        """Estimative lower bound for detector count (Height-Aware).
+        
+        V131 SAFETY UPGRADE: Now uses the derated radius based on ceiling height
+        to provide a realistic minimum count.
         """
-        return max(1, math.ceil(room.width * room.length / (math.pi * coverage_radius**2)))
+        # Get derated radius for theoretical calculation
+        temp_opt = DensityOptimizer(coverage_radius=coverage_radius)
+        actual_R = temp_opt._get_derated_radius(room.ceiling_height, detector_type)
+        
+        return max(1, math.ceil(room.width * room.length / (math.pi * actual_R**2)))
 
     # Private alias — DO NOT use outside this module.
     # This name incorrectly implies a mathematically proven minimum.
