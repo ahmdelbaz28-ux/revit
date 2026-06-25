@@ -275,22 +275,52 @@ class DensityOptimizer:
 
     # ── public ──────────────────────────────────────────────────────────────────
 
+    def _get_derated_radius(self, ceiling_height: float) -> float:
+        """
+        V131 LIFE-SAFETY FIX: NFPA 72 Spacing Derating (Table 17.6.3.5.1).
+        Provides the reduction factor for detector spacing based on ceiling height.
+        """
+        # Spacing reduction factors based on NFPA 72 Table 17.6.3.5.1
+        if ceiling_height <= 3.0:
+            factor = 1.0
+        elif ceiling_height <= 3.6:
+            factor = 0.91
+        elif ceiling_height <= 4.2:
+            factor = 0.84
+        elif ceiling_height <= 4.8:
+            factor = 0.77
+        elif ceiling_height <= 5.4:
+            factor = 0.71
+        elif ceiling_height <= 6.0:
+            factor = 0.64
+        elif ceiling_height <= 7.3:
+            factor = 0.58
+        elif ceiling_height <= 8.5:
+            factor = 0.52
+        elif ceiling_height <= 9.1:
+            factor = 0.46
+        else:
+            # NFPA 72 §17.7.3.1.2: Standard spot detectors above 30ft (9.1m) 
+            # generally NOT recommended for heat.
+            factor = 0.34 # Ultra-conservative fallback for R&D purposes
+            
+        return self.R * factor
+
     def optimize(self, room: Room, coverage_radius: float | None = None) -> DetectorLayout:
         """Find the best detector placement for a room.
-
-        Args:
-            room: Room with width, length, ceiling_height.
-            coverage_radius: Override coverage radius (meters). If None, uses
-                the instance default (DETECTOR_RADIUS = 6.37m). When calculated
-                from NFPA 72 Table 17.6.3.1.1 via calculate_coverage_radius_from_height,
-                higher ceilings produce smaller radii (more detectors).
-                The default behaviour is unchanged — existing callers need not
-                pass this parameter.
-
-        Returns:
-            DetectorLayout with positions, coverage, and compliance info.
-
+        
+        V131 SAFETY UPGRADE: Automatically calculates derating based on ceiling height
+        if no manual override is provided.
         """
+        # Life-Safety Auto-Correction
+        if coverage_radius is None:
+            coverage_radius = self._get_derated_radius(room.ceiling_height)
+            if coverage_radius < self.R:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "LIFE-SAFETY: Auto-applying NFPA 72 derating for height %.2fm. Radius reduced to %.2fm",
+                    room.ceiling_height, coverage_radius
+                )
         # ── Convergence guards (PDF Phase 3 requirement) ──
         self._start_time = time.monotonic()
         self._iteration_count = 0
