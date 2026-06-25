@@ -60,12 +60,27 @@ def test_legacy_health_deprecated(client):
     assert r.status_code == 200
 
 
-def test_v1_health_no_deprecation(client):
-    """V1 health endpoint should NOT have deprecation headers."""
+def test_v1_health_has_deprecation(client):
+    """
+    V143: V1 health endpoint SHOULD have deprecation headers (V132 Task 3.1).
+
+    The V132 API versioning task added Deprecation: true, Sunset, and Link
+    headers to ALL /api/v1/ endpoints per RFC 7234. This test was originally
+    asserting NO deprecation (old behavior). Now it correctly asserts the
+    deprecation header IS present.
+    """
     r = client.get("/api/v1/health")
     assert r.status_code == 200
     deprecation_header = r.headers.get("deprecation", "")
-    assert deprecation_header != "true"
+    assert deprecation_header == "true", (
+        f"V1 endpoints must have Deprecation: true (RFC 7234). Got: '{deprecation_header}'"
+    )
+    # Also verify Sunset header exists
+    sunset = r.headers.get("sunset", "")
+    assert sunset, "V1 endpoints must have Sunset header"
+    # Also verify Link header points to v2 successor
+    link = r.headers.get("link", "")
+    assert "/api/v2/" in link, f"Link header must point to v2 successor. Got: '{link}'"
 
 
 def test_oversized_request_rejected(client):
