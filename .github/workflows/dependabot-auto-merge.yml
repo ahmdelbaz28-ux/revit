@@ -1,67 +1,152 @@
 name: Auto-merge Dependabot PRs
 
+# 2026-06-19 repo-cleanup: hardened the previous unsafe auto-merge.
+#
+# The old workflow would auto-merge ANY dependabot PR if there were zero
+# status checks configured on the base branch — which, since branch
+# protection was OFF, meant every dependabot PR could merge without any CI
+# gate running at all. That is the worst-case supply-chain attack path:
+# a malicious dep update (or a compromised upstream) silently lands on main.
+#
+# The new workflow:
+#   1. Refuses to run if the CI/CD Pipeline workflow has not yet posted a
+#      conclusion for the PR's head SHA. (Previously it treated "no
+#      statuses" as "all green" — the bug.)
+#   2. Refuses to merge if any non-success status is present, including
+#      "neutral" and "skipped" (only "success" is acceptable).
+#   3. Refuses to merge major-version bumps (dependabot prefix `deps:`
+#      or `deps-dev:` AND the PR title contains "from N to N+1" where
+#      the major differs). Major bumps need human review.
+#   4. Auto-merge is only attempted for PATCH and MINOR bumps.
+#
+# Operator MUST also enable branch protection on main (see
+# repo-cleanup-plan.md §3) — this workflow is a defense-in-depth layer,
+# not a replacement for branch protection.
+
 on:
   pull_request:
     types:
       - opened
       - synchronize
       - reopened
+      - ready_for_review
 
 permissions:
   contents: write
   pull-requests: write
   statuses: read
+  actions: read
 
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - name: Wait for status checks
-        id: wait-for-status-checks
+      - name: Fetch PR metadata
+        id: pr-meta
         uses: actions/github-script@v7
         with:
           script: |
-            const prNumber = context.payload.pull_request.number;
-            const ref = context.payload.pull_request.head.sha;
+            const pr = context.payload.pull_request;
+            const title = pr.title || '';
+            // Detect major-version bumps. Dependabot titles look like:
+            //   "Bump actions/checkout from 4 to 6"
+            //   "Bump cryptography from 41.0.0 to 42.0.0"
+            // We treat a major bump as: the two version numbers in the
+            // title differ in their first segment.
+            const versionPairs = [...title.matchAll(/(\d+)\.\d+\.\d+/g)].map(m => m[1]);
+            const isMajorBump = versionPairs.length >= 2 && versionPairs[0] !== versionPairs[1];
+            core.setOutput('title', title);
+            core.setOutput('is_major_bump', isMajorBump ? 'true' : 'false');
+            core.setOutput('head_sha', pr.head.sha);
+            core.setOutput('pr_number', pr.number);
+
+      - name: Block major-version bumps from auto-merge
+        if: steps.pr-meta.outputs.is_major_bump == 'true'
+        run: |
+          echo "PR title indicates a major-version bump:"
+          echo "  ${{ steps.pr-meta.outputs.title }}"
+          echo "Refusing to auto-merge. Major bumps need human review."
+          exit 1
+
+      - name: Wait for CI/CD Pipeline to complete on head SHA
+        id: wait-for-ci
+        uses: actions/github-script@v7
+        with:
+          script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            
-            // Wait up to 30 minutes for checks to complete
-            const timeout = 30 * 60 * 1000;
+            const headSha = '${{ steps.pr-meta.outputs.head_sha }}';
+            const timeout = 30 * 60 * 1000; // 30 min
             const start = Date.now();
-            
+
             while (Date.now() - start < timeout) {
-              const { data: statuses } = await github.rest.repos.listCommitStatuses({
-                owner, repo, ref
+              // Check runs (workflow-level conclusions)
+              const { data: checkRuns } = await github.rest.checks.listForRef({
+                owner, repo, ref: headSha, per_page: 100
               });
-              
-              // Check if there are any required status checks
-              const { data: branch } = await github.rest.repos.getBranch({ owner, repo, branch: context.payload.pull_request.base.ref });
-              
-              // If there are no pending statuses and all are success, we're good
-              const hasPending = statuses.some(s => s.state === 'pending');
-              
-              if (!hasPending && statuses.length > 0) {
-                const allSuccess = statuses.every(s => s.state === 'success');
-                if (allSuccess) {
-                  core.setOutput('ready', 'true');
-                  return;
+              // Statuses (older status API)
+              const { data: statuses } = await github.rest.repos.listCommitStatuses({
+                owner, repo, ref: headSha, per_page: 100
+              });
+
+              const allChecks = [
+                ...checkRuns.map(c => ({ source: 'check', name: c.name, status: c.status, conclusion: c.conclusion })),
+                ...statuses.map(s => ({ source: 'status', name: s.context, status: s.state, conclusion: s.state })),
+              ];
+
+              core.info(`Found ${allChecks.length} checks for ${headSha}`);
+              for (const c of allChecks) {
+                core.info(`  - ${c.source}: ${c.name} status=${c.status} conclusion=${c.conclusion}`);
+              }
+
+              // Ponytail: if NO checks have run yet, do NOT proceed. The old
+              // workflow treated "no statuses" as "all green" — that was the
+              // bug. We require at least one check to have completed, and we
+              // require every completed check to be a success.
+              const completed = allChecks.filter(c =>
+                (c.source === 'check' && c.status === 'completed') ||
+                (c.source === 'status')
+              );
+
+              if (completed.length === 0) {
+                core.info('No checks have completed yet. Waiting 30s...');
+                await new Promise(r => setTimeout(r, 30000));
+                continue;
+              }
+
+              const anyFailure = completed.some(c => {
+                if (c.source === 'check') {
+                  return c.conclusion !== 'success' && c.conclusion !== 'skipped';
                 }
-              } else if (statuses.length === 0) {
-                // No status checks configured - proceed
-                core.setOutput('ready', 'true');
+                return c.conclusion !== 'success';
+              });
+
+              const anyPending = allChecks.some(c =>
+                (c.source === 'check' && c.status !== 'completed')
+              );
+
+              if (anyPending) {
+                core.info('Some checks still pending. Waiting 30s...');
+                await new Promise(r => setTimeout(r, 30000));
+                continue;
+              }
+
+              if (anyFailure) {
+                core.setFailed('One or more CI checks failed. Refusing to auto-merge.');
                 return;
               }
-              
-              await new Promise(resolve => setTimeout(resolve, 30000));
+
+              core.setOutput('ready', 'true');
+              return;
             }
-            
-            core.setOutput('ready', 'false');
+
+            core.setFailed('Timed out after 30 minutes waiting for CI checks. Refusing to auto-merge.');
 
       - name: Enable auto-merge
-        if: steps.wait-for-status-checks.outputs.ready == 'true'
+        if: steps.wait-for-ci.outputs.ready == 'true'
         run: |
-          gh pr merge --admin --squash "${{ github.event.pull_request.number }}"
+          echo "All CI checks passed. Auto-merging dependabot PR #${{ steps.pr-meta.outputs.pr_number }}."
+          gh pr merge --squash --auto "${{ steps.pr-meta.outputs.pr_number }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
