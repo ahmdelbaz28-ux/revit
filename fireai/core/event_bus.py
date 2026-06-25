@@ -388,7 +388,43 @@ class EventBus:
                     exc,
                 )
 
+        # Webhook delivery (Non-blocking)
+        webhooks = getattr(self, "_webhook_endpoints", [])
+        if webhooks:
+            import threading
+            threading.Thread(target=self._deliver_webhooks, args=(webhooks, event), daemon=True).start()
+
         return event
+
+    def _deliver_webhooks(self, urls: List[str], event: Event):
+        """Deliver event to external webhooks using standard library."""
+        import json
+        import urllib.request
+        import logging as _logging
+        
+        payload = json.dumps(event.to_dict()).encode("utf-8")
+        for url in urls:
+            try:
+                req = urllib.request.Request(
+                    url, 
+                    data=payload, 
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    pass
+            except Exception as e:
+                _logging.getLogger(__name__).warning("Webhook delivery failed to %s: %s", url, e)
+
+    def subscribe_webhook(self, url: str):
+        """Subscribe an external URL to all events."""
+        with self._lock:
+            if not hasattr(self, "_webhook_endpoints"):
+                self._webhook_endpoints = []
+            if url not in self._webhook_endpoints:
+                self._webhook_endpoints.append(url)
+                import logging as _logging
+                _logging.getLogger(__name__).info("Webhook subscribed: %s", url)
 
     # ── Query ────────────────────────────────────────────────────────
 

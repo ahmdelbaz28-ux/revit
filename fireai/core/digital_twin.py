@@ -220,22 +220,10 @@ class DriftType(Enum):
 class DetectorState:
     """Complete state of a single fire detector in the digital twin.
 
-    Attributes:
-        detector_id: Unique identifier for this detector.
-        room_id: Room this detector belongs to.
-        x: X position in meters (room-local coordinates).
-        y: Y position in meters.
-        z: Z position in meters (typically ceiling height).
-        detector_type: "smoke", "heat", "flame", "gas", "duct_smoke".
-        status: Current lifecycle status (PLANNED, OK, FAULT, etc.).
-        coverage_radius: Coverage radius in meters (default 6.37 per NFPA 72).
-        design_x: Original design X position (for drift detection).
-        design_y: Original design Y position.
-        design_z: Original design Z position.
-        installed_at: ISO 8601 timestamp when status changed to OK.
-        last_verified_at: ISO 8601 timestamp of last verification.
-        metadata: Additional key-value metadata.
-
+    V131: Added Simulation and AR Hooks.
+    - smoke_density: Current simulated smoke obscuration at detector location.
+    - visibility_m: Simulated visibility in meters.
+    - ar_visible: Flag for augmented reality visibility.
     """
 
     detector_id: str
@@ -252,6 +240,15 @@ class DetectorState:
     installed_at: str = ""
     last_verified_at: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    # Simulation Hooks (V131)
+    smoke_density: float = 0.0  # % obscuration/m
+    visibility_m: float = 30.0   # meters
+    temperature_c: float = 20.0  # Celsius
+    
+    # AR Hooks (V131)
+    ar_visible: bool = True
+    wall_depth_m: float = 0.0    # For "behind-the-wall" rendering
 
     def __post_init__(self) -> None:
         # Initialize design coordinates to match placement if not explicitly set.
