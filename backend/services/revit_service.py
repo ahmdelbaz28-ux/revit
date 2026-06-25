@@ -172,9 +172,17 @@ class RevitService(BIMProvider):
     # =========================================================================
 
     def get_rooms(self, source: str) -> List[Dict[str, Any]]:
-        """Implementation of BIMProvider.get_rooms"""
-        if source == "live":
-            return self._get_simulated_elements(category="Rooms")
+        """Implementation of BIMProvider.get_rooms.
+        Returns live or simulated room data depending on connection status.
+        """
+        if not self._connected:
+            logger.warning("Attempted to get rooms while not connected.")
+            return []
+            
+        if self._connection_method == ConnectionMethod.SIMULATION:
+            return self._get_simulated_elements(category="Walls") # Rooms are simulated as walls in this stub
+            
+        # In a real environment, this would call Autodesk.Revit.DB.FilteredElementCollector
         return []
 
     def write_detectors(self, project_id: str, detectors: List[Dict[str, Any]]) -> bool:

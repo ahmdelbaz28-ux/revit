@@ -297,20 +297,32 @@ class DetectorState:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> DetectorState:
-        """Deserialize from dictionary.
+        """Deserialize from dictionary with V131 backward compatibility.
 
-        Handles backward compatibility: if design_x/y/z are missing
-        from old serialized data (pre-FIX-5), they default to None
-        which triggers __post_init__ to set them from x/y/z.
+        Handles backward compatibility for design_x/y/z and V131 
+        simulation/AR fields.
         """
         data = dict(data)
         if isinstance(data.get("status"), str):
             data["status"] = DetectorStatus(data["status"])
-        # Backward compat: old data may not have design_x/y/z fields.
-        # If missing, set to None so __post_init__ fills them from x/y/z.
+            
+        # V131 Migration: Provide defaults for new fields if missing from old data
+        defaults = {
+            "smoke_density": 0.0,
+            "visibility_m": 30.0,
+            "temperature_c": 20.0,
+            "ar_visible": True,
+            "wall_depth_m": 0.0
+        }
+        for field_name, default_value in defaults.items():
+            if field_name not in data:
+                data[field_name] = default_value
+
+        # Standard field check (pre-V131 compatibility)
         for key in ("design_x", "design_y", "design_z"):
             if key not in data:
                 data[key] = None
+                
         return cls(**data)
 
 
