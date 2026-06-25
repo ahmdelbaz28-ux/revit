@@ -275,46 +275,49 @@ class DensityOptimizer:
 
     # ── public ──────────────────────────────────────────────────────────────────
 
-    def _get_derated_radius(self, ceiling_height: float) -> float:
+    def _get_derated_radius(self, ceiling_height: float, detector_type: str = "smoke") -> float:
         """
-        V131 LIFE-SAFETY FIX: NFPA 72 Spacing Derating (Table 17.6.3.5.1).
-        Provides the reduction factor for detector spacing based on ceiling height.
+        V131 LIFE-SAFETY CORRECTIVE FIX: 
+        Aligned with fireai/constants/nfpa72.py and NFPA 72-2022.
+        
+        - Smoke Detectors: Flat spacing (9.1m) per §17.7.3.2.3.
+        - Heat Detectors: Derated spacing per Table 17.6.3.5.1.
         """
-        # Spacing reduction factors based on NFPA 72 Table 17.6.3.5.1
-        if ceiling_height <= 3.0:
-            factor = 1.0
-        elif ceiling_height <= 3.6:
-            factor = 0.91
-        elif ceiling_height <= 4.2:
-            factor = 0.84
-        elif ceiling_height <= 4.8:
-            factor = 0.77
-        elif ceiling_height <= 5.4:
-            factor = 0.71
-        elif ceiling_height <= 6.0:
-            factor = 0.64
-        elif ceiling_height <= 7.3:
-            factor = 0.58
-        elif ceiling_height <= 8.5:
-            factor = 0.52
-        elif ceiling_height <= 9.1:
-            factor = 0.46
-        else:
-            # NFPA 72 §17.7.3.1.2: Standard spot detectors above 30ft (9.1m) 
-            # generally NOT recommended for heat.
-            factor = 0.34 # Ultra-conservative fallback for R&D purposes
-            
-        return self.R * factor
+        from fireai.constants.nfpa72 import (
+            SMOKE_COVERAGE_RADIUS_M,
+            HEAT_HEIGHT_SPACING_TABLE,
+            HEAT_SPACING_FALLBACK_M,
+            COVERAGE_RADIUS_FACTOR,
+            SMOKE_PRACTICAL_CEILING_HEIGHT_M
+        )
 
-    def optimize(self, room: Room, coverage_radius: float | None = None) -> DetectorLayout:
+        if detector_type == "smoke":
+            if ceiling_height > SMOKE_PRACTICAL_CEILING_HEIGHT_M:
+                logger.warning(
+                    "LIFE-SAFETY: Ceiling height %.2fm exceeds practical limit (6.1m) for spot smoke detectors. "
+                    "Stratification risk detected. Consider Beam Detectors per NFPA 72 §17.7.1.11.",
+                    ceiling_height
+                )
+            return SMOKE_COVERAGE_RADIUS_M
+
+        # Heat Detector Derating
+        spacing = HEAT_SPACING_FALLBACK_M
+        for max_h, s in HEAT_HEIGHT_SPACING_TABLE:
+            if ceiling_height <= max_h:
+                spacing = s
+                break
+        
+        return spacing * COVERAGE_RADIUS_FACTOR
+
+    def optimize(self, room: Room, coverage_radius: float | None = None, detector_type: str = "smoke") -> DetectorLayout:
         """Find the best detector placement for a room.
         
         V131 SAFETY UPGRADE: Automatically calculates derating based on ceiling height
-        if no manual override is provided.
+        and detector type if no manual override is provided.
         """
         # Life-Safety Auto-Correction
         if coverage_radius is None:
-            coverage_radius = self._get_derated_radius(room.ceiling_height)
+            coverage_radius = self._get_derated_radius(room.ceiling_height, detector_type)
             if coverage_radius < self.R:
                 import logging
                 logging.getLogger(__name__).warning(
