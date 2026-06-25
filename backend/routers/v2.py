@@ -39,10 +39,13 @@ References
 
 """
 
-from __future__ import annotations
+# V141 FIX: Removed __future__ annotations to fix Pydantic forward ref resolution.
+# With __future__ annotations, Dict[str, Any] becomes ForwardRef('Dict[str, Any]')
+# which Pydantic cannot resolve at runtime for FastAPI model parsing.
+# Removing it forces actual type resolution at import time.
 
 import logging
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -548,6 +551,158 @@ async def create_smoke_state(req: SmokeSimulationStateRequest) -> dict[str, Any]
         state = SmokeSimulationState.create_placeholder(req.room_id)
 
     return state.to_dict()
+
+
+# ---------------------------------------------------------------------------
+# V141: Vector Memory & Topology Endpoints
+# ---------------------------------------------------------------------------
+
+
+class VectorMemoryStoreRequest(BaseModel):
+    """Request body for /api/v2/memory/store."""
+
+    content: str = Field(..., min_length=1, max_length=10000)
+    memory_type: str = Field("conversation", description="conversation|study_result|document|etap_knowledge")
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class VectorMemorySearchRequest(BaseModel):
+    """Request body for /api/v2/memory/search."""
+
+    query: str = Field(..., min_length=1, max_length=1000)
+    memory_type: str = Field("conversation")
+    limit: int = Field(5, ge=1, le=50)
+    score_threshold: float = Field(0.0, ge=0.0, le=1.0)
+
+
+class TopologyAddElementRequest(BaseModel):
+    """Request body for /api/v2/topology/element."""
+
+    element_id: str = Field(..., max_length=200)
+    element_type: str = Field(..., description="Bus|Line|Transformer|Load|Breaker|Generator")
+    name: str = Field("", max_length=200)
+    properties: Dict[str, Any] = Field(default_factory=dict)
+
+
+class TopologyAddConnectionRequest(BaseModel):
+    """Request body for /api/v2/topology/connection."""
+
+    from_element: str = Field(..., max_length=200)
+    to_element: str = Field(..., max_length=200)
+    relationship_type: str = Field("CONNECTED_TO")
+    properties: Dict[str, Any] = Field(default_factory=dict)
+
+
+class TopologyImpactRequest(BaseModel):
+    """Request body for /api/v2/topology/impact."""
+
+    breaker_id: str = Field(..., max_length=200)
+
+
+@router.post("/memory/store")
+async def store_memory(req: VectorMemoryStoreRequest) -> Dict[str, Any]:
+    """Store a memory entry in Qdrant vector database."""
+    from fireai.infrastructure.vector_memory_service import (
+        MemoryType,
+        get_vector_memory,
+    )
+    service = get_vector_memory()
+    try:
+        mem_type = MemoryType(req.memory_type)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid memory_type: {req.memory_type}")
+    entry_id = service.store(content=req.content, memory_type=mem_type, metadata=req.metadata)
+    if entry_id is None:
+        raise HTTPException(status_code=503, detail="Qdrant unavailable — memory not stored")
+    return {"entry_id": entry_id, "stored": True, "memory_type": req.memory_type}
+
+
+@router.post("/memory/search")
+async def search_memory(req: VectorMemorySearchRequest) -> Dict[str, Any]:
+    """Search for similar memories in Qdrant."""
+    from fireai.infrastructure.vector_memory_service import (
+        MemoryType,
+        get_vector_memory,
+    )
+    service = get_vector_memory()
+    try:
+        mem_type = MemoryType(req.memory_type)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid memory_type: {req.memory_type}")
+    result = service.search(
+        query=req.query, memory_type=mem_type,
+        limit=req.limit, score_threshold=req.score_threshold,
+    )
+    return result.to_dict()
+
+
+@router.get("/memory/health")
+async def memory_health() -> Dict[str, Any]:
+    """Check Qdrant vector database health."""
+    from fireai.infrastructure.vector_memory_service import get_vector_memory
+    return get_vector_memory().health_check()
+
+
+@router.post("/topology/element")
+async def add_topology_element(req: TopologyAddElementRequest) -> Dict[str, Any]:
+    """Add a network element to the Neo4j topology graph."""
+    from fireai.infrastructure.topology_graph_service import (
+        ElementType,
+        NetworkElement,
+        get_topology_service,
+    )
+    service = get_topology_service()
+    try:
+        et = ElementType(req.element_type)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid element_type: {req.element_type}")
+    element = NetworkElement(
+        element_id=req.element_id, element_type=et,
+        name=req.name, properties=req.properties,
+    )
+    added = service.add_element(element)
+    return {"element_id": req.element_id, "added": added}
+
+
+@router.post("/topology/connection")
+async def add_topology_connection(req: TopologyAddConnectionRequest) -> Dict[str, Any]:
+    """Add a connection between two network elements."""
+    from fireai.infrastructure.topology_graph_service import (
+        NetworkConnection,
+        RelationshipType,
+        get_topology_service,
+    )
+    service = get_topology_service()
+    try:
+        rt = RelationshipType(req.relationship_type)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid relationship_type: {req.relationship_type}")
+    conn = NetworkConnection(
+        from_element=req.from_element, to_element=req.to_element,
+        relationship_type=rt, properties=req.properties,
+    )
+    added = service.add_connection(conn)
+    return {"from": req.from_element, "to": req.to_element, "added": added}
+
+
+@router.post("/topology/impact")
+async def analyze_impact(req: TopologyImpactRequest) -> Dict[str, Any]:
+    """
+    Analyze the impact of tripping a breaker.
+
+    Answers: "If I trip this breaker, which loads and buses are affected?"
+    """
+    from fireai.infrastructure.topology_graph_service import get_topology_service
+    service = get_topology_service()
+    result = service.analyze_breaker_impact(req.breaker_id)
+    return result.to_dict()
+
+
+@router.get("/topology/health")
+async def topology_health() -> Dict[str, Any]:
+    """Check Neo4j topology graph health."""
+    from fireai.infrastructure.topology_graph_service import get_topology_service
+    return get_topology_service().health_check()
 
 
 # ---------------------------------------------------------------------------
