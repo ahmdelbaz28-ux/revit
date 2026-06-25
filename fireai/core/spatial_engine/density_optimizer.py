@@ -1343,8 +1343,73 @@ class DensityOptimizer:
     # See TECHNICAL_HONESTY.md §5: theoretical_lower_bound ≠ theoretical_minimum.
     @staticmethod
     def _theoretical_minimum(room: Room, coverage_radius: float = DETECTOR_RADIUS) -> int:
-        """DEPRECATED: Use theoretical_lower_bound instead.
-        Private method — do not call from outside this module.
-        The name 'theoretical_minimum' creates a precision illusion.
-        """
+        """DEPRECATED: Use theoretical_lower_bound instead."""
         return DensityOptimizer.theoretical_lower_bound(room, coverage_radius)
+
+
+@dataclass
+class GenerativeVariant:
+    """A specific variant of a fire alarm layout."""
+    variant_id: str
+    layout: DetectorLayout
+    score: float
+    cost_estimate: float
+    safety_index: float
+    description: str
+
+
+def _run_optimization_task(radius: float, room: Room, pref: List[str]) -> DetectorLayout:
+    """Helper function for multiprocessing to avoid serialization issues."""
+    opt = DensityOptimizer(coverage_radius=radius)
+    return opt.optimize(room, strategy_preference=pref)
+
+
+class GenerativeOptimizer:
+    """
+    Generative Design Engine (V131 R&D).
+    Uses true MULTIPROCESSING to generate design variants in parallel.
+    """
+
+    def __init__(self, room: Room, coverage_radius: float = DETECTOR_RADIUS):
+        self.room = room
+        self.R = coverage_radius
+
+    def generate_variants(self) -> List[GenerativeVariant]:
+        """Generate 3 variants in parallel using ProcessPoolExecutor."""
+        from concurrent.futures import ProcessPoolExecutor
+        
+        tasks = [
+            (self.R, self.room, ["hexA_x", "hexA_y"]),
+            (self.R * 0.85, self.room, ["hexG_x", "rect"]),
+            (self.R, self.room, ["hexG_x", "hexG_y", "rect"])
+        ]
+        
+        variants = []
+        with ProcessPoolExecutor() as executor:
+            # Parallel execution
+            futures = [executor.submit(_run_optimization_task, r, rm, p) for r, rm, p in tasks]
+            results = [f.result() for f in futures]
+
+        variants.append(self._create_variant("cost_minimized", results[0], "Optimized for minimal cost."))
+        variants.append(self._create_variant("safety_maximized", results[1], "Optimized for max overlap."))
+        variants.append(self._create_variant("standard_compliant", results[2], "Standard balanced design."))
+
+        variants.sort(key=lambda x: x.score, reverse=True)
+        return variants
+
+    def _create_variant(self, variant_id: str, layout: DetectorLayout, description: str) -> GenerativeVariant:
+        count = len(layout.detectors)
+        area = self.room.width * self.room.length
+        density = (count * math.pi * self.R**2) / area if area > 0 else 0
+        safety_index = min(1.0, density / 2.0)
+        coverage_score = layout.coverage_pct / 100.0
+        score = (coverage_score * 0.5) + (safety_index * 0.3) - (min(count/10, 1.0) * 0.2)
+        
+        return GenerativeVariant(
+            variant_id=variant_id,
+            layout=layout,
+            score=round(score * 100, 2),
+            cost_estimate=count * 150.0,
+            safety_index=round(safety_index, 4),
+            description=description
+        )
